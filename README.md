@@ -14,16 +14,20 @@ fresh, default-no confirmation.
 Requirements:
 
 - Python 3.11 or newer
+- Git and `uv` for the recommended install flow
 - `nmap` for scanning
 - Rich (installed with the project)
 - Optional tools for the commands you choose to run: `feroxbuster`, `ffuf`,
   NetExec (`nxc`), `smbclient`, `ldapsearch`, and `kerbrute`
 
-Using `uv`:
+Clone, install, and launch with Git and `uv`:
 
 ```bash
+git clone https://github.com/0xsl0th/recon-cockpit.git
+cd recon-cockpit
 uv sync --python 3.13
 source .venv/bin/activate
+python recon.py 10.10.11.123
 ```
 
 Python 3.13 is recommended for compatibility with the broader
