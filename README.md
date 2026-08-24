@@ -22,10 +22,12 @@ Requirements:
 Using `uv`:
 
 ```bash
-uv venv
-uv pip install -e .
+uv sync --python 3.13
 source .venv/bin/activate
 ```
+
+Python 3.13 is recommended for compatibility with the broader
+offensive-security Python ecosystem.
 
 Or use any Python environment manager and install the project with its normal
 editable-install command.
