@@ -12,9 +12,11 @@ from recon_cockpit.cli import (
     _execute_suggestion,
     _generated_user_file,
     _handle_group,
+    _interactive_menu,
     _materialize_user_file,
     _print_live_line,
     _resolve_command,
+    _run_custom_nmap_scan,
     _run_nmap_scan,
     _terminal_safe,
     main,
@@ -180,6 +182,133 @@ def test_confirmed_standard_scan_runs_scripts_and_parses_xml(
     assert "-sV" in state.scan_command
     assert "-vv" in state.scan_command
     assert {service.port for service in state.services} == {22, 80, 445, 5985}
+
+
+def test_blank_custom_scan_cancels_without_confirmation_or_artifacts(
+    tmp_path: Path, monkeypatch
+) -> None:
+    state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
+    monkeypatch.setattr("recon_cockpit.cli.Prompt.ask", lambda *args, **kwargs: "")
+
+    def unexpected_confirmation(*args, **kwargs):
+        raise AssertionError("blank custom options should cancel before confirmation")
+
+    monkeypatch.setattr("recon_cockpit.cli.Confirm.ask", unexpected_confirmation)
+
+    assert _run_custom_nmap_scan(state, case_dir) is False
+    assert list((case_dir / "scans").iterdir()) == []
+    assert list((case_dir / "commands").iterdir()) == []
+
+
+def test_declining_custom_scan_executes_nothing(tmp_path: Path, monkeypatch) -> None:
+    state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
+    monkeypatch.setattr(
+        "recon_cockpit.cli.Prompt.ask",
+        lambda *args, **kwargs: "-sU --top-ports 50 -sV -T4",
+    )
+
+    def decline(*args, **kwargs):
+        assert kwargs["default"] is False
+        return False
+
+    def unexpected_execution(*args, **kwargs):
+        raise AssertionError("runner was called after a default-deny response")
+
+    monkeypatch.setattr("recon_cockpit.cli.Confirm.ask", decline)
+    monkeypatch.setattr("recon_cockpit.cli.stream_command", unexpected_execution)
+
+    assert _run_custom_nmap_scan(state, case_dir) is False
+    assert list((case_dir / "scans").iterdir()) == []
+    assert list((case_dir / "commands").iterdir()) == []
+
+
+def test_confirmed_custom_scan_parses_xml_and_saves_private_artifacts(
+    tmp_path: Path, monkeypatch
+) -> None:
+    state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
+    monkeypatch.setattr(
+        "recon_cockpit.cli.Prompt.ask",
+        lambda *args, **kwargs: "-sU --top-ports=50 -sV -T4 -vv",
+    )
+    monkeypatch.setattr("recon_cockpit.cli.Confirm.ask", lambda *args, **kwargs: True)
+
+    def fake_nmap(argv, **kwargs):
+        xml_path = Path(argv[argv.index("-oX") + 1])
+        text_path = Path(argv[argv.index("-oN") + 1])
+        xml_path.write_text(
+            (FIXTURES / "windows_nmap.xml").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        text_path.write_text("offline fake custom output\n", encoding="utf-8")
+        return CommandResult(tuple(argv), 0, "offline fake custom output\n", "")
+
+    monkeypatch.setattr("recon_cockpit.cli.stream_command", fake_nmap)
+
+    assert _run_custom_nmap_scan(state, case_dir) is True
+    assert state.scan_command[0:4] == ["nmap", "-Pn", "-sU", "--top-ports=50"]
+    assert state.scan_command[-1] == state.target
+    assert state.scan_command.count(state.target) == 1
+    xml_output = Path(state.scan_command[state.scan_command.index("-oX") + 1])
+    text_output = Path(state.scan_command[state.scan_command.index("-oN") + 1])
+    assert xml_output.parent == (case_dir / "scans").resolve()
+    assert text_output.parent == (case_dir / "scans").resolve()
+    artifacts = list((case_dir / "scans").iterdir())
+    assert {artifact.suffix for artifact in artifacts} == {".xml", ".nmap"}
+    assert all(stat.S_IMODE(artifact.stat().st_mode) == 0o600 for artifact in artifacts)
+    records = list((case_dir / "commands").glob("*-nmap-custom.json"))
+    assert records
+    assert stat.S_IMODE(records[0].stat().st_mode) == 0o600
+    assert {service.port for service in state.services} == {22, 80, 445, 5985}
+
+
+@pytest.mark.parametrize(
+    "raw_options",
+    [
+        "nmap -sV 10.10.11.124",
+        "-sV -oA /tmp/other",
+        "-sV '; id'",
+        "-sV 'unterminated",
+    ],
+)
+def test_invalid_custom_scan_never_reaches_confirmation_or_execution(
+    tmp_path: Path, monkeypatch, raw_options: str
+) -> None:
+    state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
+    monkeypatch.setattr(
+        "recon_cockpit.cli.Prompt.ask", lambda *args, **kwargs: raw_options
+    )
+
+    def unexpected_action(*args, **kwargs):
+        raise AssertionError("invalid custom options passed the validation boundary")
+
+    monkeypatch.setattr("recon_cockpit.cli.Confirm.ask", unexpected_action)
+    monkeypatch.setattr("recon_cockpit.cli.stream_command", unexpected_action)
+
+    with pytest.raises(ReconError):
+        _run_custom_nmap_scan(state, case_dir)
+    assert list((case_dir / "scans").iterdir()) == []
+    assert list((case_dir / "commands").iterdir()) == []
+
+
+def test_interactive_menu_dispatches_custom_nmap_action(
+    tmp_path: Path, monkeypatch
+) -> None:
+    state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
+    choices = iter((1, 5))
+    called: list[Path] = []
+
+    monkeypatch.setattr("recon_cockpit.cli._refresh_next_actions", lambda state: [])
+    monkeypatch.setattr(
+        "recon_cockpit.cli.IntPrompt.ask", lambda *args, **kwargs: next(choices)
+    )
+    monkeypatch.setattr(
+        "recon_cockpit.cli._run_custom_nmap_scan",
+        lambda state, selected_case: called.append(selected_case) or False,
+    )
+
+    _interactive_menu(state, case_dir)
+
+    assert called == [case_dir]
 
 
 def test_ancestor_case_rejects_output_for_a_different_target(tmp_path: Path) -> None:

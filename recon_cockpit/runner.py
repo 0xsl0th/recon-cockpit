@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import ipaddress
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -15,6 +16,107 @@ from typing import Callable, Sequence
 
 class ReconError(RuntimeError):
     """A user-facing error raised by the recon workflow."""
+
+
+_CUSTOM_NMAP_SIMPLE_OPTIONS = frozenset(
+    {
+        "-sC",
+        "-sV",
+        "--version-light",
+        "--version-all",
+        "--version-trace",
+        "-sT",
+        "-sS",
+        "-sU",
+        "-O",
+        "--osscan-limit",
+        "--osscan-guess",
+        "-F",
+        "-r",
+        "-n",
+        "-R",
+        "--system-dns",
+        "--traceroute",
+        "--open",
+        "--packet-trace",
+        "--script-trace",
+    }
+)
+_CUSTOM_NMAP_VALUE_OPTIONS = frozenset(
+    {
+        "-p",
+        "-T",
+        "--exclude-ports",
+        "--top-ports",
+        "--port-ratio",
+        "--version-intensity",
+        "--min-rate",
+        "--max-rate",
+        "--max-retries",
+        "--host-timeout",
+        "--scan-delay",
+        "--max-scan-delay",
+        "--min-rtt-timeout",
+        "--max-rtt-timeout",
+        "--initial-rtt-timeout",
+        "--stats-every",
+    }
+)
+_CUSTOM_NMAP_FORBIDDEN_PREFIXES = (
+    "-iL",
+    "-iR",
+    "-oA",
+    "-oG",
+    "-oN",
+    "-oS",
+    "-oX",
+)
+_CUSTOM_NMAP_FORBIDDEN_OPTIONS = frozenset(
+    {
+        "--",
+        "-6",
+        "-Pn",
+        "--reason",
+        "--append-output",
+        "--resume",
+        "--exclude",
+        "--excludefile",
+        "--script",
+        "--script-args",
+        "--script-args-file",
+        "--script-help",
+        "--script-updatedb",
+        "--datadir",
+        "--proxies",
+        "-D",
+        "-S",
+        "-e",
+        "-g",
+        "--source-port",
+        "-sI",
+        "-b",
+        "-f",
+        "--mtu",
+        "--data",
+        "--data-string",
+        "--data-length",
+        "--ip-options",
+        "--ttl",
+        "--spoof-mac",
+        "--badsum",
+        "--scanflags",
+        "--iflist",
+        "-h",
+        "--help",
+        "-V",
+        "--version",
+    }
+)
+_PORT_EXPRESSION_RE = re.compile(
+    r"(?:(?:[TUSP]):)?(?:\d+|\d*-\d*)(?:,(?:(?:[TUSP]):)?(?:\d+|\d*-\d*))*\Z",
+    re.IGNORECASE,
+)
+_DURATION_RE = re.compile(r"(\d+(?:\.\d+)?)(ms|s|m|h)?\Z", re.IGNORECASE)
 
 
 @dataclass(slots=True)
@@ -80,6 +182,174 @@ def standard_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[st
     return tuple(args)
 
 
+def _option_and_inline_value(token: str) -> tuple[str, str | None]:
+    if token.startswith("--") and "=" in token:
+        option, value = token.split("=", 1)
+        return option, value
+    if token.startswith("-p") and token != "-p":
+        return "-p", token[2:]
+    if token.startswith("-T") and token != "-T":
+        return "-T", token[2:]
+    return token, None
+
+
+def _validate_port_expression(value: str, option: str) -> None:
+    if not value or not _PORT_EXPRESSION_RE.fullmatch(value):
+        raise ReconError(f"{option} requires a numeric port list or range")
+    numbers = (int(item) for item in re.findall(r"\d+", value))
+    if any(number > 65535 for number in numbers):
+        raise ReconError(f"{option} ports must be between 0 and 65535")
+
+
+def _validate_custom_option_value(option: str, value: str) -> None:
+    if not value:
+        raise ReconError(f"Custom nmap option {option} requires a value")
+    if option in {"-p", "--exclude-ports"}:
+        _validate_port_expression(value, option)
+        return
+    if option == "-T":
+        if value not in {"0", "1", "2", "3", "4"}:
+            raise ReconError("Custom nmap timing must be between -T0 and -T4")
+        return
+    if option == "--top-ports":
+        if not value.isdecimal() or not 1 <= int(value) <= 65535:
+            raise ReconError("--top-ports must be between 1 and 65535")
+        return
+    if option == "--port-ratio":
+        try:
+            ratio = float(value)
+        except ValueError as exc:
+            raise ReconError("--port-ratio must be a number between 0 and 1") from exc
+        if not 0 < ratio <= 1:
+            raise ReconError("--port-ratio must be a number between 0 and 1")
+        return
+    if option == "--version-intensity":
+        if not value.isdecimal() or not 0 <= int(value) <= 9:
+            raise ReconError("--version-intensity must be between 0 and 9")
+        return
+    if option in {"--min-rate", "--max-rate"}:
+        if not value.isdecimal() or not 1 <= int(value) <= 10_000:
+            raise ReconError(f"{option} must be between 1 and 10000")
+        return
+    if option == "--max-retries":
+        if not value.isdecimal() or not 0 <= int(value) <= 20:
+            raise ReconError("--max-retries must be between 0 and 20")
+        return
+    duration = _DURATION_RE.fullmatch(value)
+    if duration is None:
+        raise ReconError(f"{option} requires a duration such as 500ms, 30s, or 5m")
+    multipliers = {"ms": 0.001, "s": 1, "m": 60, "h": 3600}
+    unit = (duration.group(2) or "s").casefold()
+    if float(duration.group(1)) * multipliers[unit] > 24 * 60 * 60:
+        raise ReconError(f"{option} cannot exceed 24 hours")
+
+
+def _validate_custom_nmap_args(extra_args: Sequence[str]) -> tuple[str, ...]:
+    """Validate a bounded, options-only custom scan argument vector."""
+
+    tokens = tuple(str(token) for token in extra_args)
+    if not tokens:
+        raise ReconError("Enter at least one custom nmap option")
+    if len(tokens) > 64 or sum(len(token) for token in tokens) > 2048:
+        raise ReconError("Custom nmap options are limited to 64 tokens and 2048 characters")
+    if any(
+        not token
+        or any(
+            ord(character) < 32 or 127 <= ord(character) <= 159
+            for character in token
+        )
+        for token in tokens
+    ):
+        raise ReconError("Custom nmap options cannot contain empty or control characters")
+
+    validated: list[str] = []
+    seen: set[str] = set()
+    values: dict[str, str] = {}
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        option, inline_value = _option_and_inline_value(token)
+        if option in _CUSTOM_NMAP_FORBIDDEN_OPTIONS or any(
+            token.startswith(prefix) for prefix in _CUSTOM_NMAP_FORBIDDEN_PREFIXES
+        ):
+            raise ReconError(
+                f"Custom nmap option {option!r} is controlled or blocked by the cockpit"
+            )
+        if option in {"nmap", "sudo", "doas", "env"} or not option.startswith("-"):
+            raise ReconError(
+                "Enter nmap options only; omit the executable, target, and shell syntax"
+            )
+
+        if option in _CUSTOM_NMAP_VALUE_OPTIONS:
+            if option in seen:
+                raise ReconError(f"Custom nmap option {option} was supplied more than once")
+            if inline_value is None:
+                index += 1
+                if index >= len(tokens):
+                    raise ReconError(f"Custom nmap option {option} requires a value")
+                inline_value = tokens[index]
+            _validate_custom_option_value(option, inline_value)
+            seen.add(option)
+            values[option] = inline_value
+            validated.append(token)
+            if token == option:
+                validated.append(inline_value)
+        elif option in _CUSTOM_NMAP_SIMPLE_OPTIONS or re.fullmatch(r"-v{1,3}", option):
+            if inline_value is not None:
+                raise ReconError(f"Custom nmap option {option} does not accept a value")
+            duplicate_key = "-v" if option.startswith("-v") else option
+            if duplicate_key in seen:
+                raise ReconError(
+                    f"Custom nmap option {duplicate_key} was supplied more than once"
+                )
+            seen.add(duplicate_key)
+            validated.append(token)
+        else:
+            raise ReconError(
+                f"Unsupported custom nmap option {option!r}; use a documented safe option "
+                "or run the scan manually and import its XML"
+            )
+        index += 1
+
+    if "-sS" in seen and "-sT" in seen:
+        raise ReconError("Choose either -sS or -sT, not both")
+    if "-n" in seen and seen.intersection({"-R", "--system-dns"}):
+        raise ReconError("-n cannot be combined with DNS resolution options")
+    if len(seen.intersection({"-p", "-F", "--top-ports", "--port-ratio"})) > 1:
+        raise ReconError("Choose only one of -p, -F, --top-ports, or --port-ratio")
+    if len(
+        seen.intersection(
+            {"--version-light", "--version-all", "--version-intensity"}
+        )
+    ) > 1:
+        raise ReconError("Choose only one version intensity option")
+    if "--min-rate" in values and "--max-rate" in values:
+        if int(values["--min-rate"]) > int(values["--max-rate"]):
+            raise ReconError("--min-rate cannot exceed --max-rate")
+
+    return tuple(validated)
+
+
+def custom_scan_argv(
+    target: str,
+    extra_args: Sequence[str],
+    xml_path: Path,
+    text_path: Path,
+) -> tuple[str, ...]:
+    """Build a user-composed scan with a controlled target and output paths."""
+
+    canonical = validate_target(target)
+    custom_args = _validate_custom_nmap_args(extra_args)
+    args = ["nmap"]
+    if ipaddress.ip_address(canonical).version == 6:
+        args.append("-6")
+    args.extend(
+        ("-Pn", *custom_args, "--reason", "-oX", str(xml_path), "-oN", str(text_path))
+    )
+    args.append(canonical)
+    return tuple(args)
+
+
 def deeper_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str, ...]:
     """Build an all-TCP-ports service scan, only run after explicit confirmation."""
 
@@ -103,8 +373,13 @@ def deeper_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str,
 
 
 def scan_paths(case_dir: Path, label: str) -> tuple[Path, Path]:
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    base = case_dir.resolve() / "scans" / f"{label}-{timestamp}"
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    scan_dir = case_dir.resolve() / "scans"
+    base = scan_dir / f"{label}-{timestamp}"
+    counter = 2
+    while base.with_suffix(".xml").exists() or base.with_suffix(".nmap").exists():
+        base = scan_dir / f"{label}-{timestamp}-{counter}"
+        counter += 1
     return base.with_suffix(".xml"), base.with_suffix(".nmap")
 
 

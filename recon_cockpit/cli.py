@@ -36,6 +36,7 @@ from .models import CaseState, Credential, IngestResult
 from .parsers import ingest_command_output, parse_nmap_xml, strip_ansi
 from .runner import (
     ReconError,
+    custom_scan_argv,
     deeper_scan_argv,
     initial_scan_argv,
     run_command,
@@ -223,10 +224,16 @@ def show_summary(state: CaseState, case_dir: Path) -> None:
 
 
 def _run_nmap_scan(
-    state: CaseState, case_dir: Path, *, profile: str = "initial"
+    state: CaseState,
+    case_dir: Path,
+    *,
+    profile: str = "initial",
+    custom_args: Sequence[str] = (),
 ) -> bool:
-    if profile not in {"initial", "standard", "deep"}:
+    if profile not in {"initial", "standard", "custom", "deep"}:
         raise ReconError(f"Unknown nmap scan profile: {profile}")
+    if profile != "custom" and custom_args:
+        raise ReconError("Custom nmap arguments require the custom scan profile")
 
     label = profile
     xml_path, text_path = scan_paths(case_dir, label)
@@ -235,16 +242,22 @@ def _run_nmap_scan(
         "standard": standard_scan_argv,
         "deep": deeper_scan_argv,
     }
-    command = builders[profile](state.target, xml_path, text_path)
+    command = (
+        custom_scan_argv(state.target, custom_args, xml_path, text_path)
+        if profile == "custom"
+        else builders[profile](state.target, xml_path, text_path)
+    )
     titles = {
         "initial": "Initial nmap scan",
         "standard": "Standard-script nmap scan",
+        "custom": "Custom nmap scan",
         "deep": "Deeper nmap scan",
     }
     console.print(f"\n[bold]{titles[profile]}[/bold]")
     console.print(Text(shell_join(command), style="cyan"))
     prompts = {
         "standard": "Run this active default-NSE-script enumeration?",
+        "custom": "Run this active custom nmap enumeration command?",
         "deep": "Run this active all-TCP-ports enumeration command?",
     }
     if profile != "initial" and not Confirm.ask(prompts[profile], default=False):
@@ -279,6 +292,34 @@ def _run_nmap_scan(
     open_count = sum(service.state.casefold() == "open" for service in services)
     console.print(f"[green]Parsed {open_count} open service(s) into notes.md.[/green]")
     return True
+
+
+def _run_custom_nmap_scan(state: CaseState, case_dir: Path) -> bool:
+    console.print("\n[bold]Build a custom nmap scan[/bold]")
+    console.print(
+        "[dim]Enter options only. The cockpit supplies nmap, -Pn, --reason, "
+        "private output paths, and the case target.[/dim]"
+    )
+    console.print(
+        "[dim]Example: -sT --top-ports 50 -sV -T4. "
+        "Unknown or scope-changing options are rejected.[/dim]"
+    )
+    raw_options = Prompt.ask(
+        "Nmap options (blank cancels)", default="", show_default=False
+    )
+    if not raw_options.strip():
+        console.print("[yellow]Skipped; nothing was executed.[/yellow]")
+        return False
+    try:
+        custom_args = tuple(shlex.split(raw_options, posix=True))
+    except ValueError as exc:
+        raise ReconError(f"Could not parse custom nmap options: {exc}") from exc
+    return _run_nmap_scan(
+        state,
+        case_dir,
+        profile="custom",
+        custom_args=custom_args,
+    )
 
 
 def _import_nmap_xml(state: CaseState, case_dir: Path, source: Path) -> None:
@@ -642,7 +683,13 @@ def _validate_ingest_target(result: IngestResult, state: CaseState) -> None:
 def _interactive_menu(state: CaseState, case_dir: Path) -> None:
     while True:
         groups = _refresh_next_actions(state)
-        extras = ["Add a credential", "Open target notes", "Ingest saved command output", "Quit"]
+        extras = [
+            "Run custom Nmap scan",
+            "Add a credential",
+            "Open target notes",
+            "Ingest saved command output",
+            "Quit",
+        ]
         console.print("\n[bold]Actions[/bold]\n")
         for index, group in enumerate(groups, start=1):
             console.print(f"  [cyan][{index}][/cyan] {group.title}")
@@ -656,11 +703,13 @@ def _interactive_menu(state: CaseState, case_dir: Path) -> None:
             if choice <= base:
                 _handle_group(groups[choice - 1], state, case_dir)
             elif choice == base + 1:
-                _add_credential(state, case_dir)
+                _run_custom_nmap_scan(state, case_dir)
             elif choice == base + 2:
+                _add_credential(state, case_dir)
+            elif choice == base + 3:
                 _open_notes(case_dir)
                 state = load_case(case_dir)
-            elif choice == base + 3:
+            elif choice == base + 4:
                 source = Path(Prompt.ask("Output file")).expanduser()
                 result = _ingest_file_into_state(source, state, case_dir)
                 _print_ingest_result(result, state, case_dir)

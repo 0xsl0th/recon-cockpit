@@ -93,6 +93,36 @@ automatic elevation could leave root-owned files inside the case. If privileged
 Nmap behavior is specifically needed, copy the displayed command and run it
 manually with the appropriate authorization.
 
+#### Custom Nmap scans
+
+The interactive Actions menu also includes **Run custom Nmap scan**. This is an
+options prompt, not a shell or a raw-command field. For example, enter:
+
+```text
+-sT --top-ports 50 -sV -T4 -vv
+```
+
+The cockpit constructs, displays, and asks you to approve a command equivalent to:
+
+```text
+nmap -Pn -sT --top-ports 50 -sV -T4 -vv --reason \
+  -oX cases/10.10.11.123/scans/custom-….xml \
+  -oN cases/10.10.11.123/scans/custom-….nmap 10.10.11.123
+```
+
+Enter options only: omit `nmap`, `sudo`, the target, output flags, pipes, and
+redirection. The cockpit owns the canonical single target and private output paths.
+It accepts common TCP/UDP scan types, numeric port selections, version and OS
+detection, verbosity, timing templates through `-T4`, and bounded rate, retry, and
+timeout controls. It rejects unknown flags, additional target sources, output
+overrides, arbitrary NSE scripts, spoofing, decoys, proxies, and other options that
+could escape the case scope. Use `-sC` for the fixed default NSE set.
+
+Every custom scan receives a separate default-no confirmation and executes without
+a shell. Raw-socket options such as `-sS`, `-sU`, or `-O` can fail when Nmap lacks
+the required capabilities; the cockpit never elevates itself. For options outside
+the safe custom builder, run Nmap separately and import its XML with `--nmap-xml`.
+
 If ports 139/445 or an SMB fingerprint are absent, the SMB group does not exist.
 HTTP evidence produces ready-to-review feroxbuster and ffuf commands. SMB evidence
 produces NetExec anonymous-share, smbclient, and RID-enumeration commands. LDAP
