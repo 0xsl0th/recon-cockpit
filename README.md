@@ -50,9 +50,9 @@ nmap -Pn -sV --version-light --top-ports 1000 --reason \
   -oN cases/10.10.11.123/scans/initial-….nmap 10.10.11.123
 ```
 
-No NSE scripts, exploit checks, brute force, or all-port scan are part of that
-automatic action. Reopening an existing case reuses its saved evidence; pass
-`--rescan` to deliberately repeat the initial scan.
+No default-script scan (`-sC`), exploit checks, brute force, or all-port scan is
+part of that automatic action. Reopening an existing case reuses its saved
+evidence; pass `--rescan` to deliberately repeat the initial scan.
 
 The menu is derived from open-service evidence. For example:
 
@@ -70,8 +70,28 @@ Suggested next actions:
   [1] Enumerate HTTP
   [2] Enumerate SMB
   [3] Inspect WinRM
-  [4] Run deeper nmap scan
+  [4] Run standard Nmap scripts
+  [5] Run deeper nmap scan
 ```
+
+### Confirmed Nmap scans
+
+After the conservative initial scan, the menu offers a standard scripted scan
+equivalent to:
+
+```text
+nmap -Pn -sC -sV -vv --reason \
+  -oX cases/10.10.11.123/scans/standard-….xml \
+  -oN cases/10.10.11.123/scans/standard-….nmap 10.10.11.123
+```
+
+This runs Nmap's default NSE scripts (`-sC`), normal service/version detection
+(`-sV`), and verbose output (`-vv`). Because NSE scripts actively query exposed
+services, the cockpit shows the exact command and asks for confirmation, defaulting
+to no. The cockpit does not prepend `sudo`: these flags work without it, and
+automatic elevation could leave root-owned files inside the case. If privileged
+Nmap behavior is specifically needed, copy the displayed command and run it
+manually with the appropriate authorization.
 
 If ports 139/445 or an SMB fingerprint are absent, the SMB group does not exist.
 HTTP evidence produces ready-to-review feroxbuster and ffuf commands. SMB evidence
@@ -82,11 +102,13 @@ identified as a probable Windows workflow and adjusts the wording and available
 credential checks. Domain credentials use NetExec's domain mode; credentials
 without a domain use `--local-auth`.
 
-Selecting a group only displays its possible commands. Selecting a command still
-does not run it until you answer the final confirmation prompt. Commands execute
-as argument arrays, never through a shell, so metacharacters cannot silently add
-a pipeline or second command. Long-running output is streamed to the terminal and
-incrementally saved to a private transcript; the in-memory parser buffer is bounded.
+Selecting a service group only displays its possible commands. Selecting one still
+does not run it until you answer the final confirmation prompt. Nmap follow-up
+actions display their exact generated command and then ask for the same default-no
+confirmation. Commands execute as argument arrays, never through a shell, so
+metacharacters cannot silently add a pipeline or second command. Long-running
+output is streamed to the terminal and incrementally saved to a private transcript;
+the in-memory parser buffer is bounded.
 
 ## Cases and notes
 

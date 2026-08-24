@@ -110,16 +110,24 @@ def test_declining_service_command_executes_nothing(tmp_path: Path, monkeypatch)
     assert list((case_dir / "loot").iterdir()) == []
 
 
-def test_declining_deeper_scan_executes_nothing(tmp_path: Path, monkeypatch) -> None:
+@pytest.mark.parametrize("profile", ["standard", "deep"])
+def test_declining_active_nmap_scan_executes_nothing(
+    tmp_path: Path, monkeypatch, profile: str
+) -> None:
     state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
-    monkeypatch.setattr("recon_cockpit.cli.Confirm.ask", lambda *args, **kwargs: False)
+
+    def decline(*args, **kwargs):
+        assert kwargs["default"] is False
+        return False
+
+    monkeypatch.setattr("recon_cockpit.cli.Confirm.ask", decline)
 
     def unexpected_execution(*args, **kwargs):
         raise AssertionError("runner was called after a default-deny response")
 
     monkeypatch.setattr("recon_cockpit.cli.stream_command", unexpected_execution)
 
-    assert _run_nmap_scan(state, case_dir, deeper=True) is False
+    assert _run_nmap_scan(state, case_dir, profile=profile) is False
     assert list((case_dir / "scans").iterdir()) == []
 
 
@@ -144,9 +152,34 @@ def test_initial_scan_runs_without_post_scan_confirmation_and_parses_xml(
     monkeypatch.setattr("recon_cockpit.cli.Confirm.ask", unexpected_confirmation)
     monkeypatch.setattr("recon_cockpit.cli.stream_command", fake_nmap)
 
-    assert _run_nmap_scan(state, case_dir, deeper=False) is True
+    assert _run_nmap_scan(state, case_dir, profile="initial") is True
     assert {service.port for service in state.services} == {22, 80, 445, 5985}
     assert state.scan_command[0] == "nmap"
+
+
+def test_confirmed_standard_scan_runs_scripts_and_parses_xml(
+    tmp_path: Path, monkeypatch
+) -> None:
+    state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
+
+    def fake_nmap(argv, **kwargs):
+        xml_path = Path(argv[argv.index("-oX") + 1])
+        text_path = Path(argv[argv.index("-oN") + 1])
+        xml_path.write_text(
+            (FIXTURES / "windows_nmap.xml").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        text_path.write_text("offline fake nmap output\n", encoding="utf-8")
+        return CommandResult(tuple(argv), 0, "offline fake nmap output\n", "")
+
+    monkeypatch.setattr("recon_cockpit.cli.Confirm.ask", lambda *args, **kwargs: True)
+    monkeypatch.setattr("recon_cockpit.cli.stream_command", fake_nmap)
+
+    assert _run_nmap_scan(state, case_dir, profile="standard") is True
+    assert "-sC" in state.scan_command
+    assert "-sV" in state.scan_command
+    assert "-vv" in state.scan_command
+    assert {service.port for service in state.services} == {22, 80, 445, 5985}
 
 
 def test_ancestor_case_rejects_output_for_a_different_target(tmp_path: Path) -> None:

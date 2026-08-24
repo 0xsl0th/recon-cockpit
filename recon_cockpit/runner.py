@@ -58,6 +58,28 @@ def initial_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str
     return tuple(args)
 
 
+def standard_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str, ...]:
+    """Build a default-script scan, only run after explicit confirmation."""
+
+    canonical = validate_target(target)
+    args = [
+        "nmap",
+        "-Pn",
+        "-sC",
+        "-sV",
+        "-vv",
+        "--reason",
+        "-oX",
+        str(xml_path),
+        "-oN",
+        str(text_path),
+    ]
+    if ipaddress.ip_address(canonical).version == 6:
+        args.insert(1, "-6")
+    args.append(canonical)
+    return tuple(args)
+
+
 def deeper_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str, ...]:
     """Build an all-TCP-ports service scan, only run after explicit confirmation."""
 

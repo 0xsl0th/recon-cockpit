@@ -100,7 +100,7 @@ def test_iis_winrm_and_smb_produce_windows_adjusted_flow() -> None:
 
     assert profile.probable_windows is True
     assert profile.windows_stack is True
-    assert {"http", "smb", "winrm", "nmap_deep"} <= groups.keys()
+    assert {"http", "smb", "winrm", "nmap_standard", "nmap_deep"} <= groups.keys()
     assert any(command.argv[0:2] == ("nxc", "smb") for command in groups["smb"].commands)
     assert any(command.argv[0] == "smbclient" for command in groups["smb"].commands)
     assert any("--rid-brute" in command.argv for command in groups["smb"].commands)
@@ -223,7 +223,7 @@ def test_closed_services_do_not_create_service_suggestions() -> None:
 
     suggestions = build_suggestions(case_with(closed_smb))
 
-    assert {item.category for item in suggestions} == {"nmap_deep"}
+    assert {item.category for item in suggestions} == {"nmap_standard", "nmap_deep"}
 
 
 @pytest.mark.parametrize(
@@ -240,7 +240,7 @@ def test_only_exactly_open_tcp_services_create_service_actions(
 ) -> None:
     suggestions = build_suggestions(case_with(non_actionable_service))
 
-    assert {item.category for item in suggestions} == {"nmap_deep"}
+    assert {item.category for item in suggestions} == {"nmap_standard", "nmap_deep"}
 
 
 def test_command_data_is_argv_and_display_is_shell_quoted() -> None:
@@ -276,6 +276,21 @@ def test_deep_scan_uses_light_versions_without_default_scripts() -> None:
         "10.10.11.123",
     )
     assert "-sC" not in command.argv
+
+
+def test_standard_scan_uses_default_scripts_and_verbose_versions() -> None:
+    suggestions = build_suggestions(case_with(service(22, "ssh")))
+    command = next(item for item in suggestions if item.category == "nmap_standard")
+
+    assert command.argv == (
+        "nmap",
+        "-Pn",
+        "-sC",
+        "-sV",
+        "-vv",
+        "10.10.11.123",
+    )
+    assert command.active is True
 
 
 def test_explicit_windows_os_guess_adjusts_smb_wording() -> None:

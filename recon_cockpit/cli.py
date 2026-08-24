@@ -40,6 +40,7 @@ from .runner import (
     initial_scan_argv,
     run_command,
     scan_paths,
+    standard_scan_argv,
     stream_command,
     validate_target,
 )
@@ -221,19 +222,32 @@ def show_summary(state: CaseState, case_dir: Path) -> None:
     console.print(Text(f"\nCase: {_terminal_safe(case_dir)}", style="dim"))
 
 
-def _run_nmap_scan(state: CaseState, case_dir: Path, *, deeper: bool) -> bool:
-    label = "deep" if deeper else "initial"
+def _run_nmap_scan(
+    state: CaseState, case_dir: Path, *, profile: str = "initial"
+) -> bool:
+    if profile not in {"initial", "standard", "deep"}:
+        raise ReconError(f"Unknown nmap scan profile: {profile}")
+
+    label = profile
     xml_path, text_path = scan_paths(case_dir, label)
-    command = (
-        deeper_scan_argv(state.target, xml_path, text_path)
-        if deeper
-        else initial_scan_argv(state.target, xml_path, text_path)
-    )
-    console.print(f"\n[bold]{'Deeper' if deeper else 'Initial'} nmap scan[/bold]")
+    builders = {
+        "initial": initial_scan_argv,
+        "standard": standard_scan_argv,
+        "deep": deeper_scan_argv,
+    }
+    command = builders[profile](state.target, xml_path, text_path)
+    titles = {
+        "initial": "Initial nmap scan",
+        "standard": "Standard-script nmap scan",
+        "deep": "Deeper nmap scan",
+    }
+    console.print(f"\n[bold]{titles[profile]}[/bold]")
     console.print(Text(shell_join(command), style="cyan"))
-    if deeper and not Confirm.ask(
-        "Run this active all-TCP-ports enumeration command?", default=False
-    ):
+    prompts = {
+        "standard": "Run this active default-NSE-script enumeration?",
+        "deep": "Run this active all-TCP-ports enumeration command?",
+    }
+    if profile != "initial" and not Confirm.ask(prompts[profile], default=False):
         console.print("[yellow]Skipped; nothing was executed.[/yellow]")
         return False
 
@@ -524,8 +538,11 @@ def _ingest_has_evidence(result: IngestResult) -> bool:
 
 def _handle_group(group: object, state: CaseState, case_dir: Path) -> None:
     key = getattr(group, "key", getattr(group, "category", "enumeration"))
+    if key in {"nmap_standard", "standard_nmap"}:
+        _run_nmap_scan(state, case_dir, profile="standard")
+        return
     if key in {"nmap_deep", "deep_nmap", "nmap"}:
-        _run_nmap_scan(state, case_dir, deeper=True)
+        _run_nmap_scan(state, case_dir, profile="deep")
         return
 
     commands = list(group.commands)
@@ -724,7 +741,7 @@ def _run_target_mode(args: argparse.Namespace) -> int:
     if args.nmap_xml:
         _import_nmap_xml(state, case_dir, args.nmap_xml.expanduser().resolve())
     elif args.rescan or not state.scan_command:
-        _run_nmap_scan(state, case_dir, deeper=False)
+        _run_nmap_scan(state, case_dir, profile="initial")
     else:
         console.print(
             Text(

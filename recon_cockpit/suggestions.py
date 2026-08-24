@@ -51,6 +51,7 @@ _CATEGORY_ORDER = (
     "kerberos",
     "winrm",
     "credentials",
+    "nmap_standard",
     "nmap_deep",
 )
 _GROUP_TITLES = {
@@ -60,6 +61,7 @@ _GROUP_TITLES = {
     "kerberos": "Enumerate Kerberos",
     "winrm": "Inspect WinRM",
     "credentials": "Test known credentials",
+    "nmap_standard": "Run standard Nmap scripts",
     "nmap_deep": "Run deeper nmap scan",
 }
 
@@ -695,6 +697,18 @@ def build_suggestions(
             )
 
     if target.strip():
+        _append_unique(
+            commands,
+            CommandSuggestion(
+                description="Run default NSE scripts with service detection",
+                argv=("nmap", "-Pn", "-sC", "-sV", "-vv", target),
+                category="nmap_standard",
+                evidence=(
+                    "default NSE scripts actively query services and require "
+                    "explicit approval"
+                ),
+            ),
+        )
         _append_unique(
             commands,
             CommandSuggestion(

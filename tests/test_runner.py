@@ -8,6 +8,7 @@ from recon_cockpit.runner import (
     ReconError,
     deeper_scan_argv,
     initial_scan_argv,
+    standard_scan_argv,
     stream_command,
     validate_target,
 )
@@ -29,6 +30,36 @@ def test_initial_scan_is_conservative_and_writes_xml() -> None:
     assert "-sC" not in command
     assert "-A" not in command
     assert command[-1] == "10.10.11.123"
+
+
+def test_standard_scan_uses_default_scripts_without_sudo() -> None:
+    command = standard_scan_argv(
+        "10.10.11.123", Path("scan.xml"), Path("scan.nmap")
+    )
+
+    assert command == (
+        "nmap",
+        "-Pn",
+        "-sC",
+        "-sV",
+        "-vv",
+        "--reason",
+        "-oX",
+        "scan.xml",
+        "-oN",
+        "scan.nmap",
+        "10.10.11.123",
+    )
+    assert "sudo" not in command
+
+
+def test_standard_scan_supports_ipv6() -> None:
+    command = standard_scan_argv(
+        "2001:db8::1", Path("scan.xml"), Path("scan.nmap")
+    )
+
+    assert command[1] == "-6"
+    assert command[-1] == "2001:db8::1"
 
 
 def test_deeper_scan_is_all_ports_and_ipv6_uses_flag() -> None:
