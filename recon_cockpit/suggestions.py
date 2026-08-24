@@ -8,6 +8,7 @@ not need a shell and user supplied values cannot turn into shell pipelines.
 
 from __future__ import annotations
 
+import ipaddress
 from dataclasses import dataclass
 from shlex import join as _shlex_join
 from typing import Iterable, Sequence
@@ -43,9 +44,21 @@ LDAP_PORTS = frozenset({389, 636, 3268, 3269})
 LDAPS_PORTS = frozenset({636, 3269})
 KERBEROS_PORTS = frozenset({88, 464})
 WINRM_PORTS = frozenset({5985, 5986})
+FTP_PORTS = frozenset({21, 990})
+RPC_PORTS = frozenset({111})
+NFS_PORTS = frozenset({2049})
+DNS_PORTS = frozenset({53})
+SMTP_PORTS = frozenset({25, 465, 587, 2525})
+DOCKER_API_PORTS = frozenset({2375, 2376})
 
 _CATEGORY_ORDER = (
     "http",
+    "ssh",
+    "ftp",
+    "nfs_rpc",
+    "dns",
+    "smtp",
+    "docker",
     "smb",
     "ldap",
     "kerberos",
@@ -56,13 +69,19 @@ _CATEGORY_ORDER = (
 )
 _GROUP_TITLES = {
     "http": "Enumerate HTTP",
+    "ssh": "Enumerate SSH",
+    "ftp": "Enumerate FTP",
+    "nfs_rpc": "Enumerate NFS / RPC",
+    "dns": "Enumerate DNS",
+    "smtp": "Enumerate SMTP",
+    "docker": "Inspect Docker API",
     "smb": "Enumerate SMB",
     "ldap": "Enumerate LDAP",
     "kerberos": "Enumerate Kerberos",
     "winrm": "Inspect WinRM",
     "credentials": "Test known credentials",
     "nmap_standard": "Run standard Nmap scripts",
-    "nmap_deep": "Run deeper nmap scan",
+    "nmap_deep": "Run full TCP Nmap scan",
 }
 
 
@@ -105,9 +124,16 @@ class SuggestionGroup:
 
 @dataclass(frozen=True, slots=True)
 class ServiceClassification:
-    """Relevant services and the Windows posture inferred from scan evidence."""
+    """Relevant services and conservative OS postures inferred from evidence."""
 
     http: tuple[Service, ...]
+    ssh: tuple[Service, ...]
+    ftp: tuple[Service, ...]
+    rpc: tuple[Service, ...]
+    nfs: tuple[Service, ...]
+    dns: tuple[Service, ...]
+    smtp: tuple[Service, ...]
+    docker_api: tuple[Service, ...]
     smb: tuple[Service, ...]
     ldap: tuple[Service, ...]
     kerberos: tuple[Service, ...]
@@ -115,6 +141,8 @@ class ServiceClassification:
     probable_windows: bool
     windows_stack: bool
     windows_evidence: tuple[str, ...]
+    probable_linux: bool
+    linux_evidence: tuple[str, ...]
 
 
 def shell_join(argv: Sequence[str]) -> str:
@@ -127,6 +155,13 @@ def shell_join(argv: Sequence[str]) -> str:
     return _shlex_join(list(argv))
 
 
+def _is_exactly_open(service: Service) -> bool:
+    return (
+        service.state.casefold() == "open"
+        and service.protocol.casefold() in {"tcp", "udp"}
+    )
+
+
 def _is_open(service: Service) -> bool:
     """Return whether a service is actionable in the TCP-oriented cockpit."""
 
@@ -134,9 +169,10 @@ def _is_open(service: Service) -> bool:
 
 
 def _fingerprint(service: Service) -> str:
-    script_text = " ".join(
-        [*service.scripts.keys(), *service.scripts.values()]
-    )
+    # Script identifiers are useful protocol evidence (for example
+    # ``smb2-security-mode``), but script output is arbitrary remote text and
+    # must not be allowed to reclassify a service.
+    script_ids = " ".join(service.scripts.keys())
     return " ".join(
         (
             service.name,
@@ -144,7 +180,7 @@ def _fingerprint(service: Service) -> str:
             service.version,
             service.extra_info,
             service.tunnel,
-            script_text,
+            script_ids,
         )
     ).casefold()
 
@@ -224,8 +260,67 @@ def _is_winrm(service: Service) -> bool:
 
 
 def _is_ssh(service: Service) -> bool:
-    name = service.name.casefold()
+    name = service.name.casefold().replace("_", "-")
     return service.port == 22 or name == "ssh" or name.startswith("ssh-")
+
+
+def _is_ftp(service: Service) -> bool:
+    name = service.name.casefold().replace("_", "-")
+    if name == "sftp" or name.startswith("sftp-"):
+        return False
+    text = _fingerprint(service)
+    return (
+        service.port in FTP_PORTS
+        or name in {"ftp", "ftps", "ssl/ftp"}
+        or _contains_any(text, ("vsftpd", "proftpd", "pure-ftpd"))
+    )
+
+
+def _is_rpc(service: Service) -> bool:
+    # Nmap's safe rpcinfo script is intentionally hard-coded to port 111.
+    return service.port in RPC_PORTS
+
+
+def _is_nfs(service: Service) -> bool:
+    name = service.name.casefold().replace("_", "-")
+    return (
+        service.port in NFS_PORTS
+        or name in {"nfs", "nfs-acl", "mountd"}
+        or name.startswith("nfs-")
+    )
+
+
+def _is_dns(service: Service) -> bool:
+    name = service.name.casefold().replace("_", "-")
+    return service.port in DNS_PORTS or name in {
+        "domain",
+        "domain-s",
+        "dns",
+        "dns-tcp",
+    }
+
+
+def _is_smtp(service: Service) -> bool:
+    name = service.name.casefold().replace("_", "-")
+    text = _fingerprint(service)
+    return (
+        service.port in SMTP_PORTS
+        or name in {"smtp", "smtps", "submission"}
+        or _contains_any(text, ("postfix", "exim", "sendmail", "opensmtpd"))
+    )
+
+
+def _is_docker_api(service: Service) -> bool:
+    name = service.name.casefold().replace("_", "-")
+    text = _fingerprint(service)
+    if "docker registry" in text or name in {"docker-registry", "registry"}:
+        return False
+    return (
+        service.port in DOCKER_API_PORTS
+        or name in {"docker", "docker-api", "docker-daemon"}
+        or "docker daemon" in text
+        or "docker api" in text
+    )
 
 
 def _credential_is_testable(credential: Credential) -> bool:
@@ -244,17 +339,31 @@ def _service_label(service: Service) -> str:
 def classify_services(
     services: Iterable[Service], hosts: Iterable[Host] = ()
 ) -> ServiceClassification:
-    """Classify only open services and infer a conservative Windows posture."""
+    """Classify exact-open services and infer conservative host postures."""
 
-    open_services = tuple(service for service in services if _is_open(service))
-    smb = tuple(service for service in open_services if _is_smb(service))
-    ldap = tuple(service for service in open_services if _is_ldap(service))
-    kerberos = tuple(service for service in open_services if _is_kerberos(service))
-    winrm = tuple(service for service in open_services if _is_winrm(service))
+    exact_open_services = tuple(
+        service for service in services if _is_exactly_open(service)
+    )
+    tcp_services = tuple(
+        service for service in exact_open_services if _is_open(service)
+    )
+    ssh = tuple(service for service in tcp_services if _is_ssh(service))
+    ftp = tuple(service for service in tcp_services if _is_ftp(service))
+    rpc = tuple(service for service in tcp_services if _is_rpc(service))
+    nfs = tuple(service for service in tcp_services if _is_nfs(service))
+    dns = tuple(service for service in tcp_services if _is_dns(service))
+    smtp = tuple(service for service in tcp_services if _is_smtp(service))
+    docker_api = tuple(
+        service for service in tcp_services if _is_docker_api(service)
+    )
+    smb = tuple(service for service in tcp_services if _is_smb(service))
+    ldap = tuple(service for service in tcp_services if _is_ldap(service))
+    kerberos = tuple(service for service in tcp_services if _is_kerberos(service))
+    winrm = tuple(service for service in tcp_services if _is_winrm(service))
 
     iis = tuple(
         service
-        for service in open_services
+        for service in tcp_services
         if "iis" in _fingerprint(service)
     )
     # A WSMan listener uses HTTP as a transport, but it is not a content
@@ -262,34 +371,88 @@ def classify_services(
     # identified on that service.
     http = tuple(
         service
-        for service in open_services
-        if _is_http(service) and (not _is_winrm(service) or service in iis)
+        for service in tcp_services
+        if _is_http(service)
+        and (not _is_winrm(service) or service in iis)
+        and not _is_docker_api(service)
     )
     explicit_windows = tuple(
         host.os_guess for host in hosts if "windows" in host.os_guess.casefold()
     )
     windows_products = tuple(
         service
-        for service in open_services
+        for service in tcp_services
         if _contains_any(
             _fingerprint(service),
             ("microsoft windows", "windows server", "windows rpc"),
         )
     )
 
-    evidence: list[str] = []
+    windows_evidence: list[str] = []
     if smb:
-        evidence.append("SMB is exposed")
+        windows_evidence.append("SMB is exposed")
     if winrm:
-        evidence.append("WinRM is exposed")
+        windows_evidence.append("WinRM is exposed")
     if iis:
-        evidence.append("a Microsoft IIS/HTTP service was identified")
+        windows_evidence.append("a Microsoft IIS/HTTP service was identified")
     if explicit_windows:
-        evidence.append("nmap's OS guess includes Windows")
+        windows_evidence.append("nmap's OS guess includes Windows")
     if windows_products:
-        evidence.append("a service product identifies Microsoft Windows")
+        windows_evidence.append("a service product identifies Microsoft Windows")
     if ldap and kerberos:
-        evidence.append("LDAP and Kerberos are both exposed")
+        windows_evidence.append("LDAP and Kerberos are both exposed")
+
+    explicit_linux = tuple(
+        host.os_guess
+        for host in hosts
+        if _contains_any(
+            host.os_guess.casefold(),
+            (
+                "linux",
+                "ubuntu",
+                "debian",
+                "red hat",
+                "rhel",
+                "centos",
+                "fedora",
+                "rocky",
+                "alma",
+                "suse",
+                "arch linux",
+                "gentoo",
+            ),
+        )
+    )
+    linux_products = tuple(
+        service
+        for service in exact_open_services
+        if _contains_any(
+            _fingerprint(service),
+            (
+                "linux",
+                "ubuntu",
+                "debian",
+                "red hat",
+                "rhel",
+                "centos",
+                "fedora",
+                "rocky linux",
+                "almalinux",
+                "opensuse",
+                "suse linux",
+                "arch linux",
+                "gentoo",
+            ),
+        )
+    )
+    linux_stack = bool(ssh and (nfs or rpc))
+    linux_evidence: list[str] = []
+    if explicit_linux:
+        linux_evidence.append("nmap's OS guess includes Linux/Unix")
+    if linux_products:
+        linux_evidence.append("a service fingerprint identifies a Linux distribution")
+    if linux_stack:
+        linux_evidence.append("SSH with NFS/RPC indicates a Unix-style service stack")
 
     # SMB alone can be Samba, and LDAP+Kerberos alone can be a Unix realm.
     # WinRM, an explicit OS guess, or two independent Microsoft-facing signals
@@ -302,15 +465,25 @@ def classify_services(
         or (iis and smb)
         or (smb and ldap and kerberos)
     )
+    probable_linux = bool(explicit_linux or linux_products or linux_stack)
     return ServiceClassification(
         http=http,
+        ssh=ssh,
+        ftp=ftp,
+        rpc=rpc,
+        nfs=nfs,
+        dns=dns,
+        smtp=smtp,
+        docker_api=docker_api,
         smb=smb,
         ldap=ldap,
         kerberos=kerberos,
         winrm=winrm,
         probable_windows=probable_windows,
         windows_stack=windows_stack,
-        windows_evidence=tuple(evidence),
+        windows_evidence=tuple(windows_evidence),
+        probable_linux=probable_linux,
+        linux_evidence=tuple(linux_evidence),
     )
 
 
@@ -330,6 +503,7 @@ def _is_tls(service: Service) -> bool:
         service.port in HTTPS_PORTS
         or service.tunnel.casefold() in {"ssl", "tls"}
         or "https" in name
+        or name in {"ftps", "ssl/ftp"}
         or name.startswith("ssl/")
     )
 
@@ -340,6 +514,52 @@ def _http_url(service: Service, fallback_host: str) -> str:
     default_port = 443 if scheme == "https" else 80
     port = "" if service.port == default_port else f":{service.port}"
     return f"{scheme}://{host}{port}"
+
+
+def _ftp_url(service: Service, fallback_host: str) -> str:
+    scheme = "ftps" if _is_tls(service) or service.port == 990 else "ftp"
+    host = _url_host(_host_for(service, fallback_host))
+    return f"{scheme}://{host}:{service.port}/"
+
+
+def _docker_url(service: Service, fallback_host: str, path: str) -> str:
+    scheme = "https" if _is_tls(service) or service.port == 2376 else "http"
+    host = _url_host(_host_for(service, fallback_host))
+    return f"{scheme}://{host}:{service.port}{path}"
+
+
+def _nmap_target_argv(host: str, port: int, scripts: str) -> tuple[str, ...]:
+    args = ["nmap"]
+    try:
+        if ipaddress.ip_address(host).version == 6:
+            args.append("-6")
+    except ValueError:
+        pass
+    args.extend(
+        (
+            "-Pn",
+            "-sT",
+            "-sV",
+            "-p",
+            str(port),
+            "--script",
+            scripts,
+            host,
+        )
+    )
+    return tuple(args)
+
+
+def _nmap_service_argv(
+    service: Service,
+    fallback_host: str,
+    scripts: str,
+) -> tuple[str, ...]:
+    return _nmap_target_argv(
+        _host_for(service, fallback_host),
+        service.port,
+        scripts,
+    )
 
 
 def _ldap_url(service: Service, fallback_host: str) -> str:
@@ -429,12 +649,166 @@ def build_suggestions(
                     "-u",
                     f"{url}/FUZZ",
                     "-w",
-                    "/usr/share/seclists/Discovery/Web-Content/raft-small-words.txt",
+                    "{wordlist}",
                 ),
                 category="http",
                 evidence=evidence,
             ),
         )
+
+    for service in profile.ssh:
+        host = _host_for(service, target)
+        posture = (
+            "probable Linux/Unix host"
+            if profile.probable_linux and not profile.probable_windows
+            else "SSH host"
+        )
+        evidence = f"nmap identified SSH at {_service_label(service)}"
+        _append_unique(
+            commands,
+            CommandSuggestion(
+                description=f"Collect SSH host keys from the {posture}",
+                argv=("ssh-keyscan", "-T", "5", "-p", str(service.port), host),
+                category="ssh",
+                evidence=evidence,
+            ),
+        )
+        _append_unique(
+            commands,
+            CommandSuggestion(
+                description="Enumerate SSH host keys and supported algorithms",
+                argv=_nmap_service_argv(
+                    service,
+                    target,
+                    "ssh-hostkey,ssh2-enum-algos",
+                ),
+                category="ssh",
+                evidence=evidence,
+            ),
+        )
+
+    for service in profile.ftp:
+        url = _ftp_url(service, target)
+        evidence = f"nmap identified FTP at {_service_label(service)}"
+        curl_args = [
+            "curl",
+            "--silent",
+            "--show-error",
+            "--max-time",
+            "15",
+            "--list-only",
+            "--user",
+            "anonymous:anonymous@",
+        ]
+        if url.startswith("ftps://"):
+            curl_args.append("--insecure")
+        curl_args.append(url)
+        _append_unique(
+            commands,
+            CommandSuggestion(
+                description=f"Try a bounded anonymous directory listing at {url}",
+                argv=tuple(curl_args),
+                category="ftp",
+                evidence=evidence,
+            ),
+        )
+        _append_unique(
+            commands,
+            CommandSuggestion(
+                description="Check anonymous FTP access and server type with Nmap",
+                argv=_nmap_service_argv(service, target, "ftp-anon,ftp-syst"),
+                category="ftp",
+                evidence=evidence,
+            ),
+        )
+
+    for service in profile.rpc:
+        evidence = f"nmap identified RPC bind at {_service_label(service)}"
+        _append_unique(
+            commands,
+            CommandSuggestion(
+                description="Enumerate registered RPC programs with Nmap",
+                argv=_nmap_service_argv(service, target, "rpcinfo"),
+                category="nfs_rpc",
+                evidence=evidence,
+            ),
+        )
+
+    for service in profile.nfs:
+        host = _host_for(service, target)
+        name = service.name.casefold().replace("_", "-")
+        rpc_endpoint = next(
+            (
+                candidate
+                for candidate in profile.rpc
+                if _host_for(candidate, target) == host
+            ),
+            None,
+        )
+        # nfs-showmount runs against rpcbind (111) or a detected mountd
+        # service, not against the common NFS data port 2049.
+        query_port = (
+            service.port
+            if name == "mountd"
+            else rpc_endpoint.port if rpc_endpoint is not None else 111
+        )
+        evidence = f"nmap identified NFS at {_service_label(service)}"
+        _append_unique(
+            commands,
+            CommandSuggestion(
+                description="List advertised NFS exports without mounting them",
+                argv=_nmap_target_argv(host, query_port, "nfs-showmount"),
+                category="nfs_rpc",
+                evidence=evidence,
+            ),
+        )
+
+    for service in profile.dns:
+        evidence = f"nmap identified DNS at {_service_label(service)}"
+        _append_unique(
+            commands,
+            CommandSuggestion(
+                description="Query DNS server identity metadata with Nmap",
+                argv=_nmap_service_argv(service, target, "dns-nsid"),
+                category="dns",
+                evidence=evidence,
+            ),
+        )
+
+    for service in profile.smtp:
+        evidence = f"nmap identified SMTP at {_service_label(service)}"
+        _append_unique(
+            commands,
+            CommandSuggestion(
+                description="Enumerate advertised SMTP commands without sending mail",
+                argv=_nmap_service_argv(service, target, "smtp-commands"),
+                category="smtp",
+                evidence=evidence,
+            ),
+        )
+
+    for service in profile.docker_api:
+        evidence = f"nmap identified a Docker API at {_service_label(service)}"
+        for path, description in (
+            ("/_ping", "Check whether the Docker API responds"),
+            ("/version", "Read Docker daemon version metadata"),
+            ("/info", "Read Docker daemon configuration metadata"),
+            ("/containers/json?all=1", "List Docker container metadata (read-only)"),
+        ):
+            url = _docker_url(service, target, path)
+            curl_args = ["curl", "--silent", "--show-error", "--max-time", "15"]
+            if url.startswith("https://"):
+                curl_args.append("--insecure")
+            curl_args.append(url)
+            _append_unique(
+                commands,
+                CommandSuggestion(
+                    description=description,
+                    argv=tuple(curl_args),
+                    category="docker",
+                    evidence=evidence,
+                ),
+            )
 
     for service in profile.smb:
         host = _host_for(service, target)
@@ -701,7 +1075,16 @@ def build_suggestions(
             commands,
             CommandSuggestion(
                 description="Run default NSE scripts with service detection",
-                argv=("nmap", "-Pn", "-sC", "-sV", "-vv", target),
+                argv=(
+                    "nmap",
+                    "-Pn",
+                    "-sC",
+                    "-sV",
+                    "-vv",
+                    "--top-ports",
+                    "1000",
+                    target,
+                ),
                 category="nmap_standard",
                 evidence=(
                     "default NSE scripts actively query services and require "
@@ -712,10 +1095,13 @@ def build_suggestions(
         _append_unique(
             commands,
             CommandSuggestion(
-                description="Scan all TCP ports with light version detection",
-                argv=("nmap", "-Pn", "-p-", "-sV", "--version-light", target),
+                description="Scan all TCP ports with default scripts and versions",
+                argv=("nmap", "-Pn", "-p-", "-sC", "-sV", "-vv", target),
                 category="nmap_deep",
-                evidence="a target is defined; deeper coverage requires explicit approval",
+                evidence=(
+                    "all 65,535 TCP ports and default NSE scripts require "
+                    "explicit approval"
+                ),
             ),
         )
 

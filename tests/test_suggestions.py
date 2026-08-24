@@ -29,9 +29,12 @@ def service(
     name: str,
     *,
     product: str = "",
+    version: str = "",
+    extra_info: str = "",
     tunnel: str = "",
     protocol: str = "tcp",
     state: str = "open",
+    scripts: dict[str, str] | None = None,
 ) -> Service:
     return Service(
         host="10.10.11.123",
@@ -40,7 +43,10 @@ def service(
         state=state,
         name=name,
         product=product,
+        version=version,
+        extra_info=extra_info,
         tunnel=tunnel,
+        scripts=scripts or {},
     )
 
 
@@ -85,7 +91,130 @@ def test_http_evidence_creates_both_ready_content_commands(
     assert {item.argv[0] for item in commands} == {"feroxbuster", "ffuf"}
     assert all(expected_url in item.argv for item in commands if item.argv[0] == "feroxbuster")
     assert any(f"{expected_url}/FUZZ" in item.argv for item in commands)
-    assert not any("{" in part for item in commands for part in item.argv)
+    ferox = next(item for item in commands if item.argv[0] == "feroxbuster")
+    ffuf = next(item for item in commands if item.argv[0] == "ffuf")
+    assert not any("{" in part for part in ferox.argv)
+    assert "{wordlist}" in ffuf.argv
+
+
+@pytest.mark.parametrize(
+    "observed,category,executable",
+    [
+        (service(22, "ssh", product="OpenSSH"), "ssh", "ssh-keyscan"),
+        (service(21, "ftp", product="vsftpd"), "ftp", "curl"),
+        (service(111, "rpcbind"), "nfs_rpc", "nmap"),
+        (service(2049, "nfs"), "nfs_rpc", "nmap"),
+        (service(53, "domain"), "dns", "nmap"),
+        (service(25, "smtp", product="Postfix"), "smtp", "nmap"),
+        (service(2375, "http", product="Docker daemon"), "docker", "curl"),
+    ],
+)
+def test_linux_unix_services_create_evidence_gated_enumeration(
+    observed: Service, category: str, executable: str
+) -> None:
+    suggestions = build_suggestions(case_with(observed))
+    commands = [item for item in suggestions if item.category == category]
+
+    assert commands
+    assert any(command.argv[0] == executable for command in commands)
+    assert all(command.active for command in commands)
+
+
+def test_docker_api_is_not_mistaken_for_a_generic_web_content_target() -> None:
+    suggestions = build_suggestions(
+        case_with(service(2375, "http", product="Docker daemon 27.0"))
+    )
+    categories = {item.category for item in suggestions}
+
+    assert "docker" in categories
+    assert "http" not in categories
+
+
+def test_sftp_and_docker_registry_do_not_trigger_wrong_workflows() -> None:
+    suggestions = build_suggestions(
+        case_with(
+            service(2222, "sftp"),
+            service(5000, "http", product="Docker Registry"),
+        )
+    )
+    categories = {item.category for item in suggestions}
+
+    assert "ftp" not in categories
+    assert "docker" not in categories
+    assert "http" in categories
+
+
+def test_nfs_export_command_queries_rpcbind_instead_of_nfs_data_port() -> None:
+    commands = [
+        item
+        for item in build_suggestions(case_with(service(2049, "nfs")))
+        if item.category == "nfs_rpc"
+    ]
+
+    assert commands[0].argv == (
+        "nmap",
+        "-Pn",
+        "-sT",
+        "-sV",
+        "-p",
+        "111",
+        "--script",
+        "nfs-showmount",
+        "10.10.11.123",
+    )
+
+
+def test_alternate_service_ports_receive_version_detection_for_nse_rules() -> None:
+    suggestions = build_suggestions(
+        case_with(
+            service(2222, "ssh"),
+            service(2121, "ftp"),
+            service(2525, "smtp"),
+            service(32767, "mountd"),
+        )
+    )
+    nmap_commands = [
+        item.argv
+        for item in suggestions
+        if item.category in {"ssh", "ftp", "smtp", "nfs_rpc"}
+        and item.argv[0] == "nmap"
+    ]
+
+    assert len(nmap_commands) == 4
+    assert all(command[1:4] == ("-Pn", "-sT", "-sV") for command in nmap_commands)
+    assert {command[command.index("-p") + 1] for command in nmap_commands} == {
+        "2121",
+        "2222",
+        "2525",
+        "32767",
+    }
+
+
+def test_alternate_port_ftps_uses_an_encrypted_curl_url() -> None:
+    command = next(
+        item
+        for item in build_suggestions(case_with(service(2990, "ftps")))
+        if item.category == "ftp" and item.argv[0] == "curl"
+    )
+
+    assert command.argv[-1] == "ftps://10.10.11.123:2990/"
+    assert "--insecure" in command.argv
+
+
+def test_remote_script_output_cannot_reclassify_an_http_service() -> None:
+    suggestions = build_suggestions(
+        case_with(
+            service(
+                8080,
+                "http",
+                scripts={"http-title": "Docker API Postfix vsftpd documentation"},
+            )
+        )
+    )
+    categories = {item.category for item in suggestions}
+
+    assert "http" in categories
+    assert not ({"docker", "ftp", "smtp"} & categories)
 
 
 def test_iis_winrm_and_smb_produce_windows_adjusted_flow() -> None:
@@ -233,6 +362,11 @@ def test_closed_services_do_not_create_service_suggestions() -> None:
         service(445, "microsoft-ds", state="open|filtered"),
         service(80, "http", protocol="udp"),
         service(445, "microsoft-ds", protocol="udp"),
+        service(53, "domain", protocol="udp"),
+        service(111, "rpcbind", protocol="udp"),
+        service(2049, "nfs", protocol="udp"),
+        service(53, "domain", protocol="udp", state="open|filtered"),
+        service(111, "rpcbind", protocol="udp", state="open|filtered"),
     ],
 )
 def test_only_exactly_open_tcp_services_create_service_actions(
@@ -263,7 +397,7 @@ def test_target_and_services_call_style_is_supported() -> None:
     assert suggestions[-1].category == "nmap_deep"
 
 
-def test_deep_scan_uses_light_versions_without_default_scripts() -> None:
+def test_full_scan_uses_all_ports_default_scripts_and_versions() -> None:
     command = build_suggestions(case_with(service(22, "ssh")))[-1]
 
     assert command.category == "nmap_deep"
@@ -271,11 +405,11 @@ def test_deep_scan_uses_light_versions_without_default_scripts() -> None:
         "nmap",
         "-Pn",
         "-p-",
+        "-sC",
         "-sV",
-        "--version-light",
+        "-vv",
         "10.10.11.123",
     )
-    assert "-sC" not in command.argv
 
 
 def test_standard_scan_uses_default_scripts_and_verbose_versions() -> None:
@@ -288,6 +422,8 @@ def test_standard_scan_uses_default_scripts_and_verbose_versions() -> None:
         "-sC",
         "-sV",
         "-vv",
+        "--top-ports",
+        "1000",
         "10.10.11.123",
     )
     assert command.active is True
@@ -301,3 +437,79 @@ def test_explicit_windows_os_guess_adjusts_smb_wording() -> None:
 
     assert profile.probable_windows is True
     assert "nmap's OS guess includes Windows" in profile.windows_evidence
+
+
+def test_linux_posture_requires_explicit_or_corroborating_evidence() -> None:
+    ssh = service(22, "ssh", product="OpenSSH")
+    ssh_only = classify_services([ssh])
+    unix_stack = classify_services([ssh, service(2049, "nfs")])
+    explicit = classify_services(
+        [ssh],
+        [Host(address="10.10.11.123", os_guess="Linux 6.x")],
+    )
+
+    assert ssh_only.probable_linux is False
+    assert unix_stack.probable_linux is True
+    assert "SSH with NFS/RPC" in unix_stack.linux_evidence[0]
+    assert explicit.probable_linux is True
+    assert "OS guess includes Linux/Unix" in explicit.linux_evidence[0]
+
+
+def test_linux_service_commands_are_read_only_enumeration() -> None:
+    suggestions = build_suggestions(
+        case_with(
+            service(2049, "nfs"),
+            service(25, "smtp"),
+            service(2375, "http", product="Docker daemon"),
+        )
+    )
+    commands = [item.argv for item in suggestions]
+    flattened = {part for command in commands for part in command}
+
+    assert not any(command[0] == "mount" for command in commands)
+    assert "nfs-ls" not in flattened
+    assert "smtp-open-relay" not in flattened
+    assert "smtp-enum-users" not in flattened
+    assert "POST" not in flattened
+    assert not ({"create", "exec", "start"} & flattened)
+    assert "-sU" not in flattened
+
+
+def test_architecture_text_does_not_imply_arch_linux() -> None:
+    profile = classify_services(
+        [service(22, "ssh")],
+        [Host(address="10.10.11.123", os_guess="network appliance architecture")],
+    )
+
+    assert profile.probable_linux is False
+
+
+def test_ipv6_linux_commands_use_nmap_flag_and_bracketed_urls() -> None:
+    state = case_with()
+    state.target = "2001:db8::7"
+    state.services = [
+        Service(
+            host=state.target,
+            port=22,
+            protocol="tcp",
+            state="open",
+            name="ssh",
+        ),
+        Service(
+            host=state.target,
+            port=2375,
+            protocol="tcp",
+            state="open",
+            name="docker-api",
+        ),
+    ]
+    suggestions = build_suggestions(state)
+    ssh_nmap = next(
+        item
+        for item in suggestions
+        if item.category == "ssh" and item.argv[0] == "nmap"
+    )
+    docker_commands = [item for item in suggestions if item.category == "docker"]
+
+    assert ssh_nmap.argv[1] == "-6"
+    assert all("http://[2001:db8::7]:2375" in item.argv[-1] for item in docker_commands)

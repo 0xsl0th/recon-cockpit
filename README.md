@@ -1,13 +1,13 @@
 # Recon Cockpit
 
 Recon Cockpit is an evidence-driven terminal UI for authorized HTB/THM-style
-targets. Give it one IP address and it creates a durable case, runs a conservative
-initial nmap service scan, parses the XML, and offers only the enumeration paths
-supported by the ports and fingerprints it actually observed.
+targets. Give it one IP address and it creates a durable case, lets you choose one
+of three bounded Nmap profiles, parses the XML, and offers only the enumeration
+paths supported by the ports and fingerprints it actually observed.
 
 It does not exploit targets. It does not run service enumeration automatically.
-Every action after the initial scan is shown as an exact command and requires a
-fresh, default-no confirmation.
+Standard, Full TCP, custom, and service-enumeration actions are shown as exact
+commands and require a fresh, default-no confirmation.
 
 ## Install
 
@@ -17,8 +17,11 @@ Requirements:
 - Git and `uv` for the recommended install flow
 - `nmap` for scanning
 - Rich (installed with the project)
-- Optional tools for the commands you choose to run: `feroxbuster`, `ffuf`,
-  NetExec (`nxc`), `smbclient`, `ldapsearch`, and `kerbrute`
+- OpenSSH client tools (`ssh`, `ssh-keyscan`) and `curl` for SSH credential/key
+  checks, FTP, Docker API, and WinRM suggestions
+- Optional tools for other commands you choose to run: `feroxbuster`, `ffuf`,
+  NetExec (`nxc`), `smbclient`, `ldapsearch`, and `kerbrute`. The ffuf action
+  prompts for a wordlist path; SecLists is one option but is not required.
 
 Clone, install, and launch with Git and `uv`:
 
@@ -42,17 +45,27 @@ editable-install command.
 python recon.py 10.10.11.123
 ```
 
-For a new case, the only automatic target action is equivalent to:
+For a new interactive case, choose a scan before any target command runs:
 
 ```text
-nmap -Pn -sV --version-light --top-ports 1000 --reason \
-  -oX cases/10.10.11.123/scans/initial-….xml \
-  -oN cases/10.10.11.123/scans/initial-….nmap 10.10.11.123
+Choose the initial Nmap scan
+
+  [1] Quick                  Top 1,000 TCP ports; light version probes
+  [2] Standard (recommended) Top 1,000 TCP ports; default scripts + versions
+  [3] Full TCP               All TCP ports; scripts + versions on open services
+
+Scan profile (2):
 ```
 
-No default-script scan (`-sC`), exploit checks, brute force, or all-port scan is
-part of that automatic action. Reopening an existing case reuses its saved
-evidence; pass `--rescan` to deliberately repeat the initial scan.
+The Quick profile runs immediately after you choose it. Standard and Full TCP
+display the exact generated command and require a second confirmation that
+defaults to no. Full TCP explicitly warns that it will query all 65,535 TCP ports,
+then run Nmap's default NSE scripts and version probes on discovered services.
+Reopening an existing case reuses its saved evidence; pass `--rescan` to choose a
+fresh scan profile.
+
+With `--no-menu`, or when standard input is not interactive, the cockpit cannot
+ask for a profile and falls back to Quick. It prints that decision before running.
 
 The menu is derived from open-service evidence. For example:
 
@@ -68,39 +81,71 @@ PORT      SERVICE   VERSION / EVIDENCE
 Suggested next actions:
 
   [1] Enumerate HTTP
-  [2] Enumerate SMB
-  [3] Inspect WinRM
-  [4] Run standard Nmap scripts
-  [5] Run deeper nmap scan
+  [2] Enumerate SSH
+  [3] Enumerate SMB
+  [4] Inspect WinRM
+  [5] Run standard Nmap scripts
+  [6] Run full TCP Nmap scan
 ```
 
-### Confirmed Nmap scans
+### Nmap scan profiles
 
-After the conservative initial scan, the menu offers a standard scripted scan
-equivalent to:
+Quick scans the 1,000 most common TCP ports with light version probes:
 
 ```text
-nmap -Pn -sC -sV -vv --reason \
+nmap -Pn -sV --version-light --top-ports 1000 --reason \
+  -oX cases/10.10.11.123/scans/quick-….xml \
+  -oN cases/10.10.11.123/scans/quick-….nmap 10.10.11.123
+```
+
+Standard is the recommended starting point for an interactive lab case:
+
+```text
+nmap -Pn -sC -sV -vv --top-ports 1000 --reason \
   -oX cases/10.10.11.123/scans/standard-….xml \
   -oN cases/10.10.11.123/scans/standard-….nmap 10.10.11.123
 ```
 
-This runs Nmap's default NSE scripts (`-sC`), normal service/version detection
-(`-sV`), and verbose output (`-vv`). Because NSE scripts actively query exposed
-services, the cockpit shows the exact command and asks for confirmation, defaulting
-to no. The cockpit does not prepend `sudo`: these flags work without it, and
-automatic elevation could leave root-owned files inside the case. If privileged
-Nmap behavior is specifically needed, copy the displayed command and run it
-manually with the appropriate authorization.
+Full TCP scans every TCP port, then applies the same scripts and version probes to
+discovered services:
+
+```text
+nmap -Pn -p- -sC -sV -vv --reason \
+  -oX cases/10.10.11.123/scans/full-….xml \
+  -oN cases/10.10.11.123/scans/full-….nmap 10.10.11.123
+```
+
+The cockpit does not prepend `sudo`: these profiles work without automatic
+elevation and will not leave root-owned files inside the case. If privileged Nmap
+behavior is specifically needed, copy the displayed command and run it manually
+with the appropriate authorization.
 
 If ports 139/445 or an SMB fingerprint are absent, the SMB group does not exist.
-HTTP evidence produces ready-to-review feroxbuster and ffuf commands. SMB evidence
-produces NetExec anonymous-share, smbclient, and RID-enumeration commands. LDAP
-produces RootDSE and base-DN queries; Kerberos produces a username-enumeration
+HTTP evidence produces ready-to-review feroxbuster and ffuf commands; the ffuf
+action asks for the wordlist path when selected. SMB evidence produces NetExec
+anonymous-share, smbclient, and RID-enumeration commands. LDAP produces RootDSE
+and base-DN queries; Kerberos produces a username-enumeration
 command with prompted domain and user-list values. IIS + SMB + WinRM evidence is
 identified as a probable Windows workflow and adjusts the wording and available
 credential checks. Domain credentials use NetExec's domain mode; credentials
 without a domain use `--local-auth`.
+
+Linux/Unix evidence adds equally service-specific workflows:
+
+- SSH offers host-key collection and algorithm enumeration.
+- FTP offers bounded anonymous listing and fixed `ftp-anon,ftp-syst` NSE checks.
+- RPC/NFS offers RPC program and export discovery without mounting anything.
+- DNS offers a server-identity query; SMTP lists advertised commands without
+  sending mail or enumerating users.
+- An exposed Docker daemon API offers GET-only ping, version, info, and container
+  metadata requests. Docker Registry fingerprints are not treated as daemon APIs.
+
+SSH alone is not enough to label a target Linux because Windows can expose
+OpenSSH. A Linux/Unix posture requires an OS/distribution fingerprint or a
+corroborating SSH plus NFS/RPC stack. Generic HTTP discovery is suppressed for
+Docker daemon and WinRM endpoints. These commands use Nmap's bundled NSE scripts,
+`ssh-keyscan`, and `curl`; they do not require `showmount`, `rpcinfo`, `dig`, or
+`swaks` to be installed.
 
 Selecting a service group only displays its possible commands. Selecting one still
 does not run it until you answer the final confirmation prompt. Nmap follow-up
@@ -125,17 +170,18 @@ number changes depending on which service actions are available:
 Actions
 
   [1] Enumerate HTTP
-  [2] Enumerate SMB
-  [3] Inspect WinRM
-  [4] Run standard Nmap scripts
-  [5] Run deeper nmap scan
-  [6] Run custom Nmap scan
-  [7] Add a credential
-  [8] Open target notes
-  [9] Ingest saved command output
-  [10] Quit
+  [2] Enumerate SSH
+  [3] Enumerate SMB
+  [4] Inspect WinRM
+  [5] Run standard Nmap scripts
+  [6] Run full TCP Nmap scan
+  [7] Run custom Nmap scan
+  [8] Add a credential
+  [9] Open target notes
+  [10] Ingest saved command output
+  [11] Quit
 
-Select: 6
+Select: 7
 Nmap options (blank cancels): -sT --top-ports 50 -sV -T4 -vv
 ```
 
@@ -246,5 +292,5 @@ pytest
 ```
 
 The tests cover nmap XML parsing, NetExec extraction, Markdown preservation and
-deduplication, target validation, service-gated suggestions, and the inferred
-Windows workflow.
+deduplication, target validation, scan confirmations, service-gated Linux/Unix and
+Windows suggestions, and conservative host-posture inference.

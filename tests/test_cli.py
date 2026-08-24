@@ -7,8 +7,9 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
-from recon_cockpit.case import create_case, load_case
+from recon_cockpit.case import create_case, load_case, save_case
 from recon_cockpit.cli import (
+    _choose_initial_scan,
     _execute_suggestion,
     _generated_user_file,
     _handle_group,
@@ -112,7 +113,7 @@ def test_declining_service_command_executes_nothing(tmp_path: Path, monkeypatch)
     assert list((case_dir / "loot").iterdir()) == []
 
 
-@pytest.mark.parametrize("profile", ["standard", "deep"])
+@pytest.mark.parametrize("profile", ["standard", "deep", "full"])
 def test_declining_active_nmap_scan_executes_nothing(
     tmp_path: Path, monkeypatch, profile: str
 ) -> None:
@@ -131,6 +132,113 @@ def test_declining_active_nmap_scan_executes_nothing(
 
     assert _run_nmap_scan(state, case_dir, profile=profile) is False
     assert list((case_dir / "scans").iterdir()) == []
+
+
+def test_initial_scan_picker_offers_three_profiles_and_recommends_standard(
+    tmp_path: Path, monkeypatch
+) -> None:
+    state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
+    prompt: dict[str, object] = {}
+    selected: dict[str, object] = {}
+
+    def choose(*args, **kwargs):
+        prompt.update(kwargs)
+        return 2
+
+    def record_scan(scan_state, selected_case, **kwargs):
+        assert scan_state is state
+        assert selected_case == case_dir
+        selected.update(kwargs)
+        return True
+
+    monkeypatch.setattr("recon_cockpit.cli.IntPrompt.ask", choose)
+    monkeypatch.setattr("recon_cockpit.cli._run_nmap_scan", record_scan)
+
+    assert _choose_initial_scan(state, case_dir) is True
+    assert prompt["choices"] == ["1", "2", "3"]
+    assert prompt["default"] == 2
+    assert selected == {"profile": "standard"}
+
+
+def test_full_scan_selection_still_requires_explicit_default_no_confirmation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
+    asked: dict[str, object] = {}
+    output = io.StringIO()
+
+    def decline(question, **kwargs):
+        asked["question"] = question
+        asked["rendered_before_prompt"] = output.getvalue()
+        asked.update(kwargs)
+        return False
+
+    monkeypatch.setattr("recon_cockpit.cli.console", Console(file=output, color_system=None))
+    monkeypatch.setattr("recon_cockpit.cli.IntPrompt.ask", lambda *args, **kwargs: 3)
+    monkeypatch.setattr("recon_cockpit.cli.Confirm.ask", decline)
+
+    assert _choose_initial_scan(state, case_dir) is False
+    assert "65,535 TCP ports" in str(asked["question"])
+    assert "nmap -Pn -p- -sC -sV -vv" in str(asked["rendered_before_prompt"])
+    assert asked["default"] is False
+    assert list((case_dir / "scans").iterdir()) == []
+
+
+@pytest.mark.parametrize("extra_args", [("--no-menu",), ()])
+def test_noninteractive_new_case_uses_quick_fallback(
+    tmp_path: Path, monkeypatch, extra_args: tuple[str, ...]
+) -> None:
+    selected: list[str] = []
+
+    def record_scan(state, case_dir, **kwargs):
+        selected.append(kwargs["profile"])
+        return False
+
+    monkeypatch.setattr("recon_cockpit.cli._run_nmap_scan", record_scan)
+    monkeypatch.setattr("recon_cockpit.cli.sys.stdin", io.StringIO())
+
+    assert (
+        main(
+            [
+                "10.10.11.123",
+                "--cases-dir",
+                str(tmp_path / "cases"),
+                *extra_args,
+            ]
+        )
+        == 0
+    )
+    assert selected == ["quick"]
+
+
+def test_existing_interactive_case_only_reopens_scan_picker_with_rescan(
+    tmp_path: Path, monkeypatch
+) -> None:
+    cases = tmp_path / "cases"
+    state, case_dir = create_case("10.10.11.123", cases)
+    state.scan_command = ["import", "saved.xml"]
+    save_case(case_dir, state)
+    selected: list[Path] = []
+
+    class InteractiveInput(io.StringIO):
+        def isatty(self) -> bool:
+            return True
+
+    monkeypatch.setattr("recon_cockpit.cli.sys.stdin", InteractiveInput())
+    monkeypatch.setattr(
+        "recon_cockpit.cli._choose_initial_scan",
+        lambda selected_state, selected_case: selected.append(selected_case) or False,
+    )
+    monkeypatch.setattr(
+        "recon_cockpit.cli._interactive_menu",
+        lambda selected_state, selected_case: None,
+    )
+
+    assert main([state.target, "--cases-dir", str(cases)]) == 0
+    assert selected == []
+
+    assert main([state.target, "--cases-dir", str(cases), "--rescan"]) == 0
+    assert selected == [case_dir]
 
 
 def test_initial_scan_runs_without_post_scan_confirmation_and_parses_xml(
@@ -360,6 +468,54 @@ def test_stored_secret_is_resolved_without_rendering_it_as_a_prompt_default(
     assert "Sup3rSecret!" in command
     assert secrets == {"Sup3rSecret!"}
     assert "Password" not in prompted
+
+
+def test_ffuf_wordlist_is_prompted_instead_of_assuming_a_system_path(
+    tmp_path: Path, monkeypatch
+) -> None:
+    state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
+    wordlist = tmp_path / "words.txt"
+    wordlist.write_text("admin\n", encoding="utf-8")
+    monkeypatch.setattr(
+        "recon_cockpit.cli.Prompt.ask",
+        lambda label, **kwargs: str(wordlist),
+    )
+
+    resolved = _resolve_command(
+        ("ffuf", "-u", "http://10.10.11.123/FUZZ", "-w", "{wordlist}"),
+        state,
+        case_dir,
+    )
+
+    assert resolved == (
+        (
+            "ffuf",
+            "-u",
+            "http://10.10.11.123/FUZZ",
+            "-w",
+            str(wordlist),
+        ),
+        set(),
+    )
+
+
+def test_missing_ffuf_wordlist_cancels_before_execution(
+    tmp_path: Path, monkeypatch
+) -> None:
+    state, case_dir = create_case("10.10.11.123", tmp_path / "cases")
+    monkeypatch.setattr(
+        "recon_cockpit.cli.Prompt.ask",
+        lambda label, **kwargs: str(tmp_path / "missing.txt"),
+    )
+
+    assert (
+        _resolve_command(
+            ("ffuf", "-u", "http://10.10.11.123/FUZZ", "-w", "{wordlist}"),
+            state,
+            case_dir,
+        )
+        is None
+    )
 
 
 def test_terminal_rendering_strips_controls_and_redacts_known_secrets(

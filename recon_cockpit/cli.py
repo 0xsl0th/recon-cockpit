@@ -38,6 +38,7 @@ from .runner import (
     ReconError,
     custom_scan_argv,
     deeper_scan_argv,
+    full_scan_argv,
     initial_scan_argv,
     run_command,
     scan_paths,
@@ -59,7 +60,7 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Evidence-driven reconnaissance for authorized HTB/THM-style targets. "
-            "Only the conservative initial nmap scan runs automatically."
+            "Interactive launches offer three bounded nmap scan profiles."
         ),
     )
     parser.add_argument("target", nargs="?", help="single target IPv4 or IPv6 address")
@@ -73,7 +74,7 @@ def build_argument_parser() -> argparse.ArgumentParser:
         "--nmap-xml",
         type=Path,
         metavar="FILE",
-        help="import existing nmap XML instead of starting an initial scan",
+        help="import existing nmap XML instead of choosing a live scan",
     )
     parser.add_argument(
         "--cases-dir",
@@ -84,12 +85,12 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--rescan",
         action="store_true",
-        help="run a fresh initial scan even when the case already has service evidence",
+        help="choose and run a fresh scan even when the case has service evidence",
     )
     parser.add_argument(
         "--no-menu",
         action="store_true",
-        help="print the updated summary and exit",
+        help="skip interactive menus (new cases use the Quick scan profile)",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
@@ -158,6 +159,18 @@ def _service_label(name: str, port: int, tunnel: str = "") -> str:
         return "LDAP"
     if port in {636, 3269}:
         return "LDAPS"
+    if port == 111:
+        return "RPC"
+    if port == 2049:
+        return "NFS"
+    if port == 53:
+        return "DNS"
+    if port in {21, 990}:
+        return "FTPS" if port == 990 or tunnel.lower() in {"ssl", "tls"} else "FTP"
+    if port in {25, 465, 587, 2525}:
+        return "SMTP"
+    if port in {2375, 2376}:
+        return "Docker API"
     friendly = {
         "microsoft-ds": "SMB",
         "netbios-ssn": "SMB",
@@ -230,7 +243,14 @@ def _run_nmap_scan(
     profile: str = "initial",
     custom_args: Sequence[str] = (),
 ) -> bool:
-    if profile not in {"initial", "standard", "custom", "deep"}:
+    if profile not in {
+        "initial",
+        "quick",
+        "standard",
+        "custom",
+        "deep",
+        "full",
+    }:
         raise ReconError(f"Unknown nmap scan profile: {profile}")
     if profile != "custom" and custom_args:
         raise ReconError("Custom nmap arguments require the custom scan profile")
@@ -239,8 +259,10 @@ def _run_nmap_scan(
     xml_path, text_path = scan_paths(case_dir, label)
     builders = {
         "initial": initial_scan_argv,
+        "quick": initial_scan_argv,
         "standard": standard_scan_argv,
         "deep": deeper_scan_argv,
+        "full": full_scan_argv,
     }
     command = (
         custom_scan_argv(state.target, custom_args, xml_path, text_path)
@@ -248,19 +270,29 @@ def _run_nmap_scan(
         else builders[profile](state.target, xml_path, text_path)
     )
     titles = {
-        "initial": "Initial nmap scan",
-        "standard": "Standard-script nmap scan",
+        "initial": "Quick nmap scan",
+        "quick": "Quick nmap scan",
+        "standard": "Standard nmap scan",
         "custom": "Custom nmap scan",
-        "deep": "Deeper nmap scan",
+        "deep": "Full TCP nmap scan",
+        "full": "Full TCP nmap scan",
     }
     console.print(f"\n[bold]{titles[profile]}[/bold]")
     console.print(Text(shell_join(command), style="cyan"))
     prompts = {
         "standard": "Run this active default-NSE-script enumeration?",
         "custom": "Run this active custom nmap enumeration command?",
-        "deep": "Run this active all-TCP-ports enumeration command?",
+        "deep": (
+            "Scan all 65,535 TCP ports, then run default NSE scripts and version "
+            "detection on discovered services?"
+        ),
+        "full": (
+            "Scan all 65,535 TCP ports, then run default NSE scripts and version "
+            "detection on discovered services?"
+        ),
     }
-    if profile != "initial" and not Confirm.ask(prompts[profile], default=False):
+    needs_confirmation = profile in {"standard", "custom", "deep", "full"}
+    if needs_confirmation and not Confirm.ask(prompts[profile], default=False):
         console.print("[yellow]Skipped; nothing was executed.[/yellow]")
         return False
 
@@ -292,6 +324,47 @@ def _run_nmap_scan(
     open_count = sum(service.state.casefold() == "open" for service in services)
     console.print(f"[green]Parsed {open_count} open service(s) into notes.md.[/green]")
     return True
+
+
+def _choose_initial_scan(state: CaseState, case_dir: Path) -> bool:
+    """Ask which bounded scan profile to run for a new or rescanned case."""
+
+    console.print("\n[bold]Choose the initial Nmap scan[/bold]\n")
+    table = Table(box=box.SIMPLE, show_edge=False, header_style="bold")
+    table.add_column("", style="cyan", justify="right", no_wrap=True)
+    table.add_column("PROFILE", style="green", no_wrap=True)
+    table.add_column("COVERAGE")
+    table.add_column("NMAP OPTIONS", style="dim")
+    table.add_row(
+        "[1]",
+        "Quick",
+        "Top 1,000 TCP ports; light version probes",
+        "-sV --version-light --top-ports 1000",
+    )
+    table.add_row(
+        "[2]",
+        "Standard (recommended)",
+        "Top 1,000 TCP ports; default scripts + versions",
+        "-sC -sV -vv --top-ports 1000",
+    )
+    table.add_row(
+        "[3]",
+        "Full TCP",
+        "All TCP ports; scripts + versions on open services",
+        "-p- -sC -sV -vv",
+    )
+    console.print(table)
+    choice = IntPrompt.ask(
+        "Scan profile",
+        choices=["1", "2", "3"],
+        default=2,
+    )
+    profile = {1: "quick", 2: "standard", 3: "full"}[choice]
+    return _run_nmap_scan(
+        state,
+        case_dir,
+        profile=profile,
+    )
 
 
 def _run_custom_nmap_scan(state: CaseState, case_dir: Path) -> bool:
@@ -457,7 +530,10 @@ def _resolve_command(
             console.print("[yellow]A required value was empty; command skipped.[/yellow]")
             return None
         if name.endswith("_file") or name in {"wordlist"}:
-            value = str(Path(value).expanduser())
+            value = str(Path(value).expanduser().resolve())
+        if name == "wordlist" and not Path(value).is_file():
+            console.print("[yellow]Wordlist file was not found; command skipped.[/yellow]")
+            return None
         values[name] = value
 
     unsafe_name = next(
@@ -583,7 +659,7 @@ def _handle_group(group: object, state: CaseState, case_dir: Path) -> None:
         _run_nmap_scan(state, case_dir, profile="standard")
         return
     if key in {"nmap_deep", "deep_nmap", "nmap"}:
-        _run_nmap_scan(state, case_dir, profile="deep")
+        _run_nmap_scan(state, case_dir, profile="full")
         return
 
     commands = list(group.commands)
@@ -790,13 +866,21 @@ def _run_target_mode(args: argparse.Namespace) -> int:
     if args.nmap_xml:
         _import_nmap_xml(state, case_dir, args.nmap_xml.expanduser().resolve())
     elif args.rescan or not state.scan_command:
-        _run_nmap_scan(state, case_dir, profile="initial")
+        if not args.no_menu and sys.stdin.isatty():
+            _choose_initial_scan(state, case_dir)
+        else:
+            console.print(
+                "[dim]Interactive scan selection is unavailable; using the Quick "
+                "top-1,000 profile. Launch in a terminal without --no-menu to "
+                "choose Standard or Full TCP.[/dim]"
+            )
+            _run_nmap_scan(state, case_dir, profile="quick")
     else:
         console.print(
             Text(
                 f"Loaded existing evidence from "
                 f"{_terminal_safe(case_dir / STATE_FILENAME)}; "
-                "use --rescan for a fresh initial scan.",
+                "use --rescan to choose a fresh scan.",
                 style="dim",
             )
         )

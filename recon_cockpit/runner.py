@@ -138,7 +138,11 @@ def validate_target(value: str) -> str:
 
 
 def initial_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str, ...]:
-    """Build the deliberately conservative initial service-detection scan."""
+    """Build the quick top-ports service-detection scan.
+
+    ``initial`` remains the public compatibility name for cases and integrations
+    created before scan profiles were exposed in the launch UI.
+    """
 
     canonical = validate_target(target)
     args = [
@@ -161,7 +165,7 @@ def initial_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str
 
 
 def standard_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str, ...]:
-    """Build a default-script scan, only run after explicit confirmation."""
+    """Build the recommended top-ports default-script and version scan."""
 
     canonical = validate_target(target)
     args = [
@@ -170,6 +174,8 @@ def standard_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[st
         "-sC",
         "-sV",
         "-vv",
+        "--top-ports",
+        "1000",
         "--reason",
         "-oX",
         str(xml_path),
@@ -350,16 +356,17 @@ def custom_scan_argv(
     return tuple(args)
 
 
-def deeper_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str, ...]:
-    """Build an all-TCP-ports service scan, only run after explicit confirmation."""
+def full_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str, ...]:
+    """Build the full TCP default-script scan that requires extra confirmation."""
 
     canonical = validate_target(target)
     args = [
         "nmap",
         "-Pn",
-        "-sV",
-        "--version-light",
         "-p-",
+        "-sC",
+        "-sV",
+        "-vv",
         "--reason",
         "-oX",
         str(xml_path),
@@ -370,6 +377,12 @@ def deeper_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str,
         args.insert(1, "-6")
     args.append(canonical)
     return tuple(args)
+
+
+def deeper_scan_argv(target: str, xml_path: Path, text_path: Path) -> tuple[str, ...]:
+    """Compatibility alias for :func:`full_scan_argv`."""
+
+    return full_scan_argv(target, xml_path, text_path)
 
 
 def scan_paths(case_dir: Path, label: str) -> tuple[Path, Path]:

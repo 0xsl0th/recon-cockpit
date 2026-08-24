@@ -9,6 +9,7 @@ from recon_cockpit.runner import (
     ReconError,
     custom_scan_argv,
     deeper_scan_argv,
+    full_scan_argv,
     initial_scan_argv,
     scan_paths,
     standard_scan_argv,
@@ -46,6 +47,8 @@ def test_standard_scan_uses_default_scripts_without_sudo() -> None:
         "-sC",
         "-sV",
         "-vv",
+        "--top-ports",
+        "1000",
         "--reason",
         "-oX",
         "scan.xml",
@@ -185,10 +188,27 @@ def test_custom_scan_rejects_invalid_or_conflicting_values(
         )
 
 
-def test_deeper_scan_is_all_ports_and_ipv6_uses_flag() -> None:
-    command = deeper_scan_argv("2001:db8::1", Path("scan.xml"), Path("scan.nmap"))
-    assert command[1] == "-6"
-    assert "-p-" in command
+def test_full_scan_is_all_ports_with_scripts_versions_and_ipv6() -> None:
+    command = full_scan_argv("2001:db8::1", Path("scan.xml"), Path("scan.nmap"))
+
+    assert command == (
+        "nmap",
+        "-6",
+        "-Pn",
+        "-p-",
+        "-sC",
+        "-sV",
+        "-vv",
+        "--reason",
+        "-oX",
+        "scan.xml",
+        "-oN",
+        "scan.nmap",
+        "2001:db8::1",
+    )
+    assert deeper_scan_argv(
+        "2001:db8::1", Path("scan.xml"), Path("scan.nmap")
+    ) == command
 
 
 def test_scan_paths_do_not_reuse_an_existing_artifact(
