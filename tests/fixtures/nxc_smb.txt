@@ -1,0 +1,9 @@
+SMB         10.10.11.123   445    DC01             [*] Windows Server 2019 Build 17763 x64 (name:DC01) (domain:CORP.LOCAL) (signing:True) (SMBv1:False)
+SMB         10.10.11.123   445    DC01             [-] CORP.LOCAL\bob:wrong STATUS_LOGON_FAILURE
+SMB         10.10.11.123   445    DC01             [+] CORP.LOCAL\alice:Spring2026! (Pwn3d!)
+SMB         10.10.11.123   445    DC01             1104: CORP\svc_backup (SidTypeUser)
+SMB         10.10.11.123   445    DC01             [*] Enumerated shares
+SMB         10.10.11.123   445    DC01             Share           Permissions     Remark
+SMB         10.10.11.123   445    DC01             -----           -----------     ------
+SMB         10.10.11.123   445    DC01             ADMIN$          READ,WRITE      Remote Admin
+SMB         10.10.11.123   445    DC01             Public          READ            Team files
