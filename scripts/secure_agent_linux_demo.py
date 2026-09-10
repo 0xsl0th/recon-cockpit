@@ -20,6 +20,14 @@ from recon_cockpit.secure_agent.models import parse_policy
 from recon_cockpit.secure_agent.providers import MockProvider
 
 
+def _require_boundary_checks(checks: object) -> None:
+    expected = {"forbidden_ip_blocked", "forbidden_port_blocked",
+                "namespace_creation_blocked", "capabilities_dropped"}
+    if (type(checks) is not dict or set(checks) != expected
+            or any(checks[name] is not True for name in expected)):
+        raise RuntimeError("kernel boundary verification failed")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--audit", type=Path, help="retain JSONL evidence at this operator-selected path")
@@ -55,9 +63,9 @@ def main() -> int:
                     raise RuntimeError(f"{path}: expected {expected}, got {result['execution_status']}")
                 if controller.policy.digest != original_digest:
                     raise RuntimeError("policy changed")
-                checks = result["untrusted_result"]["boundary_checks"]
-                if not all(checks.values()):
-                    raise RuntimeError("kernel boundary verification failed")
+                payload = result.get("untrusted_result")
+                checks = payload.get("boundary_checks") if type(payload) is dict else None
+                _require_boundary_checks(checks)
                 print(json.dumps({"case": path, "status": result["execution_status"],
                                   "boundary_checks": checks, "metadata": result["result_metadata"]}))
             for label, change in (("out_of_scope", {"target": "127.0.0.2"}),

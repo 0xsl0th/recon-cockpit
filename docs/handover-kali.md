@@ -1,9 +1,17 @@
 # Handover to the Lenovo / Kali amd64
 
+**Continuation update, 10 September 2026:** Kali kernel integration and the demo
+now pass after native libseccomp selection was fixed. The controlling-terminal
+I/O was also fixed, and the operator completed one approved fixture execution.
+Current totals are 360 portable tests passed and five real Linux integration
+tests passed. See [the actual validation record](verification.md) for commands, environment and
+remaining limits. The original Mac handoff and continuation prompt below are
+historical; their unvalidated-Linux statements describe the pre-Kali state.
+
 Work continues on `feature/secure-agent-m1` in
 `https://github.com/0xsl0th/recon-cockpit`. Main is unchanged.
-Read [verification.md](verification.md) first: implementation exists, but real
-Linux isolation still needs validation. No autonomous model has been tested.
+Read [verification.md](verification.md) first for the observed Linux isolation
+results and remaining limits. No autonomous model has been tested.
 
 ## Get the same work
 
@@ -45,9 +53,9 @@ digests and enter the approval challenge yourself. Blank input denies. The
 unattended demo has a separately declared, fixture-only allow policy; it never
 pretends to supply a human approval.
 
-Expected portable total at this handoff: 335 passed, 5 deselected. Expected Linux
-integration total after successful validation: 5 passed. These latter results
-are **not yet observed**. The demo must report `demo: passed`, not merely exit
+Current verified portable total: 360 passed, 5 deselected (335 at the original Mac
+handoff). The Linux integration total is 5 passed. The demo must report
+`demo: passed`, not merely exit
 without a traceback. Its normal and malicious response cases should succeed;
 large output should stop at `output_limit`; slow output should hit `timeout`.
 Every case must also report true socket-level forbidden-IP and forbidden-port
@@ -59,15 +67,16 @@ Bubblewrap flags, seccomp loading, and shared-library closure. Setup exceptions
 are intentionally reduced to safe error codes in the public CLI; diagnose in
 trusted local code without sending raw response/credential data to audit logs.
 The backend expects distribution Python `/usr/bin/python3` with standard library
-under `/usr/lib/python3.x`, a non-setuid Bubblewrap, and one unprivileged host UID
-mapped to namespace UID 0. Nested-user-namespace behavior and runtime-library
+under `/usr/lib/python3.x`, native libseccomp in `/lib/<MULTIARCH>` or
+`/usr/lib/<MULTIARCH>` (the Debian/Kali layout), a non-setuid Bubblewrap, and one
+unprivileged host UID mapped to namespace UID 0. Nested-user-namespace behavior and runtime-library
 resolution are especially worth checking on the actual Kali version.
 
 No host firewall/route/forwarding/NAT/sysctl change is part of this backend.
 If host administration beyond package installation appears necessary, explain
 the exact requirement before changing it. Preserve fail-closed controls.
 
-## Prompt for the next coding session
+## Original validation prompt from the Mac handoff
 
 Open this repository as the workspace on the Lenovo and paste:
 

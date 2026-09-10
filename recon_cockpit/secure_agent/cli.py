@@ -43,13 +43,19 @@ def _human_approval(controller: Controller, raw: bytes | str) -> str | None:
     # Read from the controlling terminal, never the proposal input channel.
     challenge = "approve " + action.digest[:16]
     try:
-        with open("/dev/tty", "r+", encoding="utf-8") as terminal:
-            terminal.write(f"Type '{challenge}' to approve once (blank denies): ")
-            terminal.flush()
-            answer = terminal.readline(128).strip()
+        # A terminal is not seekable: buffered text update mode (r+) cannot
+        # open it. Keep both directions on the controlling terminal with
+        # separate streams, never falling back to proposal/stdin input.
+        with (open("/dev/tty", "r", encoding="utf-8") as terminal_input,
+              open("/dev/tty", "w", encoding="utf-8") as terminal_output):
+            terminal_output.write(f"Type '{challenge}' to approve once (blank denies): ")
+            terminal_output.flush()
+            answer = terminal_input.readline(128).strip()
     except OSError:
         return None
     if answer != challenge:
+        print("Approval not granted: expected the displayed challenge with its 16-character digest prefix; "
+              "blank input denies.", file=sys.stderr)
         return None
     grant = controller.approvals.issue(action, controller.policy)
     return grant.reference

@@ -7,7 +7,6 @@ It is an internal controller component, not an agent-facing execution API.
 from __future__ import annotations
 
 import dataclasses
-import glob
 import json
 import os
 from pathlib import Path
@@ -42,19 +41,27 @@ def _runtime_files(python: str, nft: str) -> tuple[str, list[tuple[str, str]]]:
     env = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C"}
     try:
         probe = subprocess.run(
-            [python, "-I", "-S", "-c", "import sysconfig; print(sysconfig.get_path('stdlib'))"],
+            [python, "-I", "-S", "-c",
+             "import sysconfig; print(sysconfig.get_path('stdlib')); print(sysconfig.get_config_var('MULTIARCH'))"],
             stdin=subprocess.DEVNULL, capture_output=True, timeout=3, env=env, check=True,
         )
-        stdlib = probe.stdout.decode("ascii").strip()
+        runtime_paths = probe.stdout.decode("ascii").splitlines()
+        if len(runtime_paths) != 2:
+            raise IsolationUnavailable("Cannot identify the distribution Python runtime")
+        stdlib, multiarch = runtime_paths
         if not re.fullmatch(r"/usr/lib/python3\.\d+", stdlib) or not Path(stdlib).is_dir():
             raise IsolationUnavailable("Use the distribution Python in /usr/bin (stdlib /usr/lib/python3.x)")
+        if not re.fullmatch(r"[A-Za-z0-9_]+(?:-[A-Za-z0-9_]+)+", multiarch):
+            raise IsolationUnavailable("Cannot identify the distribution Python library architecture")
         modules = sorted(str(p) for p in Path(stdlib, "lib-dynload").glob("*.so"))
+        # Multiarch hosts can also install e.g. i386 libraries. Their directory
+        # iteration order must not select the ABI of our native Python worker.
         seccomp_candidates = [
-            p for pattern in ("/lib/*/libseccomp.so.2", "/usr/lib/*/libseccomp.so.2", "/lib64/libseccomp.so.2")
-            for p in glob.glob(pattern)
+            path for path in (f"/lib/{multiarch}/libseccomp.so.2", f"/usr/lib/{multiarch}/libseccomp.so.2")
+            if Path(path).is_file()
         ]
         if not seccomp_candidates:
-            raise IsolationUnavailable("Linux fixture isolation requires libseccomp2")
+            raise IsolationUnavailable("Linux fixture isolation requires native libseccomp2")
         seccomp = seccomp_candidates[0]
         dependencies = subprocess.run(
             [_trusted_program("ldd"), python, nft, seccomp, *modules],

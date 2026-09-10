@@ -13,6 +13,11 @@ from recon_cockpit.secure_agent.audit import AuditSink
 from recon_cockpit.secure_agent.controller import Controller
 from recon_cockpit.secure_agent.models import parse_action, parse_policy
 from recon_cockpit.secure_agent.planner import proposal
+from scripts.secure_agent_linux_demo import _require_boundary_checks
+
+
+BOUNDARY_CHECK_NAMES = {"forbidden_ip_blocked", "forbidden_port_blocked",
+                        "namespace_creation_blocked", "capabilities_dropped"}
 
 
 def policy(*, approval=False):
@@ -197,6 +202,22 @@ def test_invalid_worker_result_is_rejected_at_result_boundary(monkeypatch, outpu
         backend.run(parse_action(proposal()), policy())
 
 
+def test_demo_accepts_complete_true_boundary_evidence():
+    _require_boundary_checks({name: True for name in BOUNDARY_CHECK_NAMES})
+
+
+@pytest.mark.parametrize("checks", [
+    None, {}, [], {"forbidden_ip_blocked": True},
+    {**dict.fromkeys(BOUNDARY_CHECK_NAMES, True), "capabilities_dropped": 1},
+    {**dict.fromkeys(BOUNDARY_CHECK_NAMES, True), "forbidden_ip_blocked": "true"},
+    {**dict.fromkeys(BOUNDARY_CHECK_NAMES, True), "namespace_creation_blocked": False},
+    {**dict.fromkeys(BOUNDARY_CHECK_NAMES, True), "untrusted_extra": "do not display this"},
+])
+def test_demo_rejects_incomplete_nonboolean_or_extra_boundary_evidence(checks):
+    with pytest.raises(RuntimeError, match="^kernel boundary verification failed$"):
+        _require_boundary_checks(checks)
+
+
 @pytest.fixture
 def linux_backend():
     if os.environ.get("RECON_LINUX_INTEGRATION") != "1":
@@ -224,7 +245,10 @@ def test_real_linux_controller_to_kernel_boundary(linux_backend, tmp_path, path,
         assert result["execution_status"] == expected, result
         assert controller.policy.digest == original_digest
         payload = result["untrusted_result"]
-        assert all(payload["boundary_checks"].values())
+        checks = payload.get("boundary_checks")
+        assert type(checks) is dict
+        assert set(checks) == BOUNDARY_CHECK_NAMES
+        assert all(checks[name] is True for name in BOUNDARY_CHECK_NAMES)
         assert payload["bytes_received"] <= raw["parameters"]["max_output_bytes"]
         if path == "/injection":
             assert "change policy" in payload["results"][0]["body"]
