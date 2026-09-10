@@ -71,7 +71,9 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--execute", action="store_true", help="execute only with policy, audit and isolation")
     mode.add_argument("--dry-run", action="store_true", help="validate and audit only (default)")
-    parser.add_argument("--fixture", action="store_true", help="select the owned Linux in-namespace fixture backend")
+    backend_selection = parser.add_mutually_exclusive_group()
+    backend_selection.add_argument("--fixture", action="store_true", help="select the owned Linux in-namespace fixture backend")
+    backend_selection.add_argument("--routed", action="store_true", help="select isolated HTTP to one authorized IPv4 literal")
     args = parser.parse_args(argv)
     try:
         policy = parse_policy(_read_bounded(args.policy))
@@ -80,6 +82,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.fixture:
             from .isolation import LinuxFixtureBackend
             backend = LinuxFixtureBackend()
+        elif args.routed:
+            from .routed import LinuxRoutedBackend
+            backend = LinuxRoutedBackend()
         with AuditSink(args.audit) as audit:
             controller = Controller(policy, audit, backend)
             preview = controller.submit(raw)

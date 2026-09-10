@@ -1,5 +1,110 @@
 # Verification record
 
+## Routed HTTP milestone — 10 September 2026
+
+Continued clean branch `feature/secure-agent-m1` from `915d822` on the same Kali
+amd64 host. Added a separate `--routed` backend for one authorized IPv4 literal and
+TCP port, retaining the fixture backend and controller approval/audit path.
+Design, runtime boundaries, examples and prerequisites are in
+[routed-http.md](routed-http.md).
+
+Package setup was performed by the operator in a desktop terminal:
+`sudo apt-get install --no-install-recommends slirp4netns`. APT installed only
+`slirp4netns 1.3.3-1` and `libslirp0 4.9.3-1`; no upgrades or removals were part of
+the request. Existing util-linux is `2.41.3-4`; `/dev/net/tun` was already present.
+All application/tests ran as host user `sloth` (UID 1000), outside the coding
+agent's outer sandbox for kernel execution. No host firewall, route, forwarding,
+NAT, interface or sysctl changes were made. The demo's address configuration is
+confined to its disconnected outer lab namespace.
+
+### Actual checks
+
+| Command/check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration'` | **426 passed, 14 deselected**, 1.90 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short` | **14 passed, 426 deselected**, 12.13 seconds |
+| `.venv/bin/python scripts/secure_agent_routed_demo.py --audit .secure-agent/routed-demo-final.jsonl` | **`demo: passed`**, exit 0 |
+| `.venv/bin/python scripts/secure_agent_routed_demo.py --interactive --audit .secure-agent/routed-human-1.jsonl` | Operator-entered approval; **HTTP 200, 96 bytes, exit 0** |
+| `.venv/bin/python -m recon_cockpit.secure_agent --routed --policy examples/secure-agent-routed-policy.json --proposal examples/secure-agent-routed-action.json --dry-run` | `approval_required`, `dry_run`, exit 0; imported example JSON, no network request |
+| `.venv/bin/python -m compileall -q recon_cockpit/secure_agent scripts` | Passed |
+| `git diff --check` | Passed |
+
+There were **no skipped tests** in these selected runs. The 66 new portable cases
+cover routed target/request restrictions, fixed destination firewall generation,
+separate bootstrap gates, minimal mount configuration, bounded multi-process
+supervision/cleanup and lab setup refusal. Portable process helpers test control
+mechanics, not kernel routing. The 14 integration tests comprise the five
+original fixture cases and nine routed assertions over a shared real lab run.
+That routed run performs ten real executions: three authorized witness baselines
+plus the seven cases below.
+
+| Routed case | Status | HTTP | Retained bytes |
+| --- | --- | --- | --- |
+| GET `/` | `succeeded` | 200 | 96 |
+| HEAD `/` | `succeeded` | 200 | 61 |
+| `/injection` | `succeeded`, inert content | 200 | 290 |
+| `/redirect-ip` | `succeeded`, not followed | 302 | 127 |
+| `/redirect-port` | `succeeded`, not followed | 302 | 127 |
+| `/large` | `output_limit`, truncated | 200 | 4096 |
+| `/slow` | `timeout` | none | 0 |
+
+Each case reported all four checks as boolean true: forbidden IP blocked,
+forbidden port blocked, namespace creation blocked and capabilities dropped.
+Baseline actions first obtained HTTP 200 from the allowed service
+`192.0.2.10:8080`, the IP witness `192.0.2.11:8080` and the port witness
+`192.0.2.10:8081`, each under its own exact allow policy. Restricted cases then
+attempted direct sockets to the two forbidden witnesses inside the worker's
+filtered network namespace. Both witnesses accepted **zero additional
+connections**, including during redirects. Services were outside the execution
+namespace and unreachable from the host/LAN. The outer lab controller ran as
+UID 1000 with all capability sets zero.
+
+The demo also rejected two out-of-scope policy actions and blocked noninteractive
+execution under an approval-required policy. The final audit has 34 events,
+exactly ten execution starts and ten completions, and zero consumed human grants.
+No raw malicious response text appeared in the audit.
+
+### Human approval evidence
+
+The operator entered the newly displayed challenge directly in the routed lab's
+desktop terminal and confirmed exit 0. No agent supplied approval input. Private
+`.secure-agent/routed-human-1.jsonl` contains five events with exactly one
+`approval_consumed`, one `execution_started` and one `execution_finished`, in
+order and sharing the full action/policy digests and non-null approval reference.
+The successful completion is timestamped `2026-09-10T18:15:19.269739+00:00` and
+records backend `linux-bubblewrap-slirp-v1`, HTTP 200 and 96 bytes. The policy
+decision remains `approval_required`; the single consumed grant satisfies it.
+
+Audit files are mode `0600` in ignored `.secure-agent/` (mode `0700`). They and
+private setup diagnostics are excluded from the commit. Failed prototype attempts
+remain separate from the fresh final demo/human evidence files.
+
+### Failures resolved during implementation
+
+- Direct script invocation initially failed to import its sibling demo helper.
+  The script now supports both direct invocation and package import by tests.
+- The first worker launch tried to create its routed-script mount after the root
+  filesystem became read-only. The new mount now precedes the read-only remounts;
+  a regression checks the order. The read-only boundary remains in place.
+- Bubblewrap could not bind-mount the nsfs descriptor as an ordinary file path.
+  The controller now passes a pinned network namespace descriptor directly to the
+  transport via `/proc/self/fd/N`, alongside a separate user-namespace descriptor
+  consumed by Bubblewrap. No host directory mount or mutable namespace path was
+  added. The worker never receives these descriptors.
+- Reusing a diagnostic audit file intentionally failed the demo's fresh-run event
+  count check. Final verification uses fresh files. Portable supervised-process
+  tests confirm bad/empty readiness messages prevent probe release, and early
+  exits or capture/deadline failures reap both process trees. Traffic already
+  sent before a later failure cannot be undone; it remains subject to the
+  preinstalled destination filter and recorded execution-start event.
+
+This establishes the routed path and kernel destination boundary in the owned
+lab, plus the existing fixture behavior. It does **not** establish reachability
+of a real remote/VPN target or any real-model/autonomy behavior. External scope
+must be supplied explicitly by the operator. TLS, Nmap, CIDR/multi-target
+execution and real providers remain future work. The slirp transport is an
+additional trusted network component; its compromise is outside the contract.
+
 ## Lenovo / Kali amd64 — 10 September 2026
 
 Continued the clean `feature/secure-agent-m1` checkout at `d22e630`; fetched

@@ -1,18 +1,19 @@
 # Recon Cockpit
 
-## Secure Agent Mode — first milestone
+## Secure Agent Mode — fixture and routed HTTP
 
 An additional entry point now accepts **deterministic mock agent** proposals and
 enforces schema → policy → human approval when required → isolated execution →
 structured result and JSONL audit. It uses no API keys or paid services. This
 milestone does not validate an autonomous model.
 
-The executable tool set is one bounded HTTP probe against an owned fixture inside
-a fresh Linux namespace. Policy supports literal IPv4/IPv6 addresses and bounded
-CIDRs; this first backend executes only its own `127.0.0.1` singleton fixture.
-External authorized targets, host localhost services, hostnames, TLS and Nmap are
-not executable in secure mode yet. The existing interactive workflow below is
-preserved and has a different, human-operated security boundary.
+The executable tool set is one bounded HTTP probe. `--fixture` reaches only its
+owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
+backend reaches one explicitly authorized IPv4 literal and TCP port through an
+isolated worker and a supervised slirp transport. Policy supports broader scopes,
+but routed CIDR actions, IPv6, loopback, hostnames, TLS and Nmap remain unavailable.
+The existing interactive workflow below is preserved and has a different,
+human-operated security boundary.
 
 ### Quick start
 
@@ -53,6 +54,27 @@ default-deny nftables ruleset there, drops capabilities, and applies filesystem,
 syscall and resource restrictions. It makes no changes to host routes, firewall,
 forwarding, NAT or sysctls. Do not run secure mode with sudo, add broad mounts, or
 expose a Docker socket to it.
+
+### Routed HTTP
+
+Install the additional rootless transport dependency as operator setup:
+
+```bash
+sudo apt-get install --no-install-recommends slirp4netns
+```
+
+The application runs as a normal user and uses existing operator routes. No host
+firewall, routing, forwarding, NAT or sysctl changes are needed. Review the
+[routed design and examples](docs/routed-http.md) before configuring a real
+authorized destination. No real remote/VPN target or autonomous model has been
+validated; the routed tests use owned services in a disconnected outer namespace.
+
+To reproduce that lab and the human approval check (use fresh audit filenames):
+
+```bash
+python scripts/secure_agent_routed_demo.py --audit .secure-agent/routed-demo.jsonl
+python scripts/secure_agent_routed_demo.py --interactive --audit .secure-agent/routed-human.jsonl
+```
 
 ### Reproducible verification
 

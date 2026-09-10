@@ -88,8 +88,17 @@ requires a fresh approval. The store is not an external authorization service.
 owned HTTP service in a fresh network namespace and accepts only `127.0.0.1` or
 the equivalent singleton CIDR. This address refers to the sandbox fixture, not
 the operator's localhost. The policy engine supports wider literal scopes, but
-this backend refuses to execute against them. A routed authorized-target backend
-is future work; there is no host fallback.
+this backend refuses to execute against them. There is no fixture-to-host fallback.
+
+The separate `LinuxRoutedBackend`, selected by `--routed`, now supports one
+policy-authorized canonical IPv4 literal and TCP port through a supervised slirp
+transport. It preserves the worker boundary below, using distinct routed
+firewall rules and an explicit firewall-ready/transport-ready release handshake.
+Only the separately sandboxed trusted transport retains the controller's network
+namespace. It uses existing routes; no host network configuration changes occur.
+The transport adds slirp4netns/libslirp to the trusted computing base. See
+[routed-http.md](routed-http.md) for lifecycle, filesystem isolation, limits,
+operator examples and the owned-service test topology.
 
 Bubblewrap creates user, network, mount, PID, IPC and UTS isolation. A minimal
 read-only runtime contains the fixed worker, system Python/standard library, nft
@@ -100,6 +109,9 @@ temporary filesystem and process resource limits bound tool resources.
 The namespace bootstrap installs nftables default-deny output rules for the
 exact action IP and TCP destination port. Established **reply-direction** traffic
 supports the fixture; it is not a general outbound established-connection bypass.
+For routed execution, output admits only the original destination tuple on
+`tap0`, while input admits only established replies matching that tuple. There
+is no incoming-listener allowance in the routed worker.
 The bootstrap then drops capabilities and sets no-new-privileges. A seccomp filter
 restricts new processes, execution, namespace changes and dangerous syscalls.
 Worker checks prevent applying namespace firewall setup to the host namespace.

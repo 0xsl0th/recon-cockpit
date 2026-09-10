@@ -1,5 +1,12 @@
 # Handover to the Lenovo / Kali amd64
 
+**Routed continuation:** the separate `--routed` backend now supports one
+authorized IPv4 literal/TCP port through a filtered worker and a separately
+sandboxed slirp transport. See [routed-http.md](routed-http.md) for package setup,
+owned-service validation and remaining limits, and [verification.md](verification.md)
+for the latest actual results. A real remote/VPN target still needs explicit
+operator scope and has not been exercised.
+
 **Continuation update, 10 September 2026:** Kali kernel integration and the demo
 now pass after native libseccomp selection was fixed. The controlling-terminal
 I/O was also fixed, and the operator completed one approved fixture execution.
