@@ -17,10 +17,14 @@ test = ["pytest>=8"]
 
 [project.scripts]
 recon-cockpit = "recon_cockpit.cli:main"
+recon-secure-agent = "recon_cockpit.secure_agent.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+  "integration: real Linux namespace and network enforcement (opt-in)",
+]
 
 [tool.setuptools.packages.find]
 include = ["recon_cockpit*"]
