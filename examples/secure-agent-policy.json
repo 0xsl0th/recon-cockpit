@@ -1,0 +1,13 @@
+{
+  "schema_version": "1",
+  "policy_version": "local-lab-v1",
+  "allowed_targets": ["127.0.0.1/32"],
+  "allowed_tools": ["http_probe"],
+  "allowed_ports": [8080],
+  "allowed_methods": ["GET", "HEAD"],
+  "max_timeout_seconds": 3,
+  "max_output_bytes": 4096,
+  "max_targets": 1,
+  "require_approval": true,
+  "approval_ttl_seconds": 60
+}

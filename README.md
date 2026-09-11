@@ -1,5 +1,142 @@
 # Recon Cockpit
 
+## Secure Agent Mode — fixture and routed HTTP
+
+An additional entry point now accepts **deterministic mock agent** proposals and
+enforces schema → policy → human approval when required → isolated execution →
+structured result and JSONL audit. It uses no API keys or paid services. This
+milestone does not validate an autonomous model.
+
+The executable tool set is one bounded HTTP probe. `--fixture` reaches only its
+owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
+backend reaches one explicitly authorized IPv4 literal and TCP port through an
+isolated worker and a supervised slirp transport. Policy supports broader scopes,
+but routed CIDR actions, IPv6, loopback, hostnames, TLS and Nmap remain unavailable.
+The existing interactive workflow below is preserved and has a different,
+human-operated security boundary.
+
+### Quick start
+
+From the repository, install Python 3.11+ and the project/test dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[test]'
+python -m recon_cockpit.secure_agent --mock --dry-run
+```
+
+Dry-run works on macOS and Linux without isolation tools. Expected JSON:
+`provider: deterministic-mock-no-model`, `decision: approval_required`,
+`execution_status: dry_run`. No network request runs. Events go to the private
+`.secure-agent/audit.jsonl`; override the path with trusted operator flag
+`--audit /path/to/private-directory/audit.jsonl`.
+
+For real fixture execution, use a dedicated Linux/Kali lab. Install the system
+packages explicitly (this is operator setup, not an automatic privilege request):
+
+```bash
+sudo apt-get update
+sudo apt-get install python3 python3-venv bubblewrap nftables libseccomp2 libc-bin
+python -m recon_cockpit.secure_agent --mock --fixture --execute
+```
+
+Run the Python command as a normal user, from a terminal. Review the exact action
+and policy digests, then type the displayed `approve <digest-prefix>` challenge.
+Expected result: `execution_status: succeeded`, HTTP status 200 in
+`result_metadata.results`, and an approval reference in the audit trail.
+The approved address belongs to the owned fixture **inside** the sandbox. It does
+not contact your host's port 8080. Raw response/rationale are not printed or logged.
+
+The lab must permit unprivileged user/network namespaces and a compatible
+non-setuid Bubblewrap. The backend creates ephemeral namespaces, installs a
+default-deny nftables ruleset there, drops capabilities, and applies filesystem,
+syscall and resource restrictions. It makes no changes to host routes, firewall,
+forwarding, NAT or sysctls. Do not run secure mode with sudo, add broad mounts, or
+expose a Docker socket to it.
+
+### Routed HTTP
+
+Install the additional rootless transport dependency as operator setup:
+
+```bash
+sudo apt-get install --no-install-recommends slirp4netns
+```
+
+The application runs as a normal user and uses existing operator routes. No host
+firewall, routing, forwarding, NAT or sysctl changes are needed. Review the
+[routed design and examples](docs/routed-http.md) before configuring a real
+authorized destination. No real remote/VPN target or autonomous model has been
+validated; the routed tests use owned services in a disconnected outer namespace.
+
+To reproduce that lab and the human approval check (use fresh audit filenames):
+
+```bash
+python scripts/secure_agent_routed_demo.py --audit .secure-agent/routed-demo.jsonl
+python scripts/secure_agent_routed_demo.py --interactive --audit .secure-agent/routed-human.jsonl
+```
+
+### Reproducible verification
+
+GitHub Actions runs the portable suite on Ubuntu with Python 3.11–3.14 and on
+macOS with Python 3.14 for pull requests into `main` and pushes to `main` or
+`feature/secure-agent-m1`. These jobs require zero skipped portable tests; Linux
+integration tests are explicitly deselected. CI does not execute probes, supply
+human approvals, or establish kernel isolation. The opted-in Kali tests and
+human approval evidence in [verification.md](docs/verification.md) remain a
+separate review requirement for execution-boundary changes.
+
+```bash
+# Portable control-plane tests and existing workflow regressions
+python -m pytest -m 'not integration'
+
+# Real Linux isolation tests: opted-in setup failures are failures, not passes
+RECON_LINUX_INTEGRATION=1 python -m pytest -m integration -v
+
+# Complete owned-fixture demo (Linux prerequisites above)
+python scripts/secure_agent_linux_demo.py
+```
+
+The unattended demo uses a clearly labeled fixture-only policy with
+`require_approval: false` for its allowed-action cases. It also demonstrates
+approval-required failures; it never fabricates a human approval. The example
+policy used by the CLI requires human approval. Portable tests exercise missing,
+expired, replayed and changed-action approvals and concurrent single use. Kernel
+tests exercise real HTTP, malicious fixture output, redirects, timeouts/output
+caps, and direct socket attempts toward listening out-of-scope IP/port witnesses.
+
+Use `--proposal action.json` instead of `--mock` to submit untrusted JSON. See
+[the mock action](recon_cockpit/secure_agent/planner.py) for the exact required
+fields and [the example policy](examples/secure-agent-policy.json) for operator
+configuration. Extra fields, booleans used as numbers, command strings, arbitrary
+paths, headers, policy/approval overrides and unsupported tools are rejected.
+
+### Expected failures and troubleshooting
+
+- `noninteractive_approval_required`: an approval-required action was executed
+  without an interactive terminal. Review it interactively; there is no `--yes`.
+- `isolation_unavailable`: Linux, dependencies, user namespaces, sandbox setup,
+  or backend target support is missing. Execution remains blocked; dry-run works.
+  Use a dedicated compatible Linux/Kali VM rather than weakening host controls.
+- `audit_unavailable` / exit 3: the audit directory/file must be private and owned
+  by the controller user, writable, and a regular non-symlink file. Check disk
+  space and permissions. Reconcile any start event without a completion event
+  before retrying; a completion-write failure cannot undo an already sent request.
+- Exit 2 reports a policy/schema/approval/isolation denial or execution failure.
+  Timeouts and output limits are distinct structured execution statuses.
+- A suite with skipped Linux tests proves only the portable controls. The
+  prompt-injection fixture demonstrates that specific payload remains inert;
+  it is not evidence of universal immunity.
+
+Local JSONL logs are not tamper-proof and can be rewritten by the owner or a
+compromised host. Approval hashes bind content; they do not protect host history.
+See [architecture](docs/architecture.md), [threat model](docs/threat-model.md),
+[Spanish competition draft](docs/competition-proposal.md), and
+[verification record](docs/verification.md).
+For continuation on Kali amd64, use the [Lenovo handover and session prompt](docs/handover-kali.md).
+
+## Interactive Recon Cockpit
+
 Recon Cockpit is an evidence-driven terminal UI for authorized HTB/THM-style
 targets. Give it one IP address and it creates a durable case, lets you choose one
 of three bounded Nmap profiles, parses the XML, and offers only the enumeration

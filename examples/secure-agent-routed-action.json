@@ -1,0 +1,14 @@
+{
+  "schema_version": "1",
+  "action_id": "22222222-2222-4222-8222-222222222222",
+  "tool_id": "http_probe",
+  "target": "192.0.2.10",
+  "parameters": {
+    "port": 8080,
+    "method": "GET",
+    "path": "/",
+    "timeout_seconds": 3,
+    "max_output_bytes": 4096
+  },
+  "rationale": "Example only: the operator must configure an explicitly authorized reachable destination."
+}
