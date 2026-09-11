@@ -78,6 +78,14 @@ python scripts/secure_agent_routed_demo.py --interactive --audit .secure-agent/r
 
 ### Reproducible verification
 
+GitHub Actions runs the portable suite on Ubuntu with Python 3.11–3.14 and on
+macOS with Python 3.14 for pull requests into `main` and pushes to `main` or
+`feature/secure-agent-m1`. These jobs require zero skipped portable tests; Linux
+integration tests are explicitly deselected. CI does not execute probes, supply
+human approvals, or establish kernel isolation. The opted-in Kali tests and
+human approval evidence in [verification.md](docs/verification.md) remain a
+separate review requirement for execution-boundary changes.
+
 ```bash
 # Portable control-plane tests and existing workflow regressions
 python -m pytest -m 'not integration'

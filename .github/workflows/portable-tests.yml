@@ -1,0 +1,59 @@
+name: Portable tests
+
+on:
+  push:
+    branches: [main, feature/secure-agent-m1]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portable-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  portable:
+    name: Portable (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+        python: ['3.11', '3.12', '3.13', '3.14']
+        include:
+          - os: macos-15
+            python: '3.14'
+    env:
+      RECON_LINUX_INTEGRATION: '0'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install project and test dependencies
+        run: python -m pip install -e '.[test]'
+      - name: Check dependency consistency
+        run: python -m pip check
+      - name: Run portable tests
+        run: python -m pytest -m 'not integration' --strict-markers -ra --junitxml=portable-results.xml
+      - name: Require a complete portable run
+        # PTY-dependent portable tests must run on these POSIX runners too.
+        # Integration tests are deselected, not represented as skipped evidence.
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+
+          cases = list(ET.parse('portable-results.xml').iter('testcase'))
+          if not cases or any(case.find(tag) is not None
+                              for case in cases
+                              for tag in ('skipped', 'failure', 'error')):
+              raise SystemExit('Portable suite must contain tests and no skips, failures or errors')
+          print(f'Complete portable run: {len(cases)} tests')
+          PY

@@ -1,5 +1,52 @@
 # Verification record
 
+## PR preparation and portable CI — 11 September 2026
+
+Continued `feature/secure-agent-m1` from `6f4adb6`, preserving the clean worktree
+and all existing execution controls. Added `.github/workflows/portable-tests.yml`
+and documented its scope in the README. The workflow uses standard GitHub-hosted
+Ubuntu 24.04 runners with Python 3.11, 3.12, 3.13 and 3.14, plus macOS 15 with
+Python 3.14. It runs on pull requests into `main` and pushes to `main` or this
+feature branch. It has a ten-minute job timeout, read-only `contents` permission,
+immutable official action revisions, no persisted checkout credentials, no
+repository secrets or artifact uploads, and no privileged or self-hosted jobs.
+Action pins were resolved from the official checkout v7.0.1 and setup-python
+v7.0.0 release tags, and their definitions were inspected before use.
+
+The selected suite excludes integration tests explicitly. A JUnit check rejects
+empty runs and skipped, failed or errored portable tests, including unavailable
+PTY mechanics on the selected POSIX runners. CI never supplies a human execution
+grant or runs a real probe. Hosted matrix results are tracked separately in PR
+checks; the following results were observed locally on the existing Kali amd64
+host with Python 3.14.6:
+
+| Command/check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=<temporary-report>` | **426 passed, 14 deselected**, 1.97 seconds; no skips |
+| Exact workflow JUnit-check code against that report | **426 complete tests**; synthetic empty/skipped/failed/errored reports all rejected |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short` outside the coding sandbox as the normal user | **14 passed, 426 deselected**, 11.99 seconds; no skips |
+| `.venv/bin/python -m pip check` | No broken requirements |
+| Workflow YAML parsing, permission/action-pin/matrix assertions and embedded Python compilation | Passed |
+| `.venv/bin/python -m compileall -q recon_cockpit scripts` / `git diff --check` | Passed |
+
+The integration rerun used only the disconnected owned lab and fixture. It did
+not alter host networking, contact a real remote/VPN target, or repeat the human
+approval ceremony. The separately recorded operator approvals below remain the
+human evidence; CI and scripted PTY tests do not replace them.
+
+A targeted local static review traced strict proposal parsing, policy checks,
+full-digest single-use grants, audit-before-launch and audit-failure poisoning,
+minimal namespace/runtime mounts, worker destination rules, bootstrap gates and
+bounded process cleanup. No merge-blocking issue was identified in that review;
+no runtime change was made during PR preparation. Attempts at parallel agent
+reviews stopped at a usage limit and are not counted as completed reviews. This
+is not an independent security audit or a guarantee against sandbox escapes.
+Maintainer review and passing PR checks remain merge requirements; no merge,
+auto-merge or branch-protection change is part of this preparation.
+
+Workflow references: [GitHub's Python test guidance](https://docs.github.com/en/actions/tutorials/build-and-test-code/python)
+and [secure-use guidance](https://docs.github.com/en/actions/reference/security/secure-use).
+
 ## Routed HTTP milestone — 10 September 2026
 
 Continued clean branch `feature/secure-agent-m1` from `915d822` on the same Kali
