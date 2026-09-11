@@ -1,5 +1,78 @@
 # Verification record
 
+## Bounded mock sessions — 11 September 2026
+
+Recovered the interrupted milestone 2 worktree on `feature/secure-agent-m2`,
+based on merged `main` revision `8d7fe69`. The recovered files already contained
+the session runner, fixed subprocess planner, shared execution control and
+backend/CLI wiring. The initial portable run passed **503 tests, 14 deselected**;
+session lifecycle, CLI and real-kernel session coverage and the demo were still
+missing. Completed that first implementation slice without replacing the
+existing architecture or widening the execution target scope.
+
+The session now has immutable attempt/runtime/output limits, a monotonic deadline
+covering planner execution, terminal approval waiting, runtime inspection and
+tool supervision, and SIGINT/SIGTERM cancellation. Each accepted action reserves
+its full response allowance without refunds. Every follow-up traverses schema,
+policy, required fresh approval and durable audit. Session/step events correlate
+with controller events; CLI progress and final summary exclude raw feedback.
+See [bounded-sessions.md](bounded-sessions.md) for the exact contract.
+
+Actual local environment remained Kali Linux `6.16.8+kali-amd64`, x86_64,
+Python `3.14.6`, pytest `9.1.1`, running as the normal host user. Kernel tests and
+the demo ran outside the coding sandbox to permit the required namespaces.
+
+| Command/check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-m2-portable.xml` | **609 passed, 22 deselected**, 5.58 seconds; no skips |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short` | **22 passed, 523 deselected**, 21.78 seconds; no skips; run before the final 86 portable session cases were added |
+| `.venv/bin/python scripts/secure_agent_session_demo.py --audit .secure-agent/session-demo-m2-resumed.jsonl` | **`demo: passed`**, six verified cases, exit 0 |
+| `.venv/bin/python -m pip check` | No broken requirements |
+| `.venv/bin/python -m compileall -q recon_cockpit scripts` and `git diff --check` | Passed |
+
+The standalone demo performed nine successful isolated HTTP executions across
+six sessions. Every completed worker returned true `forbidden_ip_blocked`,
+`forbidden_port_blocked`, `namespace_creation_blocked` and `capabilities_dropped`
+checks. It checked the injection fixture internally and retained only safe
+receipt booleans and boundary evidence in its public report.
+
+| Demo case | Observed result |
+| --- | --- |
+| Three-step plan | Three successes at `/`, `/injection`, `/`; 3072 bytes reserved; `planner_done` |
+| Injected target | First fixture response received; second action rejected with `target_out_of_scope`; one execution |
+| Injected approval authority | First fixture response received; second action rejected with `unknown_action_fields`; one execution |
+| Endless planner with two-step limit | Exactly two executions; `step_limit` |
+| 1024-byte session output budget | One execution; second action refused with `session_output_limit`; no second approval or launch |
+| Cancellation after first step | Exactly one execution; `session_cancelled`; no next planner invocation |
+
+The eight new Linux integration cases cover those six scenarios plus timeout
+and cancellation of an actual running Bubblewrap worker against `/slow`. Both
+in-flight stops observed SIGKILL termination and verified the direct child was
+already reaped. All 14 earlier fixture/routed integration tests also passed.
+Portable process tests additionally cover blocked input, flooded output, runtime
+inspection, routed release gates and a descendant retaining output pipes after
+its direct parent exits. Session tests cover strict proposal wrappers, fresh
+approval/replay rejection, durable audit at launch, audit-failure poisoning,
+stops during approval and pre-launch logging, no-refund reservations, concurrency
+and single-use lifecycle. CLI tests cover signal-handler restoration, safe
+progress, option validation and bounded controlling-terminal reads.
+
+A completed parallel code review found no concrete new authorization or cleanup
+bug in the session/provider/controller or execution supervisor changes. This is
+an implementation review, not an independent security audit. The unattended
+demo explicitly declares a fixture-only allow policy and never manufactures a
+human approval. Scripted PTY tests validate terminal mechanics only; the prior
+milestone's human approvals remain historical evidence and no new human session
+approval ceremony is claimed here.
+
+No packages were installed and no host network configuration was changed. Real
+models, arbitrary provider plugins, routed sessions and actual VPN targets remain
+unvalidated and outside this slice. Host filesystem/kernel stalls cannot be
+hard-preempted; cleanup can extend beyond the deadline. Session budgets are not
+persistent per-user quotas across restarts. The portable workflow now includes
+pushes to `feature/secure-agent-m2`; hosted results and maintainer review remain
+separate from this local run record.
+
 ## PR preparation and portable CI — 11 September 2026
 
 Continued `feature/secure-agent-m1` from `6f4adb6`, preserving the clean worktree

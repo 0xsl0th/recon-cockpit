@@ -1,8 +1,10 @@
 # Recon Cockpit — Secure Agent Mode
 
-Milestone 1 adds a dedicated command, `python -m recon_cockpit.secure_agent`.
-The existing interactive cockpit and case formats remain intact. This milestone
-validates a deterministic mock and security controls, not an autonomous model.
+Secure mode has a dedicated command, `python -m recon_cockpit.secure_agent`.
+Milestone 1 established isolated individual actions; milestone 2 adds bounded
+mock planning sessions. The existing interactive cockpit and case formats remain
+intact. These milestones validate deterministic mocks and security controls,
+not an autonomous model.
 
 ## Repository assessment
 
@@ -29,7 +31,8 @@ old builders' responsibilities.
 | Human UI → approval store | Controller-only grant | Monotonic expiry, full content binding, atomic single use |
 | Controller → audit | Structured decision/start event | Private JSONL, synchronous write + fsync required before launch |
 | Controller → Linux backend | Revalidated action and policy | Fresh namespaces, exact destination firewall, restricted runtime |
-| Tool → controller | Bounded untrusted result | No follow-up execution; allowlisted metadata in audit and CLI |
+| Tool → controller | Bounded untrusted result | Allowlisted metadata in audit and CLI; session feedback remains untrusted |
+| Session → fixed mock → controller | Previous response excerpt, then a fresh proposal | Step/deadline/output budgets; full validation and authorization for every follow-up |
 
 `ProposalProvider.propose() -> str` is the small future provider interface.
 `MockProvider` invokes only the bundled fixed mock script with an empty credential
@@ -42,6 +45,15 @@ code into the controller is outside this interface's security contract.
 The controller owns policy, approval store, audit, and backend. No provider gets
 those objects. The only agent-controlled input is the proposal. The Python APIs
 are internal trusted components, not independently authenticated services.
+
+`SessionRunner` adds a single-use loop around that same controller. Its fixed
+`SessionMockProvider.propose(observation, control=...)` adapter supervises a
+bundled subprocess; the process receives JSON observation bytes only. Shared
+trusted `ExecutionControl` state bounds planning, terminal approval waiting,
+runtime discovery and worker supervision. Every planner call costs one step;
+every accepted action reserves its full response allowance before approval,
+without refunds. Session configuration never arrives through proposal fields.
+See [bounded-sessions.md](bounded-sessions.md) for exact limits, events and stops.
 
 ## Schema and policy
 
@@ -125,7 +137,8 @@ and [Bubblewrap manual](https://manpages.debian.org/bookworm/bubblewrap/bwrap.1.
 The fixed worker bounds response bytes and request duration; the parent also
 bounds total execution time and subprocess output and kills the process group on
 violation. Output content remains data. The malicious fixture never changes
-policy or submits another action.
+policy. In session mode a fixed adversarial mock can turn it into another
+proposal, which must independently pass validation, policy and approval.
 
 ## Event contract
 

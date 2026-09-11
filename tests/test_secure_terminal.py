@@ -6,6 +6,7 @@ import io
 import json
 import os
 import select
+import threading
 import time
 from types import SimpleNamespace
 
@@ -13,6 +14,7 @@ import pytest
 
 from recon_cockpit.secure_agent import cli
 from recon_cockpit.secure_agent.approvals import ApprovalStore
+from recon_cockpit.secure_agent.execution import ExecutionControl, ExecutionStopped
 from recon_cockpit.secure_agent.models import parse_action, parse_policy
 from recon_cockpit.secure_agent.planner import proposal
 
@@ -134,3 +136,52 @@ def test_noninteractive_approval_does_not_open_terminal_or_parse_input(
     monkeypatch.setattr(cli, "open", lambda *_args, **_kwargs: pytest.fail("must not open terminal"), raising=False)
     monkeypatch.setattr(cli, "parse_action", lambda *_: pytest.fail("must not parse noninteractive input"))
     assert cli._human_approval(approval_context, b"not proposal JSON") is None
+
+
+def test_session_terminal_challenge_issues_a_single_use_grant(approval_context, scripted_terminal):
+    action = parse_action(proposal())
+    os.write(scripted_terminal, ("approve " + action.digest[:16] + "\n").encode("ascii"))
+    reference = cli._human_approval(approval_context, json.dumps(proposal()),
+                                    control=ExecutionControl(time.monotonic() + 5))
+    assert reference is not None
+    assert approval_context.approvals.consume(reference, action, approval_context.policy) is None
+    assert approval_context.approvals.consume(reference, action, approval_context.policy) == "approval_unknown_or_replayed"
+
+
+@pytest.mark.parametrize("cancel", [False, True])
+def test_session_terminal_wait_stops_without_a_grant(approval_context, scripted_terminal, monkeypatch, cancel):
+    stopped = threading.Event()
+    control = ExecutionControl(time.monotonic() + (5 if cancel else 0.15), stopped)
+    monkeypatch.setattr(approval_context.approvals, "issue",
+                        lambda *_: pytest.fail("a stopped wait must not issue a grant"))
+    timer = threading.Timer(0.15, stopped.set)
+    if cancel:
+        timer.start()
+    try:
+        with pytest.raises(ExecutionStopped) as error:
+            cli._human_approval(approval_context, json.dumps(proposal()), control=control)
+        assert error.value.reason == ("session_cancelled" if cancel else "session_timeout")
+        assert "to approve once" in terminal_output(scripted_terminal)
+    finally:
+        if cancel:
+            timer.join()
+
+
+def test_session_terminal_rechecks_deadline_after_input(approval_context, scripted_terminal, monkeypatch):
+    action = parse_action(proposal())
+    os.write(scripted_terminal, ("approve " + action.digest[:16] + "\n").encode("ascii"))
+    stopped = threading.Event()
+    read = os.read
+
+    def cancel_at_newline(*args):
+        value = read(*args)
+        if value == b"\n":
+            stopped.set()
+        return value
+
+    monkeypatch.setattr(cli.os, "read", cancel_at_newline)
+    monkeypatch.setattr(approval_context.approvals, "issue",
+                        lambda *_: pytest.fail("cancellation at input completion must deny"))
+    with pytest.raises(ExecutionStopped, match="session_cancelled"):
+        cli._human_approval(approval_context, json.dumps(proposal()),
+                            control=ExecutionControl(time.monotonic() + 5, stopped))

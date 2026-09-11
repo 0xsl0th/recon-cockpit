@@ -7,6 +7,7 @@ from typing import Protocol
 
 from .approvals import ApprovalStore
 from .audit import AuditSink, AuditUnavailable
+from .execution import ExecutionControl, ExecutionStopped
 from .models import Action, Policy, ValidationError, parse_action, parse_policy
 
 
@@ -19,7 +20,7 @@ class Backend(Protocol):
 
     def check_available(self, action: Action | None = None) -> None: ...
 
-    def run(self, action: Action, policy: Policy) -> dict: ...
+    def run(self, action: Action, policy: Policy, *, control: ExecutionControl | None = None) -> dict: ...
 
 
 class UnavailableBackend:
@@ -48,13 +49,18 @@ def result_metadata(result: dict) -> dict:
 
 class Controller:
     def __init__(self, policy: Policy, audit: AuditSink, backend: Backend | None = None,
-                 approvals: ApprovalStore | None = None):
+                 approvals: ApprovalStore | None = None, *, session_id: str | None = None):
         self.policy = parse_policy(policy.to_dict())
         self.audit = audit
         self.backend = backend if backend is not None else UnavailableBackend()
         self.approvals = approvals if approvals is not None else ApprovalStore()
         self._lock = threading.Lock()
         self._audit_failed = False
+        if session_id is not None:
+            from uuid import UUID
+            if type(session_id) is not str or str(UUID(session_id)) != session_id:
+                raise ValueError("invalid_session_id")
+        self.session_id = session_id
 
     def _emit(self, event: dict) -> None:
         if self._audit_failed:
@@ -66,22 +72,32 @@ class Controller:
             raise
 
     def submit(self, proposal: dict | str | bytes, *, execute: bool = False,
-               approval_reference: str | None = None, interactive: bool = False) -> dict:
+               approval_reference: str | None = None, interactive: bool = False,
+               execution_control: ExecutionControl | None = None,
+               session_step: int | None = None) -> dict:
         """Trusted controller API. IPC accepts proposal data only, never kwargs.
 
         `interactive` is set by the trusted TTY UI, not a proposal field. The UI
         owns the ApprovalStore. Dry-run still validates and audits the decision.
         """
         with self._lock:
-            return self._submit(proposal, execute, approval_reference, interactive)
+            if session_step is not None and (self.session_id is None or type(session_step) is not int
+                                             or not 1 <= session_step <= 16):
+                raise ValueError("invalid_session_step")
+            if execution_control is not None:
+                execution_control.check()
+            return self._submit(proposal, execute, approval_reference, interactive,
+                                execution_control, session_step)
 
-    def _submit(self, proposal, execute, approval_reference, interactive):
+    def _submit(self, proposal, execute, approval_reference, interactive, control, session_step):
         base = {
             "action_id": None, "action_digest": None,
             "policy_version": self.policy.policy_version,
             "policy_digest": self.policy.digest,
             "approval_reference": None,
         }
+        if self.session_id is not None:
+            base.update(session_id=self.session_id, session_step=session_step)
         try:
             action = parse_action(proposal)
         except ValidationError as exc:
@@ -103,6 +119,8 @@ class Controller:
         if not execute:
             outcome["execution_status"] = "dry_run"
             return outcome
+        if control is not None:
+            control.check()
         if decision.decision == "approval_required":
             reason = ("noninteractive_approval_required" if not interactive else
                       self.approvals.consume(approval_reference, action, self.policy))
@@ -122,7 +140,16 @@ class Controller:
         self._emit({**outcome, "event_type": "execution_started",
                     "execution_status": "started", "backend": self.backend.name})
         try:
-            result = self.backend.run(action, self.policy)
+            # A durable write or availability check may have used the remaining
+            # session time. Never launch after that deadline/cancellation.
+            if control is not None:
+                control.check()
+                result = self.backend.run(action, self.policy, control=control)
+            else:
+                result = self.backend.run(action, self.policy)
+        except ExecutionStopped as exc:
+            result = {"status": "cancelled" if exc.reason == "session_cancelled" else "timeout"}
+            outcome["reasons"] = [exc.reason]
         except (RuntimeError, OSError, ValueError) as exc:
             if getattr(exc, "code", None) == "isolation_unavailable":
                 result = {"status": "blocked"}
@@ -130,7 +157,7 @@ class Controller:
             else:
                 result = {"status": "failed"}
         status = result.get("status", "failed")
-        if status not in {"succeeded", "failed", "timeout", "output_limit", "blocked"}:
+        if status not in {"succeeded", "failed", "timeout", "output_limit", "blocked", "cancelled"}:
             status = "failed"
         outcome["execution_status"] = status
         self._emit({**outcome, "event_type": "execution_finished",

@@ -2,7 +2,7 @@ name: Portable tests
 
 on:
   push:
-    branches: [main, feature/secure-agent-m1]
+    branches: [main, feature/secure-agent-m1, feature/secure-agent-m2]
   pull_request:
     branches: [main]
 

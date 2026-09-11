@@ -1,5 +1,40 @@
 # Handover to the Lenovo / Kali amd64
 
+## Current continuation — milestone 2, 11 September 2026
+
+PR #1 was merged into `main` as `8d7fe69`. Work now continues on
+`feature/secure-agent-m2`, created from that merged revision. The interrupted
+session's uncommitted code was recovered from disk and continued in place.
+The completed slice passed 609 portable tests, 22 Linux integration tests and
+the six-case owned-fixture session demo. Exact commands, limitations and review
+status are recorded in [verification.md](verification.md).
+
+The agreed first milestone 2 slice is a bounded three-step owned-fixture mock
+session with adversarial follow-ups, session budgets and cancellation. Real
+model-provider integration and actual VPN-target validation remain deferred.
+Read [bounded-sessions.md](bounded-sessions.md), the latest
+[verification record](verification.md), then inspect `git status` and preserve
+any local changes. Do not restart milestone 1 or infer that archived branch and
+test-count statements below describe the current checkout.
+
+Session entry points:
+
+```bash
+python -m recon_cockpit.secure_agent --session-mock three_step --dry-run
+python scripts/secure_agent_session_demo.py --audit .secure-agent/session-demo.jsonl
+```
+
+Use a fresh audit filename when retaining new evidence. Required checks are the
+portable suite and the explicitly opted-in Linux integration suite described in
+the verification record. Run kernel tests outside the coding sandbox as the
+normal user; they do not require root or host networking changes. A scripted
+terminal test is not human approval evidence. Never manufacture an approval.
+
+## Historical milestone 1 handover
+
+The following setup and original prompt are retained as history. The current
+branch and latest validation totals are given above and in verification.md.
+
 **Routed continuation:** the separate `--routed` backend now supports one
 authorized IPv4 literal/TCP port through a filtered worker and a separately
 sandboxed slirp transport. See [routed-http.md](routed-http.md) for package setup,
