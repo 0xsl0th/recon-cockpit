@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from recon_cockpit.secure_agent import routed
+from recon_cockpit.secure_agent import isolation, routed
 from recon_cockpit.secure_agent.isolation import IsolationUnavailable
 from recon_cockpit.secure_agent.models import parse_action
 from scripts.secure_agent_routed_demo import lab_action, lab_policy
@@ -18,12 +18,22 @@ def python_command(code):
 
 
 def test_worker_mounts_are_complete_before_root_becomes_readonly(monkeypatch):
-    monkeypatch.setattr(routed, "_trusted_program", lambda _: "/usr/bin/bwrap")
+    # The reused command builder resolves bwrap in isolation, not routed.
+    # An installed host bwrap must not hide an incomplete portable test double.
+    monkeypatch.setattr(isolation.shutil, "which", lambda *_args, **_kwargs:
+                        pytest.fail("portable command construction must not inspect host tools"))
+    monkeypatch.setattr(isolation, "_trusted_program", lambda _: "/usr/bin/bwrap")
     command = routed.LinuxRoutedBackend()._worker_command("/usr/lib/python3.14", [], 10)
     assert command.index("/app/routed_worker.py") < command.index("--remount-ro")
     assert command[-4:] == ["/usr/bin/python3", "-I", "-S", "/app/routed_worker.py"]
     for flag in ("--unshare-net", "--unshare-user", "--unshare-pid", "--clearenv", "--die-with-parent"):
         assert flag in command
+
+
+def test_worker_command_fails_closed_without_bwrap(monkeypatch):
+    monkeypatch.setattr(isolation.shutil, "which", lambda *_args, **_kwargs: None)
+    with pytest.raises(IsolationUnavailable, match="requires bwrap"):
+        routed.LinuxRoutedBackend()._worker_command("/usr/lib/python3.14", [], 10)
 
 
 def test_transport_has_only_explicit_runtime_and_tun_no_host_sockets_or_dns(monkeypatch):

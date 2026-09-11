@@ -44,6 +44,24 @@ is not an independent security audit or a guarantee against sandbox escapes.
 Maintainer review and passing PR checks remain merge requirements; no merge,
 auto-merge or branch-protection change is part of this preparation.
 
+### First hosted CI failure and test-only correction
+
+The [first hosted run](https://github.com/0xsl0th/recon-cockpit/actions/runs/34547888828)
+at `2c17192` installed successfully but failed the routed worker mount-order unit
+test. That test mocked `routed._trusted_program`, while the reused fixture
+command builder actually resolves Bubblewrap through `isolation._trusted_program`.
+The installed Kali `bwrap` masked the incomplete test double; clean Ubuntu and
+macOS runners exposed it. This was not a real isolation execution failure.
+
+The test now replaces discovery where the command builder uses it and rejects
+any unintended host executable lookup. All original read-only mount ordering,
+namespace and environment assertions remain. An additional portable regression
+checks that the unmodified production command builder still refuses missing
+Bubblewrap. No runtime fallback, runner package installation, test skipping or
+isolation relaxation was added. The corrected local portable run passed
+**427 tests, 14 deselected**, in 1.80 seconds, with no skips. Hosted results for
+the corrected revision are recorded separately by its CI checks.
+
 Workflow references: [GitHub's Python test guidance](https://docs.github.com/en/actions/tutorials/build-and-test-code/python)
 and [secure-use guidance](https://docs.github.com/en/actions/reference/security/secure-use).
 
