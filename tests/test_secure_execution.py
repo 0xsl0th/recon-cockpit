@@ -127,6 +127,7 @@ def test_capture_cancellation_kills_pipe_holder_after_direct_child_exits(monkeyp
     monkeypatch.setattr(subprocess, "Popen", launch)
     holder = command("import time; time.sleep(30)")
     parent = command(f"import os,subprocess; subprocess.Popen({holder!r}); os._exit(0)")
+    holder_closed = False
     try:
         with pytest.raises(ExecutionStopped) as error:
             isolation._capture_bounded(parent, b"", 5, 1024,
@@ -137,17 +138,22 @@ def test_capture_cancellation_kills_pipe_holder_after_direct_child_exits(monkeyp
         # immediate child's successful exit alone cannot establish cleanup.
         assert select.select(readers, [], [], 1)[0], "descendant still holds captured output"
         assert os.read(readers[0], 1) == b""
+        holder_closed = True
     finally:
         # Also terminate the descendant if any assertion or production cleanup
         # fails. The processes fixture reaps our direct child; an orphaned
         # descendant is reaped by the operating system after the group kill.
-        for child in processes:
-            try:
-                os.killpg(child.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-        for reader in readers:
-            os.close(reader)
+        # Once EOF verifies cleanup, avoid signalling a stale process group.
+        try:
+            if not holder_closed:
+                for child in processes:
+                    try:
+                        os.killpg(child.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+        finally:
+            for reader in readers:
+                os.close(reader)
 
 
 def test_capture_nonblocking_input_delivers_all_data_and_eof(processes):

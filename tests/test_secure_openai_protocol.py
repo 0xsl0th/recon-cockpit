@@ -307,7 +307,7 @@ def test_ambiguous_or_missing_output_is_rejected(mutation):
     b'{"metadata":{"private":"one","private":"two"}}',
     b'{"metadata":{"private":NaN}}', b'{"metadata":{"private":Infinity}}',
     b'{"metadata":{"private":-Infinity}}', b'{"metadata":{"private":1e999}}',
-    b'{"metadata":{"private":"\ud800"}}',
+    br'{"metadata":{"private":"\ud800"}}',
     b'{"metadata":' + b"[" * 1000 + b"0" + b"]" * 1000 + b"}",
 ])
 def test_response_json_rejects_invalid_encoding_duplicates_nonfinite_and_depth(raw):

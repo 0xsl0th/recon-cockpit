@@ -7,7 +7,8 @@ The bounded-session slice is committed as `467fab0` and pushed in
 and it is now ready for review. It has not been merged.
 
 The follow-up branch is `feature/secure-agent-provider-isolation`, based on
-that tested commit. It adds a dedicated Linux sandbox for the fixed planner and
+that tested commit, with review in
+[draft PR #3](https://github.com/0xsl0th/recon-cockpit/pull/3). It adds a dedicated Linux sandbox for the fixed planner and
 an offline OpenAI Responses API codec. The operator selected **OpenAI API, with
 live calls disabled initially**. Preserve that constraint: no credential lookup,
 SDK client or outbound API request is part of this slice. Real VPN testing also

@@ -71,10 +71,34 @@ review is not an independent security audit, and offline protocol tests do not
 validate real model behavior or account access.
 
 The workflow now runs pushes to this follow-up branch and PRs targeting
-`feature/secure-agent-m2`, permitting review of the added slice independently.
-Hosted results remain separate from the local evidence above. Real API transport,
-credential mediation, broker IPC/budgets and live model evaluation remain pending;
-live calls remain disabled.
+`feature/secure-agent-m2`, permitting review of the added slice independently in
+[draft PR #3](https://github.com/0xsl0th/recon-cockpit/pull/3). Hosted results remain
+separate from the local evidence above. Real API transport, credential mediation,
+broker IPC/budgets and live model evaluation remain pending; live calls remain
+disabled.
+
+### Hosted CI cleanup correction
+
+For implementation commit `f5b17d3`, the
+[PR workflow](https://github.com/0xsl0th/recon-cockpit/actions/runs/34713295830)
+passed all five jobs. The separate
+[push workflow](https://github.com/0xsl0th/recon-cockpit/actions/runs/34713286291)
+failed on macOS 15 / Python 3.14.7: **891 passed, 1 failed, 28 deselected**.
+The existing cancellation test verified the expected cancellation, reaped direct
+child and EOF from its descendant, then its redundant final cleanup signal
+raised `PermissionError` for the already-cleaned process group.
+
+The test now attempts fallback group cleanup only if EOF has not yet verified
+success; every original cancellation/descendant assertion remains. Duplicate
+pipe readers close even if fallback cleanup raises. A raw bytes literal also
+removes an invalid-escape warning while preserving the malformed JSON surrogate
+fixture. These are test-only changes, reviewed without a new finding.
+
+After this correction,
+`.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-provider-ci-fix-portable.xml`
+passed **892 tests, 28 deselected**, in **6.18 seconds**, with no skips. Production
+code was unchanged, so the Linux integration and demo evidence above still
+applies. Hosted reruns are recorded in the PR checks.
 
 ## Bounded mock sessions — 11 September 2026
 
