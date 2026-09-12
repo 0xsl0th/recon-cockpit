@@ -55,6 +55,14 @@ every accepted action reserves its full response allowance before approval,
 without refunds. Session configuration never arrives through proposal fields.
 See [bounded-sessions.md](bounded-sessions.md) for exact limits, events and stops.
 
+The explicit `--isolated-session-mock` provider now wraps the fixed planner in
+a dedicated Linux boundary. It grants no capabilities, mounts no probe/network
+bootstrap, and blocks socket/process/namespace creation before reading feedback.
+It never falls back to the portable mock. A separate offline OpenAI Responses
+codec prepares and validates JSON without any network or credential access.
+Live API transport and the future credential-owning broker remain unimplemented;
+see [provider-isolation.md](provider-isolation.md).
+
 ## Schema and policy
 
 Schema version `"1"` requires all action fields: UUID `action_id`, `tool_id`,

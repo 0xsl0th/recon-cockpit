@@ -11,6 +11,8 @@ from recon_cockpit.secure_agent import cli
 from recon_cockpit.secure_agent.audit import AuditUnavailable
 from recon_cockpit.secure_agent.session import SessionRunner
 from recon_cockpit.secure_agent.session_provider import SessionMockProvider
+from recon_cockpit.secure_agent.planner_isolation import LinuxIsolatedMockProvider
+from recon_cockpit.secure_agent.isolation import IsolationUnavailable
 
 
 POLICY = Path(__file__).resolve().parents[1] / "examples/secure-agent-policy.json"
@@ -65,6 +67,8 @@ def test_cli_rejects_invalid_limits_without_planning(tmp_path, capsys, monkeypat
     ["--session-mock", "three_step", "--routed"],
     ["--session-mock", "three_step", "--mock"],
     ["--session-mock", "three_step", "--proposal", "unused"],
+    ["--isolated-session-mock", "three_step", "--session-mock", "three_step"],
+    ["--isolated-session-mock", "three_step", "--routed"],
 ])
 def test_cli_rejects_unsupported_combinations_before_opening_files(monkeypatch, args):
     monkeypatch.setattr(cli, "_read_bounded", lambda *_: pytest.fail("must not read policy"))
@@ -112,3 +116,42 @@ def test_session_audit_error_returns_exit_three_and_restores_handlers(tmp_path, 
     assert result["reasons"] == ["audit_unavailable"]
     assert "private details" not in json.dumps(result)
     assert all(signal.getsignal(sig) == handler for sig, handler in previous.items())
+
+
+def test_isolated_planner_selection_never_falls_back_on_setup_failure(tmp_path, capsys, monkeypatch):
+    calls = []
+
+    def unavailable(self, observation, *, control):
+        calls.append(self.scenario)
+        raise IsolationUnavailable("untrusted internals")
+
+    monkeypatch.setattr(LinuxIsolatedMockProvider, "propose", unavailable)
+    monkeypatch.setattr(SessionMockProvider, "propose", lambda *_a, **_k: pytest.fail("must not fall back"))
+    args = arguments(tmp_path)
+    args[args.index("--session-mock")] = "--isolated-session-mock"
+    assert cli.main(args) == 2
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["provider"] == "linux-isolated-session-mock-no-model"
+    assert summary["stop_reason"] == "session_component_failed"
+    assert summary["actions_succeeded"] == 0
+    assert calls == ["three_step"]
+    assert "untrusted internals" not in json.dumps(summary)
+
+
+def test_isolated_planner_retains_session_limits_and_normal_completion(tmp_path, capsys, monkeypatch):
+    calls = []
+
+    def done(self, observation, *, control):
+        calls.append(json.loads(observation))
+        control.check()
+        return b'{"schema_version":"1","action":null,"done":true}'
+
+    monkeypatch.setattr(LinuxIsolatedMockProvider, "propose", done)
+    args = arguments(tmp_path, "--session-max-steps", "1")
+    args[args.index("--session-mock")] = "--isolated-session-mock"
+    assert cli.main(args) == 0
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["provider"] == "linux-isolated-session-mock-no-model"
+    assert summary["session_status"] == "completed"
+    assert summary["steps_attempted"] == 1
+    assert calls == [{"step": 1, "untrusted_observation": None}]

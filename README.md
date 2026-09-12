@@ -13,6 +13,11 @@ schema, policy, approval and audit checks. Session deadlines cover planning,
 approval waiting, setup and execution; step and reserved-output budgets stop
 further work. See [bounded sessions](docs/bounded-sessions.md) for the contract.
 
+The next slice adds an explicit Linux planner sandbox and an offline OpenAI
+Responses API codec. `--isolated-session-mock` runs the fixed mock with no network
+or credentials. OpenAI live calls remain disabled; the codec has no transport.
+See [planner isolation](docs/provider-isolation.md) for usage and remaining work.
+
 The executable tool set is one bounded HTTP probe. `--fixture` reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
 backend reaches one explicitly authorized IPv4 literal and TCP port through an
@@ -85,8 +90,8 @@ python scripts/secure_agent_routed_demo.py --interactive --audit .secure-agent/r
 ### Reproducible verification
 
 GitHub Actions runs the portable suite on Ubuntu with Python 3.11–3.14 and on
-macOS with Python 3.14 for pull requests into `main` and pushes to `main` or
-`feature/secure-agent-m1` or `feature/secure-agent-m2`. These jobs require zero skipped portable tests; Linux
+macOS with Python 3.14 for pull requests into `main` or `feature/secure-agent-m2`,
+and pushes to the configured secure-agent branches and `main`. These jobs require zero skipped portable tests; Linux
 integration tests are explicitly deselected. CI does not execute probes, supply
 human approvals, or establish kernel isolation. The opted-in Kali tests and
 human approval evidence in [verification.md](docs/verification.md) remain a

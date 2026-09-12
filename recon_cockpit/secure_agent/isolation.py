@@ -54,7 +54,7 @@ def _runtime_probe(argv: list[str], timeout: float, limit: int,
     return stdout
 
 
-def _runtime_files(python: str, nft: str, *, control: ExecutionControl | None = None
+def _runtime_files(python: str, nft: str | None, *, control: ExecutionControl | None = None
                    ) -> tuple[str, list[tuple[str, str]]]:
     """Build an explicit runtime closure, never bind the host /usr or /lib."""
     if control is not None:
@@ -84,7 +84,7 @@ def _runtime_files(python: str, nft: str, *, control: ExecutionControl | None = 
             raise IsolationUnavailable("Linux fixture isolation requires native libseccomp2")
         seccomp = seccomp_candidates[0]
         dependencies = _runtime_probe(
-            [_trusted_program("ldd"), python, nft, seccomp, *modules],
+            [_trusted_program("ldd"), python, *([nft] if nft is not None else []), seccomp, *modules],
             5, 1048576, control,
         )
     except (subprocess.SubprocessError, OSError, UnicodeError) as exc:
@@ -95,8 +95,9 @@ def _runtime_files(python: str, nft: str, *, control: ExecutionControl | None = 
     library_paths = set(re.findall(r"(?:=>\s+)?(/[^\s]+)\s+\(", listing))
     library_paths.add(seccomp)
     files = [(str(Path(path).resolve(strict=True)), path) for path in sorted(library_paths)]
-    files += [(str(Path(python).resolve(strict=True)), "/usr/bin/python3"),
-              (str(Path(nft).resolve(strict=True)), "/usr/sbin/nft")]
+    files.append((str(Path(python).resolve(strict=True)), "/usr/bin/python3"))
+    if nft is not None:
+        files.append((str(Path(nft).resolve(strict=True)), "/usr/sbin/nft"))
     if control is not None:
         control.check()
     return stdlib, files
