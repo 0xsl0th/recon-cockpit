@@ -16,7 +16,7 @@ import math
 import re
 
 from .models import parse_action
-from .session import _plan
+from .session_protocol import _plan
 
 
 REQUEST_METHOD = "POST"

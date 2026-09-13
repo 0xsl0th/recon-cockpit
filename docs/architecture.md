@@ -33,6 +33,8 @@ old builders' responsibilities.
 | Controller → Linux backend | Revalidated action and policy | Fresh namespaces, exact destination firewall, restricted runtime |
 | Tool → controller | Bounded untrusted result | Allowlisted metadata in audit and CLI; session feedback remains untrusted |
 | Session → fixed mock → controller | Previous response excerpt, then a fresh proposal | Step/deadline/output budgets; full validation and authorization for every follow-up |
+| Isolated API parser → trusted offline broker | One framed canonical API request | Exact reconstruction from trusted configuration/observation; reserve budgets and durable audit before a synthetic exchange |
+| Offline broker → isolated API parser → session | Bounded synthetic Responses JSON, then proposal | No credentials/network; strict response parsing in Linux isolation; full controller checks still apply |
 
 `ProposalProvider.propose() -> str` is the small future provider interface.
 `MockProvider` invokes only the bundled fixed mock script with an empty credential
@@ -42,9 +44,11 @@ no configurable provider executable or API credential support. A real provider
 must be separately sandboxed before integration; importing arbitrary provider
 code into the controller is outside this interface's security contract.
 
-The controller owns policy, approval store, audit, and backend. No provider gets
-those objects. The only agent-controlled input is the proposal. The Python APIs
-are internal trusted components, not independently authenticated services.
+The controller owns policy, approval store, audit, and backend. Sandboxed planners
+receive none of those objects. The trusted offline broker also records audit
+events, through a host adapter whose Python APIs are internal trusted components,
+not independently authenticated services. Request and proposal bytes crossing
+the sandbox boundary remain untrusted.
 
 `SessionRunner` adds a single-use loop around that same controller. Its fixed
 `SessionMockProvider.propose(observation, control=...)` adapter supervises a
@@ -60,8 +64,16 @@ a dedicated Linux boundary. It grants no capabilities, mounts no probe/network
 bootstrap, and blocks socket/process/namespace creation before reading feedback.
 It never falls back to the portable mock. A separate offline OpenAI Responses
 codec prepares and validates JSON without any network or credential access.
-Live API transport and the future credential-owning broker remain unimplemented;
-see [provider-isolation.md](provider-isolation.md).
+The `--openai-offline` provider connects that codec to an offline broker through
+bounded framed pipes. Each step starts a fresh Linux parser process, builds one
+request, receives one synthetic response, and returns one proposal. The host
+broker requires the request to exactly match its own reconstruction, enforces
+operator call/output-token/request-byte budgets without refunds, and audits
+before handing off to the fixed offline transport. The parser has no audit,
+credential, controller or network handle. TLS/network transport, credential
+retrieval and live evaluation remain unimplemented. See
+[offline-openai-broker.md](offline-openai-broker.md) and the earlier
+[provider-isolation.md](provider-isolation.md).
 
 ## Schema and policy
 

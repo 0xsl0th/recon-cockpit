@@ -13,10 +13,24 @@ schema, policy, approval and audit checks. Session deadlines cover planning,
 approval waiting, setup and execution; step and reserved-output budgets stop
 further work. See [bounded sessions](docs/bounded-sessions.md) for the contract.
 
-The next slice adds an explicit Linux planner sandbox and an offline OpenAI
+The planner isolation slice adds an explicit Linux planner sandbox and an offline OpenAI
 Responses API codec. `--isolated-session-mock` runs the fixed mock with no network
 or credentials. OpenAI live calls remain disabled; the codec has no transport.
 See [planner isolation](docs/provider-isolation.md) for usage and remaining work.
+
+`--openai-offline` now connects the codec to a trusted broker and a dedicated
+Linux parser sandbox using framed pipes. It runs fixed synthetic API responses,
+reserves call/output-token/request-byte allowances before each exchange, and
+requires durable audit recording. Live calls and credential lookup remain
+unavailable. See [the offline broker](docs/offline-openai-broker.md).
+
+```bash
+python -m recon_cockpit.secure_agent --openai-offline three_step --openai-model offline-fixture-model --dry-run
+python scripts/secure_agent_openai_demo.py --execute-fixtures
+```
+
+The model name above is a fixture identifier, not a claim of an available API
+model. Offline OpenAI mode requires Linux isolation even for tool dry-runs.
 
 The executable tool set is one bounded HTTP probe. `--fixture` reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
@@ -90,7 +104,8 @@ python scripts/secure_agent_routed_demo.py --interactive --audit .secure-agent/r
 ### Reproducible verification
 
 GitHub Actions runs the portable suite on Ubuntu with Python 3.11–3.14 and on
-macOS with Python 3.14 for pull requests into `main` or `feature/secure-agent-m2`,
+macOS with Python 3.14 for pull requests into `main`, `feature/secure-agent-m2`
+or `feature/secure-agent-provider-isolation`,
 and pushes to the configured secure-agent branches and `main`. These jobs require zero skipped portable tests; Linux
 integration tests are explicitly deselected. CI does not execute probes, supply
 human approvals, or establish kernel isolation. The opted-in Kali tests and

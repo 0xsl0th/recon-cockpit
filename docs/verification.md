@@ -1,5 +1,65 @@
 # Verification record
 
+## Offline OpenAI broker — 13 September 2026
+
+Implemented on `feature/secure-agent-offline-broker`, based on tested `3e96e67`
+from [PR #3](https://github.com/0xsl0th/recon-cockpit/pull/3). The operator approved
+an offline broker/session integration and subsequently requested work on the
+open PRs. Live API calls and credential retrieval remain unavailable.
+
+The fixed Linux parser now builds one canonical request and parses one synthetic
+Responses envelope over bounded typed frames. The trusted broker compares that
+request with its own reconstruction, reserves full call/output-token/request-byte
+allowances, requires durable audit before transport handoff and never refunds
+from untrusted usage metadata. No retries, endpoint overrides or live transport
+exist. The session continues to enforce policy and fresh approval on every
+action. See [offline-openai-broker.md](offline-openai-broker.md).
+
+Actual environment: Kali Linux `6.16.8+kali-amd64`, x86_64, Python `3.14.6`,
+pytest `9.1.1`, normal host user. Integration tests and the standalone demo ran
+outside the coding sandbox to create the required namespaces. No packages were
+installed, no host routes/firewall/sysctls changed, and no API or remote/VPN
+requests were sent. Synthetic credential canaries in tests are not real keys.
+
+| Command/check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-offline-broker-portable.xml` | **1123 passed, 40 deselected**, 9.67 seconds; no skips |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-offline-broker-linux.xml` | **40 passed, 1123 deselected**, 59.64 seconds; no skips |
+| `.venv/bin/python scripts/secure_agent_openai_demo.py --execute-fixtures --audit .secure-agent/openai-broker-dev.jsonl` | **`demo: passed`**, all nine cases, nine successful owned-fixture executions, exit 0 |
+| `.venv/bin/python -m compileall -q recon_cockpit scripts`, dependency consistency and whitespace checks | Passed |
+
+JUnit files were checked for complete case counts with no failures, errors or
+skips. The 12 new Linux integrations cover full offline demos with dry-run and
+executed tools, fresh/refused/replayed approval mechanics, isolated request
+construction and response rejection, absent host canaries/descriptors/controller
+modules, denied IPv4/IPv6/Unix sockets, and hostile codec floods/cancellation/
+deadlines with reaped workers. All 28 earlier integrations also passed.
+
+| Standalone demo case | Verified outcome |
+| --- | --- |
+| Three-step session | Three successful owned actions, three exchanges, `planner_done` |
+| Hostile target | One owned action, second proposal policy-denied with `target_out_of_scope` |
+| Forged approval field | One owned action, second response rejected by isolated parsing |
+| Refusal / malformed / incomplete response | One reserved exchange each, zero actions, no retry |
+| Call / output-token budget | Two actions each, third exchange refused, no refund |
+| Delayed synthetic response | One reserved exchange, session deadline, zero actions |
+
+Every successful parser output carried all seven expected boundary booleans;
+every successful fixture worker carried all four existing tool boundary checks.
+The standalone audit recorded nine closed sessions and nine matched tool
+start/completion pairs, with no approval grants or raw request/response bodies.
+The demo's explicit unattended policy does not establish human approval. The
+scripted approval tests exercise grant mechanics only.
+
+Some parallel tasks stopped at usage limits after saving code/tests. All saved
+work was included in the final suites. Follow-up parallel reviews were interrupted
+before completion; the parent reviewed the broker, framing, worker, adapter,
+session/CLI wiring and documentation directly. This is implementation review,
+not an independent security audit. The typed offline transport's TLS flag is a
+contract check, not evidence of a verified TLS connection. Output tokens and
+request bytes are reservations, not input-token counts or monetary spending.
+Hosted CI and PR reviews are tracked separately from this local evidence.
+
 ## Isolated planner and offline OpenAI codec — 12 September 2026
 
 Continued milestone 2 on `feature/secure-agent-provider-isolation`, based on

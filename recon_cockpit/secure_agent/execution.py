@@ -13,7 +13,8 @@ class ExecutionStopped(RuntimeError):
     """A session stop, not an isolation failure or successful tool result."""
 
     def __init__(self, reason: str):
-        if reason not in {"session_timeout", "session_cancelled"}:
+        if reason not in {"session_timeout", "session_cancelled", "broker_call_limit",
+                          "broker_token_limit", "broker_request_limit"}:
             raise ValueError("invalid_execution_stop_reason")
         self.reason = reason
         super().__init__(reason)

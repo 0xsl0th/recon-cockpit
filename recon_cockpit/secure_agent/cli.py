@@ -82,6 +82,8 @@ def _human_approval(controller: Controller, raw: bytes | str, *, control=None) -
 
 def main(argv: list[str] | None = None) -> int:
     from .session_provider import SCENARIOS
+    from .openai_broker import BrokerError
+    from .openai_fixtures import SCENARIOS as OPENAI_SCENARIOS
 
     parser = argparse.ArgumentParser(description="Secure Agent Mode: isolated actions and bounded mock sessions")
     parser.add_argument("--policy", type=Path, default=Path("examples/secure-agent-policy.json"))
@@ -92,6 +94,17 @@ def main(argv: list[str] | None = None) -> int:
                         help="run a bounded deterministic fixture planning session (no real model)")
     source.add_argument("--isolated-session-mock", choices=SCENARIOS,
                         help="run the fixed session mock in a network-disabled Linux planner sandbox")
+    source.add_argument("--openai-offline", choices=OPENAI_SCENARIOS,
+                        help="run synthetic OpenAI responses through the isolated parser; no API calls")
+    parser.add_argument("--openai-model", help="explicit model identifier for the offline request contract")
+    parser.add_argument("--openai-max-output-tokens", type=int,
+                        help="output token allowance per simulated request: 16–4096 (default: 1024)")
+    parser.add_argument("--broker-max-calls", type=int,
+                        help="simulated request allowance: 1–16 (default: 3)")
+    parser.add_argument("--broker-max-output-tokens", type=int,
+                        help="total reserved output tokens: 1–65536 (default: 3072)")
+    parser.add_argument("--broker-max-request-bytes", type=int,
+                        help="total request bytes: 1–262144 (default: 49152)")
     parser.add_argument("--session-max-steps", type=int, help="planner attempt limit: 1–16 (default: 3)")
     parser.add_argument("--session-max-seconds", type=int, help="total session deadline: 1–600 seconds (default: 60)")
     parser.add_argument("--session-max-output-bytes", type=int,
@@ -104,10 +117,16 @@ def main(argv: list[str] | None = None) -> int:
     backend_selection.add_argument("--fixture", action="store_true", help="select the owned Linux in-namespace fixture backend")
     backend_selection.add_argument("--routed", action="store_true", help="select isolated HTTP to one authorized IPv4 literal")
     args = parser.parse_args(argv)
-    session_scenario = args.session_mock or args.isolated_session_mock
+    session_scenario = args.session_mock or args.isolated_session_mock or args.openai_offline
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
+    broker_options = (args.broker_max_calls, args.broker_max_output_tokens, args.broker_max_request_bytes)
+    if not args.openai_offline and any(value is not None for value in (
+            args.openai_model, args.openai_max_output_tokens, *broker_options)):
+        parser.error("OpenAI and broker options require --openai-offline")
+    if args.openai_offline and args.openai_model is None:
+        parser.error("--openai-offline requires an explicit --openai-model")
     if not session_scenario and any(value is not None for value in session_options):
-        parser.error("session limits require --session-mock or --isolated-session-mock")
+        parser.error("session limits require a session source")
     if session_scenario and args.routed:
         parser.error("this mock session slice supports owned fixtures only, not routed targets")
     try:
@@ -127,12 +146,27 @@ def main(argv: list[str] | None = None) -> int:
                 limits = SessionLimits(**{key: value for key, value in zip(
                     ("max_steps", "max_runtime_seconds", "max_output_bytes"), session_options)
                     if value is not None})
-                if args.isolated_session_mock:
+                if args.openai_offline:
+                    from .openai_broker import BrokerLimits, OfflineTransport
+                    from .openai_fixtures import scenario_responses
+                    from .openai_protocol import OpenAIConfig
+                    from .openai_provider import OfflineOpenAIProvider
+
+                    config = OpenAIConfig(args.openai_model, max_output_tokens=(
+                        args.openai_max_output_tokens if args.openai_max_output_tokens is not None else 1024))
+                    broker_limits = BrokerLimits(**{key: value for key, value in zip(
+                        ("max_calls", "max_reserved_output_tokens", "max_request_bytes"), broker_options)
+                        if value is not None})
+                    provider = OfflineOpenAIProvider(config, audit,
+                        OfflineTransport(scenario_responses(args.openai_offline)), broker_limits)
+                elif args.isolated_session_mock:
                     from .planner_isolation import LinuxIsolatedMockProvider
                     provider = LinuxIsolatedMockProvider(session_scenario)
                 else:
                     provider = SessionMockProvider(session_scenario)
                 runner = SessionRunner(policy, audit, backend, provider, limits)
+                if args.openai_offline:
+                    provider.bind_session(runner.session_id)
                 previous_handlers = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
                 try:
                     for number in previous_handlers:
@@ -147,7 +181,11 @@ def main(argv: list[str] | None = None) -> int:
                 finally:
                     for number, handler in previous_handlers.items():
                         signal.signal(number, handler)
-                _print({**summary, "provider": provider.name})
+                extra = ({"broker_id": provider.broker.broker_id,
+                          "broker": dict(provider.broker.snapshot),
+                          "broker_error": provider.broker.last_error,
+                          "live_calls_enabled": False} if args.openai_offline else {})
+                _print({**summary, "provider": provider.name, **extra})
                 return 0 if summary["session_status"] == "completed" else 2
             raw = _read_bounded(args.proposal) if args.proposal else MockProvider().propose()
             controller = Controller(policy, audit, backend)
@@ -170,7 +208,7 @@ def main(argv: list[str] | None = None) -> int:
                 "reasons": ["audit_unavailable"],
                 "note": "No new execution is permitted; check for an unmatched execution_started event."})
         return 3
-    except (ValidationError, ValueError, OSError, subprocess.SubprocessError) as exc:
+    except (ValidationError, ValueError, BrokerError, OSError, subprocess.SubprocessError) as exc:
         _print({"decision": "deny", "execution_status": "blocked",
                 "reasons": [exc.code if isinstance(exc, ValidationError) else "configuration_or_input_error"]})
         return 2
