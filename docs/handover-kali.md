@@ -15,12 +15,17 @@ python -m recon_cockpit.secure_agent --openai-offline three_step --openai-model 
 python scripts/secure_agent_openai_demo.py --execute-fixtures --audit .secure-agent/openai-offline-demo.jsonl
 ```
 
-Local validation passed 1123 portable tests, 40 opted-in Linux integrations and
+Local validation passed 1124 portable tests, 40 opted-in Linux integrations and
 the nine-case offline demo with nine owned-fixture HTTP executions. The model
 identifier is synthetic, and the demo's unattended policy is explicit. No human
 approval or live model behavior is claimed. The operator also requested work on
 the open PRs: review and validation continue in dependency order #2, #3, then
-the broker follow-up. Preserve the live-calls-disabled and deferred-VPN constraints.
+[broker PR #4](https://github.com/0xsl0th/recon-cockpit/pull/4). PR #2 now includes
+the test-only cleanup backport `fc99758`; PR #3's ancestry was synchronized as
+`46bdc77` without changing its tree. Both hosted runs passed for those revisions.
+The broker's macOS supervisor cleanup correction was followed by another complete
+portable run and all 12 affected Linux integrations. Preserve the
+live-calls-disabled and deferred-VPN constraints.
 
 The next live transport still requires reviewed TLS/credential handling,
 bounded cancellable reads, input-token/spending accounting and approved data.

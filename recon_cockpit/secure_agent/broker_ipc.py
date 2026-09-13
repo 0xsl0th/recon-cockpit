@@ -56,7 +56,11 @@ def _kill_and_reap(proc, *, failed):
     import signal
 
     try:
-        if failed or proc.poll() is None:
+        # Reap an already-exited leader before signalling: Darwin may return
+        # EPERM for a group whose only remaining member is that zombie. Still
+        # signal on failure after reaping, since live descendants can own pipes.
+        alive = proc.poll() is None
+        if failed or alive:
             try:
                 os.killpg(proc.pid, signal.SIGKILL)
             except ProcessLookupError:

@@ -60,6 +60,38 @@ contract check, not evidence of a verified TLS connection. Output tokens and
 request bytes are reservations, not input-token counts or monetary spending.
 Hosted CI and PR reviews are tracked separately from this local evidence.
 
+### Hosted cleanup correction and dependent PR maintenance
+
+The first broker [branch run](https://github.com/0xsl0th/recon-cockpit/actions/runs/34776278316)
+and [PR run](https://github.com/0xsl0th/recon-cockpit/actions/runs/34776309922)
+failed five malformed/truncated-frame tests on macOS 15 / Python 3.14.7.
+The supervisor correctly rejected the protocol, but cleanup's short-circuited
+`failed or proc.poll()` skipped reaping an exited leader before signalling its
+group. Darwin returned `EPERM`, masking the intended protocol error.
+
+Cleanup now polls/reaps first and still sends SIGKILL to the group on failure,
+including when a reaped parent's live descendant holds an output pipe. No
+permission error is suppressed. A portable OS-behavior regression covers the
+unreaped-zombie case, alongside the real descendant/pipe cleanup tests.
+
+After correction, the complete portable suite passed **1124 tests, 40
+deselected**, in **9.23 seconds**, with no skips, recorded in
+`/tmp/recon-offline-broker-portable-fixed.xml`. All **12 affected OpenAI Linux
+integrations** passed again, **56 deselected**, in **27.23 seconds**, recorded in
+`/tmp/recon-offline-broker-linux-fixed.xml`. The 28 earlier integration results
+above apply to unchanged implementations.
+
+The earlier test-only macOS cleanup fix was also backported to PR #2 as
+`fc99758`. Its own checkout passed **609 portable tests, 22 deselected**, in
+**5.32 seconds**, without skips. Its
+[branch](https://github.com/0xsl0th/recon-cockpit/actions/runs/34776381633) and
+[PR](https://github.com/0xsl0th/recon-cockpit/actions/runs/34776384232) CI passed.
+PR #3 incorporated that ancestry as `46bdc77` with no tree changes; its
+[branch](https://github.com/0xsl0th/recon-cockpit/actions/runs/34776471889) and
+[PR](https://github.com/0xsl0th/recon-cockpit/actions/runs/34776473843) CI also passed.
+The broker branch incorporates the same ancestry. No PR has been merged into
+`main`; dependency order remains #2 → #3 → #4.
+
 ## Isolated planner and offline OpenAI codec — 12 September 2026
 
 Continued milestone 2 on `feature/secure-agent-provider-isolation`, based on

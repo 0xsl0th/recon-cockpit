@@ -94,6 +94,38 @@ def test_frame_reader_handles_one_byte_reads_without_consuming_next_frame():
     assert ipc.read_frame(stream, ipc.RESULT) == b"two"
 
 
+def test_cleanup_reaps_zombie_leader_before_signalling_but_still_kills_descendants(monkeypatch):
+    # Model Darwin's EPERM when a process group contains only an unreaped
+    # zombie. A live descendant still needs a group signal after leader reap.
+    class Process:
+        pid = 123
+        zombie = True
+        waited = False
+        stdin, stdout, stderr = io.BytesIO(), io.BytesIO(), io.BytesIO()
+
+        def poll(self):
+            self.zombie = False
+            return 0
+
+        def wait(self, timeout):
+            self.waited = True
+            return 0
+
+    process = Process()
+    signals = []
+
+    def killpg(pid, sig):
+        if process.zombie:
+            raise PermissionError("unreaped zombie group")
+        signals.append((pid, sig))
+
+    monkeypatch.setattr(os, "killpg", killpg)
+    ipc._kill_and_reap(process, failed=True)
+    assert signals == [(process.pid, signal.SIGKILL)]
+    assert process.waited
+    assert all(stream.closed for stream in (process.stdin, process.stdout, process.stderr))
+
+
 def test_fragmented_request_and_result_with_maximum_nonblocking_response(processes):
     calls = []
     code = '''
