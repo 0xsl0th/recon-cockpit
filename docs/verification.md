@@ -92,6 +92,13 @@ PR #3 incorporated that ancestry as `46bdc77` with no tree changes; its
 The broker branch incorporates the same ancestry. No PR has been merged into
 `main`; dependency order remains #2 → #3 → #4.
 
+After the usage reset, bounded read-only parallel reviews completed: PR #2 at
+`fc99758` (session/controller/approval/audit/deadline/cleanup), PR #3 at `46bdc77`
+(planner bootstrap/isolation/codec/runtime handoff), and the final broker IPC
+cleanup/provider/CLI integration. No concrete new findings were reported.
+These are implementation reviews and do not constitute an independent security
+audit or approval of live API use.
+
 ## Isolated planner and offline OpenAI codec — 12 September 2026
 
 Continued milestone 2 on `feature/secure-agent-provider-isolation`, based on
