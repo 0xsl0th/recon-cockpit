@@ -1,11 +1,17 @@
 # Recon Cockpit
 
-## Secure Agent Mode — fixture and routed HTTP
+## Secure Agent Mode — bounded mock sessions, fixture and routed HTTP
 
 An additional entry point now accepts **deterministic mock agent** proposals and
 enforces schema → policy → human approval when required → isolated execution →
 structured result and JSONL audit. It uses no API keys or paid services. This
 milestone does not validate an autonomous model.
+
+Milestone 2 adds a bounded session loop: the fixed mock can propose follow-up
+actions from the previous untrusted response, and every action passes the same
+schema, policy, approval and audit checks. Session deadlines cover planning,
+approval waiting, setup and execution; step and reserved-output budgets stop
+further work. See [bounded sessions](docs/bounded-sessions.md) for the contract.
 
 The executable tool set is one bounded HTTP probe. `--fixture` reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
@@ -80,7 +86,7 @@ python scripts/secure_agent_routed_demo.py --interactive --audit .secure-agent/r
 
 GitHub Actions runs the portable suite on Ubuntu with Python 3.11–3.14 and on
 macOS with Python 3.14 for pull requests into `main` and pushes to `main` or
-`feature/secure-agent-m1`. These jobs require zero skipped portable tests; Linux
+`feature/secure-agent-m1` or `feature/secure-agent-m2`. These jobs require zero skipped portable tests; Linux
 integration tests are explicitly deselected. CI does not execute probes, supply
 human approvals, or establish kernel isolation. The opted-in Kali tests and
 human approval evidence in [verification.md](docs/verification.md) remain a
@@ -95,11 +101,15 @@ RECON_LINUX_INTEGRATION=1 python -m pytest -m integration -v
 
 # Complete owned-fixture demo (Linux prerequisites above)
 python scripts/secure_agent_linux_demo.py
+
+# Multi-step owned-fixture demo: success, malicious follow-ups and stop limits
+python scripts/secure_agent_session_demo.py
 ```
 
-The unattended demo uses a clearly labeled fixture-only policy with
-`require_approval: false` for its allowed-action cases. It also demonstrates
-approval-required failures; it never fabricates a human approval. The example
+The unattended demos use a clearly labeled fixture-only policy with
+`require_approval: false` for their allowed-action cases. The original
+`secure_agent_linux_demo.py` also demonstrates approval-required failures;
+neither demo fabricates a human approval. The example
 policy used by the CLI requires human approval. Portable tests exercise missing,
 expired, replayed and changed-action approvals and concurrent single use. Kernel
 tests exercise real HTTP, malicious fixture output, redirects, timeouts/output
@@ -122,11 +132,12 @@ paths, headers, policy/approval overrides and unsupported tools are rejected.
   by the controller user, writable, and a regular non-symlink file. Check disk
   space and permissions. Reconcile any start event without a completion event
   before retrying; a completion-write failure cannot undo an already sent request.
-- Exit 2 reports a policy/schema/approval/isolation denial or execution failure.
-  Timeouts and output limits are distinct structured execution statuses.
+- Exit 2 reports a policy/schema/approval/isolation denial, execution failure,
+  or a stopped session, including budget exhaustion and cancellation. Timeouts
+  and output limits have distinct structured reasons.
 - A suite with skipped Linux tests proves only the portable controls. The
-  prompt-injection fixture demonstrates that specific payload remains inert;
-  it is not evidence of universal immunity.
+  prompt-injection fixtures demonstrate that specific malicious follow-up
+  proposals are rejected; they are not evidence of universal immunity.
 
 Local JSONL logs are not tamper-proof and can be rewritten by the owner or a
 compromised host. Approval hashes bind content; they do not protect host history.

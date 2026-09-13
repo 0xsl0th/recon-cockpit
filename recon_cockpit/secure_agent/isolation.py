@@ -19,6 +19,8 @@ import sys
 import time
 from typing import Any
 
+from .execution import ExecutionControl
+
 
 class IsolationUnavailable(RuntimeError):
     code = "isolation_unavailable"
@@ -36,16 +38,34 @@ def _namespaces() -> dict[str, str]:
     return {name: os.readlink(f"/proc/self/ns/{name}") for name in ("user", "net", "mnt", "pid")}
 
 
-def _runtime_files(python: str, nft: str) -> tuple[str, list[tuple[str, str]]]:
+def _runtime_probe(argv: list[str], timeout: float, limit: int,
+                   control: ExecutionControl | None) -> bytes:
+    """Inspect fixed trusted programs; session probes also bound live output."""
+    if control is None:
+        return subprocess.run(
+            argv, stdin=subprocess.DEVNULL, capture_output=True, timeout=timeout,
+            env={"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C"}, check=True,
+        ).stdout
+    returncode, stdout, _stderr, reason = _capture_bounded(
+        argv, b"", timeout, limit, control=control,
+    )
+    if reason is not None or returncode != 0:
+        raise IsolationUnavailable("Trusted runtime inspection failed or exceeded its bound")
+    return stdout
+
+
+def _runtime_files(python: str, nft: str, *, control: ExecutionControl | None = None
+                   ) -> tuple[str, list[tuple[str, str]]]:
     """Build an explicit runtime closure, never bind the host /usr or /lib."""
-    env = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C"}
+    if control is not None:
+        control.check()
     try:
-        probe = subprocess.run(
+        probe = _runtime_probe(
             [python, "-I", "-S", "-c",
              "import sysconfig; print(sysconfig.get_path('stdlib')); print(sysconfig.get_config_var('MULTIARCH'))"],
-            stdin=subprocess.DEVNULL, capture_output=True, timeout=3, env=env, check=True,
+            3, 8192, control,
         )
-        runtime_paths = probe.stdout.decode("ascii").splitlines()
+        runtime_paths = probe.decode("ascii").splitlines()
         if len(runtime_paths) != 2:
             raise IsolationUnavailable("Cannot identify the distribution Python runtime")
         stdlib, multiarch = runtime_paths
@@ -63,13 +83,13 @@ def _runtime_files(python: str, nft: str) -> tuple[str, list[tuple[str, str]]]:
         if not seccomp_candidates:
             raise IsolationUnavailable("Linux fixture isolation requires native libseccomp2")
         seccomp = seccomp_candidates[0]
-        dependencies = subprocess.run(
+        dependencies = _runtime_probe(
             [_trusted_program("ldd"), python, nft, seccomp, *modules],
-            stdin=subprocess.DEVNULL, capture_output=True, timeout=5, env=env, check=True,
+            5, 1048576, control,
         )
     except (subprocess.SubprocessError, OSError, UnicodeError) as exc:
         raise IsolationUnavailable("Cannot inspect the trusted Linux runtime") from exc
-    listing = dependencies.stdout.decode("utf-8", "replace")
+    listing = dependencies.decode("utf-8", "replace")
     if "not found" in listing:
         raise IsolationUnavailable("The trusted runtime has missing shared libraries")
     library_paths = set(re.findall(r"(?:=>\s+)?(/[^\s]+)\s+\(", listing))
@@ -77,37 +97,59 @@ def _runtime_files(python: str, nft: str) -> tuple[str, list[tuple[str, str]]]:
     files = [(str(Path(path).resolve(strict=True)), path) for path in sorted(library_paths)]
     files += [(str(Path(python).resolve(strict=True)), "/usr/bin/python3"),
               (str(Path(nft).resolve(strict=True)), "/usr/sbin/nft")]
+    if control is not None:
+        control.check()
     return stdlib, files
 
 
-def _capture_bounded(argv: list[str], request: bytes, timeout: float, limit: int) -> tuple[int, bytes, bytes, str | None]:
-    """Bound both pipes while running, and terminate the sandbox on deadline."""
+def _capture_bounded(argv: list[str], request: bytes, timeout: float, limit: int, *,
+                     control: ExecutionControl | None = None) -> tuple[int, bytes, bytes, str | None]:
+    """Bound both output pipes and supervise nonblocking input and cancellation."""
     env = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C"}
+    deadline = time.monotonic() + timeout
+    if control is not None:
+        control.check()
     try:
         proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                env=env, close_fds=True, start_new_session=True)
+                                env=env, close_fds=True, start_new_session=True, bufsize=0)
     except OSError as exc:
         raise IsolationUnavailable("Cannot start bubblewrap") from exc
     chunks: dict[str, bytearray] = {"stdout": bytearray(), "stderr": bytearray()}
     reason = None
-    deadline = time.monotonic() + timeout
+    interrupted = False
     try:
         assert proc.stdin is not None and proc.stdout is not None and proc.stderr is not None
-        try:
-            proc.stdin.write(request)
-            proc.stdin.close()
-        except BrokenPipeError:
-            pass
         with selectors.DefaultSelector() as selector:
             selector.register(proc.stdout, selectors.EVENT_READ, "stdout")
             selector.register(proc.stderr, selectors.EVENT_READ, "stderr")
+            offset = 0
+            if request:
+                os.set_blocking(proc.stdin.fileno(), False)
+                selector.register(proc.stdin, selectors.EVENT_WRITE, "stdin")
+            else:
+                proc.stdin.close()
             total = 0
             while selector.get_map():
                 remaining = deadline - time.monotonic()
+                if control is not None:
+                    remaining = min(remaining, control.remaining())
                 if remaining <= 0:
                     reason = "timeout"
                     break
-                for key, _ in selector.select(min(remaining, 0.2)):
+                for key, _ in selector.select(min(remaining, 0.05 if control is not None else 0.2)):
+                    if control is not None:
+                        control.check()
+                    if key.data == "stdin":
+                        try:
+                            offset += os.write(key.fd, memoryview(request)[offset:offset + 4096])
+                        except BlockingIOError:
+                            continue
+                        except BrokenPipeError:
+                            offset = len(request)
+                        if offset >= len(request):
+                            selector.unregister(proc.stdin)
+                            proc.stdin.close()
+                        continue
                     data = os.read(key.fileobj.fileno(), min(8192, limit - total + 1))
                     if not data:
                         selector.unregister(key.fileobj)
@@ -120,12 +162,27 @@ def _capture_bounded(argv: list[str], request: bytes, timeout: float, limit: int
                 if reason:
                     break
         if reason is None:
-            try:
-                proc.wait(timeout=max(0.01, deadline - time.monotonic()))
-            except subprocess.TimeoutExpired:
-                reason = "timeout"
+            while True:
+                remaining = deadline - time.monotonic()
+                if control is not None:
+                    remaining = min(remaining, control.remaining())
+                if remaining <= 0:
+                    reason = "timeout"
+                    break
+                try:
+                    proc.wait(timeout=min(remaining, 0.05) if control is not None else remaining)
+                    break
+                except subprocess.TimeoutExpired:
+                    if control is None:
+                        reason = "timeout"
+                        break
+        if control is not None:
+            control.check()
+    except BaseException:
+        interrupted = True
+        raise
     finally:
-        if reason or proc.poll() is None:
+        if interrupted or reason or proc.poll() is None:
             # bwrap's --die-with-parent and private PID namespace also reap tools
             # that made a different process group before their syscall filter.
             try:
@@ -138,6 +195,8 @@ def _capture_bounded(argv: list[str], request: bytes, timeout: float, limit: int
             for stream in (proc.stdin, proc.stdout, proc.stderr):
                 if stream and not stream.closed:
                     stream.close()
+    if control is not None:
+        control.check()
     return proc.returncode, bytes(chunks["stdout"]), bytes(chunks["stderr"]), reason
 
 
@@ -179,16 +238,19 @@ class LinuxFixtureBackend:
                      "/usr/bin/python3", "-I", "-S", "/app/worker.py"))
         return argv
 
-    def run(self, action: Any, policy: Any) -> dict[str, Any]:
+    def run(self, action: Any, policy: Any, *, control: ExecutionControl | None = None) -> dict[str, Any]:
         # A second policy evaluation protects internal accidental DENY bypasses.
         # Approval verification belongs to the controller, which owns its store.
         from .models import parse_action
 
+        if control is not None:
+            control.check()
         action = parse_action(dataclasses.asdict(action))
         if policy.evaluate(action).decision == "deny":
             raise IsolationUnavailable("The action failed independent policy evaluation")
         self.check_available(action)
-        stdlib, runtime = _runtime_files("/usr/bin/python3", _trusted_program("nft"))
+        control_kwargs = {} if control is None else {"control": control}
+        stdlib, runtime = _runtime_files("/usr/bin/python3", _trusted_program("nft"), **control_kwargs)
         request = json.dumps({"target": "127.0.0.1", "parameters": dataclasses.asdict(action.parameters),
                               "verify_boundary": self.verify_boundary, "host_namespaces": _namespaces()},
                              separators=(",", ":")).encode("utf-8")
@@ -199,7 +261,7 @@ class LinuxFixtureBackend:
         budget = action.parameters.max_output_bytes * 6 + 16384
         returncode, stdout, _stderr, reason = _capture_bounded(
             self._command(stdlib, runtime), request,
-            action.parameters.timeout_seconds + 8, budget,
+            action.parameters.timeout_seconds + 8, budget, **control_kwargs,
         )
         if reason:
             return {"status": reason, "backend": self.name, "results": [], "bytes_received": 0,
@@ -215,6 +277,8 @@ class LinuxFixtureBackend:
         except (ValueError, UnicodeError, RecursionError) as exc:
             raise IsolationUnavailable("Sandbox returned an invalid result") from exc
         result["backend"] = self.name
+        if control is not None:
+            control.check()
         return result
 
 

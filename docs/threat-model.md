@@ -1,4 +1,4 @@
-# Threat model — fixture and single-target routed HTTP
+# Threat model — bounded mock sessions, fixture and routed HTTP
 
 ## Assets and trusted components
 
@@ -24,10 +24,11 @@ future import adapter must produce proposals that traverse the same controller.
 | Forbidden methods/ports, huge ranges or parameters | Tool-specific bounds, default-deny policy | GET/HEAD can still have side effects on a badly designed service |
 | Reuse, delay, or alter an approved action | Full action/policy digests, monotonic expiry, atomic consumption | Human/controller compromise is outside this milestone |
 | Submit approval flags via agent or pipe input | Unknown-field rejection, controlling-terminal UI, unattended fail-closed | A trusted operator can deliberately configure allow without approval |
-| Return prompt injection, forged tool calls, secrets or terminal escapes | Result is inert data; no recursive planner loop; raw content omitted from logs/UI | Specific fixtures do not establish universal prompt-injection immunity |
+| Return prompt injection, forged tool calls, secrets or terminal escapes | Result remains untrusted feedback; every follow-up traverses schema, policy, required approval and audit; raw content omitted from logs/UI | Specific fixtures do not establish universal prompt-injection immunity |
 | Hang, flood output, or compromise executed probe code | Deadlines, byte/resource caps, read-only runtime, zero capabilities, seccomp | No separate kernel or VM boundary; no protection from kernel exploit |
 | Try direct sockets to a different destination/port | Per-action nftables rules inside the execution namespace | Routed helper is trusted; operator routes must already exist |
 | Make audit unavailable | Synchronous pre-execution audit; poison controller on audit errors | Already sent traffic cannot be rolled back if completion logging fails |
+| Propose indefinitely, underreport output, or stall during planning/approval | Single-use session, attempt limit, full response reservations without refunds, shared deadline and cancellation | Trusted filesystem/kernel stalls are not hard-preemptible; restarting creates a new session budget |
 
 The mock is deterministic bundled code, not an autonomous model. Its JSON is
 untrusted even though its implementation is known. It runs in a separate process
@@ -88,9 +89,12 @@ container or weaken host security silently to make a test pass.
   append-only collection must include independent access control and retention.
 - Approval state is session-local, not a distributed approval service. Restart
   invalidates grants. Clock expiry uses monotonic time, not audit UTC timestamps.
-- Resource limits bound individual executions; this milestone has no persistent
-  per-user budget/rate limiting, scheduling, distributed concurrency quota, or
-  remotely authenticated submission API.
+- Resource limits bound individual executions and each mock session. Sessions
+  have attempt, deadline and reserved-output limits, but no persistent per-user
+  budget/rate limiting, scheduling, distributed concurrency quota, or remotely
+  authenticated submission API. Cleanup may finish after the session deadline;
+  audit/fsync and kernel stalls cannot be safely hard-preempted. Session CLI
+  currently supports owned fixtures only; routed sessions remain future work.
 - Network byte limits distinguish captured response bytes from protocol overhead;
   audit metadata is intentionally lossy and excludes raw forensic response text.
 

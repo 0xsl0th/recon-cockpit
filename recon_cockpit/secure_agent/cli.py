@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
+import select
+import signal
 import subprocess
 import sys
 
@@ -29,7 +32,7 @@ def _print(outcome: dict) -> None:
                       if key != "untrusted_result"}, sort_keys=True, ensure_ascii=True))
 
 
-def _human_approval(controller: Controller, raw: bytes | str) -> str | None:
+def _human_approval(controller: Controller, raw: bytes | str, *, control=None) -> str | None:
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         return None
     action = parse_action(raw)
@@ -50,7 +53,23 @@ def _human_approval(controller: Controller, raw: bytes | str) -> str | None:
               open("/dev/tty", "w", encoding="utf-8") as terminal_output):
             terminal_output.write(f"Type '{challenge}' to approve once (blank denies): ")
             terminal_output.flush()
-            answer = terminal_input.readline(128).strip()
+            if control is None:
+                answer = terminal_input.readline(128).strip()
+            else:
+                # Deadline/cancellation cover time spent waiting for the human.
+                # Read only the controlling terminal, never provider/stdin data.
+                received = bytearray()
+                while len(received) < 128:
+                    control.check()
+                    ready, _, _ = select.select([terminal_input.fileno()], [], [], min(0.1, control.remaining()))
+                    if not ready:
+                        continue
+                    byte = os.read(terminal_input.fileno(), 1)
+                    if not byte or byte == b"\n":
+                        break
+                    received.extend(byte)
+                control.check()
+                answer = received.decode("utf-8", "replace").strip()
     except OSError:
         return None
     if answer != challenge:
@@ -62,11 +81,19 @@ def _human_approval(controller: Controller, raw: bytes | str) -> str | None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Secure Agent Mode, milestone 1 (deterministic mock)")
+    from .session_provider import SCENARIOS
+
+    parser = argparse.ArgumentParser(description="Secure Agent Mode: isolated actions and bounded mock sessions")
     parser.add_argument("--policy", type=Path, default=Path("examples/secure-agent-policy.json"))
     source = parser.add_mutually_exclusive_group()
     source.add_argument("--mock", action="store_true", help="use the deterministic mock (default)")
     source.add_argument("--proposal", type=Path, help="read strictly bounded untrusted action JSON")
+    source.add_argument("--session-mock", choices=SCENARIOS,
+                        help="run a bounded deterministic fixture planning session (no real model)")
+    parser.add_argument("--session-max-steps", type=int, help="planner attempt limit: 1–16 (default: 3)")
+    parser.add_argument("--session-max-seconds", type=int, help="total session deadline: 1–600 seconds (default: 60)")
+    parser.add_argument("--session-max-output-bytes", type=int,
+                        help="total reserved response allowance: 1–1048576 bytes (default: 3072)")
     parser.add_argument("--audit", type=Path, default=Path(".secure-agent/audit.jsonl"))
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--execute", action="store_true", help="execute only with policy, audit and isolation")
@@ -75,9 +102,13 @@ def main(argv: list[str] | None = None) -> int:
     backend_selection.add_argument("--fixture", action="store_true", help="select the owned Linux in-namespace fixture backend")
     backend_selection.add_argument("--routed", action="store_true", help="select isolated HTTP to one authorized IPv4 literal")
     args = parser.parse_args(argv)
+    session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
+    if not args.session_mock and any(value is not None for value in session_options):
+        parser.error("session limits require --session-mock")
+    if args.session_mock and args.routed:
+        parser.error("this mock session slice supports owned fixtures only, not routed targets")
     try:
         policy = parse_policy(_read_bounded(args.policy))
-        raw = _read_bounded(args.proposal) if args.proposal else MockProvider().propose()
         backend = None
         if args.fixture:
             from .isolation import LinuxFixtureBackend
@@ -86,6 +117,31 @@ def main(argv: list[str] | None = None) -> int:
             from .routed import LinuxRoutedBackend
             backend = LinuxRoutedBackend()
         with AuditSink(args.audit) as audit:
+            if args.session_mock:
+                from .session import SessionLimits, SessionRunner
+                from .session_provider import SessionMockProvider
+
+                limits = SessionLimits(**{key: value for key, value in zip(
+                    ("max_steps", "max_runtime_seconds", "max_output_bytes"), session_options)
+                    if value is not None})
+                runner = SessionRunner(policy, audit, backend, SessionMockProvider(args.session_mock), limits)
+                previous_handlers = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
+                try:
+                    for number in previous_handlers:
+                        signal.signal(number, lambda *_: runner.cancel())
+                    summary = runner.run(execute=args.execute,
+                                         interactive=sys.stdin.isatty() and sys.stdout.isatty(),
+                                         approval=_human_approval,
+                                         on_step=lambda step: print(json.dumps({
+                                             "event_type": "session_step_finished", "session_id": runner.session_id,
+                                             **step,
+                                         }, sort_keys=True, ensure_ascii=True), file=sys.stderr, flush=True))
+                finally:
+                    for number, handler in previous_handlers.items():
+                        signal.signal(number, handler)
+                _print({**summary, "provider": SessionMockProvider.name})
+                return 0 if summary["session_status"] == "completed" else 2
+            raw = _read_bounded(args.proposal) if args.proposal else MockProvider().propose()
             controller = Controller(policy, audit, backend)
             preview = controller.submit(raw)
             preview["provider"] = "imported-untrusted-json" if args.proposal else MockProvider.name

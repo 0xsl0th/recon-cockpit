@@ -18,7 +18,8 @@ import stat
 import subprocess
 import time
 
-from .isolation import IsolationUnavailable, LinuxFixtureBackend, _namespaces, _runtime_files, _trusted_program
+from .execution import ExecutionControl
+from .isolation import IsolationUnavailable, LinuxFixtureBackend, _namespaces, _runtime_files, _runtime_probe, _trusted_program
 from .models import parse_action
 
 
@@ -34,7 +35,7 @@ class _BudgetExceeded(RuntimeError):
 class _Supervisor:
     """One deadline and aggregate output budget, including bootstrap pipes."""
 
-    def __init__(self, timeout: float, limit: int):
+    def __init__(self, timeout: float, limit: int, *, control: ExecutionControl | None = None):
         self.deadline = time.monotonic() + timeout
         self.limit = limit
         self.total = 0
@@ -43,6 +44,13 @@ class _Supervisor:
         self.eof: set[str] = set()
         self.processes: dict[str, subprocess.Popen] = {}
         self.fds: set[int] = set()
+        self.control = control
+
+    def check(self) -> None:
+        if self.control is not None:
+            self.control.check()
+        if time.monotonic() >= self.deadline:
+            raise _BudgetExceeded("timeout")
 
     def pipe(self) -> tuple[int, int]:
         ends = os.pipe()
@@ -59,6 +67,7 @@ class _Supervisor:
         self.selector.register(fd, selectors.EVENT_READ, name)
 
     def launch(self, name: str, argv: list[str], *, pass_fds=(), stdin=subprocess.DEVNULL) -> subprocess.Popen:
+        self.check()
         proc = subprocess.Popen(argv, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 env=_ENV, pass_fds=pass_fds, close_fds=True,
                                 start_new_session=True, bufsize=0)
@@ -69,15 +78,20 @@ class _Supervisor:
 
     def wait_for(self, predicate, *, worker_may_exit: bool = False) -> None:
         while True:
+            self.check()
             remaining = self.deadline - time.monotonic()
+            if self.control is not None:
+                remaining = min(remaining, self.control.remaining())
             if remaining <= 0:
                 raise _BudgetExceeded("timeout")
             for name, proc in self.processes.items():
                 if proc.poll() is not None and not (name == "worker" and worker_may_exit):
                     raise IsolationUnavailable("Routed sandbox or transport exited prematurely")
             if predicate():
+                self.check()
                 return
             for key, _ in self.selector.select(min(remaining, 0.05)):
+                self.check()
                 data = os.read(key.fd, min(8192, self.limit - self.total + 1))
                 if not data:
                     self.selector.unregister(key.fd)
@@ -122,20 +136,22 @@ class _Supervisor:
             raise IsolationUnavailable("Routed sandbox cleanup failed")
 
 
-def _transport_files() -> list[tuple[str, str]]:
+def _transport_files(*, control: ExecutionControl | None = None) -> list[tuple[str, str]]:
     """Explicit native loader/library closure; no host directory mounts."""
     programs = [_trusted_program("slirp4netns"), _trusted_program("prlimit")]
     try:
-        result = subprocess.run([_trusted_program("ldd"), *programs], stdin=subprocess.DEVNULL,
-                                capture_output=True, check=True, timeout=5, env=_ENV)
-        listing = result.stdout.decode("utf-8", "replace")
+        result = _runtime_probe([_trusted_program("ldd"), *programs], 5, 1048576, control)
+        listing = result.decode("utf-8", "replace")
         if "not found" in listing:
             raise IsolationUnavailable("The transport runtime has missing shared libraries")
         libraries = set(re.findall(r"(?:=>\s+)?(/[^\s]+)\s+\(", listing))
         if not libraries:
             raise IsolationUnavailable("Cannot identify the transport runtime")
-        return [(str(Path(p).resolve(strict=True)), p) for p in sorted(libraries)] + [
+        files = [(str(Path(p).resolve(strict=True)), p) for p in sorted(libraries)] + [
             (str(Path(p).resolve(strict=True)), "/usr/bin/" + Path(p).name) for p in programs]
+        if control is not None:
+            control.check()
+        return files
     except (OSError, subprocess.SubprocessError) as exc:
         raise IsolationUnavailable("Cannot inspect the trusted transport runtime") from exc
 
@@ -216,9 +232,11 @@ class LinuxRoutedBackend:
                      f"/proc/self/fd/{net_fd}", "tap0"))
         return argv
 
-    def run(self, action, policy) -> dict:
+    def run(self, action, policy, *, control: ExecutionControl | None = None) -> dict:
         from .routed_worker import validate_request
 
+        if control is not None:
+            control.check()
         action = parse_action(dataclasses.asdict(action))
         if policy.evaluate(action).decision == "deny":
             raise IsolationUnavailable("The action failed independent policy evaluation")
@@ -230,16 +248,18 @@ class LinuxRoutedBackend:
         validate_request(request)
         if len(request) > 4096:
             raise IsolationUnavailable("Routed request exceeds pipe bound")
-        stdlib, files = _runtime_files("/usr/bin/python3", _trusted_program("nft"))
-        transport_files = _transport_files()
+        control_kwargs = {} if control is None else {"control": control}
+        stdlib, files = _runtime_files("/usr/bin/python3", _trusted_program("nft"), **control_kwargs)
+        transport_files = _transport_files(**control_kwargs)
         supervisor = _Supervisor(action.parameters.timeout_seconds + 15,
-                                 action.parameters.max_output_bytes * 6 + 32768)
+                                 action.parameters.max_output_bytes * 6 + 32768, **control_kwargs)
         try:
             info_r, info_w = supervisor.pipe()
             supervisor.watch(info_r, "info")
             child = supervisor.launch("worker", self._worker_command(stdlib, files, info_w),
                                       pass_fds=(info_w,), stdin=subprocess.PIPE)
             supervisor.close_fd(info_w)
+            supervisor.check()
             child.stdin.write(request)
             supervisor.wait_for(lambda: "info" in supervisor.eof and
                                 b"\n" in supervisor.buffers["worker_out"])
@@ -260,6 +280,7 @@ class LinuxRoutedBackend:
                 raise IsolationUnavailable("Routed transport readiness was not confirmed")
             if bytes(supervisor.buffers["worker_out"]) != _READY:
                 raise IsolationUnavailable("Worker sent output before release")
+            supervisor.check()
             child.stdin.write(b"GO\n")
             child.stdin.close()
             supervisor.wait_for(lambda: child.poll() is not None and
@@ -274,6 +295,7 @@ class LinuxRoutedBackend:
             except (ValueError, UnicodeError, RecursionError) as exc:
                 raise IsolationUnavailable("Routed worker returned an invalid result") from exc
             result["backend"] = self.name
+            supervisor.check()
             return result
         except _BudgetExceeded as exc:
             return {"status": exc.status, "backend": self.name, "results": [], "bytes_received": 0,
@@ -282,3 +304,5 @@ class LinuxRoutedBackend:
             raise IsolationUnavailable("Routed sandbox setup failed; execution refused") from exc
         finally:
             supervisor.close()
+            if control is not None:
+                control.check()
