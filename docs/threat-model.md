@@ -36,6 +36,17 @@ with no inherited credential environment or tool handles; arbitrary hostile
 provider code is **not** supported by that process boundary. A real model provider
 requires separate sandboxing, mediated network access and credential handling.
 
+`--isolated-session-mock` adds an explicitly selected planner sandbox with no
+network transport, zero capabilities, read-only fixed runtime mounts and syscall
+restrictions installed before observations are read. Its socket creation checks
+require `EPERM`, so an absent listening service cannot masquerade as enforcement.
+Tests also use owned host file, environment and descriptor canaries. Arbitrary
+provider plugins remain unsupported; the installed bootstrap and fixed planner
+are trusted. The offline OpenAI codec has no HTTP transport or credential lookup;
+protocol tests are synthetic and establish neither model behavior nor API access.
+See [provider-isolation.md](provider-isolation.md) for the broker design that must
+precede enabling live calls.
+
 ## Isolation assumptions
 
 Use a dedicated Linux/Kali lab with unprivileged user namespaces and a compatible

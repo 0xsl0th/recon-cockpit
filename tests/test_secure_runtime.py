@@ -59,6 +59,15 @@ def test_native_seccomp_is_selected_on_a_multiarch_host(runtime):
     assert not destinations.intersection({"/usr", "/lib"})
 
 
+def test_planner_runtime_does_not_require_or_mount_nft(runtime):
+    stdlib, files = isolation._runtime_files("/usr/bin/python3", None)
+    assert stdlib == "/usr/lib/python3.14"
+    assert all("nft" not in str(argument) for argv in runtime["commands"] for argument in argv)
+    assert {destination for _, destination in files} == {
+        "/usr/bin/python3", "/lib/x86_64-linux-gnu/libseccomp.so.2", "/lib/x86_64-linux-gnu/libc.so.6",
+    }
+
+
 def test_foreign_seccomp_does_not_satisfy_native_dependency(runtime):
     runtime["files"] = {"/lib/i386-linux-gnu/libseccomp.so.2"}
     with pytest.raises(isolation.IsolationUnavailable, match="native libseccomp2"):

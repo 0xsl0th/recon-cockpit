@@ -1,5 +1,31 @@
 # Handover to the Lenovo / Kali amd64
 
+## Current continuation — provider isolation, 12 September 2026
+
+The bounded-session slice is committed as `467fab0` and pushed in
+[PR #2](https://github.com/0xsl0th/recon-cockpit/pull/2). Its branch and PR CI passed,
+and it is now ready for review. It has not been merged.
+
+The follow-up branch is `feature/secure-agent-provider-isolation`, based on
+that tested commit, with review in
+[draft PR #3](https://github.com/0xsl0th/recon-cockpit/pull/3). It adds a dedicated Linux sandbox for the fixed planner and
+an offline OpenAI Responses API codec. The operator selected **OpenAI API, with
+live calls disabled initially**. Preserve that constraint: no credential lookup,
+SDK client or outbound API request is part of this slice. Real VPN testing also
+remains deferred. Read [provider-isolation.md](provider-isolation.md) and the latest
+[verification record](verification.md), then inspect Git status before editing.
+
+```bash
+python -m recon_cockpit.secure_agent --isolated-session-mock three_step --dry-run
+python scripts/secure_agent_planner_demo.py --execute-fixtures --audit .secure-agent/planner-fixture-demo.jsonl
+```
+
+The next live-integration work is a narrowly scoped credential/network broker
+with request budgets, bounded framed IPC, TLS verification and audit-before-send;
+it must be implemented and tested with live calls disabled before any live
+evaluation is considered. The codec currently has no transport and its tests
+use synthetic API responses.
+
 ## Current continuation — milestone 2, 11 September 2026
 
 PR #1 was merged into `main` as `8d7fe69`. Work now continues on

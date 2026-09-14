@@ -90,6 +90,8 @@ def main(argv: list[str] | None = None) -> int:
     source.add_argument("--proposal", type=Path, help="read strictly bounded untrusted action JSON")
     source.add_argument("--session-mock", choices=SCENARIOS,
                         help="run a bounded deterministic fixture planning session (no real model)")
+    source.add_argument("--isolated-session-mock", choices=SCENARIOS,
+                        help="run the fixed session mock in a network-disabled Linux planner sandbox")
     parser.add_argument("--session-max-steps", type=int, help="planner attempt limit: 1–16 (default: 3)")
     parser.add_argument("--session-max-seconds", type=int, help="total session deadline: 1–600 seconds (default: 60)")
     parser.add_argument("--session-max-output-bytes", type=int,
@@ -102,10 +104,11 @@ def main(argv: list[str] | None = None) -> int:
     backend_selection.add_argument("--fixture", action="store_true", help="select the owned Linux in-namespace fixture backend")
     backend_selection.add_argument("--routed", action="store_true", help="select isolated HTTP to one authorized IPv4 literal")
     args = parser.parse_args(argv)
+    session_scenario = args.session_mock or args.isolated_session_mock
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
-    if not args.session_mock and any(value is not None for value in session_options):
-        parser.error("session limits require --session-mock")
-    if args.session_mock and args.routed:
+    if not session_scenario and any(value is not None for value in session_options):
+        parser.error("session limits require --session-mock or --isolated-session-mock")
+    if session_scenario and args.routed:
         parser.error("this mock session slice supports owned fixtures only, not routed targets")
     try:
         policy = parse_policy(_read_bounded(args.policy))
@@ -117,14 +120,19 @@ def main(argv: list[str] | None = None) -> int:
             from .routed import LinuxRoutedBackend
             backend = LinuxRoutedBackend()
         with AuditSink(args.audit) as audit:
-            if args.session_mock:
+            if session_scenario:
                 from .session import SessionLimits, SessionRunner
                 from .session_provider import SessionMockProvider
 
                 limits = SessionLimits(**{key: value for key, value in zip(
                     ("max_steps", "max_runtime_seconds", "max_output_bytes"), session_options)
                     if value is not None})
-                runner = SessionRunner(policy, audit, backend, SessionMockProvider(args.session_mock), limits)
+                if args.isolated_session_mock:
+                    from .planner_isolation import LinuxIsolatedMockProvider
+                    provider = LinuxIsolatedMockProvider(session_scenario)
+                else:
+                    provider = SessionMockProvider(session_scenario)
+                runner = SessionRunner(policy, audit, backend, provider, limits)
                 previous_handlers = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
                 try:
                     for number in previous_handlers:
@@ -139,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
                 finally:
                     for number, handler in previous_handlers.items():
                         signal.signal(number, handler)
-                _print({**summary, "provider": SessionMockProvider.name})
+                _print({**summary, "provider": provider.name})
                 return 0 if summary["session_status"] == "completed" else 2
             raw = _read_bounded(args.proposal) if args.proposal else MockProvider().propose()
             controller = Controller(policy, audit, backend)

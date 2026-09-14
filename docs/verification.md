@@ -1,5 +1,105 @@
 # Verification record
 
+## Isolated planner and offline OpenAI codec — 12 September 2026
+
+Continued milestone 2 on `feature/secure-agent-provider-isolation`, based on
+`467fab0` from [PR #2](https://github.com/0xsl0th/recon-cockpit/pull/2). All five
+portable matrix jobs passed for that PR and its branch; PR #2 was marked ready
+for review and remains unmerged. The follow-up is kept on a separate branch.
+The operator selected OpenAI API as the first real-model direction, with live
+calls explicitly disabled initially.
+
+Implemented a dedicated Linux planner boundary with zero capabilities, private
+namespaces, read-only fixed runtime, a 1 MiB private temporary filesystem and
+seccomp restrictions installed before reading observations or importing the
+planner. The bootstrap verifies namespace/capability state and attempts prohibited
+socket, fork, unshare and root-write operations. The existing session loop still
+validates and authorizes all output proposals. Runtime discovery can now omit
+nftables for planner-only execution; the fixture/routed callers retain their
+existing runtime closure.
+
+Added an offline OpenAI Responses codec with an explicit operator model/token
+configuration, fixed request shape/destination, Structured Outputs and bounded
+strict decoding. It has no network transport, credential lookup, SDK dependency
+or live-call flag. Synthetic response tests cover invalid/missing output,
+refusals, incomplete status, tool calls, ambiguous messages, forged authority,
+output/JSON limits and out-of-scope proposals rejected by the session controller.
+See [provider-isolation.md](provider-isolation.md) for the contract and the broker
+work required before live integration.
+
+Actual local environment: Kali Linux `6.16.8+kali-amd64`, x86_64,
+Python `3.14.6`, pytest `9.1.1`, normal host user. No packages were installed.
+Kernel tests and demos ran outside the coding sandbox to create namespaces;
+there were no host routing, firewall or sysctl changes, real model calls or
+remote/VPN probes.
+
+| Command/check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-provider-portable.xml` | **892 passed, 28 deselected**, 5.95 seconds; no skips |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short` | **28 passed, 892 deselected**, 32.02 seconds; no skips |
+| `.venv/bin/python scripts/secure_agent_planner_demo.py --audit .secure-agent/planner-boundary-dev.jsonl` | **`demo: passed`**, three isolated planning steps, zero tool executions, exit 0 |
+| `.venv/bin/python scripts/secure_agent_planner_demo.py --execute-fixtures --audit .secure-agent/planner-fixture-m2.jsonl` | **`demo: passed`**, three scenarios, seven planner invocations and five successful owned-fixture executions, exit 0 |
+| `.venv/bin/python -m pip check` | No broken requirements |
+| `.venv/bin/python -m compileall -q recon_cockpit scripts` and `git diff --check` | Passed |
+
+The six new opted-in integrations demonstrate a real three-step isolated
+planner dry-run, combined isolated planning/tool execution, host canary denial,
+and hostile-planner cancellation/deadline/output flooding. The owned host file
+remained intact; fake credential environment values, an explicitly inheritable
+descriptor and the host process's `/proc/<pid>/root` path were inaccessible.
+Direct IPv4/IPv6/Unix socket attempts returned `EPERM`. Hostile planner processes
+were killed with SIGKILL and already reaped when calls returned. These tests
+substitute fixed trusted test files through internal mount construction; they do
+not add a public arbitrary-plugin interface.
+
+Every successful planner invocation in the standalone demos reported all seven
+expected boundary checks as true. Every successful HTTP worker also reported
+all four existing fixture boundary checks true. Both injection scenarios reached
+the first owned response, then stopped the next proposal at policy or schema
+validation. The demo's JSON report prints these safe booleans; the private audit
+records session and action events. Neither is cryptographic attestation. The
+demonstration uses its explicit fixture-only unattended allow policy and issues
+no human approvals.
+
+Some parallel tasks stopped at a usage limit after saving their files. Work was
+resumed, all saved tests were run in the complete suites above, and the final
+read-only adapter/worker/codec/CLI review completed. No concrete new security or
+correctness bug was found. A documented compatibility caveat remains: the API
+schema's length/range keywords are unsupported for fine-tuned models, so selecting
+a syntactically valid model ID does not establish support. This implementation
+review is not an independent security audit, and offline protocol tests do not
+validate real model behavior or account access.
+
+The workflow now runs pushes to this follow-up branch and PRs targeting
+`feature/secure-agent-m2`, permitting review of the added slice independently in
+[draft PR #3](https://github.com/0xsl0th/recon-cockpit/pull/3). Hosted results remain
+separate from the local evidence above. Real API transport, credential mediation,
+broker IPC/budgets and live model evaluation remain pending; live calls remain
+disabled.
+
+### Hosted CI cleanup correction
+
+For implementation commit `f5b17d3`, the
+[PR workflow](https://github.com/0xsl0th/recon-cockpit/actions/runs/34713295830)
+passed all five jobs. The separate
+[push workflow](https://github.com/0xsl0th/recon-cockpit/actions/runs/34713286291)
+failed on macOS 15 / Python 3.14.7: **891 passed, 1 failed, 28 deselected**.
+The existing cancellation test verified the expected cancellation, reaped direct
+child and EOF from its descendant, then its redundant final cleanup signal
+raised `PermissionError` for the already-cleaned process group.
+
+The test now attempts fallback group cleanup only if EOF has not yet verified
+success; every original cancellation/descendant assertion remains. Duplicate
+pipe readers close even if fallback cleanup raises. A raw bytes literal also
+removes an invalid-escape warning while preserving the malformed JSON surrogate
+fixture. These are test-only changes, reviewed without a new finding.
+
+After this correction,
+`.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-provider-ci-fix-portable.xml`
+passed **892 tests, 28 deselected**, in **6.18 seconds**, with no skips. Production
+code was unchanged, so the Linux integration and demo evidence above still
+applies. Hosted reruns are recorded in the PR checks.
+
 ## Bounded mock sessions — 11 September 2026
 
 Recovered the interrupted milestone 2 worktree on `feature/secure-agent-m2`,
