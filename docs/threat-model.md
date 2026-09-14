@@ -31,6 +31,7 @@ future import adapter must produce proposals that traverse the same controller.
 | Propose indefinitely, underreport output, or stall during planning/approval | Single-use session, attempt limit, full response reservations without refunds, shared deadline and cancellation | Trusted filesystem/kernel stalls are not hard-preemptible; restarting creates a new session budget |
 | Change API endpoint/model/instructions, request again, or underreport tokens | Broker reconstructs the exact request; fixed offline transport; one framed exchange per step; reserved call/output-token/request-byte allowances without refunds | No live transport or credential mediation yet; output-token allowance is not an input-token or monetary cap |
 | Send malformed, oversized or reordered API/IPC data | Typed bounded frames, bounded isolated JSON parsing, strict state order, supervised cancellation and cleanup | Installed worker/runtime remain trusted; same-host kernel boundary |
+| Compromise the coordinator in `--control-plane-mock` | Persistent Linux confinement, proposal-only IPC, authority-owned approvals/accounting/audit, separate executor pipe | Host authority, UI, audit and launcher still share one trusted process; authorized actions and denial of service remain possible |
 
 The mock is deterministic bundled code, not an autonomous model. Its JSON is
 untrusted even though its implementation is known. It runs in a separate process
@@ -53,13 +54,24 @@ poisons that broker instance. The installed host adapter and synchronous offline
 transport are trusted code; arbitrary Python callbacks are not sandboxed by
 this interface. See [offline-openai-broker.md](offline-openai-broker.md).
 
+`--control-plane-mock` treats arbitrary code execution inside its coordinator
+sandbox as an attacker capability. Its host authority rejects forged authority
+fields, cross-session and replayed requests; it closes and poisons the session
+after a protocol fault. The coordinator cannot obtain the terminal, host files,
+authority memory, audit descriptor or executor pipe. Session creation and resets
+have no IPC operation. The fixture executor independently validates each fresh,
+bound launch request. This does not isolate the host authorization service from
+its own UI, audit and launcher components. See [control-plane.md](control-plane.md).
+
 ## Isolation assumptions
 
 Use a dedicated Linux/Kali lab with unprivileged user namespaces and a compatible
 non-setuid Bubblewrap. Bootstrap capabilities exist only in the newly created
 user/network namespace and are dropped before probing. The executed worker does
-not see host homes, `/run` sockets, policy/approval/audit state, or broad host
-mounts. Do not add such mounts when adapting the backend.
+not see host homes, `/run` sockets, approval/audit state, or broad host mounts.
+The new authorized executor receives a canonical policy snapshot explicitly in
+its private launch message; it has no access to the operator's policy file or
+approval store. Do not add host authority mounts when adapting the backend.
 
 Routed mode uses a second minimal Bubblewrap boundary for its trusted slirp
 transport, with empty `/etc` and `/run` instead of host mounts. Namespace-local

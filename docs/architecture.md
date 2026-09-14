@@ -75,6 +75,17 @@ retrieval and live evaluation remain unimplemented. See
 [offline-openai-broker.md](offline-openai-broker.md) and the earlier
 [provider-isolation.md](provider-isolation.md).
 
+The explicit `--control-plane-mock` path now runs a persistent coordinator in its
+own Linux sandbox. `AuthoritySession` receives only session-bound, sequenced
+proposal envelopes and owns mode, policy, approval, accounting and audit. Each
+launch uses `AuthorizedFixtureBackend` and a fresh executor that validates the
+complete launch context received over a separate bootstrap-owned pipe. There is
+no coordinator operation for approvals, policy changes, session creation, audit
+writes or direct execution. The host authority/UI/audit/launcher still share a
+trusted process; the coordinator cannot access it through filesystem, process
+memory or inherited descriptors. See [control-plane.md](control-plane.md) for
+the IPC state machines, compromise matrix and remaining privilege separation.
+
 ## Schema and policy
 
 Schema version `"1"` requires all action fields: UUID `action_id`, `tool_id`,

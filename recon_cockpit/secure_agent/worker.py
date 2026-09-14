@@ -242,16 +242,28 @@ def _deadline(_number: int, _frame: object) -> None:
     raise TimeoutError("HTTP total deadline")
 
 
-def probe(target: str, parameters: dict) -> dict:
+def _remaining(deadline: float | None, maximum: float) -> float:
+    if deadline is None:
+        return maximum
+    if type(deadline) not in (int, float) or not math.isfinite(deadline):
+        raise ValueError("invalid fixture authority deadline")
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise TimeoutError("fixture authority deadline expired")
+    return min(maximum, remaining)
+
+
+def probe(target: str, parameters: dict, *, deadline: float | None = None) -> dict:
     """One literal-address connection; bounded raw HTTP/1.x, no DNS/redirects."""
     limit = parameters["max_output_bytes"]
     response = bytearray()
+    timeout = _remaining(deadline, parameters["timeout_seconds"])
     previous = signal.signal(signal.SIGALRM, _deadline)
-    signal.setitimer(signal.ITIMER_REAL, parameters["timeout_seconds"])
+    signal.setitimer(signal.ITIMER_REAL, timeout)
     status = "succeeded"
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connection:
-            connection.settimeout(parameters["timeout_seconds"])
+            connection.settimeout(timeout)
             connection.connect((target, parameters["port"]))
             request = (f"{parameters['method']} {parameters['path']} HTTP/1.1\r\n"
                        f"Host: {target}:{parameters['port']}\r\nConnection: close\r\n\r\n").encode("ascii")
@@ -285,25 +297,38 @@ def probe(target: str, parameters: dict) -> dict:
             "truncated": metadata["truncated"]}
 
 
+def execute(request: dict, *, deadline: float | None = None) -> dict:
+    """One fixture execution; callers must provide a validated private launch."""
+    request = validate_request(json.dumps(request, allow_nan=False).encode("ascii"))
+    assert_private_namespaces(request["host_namespaces"])
+    parameters = request["parameters"]
+    _remaining(deadline, parameters["timeout_seconds"])
+    _set_limits(parameters["timeout_seconds"])
+    subprocess.run(["/usr/sbin/nft", "-f", "-"],
+                   input=firewall_rules(request["target"], parameters["port"]).encode("ascii"),
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True,
+                   timeout=_remaining(deadline, 3),
+                   env={"PATH": "/usr/sbin:/usr/bin", "LC_ALL": "C"}, close_fds=True)
+    _remaining(deadline, parameters["timeout_seconds"])
+    drop_privileges()
+    _remaining(deadline, parameters["timeout_seconds"])
+    fixture = OwnedFixture(parameters["port"])
+    _remaining(deadline, parameters["timeout_seconds"])
+    witness = OwnedFixture(parameters["port"] + 1) if request["verify_boundary"] else None
+    resource.setrlimit(resource.RLIMIT_NPROC, (1, 1))
+    install_syscall_filter()
+    _remaining(deadline, parameters["timeout_seconds"])
+    boundary = verify_network_boundary(parameters["port"]) if witness else None
+    result = (probe(request["target"], parameters) if deadline is None else
+              probe(request["target"], parameters, deadline=deadline))
+    if boundary is not None:
+        result["boundary_checks"] = boundary
+    return result
+
+
 def main() -> int:
     try:
-        request = validate_request(sys.stdin.buffer.read(8193))
-        assert_private_namespaces(request["host_namespaces"])
-        parameters = request["parameters"]
-        _set_limits(parameters["timeout_seconds"])
-        subprocess.run(["/usr/sbin/nft", "-f", "-"],
-                       input=firewall_rules(request["target"], parameters["port"]).encode("ascii"),
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=3,
-                       env={"PATH": "/usr/sbin:/usr/bin", "LC_ALL": "C"}, close_fds=True)
-        drop_privileges()
-        fixture = OwnedFixture(parameters["port"])
-        witness = OwnedFixture(parameters["port"] + 1) if request["verify_boundary"] else None
-        resource.setrlimit(resource.RLIMIT_NPROC, (1, 1))
-        install_syscall_filter()
-        boundary = verify_network_boundary(parameters["port"]) if witness else None
-        result = probe(request["target"], parameters)
-        if boundary is not None:
-            result["boundary_checks"] = boundary
+        result = execute(validate_request(sys.stdin.buffer.read(8193)))
         sys.stdout.write(json.dumps(result, separators=(",", ":")) + "\n")
         sys.stdout.flush()
         # Daemon fixture thread lifetime is exactly this private PID namespace.
