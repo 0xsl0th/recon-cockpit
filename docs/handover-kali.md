@@ -1,5 +1,37 @@
 # Handover to the Lenovo / Kali amd64
 
+## Current continuation — offline OpenAI broker, 13 September 2026
+
+Work continues on `feature/secure-agent-offline-broker`, based on `3e96e67` from
+[PR #3](https://github.com/0xsl0th/recon-cockpit/pull/3). The broker now mediates
+fixed synthetic Responses envelopes through a framed Linux parser, reserves
+call/output-token/request-byte allowances and audits before each exchange.
+Live API calls and credential lookup remain unavailable. Read
+[offline-openai-broker.md](offline-openai-broker.md), the latest
+[verification record](verification.md), then inspect Git status before editing.
+
+```bash
+python -m recon_cockpit.secure_agent --openai-offline three_step --openai-model offline-fixture-model --dry-run
+python scripts/secure_agent_openai_demo.py --execute-fixtures --audit .secure-agent/openai-offline-demo.jsonl
+```
+
+Local validation passed 1124 portable tests, 40 opted-in Linux integrations and
+the nine-case offline demo with nine owned-fixture HTTP executions. The model
+identifier is synthetic, and the demo's unattended policy is explicit. No human
+approval or live model behavior is claimed. The operator also requested work on
+the open PRs: review and validation continue in dependency order #2, #3, then
+[broker PR #4](https://github.com/0xsl0th/recon-cockpit/pull/4). PR #2 now includes
+the test-only cleanup backport `fc99758`; PR #3's ancestry was synchronized as
+`46bdc77` without changing its tree. Both hosted runs passed for those revisions.
+The broker's macOS supervisor cleanup correction was followed by another complete
+portable run and all 12 affected Linux integrations. Preserve the
+live-calls-disabled and deferred-VPN constraints.
+
+The next live transport still requires reviewed TLS/credential handling,
+bounded cancellable reads, input-token/spending accounting and approved data.
+Do not treat output-token reservations as a monetary budget or enable API calls
+from offline verification alone.
+
 ## Current continuation — provider isolation, 12 September 2026
 
 The bounded-session slice is committed as `467fab0` and pushed in

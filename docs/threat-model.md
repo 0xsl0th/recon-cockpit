@@ -29,6 +29,8 @@ future import adapter must produce proposals that traverse the same controller.
 | Try direct sockets to a different destination/port | Per-action nftables rules inside the execution namespace | Routed helper is trusted; operator routes must already exist |
 | Make audit unavailable | Synchronous pre-execution audit; poison controller on audit errors | Already sent traffic cannot be rolled back if completion logging fails |
 | Propose indefinitely, underreport output, or stall during planning/approval | Single-use session, attempt limit, full response reservations without refunds, shared deadline and cancellation | Trusted filesystem/kernel stalls are not hard-preemptible; restarting creates a new session budget |
+| Change API endpoint/model/instructions, request again, or underreport tokens | Broker reconstructs the exact request; fixed offline transport; one framed exchange per step; reserved call/output-token/request-byte allowances without refunds | No live transport or credential mediation yet; output-token allowance is not an input-token or monetary cap |
+| Send malformed, oversized or reordered API/IPC data | Typed bounded frames, bounded isolated JSON parsing, strict state order, supervised cancellation and cleanup | Installed worker/runtime remain trusted; same-host kernel boundary |
 
 The mock is deterministic bundled code, not an autonomous model. Its JSON is
 untrusted even though its implementation is known. It runs in a separate process
@@ -42,10 +44,14 @@ restrictions installed before observations are read. Its socket creation checks
 require `EPERM`, so an absent listening service cannot masquerade as enforcement.
 Tests also use owned host file, environment and descriptor canaries. Arbitrary
 provider plugins remain unsupported; the installed bootstrap and fixed planner
-are trusted. The offline OpenAI codec has no HTTP transport or credential lookup;
-protocol tests are synthetic and establish neither model behavior nor API access.
-See [provider-isolation.md](provider-isolation.md) for the broker design that must
-precede enabling live calls.
+are trusted. The OpenAI codec now runs in a similarly restricted parser sandbox
+for `--openai-offline`. Its trusted host broker reserves allowances and records
+audit before a fixed synthetic transport supplies response bytes. Neither
+component accesses credentials or sends API traffic; TLS verification is a fixed
+future transport requirement, not a tested live connection. A broker audit error
+poisons that broker instance. The installed host adapter and synchronous offline
+transport are trusted code; arbitrary Python callbacks are not sandboxed by
+this interface. See [offline-openai-broker.md](offline-openai-broker.md).
 
 ## Isolation assumptions
 

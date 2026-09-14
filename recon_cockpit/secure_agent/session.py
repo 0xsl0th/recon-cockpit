@@ -12,7 +12,8 @@ from uuid import uuid4
 from .audit import AuditUnavailable
 from .controller import Controller
 from .execution import ExecutionControl, ExecutionStopped
-from .models import ValidationError, load_json, parse_action
+from .models import ValidationError, parse_action
+from .session_protocol import _plan
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,16 +33,6 @@ class SessionLimits:
     def digest(self):
         return hashlib.sha256(json.dumps(asdict(self), sort_keys=True,
                                          separators=(",", ":")).encode("ascii")).hexdigest()
-
-
-def _plan(raw):
-    plan = load_json(raw)
-    if (set(plan) != {"schema_version", "action", "done"} or plan["schema_version"] != "1"
-            or type(plan["done"]) is not bool
-            or (plan["action"] is None and not plan["done"])
-            or (plan["action"] is not None and type(plan["action"]) is not dict)):
-        raise ValidationError("invalid_session_proposal")
-    return plan
 
 
 def _observation(step, outcome):

@@ -6,6 +6,11 @@ provider and explicitly requested that live calls remain disabled. There is no
 API transport, SDK client, credential lookup, model download or model generation
 in this slice. The runnable provider is still a deterministic bundled mock.
 
+The subsequent [offline broker slice](offline-openai-broker.md) now connects
+synthetic API responses through a framed Linux parser and trusted request
+accounting. Live transport and credential retrieval remain unavailable. The
+isolated mock described below remains a separate selectable provider.
+
 ## Run the isolated planner
 
 Use the existing Linux prerequisites: distribution Python, non-setuid Bubblewrap
@@ -108,25 +113,28 @@ are ignored as untrusted data. A completed API status or schema-conforming
 action never grants execution authority: policy and human approval remain
 separate controller checks.
 
-The codec currently runs only in offline tests/library calls. It is not yet
-wired to a network-enabled provider or an isolated API response parser. Tests
-use synthetic API envelopes and no credentials; they prove protocol handling,
-not model behavior or provider availability.
+The codec runs in offline tests/library calls and in the dedicated parser for
+`--openai-offline`. That parser uses fixed synthetic responses mediated by a
+trusted broker. Tests use no credentials; they prove protocol handling,
+not model behavior or provider availability. See the
+[offline broker contract](offline-openai-broker.md) for that later integration.
 
-## Next integration boundary
+## Remaining live integration boundary
 
-A future trusted broker must own endpoint, HTTP method/path, TLS verification,
-credential access and request budgets. A planner must never select a URL,
+A live transport must preserve the broker's fixed endpoint, HTTP method/path,
+mandatory TLS verification and request budgets, and mediate credential access.
+A planner must never select a URL,
 authorization header, proxy, arbitrary tool, file or retry policy. The broker
 must validate model requests against operator configuration, reserve call/token
 allowances before sending, bound response bytes, and share deadline/cancellation
 control. Retries require explicit accounting; usage metadata must not refund
 reserved capacity. No live-call switch is exposed by this implementation.
 
-The existing one-request/one-response capture helper is not a planner-to-broker
-dialogue protocol. Later work must use bounded framed messages with nonblocking
-supervision, preserve audit-before-send behavior, and validate the TLS/credential
-boundary before enabling any API request. Any initial live evaluation must use
+The isolated mock's one-request/one-response capture helper is not a
+planner-to-broker dialogue protocol. The offline broker now uses its own bounded
+framed messages with nonblocking supervision and audit-before-exchange. Live
+work must validate the TLS/credential boundary before enabling any API request.
+Any initial live evaluation must use
 explicitly approved data and spending limits. Real VPN-target validation remains
 deferred as previously agreed.
 
