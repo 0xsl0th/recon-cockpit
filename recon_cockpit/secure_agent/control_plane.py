@@ -1,6 +1,6 @@
 """Host authority for a session driven by a Linux-confined coordinator.
 
-Only bounded proposal messages cross the coordinator channel. Policy, mode,
+Only bounded planning triggers and proposals cross the coordinator channel. Policy, mode,
 session creation, approval input, accounting, audit and execution remain owned
 by trusted bootstrap/authority code. Python callers of this module are trusted;
 the process boundary is supplied by LinuxCoordinator, never by these objects.
@@ -16,6 +16,7 @@ from uuid import UUID, uuid4
 
 from .audit import AuditUnavailable
 from .controller import Controller
+from .coordinator_ipc import MAX_RESPONSE_BYTES
 from .execution import ExecutionControl, ExecutionStopped
 from .models import ValidationError, load_json, parse_action
 from .session import SessionLimits, _observation, _public_step
@@ -43,7 +44,7 @@ class AuthoritySession:
     """
 
     def __init__(self, policy, audit, backend, coordinator, limits=None, *,
-                 clock=time.monotonic, session_id=None):
+                 clock=time.monotonic, session_id=None, provider=None):
         limits = SessionLimits() if limits is None else limits
         if type(limits) is not SessionLimits:
             raise ValueError("invalid_session_limits")
@@ -53,6 +54,9 @@ class AuthoritySession:
             raise ValueError("invalid_session_id")
         self.controller = Controller(policy, audit, backend, session_id=self.session_id)
         self.coordinator = coordinator
+        # Internal trusted adapter only. No IPC field selects a provider or
+        # passes a Python object into either sandbox.
+        self.provider = provider
         self._clock = clock
         self._cancelled = threading.Event()
         self._lock = threading.Lock()
@@ -78,13 +82,18 @@ class AuthoritySession:
         started = self._clock()
         session_control = ExecutionControl(started + self.limits.max_runtime_seconds,
                                            cancelled=self._cancelled, clock=self._clock)
+        provider = self.provider
+        version = "2" if provider is not None else "1"
         base = {"session_id": self.session_id, "policy_digest": self.controller.policy.digest,
-                "limits_digest": self.limits.digest, "control_plane": "privsep-v1"}
+                "limits_digest": self.limits.digest,
+                "control_plane": "privsep-offline-v2" if provider is not None else "privsep-v1"}
         summary = {**base, "session_status": "stopped", "stop_reason": "coordinator_protocol_error",
                    "steps_attempted": 0, "actions_succeeded": 0, "output_reserved_bytes": 0,
                    "mode": "execute" if execute else "dry_run", "steps": []}
         closed = False
         protocol_failed = False
+        pending_plan = None
+        previous = None
         request_lock = threading.Lock()
 
         def emit(kind, **fields):
@@ -102,6 +111,10 @@ class AuthoritySession:
             raise AuthorityProtocolError("coordinator_protocol_error")
 
         def record(step, outcome):
+            nonlocal previous
+            # Retain only the same bounded observation sent to the isolated
+            # parser, constructed before an external trusted UI callback runs.
+            previous = _observation(step + 1, outcome)
             public = _public_step(step, outcome)
             summary["steps"].append(public)
             emit("session_step_finished", **public,
@@ -109,13 +122,16 @@ class AuthoritySession:
             if on_step is not None:
                 on_step(dict(public))
 
-        def response(step, outcome=None):
+        def response(step, outcome=None, *, plan=None):
+            if provider is not None:
+                return _encode({"schema_version": version, "session_id": self.session_id,
+                                "sequence": step, "stop": closed, "plan": plan})
             observation = json.loads(_observation(step + 1, outcome))["untrusted_observation"]
             return _encode({"schema_version": "1", "session_id": self.session_id,
                             "sequence": step, "stop": closed, "observation": observation})
 
         def handle(raw):
-            nonlocal closed
+            nonlocal closed, pending_plan
             session_control.check()
             if closed:
                 reject("session_closed")
@@ -125,18 +141,67 @@ class AuthoritySession:
                 request = load_json(raw)
             except ValidationError:
                 reject("invalid_request_envelope")
-            if (set(request) != {"schema_version", "session_id", "sequence", "plan"}
-                    or request["schema_version"] != "1"):
+            fields = {"schema_version", "session_id", "sequence", "plan"}
+            operation = None
+            if provider is not None:
+                operation = request.get("operation")
+                if type(operation) is not str or operation not in {"plan", "propose"}:
+                    reject("invalid_request_operation")
+                fields = {"schema_version", "session_id", "sequence", "operation"}
+                if operation == "propose":
+                    fields.add("plan")
+            if set(request) != fields or request["schema_version"] != version:
                 reject("invalid_request_envelope")
             if request["session_id"] != self.session_id:
                 reject("wrong_session")
             step = request["sequence"]
-            if type(step) is not int or step != summary["steps_attempted"] + 1:
+            expected_step = summary["steps_attempted"] + (operation != "propose")
+            if type(step) is not int or step != expected_step or step < 1:
                 reject("sequence_mismatch")
             if step > self.limits.max_steps:
                 reject("step_limit")
-            summary["steps_attempted"] = step
-            emit("session_step_started", step=step)
+            if provider is not None:
+                if (operation == "plan") != (pending_plan is None):
+                    reject("phase_mismatch")
+                if operation == "propose":
+                    if _encode(request["plan"]) != pending_plan:
+                        reject("provider_plan_mismatch")
+                    pending_plan = None
+            if operation != "propose":
+                summary["steps_attempted"] = step
+                emit("session_step_started", step=step)
+            if operation == "plan":
+                session_control.check()
+                try:
+                    raw_plan = provider.propose(
+                        _observation(1, None) if previous is None else previous,
+                        control=session_control)
+                    session_control.check()
+                except (ExecutionStopped, AuditUnavailable):
+                    raise
+                except (RuntimeError, OSError, ValueError, TypeError, RecursionError):
+                    closed = True
+                    summary["stop_reason"] = "provider_failed"
+                    emit("session_provider_failed", step=step, reason="offline_provider_failed")
+                    return response(step)
+                try:
+                    if type(raw_plan) is not bytes or len(raw_plan) > 16384:
+                        raise ValueError("invalid_provider_plan")
+                    plan = _plan(raw_plan)
+                    reply = response(step, plan=plan)
+                    # Preserve the established response ceiling. Combined
+                    # proposals must fit with their canonical reply envelope.
+                    if len(reply) > MAX_RESPONSE_BYTES:
+                        raise ValueError("provider_plan_response_limit")
+                    pending_plan = _encode(plan)
+                except (ValidationError, ValueError, TypeError, RecursionError):
+                    closed = True
+                    summary["stop_reason"] = "invalid_proposal"
+                    emit("session_proposal_rejected", step=step, reason="invalid_session_proposal")
+                    return response(step)
+                emit("session_plan_received", step=step)
+                session_control.check()
+                return reply
             try:
                 plan = _plan(_encode(request["plan"]))
             except (ValidationError, ValueError, TypeError, RecursionError):
@@ -203,6 +268,13 @@ class AuthoritySession:
                 if control is not session_control:
                     reject("invalid_control")
                 return handle(raw)
+            except AuditUnavailable:
+                # The broker and authority use the same trusted audit sink.
+                # A broker-originated audit fault must also poison Controller,
+                # even if an internal coordinator double swallows the error.
+                self.controller._audit_failed = True
+                closed = True
+                raise
             except BaseException:
                 # Even an internal callback failure irrevocably closes this
                 # authority channel before the supervisor reaps the child.
@@ -214,21 +286,35 @@ class AuthoritySession:
         emit("session_started", limits=asdict(self.limits), mode=summary["mode"])
         try:
             session_control.check()
-            result = self.coordinator.run(_encode({"schema_version": "1", "session_id": self.session_id}),
-                                          exchange, control=session_control)
-            session_control.check()
-            if protocol_failed or not closed or type(result) is not bytes or len(result) > 512:
-                reject("invalid_session_close")
-            try:
-                result = load_json(result)
-            except ValidationError:
-                reject("invalid_session_close")
-            if result != {"schema_version": "1", "session_id": self.session_id, "status": "closed"}:
-                reject("invalid_session_close")
+            if provider is not None:
+                try:
+                    provider.bind_session(self.session_id)
+                except AuditUnavailable:
+                    raise
+                except (RuntimeError, OSError, ValueError, TypeError, RecursionError):
+                    summary["stop_reason"] = "provider_failed"
+                    emit("session_provider_failed", reason="offline_provider_binding_failed")
+                    # No coordinator or provider exchange may start if a
+                    # previous session already owns this provider instance.
+                    closed = True
+                session_control.check()
+            if not closed:
+                result = self.coordinator.run(_encode({"schema_version": version, "session_id": self.session_id}),
+                                              exchange, control=session_control)
+                session_control.check()
+                if protocol_failed or not closed or type(result) is not bytes or len(result) > 512:
+                    reject("invalid_session_close")
+                try:
+                    result = load_json(result)
+                except ValidationError:
+                    reject("invalid_session_close")
+                if result != {"schema_version": version, "session_id": self.session_id, "status": "closed"}:
+                    reject("invalid_session_close")
         except ExecutionStopped as exc:
             summary.update(session_status="stopped", stop_reason=(
                 "coordinator_protocol_error" if protocol_failed else exc.reason))
         except AuditUnavailable:
+            self.controller._audit_failed = True
             raise
         except AuthorityProtocolError:
             summary.update(session_status="stopped", stop_reason="coordinator_protocol_error")

@@ -157,7 +157,8 @@ def test_missing_out_of_order_and_pipelined_frames_are_rejected(processes, wire)
 
 
 @pytest.mark.parametrize("tail", ["request", "eof", "stderr_overflow"])
-def test_queued_output_at_request_read_boundary_never_reaches_authority(processes, monkeypatch, tail):
+@pytest.mark.parametrize("max_requests", [ipc.MAX_REQUESTS, ipc.MAX_OFFLINE_REQUESTS])
+def test_queued_output_at_request_read_boundary_never_reaches_authority(processes, monkeypatch, tail, max_requests):
     # This is a valid authority request; harmless whitespace makes its frame
     # exactly one supervisor read. Framing must reject already-queued extra
     # output, EOF or excessive diagnostics before it reaches the authority.
@@ -211,7 +212,7 @@ def test_queued_output_at_request_read_boundary_never_reaches_authority(processe
         "request": "extra_ipc_output", "eof": "truncated_ipc_dialogue", "stderr_overflow": "ipc_output_limit",
     }[tail]
     with pytest.raises(ipc.IPCError, match="^" + expected + "$"):
-        ipc.supervise(command(code), b"init", authority, control=control())
+        ipc.supervise(command(code), b"init", authority, control=control(), max_requests=max_requests)
     assert calls == []
 
 
@@ -241,12 +242,13 @@ def test_result_without_host_stop_is_rejected(processes):
 
 
 @pytest.mark.parametrize("stop", [True, False])
-def test_hard_request_limit_cannot_be_reset_by_worker(processes, stop):
+@pytest.mark.parametrize("max_requests", [ipc.MAX_REQUESTS, ipc.MAX_OFFLINE_REQUESTS])
+def test_hard_request_limit_cannot_be_reset_by_worker(processes, stop, max_requests):
     calls = []
     code = '''
 read(); send(5,READY)
-for n in range(18):
-    send(2,str(n).encode())
+for n in range(33):
+    send(2,str(n).encode().ljust(20480,b' '))
     kind,raw=read()
     if json.loads(raw)['stop']:
         send(4,b'closed'); sys.exit(0)
@@ -254,14 +256,25 @@ for n in range(18):
 
     def exchange(request, *, control):
         calls.append(request)
-        return STOP if stop and len(calls) == 17 else CONTINUE
+        return STOP if stop and len(calls) == max_requests else CONTINUE
 
+    # The combined dialogue exceeds the original cumulative byte allowance.
+    # Omitting the parameter for the old mode preserves its default limit.
+    options = {} if max_requests == ipc.MAX_REQUESTS else {"max_requests": max_requests}
     if stop:
-        assert ipc.supervise(command(code), b"init", exchange, control=control()) == b"closed"
+        assert ipc.supervise(command(code), b"init", exchange, control=control(), **options) == b"closed"
     else:
         with pytest.raises(ipc.IPCError, match="ipc_request_limit"):
-            ipc.supervise(command(code), b"init", exchange, control=control())
-    assert len(calls) == 17
+            ipc.supervise(command(code), b"init", exchange, control=control(), **options)
+    assert len(calls) == max_requests
+
+
+@pytest.mark.parametrize("limit", [None, True, False, 0, -1, 16, 18, 31, 33, 32.0, "32"])
+def test_invalid_host_request_ceiling_cannot_launch(monkeypatch, limit):
+    monkeypatch.setattr(subprocess, "Popen", lambda *_a, **_k: pytest.fail("must not launch"))
+    with pytest.raises(ipc.IPCError, match="^invalid_ipc_request_limit$"):
+        ipc.supervise(command("pass"), b"init", lambda *_a, **_k: STOP,
+                      control=control(), max_requests=limit)
 
 
 @pytest.mark.parametrize("response", [b"invalid", b"{}", b'{"stop":1}', b'{"stop":true,"stop":false}',
