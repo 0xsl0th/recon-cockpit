@@ -156,6 +156,65 @@ def test_missing_out_of_order_and_pipelined_frames_are_rejected(processes, wire)
                       lambda *_a, **_k: pytest.fail("no authority call"), control=control())
 
 
+@pytest.mark.parametrize("tail", ["request", "eof", "stderr_overflow"])
+def test_queued_output_at_request_read_boundary_never_reaches_authority(processes, monkeypatch, tail):
+    # This is a valid authority request; harmless whitespace makes its frame
+    # exactly one supervisor read. Framing must reject already-queued extra
+    # output, EOF or excessive diagnostics before it reaches the authority.
+    payload = encode({
+        "schema_version": "1", "session_id": "00000000-0000-0000-0000-000000000001", "sequence": 1,
+        "plan": {"schema_version": "1", "action": None, "done": True},
+    }).ljust(8192 - 5, b" ")
+    first = ipc.frame(ipc.REQUEST, payload)
+    assert len(first) == 8192
+    ending = {
+        "request": "send(2,b'queued-extra'); time.sleep(30)",
+        "eof": "os.close(1); time.sleep(30)",
+        "stderr_overflow": f"assert exact(1)==b's'; os.write(2,b'x'*{ipc.MAX_STDERR_BYTES + 1}); time.sleep(30)",
+    }[tail]
+    code = f"read(); send(5,READY); os.write(1,{first!r}); {ending}"
+    ready_boundary = len(ipc.frame(ipc.READY, READY))
+    request_boundary = ready_boundary + len(first)
+    received = 0
+    original_read = os.read
+
+    def synchronized_read(fd, count):
+        nonlocal received
+        if not processes or fd != processes[0].stdout.fileno():
+            return original_read(fd, count)
+        # Force the useful frame and its successor into separate reads. Once
+        # the full frame is read, synchronize with the malicious child so its
+        # queued continuation is already observable before dispatch resumes. This
+        # removes scheduler/pipe-capacity races without a production wait.
+        boundary = ready_boundary if received < ready_boundary else request_boundary
+        if received < request_boundary:
+            count = min(count, boundary - received)
+        result = original_read(fd, count)
+        received += len(result)
+        if received == request_boundary and result:
+            if tail == "stderr_overflow":
+                # Release diagnostics only after the selector's ready snapshot,
+                # so rejection must come from the pre-dispatch stderr drain.
+                os.write(processes[0].stdin.fileno(), b"s")
+                fd = processes[0].stderr.fileno()
+            assert select.select([fd], [], [], 2)[0], "child must queue its continuation before dispatch"
+        return result
+
+    monkeypatch.setattr(os, "read", synchronized_read)
+    calls = []
+
+    def authority(request, *, control):
+        calls.append(json.loads(request))
+        return STOP
+
+    expected = {
+        "request": "extra_ipc_output", "eof": "truncated_ipc_dialogue", "stderr_overflow": "ipc_output_limit",
+    }[tail]
+    with pytest.raises(ipc.IPCError, match="^" + expected + "$"):
+        ipc.supervise(command(code), b"init", authority, control=control())
+    assert calls == []
+
+
 @pytest.mark.parametrize("tail", [
     b"", b"\0\0", ipc.frame(ipc.REQUEST, b"after stop"),
     ipc.frame(ipc.RESULT, b"closed") + b"x",

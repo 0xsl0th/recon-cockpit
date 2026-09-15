@@ -220,6 +220,35 @@ successful framing nor coordinator evidence confers tool execution authority.
                             result, phase = payload, "waiting_eof"
                 if phase == "exchanging":
                     control.check()
+                    # A complete request can end exactly at an os.read boundary.
+                    # Inspect queued diagnostics and stdout before dispatching it;
+                    # checking only `incoming` misses an already-buffered next
+                    # frame or EOF. These reads never wait for future output and
+                    # cannot predict what the coordinator will send afterward.
+                    while "stderr" not in eof:
+                        control.check()
+                        try:
+                            queued = os.read(proc.stderr.fileno(), min(
+                                8192, MAX_STDERR_BYTES - stderr_total + 1,
+                                MAX_OUTPUT_BYTES - output_total + 1,
+                            ))
+                        except BlockingIOError:
+                            break
+                        if not queued:
+                            selector.unregister(proc.stderr)
+                            eof.add("stderr")
+                            break
+                        stderr_total += len(queued)
+                        output_total += len(queued)
+                        if stderr_total > MAX_STDERR_BYTES or output_total > MAX_OUTPUT_BYTES:
+                            raise IPCError("ipc_output_limit")
+                    try:
+                        queued = os.read(proc.stdout.fileno(), 1)
+                    except BlockingIOError:
+                        pass
+                    else:
+                        raise IPCError("extra_ipc_output" if queued else "truncated_ipc_dialogue")
+                    control.check()
                     response = exchange(request, control=control)
                     control.check()
                     pending = frame(RESPONSE, response)

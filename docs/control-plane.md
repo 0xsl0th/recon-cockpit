@@ -81,10 +81,18 @@ boundary. No Python object deserialization or arbitrary RPC is available.
 The state machine is INIT → READY → (REQUEST → RESPONSE)* → RESULT → clean EOF
 and zero process exit. Only a host RESPONSE with `stop: true` permits RESULT.
 READY and the first REQUEST may share a read because READY needs no separate
-acknowledgement. Request pipelining, unexpected frame kinds, trailing data and
-partial EOF fail closed. Writes are nonblocking, stdout/stderr have cumulative
+acknowledgement. Before dispatching a complete request, the supervisor checks
+for already-buffered extra output or EOF and rejects them without calling the
+authority. Unexpected frame kinds, trailing data and partial EOF fail closed.
+Writes are nonblocking, stdout/stderr have cumulative
 limits, stderr is capped at 4,096 bytes, and the supervisor allows at most 17
 requests. The authority imposes its tighter operator step limit (maximum 16).
+
+This is an incremental protocol: output that arrives after the pre-dispatch
+check may be detected only after the authority call returns. Protocol failure
+cannot undo an action already executed. Every dispatched request still requires
+its own policy, approval, budget and audit checks; successful framing never
+grants authority by itself.
 
 Each REQUEST must name the existing session and the next integer sequence.
 `plan` contains exactly `schema_version`, `action`, and boolean `done`; an absent
