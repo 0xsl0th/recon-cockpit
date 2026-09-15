@@ -1,5 +1,13 @@
 # Handover to the Lenovo / Kali amd64
 
+## Latest checkpoint — competition roadmap, 15 September 2026
+
+Start with [continue-here.md](continue-here.md) for the current restart prompt and
+[roadmap.md](roadmap.md) for the next implementation slice. PR #5 is merged as
+`bf3a359`. The latest work updates the competition proposal and plans integration
+of the offline provider with the isolated authority path; that integration has
+not been implemented. Older continuation sections below are historical.
+
 ## Current continuation — control-plane review, 15 September 2026
 
 The interrupted review of

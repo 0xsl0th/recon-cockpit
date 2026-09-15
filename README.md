@@ -1,5 +1,9 @@
 # Recon Cockpit
 
+For project direction, see the [development roadmap](docs/roadmap.md) and
+[competition proposal](docs/competition-proposal.md). To resume work after an
+interruption, start with [the current checkpoint](docs/continue-here.md).
+
 ## Secure Agent Mode — bounded mock sessions, fixture and routed HTTP
 
 An additional entry point now accepts **deterministic mock agent** proposals and
