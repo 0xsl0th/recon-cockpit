@@ -32,6 +32,23 @@ python scripts/secure_agent_openai_demo.py --execute-fixtures
 The model name above is a fixture identifier, not a claim of an available API
 model. Offline OpenAI mode requires Linux isolation even for tool dry-runs.
 
+`--control-plane-mock` moves the session coordinator into a persistent Linux
+sandbox. A host authority service owns policy, terminal approval, budgets and
+audit, and sends bound launch requests to fresh fixture executors over separate
+private pipes. Forged authority fields, replay and attempts to reset a session
+fail closed. This first slice contains coordinator compromise; the authority's
+approval, audit and launcher components still share a trusted host process.
+See [control-plane authority and IPC](docs/control-plane.md) for the contract.
+
+```bash
+python -m recon_cockpit.secure_agent --control-plane-mock three_step --dry-run
+python -m recon_cockpit.secure_agent --control-plane-mock three_step --fixture --execute
+python scripts/secure_agent_control_plane_demo.py --execute-fixtures
+```
+
+This path requires Linux isolation even for dry-runs and currently uses fixed
+mock scenarios and owned fixtures. Live API calls remain unavailable.
+
 The executable tool set is one bounded HTTP probe. `--fixture` reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
 backend reaches one explicitly authorized IPv4 literal and TCP port through an
@@ -51,7 +68,7 @@ python -m pip install -e '.[test]'
 python -m recon_cockpit.secure_agent --mock --dry-run
 ```
 
-Dry-run works on macOS and Linux without isolation tools. Expected JSON:
+The basic `--mock --dry-run` works on macOS and Linux without isolation tools. Expected JSON:
 `provider: deterministic-mock-no-model`, `decision: approval_required`,
 `execution_status: dry_run`. No network request runs. Events go to the private
 `.secure-agent/audit.jsonl`; override the path with trusted operator flag

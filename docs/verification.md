@@ -1,5 +1,114 @@
 # Verification record
 
+## Control-plane privilege separation — 14 September 2026
+
+Implemented on `feature/secure-agent-control-plane`, based on merged main
+`ce16c06`. The operator approved a first slice that confines the coordinator and
+defines explicit proposal/authorization/execution IPC boundaries. The new
+`--control-plane-mock` path uses deterministic scenarios and owned fixtures;
+live OpenAI calls, credential retrieval and routed sessions remain unavailable.
+See [control-plane.md](control-plane.md) for ownership, IPC and compromise scope.
+
+The persistent coordinator has no policy, approval, audit or execution handle.
+`AuthoritySession` owns fixed session identity, mode, limits and deadline, strict
+sequence checks, resource reservations and terminal approval. Fresh executors
+receive separate private-pipe launch envelopes bound to the complete action,
+policy, session, limits, reservations, deadline and per-launch nonce. They
+independently validate these before owned-fixture setup. The host authority,
+approval UI, audit sink and launcher still share a trusted process; containment
+of compromise of that host process is not established by this slice.
+
+Environment: Kali Linux, x86_64, Python `3.14.6`, pytest `9.1.1`, normal host user.
+Linux integration and the CLI check ran outside the coding sandbox to create
+the required namespaces. No packages were installed and no host network
+configuration, real credentials, live API or remote/VPN target was used.
+
+| Command/check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-control-plane-portable.xml` | **1380 passed, 51 deselected**, 11.92 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-control-plane-linux.xml` | **51 passed, 1380 deselected**, 77.91 seconds |
+| `.venv/bin/python -m recon_cockpit.secure_agent --control-plane-mock three_step --dry-run --audit .secure-agent/control-plane-cli-dev.jsonl` | Exit 0, `coordinator_done`, three dry-run decisions, all seven coordinator checks true, zero executions |
+| `.venv/bin/python -m compileall -q recon_cockpit scripts`, `.venv/bin/python -m pip check`, `git diff --check` | Passed; no broken dependencies |
+
+Both JUnit files were parsed and contain the expected complete case counts with
+zero failures, errors or skips. The CLI audit is mode `0600`, with 14 events,
+one closed session and no `execution_started` events.
+
+The 256 new portable cases cover authority-field injection at the envelope,
+plan and action levels; replay and cross-session requests; session closure and
+no budget refunds; exact-action approval binding; audit failures; deadline and
+cancellation checks; malformed/pipelined/truncated/flooded IPC; and launch
+nonce/context/schema/policy/limit validation. A concurrency regression verifies
+that poisoning the channel cancels an action already waiting for approval.
+
+All 40 existing Linux integrations passed alongside 11 new cases:
+
+- Seven coordinator cases exercise a persistent three-step process, actual
+  host-file/environment/descriptor canaries, absent host process memory,
+  `EPERM` from tracing and cross-process memory syscalls, absent terminal,
+  denied IPv4/IPv6/Unix sockets, memory bounds, malformed dialogue, and killed
+  and reaped workers on cancellation, deadline and output flooding.
+- One executor case exercises a real independently validated fixture launch.
+- Three combined cases run the nine-case dry-run adversarial demo, the
+  eleven-case executed-fixture demo, and fresh host approval grants across
+  three actions. The executed demo records nine successful owned actions and
+  rejects forged authority, replay, wrong-session messages and malicious
+  follow-up scope/approval fields. The approval-required unattended case
+  launches nothing. Scripted grant callbacks test mechanics, not human consent.
+
+The first coordinator Linux run exposed an overly late inherited-descriptor
+check: trusted ctypes/libffi startup had opened a read-only runtime library
+descriptor. The check now runs before loading that bootstrap; the runtime can
+subsequently open its own mounted library files. The corrected seven-case
+kernel run and final complete suite passed. Review also added a final executor
+deadline/cancellation check after result parsing, with deterministic regressions,
+and checks before fixture creation after privilege setup.
+
+Implementation and bounded parallel reviews covered authority poisoning,
+coordinator framing/bootstrap, executor binding and deadline handling. These
+checks establish the documented local boundaries and fixture behavior, not an
+independent security audit or resistance to host/kernel compromise. Hosted CI
+and PR state are recorded separately from this local evidence.
+
+### Premerge protocol review correction
+
+Review of PR #5 found that a complete REQUEST ending exactly at the supervisor's
+8,192-byte read boundary could be dispatched before an already-queued second
+frame was noticed. A reproduction through `AuthoritySession` executed one
+otherwise permitted fake-backend action and then failed the protocol. Policy,
+approval and budget checks still applied, but queued protocol errors were not
+consistently rejected before dispatch.
+
+The supervisor now checks for already-buffered extra coordinator output or EOF
+immediately before calling the authority. Three regressions cover an extra
+request, EOF and excessive queued stderr at the read boundary, each requiring
+zero authority calls. The protocol remains incremental: data that arrives after
+the pre-dispatch check may be detected only after the authority call returns.
+Protocol failure cannot undo an action already executed. The documentation
+makes that limit explicit.
+
+### Restart recovery verification — 15 September 2026
+
+The saved premerge correction was recovered on
+`feature/secure-agent-control-plane` above `d6aec71`. A second review found no
+additional authority/executor issue and added the queued-stderr regression.
+That regression fails against the original supervisor with one authority call
+and passes with the correction. The full suites were rerun after the restart
+with all three boundary regressions present:
+
+| Command/check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-control-plane-recovered-portable.xml` | **1383 passed, 51 deselected**, 12.19 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-control-plane-recovered-linux.xml` | **51 passed, 1383 deselected**, 76.27 seconds |
+| `.venv/bin/python -m compileall -q recon_cockpit scripts`, `.venv/bin/python -m pip check`, `git diff --check` | Passed; no broken dependencies |
+
+Both JUnit files were parsed: 1,383 portable and 51 integration cases, with
+zero failures, errors or skips. Linux verification ran as the normal user
+outside the coding sandbox. The suites used owned fixtures and synthetic
+provider data. No host networking change, credential lookup, live API call or
+VPN-target test was performed. Hosted checks and the merge state are available
+on [PR #5](https://github.com/0xsl0th/recon-cockpit/pull/5).
+
 ## Offline OpenAI broker — 13 September 2026
 
 Implemented on `feature/secure-agent-offline-broker`, based on tested `3e96e67`

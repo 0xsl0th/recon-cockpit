@@ -1,5 +1,27 @@
 # Handover to the Lenovo / Kali amd64
 
+## Current continuation — control-plane review, 15 September 2026
+
+The interrupted review of
+[PR #5](https://github.com/0xsl0th/recon-cockpit/pull/5) was recovered on
+`feature/secure-agent-control-plane`, above `d6aec71`. This slice confines the
+session coordinator and defines bounded authority and executor IPC. Review
+corrected premature request dispatch when invalid coordinator output was
+already queued at a read boundary. The three regression cases cover a second
+request, EOF and excessive stderr, each requiring zero authority calls.
+
+After the restart, all **1,383 portable tests** and **51 real Linux integration
+tests** passed. Read [control-plane.md](control-plane.md) and the latest
+[verification record](verification.md), then inspect Git and PR state before
+continuing. The operator authorized reviewing and merging PR #5 after validation;
+the linked PR records its current hosted checks and merge status.
+
+The host authority, approval UI, audit sink and launcher still share one trusted
+process. The new control-plane path supports fixed scenarios and owned fixtures.
+Preserve the existing constraints: live API calls and credential lookup remain
+disabled, and real VPN-target validation remains deferred. Older continuation
+sections below describe earlier slices and may have stale branch or PR states.
+
 ## Current continuation — offline OpenAI broker, 13 September 2026
 
 Work continues on `feature/secure-agent-offline-broker`, based on `3e96e67` from
