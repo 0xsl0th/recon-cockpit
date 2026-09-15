@@ -92,14 +92,16 @@ está integrado en `main` como `bf3a359`.
 | Acciones HTTP tipadas, política restrictiva, aprobación caducable de un solo uso y auditoría previa. | Catálogo de capacidades y adaptadores adicionales. |
 | Sesiones simuladas con límites de pasos, tiempo, salida y cancelación. | Flujos de pentesting guiados por evidencia y hallazgos. |
 | Coordinador aislado en Linux, autoridad externa y ejecutores de fixtures con IPC acotado. | Separar más responsabilidades del proceso confiable del host. |
-| Parser y broker con respuestas sintéticas y presupuestos reservados. | Integrarlos con la nueva autoridad; transporte real, credenciales y gasto. |
+| Parser y broker con respuestas sintéticas, presupuestos reservados e integración R1 con coordinador/autoridad. | Transporte real, credenciales y gasto. |
 | Sonda HTTP y backend separado para un IPv4/puerto autorizado, probado en una red propia. | Nmap en modo seguro, sesiones remotas, pruebas VPN y herramientas autenticadas. |
 | Eventos JSONL y verificaciones de aislamiento. | Evidencia persistente, hallazgos vinculados, reporte y auditoría independiente. |
 
-La última validación registró **1.383 pruebas portables**, **51 integraciones
-reales en Linux** y diez verificaciones de CI exitosas. Los comandos y límites
-constan en [verification.md](verification.md). Broker offline y coordinador
-aislado todavía son caminos separados. El cockpit interactivo utiliza Nmap en
+La validación local de R1 registró **1.561 pruebas portables** y **66 integraciones
+reales en Linux**. R1 está en la rama `feature/secure-agent-offline-authority`;
+el estado del PR y de CI debe verificarse por separado. Los comandos y límites
+constan en [verification.md](verification.md). El nuevo modo offline conecta
+broker, parser, coordinador y autoridad; conserva los modos anteriores como
+referencias de regresión. El cockpit interactivo utiliza Nmap en
 el host; no es un adaptador seguro para agentes y no se conectará directamente
 a ellos.
 

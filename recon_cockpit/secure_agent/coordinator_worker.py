@@ -10,7 +10,7 @@ from uuid import UUID
 
 
 SCENARIOS = ("three_step", "injection_target", "injection_authority", "endless",
-             "replay", "wrong_session", "forge_approval", "oversized", "early_exit")
+             "replay", "wrong_session", "forge_approval", "oversized", "early_exit", "offline_provider")
 
 
 def _load(name):
@@ -54,9 +54,9 @@ def _encode(value):
     return json.dumps(value, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode("ascii")
 
 
-def _init(raw, ipc):
+def _init(raw, ipc, *, version="1"):
     value = ipc.object_payload(raw)
-    if (set(value) != {"schema_version", "session_id"} or value["schema_version"] != "1"
+    if (set(value) != {"schema_version", "session_id"} or value["schema_version"] != version
             or type(value["session_id"]) is not str or str(UUID(value["session_id"])) != value["session_id"]):
         raise ValueError("invalid_coordinator_init")
     return value["session_id"]
@@ -73,6 +73,39 @@ def _response(raw, ipc, session_id, sequence):
     return value
 
 
+def _offline_response(raw, ipc, session_id, sequence, *, planning):
+    value = ipc.object_payload(raw)
+    if (set(value) != {"schema_version", "session_id", "sequence", "stop", "plan"}
+            or value["schema_version"] != "2" or value["session_id"] != session_id
+            or type(value["sequence"]) is not int or value["sequence"] != sequence
+            or type(value["stop"]) is not bool):
+        raise ValueError("invalid_coordinator_response")
+    if planning and not value["stop"]:
+        if type(value["plan"]) is not dict:
+            raise ValueError("invalid_coordinator_response")
+    elif value["plan"] is not None:
+        raise ValueError("invalid_coordinator_response")
+    return value
+
+
+def _offline_dialogue(ipc, session_id, send):
+    for sequence in range(1, ipc.MAX_OFFLINE_REQUESTS // 2 + 1):
+        request = {"schema_version": "2", "session_id": session_id, "sequence": sequence}
+        send(ipc.REQUEST, {**request, "operation": "plan"})
+        response = _offline_response(ipc.read_frame(sys.stdin.buffer, ipc.RESPONSE), ipc,
+                                     session_id, sequence, planning=True)
+        if not response["stop"]:
+            send(ipc.REQUEST, {**request, "operation": "propose", "plan": response["plan"]})
+            response = _offline_response(ipc.read_frame(sys.stdin.buffer, ipc.RESPONSE), ipc,
+                                         session_id, sequence, planning=False)
+        if response["stop"]:
+            if sys.stdin.buffer.read(1) != b"":
+                raise ValueError("extra_coordinator_input")
+            send(ipc.RESULT, {"schema_version": "2", "session_id": session_id, "status": "closed"})
+            return 0
+    raise ValueError("coordinator_request_limit")
+
+
 def main():
     try:
         if len(sys.argv) != 6 or sys.argv[1] not in SCENARIOS:
@@ -83,14 +116,17 @@ def main():
         _, host = bootstrap._arguments(["three_step", *sys.argv[2:]])
         checks = bootstrap._bootstrap(host)
         ipc = _load("coordinator_ipc")
-        session_id = _init(ipc.read_frame(sys.stdin.buffer, ipc.INIT), ipc)
-        planner = _load("session_planner")
+        session_id = _init(ipc.read_frame(sys.stdin.buffer, ipc.INIT), ipc,
+                           version="2" if scenario == "offline_provider" else "1")
 
         def send(kind, value):
             sys.stdout.buffer.write(ipc.frame(kind, _encode(value)))
             sys.stdout.buffer.flush()
 
         send(ipc.READY, {"schema_version": "1", "boundary_checks": checks})
+        if scenario == "offline_provider":
+            return _offline_dialogue(ipc, session_id, send)
+        planner = _load("session_planner")
         if scenario == "early_exit":
             return 0
         previous = None

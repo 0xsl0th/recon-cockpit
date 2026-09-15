@@ -53,6 +53,22 @@ python scripts/secure_agent_control_plane_demo.py --execute-fixtures
 This path requires Linux isolation even for dry-runs and currently uses fixed
 mock scenarios and owned fixtures. Live API calls remain unavailable.
 
+`--control-plane-openai-offline` combines that authority path with the offline
+provider. The coordinator requests a plan, then submits the same plan for full
+authorization. Trusted execution records supply provider observations; separate
+provider and tool budgets share one session deadline. See the
+[combined offline path](docs/offline-authority.md) for the protocol and limits.
+
+```bash
+python -m recon_cockpit.secure_agent --control-plane-openai-offline three_step --openai-model offline-fixture-model --dry-run
+python scripts/secure_agent_offline_authority_demo.py --execute-fixtures
+```
+
+The demo uses twelve synthetic cases and an explicit unattended policy for
+owned fixtures. Normal CLI fixture execution still requires fresh human
+approval under the default policy. No live model or human approval is validated
+by the demo.
+
 The executable tool set is one bounded HTTP probe. `--fixture` reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
 backend reaches one explicitly authorized IPv4 literal and TCP port through an

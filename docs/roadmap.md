@@ -4,6 +4,13 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
+**R1 implementation update:** the combined offline authority path is implemented
+on `feature/secure-agent-offline-authority`, with 1,561 portable tests and 66 real
+Linux integrations passing locally. See [offline-authority.md](offline-authority.md)
+and [verification.md](verification.md). R2 is the next implementation slice;
+inspect current PR/CI status before continuing. The baseline below records the
+starting point; the R1 section retains its acceptance criteria.
+
 ## Product direction
 
 Build an AI-assisted pentesting platform that turns evidence into proposed next
@@ -30,8 +37,8 @@ all ten hosted branch/PR checks passed. See [verification.md](verification.md).
 
 | Existing capability | Gap that determines the next work |
 | --- | --- |
-| `AuthoritySession`, isolated coordinator and bound fixture executor | Coordinator uses fixed scenarios. Host authority/UI/audit/launcher still share one process. |
-| `OfflineOpenAIProvider`, isolated parser and offline broker | Uses `SessionRunner`, separately from the authority path. No live transport or credentials. |
+| `AuthoritySession`, isolated coordinator and bound fixture executor | R1 adds an offline-provider relay. Host authority/UI/broker/audit/launcher still share one process. |
+| `OfflineOpenAIProvider`, isolated parser and offline broker | R1 connects these to the authority path; the earlier `SessionRunner` mode remains. No live transport or credentials. |
 | Strict actions and policy | Only `http_probe` is executable in secure mode; the action model is HTTP-specific. |
 | Fixtures and a separate routed HTTP backend | Authority executors are fixture-only; routed sessions and real VPN validation are absent. |
 | Audit and bounded feedback | No secure engagement evidence store, finding lifecycle or report provenance. |
@@ -45,8 +52,8 @@ evidence, add discovery, then grow the workflow library and live planning.
 
 | Priority | Build | Why now | Exit evidence |
 | --- | --- | --- | --- |
-| R1 — next | Offline provider through the isolated coordinator and authority | Closes the split between existing boundaries without new targets or spending. | Combined three-step synthetic session and adversarial variants pass through the Linux boundaries. |
-| R2 | One HTTP assessment, minimal capability/evidence contracts and report | Makes the foundation useful and reveals the abstractions tools actually need. | Execution → observation → finding draft → reviewable report for a seeded fixture condition. |
+| R1 — implemented | Offline provider through the isolated coordinator and authority | Closes the split between existing boundaries without new targets or spending. | Combined three-step synthetic session and adversarial variants pass through the Linux boundaries. |
+| R2 — next | One HTTP assessment, minimal capability/evidence contracts and report | Makes the foundation useful and reveals the abstractions tools actually need. | Execution → observation → finding draft → reviewable report for a seeded fixture condition. |
 | R3 | One isolated discovery adapter | Adds a second tool and tests the capability contract. | Discover an owned service and select HTTP work from evidence. |
 | R4 | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Complete scoped lab assessment reaches a supported finding or an honest inconclusive result. |
 | R5 | Isolated live-provider broker and further authority separation | We now have useful actions and a reproducible baseline against which to evaluate a model. | Approved real-model runs with verified credential/egress/data/spend controls. |
@@ -54,7 +61,7 @@ evidence, add discovery, then grow the workflow library and live planning.
 
 Tests and adversarial fixtures accompany every slice; R6 consolidates them.
 
-## R1: the next implementation slice
+## R1: implemented integration and acceptance criteria
 
 **Objective:** one offline planning path using the new authority boundary and
 existing owned HTTP fixtures. Keep the current modes as regression references.
@@ -288,7 +295,7 @@ page retrieval was unavailable during this planning pass.
 
 - Confirm Enrique Folte's submission role, affiliation if applicable, and any
   additional team members.
-- Settle R1 channel topology in its architecture decision.
+- R1 channel topology is settled in [offline-authority.md](offline-authority.md).
 - Choose the seeded condition and owned lab topology for the first assessment.
 - Later choose real-model/data/credential/spend settings.
 

@@ -2,127 +2,125 @@
 
 ## Read this first
 
-This is a development checkpoint for usage-limit interruptions and restarts.
-It does not resume a live assessment or restore approvals.
+This is a development checkpoint for interruptions and restarts. It does not
+resume a live assessment or restore approvals.
 
-**Latest task:** update the competition proposal, plan secure AI pentesting
-engines/workflows, and save a restart handoff. No implementation from the new
-roadmap has started.
+**Latest task:** implement R1, combining the offline provider, isolated
+coordinator, authority and fixture executor. The combined path is implemented
+on `feature/secure-agent-offline-authority`; see the latest verification record
+for measured results. R2 has not started.
 
-Read [roadmap.md](roadmap.md), especially **R1: the next implementation slice**,
-then [competition-proposal.md](competition-proposal.md),
-[control-plane.md](control-plane.md), [offline-openai-broker.md](offline-openai-broker.md)
-and the latest [verification record](verification.md). Read repository instructions
-and inspect Git before editing.
+Read [offline-authority.md](offline-authority.md), the R2 section in
+[roadmap.md](roadmap.md), and the latest [verification record](verification.md).
+Read repository instructions and inspect Git before editing.
 
 ## Saved state
 
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
-- Documentation branch: `docs/competition-roadmap`, based on `origin/main`
-  at `bf3a359`. This handoff is saved with the proposal and roadmap; inspect
-  `git log -1` for the documentation commit and check for later changes.
-  The documentation checkpoint is local; no new PR or remote push was made.
-- [PR #5](https://github.com/0xsl0th/recon-cockpit/pull/5) is **merged**, not waiting
-  for review. Reviewed implementation: `0477f25`; merge: `bf3a359`.
-- Last implementation verification: **1,383 portable tests**, **51 Linux
-  integrations**, **all ten hosted branch/PR checks passed**.
-- This task changes documentation only; it is not a new implementation test run.
-- The IPC correction rejects queued extra stdout, premature EOF and excessive
-  stderr before authority dispatch. Later output may be detected only after the
-  authority call returns; an executed action cannot be undone.
-- Old XML files were under `/tmp/recon-control-plane-recovered-*.xml`; they may
-  disappear after reboot. Durable evidence is in `docs/verification.md`.
+- Implementation branch: `feature/secure-agent-offline-authority`, based on
+  documentation checkpoint `54461b7` above `origin/main` at `bf3a359`.
+  Inspect `git log -1`, upstream and current PR status before continuing;
+  do not assume a development checkpoint has been merged.
+- The operator pushed documentation commit `54461b7`; GitHub branch
+  `docs/competition-roadmap` was verified at that commit on 15 September.
+- [PR #5](https://github.com/0xsl0th/recon-cockpit/pull/5) is merged. Reviewed
+  implementation: `0477f25`; merge: `bf3a359`. Do not repeat its review/merge.
+- R1 adds `--control-plane-openai-offline` and the twelve-case
+  `scripts/secure_agent_offline_authority_demo.py`. Earlier CLI modes remain.
+- PR #5's historical verification was 1,383 portable tests, 51 Linux integrations
+  and ten hosted branch/PR checks. Current R1 evidence is the first section of
+  `verification.md`; local and hosted checks are separate evidence.
+- Current JUnit XML files are `/tmp/recon-offline-authority-portable.xml` and
+  `/tmp/recon-offline-authority-linux.xml`; they may disappear after reboot.
+  Durable evidence is in `docs/verification.md`.
+- Git SSH authentication was unavailable after this restart; GitHub CLI access
+  worked. Check actual authentication before assuming a future push will work.
+- Old review worktrees under `/tmp/recon-pr2-review` and
+  `/tmp/recon-pr3-review` disappeared after reboot; their stale Git registrations
+  are historical and were not pruned.
 
 ## Intent and constraints
 
-The user wants agents eventually to conduct authorized pentest workflows with
-specialist engines and attack flows, within enforced security boundaries.
-Challenge 4, security of autonomous agents, is the competition focus.
-The current foundation uses deterministic/synthetic planning.
+The product direction is authorized pentest workflows with specialist engines
+within enforced security boundaries. Challenge 4, security of autonomous
+agents, is the competition focus. Planning still uses synthetic responses.
 
-- Keep live API calls and credential lookup disabled until explicitly enabled
-  for a reviewed slice with operator data/spend settings.
-- Real VPN testing remains deferred until the product is ready. No target scope
-  was provided by the planning request.
-- Next work uses owned fixtures. Preserve scope filtering, sandboxing, fresh
-  approvals, budgets, audit-before-execution and fail-closed behavior.
+- Keep live API calls and credential lookup disabled. Real use requires a
+  reviewed slice with explicit operator data/model/credential/spend settings.
+- Real VPN testing remains deferred. Continue with owned fixtures.
+- Preserve scope filtering, isolation, fresh approvals, budgets, durable
+  audit-before-execution and fail-closed behavior.
 - Never expose the legacy host runner, arbitrary shell, credentials, broad host
   mounts or Docker socket to agents. Do not change host networking to pass tests.
 - Do not restore/replay approvals or imitate a human terminal response.
-- Host authority, UI, audit and launcher still share one trusted process.
-- PR #5's authorized merge is done. The planning task does not authorize
-  submitting the competition entry, messaging others, paid calls or merging
-  future implementation PRs.
+- Authority, UI, broker, audit and launcher still share a trusted host process.
+- This development work does not authorize competition submission, messaging
+  others, paid calls, external target assessment or merging future PRs.
 
-## Next implementation: R1
+## Completed R1 and next implementation: R2
 
-`--openai-offline` uses `OfflineOpenAIProvider` with `SessionRunner`.
-`--control-plane-mock` separately uses an isolated coordinator,
-`AuthoritySession` and `AuthorizedFixtureBackend`. Connect them before adding
-more tools or engines.
+The combined mode uses `OfflineOpenAIProvider`, `LinuxOfflineCoordinator`,
+`AuthoritySession` and `AuthorizedFixtureBackend`. Version-2 PLAN/PROPOSE
+operations share the existing pipes, with a maximum 32 requests. The authority
+constructs observations, binds the pending canonical plan, owns the shared
+deadline and enforces policy/approval/audit/execution. Broker and tool budgets
+remain separate and nonrefundable.
 
-First write a small architecture decision for provider/coordinator/authority
-message ownership and bounded IPC. Then implement one combined three-step
-offline fixture session: shared authority identity/deadline, separate provider
-and tool counters, trusted observations, canonical provider requests and full
-authority checks for each proposal. The roadmap contains acceptance criteria
-and starting files.
+The architecture decision records bounded reply sizes and poisoned channels.
+Queued invalid coordinator output is checked before callbacks; output arriving
+during a synchronous callback can be detected only afterward. An already
+completed exchange or execution cannot be undone.
 
-On the next instruction to continue implementation:
+On the next instruction to continue:
 
-1. Inspect Git and preserve this documentation checkpoint and unrelated changes.
-2. Create a dedicated implementation branch based on the saved checkpoint, or
-   include it deliberately before branching from refreshed main. Do not reset
-   away the plan.
-3. Settle R1 topology before changing IPC, then implement and validate R1 only.
-4. Update verification and this handoff with actual results, failures and the
-   precise next step. Save a reviewable commit when ready.
+1. Inspect Git, PR/CI state and verification. Preserve R1 and unrelated changes.
+   Do not repeat completed implementation or merge without operator approval.
+2. Begin the smallest R2 design: one seeded, non-destructive HTTP condition in
+   the owned fixture, bounded execution/observation/finding contracts, and a
+   reviewable Markdown/JSON report. Choose the fixture condition explicitly.
+3. Keep the first workflow fixed and preserve R1 boundaries. Additional tools,
+   live calls, external targets and generic workflow machinery come later.
+4. Implement and validate that slice, then update verification and this
+   checkpoint with actual results and publication/review status.
 
-## Recovery commands
+## Recovery and verification
 
 ```sh
 git status --short --branch
 git log -5 --oneline --decorate
 git diff --stat
 git show --stat --oneline HEAD
-```
-
-For implementation work, run focused tests and the portable suite. Changes to
-kernel boundaries require affected real Linux tests outside the coding sandbox
-as the normal user:
-
-```sh
 .venv/bin/python -m pytest -m 'not integration' --strict-markers -ra
 RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short
 git diff --check
 ```
 
-Do not rerun all tests just to verify a saved documentation change. Use fresh
-audit paths for demos. Distinguish synthetic provider behavior, real isolation
-and actual human approval evidence.
+Run affected kernel tests outside the coding sandbox as the normal user.
+Use fresh audit paths for demos. Distinguish synthetic provider behavior, real
+OS isolation and actual human approval evidence. Do not rerun all tests merely
+to verify saved documentation.
 
-## Resolved references and pending decisions
+## Remaining decisions
 
-Confirmed by the user: Enrique Folte, PentestMonkey, PayloadsAllTheThings,
-GTFOBins, LOLBAS, HackTricks and Hack The Box. Exact links and categories are in
-the roadmap; do not repeat the earlier reference clarification.
+Reference identities are resolved: Enrique Folte, PentestMonkey,
+PayloadsAllTheThings, GTFOBins, LOLBAS, HackTricks and Hack The Box. Exact links
+and categories are in the roadmap; do not repeat reference clarification.
 
 Enrique Folte is the identified project contact. Submission role, affiliation
-and any additional members remain to confirm. R1 IPC topology and the first
-seeded assessment condition remain design decisions.
+and additional members remain to confirm. These do not block R2. R1 topology is
+settled; the seeded HTTP assessment condition is the next design decision.
 
 Proposal deadline: **15 November 2026**. Final development: **20 May 2027**.
-The roadmap includes review and delivery buffers.
 
-## Copy/paste prompt for tomorrow
+## Copy/paste continuation
 
 ```text
 Continue Recon Cockpit from docs/continue-here.md and docs/roadmap.md.
-Inspect Git and preserve the saved documentation checkpoint and local changes.
-PR #5 is merged as bf3a359; do not repeat its review or merge.
-Start R1: compose the offline provider with the isolated coordinator,
-AuthoritySession and fixture executor. First settle bounded IPC/data flow,
-then implement and test the smallest combined three-step offline path.
-Keep live API calls/credentials disabled and real VPN testing deferred.
-Use owned fixtures, preserve enforcement, and update the handoff with results.
+Inspect Git and preserve saved work. PR #5 is merged as bf3a359.
+R1 is implemented on feature/secure-agent-offline-authority; inspect its current
+PR and checks. Read docs/offline-authority.md and the latest verification record.
+Begin the smallest R2 HTTP assessment/evidence/report slice using one seeded,
+non-destructive owned-fixture condition. Do not repeat R1 or merge without approval.
+Keep live calls/credentials disabled and real VPN testing deferred.
+Preserve enforcement and update the handoff with measured results.
 ```

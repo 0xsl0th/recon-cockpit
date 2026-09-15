@@ -1,5 +1,15 @@
 # Handover to the Lenovo / Kali amd64
 
+## Latest checkpoint — R1 combined offline authority, 15 September 2026
+
+Start with [continue-here.md](continue-here.md) and
+[offline-authority.md](offline-authority.md). R1 is implemented on
+`feature/secure-agent-offline-authority`, based on the operator's pushed
+documentation checkpoint `54461b7`. Local verification passed 1,561 portable
+tests and 66 real Linux integrations, including both twelve-case demos. R2's
+owned-fixture HTTP assessment and evidence/report contract is next. Inspect
+current Git, PR and CI state before continuing; older sections are historical.
+
 ## Latest checkpoint — competition roadmap, 15 September 2026
 
 Start with [continue-here.md](continue-here.md) for the current restart prompt and

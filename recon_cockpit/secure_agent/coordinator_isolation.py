@@ -24,6 +24,8 @@ synchronous code and must cooperate with the supplied cancellation/deadline.
 """
 
     name = "linux-isolated-coordinator-mock"
+    schema_version = "1"
+    _max_requests = coordinator_ipc.MAX_REQUESTS
 
     def __init__(self, scenario="three_step"):
         self.scenario = scenario
@@ -66,7 +68,7 @@ synchronous code and must cooperate with the supplied cancellation/deadline.
         control.check()
         coordinator_ipc.frame(coordinator_ipc.INIT, init_payload)
         init = coordinator_ipc.object_payload(init_payload)
-        if (set(init) != {"schema_version", "session_id"} or init["schema_version"] != "1"
+        if (set(init) != {"schema_version", "session_id"} or init["schema_version"] != self.schema_version
                 or type(init["session_id"]) is not str or str(UUID(init["session_id"])) != init["session_id"]):
             raise ValueError("invalid_coordinator_init")
         if not callable(exchange):
@@ -81,10 +83,10 @@ synchronous code and must cooperate with the supplied cancellation/deadline.
         try:
             stdlib, files = _runtime_files("/usr/bin/python3", None, control=control)
             raw = coordinator_ipc.supervise(self._command(stdlib, files), init_payload,
-                                            verified_exchange, control=control)
+                                            verified_exchange, control=control, max_requests=self._max_requests)
             result = coordinator_ipc.object_payload(raw)
             if (set(result) != {"schema_version", "session_id", "status"}
-                    or result["schema_version"] != "1" or result["session_id"] != init["session_id"]
+                    or result["schema_version"] != self.schema_version or result["session_id"] != init["session_id"]
                     or result["status"] != "closed" or self._boundary_checks is None):
                 raise ValueError("invalid_coordinator_result")
             control.check()
@@ -95,3 +97,18 @@ synchronous code and must cooperate with the supplied cancellation/deadline.
         except (OSError, RuntimeError, ValueError, TypeError, RecursionError, subprocess.SubprocessError):
             self._boundary_checks = None
             raise IsolationUnavailable("Isolated coordinator failed; no fallback is permitted") from None
+
+
+class LinuxOfflineCoordinator(LinuxCoordinator):
+    """Fixed version-2 relay; provider and authority remain in trusted host code."""
+
+    name = "linux-isolated-coordinator-offline"
+    schema_version = "2"
+    _max_requests = coordinator_ipc.MAX_OFFLINE_REQUESTS
+
+    def __init__(self):
+        super().__init__("offline_provider")
+
+    def _validate_scenario(self):
+        if type(self.scenario) is not str or self.scenario != "offline_provider":
+            raise ValueError("unsupported_coordinator_scenario")
