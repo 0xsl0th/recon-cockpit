@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import threading
 from typing import Protocol
+from uuid import UUID
 
 from .approvals import ApprovalStore
 from .audit import AuditSink, AuditUnavailable
+from .evidence import EvidenceUnavailable
 from .execution import ExecutionControl, ExecutionStopped
 from .models import Action, Policy, ValidationError, parse_action, parse_policy
 
@@ -49,15 +51,17 @@ def result_metadata(result: dict) -> dict:
 
 class Controller:
     def __init__(self, policy: Policy, audit: AuditSink, backend: Backend | None = None,
-                 approvals: ApprovalStore | None = None, *, session_id: str | None = None):
+                 approvals: ApprovalStore | None = None, *, session_id: str | None = None,
+                 evidence=None):
         self.policy = parse_policy(policy.to_dict())
         self.audit = audit
         self.backend = backend if backend is not None else UnavailableBackend()
         self.approvals = approvals if approvals is not None else ApprovalStore()
+        # Optional trusted host sink; no proposal field can select or replace it.
+        self.evidence = evidence
         self._lock = threading.Lock()
         self._audit_failed = False
         if session_id is not None:
-            from uuid import UUID
             if type(session_id) is not str or str(UUID(session_id)) != session_id:
                 raise ValueError("invalid_session_id")
         self.session_id = session_id
@@ -70,6 +74,21 @@ class Controller:
         except AuditUnavailable:
             self._audit_failed = True
             raise
+
+    def _evidence_call(self, operation, *args, **kwargs):
+        if self._audit_failed:
+            raise EvidenceUnavailable("evidence_previously_failed")
+        try:
+            result = getattr(self.evidence, operation)(*args, **kwargs)
+            if operation == "start" and (type(result) is not str or str(UUID(result)) != result):
+                raise ValueError("invalid_execution_id")
+            return result
+        except EvidenceUnavailable:
+            self._audit_failed = True
+            raise
+        except (RuntimeError, OSError, ValueError, TypeError):
+            self._audit_failed = True
+            raise EvidenceUnavailable("evidence_unavailable") from None
 
     def submit(self, proposal: dict | str | bytes, *, execute: bool = False,
                approval_reference: str | None = None, interactive: bool = False,
@@ -136,6 +155,10 @@ class Controller:
             outcome.update(execution_status="blocked", reasons=["isolation_unavailable"])
             self._emit({**outcome, "event_type": "execution_blocked"})
             return outcome
+        if self.evidence is not None:
+            outcome["execution_id"] = self._evidence_call(
+                "start", action, self.policy, session_id=self.session_id,
+                session_step=session_step, backend=self.backend.name)
         # This synchronous, durable event is a hard precondition to tool launch.
         self._emit({**outcome, "event_type": "execution_started",
                     "execution_status": "started", "backend": self.backend.name})
@@ -160,6 +183,10 @@ class Controller:
         if status not in {"succeeded", "failed", "timeout", "output_limit", "blocked", "cancelled"}:
             status = "failed"
         outcome["execution_status"] = status
+        if self.evidence is not None:
+            # Artifact/completion failures must escape, not become a fabricated
+            # backend failure or a successful audit completion.
+            self._evidence_call("finish", outcome["execution_id"], result, execution_status=status)
         self._emit({**outcome, "event_type": "execution_finished",
                     "backend": self.backend.name, "result_metadata": result_metadata(result)})
         # The caller receives bounded tool data separately from trusted decisions.

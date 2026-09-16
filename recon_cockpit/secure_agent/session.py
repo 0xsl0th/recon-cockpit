@@ -56,7 +56,7 @@ def _observation(step, outcome):
 
 
 def _public_step(step, outcome):
-    fields = ("action_id", "action_digest", "decision", "execution_status", "reasons", "result_metadata")
+    fields = ("action_id", "action_digest", "execution_id", "decision", "execution_status", "reasons", "result_metadata")
     return {"step": step, **{key: outcome[key] for key in fields if key in outcome}}
 
 

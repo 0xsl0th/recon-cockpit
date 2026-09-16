@@ -1,6 +1,6 @@
 # Recon Cockpit — agentes de pentesting con ejecución controlada
 
-**Borrador de propuesta · 15 de septiembre de 2026 · No presentado**
+**Borrador de propuesta · 16 de septiembre de 2026 · No presentado**
 
 Concurso de Desarrollo de Soluciones de Ciberseguridad 2026–2027,
 Facultad de Ingeniería, Universidad de Palermo.
@@ -84,26 +84,41 @@ confiables.
 
 ## 4. Estado real del desarrollo
 
-Al 15 de septiembre de 2026, [PR #5](https://github.com/0xsl0th/recon-cockpit/pull/5)
-está integrado en `main` como `bf3a359`.
+La base previa, [PR #5](https://github.com/0xsl0th/recon-cockpit/pull/5),
+se integró en `main` como `bf3a359`. Al 16 de septiembre de 2026, R1 aporta la
+integración offline con la autoridad en `cfde4ed`, correspondiente al
+[PR #6 en borrador](https://github.com/0xsl0th/recon-cockpit/pull/6). La rama
+`feature/secure-agent-http-assessment` implementa encima la primera evaluación
+HTTP con evidencia y reporte. Su publicación y las comprobaciones alojadas se
+registran por separado en [continue-here.md](continue-here.md).
 
 | Implementado y verificado | Pendiente |
 | --- | --- |
-| Acciones HTTP tipadas, política restrictiva, aprobación caducable de un solo uso y auditoría previa. | Catálogo de capacidades y adaptadores adicionales. |
-| Sesiones simuladas con límites de pasos, tiempo, salida y cancelación. | Flujos de pentesting guiados por evidencia y hallazgos. |
+| Acciones HTTP tipadas, política restrictiva, aprobación caducable de un solo uso, auditoría previa y descriptor versionado de la capacidad. | Catálogo general y adaptadores adicionales. |
+| Sesiones simuladas limitadas y un flujo HTTP determinista cuyo siguiente paso depende de evidencia real del fixture. | Descubrimiento aislado y motores adicionales. |
 | Coordinador aislado en Linux, autoridad externa y ejecutores de fixtures con IPC acotado. | Separar más responsabilidades del proceso confiable del host. |
 | Parser y broker con respuestas sintéticas, presupuestos reservados e integración R1 con coordinador/autoridad. | Transporte real, credenciales y gasto. |
 | Sonda HTTP y backend separado para un IPv4/puerto autorizado, probado en una red propia. | Nmap en modo seguro, sesiones remotas, pruebas VPN y herramientas autenticadas. |
-| Eventos JSONL y verificaciones de aislamiento. | Evidencia persistente, hallazgos vinculados, reporte y auditoría independiente. |
+| Artefactos privados, observaciones vinculadas, reportes JSON/Markdown y detección de evidencia incompleta mediante inspección de solo lectura. | Ciclo de revisión más amplio, interfaz y auditoría independiente. |
 
-La validación local de R1 registró **1.561 pruebas portables** y **66 integraciones
-reales en Linux**. R1 está en la rama `feature/secure-agent-offline-authority`;
-el estado del PR y de CI debe verificarse por separado. Los comandos y límites
-constan en [verification.md](verification.md). El nuevo modo offline conecta
-broker, parser, coordinador y autoridad; conserva los modos anteriores como
-referencias de regresión. El cockpit interactivo utiliza Nmap en
+La validación local de R2 del 16 de septiembre registró **1.849 pruebas
+portables** en 16,208 segundos y **78 integraciones reales en Linux** en 151,816
+segundos, sin fallos, errores ni pruebas omitidas en las suites seleccionadas.
+Los comandos y límites constan en [verification.md](verification.md). El modo
+offline conecta broker, parser, coordinador y autoridad; conserva los modos
+anteriores como referencias de regresión. El cockpit interactivo utiliza Nmap en
 el host; no es un adaptador seguro para agentes y no se conectará directamente
 a ellos.
+
+La evaluación R2 realiza hasta dos GET en un servicio propio de un namespace
+aislado. El primero descubre un documento de diagnóstico; solo evidencia válida
+habilita la segunda consulta a la ruta permitida del mismo caso. Se verificaron
+seis variantes: metadatos sintéticos expuestos, ausencia del endpoint, documento
+malformado, demora, salida excesiva y descubrimiento hostil. El reporte distingue
+condición sembrada validada, no demostrada en ese endpoint e inconclusa. Conserva
+referencias a ejecuciones y artefactos; todo hallazgo queda pendiente de revisión
+del operador. No se afirma una vulnerabilidad general, un bypass de autenticación
+ni la autenticidad del contenido del servidor. Véase [el contrato R2](http-assessment.md).
 
 No se han validado modelos autónomos ni enviado solicitudes a una API real.
 La autoridad, interfaz humana, auditoría y lanzador aún comparten un proceso
@@ -157,6 +172,11 @@ escenario incluirá respuestas manipuladas que intenten ampliar alcance,
 falsificar aprobaciones o inventar resultados. Se comparará una línea base
 determinista con un agente real cuando su integración esté habilitada.
 
+El primer tramo HTTP y su reporte ya funcionan con planificación determinista y
+respuestas sintéticas del proveedor. El siguiente tramo es R3: diseñar e
+implementar el menor adaptador de descubrimiento que preserve el aislamiento.
+La evaluación con un modelo real continúa pendiente.
+
 | Dimensión | Evidencia a obtener |
 | --- | --- |
 | Utilidad | Cobertura de condiciones sembradas, precisión de hallazgos y pasos necesarios; distinguir desconocido de descartado. |
@@ -181,7 +201,7 @@ validación, demostración y documentación. Los finalistas presentan en H4ck3d 
 
 | Período propuesto | Entregable |
 | --- | --- |
-| Septiembre–octubre 2026 | Integración offline con la autoridad; contratos de capacidades/evidencia y primer flujo reproducible. |
+| Septiembre–octubre 2026 | Revisar y publicar R1/R2, implementados localmente; diseñar e iniciar descubrimiento aislado R3. |
 | Hasta el 8/11/2026 | Cerrar propuesta, integrantes, arquitectura, alcance mínimo y evidencia para revisión. |
 | 9–15/11/2026 | Presentación por el equipo, con margen respecto de la fecha oficial. |
 | Noviembre 2026–enero 2027 | Reconocimiento y validación acotados en laboratorio, con reporte. |

@@ -1,6 +1,37 @@
 # Handover to the Lenovo / Kali amd64
 
-## Latest checkpoint — R1 combined offline authority, 15 September 2026
+## Latest checkpoint — R2 owned HTTP assessment, 16 September 2026
+
+Start with [continue-here.md](continue-here.md),
+[http-assessment.md](http-assessment.md) and [verification.md](verification.md).
+The smallest R2 slice is implemented on `feature/secure-agent-http-assessment`,
+above R1 commit `cfde4ed` in [draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6).
+Publication of R2 is being finalized; inspect Git, PR and CI state before assuming
+the checkout has been pushed or merged. The continuation checkpoint records the
+final publication state.
+
+The complete local run passed **1,849 portable tests** in 16.208 seconds and
+**78 real Linux integrations** in 151.816 seconds. Neither selected suite had
+failures, errors or skips. The HTTP workflow uses actual owned-fixture discovery
+evidence to gate a second synthetic plan through R1, records private execution
+artifacts and observations, and creates JSON/Markdown draft reports. Six cases
+cover exposure, absence, malformed/stalled/oversized responses and hostile
+discovery. Defaults are two planning steps and 2,048 reserved output bytes.
+
+For interactive execution and read-only inspection, follow the
+[README assessment example](../README.md#owned-http-assessment-and-report).
+Use a fresh assessment directory and audit filename; the default policy requires
+two separate human approvals for the normal two-GET case. Report outcomes and
+execution success are separate. Inspection reconciles incomplete evidence; it
+never resumes execution or restores approvals, deadlines or budgets.
+
+Next is R3: design the smallest isolated discovery adapter and its owned lab
+contract. Broader report/review workflows and UI remain later work. Live calls,
+credentials, external assessment targets and real VPN testing remain disabled
+or deferred. R2 validates seeded fixture behavior with deterministic planning,
+not autonomous-model performance. All older sections below are historical.
+
+## Historical checkpoint — R1 combined offline authority, 15 September 2026
 
 Start with [continue-here.md](continue-here.md) and
 [offline-authority.md](offline-authority.md). R1 is implemented on
@@ -10,7 +41,7 @@ tests and 66 real Linux integrations, including both twelve-case demos. R2's
 owned-fixture HTTP assessment and evidence/report contract is next. Inspect
 current Git, PR and CI state before continuing; older sections are historical.
 
-## Latest checkpoint — competition roadmap, 15 September 2026
+## Historical checkpoint — competition roadmap, 15 September 2026
 
 Start with [continue-here.md](continue-here.md) for the current restart prompt and
 [roadmap.md](roadmap.md) for the next implementation slice. PR #5 is merged as
@@ -18,7 +49,7 @@ Start with [continue-here.md](continue-here.md) for the current restart prompt a
 of the offline provider with the isolated authority path; that integration has
 not been implemented. Older continuation sections below are historical.
 
-## Current continuation — control-plane review, 15 September 2026
+## Historical continuation — control-plane review, 15 September 2026
 
 The interrupted review of
 [PR #5](https://github.com/0xsl0th/recon-cockpit/pull/5) was recovered on
@@ -40,7 +71,7 @@ Preserve the existing constraints: live API calls and credential lookup remain
 disabled, and real VPN-target validation remains deferred. Older continuation
 sections below describe earlier slices and may have stale branch or PR states.
 
-## Current continuation — offline OpenAI broker, 13 September 2026
+## Historical continuation — offline OpenAI broker, 13 September 2026
 
 Work continues on `feature/secure-agent-offline-broker`, based on `3e96e67` from
 [PR #3](https://github.com/0xsl0th/recon-cockpit/pull/3). The broker now mediates
@@ -72,7 +103,7 @@ bounded cancellable reads, input-token/spending accounting and approved data.
 Do not treat output-token reservations as a monetary budget or enable API calls
 from offline verification alone.
 
-## Current continuation — provider isolation, 12 September 2026
+## Historical continuation — provider isolation, 12 September 2026
 
 The bounded-session slice is committed as `467fab0` and pushed in
 [PR #2](https://github.com/0xsl0th/recon-cockpit/pull/2). Its branch and PR CI passed,
@@ -98,7 +129,7 @@ it must be implemented and tested with live calls disabled before any live
 evaluation is considered. The codec currently has no transport and its tests
 use synthetic API responses.
 
-## Current continuation — milestone 2, 11 September 2026
+## Historical continuation — milestone 2, 11 September 2026
 
 PR #1 was merged into `main` as `8d7fe69`. Work now continues on
 `feature/secure-agent-m2`, created from that merged revision. The interrupted

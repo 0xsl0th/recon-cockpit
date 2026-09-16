@@ -2,9 +2,9 @@ name: Portable tests
 
 on:
   push:
-    branches: [main, feature/secure-agent-m1, feature/secure-agent-m2, feature/secure-agent-provider-isolation, feature/secure-agent-offline-broker, feature/secure-agent-control-plane, feature/secure-agent-offline-authority]
+    branches: [main, feature/secure-agent-m1, feature/secure-agent-m2, feature/secure-agent-provider-isolation, feature/secure-agent-offline-broker, feature/secure-agent-control-plane, feature/secure-agent-offline-authority, feature/secure-agent-http-assessment]
   pull_request:
-    branches: [main, feature/secure-agent-m2, feature/secure-agent-provider-isolation]
+    branches: [main, feature/secure-agent-m2, feature/secure-agent-provider-isolation, feature/secure-agent-offline-authority]
 
 permissions:
   contents: read
