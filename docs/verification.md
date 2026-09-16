@@ -2,8 +2,9 @@
 
 ## R2: owned HTTP assessment and private evidence — 16 September 2026
 
-Implemented on `feature/secure-agent-http-assessment`, based on R1 `cfde4ed`
-in [draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6). The fixed
+Implementation `3d20b24` on `feature/secure-agent-http-assessment` is published
+in [draft PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), based on R1
+`cfde4ed` in [draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6). The fixed
 two-GET workflow gates its second synthetic provider exchange on actual
 discovery evidence, retains R1's execution boundaries, and produces linked
 execution/observation records and reviewable JSON/Markdown reports.

@@ -19,8 +19,12 @@ reconciles incomplete bundles without resuming work.
 ## Saved state
 
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
-- Current branch: `feature/secure-agent-http-assessment`, based on R1 `cfde4ed`.
-  R2 publication is being finalized; inspect Git/upstream and associated PR.
+- Current branch: `feature/secure-agent-http-assessment`, tracking
+  `origin/feature/secure-agent-http-assessment`, based on R1 `cfde4ed`.
+  R2 implementation `3d20b24` is pushed in
+  [draft PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), stacked on R1's
+  branch. Neither draft is merged. Check `git log -1` for the latest documentation
+  checkpoint and the PR for current hosted checks; local tests are separate.
 - R1 is pushed as `cfde4ed` on `feature/secure-agent-offline-authority` in
   [draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6). Its ten hosted
   branch/PR matrix checks passed. It remains R2's unmerged prerequisite.
@@ -110,8 +114,8 @@ Proposal deadline: **15 November 2026**. Final development: **20 May 2027**.
 ```text
 Continue Recon Cockpit from docs/continue-here.md and docs/roadmap.md.
 Inspect Git and preserve saved work. PR #5 is merged as bf3a359.
-R1 is pushed in draft PR #6; R2 is implemented on
-feature/secure-agent-http-assessment. Inspect its publication and checks.
+R1 is pushed in draft PR #6; R2 is pushed in draft PR #7 on
+feature/secure-agent-http-assessment, stacked on R1. Inspect current checks.
 Read docs/http-assessment.md and the latest verification record.
 Proceed with the smallest R3 isolated discovery design and owned-fixture path.
 Do not repeat R1/R2 or merge without approval. Keep live calls/credentials

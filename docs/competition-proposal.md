@@ -201,7 +201,7 @@ validación, demostración y documentación. Los finalistas presentan en H4ck3d 
 
 | Período propuesto | Entregable |
 | --- | --- |
-| Septiembre–octubre 2026 | Revisar y publicar R1/R2, implementados localmente; diseñar e iniciar descubrimiento aislado R3. |
+| Septiembre–octubre 2026 | Revisar R1/R2, publicados como PRs en borrador; diseñar e iniciar descubrimiento aislado R3. |
 | Hasta el 8/11/2026 | Cerrar propuesta, integrantes, arquitectura, alcance mínimo y evidencia para revisión. |
 | 9–15/11/2026 | Presentación por el equipo, con margen respecto de la fecha oficial. |
 | Noviembre 2026–enero 2027 | Reconocimiento y validación acotados en laboratorio, con reporte. |

@@ -6,9 +6,10 @@ Start with [continue-here.md](continue-here.md),
 [http-assessment.md](http-assessment.md) and [verification.md](verification.md).
 The smallest R2 slice is implemented on `feature/secure-agent-http-assessment`,
 above R1 commit `cfde4ed` in [draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6).
-Publication of R2 is being finalized; inspect Git, PR and CI state before assuming
-the checkout has been pushed or merged. The continuation checkpoint records the
-final publication state.
+R2 implementation `3d20b24` is pushed in
+[draft PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), stacked on R1's
+branch. Neither draft is merged. Inspect Git and current hosted checks; the
+continuation checkpoint records the branch and next work.
 
 The complete local run passed **1,849 portable tests** in 16.208 seconds and
 **78 real Linux integrations** in 151.816 seconds. Neither selected suite had
