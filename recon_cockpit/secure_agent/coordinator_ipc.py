@@ -7,6 +7,7 @@ helpers; all subprocess machinery is imported locally by the supervisor.
 
 INIT, REQUEST, RESPONSE, RESULT, READY = 1, 2, 3, 4, 5
 MAX_REQUESTS = 17
+MAX_OFFLINE_REQUESTS = 32
 MAX_INIT_BYTES = 512
 MAX_REQUEST_BYTES = 20480
 MAX_RESPONSE_BYTES = 12288
@@ -111,8 +112,8 @@ def _kill_and_reap(proc, *, failed):
                     stream.close()
 
 
-def supervise(argv, init_payload, exchange, *, control):
-    """Validate READY, mediate <=17 requests, require stop and RESULT plus EOF.
+def supervise(argv, init_payload, exchange, *, control, max_requests=MAX_REQUESTS):
+    """Validate READY, mediate a fixed bounded dialogue, then RESULT plus EOF.
 
 Requests are opaque bounded data for the authority callback. Responses must
 contain a boolean stop; only that trusted flag permits a final RESULT. Neither
@@ -122,6 +123,10 @@ successful framing nor coordinator evidence confers tool execution authority.
     import selectors
     import subprocess
 
+    if type(max_requests) is not int or max_requests not in {MAX_REQUESTS, MAX_OFFLINE_REQUESTS}:
+        raise IPCError("invalid_ipc_request_limit")
+    output_limit = (max_requests * (MAX_REQUEST_BYTES + 5)
+                    + MAX_READY_BYTES + MAX_RESULT_BYTES + 10 + MAX_STDERR_BYTES)
     pending = frame(INIT, init_payload)
     if not callable(exchange):
         raise IPCError("invalid_ipc_exchange")
@@ -169,7 +174,7 @@ successful framing nor coordinator evidence confers tool execution authority.
                                 raise IPCError("unexpected_ipc_state")
                         continue
                     try:
-                        data = os.read(key.fd, min(8192, MAX_OUTPUT_BYTES - output_total + 1))
+                        data = os.read(key.fd, min(8192, output_limit - output_total + 1))
                     except BlockingIOError:
                         continue
                     if not data:
@@ -179,7 +184,7 @@ successful framing nor coordinator evidence confers tool execution authority.
                             raise IPCError("truncated_ipc_dialogue")
                         continue
                     output_total += len(data)
-                    if output_total > MAX_OUTPUT_BYTES:
+                    if output_total > output_limit:
                         raise IPCError("ipc_output_limit")
                     if key.data == "stderr":
                         stderr_total += len(data)
@@ -213,7 +218,7 @@ successful framing nor coordinator evidence confers tool execution authority.
                             raise IPCError("extra_ipc_output")
                         if expected == REQUEST:
                             requests += 1
-                            if requests > MAX_REQUESTS:
+                            if requests > max_requests:
                                 raise IPCError("ipc_request_limit")
                             request, phase = payload, "exchanging"
                         else:
@@ -230,7 +235,7 @@ successful framing nor coordinator evidence confers tool execution authority.
                         try:
                             queued = os.read(proc.stderr.fileno(), min(
                                 8192, MAX_STDERR_BYTES - stderr_total + 1,
-                                MAX_OUTPUT_BYTES - output_total + 1,
+                                output_limit - output_total + 1,
                             ))
                         except BlockingIOError:
                             break
@@ -240,7 +245,7 @@ successful framing nor coordinator evidence confers tool execution authority.
                             break
                         stderr_total += len(queued)
                         output_total += len(queued)
-                        if stderr_total > MAX_STDERR_BYTES or output_total > MAX_OUTPUT_BYTES:
+                        if stderr_total > MAX_STDERR_BYTES or output_total > output_limit:
                             raise IPCError("ipc_output_limit")
                     try:
                         queued = os.read(proc.stdout.fileno(), 1)
@@ -256,7 +261,7 @@ successful framing nor coordinator evidence confers tool execution authority.
                     if type(value.get("stop")) is not bool:
                         raise IPCError("invalid_ipc_response")
                     stopping = value["stop"]
-                    if requests == MAX_REQUESTS and not stopping:
+                    if requests == max_requests and not stopping:
                         raise IPCError("ipc_request_limit")
                     request, phase = None, "sending_response"
                     selector.register(proc.stdin, selectors.EVENT_WRITE, "stdin")

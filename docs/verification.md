@@ -1,5 +1,67 @@
 # Verification record
 
+## R1: combined offline provider and authority — 15 September 2026
+
+Implemented on `feature/secure-agent-offline-authority`, based on the operator's
+pushed documentation checkpoint `54461b7` above merged main `bf3a359`.
+`--control-plane-openai-offline` composes the isolated coordinator, existing
+offline provider/parser/broker, host authority and independently validating
+fixture executor. The architecture and bounded version-2 PLAN/PROPOSE dialogue
+are documented in [offline-authority.md](offline-authority.md).
+
+One authority-owned ID/deadline spans planning and execution. Observations come
+from trusted execution records; canonical provider requests and pending plans
+are checked before further work. Provider and tool reservations remain separate
+and nonrefundable. No credentials, live API calls, external target, host network
+change or package installation was used. Earlier CLI modes remain available.
+
+Environment: Kali Linux x86_64, Python 3.14.6, pytest 9.1.1, normal host user.
+Linux checks ran outside the coding sandbox to exercise actual namespaces.
+
+| Command/check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-offline-authority-portable.xml` | **1561 passed, 66 deselected**, 15.60 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-offline-authority-linux.xml` | **66 passed, 1561 deselected**, 131.27 seconds |
+| Combined CLI, `three_step`, explicit synthetic model, `--dry-run` | Exit 0; `coordinator_done`; three broker calls and three dry-run decisions; zero executions; all seven coordinator and parser checks true |
+| Twelve-case combined demo, dry-run and executed fixtures (included in Linux suite) | Both passed; executed mode performed **12 owned-fixture actions** across its cases, with parser/coordinator/executor evidence and audit correlation |
+| `.venv/bin/python -m compileall -q recon_cockpit scripts`, `.venv/bin/python -m pip check`, `git diff --check` | Passed; no broken requirements |
+
+Both final JUnit files were parsed and contain zero failures, errors or skips.
+The CLI audit `.secure-agent/offline-authority-cli-r1.jsonl` is private (`0600`)
+and records one finished session, three broker reservations and no execution.
+Audit files and temporary JUnit evidence are not committed.
+
+New portable coverage exercises exact phase/sequence/session binding, altered
+plans, forged observations/configuration/approval fields, broker canonical
+requests, reply bounds, quotas, stale/replayed grants, audit fault poisoning,
+concurrency, cancellation/expiry and single-use/rebinding behavior. Both IPC
+ceilings retain queued-extra-output/EOF/stderr regressions. Full-size dialogues
+exercise the larger bounded cumulative output allowance.
+
+Fifteen new Linux cases supplement the previous 51. They exercise the fixed
+offline coordinator and inherited credential/file/descriptor/memory/TTY/socket
+canaries, combined dry-run and execution, fresh/refused/replayed scripted grants,
+hostile follow-ups, all 16 planning steps/32 messages, broker exhaustion, and
+both waiting parser/coordinator children killed and reaped on cancellation or
+expiry. The two new demo cases cover all twelve synthetic scenarios. Scripted
+grants test approval mechanics; they do not represent human approval.
+
+The first full Linux run passed 63 of 64 collected cases. The new offline
+coordinator canary probe imported ctypes before the worker's inherited-descriptor
+check; libffi could retain its own mounted runtime descriptor. Moving that
+test-only import into the post-bootstrap probe fixed the harness. No production
+boundary was relaxed. The final complete run includes that case and the two
+newly added demo integrations, all passing.
+
+Implementation review covered authority state, framing, canonical plan binding,
+shared controls, audit poisoning and CLI/demo wiring. A bounded parallel review
+found no actionable authority issue. This is local development verification,
+not an independent security audit, live-model validation, or a guarantee against
+compromised host authority/kernel. Synchronous callbacks retain the documented
+late-output detection limitation. The shared host authority/UI/broker/audit/
+launcher process is still trusted. Hosted CI and PR state must be checked
+separately; these counts describe the local checkout.
+
 ## Control-plane privilege separation — 14 September 2026
 
 Implemented on `feature/secure-agent-control-plane`, based on merged main

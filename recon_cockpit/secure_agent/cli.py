@@ -99,6 +99,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="run synthetic OpenAI responses through the isolated parser; no API calls")
     source.add_argument("--control-plane-mock", choices=COORDINATOR_SCENARIOS,
                         help="run a persistent Linux-isolated coordinator through the authority service")
+    source.add_argument("--control-plane-openai-offline", choices=OPENAI_SCENARIOS,
+                        help="run synthetic responses through the isolated coordinator, parser and authority")
     parser.add_argument("--openai-model", help="explicit model identifier for the offline request contract")
     parser.add_argument("--openai-max-output-tokens", type=int,
                         help="output token allowance per simulated request: 16–4096 (default: 1024)")
@@ -120,15 +122,18 @@ def main(argv: list[str] | None = None) -> int:
     backend_selection.add_argument("--fixture", action="store_true", help="select the owned Linux in-namespace fixture backend")
     backend_selection.add_argument("--routed", action="store_true", help="select isolated HTTP to one authorized IPv4 literal")
     args = parser.parse_args(argv)
-    session_scenario = (args.session_mock or args.isolated_session_mock or args.openai_offline
+    offline_scenario = args.openai_offline or args.control_plane_openai_offline
+    authority_mode = args.control_plane_mock or args.control_plane_openai_offline
+    session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
                         or args.control_plane_mock)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
     broker_options = (args.broker_max_calls, args.broker_max_output_tokens, args.broker_max_request_bytes)
-    if not args.openai_offline and any(value is not None for value in (
+    if not offline_scenario and any(value is not None for value in (
             args.openai_model, args.openai_max_output_tokens, *broker_options)):
-        parser.error("OpenAI and broker options require --openai-offline")
-    if args.openai_offline and args.openai_model is None:
-        parser.error("--openai-offline requires an explicit --openai-model")
+        parser.error("OpenAI and broker options require --openai-offline or --control-plane-openai-offline")
+    if offline_scenario and args.openai_model is None:
+        option = "--control-plane-openai-offline" if args.control_plane_openai_offline else "--openai-offline"
+        parser.error(option + " requires an explicit --openai-model")
     if not session_scenario and any(value is not None for value in session_options):
         parser.error("session limits require a session source")
     if session_scenario and args.routed:
@@ -136,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         policy = parse_policy(_read_bounded(args.policy))
         backend = None
-        if args.fixture:
+        if args.fixture and not authority_mode:
             from .isolation import LinuxFixtureBackend
             backend = LinuxFixtureBackend()
         elif args.routed:
@@ -150,18 +155,7 @@ def main(argv: list[str] | None = None) -> int:
                 limits = SessionLimits(**{key: value for key, value in zip(
                     ("max_steps", "max_runtime_seconds", "max_output_bytes"), session_options)
                     if value is not None})
-                if args.control_plane_mock:
-                    from uuid import uuid4
-                    from .authorized_execution import AuthorizedFixtureBackend
-                    from .control_plane import AuthoritySession
-                    from .coordinator_isolation import LinuxCoordinator
-
-                    session_id = str(uuid4())
-                    provider = LinuxCoordinator(args.control_plane_mock)
-                    backend = (AuthorizedFixtureBackend(policy, session_id, limits, execute=args.execute)
-                               if args.fixture else None)
-                    runner = AuthoritySession(policy, audit, backend, provider, limits, session_id=session_id)
-                elif args.openai_offline:
+                if offline_scenario:
                     from .openai_broker import BrokerLimits, OfflineTransport
                     from .openai_fixtures import scenario_responses
                     from .openai_protocol import OpenAIConfig
@@ -173,13 +167,29 @@ def main(argv: list[str] | None = None) -> int:
                         ("max_calls", "max_reserved_output_tokens", "max_request_bytes"), broker_options)
                         if value is not None})
                     provider = OfflineOpenAIProvider(config, audit,
-                        OfflineTransport(scenario_responses(args.openai_offline)), broker_limits)
+                        OfflineTransport(scenario_responses(offline_scenario)), broker_limits)
+                if authority_mode:
+                    from uuid import uuid4
+                    from .authorized_execution import AuthorizedFixtureBackend
+                    from .control_plane import AuthoritySession
+                    from .coordinator_isolation import LinuxCoordinator, LinuxOfflineCoordinator
+
+                    session_id = str(uuid4())
+                    coordinator = (LinuxOfflineCoordinator() if args.control_plane_openai_offline
+                                   else LinuxCoordinator(args.control_plane_mock))
+                    backend = (AuthorizedFixtureBackend(policy, session_id, limits, execute=args.execute)
+                               if args.fixture else None)
+                    provider_kwargs = {"provider": provider} if args.control_plane_openai_offline else {}
+                    runner = AuthoritySession(policy, audit, backend, coordinator, limits,
+                                              session_id=session_id, **provider_kwargs)
+                    if args.control_plane_mock:
+                        provider = coordinator
                 elif args.isolated_session_mock:
                     from .planner_isolation import LinuxIsolatedMockProvider
                     provider = LinuxIsolatedMockProvider(session_scenario)
-                else:
+                elif not offline_scenario:
                     provider = SessionMockProvider(session_scenario)
-                if not args.control_plane_mock:
+                if not authority_mode:
                     runner = SessionRunner(policy, audit, backend, provider, limits)
                 if args.openai_offline:
                     provider.bind_session(runner.session_id)
@@ -200,10 +210,15 @@ def main(argv: list[str] | None = None) -> int:
                 extra = ({"broker_id": provider.broker.broker_id,
                           "broker": dict(provider.broker.snapshot),
                           "broker_error": provider.broker.last_error,
-                          "live_calls_enabled": False} if args.openai_offline else {})
+                          "live_calls_enabled": False} if offline_scenario else {})
                 if args.control_plane_mock:
                     extra = {"boundary_checks": provider.boundary_checks, "live_calls_enabled": False}
-                _print({**summary, "provider": provider.name, **extra})
+                if args.control_plane_openai_offline:
+                    extra.update(coordinator_boundary_checks=coordinator.boundary_checks,
+                                 parser_boundary_checks=provider.boundary_checks)
+                provider_name = ("linux-isolated-coordinator-openai-offline" if args.control_plane_openai_offline
+                                 else provider.name)
+                _print({**summary, "provider": provider_name, **extra})
                 return 0 if summary["session_status"] == "completed" else 2
             raw = _read_bounded(args.proposal) if args.proposal else MockProvider().propose()
             controller = Controller(policy, audit, backend)

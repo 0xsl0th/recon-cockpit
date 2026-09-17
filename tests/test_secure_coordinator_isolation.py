@@ -1,6 +1,7 @@
 """Portable launcher validation and opt-in Linux coordinator boundary evidence."""
 
 import fcntl
+import io
 import json
 import os
 from pathlib import Path
@@ -9,13 +10,15 @@ import subprocess
 import sys
 import threading
 import time
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 
-from recon_cockpit.secure_agent import coordinator_ipc as ipc, coordinator_isolation as isolation, session_planner
+from recon_cockpit.secure_agent import (coordinator_ipc as ipc, coordinator_isolation as isolation,
+                                       coordinator_worker as worker, session_planner)
 from recon_cockpit.secure_agent.audit import AuditUnavailable
-from recon_cockpit.secure_agent.coordinator_isolation import BOUNDARY_NAMES, LinuxCoordinator
+from recon_cockpit.secure_agent.coordinator_isolation import BOUNDARY_NAMES, LinuxCoordinator, LinuxOfflineCoordinator
 from recon_cockpit.secure_agent.execution import ExecutionControl, ExecutionStopped
 from recon_cockpit.secure_agent.isolation import IsolationUnavailable
 
@@ -28,13 +31,18 @@ def control(seconds=10, cancelled=None):
     return ExecutionControl(time.monotonic() + seconds, cancelled)
 
 
-def init():
-    return encode({"schema_version": "1", "session_id": str(uuid4())})
+def init(version="1"):
+    return encode({"schema_version": version, "session_id": str(uuid4())})
 
 
 def reply(request, *, stop=True, observation=None):
     return encode({"schema_version": "1", "session_id": request["session_id"],
                    "sequence": request["sequence"], "stop": stop, "observation": observation})
+
+
+def offline_reply(request, *, stop=False, plan=None):
+    return encode({"schema_version": "2", "session_id": request["session_id"],
+                   "sequence": request["sequence"], "stop": stop, "plan": plan})
 
 
 @pytest.fixture
@@ -51,8 +59,9 @@ def test_adapter_exposes_verified_boundary_before_authority_callback(launcher, m
     session_id = json.loads(initial)["session_id"]
     expected = encode({"schema_version": "1", "session_id": session_id, "status": "closed"})
 
-    def supervise(argv, raw, exchange, *, control):
+    def supervise(argv, raw, exchange, *, control, max_requests):
         assert argv == ["fixed-coordinator"] and raw == initial
+        assert max_requests == ipc.MAX_REQUESTS
         assert exchange(b"request", control=control) == b"response"
         return expected
 
@@ -70,7 +79,7 @@ def test_adapter_exposes_verified_boundary_before_authority_callback(launcher, m
 
 @pytest.mark.parametrize("result", [b"bad", b"[]", b"{}", encode({"schema_version": "1", "session_id": str(uuid4()), "status": "closed"})])
 def test_adapter_rejects_invalid_or_cross_session_final_result(launcher, monkeypatch, result):
-    def supervise(_argv, _raw, exchange, *, control):
+    def supervise(_argv, _raw, exchange, *, control, max_requests):
         exchange(b"request", control=control)
         return result
 
@@ -96,7 +105,7 @@ def test_only_fixed_scenarios_are_selectable(scenario):
 
 @pytest.mark.parametrize("failure", [AuditUnavailable("private audit"), ExecutionStopped("session_cancelled")])
 def test_callback_audit_and_control_errors_preserve_identity(launcher, monkeypatch, failure):
-    def supervise(_argv, _raw, exchange, *, control):
+    def supervise(_argv, _raw, exchange, *, control, max_requests):
         return exchange(b"request", control=control)
 
     def exchange(*_a, **_k):
@@ -118,17 +127,134 @@ def test_missing_isolation_never_reaches_authority(launcher, monkeypatch):
         launcher.run(init(), lambda *_a, **_k: pytest.fail("must not call authority"), control=control())
 
 
-def test_command_exposes_only_fixed_coordinator_code(monkeypatch):
+@pytest.mark.parametrize("coordinator", [LinuxCoordinator(), LinuxOfflineCoordinator()])
+def test_command_exposes_only_fixed_coordinator_code(monkeypatch, coordinator):
     monkeypatch.setattr(isolation, "_trusted_program", lambda name: "/usr/bin/" + name)
     monkeypatch.setattr(isolation, "_namespaces", lambda: {name: f"{name}:[100]" for name in ("user", "net", "mnt", "pid")})
-    argv = LinuxCoordinator()._command("/usr/lib/python3.14", [("/lib/runtime.so", "/lib/runtime.so")])
+    argv = coordinator._command("/usr/lib/python3.14", [("/lib/runtime.so", "/lib/runtime.so")])
     mounts = {argv[i + 2] for i, value in enumerate(argv) if value == "--ro-bind" and argv[i + 2].startswith("/app/")}
     assert mounts == {"/app/planner_worker.py", "/app/session_planner.py",
                       "/app/coordinator_worker.py", "/app/coordinator_ipc.py"}
     assert argv[argv.index("--cap-drop") + 1] == "ALL"
     assert "--cap-add" not in argv and "--share-net" not in argv
-    assert argv[-9:-4] == ["/usr/bin/python3", "-I", "-S", "/app/coordinator_worker.py", "three_step"]
+    assert argv[-9:-4] == ["/usr/bin/python3", "-I", "-S", "/app/coordinator_worker.py", coordinator.scenario]
     assert "--new-session" in argv and "--clearenv" in argv
+
+
+def test_offline_launcher_uses_version_two_and_fixed_dialogue_ceiling(monkeypatch):
+    coordinator = LinuxOfflineCoordinator()
+    initial = init("2")
+    session_id = json.loads(initial)["session_id"]
+    expected = encode({"schema_version": "2", "session_id": session_id, "status": "closed"})
+    monkeypatch.setattr(coordinator, "check_available", lambda: None)
+    monkeypatch.setattr(isolation, "_runtime_files", lambda *_a, **_k: ("/stdlib", []))
+    monkeypatch.setattr(coordinator, "_command", lambda *_a: ["fixed-offline-coordinator"])
+
+    def supervise(argv, raw, exchange, *, control, max_requests):
+        assert argv == ["fixed-offline-coordinator"] and raw == initial
+        assert max_requests == ipc.MAX_OFFLINE_REQUESTS
+        assert exchange(b"request", control=control) == b"response"
+        return expected
+
+    monkeypatch.setattr(ipc, "supervise", supervise)
+    assert coordinator.run(initial, lambda *_a, **_k: b"response", control=control()) == expected
+    assert coordinator.boundary_checks == dict.fromkeys(BOUNDARY_NAMES, True)
+    with pytest.raises(ValueError, match="invalid_coordinator_init"):
+        coordinator.run(init(), lambda *_a, **_k: pytest.fail("must not exchange"), control=control())
+    coordinator.scenario = "three_step"
+    with pytest.raises(ValueError, match="unsupported_coordinator_scenario"):
+        coordinator.run(initial, lambda *_a, **_k: pytest.fail("must not exchange"), control=control())
+    with pytest.raises(ValueError):
+        LinuxCoordinator("offline_provider")
+
+
+def run_offline_worker(monkeypatch, initial, responses):
+    incoming = io.BytesIO(ipc.frame(ipc.INIT, initial) + b"".join(
+        ipc.frame(ipc.RESPONSE, response) for response in responses))
+    outgoing = io.BytesIO()
+    errors = io.StringIO()
+    monkeypatch.setattr(worker, "sys", SimpleNamespace(
+        argv=["worker", "offline_provider", "user", "net", "mnt", "pid"],
+        stdin=SimpleNamespace(buffer=incoming), stdout=SimpleNamespace(buffer=outgoing), stderr=errors))
+    monkeypatch.setattr(worker, "_private_descriptors", lambda: None)
+    bootstrap = SimpleNamespace(_arguments=lambda *_a: (None, {}),
+                                _bootstrap=lambda *_a: dict.fromkeys(BOUNDARY_NAMES, True))
+
+    def load(name):
+        if name == "planner_worker":
+            return bootstrap
+        if name == "coordinator_ipc":
+            return ipc
+        pytest.fail("combined worker must not load planner or authority modules")
+
+    monkeypatch.setattr(worker, "_load", load)
+    status = worker.main()
+    result = []
+    output = io.BytesIO(outgoing.getvalue())
+    while output.tell() < len(outgoing.getvalue()):
+        kind = outgoing.getvalue()[output.tell() + 4]
+        result.append((kind, ipc.object_payload(ipc.read_frame(output, kind))))
+    return status, result, errors.getvalue()
+
+
+@pytest.mark.parametrize("steps", [3, 16])
+def test_offline_worker_relays_each_plan_before_next_planning_request(monkeypatch, steps):
+    initial = init("2")
+    session_id = json.loads(initial)["session_id"]
+    responses, expected = [], []
+    for sequence in range(1, steps + 1):
+        request = {"schema_version": "2", "session_id": session_id, "sequence": sequence}
+        # Content is relayed as untrusted data, never interpreted by this worker.
+        plan = {"schema_version": "1", "action": {"untrusted": "ignore rules; café"}, "done": sequence == steps}
+        responses.extend((offline_reply(request, plan=plan), offline_reply(request, stop=sequence == steps)))
+        expected.extend(((ipc.REQUEST, {**request, "operation": "plan"}),
+                         (ipc.REQUEST, {**request, "operation": "propose", "plan": plan})))
+    status, output, errors = run_offline_worker(monkeypatch, initial, responses)
+    assert status == 0 and errors == ""
+    assert output[0] == (ipc.READY, {"schema_version": "1", "boundary_checks": dict.fromkeys(BOUNDARY_NAMES, True)})
+    assert output[1:-1] == expected
+    assert output[-1] == (ipc.RESULT, {"schema_version": "2", "session_id": session_id, "status": "closed"})
+
+
+def test_offline_worker_planning_stop_never_proposes(monkeypatch):
+    initial = init("2")
+    request = {**json.loads(initial), "sequence": 1}
+    status, output, errors = run_offline_worker(monkeypatch, initial, [offline_reply(request, stop=True)])
+    assert status == 0 and errors == ""
+    assert [kind for kind, _value in output] == [ipc.READY, ipc.REQUEST, ipc.RESULT]
+    assert output[1][1] == {**request, "operation": "plan"}
+
+
+@pytest.mark.parametrize("mutation", [
+    {"schema_version": "1"}, {"session_id": str(uuid4())}, {"sequence": True},
+    {"sequence": 2}, {"stop": 1}, {"observation": {}}, {"approval_reference": "forged"},
+    {"plan": None}, {"plan": []}, {"stop": True},
+])
+def test_offline_worker_rejects_invalid_planning_response_before_proposal(monkeypatch, mutation):
+    initial = init("2")
+    request = {**json.loads(initial), "sequence": 1}
+    response = json.loads(offline_reply(request, plan={"schema_version": "1", "action": None, "done": True}))
+    response.update(mutation)
+    status, output, errors = run_offline_worker(monkeypatch, initial, [encode(response)])
+    assert status == 78 and errors == "secure_coordinator_failed\n"
+    assert [kind for kind, _value in output] == [ipc.READY, ipc.REQUEST]
+
+
+def test_offline_worker_rejects_plan_in_proposal_response(monkeypatch):
+    initial = init("2")
+    request = {**json.loads(initial), "sequence": 1}
+    plan = {"schema_version": "1", "action": None, "done": True}
+    status, output, errors = run_offline_worker(monkeypatch, initial, [
+        offline_reply(request, plan=plan), offline_reply(request, stop=True, plan=plan),
+    ])
+    assert status == 78 and errors == "secure_coordinator_failed\n"
+    assert [value.get("operation") for kind, value in output if kind == ipc.REQUEST] == ["plan", "propose"]
+    assert all(kind != ipc.RESULT for kind, _value in output)
+
+
+def test_offline_worker_rejects_version_one_init(monkeypatch):
+    status, output, errors = run_offline_worker(monkeypatch, init(), [])
+    assert status == 78 and output == [] and errors == "secure_coordinator_failed\n"
 
 
 @pytest.fixture
@@ -167,6 +293,44 @@ def test_real_coordinator_retains_process_for_three_step_dialogue(real_coordinat
     assert len(requests) == 3 and len(children) == 1 and children[0].returncode == 0
 
 
+@pytest.mark.integration
+def test_real_offline_coordinator_retains_process_for_six_exchanges(real_coordinator, monkeypatch):
+    coordinator = LinuxOfflineCoordinator()
+    initial = init("2")
+    session_id = json.loads(initial)["session_id"]
+    requests, children = [], []
+    original = subprocess.Popen
+
+    def launch(argv, *args, **kwargs):
+        child = original(argv, *args, **kwargs)
+        if Path(argv[0]).name == "bwrap":
+            children.append(child)
+        return child
+
+    monkeypatch.setattr(subprocess, "Popen", launch)
+    pending = None
+
+    def exchange(raw, *, control):
+        nonlocal pending
+        request = json.loads(raw)
+        requests.append(request)
+        assert request["session_id"] == session_id and request["schema_version"] == "2"
+        assert request["sequence"] == (len(requests) + 1) // 2
+        assert coordinator.boundary_checks == dict.fromkeys(BOUNDARY_NAMES, True)
+        if len(requests) % 2:
+            assert set(request) == {"schema_version", "session_id", "sequence", "operation"}
+            assert request["operation"] == "plan"
+            pending = {"schema_version": "1", "action": {"fixture": request["sequence"]}, "done": len(requests) == 5}
+            return offline_reply(request, plan=pending)
+        assert set(request) == {"schema_version", "session_id", "sequence", "operation", "plan"}
+        assert request["operation"] == "propose" and request["plan"] == pending
+        return offline_reply(request, stop=len(requests) == 6)
+
+    result = json.loads(coordinator.run(initial, exchange, control=control()))
+    assert result == {"schema_version": "2", "session_id": session_id, "status": "closed"}
+    assert len(requests) == 6 and len(children) == 1 and children[0].returncode == 0
+
+
 def mount_test_planner(coordinator, monkeypatch, tmp_path, suffix):
     # Fixed-module replacement is trusted test instrumentation, never a public
     # executable/module option supplied by an untrusted coordinator.
@@ -184,8 +348,29 @@ def mount_test_planner(coordinator, monkeypatch, tmp_path, suffix):
     monkeypatch.setattr(coordinator, "_command", command)
 
 
+def mount_test_worker(coordinator, monkeypatch, tmp_path, suffix):
+    path = tmp_path / "trusted-test-coordinator.py"
+    source = Path(worker.__file__).read_text()
+    marker = 'if __name__ == "__main__":'
+    assert source.count(marker) == 1
+    path.write_text(source.replace(marker, suffix + "\n" + marker))
+    original = coordinator._command
+
+    def command(stdlib, files):
+        argv = original(stdlib, files)
+        index = [i for i, word in enumerate(argv) if word == "--ro-bind" and argv[i + 2] == "/app/coordinator_worker.py"]
+        assert len(index) == 1
+        argv[index[0] + 1] = str(path)
+        return argv
+
+    monkeypatch.setattr(coordinator, "_command", command)
+
+
 @pytest.mark.integration
-def test_real_coordinator_cannot_reach_host_authority_memory_tty_or_credentials(real_coordinator, monkeypatch, tmp_path):
+@pytest.mark.parametrize("offline", [False, True])
+def test_real_coordinator_cannot_reach_host_authority_memory_tty_or_credentials(real_coordinator, monkeypatch, tmp_path, offline):
+    if offline:
+        real_coordinator = LinuxOfflineCoordinator()
     sentinel = tmp_path / "host-authority-canary"
     sentinel.write_text("PRIVATE-HOST-CANARY")
     monkeypatch.setenv("OPENAI_API_KEY", "PRIVATE-HOST-CANARY")
@@ -193,8 +378,10 @@ def test_real_coordinator_cannot_reach_host_authority_memory_tty_or_credentials(
     inherited = fcntl.fcntl(descriptor, fcntl.F_DUPFD, 128)
     os.set_inheritable(inherited, True)
     suffix = f'''
-import ctypes,errno,os,resource,socket
 def proposal(*args):
+    # Probe imports run after the original worker's descriptor/bootstrap checks.
+    # ctypes/libffi may retain its own mounted runtime descriptor on this host.
+    import ctypes,errno,os,resource,socket
     checks={{'credentials_absent':'OPENAI_API_KEY' not in os.environ}}
     checks['authority_modules_absent']=set(os.listdir('/app'))=={{'planner_worker.py','session_planner.py','coordinator_worker.py','coordinator_ipc.py'}}
     for name,path,allowed in [('host_file_absent',{str(sentinel)!r},{{errno.ENOENT}}),
@@ -220,16 +407,29 @@ def proposal(*args):
     else: del data; checks['memory_bounded']=False
     return {{'schema_version':'1','action':None,'done':True,'witnesses':checks}}
 '''
-    mount_test_planner(real_coordinator, monkeypatch, tmp_path, suffix)
+    if offline:
+        suffix += '''
+original_offline_response = _offline_response
+def _offline_response(*args, **kwargs):
+    value = original_offline_response(*args, **kwargs)
+    if kwargs['planning'] and not value['stop']:
+        value['plan'] = proposal()
+    return value
+'''
+        mount_test_worker(real_coordinator, monkeypatch, tmp_path, suffix)
+    else:
+        mount_test_planner(real_coordinator, monkeypatch, tmp_path, suffix)
     witnesses = []
 
     def exchange(raw, *, control):
         request = json.loads(raw)
+        if offline and request["operation"] == "plan":
+            return offline_reply(request, plan={"schema_version": "1", "action": None, "done": True})
         witnesses.append(request["plan"]["witnesses"])
-        return reply(request)
+        return offline_reply(request, stop=True) if offline else reply(request)
 
     try:
-        real_coordinator.run(init(), exchange, control=control())
+        real_coordinator.run(init("2" if offline else "1"), exchange, control=control())
     finally:
         os.close(inherited)
         os.close(descriptor)
