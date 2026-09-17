@@ -1,6 +1,6 @@
 # Recon Cockpit — agentes de pentesting con ejecución controlada
 
-**Borrador de propuesta · 16 de septiembre de 2026 · No presentado**
+**Borrador de propuesta · 17 de septiembre de 2026 · No presentado**
 
 Concurso de Desarrollo de Soluciones de Ciberseguridad 2026–2027,
 Facultad de Ingeniería, Universidad de Palermo.
@@ -85,12 +85,13 @@ confiables.
 ## 4. Estado real del desarrollo
 
 La base previa, [PR #5](https://github.com/0xsl0th/recon-cockpit/pull/5),
-se integró en `main` como `bf3a359`. Al 16 de septiembre de 2026, R1 aporta la
-integración offline con la autoridad en `cfde4ed`, correspondiente al
-[PR #6 en borrador](https://github.com/0xsl0th/recon-cockpit/pull/6). La rama
-`feature/secure-agent-http-assessment` implementa encima la primera evaluación
-HTTP con evidencia y reporte. Su publicación y las comprobaciones alojadas se
-registran por separado en [continue-here.md](continue-here.md).
+se integró en `main` como `bf3a359`. El 17 de septiembre de 2026 se revisaron e
+integraron R1, la planificación offline con autoridad
+([PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6), `07af513`), y R2,
+la primera evaluación HTTP con evidencia y reporte
+([PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), `f85aaa9`). Las diez
+comprobaciones alojadas de R2 pasaron tras actualizar su base a main.
+El estado actual consta en [continue-here.md](continue-here.md).
 
 | Implementado y verificado | Pendiente |
 | --- | --- |
@@ -201,7 +202,7 @@ validación, demostración y documentación. Los finalistas presentan en H4ck3d 
 
 | Período propuesto | Entregable |
 | --- | --- |
-| Septiembre–octubre 2026 | Revisar R1/R2, publicados como PRs en borrador; diseñar e iniciar descubrimiento aislado R3. |
+| Septiembre–octubre 2026 | R1/R2 revisados e integrados; diseñar e iniciar descubrimiento aislado R3. |
 | Hasta el 8/11/2026 | Cerrar propuesta, integrantes, arquitectura, alcance mínimo y evidencia para revisión. |
 | 9–15/11/2026 | Presentación por el equipo, con margen respecto de la fecha oficial. |
 | Noviembre 2026–enero 2027 | Reconocimiento y validación acotados en laboratorio, con reporte. |

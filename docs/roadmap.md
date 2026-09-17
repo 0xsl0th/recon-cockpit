@@ -4,13 +4,14 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Implementation update — 16 September 2026:** the smallest R2 HTTP assessment,
-private evidence and report slice is implemented on
-`feature/secure-agent-http-assessment`. Verification passed 1,849 portable tests
+**Implementation update — 17 September 2026:** R1 and the smallest R2 HTTP
+assessment, private evidence and report slice are reviewed and merged into
+`main` through [PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6) (`07af513`)
+and [PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7) (`f85aaa9`).
+Verification passed 1,849 portable tests
 and 78 real Linux integrations, without failures, errors or skips in the selected
-suites. R2 builds on R1 commit `cfde4ed` in
-[draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6); publication and hosted
-checks for R2 are recorded separately in [continue-here.md](continue-here.md).
+suites. All ten refreshed R2 branch/PR checks passed before merge; the merge
+preserved the reviewed files. Current state is in [continue-here.md](continue-here.md).
 See [http-assessment.md](http-assessment.md),
 [offline-authority.md](offline-authority.md) and [verification.md](verification.md).
 R3's smallest isolated discovery adapter is next. The baseline below is historical.
@@ -257,7 +258,7 @@ publication and R3 design rather than treating later capabilities as completed.
 
 | Target window | Outcome |
 | --- | --- |
-| 16–30 September 2026 | Review/publish R1 and the smallest R2 slice; design isolated discovery. |
+| 16–30 September 2026 | R1/R2 review and merges completed on 17 September; design isolated discovery. |
 | 1–18 October | Begin R3 and extend HTTP/evidence contracts only where the second adapter requires it. |
 | 19 October–8 November | R3 discovery prototype if ready; finalize proposal, team and measured baseline. Tool breadth is not a submission prerequisite. |
 | 9–15 November | Human review and project submission; aim for 9 November for margin. |

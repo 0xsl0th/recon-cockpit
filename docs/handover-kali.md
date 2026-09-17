@@ -1,15 +1,15 @@
 # Handover to the Lenovo / Kali amd64
 
-## Latest checkpoint — R2 owned HTTP assessment, 16 September 2026
+## Latest checkpoint — R1/R2 merged, 17 September 2026
 
 Start with [continue-here.md](continue-here.md),
 [http-assessment.md](http-assessment.md) and [verification.md](verification.md).
-The smallest R2 slice is implemented on `feature/secure-agent-http-assessment`,
-above R1 commit `cfde4ed` in [draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6).
-R2 implementation `3d20b24` is pushed in
-[draft PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), stacked on R1's
-branch. Neither draft is merged. Inspect Git and current hosted checks; the
-continuation checkpoint records the branch and next work.
+Both PRs passed bounded review and were merged with operator authorization:
+[PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6) as `07af513` and
+[PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7) as `f85aaa9`.
+All ten refreshed R2 branch/PR checks passed after retargeting it to main.
+The merged files exactly match reviewed R2 `1312acf`. The workspace is on
+`main`; start R3 on a new branch from updated main. Do not repeat these merges.
 
 The complete local run passed **1,849 portable tests** in 16.208 seconds and
 **78 real Linux integrations** in 151.816 seconds. Neither selected suite had

@@ -1,11 +1,11 @@
-# Continue here — 16 September 2026
+# Continue here — 17 September 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**R2's smallest HTTP assessment/evidence/report slice is implemented and locally
-verified** on `feature/secure-agent-http-assessment`. Do not restart R1 or R2.
+**R1 and R2 are reviewed and merged into `main`.** R2's smallest HTTP
+assessment/evidence/report slice is complete. Do not restart or re-merge them.
 Read [http-assessment.md](http-assessment.md), [verification.md](verification.md)
 and [roadmap.md](roadmap.md), then inspect Git and current PR checks.
 
@@ -19,15 +19,18 @@ reconciles incomplete bundles without resuming work.
 ## Saved state
 
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
-- Current branch: `feature/secure-agent-http-assessment`, tracking
-  `origin/feature/secure-agent-http-assessment`, based on R1 `cfde4ed`.
-  R2 implementation `3d20b24` is pushed in
-  [draft PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), stacked on R1's
-  branch. Neither draft is merged. Check `git log -1` for the latest documentation
-  checkpoint and the PR for current hosted checks; local tests are separate.
-- R1 is pushed as `cfde4ed` on `feature/secure-agent-offline-authority` in
-  [draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6). Its ten hosted
-  branch/PR matrix checks passed. It remains R2's unmerged prerequisite.
+- Current branch: `main`, tracking `origin/main`. Both PRs were reviewed and
+  merged with the operator's explicit authorization on 17 September.
+- [PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6): reviewed R1
+  `cfde4ed`, merged as `07af513`. All ten branch/PR checks and subsequent
+  main CI passed.
+- [PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7): reviewed R2
+  `1312acf`, retargeted to main and updated as `33edceb` without file changes;
+  all ten refreshed checks passed. Merged as `f85aaa9`, whose files exactly
+  match the reviewed version. Its five main CI jobs also passed. Implementation
+  commit: `3d20b24`.
+- Check `git log -1` for the latest documentation checkpoint and current main
+  CI. Local/Linux results and hosted portable checks are separate evidence.
 - The operator already pushed documentation checkpoint `54461b7` on
   `docs/competition-roadmap`; verified on 15 September.
 - [PR #5](https://github.com/0xsl0th/recon-cockpit/pull/5) is merged as `bf3a359`
@@ -61,13 +64,14 @@ competition focus. Planning still uses synthetic responses.
   mounts or Docker socket to agents. Do not change host networking to pass tests.
 - Authority, UI, broker, audit and launcher still share a trusted host process.
   Local hashes detect inconsistency, not host-owner tampering.
-- This work does not authorize competition submission, messaging others, paid
-  calls, external target assessment or merging PRs.
+- The operator authorized the completed merges of PRs #6 and #7. This does not
+  authorize competition submission, messaging others, paid calls, external
+  target assessment or merging future PRs.
 
 ## Next continuation
 
-1. Inspect Git, PRs and checks. Preserve R1/R2 and unrelated work; do not merge
-   without operator authorization.
+1. Inspect Git and checks. Start from updated main, preserve unrelated work,
+   and use a new branch for R3. PRs #6/#7 are already merged.
 2. Start the smallest R3 discovery design in [roadmap.md](roadmap.md): one owned
    service topology, a bounded isolated discovery runtime, typed capability
    and result contracts, and evidence needed to select the HTTP workflow.
@@ -113,12 +117,12 @@ Proposal deadline: **15 November 2026**. Final development: **20 May 2027**.
 
 ```text
 Continue Recon Cockpit from docs/continue-here.md and docs/roadmap.md.
-Inspect Git and preserve saved work. PR #5 is merged as bf3a359.
-R1 is pushed in draft PR #6; R2 is pushed in draft PR #7 on
-feature/secure-agent-http-assessment, stacked on R1. Inspect current checks.
+Inspect Git and preserve saved work. PR #6 is merged as 07af513 and PR #7
+as f85aaa9. The workspace is on main; inspect current checks and start a new
+R3 branch from updated main. Do not repeat the completed reviews or merges.
 Read docs/http-assessment.md and the latest verification record.
 Proceed with the smallest R3 isolated discovery design and owned-fixture path.
-Do not repeat R1/R2 or merge without approval. Keep live calls/credentials
+Do not repeat R1/R2 or merge future PRs without approval. Keep live calls/credentials
 disabled and real VPN testing deferred. Preserve enforcement and update the
 handoff with measured results.
 ```

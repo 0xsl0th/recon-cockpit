@@ -1,10 +1,48 @@
 # Verification record
 
+## R1/R2 premerge review and authorized merges — 17 September 2026
+
+The operator authorized review and merging of
+[PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6) and
+[PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7). Three bounded code
+reviews found no concrete blockers. Fresh focused contract checks passed
+**153 tests**. The implementation source was unchanged from the recorded
+**1,849 portable / 78 real Linux** verification below; no new local full-suite
+run was needed for these merges. Hosted CI reran the full portable suite.
+
+| Change | Reviewed head | Merge into `main` |
+| --- | --- | --- |
+| PR #6 — combined offline authority | `cfde4ed16ecc07ae7e1d1d7f5d38d517b4ffc712` | `07af5130fed45e93b0921604e7a0dc6701660ab5` |
+| PR #7 — owned HTTP assessment | `1312acfc5b2935b35720f6bdf7c95e4e8fd96aa1` | `f85aaa9e5deb4b9af92faac29589d015aa83c86b` |
+
+After PR #6 merged, PR #7 was retargeted to `main` and updated to
+`33edceb1862b2a001ab1a50f24e29d8ffd3c0617`. Its complete Git tree was identical
+to reviewed `1312acf`; the final PR #7 merge tree was also identical to that
+reviewed tree.
+
+All ten PR #6 branch/PR checks passed. Its
+[main run](https://github.com/0xsl0th/recon-cockpit/actions/runs/35183526756)
+also passed. After the PR #7 update, all ten checks passed across its
+[branch run](https://github.com/0xsl0th/recon-cockpit/actions/runs/35183582155)
+and [PR run](https://github.com/0xsl0th/recon-cockpit/actions/runs/35183585082).
+All five jobs on the resulting
+[main merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/35183705044)
+passed at `f85aaa9`.
+
+The review and merges preserve the owned-fixture, offline scope and existing
+approval, budget, audit and isolation boundaries. Live calls and credential
+retrieval remain disabled; external/VPN testing remains deferred. The shared
+trusted host process, synchronous-callback limitations and local-evidence
+integrity limits still apply. These were development reviews, not an independent
+security audit or new live-model validation.
+
 ## R2: owned HTTP assessment and private evidence — 16 September 2026
 
-Implementation `3d20b24` on `feature/secure-agent-http-assessment` is published
-in [draft PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), based on R1
-`cfde4ed` in [draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6). The fixed
+Historical publication checkpoint: implementation `3d20b24` on
+`feature/secure-agent-http-assessment` was published in
+[PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), then a draft, based on R1
+`cfde4ed` in [PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6), also then a
+draft. The 17 September record above documents their completed merges. The fixed
 two-GET workflow gates its second synthetic provider exchange on actual
 discovery evidence, retains R1's execution boundaries, and produces linked
 execution/observation records and reviewable JSON/Markdown reports.
