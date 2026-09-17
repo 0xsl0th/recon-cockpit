@@ -80,6 +80,57 @@ def _human_approval(controller: Controller, raw: bytes | str, *, control=None) -
     return grant.reference
 
 
+def _run_http_assessment(args, policy, audit):
+    """Construct one fresh fixture authority with privately persisted evidence."""
+    from uuid import uuid4
+
+    from .assessment import AssessmentProvider
+    from .assessment_contract import capability_descriptor
+    from .authorized_execution import AuthorizedFixtureBackend
+    from .control_plane import AuthoritySession
+    from .coordinator_isolation import LinuxOfflineCoordinator
+    from .evidence import EvidenceStore
+    from .session import SessionLimits
+
+    limits = SessionLimits(**{"max_steps": 2, "max_output_bytes": 2048, **{key: value for key, value in zip(
+        ("max_steps", "max_runtime_seconds", "max_output_bytes"),
+        (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes))
+        if value is not None}})
+    session_id = str(uuid4())
+    coordinator = LinuxOfflineCoordinator()
+    backend = (AuthorizedFixtureBackend(policy, session_id, limits, execute=args.execute)
+               if args.fixture else None)
+    with EvidenceStore(args.assessment_dir, session_id=session_id, policy=policy, case=args.http_assessment) as evidence:
+        provider = AssessmentProvider(args.http_assessment, audit, evidence)
+        runner = AuthoritySession(policy, audit, backend, coordinator, limits, session_id=session_id,
+                                  provider=provider, evidence=evidence)
+        previous_handlers = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
+        try:
+            for number in previous_handlers:
+                signal.signal(number, lambda *_: runner.cancel())
+            summary = runner.run(execute=args.execute,
+                                 interactive=sys.stdin.isatty() and sys.stdout.isatty(),
+                                 approval=_human_approval,
+                                 on_step=lambda step: print(json.dumps({
+                                     "event_type": "session_step_finished", "session_id": runner.session_id,
+                                     **step,
+                                 }, sort_keys=True, ensure_ascii=True), file=sys.stderr, flush=True))
+        finally:
+            for number, handler in previous_handlers.items():
+                signal.signal(number, handler)
+        report = evidence.finalize(summary)
+    _print({**summary, "provider": provider.name, "fixture_case": args.http_assessment,
+            "assessment_outcome": report["outcome"], "assessment_id": report.get("assessment_id"),
+            "report_paths": {"json": str(args.assessment_dir / "report.json"),
+                             "markdown": str(args.assessment_dir / "report.md")},
+            "capability": capability_descriptor(), "live_calls_enabled": False,
+            "broker_id": provider.broker.broker_id, "broker": dict(provider.broker.snapshot),
+            "broker_error": provider.broker.last_error,
+            "coordinator_boundary_checks": coordinator.boundary_checks,
+            "parser_boundary_checks": provider.boundary_checks})
+    return 0 if summary["session_status"] == "completed" else 2
+
+
 def main(argv: list[str] | None = None) -> int:
     from .session_provider import SCENARIOS
     from .openai_broker import BrokerError
@@ -101,6 +152,12 @@ def main(argv: list[str] | None = None) -> int:
                         help="run a persistent Linux-isolated coordinator through the authority service")
     source.add_argument("--control-plane-openai-offline", choices=OPENAI_SCENARIOS,
                         help="run synthetic responses through the isolated coordinator, parser and authority")
+    source.add_argument("--http-assessment", choices=tuple("abcdef"),
+                        help="run the fixed owned HTTP assessment with private evidence; no live model")
+    source.add_argument("--inspect-assessment", type=Path,
+                        help="inspect existing assessment evidence without resuming execution")
+    parser.add_argument("--assessment-dir", type=Path,
+                        help="new private directory for --http-assessment artifacts and reports")
     parser.add_argument("--openai-model", help="explicit model identifier for the offline request contract")
     parser.add_argument("--openai-max-output-tokens", type=int,
                         help="output token allowance per simulated request: 16–4096 (default: 1024)")
@@ -123,9 +180,9 @@ def main(argv: list[str] | None = None) -> int:
     backend_selection.add_argument("--routed", action="store_true", help="select isolated HTTP to one authorized IPv4 literal")
     args = parser.parse_args(argv)
     offline_scenario = args.openai_offline or args.control_plane_openai_offline
-    authority_mode = args.control_plane_mock or args.control_plane_openai_offline
+    authority_mode = args.control_plane_mock or args.control_plane_openai_offline or args.http_assessment
     session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
-                        or args.control_plane_mock)
+                        or args.control_plane_mock or args.http_assessment)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
     broker_options = (args.broker_max_calls, args.broker_max_output_tokens, args.broker_max_request_bytes)
     if not offline_scenario and any(value is not None for value in (
@@ -138,7 +195,21 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("session limits require a session source")
     if session_scenario and args.routed:
         parser.error("this mock session slice supports owned fixtures only, not routed targets")
+    if args.http_assessment and args.assessment_dir is None:
+        parser.error("--http-assessment requires --assessment-dir")
+    if args.assessment_dir is not None and not args.http_assessment:
+        parser.error("--assessment-dir requires --http-assessment")
+    if args.http_assessment and args.execute and not args.fixture:
+        parser.error("executing --http-assessment requires --fixture")
+    if args.inspect_assessment and (args.execute or args.dry_run or args.fixture or args.routed):
+        parser.error("--inspect-assessment cannot select an execution mode or backend")
     try:
+        if args.inspect_assessment is not None:
+            from .evidence import inspect_assessment
+
+            report = inspect_assessment(args.inspect_assessment)
+            _print(report)
+            return 0 if not report["integrity_issues"] else 2
         policy = parse_policy(_read_bounded(args.policy))
         backend = None
         if args.fixture and not authority_mode:
@@ -148,6 +219,8 @@ def main(argv: list[str] | None = None) -> int:
             from .routed import LinuxRoutedBackend
             backend = LinuxRoutedBackend()
         with AuditSink(args.audit) as audit:
+            if args.http_assessment:
+                return _run_http_assessment(args, policy, audit)
             if session_scenario:
                 from .session import SessionLimits, SessionRunner
                 from .session_provider import SessionMockProvider
@@ -236,7 +309,12 @@ def main(argv: list[str] | None = None) -> int:
             outcome["provider"] = preview["provider"]
             _print(outcome)
             return 0 if outcome["execution_status"] == "succeeded" else 2
-    except AuditUnavailable:
+    except AuditUnavailable as exc:
+        if getattr(exc, "code", None) == "evidence_unavailable":
+            _print({"decision": "deny", "execution_status": "evidence_error",
+                    "reasons": ["evidence_unavailable"],
+                    "note": "No new execution is permitted; inspect the private assessment directory for incomplete evidence."})
+            return 3
         _print({"decision": "deny", "execution_status": "audit_error",
                 "reasons": ["audit_unavailable"],
                 "note": "No new execution is permitted; check for an unmatched execution_started event."})

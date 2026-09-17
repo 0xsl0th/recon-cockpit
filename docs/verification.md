@@ -1,5 +1,70 @@
 # Verification record
 
+## R2: owned HTTP assessment and private evidence — 16 September 2026
+
+Implementation `3d20b24` on `feature/secure-agent-http-assessment` is published
+in [draft PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), based on R1
+`cfde4ed` in [draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6). The fixed
+two-GET workflow gates its second synthetic provider exchange on actual
+discovery evidence, retains R1's execution boundaries, and produces linked
+execution/observation records and reviewable JSON/Markdown reports.
+See [http-assessment.md](http-assessment.md) for the contract and CLI.
+
+Environment: Kali Linux x86_64, Python 3.14.6, pytest 9.1.1, normal host user.
+Linux tests and the sample CLI ran outside the coding sandbox to exercise real
+namespaces. No package installation, host network changes, live API calls,
+credentials or external/VPN target were used.
+
+| Command/check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-http-assessment-portable.xml` | **1849 passed, 78 deselected**, 16.208 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-http-assessment-linux.xml` | **78 passed, 1849 deselected**, 151.816 seconds |
+| Focused R2 portable contract/evidence/hooks/provider/CLI checks | **288 passed**, 0.93 seconds |
+| Focused real Linux R2 checks | **12 passed**, 20.93 seconds |
+| Executed CLI case a, explicit owned-fixture demo policy, fresh private output paths | Exit 0; two successful GETs; two broker reservations; `validated`; all seven coordinator and parser checks true |
+| Read-only CLI inspection of the case-a sample | Exit 0; `validated`; no integrity issues; every bundle file unchanged |
+| `.venv/bin/python -m compileall -q recon_cockpit scripts`, `.venv/bin/python -m pip check`, `git diff --check` | Passed; no broken requirements |
+
+Both full JUnit files were parsed and contain zero failures, errors or skips.
+The sample is at `.secure-agent/r2-example-a/report.md` and `report.json`,
+with separate `.secure-agent/r2-example-audit.jsonl`. Its directory is 0700 and
+files are 0600. It used the existing explicit unattended owned-fixture
+`demo_policy()`, saved to `/tmp/recon-r2-owned-fixture-policy.json`; this is
+not human approval evidence. Default CLI policy still requires fresh approval
+for each exact action. Sample artifacts and temporary XML are not committed.
+
+The 288 new portable checks exercise fixed typed contracts, strict duplicate-free
+JSON, misleading content, candidate and observation binding, budgets, dry-run,
+denial and CLI combinations. Evidence checks cover private file modes, exclusive
+creation, symlink/hardlink/FIFO rejection, artifact/journal bounds, digest
+consistency, partial/unmatched/orphan records, report mismatches, write-failure
+poisoning, no resume and read-only recovery. Controller tests cover
+authorization/start/launch/completion ordering and authority poisoning.
+
+Twelve new Linux cases supplement R1's 66. Six execute exposure, absence,
+malformed content, timeout, output limit and hostile discovery through real
+coordinator/parser/executor boundaries. Hostile discovery launches no follow-up.
+Remaining cases cover dry-run, missing/fresh/refused/replayed scripted grants,
+and an artifact failure after one real execution that prevents the next plan
+and launch. They check process reaping, reservations, execution-ID audit
+correlation and private evidence. Scripted grants test mechanisms only.
+
+A bounded parallel review found three recovery defects before final verification:
+reports could precede durable closure, directory enumeration was unbounded
+before enforcing its cap, and Python equality admitted Boolean/integer
+substitutions in integrity metadata. Fixes put closure first, stop enumeration
+at entry 13, and compare canonical JSON encodings. Focused regressions and both
+full suites passed after the fixes. Final bounded review found no further
+concrete blocker; this is development review, not an independent security audit.
+
+These outcomes establish only seeded fixture behavior. Reports remain pending
+operator review; absence applies only to the inspected endpoint. Artifacts are
+decoded-result JSON, not HTTP wire captures; the probe does not validate all
+HTTP framing semantics. A compromised host owner can rewrite local evidence.
+Shared trusted host responsibilities and R1's synchronous-callback limitation
+remain. Current publication/PR state is in [continue-here.md](continue-here.md);
+hosted CI is separate evidence from these local results.
+
 ## R1: combined offline provider and authority — 15 September 2026
 
 Implemented on `feature/secure-agent-offline-authority`, based on the operator's

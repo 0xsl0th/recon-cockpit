@@ -4,12 +4,16 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**R1 implementation update:** the combined offline authority path is implemented
-on `feature/secure-agent-offline-authority`, with 1,561 portable tests and 66 real
-Linux integrations passing locally. See [offline-authority.md](offline-authority.md)
-and [verification.md](verification.md). R2 is the next implementation slice;
-inspect current PR/CI status before continuing. The baseline below records the
-starting point; the R1 section retains its acceptance criteria.
+**Implementation update — 16 September 2026:** the smallest R2 HTTP assessment,
+private evidence and report slice is implemented on
+`feature/secure-agent-http-assessment`. Verification passed 1,849 portable tests
+and 78 real Linux integrations, without failures, errors or skips in the selected
+suites. R2 builds on R1 commit `cfde4ed` in
+[draft PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6); publication and hosted
+checks for R2 are recorded separately in [continue-here.md](continue-here.md).
+See [http-assessment.md](http-assessment.md),
+[offline-authority.md](offline-authority.md) and [verification.md](verification.md).
+R3's smallest isolated discovery adapter is next. The baseline below is historical.
 
 ## Product direction
 
@@ -29,7 +33,7 @@ useful pentesting. The official [Challenge 4](https://www.palermo.edu/ingenieria
 supports that framing. Keep the Spanish [proposal](competition-proposal.md)
 consistent with implemented limits and measured results.
 
-## Baseline
+## Baseline before R1/R2 — historical
 
 PRs #2–#5 are merged. PR #5's reviewed code is `0477f25`; its merge on `main` is
 `bf3a359`. The final run passed 1,383 portable and 51 Linux integration tests;
@@ -53,8 +57,8 @@ evidence, add discovery, then grow the workflow library and live planning.
 | Priority | Build | Why now | Exit evidence |
 | --- | --- | --- | --- |
 | R1 — implemented | Offline provider through the isolated coordinator and authority | Closes the split between existing boundaries without new targets or spending. | Combined three-step synthetic session and adversarial variants pass through the Linux boundaries. |
-| R2 — next | One HTTP assessment, minimal capability/evidence contracts and report | Makes the foundation useful and reveals the abstractions tools actually need. | Execution → observation → finding draft → reviewable report for a seeded fixture condition. |
-| R3 | One isolated discovery adapter | Adds a second tool and tests the capability contract. | Discover an owned service and select HTTP work from evidence. |
+| R2 — smallest slice implemented | One HTTP assessment, minimal capability/evidence contracts and report | Makes the foundation useful and reveals the abstractions tools actually need. | Two-GET owned workflow, private execution/observation artifacts, draft reports and read-only crash inspection. |
+| R3 — next | One isolated discovery adapter | Adds a second tool and tests the capability contract. | Discover an owned service and select HTTP work from evidence. |
 | R4 | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Complete scoped lab assessment reaches a supported finding or an honest inconclusive result. |
 | R5 | Isolated live-provider broker and further authority separation | We now have useful actions and a reproducible baseline against which to evaluate a model. | Approved real-model runs with verified credential/egress/data/spend controls. |
 | R6 | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
@@ -117,16 +121,42 @@ Under `recon_cockpit/secure_agent/`, inspect `cli.py`, `control_plane.py`,
 **Outside R1:** new pentesting tool capabilities, live API calls, credentials, external targets,
 VPN testing, generic knowledge ingestion, GUI and multiple agents.
 
-## R2–R4: a useful assessment with evidence
+## R2: implemented owned HTTP assessment
+
+The fixed workflow discovers `/assessment/<case>/diagnostics.json` from an actual
+successful response, then permits only that same-case follow-up. Both GETs use
+`127.0.0.1:8080` inside owned fixtures and the R1 coordinator, offline parser,
+authority and independently checked executor. Defaults are two planning steps
+and 2,048 reserved output bytes. No live model or external target is involved.
+
+A versioned descriptor covers this one capability. Private records bind host
+execution IDs, action/policy digests, decoded artifacts and parsed observations.
+JSON/Markdown reports distinguish validated seeded exposure, not demonstrated
+at the endpoint, and inconclusive evidence. Findings remain pending operator
+review. Read-only inspection recomputes observations and flags missing or
+inconsistent records; it does not restore execution or approvals.
+
+Six fixture cases cover exposure, absence, malformed documents, timeout, excess
+output and hostile discovery. The current parser uses probe success/EOF and no
+reported truncation; it does not establish comprehensive HTTP framing integrity
+or authenticate server content. Local digests detect inconsistency, not a
+compromised host owner's modifications. See [the R2 design](http-assessment.md)
+for evidence ordering, storage bounds and remaining limits.
+
+General capability registration, broader finding/review workflows, richer UI and
+remote assessments remain future work. R3 should first settle the second tool's
+smallest isolated runtime and owned lab contract, then extend the proven path.
+
+## R3–R4: extend the assessment with discovery and workflow cards
 
 ### Start with HTTP, then generalize only what the second tool needs
 
-Use the existing HTTP probe against an owned fixture: inspect an approved
-endpoint, select a bounded follow-up, validate a seeded condition, and produce
-a finding draft or “not demonstrated.” Begin with a small fixed workflow;
-do not build a generic workflow language before it works.
+R2 now covers the fixed HTTP path: inspect an approved endpoint, select a
+bounded follow-up, validate a seeded condition, and produce a finding draft,
+“not demonstrated,” or an inconclusive result. Extend this small workflow as
+discovery exposes concrete requirements for another capability.
 
-Introduce a versioned registry of reviewed built-in capabilities. An entry
+Generalize R2's versioned descriptor into a registry of reviewed built-in capabilities. An entry
 declares typed parameters, destination requirements, effect/approval classification
 interpreted by operator policy, resource ceilings, isolated runtime, parser and
 result schema. Agents select
@@ -221,12 +251,14 @@ a convincing report without evidence is not success.
 ## Competition scope and schedule
 
 Assumption: one primary developer with intermittent assistant access; team
-capacity is unconfirmed. These are target windows. Re-estimate after R1.
+capacity is unconfirmed. These are target windows. R1 and the smallest R2 slice
+were implemented by 16 September; use the remaining early windows for review,
+publication and R3 design rather than treating later capabilities as completed.
 
 | Target window | Outcome |
 | --- | --- |
-| 16–30 September 2026 | R1 combined offline path. |
-| 1–18 October | R2 HTTP assessment and evidence/report contracts. |
+| 16–30 September 2026 | Review/publish R1 and the smallest R2 slice; design isolated discovery. |
+| 1–18 October | Begin R3 and extend HTTP/evidence contracts only where the second adapter requires it. |
 | 19 October–8 November | R3 discovery prototype if ready; finalize proposal, team and measured baseline. Tool breadth is not a submission prerequisite. |
 | 9–15 November | Human review and project submission; aim for 9 November for margin. |
 | 16 November–10 January 2027 | Complete R3/R4 and the lab assessment corpus. |
@@ -296,8 +328,8 @@ page retrieval was unavailable during this planning pass.
 - Confirm Enrique Folte's submission role, affiliation if applicable, and any
   additional team members.
 - R1 channel topology is settled in [offline-authority.md](offline-authority.md).
-- Choose the seeded condition and owned lab topology for the first assessment.
+- R2's seeded diagnostic metadata condition is fixed in [http-assessment.md](http-assessment.md); choose the smallest owned discovery topology for R3.
 - Later choose real-model/data/credential/spend settings.
 
-Reference identities are resolved. Team details do not block R1. This plan does
+Reference identities are resolved. Team details do not block scoped development. This plan does
 not authorize registration, messages, paid calls or target assessments.

@@ -44,7 +44,7 @@ class AuthoritySession:
     """
 
     def __init__(self, policy, audit, backend, coordinator, limits=None, *,
-                 clock=time.monotonic, session_id=None, provider=None):
+                 clock=time.monotonic, session_id=None, provider=None, evidence=None):
         limits = SessionLimits() if limits is None else limits
         if type(limits) is not SessionLimits:
             raise ValueError("invalid_session_limits")
@@ -52,7 +52,7 @@ class AuthoritySession:
         self.session_id = str(uuid4()) if session_id is None else session_id
         if type(self.session_id) is not str or str(UUID(self.session_id)) != self.session_id:
             raise ValueError("invalid_session_id")
-        self.controller = Controller(policy, audit, backend, session_id=self.session_id)
+        self.controller = Controller(policy, audit, backend, session_id=self.session_id, evidence=evidence)
         self.coordinator = coordinator
         # Internal trusted adapter only. No IPC field selects a provider or
         # passes a Python object into either sandbox.

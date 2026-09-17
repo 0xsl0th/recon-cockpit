@@ -4,7 +4,7 @@ For project direction, see the [development roadmap](docs/roadmap.md) and
 [competition proposal](docs/competition-proposal.md). To resume work after an
 interruption, start with [the current checkpoint](docs/continue-here.md).
 
-## Secure Agent Mode — bounded mock sessions, fixture and routed HTTP
+## Secure Agent Mode — bounded sessions and owned HTTP assessments
 
 An additional entry point now accepts **deterministic mock agent** proposals and
 enforces schema → policy → human approval when required → isolated execution →
@@ -69,6 +69,13 @@ owned fixtures. Normal CLI fixture execution still requires fresh human
 approval under the default policy. No live model or human approval is validated
 by the demo.
 
+`--http-assessment` now runs one deterministic, evidence-gated HTTP assessment
+through that combined path. It discovers an owned diagnostic endpoint, validates
+the seeded condition, and saves private execution artifacts plus JSON/Markdown
+reports. The follow-up requires actual successful discovery evidence. Reports
+distinguish `validated`, `not_demonstrated` and `inconclusive`, and remain drafts
+for operator review. See [the HTTP assessment contract](docs/http-assessment.md).
+
 The executable tool set is one bounded HTTP probe. `--fixture` reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
 backend reaches one explicitly authorized IPv4 literal and TCP port through an
@@ -117,6 +124,41 @@ syscall and resource restrictions. It makes no changes to host routes, firewall,
 forwarding, NAT or sysctls. Do not run secure mode with sudo, add broad mounts, or
 expose a Docker socket to it.
 
+### Owned HTTP assessment and report
+
+After the Linux setup above, run from a normal interactive terminal. Choose a
+**new assessment directory and audit filename for each run**; the directory must
+not already exist. The default policy requests a fresh approval for each of the
+two exact GET actions:
+
+```bash
+python -m recon_cockpit.secure_agent --http-assessment a --fixture --execute \
+  --assessment-dir .secure-agent/http-assessment-a-001 \
+  --audit .secure-agent/http-assessment-a-001.audit.jsonl
+
+# Read-only inspection; does not resume execution or restore approvals/budgets
+python -m recon_cockpit.secure_agent --inspect-assessment .secure-agent/http-assessment-a-001
+```
+
+Review `.secure-agent/http-assessment-a-001/report.json` and `report.md`.
+Case `a` returns synthetic internal diagnostic metadata; `b` demonstrates the
+endpoint is absent; `c`–`f` cover malformed, stalled, oversized and hostile
+discovery responses. These cases remain inside owned namespace fixtures.
+The assessment defaults to two planning steps and 2,048 reserved output bytes.
+It uses fixed synthetic provider replies and makes no live API calls.
+
+For a tool dry-run, use `--dry-run` in place of `--fixture --execute` and choose
+fresh output paths. No execution evidence is produced, so its assessment outcome
+is `inconclusive`. Exit status describes session execution; inspect
+`assessment_outcome` separately to determine the finding result.
+
+Raw decoded responses stay in private artifact files; reports and audit use safe
+metadata and evidence references. Artifacts are not HTTP wire captures, and local
+digests do not prevent host-owner tampering. Inspection flags incomplete or
+mismatched evidence without restarting work. Retention and deletion remain with
+the operator. A validated result establishes the seeded fixture condition, not a
+general vulnerability, authentication bypass or autonomous-model performance.
+
 ### Routed HTTP
 
 Install the additional rootless transport dependency as operator setup:
@@ -140,9 +182,14 @@ python scripts/secure_agent_routed_demo.py --interactive --audit .secure-agent/r
 
 ### Reproducible verification
 
+The 16 September 2026 local R2 run passed **1,849 portable tests** in 16.208 seconds
+and **78 real Linux integrations** in 151.816 seconds, with no failures, errors or
+skips in either selected suite. See [verification.md](docs/verification.md) for
+the tested revision, commands and limitations; hosted CI is separate evidence.
+
 GitHub Actions runs the portable suite on Ubuntu with Python 3.11–3.14 and on
-macOS with Python 3.14 for pull requests into `main`, `feature/secure-agent-m2`
-or `feature/secure-agent-provider-isolation`,
+macOS with Python 3.14 for pull requests into `main`, `feature/secure-agent-m2`,
+`feature/secure-agent-provider-isolation` or `feature/secure-agent-offline-authority`,
 and pushes to the configured secure-agent branches and `main`. These jobs require zero skipped portable tests; Linux
 integration tests are explicitly deselected. CI does not execute probes, supply
 human approvals, or establish kernel isolation. The opted-in Kali tests and
@@ -189,6 +236,9 @@ paths, headers, policy/approval overrides and unsupported tools are rejected.
   by the controller user, writable, and a regular non-symlink file. Check disk
   space and permissions. Reconcile any start event without a completion event
   before retrying; a completion-write failure cannot undo an already sent request.
+- `evidence_unavailable` / exit 3: the assessment directory already exists or
+  private evidence could not be recorded. Inspect any retained assessment before
+  starting a new one; an unmatched start leaves completion unknown.
 - Exit 2 reports a policy/schema/approval/isolation denial, execution failure,
   or a stopped session, including budget exhaustion and cancellation. Timeouts
   and output limits have distinct structured reasons.
