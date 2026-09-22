@@ -15,6 +15,15 @@ The planner's proposal, target HTTP responses, and imported content are untruste
 Legacy scan imports are not connected to the secure execution interface. Any
 future import adapter must produce proposals that traverse the same controller.
 
+The owned discovery workflow adds one bounded TCP handshake using the same
+namespace/firewall boundary and an explicit discovery executor mode. TCP
+reachability is neither a service identity nor permission for further work.
+Its result must match the fixed evidence contract before trusted code considers
+HTTP; both HTTP steps still require independent authority checks. Each action
+recreates its owned topology, so these results do not prove continuity of a
+persistent remote service. Original fixture/routed HTTP modes reject TCP actions.
+See [discovery-assessment.md](discovery-assessment.md).
+
 ## Attacker capabilities and boundaries
 
 | Attacker capability | Control | Residual limitation |

@@ -6,7 +6,7 @@ import json
 import pytest
 
 from recon_cockpit.secure_agent.models import (
-    HTTPParameters, ValidationError, load_json, parse_action, parse_policy,
+    Action, HTTPParameters, TCPParameters, ValidationError, load_json, parse_action, parse_policy,
 )
 
 
@@ -33,6 +33,95 @@ def policy_data():
         "allowed_ports": [8080], "allowed_methods": ["GET", "HEAD"],
         "max_timeout_seconds": 3, "max_output_bytes": 4096, "max_targets": 1,
         "require_approval": True, "approval_ttl_seconds": 60,
+    }
+
+
+@pytest.fixture
+def tcp_action_data(action_data):
+    return {**action_data, "tool_id": "tcp_connect", "parameters": {
+        "port": 8080, "timeout_seconds": 2, "max_output_bytes": 1024,
+    }}
+
+
+def test_tcp_round_trip_is_immutable_and_digest_binds_connection_bounds(tcp_action_data):
+    action = parse_action(json.dumps(tcp_action_data))
+    assert type(action.parameters) is TCPParameters
+    assert action.to_dict() == tcp_action_data
+    assert action.parameters.to_dict() == tcp_action_data["parameters"]
+    assert parse_action(action.to_dict()).digest == action.digest
+    with pytest.raises(FrozenInstanceError):
+        action.parameters.port = 80
+    for field, value in (("port", 8081), ("timeout_seconds", 3), ("max_output_bytes", 512)):
+        changed = {**tcp_action_data, "parameters": {**tcp_action_data["parameters"], field: value}}
+        assert parse_action(changed).digest != action.digest
+
+
+@pytest.mark.parametrize("field,value", [
+    ("port", True), ("port", None), ("port", 8080.0), ("port", "8080"),
+    ("port", [8080]), ("port", {"port": 8080}), ("port", 0), ("port", 65536),
+    ("timeout_seconds", False), ("timeout_seconds", 0), ("timeout_seconds", 31),
+    ("max_output_bytes", True), ("max_output_bytes", 0), ("max_output_bytes", 65537),
+])
+def test_tcp_rejects_malformed_or_unbounded_parameters(tcp_action_data, field, value):
+    tcp_action_data["parameters"][field] = value
+    with pytest.raises(ValidationError, match=f"^invalid_{field}$"):
+        parse_action(tcp_action_data)
+
+
+@pytest.mark.parametrize("field", ["method", "path", "ports", "payload", "read_banner", "headers"])
+def test_tcp_rejects_http_fields_and_additional_capabilities(tcp_action_data, field):
+    tcp_action_data["parameters"][field] = "untrusted"
+    with pytest.raises(ValidationError, match="^unknown_parameters_fields$"):
+        parse_action(tcp_action_data)
+
+
+@pytest.mark.parametrize("field", ["port", "timeout_seconds", "max_output_bytes"])
+def test_tcp_requires_each_bound(tcp_action_data, field):
+    del tcp_action_data["parameters"][field]
+    with pytest.raises(ValidationError, match="^missing_parameters_fields$"):
+        parse_action(tcp_action_data)
+
+
+@pytest.mark.parametrize("tool_id,parameters", [
+    ("http_probe", TCPParameters(8080, 1, 1024)),
+    ("tcp_connect", HTTPParameters(8080, "GET", "/", 1, 1024)),
+    ("tcp_connect", {"port": 8080, "timeout_seconds": 1, "max_output_bytes": 1024}),
+])
+def test_direct_action_rejects_mismatched_parameter_types(action_data, tool_id, parameters):
+    with pytest.raises(ValidationError, match="^invalid_parameters$"):
+        Action(**{**action_data, "tool_id": tool_id, "parameters": parameters})
+
+
+def test_action_rejects_parameter_subclasses(tcp_action_data):
+    class ExtendedTCPParameters(TCPParameters):
+        pass
+
+    with pytest.raises(ValidationError, match="^invalid_parameters$"):
+        Action(**{**tcp_action_data, "parameters": ExtendedTCPParameters(8080, 1, 1024)})
+    with pytest.raises(ValidationError, match="^invalid_port$"):
+        TCPParameters(True, 1, 1024)
+
+
+def test_tcp_requires_explicit_tool_permission_and_http_methods_apply_only_to_http(
+        action_data, tcp_action_data, policy_data):
+    tcp_action = parse_action(tcp_action_data)
+    assert parse_policy(policy_data).evaluate(tcp_action).reasons == ("tool_not_allowed",)
+    policy_data.update(allowed_tools=["http_probe", "tcp_connect"], allowed_methods=[])
+    policy = parse_policy(policy_data)
+    assert parse_policy(policy.to_dict()).digest == policy.digest
+    assert policy.evaluate(tcp_action).decision == "approval_required"
+    assert policy.evaluate(parse_action(action_data)).reasons == ("method_not_allowed",)
+    assert replace(policy, require_approval=False).evaluate(tcp_action).decision == "allow"
+
+
+def test_tcp_collects_scope_port_and_budget_denials_before_approval(tcp_action_data, policy_data):
+    tcp_action_data["target"] = "127.0.0.0/28"
+    tcp_action_data["parameters"].update(port=80, timeout_seconds=4, max_output_bytes=5000)
+    result = parse_policy(policy_data).evaluate(parse_action(tcp_action_data))
+    assert result.decision == "deny"
+    assert set(result.reasons) == {
+        "target_out_of_scope", "too_many_targets", "tool_not_allowed", "port_not_allowed",
+        "timeout_exceeds_policy", "output_limit_exceeds_policy",
     }
 
 

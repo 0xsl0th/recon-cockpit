@@ -89,9 +89,13 @@ the IPC state machines, compromise matrix and remaining privilege separation.
 ## Schema and policy
 
 Schema version `"1"` requires all action fields: UUID `action_id`, `tool_id`,
-literal `target`, typed `parameters`, and bounded `rationale`. The only tool is
-`http_probe`. Its parameters are `port`, `method`, `path`, `timeout_seconds`, and
-`max_output_bytes`. No command, output file, headers, proxy, URL, environment,
+literal `target`, typed `parameters`, and bounded `rationale`. `http_probe`
+parameters are `port`, `method`, `path`, `timeout_seconds`, and `max_output_bytes`.
+`tcp_connect` has only `port`, `timeout_seconds` and `max_output_bytes`, with an
+exact parameter type selected by tool identity. It executes only through the
+explicit owned discovery backend at `127.0.0.1:8080`; existing HTTP backends
+reject it. See [the discovery contract](discovery-assessment.md).
+No command, output file, headers, proxy, URL, environment,
 approval flag, policy override, or arbitrary extra field is accepted.
 
 Methods are GET and HEAD; paths are bounded simple absolute paths without query

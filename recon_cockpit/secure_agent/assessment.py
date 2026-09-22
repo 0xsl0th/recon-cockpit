@@ -30,17 +30,21 @@ class AssessmentProvider:
 
     name = "deterministic-http-fixture-assessment"
 
+    def _candidate_plans(self, case):
+        return tuple({"schema_version": "1", "action": assessment_action(case, step),
+                      "done": step == 2} for step in (1, 2))
+
     def __init__(self, case, audit, evidence):
         if type(case) is not str or case not in CASES:
             raise ValueError("invalid_assessment_case")
         self.case = case
         self._evidence = evidence
-        self._plans = tuple({"schema_version": "1", "action": assessment_action(case, step),
-                             "done": step == 2} for step in (1, 2))
+        self._plans = self._candidate_plans(case)
         replies = tuple(OfflineReply(200, _encode(_response(plan))) for plan in self._plans)
         self._offline = OfflineOpenAIProvider(
             OpenAIConfig("offline-fixture-http-assessment"), audit, OfflineTransport(replies),
-            BrokerLimits(max_calls=2, max_reserved_output_tokens=2048, max_request_bytes=32768),
+            BrokerLimits(max_calls=len(self._plans), max_reserved_output_tokens=1024 * len(self._plans),
+                         max_request_bytes=16384 * len(self._plans)),
         )
         self._lock = threading.Lock()
         self._bound = False
@@ -98,7 +102,7 @@ class AssessmentProvider:
                 raise ValueError("invalid_assessment_observation")
             step = self._next_step
             self._next_step += 1
-            if step == 2 and not self._discovery_complete(observation):
+            if step > 1 and not self._discovery_complete(observation):
                 self._closed = True
                 return _encode({"schema_version": "1", "action": None, "done": True})
             raw = self._offline.propose(observation, control=control)
@@ -107,7 +111,7 @@ class AssessmentProvider:
             # path, allowance, action identity or workflow-completion signal.
             if type(raw) is not bytes or len(raw) > 16384 or _encode(_plan(raw)) != _encode(self._plans[step - 1]):
                 raise ValueError("assessment_candidate_mismatch")
-            if step == 2:
+            if step == len(self._plans):
                 self._closed = True
             return raw
         except BaseException:
@@ -115,3 +119,44 @@ class AssessmentProvider:
             raise
         finally:
             self._lock.release()
+
+
+class DiscoveryAssessmentProvider(AssessmentProvider):
+    """One TCP attempt gates HTTP consideration; HTTP evidence gates validation."""
+
+    name = "deterministic-discovery-http-fixture-assessment"
+
+    def _candidate_plans(self, case):
+        from .discovery_contract import discovery_action
+
+        return tuple({"schema_version": "1", "action": discovery_action(case, step),
+                      "done": step == 3} for step in (1, 2, 3))
+
+    def _discovery_complete(self, observation):
+        from .discovery_contract import PARSER_VERSION
+
+        records = self._evidence.records
+        # propose has already advanced _next_step. Every completed predecessor
+        # must still match the fixed workflow before another exchange is made.
+        count = self._next_step - 2
+        if type(records) not in (list, tuple) or len(records) != count or count not in (1, 2):
+            return False
+        for index, record in enumerate(records):
+            expected = self._plans[index]["action"]
+            safe = {key: value for key, value in expected.items() if key != "rationale"}
+            if (type(record) is not dict or type(record.get("session_step")) is not int
+                    or record["session_step"] != index + 1
+                    or record.get("execution_status") != "succeeded"
+                    or record.get("action_digest") != parse_action(expected).digest
+                    or record.get("action") != safe):
+                return False
+            parsed = record.get("observation")
+            if index == 0:
+                if parsed != {"parser_version": PARSER_VERSION, "kind": "tcp_discovery",
+                              "classification": "reachable", "reason": "tcp_port_reachable",
+                              "followup_path": None}:
+                    return False
+            elif (type(parsed) is not dict or parsed.get("classification") != "discovered"
+                  or parsed.get("followup_path") != diagnostics_path(self.case)):
+                return False
+        return records[-1].get("authority_observation_sha256") == hashlib.sha256(observation).hexdigest()

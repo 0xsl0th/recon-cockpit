@@ -29,6 +29,7 @@ class AuthorizedFixtureBackend(LinuxFixtureBackend):
     """One fixed authority session; launch allowances are reserved without refunds."""
 
     name = "linux-authorized-fixture-executor-v1"
+    launch_mode = "fixture"
 
     def __init__(self, policy, session_id, limits, *, execute=False):
         if type(policy) is not Policy or type(limits) is not SessionLimits or type(execute) is not bool:
@@ -99,7 +100,7 @@ class AuthorizedFixtureBackend(LinuxFixtureBackend):
             # All setup and launch failures after reservation retain their full cost.
             nonce = secrets.token_hex(32)
             envelope = {
-                "schema_version": "1", "mode": "fixture", "execute": True,
+                "schema_version": "1", "mode": self.launch_mode, "execute": True,
                 "session_id": self._session_id, "nonce": nonce, "sequence": self._sequence,
                 "action": action.to_dict(), "action_digest": action.digest,
                 "policy": self._policy.to_dict(), "policy_digest": self._policy_digest,
@@ -139,3 +140,21 @@ class AuthorizedFixtureBackend(LinuxFixtureBackend):
             return result
         finally:
             self._lock.release()
+
+
+class AuthorizedDiscoveryFixtureBackend(AuthorizedFixtureBackend):
+    """Explicit opt-in to one fixed, owned TCP-discovery/HTTP topology."""
+
+    name = "linux-authorized-discovery-fixture-executor-v1"
+    launch_mode = "discovery_fixture"
+    supported_tools = ("http_probe", "tcp_connect")
+
+    def check_available(self, action=None):
+        if action is not None:
+            if action.targets != ("127.0.0.1",) or action.parameters.port != 8080:
+                raise IsolationUnavailable("Discovery fixtures require the owned 127.0.0.1:8080 topology")
+            if action.tool_id == "tcp_connect" and action.parameters.to_dict() != {
+                "port": 8080, "timeout_seconds": 1, "max_output_bytes": 1024,
+            }:
+                raise IsolationUnavailable("Discovery fixtures require the fixed single-connect profile")
+        super().check_available(action)

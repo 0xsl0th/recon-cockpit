@@ -1,4 +1,4 @@
-"""Private, bounded evidence for the fixed owned HTTP assessment.
+"""Private, bounded evidence for fixed owned HTTP assessment workflows.
 
 Trusted Controller code owns this store. No pathname or handle crosses an agent
 boundary. Artifacts contain decoded results, not original HTTP wire bytes.
@@ -27,6 +27,8 @@ MAX_REPORT_BYTES = 32768
 MAX_EXECUTIONS = 2
 REPRESENTATION = "canonical-decoded-http-result-json-v1"
 WORKFLOW = "owned-http-assessment-v1"
+DISCOVERY_REPRESENTATION = "canonical-decoded-discovery-http-result-json-v1"
+DISCOVERY_WORKFLOW = "owned-discovery-http-assessment-v1"
 
 
 class EvidenceUnavailable(AuditUnavailable):
@@ -56,13 +58,16 @@ def _safe_action(action):
     return value
 
 
-def _check_action(action, case, step):
-    from .assessment_contract import assessment_action
+def _check_action(action, case, step, *, discovery=False):
+    if discovery:
+        from .discovery_contract import discovery_action as expected_action
+    else:
+        from .assessment_contract import assessment_action as expected_action
 
-    if type(step) is not int or not 1 <= step <= MAX_EXECUTIONS:
+    if type(step) is not int or not 1 <= step <= (3 if discovery else MAX_EXECUTIONS):
         raise ValueError("invalid_evidence_step")
     parsed = parse_action({**action, "rationale": "Evidence excludes planner rationale."})
-    expected = assessment_action(case, step)
+    expected = expected_action(case, step)
     # Action IDs are planner data. The store generates its own execution IDs.
     if any(parsed.to_dict()[key] != expected[key] for key in ("tool_id", "target", "parameters")):
         raise ValueError("unexpected_assessment_action")
@@ -70,7 +75,7 @@ def _check_action(action, case, step):
         raise ValueError("invalid_evidence_action")
 
 
-def _summary(value, session_id):
+def _summary(value, session_id, *, discovery=False):
     keys = ("session_id", "session_status", "stop_reason", "steps_attempted",
             "actions_succeeded", "output_reserved_bytes", "mode")
     result = {key: value[key] for key in keys}
@@ -79,10 +84,32 @@ def _summary(value, session_id):
             or type(result["stop_reason"]) is not str
             or re.fullmatch(r"[a-z][a-z0-9_]{0,63}", result["stop_reason"]) is None):
         raise ValueError("invalid_assessment_summary")
-    for key, maximum in (("steps_attempted", 16), ("actions_succeeded", 2), ("output_reserved_bytes", 1048576)):
+    for key, maximum in (("steps_attempted", 3 if discovery else 16),
+                         ("actions_succeeded", 3 if discovery else MAX_EXECUTIONS),
+                         ("output_reserved_bytes", 3072 if discovery else 1048576)):
         if type(result[key]) is not int or not 0 <= result[key] <= maximum:
             raise ValueError("invalid_assessment_summary")
+    if discovery and result["actions_succeeded"] > result["steps_attempted"]:
+        raise ValueError("invalid_assessment_summary")
     return result
+
+
+def _parse_observation(action, result, *, execution_status, discovery=False):
+    if discovery:
+        from .discovery_contract import parse_observation
+    else:
+        from .assessment_contract import parse_observation
+
+    return parse_observation(action, result, execution_status=execution_status)
+
+
+def _reconcile_summary(summary, records, *, discovery=False):
+    if summary["actions_succeeded"] != sum(row["execution_status"] == "succeeded" for row in records):
+        raise ValueError("inconsistent_assessment_summary")
+    if discovery and (summary["steps_attempted"] < max((row["session_step"] for row in records), default=0)
+                      or summary["output_reserved_bytes"] < sum(
+                          row["action"]["parameters"]["max_output_bytes"] for row in records)):
+        raise ValueError("inconsistent_assessment_summary")
 
 
 def _observation_digest(step, status, result):
@@ -103,18 +130,25 @@ def _result_metadata(result):
 def _report(manifest, records, summary, issues):
     from .assessment_contract import capability_descriptor, discovery_path, diagnostics_path
 
+    discovery = manifest["workflow"] == DISCOVERY_WORKFLOW
+    if discovery:
+        from .discovery_contract import capability_descriptor
+
     issues = sorted(set(issues))
     outcome, reason = "inconclusive", "assessment_incomplete"
     completed = [row for row in records if row.get("artifact") is not None]
+    expected_steps = [1, 2, 3] if discovery else [1, 2]
+    preceding_classifications = ["reachable", "discovered"] if discovery else ["discovered"]
     if summary is not None and not issues:
         if summary["mode"] == "dry_run":
             reason = "dry_run_has_no_execution_evidence"
         elif summary["session_status"] != "completed":
             reason = "session_stopped"
-        elif (len(completed) == 2 and [row["session_step"] for row in completed] == [1, 2]
+        elif (len(completed) == len(expected_steps)
+              and [row["session_step"] for row in completed] == expected_steps
               and all(row["execution_status"] == "succeeded" for row in completed)
-              and completed[0]["observation"]["classification"] == "discovered"):
-            classification = completed[1]["observation"]["classification"]
+              and [row["observation"]["classification"] for row in completed[:-1]] == preceding_classifications):
+            classification = completed[-1]["observation"]["classification"]
             if classification == "exposed":
                 outcome, reason = "validated", "seeded_diagnostic_metadata_exposed"
             elif classification == "absent":
@@ -129,7 +163,7 @@ def _report(manifest, records, summary, issues):
                    "artifact": copy.deepcopy(row["artifact"])} for row in completed]
     return {
         "schema_version": "1", "assessment_id": manifest["assessment_id"],
-        "session_id": manifest["session_id"], "workflow": WORKFLOW,
+        "session_id": manifest["session_id"], "workflow": manifest["workflow"],
         "fixture_case": manifest["fixture_case"], "outcome": outcome, "reason": reason,
         "planning": "deterministic fixture workflow with gated synthetic provider replies",
         "live_calls_enabled": False, "capability": capability_descriptor(),
@@ -150,14 +184,17 @@ def _report(manifest, records, summary, issues):
             "Artifacts hold decoded result JSON, not exact HTTP wire bytes; response and artifact digests identify different representations.",
             "Local hashes do not prevent a host owner from modifying evidence. Raw artifacts are private and retained until operator cleanup.",
             "Inspection never resumes execution or restores approvals, deadlines or budgets.",
-        ],
+        ] + (["TCP evidence establishes a completed connection only, not HTTP service identity or a finding.",
+              "Each action recreates the owned topology in a fresh namespace; this does not track a persistent remote service."]
+             if discovery else []),
     }
 
 
 def _markdown(report):
     # Only validated enums, UUIDs, generated artifact filenames/digests and fixed
     # text are rendered. No response body, rationale or model prose is included.
-    lines = ["# Owned HTTP assessment", "", "Outcome: **" + report["outcome"] + "**", "",
+    title = "# Owned discovery and HTTP assessment" if report["workflow"] == DISCOVERY_WORKFLOW else "# Owned HTTP assessment"
+    lines = [title, "", "Outcome: **" + report["outcome"] + "**", "",
              report["finding"]["title"], "", "Review: pending operator review.", "",
              "Assessment: `" + report["assessment_id"] + "`", "",
              "Session: `" + report["session_id"] + "`", "",
@@ -181,7 +218,7 @@ def _markdown(report):
 class EvidenceStore:
     """One fresh, bounded assessment. Existing directories cannot be resumed."""
 
-    def __init__(self, directory, *, session_id, policy, case):
+    def __init__(self, directory, *, session_id, policy, case, discovery=False):
         from .assessment_contract import CASES
 
         self.directory = Path(directory)
@@ -192,12 +229,17 @@ class EvidenceStore:
         self._records = []
         self._lock = threading.Lock()
         try:
-            if not _uuid(session_id) or type(case) is not str or case not in CASES:
+            if (not _uuid(session_id) or type(case) is not str or case not in CASES
+                    or type(discovery) is not bool):
                 raise ValueError("invalid_assessment_configuration")
+            self._discovery = discovery
+            self._max_executions = 3 if discovery else MAX_EXECUTIONS
             self._manifest = {
                 "schema_version": "1", "assessment_id": str(uuid4()), "session_id": session_id,
-                "workflow": WORKFLOW, "fixture_case": case, "policy_digest": policy.digest,
-                "created_at": _now(), "artifact_representation": REPRESENTATION,
+                "workflow": DISCOVERY_WORKFLOW if discovery else WORKFLOW,
+                "fixture_case": case, "policy_digest": policy.digest,
+                "created_at": _now(),
+                "artifact_representation": DISCOVERY_REPRESENTATION if discovery else REPRESENTATION,
             }
             self.directory.mkdir(mode=0o700, parents=True, exist_ok=False)
             self._fd = os.open(self.directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
@@ -265,9 +307,9 @@ class EvidenceStore:
             try:
                 self._check()
                 safe = _safe_action(action)
-                _check_action(safe, self._manifest["fixture_case"], session_step)
+                _check_action(safe, self._manifest["fixture_case"], session_step, discovery=self._discovery)
                 if (session_id != self._manifest["session_id"] or policy.digest != self._manifest["policy_digest"]
-                        or session_step != len(self._records) + 1 or len(self._records) >= MAX_EXECUTIONS
+                        or session_step != len(self._records) + 1 or len(self._records) >= self._max_executions
                         or any(row["artifact"] is None for row in self._records)
                         or type(backend) is not str or re.fullmatch(r"[a-z][a-z0-9-]{0,80}", backend) is None):
                     raise ValueError("invalid_evidence_start")
@@ -284,8 +326,6 @@ class EvidenceStore:
                 raise EvidenceUnavailable("evidence_unavailable") from None
 
     def finish(self, execution_id, result, *, execution_status):
-        from .assessment_contract import parse_observation
-
         with self._lock:
             try:
                 self._check()
@@ -301,10 +341,11 @@ class EvidenceStore:
                 completed = {**record, "finished_at": _now(), "execution_status": execution_status,
                              "observation_id": str(uuid4()),
                              "result_metadata": _result_metadata(result),
-                             "observation": parse_observation(record["action"], result,
-                                                              execution_status=execution_status),
+                             "observation": _parse_observation(record["action"], result,
+                                                               execution_status=execution_status,
+                                                               discovery=self._discovery),
                              "artifact": {"filename": filename, "sha256": hashlib.sha256(raw).hexdigest(),
-                                          "bytes": len(raw), "representation": REPRESENTATION},
+                                          "bytes": len(raw), "representation": self._manifest["artifact_representation"]},
                              "authority_observation_sha256": _observation_digest(record["session_step"], execution_status, result)}
                 self._emit({"event_type": "assessment_execution_finished", "record": completed})
                 self._records[-1] = completed
@@ -316,10 +357,8 @@ class EvidenceStore:
         with self._lock:
             try:
                 self._check()
-                safe = _summary(summary, self._manifest["session_id"])
-                succeeded = sum(row["execution_status"] == "succeeded" for row in self._records)
-                if safe["actions_succeeded"] != succeeded:
-                    raise ValueError("inconsistent_assessment_summary")
+                safe = _summary(summary, self._manifest["session_id"], discovery=self._discovery)
+                _reconcile_summary(safe, self._records, discovery=self._discovery)
                 issues = ["execution_completion_unknown"] if any(row["artifact"] is None for row in self._records) else []
                 report = _report(self._manifest, self._records, safe, issues)
                 # Publish findings only after the evidence session is durably
@@ -369,7 +408,7 @@ def _read_private(directory_fd, name, limit):
 
 def inspect_assessment(directory):
     """Recompute a safe report without writing files or restoring any authority."""
-    from .assessment_contract import CASES, parse_observation
+    from .assessment_contract import CASES
 
     fd = None
     try:
@@ -386,12 +425,15 @@ def inspect_assessment(directory):
         manifest = load_json(_read_private(fd, "manifest.json", 8192))
         if (set(manifest) != {"schema_version", "assessment_id", "session_id", "workflow", "fixture_case",
                              "policy_digest", "created_at", "artifact_representation"}
-                or manifest["schema_version"] != "1" or manifest["workflow"] != WORKFLOW
-                or manifest["artifact_representation"] != REPRESENTATION
+                or manifest["schema_version"] != "1"
+                or (manifest["workflow"], manifest["artifact_representation"]) not in (
+                    (WORKFLOW, REPRESENTATION), (DISCOVERY_WORKFLOW, DISCOVERY_REPRESENTATION))
                 or not _uuid(manifest["assessment_id"]) or not _uuid(manifest["session_id"])
                 or not _digest(manifest["policy_digest"]) or manifest["fixture_case"] not in CASES
                 or type(manifest["created_at"]) is not str or len(manifest["created_at"]) > 64):
             raise ValueError("invalid_assessment_manifest")
+        discovery = manifest["workflow"] == DISCOVERY_WORKFLOW
+        max_executions = 3 if discovery else MAX_EXECUTIONS
         issues, records, summary = [], [], None
         try:
             journal = _read_private(fd, "evidence.jsonl", MAX_JOURNAL_BYTES)
@@ -399,9 +441,9 @@ def inspect_assessment(directory):
             journal = b""
             issues.append("journal_unavailable")
         lines = journal.splitlines(keepends=True)
-        if len(lines) > 5:
+        if len(lines) > 2 * max_executions + 1:
             issues.append("journal_event_limit")
-            lines = lines[:5]
+            lines = lines[:2 * max_executions + 1]
         referenced = {"manifest.json", "evidence.jsonl", "report.json", "report.md"}
         for line in lines:
             try:
@@ -412,9 +454,8 @@ def inspect_assessment(directory):
                     raise ValueError("wrong_evidence_session")
                 kind = event["event_type"]
                 if kind == "assessment_finished":
-                    summary = _summary(event["summary"], manifest["session_id"])
-                    if summary["actions_succeeded"] != sum(row["execution_status"] == "succeeded" for row in records):
-                        raise ValueError("inconsistent_assessment_summary")
+                    summary = _summary(event["summary"], manifest["session_id"], discovery=discovery)
+                    _reconcile_summary(summary, records, discovery=discovery)
                     continue
                 record = event["record"]
                 if (type(record) is not dict or set(record) != {
@@ -426,9 +467,9 @@ def inspect_assessment(directory):
                         or type(record["backend"]) is not str or re.fullmatch(r"[a-z][a-z0-9-]{0,80}", record["backend"]) is None
                         or type(record["started_at"]) is not str or len(record["started_at"]) > 64):
                     raise ValueError("invalid_evidence_record")
-                _check_action(record["action"], manifest["fixture_case"], record["session_step"])
+                _check_action(record["action"], manifest["fixture_case"], record["session_step"], discovery=discovery)
                 if kind == "assessment_execution_started":
-                    if (len(records) >= 2 or record["session_step"] != len(records) + 1
+                    if (len(records) >= max_executions or record["session_step"] != len(records) + 1
                             or record["execution_status"] != "started" or any(row["artifact"] is None for row in records)
                             or record["execution_id"] in {row["execution_id"] for row in records}
                             or any(record[key] is not None for key in ("finished_at", "observation_id", "observation", "artifact", "authority_observation_sha256", "result_metadata"))):
@@ -446,14 +487,15 @@ def inspect_assessment(directory):
                     if (type(artifact) is not dict or set(artifact) != {"filename", "sha256", "bytes", "representation"}
                             or artifact["filename"] != "result-" + record["execution_id"] + ".json"
                             or not _digest(artifact["sha256"]) or type(artifact["bytes"]) is not int
-                            or not 1 <= artifact["bytes"] <= MAX_ARTIFACT_BYTES or artifact["representation"] != REPRESENTATION):
+                            or not 1 <= artifact["bytes"] <= MAX_ARTIFACT_BYTES
+                            or artifact["representation"] != manifest["artifact_representation"]):
                         raise ValueError("invalid_evidence_artifact")
                     raw = _read_private(fd, artifact["filename"], MAX_ARTIFACT_BYTES)
                     referenced.add(artifact["filename"])
                     if len(raw) != artifact["bytes"] or hashlib.sha256(raw).hexdigest() != artifact["sha256"]:
                         raise ValueError("artifact_digest_mismatch")
                     result = load_json(raw)
-                    if (_encode(parse_observation(record["action"], result, execution_status=record["execution_status"])) != _encode(record["observation"])
+                    if (_encode(_parse_observation(record["action"], result, execution_status=record["execution_status"], discovery=discovery)) != _encode(record["observation"])
                             or _encode(_result_metadata(result)) != _encode(record["result_metadata"])
                             or _observation_digest(record["session_step"], record["execution_status"], result) != record["authority_observation_sha256"]):
                         raise ValueError("observation_mismatch")

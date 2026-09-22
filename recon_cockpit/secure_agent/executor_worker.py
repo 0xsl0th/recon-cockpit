@@ -74,7 +74,7 @@ class LaunchVerifier:
             raise ValueError("executor_context_mismatch")
         envelope = load_json(raw)
         if (set(envelope) != LAUNCH_FIELDS or envelope["schema_version"] != "1"
-                or envelope["mode"] != "fixture" or envelope["execute"] is not True
+                or envelope["mode"] not in ("fixture", "discovery_fixture") or envelope["execute"] is not True
                 or not _hex(envelope["nonce"])
                 or not hmac.compare_digest(envelope["nonce"], self._nonce)):
             raise ValueError("invalid_executor_launch")
@@ -104,6 +104,11 @@ class LaunchVerifier:
             raise ValueError("executor_action_or_policy_denied")
         if action.targets != ("127.0.0.1",) or not 1024 <= action.parameters.port <= 65534:
             raise ValueError("executor_fixture_only")
+        if envelope["mode"] == "fixture" and action.tool_id != "http_probe":
+            raise ValueError("executor_capability_not_supported")
+        if envelope["mode"] == "discovery_fixture" and (
+                action.tool_id not in ("http_probe", "tcp_connect") or action.parameters.port != 8080):
+            raise ValueError("executor_discovery_fixture_only")
         before, after = envelope["output_reserved_before"], envelope["output_reserved_after"]
         if (type(before) is not int or type(after) is not int
                 or not 0 <= before < after <= limits["max_output_bytes"]
@@ -117,6 +122,9 @@ class LaunchVerifier:
             raise ValueError("invalid_executor_namespaces")
         request = {"target": "127.0.0.1", "parameters": action.parameters.to_dict(),
                    "verify_boundary": True, "host_namespaces": host}
+        if action.tool_id == "tcp_connect":
+            request["tool_id"] = "tcp_connect"
+            return worker.validate_tcp_request(encode(request)), deadline
         return worker.validate_request(encode(request)), deadline
 
 
@@ -129,7 +137,8 @@ def main() -> int:
         raw = sys.stdin.buffer.read(MAX_LAUNCH_BYTES + 1)
         sys.stdin.close()
         request, deadline = verifier.consume(raw)
-        result = worker.execute(request, deadline=deadline)
+        result = (worker.execute_tcp_connect(request, deadline=deadline)
+                  if request.get("tool_id") == "tcp_connect" else worker.execute(request, deadline=deadline))
         sys.stdout.write(json.dumps(result, separators=(",", ":")) + "\n")
         sys.stdout.flush()
         return 0

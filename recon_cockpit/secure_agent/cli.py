@@ -84,24 +84,32 @@ def _run_http_assessment(args, policy, audit):
     """Construct one fresh fixture authority with privately persisted evidence."""
     from uuid import uuid4
 
-    from .assessment import AssessmentProvider
+    from .assessment import AssessmentProvider, DiscoveryAssessmentProvider
     from .assessment_contract import capability_descriptor
-    from .authorized_execution import AuthorizedFixtureBackend
+    from .authorized_execution import AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend
     from .control_plane import AuthoritySession
     from .coordinator_isolation import LinuxOfflineCoordinator
     from .evidence import EvidenceStore
     from .session import SessionLimits
 
-    limits = SessionLimits(**{"max_steps": 2, "max_output_bytes": 2048, **{key: value for key, value in zip(
+    discovery = args.discovery_assessment is not None
+    case = args.discovery_assessment if discovery else args.http_assessment
+    steps = 3 if discovery else 2
+    provider_type = DiscoveryAssessmentProvider if discovery else AssessmentProvider
+    backend_type = AuthorizedDiscoveryFixtureBackend if discovery else AuthorizedFixtureBackend
+    if discovery:
+        from .discovery_contract import capability_descriptor
+    limits = SessionLimits(**{"max_steps": steps, "max_output_bytes": steps * 1024, **{key: value for key, value in zip(
         ("max_steps", "max_runtime_seconds", "max_output_bytes"),
         (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes))
         if value is not None}})
     session_id = str(uuid4())
     coordinator = LinuxOfflineCoordinator()
-    backend = (AuthorizedFixtureBackend(policy, session_id, limits, execute=args.execute)
+    backend = (backend_type(policy, session_id, limits, execute=args.execute)
                if args.fixture else None)
-    with EvidenceStore(args.assessment_dir, session_id=session_id, policy=policy, case=args.http_assessment) as evidence:
-        provider = AssessmentProvider(args.http_assessment, audit, evidence)
+    with EvidenceStore(args.assessment_dir, session_id=session_id, policy=policy,
+                       case=case, discovery=discovery) as evidence:
+        provider = provider_type(case, audit, evidence)
         runner = AuthoritySession(policy, audit, backend, coordinator, limits, session_id=session_id,
                                   provider=provider, evidence=evidence)
         previous_handlers = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
@@ -119,7 +127,7 @@ def _run_http_assessment(args, policy, audit):
             for number, handler in previous_handlers.items():
                 signal.signal(number, handler)
         report = evidence.finalize(summary)
-    _print({**summary, "provider": provider.name, "fixture_case": args.http_assessment,
+    _print({**summary, "provider": provider.name, "fixture_case": case,
             "assessment_outcome": report["outcome"], "assessment_id": report.get("assessment_id"),
             "report_paths": {"json": str(args.assessment_dir / "report.json"),
                              "markdown": str(args.assessment_dir / "report.md")},
@@ -154,10 +162,12 @@ def main(argv: list[str] | None = None) -> int:
                         help="run synthetic responses through the isolated coordinator, parser and authority")
     source.add_argument("--http-assessment", choices=tuple("abcdef"),
                         help="run the fixed owned HTTP assessment with private evidence; no live model")
+    source.add_argument("--discovery-assessment", choices=tuple("abcdef"),
+                        help="gate owned HTTP assessment on one TCP connection; policy must allow tcp_connect")
     source.add_argument("--inspect-assessment", type=Path,
                         help="inspect existing assessment evidence without resuming execution")
     parser.add_argument("--assessment-dir", type=Path,
-                        help="new private directory for --http-assessment artifacts and reports")
+                        help="new private directory for HTTP or discovery assessment artifacts and reports")
     parser.add_argument("--openai-model", help="explicit model identifier for the offline request contract")
     parser.add_argument("--openai-max-output-tokens", type=int,
                         help="output token allowance per simulated request: 16–4096 (default: 1024)")
@@ -180,9 +190,10 @@ def main(argv: list[str] | None = None) -> int:
     backend_selection.add_argument("--routed", action="store_true", help="select isolated HTTP to one authorized IPv4 literal")
     args = parser.parse_args(argv)
     offline_scenario = args.openai_offline or args.control_plane_openai_offline
-    authority_mode = args.control_plane_mock or args.control_plane_openai_offline or args.http_assessment
+    assessment_case = args.http_assessment or args.discovery_assessment
+    authority_mode = args.control_plane_mock or args.control_plane_openai_offline or assessment_case
     session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
-                        or args.control_plane_mock or args.http_assessment)
+                        or args.control_plane_mock or assessment_case)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
     broker_options = (args.broker_max_calls, args.broker_max_output_tokens, args.broker_max_request_bytes)
     if not offline_scenario and any(value is not None for value in (
@@ -195,12 +206,12 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("session limits require a session source")
     if session_scenario and args.routed:
         parser.error("this mock session slice supports owned fixtures only, not routed targets")
-    if args.http_assessment and args.assessment_dir is None:
-        parser.error("--http-assessment requires --assessment-dir")
-    if args.assessment_dir is not None and not args.http_assessment:
-        parser.error("--assessment-dir requires --http-assessment")
-    if args.http_assessment and args.execute and not args.fixture:
-        parser.error("executing --http-assessment requires --fixture")
+    if assessment_case and args.assessment_dir is None:
+        parser.error("assessment requires --assessment-dir")
+    if args.assessment_dir is not None and not assessment_case:
+        parser.error("--assessment-dir requires --http-assessment or --discovery-assessment")
+    if assessment_case and args.execute and not args.fixture:
+        parser.error("executing an assessment requires --fixture")
     if args.inspect_assessment and (args.execute or args.dry_run or args.fixture or args.routed):
         parser.error("--inspect-assessment cannot select an execution mode or backend")
     try:
@@ -219,7 +230,7 @@ def main(argv: list[str] | None = None) -> int:
             from .routed import LinuxRoutedBackend
             backend = LinuxRoutedBackend()
         with AuditSink(args.audit) as audit:
-            if args.http_assessment:
+            if assessment_case:
                 return _run_http_assessment(args, policy, audit)
             if session_scenario:
                 from .session import SessionLimits, SessionRunner

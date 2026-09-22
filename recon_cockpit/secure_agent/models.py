@@ -18,7 +18,7 @@ MAX_JSON_BYTES = 32_768
 MAX_TARGETS = 16
 MAX_TIMEOUT_SECONDS = 30
 MAX_OUTPUT_BYTES = 65_536
-SUPPORTED_TOOLS = ("http_probe",)
+SUPPORTED_TOOLS = ("http_probe", "tcp_connect")
 SUPPORTED_METHODS = ("GET", "HEAD")
 Network = ipaddress.IPv4Network | ipaddress.IPv6Network
 
@@ -161,12 +161,29 @@ class HTTPParameters:
 
 
 @dataclass(frozen=True, slots=True)
+class TCPParameters:
+    """One bounded connection attempt; no payload, banner read, or port list."""
+
+    port: int
+    timeout_seconds: int
+    max_output_bytes: int
+
+    def __post_init__(self) -> None:
+        _integer(self.port, "port", 1, 65_535)
+        _integer(self.timeout_seconds, "timeout_seconds", 1, MAX_TIMEOUT_SECONDS)
+        _integer(self.max_output_bytes, "max_output_bytes", 1, MAX_OUTPUT_BYTES)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
 class Action:
     schema_version: str
     action_id: str
     tool_id: str
     target: str
-    parameters: HTTPParameters
+    parameters: HTTPParameters | TCPParameters
     rationale: str
 
     def __post_init__(self) -> None:
@@ -181,7 +198,8 @@ class Action:
         if type(self.tool_id) is not str or self.tool_id not in SUPPORTED_TOOLS:
             _reject("unsupported_tool")
         object.__setattr__(self, "target", _canonical_target(self.target))
-        if type(self.parameters) is not HTTPParameters:
+        parameter_type = HTTPParameters if self.tool_id == "http_probe" else TCPParameters
+        if type(self.parameters) is not parameter_type:
             _reject("invalid_parameters")
         _string(self.rationale, "rationale", 0, 1_000)
 
@@ -286,7 +304,7 @@ class Policy:
             reasons.append("too_many_targets")
         if action.parameters.port not in self.allowed_ports:
             reasons.append("port_not_allowed")
-        if action.parameters.method not in self.allowed_methods:
+        if action.tool_id == "http_probe" and action.parameters.method not in self.allowed_methods:
             reasons.append("method_not_allowed")
         if action.parameters.timeout_seconds > self.max_timeout_seconds:
             reasons.append("timeout_exceeds_policy")
@@ -305,10 +323,16 @@ def parse_action(value: dict[str, Any] | str | bytes) -> Action:
     value = _fields(value, {
         "schema_version", "action_id", "tool_id", "target", "parameters", "rationale"
     }, "action")
-    parameters = _fields(value["parameters"], {
-        "port", "method", "path", "timeout_seconds", "max_output_bytes"
-    }, "parameters")
-    return Action(**{**value, "parameters": HTTPParameters(**parameters)})
+    tool_id = value["tool_id"]
+    if type(tool_id) is not str or tool_id not in SUPPORTED_TOOLS:
+        _reject("unsupported_tool")
+    fields = {"port", "timeout_seconds", "max_output_bytes"}
+    parameter_type = TCPParameters
+    if tool_id == "http_probe":
+        fields.update(("method", "path"))
+        parameter_type = HTTPParameters
+    parameters = _fields(value["parameters"], fields, "parameters")
+    return Action(**{**value, "parameters": parameter_type(**parameters)})
 
 
 def parse_policy(value: dict[str, Any] | str | bytes) -> Policy:
