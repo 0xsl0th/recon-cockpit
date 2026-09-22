@@ -15,11 +15,12 @@ preserved the reviewed files. Current state is in [continue-here.md](continue-he
 See [http-assessment.md](http-assessment.md),
 [offline-authority.md](offline-authority.md) and [verification.md](verification.md).
 **R3 update — 22 September 2026:** the smallest owned single-port discovery
-slice is implemented on `feature/secure-agent-discovery`. One isolated TCP
-connection gates the existing two-GET workflow; local verification passed
-**1,977 portable tests and 96 real Linux integrations**. See
-[discovery-assessment.md](discovery-assessment.md) and the continuation checkpoint
-for review/publication state. Broader discovery and R4 workflow cards remain
+slice is reviewed and merged into `main` through
+[PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8), merge `b1c7b67`.
+One isolated TCP connection gates the existing two-GET workflow; local verification
+passed **1,977 portable tests and 96 real Linux integrations**, and all ten
+premerge branch/PR checks passed. See [discovery-assessment.md](discovery-assessment.md)
+and the continuation checkpoint. Broader discovery and R4 workflow cards remain
 future work. The baseline below is historical.
 
 ## Product direction
@@ -65,7 +66,7 @@ evidence, add discovery, then grow the workflow library and live planning.
 | --- | --- | --- | --- |
 | R1 — implemented | Offline provider through the isolated coordinator and authority | Closes the split between existing boundaries without new targets or spending. | Combined three-step synthetic session and adversarial variants pass through the Linux boundaries. |
 | R2 — smallest slice implemented | One HTTP assessment, minimal capability/evidence contracts and report | Makes the foundation useful and reveals the abstractions tools actually need. | Two-GET owned workflow, private execution/observation artifacts, draft reports and read-only crash inspection. |
-| R3 — smallest slice implemented, review pending | One isolated single-port TCP adapter | Adds a second typed capability without broadening old HTTP backends. | Owned TCP evidence gates HTTP; 1,977 portable and 96 Linux tests pass. Broader topology remains future work. |
+| R3 — smallest slice merged | One isolated single-port TCP adapter | Adds a second typed capability without broadening old HTTP backends. | Owned TCP evidence gates HTTP; 1,977 portable and 96 Linux tests pass. Broader topology remains future work. |
 | R4 | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Complete scoped lab assessment reaches a supported finding or an honest inconclusive result. |
 | R5 | Isolated live-provider broker and further authority separation | We now have useful actions and a reproducible baseline against which to evaluate a model. | Approved real-model runs with verified credential/egress/data/spend controls. |
 | R6 | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
@@ -335,7 +336,7 @@ page retrieval was unavailable during this planning pass.
 - Confirm Enrique Folte's submission role, affiliation if applicable, and any
   additional team members.
 - R1 channel topology is settled in [offline-authority.md](offline-authority.md).
-- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). Review R3 before expanding topology or adding workflow cards.
+- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). R3 is reviewed and merged; use its proven path when designing the first workflow card.
 - Later choose real-model/data/credential/spend settings.
 
 Reference identities are resolved. Team details do not block scoped development. This plan does

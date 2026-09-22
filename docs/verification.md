@@ -1,5 +1,34 @@
 # Verification record
 
+## R3 premerge review and authorized merge — 22 September 2026
+
+The operator requested review of [PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8)
+and explicitly authorized merging if sound. Bounded reviews of executor/isolation,
+workflow/schema and evidence/recovery found no concrete blockers at reviewed head
+`124300af8c854c4e3be0cc2b2fb4b4c6c7f91549`. There were no unresolved GitHub review
+comments or requested changes. Main remained at the tested base `75ebb8d`.
+
+All ten branch/PR checks passed on the reviewed head: five jobs each in
+[branch CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/35737246850) and
+[PR CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/35737253627).
+Fresh focused evidence/workflow/executor regressions passed **195 tests**;
+reviewers also ran overlapping boundary and schema/HTTP checks (221 and 275
+passing tests respectively). These are not additive full-suite counts.
+The prior full **1,977 portable / 96 Linux** results still apply: production
+files are unchanged since the verified implementation, and the final portable
+platform-test correction passed hosted CI on macOS and Ubuntu.
+
+PR #8 was marked ready and merged with an exact-head guard as
+`b1c7b67f62a8f3c951308e28e58cd52cc4049b50` at 14:05:03 UTC. Local main was
+fast-forwarded to that commit. A complete tree comparison against reviewed
+`124300a` found no differences. No approval bypass, live provider, external target,
+credential access or host network change was involved in this review/merge.
+
+All five jobs on the
+[post-merge main run](https://github.com/0xsl0th/recon-cockpit/actions/runs/35737835396)
+passed at `b1c7b67`. The following checkpoint changes documentation only; inspect
+current main checks for its separate hosted result.
+
 ## R3: owned TCP discovery-to-HTTP path — 22 September 2026
 
 Recovered the clean `feature/secure-agent-discovery` checkout at `75ebb8d` after
@@ -9,10 +38,10 @@ GitHub main still pointed to `75ebb8d`, with successful portable CI. The saved
 conversation confirmed the chosen one-connect discovery slice. R1/R2 merges
 were already complete and were not repeated.
 
-Implementation `ad30297` is published in draft
-[PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8), targeting `main` and
-remaining unmerged. Hosted CI status must be checked on the current PR head;
-the measured results below are local verification.
+Historical implementation checkpoint: `ad30297` was published in
+[PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8), initially a draft.
+It was subsequently reviewed and merged as documented above. The measurements
+below are local verification, separate from hosted CI.
 
 Implemented the smallest R3 slice on that branch: a typed `tcp_connect` action,
 an explicit owned discovery executor, evidence-gated TCP → HTTP discovery → HTTP
