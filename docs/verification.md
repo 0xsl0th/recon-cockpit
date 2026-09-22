@@ -38,6 +38,13 @@ portable cases and 18 additional real Linux cases. A final evidence-test metadat
 correction and descriptor assertion passed the focused evidence/executor checks;
 production files were unchanged.
 
+Initial hosted CI passed all Ubuntu/Python jobs but found one macOS-only test
+failure: the portable host-namespace refusal test assumed a Linux platform and
+expected the later namespace error, while macOS correctly refused at the earlier
+Linux-only guard. The test now explicitly exercises both platform refusal paths
+with network/setup calls forbidden. Focused portable executor checks passed
+after this test-only correction; production code and Linux evidence are unchanged.
+
 Linux additions cover six HTTP fixture cases following real TCP discovery,
 missing/fresh/refused/replayed scripted grants across capability types, separate
 step/output budgets, dry-run and artifact failure before further planning. Three

@@ -24,6 +24,9 @@ step. Main still matched `75ebb8d` and its hosted CI was successful.
   [PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8), targeting `main`.
   It remains unmerged. Read current PR checks for hosted CI status;
   the results below are local evidence. No R3 merge is authorized.
+- Initial hosted CI exposed a macOS assumption in a new portable refusal test.
+  The test now explicitly exercises both Linux host-namespace refusal and
+  non-Linux refusal. Production files and Linux verification are unchanged.
 - Full local verification: **1,977 portable tests and 96 real Linux
   integrations**, zero selected failures/errors/skips. Compile, dependency and
   whitespace checks passed. See the exact commands/timing in verification.md.

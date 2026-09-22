@@ -152,10 +152,15 @@ def test_expired_tcp_deadline_prevents_socket_creation(monkeypatch):
 
 
 def test_tcp_execution_refuses_host_namespace_before_network_setup(monkeypatch):
+    # Exercise both guards independently of the host running this portable test.
+    monkeypatch.setattr(worker.sys, "platform", "linux")
     monkeypatch.setattr(worker.os, "readlink", lambda _: "user:[100]")
     monkeypatch.setattr(worker.subprocess, "run", lambda *a, **k: pytest.fail("host firewall access"))
     monkeypatch.setattr(worker.socket, "socket", lambda *a: pytest.fail("host socket access"))
     with pytest.raises(RuntimeError, match="host namespace"):
+        worker.execute_tcp_connect(request(), deadline=time.monotonic() + 10)
+    monkeypatch.setattr(worker.sys, "platform", "darwin")
+    with pytest.raises(RuntimeError, match="missing Linux isolation identity"):
         worker.execute_tcp_connect(request(), deadline=time.monotonic() + 10)
 
 
