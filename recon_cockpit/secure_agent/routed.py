@@ -186,6 +186,8 @@ class LinuxRoutedBackend:
         self.boundary_witnesses = dict(boundary_witnesses) if boundary_witnesses is not None else None
 
     def check_available(self, action=None) -> None:
+        if action is not None and action.tool_id != "http_probe":
+            raise IsolationUnavailable("Routed execution supports HTTP actions only")
         LinuxFixtureBackend().check_available()
         for program in ("slirp4netns", "prlimit"):
             _trusted_program(program)

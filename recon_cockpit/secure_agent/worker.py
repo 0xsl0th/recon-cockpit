@@ -64,6 +64,24 @@ def validate_request(raw: bytes) -> dict:
     return request
 
 
+def validate_tcp_request(raw: bytes) -> dict:
+    """The discovery profile is separate from the original HTTP-only worker."""
+    if len(raw) > 8192:
+        raise ValueError("request too large")
+    request = json.loads(raw)
+    if (type(request) is not dict or set(request) != {
+            "target", "tool_id", "parameters", "verify_boundary", "host_namespaces"}
+            or request["tool_id"] != "tcp_connect" or request["target"] != "127.0.0.1"
+            or request["verify_boundary"] is not True):
+        raise ValueError("invalid discovery request")
+    parameters = request["parameters"]
+    expected = {"port": 8080, "timeout_seconds": 1, "max_output_bytes": 1024}
+    if (type(parameters) is not dict or parameters != expected
+            or any(type(value) is not int for value in parameters.values())):
+        raise ValueError("invalid discovery profile")
+    return request
+
+
 def assert_private_namespaces(host: dict) -> None:
     if sys.platform != "linux" or type(host) is not dict or set(host) != {"user", "net", "mnt", "pid"}:
         raise RuntimeError("missing Linux isolation identity")
@@ -319,9 +337,42 @@ def probe(target: str, parameters: dict, *, deadline: float | None = None) -> di
             "truncated": metadata["truncated"]}
 
 
+def tcp_connect_probe(target: str, parameters: dict, *, deadline: float | None = None) -> dict:
+    """One TCP handshake, with no payload, banner read, retry, DNS or HTTP claim."""
+    timeout = _remaining(deadline, parameters["timeout_seconds"])
+    previous = signal.signal(signal.SIGALRM, _deadline)
+    signal.setitimer(signal.ITIMER_REAL, timeout)
+    status, state = "succeeded", "open"
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connection:
+            connection.settimeout(timeout)
+            connection.connect((target, parameters["port"]))
+    except ConnectionRefusedError:
+        state = "closed"
+    except TimeoutError:
+        status, state = "timeout", "timeout"
+    except OSError:
+        status, state = "failed", "error"
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+    return {"status": status, "results": [{"target": target, "port": parameters["port"], "state": state}],
+            "bytes_received": 0, "truncated": False}
+
+
 def execute(request: dict, *, deadline: float | None = None) -> dict:
     """One fixture execution; callers must provide a validated private launch."""
     request = validate_request(json.dumps(request, allow_nan=False).encode("ascii"))
+    return _execute_validated(request, probe, deadline=deadline)
+
+
+def execute_tcp_connect(request: dict, *, deadline: float | None = None) -> dict:
+    """Run the fixed connect profile inside the same independently checked lab."""
+    request = validate_tcp_request(json.dumps(request, allow_nan=False).encode("ascii"))
+    return _execute_validated(request, tcp_connect_probe, deadline=deadline)
+
+
+def _execute_validated(request: dict, operation, *, deadline: float | None) -> dict:
     assert_private_namespaces(request["host_namespaces"])
     parameters = request["parameters"]
     _remaining(deadline, parameters["timeout_seconds"])
@@ -341,8 +392,8 @@ def execute(request: dict, *, deadline: float | None = None) -> dict:
     install_syscall_filter()
     _remaining(deadline, parameters["timeout_seconds"])
     boundary = verify_network_boundary(parameters["port"]) if witness else None
-    result = (probe(request["target"], parameters) if deadline is None else
-              probe(request["target"], parameters, deadline=deadline))
+    result = (operation(request["target"], parameters) if deadline is None else
+              operation(request["target"], parameters, deadline=deadline))
     if boundary is not None:
         result["boundary_checks"] = boundary
     return result

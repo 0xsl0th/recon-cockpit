@@ -119,14 +119,57 @@ def test_structured_output_schema_closes_and_requires_every_object_field():
                 inspect(child)
 
     inspect(schema)
-    assert len(objects) == 3
+    assert len(objects) == 5
     assert schema["type"] == "object" and "anyOf" not in schema
     assert set(schema["properties"]) == {"schema_version", "action", "done"}
     action = schema["properties"]["action"]
-    assert action["type"] == ["object", "null"]
-    assert set(action["properties"]) == set(proposal()["action"])
-    assert action["properties"]["tool_id"]["enum"] == ["http_probe"]
-    assert set(action["properties"]["parameters"]["properties"]) == set(proposal()["action"]["parameters"])
+    assert set(action) == {"anyOf"}
+    http, tcp, null = action["anyOf"]
+    assert null == {"type": "null"}
+    for branch, tool in ((http, "http_probe"), (tcp, "tcp_connect")):
+        assert branch["type"] == "object"
+        assert set(branch["properties"]) == set(proposal()["action"])
+        assert branch["properties"]["tool_id"]["enum"] == [tool]
+    assert set(http["properties"]["parameters"]["properties"]) == set(proposal()["action"]["parameters"])
+    assert set(tcp["properties"]["parameters"]["properties"]) == {
+        "port", "timeout_seconds", "max_output_bytes",
+    }
+
+
+def tcp_proposal():
+    plan = proposal()
+    plan["action"]["tool_id"] = "tcp_connect"
+    del plan["action"]["parameters"]["method"]
+    del plan["action"]["parameters"]["path"]
+    return plan
+
+
+def test_tcp_response_decodes_to_strict_typed_action():
+    plan = tcp_proposal()
+    decoded = protocol.decode_response(encode(response(plan)))
+    assert json.loads(decoded) == plan
+    action = parse_action(json.loads(decoded)["action"])
+    assert action.tool_id == "tcp_connect"
+    assert action.parameters.to_dict() == {
+        "port": 8080, "timeout_seconds": 1, "max_output_bytes": 1024,
+    }
+
+
+@pytest.mark.parametrize("field,value", [
+    ("method", "GET"), ("path", "/"), ("ports", [8080]), ("payload", "GET /"),
+    ("port", [8080]), ("port", True), ("port", 65536),
+])
+def test_tcp_response_rejects_http_fields_extra_capabilities_and_malformed_ports(field, value):
+    plan = tcp_proposal()
+    plan["action"]["parameters"][field] = value
+    assert_response_rejected(response(plan))
+
+
+@pytest.mark.parametrize("tool", ["http_probe", "tcp_connect"])
+def test_response_rejects_other_tools_parameter_shape(tool):
+    plan = tcp_proposal() if tool == "http_probe" else proposal()
+    plan["action"]["tool_id"] = tool
+    assert_response_rejected(response(plan))
 
 
 @pytest.mark.parametrize("model", [None, True, 1, [], {}, "", " ", "a b", "a\n", "x" * 129,

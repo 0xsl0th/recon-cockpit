@@ -205,11 +205,14 @@ class LinuxFixtureBackend:
     """Owned fixtures only; instantiate exclusively in trusted controller code."""
 
     name = "linux-bubblewrap-fixture-v1"
+    supported_tools = ("http_probe",)
 
     def __init__(self, *, verify_boundary: bool = False):
         self.verify_boundary = verify_boundary
 
     def check_available(self, action: Any = None) -> None:
+        if action is not None and action.tool_id not in self.supported_tools:
+            raise IsolationUnavailable("This fixture backend does not support the requested capability")
         if sys.platform != "linux":
             raise IsolationUnavailable("Secure fixture execution requires Linux; dry-run remains available")
         if os.geteuid() == 0:

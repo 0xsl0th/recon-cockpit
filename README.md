@@ -76,7 +76,14 @@ reports. The follow-up requires actual successful discovery evidence. Reports
 distinguish `validated`, `not_demonstrated` and `inconclusive`, and remain drafts
 for operator review. See [the HTTP assessment contract](docs/http-assessment.md).
 
-The executable tool set is one bounded HTTP probe. `--fixture` reaches only its
+`--discovery-assessment` adds a single isolated TCP connection before that HTTP
+workflow. Valid reachability evidence gates HTTP consideration; a separate policy
+must explicitly allow `tcp_connect`. The three execution records contribute to
+the draft report. See [the discovery contract](docs/discovery-assessment.md) for
+the command, evidence semantics and fixed topology.
+
+The executable tool set includes bounded HTTP and the fixed discovery profile.
+The original `--fixture` HTTP mode reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
 backend reaches one explicitly authorized IPv4 literal and TCP port through an
 isolated worker and a supervised slirp transport. Policy supports broader scopes,
@@ -182,10 +189,10 @@ python scripts/secure_agent_routed_demo.py --interactive --audit .secure-agent/r
 
 ### Reproducible verification
 
-The 16 September 2026 local R2 run passed **1,849 portable tests** in 16.208 seconds
-and **78 real Linux integrations** in 151.816 seconds, with no failures, errors or
-skips in either selected suite. See [verification.md](docs/verification.md) for
-the tested revision, commands and limitations; hosted CI is separate evidence.
+The current local discovery verification and the historical R1/R2 results are in
+[verification.md](docs/verification.md), with exact test totals, commands and
+limitations. Portable checks and actual Linux isolation are separate evidence;
+hosted CI does not establish kernel enforcement.
 
 GitHub Actions runs the portable suite on Ubuntu with Python 3.11–3.14 and on
 macOS with Python 3.14 for pull requests into `main`, `feature/secure-agent-m2`,

@@ -1,5 +1,71 @@
 # Verification record
 
+## R3: owned TCP discovery-to-HTTP path — 22 September 2026
+
+Recovered the clean `feature/secure-agent-discovery` checkout at `75ebb8d` after
+session exhaustion and a power loss. Git object checks found no corruption;
+the branch had been created but no R3 implementation edits existed. Current
+GitHub main still pointed to `75ebb8d`, with successful portable CI. The saved
+conversation confirmed the chosen one-connect discovery slice. R1/R2 merges
+were already complete and were not repeated.
+
+Implemented the smallest R3 slice on that branch: a typed `tcp_connect` action,
+an explicit owned discovery executor, evidence-gated TCP → HTTP discovery → HTTP
+validation, bounded private artifacts and a draft report. See
+[discovery-assessment.md](discovery-assessment.md). No new runtime dependency,
+package installation, host network change, live API call, credential access or
+external/VPN target was used. Tests ran as the normal Kali Linux x86_64 user,
+with Python 3.14.6 and pytest 9.1.1. Kernel checks ran outside the coding sandbox.
+
+| Check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-discovery-portable.xml` | **1,977 passed, 96 deselected**, 16.76 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-discovery-linux.xml` | **96 passed, 1,975 deselected**, 187.79 seconds |
+| Parsed both final JUnit reports | Zero failures, errors or skips; 1,977 portable / 96 integration test cases |
+| Real CLI case a using explicit unattended owned-fixture demo policy | Exit 0; one TCP and two HTTP executions; three broker calls; 3,072 reserved tool bytes; `validated` draft |
+| Read-only CLI inspection of sample | Exit 0; `validated`; three linked records; zero integrity issues; file bytes and modification times unchanged |
+| Compile, dependency and whitespace checks | Passed; no broken requirements |
+
+The Linux run preceded two additional portable direct-backend refusal tests;
+no implementation changed between that run and the final portable run. This
+explains the different deselected count. Relative to R2 there are 128 additional
+portable cases and 18 additional real Linux cases. A final evidence-test metadata
+correction and descriptor assertion passed the focused evidence/executor checks;
+production files were unchanged.
+
+Linux additions cover six HTTP fixture cases following real TCP discovery,
+missing/fresh/refused/replayed scripted grants across capability types, separate
+step/output budgets, dry-run and artifact failure before further planning. Three
+executor tests cover actual open/closed/timeout states and listening forbidden
+IP/port witnesses. Closed/timeout variants modify a trusted temporary worker copy
+inside the test harness, retaining the namespace boundary and using a stricter
+namespace-local firewall for timeout. Production accepts only the fixed owned
+profile. Scripted grants and the unattended demo are not human approval evidence.
+
+A bounded development review found an inaccurate embedded executor descriptor
+and evidence summaries that did not reconcile reservations/attempts with actual
+records. The descriptor now names the discovery executor; writer and inspector
+reject summaries below the recorded execution requirements. Regression tests
+cover both, including a blocked action that legitimately reserves output without
+creating an execution record. Review found no legacy/routed TCP execution escape;
+direct refusal regressions exercise that boundary. This is development review,
+not an independent security audit.
+
+The private sample is `.secure-agent/r3-example-a/report.md` and `report.json`,
+with `.secure-agent/r3-example-audit.jsonl`. Its 0700 directory and 0600 files stay
+ignored by Git. The demo policy at `/tmp/recon-r3-owned-fixture-policy.json`
+explicitly disables approval only for this unattended owned-fixture demonstration;
+`examples/secure-agent-discovery-policy.json` requires approval. Temporary files
+may disappear after reboot; this measured record is durable.
+
+TCP reachability does not establish HTTP identity. Each action recreates the
+owned service topology in a new namespace. Findings remain pending operator
+review and do not establish live-model performance, general vulnerability
+coverage or remote-service continuity. Shared host trust, R1 callback limitations,
+R2 HTTP framing limitations and local-evidence tampering limits remain. Nmap,
+broader topology, workflows, external targets and live planning are future work.
+Publication state is recorded in [continue-here.md](continue-here.md).
+
 ## R1/R2 premerge review and authorized merges — 17 September 2026
 
 The operator authorized review and merging of
