@@ -20,8 +20,10 @@ step. Main still matched `75ebb8d` and its hosted CI was successful.
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
 - Current branch: `feature/secure-agent-discovery`, based on main `75ebb8d`.
   Use `git log -1` and `git status` for the latest implementation/checkpoint.
-- R3 local implementation and documentation are complete. Publication state
-  will be updated after saving the branch; no R3 merge is authorized.
+- R3 implementation `ad30297` is published in draft
+  [PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8), targeting `main`.
+  It remains unmerged. Read current PR checks for hosted CI status;
+  the results below are local evidence. No R3 merge is authorized.
 - Full local verification: **1,977 portable tests and 96 real Linux
   integrations**, zero selected failures/errors/skips. Compile, dependency and
   whitespace checks passed. See the exact commands/timing in verification.md.
@@ -40,6 +42,8 @@ step. Main still matched `75ebb8d` and its hosted CI was successful.
   Prior R2 verification was 1,849 portable / 78 Linux; do not present it as R3.
 - Old `/tmp/recon-pr2-review` and `/tmp/recon-pr3-review` worktrees disappeared
   after an earlier reboot; their stale registrations were not pruned.
+- SSH push authentication is still unavailable. Explicit HTTPS push with the
+  GitHub CLI credential helper succeeded; no credentials entered artifacts.
 
 ## Implemented R3 scope
 

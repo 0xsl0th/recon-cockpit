@@ -9,6 +9,11 @@ GitHub main still pointed to `75ebb8d`, with successful portable CI. The saved
 conversation confirmed the chosen one-connect discovery slice. R1/R2 merges
 were already complete and were not repeated.
 
+Implementation `ad30297` is published in draft
+[PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8), targeting `main` and
+remaining unmerged. Hosted CI status must be checked on the current PR head;
+the measured results below are local verification.
+
 Implemented the smallest R3 slice on that branch: a typed `tcp_connect` action,
 an explicit owned discovery executor, evidence-gated TCP → HTTP discovery → HTTP
 validation, bounded private artifacts and a draft report. See
