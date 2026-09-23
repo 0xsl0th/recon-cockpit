@@ -428,22 +428,36 @@ def test_scripted_delay_can_complete_under_a_fake_clock(audit, monkeypatch):
     assert now[0] == pytest.approx(100.1)
 
 
-def test_cancel_interrupts_offline_delay_and_keeps_the_reservation(audit):
+def test_cancel_interrupts_offline_delay_and_keeps_the_reservation(audit, audit_path, monkeypatch):
     cancellation = threading.Event()
-    execution_control = ExecutionControl(time.monotonic() + 5, cancelled=cancellation)
-    transport = OfflineTransport((OfflineReply(200, b"never", delay_seconds=5),))
+    waits = []
+
+    def cancel_during_wait(seconds):
+        waits.append(seconds)
+        cancellation.set()
+        return True
+
+    # Cancel only after durable audit and transport entry, regardless of host load.
+    monkeypatch.setattr(cancellation, "wait", cancel_during_wait)
+    execution_control = ExecutionControl(105.0, cancelled=cancellation, clock=lambda: 100.0)
+    transport = OfflineTransport((OfflineReply(200, b"never", delay_seconds=5), OfflineReply(200, b"next")))
     broker = OfflineOpenAIBroker(CONFIG, audit, transport)
-    timer = threading.Timer(0.03, cancellation.set)
-    timer.start()
-    try:
-        with pytest.raises(ExecutionStopped) as error:
-            exchange(broker, execution_control=execution_control)
-    finally:
-        timer.join()
+    with pytest.raises(ExecutionStopped) as error:
+        exchange(broker, execution_control=execution_control)
+    assert waits == [0.05]
     assert error.value.reason == "session_cancelled"
     assert broker.last_error == "session_cancelled"
     assert broker.snapshot["calls_reserved"] == transport.calls == 1
     assert broker.snapshot["output_tokens_reserved"] == 1024
+    assert broker.snapshot["request_bytes_reserved"] == len(build_request(CONFIG, observation()))
+    rows = records(audit_path)
+    assert [row["event_type"] for row in rows] == ["broker_request_reserved", "broker_exchange_finished"]
+    assert rows[-1]["exchange_status"] == "stopped"
+    assert rows[-1]["reason"] == "session_cancelled"
+    assert not {"status_code", "response_bytes", "response_digest"}.intersection(rows[-1])
+    assert "never" not in audit_path.read_text()
+    assert exchange(broker) == b"next"
+    assert broker.snapshot["calls_reserved"] == transport.calls == 2
 
 
 def test_concurrent_duplicate_exchange_has_one_winner_and_one_reservation(audit, monkeypatch):

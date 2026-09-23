@@ -93,16 +93,19 @@ la primera evaluación HTTP con evidencia y reporte
 septiembre se revisó e integró el tramo mínimo R3 de descubrimiento TCP seguido
 de evaluación HTTP ([PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8),
 revisión `124300a`, merge `b1c7b67`). Pasaron las diez comprobaciones alojadas de
-la rama/PR y los cinco trabajos de main posteriores al merge. R4, la primera
-ficha de procedimiento versionada y su motor determinista, está implementado
-en una rama separada, pendiente de revisión e integración. Su verificación
-consta en [verification.md](verification.md). El estado actual consta en
+la rama/PR y los cinco trabajos de main posteriores al merge. El 23 de septiembre
+se revisó e integró R4, la primera ficha de procedimiento versionada y su motor
+determinista ([PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9), revisión
+`401cbe1`, merge `8673dc0`). Pasaron las diez comprobaciones previas al merge;
+una carrera temporal en una prueba de cancelación afectó uno de los cinco trabajos
+posteriores. La corrección de esa prueba y su verificación
+constan en [verification.md](verification.md). El estado actual consta en
 [continue-here.md](continue-here.md).
 
 | Implementado y verificado | Pendiente |
 | --- | --- |
 | Acciones TCP/HTTP tipadas, política restrictiva, aprobación caducable de un solo uso, auditoría previa y descriptores de capacidades revisadas. | Catálogo general y adaptadores adicionales. |
-| Sesiones simuladas limitadas y un flujo TCP → HTTP → diagnóstico guiado por evidencia; primera ficha versionada y motor determinista R4 en revisión. | Motores adicionales, catálogo ampliado y planificación real. |
+| Sesiones simuladas limitadas y un flujo TCP → HTTP → diagnóstico guiado por evidencia; primera ficha versionada y motor determinista R4 integrados. | Motores adicionales, catálogo ampliado y planificación real. |
 | Coordinador aislado en Linux, autoridad externa y ejecutores de fixtures con IPC acotado. | Separar más responsabilidades del proceso confiable del host. |
 | Parser y broker con respuestas sintéticas, presupuestos reservados e integración R1 con coordinador/autoridad. | Transporte real, credenciales y gasto. |
 | Conexión TCP aislada a un único servicio propio y sonda HTTP; backend HTTP separado para un IPv4/puerto autorizado, probado en una red propia. | Descubrimiento general, Nmap en modo seguro, laboratorio persistente, sesiones remotas, pruebas VPN y herramientas autenticadas. |
@@ -113,7 +116,8 @@ portables** en 16,76 segundos y **96 integraciones reales en Linux** en 187,79
 segundos, sin fallos, errores ni pruebas omitidas en las suites seleccionadas.
 El primer tramo R4, verificado el 23 de septiembre en su rama de desarrollo,
 pasó **2.134 pruebas portables y 109 integraciones reales en Linux**, también
-sin fallos, errores ni pruebas omitidas; sigue pendiente de revisión e integración.
+sin fallos, errores ni pruebas omitidas. Su revisión e integración se completaron
+ese mismo día; el fallo posterior de CI se registra por separado.
 Los comandos y límites constan en [verification.md](verification.md). El modo
 offline conecta broker, parser, coordinador y autoridad; conserva los modos
 anteriores como referencias de regresión. El cockpit interactivo utiliza Nmap en
@@ -194,7 +198,7 @@ determinista con un agente real cuando su integración esté habilitada.
 
 El tramo fijo TCP → HTTP → diagnóstico y su reporte ya funcionan con
 planificación determinista y respuestas sintéticas del proveedor. El primer
-tramo R4 está implementado, pendiente de revisión: una ficha versionada para ese mismo procedimiento,
+tramo R4 está revisado e integrado: una ficha versionada para ese mismo procedimiento,
 con precondiciones, evidencia necesaria, acciones permitidas y reglas de
 detención. Su motor registra qué evidencia respalda cada propuesta, distingue
 propuestas de ejecuciones y explica por qué se detiene la evaluación. Conserva
@@ -228,7 +232,7 @@ validación, demostración y documentación. Los finalistas presentan en H4ck3d 
 
 | Período propuesto | Entregable |
 | --- | --- |
-| Septiembre–octubre 2026 | R1/R2 y el tramo mínimo R3 revisados e integrados; revisar R4 y diseñar el laboratorio persistente. |
+| Septiembre–octubre 2026 | R1/R2, el tramo mínimo R3 y la primera ficha R4 revisados e integrados; diseñar el laboratorio persistente. |
 | Hasta el 8/11/2026 | Cerrar propuesta, datos de inscripción, arquitectura, alcance mínimo y evidencia para revisión. |
 | 9–15/11/2026 | Presentación por el equipo, con margen respecto de la fecha oficial. |
 | Noviembre 2026–enero 2027 | Reconocimiento y validación acotados en laboratorio, con reporte. |
