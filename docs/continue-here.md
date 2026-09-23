@@ -4,27 +4,39 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**R1, R2 and the smallest R3 discovery-to-HTTP slice are merged. The first R4
-card/engine is implemented on `feature/secure-agent-workflow`, pending review and
-merge.** Read [workflow-assessment.md](workflow-assessment.md),
+**R1, R2, the smallest R3 discovery-to-HTTP slice and the first R4 card/engine
+are reviewed and merged. A test-only correction for post-merge CI and this
+recovery checkpoint are on `fix/offline-cancellation-checkpoint`.**
+Read [workflow-assessment.md](workflow-assessment.md),
 [verification.md](verification.md) and [roadmap.md](roadmap.md). Inspect Git and
-current PR checks before more work. Do not restart R1/R2/R3 or repeat their merges.
+current PR checks before more work. Do not restart R1/R2/R3/R4 or repeat their merges.
 
-Recovery found the branch clean at `75ebb8d`, with no pending implementation
-edits and no Git corruption after the battery failure. Saved conversation history
-confirmed one TCP connection to the approved owned service as the intended R3
-step. At recovery, main still matched `75ebb8d` and its hosted CI was successful.
-R3 was subsequently reviewed and merged with explicit operator authorization.
+The latest recovery found a clean checkout at `401cbe1`. Saved conversation and
+GitHub state confirmed that PR #9 had already been reviewed and merged with
+operator authorization before the session limit. Git object checks found no
+corruption. Local `main` was fast-forwarded to `8673dc0`; its tree exactly matches
+the reviewed head. The interrupted local sync and checkpoint are now recovered.
 
 ## Saved state
 
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
-- Current branch: `feature/secure-agent-workflow`, based on main `1086301`.
-  Use `git log -1` and `git status` for the latest implementation checkpoint.
-- [PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9) is **open as a draft**,
-  not merged. Implementation `9bcb8b2` passed all ten branch/PR portable jobs
-  across Ubuntu Python 3.11–3.14 and macOS Python 3.14. The following publication
-  checkpoint changes documentation only; inspect the latest PR checks separately.
+- Current branch: `fix/offline-cancellation-checkpoint`, based on merged main
+  `8673dc0`. Use `git log -1` and `git status` for the latest checkpoint.
+- [PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9) is **merged**, at
+  `8673dc0ac02a762dae08f2533885d2246fb04e2a` on 23 September, 01:29:31 UTC.
+  Reviewed head `401cbe1` passed all ten branch/PR portable jobs across Ubuntu
+  Python 3.11–3.14 and macOS Python 3.14. Bounded engine/provider and evidence
+  reviews found no blockers; the root's focused regression run passed 289 tests.
+- Four of five post-merge main jobs passed. Ubuntu Python 3.12 exposed a
+  cancellation-test race: the 30 ms timer could fire after reserving the broker
+  allowance but before consuming the scripted reply. Production correctly stopped
+  without consuming that reply. This branch makes cancellation occur during the
+  intended offline delay. See [verification.md](verification.md) for the failed
+  run and correction verification; production code is unchanged.
+- Correction verification: **2,134 portable tests passed, 109 deselected**;
+  JUnit records zero failures, errors or skips. Focused broker tests passed 107
+  cases. The earlier 109 real Linux results still apply to unchanged production;
+  kernel tests were not rerun for this test/documentation-only correction.
 - R4 adds a repository-authored versioned card, immutable deterministic
   decisions, durable proposal/terminal events and independent read-only replay.
   The CLI selector is `--workflow-assessment`; existing R2/R3 modes remain.
@@ -117,15 +129,16 @@ Planning uses synthetic responses.
 - Authority/UI/broker/audit/launcher still share a trusted host process. Hashes
   detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP framing
   limits remain documented.
-- The operator authorized the completed PR #6/#7/#8 merges. This does not
+- The operator authorized the completed PR #6/#7/#8/#9 merges. This does not
   authorize future merges, submission, messages, paid calls or external targets.
 
 ## Next continuation
 
-1. Inspect this branch and its PR/checks, preserving unrelated work. PR #8 is
+1. Inspect this branch and its PR/checks, preserving unrelated work. PR #9 is
    already merged; do not repeat its review, implementation or merge.
-2. Review the concrete R4 card/engine PR. Future merging still requires operator
-   authorization; the earlier PR #8 approval does not cover this branch.
+2. Settle the test-only CI correction and recovered checkpoint. Future merging
+   still requires operator authorization; the earlier PR #9 approval does not
+   cover a new PR.
 3. The accepted next development sequence is persistent owned lab, repeatable
    evaluation runner, then separately reviewed live-provider controls. First
    settle the lab lifecycle and executor scope contract; do not silently widen

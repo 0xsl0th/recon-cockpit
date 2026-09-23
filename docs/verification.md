@@ -1,18 +1,68 @@
 # Verification record
 
+## R4 merge recovery and post-merge CI correction — 23 September 2026
+
+The operator requested review of [PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9)
+and authorized merging if sound. The interrupted session completed that review
+and merge. Bounded engine/provider and evidence/replay reviews found no blockers
+at head `401cbe153ebbb4a1aa8e699507203b88663eebb4`, based on `1086301`.
+There were no GitHub reviews or inline comments requiring resolution. A fresh
+focused workflow/HTTP/discovery run passed **289 tests in 3.18 seconds**;
+the two reviewers' overlapping 97- and 127-test runs also passed. These are not
+additive full-suite counts. The prior full **2,134 portable / 109 Linux** results
+were checked against unchanged production/test/CI files from `9bcb8b2`.
+
+All ten jobs passed on the reviewed head: five in
+[branch CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/35806225192)
+and five in [PR CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/35806227338).
+PR #9 was marked ready and merged as
+`8673dc0ac02a762dae08f2533885d2246fb04e2a` at 01:29:31 UTC. The usage limit
+interrupted after fetching the merge, before local-main synchronization and the
+checkpoint update. Recovery after the power loss found the clean feature branch
+at `401cbe1`; Git object checks found no corruption. Local main was fast-forwarded
+to `8673dc0`, whose tree exactly matches the reviewed head.
+
+The [post-merge main run](https://github.com/0xsl0th/recon-cockpit/actions/runs/35806498955)
+passed four jobs but failed Ubuntu Python 3.12: **2,133 passed, 1 failed, 109
+deselected**. `test_cancel_interrupts_offline_delay_and_keeps_the_reservation`
+started a 30 ms cancellation timer before broker entry. Under host load it could
+fire after reservation but before the transport consumed a scripted reply, so
+production correctly retained one reservation and stopped with its transport
+counter at zero. The test expected one consumed reply because it intended to
+exercise cancellation during delay.
+
+The correction uses a fixed clock and sets the event from its first delay wait,
+after transport entry. It verifies the cancellation reason, retained call/token/
+request-byte reservations, stopped audit with no response metadata, and consumption
+of the first scripted reply before a subsequent exchange. Existing tests retain
+coverage for cancellation before reservation and during audit. This changes one
+portable test and checkpoint documentation; production code is unchanged.
+
+| Check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest tests/test_secure_openai_broker.py -ra` | **107 passed**, 0.37 seconds |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-r4-recovery-portable.xml` | **2,134 passed, 109 deselected**, 20.07 seconds |
+| Recovery JUnit inspection | 2,134 cases; zero failures, errors or skips |
+| `git diff --check` | Passed |
+
+The existing 109 real Linux test results still apply to the unchanged production
+code. Kernel tests were not repeated for this test/documentation-only correction.
+Follow-up publication state is recorded in [continue-here.md](continue-here.md).
+
 ## R4: one versioned owned workflow — 23 September 2026
 
 The operator accepted the first R4 card/engine slice and confirmed the team as
 Enrique Folte with Codex development assistance. Work started on
 `feature/secure-agent-workflow` from merged main `1086301`. R1/R2/R3 were not
-reimplemented or merged again. Implementation `9bcb8b2` is published in
-[draft PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9), not merged.
+reimplemented or merged again. Implementation `9bcb8b2` was published in
+[PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9), initially a draft;
+its subsequent review, merge and recovery are recorded above.
 All ten hosted portable jobs passed at that commit: five in
 [branch CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/35806046599)
 and five in [PR CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/35806060768).
 They cover Ubuntu Python 3.11–3.14 and macOS Python 3.14, independently of local
-kernel verification. The following checkpoint changes documentation only;
-inspect its latest hosted checks separately. Publication state is recorded in
+kernel verification. Publication checkpoint `401cbe1` changed documentation only;
+its separate hosted checks are recorded above. Current publication state is in
 [continue-here.md](continue-here.md).
 
 The new `--workflow-assessment` mode uses one repository-authored versioned card
