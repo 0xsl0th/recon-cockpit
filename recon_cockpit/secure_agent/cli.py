@@ -84,7 +84,7 @@ def _run_http_assessment(args, policy, audit):
     """Construct one fresh fixture authority with privately persisted evidence."""
     from uuid import uuid4
 
-    from .assessment import AssessmentProvider, DiscoveryAssessmentProvider
+    from .assessment import AssessmentProvider, DiscoveryAssessmentProvider, WorkflowAssessmentProvider
     from .assessment_contract import capability_descriptor
     from .authorized_execution import AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend
     from .control_plane import AuthoritySession
@@ -92,10 +92,13 @@ def _run_http_assessment(args, policy, audit):
     from .evidence import EvidenceStore
     from .session import SessionLimits
 
-    discovery = args.discovery_assessment is not None
-    case = args.discovery_assessment if discovery else args.http_assessment
+    workflow = args.workflow_assessment is not None
+    discovery = workflow or args.discovery_assessment is not None
+    case = args.workflow_assessment or args.discovery_assessment or args.http_assessment
     steps = 3 if discovery else 2
     provider_type = DiscoveryAssessmentProvider if discovery else AssessmentProvider
+    if workflow:
+        provider_type = WorkflowAssessmentProvider
     backend_type = AuthorizedDiscoveryFixtureBackend if discovery else AuthorizedFixtureBackend
     if discovery:
         from .discovery_contract import capability_descriptor
@@ -108,7 +111,7 @@ def _run_http_assessment(args, policy, audit):
     backend = (backend_type(policy, session_id, limits, execute=args.execute)
                if args.fixture else None)
     with EvidenceStore(args.assessment_dir, session_id=session_id, policy=policy,
-                       case=case, discovery=discovery) as evidence:
+                       case=case, discovery=discovery, workflow=workflow) as evidence:
         provider = provider_type(case, audit, evidence)
         runner = AuthoritySession(policy, audit, backend, coordinator, limits, session_id=session_id,
                                   provider=provider, evidence=evidence)
@@ -132,6 +135,7 @@ def _run_http_assessment(args, policy, audit):
             "report_paths": {"json": str(args.assessment_dir / "report.json"),
                              "markdown": str(args.assessment_dir / "report.md")},
             "capability": capability_descriptor(), "live_calls_enabled": False,
+            **({"workflow_card": report["workflow_card"]} if workflow else {}),
             "broker_id": provider.broker.broker_id, "broker": dict(provider.broker.snapshot),
             "broker_error": provider.broker.last_error,
             "coordinator_boundary_checks": coordinator.boundary_checks,
@@ -164,10 +168,12 @@ def main(argv: list[str] | None = None) -> int:
                         help="run the fixed owned HTTP assessment with private evidence; no live model")
     source.add_argument("--discovery-assessment", choices=tuple("abcdef"),
                         help="gate owned HTTP assessment on one TCP connection; policy must allow tcp_connect")
+    source.add_argument("--workflow-assessment", choices=tuple("abcdef"),
+                        help="run the reviewed TCP-to-HTTP workflow card and record each decision")
     source.add_argument("--inspect-assessment", type=Path,
                         help="inspect existing assessment evidence without resuming execution")
     parser.add_argument("--assessment-dir", type=Path,
-                        help="new private directory for HTTP or discovery assessment artifacts and reports")
+                        help="new private directory for assessment artifacts, decisions and reports")
     parser.add_argument("--openai-model", help="explicit model identifier for the offline request contract")
     parser.add_argument("--openai-max-output-tokens", type=int,
                         help="output token allowance per simulated request: 16–4096 (default: 1024)")
@@ -190,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
     backend_selection.add_argument("--routed", action="store_true", help="select isolated HTTP to one authorized IPv4 literal")
     args = parser.parse_args(argv)
     offline_scenario = args.openai_offline or args.control_plane_openai_offline
-    assessment_case = args.http_assessment or args.discovery_assessment
+    assessment_case = args.http_assessment or args.discovery_assessment or args.workflow_assessment
     authority_mode = args.control_plane_mock or args.control_plane_openai_offline or assessment_case
     session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
                         or args.control_plane_mock or assessment_case)
@@ -209,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
     if assessment_case and args.assessment_dir is None:
         parser.error("assessment requires --assessment-dir")
     if args.assessment_dir is not None and not assessment_case:
-        parser.error("--assessment-dir requires --http-assessment or --discovery-assessment")
+        parser.error("--assessment-dir requires --http-assessment, --discovery-assessment or --workflow-assessment")
     if assessment_case and args.execute and not args.fixture:
         parser.error("executing an assessment requires --fixture")
     if args.inspect_assessment and (args.execute or args.dry_run or args.fixture or args.routed):

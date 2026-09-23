@@ -1,6 +1,6 @@
 # Recon Cockpit — agentes de pentesting con ejecución controlada
 
-**Borrador de propuesta · 17 de septiembre de 2026 · No presentado**
+**Borrador de propuesta · 23 de septiembre de 2026 · No presentado**
 
 Concurso de Desarrollo de Soluciones de Ciberseguridad 2026–2027,
 Facultad de Ingeniería, Universidad de Palermo.
@@ -89,37 +89,56 @@ se integró en `main` como `bf3a359`. El 17 de septiembre de 2026 se revisaron e
 integraron R1, la planificación offline con autoridad
 ([PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6), `07af513`), y R2,
 la primera evaluación HTTP con evidencia y reporte
-([PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), `f85aaa9`). Las diez
-comprobaciones alojadas de R2 pasaron tras actualizar su base a main.
-El estado actual consta en [continue-here.md](continue-here.md).
+([PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), `f85aaa9`). El 22 de
+septiembre se revisó e integró el tramo mínimo R3 de descubrimiento TCP seguido
+de evaluación HTTP ([PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8),
+revisión `124300a`, merge `b1c7b67`). Pasaron las diez comprobaciones alojadas de
+la rama/PR y los cinco trabajos de main posteriores al merge. R4, la primera
+ficha de procedimiento versionada y su motor determinista, está implementado
+en una rama separada, pendiente de revisión e integración. Su verificación
+consta en [verification.md](verification.md). El estado actual consta en
+[continue-here.md](continue-here.md).
 
 | Implementado y verificado | Pendiente |
 | --- | --- |
-| Acciones HTTP tipadas, política restrictiva, aprobación caducable de un solo uso, auditoría previa y descriptor versionado de la capacidad. | Catálogo general y adaptadores adicionales. |
-| Sesiones simuladas limitadas y un flujo HTTP determinista cuyo siguiente paso depende de evidencia real del fixture. | Descubrimiento aislado y motores adicionales. |
+| Acciones TCP/HTTP tipadas, política restrictiva, aprobación caducable de un solo uso, auditoría previa y descriptores de capacidades revisadas. | Catálogo general y adaptadores adicionales. |
+| Sesiones simuladas limitadas y un flujo TCP → HTTP → diagnóstico guiado por evidencia; primera ficha versionada y motor determinista R4 en revisión. | Motores adicionales, catálogo ampliado y planificación real. |
 | Coordinador aislado en Linux, autoridad externa y ejecutores de fixtures con IPC acotado. | Separar más responsabilidades del proceso confiable del host. |
 | Parser y broker con respuestas sintéticas, presupuestos reservados e integración R1 con coordinador/autoridad. | Transporte real, credenciales y gasto. |
-| Sonda HTTP y backend separado para un IPv4/puerto autorizado, probado en una red propia. | Nmap en modo seguro, sesiones remotas, pruebas VPN y herramientas autenticadas. |
+| Conexión TCP aislada a un único servicio propio y sonda HTTP; backend HTTP separado para un IPv4/puerto autorizado, probado en una red propia. | Descubrimiento general, Nmap en modo seguro, laboratorio persistente, sesiones remotas, pruebas VPN y herramientas autenticadas. |
 | Artefactos privados, observaciones vinculadas, reportes JSON/Markdown y detección de evidencia incompleta mediante inspección de solo lectura. | Ciclo de revisión más amplio, interfaz y auditoría independiente. |
 
-La validación local de R2 del 16 de septiembre registró **1.849 pruebas
-portables** en 16,208 segundos y **78 integraciones reales en Linux** en 151,816
+La validación local de R3 del 22 de septiembre registró **1.977 pruebas
+portables** en 16,76 segundos y **96 integraciones reales en Linux** en 187,79
 segundos, sin fallos, errores ni pruebas omitidas en las suites seleccionadas.
+El primer tramo R4, verificado el 23 de septiembre en su rama de desarrollo,
+pasó **2.134 pruebas portables y 109 integraciones reales en Linux**, también
+sin fallos, errores ni pruebas omitidas; sigue pendiente de revisión e integración.
 Los comandos y límites constan en [verification.md](verification.md). El modo
 offline conecta broker, parser, coordinador y autoridad; conserva los modos
 anteriores como referencias de regresión. El cockpit interactivo utiliza Nmap en
 el host; no es un adaptador seguro para agentes y no se conectará directamente
 a ellos.
 
-La evaluación R2 realiza hasta dos GET en un servicio propio de un namespace
-aislado. El primero descubre un documento de diagnóstico; solo evidencia válida
-habilita la segunda consulta a la ruta permitida del mismo caso. Se verificaron
+La evaluación R3 intenta una conexión TCP a `127.0.0.1:8080`, sin enviar datos
+de aplicación, leer banners, resolver DNS, reintentar ni recorrer puertos.
+Solo la evidencia válida de conexión completada permite considerar el primer
+GET; no identifica HTTP, acredita permisos ni constituye un hallazgo. El flujo
+fijo continúa con hasta dos GET. El primero descubre un documento de diagnóstico;
+solo evidencia válida habilita la segunda consulta a la ruta permitida del mismo
+caso. Cada acción debe superar nuevamente los controles de autoridad, aprobación
+cuando corresponda, presupuesto y ejecución aislada. Cada ejecución recrea su
+propio namespace con el mismo servicio sembrado: no se ha demostrado persistencia
+ni continuidad del servicio entre acciones. Se verificaron
 seis variantes: metadatos sintéticos expuestos, ausencia del endpoint, documento
 malformado, demora, salida excesiva y descubrimiento hostil. El reporte distingue
 condición sembrada validada, no demostrada en ese endpoint e inconclusa. Conserva
 referencias a ejecuciones y artefactos; todo hallazgo queda pendiente de revisión
 del operador. No se afirma una vulnerabilidad general, un bypass de autenticación
-ni la autenticidad del contenido del servidor. Véase [el contrato R2](http-assessment.md).
+ni la autenticidad del contenido del servidor. Véanse
+[el contrato R3](discovery-assessment.md) y [el contrato HTTP R2](http-assessment.md).
+Este tramo no es descubrimiento general, un adaptador Nmap ni un motor de
+procedimientos reutilizable.
 
 No se han validado modelos autónomos ni enviado solicitudes a una API real.
 La autoridad, interfaz humana, auditoría y lanzador aún comparten un proceso
@@ -173,10 +192,17 @@ escenario incluirá respuestas manipuladas que intenten ampliar alcance,
 falsificar aprobaciones o inventar resultados. Se comparará una línea base
 determinista con un agente real cuando su integración esté habilitada.
 
-El primer tramo HTTP y su reporte ya funcionan con planificación determinista y
-respuestas sintéticas del proveedor. El siguiente tramo es R3: diseñar e
-implementar el menor adaptador de descubrimiento que preserve el aislamiento.
-La evaluación con un modelo real continúa pendiente.
+El tramo fijo TCP → HTTP → diagnóstico y su reporte ya funcionan con
+planificación determinista y respuestas sintéticas del proveedor. El primer
+tramo R4 está implementado, pendiente de revisión: una ficha versionada para ese mismo procedimiento,
+con precondiciones, evidencia necesaria, acciones permitidas y reglas de
+detención. Su motor registra qué evidencia respalda cada propuesta, distingue
+propuestas de ejecuciones y explica por qué se detiene la evaluación. Conserva
+los resultados de los seis casos y se detiene ante evidencia insuficiente,
+aprobación denegada o presupuesto agotado. Véase [el contrato R4](workflow-assessment.md).
+Después se incorporarán un laboratorio
+propio persistente y una evaluación repetible. La evaluación con un modelo real
+continúa pendiente.
 
 | Dimensión | Evidencia a obtener |
 | --- | --- |
@@ -198,12 +224,12 @@ La convocatoria fija el **15 de noviembre de 2026** para presentar el proyecto y
 el **20 de mayo de 2027** para la entrega final. Solicita desafío, arquitectura e
 integrantes al inscribirse; para la etapa final, una solución funcional con
 validación, demostración y documentación. Los finalistas presentan en H4ck3d 2027.
-[Fuente oficial, consultada el 15/09/2026](https://www.palermo.edu/ingenieria/concurso-ciberseguridad/).
+[Fuente oficial, consultada el 22/09/2026](https://www.palermo.edu/ingenieria/concurso-ciberseguridad/).
 
 | Período propuesto | Entregable |
 | --- | --- |
-| Septiembre–octubre 2026 | R1/R2 revisados e integrados; diseñar e iniciar descubrimiento aislado R3. |
-| Hasta el 8/11/2026 | Cerrar propuesta, integrantes, arquitectura, alcance mínimo y evidencia para revisión. |
+| Septiembre–octubre 2026 | R1/R2 y el tramo mínimo R3 revisados e integrados; revisar R4 y diseñar el laboratorio persistente. |
+| Hasta el 8/11/2026 | Cerrar propuesta, datos de inscripción, arquitectura, alcance mínimo y evidencia para revisión. |
 | 9–15/11/2026 | Presentación por el equipo, con margen respecto de la fecha oficial. |
 | Noviembre 2026–enero 2027 | Reconocimiento y validación acotados en laboratorio, con reporte. |
 | Enero–febrero 2027 | Modelo real con mediación de credenciales, datos y gasto; habilitación explícita requerida. |
@@ -216,13 +242,15 @@ de noviembre no supone que el desarrollo final ya esté completo.
 
 ## 8. Integrantes del equipo de trabajo
 
-| Nombre | Participación identificada | Rol para confirmar antes del envío |
+| Nombre | Participación identificada | Rol |
 | --- | --- | --- |
-| Enrique Folte | Titular del proyecto y del sitio de referencia indicado | Responsable técnico propuesto: arquitectura, desarrollo y evaluación. |
+| Enrique Folte | Único integrante humano, titular y contacto del proyecto | Responsable del proyecto y de las decisiones técnicas, revisión, evaluación y presentación. |
 
-Composición final del equipo, roles, afiliación si corresponde y posibles
-colaboradores: **pendientes de confirmación**. No se han añadido integrantes
-no identificados por el titular.
+La composición fue confirmada por el titular: Enrique Folte trabaja con
+asistencia de Codex para arquitectura, código, pruebas y documentación, bajo
+revisión humana. Codex es una herramienta de asistencia de IA; no se presenta
+como participante humano ni como coautor legal. No se declara una afiliación
+institucional, ya que no ha sido indicada.
 
 Antes del envío se revisarán estos datos, el alcance y las evidencias.
 Este documento no constituye una inscripción ni un envío a la Universidad.

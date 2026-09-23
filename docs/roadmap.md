@@ -20,8 +20,11 @@ slice is reviewed and merged into `main` through
 One isolated TCP connection gates the existing two-GET workflow; local verification
 passed **1,977 portable tests and 96 real Linux integrations**, and all ten
 premerge branch/PR checks passed. See [discovery-assessment.md](discovery-assessment.md)
-and the continuation checkpoint. Broader discovery and R4 workflow cards remain
-future work. The baseline below is historical.
+and the continuation checkpoint. **R4 update:** the first versioned card and
+deterministic engine are implemented on `feature/secure-agent-workflow`, pending
+review and merge. See [workflow-assessment.md](workflow-assessment.md) for the
+decision trace and evidence contract. Broader discovery remains future work.
+The baseline below is historical.
 
 ## Product direction
 
@@ -67,7 +70,7 @@ evidence, add discovery, then grow the workflow library and live planning.
 | R1 — implemented | Offline provider through the isolated coordinator and authority | Closes the split between existing boundaries without new targets or spending. | Combined three-step synthetic session and adversarial variants pass through the Linux boundaries. |
 | R2 — smallest slice implemented | One HTTP assessment, minimal capability/evidence contracts and report | Makes the foundation useful and reveals the abstractions tools actually need. | Two-GET owned workflow, private execution/observation artifacts, draft reports and read-only crash inspection. |
 | R3 — smallest slice merged | One isolated single-port TCP adapter | Adds a second typed capability without broadening old HTTP backends. | Owned TCP evidence gates HTTP; 1,977 portable and 96 Linux tests pass. Broader topology remains future work. |
-| R4 | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Complete scoped lab assessment reaches a supported finding or an honest inconclusive result. |
+| R4 — first card implemented, review pending | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Existing six owned cases retain their outcomes with durable explanations of proposals, executions and stops. |
 | R5 | Isolated live-provider broker and further authority separation | We now have useful actions and a reproducible baseline against which to evaluate a model. | Approved real-model runs with verified credential/egress/data/spend controls. |
 | R6 | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
 
@@ -229,6 +232,13 @@ through evidence-dependent transitions. Discovering another host, identity or
 credential does not authorize its use. Every engine shares the same authority
 and evidence contracts.
 
+The first slice now uses one repository-authored card for the existing singleton
+topology. It imports no external instructions and adds no capability registry.
+The accepted continuation order is: review this card/engine slice, design the
+persistent owned lab with an explicit lifecycle and scope contract, add a
+repeated evaluation runner, then develop the live-provider controls. A persistent
+lab or live-model evaluation is not implied by passing the current card tests.
+
 ## R5: live AI and further privilege separation
 
 The current constraint remains **live calls disabled**. Build transport and
@@ -258,16 +268,16 @@ a convincing report without evidence is not success.
 
 ## Competition scope and schedule
 
-Assumption: one primary developer with intermittent assistant access; team
-capacity is unconfirmed. These are target windows. R1 and the smallest R2 slice
-were implemented by 16 September; use the remaining early windows for review,
-publication and R3 design rather than treating later capabilities as completed.
+Confirmed on 22 September: Enrique Folte is the sole human participant and
+project contact, with Codex assisting development under his review. No other
+members or institutional affiliation are declared. These are target windows,
+not completed-capability claims. R1/R2 and the smallest R3 slice are merged;
+the first R4 card/engine slice is pending review.
 
 | Target window | Outcome |
 | --- | --- |
-| 16–30 September 2026 | R1/R2 review and merges completed on 17 September; design isolated discovery. |
-| 1–18 October | Begin R3 and extend HTTP/evidence contracts only where the second adapter requires it. |
-| 19 October–8 November | R3 discovery prototype if ready; finalize proposal, team and measured baseline. Tool breadth is not a submission prerequisite. |
+| September–October 2026 | R1/R2 and smallest R3 merged; review the first R4 card/engine and design the persistent owned lab. |
+| Through 8 November | Finalize proposal and measured baseline; build repeatable owned evaluation where ready. Tool breadth is not a submission prerequisite. |
 | 9–15 November | Human review and project submission; aim for 9 November for margin. |
 | 16 November–10 January 2027 | Complete R3/R4 and the lab assessment corpus. |
 | 11 January–28 February | R5 controls and explicitly approved live-model evaluation. |
@@ -333,11 +343,11 @@ page retrieval was unavailable during this planning pass.
 
 ## Open decisions
 
-- Confirm Enrique Folte's submission role, affiliation if applicable, and any
-  additional team members.
+- Enrique Folte is the confirmed sole human participant and contact; affiliation
+  is unspecified. Review submission details before sending.
 - R1 channel topology is settled in [offline-authority.md](offline-authority.md).
-- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). R3 is reviewed and merged; use its proven path when designing the first workflow card.
+- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). The first card uses that path; persistent-lab design remains next.
 - Later choose real-model/data/credential/spend settings.
 
-Reference identities are resolved. Team details do not block scoped development. This plan does
+Reference identities and team composition are resolved. This plan does
 not authorize registration, messages, paid calls or target assessments.

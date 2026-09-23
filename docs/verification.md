@@ -1,5 +1,72 @@
 # Verification record
 
+## R4: one versioned owned workflow — 23 September 2026
+
+The operator accepted the first R4 card/engine slice and confirmed the team as
+Enrique Folte with Codex development assistance. Work started on
+`feature/secure-agent-workflow` from merged main `1086301`. R1/R2/R3 were not
+reimplemented or merged again. Publication state is recorded in
+[continue-here.md](continue-here.md).
+
+The new `--workflow-assessment` mode uses one repository-authored versioned card
+for the existing TCP → HTTP index → HTTP diagnostics path. Immutable decisions
+bind the exact action, card digest and predecessor evidence; the private journal
+records them before provider exchanges. Launches require the latest matching
+proposal. Reports distinguish proposed and executed work and explain terminal
+stops, including bounded approval-failure reasons. Inspection independently
+replays decisions from artifacts and validates terminal/closure agreement.
+See [workflow-assessment.md](workflow-assessment.md).
+
+Tests ran as the normal Kali Linux x86_64 user with Python 3.14.6 and pytest
+9.1.1. Real namespace tests ran outside the coding sandbox. No dependency,
+credential, host-network, external-target or live-provider change was needed.
+
+| Check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-workflow-portable.xml` | **2,134 passed, 106 deselected**, 20.75 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-workflow-linux.xml` | **109 passed, 2,134 deselected**, 219.72 seconds |
+| Both JUnit reports inspected | 2,134 portable / 109 Linux test cases; zero selected failures, errors or skips |
+| Real CLI case a with explicit unattended owned-fixture policy | Exit 0; `validated` draft; three decisions and three successful executions; terminal explanation; three broker calls and 3,072 reserved tool bytes |
+| Read-only CLI inspection | Exact saved-report equality; no integrity issues; every file's bytes and modification time preserved; 0700 directory and 0600 files |
+| Compile, dependency and whitespace checks | Passed; no broken requirements |
+
+The full portable run preceded three added Linux-only scripted-grant tests;
+production and portable tests were unchanged. New coverage totals 157 portable
+cases and 13 real Linux cases over the merged R3 baseline. Portable tests cover
+immutable decisions, exact parser/evidence gates, candidate substitution,
+durability before exchange, cancellation, write failure, budgets, safe terminal
+reasons, corrupt/reordered/missing events and read-only crash inspection. Linux
+tests exercise all six fixture cases, dry-run, tool budgets, missing/fresh/refused/
+replayed grants, actual boundary witnesses and child-process cleanup. Scripted
+grants test enforcement; they are not evidence of human consent.
+
+Focused development reviews found no remaining blockers in provider/authority
+binding or evidence replay. Review caught duplicate observation IDs that could
+make terminal interpretation disagree with a positive report; inspection now
+rejects that inconsistency. Review also prompted bounded approval reasons instead
+of an unexplained generic blocked action. Regressions cover both. This is
+development review, not an independent security audit.
+
+An initial focused Linux run used a stale generic-blocked expectation while the
+new precise approval reason was being added. The corrected missing-approval case
+and new scripted-grant cases passed together. No production boundary change was
+needed for that test correction.
+
+Private sample: `.secure-agent/r4-example-a/report.md` and `report.json`, with
+`.secure-agent/r4-example-audit.jsonl`. Its temporary policy,
+`/tmp/recon-r4-owned-fixture-policy.json`, explicitly opts into unattended owned
+fixture execution; the repository example policy still requires fresh approvals.
+The card identity is `owned-discovery-http-assessment`, version `1`, SHA-256
+`0ee868de914e71e0ad266c2500eb5657e82ffe498a0e7a7da8c2f5c8d36312b9`.
+Temporary evidence may disappear after reboot; the measurements above are saved.
+
+Current actions still recreate their namespace and fixture independently. This
+slice does not establish persistent service continuity, general discovery, an
+external knowledge library or live-model performance. Findings remain drafts
+for operator review. Existing shared-host trust, callback, HTTP-framing and local
+evidence-tampering limitations remain. Persistent lab and repeated evaluation
+are subsequent work.
+
 ## R3 premerge review and authorized merge — 22 September 2026
 
 The operator requested review of [PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8)
