@@ -47,7 +47,11 @@ portable test and checkpoint documentation; production code is unchanged.
 
 The existing 109 real Linux test results still apply to the unchanged production
 code. Kernel tests were not repeated for this test/documentation-only correction.
-Follow-up publication state is recorded in [continue-here.md](continue-here.md).
+Correction `9f34cbc` is published in
+[draft PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10), not merged.
+The following publication checkpoint changes documentation only. Inspect the
+latest PR checks separately; [continue-here.md](continue-here.md) records the
+continuation state.
 
 ## R4: one versioned owned workflow — 23 September 2026
 

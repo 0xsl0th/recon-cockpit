@@ -22,6 +22,9 @@ the reviewed head. The interrupted local sync and checkpoint are now recovered.
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
 - Current branch: `fix/offline-cancellation-checkpoint`, based on merged main
   `8673dc0`. Use `git log -1` and `git status` for the latest checkpoint.
+- [PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10) contains the test-only
+  correction and recovered checkpoint, published as a draft, not merged.
+  Correction commit: `9f34cbc`. Check the latest PR CI before merging.
 - [PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9) is **merged**, at
   `8673dc0ac02a762dae08f2533885d2246fb04e2a` on 23 September, 01:29:31 UTC.
   Reviewed head `401cbe1` passed all ten branch/PR portable jobs across Ubuntu
