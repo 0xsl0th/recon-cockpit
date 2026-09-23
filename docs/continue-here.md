@@ -21,6 +21,10 @@ R3 was subsequently reviewed and merged with explicit operator authorization.
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
 - Current branch: `feature/secure-agent-workflow`, based on main `1086301`.
   Use `git log -1` and `git status` for the latest implementation checkpoint.
+- [PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9) is **open as a draft**,
+  not merged. Implementation `9bcb8b2` passed all ten branch/PR portable jobs
+  across Ubuntu Python 3.11–3.14 and macOS Python 3.14. The following publication
+  checkpoint changes documentation only; inspect the latest PR checks separately.
 - R4 adds a repository-authored versioned card, immutable deterministic
   decisions, durable proposal/terminal events and independent read-only replay.
   The CLI selector is `--workflow-assessment`; existing R2/R3 modes remain.

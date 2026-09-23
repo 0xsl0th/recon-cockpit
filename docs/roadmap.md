@@ -22,7 +22,8 @@ passed **1,977 portable tests and 96 real Linux integrations**, and all ten
 premerge branch/PR checks passed. See [discovery-assessment.md](discovery-assessment.md)
 and the continuation checkpoint. **R4 update:** the first versioned card and
 deterministic engine are implemented on `feature/secure-agent-workflow`, pending
-review and merge. See [workflow-assessment.md](workflow-assessment.md) for the
+review and merge in [draft PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9).
+See [workflow-assessment.md](workflow-assessment.md) for the
 decision trace and evidence contract. Broader discovery remains future work.
 The baseline below is historical.
 

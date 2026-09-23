@@ -5,7 +5,14 @@
 The operator accepted the first R4 card/engine slice and confirmed the team as
 Enrique Folte with Codex development assistance. Work started on
 `feature/secure-agent-workflow` from merged main `1086301`. R1/R2/R3 were not
-reimplemented or merged again. Publication state is recorded in
+reimplemented or merged again. Implementation `9bcb8b2` is published in
+[draft PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9), not merged.
+All ten hosted portable jobs passed at that commit: five in
+[branch CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/35806046599)
+and five in [PR CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/35806060768).
+They cover Ubuntu Python 3.11–3.14 and macOS Python 3.14, independently of local
+kernel verification. The following checkpoint changes documentation only;
+inspect its latest hosted checks separately. Publication state is recorded in
 [continue-here.md](continue-here.md).
 
 The new `--workflow-assessment` mode uses one repository-authored versioned card
