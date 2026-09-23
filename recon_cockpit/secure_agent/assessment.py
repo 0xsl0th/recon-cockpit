@@ -86,6 +86,11 @@ class AssessmentProvider:
                 and parsed.get("followup_path") == diagnostics_path(self.case)
                 and record.get("authority_observation_sha256") == hashlib.sha256(observation).hexdigest())
 
+    def _select_plan(self, step, observation):
+        if step > 1 and not self._discovery_complete(observation):
+            return {"schema_version": "1", "action": None, "done": True}
+        return self._plans[step - 1]
+
     def propose(self, observation, *, control):
         if not self._lock.acquire(blocking=False):
             raise RuntimeError("assessment_already_running")
@@ -102,16 +107,18 @@ class AssessmentProvider:
                 raise ValueError("invalid_assessment_observation")
             step = self._next_step
             self._next_step += 1
-            if step > 1 and not self._discovery_complete(observation):
+            plan = self._select_plan(step, observation)
+            control.check()
+            if plan["action"] is None:
                 self._closed = True
-                return _encode({"schema_version": "1", "action": None, "done": True})
+                return _encode(plan)
             raw = self._offline.propose(observation, control=control)
             control.check()
             # A compromised response decoder cannot substitute another target,
             # path, allowance, action identity or workflow-completion signal.
-            if type(raw) is not bytes or len(raw) > 16384 or _encode(_plan(raw)) != _encode(self._plans[step - 1]):
+            if type(raw) is not bytes or len(raw) > 16384 or _encode(_plan(raw)) != _encode(plan):
                 raise ValueError("assessment_candidate_mismatch")
-            if step == len(self._plans):
+            if plan["done"]:
                 self._closed = True
             return raw
         except BaseException:
@@ -160,3 +167,26 @@ class DiscoveryAssessmentProvider(AssessmentProvider):
                   or parsed.get("followup_path") != diagnostics_path(self.case)):
                 return False
         return records[-1].get("authority_observation_sha256") == hashlib.sha256(observation).hexdigest()
+
+
+class WorkflowAssessmentProvider(AssessmentProvider):
+    """One reviewed card chooses proposals; the authority still grants execution."""
+
+    name = "deterministic-owned-workflow-assessment"
+
+    def _candidate_plans(self, case):
+        from .discovery_contract import discovery_action
+        from .workflow import card
+
+        return tuple({"schema_version": "1", "action": discovery_action(case, step["step"]),
+                      "done": step["done"]} for step in card()["steps"])
+
+    def _select_plan(self, step, observation):
+        # This host-owned sink invokes the engine and durably records its exact
+        # decision before any broker exchange. Failure poisons the provider and
+        # propagates through the authority's audit-failure path.
+        decision = self._evidence.record_decision(step, observation)
+        plan = {"schema_version": "1", "action": decision.action, "done": decision.done}
+        if decision.action is not None and _encode(plan) != _encode(self._plans[step - 1]):
+            raise ValueError("workflow_candidate_mismatch")
+        return plan

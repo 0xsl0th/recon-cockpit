@@ -1,14 +1,14 @@
-# Continue here — 22 September 2026
+# Continue here — 23 September 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**R1, R2 and the smallest R3 discovery-to-HTTP slice are reviewed and merged
-into `main`.** Read
-[discovery-assessment.md](discovery-assessment.md), [verification.md](verification.md)
-and [roadmap.md](roadmap.md). Inspect Git and current PR checks before more work.
-Do not restart R1/R2/R3 or repeat their merges.
+**R1, R2 and the smallest R3 discovery-to-HTTP slice are merged. The first R4
+card/engine is implemented on `feature/secure-agent-workflow`, pending review and
+merge.** Read [workflow-assessment.md](workflow-assessment.md),
+[verification.md](verification.md) and [roadmap.md](roadmap.md). Inspect Git and
+current PR checks before more work. Do not restart R1/R2/R3 or repeat their merges.
 
 Recovery found the branch clean at `75ebb8d`, with no pending implementation
 edits and no Git corruption after the battery failure. Saved conversation history
@@ -19,8 +19,26 @@ R3 was subsequently reviewed and merged with explicit operator authorization.
 ## Saved state
 
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
-- Current branch: `main`, tracking `origin/main`. Use `git log -1` and
-  `git status` for the latest documentation checkpoint.
+- Current branch: `feature/secure-agent-workflow`, based on main `1086301`.
+  Use `git log -1` and `git status` for the latest implementation checkpoint.
+- [PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9) is **open as a draft**,
+  not merged. Implementation `9bcb8b2` passed all ten branch/PR portable jobs
+  across Ubuntu Python 3.11–3.14 and macOS Python 3.14. The following publication
+  checkpoint changes documentation only; inspect the latest PR checks separately.
+- R4 adds a repository-authored versioned card, immutable deterministic
+  decisions, durable proposal/terminal events and independent read-only replay.
+  The CLI selector is `--workflow-assessment`; existing R2/R3 modes remain.
+- Full R4 verification: **2,134 portable / 109 real Linux tests passed**, no
+  selected failures, errors or skips. Compile, dependency and whitespace checks
+  passed. See verification.md for commands, timings and reviewed limitations.
+- R4 JUnit: `/tmp/recon-workflow-portable.xml` and
+  `/tmp/recon-workflow-linux.xml`. Temporary evidence may disappear on reboot.
+- Private R4 sample: `.secure-agent/r4-example-a/report.md` and `report.json`,
+  plus `.secure-agent/r4-example-audit.jsonl`. The real CLI validated case a
+  with three linked executions, three decisions and a terminal explanation.
+  Read-only CLI inspection preserved every file's bytes and modification time.
+  The explicit unattended owned-fixture policy is
+  `/tmp/recon-r4-owned-fixture-policy.json`; this is not human approval evidence.
 - [PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8): reviewed head
   `124300a`, merged as `b1c7b67` on 22 September with operator authorization.
   The merge tree exactly matches the reviewed files. Implementation: `ad30297`.
@@ -32,7 +50,7 @@ R3 was subsequently reviewed and merged with explicit operator authorization.
 - Initial hosted CI exposed a macOS assumption in a new portable refusal test.
   The test now explicitly exercises both Linux host-namespace refusal and
   non-Linux refusal. Production files and Linux verification are unchanged.
-- Full local verification: **1,977 portable tests and 96 real Linux
+- Previous R3 verification: **1,977 portable tests and 96 real Linux
   integrations**, zero selected failures/errors/skips. Compile, dependency and
   whitespace checks passed. See the exact commands/timing in verification.md.
 - JUnit: `/tmp/recon-discovery-portable.xml` and `/tmp/recon-discovery-linux.xml`.
@@ -69,6 +87,21 @@ tokens. Reports link TCP and both HTTP observations, remain drafts, and preserve
 read-only crash inspection without execution or grant restoration. R3 is not a
 multi-service/Nmap adapter, general capability registry or workflow engine.
 
+## Implemented first R4 slice
+
+One card, `owned-discovery-http-assessment` version `1`, binds the existing
+TCP-to-HTTP path to exact actions, parser gates and evidence requirements. Each
+decision is durably recorded before any synthetic provider exchange. Execution
+starts require a matching preceding proposal; reports distinguish proposals
+from executions and explain evidence, approval, failure and budget stops.
+The manifest and every decision bind the canonical card digest.
+
+`owned-workflow-assessment-v1` bundles replay observations from artifacts and
+recompute decisions during inspection. Corrupt, reordered, missing or unfinished
+evidence remains inconclusive. There is no resumption of an assessment, dynamic
+card loading, external knowledge import or new execution capability. Existing
+per-action fresh namespaces remain; persistent topology is subsequent work.
+
 ## Intent and constraints
 
 Build authorized pentest workflows with specialist engines inside enforced
@@ -89,14 +122,16 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Inspect Git and current main checks, preserving unrelated work. PR #8 is
+1. Inspect this branch and its PR/checks, preserving unrelated work. PR #8 is
    already merged; do not repeat its review, implementation or merge.
-2. Start the smallest R4 workflow-card/engine design from the roadmap on a new
-   branch from updated main. Use the proven TCP-to-HTTP path as the first card.
-3. Add broader owned topology only when a concrete use case requires it. Do not
-   silently widen this singleton executor or attach the legacy Nmap runner.
-4. Keep local kernel verification separate from hosted portable CI, and record
-   measured results/publication state for the next implementation slice.
+2. Review the concrete R4 card/engine PR. Future merging still requires operator
+   authorization; the earlier PR #8 approval does not cover this branch.
+3. The accepted next development sequence is persistent owned lab, repeatable
+   evaluation runner, then separately reviewed live-provider controls. First
+   settle the lab lifecycle and executor scope contract; do not silently widen
+   the singleton executor or attach the legacy Nmap runner.
+4. Keep kernel verification separate from hosted portable CI and record measured
+   results/publication state for every slice.
 
 ## Recovery and verification
 
@@ -119,6 +154,7 @@ Reference identities are resolved: Enrique Folte, PentestMonkey,
 PayloadsAllTheThings, GTFOBins, LOLBAS, HackTricks and Hack The Box. Links and
 categories are in the roadmap; do not repeat clarification.
 
-Enrique Folte is the project contact. Submission role, affiliation and additional
-members remain to confirm; these do not block scoped development.
+Enrique Folte confirmed that he is the sole human participant and project contact,
+with Codex providing development assistance under human review. No additional
+members or institutional affiliation are declared. Do not repeat the team question.
 Proposal deadline: **15 November 2026**. Final development: **20 May 2027**.

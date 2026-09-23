@@ -82,6 +82,12 @@ must explicitly allow `tcp_connect`. The three execution records contribute to
 the draft report. See [the discovery contract](docs/discovery-assessment.md) for
 the command, evidence semantics and fixed topology.
 
+`--workflow-assessment` runs that path from a reviewed, versioned workflow card.
+The deterministic engine records the evidence and reason for each proposal or
+stop before requesting a synthetic provider reply. Reports distinguish proposed
+actions from executions and retain the card digest and decision trace. See
+[the workflow contract and commands](docs/workflow-assessment.md).
+
 The executable tool set includes bounded HTTP and the fixed discovery profile.
 The original `--fixture` HTTP mode reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
