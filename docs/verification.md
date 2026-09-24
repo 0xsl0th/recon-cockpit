@@ -7,6 +7,14 @@ The operator requested the 18-run baseline, independent saved-evidence grading,
 JSON/Markdown aggregate reports and cleanup/isolation/resource verification before
 opening a PR. Publication state is in [continue-here.md](continue-here.md).
 
+Implementation `665fcb7892ce5f839a1391c5ff7a338d054c0e29` was published in
+[PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12) after the local checks
+and final CLI baseline below completed. All five
+[implementation-head CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36039270526)
+passed: Ubuntu Python 3.11–3.14 and macOS Python 3.14. There were no GitHub
+review comments or merge conflicts at that head. The publication checkpoint
+changes documentation only; current PR checks should be inspected before merging.
+
 `--evaluate-owned-lab` runs cases a–f three times with fresh authority, lab,
 coordinator, parser and broker instances. The separate versioned oracle requires
 each case's exact action/observation/terminal trace. The grader replays saved

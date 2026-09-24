@@ -7,7 +7,7 @@ This development checkpoint never resumes an assessment or restores approvals.
 **R1, R2, the smallest R3 discovery-to-HTTP slice, the first R4 card/engine,
 the post-merge CI correction and the persistent owned lab foundation are reviewed
 and merged. PR #11 is complete. The repeatable evaluation runner is implemented
-and locally verified on `feature/owned-lab-evaluation`; PR publication is next.**
+and verified on `feature/owned-lab-evaluation`, published in PR #12 for review.**
 Read [evaluation.md](evaluation.md), [owned-lab.md](owned-lab.md), [workflow-assessment.md](workflow-assessment.md),
 [verification.md](verification.md) and [roadmap.md](roadmap.md). Inspect Git and
 current PR checks before more work. Do not restart R1/R2/R3/R4 or repeat their merges.
@@ -25,6 +25,14 @@ the reviewed head. The interrupted local sync and checkpoint are now recovered.
   `3b9ba7b` after PR #11. The operator authorized implementing the 18-run baseline,
   independent grading and aggregate reports, with cleanup/isolation/accounting
   verification before opening a PR. This task authorizes publication of the PR.
+- [PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12) is open for review.
+  Implementation commit: `665fcb7892ce5f839a1391c5ff7a338d054c0e29`.
+  The full local suites and final CLI baseline passed before the PR was opened.
+  All five [implementation-head CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36039270526)
+  passed on Ubuntu Python 3.11–3.14 and macOS Python 3.14. GitHub showed no
+  review comments or merge conflicts at that head.
+  Publication notes change documentation only; inspect the current PR head and
+  its hosted checks before further work. Do not recreate the runner or its PR.
 - The new runner uses `--evaluate-owned-lab --evaluation-dir NEW_DIRECTORY`,
   explicit unattended owned-fixture policy, six cases times three repetitions,
   fresh authority/lab/broker identities and durable reservations before each trial.
@@ -196,8 +204,8 @@ Planning uses synthetic responses.
 
 1. Inspect the feature branch and checks, preserving unrelated work. PR #10 and PR #11
    are already merged; do not repeat their implementation, review or merge.
-2. Publish the locally verified evaluation runner PR and check its hosted CI. Do not merge a new
-   PR solely based on authorization for earlier merges. Subsequent development
+2. Review open PR #12 and its current hosted checks. Do not merge it solely
+   based on authorization for earlier merges. Subsequent development
    is separately reviewed live-provider controls. Do not silently widen the
    singleton executor or attach the legacy Nmap runner.
 3. Keep kernel verification separate from hosted portable CI and record measured
