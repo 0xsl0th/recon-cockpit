@@ -28,7 +28,10 @@ reviewed and merged in [PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10
 merge `2b3527e`. All five subsequent main checks passed.
 The [persistent owned lab foundation](owned-lab.md) is reviewed and merged in
 [PR #11](https://github.com/0xsl0th/recon-cockpit/pull/11): 2,226 portable and 126
-Linux tests passed, plus all five PR CI jobs. The repeatable evaluation runner is next.
+Linux tests passed, plus all five PR CI jobs. The [repeatable evaluation runner](evaluation.md)
+now implements the 18-trial synthetic baseline, independent saved-evidence grading
+and resource/cleanup/isolation aggregates. Current verification and PR status are
+in the checkpoint. Live-provider controls follow this baseline.
 See [workflow-assessment.md](workflow-assessment.md) for the
 decision trace and evidence contract. Broader discovery remains future work.
 The baseline below is historical.
@@ -244,8 +247,8 @@ topology. It imports no external instructions and adds no capability registry.
 The first card/engine slice is merged. The persistent owned lab foundation keeps
 one seeded service alive across fresh executors, binds identity and counters to
 evidence, and destroys the instance at session end. See [its contract](owned-lab.md)
-and [verification](verification.md). Next, add a repeated evaluation runner, then
-develop the live-provider controls. Persistent lab operation does not establish
+and [verification](verification.md). The [repeated evaluation runner](evaluation.md)
+now measures this fixed baseline; next develop the live-provider controls. Persistent lab operation does not establish
 live-model performance.
 
 ## R5: live AI and further privilege separation
@@ -285,7 +288,7 @@ card/engine slice are merged.
 
 | Target window | Outcome |
 | --- | --- |
-| September–October 2026 | R1/R2, smallest R3 and first R4 card/engine merged; persistent owned lab implemented and verified; repeatable evaluation runner next. |
+| September–October 2026 | R1/R2, smallest R3, first R4 card/engine and persistent lab merged; repeated evaluation runner implemented; verify and publish the 18-trial baseline. |
 | Through 8 November | Finalize proposal and measured baseline; build repeatable owned evaluation where ready. Tool breadth is not a submission prerequisite. |
 | 9–15 November | Human review and project submission; aim for 9 November for margin. |
 | 16 November–10 January 2027 | Complete R3/R4 and the lab assessment corpus. |
@@ -355,7 +358,7 @@ page retrieval was unavailable during this planning pass.
 - Enrique Folte is the confirmed sole human participant and contact; affiliation
   is unspecified. Review submission details before sending.
 - R1 channel topology is settled in [offline-authority.md](offline-authority.md).
-- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). Card v2 uses the [persistent lab foundation](owned-lab.md); the repeated evaluation runner remains next.
+- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). Card v2 uses the [persistent lab foundation](owned-lab.md); the [evaluation runner](evaluation.md) measures repeated synthetic outcomes. Live-provider controls remain next.
 - Later choose real-model/data/credential/spend settings.
 
 Reference identities and team composition are resolved. This plan does

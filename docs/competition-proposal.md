@@ -216,8 +216,12 @@ La base del laboratorio propio persistente conserva ese servicio durante la
 evaluación sin ampliar el destino permitido. Cada nueva evaluación crea una
 instancia distinta; la inspección de evidencia nunca restaura permisos ni procesos.
 La ficha v2 describe este ciclo de vida, mientras la ficha v1 conserva su contrato
-original. El siguiente paso es un ejecutor de evaluaciones repetidas que agregue
-resultados y recursos; la evaluación con un modelo real continúa pendiente.
+original. El [ejecutor de evaluaciones repetidas](evaluation.md) implementa ahora
+una línea base de 18 ensayos: seis casos, tres repeticiones, instancias nuevas y
+calificación independiente de la evidencia guardada. Agrega decisiones esperadas
+y observadas, aislamiento, limpieza y reservas de recursos en JSON y Markdown.
+Una interrupción o fallo de evidencia no recibe crédito como abstención correcta.
+La evaluación con un modelo real continúa pendiente.
 
 | Dimensión | Evidencia a obtener |
 | --- | --- |

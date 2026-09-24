@@ -71,8 +71,8 @@ from cached counts to claim a successful assessment.
 Repeat the same scenario with new evidence/audit paths to compare semantic
 outcomes. Fresh instance/session/execution UUIDs and timestamps intentionally
 differ; scenario, specification digest, selected actions and expected findings
-remain stable. This supplies the runtime and evidence foundation for a subsequent
-evaluation runner that aggregates repeated outcomes and resource measurements.
+remain stable. The [evaluation runner](evaluation.md) repeats all six cases with
+new instances and aggregates independently graded outcomes and resource measurements.
 
 ## Run and inspect
 

@@ -94,6 +94,14 @@ creates a new instance; artifacts bind its identity, service counters and closur
 receipt. Workflow card v2 describes this lifecycle. See
 [the persistent owned lab contract](docs/owned-lab.md) for setup, reset and limits.
 
+`--evaluate-owned-lab --evaluation-dir NEW_DIRECTORY` runs the six owned cases
+three times by default, with a fresh lab and authority for each trial. Select the
+explicit unattended evaluation policy and `--execute` to run the 18-trial baseline.
+The runner independently grades saved evidence and writes JSON/Markdown aggregates
+covering expected decisions, isolation, cleanup and resource accounting.
+`--inspect-evaluation DIRECTORY` regrades without execution or writes.
+See [the evaluation contract and commands](docs/evaluation.md).
+
 The executable tool set includes bounded HTTP and the fixed discovery profile.
 The original `--fixture` HTTP mode reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`

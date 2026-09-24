@@ -1,5 +1,99 @@
 # Verification record
 
+## Repeatable owned evaluation runner — 24 September 2026
+
+Implemented on `feature/owned-lab-evaluation` from merged main `3b9ba7b`.
+The operator requested the 18-run baseline, independent saved-evidence grading,
+JSON/Markdown aggregate reports and cleanup/isolation/resource verification before
+opening a PR. Publication state is in [continue-here.md](continue-here.md).
+
+`--evaluate-owned-lab` runs cases a–f three times with fresh authority, lab,
+coordinator, parser and broker instances. The separate versioned oracle requires
+each case's exact action/observation/terminal trace. The grader replays saved
+assessment evidence and reconciles it with the authority/broker audit, artifact
+boundary witnesses and runtime cleanup/accounting receipts. Batch inspection
+regrades from disk and compares its reconstruction with both aggregate formats.
+See [evaluation.md](evaluation.md) for commands, score interpretation and limits.
+
+| Check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-evaluation-portable.xml` | **2,299 passed, 132 deselected**, 50.00 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-evaluation-linux.xml` | **132 passed, 2,299 deselected**, 335.75 seconds |
+| Both JUnit reports inspected | Zero selected failures, errors or skips |
+| Focused new Linux module | **6 passed**, 71.20 seconds; includes one 18-trial batch shared by three baseline assertions, plus cancellation/deadline runs |
+| Compile, dependency, Python 3.11 syntax and relative documentation links | Passed; no broken requirements or broken relative links |
+| `git diff --check` | Passed |
+
+New coverage totals 73 portable tests and six Linux tests over the merged lab
+foundation. Portable tests use explicit namespace/provider doubles while keeping
+the real authority, broker, evidence store and grader. They cover all six expected
+traces, all 18 scheduled trials, tampered receipts/artifacts/audit/cached reports,
+manifest substitution, strict counters and limits, duplicate identities, unsafe
+files/output reuse, audit failure before startup, cancellation, torn journal
+prefixes and CLI read-only inspection. Selected portable tests also run on hosted
+Ubuntu/macOS CI; they do not establish kernel enforcement.
+
+The real Linux tests observe Bubblewrap/nsenter child handles, owner descendants
+with PID start times, and pinned namespaces distinct from the host. They verify
+fresh session/assessment/lab/broker IDs, service continuity, closed namespace
+descriptors, reaped direct children and no surviving observed descendants.
+Active cancellation produces a failed trial within an incomplete batch; a
+between-trial cancellation preserves the completed grade and starts no next lab.
+The one-second batch deadline similarly stops further work. All original 126
+Linux tests also passed with the new optional authority deadline ceiling.
+
+Review identified that flooring remaining seconds before constructing a session
+would let setup delays extend the batch lifetime. Authority now uses the earlier
+of its fixed session deadline and a trusted absolute outer deadline; the batch
+timer supplies cancellation as well. Other review checks enforce strict retained
+response byte bounds for timeout/output-limit cases, separate expected observation
+reasons, and preserve verified reservations when later journal data is torn.
+Two initial deadline test assertions expected a new reason name; they were
+corrected to the existing `session_timeout` contract, then passed. No isolation
+or approval requirement was weakened. These are development checks, not an
+independent security audit.
+
+The evaluation specification is `owned-workflow-evaluation`, version `1`, SHA-256
+`f9a9901e9e71002c26b3b108bdb08d35ff909f71f8d0b645e7fe534718a8cc3b`.
+Its expected complete baseline is 18 passing trials: three validated, three not
+demonstrated and twelve correct abstentions. This entails 54 planning steps,
+51 executions/broker calls, 45 successful actions, and 52,224 reserved tool-output
+bytes and broker output tokens. Batch admission conservatively reserves 55,296
+bytes/tokens and 54 calls before work; it does not refund early stops.
+
+The explicit `examples/secure-agent-evaluation-policy.json` permits unattended
+owned-fixture execution; no human grants were supplied or claimed. The existing
+approval-required example is unchanged. Tests ran as the normal Kali Linux
+x86_64 user with Python 3.14.6, outside the coding sandbox for kernel execution.
+No host-network, dependency, credential, external-target or live-provider change
+was needed. Runtime and evidence remain trusted host components; hashes do not
+resist host-owner tampering, and closure observations are not external attestations.
+Reservations are ceilings, not measured token usage, wire traffic or monetary
+spend. Unknown measurements after interruption remain unknown.
+
+Final real CLI baseline:
+
+```sh
+.venv/bin/python -m recon_cockpit.secure_agent --evaluate-owned-lab \
+  --policy examples/secure-agent-evaluation-policy.json \
+  --evaluation-dir .secure-agent/evaluation-baseline-20260924 --execute
+```
+
+Exit 0; **18/18 passed** in **72,004 ms** for the batch. All 18 cleanup and
+isolation grades passed, all identities were fresh, all six cases agreed across
+repetitions and resource accounting was complete. Observed totals: 54 planning
+steps, 51 executions/broker calls, 45 successful actions, 52,224 reserved tool
+bytes/output tokens, 159,696 broker request bytes and 6,981 retained response bytes.
+The observed outcomes were three validated, three not demonstrated and twelve
+correct abstentions; there were zero unnecessary actions under the fixed oracle.
+
+Private aggregate reports are `.secure-agent/evaluation-baseline-20260924/report.json`
+and `report.md`, with links to all 18 assessment bundles. The actual
+`--inspect-evaluation` CLI exited 0 and exactly reproduced the saved JSON report.
+Every file's bytes and modification time stayed unchanged, and all directory/file
+modes were 0700/0600. Private raw artifacts remain ignored. Earlier development
+output used an intermediate schema and is not the publication baseline.
+
 ## PR #11 review and authorized merge — 24 September 2026
 
 The operator explicitly authorized commit, push and merge of the completed lab
