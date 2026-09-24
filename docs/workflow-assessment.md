@@ -111,12 +111,15 @@ publication state.
 
 This is one built-in card and deterministic engine, with no external knowledge
 import, generic registry, attack graph, new capability or new target. TCP proves
-reachability only. Each action recreates the owned topology in a fresh namespace;
-service continuity is not established. The shared trusted host process, R1
+reachability only. With `--fixture`, each action recreates the owned topology in
+a fresh namespace; service continuity is not established. The explicit
+[`--owned-lab` profile](owned-lab.md) uses workflow card v2 and retains one
+seeded service across fresh executors, then destroys it at session end. Card v1
+and its historical evidence remain unchanged. The shared trusted host process, R1
 callback limits and R2 HTTP framing limits still apply.
 
-Next, design a persistent owned lab with explicit lifecycle and destination
-controls, then a repeated evaluation runner measuring outcomes, unnecessary
-actions and enforcement. Live-provider evaluation follows separately reviewed
+The persistent owned lab supplies the foundation for a subsequent repeated
+evaluation runner measuring outcomes, unnecessary actions and enforcement.
+Live-provider evaluation follows separately reviewed
 data, model, credential and spend controls. The current slice establishes no
 live-model performance evidence.

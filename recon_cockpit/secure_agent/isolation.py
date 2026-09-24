@@ -104,7 +104,8 @@ def _runtime_files(python: str, nft: str | None, *, control: ExecutionControl | 
 
 
 def _capture_bounded(argv: list[str], request: bytes, timeout: float, limit: int, *,
-                     control: ExecutionControl | None = None) -> tuple[int, bytes, bytes, str | None]:
+                     control: ExecutionControl | None = None,
+                     pass_fds: tuple[int, ...] = ()) -> tuple[int, bytes, bytes, str | None]:
     """Bound both output pipes and supervise nonblocking input and cancellation."""
     env = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C"}
     deadline = time.monotonic() + timeout
@@ -112,7 +113,7 @@ def _capture_bounded(argv: list[str], request: bytes, timeout: float, limit: int
         control.check()
     try:
         proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                env=env, close_fds=True, start_new_session=True, bufsize=0)
+                                env=env, close_fds=True, pass_fds=pass_fds, start_new_session=True, bufsize=0)
     except OSError as exc:
         raise IsolationUnavailable("Cannot start bubblewrap") from exc
     chunks: dict[str, bytearray] = {"stdout": bytearray(), "stderr": bytearray()}

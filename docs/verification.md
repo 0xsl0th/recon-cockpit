@@ -1,5 +1,99 @@
 # Verification record
 
+## Persistent owned lab foundation — 23–24 September 2026
+
+Work starts from merged main `2b3527e` on `feature/secure-agent-owned-lab`.
+The operator requested the foundation and subsequently authorized commit, push
+and merge if review and checks pass. Publication is recorded in
+[continue-here.md](continue-here.md).
+
+`--workflow-assessment CASE --owned-lab` keeps one seeded service alive for the
+three-action workflow, with a fresh executor sandbox for each action. The fixed
+disconnected topology permits only `127.0.0.1:8080`. Startup follows policy,
+approval, budget and durable execution audit; cleanup destroys the instance.
+Workflow card v2 and a distinct evidence profile bind the lab specification,
+instance identity, service counters and closure receipt. Card v1 is unchanged.
+See [owned-lab.md](owned-lab.md) for the lifecycle and trust contract.
+
+Tests ran as the normal Kali Linux x86_64 user with Python 3.14.6. Kernel tests
+ran outside the coding sandbox with the application's isolation enforced.
+No host networking, package, credential, external-target or live-provider change
+was needed.
+
+| Check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-owned-lab-portable-final.xml` | **2,226 passed, 126 deselected**, 22.31 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-owned-lab-linux.xml` | **124 passed, 2,228 deselected**, 260.32 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest tests/test_secure_owned_lab_runtime.py -m integration -v --tb=short --junitxml=/tmp/recon-owned-lab-descriptors-linux.xml` | **2 passed, 42 deselected**, 0.15 seconds |
+| All three JUnit reports inspected | Zero selected failures, errors or skips |
+| Real CLI case a with explicit unattended owned-fixture policy | Exit 0; `validated` draft; three successful actions; three broker calls; 3,072 reserved output tokens and 3,072 reserved tool bytes |
+| Read-only CLI inspection | Exact saved-report equality; no integrity issues; every file's bytes and modification time preserved; directory 0700, files 0600 |
+| `.venv/bin/python -m compileall -q recon_cockpit/secure_agent`, `.venv/bin/python -m pip check`, `git diff --check` | Passed; no broken requirements |
+
+The full Linux run preceded reclassification of two real `/proc` descriptor tests
+from portable to integration. Production code was unchanged; the supplemental
+run verified those two cases. Together these runs cover all **126 current Linux
+tests**, not 126 cases in a single invocation. The final portable selection was
+run after that correction. New coverage over PR #10 totals 92 portable and 17
+Linux cases.
+
+Linux coverage exercises all six scenarios, service continuity across fresh
+sandboxes, reset with a new instance and the same semantic result, namespace
+substitution, owner death, child reaping, active and between-action cancellation,
+dry-run, missing approval and insufficient budget. Scripted-grant tests establish
+that lab startup follows grant consumption and durable execution audit; they are
+not human consent evidence. Portable tests cover strict runtime envelopes,
+lifecycle refusals, CLI selection, identity/counter/closure tampering and replay.
+
+The first focused kernel run exposed descriptor handling defects: namespace
+handles survived `nsenter` and Bubblewrap, and a late descriptor check also saw a
+distribution libffi descriptor opened by `ctypes`. The fixed, isolated Python
+bootstrap now closes inherited namespace handles after joining and before
+launching Bubblewrap. The executor checks for unexpected handles before importing
+`ctypes`. The guard was not relaxed. Review also caught boolean sequence numbers
+and snapshots below the requested counter barrier; both now fail closed.
+The corrected focused module passed all 15 cases before the full Linux run.
+
+Bounded development reviews of the launcher, authority binding and evidence
+replay found no remaining blockers. The bootstrap uses fixed interpreter/source
+and host-built Bubblewrap arguments; no proposal chooses code or an executable.
+These reviews and tests are not an independent security audit.
+
+Private sample: `.secure-agent/owned-lab-a-20260923/report.json` and `report.md`,
+with `.secure-agent/owned-lab-a-20260923-audit.jsonl`. Its temporary policy,
+`/tmp/recon-owned-lab-demo-policy.json`, explicitly allows unattended owned-fixture
+execution. The repository policy still requires fresh approvals. The same lab
+instance appears in all three artifacts, with `(connections, requests)` counters
+`(1, 0)`, `(2, 1)`, `(3, 2)` and a closed receipt at `(3, 2)`.
+Card v2 SHA-256 is
+`da8dca2eeb37b3453e838d6519287e47996f0b9bc9ea16c40f654221d4a3255c`;
+case-a lab specification SHA-256 is
+`ff0f130d61875294e165fe0e3e27dd863a47fe11d8cdf6fcd4e0cf3ac331d4dd`.
+Private files remain ignored; temporary artifacts may disappear after reboot.
+
+Closure repeats the last acknowledged service totals, not a final counter sample
+after interruption. An interrupted action can leave partial, inconclusive evidence
+and `evidence_error`; cleanup still runs and inspection never fabricates completion.
+Host authority, lifecycle supervision and evidence remain trusted in one host
+process. Hashes and counters do not resist a malicious host owner. Existing HTTP
+framing limits remain. This delivers the lab foundation; the aggregate repeatable
+evaluation runner remains subsequent work.
+
+## PR #10 review and authorized merge — 23 September 2026
+
+The operator authorized review and merge of the open correction PR. The reviewed
+head `9fef4987a1a98d3d44f1d65b8d3b2e99fb57e7a3` had no outstanding GitHub
+reviews/comments and all five
+[PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/35871537198)
+passed. The prior 2,134 portable results applied to the unchanged test correction;
+only publication documentation had changed. Review found no blocker.
+
+[PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10) was marked ready and
+merged with an exact-head guard as `2b3527ec20c8a8b9dd30f5e7aa000bb48aa51fc3`
+at 14:14:09 UTC. Local main was fast-forwarded and its tree matches the reviewed
+head. All five [post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/35872690851)
+passed. The new lab work starts from that merge on `feature/secure-agent-owned-lab`.
+
 ## R4 merge recovery and post-merge CI correction — 23 September 2026
 
 The operator requested review of [PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9)
@@ -47,11 +141,10 @@ portable test and checkpoint documentation; production code is unchanged.
 
 The existing 109 real Linux test results still apply to the unchanged production
 code. Kernel tests were not repeated for this test/documentation-only correction.
-Correction `9f34cbc` is published in
-[draft PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10), not merged.
-The following publication checkpoint changes documentation only. Inspect the
-latest PR checks separately; [continue-here.md](continue-here.md) records the
-continuation state.
+Correction `9f34cbc` was published in
+[PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10), initially as a draft.
+Its subsequent review and merge are recorded above;
+[continue-here.md](continue-here.md) records the current continuation state.
 
 ## R4: one versioned owned workflow — 23 September 2026
 

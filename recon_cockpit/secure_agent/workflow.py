@@ -38,14 +38,16 @@ def _encode(value):
                       separators=(",", ":")).encode("ascii")
 
 
-def card():
+def card(*, owned_lab=False):
     """Return a fresh descriptor of the single supported workflow.
 
     Ordered predecessor gates and proposal reasons are consumed by decide().
     The action digests bind all six cases to the existing reviewed contracts.
     This descriptor cannot grant permission or introduce another capability.
     """
-    return {
+    if type(owned_lab) is not bool:
+        raise ValueError("invalid_workflow_profile")
+    definition = {
         "schema_version": "1", "workflow_id": WORKFLOW_ID,
         "workflow_version": WORKFLOW_VERSION,
         "title": "Owned TCP discovery and diagnostic metadata assessment",
@@ -99,13 +101,24 @@ def card():
                         "The card supplies neither authorization nor live-model evidence."],
     }
 
+    if owned_lab:
+        definition["workflow_version"] = "2"
+        definition["provenance"]["contracts"].append("owned_lab_contract.py")
+        definition["prerequisites"][1] = "isolated_persistent_owned_lab_executor"
+        definition["cleanup"]["lab"] = "terminate_and_reap_at_authority_session_end"
+        definition["evidence_requirements"].extend([
+            "exact_owned_lab_identity", "monotonic_owned_service_counters", "durable_lab_closure_receipt"])
+        definition["limitations"][1] = "One owned service persists across actions in this authority session; reset creates a new instance."
+    return definition
 
-def card_digest():
-    return hashlib.sha256(_encode(card())).hexdigest()
+
+def card_digest(*, owned_lab=False):
+    return hashlib.sha256(_encode(card(owned_lab=owned_lab))).hexdigest()
 
 
-def card_identity():
-    return {"id": WORKFLOW_ID, "version": WORKFLOW_VERSION, "sha256": card_digest()}
+def card_identity(*, owned_lab=False):
+    return {"id": WORKFLOW_ID, "version": card(owned_lab=owned_lab)["workflow_version"],
+            "sha256": card_digest(owned_lab=owned_lab)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +131,7 @@ class WorkflowDecision:
     workflow_digest: str
     _action_bytes: bytes | None
     _predecessors: tuple[tuple[str, str | None], ...]
+    workflow_version: str = WORKFLOW_VERSION
 
     @property
     def action(self):
@@ -131,7 +145,7 @@ class WorkflowDecision:
     def to_dict(self):
         """Bounded decision metadata, excluding response bodies and rationale."""
         return {"schema_version": "1", "workflow_id": WORKFLOW_ID,
-                "workflow_version": WORKFLOW_VERSION, "workflow_digest": self.workflow_digest,
+                "workflow_version": self.workflow_version, "workflow_digest": self.workflow_digest,
                 "decision_kind": self.decision_kind, "step": self.step,
                 "reason": self.reason, "action_digest": self.action_digest,
                 "predecessors": self.predecessors}
@@ -152,8 +166,9 @@ def _references(records):
                  and (row.get("observation_id") is None or _uuid(row["observation_id"])))
 
 
-def _stop(step, reason, records):
-    return WorkflowDecision(step, "stop", reason, True, None, card_digest(), None, _references(records))
+def _stop(step, reason, records, *, owned_lab=False):
+    return WorkflowDecision(step, "stop", reason, True, None, card_digest(owned_lab=owned_lab),
+                            None, _references(records), "2" if owned_lab else WORKFLOW_VERSION)
 
 
 def _record_matches(case, step, record):
@@ -185,7 +200,7 @@ def _case(case):
         raise ValueError("invalid_assessment_case")
 
 
-def decide(case, step, records, observation):
+def decide(case, step, records, observation, *, owned_lab=False):
     """Propose the next exact action or stop, using only host-owned evidence.
 
     The provider validates sequencing and the authority frame before calling.
@@ -195,65 +210,67 @@ def decide(case, step, records, observation):
     _case(case)
     if type(step) is not int or step not in (1, 2, 3):
         raise ValueError("invalid_workflow_step")
-    definition = card()
+    definition = card(owned_lab=owned_lab)
     node = definition["steps"][step - 1]
     required = node["requires"]
     if type(records) not in (list, tuple) or len(records) < len(required):
-        return _stop(step, "predecessor_evidence_missing", records)
+        return _stop(step, "predecessor_evidence_missing", records, owned_lab=owned_lab)
     if len(records) != len(required):
-        return _stop(step, "unexpected_predecessor_evidence", records)
+        return _stop(step, "unexpected_predecessor_evidence", records, owned_lab=owned_lab)
     executions, observations = set(), set()
     for index, (record, gate) in enumerate(zip(records, required), start=1):
         if not _record_matches(case, index, record):
-            return _stop(step, "predecessor_evidence_invalid", records)
+            return _stop(step, "predecessor_evidence_invalid", records, owned_lab=owned_lab)
         if record["execution_id"] in executions or record["observation_id"] in observations:
-            return _stop(step, "predecessor_evidence_invalid", records)
+            return _stop(step, "predecessor_evidence_invalid", records, owned_lab=owned_lab)
         executions.add(record["execution_id"])
         observations.add(record["observation_id"])
         if record.get("execution_status") != "succeeded":
-            return _stop(step, "predecessor_execution_not_succeeded", records)
+            return _stop(step, "predecessor_execution_not_succeeded", records, owned_lab=owned_lab)
         if not _gate_matches(case, gate, record.get("observation"), definition):
             return _stop(step, "tcp_reachability_not_established" if gate == "tcp_reachable"
-                         else "fixture_index_not_established", records)
+                         else "fixture_index_not_established", records, owned_lab=owned_lab)
     if records and (type(observation) is not bytes or len(observation) > 8192
                     or records[-1].get("authority_observation_sha256") != hashlib.sha256(observation).hexdigest()):
-        return _stop(step, "authority_observation_mismatch", records)
+        return _stop(step, "authority_observation_mismatch", records, owned_lab=owned_lab)
     action = discovery_action(case, step)
     return WorkflowDecision(step, "propose", node["reason"], node["done"],
                             definition["action_digests"][case][step - 1],
-                            hashlib.sha256(_encode(definition)).hexdigest(), _encode(action), _references(records))
+                            hashlib.sha256(_encode(definition)).hexdigest(), _encode(action), _references(records),
+                            definition["workflow_version"])
 
 
-def terminal_decision(case, records, summary):
+def terminal_decision(case, records, summary, *, owned_lab=False):
     """Explain final authority closure; never propose or restore execution.
 
     Summary fields are validated again by evidence persistence. Fixed allowlists
     prevent arbitrary component error text appearing in decision explanations.
     """
     _case(case)
+    card(owned_lab=owned_lab)
     if (type(summary) is not dict or type(summary.get("steps_attempted")) is not int
             or not 0 <= summary["steps_attempted"] <= 3):
         raise ValueError("invalid_workflow_summary")
     step = summary["steps_attempted"] + 1
     if summary.get("mode") == "dry_run":
-        return _stop(step, "dry_run_has_no_execution_evidence", records)
+        return _stop(step, "dry_run_has_no_execution_evidence", records, owned_lab=owned_lab)
     if summary.get("mode") != "execute":
         raise ValueError("invalid_workflow_summary")
     if summary.get("session_status") != "completed":
         reason = summary.get("stop_reason")
         blocked = summary.get("blocked_reason")
         if reason == "action_blocked" and type(blocked) is str and blocked in BLOCKED_REASONS:
-            return _stop(step, blocked, records)
-        return _stop(step, reason if type(reason) is str and reason in _STOPS else "session_stopped", records)
+            return _stop(step, blocked, records, owned_lab=owned_lab)
+        return _stop(step, reason if type(reason) is str and reason in _STOPS else "session_stopped", records, owned_lab=owned_lab)
     if type(records) not in (list, tuple) or len(records) != 3:
-        return _stop(step, "discovery_or_execution_evidence_missing", records)
+        return _stop(step, "discovery_or_execution_evidence_missing", records, owned_lab=owned_lab)
     if (any(not _record_matches(case, index, row) or row.get("execution_status") != "succeeded"
             for index, row in enumerate(records, start=1))
             or len({row["execution_id"] for row in records}) != 3
             or len({row["observation_id"] for row in records}) != 3
             or not _gate_matches(case, "tcp_reachable", records[0].get("observation"))
             or not _gate_matches(case, "index_discovered", records[1].get("observation"))):
-        return _stop(step, "discovery_or_execution_evidence_missing", records)
+        return _stop(step, "discovery_or_execution_evidence_missing", records, owned_lab=owned_lab)
     last = records[-1].get("observation")
     expected = {"parser_version": HTTP_PARSER, "kind": "diagnostics", "followup_path": None}
     if last == {**expected, "classification": "exposed", "reason": "seeded_diagnostics_exposed"}:
@@ -262,4 +279,4 @@ def terminal_decision(case, records, summary):
         reason = "diagnostic_endpoint_not_found"
     else:
         reason = "diagnostic_evidence_invalid"
-    return _stop(step, reason, records)
+    return _stop(step, reason, records, owned_lab=owned_lab)

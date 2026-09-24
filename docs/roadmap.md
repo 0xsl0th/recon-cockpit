@@ -23,8 +23,12 @@ premerge branch/PR checks passed. See [discovery-assessment.md](discovery-assess
 and the continuation checkpoint. **R4 update — 23 September 2026:** the first
 versioned card and deterministic engine are reviewed and merged into `main`
 through [PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9), merge `8673dc0`.
-All ten premerge checks passed; a post-merge cancellation-test race is tracked
-with its correction in [verification.md](verification.md).
+All ten premerge checks passed; the post-merge cancellation-test correction was
+reviewed and merged in [PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10),
+merge `2b3527e`. All five subsequent main checks passed.
+The [persistent owned lab foundation](owned-lab.md) is implemented and locally
+verified: 2,226 portable and 126 Linux tests passed. Its publication state is in
+the checkpoint; the repeatable evaluation runner is next.
 See [workflow-assessment.md](workflow-assessment.md) for the
 decision trace and evidence contract. Broader discovery remains future work.
 The baseline below is historical.
@@ -237,10 +241,12 @@ and evidence contracts.
 
 The first slice now uses one repository-authored card for the existing singleton
 topology. It imports no external instructions and adds no capability registry.
-The accepted continuation order is: review this card/engine slice, design the
-persistent owned lab with an explicit lifecycle and scope contract, add a
-repeated evaluation runner, then develop the live-provider controls. A persistent
-lab or live-model evaluation is not implied by passing the current card tests.
+The first card/engine slice is merged. The persistent owned lab foundation keeps
+one seeded service alive across fresh executors, binds identity and counters to
+evidence, and destroys the instance at session end. See [its contract](owned-lab.md)
+and [verification](verification.md). Next, add a repeated evaluation runner, then
+develop the live-provider controls. Persistent lab operation does not establish
+live-model performance.
 
 ## R5: live AI and further privilege separation
 
@@ -279,7 +285,7 @@ card/engine slice are merged.
 
 | Target window | Outcome |
 | --- | --- |
-| September–October 2026 | R1/R2, smallest R3 and first R4 card/engine merged; design the persistent owned lab. |
+| September–October 2026 | R1/R2, smallest R3 and first R4 card/engine merged; persistent owned lab implemented and verified; repeatable evaluation runner next. |
 | Through 8 November | Finalize proposal and measured baseline; build repeatable owned evaluation where ready. Tool breadth is not a submission prerequisite. |
 | 9–15 November | Human review and project submission; aim for 9 November for margin. |
 | 16 November–10 January 2027 | Complete R3/R4 and the lab assessment corpus. |
@@ -349,7 +355,7 @@ page retrieval was unavailable during this planning pass.
 - Enrique Folte is the confirmed sole human participant and contact; affiliation
   is unspecified. Review submission details before sending.
 - R1 channel topology is settled in [offline-authority.md](offline-authority.md).
-- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). The first card uses that path; persistent-lab design remains next.
+- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). Card v2 uses the [persistent lab foundation](owned-lab.md); the repeated evaluation runner remains next.
 - Later choose real-model/data/credential/spend settings.
 
 Reference identities and team composition are resolved. This plan does

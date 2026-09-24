@@ -88,6 +88,12 @@ stop before requesting a synthetic provider reply. Reports distinguish proposed
 actions from executions and retain the card digest and decision trace. See
 [the workflow contract and commands](docs/workflow-assessment.md).
 
+Select `--owned-lab` with `--workflow-assessment` to keep the seeded service alive
+across those actions while retaining fresh executor sandboxes. Every new run
+creates a new instance; artifacts bind its identity, service counters and closure
+receipt. Workflow card v2 describes this lifecycle. See
+[the persistent owned lab contract](docs/owned-lab.md) for setup, reset and limits.
+
 The executable tool set includes bounded HTTP and the fixed discovery profile.
 The original `--fixture` HTTP mode reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`

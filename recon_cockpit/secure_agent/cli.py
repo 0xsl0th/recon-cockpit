@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
 import json
 import os
 from pathlib import Path
@@ -108,10 +109,22 @@ def _run_http_assessment(args, policy, audit):
         if value is not None}})
     session_id = str(uuid4())
     coordinator = LinuxOfflineCoordinator()
+    lab = None
     backend = (backend_type(policy, session_id, limits, execute=args.execute)
                if args.fixture else None)
-    with EvidenceStore(args.assessment_dir, session_id=session_id, policy=policy,
-                       case=case, discovery=discovery, workflow=workflow) as evidence:
+    evidence_options = {}
+    if args.owned_lab:
+        from .owned_lab import OwnedLab, AuthorizedOwnedLabBackend
+        from .owned_lab_contract import capability_descriptor
+
+        # Construction is inert. The first authorized, audited action starts
+        # the lab; dry runs and denied approvals never create its services.
+        lab = OwnedLab(case, session_id, limits, execute=args.execute)
+        backend = AuthorizedOwnedLabBackend(policy, session_id, limits, lab, execute=args.execute)
+        evidence_options["owned_lab"] = lab.identity
+    with (lab if lab is not None else nullcontext()), EvidenceStore(
+            args.assessment_dir, session_id=session_id, policy=policy,
+            case=case, discovery=discovery, workflow=workflow, **evidence_options) as evidence:
         provider = provider_type(case, audit, evidence)
         runner = AuthoritySession(policy, audit, backend, coordinator, limits, session_id=session_id,
                                   provider=provider, evidence=evidence)
@@ -126,16 +139,19 @@ def _run_http_assessment(args, policy, audit):
                                      "event_type": "session_step_finished", "session_id": runner.session_id,
                                      **step,
                                  }, sort_keys=True, ensure_ascii=True), file=sys.stderr, flush=True))
+            if lab is not None:
+                evidence.record_lab_closed(lab.close())
+            report = evidence.finalize(summary)
         finally:
             for number, handler in previous_handlers.items():
                 signal.signal(number, handler)
-        report = evidence.finalize(summary)
     _print({**summary, "provider": provider.name, "fixture_case": case,
             "assessment_outcome": report["outcome"], "assessment_id": report.get("assessment_id"),
             "report_paths": {"json": str(args.assessment_dir / "report.json"),
                              "markdown": str(args.assessment_dir / "report.md")},
             "capability": capability_descriptor(), "live_calls_enabled": False,
             **({"workflow_card": report["workflow_card"]} if workflow else {}),
+            **({"owned_lab": report["owned_lab"]} if lab is not None else {}),
             "broker_id": provider.broker.broker_id, "broker": dict(provider.broker.snapshot),
             "broker_error": provider.broker.last_error,
             "coordinator_boundary_checks": coordinator.boundary_checks,
@@ -148,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
     from .openai_broker import BrokerError
     from .openai_fixtures import SCENARIOS as OPENAI_SCENARIOS
     from .coordinator_isolation import SCENARIOS as COORDINATOR_SCENARIOS
+    from .isolation import IsolationUnavailable
 
     parser = argparse.ArgumentParser(description="Secure Agent Mode: isolated actions and bounded mock sessions")
     parser.add_argument("--policy", type=Path, default=Path("examples/secure-agent-policy.json"))
@@ -194,6 +211,8 @@ def main(argv: list[str] | None = None) -> int:
     backend_selection = parser.add_mutually_exclusive_group()
     backend_selection.add_argument("--fixture", action="store_true", help="select the owned Linux in-namespace fixture backend")
     backend_selection.add_argument("--routed", action="store_true", help="select isolated HTTP to one authorized IPv4 literal")
+    backend_selection.add_argument("--owned-lab", action="store_true",
+                                   help="keep one owned fixture alive across a workflow; reset on each run")
     args = parser.parse_args(argv)
     offline_scenario = args.openai_offline or args.control_plane_openai_offline
     assessment_case = args.http_assessment or args.discovery_assessment or args.workflow_assessment
@@ -216,9 +235,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("assessment requires --assessment-dir")
     if args.assessment_dir is not None and not assessment_case:
         parser.error("--assessment-dir requires --http-assessment, --discovery-assessment or --workflow-assessment")
-    if assessment_case and args.execute and not args.fixture:
-        parser.error("executing an assessment requires --fixture")
-    if args.inspect_assessment and (args.execute or args.dry_run or args.fixture or args.routed):
+    if args.owned_lab and not args.workflow_assessment:
+        parser.error("--owned-lab requires --workflow-assessment")
+    if assessment_case and args.execute and not (args.fixture or args.owned_lab):
+        parser.error("executing an assessment requires --fixture or --owned-lab")
+    if args.inspect_assessment and (args.execute or args.dry_run or args.fixture or args.routed or args.owned_lab):
         parser.error("--inspect-assessment cannot select an execution mode or backend")
     try:
         if args.inspect_assessment is not None:
@@ -336,6 +357,9 @@ def main(argv: list[str] | None = None) -> int:
                 "reasons": ["audit_unavailable"],
                 "note": "No new execution is permitted; check for an unmatched execution_started event."})
         return 3
+    except IsolationUnavailable:
+        _print({"decision": "deny", "execution_status": "blocked", "reasons": ["isolation_unavailable"]})
+        return 2
     except (ValidationError, ValueError, BrokerError, OSError, subprocess.SubprocessError) as exc:
         _print({"decision": "deny", "execution_status": "blocked",
                 "reasons": [exc.code if isinstance(exc, ValidationError) else "configuration_or_input_error"]})
