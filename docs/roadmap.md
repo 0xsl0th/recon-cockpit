@@ -31,7 +31,7 @@ The [persistent owned lab foundation](owned-lab.md) is reviewed and merged in
 Linux tests passed, plus all five PR CI jobs. The [repeatable evaluation runner](evaluation.md)
 now implements the 18-trial synthetic baseline, independent saved-evidence grading
 and resource/cleanup/isolation aggregates in [PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12).
-Verification passed 2,299 portable and 132 Linux tests, plus the final 18/18 CLI
+Verification passed 2,300 portable and 132 Linux tests, plus the final 18/18 CLI
 baseline. Current review status is in the checkpoint. Live-provider controls follow this baseline.
 See [workflow-assessment.md](workflow-assessment.md) for the
 decision trace and evidence contract. Broader discovery remains future work.

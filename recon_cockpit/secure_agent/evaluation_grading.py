@@ -9,6 +9,7 @@ abstention merely because its report says inconclusive.
 from __future__ import annotations
 
 from dataclasses import asdict
+from datetime import datetime, timedelta
 import hashlib
 import os
 from pathlib import Path
@@ -30,6 +31,28 @@ _RUNTIME_FIELDS = {"schema_version", "case", "session_id", "lab_identity", "back
 _ISOLATION = {"namespaces_private", "capabilities_dropped", "no_new_privs", "socket_creation_blocked",
               "process_creation_blocked", "namespace_creation_blocked", "root_read_only"}
 _EXECUTOR = {"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked", "capabilities_dropped"}
+_ENVELOPE = {"event_schema_version", "event_id", "timestamp", "source", "event_type"}
+_AUTHORITY = {"session_id", "policy_digest", "limits_digest", "control_plane"}
+_ACTION = {"action_id", "action_digest", "policy_version", "policy_digest", "approval_reference", "session_id",
+           "session_step", "tool_id", "target", "decision", "reasons", "execution_status"}
+_BROKER = {"broker_id", "config_digest", "broker_sequence", "request_digest", "calls_reserved",
+           "output_tokens_reserved", "request_bytes_reserved"}
+_AUDIT_FIELDS = {
+    "session_started": _AUTHORITY | {"limits", "mode"},
+    "offline_provider_session_bound": {"session_id", "broker_id", "provider", "live_calls_enabled"},
+    "session_step_started": _AUTHORITY | {"step"},
+    "broker_request_reserved": _BROKER,
+    "broker_exchange_finished": _BROKER | {"exchange_status", "status_code", "response_bytes", "response_digest"},
+    "session_plan_received": _AUTHORITY | {"step"},
+    "policy_decision": _ACTION | {"untrusted_agent_context"},
+    "session_output_reserved": _AUTHORITY | {"step", "action_digest", "action_output_allowance", "output_reserved_bytes"},
+    "execution_started": _ACTION | {"execution_id", "backend"},
+    "execution_finished": _ACTION | {"execution_id", "backend", "result_metadata"},
+    "session_step_finished": _AUTHORITY | {"step", "action_id", "action_digest", "execution_id", "decision",
+                                           "execution_status", "reasons", "result_metadata", "output_reserved_bytes"},
+    "session_finished": _AUTHORITY | {"mode", "session_status", "stop_reason", "steps_attempted", "actions_succeeded",
+                                      "output_reserved_bytes", "duration_ms"},
+}
 
 
 def _uuid(value):
@@ -87,7 +110,7 @@ def _trace(report, expected):
 
 def _audit(raw, report, runtime, artifacts, policy_digest, limits):
     from .openai_broker import BrokerLimits, _digest
-    from .openai_protocol import OpenAIConfig, build_request, REQUEST_METHOD, RESPONSE_URL
+    from .openai_protocol import OpenAIConfig, build_request, MAX_RESPONSE_BYTES, REQUEST_METHOD, RESPONSE_URL
     from .session import SessionLimits, _observation
 
     _assert(raw.endswith(b"\n"), "audit_incomplete")
@@ -103,26 +126,46 @@ def _audit(raw, report, runtime, artifacts, policy_digest, limits):
     if len(records) == 2:
         _assert(all(type(event["step"]) is int and event["step"] == 3 for event in events[-3:-1]), "audit_stop_step_mismatch")
     ids = set()
+    policy_versions = set()
     limits_digest = SessionLimits(**limits).digest
     for event in events:
+        fields = _AUDIT_FIELDS[event["event_type"]]
+        # Required context must not become optional just because it was removed
+        # from a saved event. Unknown fields require a new audit profile too.
+        _assert(set(event) == _ENVELOPE | fields, "audit_fields_mismatch")
         _assert(event["event_schema_version"] == "1" and event["source"] == "recon-cockpit.secure-agent"
                 and _uuid(event["event_id"]) and event["event_id"] not in ids, "audit_envelope_mismatch")
+        timestamp = event["timestamp"]
+        _assert(type(timestamp) is str and 20 <= len(timestamp) <= 32, "audit_timestamp_invalid")
+        parsed = datetime.fromisoformat(timestamp)
+        _assert(parsed.utcoffset() == timedelta(0) and parsed.isoformat() == timestamp, "audit_timestamp_invalid")
         ids.add(event["event_id"])
         for key, expected in (("session_id", report["session_id"]), ("policy_digest", policy_digest),
-                              ("limits_digest", limits_digest), ("broker_id", runtime["broker_id"])):
-            if key in event:
+                              ("limits_digest", limits_digest), ("broker_id", runtime["broker_id"]),
+                              ("control_plane", "privsep-offline-v2")):
+            if key in fields:
                 _assert(event[key] == expected, "audit_identity_mismatch")
+        if "policy_version" in fields:
+            version = event["policy_version"]
+            _assert(type(version) is str and 1 <= len(version) <= 64
+                    and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", version) is not None, "audit_policy_version_invalid")
+            policy_versions.add(version)
+    _assert(len(policy_versions) == 1, "audit_policy_version_mismatch")
     _assert(events[0]["session_id"] == report["session_id"] and events[0]["policy_digest"] == policy_digest
             and _encode(events[0]["limits"]) == _encode(limits) and events[0]["mode"] == "execute", "audit_session_mismatch")
     _assert(events[1]["live_calls_enabled"] is False and events[1]["broker_id"] == runtime["broker_id"]
-            and events[1]["session_id"] == report["session_id"], "audit_provider_mismatch")
+            and events[1]["session_id"] == report["session_id"]
+            and events[1]["provider"] == "linux-isolated-openai-offline", "audit_provider_mismatch")
     config = OpenAIConfig("offline-fixture-http-assessment")
     config_digest = _digest({"config": asdict(config), "limits": asdict(BrokerLimits()),
                              "method": REQUEST_METHOD, "url": RESPONSE_URL, "verify_tls": True, "transport": "offline"})
     request_bytes = 0
     for index, record in enumerate(records, 1):
         rows = events[2 + (index - 1) * 10:2 + index * 10]
-        _assert(all(row.get("step", index) == index for row in rows), "audit_step_mismatch")
+        for row in rows:
+            for key in ("step", "session_step"):
+                if key in _AUDIT_FIELDS[row["event_type"]]:
+                    _assert(type(row[key]) is int and row[key] == index, "audit_step_mismatch")
         previous = None if index == 1 else {"execution_status": records[index - 2]["execution_status"],
                                           "untrusted_result": artifacts[index - 2]}
         request = build_request(config, _observation(index, previous))
@@ -133,12 +176,27 @@ def _audit(raw, report, runtime, artifacts, policy_digest, limits):
                     and type(broker_event["broker_sequence"]) is int and broker_event["broker_sequence"] == index
                     and broker_event["request_digest"] == hashlib.sha256(request).hexdigest()
                     and _encode({key: broker_event[key] for key in counters}) == _encode(counters), "broker_accounting_mismatch")
-        _assert(rows[2]["exchange_status"] == "succeeded" and rows[2]["status_code"] == 200, "broker_exchange_failed")
+        _assert(rows[2]["exchange_status"] == "succeeded" and type(rows[2]["status_code"]) is int
+                and rows[2]["status_code"] == 200 and type(rows[2]["response_bytes"]) is int
+                and 0 < rows[2]["response_bytes"] <= MAX_RESPONSE_BYTES
+                and type(rows[2]["response_digest"]) is str
+                and re.fullmatch(r"[0-9a-f]{64}", rows[2]["response_digest"]) is not None, "broker_exchange_failed")
         for action_event in (rows[4], rows[5], rows[6], rows[7], rows[8], rows[9]):
             _assert(action_event["action_digest"] == record["action_digest"], "audit_action_mismatch")
+            for key in ("action_id", "tool_id", "target"):
+                if key in _AUDIT_FIELDS[action_event["event_type"]]:
+                    _assert(action_event[key] == record["action"][key], "audit_action_mismatch")
+            if "decision" in action_event:
+                _assert(action_event["decision"] == "allow" and action_event["reasons"] == ["policy_allows_action"],
+                        "audit_authorization_mismatch")
+            if "approval_reference" in action_event:
+                _assert(action_event["approval_reference"] is None, "audit_authorization_mismatch")
         for policy_event in (rows[4], rows[6]):
-            _assert(policy_event["decision"] == "allow" and policy_event["policy_digest"] == policy_digest
-                    and policy_event["approval_reference"] is None, "audit_authorization_mismatch")
+            context = policy_event["untrusted_agent_context"]
+            _assert(policy_event["execution_status"] == "not_started" and type(context) is dict
+                    and set(context) == {"rationale", "rationale_length"} and context["rationale"] == "[REDACTED]"
+                    and type(context["rationale_length"]) is int and 0 <= context["rationale_length"] <= 1000,
+                    "audit_authorization_mismatch")
         _assert(_encode({key: rows[5][key] for key in ("action_output_allowance", "output_reserved_bytes")}) ==
                 _encode({"action_output_allowance": 1024, "output_reserved_bytes": index * 1024}), "tool_accounting_mismatch")
         for event, status in ((rows[7], "started"), (rows[8], record["execution_status"])):

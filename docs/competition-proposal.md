@@ -224,7 +224,7 @@ Una interrupción o fallo de evidencia no recibe crédito como abstención corre
 La evaluación con un modelo real continúa pendiente.
 
 La implementación se publicó para revisión en
-[PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12), tras pasar 2.299 pruebas
+[PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12), con 2.300 pruebas
 portables y 132 integraciones reales en Linux. La línea base final pasó los
 18 ensayos en 72,004 segundos: tres validaciones, tres resultados no demostrados
 y doce abstenciones correctas, con inspección posterior sin modificar la evidencia.

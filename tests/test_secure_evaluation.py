@@ -239,6 +239,68 @@ def test_cached_aggregate_and_trial_grades_do_not_override_replay(batch):
     assert actual["status"] == "failed" and "aggregate_report_mismatch" in actual["integrity_issues"]
 
 
+def test_incomplete_or_contradictory_audit_context_cannot_receive_abstention_credit(batch):
+    # Reuse one valid six-case batch. Each mutation starts from the original
+    # bytes, so corruption checks do not multiply namespace-double executions.
+    trial = batch.directory / "trial-003-c"
+    audit_path = trial / "audit.jsonl"
+    original = audit_path.read_bytes()
+    events = [json.loads(line) for line in original.splitlines()]
+    first_by_kind = {}
+    for index, event in enumerate(events):
+        first_by_kind.setdefault(event["event_type"], index)
+    mutations = []
+    for kind, index in first_by_kind.items():
+        event = events[index]
+        for field in ("session_id", "policy_digest", "limits_digest", "control_plane", "broker_id", "config_digest"):
+            if field in event:
+                mutations.append((kind + " missing " + field, index, field, "delete", None))
+        for field in ("step", "session_step"):
+            if field in event:
+                assert event[field] == 1
+                mutations.append((kind + " boolean " + field, index, field, "replace", True))
+        for field, value in (("action_id", str(uuid4())), ("tool_id", "unexpected_tool"), ("target", "203.0.113.99")):
+            if field in event:
+                mutations.append((kind + " changed " + field, index, field, "replace", value))
+        mutations.append((kind + " extra field", index, "unrecognized_context", "replace", {"approval": True}))
+    # The schema must cover the actual submission as well as its preview.
+    actual_policy = [index for index, event in enumerate(events) if event["event_type"] == "policy_decision"][1]
+    mutations.extend([
+        ("actual policy missing session", actual_policy, "session_id", "delete", None),
+        ("actual policy boolean step", actual_policy, "session_step", "replace", True),
+        ("actual policy changed action", actual_policy, "action_id", "replace", str(uuid4())),
+        ("missing timestamp", 0, "timestamp", "delete", None),
+        ("null timestamp", 0, "timestamp", "replace", None),
+        ("boolean timestamp", 0, "timestamp", "replace", True),
+        ("malformed timestamp", 0, "timestamp", "replace", "not-a-timestamp"),
+        ("timezone-free timestamp", 0, "timestamp", "replace", "2026-09-24T12:00:00"),
+    ])
+    policy_digest = policy().digest
+    try:
+        for label, index, field, operation, replacement in mutations:
+            changed = copy.deepcopy(events)
+            if operation == "delete":
+                del changed[index][field]
+            else:
+                changed[index][field] = replacement
+            audit_path.write_text("\n".join(json.dumps(event) for event in changed) + "\n")
+            before = snapshot(batch.directory)
+            grade = grading.grade_trial(trial, case="c", policy_digest=policy_digest, limits=FIXED_LIMITS)
+            assert grade["verdict"] == "failed" and grade["classification"] == "failed", label
+            assert grade["issues"] == ["audit_accounting_failed"], label
+            assert grade["checks"]["resource_accounting"] is False, label
+            assert all(value is None for value in grade["metrics"].values()), label
+            aggregate = inspect_evaluation(batch.directory)
+            assert aggregate["status"] == "failed" and not aggregate["resource_accounting_complete"], label
+            assert aggregate["correct_abstentions"] == 3, label
+            assert "saved_trial_grade_mismatch" in aggregate["integrity_issues"], label
+            assert all(value is None for value in aggregate["aggregate_metrics"].values()), label
+            assert snapshot(batch.directory) == before, label
+    finally:
+        audit_path.write_bytes(original)
+    assert inspect_evaluation(batch.directory) == batch.report
+
+
 def test_interrupted_journal_retains_reservation_and_never_resumes(batch):
     journal = batch.directory / "evaluation.jsonl"
     lines = journal.read_text().splitlines()

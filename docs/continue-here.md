@@ -24,26 +24,35 @@ the reviewed head. The interrupted local sync and checkpoint are now recovered.
 - Current branch: `feature/owned-lab-evaluation`, based on synchronized main
   `3b9ba7b` after PR #11. The operator authorized implementing the 18-run baseline,
   independent grading and aggregate reports, with cleanup/isolation/accounting
-  verification before opening a PR. This task authorizes publication of the PR.
+  verification before opening a PR. The operator subsequently explicitly
+  authorized reviewing and merging PR #12 into main after checks pass.
 - [PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12) is open for review.
   Implementation commit: `665fcb7892ce5f839a1391c5ff7a338d054c0e29`.
   The full local suites and final CLI baseline passed before the PR was opened.
   All five [implementation-head CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36039270526)
   passed on Ubuntu Python 3.11–3.14 and macOS Python 3.14. GitHub showed no
   review comments or merge conflicts at that head.
-  Publication notes change documentation only; inspect the current PR head and
-  its hosted checks before further work. Do not recreate the runner or its PR.
+  Final review found that missing audit context could still pass grading.
+  Strict per-event fields, typed steps and action identity bindings now reject
+  that corruption; the regression covers 73 mutations. The independent reviewer
+  confirmed the fix and found no remaining blocker. Inspect the current PR head
+  and hosted checks before merging. Do not recreate the runner or its PR.
 - The new runner uses `--evaluate-owned-lab --evaluation-dir NEW_DIRECTORY`,
   explicit unattended owned-fixture policy, six cases times three repetitions,
   fresh authority/lab/broker identities and durable reservations before each trial.
   `--inspect-evaluation` independently regrades all saved evidence without writes
   or execution. See [evaluation.md](evaluation.md) for the contract and commands.
-- Full verification passed **2,299 portable / 132 real Linux tests**, no selected
+- Full verification passed **2,300 portable / 132 real Linux tests**, no selected
   failures/errors/skips. Compile, dependency, Python 3.11 syntax, relative link
   and whitespace checks passed. Linux tests include the full 18-trial baseline,
   process/namespace observations, read-only inspection, active/between-trial
   cancellation and an absolute batch deadline. See verification.md for exact
   commands and measured results.
+- The audit fix passed the full 2,300-test portable suite and reran all six
+  Linux evaluation tests, including another 18-trial baseline. The prior 126
+  other Linux results apply to the unchanged runtime. Review JUnit reports:
+  `/tmp/recon-evaluation-review-portable.xml` and
+  `/tmp/recon-evaluation-review-linux.xml`.
 - Evaluation JUnit: `/tmp/recon-evaluation-portable.xml` and
   `/tmp/recon-evaluation-linux.xml`. Final private baseline:
   `.secure-agent/evaluation-baseline-20260924/report.json` and `report.md`.
@@ -204,8 +213,8 @@ Planning uses synthetic responses.
 
 1. Inspect the feature branch and checks, preserving unrelated work. PR #10 and PR #11
    are already merged; do not repeat their implementation, review or merge.
-2. Review open PR #12 and its current hosted checks. Do not merge it solely
-   based on authorization for earlier merges. Subsequent development
+2. Finish reviewing PR #12 and its current hosted checks, then merge it using
+   the operator's explicit authorization for this PR. Subsequent development
    is separately reviewed live-provider controls. Do not silently widen the
    singleton executor or attach the legacy Nmap runner.
 3. Keep kernel verification separate from hosted portable CI and record measured

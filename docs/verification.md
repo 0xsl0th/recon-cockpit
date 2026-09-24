@@ -12,8 +12,19 @@ Implementation `665fcb7892ce5f839a1391c5ff7a338d054c0e29` was published in
 and final CLI baseline below completed. All five
 [implementation-head CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36039270526)
 passed: Ubuntu Python 3.11–3.14 and macOS Python 3.14. There were no GitHub
-review comments or merge conflicts at that head. The publication checkpoint
-changes documentation only; current PR checks should be inspected before merging.
+review comments or merge conflicts at that head. The operator subsequently
+explicitly authorized review and merge after checks pass.
+
+Final independent review reproduced an audit-integrity gap: deleting a required
+session identifier or substituting an action identifier could still pass grading.
+The grader now requires exact event fields, validates typed step counters and
+binds every emitted action identity to the saved assessment. It also validates
+the event envelope and required authority/provider context. One regression reuses
+a valid batch across 73 mutations and requires failed trial/aggregate grades,
+unknown metrics, no abstention credit for the corrupted trial and read-only
+inspection. The independent reviewer confirmed the fix with no remaining blocker.
+The stricter grader also reproduced the saved real 18-run baseline exactly,
+preserving every evidence file's bytes and modification time.
 
 `--evaluate-owned-lab` runs cases a–f three times with fresh authority, lab,
 coordinator, parser and broker instances. The separate versioned oracle requires
@@ -25,6 +36,8 @@ See [evaluation.md](evaluation.md) for commands, score interpretation and limits
 
 | Check | Observed result |
 | --- | --- |
+| After audit fix: `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-evaluation-review-portable.xml` | **2,300 passed, 132 deselected**, 82.73 seconds |
+| After audit fix: `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest tests/test_secure_evaluation_linux.py -m integration -v --tb=short --junitxml=/tmp/recon-evaluation-review-linux.xml` | **6 passed**, 75.22 seconds; new 18-run baseline, cleanup/isolation/accounting and cancellation/deadline checks |
 | `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-evaluation-portable.xml` | **2,299 passed, 132 deselected**, 50.00 seconds |
 | `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-evaluation-linux.xml` | **132 passed, 2,299 deselected**, 335.75 seconds |
 | Both JUnit reports inspected | Zero selected failures, errors or skips |
@@ -32,7 +45,11 @@ See [evaluation.md](evaluation.md) for commands, score interpretation and limits
 | Compile, dependency, Python 3.11 syntax and relative documentation links | Passed; no broken requirements or broken relative links |
 | `git diff --check` | Passed |
 
-New coverage totals 73 portable tests and six Linux tests over the merged lab
+The review fix changes grading and its tests only. The other 126 real Linux
+results still apply to the unchanged runtime. Both review JUnit reports also
+record zero selected failures, errors or skips.
+
+New coverage totals 74 portable tests and six Linux tests over the merged lab
 foundation. Portable tests use explicit namespace/provider doubles while keeping
 the real authority, broker, evidence store and grader. They cover all six expected
 traces, all 18 scheduled trials, tampered receipts/artifacts/audit/cached reports,
