@@ -98,8 +98,15 @@ se revisó e integró R4, la primera ficha de procedimiento versionada y su moto
 determinista ([PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9), revisión
 `401cbe1`, merge `8673dc0`). Pasaron las diez comprobaciones previas al merge;
 una carrera temporal en una prueba de cancelación afectó uno de los cinco trabajos
-posteriores. La corrección de esa prueba y su verificación
-constan en [verification.md](verification.md). El estado actual consta en
+posteriores. La corrección de esa prueba se revisó e integró mediante
+[PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10), merge `2b3527e`;
+pasaron los cinco trabajos posteriores de main.
+La nueva rama implementa la [base del laboratorio propio persistente](owned-lab.md):
+un servicio por evaluación, ejecutores nuevos por acción, reinicio mediante
+destrucción y creación, e identidad y contadores vinculados a la evidencia.
+La verificación local pasó **2.226 pruebas portables y 126 integraciones reales
+en Linux**, sin fallos, errores ni omisiones entre los casos seleccionados.
+Los resultados medidos constan en [verification.md](verification.md). El estado actual consta en
 [continue-here.md](continue-here.md).
 
 | Implementado y verificado | Pendiente |
@@ -108,7 +115,7 @@ constan en [verification.md](verification.md). El estado actual consta en
 | Sesiones simuladas limitadas y un flujo TCP → HTTP → diagnóstico guiado por evidencia; primera ficha versionada y motor determinista R4 integrados. | Motores adicionales, catálogo ampliado y planificación real. |
 | Coordinador aislado en Linux, autoridad externa y ejecutores de fixtures con IPC acotado. | Separar más responsabilidades del proceso confiable del host. |
 | Parser y broker con respuestas sintéticas, presupuestos reservados e integración R1 con coordinador/autoridad. | Transporte real, credenciales y gasto. |
-| Conexión TCP aislada a un único servicio propio y sonda HTTP; backend HTTP separado para un IPv4/puerto autorizado, probado en una red propia. | Descubrimiento general, Nmap en modo seguro, laboratorio persistente, sesiones remotas, pruebas VPN y herramientas autenticadas. |
+| Conexión TCP aislada a un único servicio propio y sonda HTTP; laboratorio persistente por evaluación con reinicio limpio; backend HTTP separado para un IPv4/puerto autorizado, probado en una red propia. | Descubrimiento general, Nmap en modo seguro, topología multiservicio, sesiones remotas, pruebas VPN y herramientas autenticadas. |
 | Artefactos privados, observaciones vinculadas, reportes JSON/Markdown y detección de evidencia incompleta mediante inspección de solo lectura. | Ciclo de revisión más amplio, interfaz y auditoría independiente. |
 
 La validación local de R3 del 22 de septiembre registró **1.977 pruebas
@@ -204,9 +211,12 @@ detención. Su motor registra qué evidencia respalda cada propuesta, distingue
 propuestas de ejecuciones y explica por qué se detiene la evaluación. Conserva
 los resultados de los seis casos y se detiene ante evidencia insuficiente,
 aprobación denegada o presupuesto agotado. Véase [el contrato R4](workflow-assessment.md).
-Después se incorporarán un laboratorio
-propio persistente y una evaluación repetible. La evaluación con un modelo real
-continúa pendiente.
+La base del laboratorio propio persistente conserva ese servicio durante la
+evaluación sin ampliar el destino permitido. Cada nueva evaluación crea una
+instancia distinta; la inspección de evidencia nunca restaura permisos ni procesos.
+La ficha v2 describe este ciclo de vida, mientras la ficha v1 conserva su contrato
+original. El siguiente paso es un ejecutor de evaluaciones repetidas que agregue
+resultados y recursos; la evaluación con un modelo real continúa pendiente.
 
 | Dimensión | Evidencia a obtener |
 | --- | --- |
@@ -232,7 +242,7 @@ validación, demostración y documentación. Los finalistas presentan en H4ck3d 
 
 | Período propuesto | Entregable |
 | --- | --- |
-| Septiembre–octubre 2026 | R1/R2, el tramo mínimo R3 y la primera ficha R4 revisados e integrados; diseñar el laboratorio persistente. |
+| Septiembre–octubre 2026 | R1/R2, el tramo mínimo R3 y la primera ficha R4 revisados e integrados; base del laboratorio persistente implementada y verificada; siguiente paso: evaluaciones repetidas. |
 | Hasta el 8/11/2026 | Cerrar propuesta, datos de inscripción, arquitectura, alcance mínimo y evidencia para revisión. |
 | 9–15/11/2026 | Presentación por el equipo, con margen respecto de la fecha oficial. |
 | Noviembre 2026–enero 2027 | Reconocimiento y validación acotados en laboratorio, con reporte. |

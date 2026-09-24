@@ -1,12 +1,13 @@
-# Continue here — 23 September 2026
+# Continue here — 24 September 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**R1, R2, the smallest R3 discovery-to-HTTP slice and the first R4 card/engine
-are reviewed and merged. A test-only correction for post-merge CI and this
-recovery checkpoint are on `fix/offline-cancellation-checkpoint`.**
+**R1, R2, the smallest R3 discovery-to-HTTP slice, the first R4 card/engine and
+the post-merge CI correction are reviewed and merged. The persistent owned lab
+foundation is implemented and locally verified on `feature/secure-agent-owned-lab`;
+publication and the authorized conditional merge are next.**
 Read [workflow-assessment.md](workflow-assessment.md),
 [verification.md](verification.md) and [roadmap.md](roadmap.md). Inspect Git and
 current PR checks before more work. Do not restart R1/R2/R3/R4 or repeat their merges.
@@ -20,11 +21,35 @@ the reviewed head. The interrupted local sync and checkpoint are now recovered.
 ## Saved state
 
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
-- Current branch: `fix/offline-cancellation-checkpoint`, based on merged main
-  `8673dc0`. Use `git log -1` and `git status` for the latest checkpoint.
+- Current branch: `feature/secure-agent-owned-lab`, based on merged main
+  `2b3527e`. Use `git log -1` and `git status` for the latest checkpoint.
 - [PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10) contains the test-only
-  correction and recovered checkpoint, published as a draft, not merged.
-  Correction commit: `9f34cbc`. Check the latest PR CI before merging.
+  correction and recovered checkpoint. It was reviewed and merged with operator
+  authorization as `2b3527ec20c8a8b9dd30f5e7aa000bb48aa51fc3`, 23 September at
+  14:14:09 UTC. Reviewed head `9fef498` passed all five PR jobs; all five
+  [post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/35872690851)
+  passed. Local main matches the reviewed tree. Do not repeat this merge.
+- The operator then requested design and implementation of the persistent owned
+  lab foundation. Contract: [owned-lab.md](owned-lab.md). Fixed-case service at
+  `127.0.0.1:8080` persists for one authority session, with fresh nested executor
+  sandboxes and pinned lab namespaces. Reset destroys/recreates; no resume.
+  `--workflow-assessment CASE --owned-lab` selects card v2 and strict identity,
+  counters and closure evidence. Live calls and external targets stay disabled.
+  Full verification: **2,226 portable and 126 real Linux tests passed**, zero
+  selected failures/errors/skips. Linux coverage combines the full 124-case run
+  and two descriptor tests subsequently classified as Linux-only. Compile,
+  dependency and whitespace checks passed. Bounded runtime/evidence reviews found
+  no remaining blockers; see verification.md for exact commands and limitations.
+- The latest operator instruction explicitly authorizes commit, push and merge
+  of this lab foundation if checks pass. At the publication checkpoint there is
+  no open PR; create the lab PR and check its exact head before merging.
+- Lab JUnit: `/tmp/recon-owned-lab-portable-final.xml`,
+  `/tmp/recon-owned-lab-linux.xml`, `/tmp/recon-owned-lab-descriptors-linux.xml`.
+  Private sample: `.secure-agent/owned-lab-a-20260923/report.json` and `report.md`,
+  plus `.secure-agent/owned-lab-a-20260923-audit.jsonl`. Case a validated using an
+  explicit unattended owned-fixture policy, not human approval. All three actions
+  share one lab instance; counters advance `(1, 0)`, `(2, 1)`, `(3, 2)`. Read-only
+  CLI inspection preserved all bytes and mtimes and reported no integrity issues.
 - [PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9) is **merged**, at
   `8673dc0ac02a762dae08f2533885d2246fb04e2a` on 23 September, 01:29:31 UTC.
   Reviewed head `401cbe1` passed all ten branch/PR portable jobs across Ubuntu
@@ -33,7 +58,7 @@ the reviewed head. The interrupted local sync and checkpoint are now recovered.
 - Four of five post-merge main jobs passed. Ubuntu Python 3.12 exposed a
   cancellation-test race: the 30 ms timer could fire after reserving the broker
   allowance but before consuming the scripted reply. Production correctly stopped
-  without consuming that reply. This branch makes cancellation occur during the
+  without consuming that reply. PR #10 makes cancellation occur during the
   intended offline delay. See [verification.md](verification.md) for the failed
   run and correction verification; production code is unchanged.
 - Correction verification: **2,134 portable tests passed, 109 deselected**;
@@ -114,8 +139,9 @@ The manifest and every decision bind the canonical card digest.
 `owned-workflow-assessment-v1` bundles replay observations from artifacts and
 recompute decisions during inspection. Corrupt, reordered, missing or unfinished
 evidence remains inconclusive. There is no resumption of an assessment, dynamic
-card loading, external knowledge import or new execution capability. Existing
-per-action fresh namespaces remain; persistent topology is subsequent work.
+card loading, external knowledge import or new execution capability. The original
+`--fixture` profile retains per-action services. The new `--owned-lab` profile
+uses card v2 and the session-scoped service lifecycle described in [owned-lab.md](owned-lab.md).
 
 ## Intent and constraints
 
@@ -132,20 +158,21 @@ Planning uses synthetic responses.
 - Authority/UI/broker/audit/launcher still share a trusted host process. Hashes
   detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP framing
   limits remain documented.
-- The operator authorized the completed PR #6/#7/#8/#9 merges. This does not
-  authorize future merges, submission, messages, paid calls or external targets.
+- The operator authorized the completed PR #6/#7/#8/#9/#10 merges and the current
+  lab foundation merge if review and checks pass. This does not authorize unrelated
+  future merges, submission, messages, paid calls or external targets.
 
 ## Next continuation
 
-1. Inspect this branch and its PR/checks, preserving unrelated work. PR #9 is
+1. Inspect this branch and its PR/checks, preserving unrelated work. PR #10 is
    already merged; do not repeat its review, implementation or merge.
-2. Settle the test-only CI correction and recovered checkpoint. Future merging
-   still requires operator authorization; the earlier PR #9 approval does not
-   cover a new PR.
-3. The accepted next development sequence is persistent owned lab, repeatable
-   evaluation runner, then separately reviewed live-provider controls. First
-   settle the lab lifecycle and executor scope contract; do not silently widen
-   the singleton executor or attach the legacy Nmap runner.
+2. Commit and push the verified lab foundation, inspect its PR reviews and all
+   five portable CI jobs, then merge with an exact-head guard if sound. Synchronize
+   local main and record the merge and post-merge checks. This is authorized by
+   the latest operator instruction; do not repeat completed local tests for docs.
+3. Subsequent development is the repeatable evaluation runner, then
+   separately reviewed live-provider controls. Do not silently widen the
+   singleton executor or attach the legacy Nmap runner.
 4. Keep kernel verification separate from hosted portable CI and record measured
    results/publication state for every slice.
 
