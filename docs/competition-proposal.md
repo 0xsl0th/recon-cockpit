@@ -101,7 +101,8 @@ una carrera temporal en una prueba de cancelación afectó uno de los cinco trab
 posteriores. La corrección de esa prueba se revisó e integró mediante
 [PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10), merge `2b3527e`;
 pasaron los cinco trabajos posteriores de main.
-La nueva rama implementa la [base del laboratorio propio persistente](owned-lab.md):
+La [base del laboratorio propio persistente](owned-lab.md) está integrada en
+[PR #11](https://github.com/0xsl0th/recon-cockpit/pull/11), merge `7f316ce`:
 un servicio por evaluación, ejecutores nuevos por acción, reinicio mediante
 destrucción y creación, e identidad y contadores vinculados a la evidencia.
 La verificación local pasó **2.226 pruebas portables y 126 integraciones reales

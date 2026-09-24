@@ -26,9 +26,9 @@ through [PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9), merge `8673dc0
 All ten premerge checks passed; the post-merge cancellation-test correction was
 reviewed and merged in [PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10),
 merge `2b3527e`. All five subsequent main checks passed.
-The [persistent owned lab foundation](owned-lab.md) is implemented and locally
-verified: 2,226 portable and 126 Linux tests passed. Its publication state is in
-the checkpoint; the repeatable evaluation runner is next.
+The [persistent owned lab foundation](owned-lab.md) is reviewed and merged in
+[PR #11](https://github.com/0xsl0th/recon-cockpit/pull/11): 2,226 portable and 126
+Linux tests passed, plus all five PR CI jobs. The repeatable evaluation runner is next.
 See [workflow-assessment.md](workflow-assessment.md) for the
 decision trace and evidence contract. Broader discovery remains future work.
 The baseline below is historical.

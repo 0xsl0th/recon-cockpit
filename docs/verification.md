@@ -1,5 +1,24 @@
 # Verification record
 
+## PR #11 review and authorized merge — 24 September 2026
+
+The operator explicitly authorized commit, push and merge of the completed lab
+foundation if review and checks passed. Bounded launcher, authority/evidence and
+portability reviews found no blocker at implementation head
+`15583161e09658ef808160ecf308ab74e82b60c8`. All five
+[PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/35939526013)
+passed: Ubuntu Python 3.11–3.14 and macOS Python 3.14. GitHub showed no
+outstanding reviews/comments or merge conflicts. The local results below apply
+to the same production and test files; only verification/checkpoint documentation
+was completed before committing.
+
+[PR #11](https://github.com/0xsl0th/recon-cockpit/pull/11) merged with an exact-head
+guard as `7f316ce77f5c812477290e1b293d06d4afd88d53` at 00:42:55 UTC.
+Local main was fast-forwarded and the merge tree exactly matches the reviewed
+head. All five [post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/35939661436)
+also passed. The follow-up publication checkpoint changes documentation only;
+local production tests were not repeated for those notes.
+
 ## Persistent owned lab foundation — 23–24 September 2026
 
 Work starts from merged main `2b3527e` on `feature/secure-agent-owned-lab`.

@@ -4,15 +4,14 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**R1, R2, the smallest R3 discovery-to-HTTP slice, the first R4 card/engine and
-the post-merge CI correction are reviewed and merged. The persistent owned lab
-foundation is implemented and locally verified on `feature/secure-agent-owned-lab`;
-publication and the authorized conditional merge are next.**
-Read [workflow-assessment.md](workflow-assessment.md),
+**R1, R2, the smallest R3 discovery-to-HTTP slice, the first R4 card/engine,
+the post-merge CI correction and the persistent owned lab foundation are reviewed
+and merged. PR #11 is complete; the repeatable evaluation runner is next.**
+Read [owned-lab.md](owned-lab.md), [workflow-assessment.md](workflow-assessment.md),
 [verification.md](verification.md) and [roadmap.md](roadmap.md). Inspect Git and
 current PR checks before more work. Do not restart R1/R2/R3/R4 or repeat their merges.
 
-The latest recovery found a clean checkout at `401cbe1`. Saved conversation and
+An earlier recovery found a clean checkout at `401cbe1`. Saved conversation and
 GitHub state confirmed that PR #9 had already been reviewed and merged with
 operator authorization before the session limit. Git object checks found no
 corruption. Local `main` was fast-forwarded to `8673dc0`; its tree exactly matches
@@ -21,14 +20,25 @@ the reviewed head. The interrupted local sync and checkpoint are now recovered.
 ## Saved state
 
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
-- Current branch: `feature/secure-agent-owned-lab`, based on merged main
-  `2b3527e`. Use `git log -1` and `git status` for the latest checkpoint.
+- Current branch: `main`, synchronized after PR #11 merge `7f316ce`.
+  Use `git log -1` and `git status` for the latest documentation checkpoint.
+- [PR #11](https://github.com/0xsl0th/recon-cockpit/pull/11) is **merged**, at
+  `7f316ce77f5c812477290e1b293d06d4afd88d53` on 24 September, 00:42:55 UTC.
+  Reviewed implementation head `15583161e09658ef808160ecf308ab74e82b60c8`
+  passed all five [PR CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/35939526013).
+  Bounded launcher/evidence/portability reviews found no blocker; GitHub had no
+  outstanding reviews or comments. The operator explicitly authorized commit,
+  push and merge if checks passed. The exact-head-guarded merge succeeded and
+  its tree matches the reviewed head. Do not repeat this merge.
+  All five [post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/35939661436)
+  also passed. The final publication checkpoint changes documentation only;
+  inspect its current main checks when continuing.
 - [PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10) contains the test-only
   correction and recovered checkpoint. It was reviewed and merged with operator
   authorization as `2b3527ec20c8a8b9dd30f5e7aa000bb48aa51fc3`, 23 September at
   14:14:09 UTC. Reviewed head `9fef498` passed all five PR jobs; all five
   [post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/35872690851)
-  passed. Local main matches the reviewed tree. Do not repeat this merge.
+  passed. Its merge tree matches the reviewed tree. Do not repeat this merge.
 - The operator then requested design and implementation of the persistent owned
   lab foundation. Contract: [owned-lab.md](owned-lab.md). Fixed-case service at
   `127.0.0.1:8080` persists for one authority session, with fresh nested executor
@@ -40,9 +50,6 @@ the reviewed head. The interrupted local sync and checkpoint are now recovered.
   and two descriptor tests subsequently classified as Linux-only. Compile,
   dependency and whitespace checks passed. Bounded runtime/evidence reviews found
   no remaining blockers; see verification.md for exact commands and limitations.
-- The latest operator instruction explicitly authorizes commit, push and merge
-  of this lab foundation if checks pass. At the publication checkpoint there is
-  no open PR; create the lab PR and check its exact head before merging.
 - Lab JUnit: `/tmp/recon-owned-lab-portable-final.xml`,
   `/tmp/recon-owned-lab-linux.xml`, `/tmp/recon-owned-lab-descriptors-linux.xml`.
   Private sample: `.secure-agent/owned-lab-a-20260923/report.json` and `report.md`,
@@ -158,22 +165,18 @@ Planning uses synthetic responses.
 - Authority/UI/broker/audit/launcher still share a trusted host process. Hashes
   detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP framing
   limits remain documented.
-- The operator authorized the completed PR #6/#7/#8/#9/#10 merges and the current
-  lab foundation merge if review and checks pass. This does not authorize unrelated
+- The operator authorized the completed PR #6/#7/#8/#9/#10/#11 merges.
+  This does not authorize unrelated
   future merges, submission, messages, paid calls or external targets.
 
 ## Next continuation
 
-1. Inspect this branch and its PR/checks, preserving unrelated work. PR #10 is
-   already merged; do not repeat its review, implementation or merge.
-2. Commit and push the verified lab foundation, inspect its PR reviews and all
-   five portable CI jobs, then merge with an exact-head guard if sound. Synchronize
-   local main and record the merge and post-merge checks. This is authorized by
-   the latest operator instruction; do not repeat completed local tests for docs.
-3. Subsequent development is the repeatable evaluation runner, then
+1. Inspect current main and checks, preserving unrelated work. PR #10 and PR #11
+   are already merged; do not repeat their implementation, review or merge.
+2. Subsequent development is the repeatable evaluation runner, then
    separately reviewed live-provider controls. Do not silently widen the
    singleton executor or attach the legacy Nmap runner.
-4. Keep kernel verification separate from hosted portable CI and record measured
+3. Keep kernel verification separate from hosted portable CI and record measured
    results/publication state for every slice.
 
 ## Recovery and verification
