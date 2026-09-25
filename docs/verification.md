@@ -1,5 +1,23 @@
 # Verification record
 
+## PR #12 review and authorized merge — 25 September 2026
+
+The operator explicitly authorized review and merge of the evaluation runner.
+Final reviewed head `e23016a500b6fa24e36f783f4e2ba93662740321` includes the
+strict audit-context correction described below. Independent runtime and evidence
+reviews found no remaining blocker. All five
+[final PR CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36070544788)
+passed on Ubuntu Python 3.11–3.14 and macOS Python 3.14; GitHub had no outstanding
+review comments or merge conflicts.
+
+[PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12) merged with an exact-head
+guard as `ff5f76a6f81327b7ef184d7cfefff29ff087dd47` at 04:35:39 UTC.
+Local main was fast-forwarded and the merge tree exactly matches the reviewed
+head. All five [post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36095076635)
+also passed. This publication checkpoint changes documentation only; local
+runtime tests were not repeated for these notes. Inspect current main checks
+when continuing.
+
 ## Repeatable owned evaluation runner — 24 September 2026
 
 Implemented on `feature/owned-lab-evaluation` from merged main `3b9ba7b`.

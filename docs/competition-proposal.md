@@ -223,9 +223,10 @@ y observadas, aislamiento, limpieza y reservas de recursos en JSON y Markdown.
 Una interrupción o fallo de evidencia no recibe crédito como abstención correcta.
 La evaluación con un modelo real continúa pendiente.
 
-La implementación se publicó para revisión en
+La implementación se revisó y fusionó con `main` mediante
 [PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12), con 2.300 pruebas
-portables y 132 integraciones reales en Linux. La línea base final pasó los
+portables y 132 integraciones reales en Linux verificadas; las cinco tareas de CI
+del PR también pasaron. La línea base final pasó los
 18 ensayos en 72,004 segundos: tres validaciones, tres resultados no demostrados
 y doce abstenciones correctas, con inspección posterior sin modificar la evidencia.
 
