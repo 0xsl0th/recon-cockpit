@@ -189,6 +189,13 @@ def main(argv: list[str] | None = None) -> int:
                         help="run the reviewed TCP-to-HTTP workflow card and record each decision")
     source.add_argument("--inspect-assessment", type=Path,
                         help="inspect existing assessment evidence without resuming execution")
+    source.add_argument("--evaluate-owned-lab", action="store_true",
+                        help="repeat all six owned cases and independently grade saved evidence")
+    source.add_argument("--inspect-evaluation", type=Path,
+                        help="regrade an existing owned evaluation without execution or writes")
+    parser.add_argument("--evaluation-dir", type=Path, help="fresh private batch directory; parent must exist")
+    parser.add_argument("--evaluation-repeats", type=int, help="repetitions of cases a-f: 1-10 (default: 3, 18 trials)")
+    parser.add_argument("--evaluation-max-seconds", type=int, help="absolute batch lifetime: 1-3600 seconds (default: 600)")
     parser.add_argument("--assessment-dir", type=Path,
                         help="new private directory for assessment artifacts, decisions and reports")
     parser.add_argument("--openai-model", help="explicit model identifier for the offline request contract")
@@ -221,6 +228,15 @@ def main(argv: list[str] | None = None) -> int:
                         or args.control_plane_mock or assessment_case)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
     broker_options = (args.broker_max_calls, args.broker_max_output_tokens, args.broker_max_request_bytes)
+    evaluation_options = (args.evaluation_dir, args.evaluation_repeats, args.evaluation_max_seconds)
+    if not args.evaluate_owned_lab and any(value is not None for value in evaluation_options):
+        parser.error("evaluation options require --evaluate-owned-lab")
+    if args.evaluate_owned_lab and args.evaluation_dir is None:
+        parser.error("--evaluate-owned-lab requires --evaluation-dir")
+    if (args.evaluate_owned_lab or args.inspect_evaluation) and (args.fixture or args.routed or args.owned_lab):
+        parser.error("evaluation fixes the owned lab backend and cannot select another backend")
+    if args.inspect_evaluation and (args.execute or args.dry_run):
+        parser.error("--inspect-evaluation cannot select an execution mode")
     if not offline_scenario and any(value is not None for value in (
             args.openai_model, args.openai_max_output_tokens, *broker_options)):
         parser.error("OpenAI and broker options require --openai-offline or --control-plane-openai-offline")
@@ -242,6 +258,32 @@ def main(argv: list[str] | None = None) -> int:
     if args.inspect_assessment and (args.execute or args.dry_run or args.fixture or args.routed or args.owned_lab):
         parser.error("--inspect-assessment cannot select an execution mode or backend")
     try:
+        if args.inspect_evaluation is not None:
+            from .evaluation import inspect_evaluation
+
+            report = inspect_evaluation(args.inspect_evaluation)
+            _print(report)
+            return 0 if report["status"] in {"passed", "dry_run"} and not report["integrity_issues"] else 2
+        if args.evaluate_owned_lab:
+            from .evaluation import EvaluationRunner, EvaluationLimits
+
+            limits = EvaluationLimits(**{key: value for key, value in zip(
+                ("repeats", "max_runtime_seconds"),
+                (args.evaluation_repeats, args.evaluation_max_seconds)) if value is not None})
+            runner = EvaluationRunner(args.evaluation_dir, parse_policy(_read_bounded(args.policy)), limits)
+            previous = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
+            try:
+                for number in previous:
+                    signal.signal(number, lambda *_: runner.cancel())
+                report = runner.run(execute=args.execute, on_trial=lambda trial: print(json.dumps({
+                    "event_type": "evaluation_trial_graded", "trial_id": trial["trial_id"],
+                    "verdict": trial["grade"]["verdict"], "issues": trial["grade"]["issues"],
+                }, sort_keys=True, ensure_ascii=True), file=sys.stderr, flush=True))
+            finally:
+                for number, handler in previous.items():
+                    signal.signal(number, handler)
+            _print(report)
+            return 0 if report["status"] in {"passed", "dry_run"} else 2
         if args.inspect_assessment is not None:
             from .evidence import inspect_assessment
 

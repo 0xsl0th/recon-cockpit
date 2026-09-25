@@ -216,8 +216,18 @@ La base del laboratorio propio persistente conserva ese servicio durante la
 evaluación sin ampliar el destino permitido. Cada nueva evaluación crea una
 instancia distinta; la inspección de evidencia nunca restaura permisos ni procesos.
 La ficha v2 describe este ciclo de vida, mientras la ficha v1 conserva su contrato
-original. El siguiente paso es un ejecutor de evaluaciones repetidas que agregue
-resultados y recursos; la evaluación con un modelo real continúa pendiente.
+original. El [ejecutor de evaluaciones repetidas](evaluation.md) implementa ahora
+una línea base de 18 ensayos: seis casos, tres repeticiones, instancias nuevas y
+calificación independiente de la evidencia guardada. Agrega decisiones esperadas
+y observadas, aislamiento, limpieza y reservas de recursos en JSON y Markdown.
+Una interrupción o fallo de evidencia no recibe crédito como abstención correcta.
+La evaluación con un modelo real continúa pendiente.
+
+La implementación se publicó para revisión en
+[PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12), con 2.300 pruebas
+portables y 132 integraciones reales en Linux. La línea base final pasó los
+18 ensayos en 72,004 segundos: tres validaciones, tres resultados no demostrados
+y doce abstenciones correctas, con inspección posterior sin modificar la evidencia.
 
 | Dimensión | Evidencia a obtener |
 | --- | --- |

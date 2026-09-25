@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 import json
+import math
 import threading
 import time
 from uuid import UUID, uuid4
@@ -44,7 +45,7 @@ class AuthoritySession:
     """
 
     def __init__(self, policy, audit, backend, coordinator, limits=None, *,
-                 clock=time.monotonic, session_id=None, provider=None, evidence=None):
+                 clock=time.monotonic, session_id=None, provider=None, evidence=None, deadline=None):
         limits = SessionLimits() if limits is None else limits
         if type(limits) is not SessionLimits:
             raise ValueError("invalid_session_limits")
@@ -58,6 +59,11 @@ class AuthoritySession:
         # passes a Python object into either sandbox.
         self.provider = provider
         self._clock = clock
+        # A trusted outer scheduler may shorten, never extend, this session's
+        # absolute lifetime. Setup delays cannot renew its enclosing deadline.
+        if deadline is not None and (type(deadline) not in (int, float) or not math.isfinite(deadline)):
+            raise ValueError("invalid_authority_deadline")
+        self._deadline = deadline
         self._cancelled = threading.Event()
         self._lock = threading.Lock()
         self._used = False
@@ -80,7 +86,10 @@ class AuthoritySession:
 
     def _run(self, execute, interactive, approval, on_step):
         started = self._clock()
-        session_control = ExecutionControl(started + self.limits.max_runtime_seconds,
+        deadline = started + self.limits.max_runtime_seconds
+        if self._deadline is not None:
+            deadline = min(deadline, self._deadline)
+        session_control = ExecutionControl(deadline,
                                            cancelled=self._cancelled, clock=self._clock)
         provider = self.provider
         version = "2" if provider is not None else "1"
