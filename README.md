@@ -102,6 +102,18 @@ covering expected decisions, isolation, cleanup and resource accounting.
 `--inspect-evaluation DIRECTORY` regrades without execution or writes.
 See [the evaluation contract and commands](docs/evaluation.md).
 
+The [owned TLS provider foundation](docs/provider-foundation.md) exercises a
+separate credential-bearing broker against a disposable, disconnected TLS
+fixture. Only the step and an allowlisted execution status leave the host;
+synthetic credentials enter private pipes. Each attempt reserves calls, bytes,
+output tokens and synthetic cost before durable audit and launch. It performs no
+tool actions and makes no real-model calls. Preview or run its standalone demo:
+
+```bash
+python scripts/secure_agent_provider_demo.py
+python scripts/secure_agent_provider_demo.py --execute --audit .secure-agent/provider-foundation/audit.jsonl
+```
+
 The executable tool set includes bounded HTTP and the fixed discovery profile.
 The original `--fixture` HTTP mode reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`

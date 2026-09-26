@@ -1,8 +1,46 @@
-# Continue here — 25 September 2026
+# Continue here — 26 September 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
+
+## Recovered R5a work — verified 26 September
+
+Current branch: `feature/isolated-provider-foundation`, based on `ba3951e`.
+The operator approved the proposed focused R5a PR with “sounds good, go ahead!”
+at 04:51 UTC, then requested continuation after the laptop unexpectedly powered
+off. Seven untracked implementation/documentation/test files survived. The
+interrupted broker and host runtime had not been saved; they are now implemented.
+Git object checks found no corruption. Main checkpoint `ba3951e` passed all five
+[hosted portable jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36095234761).
+
+Scope: [owned TLS provider foundation](provider-foundation.md), using only
+disconnected fixtures, synthetic credentials/model/cost units, status-only data
+release and the existing networkless parser. No tool execution or live-provider
+integration is added. The 18-run evaluation contract is preserved. Verification
+and independent review are complete. Publication of the authorized focused PR
+is next; earlier PR-specific merge authority does not cover this new PR.
+
+The 26 September review found and fixed two failures: cancellation while collecting
+owner counters could mask the stop with an invalid receipt, and temporary audit
+directory setup errors could escape the demo's safe JSON reporting. Independent
+runtime, contract and portability reviews found no remaining blocker. All **16
+provider Linux tests passed** in 17.48 seconds, including both new cancellation
+cases (`/tmp/recon-provider-review-linux.xml`, no failures/errors/skips).
+The standalone demo passed with all ten transport and seven parser checks true,
+one connection/request and reaped owner/worker processes. Its private audit is
+`.secure-agent/provider-foundation-20260926/audit.jsonl`; it reserved one call,
+1,024 output tokens, 3,060 request bytes and 5,208 synthetic cost units.
+
+The final portable suite passed **2,548 tests**, 148 deselected, in 87.89 seconds;
+the full Linux suite passed **148 tests**, 2,548 deselected, in 345.51 seconds.
+Both reports contain no failures/errors/skips: `/tmp/recon-provider-final-portable.xml`
+and `/tmp/recon-provider-linux.xml`. The existing 18-trial baseline passed within
+the Linux suite. Compile, dependency, Python 3.11 syntax, documentation links and
+whitespace checks passed. See [verification.md](verification.md).
+A coding-service restart interrupted earlier runs; they were restarted after
+confirming no matching processes survived. No commit, push or PR has yet been
+made for R5a. Do not restore an interrupted assessment or approvals.
 
 **R1, R2, the smallest R3 discovery-to-HTTP slice, the first R4 card/engine,
 the post-merge CI correction, the persistent owned lab foundation and the
@@ -20,7 +58,7 @@ the reviewed head. The interrupted local sync and checkpoint are now recovered.
 ## Saved state
 
 - Workspace: `/home/sloth/Code/recon-cockpit`, Kali Linux x86_64, normal user.
-- Current branch: `main`, synchronized with the PR #12 merge `ff5f76a`.
+- Prior completed checkpoint: `main`, synchronized with the PR #12 merge `ff5f76a`.
   The operator authorized implementing the 18-run baseline,
   independent grading and aggregate reports, with cleanup/isolation/accounting
   verification before opening a PR. The operator subsequently explicitly
@@ -218,7 +256,8 @@ Planning uses synthetic responses.
 
 1. Inspect main and its checks, preserving unrelated work. PR #10, PR #11 and
    PR #12 are already merged; do not repeat their implementation, review or merge.
-2. The next development slice is separately reviewed live-provider controls.
+2. Finish verification/review/publication of the recovered R5a foundation above.
+   Later real-provider work needs explicit data/model/credential/spend choices.
    Do not silently widen the
    singleton executor or attach the legacy Nmap runner.
 3. Keep kernel verification separate from hosted portable CI and record measured

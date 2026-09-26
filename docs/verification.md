@@ -1,5 +1,76 @@
 # Verification record
 
+## Owned TLS provider foundation — 26 September 2026
+
+Implemented on `feature/isolated-provider-foundation` from `ba3951e`. The operator
+authorized this focused R5a implementation and PR; merge authority for previous
+PRs does not apply. The [foundation contract](provider-foundation.md) preserves
+the offline authority and 18-trial evaluation contract. This slice adds only a
+disconnected TLS fixture, synthetic credentials/model/cost, status-only data
+release and a separate constrained broker transport. It executes no tools and
+contacts no public provider.
+
+Independent runtime, contract and portability reviews found two defects before
+publication. A cancellation after the TLS response but before owner counter
+collection could produce an incomplete successful receipt, masking the original
+stop. Success now requires the counters; partial observations remain available
+without inventing counts. Two real Linux regressions cancel during the counter
+request and collection, checking stopped audit, full retained reservations,
+unreleased response bytes and reaped processes. The demo also now sanitizes
+temporary audit-directory setup failures; its regression verifies safe JSON,
+exit status 2 and no private exception text or provider launch. Independent review
+confirmed the final fixes with no remaining blocker. These are bounded development
+reviews, not an independent security audit.
+
+| Check | Observed result |
+| --- | --- |
+| `.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra --junitxml=/tmp/recon-provider-final-portable.xml` | **2,548 passed, 148 deselected**, 87.89 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short --junitxml=/tmp/recon-provider-linux.xml` | **148 passed, 2,548 deselected**, 345.51 seconds |
+| `RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest tests/test_secure_provider_linux.py -m integration -v --tb=short --junitxml=/tmp/recon-provider-review-linux.xml` | **16 passed**, 17.48 seconds, including both review regressions |
+| All three JUnit reports inspected | Zero selected failures, errors or skips |
+| Compile, dependency consistency, Python 3.11 syntax and relative documentation links | Passed; 131 Python files parse with the 3.11 grammar |
+| `git diff --check` | Passed |
+
+The final full suites include the two review fixes and all new tests. A
+coding-service restart interrupted earlier full portable/Linux processes and
+left no complete final reports; their partial progress is not passing evidence.
+No matching test processes survived, so both full suites were restarted. The
+completed provider-only run was preserved rather than repeated separately.
+Kernel checks ran as the normal Kali Linux x86_64 user with Python 3.14.6,
+outside the coding sandbox. The existing 18-trial evaluation baseline also
+passed within the full Linux suite.
+
+Portable tests cover strict canonical requests and the status-only release
+profile, full-attempt reservations, immutable control lifetimes, audit failure,
+closed receipt schemas, TLS configuration, credential reflection and bounded HTTP
+framing. Linux tests exercise every fixed fixture scenario, actual verified TLS,
+positive forbidden-destination listeners, host-file/environment/descriptor
+canaries, cancellation during active TLS and late counter collection, deadlines
+and observed cleanup. The successful reply is parsed in the existing separate
+networkless sandbox. Hosted portable checks do not establish kernel enforcement.
+
+The actual standalone demo command was:
+
+```sh
+.venv/bin/python scripts/secure_agent_provider_demo.py --execute \
+  --audit .secure-agent/provider-foundation-20260926/audit.jsonl
+```
+
+Exit 0, `status=passed`, all ten transport and seven parser boundary checks true,
+one connection/request and both owner/worker processes reaped. The request reserved
+one call, 1,024 output tokens, 3,060 request bytes and **5,208 synthetic cost units**;
+the response was 252 bytes and decoded to an inert done proposal. The private
+audit contains exactly the durable reservation and successful completion events,
+with directory/file modes 0700/0600. The default dry-run also passed without
+starting a runtime or creating audit storage. No real credentials, provider calls,
+monetary spending, external targets or host-network changes were involved.
+
+The host bootstrap, runtime libraries, kernel and audit owner remain trusted.
+Reflection checks cover literal credentials and JSON string escapes, not arbitrary
+secret encodings. Reservations are ceilings and synthetic tariff tests, not token
+measurement or real billing. Unknown observations after interruption remain
+unknown; filesystem/kernel stalls remain outside a hard wall-clock guarantee.
+
 ## PR #12 review and authorized merge — 25 September 2026
 
 The operator explicitly authorized review and merge of the evaluation runner.
