@@ -18,8 +18,11 @@ Scope: [owned TLS provider foundation](provider-foundation.md), using only
 disconnected fixtures, synthetic credentials/model/cost units, status-only data
 release and the existing networkless parser. No tool execution or live-provider
 integration is added. The 18-run evaluation contract is preserved. Verification
-and independent review are complete. Publication of the authorized focused PR
-is next; earlier PR-specific merge authority does not cover this new PR.
+and independent review are complete. The authorized focused
+[PR #13](https://github.com/0xsl0th/recon-cockpit/pull/13) is open, with
+implementation commit `7125c99`. Inspect its current hosted checks when continuing.
+Earlier PR-specific merge authority does not cover this new PR; it remains open
+for the operator's merge decision.
 
 The 26 September review found and fixed two failures: cancellation while collecting
 owner counters could mask the stop with an invalid receipt, and temporary audit
@@ -39,8 +42,9 @@ and `/tmp/recon-provider-linux.xml`. The existing 18-trial baseline passed withi
 the Linux suite. Compile, dependency, Python 3.11 syntax, documentation links and
 whitespace checks passed. See [verification.md](verification.md).
 A coding-service restart interrupted earlier runs; they were restarted after
-confirming no matching processes survived. No commit, push or PR has yet been
-made for R5a. Do not restore an interrupted assessment or approvals.
+confirming no matching processes survived. The implementation is committed and
+pushed to the feature branch; the publication checkpoint changes documentation
+only. Do not restore an interrupted assessment or approvals.
 
 **R1, R2, the smallest R3 discovery-to-HTTP slice, the first R4 card/engine,
 the post-merge CI correction, the persistent owned lab foundation and the
@@ -256,7 +260,8 @@ Planning uses synthetic responses.
 
 1. Inspect main and its checks, preserving unrelated work. PR #10, PR #11 and
    PR #12 are already merged; do not repeat their implementation, review or merge.
-2. Finish verification/review/publication of the recovered R5a foundation above.
+2. Inspect the open R5a PR #13 and its current checks. Local verification, review
+   and publication are complete; merging requires the operator's decision.
    Later real-provider work needs explicit data/model/credential/spend choices.
    Do not silently widen the
    singleton executor or attach the legacy Nmap runner.

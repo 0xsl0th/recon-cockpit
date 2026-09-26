@@ -10,6 +10,13 @@ disconnected TLS fixture, synthetic credentials/model/cost, status-only data
 release and a separate constrained broker transport. It executes no tools and
 contacts no public provider.
 
+Reviewed implementation `7125c99` was published in
+[PR #13](https://github.com/0xsl0th/recon-cockpit/pull/13) after all local checks
+below passed. Inspect the PR's current hosted checks before further publication
+or merge. The follow-up publication checkpoint changes documentation only;
+local runtime tests were not repeated for those notes. The PR remains open for
+the operator's merge decision.
+
 Independent runtime, contract and portability reviews found two defects before
 publication. A cancellation after the TLS response but before owner counter
 collection could produce an incomplete successful receipt, masking the original
