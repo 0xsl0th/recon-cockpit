@@ -1,10 +1,64 @@
-# Continue here — 26 September 2026
+# Continue here — 28 September 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-## Recovered R5a work — verified 26 September
+## R5b provider cost ledger — reviewed publication checkpoint
+
+The operator approved implementing the monetary ledger and spending controls
+after reviewing a future GUI reference, then authorized final review, commit and
+push. The implementation branch is `feature/provider-cost-ledger`, based on
+merge `0a9697f` for PR #13. The earlier pilot-named branch was only the development
+starting point; it contains no live pilot implementation.
+The R5a PR is therefore merged in this checkout; its older open-PR checkpoint
+below is historical. No R5b PR has been opened at this checkpoint.
+No GUI, external provider transport, credentials or paid calls were added.
+
+Read [provider-cost-ledger.md](provider-cost-ledger.md). The implementation adds
+integer microUSD price/usage contracts, an explicitly created private SQLite
+ledger, atomic account/engagement/session/agent/action caps, estimates separate
+from reservations and actual charges, one-time dispatch claims, durable budget
+denials, unknown-cost retention, idempotent settlement and billing corrections.
+The read-only report API supplies consistent scope/period/model totals for the
+future GUI. Existing R5a synthetic accounting and the owned evaluation remain
+separate. Reopening cost storage never restores execution or approvals.
+
+Operator controls are available through
+`python -m recon_cockpit.secure_agent.cost_cli --help`; the standalone
+`scripts/secure_agent_cost_demo.py` writes only explicitly labeled simulated
+accounting when given a fresh `--ledger` directory. Final private demo:
+`.secure-agent/cost-ledger-demo-20260928-final`. It shows 25 microUSD simulated
+actual, 300 held and 175 available under a 500 microUSD engagement cap, with one
+unresolved call and a durable denial. Read-only CLI inspection preserved all
+file bytes and mtimes. No real provider calls occurred.
+
+The focused suite passes **129 tests**, including independent process races,
+one-time dispatch, forced process exit during reservation/settlement, failed
+journal writes, receipt replay, billing corrections, overruns, all budget levels
+and safe read-only CLI inspection. Publication review reproduced and fixed a
+POSIX lock-loss bug from closing an extra database descriptor; metadata-only
+identity checks now preserve another connection's active lock. Inherited handles
+also fail before acquiring a lock or attempting rollback/close in a child process.
+The final full portable suite passes **2,677
+tests**, 148 deselected, with no selected failures/errors/skips. See
+[verification.md](verification.md). This accounting-only slice changes no namespace,
+network, credential, parser or execution runtime; Linux isolation tests are not
+rerun as evidence for a new boundary.
+
+GitHub `main` still points to `0a9697f`; its
+[hosted portable run](https://github.com/0xsl0th/recon-cockpit/actions/runs/36460798711)
+passed. No open PR exists for this work. Next step: a focused R5b PR against
+`main`, then hosted checks and review before any merge. The current workflow
+runs five jobs on PRs to main; this branch is not in its push-trigger allowlist.
+Inspect the remote branch head and PR state before continuing publication.
+After R5b, design the real-provider broker integration using its financial contract.
+Paid operation still needs explicit data/model/credential/spend settings and a
+reviewed provider-specific token bound, usage adapter and egress topology.
+Do not silently attach the legacy runner or convert synthetic fixture units into
+real provider charges. Previous PR merge approvals do not authorize a new merge.
+
+## Recovered R5a work — historical checkpoint, verified 26 September
 
 Current branch: `feature/isolated-provider-foundation`, based on `ba3951e`.
 The operator approved the proposed focused R5a PR with “sounds good, go ahead!”
@@ -258,13 +312,14 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Inspect main and its checks, preserving unrelated work. PR #10, PR #11 and
-   PR #12 are already merged; do not repeat their implementation, review or merge.
-2. Inspect the open R5a PR #13 and its current checks. Local verification, review
-   and publication are complete; merging requires the operator's decision.
-   Later real-provider work needs explicit data/model/credential/spend choices.
-   Do not silently widen the
-   singleton executor or attach the legacy Nmap runner.
+1. Start from the R5b checkpoint above and preserve the reviewed implementation.
+   PR #10, PR #11, PR #12 and PR #13 are already present as merges; do not repeat
+   their implementation or merge. Inspect Git and hosted checks before publication.
+2. R5b is on `feature/provider-cost-ledger`. Check its remote head and PR state.
+   Follow its monetary admission/dispatch/settlement contract
+   when building the future real-provider broker. Paid calls still need explicit
+   data/model/credential/spend choices. Do not widen the singleton executor or
+   attach the legacy Nmap runner.
 3. Keep kernel verification separate from hosted portable CI and record measured
    results/publication state for every slice.
 

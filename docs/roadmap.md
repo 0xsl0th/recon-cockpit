@@ -38,6 +38,12 @@ baseline. All five final PR CI jobs passed. The first R5a implementation is the
 transport, synthetic credentials, explicit status-only data release and bounded
 per-attempt accounting. Its publication and verification state are recorded in
 the continuation checkpoint. Real-provider controls and evaluation follow it.
+**R5b update — 28 September 2026:** the [durable provider cost ledger](provider-cost-ledger.md)
+adds explicit USD estimates, reservations, actual usage/billing reconciliation and
+atomic account/engagement/session/agent/action caps. Read-only views support the
+future GUI. The local demonstration is simulation-only; transport integration and
+paid-provider evaluation remain future work. See the continuation checkpoint for
+verification and publication state.
 See [workflow-assessment.md](workflow-assessment.md) for the
 decision trace and evidence contract. Broader discovery remains future work.
 The baseline below is historical.

@@ -97,6 +97,11 @@ limits. Hosted portable CI does not establish Linux kernel enforcement.
 
 ## Follow-up gate
 
+The [R5b cost ledger](provider-cost-ledger.md) now supplies durable USD accounting,
+hierarchical caps and reconciliation as a separate host API. R5a keeps its original
+synthetic counters; the future real-provider broker must integrate the monetary
+admission/dispatch/settlement contract before sending paid requests.
+
 Real-provider work remains separate: explicitly choose the permitted data,
 model, credential source and spending ceiling; validate model-specific input and
 output accounting and a real egress topology. Then run a small live pilot before

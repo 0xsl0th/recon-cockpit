@@ -1,5 +1,63 @@
 # Verification record
 
+## R5b provider cost ledger — 28 September 2026
+
+Reviewed on `feature/provider-cost-ledger` from `0a9697f`, with the operator's
+authorization to implement, commit and push the monetary ledger and hierarchical
+controls described in [provider-cost-ledger.md](provider-cost-ledger.md). The
+earlier pilot-named development branch contains no live pilot implementation.
+No R5b PR has been opened at this checkpoint. This adds no provider transport or GUI,
+and all demonstration charges are explicitly marked simulation. Existing R5a
+synthetic accounting and namespace runtimes are unchanged.
+
+The focused command is:
+
+```sh
+.venv/bin/python -m pytest tests/test_secure_cost_contract.py \
+  tests/test_secure_cost_ledger.py tests/test_secure_cost_cli.py \
+  --strict-markers -ra --junitxml=/tmp/recon-cost-focused.xml
+```
+
+**129 tests passed in 2.21 seconds.** Coverage uses actual private SQLite stores,
+two independent processes competing for a shared ancestor budget, two connections
+claiming the same dispatch, and abrupt child process exit before/after durable
+accounting transitions. It also covers rollback after event-write failure,
+read-only inspection preserving bytes/mtimes, immutable pricing, exact integer
+rounding, receipt replay, billing corrections, unknown costs, actual overruns,
+each hierarchy level, durable refusals, private storage checks and operator CLI.
+These are local accounting/process tests, not live provider billing validation.
+
+Publication review reproduced a concurrency defect: closing the extra database
+descriptor used for identity checks released another connection's active POSIX
+lock. A second process could then acquire a write transaction prematurely.
+Identity checks now use metadata without opening another database descriptor.
+Two regressions cover closing both read-only and writable handles during a write
+transaction, and require the external writer to stay blocked until commit.
+Three additional regressions ensure inherited handles reject reads, writes and
+close before accessing a lock or the parent's SQLite connection. The full suite
+below includes these corrections; this was a local review, not an independent audit.
+
+The full portable command is:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-cost-portable.xml
+```
+
+**2,677 passed, 148 deselected in 69.47 seconds.** Both final JUnit reports contain
+zero selected failures, errors or skips. No namespace, network, credential or
+execution boundary was modified; the 148 Linux integration tests are deselected,
+not claimed as fresh verification for this slice.
+
+The final local demo at `.secure-agent/cost-ledger-demo-20260928-final` passed:
+25 microUSD fictional actual cost, 300 held, 175 available under a 500 microUSD
+engagement limit; one unresolved call and an audited parent-budget denial.
+Its 16 ledger events survive reopening. Read-only CLI inspection reproduced the
+report and preserved every file byte and mtime. Actual provider calls: **zero**.
+Dependency consistency and Python 3.11 grammar checks passed for all 138 Python
+files. Compilation, changed documentation links and whitespace checks passed.
+The accounting uses the Python standard library without new dependencies.
+
 ## Owned TLS provider foundation — 26 September 2026
 
 Implemented on `feature/isolated-provider-foundation` from `ba3951e`. The operator

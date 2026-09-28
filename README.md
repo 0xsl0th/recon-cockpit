@@ -114,6 +114,21 @@ python scripts/secure_agent_provider_demo.py
 python scripts/secure_agent_provider_demo.py --execute --audit .secure-agent/provider-foundation/audit.jsonl
 ```
 
+The [R5b provider cost ledger](docs/provider-cost-ledger.md) adds durable USD
+estimates, reservations, usage-derived charges and billing reconciliation, with
+atomic account/engagement/session/agent/action limits. Read-only JSON views expose
+available funds, unresolved calls and model totals for the future GUI. Its local
+demo uses fictional prices and receipts in an explicitly marked simulation ledger:
+
+```bash
+python scripts/secure_agent_cost_demo.py
+python scripts/secure_agent_cost_demo.py --ledger .secure-agent/cost-demo
+python -m recon_cockpit.secure_agent.cost_cli --ledger .secure-agent/cost-demo inspect
+```
+
+The ledger adds no live provider connection. R5a's synthetic counters stay separate;
+a future provider broker must enforce the documented reservation/settlement sequence.
+
 The executable tool set includes bounded HTTP and the fixed discovery profile.
 The original `--fixture` HTTP mode reaches only its
 owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
