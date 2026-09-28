@@ -33,7 +33,11 @@ now implements the 18-trial synthetic baseline, independent saved-evidence gradi
 and resource/cleanup/isolation aggregates, reviewed and merged into main through
 [PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12), merge `ff5f76a`.
 Verification passed 2,300 portable and 132 Linux tests, plus the final 18/18 CLI
-baseline. All five final PR CI jobs passed. Live-provider controls follow this baseline.
+baseline. All five final PR CI jobs passed. The first R5a implementation is the
+[owned TLS provider foundation](provider-foundation.md): disconnected fixture
+transport, synthetic credentials, explicit status-only data release and bounded
+per-attempt accounting. Its publication and verification state are recorded in
+the continuation checkpoint. Real-provider controls and evaluation follow it.
 See [workflow-assessment.md](workflow-assessment.md) for the
 decision trace and evidence contract. Broader discovery remains future work.
 The baseline below is historical.
