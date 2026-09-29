@@ -64,6 +64,15 @@ trusted wrapper redeems a permit before calling the existing owned executor.
 Host and executor checks remain defense in depth; this does not move physical
 launcher custody out of the host or independently authenticate consent/audit truth.
 
+With `--fixture`, the additional [confined launcher](isolated-fixture-launcher.md)
+owns admission-client custody, permit redemption, executor-envelope construction
+and child supervision. The host holds only its typed execute client. A separate
+nested worker still owns admission state, and each executor retains its own
+namespace/policy checks. The launcher has no host network, terminal or audit
+storage. Consent/audit ordering remains a controller precondition; persistent
+owned-lab launch custody and independent precondition authentication are not
+provided by this fixture-only slice.
+
 `SessionRunner` adds a single-use loop around that same controller. Its fixed
 `SessionMockProvider.propose(observation, control=...)` adapter supervises a
 bundled subprocess; the process receives JSON observation bytes only. Shared

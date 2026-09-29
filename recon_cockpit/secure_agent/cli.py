@@ -98,6 +98,9 @@ def _approval_context(args, policy, session_id):
 def _admission_context(args, backend):
     if not args.isolated_launch_admission or backend is None:
         return nullcontext(backend)
+    if args.isolated_launcher:
+        from .launcher_isolation import LinuxFixtureLauncher
+        return LinuxFixtureLauncher(backend)
     from .admitted_execution import AdmissionGatedBackend
     return AdmissionGatedBackend(backend)
 
@@ -241,6 +244,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="confine terminal review and grants for an authority session or owned assessment")
     parser.add_argument("--isolated-launch-admission", action="store_true",
                         help="require independent policy/budget admission before each owned executor launch")
+    parser.add_argument("--isolated-launcher", action="store_true",
+                        help="confine fixture executor launching and keep admission permits in that worker")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--execute", action="store_true", help="execute only with policy, audit and isolation")
     mode.add_argument("--dry-run", action="store_true", help="validate and audit only (default)")
@@ -262,6 +267,8 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("--isolated-launch-admission requires an authority source, --isolated-audit and --isolated-approvals")
         if args.execute and not (args.fixture or args.owned_lab):
             parser.error("--isolated-launch-admission execution requires --fixture or --owned-lab")
+    if args.isolated_launcher and (not args.isolated_launch_admission or not args.fixture):
+        parser.error("--isolated-launcher requires --isolated-launch-admission and --fixture")
     session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
                         or args.control_plane_mock or assessment_case)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)

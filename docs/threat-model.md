@@ -96,6 +96,19 @@ and audit ordering. A compromised host can bypass its wrapper or create another
 session; this is neither independent consent attestation nor a durable engagement
 quota. R5b's durable provider-money ledger remains separate and unchanged.
 
+For fixture profiles, the optional [confined launcher](isolated-fixture-launcher.md)
+holds that admission client and constructs/supervises executors outside the host
+controller process. Host requests cannot supply permits, launch envelopes,
+executables, mounts or reset values. A separate nested admission worker still
+owns reservations. The launcher has a private network/PID/filesystem view, zero
+capabilities and no terminal/audit/credential state. It intentionally retains
+process and namespace creation, bounded scratch space and writable private proc
+UID/GID maps for child setup; it is trusted fixed code, not an arbitrary-plugin
+sandbox. Lost completion receipts can follow execution and never permit retry.
+The host still establishes consent/audit ordering and can bypass its own client;
+independent authentication of those preconditions is not claimed. Persistent lab
+launching stays on its existing path in this slice.
+
 ## Isolation assumptions
 
 Use a dedicated Linux/Kali lab with unprivileged user namespaces and a compatible

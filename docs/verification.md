@@ -1,5 +1,86 @@
 # Verification record
 
+## R5 confined fixture launcher — 29 September 2026
+
+Implemented on `feature/isolated-fixture-launcher` from verified main `e9c5496`
+(merged PR #19). The explicit `--isolated-launcher` option requires `--fixture`
+and all three isolated approval/audit/admission options. Its confined worker owns
+admission-client custody, permit redemption, executor envelopes and supervision;
+a separate nested admission worker retains the PR #19 reservation state machine.
+See [the contract and intentional capabilities](isolated-fixture-launcher.md).
+
+The full portable command was:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-launcher-portable.xml
+```
+
+**3,059 passed, 307 deselected in 65.22 seconds.** The 71 additional portable
+cases cover strict bootstrap/runtime/request/reply schemas, forbidden command,
+permit, consent/reset/budget fields, identity and deadline binding, duplicate-key/
+NaN/oversize rejection, large bounded response bodies, poisoned clients, counter
+receipt forgery, inert construction/dry-run and unsupported/noninteractive CLI
+refusal. The affected existing CLI and assessment regressions also passed
+separately: **119 tests in 1.70 seconds**.
+
+The first focused Linux command was:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest tests/test_secure_fixture_launcher_linux.py \
+  -m integration -x -v --tb=short
+```
+
+**36 passed in 40.03 seconds.** Actual nested admission and fixture executors
+preserve namespace, capability, policy and network-boundary checks without using
+the host executor adapter. Host environment/file/descriptor canaries and an owned
+host listener are inaccessible. Forged authority fields, changed sessions,
+replay, extra descriptors, oversized and duplicate-key packets cannot launch.
+Forged READY/completion receipts, output floods, altered bootstrap, dead admission
+and lost redemption acknowledgements permanently stop. A lost execution receipt
+test explicitly witnesses that the tool already succeeded, then forbids retry.
+Cancellation, deadline expiry and overlapping requests during an actual nested
+executor reap the launcher/admission/executor process trees.
+
+The combined authority path observes consumed grants and persisted intent before
+remote execution. Denied approval or a lost durable audit acknowledgement prevents
+launcher startup entirely. All six existing workflow CLI cases preserve outcomes
+and evidence integrity with all four boundaries. Scripted PTYs establish mechanics,
+not genuine human consent or acceptance. A further Linux case verifies that host
+counter/config changes cannot refund the worker's output budget; it is included
+in the full Linux regression run.
+
+The full rootless Linux command was:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
+  --junitxml=/tmp/recon-launcher-all-linux.xml
+```
+
+**307 passed, 3,059 deselected in 520.50 seconds.** This includes all 37 new
+launcher cases and the 270 established Linux regressions: approvals, audit,
+admission, authority, planners/parsers, discovery, workflows, persistent lab,
+evaluation and R5a/R5b provider boundaries. Both full JUnit reports contain zero
+selected failures, errors or skips. No launcher/admission/executor or pytest
+processes remained afterward. Python 3.11 grammar, dependency consistency, local
+Markdown links and whitespace checks passed. No dependencies were added.
+
+The launcher intentionally retains process/nested-namespace creation, bounded
+private scratch and private proc UID/GID-map writes. It has zero capabilities,
+no host filesystem/network or terminal/audit/credential state, and must remain
+trusted fixed code. Children retain their existing syscall restrictions and
+read-only proc mounts. Host consent/audit preconditions, persistent lab launching
+and independent precondition authentication are outside this fixture-only slice.
+R1–R4, R5a/R5b and established defaults remain closed; live execution remains
+disabled. External provider calls, real credentials and spend: **zero**.
+
+Runtime/test evidence above is tied to implementation `838c4a1`, published in
+[PR #20](https://github.com/0xsl0th/recon-cockpit/pull/20) against `main`. The
+publication checkpoint changes documentation only. Current review state and hosted
+checks are linked from [continue-here.md](continue-here.md). Hosted portable CI
+complements the local kernel evidence. The PR remains open for review, with no
+new merge or live execution authorized.
+
 ## R5 isolated launch admission — 29 September 2026
 
 Implemented on `feature/isolated-launch-admission` from verified main `2c02c21`
@@ -75,8 +156,16 @@ Runtime/test evidence above is tied to implementation `8a215f3`, published in
 [PR #19](https://github.com/0xsl0th/recon-cockpit/pull/19) against `main`. The
 publication checkpoint changes documentation only. Current publication state
 and hosted checks are linked from [continue-here.md](continue-here.md); hosted
-portable CI does not replace the local kernel verification. This PR remains
-open for review, with no new merge or live execution authorized.
+portable CI does not replace the local kernel verification.
+
+The operator subsequently authorized review and merge of PR #19. Review found
+no blocking issue and reran **294 focused portable tests** and **35 Linux admission
+tests in 49.07 seconds**, with no runtime correction. JUnit reports:
+`/tmp/recon-admission-review-portable.xml` and `/tmp/recon-admission-review-linux.xml`.
+Reviewed head `b1fe045` passed all five PR checks and merged as `e9c5496` on
+29 September at 03:33:29 UTC. Its tree matches the reviewed head exactly, and
+all five [post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36517670318)
+passed. This merge is complete; it does not authorize a subsequent merge or live call.
 
 ## R5 isolated terminal approvals — 29 September 2026
 

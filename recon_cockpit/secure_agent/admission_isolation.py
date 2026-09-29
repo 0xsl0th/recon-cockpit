@@ -58,6 +58,10 @@ class LinuxLaunchAdmission:
                      bootstrap_digest, *(host[name] for name in ('user', 'net', 'mnt', 'pid'))))
         return argv
 
+    def _runtime(self, control):
+        LinuxIsolatedMockProvider().check_available()
+        return _runtime_files('/usr/bin/python3', None, control=control)
+
     def _start(self, control):
         if (not self._config['execute'] or type(control) is not ExecutionControl
                 or control.clock is not time.monotonic):
@@ -66,8 +70,7 @@ class LinuxLaunchAdmission:
         self._control = control
         initial = {'configuration': self._config, 'deadline': control.deadline}
         protocol.initial(initial, time.monotonic())
-        LinuxIsolatedMockProvider().check_available()
-        stdlib, files = _runtime_files('/usr/bin/python3', None, control=control)
+        stdlib, files = self._runtime(control)
         self._supervisor = _Supervisor(10, 65536, control=control)
         self._channel, child = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
         self._channel.setblocking(False)
