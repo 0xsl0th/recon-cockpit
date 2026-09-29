@@ -180,12 +180,16 @@ expiry and rechecks freshness after admission. It closes reliance on a host
 consent claim in the opt-in path; the fixed worker and terminal remain trusted.
 
 The current [bounded offline planning slice](bounded-assessment-planning.md) on
-`feature/bounded-assessment-planning` connects the existing workflow/evidence
+`feature/bounded-assessment-planning`, published as `bb9e42c` in
+[PR #24](https://github.com/0xsl0th/recon-cockpit/pull/24), connects the existing workflow/evidence
 eligibility gate, explicit planning data release, isolated parser/coordinator and
 simulation monetary reservations/settlement to both independent launch checks.
 It uses finite owned mock responses and leaves the fixed ACK and R5a TLS contracts
-unchanged. Finish its verification/review, then continue the planning transport
-and evaluation gates. Mock responses do not complete live-model acceptance.
+unchanged. Full verification passed 3,382 portable and 430 Linux tests, with zero
+selected failures/errors/skips; independent review has no remaining findings.
+Leave #24 for operator review and separate merge authorization, then continue
+the planning transport and evaluation gates. Mock responses do not complete
+live-model acceptance.
 Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
 broader tools and lab scenarios remain deferred. The latest merge authorization
 covered PR #23 only; leave subsequent work for review and keep live calls disabled.

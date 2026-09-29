@@ -16,10 +16,16 @@ are merged and stay closed.
 Current branch: `feature/bounded-assessment-planning`, from `a87e5dd`. The next
 necessary R5 slice integrates a separate bounded mock planning adapter with
 explicit data release, the isolated parser/coordinator, simulation monetary
-admission and both direct launch gates. Read
-[bounded-assessment-planning.md](bounded-assessment-planning.md). Verification is
-in progress. Leave subsequent work unmerged for review. This authorization
-covers PR #23 only; live calls and external targets remain disabled.
+admission and both direct launch gates. Implementation `bb9e42c` is published in
+[PR #24](https://github.com/0xsl0th/recon-cockpit/pull/24). Read
+[bounded-assessment-planning.md](bounded-assessment-planning.md). Full verification
+passed **3,382 portable tests in 86.69 seconds** and **430 Linux tests in 771.15
+seconds**, with zero selected failures/errors/skips and no leftover workers.
+Independent review has no remaining findings; all five hosted jobs passed on
+the implementation. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/24/checks)
+show the final documentation checkpoint's status. Leave #24 unmerged for review.
+The latest merge authorization covers PR #23 only; live calls and external
+targets remain disabled.
 
 ## Current priority — continue R5 after completed R5a and R5b
 
@@ -64,6 +70,20 @@ settle before proposal release, and the full proposal must match the eligible
 candidate. Missing/unknown usage retains a dispatch hold; known overruns settle
 before refusal. All six existing cases and both lab backends remain the scope.
 This is a finite mock planning bridge, not actual model planning or live acceptance.
+
+## R5 bounded offline planning — verified, awaiting review
+
+Full suites and the focused 24-case Linux run passed. The new 186 portable cases
+cover release/privacy, usage recognition, money admission and lost acknowledgements,
+session lifetime and CLI refusal. All six outcomes pass through both backends
+and direct launch gates, with settlement before launch and read-only evidence
+and ledger inspection. Python 3.11 grammar (181 files), dependencies, documentation
+links and whitespace checks passed. Reports:
+`/tmp/recon-assessment-planning-portable.xml` and
+`/tmp/recon-assessment-planning-all-linux.xml`. See [verification.md](verification.md)
+for commands and the corrected prepublication lost-ledger-acknowledgement case.
+This follow-up checkpoint changes documentation only; runtime evidence is tied
+to `bb9e42c`. Do not repeat full local suites solely for that documentation commit.
 
 ## R5 direct approval gate — merged checkpoint
 
@@ -162,7 +182,8 @@ five-job portable matrix.
 
 ## Remaining milestone gates
 
-1. Complete verification and review of the bounded offline planning slice.
+1. Review the verified bounded offline planning slice in PR #24 and separately
+   authorize its merge.
    Durable audit and fresh grant verification remain independent launch
    preconditions. A selected terminal/worker still cannot prove a human's
    identity or intent independently of that trusted environment.

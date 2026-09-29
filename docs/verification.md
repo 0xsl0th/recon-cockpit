@@ -10,7 +10,8 @@ merge tree is identical, and all five
 passed. Its runtime was already covered by 3,196 portable and 406 Linux tests;
 the final documentation-only revision required no runtime correction.
 
-The next slice, on `feature/bounded-assessment-planning`, adds a separate
+The next slice, implementation `bb9e42c` on `feature/bounded-assessment-planning`
+in [PR #24](https://github.com/0xsl0th/recon-cockpit/pull/24), adds a separate
 repository-owned mock planning provider and closed data-release contract. Every
 request follows a durable evidence eligibility decision, simulated monetary
 reservation and one-use dispatch claim. Recognized usage settles before response
@@ -38,8 +39,40 @@ Independent review found a cleanup edge when a ledger operation commits before
 its acknowledgement is lost. Local phase flags could then attempt an invalid
 transition and hide the original error, although funds remained held or settled
 and no proposal was released. Cleanup now checks durable state; focused fault
-tests cover these interrupted acknowledgements. Full regression results follow
-after verification completes.
+tests cover these interrupted acknowledgements. No review findings remain.
+
+Full portable regression:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-assessment-planning-portable.xml
+```
+
+**3,382 passed, 430 deselected in 86.69 seconds.** The 186 new portable cases
+cover the closed release/usage contract, provider lifetime and money failures,
+and CLI prerequisites/storage.
+
+Full rootless Linux regression:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
+  --junitxml=/tmp/recon-assessment-planning-all-linux.xml
+```
+
+**430 passed, 3,382 deselected in 771.15 seconds.** Both full JUnit reports were
+checked for the expected count and zero selected failures/errors/skips. No test,
+owned provider fixture or isolated worker processes remained. Python 3.11 grammar
+(181 files), dependencies, local documentation links and whitespace checks pass.
+All five hosted jobs on implementation `bb9e42c` passed; the
+[PR checks](https://github.com/0xsl0th/recon-cockpit/pull/24/checks) record final
+revision status. The follow-up checkpoint changes documentation only. Leave #24
+unmerged for operator review and separate authorization.
+
+The deterministic workflow/evaluation baseline, fixed ACK diagnostic and R5a TLS
+boundary remain unchanged. No external provider call, real credential, paid usage
+or new tool/target was introduced. This mock bridge does not complete R5 planning
+transport or real-model acceptance; those gates remain before R6. Optional product
+additions stay deferred and live execution stays disabled.
 
 ## R5 direct launch-approval witness — 29 September 2026
 
@@ -130,7 +163,8 @@ blocking issue in PR #22's merged revision or PR #23's implementation; no runtim
 correction was needed. PR #22's identical merge tree and all five PR/post-merge
 checks were reconfirmed. All five hosted checks on #23 implementation `457f164`
 passed; use its PR checks above for the final documentation revision. This slice
-is verified and remains unmerged for operator review and separate authorization.
+was subsequently reviewed and merged with authorization as `a87e5dd`, as recorded
+in the current checkpoint above.
 
 No provider modes, tools, targets, workflow/evidence schemas or default execution
 settings changed. All work uses owned/mock fixtures and synthetic credentials,
