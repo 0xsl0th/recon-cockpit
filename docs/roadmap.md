@@ -4,6 +4,24 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
+**Current priority — 29 September 2026:** continue the original milestone plan
+from the current R5 work. **R5a and R5b are complete and merged within their
+agreed offline scope.** The accepted R1–R4 implementations remain the baseline;
+broader capability-registry or finding-workflow ideas do not reopen them or
+become prerequisites for continuing R5. Finish the remaining R5 work, then R6,
+before additional product ideas. The [completion order below](#milestone-completion-order)
+is the current work queue. No new milestone or parallel GUI track is introduced.
+
+The implementation baseline is `main` at `1369166`, the authorized merge of
+[PR #15](https://github.com/0xsl0th/recon-cockpit/pull/15). All five post-merge
+portable jobs passed. Full implementation verification recorded 2,750 portable
+and 166 Linux tests; the merge review also passed 291 focused portable and 18
+owned TLS Linux tests. These results establish the documented offline scope,
+not completion of live-model evaluation. Live execution remains disabled and
+development/verification continues with owned/mock fixtures only.
+
+### Earlier implementation checkpoints
+
 **Implementation update — 17 September 2026:** R1 and the smallest R2 HTTP
 assessment, private evidence and report slice are reviewed and merged into
 `main` through [PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6) (`07af513`)
@@ -36,14 +54,17 @@ Verification passed 2,300 portable and 132 Linux tests, plus the final 18/18 CLI
 baseline. All five final PR CI jobs passed. The first R5a implementation is the
 [owned TLS provider foundation](provider-foundation.md): disconnected fixture
 transport, synthetic credentials, explicit status-only data release and bounded
-per-attempt accounting. Its publication and verification state are recorded in
-the continuation checkpoint. Real-provider controls and evaluation follow it.
-**R5b update — 28 September 2026:** the [durable provider cost ledger](provider-cost-ledger.md)
+per-attempt accounting. R5a is complete and merged in PR #13; its publication
+and verification state are recorded in the continuation checkpoint.
+**R5b complete — 29 September 2026:** the [durable provider cost ledger](provider-cost-ledger.md)
 adds explicit USD estimates, reservations, actual usage/billing reconciliation and
-atomic account/engagement/session/agent/action caps. Read-only views support the
-future GUI. The local demonstration is simulation-only; transport integration and
-paid-provider evaluation remain future work. See the continuation checkpoint for
-verification and publication state.
+atomic account/engagement/session/agent/action caps, merged in PR #14 (`3a0cb67`).
+The [controlled provider call](controlled-provider-call.md), merged in PR #15
+(`1369166`), integrates one fixed synthetic ACK request with those controls and
+the R5a isolation machinery. R5a is merged in PR #13 (`0a9697f`). The new call
+remains disabled by default and separate from assessment planning. All provider
+verification used owned/mock fixtures and synthetic credentials; real planning,
+further authority separation and live evaluation remain unfinished R5 work.
 See [workflow-assessment.md](workflow-assessment.md) for the
 decision trace and evidence contract. Broader discovery remains future work.
 The baseline below is historical.
@@ -91,12 +112,76 @@ evidence, add discovery, then grow the workflow library and live planning.
 | --- | --- | --- | --- |
 | R1 — implemented | Offline provider through the isolated coordinator and authority | Closes the split between existing boundaries without new targets or spending. | Combined three-step synthetic session and adversarial variants pass through the Linux boundaries. |
 | R2 — smallest slice implemented | One HTTP assessment, minimal capability/evidence contracts and report | Makes the foundation useful and reveals the abstractions tools actually need. | Two-GET owned workflow, private execution/observation artifacts, draft reports and read-only crash inspection. |
-| R3 — smallest slice merged | One isolated single-port TCP adapter | Adds a second typed capability without broadening old HTTP backends. | Owned TCP evidence gates HTTP; 1,977 portable and 96 Linux tests pass. Broader topology remains future work. |
-| R4 — first card merged | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Existing six owned cases retain their outcomes with durable explanations of proposals, executions and stops. |
-| R5 | Isolated live-provider broker and further authority separation | We now have useful actions and a reproducible baseline against which to evaluate a model. | Approved real-model runs with verified credential/egress/data/spend controls. |
-| R6 | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
+| R3 — accepted bounded scope merged | One isolated single-port TCP adapter | Adds a second typed capability without broadening old HTTP backends. | Owned TCP evidence gates HTTP; 1,977 portable and 96 Linux tests passed. Broader discovery remains future work. |
+| R4 — accepted first card/engine merged | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Existing six owned cases retain their outcomes with durable explanations of proposals, executions and stops. |
+| R5 — active; R5a and R5b complete | Isolated live-provider broker and further authority separation | Useful actions and a reproducible baseline provide a basis for model evaluation. | Complete the remaining authority/planning work; real-model validation remains gated on explicit approval. |
+| R6 — baseline available; release work pending | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
 
 Tests and adversarial fixtures accompany every slice; R6 consolidates them.
+
+## Milestone completion order
+
+Continue from R5, the active milestone. Use the original requirements below
+alongside the accepted bounded implementation contracts; do not retroactively
+expand completed scope. Completion of the agreed offline R5a/R5b implementation
+does not claim that live-model acceptance or all of R5 is complete.
+
+1. **Preserve the accepted R1–R4 baseline:** the authority path, owned HTTP and
+   TCP workflow, versioned card/engine, persistent lab and 18-trial evaluation
+   are merged. Keep their documented limits visible. A general capability
+   registry and broader finding workflows remain future work; they are not
+   automatic blockers for R5. Address an earlier contract only when a concrete
+   dependency or regression requires it, within the current milestone's scope.
+2. **R5a complete — PR #13:** preserve the isolated owned TLS provider boundary,
+   synthetic credentials, explicit data release and bounded attempt accounting.
+3. **R5b complete — PRs #14 and #15:** preserve the durable monetary ledger,
+   hierarchical spending limits and first tightly controlled provider-call path.
+   Their agreed verification is offline with owned/mock fixtures. Live execution
+   remains disabled by default; its later activation does not reopen R5b.
+4. **Remaining R5 next:** complete the planned approval/authorization/launch/audit
+   separation and narrowly bounded assessment-planning integration on top of
+   R5a/R5b. Each change must state which authority leaves which process and verify
+   the new boundary with owned fixtures. Accounting needed for the original
+   end-to-end R5 acceptance belongs here. The fixed ACK diagnostic does not
+   establish assessment planning, and a GUI is not a dependency.
+5. **R5 live acceptance is gated:** real-model comparison still requires a later
+   explicit operator instruction and reviewed data/model/credential/spend settings.
+   This priority correction does not authorize paid or external provider calls,
+   real credentials, external targets or VPN testing. Keep that criterion visibly
+   pending while live work is prohibited; do not mark R5 complete using fixtures.
+6. **R6 after the preceding acceptance gates:** consolidate the corpus, repeat
+   functional/adversarial comparisons, obtain actual operator review, package a
+   reproducible release and rehearse the evidence-backed demonstration. Existing
+   baseline grading is a foundation, not completion of R6. If live validation
+   remains unavailable, use the original explicitly disclosed offline fallback;
+   it does not silently satisfy the live acceptance criterion.
+
+### Next bounded R5 work: further authority separation
+
+- Start with the original R5 requirement for narrowly scoped approval/launch and
+  audit interfaces. Record the current ownership and the exact authority leaving
+  each process before implementing the smallest boundary change. Do not create
+  a new submilestone or broaden tools, targets or data release as part of it.
+- Preserve fresh approval, independent authorization, cost reservations,
+  audit acknowledgement before launch and independent executor validation.
+  Moving functions into subprocesses alone does not establish a new boundary.
+- Verify denial, expiry, replay, cancellation, audit failure and cleanup with
+  owned/mock fixtures and the affected Linux isolation checks. Preserve the
+  existing R1–R4 assessment outcomes and R5a/R5b financial/provider invariants.
+- Follow with the remaining bounded planning integration and evaluation work
+  already required by R5. Keep real-model validation visibly pending until
+  separately authorized; all development and verification remains offline.
+
+### Additional ideas deferred until milestone completion
+
+The recently proposed separate budgeted-assessment initiative, general read-only
+session view/timeline API, dashboard based on the GUI reference, and interactive
+GUI controls are not the next work items. Revisit them after the original
+milestones are complete, where they naturally fit, using the established
+architecture and safety model. Necessary accounting or evidence work already
+required by an original milestone stays in that milestone; do not relabel an
+optional UI/API project as a prerequisite. Keep broader tools, multiple agents
+and other stretch goals behind the same original completion priorities.
 
 ## R1: implemented integration and acceptance criteria
 
@@ -177,8 +262,9 @@ compromised host owner's modifications. See [the R2 design](http-assessment.md)
 for evidence ordering, storage bounds and remaining limits.
 
 General capability registration, broader finding/review workflows, richer UI and
-remote assessments remain future work. R3 should first settle the second tool's
-smallest isolated runtime and owned lab contract, then extend the proven path.
+remote assessments remain future work. R3 has delivered the second tool's
+smallest isolated runtime and owned lab contract. Continue the current R5 work
+without making those broader extensions prerequisites.
 
 ## R3–R4: extend the assessment with discovery and workflow cards
 
@@ -195,6 +281,10 @@ interpreted by operator policy, resource ceilings, isolated runtime, parser and
 result schema. Agents select
 capability IDs and bounded parameters; trusted code selects executable,
 arguments and storage paths.
+
+This broader registry direction is not implemented by the accepted bounded
+R3/R4 slices. It remains a future extension unless a concrete dependency of the
+current R5 work requires a minimal change; it does not reopen those slices.
 
 A new adapter needs its own runtime/dependency review, network model and
 adversarial tests. The existing host runner must never become a fallback.
@@ -260,10 +350,16 @@ The first card/engine slice is merged. The persistent owned lab foundation keeps
 one seeded service alive across fresh executors, binds identity and counters to
 evidence, and destroys the instance at session end. See [its contract](owned-lab.md)
 and [verification](verification.md). The [repeated evaluation runner](evaluation.md)
-now measures this fixed baseline; next develop the live-provider controls. Persistent lab operation does not establish
-live-model performance.
+now measures this fixed baseline. Continue the remaining R5 work using these
+accepted implementations as regression references. Persistent lab operation
+does not establish live-model performance.
 
 ## R5: live AI and further privilege separation
+
+**Active milestone:** R5a (PR #13) and both parts of R5b (PRs #14 and #15) are
+complete within their agreed offline scope. The remaining work is further
+authority separation, bounded assessment-planning integration and the explicitly
+gated live-model evaluation described below.
 
 The current constraint remains **live calls disabled**. Build transport and
 credential handling against controlled endpoints and synthetic secrets first.
@@ -296,11 +392,12 @@ Confirmed on 22 September: Enrique Folte is the sole human participant and
 project contact, with Codex assisting development under his review. No other
 members or institutional affiliation are declared. These are target windows,
 not completed-capability claims. R1/R2, the smallest R3 slice and the first R4
-card/engine slice are merged.
+card/engine slice are merged. The windows below preserve the original schedule;
+they do not override the current R5 priority or reopen accepted R3/R4 scope.
 
 | Target window | Outcome |
 | --- | --- |
-| September–October 2026 | R1/R2, smallest R3, first R4 card/engine and persistent lab merged; repeated evaluation runner implemented; verify and publish the 18-trial baseline. |
+| September–October 2026 | R1–R4 bounded implementations, persistent lab and 18-trial baseline merged; R5 active with R5a/R5b complete. Continue remaining R5 work, then R6. |
 | Through 8 November | Finalize proposal and measured baseline; build repeatable owned evaluation where ready. Tool breadth is not a submission prerequisite. |
 | 9–15 November | Human review and project submission; aim for 9 November for margin. |
 | 16 November–10 January 2027 | Complete R3/R4 and the lab assessment corpus. |
@@ -370,7 +467,7 @@ page retrieval was unavailable during this planning pass.
 - Enrique Folte is the confirmed sole human participant and contact; affiliation
   is unspecified. Review submission details before sending.
 - R1 channel topology is settled in [offline-authority.md](offline-authority.md).
-- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). Card v2 uses the [persistent lab foundation](owned-lab.md); the [evaluation runner](evaluation.md) measures repeated synthetic outcomes. Live-provider controls remain next.
+- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). Card v2 uses the [persistent lab foundation](owned-lab.md); the [evaluation runner](evaluation.md) measures repeated synthetic outcomes. Continue the remaining R5 work from the completed R5a/R5b baseline, then R6.
 - Later choose real-model/data/credential/spend settings.
 
 Reference identities and team composition are resolved. This plan does
