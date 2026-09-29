@@ -15,12 +15,18 @@ single-use grants. Both options apply to authority sessions and owned assessment
 The controller retains policy and launch decisions; every launch still requires
 grant consumption when required and durable audit acknowledgement.
 
-The next R5 slice adds [isolated launch admission](docs/isolated-launch-admission.md).
+The merged R5 [isolated launch admission](docs/isolated-launch-admission.md) adds a policy/budget gate.
 `--isolated-launch-admission` requires both options above and makes an independent
 worker reserve execution budgets and issue one-use permits before the existing
 owned executor runs. Policy/profile checks cannot be replaced by request flags,
 and lost receipts or worker faults stop further launches. The host still owns the
 launcher and enforces consent/audit ordering; no live provider path is enabled.
+
+The next slice, [confined fixture launching](docs/isolated-fixture-launcher.md),
+adds `--isolated-launcher` for `--fixture` with all three options above. A fixed
+worker holds the admission client and launches fresh executors; the host sends
+typed execution requests. Approval/audit ordering remains controller-enforced.
+Persistent owned-lab launching is unchanged. All verification remains offline.
 
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 

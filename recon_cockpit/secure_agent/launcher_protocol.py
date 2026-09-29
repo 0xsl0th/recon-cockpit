@@ -1,0 +1,92 @@
+"""Fixed fixture-launcher messages; requests cannot select executables or permits."""
+
+import json
+import re
+
+from . import launch_admission as admission
+from .models import _object_pairs, parse_action
+
+MAX_REPLY = 6 * 65536 + 32768
+CHECKS = frozenset({'namespaces_private', 'nonroot_identity', 'capabilities_dropped',
+    'no_new_privs', 'root_read_only', 'descriptors_private', 'network_private'})
+PROFILES = {'fixture': 'linux-authorized-fixture-executor-v1',
+            'discovery_fixture': 'linux-authorized-discovery-fixture-executor-v1'}
+
+
+def encode(value):
+    raw = json.dumps(value, sort_keys=True, ensure_ascii=True, allow_nan=False,
+                     separators=(',', ':')).encode('ascii')
+    if len(raw) > MAX_REPLY:
+        raise ValueError('launcher_reply_limit')
+    return raw
+
+
+def decode(raw):
+    if type(raw) is not bytes or len(raw) > MAX_REPLY:
+        raise ValueError('launcher_reply_limit')
+    def constant(_):
+        raise ValueError('invalid_launcher_constant')
+    value = json.loads(raw.decode('ascii'), object_pairs_hook=_object_pairs, parse_constant=constant)
+    if type(value) is not dict:
+        raise ValueError('invalid_launcher_object')
+    return value
+
+
+def configuration(value):
+    value = admission.configuration(value)
+    if value['profile'] not in PROFILES:
+        raise ValueError('unsupported_launcher_profile')
+    return value
+
+
+def runtime(value):
+    if type(value) is not dict or set(value) != {'stdlib', 'files'}:
+        raise ValueError('invalid_launcher_runtime')
+    if type(value['stdlib']) is not str or not re.fullmatch(r'/usr/lib/python3\.\d+', value['stdlib']):
+        raise ValueError('invalid_launcher_stdlib')
+    paths = value['files']
+    programs = {'/usr/bin/python3', '/usr/sbin/nft', '/usr/bin/bwrap'}
+    if (type(paths) is not list or not 3 <= len(paths) <= 128
+            or any(type(p) is not str or '..' in p or '//' in p or not (
+                p in programs or re.fullmatch(r'/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*', p)) for p in paths)
+            or len(set(paths)) != len(paths) or not programs <= set(paths)):
+        raise ValueError('invalid_launcher_files')
+    return value
+
+
+def initial(value, now):
+    if type(value) is not dict or set(value) != {'configuration', 'deadline', 'runtime'}:
+        raise ValueError('invalid_launcher_init')
+    config = configuration(value['configuration'])
+    admission.initial({'configuration': config, 'deadline': value['deadline']}, now)
+    runtime(value['runtime'])
+    return config
+
+
+def request(value, config, sequence):
+    fields = {'version', 'service_id', 'session_id', 'sequence', 'operation', 'action', 'policy_digest'}
+    if (type(value) is not dict or set(value) != fields or value['version'] != '1'
+            or value['service_id'] != config['service_id'] or value['session_id'] != config['session_id']
+            or type(value['sequence']) is not int or value['sequence'] != sequence
+            or not 1 <= sequence <= config['limits']['max_steps'] or value['operation'] != 'execute'
+            or value['policy_digest'] != admission.digest(config['policy'])):
+        raise ValueError('invalid_launcher_request')
+    action = parse_action(value['action'])
+    if not admission.profile_allows(action, config):
+        raise ValueError('invalid_launcher_action')
+    return action
+
+
+def receipt(value, result, snapshot):
+    return {'version': '1', 'service_id': value['service_id'], 'session_id': value['session_id'],
+            'sequence': value['sequence'], 'request_digest': admission.digest(value),
+            'result': result, 'snapshot': dict(snapshot)}
+
+
+def result(value, config):
+    if (type(value) is not dict or type(value.get('status')) is not str
+            or value['status'] not in {'succeeded', 'failed', 'timeout', 'output_limit'}
+            or value.get('backend') != PROFILES[config['profile']]
+            or type(value.get('results')) is not list):
+        raise ValueError('invalid_launcher_result')
+    return value

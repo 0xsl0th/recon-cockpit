@@ -29,24 +29,46 @@ verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
 authorize activation, external targets, real credentials or a new merge.
 
-The verified implementation baseline is `main` at `2c02c21`.
-The operator authorized review/merge of [PR #18](https://github.com/0xsl0th/recon-cockpit/pull/18)
-and continuation of R5. Review found no blocking issue; **299 focused portable
-tests and 41 Linux approval tests** passed again. The reviewed head `b21501f`
+The verified implementation baseline is `main` at `e9c5496`.
+The operator authorized review/merge of [PR #19](https://github.com/0xsl0th/recon-cockpit/pull/19)
+and continuation of R5. Review found no blocking issue; **294 focused portable
+tests and 35 Linux admission tests** passed again. The reviewed head `b1fe045`
 merged on 29 September, and the merged tree matches it exactly. All five
-[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36514354136)
-passed. PRs #16–#18 are merged; do not repeat them. This authorization does not
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36517670318)
+passed. PRs #16–#19 are merged; do not repeat them. This authorization does not
 enable live execution or automatically merge subsequent work.
 
-Current development branch: `feature/isolated-launch-admission`, from that baseline.
-The next bounded R5 slice adds an independent policy/profile/budget admission
-worker and one-use launch permits, redeemed before existing executors run.
-Read [isolated-launch-admission.md](isolated-launch-admission.md) for ownership
-and limits. Approval and audit preconditions remain controller-enforced; independent
-launcher custody remains further R5 work. R1–R4, R5a/R5b and the merged audit and
-approval slices remain closed. Prepare the new work for review without a new merge.
+Current development branch: `feature/isolated-fixture-launcher`, from that baseline.
+The next bounded R5 slice moves admission-client custody, permit redemption,
+executor-envelope construction and supervision into a confined worker for the
+existing fixture profiles. Read [isolated-fixture-launcher.md](isolated-fixture-launcher.md)
+for the protocol and intentional capabilities. Approval/audit preconditions
+remain controller-enforced; persistent owned-lab launching remains on its existing
+path. R1–R4, R5a/R5b and merged audit/approval/admission contracts remain closed.
+Prepare this new work for review without a new merge.
 
-## R5 isolated launch admission — open PR for review
+## R5 confined fixture launcher — verified review preparation
+
+`--isolated-launcher` requires `--fixture` and all three isolated approval/audit/
+admission options. A fixed worker holds the admission client, privately redeems
+permits and constructs/supervises fresh executors. The host sends typed execution
+requests, with no command, permit, reset or deadline-update interface. Admission
+state remains in a separate worker. Startup, protocol, receipt or cleanup failures
+stop without host fallback. Lost completion can follow execution and never permits
+retry. Defaults and persistent owned-lab launching are unchanged.
+
+Full verification passed **3,059 portable tests in 65.22 seconds** and **307 real
+Linux tests in 520.50 seconds**, zero selected failures/errors/skips. This includes
+71 new portable cases and 37 Linux cases, all six workflow outcomes with the
+combined boundaries, and actual nested child cleanup during cancellation,
+deadline expiry and concurrent requests. Python 3.11 grammar, dependencies,
+local links and whitespace checks passed. Full JUnit reports:
+`/tmp/recon-launcher-portable.xml` and `/tmp/recon-launcher-all-linux.xml`.
+Detailed limitations and commands are in [verification.md](verification.md).
+All work used owned/mock fixtures and synthetic credentials; external calls and
+spend were zero. Publish the completed work for review without merging it.
+
+## R5 isolated launch admission — merged checkpoint
 
 `--isolated-launch-admission` requires both isolated audit and approvals. A fixed
 worker owns immutable bootstrap policy/profile/limits, step/output reservations
@@ -68,12 +90,13 @@ reports are `/tmp/recon-admission-portable.xml` and
 or spend was used.
 
 Implementation `8a215f3` is published in
-[PR #19](https://github.com/0xsl0th/recon-cockpit/pull/19), open against `main`.
-The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/19/checks) are the
-authoritative current hosted status. The follow-up checkpoint commit changes
-documentation only; do not repeat completed local suites solely for it. Hosted
-portable checks complement the local Linux evidence and do not run kernel tests.
-Do not merge this PR or enable live execution without a new explicit instruction.
+[PR #19](https://github.com/0xsl0th/recon-cockpit/pull/19), merged as `e9c5496` on
+29 September at 03:33:29 UTC after explicit operator authorization. Reviewed
+head `b1fe045` passed all five PR jobs; the merge tree matches it exactly, and
+all five post-merge main jobs passed. Fresh review reran 294 focused portable
+tests and 35 Linux tests (49.07 seconds), with no runtime correction needed.
+JUnit reports: `/tmp/recon-admission-review-portable.xml` and
+`/tmp/recon-admission-review-linux.xml`. Live execution remains disabled.
 
 ## R5 isolated approvals — merged checkpoint
 
@@ -462,26 +485,28 @@ Planning uses synthetic responses.
 - Never connect legacy host execution, arbitrary shell, credentials, broad mounts
   or Docker sockets to agents. Do not change host networking to pass tests.
 - The explicit audit, approval and admission options use separate confined
-  workers for persistence, grants and fixed policy/resource decisions. The host
-  still enforces consent/audit ordering and owns the launcher. Hashes detect
+  workers for persistence, grants and fixed policy/resource decisions. The new
+  fixture launcher owns nested admission and executor supervision; the host
+  still enforces consent/audit ordering and launches persistent labs. Hashes detect
   inconsistency, not host-owner tampering. R1 callback and R2 HTTP framing limits
   remain documented.
-- The operator authorized the completed merges through PR #18.
+- The operator authorized the completed merges through PR #19.
   This does not authorize unrelated
   future merges, submission, messages, paid calls or external targets.
 
 ## Next continuation
 
-1. Start from the current priority and merged checkpoint above. PRs #6–#18 are
+1. Start from the current priority and merged checkpoint above. PRs #6–#19 are
    already merged. Inspect Git and hosted checks before publication; historical
    branch names and open-PR notes below earlier checkpoints are not current work.
-2. Review the isolated launch-admission slice; audit and approvals are already merged.
+2. Review the confined fixture-launcher slice; audit, approvals and admission are merged.
    Then continue the remaining R5 authorization/launcher separation by stating
    exactly which authority leaves each process, then implement and verify the
    next bounded change with owned fixtures. Preserve existing tools and backend
    restrictions; do not schedule a general registry or R3/R4 expansion as a
-   prerequisite. Complete
-   the remaining R5 work before R6.
+   prerequisite. Persistent lab launch custody and independent precondition
+   authentication remain outside the fixture-only slice. Complete remaining R5
+   authority/planning work before R6.
 3. R5a and R5b are complete. Preserve them as regression references while
    developing the remaining bounded planning integration. The synthetic ACK
    path does not complete live assessment planning. Keep live acceptance pending

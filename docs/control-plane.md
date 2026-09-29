@@ -58,6 +58,14 @@ controller still enforces grant consumption and audit ordering before calling
 the wrapper; the worker does not accept approval/audit claims as proof of those
 preconditions.
 
+`--isolated-launcher` additionally moves the fixture launch path into a
+[confined worker](isolated-fixture-launcher.md). The host sends typed `execute`
+requests; the worker privately obtains/redeems admission permits and constructs
+fresh executor launches. This requires `--fixture` and all three isolated options
+above. No executable, permit, approval flag, mount, reset or deadline update is
+accepted from a request. Lost execution receipts stop permanently without replay;
+the action may already have run. Approval/audit preconditions remain host-enforced.
+
 ## Coordinator confinement
 
 The launcher uses a non-setuid Bubblewrap under an unprivileged Linux user. It
