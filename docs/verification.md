@@ -1,5 +1,81 @@
 # Verification record
 
+## R5b controlled provider call — 29 September 2026
+
+Implemented on `feature/controlled-provider-call`, based on PR #14's merge
+`3a0cb67`. That merge was explicitly authorized and its five hosted portable jobs
+passed. The operator authorized the next focused PR but required fully offline
+development and verification, owned/mock fixtures only, no paid or external
+provider calls, and live execution disabled by default.
+
+The [controlled-call contract](controlled-provider-call.md) adds a standalone
+fixed synthetic ACK profile with one durable financial dispatch. It reuses the
+ledger, supervisor, namespace, privilege and HTTP validation machinery. The
+credential worker receives one pinned TCP capability only after sandbox checks
+and durable financial/audit admission. It cannot create sockets, reconnect the
+received capability, create processes or regain namespace privileges. No GUI,
+assessment runner or CLI activates this path.
+
+The full portable command was:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-pilot-portable.xml
+```
+
+**2,750 passed, 166 deselected in 71.53 seconds.** The 73 new portable cases cover
+disabled execution before I/O, destination/config validation, every budget level,
+per-call caps, simulation/provider separation, exact estimates/holds/settlement,
+audit and persistence failures, duplicate receipts, concurrent invocation,
+single-use dispatch, cap changes during setup, cancellation, billing overruns,
+unsupported usage dimensions, private key-file handling and bounded chunked HTTP.
+The earlier R5a reader still rejects chunked framing by default.
+
+The full rootless Linux command was:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
+  --junitxml=/tmp/recon-pilot-linux.xml
+```
+
+**166 passed, 2,750 deselected in 360.70 seconds.** All 18 new Linux cases use
+ephemeral owned TLS certificates, synthetic credentials and loopback servers.
+They exercise real Bubblewrap/seccomp/nftables restrictions, positive network
+witnesses, descriptor transfer, TLS verification, both supported HTTP framings,
+wrong certificates/hostnames, redirects, rate limits, truncation, oversized
+responses, literal/escaped credential echoes, missing usage, rejected output,
+deadline/cancellation cleanup, failed namespace setup and failed durable audit.
+Removing the connect restriction makes startup fail before a connection or key
+handoff. Killing the host controller after the request leaves the durable
+dispatch and full cost hold, with no surviving descendant processes.
+
+Local review caught two boundary issues before final verification: a repeated
+descriptor check incorrectly classified the loader's private libffi descriptor
+as inherited authority, and namespace DROP rules alone could not prevent
+reconnecting a received host-created TCP socket. The inherited descriptor check
+now runs before imports, and a second seccomp layer denies connect/socket
+creation before handoff, with actual disconnect-denial witnesses. Public IPv4
+validation also explicitly rejects multicast, which Python may classify as
+global. These are local development reviews, not an independent security audit.
+
+Both final JUnit reports contain zero selected failures, errors or skips.
+Dependency consistency, compilation, Python 3.11 grammar checks for 143 Python
+files, changed documentation links and whitespace checks passed. No dependencies
+were added. The full Linux suite also freshly verifies existing R5a, planner,
+authority, routed owned-lab, evaluation and workflow behavior after the two shared
+helper changes.
+
+Actual provider calls and spend: **zero**. Live provider framing, model
+availability, usage semantics and billing are not established by these fixtures.
+Production pricing remains explicit operator configuration. Live activation and
+validation are deferred to a later authorized step.
+
+Reviewed implementation `50f51b2` is published in
+[PR #15](https://github.com/0xsl0th/recon-cockpit/pull/15), left open for review.
+The follow-up publication checkpoint edits documentation only; these local
+runtime results remain tied to the implementation above. Inspect the PR's current
+head and hosted checks before any further publication or merge.
+
 ## R5b provider cost ledger — 28 September 2026
 
 Reviewed on `feature/provider-cost-ledger` from `0a9697f`, with the operator's

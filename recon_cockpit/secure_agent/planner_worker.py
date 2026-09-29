@@ -101,7 +101,7 @@ def _set_limits() -> None:
             raise RuntimeError("planner resource limit was not installed")
 
 
-def _install_syscall_filter() -> None:
+def _install_syscall_filter(*, extra_denied=()) -> None:
     library = ctypes.CDLL("libseccomp.so.2", use_errno=True)
     library.seccomp_init.argtypes = [ctypes.c_uint32]
     library.seccomp_init.restype = ctypes.c_void_p
@@ -117,7 +117,7 @@ def _install_syscall_filter() -> None:
     try:
         if library.seccomp_attr_set(context, 4, 1) != 0:  # SCMP_FLTATR_CTL_TSYNC
             raise RuntimeError("planner seccomp synchronization unavailable")
-        for name in DENIED_SYSCALLS:
+        for name in (*DENIED_SYSCALLS, *extra_denied):
             number = library.seccomp_syscall_resolve_name(name.encode("ascii"))
             # libseccomp accepts negative pseudo syscall numbers, including
             # architecture-specific alternatives. Only -1 is __NR_SCMP_ERROR.

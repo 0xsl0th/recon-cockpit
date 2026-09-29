@@ -197,7 +197,45 @@ def _recv(connection, size, deadline):
     return connection.recv(size)
 
 
-def read_response(connection, deadline, credential):
+def _chunked_body(connection, initial, deadline):
+    """Bound both decoded bytes and framing; no extensions, trailers or pipeline."""
+    buffer = bytearray(initial)
+    result = bytearray()
+    wire_bytes = len(initial)
+
+    def more():
+        nonlocal wire_bytes
+        chunk = _recv(connection, 4096, deadline)
+        wire_bytes += len(chunk)
+        if not chunk or wire_bytes > 2 * MAX_RESPONSE_BYTES:
+            raise TransportFailure("malformed_response", 200)
+        buffer.extend(chunk)
+
+    while True:
+        while b"\r\n" not in buffer:
+            if len(buffer) > 8:
+                raise TransportFailure("malformed_response", 200)
+            more()
+        line, _, rest = buffer.partition(b"\r\n")
+        if re.fullmatch(rb"[0-9a-fA-F]{1,8}", line) is None:
+            raise TransportFailure("malformed_response", 200)
+        size = int(line, 16)
+        if len(result) + size > MAX_RESPONSE_BYTES:
+            raise TransportFailure("response_too_large", 200)
+        buffer[:] = rest
+        while len(buffer) < size + 2:
+            more()
+        if buffer[size:size + 2] != b"\r\n":
+            raise TransportFailure("malformed_response", 200)
+        result.extend(buffer[:size])
+        del buffer[:size + 2]
+        if size == 0:
+            if buffer or _recv(connection, 1, deadline):
+                raise TransportFailure("malformed_response", 200)
+            return bytes(result)
+
+
+def read_response(connection, deadline, credential, *, allow_chunked=False):
     """Consume one bounded, uncompressed HTTP/1.1 JSON response and EOF."""
     buffer = bytearray()
     while b"\r\n\r\n" not in buffer:
@@ -223,9 +261,13 @@ def read_response(connection, deadline, credential):
                 or re.fullmatch(rb"[\x20-\x7e]*", value) is None or name in fields):
             raise TransportFailure("malformed_response", status)
         fields[name] = value.strip(b" ")
-    if b"transfer-encoding" in fields or b"content-encoding" in fields:
+    chunked = allow_chunked and fields.get(b"transfer-encoding", b"").lower() == b"chunked"
+    if (b"content-encoding" in fields or b"transfer-encoding" in fields and not chunked
+            or chunked and b"content-length" in fields):
         raise TransportFailure("malformed_response", status)
     length = fields.get(b"content-length", b"")
+    if chunked:
+        length = b"0"
     if re.fullmatch(rb"0|[1-9][0-9]{0,9}", length) is None:
         raise TransportFailure("malformed_response", status)
     length = int(length)
@@ -238,7 +280,12 @@ def read_response(connection, deadline, credential):
     content_type = fields.get(b"content-type", b"").lower()
     if re.fullmatch(rb"application/json(?:; *charset=utf-8)?", content_type) is None:
         raise TransportFailure("malformed_response", status)
-    response = bytearray(body)
+    if chunked:
+        response = _chunked_body(connection, body, deadline)
+        # Reuse the same reflection/JSON validation below; EOF was checked above.
+        length = len(response)
+    else:
+        response = bytearray(body)
     if len(response) > length:
         raise TransportFailure("malformed_response", status)
     while len(response) < length:
@@ -246,7 +293,7 @@ def read_response(connection, deadline, credential):
         if not chunk:
             raise TransportFailure("malformed_response", status)
         response.extend(chunk)
-    if _recv(connection, 1, deadline):
+    if not chunked and _recv(connection, 1, deadline):
         raise TransportFailure("malformed_response", status)
     response = bytes(response)
     if _credential_reflected(response, credential):
