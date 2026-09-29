@@ -4,12 +4,42 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-## R5b controlled provider call — current work
+## Current priority — finish the original milestones in order
+
+The operator directed realignment with the original R1 → R2 → R3 → R4 → R5 → R6
+plan, completing its requirements before the additional ideas proposed after
+PR #15. Follow [the roadmap's completion order](roadmap.md#milestone-completion-order),
+which supersedes older “next step” notes in this file. Preserve the merged R5
+foundations; do not roll them back or treat them as completion of the full plan.
+
+The defined R1/R2 owned slices are implemented. R3's first TCP adapter and R4's
+first card are merged, but their broader planned contracts remain open. The next
+bounded implementation is **R3's registry for the two existing reviewed built-in
+capabilities**, with existing backend restrictions and authority checks intact.
+Then finish the original R4 evidence/finding/card requirements, remaining R5
+authority separation and planning integration, and R6 evaluation/release work.
+Each milestone needs its own acceptance evidence before advancing.
+
+The separate budgeted-assessment proposal, general session-view API and GUI
+dashboard are deferred until the original milestones are complete. Accounting
+actually required by R5 remains part of R5. Use judgment about the later ideas'
+fit without introducing a new parallel milestone or weakening the architecture.
+Live validation remains an explicit pending gate: all current development and
+verification must use owned/mock fixtures, no paid or external provider calls,
+and live execution disabled by default. This sequencing instruction does not
+authorize activation, external targets, real credentials or a new merge.
+
+The implementation baseline is clean `main` at `1369166`. This documentation
+realignment is prepared on `docs/milestone-realignment`; it changes no runtime,
+policy, provider gate or assessment evidence format.
+
+## R5b controlled provider call — merged checkpoint
 
 The operator authorized review and merge of PR #14, followed by the first narrow
 provider integration and a new focused PR. PR #14 was merged as `3a0cb67` on
 28 September; all five [main portable jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36498947841)
-passed. Current branch: `feature/controlled-provider-call`, based on that merge.
+passed. The integration was developed on `feature/controlled-provider-call`
+from that merge and is now merged into `main` as described below.
 
 The operator then explicitly required all development and verification to remain
 offline with owned/mock fixtures, no paid or external provider calls, and live
@@ -25,12 +55,15 @@ no live application command, assessment integration or GUI is enabled.
 
 Final local review and verification are recorded in [verification.md](verification.md):
 2,750 portable and 166 Linux tests passed with no selected failures/errors/skips.
-Implementation commit `50f51b2` is published in
-[PR #15](https://github.com/0xsl0th/recon-cockpit/pull/15), open against `main`.
-The publication checkpoint changes documentation only; inspect its exact head
-and current hosted checks when continuing. PR #15 should remain open for review;
-merge approval for PR #14 does not authorize merging its successor. Activation
-and live billing validation require a later explicit operator instruction.
+The operator subsequently authorized review and merge of
+[PR #15](https://github.com/0xsl0th/recon-cockpit/pull/15). Review found no blocking
+issue; 291 focused portable and all 18 owned TLS Linux tests passed again.
+The reviewed head `7c31c31` (implementation `50f51b2` plus documentation) merged
+as `1369166` on 29 September. The merged tree matches that reviewed head, and all
+five [main portable jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36504726956)
+passed. Local `main` was synchronized and clean. Do not repeat this merge or
+restore the old branch's publication instructions. Activation and live billing
+validation still require a later explicit operator instruction.
 
 ## R5b provider cost ledger — historical publication checkpoint
 
@@ -133,7 +166,8 @@ the post-merge CI correction, the persistent owned lab foundation and the
 repeatable evaluation runner are reviewed and merged. PR #12 is complete.**
 Read [evaluation.md](evaluation.md), [owned-lab.md](owned-lab.md), [workflow-assessment.md](workflow-assessment.md),
 [verification.md](verification.md) and [roadmap.md](roadmap.md). Inspect Git and
-current main checks before more work. Do not restart R1/R2/R3/R4 or repeat their merges.
+current main checks before more work. Do not repeat these completed slices or
+their merges; remaining R3/R4 requirements follow the current priority above.
 
 An earlier recovery found a clean checkout at `401cbe1`. Saved conversation and
 GitHub state confirmed that PR #9 had already been reviewed and merged with
@@ -334,22 +368,25 @@ Planning uses synthetic responses.
 - Authority/UI/broker/audit/launcher still share a trusted host process. Hashes
   detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP framing
   limits remain documented.
-- The operator authorized the completed PR #6/#7/#8/#9/#10/#11 merges.
+- The operator authorized the completed merges through PR #15.
   This does not authorize unrelated
   future merges, submission, messages, paid calls or external targets.
 
 ## Next continuation
 
-1. Start from the R5b checkpoint above and preserve the reviewed implementation.
-   PR #10, PR #11, PR #12 and PR #13 are already present as merges; do not repeat
-   their implementation or merge. Inspect Git and hosted checks before publication.
-2. R5b is on `feature/provider-cost-ledger`. Check its remote head and PR state.
-   Follow its monetary admission/dispatch/settlement contract
-   when building the future real-provider broker. Paid calls still need explicit
-   data/model/credential/spend choices. Do not widen the singleton executor or
-   attach the legacy Nmap runner.
-3. Keep kernel verification separate from hosted portable CI and record measured
-   results/publication state for every slice.
+1. Start from the current priority and merged checkpoint above. PRs #6–#15 are
+   already merged. Inspect Git and hosted checks before publication; historical
+   branch names and open-PR notes below earlier checkpoints are not current work.
+2. Finish the earliest open original requirement: R3's reviewed built-in
+   capability registry for `tcp_connect` and `http_probe`. Use the roadmap's
+   bounded acceptance criteria; keep the singleton executors and legacy Nmap
+   runner separate. Then close R4 before advancing the remaining R5 and R6 work.
+3. Preserve R5a/R5b as regression references. The synthetic ACK path does not
+   complete live assessment planning. Keep live acceptance pending until the
+   operator explicitly enables it; do not fill that gap with a premature GUI.
+4. Keep kernel verification separate from hosted portable CI and record measured
+   results/publication state for every slice. Revisit the additional ideas only
+   after the original milestone acceptance gates have been satisfied.
 
 ## Recovery and verification
 
