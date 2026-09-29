@@ -20,9 +20,9 @@ the canonical action, policy, profile, limits, deadline and private namespaces.
 This bounded slice supports the existing `--fixture` HTTP and discovery profiles,
 including all six fixed workflow cases. It requires `--isolated-launch-admission`,
 `--isolated-approvals` and `--isolated-audit`. Construction and dry-run do not start
-the launcher. Persistent `--owned-lab`, routed targets, legacy execution and
-evaluation batches do not accept the new option; their existing modes remain
-unchanged. There is no new tool, provider activation, general registry or GUI.
+the launcher. The dependent [persistent-lab extension](isolated-owned-lab-launcher.md)
+adds `--owned-lab`; routed targets, legacy execution and evaluation batches remain
+outside this option. There is no new tool, provider activation, general registry or GUI.
 
 The host controller still consumes human grants and records durable intent before
 sending an execute request. The launcher does not accept approval/audit booleans,
@@ -114,8 +114,8 @@ and any policy-required fresh terminal approval. Scripted PTY tests establish
 mechanics, not actual human consent. Live providers remain disabled; development
 and verification use only owned/mock fixtures and synthetic credentials.
 
-This advances R5 launcher custody for fixture profiles. The persistent lab still
-uses its established host launcher; remaining authorization/launch integration
+This advances R5 launcher custody for fixture profiles. The dependent persistent
+lab integration extends that custody to the existing lab; remaining authorization
 and bounded assessment planning precede explicitly gated live-model acceptance
 and R6. Accepted R1–R4, R5a/R5b and audit/approval/admission contracts remain closed.
 The R5b monetary ledger is unchanged. See [verification.md](verification.md) and

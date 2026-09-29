@@ -106,8 +106,13 @@ process and namespace creation, bounded scratch space and writable private proc
 UID/GID maps for child setup; it is trusted fixed code, not an arbitrary-plugin
 sandbox. Lost completion receipts can follow execution and never permit retry.
 The host still establishes consent/audit ordering and can bypass its own client;
-independent authentication of those preconditions is not claimed. Persistent lab
-launching stays on its existing path in this slice.
+independent authentication of those preconditions is not claimed. The
+[persistent-lab extension](isolated-owned-lab-launcher.md) keeps owner management
+and pinned namespace handles inside this worker too. Only this profile includes
+fixed nsenter; admission and tool children cannot access it or the management
+channel. Closure acknowledges tree destruction and the last accepted completion's
+counters, not a fresh final sample. A lost completion can undercount attempted
+work; it never authorizes retry or produces a validated positive assessment.
 
 ## Isolation assumptions
 

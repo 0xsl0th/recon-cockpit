@@ -69,9 +69,12 @@ owns admission-client custody, permit redemption, executor-envelope construction
 and child supervision. The host holds only its typed execute client. A separate
 nested worker still owns admission state, and each executor retains its own
 namespace/policy checks. The launcher has no host network, terminal or audit
-storage. Consent/audit ordering remains a controller precondition; persistent
-owned-lab launch custody and independent precondition authentication are not
-provided by this fixture-only slice.
+storage. The [persistent-lab extension](isolated-owned-lab-launcher.md) also moves
+the owner, management pipe and pinned namespace handles into that worker for
+`--owned-lab`. Executors keep the same fixed lab network across actions, while
+their other namespaces remain fresh. Host closure evidence uses the last
+acknowledged totals only after verified tree teardown. Consent/audit ordering
+remains a controller precondition; independent authentication is still pending.
 
 `SessionRunner` adds a single-use loop around that same controller. Its fixed
 `SessionMockProvider.propose(observation, control=...)` adapter supervises a

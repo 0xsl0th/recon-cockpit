@@ -38,18 +38,62 @@ merged on 29 September, and the merged tree matches it exactly. All five
 passed. PRs #16–#19 are merged; do not repeat them. This authorization does not
 enable live execution or automatically merge subsequent work.
 
-Current development branch: `feature/isolated-fixture-launcher`, from that baseline.
-The next bounded R5 slice moves admission-client custody, permit redemption,
-executor-envelope construction and supervision into a confined worker for the
-existing fixture profiles. Read [isolated-fixture-launcher.md](isolated-fixture-launcher.md)
-for the protocol and intentional capabilities. Approval/audit preconditions
-remain controller-enforced; persistent owned-lab launching remains on its existing
-path. R1–R4, R5a/R5b and merged audit/approval/admission contracts remain closed.
-Prepare this new work for review without a new merge.
+Current development branch: `feature/isolated-owned-lab-launcher`, stacked on
+reviewed PR #20 head `007f24f` (`feature/isolated-fixture-launcher`). PR #20 is
+**open, reviewed without blocking findings, not merged**. Fresh review passed
+243 focused portable tests and 37 Linux tests (41.42 seconds); all five hosted
+jobs on that head passed. No review comments were outstanding. Main remains
+`e9c5496`; the latest continuation instruction does not supply new merge authority.
 
-## R5 confined fixture launcher — open PR for review
+The next bounded R5 slice extends confined launcher custody to the existing
+persistent `--owned-lab` workflow. Read [isolated-owned-lab-launcher.md](isolated-owned-lab-launcher.md)
+for ownership, closure semantics and remaining trust limits. The host keeps inert
+lab identity and a typed execution client; the worker owns the lab, management
+pipe, namespace pins, nested admission and fresh executors. No new cases, tools,
+targets, GUI or provider activation are introduced. R1–R4 and R5a/R5b stay closed.
 
-`--isolated-launcher` requires `--fixture` and all three isolated approval/audit/
+Prepare this dependent change for review against PR #20's branch. Each PR requires
+separate explicit merge authorization; after #20 merges, retarget the dependent
+PR to main and review its resulting diff/checks before any separately authorized
+merge. Do not merge either as part of this continuation.
+
+## R5 persistent-lab launcher — verified review slice
+
+Completed confined custody for the existing persistent lab: fixed owner lifecycle,
+private management and namespace pins, separate admission and fresh executors.
+All six workflow outcomes, card v2 and read-only evidence inspection are preserved.
+The host validates completion continuity and only returns closure after verified
+teardown, retaining last acknowledged counters even after a lost reply. The worker
+resource helper preserves stricter inherited hard ceilings; SessionLimits retains
+its public type and digest through a pure module.
+
+Full verification passed **3,093 portable tests in 80.23 seconds** and **327 rootless
+Linux tests in 559.12 seconds**, zero selected failures/errors/skips. This includes
+34 new portable and 20 new Linux cases. Python 3.11 grammar, dependencies, local
+links, whitespace and post-run process cleanup passed. Reports:
+`/tmp/recon-owned-launcher-portable.xml`, `/tmp/recon-owned-launcher-all-linux.xml`.
+See [verification.md](verification.md) for commands, earlier fixture corrections
+and the distinction between scripted mechanics and actual operator acceptance.
+Provider calls, real credentials and spend remain zero; live execution is disabled.
+
+## Remaining milestone gates
+
+1. Review and separately authorize the pending launcher merges.
+2. Complete the original remaining authorization integration: the launcher owns
+   launches and admission, but still trusts controller-established consent and
+   durable audit preconditions. Independently authenticated preconditions remain
+   unfinished; process separation alone does not satisfy them.
+3. Integrate narrowly bounded assessment planning with the completed R5a/R5b
+   provider and money controls. The fixed ACK diagnostic is not that integration.
+4. Keep real-model comparison visibly pending until explicit authorization and
+   reviewed data/model/credential/spend settings. Continue offline meanwhile.
+5. Then complete R6 corpus/evaluation consolidation, actual operator review,
+   reproducible packaging and demonstration, disclosing any approved offline
+   fallback. Do not reopen completed milestones or add optional GUI/API scope.
+
+## R5 confined fixture launcher — reviewed, awaiting merge authorization
+
+In PR #20 alone, `--isolated-launcher` requires `--fixture` and all three isolated approval/audit/
 admission options. A fixed worker holds the admission client, privately redeems
 permits and constructs/supervises fresh executors. The host sends typed execution
 requests, with no command, permit, reset or deadline-update interface. Admission
@@ -73,9 +117,13 @@ Implementation `838c4a1` is published in
 The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/20/checks) are the
 authoritative current hosted status. The follow-up checkpoint changes documentation
 only; local runtime/test evidence remains tied to `838c4a1`. Hosted portable CI
-does not replace local kernel verification. Do not repeat the full local suites
-solely for the checkpoint, merge this PR or enable live execution without a new
-explicit instruction.
+does not replace local kernel verification. Do not repeat full local suites solely
+for a documentation checkpoint. New runtime changes require appropriate verification. Merge and live execution still require
+explicit authorization. Review on 29 September reran 243 portable tests and all
+37 launcher Linux cases without correction; reports are
+`/tmp/recon-launcher-review-portable.xml` and `/tmp/recon-launcher-review-linux.xml`.
+All five [checks on reviewed head `007f24f`](https://github.com/0xsl0th/recon-cockpit/actions/runs/36520129501)
+passed. Persistent-lab support is the dependent slice described above.
 
 ## R5 isolated launch admission — merged checkpoint
 

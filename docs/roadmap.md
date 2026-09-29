@@ -166,13 +166,19 @@ requires a durable acknowledgement before the existing launch gate proceeds.
 review, unpredictable challenges and single-use grant state reside in one fixed
 worker. [Isolated launch admission](isolated-launch-admission.md) is merged in
 PR #19: an independent worker owns fixed policy/profile checks, execution
-reservations and one-use permits. The next focused change is the
-[confined fixture launcher](isolated-fixture-launcher.md): its worker owns the
-admission client, permit redemption, executor-envelope construction and supervision.
-Approval/audit ordering remains host-enforced; persistent lab launching remains
-on its established path. Complete remaining authorization/launch integration
-before bounded planning; the full R5 boundary is not yet complete.
-The new work is prepared for review, with no new merge or live execution authorized.
+reservations and one-use permits. The reviewed, unmerged
+[confined fixture launcher](isolated-fixture-launcher.md) (PR #20, `007f24f`) owns
+the admission client, permit redemption, executor-envelope construction and
+supervision. Its dependent [persistent-lab integration](isolated-owned-lab-launcher.md)
+moves the existing lab owner, management pipe and namespace pins into that worker,
+preserving card v2 and all six cases. Both await separately authorized merges.
+
+The next dependency after those slices is independent consent/audit precondition
+integration: ordering remains controller-enforced today. Follow with bounded
+assessment planning on the existing provider/cost controls, then gated real-model
+acceptance. Full R5 remains incomplete. R6 follows those acceptance gates; optional
+GUI/session APIs, broader tools and lab scenarios remain deferred. No new merge
+or live execution is authorized by this continuation.
 
 - Start with the original R5 requirement for narrowly scoped approval/launch and
   audit interfaces. Record the current ownership and the exact authority leaving
