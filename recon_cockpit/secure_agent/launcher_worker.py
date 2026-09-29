@@ -147,10 +147,12 @@ def execute(action, config, closure, control, snapshot):
 
 def main():
     witness_reader = None
+    approval_reader = None
     try:
-        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] != 'launch-witness'):
+        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions'}):
             raise ValueError('invalid_launcher_bootstrap')
         witnessed = len(sys.argv) == 7
+        approval_required = witnessed and sys.argv[6] == 'launch-preconditions'
         _, host = bootstrap._arguments(['three_step', *sys.argv[2:6]])
         checks = boundary(host)
         channel = socket.socket(fileno=0)
@@ -160,7 +162,7 @@ def main():
         descriptors = []
         if witnessed:
             from recon_cockpit.secure_agent import audit_witness
-            init, descriptors = audit_witness.receive(channel, 1)
+            init, descriptors = audit_witness.receive(channel, 2 if approval_required else 1)
         else:
             init = packet(channel)
         if admission.digest(init) != sys.argv[1]:
@@ -171,8 +173,13 @@ def main():
             config = protocol.initial(init, time.monotonic())
             if ('audit_witness' in init) != witnessed:
                 raise ValueError('launcher_witness_mode_changed')
+            if ('approval_witness' in init) != approval_required:
+                raise ValueError('launcher_approval_mode_changed')
             if witnessed:
-                witness_reader = audit_witness.Reader(descriptors.pop(), init['audit_witness'])
+                witness_reader = audit_witness.Reader(descriptors.pop(0), init['audit_witness'])
+            if approval_required:
+                from recon_cockpit.secure_agent import approval_witness
+                approval_reader = approval_witness.Reader(descriptors.pop(), init['approval_witness'])
         finally:
             for fd in descriptors:
                 os.close(fd)
@@ -198,9 +205,13 @@ def main():
                 policy = parse_policy(config['policy'])
                 if witness_reader is not None:
                     witness_reader.require(config, action, control)
+                if approval_reader is not None:
+                    approval_reader.require(config, action, control)
                 granted = gate.admit(action, policy, control=control)
                 if granted['reason'] is not None or gate.redeem(granted['permit'], action, policy, control=control)['reason'] is not None:
                     raise ValueError('launcher_admission_denied')
+                if approval_reader is not None:
+                    approval_reader.check_fresh(control)
                 result = (owned.run(action, policy, control=control) if owned is not None else
                           execute(action, config, init['runtime'], control, gate.snapshot))
                 if owned is not None and dict(owned.snapshot) != dict(gate.snapshot):
@@ -212,6 +223,8 @@ def main():
         sys.stderr.write('fixture_launcher_refused\n')
         return 78
     finally:
+        if approval_reader is not None:
+            approval_reader.close()
         if witness_reader is not None:
             witness_reader.close()
 

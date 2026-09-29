@@ -30,7 +30,7 @@ OWNED_MODULES = ('owned_launcher_runtime', 'owned_lab', 'owned_lab_worker', 'own
 
 
 class LinuxFixtureLauncher:
-    def __init__(self, backend, *, audit=None):
+    def __init__(self, backend, *, audit=None, approvals=None):
         if type(backend) not in {AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend, AuthorizedOwnedLabBackend}:
             raise ValueError('unsupported_launcher_backend')
         self.name = backend.name
@@ -50,11 +50,26 @@ class LinuxFixtureLauncher:
         self._lab_context = self._lab_receipt = None
         self._cleanup_verified = False
         self._witness_reader = self._witness_source = None
+        self._approval_reader = self._approval_source = None
+        self._approval_service = approvals
+        if approvals is not None:
+            from .approval_isolation import LinuxApprovalService
+            if (audit is None or type(approvals) is not LinuxApprovalService
+                    or approvals._session_id != self._config['session_id']
+                    or approvals._policy.to_dict() != self._config['policy']):
+                raise ValueError('launcher_requires_bound_isolated_approval')
         if audit is not None:
             from .audit_isolation import LinuxAuditSink
             if type(audit) is not LinuxAuditSink:
                 raise ValueError('launcher_requires_isolated_audit')
             self._witness_reader, self._witness_source = audit.take_launch_witness()
+        if approvals is not None:
+            try:
+                self._approval_reader, self._approval_source = approvals.take_launch_witness()
+            except BaseException:
+                self._witness_reader.close()
+                self._witness_reader = None
+                raise
 
     @property
     def identity(self):
@@ -106,7 +121,8 @@ class LinuxFixtureLauncher:
         for source, destination in files:
             argv += ['--ro-bind', source, destination]
         for name in (*MODULES, *(OWNED_MODULES if self._config['profile'] == 'owned_lab' else ()),
-                     *(('audit_witness', 'audit_protocol') if self._witness_source is not None else ())):
+                     *(('audit_witness', 'audit_protocol') if self._witness_source is not None else ()),
+                     *(('approval_witness', 'approval_protocol') if self._approval_source is not None else ())):
             argv += ['--ro-bind', str(Path(__file__).with_name(name+'.py').resolve()),
                      '/app/recon_cockpit/secure_agent/'+name+'.py']
         # Private /proc must permit nested Bubblewrap's UID/GID-map writes.
@@ -114,7 +130,9 @@ class LinuxFixtureLauncher:
         argv += ['--remount-ro', '/dev', '--remount-ro', '/',
             '/usr/bin/python3', '-I', '-S', '/app/recon_cockpit/secure_agent/launcher_worker.py',
             commitment, *(host[name] for name in ('user', 'net', 'mnt', 'pid'))]
-        if self._witness_source is not None:
+        if self._approval_source is not None:
+            argv.append('launch-preconditions')
+        elif self._witness_source is not None:
             argv.append('launch-witness')
         return argv
 
@@ -123,11 +141,15 @@ class LinuxFixtureLauncher:
             raise IsolationUnavailable('Invalid fixture launcher control')
         self.check_available()
         control.check()
+        if self._approval_source is not None and self._config['policy']['require_approval']:
+            self._approval_service.seal_launch_witness()
         self._control = control
         closure, files = self._runtime(control)
         initial = {'configuration': self._config, 'deadline': control.deadline, 'runtime': closure}
         if self._witness_source is not None:
             initial['audit_witness'] = self._witness_source
+        if self._approval_source is not None:
+            initial['approval_witness'] = self._approval_source
         protocol.initial(initial, time.monotonic())
         commitment = admission.digest(initial)
         self._supervisor = _Supervisor(10, protocol.MAX_REPLY*16+4096, control=control)
@@ -142,10 +164,17 @@ class LinuxFixtureLauncher:
                 self._send(admission.encode(initial))
             else:
                 try:
-                    self._send(admission.encode(initial), fd=self._witness_reader.fileno())
+                    if self._approval_reader is None:
+                        self._send(admission.encode(initial), fd=self._witness_reader.fileno())
+                    else:
+                        self._send(admission.encode(initial), fd=self._witness_reader.fileno(),
+                                   approval_fd=self._approval_reader.fileno())
                 finally:
                     self._witness_reader.close()
                     self._witness_reader = None
+                    if self._approval_reader is not None:
+                        self._approval_reader.close()
+                        self._approval_reader = None
             expected = {'version': '1', 'ready': True, 'bootstrap_digest': commitment,
                         'checks': dict.fromkeys(protocol.CHECKS, True)}
             if protocol.encode(self._reply()) != protocol.encode(expected):
@@ -154,14 +183,15 @@ class LinuxFixtureLauncher:
         finally:
             child.close()
 
-    def _send(self, raw, *, fd=None):
+    def _send(self, raw, *, fd=None, approval_fd=None):
         while True:
             self._supervisor.check()
             if self._stopped.is_set():
                 raise IsolationUnavailable('Fixture launcher stopped')
             try:
                 written = (self._channel.send(raw) if fd is None else self._channel.sendmsg(
-                    [raw], [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array('i', [fd]))]))
+                    [raw], [(socket.SOL_SOCKET, socket.SCM_RIGHTS,
+                             array.array('i', [fd] if approval_fd is None else [fd, approval_fd]))]))
                 if written != len(raw):
                     raise IsolationUnavailable('Short fixture launcher send')
                 return
@@ -240,6 +270,9 @@ class LinuxFixtureLauncher:
             if self._witness_reader is not None:
                 self._witness_reader.close()
                 self._witness_reader = None
+            if self._approval_reader is not None:
+                self._approval_reader.close()
+                self._approval_reader = None
             if self._channel is not None:
                 self._channel.close()
         finally:

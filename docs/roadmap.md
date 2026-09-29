@@ -12,11 +12,11 @@ become prerequisites for continuing R5. Finish the remaining R5 work, then R6,
 before additional product ideas. The [completion order below](#milestone-completion-order)
 is the current work queue. No new milestone or parallel GUI track is introduced.
 
-The verified implementation baseline is `main` at `38282b9`, after the authorized
-merges of PR #20 (fixture launcher, `31d0a1f`) and PR #21 (persistent lab custody,
-`38282b9`). PRs #16–#19 are also merged. Fresh merge review passed 277 portable and
-57 Linux tests, both reviewed heads passed five hosted jobs, and all five final
-post-merge main jobs passed. The reviewed trees were preserved exactly. These
+The verified implementation baseline is `main` at `5584efe`, after the authorized
+merge of PR #22 (direct durable-intent verification). PRs #16–#21 are also merged.
+Fresh review of #22's final head `1c26828` passed 372 portable and 35 Linux tests,
+its five hosted jobs passed, and all five post-merge main jobs passed. The reviewed
+tree was preserved exactly. These
 results establish the documented offline scope, not completion of live-model
 acceptance. Live execution remains disabled; development and verification use
 owned/mock fixtures only.
@@ -171,17 +171,20 @@ reservations and one-use permits. The [confined fixture launcher](isolated-fixtu
 are now merged. The launcher owns admission-client custody, executor supervision,
 and persistent lab management/namespace pins, preserving card v2 and all six cases.
 
-The next bounded slice is [independent durable-intent verification](launch-audit-witness.md):
+With merged [independent durable-intent verification](launch-audit-witness.md),
 the isolated writer sends a direct witness after fsync, and the launcher checks it
-before admission or execution. Published as `845a093` in
-[PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22), with 3,146 portable and
-362 Linux tests passing, it completes the durability portion of precondition
-integration and awaits review. Fresh approval authentication remains the next authority dependency;
-audit producer claims do not establish consent. Follow with bounded assessment
-planning on existing provider/cost controls, then gated real-model acceptance.
+before admission or execution. [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22)
+completes the durability portion of precondition integration. The current
+[direct approval gate](launch-approval-witness.md) on `feature/launcher-approval-witness`
+independently requires proof of a consumed grant from the approval worker,
+retains its original expiry and rechecks freshness after admission. It closes
+the remaining reliance on a host consent claim in the opt-in launch path; the
+fixed worker and terminal remain trusted. Complete its verification/review, then
+follow with bounded assessment planning on existing provider/cost controls and
+gated real-model acceptance.
 Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
-broader tools and lab scenarios remain deferred. Only PRs #20/#21 were authorized
-for merge; leave subsequent work for review and keep live execution disabled.
+broader tools and lab scenarios remain deferred. The latest authorization covered
+PR #22 only; leave subsequent work for review and keep live execution disabled.
 
 - Start with the original R5 requirement for narrowly scoped approval/launch and
   audit interfaces. Record the current ownership and the exact authority leaving

@@ -29,8 +29,40 @@ verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
 authorize activation, external targets, real credentials or a new merge.
 
-The verified implementation baseline is `main` at `38282b9` after the authorized
-review and dependency-order merges of [PR #20](https://github.com/0xsl0th/recon-cockpit/pull/20)
+The verified implementation baseline is `main` at `5584efe`, the authorized
+merge of [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22) at 06:31:48 UTC
+on 29 September. Reviewed head `1c26828` had all five hosted jobs passing and no
+outstanding comments or blocking findings. Fresh review passed **372 portable
+tests in 1.35 seconds** and **35 Linux boundary tests in 65.48 seconds** without
+runtime corrections. The merge tree exactly matches the reviewed tree, and all
+five [post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36531540371)
+passed. Reports: `/tmp/recon-audit-witness-review-portable.xml` and
+`/tmp/recon-audit-witness-review-linux.xml`. PRs #16–#22 are merged; do not repeat
+them. Subsequent merges and live execution still require explicit authorization.
+
+Current development branch: `feature/launcher-approval-witness`, from that main.
+The next R5 slice adds independent fresh-approval verification at the confined
+launcher. Read [launch-approval-witness.md](launch-approval-witness.md) for ownership
+and trust limits. `--require-launch-approval` requires the direct audit gate and
+all its prerequisites. Only the approval worker can send proof of a consumed
+grant through the selected one-way endpoint. The launcher verifies exact
+bindings and the original expiry before admission and freshness again after
+redemption. This closes reliance on host consumption replies in the opt-in path.
+The fixed worker, terminal and trusted bootstrap remain trusted; scripted PTYs
+do not establish actual operator acceptance. No provider, tool, target, workflow
+case or GUI is added. Leave this subsequent work unmerged for review.
+
+## R5 direct approval gate — verification in progress
+
+All **3,196 portable tests passed in 86.32 seconds**, and **44 focused Linux tests
+passed in 92.59 seconds**. The complete Linux regression run is still pending.
+Reports: `/tmp/recon-approval-witness-portable.xml` and
+`/tmp/recon-approval-witness-focused-linux.xml`.
+
+## Earlier dependency-order merges
+
+The preceding baseline was `38282b9` after the authorized dependency-order merges
+of [PR #20](https://github.com/0xsl0th/recon-cockpit/pull/20)
 and [PR #21](https://github.com/0xsl0th/recon-cockpit/pull/21). PR #20 merged as
 `31d0a1f` at 05:36:33 UTC; #21 was retargeted to main and merged as `38282b9` at
 05:38:13 UTC on 29 September. Reviewed heads were `007f24f` and `0298e1a`;
@@ -45,21 +77,20 @@ passed. The intermediate main run for #20 was superseded/cancelled by the #21
 merge. PRs #16–#21 are merged; do not repeat them. This authorization does not
 extend to subsequent PRs or live execution.
 
-Current development branch: `feature/launcher-audit-witness`, from that verified
-main. The next necessary R5 slice independently verifies durable execution intent
+The completed `feature/launcher-audit-witness` slice independently verifies durable intent
 inside the launcher using a direct one-way channel from the isolated audit writer.
 Read [launch-audit-witness.md](launch-audit-witness.md) for ownership and trust limits.
 `--require-launch-audit` requires all existing isolated launch/approval/audit options;
 missing, forged, stale or mismatched witness data stops before admission/execution.
 No new provider, tool, target, workflow case or GUI is introduced. This verifies
-durability; authentication of fresh approval is still pending. Implementation
-`845a093` is published in [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22)
-against main. Leave it unmerged for review. The
+durability; independent approval authentication is the separate current slice.
+Implementation `845a093`, published in [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22),
+is now merged into main as `5584efe`. The
 [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/22/checks) give current
-hosted status. Production remains at `845a093`; the follow-up changes documentation
-and makes an existing cancellation test deterministic, as recorded below.
+hosted status. That PR's follow-up changed documentation and made an existing
+cancellation test deterministic, as recorded below.
 
-## R5 direct audit gate — completed review slice
+## R5 direct audit gate — merged checkpoint
 
 The launcher independently checks the selected writer's fsynced intent through
 an exclusive one-way endpoint before admission or execution. This completes the
@@ -81,8 +112,8 @@ test's reserved-call assertion tested the wrong phase. The test now cancels at
 the scripted transport wait and asserts that the call is already reserved. All
 **214 offline-authority and broker tests passed in 0.98 seconds** after this
 test-only correction (`/tmp/recon-authority-cancel-portable.xml`). Production is
-unchanged; the full Linux evidence remains valid. See PR #22's checks for hosted
-verification of the corrected final head before review/merge.
+unchanged; the full Linux evidence remained valid. All five hosted jobs passed
+on corrected final head `1c26828`, which was reviewed and merged as recorded above.
 
 ## R5 persistent-lab launcher — merged checkpoint
 
@@ -113,10 +144,11 @@ five-job portable matrix.
 
 ## Remaining milestone gates
 
-1. Review the new durable-intent gate and separately authorize its merge.
-2. Independently authenticate fresh approval at the launch boundary. Controller
-   grant consumption remains trusted today; a durable producer claim is not proof
-   of human consent. Preserve the completed audit/admission/launcher contracts.
+1. Finish verification and review of the new direct approval gate; separately
+   authorize its merge. Durable audit and fresh grant verification are independent
+   launch preconditions. A selected terminal/worker still cannot prove a human's
+   identity or intent independently of that trusted environment.
+2. Preserve the completed audit, approval, admission and launcher contracts.
 3. Integrate narrowly bounded assessment planning with the completed R5a/R5b
    provider and money controls. The fixed ACK diagnostic is not that integration.
 4. Keep real-model comparison visibly pending until explicit authorization and
@@ -124,6 +156,15 @@ five-job portable matrix.
 5. Then complete R6 corpus/evaluation consolidation, actual operator review,
    reproducible packaging and demonstration, disclosing any approved offline
    fallback. Keep accepted milestones closed and optional GUI/API scope deferred.
+
+For the next planning slice, preserve the fixed ACK diagnostic's contract in
+`provider_pilot.py`. A bounded assessment proposal/release profile must be
+separate and exercised first through owned/mock responses, the existing isolated
+parser/coordinator, simulation monetary reservations/settlement and the completed
+launch preconditions. Preserve the deterministic workflow/evaluation baseline;
+model output supplies proposals, never policy, grants or finding truth. Existing
+R5a status-only release does not authorize exporting raw evidence, credentials or
+arbitrary engagement data. Live validation remains separately authorized.
 
 ## R5 confined fixture launcher — merged checkpoint
 

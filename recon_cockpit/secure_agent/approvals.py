@@ -54,18 +54,23 @@ class ApprovalStore:
 
     def consume(self, reference: str | None, action: Action, policy: Policy) -> str | None:
         """Return a machine-readable failure code, or None on success."""
+        return self.consume_with_grant(reference, action, policy)[0]
+
+    def consume_with_grant(self, reference: str | None, action: Action,
+                           policy: Policy) -> tuple[str | None, Approval | None]:
+        """Burn once and retain the original expiry for the trusted launch witness."""
         with self._lock:
             if reference is None:
-                return "approval_missing"
+                return "approval_missing", None
             if not isinstance(reference, str) or len(reference) != 48:
-                return "approval_unknown_or_replayed"
+                return "approval_unknown_or_replayed", None
             grant = self._grants.pop(reference, None)
             if grant is None:
-                return "approval_unknown_or_replayed"
+                return "approval_unknown_or_replayed", None
             if self._clock() >= grant.expires_at:
-                return "approval_expired"
+                return "approval_expired", None
             if grant.action_digest != action.digest:
-                return "approval_action_changed"
+                return "approval_action_changed", None
             if grant.policy_digest != policy.digest:
-                return "approval_policy_changed"
-            return None
+                return "approval_policy_changed", None
+            return None, grant

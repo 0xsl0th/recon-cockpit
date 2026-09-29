@@ -28,11 +28,14 @@ The merged [confined fixture launcher](docs/isolated-fixture-launcher.md) adds
 `--workflow-assessment CASE --owned-lab` as well as `--fixture`. A fixed worker owns
 the admission client, lab lifecycle, namespace handles and executor launches;
 the host sends typed execution requests. Approval/audit ordering remains
-controller-enforced by default. The next slice,
-[direct launch-audit verification](docs/launch-audit-witness.md), adds
+controller-enforced by default. The merged
+[direct launch-audit verification](docs/launch-audit-witness.md) adds
 `--require-launch-audit`: the launcher must receive a matching durable-intent
-witness directly from the audit worker before admission or execution. Fresh
-approval authentication remains pending. All verification remains offline.
+witness directly from the audit worker before admission or execution.
+[Direct approval verification](docs/launch-approval-witness.md) adds
+`--require-launch-approval`: approval-required actions also need a matching,
+unexpired witness from the approval worker after single-use grant consumption.
+All verification remains offline; these options do not enable live providers.
 
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 

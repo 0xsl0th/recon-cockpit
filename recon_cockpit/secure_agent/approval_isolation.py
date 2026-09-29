@@ -29,7 +29,12 @@ class LinuxApprovalService:
     and starts the fixed worker. The worker owns all grant state and input.
     """
 
-    def __init__(self, policy, session_id):
+    def __init__(self, policy, session_id, *, launch_witness=False):
+        if type(launch_witness) is not bool:
+            raise ValueError('invalid_approval_witness_mode')
+        self._launch_witness = launch_witness
+        self._witness_writer = None
+        self._witness_taken = False
         self._policy = parse_policy(policy.to_dict())
         self._session_id = protocol.identity(session_id)
         self._identity = str(uuid4())
@@ -42,6 +47,40 @@ class LinuxApprovalService:
     def boundary_checks(self):
         return None if self._checks is None else dict(self._checks)
 
+    def take_launch_witness(self):
+        """Bind one receiver before lazy worker startup; never duplicate or reconnect."""
+        with self._lock:
+            if self._closed or not self._launch_witness or self._witness_taken or self._control is not None:
+                raise ApprovalUnavailable('approval_witness_unavailable')
+            reader, writer = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+            try:
+                reader.shutdown(socket.SHUT_WR)
+                writer.shutdown(socket.SHUT_RD)
+                reader.setblocking(False)
+                writer.setblocking(False)
+                info = os.fstat(reader.fileno())
+                self._witness_writer = writer
+                self._witness_taken = True
+                return reader, {'version': '1', 'broker_id': self._identity,
+                                'device': info.st_dev, 'inode': info.st_ino}
+            except BaseException:
+                reader.close()
+                writer.close()
+                raise
+
+    def seal_launch_witness(self):
+        """Finish bootstrap custody before any approval-required launcher starts.
+
+        If review never started, close the unused sender. Even queued forged
+        data then ends in EOF and cannot be accepted as a live worker's proof.
+        """
+        with self._lock:
+            if not self._launch_witness or not self._witness_taken:
+                raise ApprovalUnavailable('approval_witness_not_bound')
+            if self._witness_writer is not None:
+                self._witness_writer.close()
+                self._witness_writer = None
+
     def _command(self, stdlib, files, bootstrap_digest):
         host = _namespaces()
         argv = [_trusted_program('bwrap'), '--unshare-user', '--unshare-net', '--unshare-pid',
@@ -53,15 +92,20 @@ class LinuxApprovalService:
             argv.extend(('--ro-bind', source, destination))
         argv.extend(('--ro-bind', str(Path(__file__).with_name('planner_worker.py').resolve()),
                      '/app/planner_worker.py'))
-        for name in ('approval_worker', 'approval_protocol', 'approvals', 'models'):
+        for name in ('approval_worker', 'approval_protocol', 'approvals', 'models',
+                     *(('approval_witness', 'audit_witness', 'audit_protocol') if self._launch_witness else ())):
             argv.extend(('--ro-bind', str(Path(__file__).with_name(name + '.py').resolve()),
                          '/app/approval_runtime/' + name + '.py'))
         argv.extend(('--remount-ro', '/proc', '--remount-ro', '/dev', '--remount-ro', '/',
                      '/usr/bin/python3', '-I', '-S', '/app/approval_runtime/approval_worker.py',
                      bootstrap_digest, *(host[name] for name in ('user', 'net', 'mnt', 'pid'))))
+        if self._launch_witness:
+            argv.append('launch-witness')
         return argv
 
     def _start(self, control):
+        if self._launch_witness and (not self._witness_taken or self._witness_writer is None):
+            raise ApprovalUnavailable('approval_witness_not_bound')
         if type(control) is not ExecutionControl or control.clock is not time.monotonic:
             raise ApprovalUnavailable('invalid_approval_control')
         control.check()
@@ -80,6 +124,9 @@ class LinuxApprovalService:
             initial = {'version': '1', 'broker_id': self._identity, 'session_id': self._session_id,
                        'policy': self._policy.to_dict(), 'deadline': control.deadline,
                        'terminal': [info.st_dev, info.st_ino, info.st_rdev]}
+            if self._launch_witness:
+                witness_info = os.fstat(self._witness_writer.fileno())
+                initial['witness'] = [witness_info.st_dev, witness_info.st_ino]
             protocol.initial(initial, time.monotonic())
             bootstrap_digest = protocol.digest(initial)
             self._process = self._supervisor.launch(
@@ -87,7 +134,12 @@ class LinuxApprovalService:
             child.close()
             for stream in (self._process.stdout, self._process.stderr):
                 os.set_blocking(stream.fileno(), False)
-            self._send(protocol.encode(initial), fd=terminal)
+            if self._launch_witness:
+                self._send(protocol.encode(initial), fd=terminal, witness_fd=self._witness_writer.fileno())
+                self._witness_writer.close()
+                self._witness_writer = None
+            else:
+                self._send(protocol.encode(initial), fd=terminal)
             os.close(terminal)
             terminal = None
             expected = {'version': '1', 'bootstrap_digest': bootstrap_digest, 'ready': True,
@@ -100,8 +152,10 @@ class LinuxApprovalService:
                 os.close(terminal)
             child.close()
 
-    def _send(self, raw, *, fd=None):
+    def _send(self, raw, *, fd=None, witness_fd=None):
         ancillary = [] if fd is None else [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array('i', [fd]))]
+        if witness_fd is not None:
+            ancillary = [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array('i', [fd, witness_fd]))]
         while True:
             self._supervisor.check()
             try:
@@ -181,6 +235,9 @@ class LinuxApprovalService:
         self._closed = True
         self._checks = None
         try:
+            if self._witness_writer is not None:
+                self._witness_writer.close()
+                self._witness_writer = None
             if self._channel is not None:
                 self._channel.close()
         finally:

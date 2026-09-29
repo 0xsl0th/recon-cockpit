@@ -125,6 +125,16 @@ not authenticate producer consent claims, prevent privileged host interference
 or make the host-owned file immutable. Lost witnesses can follow a durable write;
 lost completions can follow execution. Neither is safe to retry.
 
+The opt-in [direct approval gate](launch-approval-witness.md) also prevents forged
+host consumption replies or durable consent claims from authorizing an
+approval-required launch. The selected approval worker sends proof only after
+consuming a grant; the launcher checks exact bindings, single use and original
+expiry before admission and freshness again after redemption. Missing/replayed/
+expired/extra proofs and endpoint substitution or producer failure stop without
+fallback. Expiry does not refund admission reservations. This authenticates a
+fixed worker's result, not a human identity independently of the selected terminal,
+worker or trusted host bootstrap. Scripted PTYs prove mechanics only.
+
 ## Isolation assumptions
 
 Use a dedicated Linux/Kali lab with unprivileged user namespaces and a compatible
