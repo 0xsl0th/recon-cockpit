@@ -22,7 +22,7 @@ from .executor_worker import MAX_LAUNCH_BYTES, encode
 from .isolation import (IsolationUnavailable, LinuxFixtureBackend, _capture_bounded,
                         _namespaces, _runtime_files, _trusted_program)
 from .models import Action, Policy, parse_action, parse_policy
-from .session import SessionLimits
+from .session_limits import SessionLimits
 
 
 class AuthorizedFixtureBackend(LinuxFixtureBackend):

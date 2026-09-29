@@ -22,11 +22,14 @@ owned executor runs. Policy/profile checks cannot be replaced by request flags,
 and lost receipts or worker faults stop further launches. The host still owns the
 launcher and enforces consent/audit ordering; no live provider path is enabled.
 
-The next slice, [confined fixture launching](docs/isolated-fixture-launcher.md),
-adds `--isolated-launcher` for `--fixture` with all three options above. A fixed
-worker holds the admission client and launches fresh executors; the host sends
-typed execution requests. Approval/audit ordering remains controller-enforced.
-Persistent owned-lab launching is unchanged. All verification remains offline.
+The reviewed [confined fixture launcher](docs/isolated-fixture-launcher.md) adds
+`--isolated-launcher` with all three options above. Its dependent
+[persistent-lab integration](docs/isolated-owned-lab-launcher.md) supports
+`--workflow-assessment CASE --owned-lab` as well as `--fixture`. A fixed worker owns
+the admission client, lab lifecycle, namespace handles and executor launches;
+the host sends typed execution requests. Approval/audit ordering remains
+controller-enforced. Both slices await separate merge authorization; all
+verification remains offline.
 
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 

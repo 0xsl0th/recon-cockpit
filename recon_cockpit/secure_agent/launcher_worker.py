@@ -60,6 +60,7 @@ import secrets
 import select
 import socket
 import time
+from contextlib import nullcontext
 
 
 @dataclass(frozen=True)
@@ -72,13 +73,13 @@ class _Limits:
 class _NestedAdmission(LinuxLaunchAdmission):
     def __init__(self, config, closure):
         super().__init__(parse_policy(config['policy']), config['session_id'],
-                         _Limits(**config['limits']), execute=config['execute'], profile=config['profile'])
+                         _Limits(**config['limits']), execute=config['execute'], profile=config['profile'], case=config['case'])
         self._closure = closure
 
     def _runtime(self, control):
         control.check()
         return self._closure['stdlib'], [(p, p) for p in self._closure['files']
-                                        if p not in {'/usr/bin/bwrap', '/usr/sbin/nft'}]
+                                        if p not in {'/usr/bin/bwrap', '/usr/sbin/nft', '/usr/bin/nsenter'}]
 
 
 def boundary(host):
@@ -162,7 +163,11 @@ def main():
             raise ValueError('launcher_dry_run')
         control = ExecutionControl(init['deadline'])
         channel.setblocking(False)
-        with _NestedAdmission(config, init['runtime']) as gate:
+        owned = None
+        if config['profile'] == 'owned_lab':
+            from recon_cockpit.secure_agent.owned_launcher_runtime import ConfinedOwnedBackend
+            owned = ConfinedOwnedBackend(config, init['runtime'])
+        with _NestedAdmission(config, init['runtime']) as gate, (owned.lab if owned is not None else nullcontext()):
             print(protocol.encode({'version': '1', 'ready': True, 'bootstrap_digest': sys.argv[1], 'checks': checks}).decode(), flush=True)
             sequence = 1
             while True:
@@ -177,7 +182,10 @@ def main():
                 granted = gate.admit(action, policy, control=control)
                 if granted['reason'] is not None or gate.redeem(granted['permit'], action, policy, control=control)['reason'] is not None:
                     raise ValueError('launcher_admission_denied')
-                result = execute(action, config, init['runtime'], control, gate.snapshot)
+                result = (owned.run(action, policy, control=control) if owned is not None else
+                          execute(action, config, init['runtime'], control, gate.snapshot))
+                if owned is not None and dict(owned.snapshot) != dict(gate.snapshot):
+                    raise ValueError('owned_launcher_reservations_changed')
                 control.check()
                 print(protocol.encode(protocol.receipt(value, result, gate.snapshot)).decode(), flush=True)
         return 0

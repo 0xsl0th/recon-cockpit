@@ -28,7 +28,7 @@ from .models import Action, Policy, parse_action, parse_policy
 from .owned_lab_contract import BACKEND, identity, validate_context, validate_result_context
 from .owned_lab_executor import MAX_OWNED_LAUNCH_BYTES
 from .routed import _Supervisor, _pin_namespaces
-from .session import SessionLimits
+from .session_limits import SessionLimits
 
 
 _CLOSE_NAMESPACE_FDS = """import os, sys
@@ -117,6 +117,15 @@ class OwnedLab:
             if self._supervisor.processes["lab"].poll() is not None:
                 raise IsolationUnavailable("Owned lab owner exited")
 
+    def _runtime(self, control):
+        return _runtime_files("/usr/bin/python3", _trusted_program("nft"), control=control)
+
+    def _check_available(self):
+        LinuxFixtureBackend().check_available()
+        if Path(_trusted_program("bwrap")).stat().st_mode & stat.S_ISUID:
+            raise IsolationUnavailable("Owned lab requires non-setuid Bubblewrap")
+        _trusted_program("nsenter")
+
     def start(self, control):
         with self._lock:
             try:
@@ -127,12 +136,9 @@ class OwnedLab:
                 if control.remaining() > self.limits.max_runtime_seconds:
                     raise IsolationUnavailable("Owned lab deadline exceeds its fixed lifetime")
                 self._control = control
-                LinuxFixtureBackend().check_available()
-                if Path(_trusted_program("bwrap")).stat().st_mode & stat.S_ISUID:
-                    raise IsolationUnavailable("Owned lab requires non-setuid Bubblewrap")
-                _trusted_program("nsenter")
+                self._check_available()
                 host = _namespaces()
-                stdlib, files = _runtime_files("/usr/bin/python3", _trusted_program("nft"), control=control)
+                stdlib, files = self._runtime(control)
                 self._supervisor = _Supervisor(control.remaining(), 32768, control=control)
                 info_r, info_w = self._supervisor.pipe()
                 self._supervisor.watch(info_r, "info")
@@ -219,12 +225,18 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
 
     def __init__(self, policy, session_id, limits, lab, *, execute=False):
         super().__init__(policy, session_id, limits, execute=execute)
-        if (type(lab) is not OwnedLab or lab.session_id != session_id or lab.limits != limits
+        if (not self._accept_lab(lab) or lab.session_id != session_id or lab.limits != limits
                 or lab.execute != execute):
             raise ValueError("owned_lab_authority_mismatch")
         self.lab = lab
         self._lab_identity = lab.identity
         self._previous_context = None
+
+    def _accept_lab(self, lab):
+        return type(lab) is OwnedLab
+
+    def _runtime(self, control):
+        return _runtime_files("/usr/bin/python3", None, control=control)
 
     def check_available(self, action=None):
         super().check_available(action)
@@ -298,7 +310,7 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
                               "namespaces": self.lab._lab_namespaces})
             if len(request) > MAX_OWNED_LAUNCH_BYTES:
                 raise IsolationUnavailable("Owned lab executor launch exceeds its bound")
-            stdlib, files = _runtime_files("/usr/bin/python3", None, control=control)
+            stdlib, files = self._runtime(control)
             code, stdout, _stderr, reason = _capture_bounded(
                 self._command(stdlib, files, nonce, hashlib.sha256(request).hexdigest()), request,
                 action.parameters.timeout_seconds + 8, action.parameters.max_output_bytes * 6 + 16384,

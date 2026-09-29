@@ -10,7 +10,8 @@ MAX_REPLY = 6 * 65536 + 32768
 CHECKS = frozenset({'namespaces_private', 'nonroot_identity', 'capabilities_dropped',
     'no_new_privs', 'root_read_only', 'descriptors_private', 'network_private'})
 PROFILES = {'fixture': 'linux-authorized-fixture-executor-v1',
-            'discovery_fixture': 'linux-authorized-discovery-fixture-executor-v1'}
+            'discovery_fixture': 'linux-authorized-discovery-fixture-executor-v1',
+            'owned_lab': 'linux-authorized-owned-lab-executor-v1'}
 
 
 def encode(value):
@@ -33,19 +34,25 @@ def decode(raw):
 
 
 def configuration(value):
+    if type(value) is dict and value.get('profile') == 'owned_lab':
+        from .owned_lab_contract import validate_identity
+        base = admission.configuration({key: item for key, item in value.items() if key != 'owned_lab'})
+        return {**base, 'owned_lab': validate_identity(value.get('owned_lab'), case=base['case'])}
     value = admission.configuration(value)
     if value['profile'] not in PROFILES:
         raise ValueError('unsupported_launcher_profile')
     return value
 
 
-def runtime(value):
+def runtime(value, *, owned_lab=False):
     if type(value) is not dict or set(value) != {'stdlib', 'files'}:
         raise ValueError('invalid_launcher_runtime')
     if type(value['stdlib']) is not str or not re.fullmatch(r'/usr/lib/python3\.\d+', value['stdlib']):
         raise ValueError('invalid_launcher_stdlib')
     paths = value['files']
     programs = {'/usr/bin/python3', '/usr/sbin/nft', '/usr/bin/bwrap'}
+    if owned_lab:
+        programs.add('/usr/bin/nsenter')
     if (type(paths) is not list or not 3 <= len(paths) <= 128
             or any(type(p) is not str or '..' in p or '//' in p or not (
                 p in programs or re.fullmatch(r'/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*', p)) for p in paths)
@@ -58,8 +65,8 @@ def initial(value, now):
     if type(value) is not dict or set(value) != {'configuration', 'deadline', 'runtime'}:
         raise ValueError('invalid_launcher_init')
     config = configuration(value['configuration'])
-    admission.initial({'configuration': config, 'deadline': value['deadline']}, now)
-    runtime(value['runtime'])
+    admission.initial({'configuration': {k: v for k, v in config.items() if k != 'owned_lab'}, 'deadline': value['deadline']}, now)
+    runtime(value['runtime'], owned_lab=config['profile'] == 'owned_lab')
     return config
 
 

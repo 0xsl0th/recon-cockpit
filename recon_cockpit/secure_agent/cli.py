@@ -148,7 +148,8 @@ def _run_http_assessment(args, policy, audit):
         evidence_options["owned_lab"] = lab.identity
     with (_approval_context(args, policy, session_id) as approvals,
           _admission_context(args, backend) as backend,
-          (lab if lab is not None else nullcontext()), EvidenceStore(
+          (backend if args.isolated_launcher and lab is not None else
+           lab if lab is not None else nullcontext()) as lab, EvidenceStore(
             args.assessment_dir, session_id=session_id, policy=policy,
             case=case, discovery=discovery, workflow=workflow, **evidence_options) as evidence):
         provider = provider_type(case, audit, evidence)
@@ -245,7 +246,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--isolated-launch-admission", action="store_true",
                         help="require independent policy/budget admission before each owned executor launch")
     parser.add_argument("--isolated-launcher", action="store_true",
-                        help="confine fixture executor launching and keep admission permits in that worker")
+                        help="confine fixture/owned-lab launching and keep admission permits in that worker")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--execute", action="store_true", help="execute only with policy, audit and isolation")
     mode.add_argument("--dry-run", action="store_true", help="validate and audit only (default)")
@@ -267,8 +268,8 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("--isolated-launch-admission requires an authority source, --isolated-audit and --isolated-approvals")
         if args.execute and not (args.fixture or args.owned_lab):
             parser.error("--isolated-launch-admission execution requires --fixture or --owned-lab")
-    if args.isolated_launcher and (not args.isolated_launch_admission or not args.fixture):
-        parser.error("--isolated-launcher requires --isolated-launch-admission and --fixture")
+    if args.isolated_launcher and (not args.isolated_launch_admission or not (args.fixture or args.owned_lab)):
+        parser.error("--isolated-launcher requires --isolated-launch-admission and --fixture or --owned-lab")
     session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
                         or args.control_plane_mock or assessment_case)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)

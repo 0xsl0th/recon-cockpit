@@ -13,6 +13,8 @@ from uuid import uuid4
 
 from . import launch_admission as admission, launcher_protocol as protocol
 from .authorized_execution import AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend
+from .owned_lab import AuthorizedOwnedLabBackend
+from .owned_lab_contract import validate_result_context, validate_closure
 from .execution import ExecutionControl, ExecutionStopped
 from .isolation import (IsolationUnavailable, LinuxFixtureBackend, _namespaces,
                         _runtime_files, _runtime_probe, _trusted_program)
@@ -22,23 +24,36 @@ from .routed import _Supervisor
 MODULES = ('launcher_worker', 'launcher_protocol', 'execution', 'models', 'worker',
            'executor_worker', 'admission_isolation', 'admission_worker', 'launch_admission',
            'isolation', 'routed', 'planner_isolation', 'planner_worker', 'session_provider')
+OWNED_MODULES = ('owned_launcher_runtime', 'owned_lab', 'owned_lab_worker', 'owned_lab_executor',
+                 'owned_lab_contract', 'assessment_contract', 'authorized_execution', 'session_limits', '__init__')
 
 
 class LinuxFixtureLauncher:
     def __init__(self, backend):
-        if type(backend) not in {AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend}:
+        if type(backend) not in {AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend, AuthorizedOwnedLabBackend}:
             raise ValueError('unsupported_launcher_backend')
         self.name = backend.name
+        owned = type(backend) is AuthorizedOwnedLabBackend
         self._config = protocol.configuration({'version': '1', 'service_id': str(uuid4()),
             'session_id': backend._session_id, 'policy': backend._policy.to_dict(),
             'limits': asdict(backend._limits), 'execute': backend._execute,
-            'profile': backend.launch_mode, 'case': None})
+            'profile': 'owned_lab' if owned else backend.launch_mode,
+            'case': backend._lab_identity['scenario'] if owned else None,
+            **({'owned_lab': backend._lab_identity} if owned else {})})
         self._control = self._channel = self._supervisor = self._checks = None
         self._snapshot = {'executions_reserved': 0, 'output_bytes_reserved': 0}
         self._sequence = 0
         self._closed = False
         self._lock = threading.Lock()
         self._stopped = threading.Event()
+        self._lab_context = self._lab_receipt = None
+        self._cleanup_verified = False
+
+    @property
+    def identity(self):
+        if self._config['profile'] != 'owned_lab':
+            raise ValueError('launcher_has_no_persistent_lab')
+        return dict(self._config['owned_lab'])
 
     @property
     def snapshot(self):
@@ -58,18 +73,20 @@ class LinuxFixtureLauncher:
 
     def _runtime(self, control):
         stdlib, files = _runtime_files('/usr/bin/python3', _trusted_program('nft'), control=control)
-        bwrap = _trusted_program('bwrap')
-        listing = _runtime_probe([_trusted_program('ldd'), bwrap], 5, 65536, control).decode('ascii')
+        programs = [_trusted_program('bwrap')]
+        if self._config['profile'] == 'owned_lab':
+            programs.append(_trusted_program('nsenter'))
+        listing = _runtime_probe([_trusted_program('ldd'), *programs], 5, 65536, control).decode('ascii')
         if 'not found' in listing:
             raise IsolationUnavailable('Missing launcher runtime')
         libraries = set(re.findall(r'(?:=>\s+)?(/[^\s]+)\s+\(', listing))
         if not libraries:
             raise IsolationUnavailable('Invalid launcher runtime')
         files += [(str(Path(p).resolve(strict=True)), p) for p in sorted(libraries)]
-        files.append((str(Path(bwrap).resolve(strict=True)), '/usr/bin/bwrap'))
+        files += [(str(Path(p).resolve(strict=True)), '/usr/bin/'+Path(p).name) for p in programs]
         by_destination = {destination: source for source, destination in files}
         files = [(by_destination[p], p) for p in sorted(by_destination)]
-        closure = protocol.runtime({'stdlib': stdlib, 'files': [p for _, p in files]})
+        closure = protocol.runtime({'stdlib': stdlib, 'files': [p for _, p in files]}, owned_lab=self._config['profile'] == 'owned_lab')
         return closure, files
 
     def _command(self, closure, files, commitment):
@@ -81,7 +98,7 @@ class LinuxFixtureLauncher:
             '--size', '1048576', '--tmpfs', '/tmp', '--ro-bind', closure['stdlib'], closure['stdlib']]
         for source, destination in files:
             argv += ['--ro-bind', source, destination]
-        for name in MODULES:
+        for name in (*MODULES, *(OWNED_MODULES if self._config['profile'] == 'owned_lab' else ())):
             argv += ['--ro-bind', str(Path(__file__).with_name(name+'.py').resolve()),
                      '/app/recon_cockpit/secure_agent/'+name+'.py']
         # Private /proc must permit nested Bubblewrap's UID/GID-map writes.
@@ -173,6 +190,8 @@ class LinuxFixtureLauncher:
             self._send(admission.encode(value))
             reply = self._reply()
             result = protocol.result(reply.get('result'), self._config)
+            lab_context = (validate_result_context(result, self.identity, previous=self._lab_context,
+                tool_id=action.tool_id, execution_status=result['status']) if self._config['profile'] == 'owned_lab' else None)
             expected = {'executions_reserved': self._snapshot['executions_reserved']+1,
                         'output_bytes_reserved': self._snapshot['output_bytes_reserved']+action.parameters.max_output_bytes}
             if (expected['output_bytes_reserved'] > self._config['limits']['max_output_bytes']
@@ -181,6 +200,7 @@ class LinuxFixtureLauncher:
             control.check()
             self._sequence += 1
             self._snapshot = expected
+            self._lab_context = lab_context
             return result
         except BaseException as exc:
             self._cleanup()
@@ -191,6 +211,7 @@ class LinuxFixtureLauncher:
             self._lock.release()
 
     def _cleanup(self):
+        self._cleanup_verified = False
         self._closed = True
         self._stopped.set()
         self._checks = None
@@ -200,12 +221,20 @@ class LinuxFixtureLauncher:
         finally:
             if self._supervisor is not None:
                 self._supervisor.close()
+        self._cleanup_verified = True
 
     def close(self):
         self._stopped.set()
         with self._lock:
             if not self._closed:
                 self._cleanup()
+            if self._config['profile'] == 'owned_lab':
+                if not self._cleanup_verified:
+                    raise IsolationUnavailable('Lab cleanup was not verified')
+                if self._lab_receipt is None:
+                    context = self._lab_context or {'identity': self.identity, 'connection_count': 0, 'request_count': 0}
+                    self._lab_receipt = validate_closure({**context, 'status': 'closed'}, self.identity, previous=self._lab_context)
+                return {**self._lab_receipt, 'identity': self.identity}
 
     def __enter__(self):
         return self

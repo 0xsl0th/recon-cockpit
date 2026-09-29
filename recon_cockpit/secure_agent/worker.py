@@ -125,7 +125,11 @@ def _set_limits(timeout: float) -> None:
     for kind, value in ((resource.RLIMIT_AS, 256 * 1024 * 1024), (resource.RLIMIT_FSIZE, 1024 * 1024),
                         (resource.RLIMIT_NOFILE, 64), (resource.RLIMIT_CORE, 0),
                         (resource.RLIMIT_CPU, math.ceil(timeout) + 2)):
-        resource.setrlimit(kind, (value, value))
+        # Nested launchers may already impose a stricter hard ceiling. Preserve
+        # it rather than attempting to raise it (which fails without privilege).
+        inherited = resource.getrlimit(kind)[1]
+        bound = value if inherited == resource.RLIM_INFINITY else min(value, inherited)
+        resource.setrlimit(kind, (bound, bound))
 
 
 def drop_privileges() -> None:

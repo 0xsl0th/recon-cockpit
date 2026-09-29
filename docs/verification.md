@@ -1,5 +1,88 @@
 # Verification record
 
+## R5 confined persistent-lab launcher — 29 September 2026
+
+Reviewed PR #20 head `007f24f` against verified main `e9c5496`: no blocking
+findings, no outstanding GitHub comments, five hosted jobs successful. Fresh
+review passed **243 focused portable tests in 0.56 seconds** and **37 Linux
+launcher tests in 41.42 seconds**; no runtime correction was needed. Reports:
+`/tmp/recon-launcher-review-portable.xml`, `/tmp/recon-launcher-review-linux.xml`.
+PR #20 remains open; this continuation supplies no new merge authorization.
+
+Implemented its dependent slice as `7864e09` on
+`feature/isolated-owned-lab-launcher`, published in
+[PR #21](https://github.com/0xsl0th/recon-cockpit/pull/21) against PR #20's branch.
+The publication checkpoint changes documentation only; local test evidence stays
+bound to that implementation. Current hosted status is on the
+[PR checks](https://github.com/0xsl0th/recon-cockpit/pull/21/checks).
+`--isolated-launcher` now also composes with persistent `--owned-lab` workflows.
+The confined worker owns lab management, namespace pins, admission-client custody
+and fresh executor supervision; host requests cannot choose a namespace, lab,
+command, reset or replacement control. Existing owner/executor/evidence validators
+and card v2 remain authoritative. See [the ownership contract](isolated-owned-lab-launcher.md).
+
+The portable command was:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-owned-launcher-portable.xml
+```
+
+**3,093 passed, 327 deselected in 80.23 seconds.** The 34 additional cases verify
+strict identity/case/runtime binding, namespace/reset/authority-field rejection,
+completion continuity, unchanged public SessionLimits identity/digest, dry clients,
+cleanup failures without fabricated closure, and inherited hard-limit preservation.
+The focused Linux run passed **20 tests in 36.75 seconds**:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest tests/test_secure_owned_launcher_linux.py \
+  -m integration -v --tb=short --junitxml=/tmp/recon-owned-launcher-focused-linux.xml
+```
+
+These exercise three actions sharing one confined lab (counters `(1, 0)`, `(2, 1)`,
+`(3, 2)`), all six workflow outcomes and unchanged read-only evidence inspection,
+no host lab/executor invocation, inaccessible authority files/environment,
+owner failure, broken pins, lost redemption/completion, no replay/refund, active
+executor cancellation/deadline/concurrent-request teardown, dry/noninteractive
+CLI behavior and denial/lost-audit acknowledgement before startup. Scripted PTYs
+exercise mechanics only; they do not establish real human consent.
+
+Initial nested startup correctly refused the owner's attempt to raise an inherited
+CPU hard limit. The shared resource helper now preserves stricter inherited hard
+ceilings without changing wall-clock deadlines. Two test API calls and the delayed
+executor fixture's missing time import were corrected before the passing focused
+run; those early failures are not counted as acceptance evidence.
+
+The complete Linux regression command is:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
+  --junitxml=/tmp/recon-owned-launcher-all-linux.xml
+```
+
+**327 passed, 3,093 deselected in 559.12 seconds.** Both full JUnit reports contain
+zero selected failures, errors or skips. No task launcher, lab, executor, admission
+or pytest processes remained afterward. Python 3.11 grammar (168 files),
+dependency consistency, local documentation links and whitespace checks passed. The new PR targets the reviewed PR #20 branch; the CI
+base-branch filter includes it so the focused stacked diff receives the existing
+five portable jobs. Hosted CI does not substitute for rootless kernel tests.
+
+Closure records verified teardown and the host's last acknowledged completion,
+not a fresh final sample. Unknown completion can follow actual execution; neither
+retry nor positive assessment evidence is inferred. Controller-established consent
+and durable intent remain trusted preconditions; independent authentication and
+bounded assessment planning are still R5 work, followed by gated real-model
+acceptance and R6. R1–R4/R5a/R5b stay closed. External provider calls, real credentials and
+spend: **zero**; live execution remains disabled by default.
+
+Hosted CI on publication head `3f0d7d1` passed all four Ubuntu jobs, but macOS
+correctly exposed a new test's assumption that RLIM_INFINITY equals `-1`. The
+fixture now uses `resource.RLIM_INFINITY`, as production already did. All 34
+focused portable cases passed again in 0.17 seconds
+(`/tmp/recon-owned-launcher-portability.xml`). Production is unchanged, so the
+full Linux evidence remains valid; see the PR checks for the corrected head's
+five-job portable matrix.
+
 ## R5 confined fixture launcher — 29 September 2026
 
 Implemented on `feature/isolated-fixture-launcher` from verified main `e9c5496`
