@@ -3,8 +3,8 @@
 For project direction, see the [development roadmap](docs/roadmap.md) and
 [competition proposal](docs/competition-proposal.md). To resume work after an
 interruption, start with [the current checkpoint](docs/continue-here.md).
-Current priority is to complete the original milestones in order, starting with
-the remaining R3 capability contract. See the [completion order](docs/roadmap.md#milestone-completion-order);
+Current priority is to finish R5, with R5a and R5b complete and merged, then R6.
+See the [completion order](docs/roadmap.md#milestone-completion-order);
 additional session-view and GUI work follows milestone completion. Live provider
 execution remains disabled, with development and verification using owned/mock fixtures.
 

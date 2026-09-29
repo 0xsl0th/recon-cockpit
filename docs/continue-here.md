@@ -4,21 +4,21 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-## Current priority — finish the original milestones in order
+## Current priority — continue R5 after completed R5a and R5b
 
-The operator directed realignment with the original R1 → R2 → R3 → R4 → R5 → R6
-plan, completing its requirements before the additional ideas proposed after
-PR #15. Follow [the roadmap's completion order](roadmap.md#milestone-completion-order),
-which supersedes older “next step” notes in this file. Preserve the merged R5
-foundations; do not roll them back or treat them as completion of the full plan.
+The operator clarified that **R5 is the active milestone and R5a and R5b are
+complete**. R5a merged in PR #13; R5b's ledger and controlled provider-call path
+merged in PRs #14 and #15. Their agreed development and verification scope is
+offline. Follow [the roadmap's completion order](roadmap.md#milestone-completion-order),
+which supersedes older “next step” notes in this file.
 
-The defined R1/R2 owned slices are implemented. R3's first TCP adapter and R4's
-first card are merged, but their broader planned contracts remain open. The next
-bounded implementation is **R3's registry for the two existing reviewed built-in
-capabilities**, with existing backend restrictions and authority checks intact.
-Then finish the original R4 evidence/finding/card requirements, remaining R5
-authority separation and planning integration, and R6 evaluation/release work.
-Each milestone needs its own acceptance evidence before advancing.
+Preserve the accepted R1–R4 implementations and their documented limits. Do not
+restart them or make broader capability-registry/finding-workflow extensions
+prerequisites for continuing R5. The next work is the original **remaining R5
+authority separation**, followed by bounded planning integration and its
+evaluation gates, then R6 evaluation/release work. Address an earlier contract
+only when a concrete dependency or regression requires it. R5a/R5b completion
+does not claim that all of R5 or real-model validation is complete.
 
 The separate budgeted-assessment proposal, general session-view API and GUI
 dashboard are deferred until the original milestones are complete. Accounting
@@ -29,9 +29,10 @@ verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
 authorize activation, external targets, real credentials or a new merge.
 
-The implementation baseline is clean `main` at `1369166`. This documentation
-realignment is prepared on `docs/milestone-realignment`; it changes no runtime,
-policy, provider gate or assessment evidence format.
+The implementation baseline is `main` at `1369166`. This documentation
+realignment is on `docs/milestone-realignment` in
+[PR #16](https://github.com/0xsl0th/recon-cockpit/pull/16), open for review;
+it changes no runtime, policy, provider gate or assessment evidence format.
 
 ## R5b controlled provider call — merged checkpoint
 
@@ -167,7 +168,7 @@ repeatable evaluation runner are reviewed and merged. PR #12 is complete.**
 Read [evaluation.md](evaluation.md), [owned-lab.md](owned-lab.md), [workflow-assessment.md](workflow-assessment.md),
 [verification.md](verification.md) and [roadmap.md](roadmap.md). Inspect Git and
 current main checks before more work. Do not repeat these completed slices or
-their merges; remaining R3/R4 requirements follow the current priority above.
+their merges; continue R5 from the completed R5a/R5b baseline above.
 
 An earlier recovery found a clean checkout at `401cbe1`. Saved conversation and
 GitHub state confirmed that PR #9 had already been reviewed and merged with
@@ -377,13 +378,15 @@ Planning uses synthetic responses.
 1. Start from the current priority and merged checkpoint above. PRs #6–#15 are
    already merged. Inspect Git and hosted checks before publication; historical
    branch names and open-PR notes below earlier checkpoints are not current work.
-2. Finish the earliest open original requirement: R3's reviewed built-in
-   capability registry for `tcp_connect` and `http_probe`. Use the roadmap's
-   bounded acceptance criteria; keep the singleton executors and legacy Nmap
-   runner separate. Then close R4 before advancing the remaining R5 and R6 work.
-3. Preserve R5a/R5b as regression references. The synthetic ACK path does not
-   complete live assessment planning. Keep live acceptance pending until the
-   operator explicitly enables it; do not fill that gap with a premature GUI.
+2. Continue the remaining R5 authority separation. Define which authority leaves
+   which process for the smallest approval/launch/audit boundary change, then
+   implement and verify it with owned fixtures. Preserve the existing tools and
+   backend restrictions; do not schedule a general registry or R3/R4 expansion
+   as a prerequisite. Complete the remaining R5 work before R6.
+3. R5a and R5b are complete. Preserve them as regression references while
+   developing the remaining bounded planning integration. The synthetic ACK
+   path does not complete live assessment planning. Keep live acceptance pending
+   until the operator explicitly enables it; do not fill that gap with a GUI.
 4. Keep kernel verification separate from hosted portable CI and record measured
    results/publication state for every slice. Revisit the additional ideas only
    after the original milestone acceptance gates have been satisfied.
