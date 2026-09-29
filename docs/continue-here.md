@@ -52,8 +52,12 @@ Read [launch-audit-witness.md](launch-audit-witness.md) for ownership and trust 
 `--require-launch-audit` requires all existing isolated launch/approval/audit options;
 missing, forged, stale or mismatched witness data stops before admission/execution.
 No new provider, tool, target, workflow case or GUI is introduced. This verifies
-durability; authentication of fresh approval is still pending. Leave this new work
-ready for review without merging it.
+durability; authentication of fresh approval is still pending. Implementation
+`845a093` is published in [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22)
+against main. Leave it unmerged for review. The
+[PR checks](https://github.com/0xsl0th/recon-cockpit/pull/22/checks) give current
+hosted status; this publication checkpoint changes documentation only, so local
+runtime/test evidence remains tied to `845a093`.
 
 ## R5 direct audit gate — completed review slice
 

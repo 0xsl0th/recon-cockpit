@@ -13,8 +13,12 @@ passed. The intermediate main run was superseded by the second merge. Review
 reports: `/tmp/recon-launchers-merge-review-portable.xml` and
 `/tmp/recon-launchers-merge-review-linux.xml`.
 
-The next necessary R5 slice, on `feature/launcher-audit-witness` from `38282b9`,
-adds explicit `--require-launch-audit`. The audit worker alone holds a one-way
+The next necessary R5 slice, implementation `845a093` on
+`feature/launcher-audit-witness` from `38282b9`, is published in
+[PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22) against main. The
+publication checkpoint changes documentation only; the evidence below stays tied
+to that implementation. Current hosted status is on the
+[PR checks](https://github.com/0xsl0th/recon-cockpit/pull/22/checks). It adds explicit `--require-launch-audit`. The audit worker alone holds a one-way
 sending endpoint and emits an execution-intent witness only after fsync. The
 launcher checks source, sequences, freshness and exact action/session/policy/
 backend before admission or execution. Default requests and evidence schemas

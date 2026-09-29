@@ -173,8 +173,10 @@ and persistent lab management/namespace pins, preserving card v2 and all six cas
 
 The next bounded slice is [independent durable-intent verification](launch-audit-witness.md):
 the isolated writer sends a direct witness after fsync, and the launcher checks it
-before admission or execution. This closes the durability portion of precondition
-integration. Fresh approval authentication remains the next authority dependency;
+before admission or execution. Published as `845a093` in
+[PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22), with 3,146 portable and
+362 Linux tests passing, it completes the durability portion of precondition
+integration and awaits review. Fresh approval authentication remains the next authority dependency;
 audit producer claims do not establish consent. Follow with bounded assessment
 planning on existing provider/cost controls, then gated real-model acceptance.
 Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
