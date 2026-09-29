@@ -12,12 +12,13 @@ become prerequisites for continuing R5. Finish the remaining R5 work, then R6,
 before additional product ideas. The [completion order below](#milestone-completion-order)
 is the current work queue. No new milestone or parallel GUI track is introduced.
 
-The verified implementation baseline is `main` at `a87e5dd`, after the authorized
+The main baseline before PR #24 is `a87e5dd`, after the authorized
 merge of PR #23 (direct fresh-approval verification). PRs #16–#22 are also merged.
 Final head `6dc7a7d` passed review, all five hosted checks and a previously completed
 3,196-test portable / 406-test Linux verification. The merge tree is identical;
-all five post-merge main checks passed. Continue bounded assessment planning from
-that baseline. These results establish offline scope, not live-model acceptance.
+all five post-merge main checks passed. PR #24's bounded mock planning slice is
+verified and authorized for merge as recorded below. These results establish
+offline scope, not live-model acceptance.
 Live calls remain disabled; development and verification use owned/mock fixtures.
 
 ### Earlier implementation checkpoints
@@ -187,12 +188,14 @@ simulation monetary reservations/settlement to both independent launch checks.
 It uses finite owned mock responses and leaves the fixed ACK and R5a TLS contracts
 unchanged. Full verification passed 3,382 portable and 430 Linux tests, with zero
 selected failures/errors/skips; independent review has no remaining findings.
-Leave #24 for operator review and separate merge authorization, then continue
+The operator authorized review and merge of #24; review of `f24d313` found no
+blocking issue, and all five hosted jobs passed. The PR record gives its final
+merge state and commit. After merge, keep this mock slice closed and continue
 the planning transport and evaluation gates. Mock responses do not complete
 live-model acceptance.
 Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
 broader tools and lab scenarios remain deferred. The latest merge authorization
-covered PR #23 only; leave subsequent work for review and keep live calls disabled.
+covers PR #24 only; leave subsequent work for review and keep live calls disabled.
 
 - Preserve the merged narrowly scoped approval/launch and audit interfaces.
   Record any necessary ownership change before extending the planning path.

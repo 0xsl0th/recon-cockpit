@@ -4,6 +4,17 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
+**PR #24 review and merge are authorized.** On 29 September 2026, the operator
+requested review and merge into main if all checks pass. Review of `f24d313`
+found no blocking issues or outstanding comments; all five hosted jobs passed.
+Both existing full-suite reports were rechecked: 3,382 portable and 430 Linux
+tests, zero failures/errors/skips. No runtime correction was needed. This
+authorization update changes documentation only. The
+[PR record](https://github.com/0xsl0th/recon-cockpit/pull/24) gives the authoritative
+merge state and commit; after merge, keep this mock planning slice closed and
+continue the remaining planning transport/evaluation work below. Later merges
+and live validation still require authorization.
+
 **PR #23 is merged.** The operator authorized review and merge on 29 September
 2026. Final head `6dc7a7d` passed review with no blocking findings or outstanding
 comments and all five hosted checks green. The authorized merge is `a87e5dd` at
@@ -13,8 +24,8 @@ passed. The previously completed 3,196 portable and 406 Linux tests remain the
 runtime evidence; the final PR commit changed documentation only. PRs #16–#23
 are merged and stay closed.
 
-Current branch: `feature/bounded-assessment-planning`, from `a87e5dd`. The next
-necessary R5 slice integrates a separate bounded mock planning adapter with
+PR #24 branch: `feature/bounded-assessment-planning`, from `a87e5dd`. This verified
+R5 slice integrates a separate bounded mock planning adapter with
 explicit data release, the isolated parser/coordinator, simulation monetary
 admission and both direct launch gates. Implementation `bb9e42c` is published in
 [PR #24](https://github.com/0xsl0th/recon-cockpit/pull/24). Read
@@ -23,8 +34,8 @@ passed **3,382 portable tests in 86.69 seconds** and **430 Linux tests in 771.15
 seconds**, with zero selected failures/errors/skips and no leftover workers.
 Independent review has no remaining findings; all five hosted jobs passed on
 the implementation. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/24/checks)
-show the final documentation checkpoint's status. Leave #24 unmerged for review.
-The latest merge authorization covers PR #23 only; live calls and external
+show the final documentation checkpoint's status. The latest merge authorization
+covers PR #24; it does not extend to subsequent work. Live calls and external
 targets remain disabled.
 
 ## Current priority — continue R5 after completed R5a and R5b
@@ -52,7 +63,7 @@ verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
 authorize activation, external targets, real credentials or a new merge.
 
-The verified implementation baseline is `main` at `a87e5dd`, the merge of
+The main baseline before PR #24 is `a87e5dd`, the merge of
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate
 requires proof from the fixed approval worker after single-use grant consumption,
 binds it to the exact action/session/policy and preserves the original expiry.
@@ -71,7 +82,7 @@ candidate. Missing/unknown usage retains a dispatch hold; known overruns settle
 before refusal. All six existing cases and both lab backends remain the scope.
 This is a finite mock planning bridge, not actual model planning or live acceptance.
 
-## R5 bounded offline planning — verified, awaiting review
+## R5 bounded offline planning — reviewed for authorized merge
 
 Full suites and the focused 24-case Linux run passed. The new 186 portable cases
 cover release/privacy, usage recognition, money admission and lost acknowledgements,
@@ -182,8 +193,8 @@ five-job portable matrix.
 
 ## Remaining milestone gates
 
-1. Review the verified bounded offline planning slice in PR #24 and separately
-   authorize its merge.
+1. Confirm PR #24's recorded merge, then keep the verified mock planning slice
+   closed and continue the remaining planning transport/evaluation gates.
    Durable audit and fresh grant verification remain independent launch
    preconditions. A selected terminal/worker still cannot prove a human's
    identity or intent independently of that trusted environment.
