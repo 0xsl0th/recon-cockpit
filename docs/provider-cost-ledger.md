@@ -6,6 +6,10 @@ synthetic units. This slice adds no transport, API-key lookup, paid call or GUI.
 The local demo uses a ledger explicitly marked `simulation`; its prices and
 billing receipts are fictional.
 
+The separate [controlled provider call](controlled-provider-call.md) now implements
+the first broker integration. It remains disabled by default and has been tested
+only with owned/mock fixtures. The accounting contract below is unchanged.
+
 ## Accounting contract
 
 All amounts are integer **microUSD**: 1,000,000 microUSD = USD 1.00. USD is the

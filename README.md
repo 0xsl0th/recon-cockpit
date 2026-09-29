@@ -126,8 +126,11 @@ python scripts/secure_agent_cost_demo.py --ledger .secure-agent/cost-demo
 python -m recon_cockpit.secure_agent.cost_cli --ledger .secure-agent/cost-demo inspect
 ```
 
-The ledger adds no live provider connection. R5a's synthetic counters stay separate;
-a future provider broker must enforce the documented reservation/settlement sequence.
+The [controlled provider call](docs/controlled-provider-call.md) connects this ledger
+to a single fixed synthetic request through a separate Linux credential sandbox.
+Live execution is disabled by default and is not wired into the CLI or assessment
+runner. All development verification uses owned TLS fixtures and synthetic keys;
+no paid or external provider calls were made. R5a's synthetic counters stay separate.
 
 The executable tool set includes bounded HTTP and the fixed discovery profile.
 The original `--fixture` HTTP mode reaches only its

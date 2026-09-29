@@ -1,10 +1,35 @@
-# Continue here — 28 September 2026
+# Continue here — 29 September 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-## R5b provider cost ledger — reviewed publication checkpoint
+## R5b controlled provider call — current work
+
+The operator authorized review and merge of PR #14, followed by the first narrow
+provider integration and a new focused PR. PR #14 was merged as `3a0cb67` on
+28 September; all five [main portable jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36498947841)
+passed. Current branch: `feature/controlled-provider-call`, based on that merge.
+
+The operator then explicitly required all development and verification to remain
+offline with owned/mock fixtures, no paid or external provider calls, and live
+execution disabled by default. These constraints remain in force. No real key
+was read and no external provider request was sent.
+
+Read [controlled-provider-call.md](controlled-provider-call.md). The implementation
+adds a fixed synthetic ACK request, explicit price/call admission, durable ledger
+dispatch and usage settlement, a private Linux credential worker and one pinned
+TCP capability. A second seccomp layer prevents reconnecting that capability or
+creating another socket. Only the trusted host opens the literal-IP connection;
+no live application command, assessment integration or GUI is enabled.
+
+Final local review and verification are recorded in [verification.md](verification.md).
+The next focused PR should remain open for review; merge approval for PR #14 does
+not authorize merging its successor. Inspect the branch head and current remote
+PR state before publication or any later merge. Activation and live billing
+validation require a later explicit operator instruction.
+
+## R5b provider cost ledger — historical publication checkpoint
 
 The operator approved implementing the monetary ledger and spending controls
 after reviewing a future GUI reference, then authorized final review, commit and
