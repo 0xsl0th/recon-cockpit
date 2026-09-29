@@ -86,6 +86,16 @@ trusted and can bypass their own launcher checks; executor-independent consent
 authorization is still future R5 work. Scripted PTY verification establishes
 mechanics and OS confinement, never evidence of a real human approval.
 
+The optional [launch-admission worker](isolated-launch-admission.md) independently
+evaluates a fixed policy/profile and holds per-session execution reservations and
+one-use permits. It has no target network, terminal, audit file or executor code.
+Changing host-side counters cannot replenish its allowance; changed/replayed
+permits, unknown authority fields, cancellation and lost receipts prevent launch
+through the selected wrapper. The host retains the launcher and enforces consent
+and audit ordering. A compromised host can bypass its wrapper or create another
+session; this is neither independent consent attestation nor a durable engagement
+quota. R5b's durable provider-money ledger remains separate and unchanged.
+
 ## Isolation assumptions
 
 Use a dedicated Linux/Kali lab with unprivileged user namespaces and a compatible

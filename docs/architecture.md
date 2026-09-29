@@ -57,6 +57,13 @@ and the approval worker owns terminal review and ephemeral grant state. Policy,
 accounting and launch decisions remain host-owned. These are explicit opt-in
 boundaries; the earlier/default modes described here keep their local services.
 
+The explicit [launch-admission gate](isolated-launch-admission.md) adds a separate
+fixed policy/profile/limit decision and one-use permit store. Its worker cannot
+launch processes, read human grants, access audit storage or reach targets. A
+trusted wrapper redeems a permit before calling the existing owned executor.
+Host and executor checks remain defense in depth; this does not move physical
+launcher custody out of the host or independently authenticate consent/audit truth.
+
 `SessionRunner` adds a single-use loop around that same controller. Its fixed
 `SessionMockProvider.propose(observation, control=...)` adapter supervises a
 bundled subprocess; the process receives JSON observation bytes only. Shared

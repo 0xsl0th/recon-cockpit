@@ -9,11 +9,18 @@ additional session-view and GUI work follows milestone completion. Live provider
 execution remains disabled, with development and verification using owned/mock fixtures.
 
 The merged [confined audit writer](docs/isolated-audit.md) is available through
-`--isolated-audit`. The next R5 slice adds [isolated terminal approval](docs/isolated-approvals.md)
+`--isolated-audit`. The merged [isolated terminal approval](docs/isolated-approvals.md) is selected
 through `--isolated-approvals`: a fixed worker owns review, fresh challenges and
 single-use grants. Both options apply to authority sessions and owned assessments.
 The controller retains policy and launch decisions; every launch still requires
 grant consumption when required and durable audit acknowledgement.
+
+The next R5 slice adds [isolated launch admission](docs/isolated-launch-admission.md).
+`--isolated-launch-admission` requires both options above and makes an independent
+worker reserve execution budgets and issue one-use permits before the existing
+owned executor runs. Policy/profile checks cannot be replaced by request flags,
+and lost receipts or worker faults stop further launches. The host still owns the
+launcher and enforces consent/audit ordering; no live provider path is enabled.
 
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 

@@ -1,5 +1,76 @@
 # Verification record
 
+## R5 isolated launch admission — 29 September 2026
+
+Implemented on `feature/isolated-launch-admission` from verified main `2c02c21`
+(merged PR #18). The explicit `--isolated-launch-admission` option requires both
+isolated approval and audit services. A fixed worker independently owns the
+bootstrap policy/profile/limits, execution reservations and one-use permits;
+the wrapper requires successful admission and redemption before calling an
+existing owned executor. See [the contract](isolated-launch-admission.md).
+
+The full portable command was:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-admission-portable.xml
+```
+
+**2,988 passed, 270 deselected in 79.17 seconds.** The 105 additional portable
+cases cover strict configuration/request/receipt schemas, fixed policy and
+fixture profiles, independent step/output limits, one-use permits, binding,
+expiry and restart invalidation. Client tests cover changed controls, sequence
+exhaustion, counter rollback, malformed receipts and permanent poisoning.
+Wrapper tests witness no launch after failed admission/redemption, cancellation
+or an overlapping call before launch. CLI tests cover invalid combinations,
+inert dry-runs and noninteractive refusal.
+
+The focused Linux command was:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest tests/test_secure_launch_admission_linux.py \
+  -m integration -x -v --tb=short
+```
+
+**35 passed in 48.89 seconds.** Actual namespace, capability, descriptor and
+syscall checks establish the restricted worker boundary. Host environment/file/
+descriptor canaries are absent. Forged initialization, changed sessions/services,
+replay, reset/approval/budget fields, duplicate keys, oversized packets and extra
+descriptors are refused. Forged READY/receipts, output floods, dead workers, lost
+admit/redeem acknowledgements, cancellation and deadline expiry stop without an
+underlying launch and reap the worker. Resetting the host executor's counters
+cannot replenish the worker's allowance.
+
+The combined coordinator/approval/audit/admission/executor path observes consumed
+grants and persisted intent before every launch. Approval denial or a lost durable
+audit acknowledgement prevents admission from starting. All six existing workflow
+cases preserve their outcomes and evidence integrity with all three options;
+the persistent owned-lab case also validates. Scripted PTYs establish mechanics,
+not genuine human consent or operator acceptance.
+
+The full rootless Linux command was:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
+  --junitxml=/tmp/recon-admission-all-linux.xml
+```
+
+**270 passed, 2,988 deselected in 472.98 seconds.** This includes all 35 admission
+cases and the 235 established Linux regressions, including audit, approvals,
+authority, planners/parsers, discovery, workflow/assessment/lab evaluation and
+R5a/R5b provider boundaries. Both full JUnit reports contain zero selected
+failures, errors or skips. No admission/approval workers or pytest processes
+remained after verification. Python 3.11 grammar, dependency consistency, local
+Markdown links and whitespace checks passed.
+
+The host remains trusted for launcher custody and consent/audit ordering; this
+worker does not independently attest those preconditions or contain host compromise.
+Its in-memory allowances are per session, not a durable engagement quota or a
+replacement for the R5b provider-money ledger. No new dependency, provider
+activation, tool, target topology or generic registry was introduced. Remaining
+launcher separation and bounded planning integration precede gated live-model
+acceptance and R6. External provider calls and spend remain **zero**.
+
 ## R5 isolated terminal approvals — 29 September 2026
 
 Implemented on `feature/isolated-approvals` from verified main `5650b86`.
@@ -71,14 +142,22 @@ and the host still owns launch decisions. This is not an independent security au
 All development and provider verification used owned/mock fixtures and synthetic
 credentials. External provider calls and spend: **zero**. Live execution remains
 disabled. Remaining R5 authorization/launch separation and bounded planning
-integration precede R6; real-model acceptance remains explicitly gated. This work
-is prepared for review, with no new merge authorized. Current publication state
-is recorded in [continue-here.md](continue-here.md).
+integration precede R6; real-model acceptance remains explicitly gated. Current
+publication state is recorded in [continue-here.md](continue-here.md).
 
 Runtime/test evidence above is tied to implementation `0055f61`, published in
 [PR #18](https://github.com/0xsl0th/recon-cockpit/pull/18) against main. The subsequent
 checkpoint update changes documentation only. Hosted portable checks complement
 the local Linux evidence; they do not run the kernel integration suite.
+
+The operator subsequently authorized review and merge of PR #18. Review reran
+**299 focused portable tests in 1.00 second** and **41 Linux approval tests in
+42.38 seconds**, with no blocking findings or runtime changes. JUnit reports:
+`/tmp/recon-approvals-review-portable.xml` and `/tmp/recon-approvals-review-linux.xml`.
+Reviewed head `b21501f` passed all five PR jobs and merged as `2c02c21` on
+29 September at 02:49:04 UTC; its tree matches the reviewed head exactly.
+All five [post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36514354136)
+passed. This merge is complete and does not authorize the next PR's merge.
 
 ## R5 confined audit persistence — 29 September 2026
 

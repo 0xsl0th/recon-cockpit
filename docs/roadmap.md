@@ -12,12 +12,12 @@ become prerequisites for continuing R5. Finish the remaining R5 work, then R6,
 before additional product ideas. The [completion order below](#milestone-completion-order)
 is the current work queue. No new milestone or parallel GUI track is introduced.
 
-The verified implementation baseline is `main` at `5650b86`, after the authorized
-merges of [PR #16](https://github.com/0xsl0th/recon-cockpit/pull/16) (roadmap alignment)
-and [PR #17](https://github.com/0xsl0th/recon-cockpit/pull/17) (isolated audit).
+The verified implementation baseline is `main` at `2c02c21`, after the authorized
+merge of [PR #18](https://github.com/0xsl0th/recon-cockpit/pull/18) (isolated approvals).
+PR #16 (roadmap alignment) and PR #17 (isolated audit) are also merged.
 All five post-merge portable jobs passed. Full implementation verification recorded
-2,810 portable and 194 Linux tests; the merge review also passed 287 focused
-portable and 28 Linux audit tests. These results establish the documented offline scope,
+2,883 portable and 235 Linux tests; the merge review also passed 299 focused
+portable and 41 Linux approval tests. These results establish the documented offline scope,
 not completion of live-model evaluation. Live execution remains disabled and
 development/verification continues with owned/mock fixtures only.
 
@@ -162,12 +162,14 @@ does not claim that live-model acceptance or all of R5 is complete.
 The first merged implementation is the [confined audit writer](isolated-audit.md): an
 explicit Linux option transfers audit persistence to a restricted worker and
 requires a durable acknowledgement before the existing launch gate proceeds.
-The next focused change is [isolated terminal approval](isolated-approvals.md):
-review, unpredictable challenges and single-use grant state leave the host for
-one fixed worker. Authorization and launch decisions remain host-owned; further
-launch separation follows before bounded planning integration. This advances R5
-without claiming that its full authority separation is complete. The new work
-is prepared for review, with no new merge or live execution authorized.
+[Isolated terminal approval](isolated-approvals.md) is now merged in PR #18:
+review, unpredictable challenges and single-use grant state reside in one fixed
+worker. The next focused change is [isolated launch admission](isolated-launch-admission.md):
+an independent worker owns fixed policy/profile checks, execution reservations
+and one-use permits redeemed before launching. Approval/audit ordering and actual
+launching still depend on the trusted host. Independent launcher custody follows
+before bounded planning integration; the full R5 boundary is not yet complete.
+The new work is prepared for review, with no new merge or live execution authorized.
 
 - Start with the original R5 requirement for narrowly scoped approval/launch and
   audit interfaces. Record the current ownership and the exact authority leaving
