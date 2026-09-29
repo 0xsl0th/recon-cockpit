@@ -71,6 +71,13 @@ activation, tool, target topology or generic registry was introduced. Remaining
 launcher separation and bounded planning integration precede gated live-model
 acceptance and R6. External provider calls and spend remain **zero**.
 
+Runtime/test evidence above is tied to implementation `8a215f3`, published in
+[PR #19](https://github.com/0xsl0th/recon-cockpit/pull/19) against `main`. The
+publication checkpoint changes documentation only. Current publication state
+and hosted checks are linked from [continue-here.md](continue-here.md); hosted
+portable CI does not replace the local kernel verification. This PR remains
+open for review, with no new merge or live execution authorized.
+
 ## R5 isolated terminal approvals — 29 September 2026
 
 Implemented on `feature/isolated-approvals` from verified main `5650b86`.

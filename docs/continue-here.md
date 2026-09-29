@@ -46,7 +46,7 @@ and limits. Approval and audit preconditions remain controller-enforced; indepen
 launcher custody remains further R5 work. R1–R4, R5a/R5b and the merged audit and
 approval slices remain closed. Prepare the new work for review without a new merge.
 
-## R5 isolated launch admission — verified review preparation
+## R5 isolated launch admission — open PR for review
 
 `--isolated-launch-admission` requires both isolated audit and approvals. A fixed
 worker owns immutable bootstrap policy/profile/limits, step/output reservations
@@ -65,7 +65,15 @@ grammar, dependencies, local links and whitespace checks passed. The JUnit
 reports are `/tmp/recon-admission-portable.xml` and
 `/tmp/recon-admission-all-linux.xml`; detailed scope and limits are recorded in
 [verification.md](verification.md). No external provider call, real credential
-or spend was used. Publish for review without merging this new work.
+or spend was used.
+
+Implementation `8a215f3` is published in
+[PR #19](https://github.com/0xsl0th/recon-cockpit/pull/19), open against `main`.
+The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/19/checks) are the
+authoritative current hosted status. The follow-up checkpoint commit changes
+documentation only; do not repeat completed local suites solely for it. Hosted
+portable checks complement the local Linux evidence and do not run kernel tests.
+Do not merge this PR or enable live execution without a new explicit instruction.
 
 ## R5 isolated approvals — merged checkpoint
 
