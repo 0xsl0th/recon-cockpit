@@ -1,5 +1,46 @@
 # Verification record
 
+## R5 bounded offline assessment planning — 29 September 2026
+
+[PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23) passed final review at
+`6dc7a7d` with no blocking findings or outstanding comments and all five hosted
+checks green. The user authorized its merge as `a87e5dd` at 21:57:20 UTC. The
+merge tree is identical, and all five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36636608649)
+passed. Its runtime was already covered by 3,196 portable and 406 Linux tests;
+the final documentation-only revision required no runtime correction.
+
+The next slice, on `feature/bounded-assessment-planning`, adds a separate
+repository-owned mock planning provider and closed data-release contract. Every
+request follows a durable evidence eligibility decision, simulated monetary
+reservation and one-use dispatch claim. Recognized usage settles before response
+bytes reach the unchanged isolated parser; the complete decoded proposal must
+match the eligible candidate before reaching the coordinator. The CLI requires
+both direct launch gates and a fresh simulation ledger. Read
+[bounded-assessment-planning.md](bounded-assessment-planning.md) for scope and
+trust limits. No live provider, credential or network transport is added.
+
+Focused Linux verification passed **24 tests in 57.56 seconds**:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest tests/test_secure_assessment_planning_linux.py \
+  -m integration -x -v --tb=short --junitxml=/tmp/recon-assessment-planning-focused-linux.xml
+```
+
+This covers all six cases with both fixture/card v1 and persistent-lab/card v2,
+settled accounting before each launch, actual parser/coordinator boundaries,
+read-only evidence/ledger inspection, hostile proposals and usage, budget
+refusal before transport, dry/noninteractive refusal, dispatched cancellation
+and lost settlement-audit acknowledgement. Scripted PTYs establish mechanics,
+not human approval or operator acceptance.
+
+Independent review found a cleanup edge when a ledger operation commits before
+its acknowledgement is lost. Local phase flags could then attempt an invalid
+transition and hide the original error, although funds remained held or settled
+and no proposal was released. Cleanup now checks durable state; focused fault
+tests cover these interrupted acknowledgements. Full regression results follow
+after verification completes.
+
 ## R5 direct launch-approval witness — 29 September 2026
 
 [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22) was reviewed at final

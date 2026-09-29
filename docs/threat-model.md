@@ -135,6 +135,16 @@ fallback. Expiry does not refund admission reservations. This authenticates a
 fixed worker's result, not a human identity independently of the selected terminal,
 worker or trusted host bootstrap. Scripted PTYs prove mechanics only.
 
+The [bounded offline planning adapter](bounded-assessment-planning.md) releases
+only a repository-authored descriptor after a durable workflow decision. It
+rejects substituted requests and proposals, and returns response bytes to the
+isolated parser only after recognized simulated usage settles. Unknown usage
+after dispatch retains the monetary hold. A settled fixture response never supplies
+policy, approval or finding truth. The trusted host owns the finite mock
+transcript and ledger; no credential or real-provider authentication is claimed.
+The CLI requires both direct launch gates and refuses existing ledger directories.
+All original execution and evidence limits still apply.
+
 ## Isolation assumptions
 
 Use a dedicated Linux/Kali lab with unprivileged user namespaces and a compatible

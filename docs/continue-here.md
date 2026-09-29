@@ -4,19 +4,22 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Resumed on 29 September 2026.** PR #22 is already merged at `5584efe`;
-fresh inspection found no blocking issue in reviewed head `1c26828`, confirmed
-the identical merge tree, no review comments and all five successful PR and
-post-merge checks. Keep that completed slice closed.
+**PR #23 is merged.** The operator authorized review and merge on 29 September
+2026. Final head `6dc7a7d` passed review with no blocking findings or outstanding
+comments and all five hosted checks green. The authorized merge is `a87e5dd` at
+21:57:20 UTC; its tree exactly matches the reviewed head. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36636608649)
+passed. The previously completed 3,196 portable and 406 Linux tests remain the
+runtime evidence; the final PR commit changed documentation only. PRs #16–#23
+are merged and stay closed.
 
-[PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23), implementation `457f164`,
-has completed verification and independent review with no blocking findings.
-Fresh full runs passed **3,196 portable tests in 85.76 seconds** and **406 Linux
-tests in 716.31 seconds**, with zero selected failures/errors/skips. No test or
-isolated worker processes remained. All five hosted checks passed on the
-implementation; check the [final PR status](https://github.com/0xsl0th/recon-cockpit/pull/23/checks)
-for its documentation checkpoint. Leave this slice unmerged for operator review.
-Do not merge #23 or enable live execution without authorization.
+Current branch: `feature/bounded-assessment-planning`, from `a87e5dd`. The next
+necessary R5 slice integrates a separate bounded mock planning adapter with
+explicit data release, the isolated parser/coordinator, simulation monetary
+admission and both direct launch gates. Read
+[bounded-assessment-planning.md](bounded-assessment-planning.md). Verification is
+in progress. Leave subsequent work unmerged for review. This authorization
+covers PR #23 only; live calls and external targets remain disabled.
 
 ## Current priority — continue R5 after completed R5a and R5b
 
@@ -28,10 +31,10 @@ which supersedes older “next step” notes in this file.
 
 Preserve the accepted R1–R4 implementations and their documented limits. Do not
 restart them or make broader capability-registry/finding-workflow extensions
-prerequisites for continuing R5. The next work is the original **remaining R5
-authority separation**, followed by bounded planning integration and its
-evaluation gates, then R6 evaluation/release work. Address an earlier contract
-only when a concrete dependency or regression requires it. R5a/R5b completion
+prerequisites for continuing R5. The next work is **bounded R5 planning
+integration** on the completed authority boundaries, followed by its evaluation
+gates, then R6 evaluation/release work. Address an earlier contract only when a
+concrete dependency or regression requires it. R5a/R5b completion
 does not claim that all of R5 or real-model validation is complete.
 
 The separate budgeted-assessment proposal, general session-view API and GUI
@@ -43,35 +46,26 @@ verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
 authorize activation, external targets, real credentials or a new merge.
 
-The verified implementation baseline is `main` at `5584efe`, the authorized
-merge of [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22) at 06:31:48 UTC
-on 29 September. Reviewed head `1c26828` had all five hosted jobs passing and no
-outstanding comments or blocking findings. Fresh review passed **372 portable
-tests in 1.35 seconds** and **35 Linux boundary tests in 65.48 seconds** without
-runtime corrections. The merge tree exactly matches the reviewed tree, and all
-five [post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36531540371)
-passed. Reports: `/tmp/recon-audit-witness-review-portable.xml` and
-`/tmp/recon-audit-witness-review-linux.xml`. PRs #16–#22 are merged; do not repeat
-them. Subsequent merges and live execution still require explicit authorization.
+The verified implementation baseline is `main` at `a87e5dd`, the merge of
+[PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate
+requires proof from the fixed approval worker after single-use grant consumption,
+binds it to the exact action/session/policy and preserves the original expiry.
+The launcher checks freshness again after admission. The worker, selected
+terminal, bootstrap and host/kernel remain trusted; scripted PTYs are mechanics
+fixtures, not actual operator acceptance. Read
+[launch-approval-witness.md](launch-approval-witness.md) for the ownership contract.
 
-Current development branch: `feature/launcher-approval-witness`, from that main.
-The next R5 slice adds independent fresh-approval verification at the confined
-launcher. Read [launch-approval-witness.md](launch-approval-witness.md) for ownership
-and trust limits. `--require-launch-approval` requires the direct audit gate and
-all its prerequisites. Only the approval worker can send proof of a consumed
-grant through the selected one-way endpoint. The launcher verifies exact
-bindings and the original expiry before admission and freshness again after
-redemption. This closes reliance on host consumption replies in the opt-in path.
-The fixed worker, terminal and trusted bootstrap remain trusted; scripted PTYs
-do not establish actual operator acceptance. No provider, tool, target, workflow
-case or GUI is added. Implementation `457f164` is published in
-[PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23) against main. Leave it
-unmerged for review. This publication checkpoint changes documentation only;
-runtime/test evidence remains tied to `457f164`. The
-[PR checks](https://github.com/0xsl0th/recon-cockpit/pull/23/checks) give current
-hosted status; hosted portable results do not replace local kernel verification.
+The current planning slice leaves that boundary, the fixed ACK diagnostic and
+R5a's TLS/status-only contract unchanged. `--assessment-planning-offline` requires
+a workflow, both direct launch gates and a new private `--planning-ledger`.
+Only a canonical repository-authored planning descriptor is released. The
+existing workflow/evidence decision chooses eligibility, simulated usage must
+settle before proposal release, and the full proposal must match the eligible
+candidate. Missing/unknown usage retains a dispatch hold; known overruns settle
+before refusal. All six existing cases and both lab backends remain the scope.
+This is a finite mock planning bridge, not actual model planning or live acceptance.
 
-## R5 direct approval gate — verification complete, awaiting review
+## R5 direct approval gate — merged checkpoint
 
 Fresh full verification passed **3,196 portable tests in 85.76 seconds** and
 **406 Linux tests in 716.31 seconds**, including all 44 new Linux cases. Both
@@ -168,13 +162,14 @@ five-job portable matrix.
 
 ## Remaining milestone gates
 
-1. Review the verified direct approval gate in PR #23 and separately authorize
-   its merge. Durable audit and fresh grant verification are independent
-   launch preconditions. A selected terminal/worker still cannot prove a human's
+1. Complete verification and review of the bounded offline planning slice.
+   Durable audit and fresh grant verification remain independent launch
+   preconditions. A selected terminal/worker still cannot prove a human's
    identity or intent independently of that trusted environment.
 2. Preserve the completed audit, approval, admission and launcher contracts.
-3. Integrate narrowly bounded assessment planning with the completed R5a/R5b
-   provider and money controls. The fixed ACK diagnostic is not that integration.
+3. Continue the remaining planning transport/integration and offline evaluation
+   gates on R5a/R5b after this mock bridge. Neither fixed ACK nor mock responses
+   establish real-model performance.
 4. Keep real-model comparison visibly pending until explicit authorization and
    reviewed data/model/credential/spend settings. Continue offline meanwhile.
 5. Then complete R6 corpus/evaluation consolidation, actual operator review,
@@ -190,7 +185,7 @@ model output supplies proposals, never policy, grants or finding truth. Existing
 R5a status-only release does not authorize exporting raw evidence, credentials or
 arbitrary engagement data. Live validation remains separately authorized.
 
-Start with a separate owned-only assessment provider implementing the
+The current slice implements a separate owned-only assessment provider with the
 `bind_session`/`propose` interface consumed by `AuthoritySession`; keep
 `workflow.decide` and saved evidence authoritative for eligible actions and
 findings. Before releasing any proposal, verify the explicit assessment data
