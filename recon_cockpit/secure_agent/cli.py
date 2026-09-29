@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from contextlib import nullcontext
+from contextlib import ExitStack, nullcontext
 import json
 import os
 from pathlib import Path
@@ -13,6 +13,7 @@ import subprocess
 import sys
 
 from .audit import AuditSink, AuditUnavailable
+from .approvals import ApprovalUnavailable
 from .controller import Controller
 from .models import ValidationError, parse_action, parse_policy
 from .providers import MockProvider
@@ -81,6 +82,19 @@ def _human_approval(controller: Controller, raw: bytes | str, *, control=None) -
     return grant.reference
 
 
+def _isolated_human_approval(controller, raw, *, control):
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        return None
+    return controller.approvals.review(parse_action(raw), controller.policy, control=control)
+
+
+def _approval_context(args, policy, session_id):
+    if not args.isolated_approvals:
+        return nullcontext(None)
+    from .approval_isolation import LinuxApprovalService
+    return LinuxApprovalService(policy, session_id)
+
+
 def _run_http_assessment(args, policy, audit):
     """Construct one fresh fixture authority with privately persisted evidence."""
     from uuid import uuid4
@@ -122,19 +136,20 @@ def _run_http_assessment(args, policy, audit):
         lab = OwnedLab(case, session_id, limits, execute=args.execute)
         backend = AuthorizedOwnedLabBackend(policy, session_id, limits, lab, execute=args.execute)
         evidence_options["owned_lab"] = lab.identity
-    with (lab if lab is not None else nullcontext()), EvidenceStore(
+    with (_approval_context(args, policy, session_id) as approvals,
+          (lab if lab is not None else nullcontext()), EvidenceStore(
             args.assessment_dir, session_id=session_id, policy=policy,
-            case=case, discovery=discovery, workflow=workflow, **evidence_options) as evidence:
+            case=case, discovery=discovery, workflow=workflow, **evidence_options) as evidence):
         provider = provider_type(case, audit, evidence)
         runner = AuthoritySession(policy, audit, backend, coordinator, limits, session_id=session_id,
-                                  provider=provider, evidence=evidence)
+                                  provider=provider, evidence=evidence, approvals=approvals)
         previous_handlers = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
         try:
             for number in previous_handlers:
                 signal.signal(number, lambda *_: runner.cancel())
             summary = runner.run(execute=args.execute,
                                  interactive=sys.stdin.isatty() and sys.stdout.isatty(),
-                                 approval=_human_approval,
+                                 approval=_isolated_human_approval if args.isolated_approvals else _human_approval,
                                  on_step=lambda step: print(json.dumps({
                                      "event_type": "session_step_finished", "session_id": runner.session_id,
                                      **step,
@@ -214,6 +229,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--audit", type=Path, default=Path(".secure-agent/audit.jsonl"))
     parser.add_argument("--isolated-audit", action="store_true",
                         help="use the confined Linux audit writer for an authority session or owned assessment")
+    parser.add_argument("--isolated-approvals", action="store_true",
+                        help="confine terminal review and grants for an authority session or owned assessment")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--execute", action="store_true", help="execute only with policy, audit and isolation")
     mode.add_argument("--dry-run", action="store_true", help="validate and audit only (default)")
@@ -228,6 +245,8 @@ def main(argv: list[str] | None = None) -> int:
     authority_mode = args.control_plane_mock or args.control_plane_openai_offline or assessment_case
     if args.isolated_audit and not authority_mode:
         parser.error("--isolated-audit requires an authority session or owned assessment")
+    if args.isolated_approvals and not authority_mode:
+        parser.error("--isolated-approvals requires an authority session or owned assessment")
     session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
                         or args.control_plane_mock or assessment_case)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
@@ -306,7 +325,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.isolated_audit:
             from .audit_isolation import LinuxAuditSink
             audit_type = LinuxAuditSink
-        with audit_type(args.audit) as audit:
+        with audit_type(args.audit) as audit, ExitStack() as services:
             if assessment_case:
                 return _run_http_assessment(args, policy, audit)
             if session_scenario:
@@ -341,8 +360,9 @@ def main(argv: list[str] | None = None) -> int:
                     backend = (AuthorizedFixtureBackend(policy, session_id, limits, execute=args.execute)
                                if args.fixture else None)
                     provider_kwargs = {"provider": provider} if args.control_plane_openai_offline else {}
+                    approvals = services.enter_context(_approval_context(args, policy, session_id))
                     runner = AuthoritySession(policy, audit, backend, coordinator, limits,
-                                              session_id=session_id, **provider_kwargs)
+                                              session_id=session_id, approvals=approvals, **provider_kwargs)
                     if args.control_plane_mock:
                         provider = coordinator
                 elif args.isolated_session_mock:
@@ -360,7 +380,7 @@ def main(argv: list[str] | None = None) -> int:
                         signal.signal(number, lambda *_: runner.cancel())
                     summary = runner.run(execute=args.execute,
                                          interactive=sys.stdin.isatty() and sys.stdout.isatty(),
-                                         approval=_human_approval,
+                                         approval=_isolated_human_approval if args.isolated_approvals else _human_approval,
                                          on_step=lambda step: print(json.dumps({
                                              "event_type": "session_step_finished", "session_id": runner.session_id,
                                              **step,
@@ -407,6 +427,9 @@ def main(argv: list[str] | None = None) -> int:
                 "reasons": ["audit_unavailable"],
                 "note": "No new execution is permitted; check for an unmatched execution_started event."})
         return 3
+    except ApprovalUnavailable:
+        _print({"decision": "deny", "execution_status": "blocked", "reasons": ["approval_unavailable"]})
+        return 2
     except IsolationUnavailable:
         _print({"decision": "deny", "execution_status": "blocked", "reasons": ["isolation_unavailable"]})
         return 2

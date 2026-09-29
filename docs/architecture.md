@@ -50,6 +50,13 @@ events, through a host adapter whose Python APIs are internal trusted components
 not independently authenticated services. Request and proposal bytes crossing
 the sandbox boundary remain untrusted.
 
+Authority sessions can select the R5 [isolated audit writer](isolated-audit.md)
+and [isolated terminal approval service](isolated-approvals.md). With those options,
+the controller holds narrow clients: the audit worker owns its append descriptor,
+and the approval worker owns terminal review and ephemeral grant state. Policy,
+accounting and launch decisions remain host-owned. These are explicit opt-in
+boundaries; the earlier/default modes described here keep their local services.
+
 `SessionRunner` adds a single-use loop around that same controller. Its fixed
 `SessionMockProvider.propose(observation, control=...)` adapter supervises a
 bundled subprocess; the process receives JSON observation bytes only. Shared

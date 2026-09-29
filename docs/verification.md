@@ -1,5 +1,80 @@
 # Verification record
 
+## R5 isolated terminal approvals — 29 September 2026
+
+Implemented on `feature/isolated-approvals` from verified main `5650b86`.
+PRs #16 and #17 are already merged; their five final main CI jobs passed.
+This slice transfers terminal review and ephemeral grant issuance/consumption
+to one fixed worker, selected by `--isolated-approvals`. Policy/accounting and
+launch decisions remain in the host. See [the authority contract](isolated-approvals.md).
+Accepted R1–R4, R5a/R5b and isolated audit work remain closed.
+
+The final full portable command was:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-approvals-portable.xml
+```
+
+**2,883 passed, 235 deselected in 86.97 seconds.** The 73 additional portable
+cases cover strict message/reference/bootstrap validation, forged issuance,
+policy/reset fields, session/sequence binding, malformed receipts, permanent
+client/controller poisoning, immutable execution control, request limits,
+inert construction/dry-run, unsupported CLI modes and noninteractive refusal.
+Authority tests preserve a static approval-failure summary even if a coordinator
+double swallows the exception, with no subsequent launch. Coordinator supervision
+preserves the original approval exception identity.
+
+The focused Linux command was:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest tests/test_secure_approval_linux.py \
+  -m integration -x -v --tb=short
+```
+
+**41 passed in 42.20 seconds.** Owned scripted PTYs exercise actual namespace,
+descriptor and syscall restrictions, absent host environment/file/descriptor
+canaries, exact fresh challenges, flushed pretyped input, wrong/bounded answers,
+grant replay/expiry/action-policy binding and restart invalidation. Adversarial
+messages include forged issue/reset/boolean approvals, changed sessions/policies,
+out-of-scope actions, extra descriptors, oversized and duplicate-key packets.
+Missing/nonterminal descriptors, forged READY, dead workers and lost receipts
+permanently close the client. Review limits, cancellation and deadlines reap
+children without restoring grants or extending the execution budget.
+
+Actual coordinator/approval/audit/executor checks observe consumed grants and
+persisted intent before every owned launch. Denial, cancellation, timeout and
+lost consumption acknowledgements stop the real authority with no launch.
+All six existing workflow CLI cases preserve outcomes and evidence integrity
+with both isolated services enabled and one fresh scripted challenge per action.
+These are grant-mechanics fixtures, not evidence of genuine human approval.
+
+The final full rootless Linux command was:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
+  --junitxml=/tmp/recon-approvals-all-linux.xml
+```
+
+**235 passed, 2,883 deselected in 435.30 seconds.** This includes all 41 new cases
+and the 194 established regressions: audit, authority, planners/parsers, discovery,
+assessments/workflows, persistent lab, evaluation, R5a TLS and R5b controlled calls.
+Both full JUnit reports contain zero selected failures, errors or skips.
+
+No dependencies were added. Python 3.11 grammar, dependency consistency, local
+Markdown links and whitespace checks passed. Local boundary review confirms that
+the terminal is the intentional capability, input injection/mode changes are
+blocked, and the grant store remains in the worker. The host/bootstrap/user and
+fixed reviewer remain trusted; a compromised reviewer could falsify consent,
+and the host still owns launch decisions. This is not an independent security audit.
+
+All development and provider verification used owned/mock fixtures and synthetic
+credentials. External provider calls and spend: **zero**. Live execution remains
+disabled. Remaining R5 authorization/launch separation and bounded planning
+integration precede R6; real-model acceptance remains explicitly gated. This work
+is prepared for review, with no new merge authorized. Current publication state
+is recorded in [continue-here.md](continue-here.md).
+
 ## R5 confined audit persistence — 29 September 2026
 
 Implemented on `feature/isolated-audit-writer`, from the corrected planning head

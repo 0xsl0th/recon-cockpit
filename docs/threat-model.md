@@ -70,7 +70,21 @@ after a protocol fault. The coordinator cannot obtain the terminal, host files,
 authority memory, audit descriptor or executor pipe. Session creation and resets
 have no IPC operation. The fixture executor independently validates each fresh,
 bound launch request. This does not isolate the host authorization service from
-its own UI, audit and launcher components. See [control-plane.md](control-plane.md).
+its own UI, audit and launcher components by default. See [control-plane.md](control-plane.md).
+
+The explicit R5 options separate [audit persistence](isolated-audit.md) and
+[terminal approval issuance](isolated-approvals.md) into fixed workers. The latter
+receives a controlling-terminal descriptor and a fixed policy/session bootstrap;
+no network, executor, provider credentials or audit storage is mounted. It flushes
+pretyped input and requires a new unpredictable challenge for each review. Grant
+consumption burns on an attempted use, including changed action/policy; expiry,
+replay, service faults and cancellation fail closed. Its syscall filter allows
+only input flushing on that terminal and denies input injection or mode changes.
+The terminal remains an intentional read/write capability: a compromised reviewer
+could mislead the operator or falsify consent. The host/bootstrap/user remain
+trusted and can bypass their own launcher checks; executor-independent consent
+authorization is still future R5 work. Scripted PTY verification establishes
+mechanics and OS confinement, never evidence of a real human approval.
 
 ## Isolation assumptions
 

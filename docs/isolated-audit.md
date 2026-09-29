@@ -3,6 +3,8 @@
 This slice separates audit persistence from the host controller. R5a and R5b
 remain complete; approval/authorization separation and assessment-planning
 integration remain later R5 work. Development uses owned/mock fixtures only.
+This slice is merged in PR #17. The subsequent [isolated approval option](isolated-approvals.md)
+can compose with it; the ownership discussion below describes the audit option alone.
 
 ## Authority decision
 

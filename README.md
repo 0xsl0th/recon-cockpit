@@ -8,10 +8,12 @@ See the [completion order](docs/roadmap.md#milestone-completion-order);
 additional session-view and GUI work follows milestone completion. Live provider
 execution remains disabled, with development and verification using owned/mock fixtures.
 
-The next R5 boundary adds an opt-in [confined audit writer](docs/isolated-audit.md)
-for authority sessions and owned assessments (`--isolated-audit`). Each launch
-still requires a durable audit acknowledgement; approval and authorization remain
-with the trusted host in this slice.
+The merged [confined audit writer](docs/isolated-audit.md) is available through
+`--isolated-audit`. The next R5 slice adds [isolated terminal approval](docs/isolated-approvals.md)
+through `--isolated-approvals`: a fixed worker owns review, fresh challenges and
+single-use grants. Both options apply to authority sessions and owned assessments.
+The controller retains policy and launch decisions; every launch still requires
+grant consumption when required and durable audit acknowledgement.
 
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 

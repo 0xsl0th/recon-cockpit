@@ -36,9 +36,18 @@ The later R5 [confined audit writer](isolated-audit.md) is now available through
 `--isolated-audit`. With that option, the host transfers one append descriptor to
 a fixed Linux worker and retains a synchronous append/acknowledgement channel.
 The worker has no approval or launch authority and cannot reopen or truncate the
-file. The table above describes the original/default local sink; approval,
-authorization and launching still remain in the host with either sink. R5a/R5b
-provider boundaries are documented separately and live calls remain disabled.
+file. The table above describes the original/default local services.
+
+The R5 [isolated approval option](isolated-approvals.md), `--isolated-approvals`,
+moves exact-action terminal review and grant storage/consumption into a separate
+fixed worker. Its only intentional host capability is one controlling-terminal
+descriptor; the authority receives opaque references and consumption results.
+The original session deadline, cancellation, output reservation before review,
+policy checks and durable audit-before-launch ordering remain mandatory. Any
+approval service failure poisons the controller and stops the session. Policy
+authorization and launching remain in the trusted host; this is not independent
+executor verification of human consent. R5a/R5b provider boundaries are documented
+separately and live calls remain disabled.
 
 ## Coordinator confinement
 

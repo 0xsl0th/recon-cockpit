@@ -16,6 +16,7 @@ import time
 from uuid import UUID, uuid4
 
 from .audit import AuditUnavailable
+from .approvals import ApprovalUnavailable
 from .controller import Controller
 from .coordinator_ipc import MAX_RESPONSE_BYTES
 from .execution import ExecutionControl, ExecutionStopped
@@ -45,7 +46,8 @@ class AuthoritySession:
     """
 
     def __init__(self, policy, audit, backend, coordinator, limits=None, *,
-                 clock=time.monotonic, session_id=None, provider=None, evidence=None, deadline=None):
+                 clock=time.monotonic, session_id=None, provider=None, evidence=None, deadline=None,
+                 approvals=None):
         limits = SessionLimits() if limits is None else limits
         if type(limits) is not SessionLimits:
             raise ValueError("invalid_session_limits")
@@ -53,7 +55,8 @@ class AuthoritySession:
         self.session_id = str(uuid4()) if session_id is None else session_id
         if type(self.session_id) is not str or str(UUID(self.session_id)) != self.session_id:
             raise ValueError("invalid_session_id")
-        self.controller = Controller(policy, audit, backend, session_id=self.session_id, evidence=evidence)
+        self.controller = Controller(policy, audit, backend, approvals=approvals,
+                                     session_id=self.session_id, evidence=evidence)
         self.coordinator = coordinator
         # Internal trusted adapter only. No IPC field selects a provider or
         # passes a Python object into either sandbox.
@@ -247,7 +250,7 @@ class AuthoritySession:
             if execute:
                 reference = None
                 if preview["decision"] == "approval_required" and interactive and approval is not None:
-                    # This callback belongs to the host UI and reads /dev/tty.
+                    # Trusted UI callback: local or confined terminal review.
                     # It is never exposed as a coordinator IPC operation.
                     reference = approval(self.controller, _encode(proposal), control=session_control)
                 session_control.check()
@@ -283,6 +286,11 @@ class AuthoritySession:
                 # even if an internal coordinator double swallows the error.
                 self.controller._audit_failed = True
                 closed = True
+                raise
+            except ApprovalUnavailable:
+                self.controller._approval_failed = True
+                closed = True
+                self._cancelled.set()
                 raise
             except BaseException:
                 # Even an internal callback failure irrevocably closes this
@@ -322,6 +330,9 @@ class AuthoritySession:
         except ExecutionStopped as exc:
             summary.update(session_status="stopped", stop_reason=(
                 "coordinator_protocol_error" if protocol_failed else exc.reason))
+        except ApprovalUnavailable:
+            self.controller._approval_failed = True
+            summary.update(session_status="stopped", stop_reason="approval_unavailable")
         except AuditUnavailable:
             self.controller._audit_failed = True
             raise
@@ -332,6 +343,8 @@ class AuthoritySession:
                 "coordinator_protocol_error" if protocol_failed else "coordinator_failed"))
         finally:
             closed = True
+        if self.controller._approval_failed:
+            summary.update(session_status="stopped", stop_reason="approval_unavailable")
         summary["duration_ms"] = max(0, min(10**9, int((self._clock() - started) * 1000)))
         emit("session_finished", **{key: value for key, value in summary.items()
                                     if key not in {*base, "steps"}})
