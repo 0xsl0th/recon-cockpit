@@ -519,17 +519,22 @@ def test_one_deadline_and_cancel_cover_all_prelaunch_boundaries(make_session, mo
     assert case.transport.calls <= 1
 
 
-def test_cancellation_during_offline_exchange_retains_cost_and_stops_both_dialogues(make_session):
+def test_cancellation_during_offline_exchange_retains_cost_and_stops_both_dialogues(make_session, monkeypatch):
     case = make_session("timeout")
-    timer = threading.Timer(0.05, case.authority.cancel)
+    waits = []
+
+    def cancel_during_wait(seconds):
+        waits.append(seconds)
+        assert case.transport.calls == case.provider.broker.snapshot["calls_reserved"] == 1
+        case.authority.cancel()
+        return True
+
+    # Reach the scripted exchange after durable audit, regardless of host load.
+    monkeypatch.setattr(case.authority._cancelled, "wait", cancel_during_wait)
     started = time.monotonic()
-    timer.start()
-    try:
-        summary = case.authority.run(execute=True)
-    finally:
-        timer.cancel()
-        timer.join(timeout=1)
+    summary = case.authority.run(execute=True)
     assert time.monotonic() - started < 2
+    assert waits == [0.05]
     assert summary["stop_reason"] == "session_cancelled"
     assert case.transport.calls == case.provider.broker.snapshot["calls_reserved"] == 1
     assert case.provider.broker.snapshot["output_tokens_reserved"] == 1024

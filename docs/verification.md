@@ -16,8 +16,8 @@ reports: `/tmp/recon-launchers-merge-review-portable.xml` and
 The next necessary R5 slice, implementation `845a093` on
 `feature/launcher-audit-witness` from `38282b9`, is published in
 [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22) against main. The
-publication checkpoint changes documentation only; the evidence below stays tied
-to that implementation. Current hosted status is on the
+production implementation is unchanged by the documentation checkpoint and
+test-only CI correction recorded below. Current hosted status is on the
 [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/22/checks). It adds explicit `--require-launch-audit`. The audit worker alone holds a one-way
 sending endpoint and emits an execution-intent witness only after fsync. The
 launcher checks source, sequences, freshness and exact action/session/policy/
@@ -65,6 +65,22 @@ zero selected failures, errors or skips. No task workers or pytest processes
 remained afterward. Python 3.11 grammar (171 files), dependencies, local links and
 whitespace checks passed; no dependencies were added. Hosted portable CI supplements,
 rather than replaces, the rootless kernel verification.
+
+The [hosted run on `d5616d5`](https://github.com/0xsl0th/recon-cockpit/actions/runs/36529547273)
+passed four jobs and exposed an existing cancellation-test race on Ubuntu/Python
+3.14. Its 50 ms timer could cancel before mock exchange entry under host load,
+so no call was reserved. The corrected test cancels at the actual scripted
+transport wait, asserts the call is already reserved, and retains the existing
+stop/no-execution/cost assertions. No production code changed. Reverification:
+
+```sh
+.venv/bin/python -m pytest tests/test_secure_offline_authority.py \
+  tests/test_secure_openai_broker.py -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-authority-cancel-portable.xml
+```
+
+**214 passed in 0.98 seconds.** Full Linux verification above remains applicable;
+the PR checks report the corrected head's hosted portable matrix.
 
 The direct gate proves durable intent from the selected writer, not truth of a
 producer's approval claim or completed execution. Trusted bootstrap, fixed workers

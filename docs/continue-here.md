@@ -56,8 +56,8 @@ durability; authentication of fresh approval is still pending. Implementation
 `845a093` is published in [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22)
 against main. Leave it unmerged for review. The
 [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/22/checks) give current
-hosted status; this publication checkpoint changes documentation only, so local
-runtime/test evidence remains tied to `845a093`.
+hosted status. Production remains at `845a093`; the follow-up changes documentation
+and makes an existing cancellation test deterministic, as recorded below.
 
 ## R5 direct audit gate — completed review slice
 
@@ -74,6 +74,15 @@ whitespace and post-run process cleanup passed. Full reports:
 `/tmp/recon-audit-witness-portable.xml`, `/tmp/recon-audit-witness-all-linux.xml`.
 The focused 35-case Linux run passed in 64.86 seconds. See
 [verification.md](verification.md) for commands, coverage and trust limits.
+
+Hosted CI on `d5616d5` passed four matrix jobs but exposed an existing timer race
+on Ubuntu/Python 3.14: cancellation could precede mock transport entry, so the
+test's reserved-call assertion tested the wrong phase. The test now cancels at
+the scripted transport wait and asserts that the call is already reserved. All
+**214 offline-authority and broker tests passed in 0.98 seconds** after this
+test-only correction (`/tmp/recon-authority-cancel-portable.xml`). Production is
+unchanged; the full Linux evidence remains valid. See PR #22's checks for hosted
+verification of the corrected final head before review/merge.
 
 ## R5 persistent-lab launcher — merged checkpoint
 
