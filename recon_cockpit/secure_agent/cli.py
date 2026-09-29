@@ -95,6 +95,13 @@ def _approval_context(args, policy, session_id):
     return LinuxApprovalService(policy, session_id)
 
 
+def _admission_context(args, backend):
+    if not args.isolated_launch_admission or backend is None:
+        return nullcontext(backend)
+    from .admitted_execution import AdmissionGatedBackend
+    return AdmissionGatedBackend(backend)
+
+
 def _run_http_assessment(args, policy, audit):
     """Construct one fresh fixture authority with privately persisted evidence."""
     from uuid import uuid4
@@ -137,6 +144,7 @@ def _run_http_assessment(args, policy, audit):
         backend = AuthorizedOwnedLabBackend(policy, session_id, limits, lab, execute=args.execute)
         evidence_options["owned_lab"] = lab.identity
     with (_approval_context(args, policy, session_id) as approvals,
+          _admission_context(args, backend) as backend,
           (lab if lab is not None else nullcontext()), EvidenceStore(
             args.assessment_dir, session_id=session_id, policy=policy,
             case=case, discovery=discovery, workflow=workflow, **evidence_options) as evidence):
@@ -231,6 +239,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="use the confined Linux audit writer for an authority session or owned assessment")
     parser.add_argument("--isolated-approvals", action="store_true",
                         help="confine terminal review and grants for an authority session or owned assessment")
+    parser.add_argument("--isolated-launch-admission", action="store_true",
+                        help="require independent policy/budget admission before each owned executor launch")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--execute", action="store_true", help="execute only with policy, audit and isolation")
     mode.add_argument("--dry-run", action="store_true", help="validate and audit only (default)")
@@ -247,6 +257,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--isolated-audit requires an authority session or owned assessment")
     if args.isolated_approvals and not authority_mode:
         parser.error("--isolated-approvals requires an authority session or owned assessment")
+    if args.isolated_launch_admission:
+        if not authority_mode or not args.isolated_audit or not args.isolated_approvals:
+            parser.error("--isolated-launch-admission requires an authority source, --isolated-audit and --isolated-approvals")
+        if args.execute and not (args.fixture or args.owned_lab):
+            parser.error("--isolated-launch-admission execution requires --fixture or --owned-lab")
     session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
                         or args.control_plane_mock or assessment_case)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
@@ -359,6 +374,7 @@ def main(argv: list[str] | None = None) -> int:
                                    else LinuxCoordinator(args.control_plane_mock))
                     backend = (AuthorizedFixtureBackend(policy, session_id, limits, execute=args.execute)
                                if args.fixture else None)
+                    backend = services.enter_context(_admission_context(args, backend))
                     provider_kwargs = {"provider": provider} if args.control_plane_openai_offline else {}
                     approvals = services.enter_context(_approval_context(args, policy, session_id))
                     runner = AuthoritySession(policy, audit, backend, coordinator, limits,

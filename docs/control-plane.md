@@ -49,6 +49,15 @@ authorization and launching remain in the trusted host; this is not independent
 executor verification of human consent. R5a/R5b provider boundaries are documented
 separately and live calls remain disabled.
 
+With both options selected, `--isolated-launch-admission` additionally requires
+an [independent admission permit](isolated-launch-admission.md) for every owned
+launch. The worker's bootstrap fixes policy, limits, execution mode, fixture
+profile, session and deadline; only admit/redeem operations exist. Its counters
+cannot be reset by the launcher and failed attempts are not refunded. The host
+controller still enforces grant consumption and audit ordering before calling
+the wrapper; the worker does not accept approval/audit claims as proof of those
+preconditions.
+
 ## Coordinator confinement
 
 The launcher uses a non-setuid Bubblewrap under an unprivileged Linux user. It
