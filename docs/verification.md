@@ -74,6 +74,13 @@ and independent precondition authentication are outside this fixture-only slice.
 R1–R4, R5a/R5b and established defaults remain closed; live execution remains
 disabled. External provider calls, real credentials and spend: **zero**.
 
+Runtime/test evidence above is tied to implementation `838c4a1`, published in
+[PR #20](https://github.com/0xsl0th/recon-cockpit/pull/20) against `main`. The
+publication checkpoint changes documentation only. Current review state and hosted
+checks are linked from [continue-here.md](continue-here.md). Hosted portable CI
+complements the local kernel evidence. The PR remains open for review, with no
+new merge or live execution authorized.
+
 ## R5 isolated launch admission — 29 September 2026
 
 Implemented on `feature/isolated-launch-admission` from verified main `2c02c21`

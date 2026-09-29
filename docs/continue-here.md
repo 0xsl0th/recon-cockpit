@@ -47,7 +47,7 @@ remain controller-enforced; persistent owned-lab launching remains on its existi
 path. R1–R4, R5a/R5b and merged audit/approval/admission contracts remain closed.
 Prepare this new work for review without a new merge.
 
-## R5 confined fixture launcher — verified review preparation
+## R5 confined fixture launcher — open PR for review
 
 `--isolated-launcher` requires `--fixture` and all three isolated approval/audit/
 admission options. A fixed worker holds the admission client, privately redeems
@@ -66,7 +66,16 @@ local links and whitespace checks passed. Full JUnit reports:
 `/tmp/recon-launcher-portable.xml` and `/tmp/recon-launcher-all-linux.xml`.
 Detailed limitations and commands are in [verification.md](verification.md).
 All work used owned/mock fixtures and synthetic credentials; external calls and
-spend were zero. Publish the completed work for review without merging it.
+spend were zero.
+
+Implementation `838c4a1` is published in
+[PR #20](https://github.com/0xsl0th/recon-cockpit/pull/20), open against `main`.
+The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/20/checks) are the
+authoritative current hosted status. The follow-up checkpoint changes documentation
+only; local runtime/test evidence remains tied to `838c4a1`. Hosted portable CI
+does not replace local kernel verification. Do not repeat the full local suites
+solely for the checkpoint, merge this PR or enable live execution without a new
+explicit instruction.
 
 ## R5 isolated launch admission — merged checkpoint
 
