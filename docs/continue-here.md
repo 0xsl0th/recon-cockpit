@@ -4,6 +4,20 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
+**Resumed on 29 September 2026.** PR #22 is already merged at `5584efe`;
+fresh inspection found no blocking issue in reviewed head `1c26828`, confirmed
+the identical merge tree, no review comments and all five successful PR and
+post-merge checks. Keep that completed slice closed.
+
+[PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23), implementation `457f164`,
+has completed verification and independent review with no blocking findings.
+Fresh full runs passed **3,196 portable tests in 85.76 seconds** and **406 Linux
+tests in 716.31 seconds**, with zero selected failures/errors/skips. No test or
+isolated worker processes remained. All five hosted checks passed on the
+implementation; check the [final PR status](https://github.com/0xsl0th/recon-cockpit/pull/23/checks)
+for its documentation checkpoint. Leave this slice unmerged for operator review.
+Do not merge #23 or enable live execution without authorization.
+
 ## Current priority — continue R5 after completed R5a and R5b
 
 The operator clarified that **R5 is the active milestone and R5a and R5b are
@@ -50,14 +64,24 @@ bindings and the original expiry before admission and freshness again after
 redemption. This closes reliance on host consumption replies in the opt-in path.
 The fixed worker, terminal and trusted bootstrap remain trusted; scripted PTYs
 do not establish actual operator acceptance. No provider, tool, target, workflow
-case or GUI is added. Leave this subsequent work unmerged for review.
+case or GUI is added. Implementation `457f164` is published in
+[PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23) against main. Leave it
+unmerged for review. This publication checkpoint changes documentation only;
+runtime/test evidence remains tied to `457f164`. The
+[PR checks](https://github.com/0xsl0th/recon-cockpit/pull/23/checks) give current
+hosted status; hosted portable results do not replace local kernel verification.
 
-## R5 direct approval gate — verification in progress
+## R5 direct approval gate — verification complete, awaiting review
 
-All **3,196 portable tests passed in 86.32 seconds**, and **44 focused Linux tests
-passed in 92.59 seconds**. The complete Linux regression run is still pending.
-Reports: `/tmp/recon-approval-witness-portable.xml` and
-`/tmp/recon-approval-witness-focused-linux.xml`.
+Fresh full verification passed **3,196 portable tests in 85.76 seconds** and
+**406 Linux tests in 716.31 seconds**, including all 44 new Linux cases. Both
+JUnit reports have zero selected failures/errors/skips. Independent review found
+no blocking issue and required no runtime correction. Python 3.11 grammar (175
+tracked files), dependencies, local documentation links, whitespace and process
+cleanup passed. Reports: `/tmp/recon-approval-witness-resumed-portable.xml` and
+`/tmp/recon-approval-witness-all-linux.xml`. These complete runs supersede the
+earlier operator-paused and server-interrupted runs. See [verification.md](verification.md)
+for commands, coverage and trust limits.
 
 ## Earlier dependency-order merges
 
@@ -144,8 +168,8 @@ five-job portable matrix.
 
 ## Remaining milestone gates
 
-1. Finish verification and review of the new direct approval gate; separately
-   authorize its merge. Durable audit and fresh grant verification are independent
+1. Review the verified direct approval gate in PR #23 and separately authorize
+   its merge. Durable audit and fresh grant verification are independent
    launch preconditions. A selected terminal/worker still cannot prove a human's
    identity or intent independently of that trusted environment.
 2. Preserve the completed audit, approval, admission and launcher contracts.
@@ -165,6 +189,15 @@ launch preconditions. Preserve the deterministic workflow/evaluation baseline;
 model output supplies proposals, never policy, grants or finding truth. Existing
 R5a status-only release does not authorize exporting raw evidence, credentials or
 arbitrary engagement data. Live validation remains separately authorized.
+
+Start with a separate owned-only assessment provider implementing the
+`bind_session`/`propose` interface consumed by `AuthoritySession`; keep
+`workflow.decide` and saved evidence authoritative for eligible actions and
+findings. Before releasing any proposal, verify the explicit assessment data
+profile and settle recognized usage against a simulation reservation; ambiguous
+dispatch failures retain their holds. Exercise the existing six cases and
+adversarial refusal/cancellation paths through both direct launch gates. This
+does not change the fixed ACK call or expand completed milestone scope.
 
 ## R5 confined fixture launcher — merged checkpoint
 

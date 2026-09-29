@@ -176,12 +176,15 @@ the isolated writer sends a direct witness after fsync, and the launcher checks 
 before admission or execution. [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22)
 completes the durability portion of precondition integration. The current
 [direct approval gate](launch-approval-witness.md) on `feature/launcher-approval-witness`
+is published as `457f164` in [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). It
 independently requires proof of a consumed grant from the approval worker,
 retains its original expiry and rechecks freshness after admission. It closes
 the remaining reliance on a host consent claim in the opt-in launch path; the
-fixed worker and terminal remain trusted. Complete its verification/review, then
-follow with bounded assessment planning on existing provider/cost controls and
-gated real-model acceptance.
+fixed worker and terminal remain trusted. Full verification passed 3,196 portable
+and 406 Linux tests, with no selected failures/errors/skips, and independent
+review found no blocking issue. Leave #23 for operator review and separate merge
+authorization, then follow with bounded assessment planning on existing
+provider/cost controls and gated real-model acceptance.
 Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
 broader tools and lab scenarios remain deferred. The latest authorization covered
 PR #22 only; leave subsequent work for review and keep live execution disabled.

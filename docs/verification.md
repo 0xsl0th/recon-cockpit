@@ -11,8 +11,12 @@ reviewed head. All five [post-merge main jobs](https://github.com/0xsl0th/recon-
 passed. Review reports: `/tmp/recon-audit-witness-review-portable.xml` and
 `/tmp/recon-audit-witness-review-linux.xml`.
 
-The next R5 slice, on `feature/launcher-approval-witness` from that verified main,
-adds `--require-launch-approval` on top of the direct audit gate. The isolated
+The next R5 slice, implementation `457f164` on `feature/launcher-approval-witness`
+from that verified main, is published in [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23).
+Its publication checkpoint changes documentation only; runtime/test evidence
+remains tied to that implementation. Current hosted status is on the
+[PR checks](https://github.com/0xsl0th/recon-cockpit/pull/23/checks).
+It adds `--require-launch-approval` on top of the direct audit gate. The isolated
 approval worker alone holds the sending endpoint after startup and sends proof
 only after consuming a reviewed grant. The launcher checks exact bindings,
 sequence and original expiry before admission, then freshness again after
@@ -58,12 +62,34 @@ that EOF still prevents admission. An earlier full Linux run was deliberately
 interrupted at 204 passing cases to make this correction; it is not completion
 evidence. The portable and focused Linux results above are after the correction.
 
-Full rootless Linux command (final result pending):
+Full rootless Linux command:
 
 ```sh
 RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
   --junitxml=/tmp/recon-approval-witness-all-linux.xml
 ```
+
+**406 passed, 3,196 deselected in 716.31 seconds.** This complete run supersedes
+an operator-paused run (369 passing tests in 675.61 seconds) and a subsequent
+server-interrupted run, neither of which established suite completion.
+
+Fresh portable verification on the unchanged implementation:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-approval-witness-resumed-portable.xml
+```
+
+**3,196 passed, 406 deselected in 85.76 seconds.** Both complete JUnit reports
+were checked for the expected case count and zero selected failures/errors/skips.
+No pytest, owned provider fixture or isolated worker processes remained afterward.
+Python 3.11 grammar (175 tracked files), dependency consistency, 153 relative
+documentation links and whitespace checks passed. Independent review found no
+blocking issue in PR #22's merged revision or PR #23's implementation; no runtime
+correction was needed. PR #22's identical merge tree and all five PR/post-merge
+checks were reconfirmed. All five hosted checks on #23 implementation `457f164`
+passed; use its PR checks above for the final documentation revision. This slice
+is verified and remains unmerged for operator review and separate authorization.
 
 No provider modes, tools, targets, workflow/evidence schemas or default execution
 settings changed. All work uses owned/mock fixtures and synthetic credentials,
