@@ -75,6 +75,14 @@ bounded assessment planning are still R5 work, followed by gated real-model
 acceptance and R6. R1–R4/R5a/R5b stay closed. External provider calls, real credentials and
 spend: **zero**; live execution remains disabled by default.
 
+Hosted CI on publication head `3f0d7d1` passed all four Ubuntu jobs, but macOS
+correctly exposed a new test's assumption that RLIM_INFINITY equals `-1`. The
+fixture now uses `resource.RLIM_INFINITY`, as production already did. All 34
+focused portable cases passed again in 0.17 seconds
+(`/tmp/recon-owned-launcher-portability.xml`). Production is unchanged, so the
+full Linux evidence remains valid; see the PR checks for the corrected head's
+five-job portable matrix.
+
 ## R5 confined fixture launcher — 29 September 2026
 
 Implemented on `feature/isolated-fixture-launcher` from verified main `e9c5496`

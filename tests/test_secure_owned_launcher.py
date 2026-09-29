@@ -134,15 +134,16 @@ def test_owned_dry_client_is_metadata_only_and_cannot_upgrade(monkeypatch):
     assert launcher.close() == {'identity': launcher.identity, 'status': 'closed', 'connection_count': 0, 'request_count': 0}
 
 
-@pytest.mark.parametrize('inherited', [-1, 30, 600])
+@pytest.mark.parametrize('inherited', ['unlimited', 30, 600])
 def test_child_limits_never_raise_inherited_hard_ceiling(monkeypatch, inherited):
     import resource
+    inherited = resource.RLIM_INFINITY if inherited == 'unlimited' else inherited
     calls = {}
     monkeypatch.setattr(resource, 'getrlimit', lambda kind: (inherited, inherited))
     monkeypatch.setattr(resource, 'setrlimit', lambda kind, limits: calls.update({kind: limits}))
     worker._set_limits(60)
     assert calls[resource.RLIMIT_CPU] == ((30, 30) if inherited == 30 else (62, 62))
-    assert all(soft == hard and (inherited == -1 or hard <= inherited) for soft, hard in calls.values())
+    assert all(soft == hard and (inherited == resource.RLIM_INFINITY or hard <= inherited) for soft, hard in calls.values())
 
 
 def test_extracted_session_limits_preserves_public_type_and_digest():

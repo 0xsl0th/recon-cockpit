@@ -81,6 +81,14 @@ See [verification.md](verification.md) for commands, earlier fixture corrections
 and the distinction between scripted mechanics and actual operator acceptance.
 Provider calls, real credentials and spend remain zero; live execution is disabled.
 
+Hosted CI on publication head `3f0d7d1` passed all four Ubuntu jobs, but macOS
+correctly exposed a new test's assumption that RLIM_INFINITY equals `-1`. The
+fixture now uses `resource.RLIM_INFINITY`, as production already did. All 34
+focused portable cases passed again in 0.17 seconds
+(`/tmp/recon-owned-launcher-portability.xml`). Production is unchanged, so the
+full Linux evidence remains valid; see the PR checks for the corrected head's
+five-job portable matrix.
+
 ## Remaining milestone gates
 
 1. Review and separately authorize the pending launcher merges.
