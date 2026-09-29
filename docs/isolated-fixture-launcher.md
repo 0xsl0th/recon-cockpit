@@ -120,3 +120,10 @@ and bounded assessment planning precede explicitly gated live-model acceptance
 and R6. Accepted R1–R4, R5a/R5b and audit/approval/admission contracts remain closed.
 The R5b monetary ledger is unchanged. See [verification.md](verification.md) and
 [continue-here.md](continue-here.md) for evidence and review state.
+
+The next [direct audit gate](launch-audit-witness.md) adds an explicit
+`--require-launch-audit` option. Committed bootstrap transfers exactly one
+receiving endpoint from the audit writer; each launch requires its exact fresh
+durability witness before admission. Ordinary execute requests still cannot
+supply receipt booleans, descriptors or replacement source information. Consent
+authentication remains pending, and defaults described above stay unchanged.

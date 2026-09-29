@@ -95,12 +95,14 @@ def _approval_context(args, policy, session_id):
     return LinuxApprovalService(policy, session_id)
 
 
-def _admission_context(args, backend):
+def _admission_context(args, backend, audit=None):
     if not args.isolated_launch_admission or backend is None:
         return nullcontext(backend)
     if args.isolated_launcher:
         from .launcher_isolation import LinuxFixtureLauncher
-        return LinuxFixtureLauncher(backend)
+        if args.require_launch_audit and audit is None:
+            raise ValueError('launch_audit_required')
+        return LinuxFixtureLauncher(backend, audit=audit) if args.require_launch_audit else LinuxFixtureLauncher(backend)
     from .admitted_execution import AdmissionGatedBackend
     return AdmissionGatedBackend(backend)
 
@@ -147,7 +149,7 @@ def _run_http_assessment(args, policy, audit):
         backend = AuthorizedOwnedLabBackend(policy, session_id, limits, lab, execute=args.execute)
         evidence_options["owned_lab"] = lab.identity
     with (_approval_context(args, policy, session_id) as approvals,
-          _admission_context(args, backend) as backend,
+          _admission_context(args, backend, audit) as backend,
           (backend if args.isolated_launcher and lab is not None else
            lab if lab is not None else nullcontext()) as lab, EvidenceStore(
             args.assessment_dir, session_id=session_id, policy=policy,
@@ -247,6 +249,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="require independent policy/budget admission before each owned executor launch")
     parser.add_argument("--isolated-launcher", action="store_true",
                         help="confine fixture/owned-lab launching and keep admission permits in that worker")
+    parser.add_argument("--require-launch-audit", action="store_true",
+                        help="require direct durable intent from the audit worker before confined launches")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--execute", action="store_true", help="execute only with policy, audit and isolation")
     mode.add_argument("--dry-run", action="store_true", help="validate and audit only (default)")
@@ -270,6 +274,8 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("--isolated-launch-admission execution requires --fixture or --owned-lab")
     if args.isolated_launcher and (not args.isolated_launch_admission or not (args.fixture or args.owned_lab)):
         parser.error("--isolated-launcher requires --isolated-launch-admission and --fixture or --owned-lab")
+    if args.require_launch_audit and not args.isolated_launcher:
+        parser.error("--require-launch-audit requires --isolated-launcher and all its prerequisites")
     session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
                         or args.control_plane_mock or assessment_case)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
@@ -348,7 +354,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.isolated_audit:
             from .audit_isolation import LinuxAuditSink
             audit_type = LinuxAuditSink
-        with audit_type(args.audit) as audit, ExitStack() as services:
+        with audit_type(args.audit, **({'launch_witness': True} if args.require_launch_audit else {})) as audit, ExitStack() as services:
             if assessment_case:
                 return _run_http_assessment(args, policy, audit)
             if session_scenario:
@@ -382,7 +388,7 @@ def main(argv: list[str] | None = None) -> int:
                                    else LinuxCoordinator(args.control_plane_mock))
                     backend = (AuthorizedFixtureBackend(policy, session_id, limits, execute=args.execute)
                                if args.fixture else None)
-                    backend = services.enter_context(_admission_context(args, backend))
+                    backend = services.enter_context(_admission_context(args, backend, audit))
                     provider_kwargs = {"provider": provider} if args.control_plane_openai_offline else {}
                     approvals = services.enter_context(_approval_context(args, policy, session_id))
                     runner = AuthoritySession(policy, audit, backend, coordinator, limits,

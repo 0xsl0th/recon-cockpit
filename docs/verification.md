@@ -1,5 +1,97 @@
 # Verification record
 
+## R5 direct launch-audit witness — 29 September 2026
+
+PRs #20 and #21 were reviewed at `007f24f` and `0298e1a`, then merged in dependency
+order with explicit operator authorization. #20 merged as `31d0a1f`; #21 was
+retargeted to main with an unchanged diff and merged as `38282b9`. Both merge
+trees match the reviewed trees exactly. No review comments or blocking findings
+remained. Fresh review passed **277 portable tests in 0.74 seconds** and **57 Linux
+boundary tests in 79.30 seconds**. Both heads had five passing hosted jobs; all
+five [final post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36527099212)
+passed. The intermediate main run was superseded by the second merge. Review
+reports: `/tmp/recon-launchers-merge-review-portable.xml` and
+`/tmp/recon-launchers-merge-review-linux.xml`.
+
+The next necessary R5 slice, implementation `845a093` on
+`feature/launcher-audit-witness` from `38282b9`, is published in
+[PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22) against main. The
+production implementation is unchanged by the documentation checkpoint and
+test-only CI correction recorded below. Current hosted status is on the
+[PR checks](https://github.com/0xsl0th/recon-cockpit/pull/22/checks). It adds explicit `--require-launch-audit`. The audit worker alone holds a one-way
+sending endpoint and emits an execution-intent witness only after fsync. The
+launcher checks source, sequences, freshness and exact action/session/policy/
+backend before admission or execution. Default requests and evidence schemas
+are unchanged. See [launch-audit-witness.md](launch-audit-witness.md).
+
+Focused portable verification passed **228 tests in 0.62 seconds**. The full
+portable command was:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-audit-witness-portable.xml
+```
+
+**3,146 passed, 362 deselected in 86.26 seconds.** The 53 new cases cover strict
+source/event/sequence/time bindings, malformed intent rejection, replay and
+launch ceilings, received-descriptor cleanup, truncation and CLI prerequisites.
+
+Focused rootless Linux verification passed **35 tests in 64.86 seconds**:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest tests/test_secure_audit_witness_linux.py \
+  -m integration -v --tb=short --junitxml=/tmp/recon-audit-witness-focused-linux.xml
+```
+
+This witnesses actual endpoint custody and kernel-enforced direction, no witness
+capability in an executor, descriptor substitution/duplication/omission and
+bootstrap downgrade refusal, a forged host audit acknowledgement without a real
+event, missing/stale/replayed/mismatched/queued-extra witnesses, fsync failure,
+lost acknowledgement, writer/channel failure, cancellation cleanup and prevention
+of startup after denied approval or lost controller acknowledgement. All six
+workflow outcomes pass with both fixture and persistent-lab launchers, preserving
+saved-evidence integrity and read-only bytes/mtimes. Dry/noninteractive CLI runs
+start no launcher. Scripted PTYs verify mechanics, not actual human consent.
+
+The full rootless Linux command is:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
+  --junitxml=/tmp/recon-audit-witness-all-linux.xml
+```
+
+**362 passed, 3,146 deselected in 626.77 seconds.** Both full JUnit reports contain
+zero selected failures, errors or skips. No task workers or pytest processes
+remained afterward. Python 3.11 grammar (171 files), dependencies, local links and
+whitespace checks passed; no dependencies were added. Hosted portable CI supplements,
+rather than replaces, the rootless kernel verification.
+
+The [hosted run on `d5616d5`](https://github.com/0xsl0th/recon-cockpit/actions/runs/36529547273)
+passed four jobs and exposed an existing cancellation-test race on Ubuntu/Python
+3.14. Its 50 ms timer could cancel before mock exchange entry under host load,
+so no call was reserved. The corrected test cancels at the actual scripted
+transport wait, asserts the call is already reserved, and retains the existing
+stop/no-execution/cost assertions. No production code changed. Reverification:
+
+```sh
+.venv/bin/python -m pytest tests/test_secure_offline_authority.py \
+  tests/test_secure_openai_broker.py -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-authority-cancel-portable.xml
+```
+
+**214 passed in 0.98 seconds.** Full Linux verification above remains applicable;
+the PR checks report the corrected head's hosted portable matrix.
+
+The direct gate proves durable intent from the selected writer, not truth of a
+producer's approval claim or completed execution. Trusted bootstrap, fixed workers
+and the host account/kernel remain trusted; the file is not immutable against its
+owner. An unknown append/completion may already have happened and never permits
+retry. Independent fresh-approval authentication, bounded provider-backed planning
+and explicitly gated real-model acceptance still precede R6. R1–R4 and R5a/R5b
+remain closed. All verification is offline with owned/mock fixtures and synthetic
+credentials: zero external provider calls, real keys or spend. Subsequent PRs need
+review and separate merge authorization.
+
 ## R5 confined persistent-lab launcher — 29 September 2026
 
 Reviewed PR #20 head `007f24f` against verified main `e9c5496`: no blocking

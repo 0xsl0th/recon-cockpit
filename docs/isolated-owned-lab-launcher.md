@@ -2,7 +2,7 @@
 
 ## Ownership decision
 
-This slice depends on reviewed, unmerged PR #20 (`007f24f`). It completes launcher
+This slice merged in PR #21 (`38282b9`) after PR #20 (`31d0a1f`). It completes launcher
 custody for the other existing owned workflow profile, without expanding R4's
 lab specification, cases, tools or evidence schema. `--isolated-launcher` can
 compose with `--owned-lab` and the existing isolated approval/audit/admission
@@ -55,8 +55,10 @@ This completes the bounded persistent-lab launcher integration, not all R5.
 Pending merge/review gates, remaining authorization integration, bounded assessment
 planning on the existing provider/cost boundary and explicitly gated real-model
 acceptance still precede R6 evaluation, operator review, packaging and demonstration.
-Optional GUI/session APIs, broader tools and lab scenarios stay deferred. PR #20
-and this dependent change need their own explicit merge authorization.
+Optional GUI/session APIs, broader tools and lab scenarios stay deferred. PRs #20
+and #21 are merged; subsequent work needs separate merge authorization. The next
+[durable-intent gate](launch-audit-witness.md) independently verifies the audit
+precondition; fresh approval authentication remains pending.
 
 An offline dry-run (with a new evidence directory) is:
 

@@ -25,7 +25,11 @@ class LinuxAuditSink:
     retained append descriptor, not approval, policy or execution authority.
     """
 
-    def __init__(self, path):
+    def __init__(self, path, *, launch_witness=False):
+        if type(launch_witness) is not bool:
+            raise ValueError('invalid_launch_witness_mode')
+        self._launch_witness = launch_witness
+        self._witness_reader = None
         self._path = Path(path)
         self._identity = str(uuid4())
         self._sequence = 0
@@ -60,9 +64,13 @@ class LinuxAuditSink:
         for name in ('planner_worker', 'audit_worker', 'audit_protocol'):
             argv.extend(('--ro-bind', str(Path(__file__).with_name(name + '.py').resolve()),
                          '/app/' + name + '.py'))
+        if self._launch_witness:
+            argv.extend(('--ro-bind', str(Path(__file__).with_name('audit_witness.py').resolve()), '/app/audit_witness.py'))
         argv.extend(('--remount-ro', '/proc', '--remount-ro', '/dev', '--remount-ro', '/',
                      '/usr/bin/python3', '-I', '-S', '/app/audit_worker.py', self._identity,
                      *(host[name] for name in ('user', 'net', 'mnt', 'pid'))))
+        if self._launch_witness:
+            argv.append('launch-witness')
         return argv
 
     def _start(self):
@@ -72,7 +80,14 @@ class LinuxAuditSink:
         self._supervisor = _Supervisor(protocol.EXCHANGE_SECONDS, 1048576)
         self._channel, child = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
         self._channel.setblocking(False)
+        witness_writer = None
         try:
+            if self._launch_witness:
+                self._witness_reader, witness_writer = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+                self._witness_reader.shutdown(socket.SHUT_WR)
+                witness_writer.shutdown(socket.SHUT_RD)
+                self._witness_reader.setblocking(False)
+                witness_writer.setblocking(False)
             # Reuse the existing private path, O_NOFOLLOW, mode/link validation
             # and directory fsync. Transfer exactly this descriptor, then close
             # our copy before accepting READY or any producer event.
@@ -85,8 +100,14 @@ class LinuxAuditSink:
                 child.close()
                 for stream in (self._process.stdout, self._process.stderr):
                     os.set_blocking(stream.fileno(), False)
-                self._send(protocol.encode({'version': '1', 'writer_id': self._identity,
-                                            'device': info.st_dev, 'inode': info.st_ino}), fd=source._fd)
+                initial = {'version': '1', 'writer_id': self._identity, 'device': info.st_dev, 'inode': info.st_ino}
+                if witness_writer is None:
+                    self._send(protocol.encode(initial), fd=source._fd)
+                else:
+                    witness_info = os.fstat(witness_writer.fileno())
+                    initial['witness'] = [witness_info.st_dev, witness_info.st_ino]
+                    self._send(protocol.encode(initial), fd=source._fd, witness_fd=witness_writer.fileno())
+                    witness_writer.close()
             ready = self._reply()
             expected = {'version': '1', 'writer_id': self._identity, 'ready': True,
                         'checks': dict.fromkeys(protocol.CHECKS, True)}
@@ -95,12 +116,26 @@ class LinuxAuditSink:
             self._checks = ready['checks']
             self._verify_path()
         finally:
+            if witness_writer is not None:
+                witness_writer.close()
             child.close()
 
-    def _send(self, raw, *, fd=None):
+    def take_launch_witness(self):
+        """Transfer the one receiving endpoint once; no source reset or clone."""
+        with self._lock:
+            if self._closed or self._failed or self._witness_reader is None:
+                raise AuditUnavailable('launch_witness_unavailable')
+            reader = self._witness_reader
+            info = os.fstat(reader.fileno())
+            self._witness_reader = None
+            return reader, {'version': '1', 'writer_id': self._identity, 'device': info.st_dev, 'inode': info.st_ino}
+
+    def _send(self, raw, *, fd=None, witness_fd=None):
         if len(raw) > protocol.MAX_PACKET:
             raise AuditUnavailable('audit_packet_limit')
         ancillary = [] if fd is None else [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array('i', [fd]))]
+        if witness_fd is not None:
+            ancillary = [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array('i', [fd, witness_fd]))]
         while True:
             self._supervisor.check()
             try:
@@ -176,9 +211,14 @@ class LinuxAuditSink:
             if self._channel is not None:
                 self._channel.close()
         finally:
-            if self._supervisor is not None:
+            try:
+                if self._witness_reader is not None:
+                    self._witness_reader.close()
+                    self._witness_reader = None
+            finally:
                 try:
-                    self._supervisor.close()
+                    if self._supervisor is not None:
+                        self._supervisor.close()
                 except Exception:
                     raise AuditUnavailable('audit_cleanup_failed') from None
 
