@@ -8,6 +8,11 @@ See the [completion order](docs/roadmap.md#milestone-completion-order);
 additional session-view and GUI work follows milestone completion. Live provider
 execution remains disabled, with development and verification using owned/mock fixtures.
 
+The next R5 boundary adds an opt-in [confined audit writer](docs/isolated-audit.md)
+for authority sessions and owned assessments (`--isolated-audit`). Each launch
+still requires a durable audit acknowledgement; approval and authorization remain
+with the trusted host in this slice.
+
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 
 An additional entry point now accepts **deterministic mock agent** proposals and

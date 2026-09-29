@@ -158,6 +158,12 @@ does not claim that live-model acceptance or all of R5 is complete.
 
 ### Next bounded R5 work: further authority separation
 
+The first implementation is the [confined audit writer](isolated-audit.md): an
+explicit Linux option transfers audit persistence to a restricted worker and
+requires a durable acknowledgement before the existing launch gate proceeds.
+Approval issuance, authorization and launch decisions remain host-owned. This
+advances R5 without claiming that its full authority separation is complete.
+
 - Start with the original R5 requirement for narrowly scoped approval/launch and
   audit interfaces. Record the current ownership and the exact authority leaving
   each process before implementing the smallest boundary change. Do not create

@@ -32,6 +32,14 @@ result handling; it does not make the remaining services independently isolated.
 The API credential broker and independently protected audit storage are separate
 follow-up work, with explicit compromise analysis before their introduction.
 
+The later R5 [confined audit writer](isolated-audit.md) is now available through
+`--isolated-audit`. With that option, the host transfers one append descriptor to
+a fixed Linux worker and retains a synchronous append/acknowledgement channel.
+The worker has no approval or launch authority and cannot reopen or truncate the
+file. The table above describes the original/default local sink; approval,
+authorization and launching still remain in the host with either sink. R5a/R5b
+provider boundaries are documented separately and live calls remain disabled.
+
 ## Coordinator confinement
 
 The launcher uses a non-setuid Bubblewrap under an unprivileged Linux user. It
