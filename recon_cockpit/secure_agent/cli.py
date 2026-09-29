@@ -212,6 +212,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--session-max-output-bytes", type=int,
                         help="total reserved response allowance: 1–1048576 bytes (default: 3072)")
     parser.add_argument("--audit", type=Path, default=Path(".secure-agent/audit.jsonl"))
+    parser.add_argument("--isolated-audit", action="store_true",
+                        help="use the confined Linux audit writer for an authority session or owned assessment")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--execute", action="store_true", help="execute only with policy, audit and isolation")
     mode.add_argument("--dry-run", action="store_true", help="validate and audit only (default)")
@@ -224,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
     offline_scenario = args.openai_offline or args.control_plane_openai_offline
     assessment_case = args.http_assessment or args.discovery_assessment or args.workflow_assessment
     authority_mode = args.control_plane_mock or args.control_plane_openai_offline or assessment_case
+    if args.isolated_audit and not authority_mode:
+        parser.error("--isolated-audit requires an authority session or owned assessment")
     session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
                         or args.control_plane_mock or assessment_case)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
@@ -298,7 +302,11 @@ def main(argv: list[str] | None = None) -> int:
         elif args.routed:
             from .routed import LinuxRoutedBackend
             backend = LinuxRoutedBackend()
-        with AuditSink(args.audit) as audit:
+        audit_type = AuditSink
+        if args.isolated_audit:
+            from .audit_isolation import LinuxAuditSink
+            audit_type = LinuxAuditSink
+        with audit_type(args.audit) as audit:
             if assessment_case:
                 return _run_http_assessment(args, policy, audit)
             if session_scenario:

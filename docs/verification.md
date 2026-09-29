@@ -1,5 +1,71 @@
 # Verification record
 
+## R5 confined audit persistence — 29 September 2026
+
+Implemented on `feature/isolated-audit-writer`, from the corrected planning head
+`2267e98` in PR #16 (runtime baseline `1369166`, PR #15). R5a/R5b remain complete.
+This slice separates append persistence, with an explicit Linux CLI option;
+approval issuance, authorization and launch decisions still belong to the host.
+See [the authority and failure contract](isolated-audit.md).
+
+The full portable command was:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-audit-portable.xml
+```
+
+**2,810 passed, 194 deselected in 77.82 seconds.** The 60 new portable cases
+cover strict packet/event schemas, reserved envelope fields, replay and identity
+binding, partial writes, fsync failure, descriptor modes, event limits, permanent
+poisoning, unsupported CLI modes and absent-isolation refusal without fallback.
+
+The focused real Linux command was:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest tests/test_secure_audit_linux.py \
+  -m integration -v --tb=short --junitxml=/tmp/recon-audit-linux.xml
+```
+
+**28 passed in 31.94 seconds.** These exercise the actual namespace/seccomp
+boundary, exclusive descriptor custody, concurrent producers, absent inherited
+host files/environment/descriptors, changed file identities/modes/links, dead
+writers, replay, extra descriptors, oversized requests, failed fsync, silent or
+flooding workers and forged receipts. A real coordinator/authority/executor path
+observes the persisted intent before each owned launch, including denial and
+fixture-grant cases. Separate no-launch witnesses cover lost acknowledgements
+and cancellation/deadline expiry after intent persistence. All six fixed workflow
+CLI cases retain their expected outcomes and evidence with the new sink.
+
+The full rootless Linux regression command was:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
+  --junitxml=/tmp/recon-audit-all-linux.xml
+```
+
+**194 passed, 2,810 deselected in 391.19 seconds.** This includes the 28 new
+audit tests and all 166 existing Linux regressions for authority, approvals,
+planners/parsers, discovery, workflows, persistent labs, evaluation, R5a TLS and
+R5b controlled provider calls. The portable, focused Linux and full Linux JUnit
+reports contain zero selected failures, errors or skips.
+
+Local boundary review also blocked `ioctl`, `fallocate` and descriptor flag
+changes, preventing alternate file-modification routes through an append handle.
+The channel switches to nonblocking mode before these restrictions; later waits
+use `select` without changing descriptor flags. These are local development
+reviews, not an independent security audit.
+
+No dependencies were added. Python 3.11 grammar, dependency consistency,
+documentation links and whitespace checks passed. Existing record schemas and
+provider/cost implementations are unchanged. Actual external provider calls and
+spend: **zero**. This work does not enable live providers, claim immutable storage
+against the host owner, or complete the remaining R5 authority/planning work.
+The portable workflow also admits PRs based on `docs/milestone-realignment`,
+so the focused dependent PR receives the existing five-job matrix. The runtime
+results above are tied to implementation `d918e5b`; this trigger update changes
+no runtime behavior.
+
 ## R5b controlled provider call — 29 September 2026
 
 Implemented on `feature/controlled-provider-call`, based on PR #14's merge

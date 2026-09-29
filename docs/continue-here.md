@@ -29,10 +29,33 @@ verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
 authorize activation, external targets, real credentials or a new merge.
 
-The implementation baseline is `main` at `1369166`. This documentation
-realignment is on `docs/milestone-realignment` in
-[PR #16](https://github.com/0xsl0th/recon-cockpit/pull/16), open for review;
-it changes no runtime, policy, provider gate or assessment evidence format.
+The implementation baseline is `main` at `1369166`. The corrected planning
+documents are in [PR #16](https://github.com/0xsl0th/recon-cockpit/pull/16), open
+with all five hosted checks passing. The next R5 implementation is on
+`feature/isolated-audit-writer`, based on PR #16's corrected head `2267e98`.
+Do not merge either branch without the operator's merge instruction.
+
+## R5 confined audit persistence — current implementation
+
+Read [isolated-audit.md](isolated-audit.md). The explicit `--isolated-audit`
+option transfers one verified append descriptor to a fixed Linux worker for
+authority sessions and owned assessments. The host closes its copy and waits
+for an identity/sequence/event-bound acknowledgement after each write and fsync.
+Missing acknowledgements poison the sink; no retry or local fallback exists.
+The worker cannot create sockets/processes, reopen files, clear append mode,
+truncate or punch holes in existing records. Limits, private-file checks and
+process cleanup remain enforced. Audit JSONL and evidence schemas are preserved.
+
+Approval issuance, authorization, launch decisions and event truth remain
+host-owned; neither remote immutable storage nor full host-compromise resistance
+is claimed. This is the first remaining R5 authority-separation slice, not the
+completion of all R5 work. Existing provider gates, credentials, endpoints and
+cost controls are unchanged. All provider verification remains offline.
+
+Verification and publication evidence for this implementation is recorded in
+[verification.md](verification.md): **2,810 portable and 194 real Linux tests
+passed**, with zero selected failures/errors/skips. The implementation PR targets the
+planning branch while PR #16 remains open, keeping its runtime diff focused.
 
 ## R5b controlled provider call — merged checkpoint
 
@@ -378,11 +401,12 @@ Planning uses synthetic responses.
 1. Start from the current priority and merged checkpoint above. PRs #6–#15 are
    already merged. Inspect Git and hosted checks before publication; historical
    branch names and open-PR notes below earlier checkpoints are not current work.
-2. Continue the remaining R5 authority separation. Define which authority leaves
-   which process for the smallest approval/launch/audit boundary change, then
-   implement and verify it with owned fixtures. Preserve the existing tools and
-   backend restrictions; do not schedule a general registry or R3/R4 expansion
-   as a prerequisite. Complete the remaining R5 work before R6.
+2. Review the confined audit persistence slice above. Continue the remaining R5
+   approval/authorization/launch separation by stating exactly which authority
+   leaves each process, then implement and verify the next bounded change with
+   owned fixtures. Preserve the existing tools and backend restrictions; do not
+   schedule a general registry or R3/R4 expansion as a prerequisite. Complete
+   the remaining R5 work before R6.
 3. R5a and R5b are complete. Preserve them as regression references while
    developing the remaining bounded planning integration. The synthetic ACK
    path does not complete live assessment planning. Keep live acceptance pending
