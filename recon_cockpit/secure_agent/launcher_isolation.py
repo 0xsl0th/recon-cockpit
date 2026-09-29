@@ -1,6 +1,7 @@
 """Lazy fixture-launcher client; executable construction and permits stay remote."""
 
 from dataclasses import asdict
+import array
 import os
 from pathlib import Path
 import re
@@ -29,7 +30,7 @@ OWNED_MODULES = ('owned_launcher_runtime', 'owned_lab', 'owned_lab_worker', 'own
 
 
 class LinuxFixtureLauncher:
-    def __init__(self, backend):
+    def __init__(self, backend, *, audit=None):
         if type(backend) not in {AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend, AuthorizedOwnedLabBackend}:
             raise ValueError('unsupported_launcher_backend')
         self.name = backend.name
@@ -48,6 +49,12 @@ class LinuxFixtureLauncher:
         self._stopped = threading.Event()
         self._lab_context = self._lab_receipt = None
         self._cleanup_verified = False
+        self._witness_reader = self._witness_source = None
+        if audit is not None:
+            from .audit_isolation import LinuxAuditSink
+            if type(audit) is not LinuxAuditSink:
+                raise ValueError('launcher_requires_isolated_audit')
+            self._witness_reader, self._witness_source = audit.take_launch_witness()
 
     @property
     def identity(self):
@@ -98,7 +105,8 @@ class LinuxFixtureLauncher:
             '--size', '1048576', '--tmpfs', '/tmp', '--ro-bind', closure['stdlib'], closure['stdlib']]
         for source, destination in files:
             argv += ['--ro-bind', source, destination]
-        for name in (*MODULES, *(OWNED_MODULES if self._config['profile'] == 'owned_lab' else ())):
+        for name in (*MODULES, *(OWNED_MODULES if self._config['profile'] == 'owned_lab' else ()),
+                     *(('audit_witness', 'audit_protocol') if self._witness_source is not None else ())):
             argv += ['--ro-bind', str(Path(__file__).with_name(name+'.py').resolve()),
                      '/app/recon_cockpit/secure_agent/'+name+'.py']
         # Private /proc must permit nested Bubblewrap's UID/GID-map writes.
@@ -106,6 +114,8 @@ class LinuxFixtureLauncher:
         argv += ['--remount-ro', '/dev', '--remount-ro', '/',
             '/usr/bin/python3', '-I', '-S', '/app/recon_cockpit/secure_agent/launcher_worker.py',
             commitment, *(host[name] for name in ('user', 'net', 'mnt', 'pid'))]
+        if self._witness_source is not None:
+            argv.append('launch-witness')
         return argv
 
     def _start(self, control):
@@ -116,6 +126,8 @@ class LinuxFixtureLauncher:
         self._control = control
         closure, files = self._runtime(control)
         initial = {'configuration': self._config, 'deadline': control.deadline, 'runtime': closure}
+        if self._witness_source is not None:
+            initial['audit_witness'] = self._witness_source
         protocol.initial(initial, time.monotonic())
         commitment = admission.digest(initial)
         self._supervisor = _Supervisor(10, protocol.MAX_REPLY*16+4096, control=control)
@@ -126,7 +138,14 @@ class LinuxFixtureLauncher:
             child.close()
             for stream in (self._process.stdout, self._process.stderr):
                 os.set_blocking(stream.fileno(), False)
-            self._send(admission.encode(initial))
+            if self._witness_reader is None:
+                self._send(admission.encode(initial))
+            else:
+                try:
+                    self._send(admission.encode(initial), fd=self._witness_reader.fileno())
+                finally:
+                    self._witness_reader.close()
+                    self._witness_reader = None
             expected = {'version': '1', 'ready': True, 'bootstrap_digest': commitment,
                         'checks': dict.fromkeys(protocol.CHECKS, True)}
             if protocol.encode(self._reply()) != protocol.encode(expected):
@@ -135,13 +154,15 @@ class LinuxFixtureLauncher:
         finally:
             child.close()
 
-    def _send(self, raw):
+    def _send(self, raw, *, fd=None):
         while True:
             self._supervisor.check()
             if self._stopped.is_set():
                 raise IsolationUnavailable('Fixture launcher stopped')
             try:
-                if self._channel.send(raw) != len(raw):
+                written = (self._channel.send(raw) if fd is None else self._channel.sendmsg(
+                    [raw], [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array('i', [fd]))]))
+                if written != len(raw):
                     raise IsolationUnavailable('Short fixture launcher send')
                 return
             except BlockingIOError:
@@ -216,6 +237,9 @@ class LinuxFixtureLauncher:
         self._stopped.set()
         self._checks = None
         try:
+            if self._witness_reader is not None:
+                self._witness_reader.close()
+                self._witness_reader = None
             if self._channel is not None:
                 self._channel.close()
         finally:

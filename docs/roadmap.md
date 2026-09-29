@@ -12,14 +12,14 @@ become prerequisites for continuing R5. Finish the remaining R5 work, then R6,
 before additional product ideas. The [completion order below](#milestone-completion-order)
 is the current work queue. No new milestone or parallel GUI track is introduced.
 
-The verified implementation baseline is `main` at `e9c5496`, after the authorized
-merge of [PR #19](https://github.com/0xsl0th/recon-cockpit/pull/19) (isolated admission).
-PR #16 (roadmap alignment), #17 (isolated audit) and #18 (approvals) are also merged.
-All five post-merge portable jobs passed. Full implementation verification recorded
-2,988 portable and 270 Linux tests; the merge review also passed 294 focused
-portable and 35 Linux admission tests. These results establish the documented offline scope,
-not completion of live-model evaluation. Live execution remains disabled and
-development/verification continues with owned/mock fixtures only.
+The verified implementation baseline is `main` at `38282b9`, after the authorized
+merges of PR #20 (fixture launcher, `31d0a1f`) and PR #21 (persistent lab custody,
+`38282b9`). PRs #16–#19 are also merged. Fresh merge review passed 277 portable and
+57 Linux tests, both reviewed heads passed five hosted jobs, and all five final
+post-merge main jobs passed. The reviewed trees were preserved exactly. These
+results establish the documented offline scope, not completion of live-model
+acceptance. Live execution remains disabled; development and verification use
+owned/mock fixtures only.
 
 ### Earlier implementation checkpoints
 
@@ -166,21 +166,20 @@ requires a durable acknowledgement before the existing launch gate proceeds.
 review, unpredictable challenges and single-use grant state reside in one fixed
 worker. [Isolated launch admission](isolated-launch-admission.md) is merged in
 PR #19: an independent worker owns fixed policy/profile checks, execution
-reservations and one-use permits. The reviewed, unmerged
-[confined fixture launcher](isolated-fixture-launcher.md) (PR #20, `007f24f`) owns
-the admission client, permit redemption, executor-envelope construction and
-supervision. Its dependent [persistent-lab integration](isolated-owned-lab-launcher.md)
-moves the existing lab owner, management pipe and namespace pins into that worker,
-preserving card v2 and all six cases. This dependent slice is published in
-[PR #21](https://github.com/0xsl0th/recon-cockpit/pull/21) (`7864e09`), with 3,093
-portable and 327 Linux tests passing. Both await separately authorized merges.
+reservations and one-use permits. The [confined fixture launcher](isolated-fixture-launcher.md)
+(PR #20) and [persistent-lab integration](isolated-owned-lab-launcher.md) (PR #21)
+are now merged. The launcher owns admission-client custody, executor supervision,
+and persistent lab management/namespace pins, preserving card v2 and all six cases.
 
-The next dependency after those slices is independent consent/audit precondition
-integration: ordering remains controller-enforced today. Follow with bounded
-assessment planning on the existing provider/cost controls, then gated real-model
-acceptance. Full R5 remains incomplete. R6 follows those acceptance gates; optional
-GUI/session APIs, broader tools and lab scenarios remain deferred. No new merge
-or live execution is authorized by this continuation.
+The next bounded slice is [independent durable-intent verification](launch-audit-witness.md):
+the isolated writer sends a direct witness after fsync, and the launcher checks it
+before admission or execution. This closes the durability portion of precondition
+integration. Fresh approval authentication remains the next authority dependency;
+audit producer claims do not establish consent. Follow with bounded assessment
+planning on existing provider/cost controls, then gated real-model acceptance.
+Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
+broader tools and lab scenarios remain deferred. Only PRs #20/#21 were authorized
+for merge; leave subsequent work for review and keep live execution disabled.
 
 - Start with the original R5 requirement for narrowly scoped approval/launch and
   audit interfaces. Record the current ownership and the exact authority leaving

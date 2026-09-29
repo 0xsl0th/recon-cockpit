@@ -5,6 +5,11 @@ remain complete; approval/authorization separation and assessment-planning
 integration remain later R5 work. Development uses owned/mock fixtures only.
 This slice is merged in PR #17. The subsequent [isolated approval option](isolated-approvals.md)
 can compose with it; the ownership discussion below describes the audit option alone.
+The later [direct launch-audit gate](launch-audit-witness.md) optionally transfers
+one additional, already half-closed sending endpoint at bootstrap. After fsync,
+the writer sends a bounded execution-intent witness directly to the launcher.
+Ordinary append requests and JSONL schemas are unchanged; the added endpoint
+conveys durability, not approval authority or an execution command.
 
 ## Authority decision
 

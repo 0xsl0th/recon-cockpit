@@ -142,18 +142,29 @@ def append(fd, event):
 
 def main():
     fd = None
+    witness_channel = None
     try:
-        if len(sys.argv) != 6:
+        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] != 'launch-witness'):
             raise ValueError('invalid_audit_bootstrap')
+        witnessed = len(sys.argv) == 7
         identity = protocol.writer_id(sys.argv[1])
-        _, host = bootstrap._arguments(['three_step', *sys.argv[2:]])
+        _, host = bootstrap._arguments(['three_step', *sys.argv[2:6]])
         channel = socket.socket(fileno=0)
         if channel.family != socket.AF_UNIX or channel.type != socket.SOCK_SEQPACKET:
             raise ValueError('invalid_audit_channel')
         checks = bootstrap._bootstrap(host)
         channel.settimeout(protocol.EXCHANGE_SECONDS)
-        initial, fd = packet(channel, expect_fd=True)
-        if (set(initial) != {'version', 'writer_id', 'device', 'inode'}
+        if witnessed:
+            if __package__:
+                from . import audit_witness
+            else:
+                import audit_witness
+            initial, descriptors = audit_witness.receive(channel, 2)
+            fd, witness_fd = descriptors
+            witness_channel = audit_witness.endpoint(witness_fd, initial.get('witness'), writer=True)
+        else:
+            initial, fd = packet(channel, expect_fd=True)
+        if (set(initial) != {'version', 'writer_id', 'device', 'inode'} | ({'witness'} if witnessed else set())
                 or initial['version'] != '1' or initial['writer_id'] != identity
                 or type(initial['device']) is not int or type(initial['inode']) is not int):
             raise ValueError('invalid_audit_init')
@@ -169,6 +180,7 @@ def main():
                                'checks': checks}).decode('ascii'), flush=True)
         deadline = time.monotonic() + protocol.MAX_LIFETIME
         sequence = 1
+        witness_sequence = 0
         while True:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
@@ -179,7 +191,18 @@ def main():
             if value is None:
                 break
             raw = protocol.request(value, identity, sequence)
+            is_intent = witnessed and value['event']['event_type'] == 'execution_started'
+            if is_intent:
+                # Reject malformed/excess intents before persisting them; issue
+                # the timed witness only after the durable append completes.
+                proof = audit_witness.witness(value['event'], identity, sequence, witness_sequence+1, time.monotonic())
             append(fd, value['event'])
+            if is_intent:
+                proof['issued_at'] = time.monotonic()
+                encoded = protocol.encode(proof)
+                if os.write(witness_channel.fileno(), encoded) != len(encoded):
+                    raise ValueError('audit_witness_short_write')
+                witness_sequence += 1
             print(protocol.encode(protocol.receipt(identity, sequence, raw)).decode('ascii'), flush=True)
             sequence += 1
         return 0
@@ -187,6 +210,8 @@ def main():
         sys.stderr.write('audit_worker_refused\n')
         return 78
     finally:
+        if witness_channel is not None:
+            witness_channel.close()
         if fd is not None:
             os.close(fd)
 

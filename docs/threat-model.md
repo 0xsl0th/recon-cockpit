@@ -114,6 +114,17 @@ channel. Closure acknowledges tree destruction and the last accepted completion'
 counters, not a fresh final sample. A lost completion can undercount attempted
 work; it never authorizes retry or produces a validated positive assessment.
 
+The additional [direct audit gate](launch-audit-witness.md) independently requires
+durable execution intent: a false host acknowledgement, skipped audit call,
+changed action/session/policy/backend, replay or expired witness cannot pass.
+Bootstrap pins a one-way endpoint to the selected writer; the host closes its
+sending copy before writer READY and its receiving copy after launcher transfer.
+Neither endpoint reaches a tool. Malformed/extra frames, changed descriptors,
+channel loss and fsync failure stop without replacement or fallback. This does
+not authenticate producer consent claims, prevent privileged host interference
+or make the host-owned file immutable. Lost witnesses can follow a durable write;
+lost completions can follow execution. Neither is safe to retry.
+
 ## Isolation assumptions
 
 Use a dedicated Linux/Kali lab with unprivileged user namespaces and a compatible

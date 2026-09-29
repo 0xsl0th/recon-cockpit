@@ -29,40 +29,49 @@ verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
 authorize activation, external targets, real credentials or a new merge.
 
-The verified implementation baseline is `main` at `e9c5496`.
-The operator authorized review/merge of [PR #19](https://github.com/0xsl0th/recon-cockpit/pull/19)
-and continuation of R5. Review found no blocking issue; **294 focused portable
-tests and 35 Linux admission tests** passed again. The reviewed head `b1fe045`
-merged on 29 September, and the merged tree matches it exactly. All five
-[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36517670318)
-passed. PRs #16–#19 are merged; do not repeat them. This authorization does not
-enable live execution or automatically merge subsequent work.
+The verified implementation baseline is `main` at `38282b9` after the authorized
+review and dependency-order merges of [PR #20](https://github.com/0xsl0th/recon-cockpit/pull/20)
+and [PR #21](https://github.com/0xsl0th/recon-cockpit/pull/21). PR #20 merged as
+`31d0a1f` at 05:36:33 UTC; #21 was retargeted to main and merged as `38282b9` at
+05:38:13 UTC on 29 September. Reviewed heads were `007f24f` and `0298e1a`;
+both had five passing hosted jobs and no outstanding comments. Their merge trees
+match the reviewed trees exactly. Fresh review passed **277 portable tests in
+0.74 seconds** and **57 Linux boundary tests in 79.30 seconds**, with no runtime
+correction. Reports: `/tmp/recon-launchers-merge-review-portable.xml` and
+`/tmp/recon-launchers-merge-review-linux.xml`.
 
-Current development branch: `feature/isolated-owned-lab-launcher`, stacked on
-reviewed PR #20 head `007f24f` (`feature/isolated-fixture-launcher`). PR #20 is
-**open, reviewed without blocking findings, not merged**. Fresh review passed
-243 focused portable tests and 37 Linux tests (41.42 seconds); all five hosted
-jobs on that head passed. No review comments were outstanding. Main remains
-`e9c5496`; the latest continuation instruction does not supply new merge authority.
+All five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36527099212)
+passed. The intermediate main run for #20 was superseded/cancelled by the #21
+merge. PRs #16–#21 are merged; do not repeat them. This authorization does not
+extend to subsequent PRs or live execution.
 
-The next bounded R5 slice extends confined launcher custody to the existing
-persistent `--owned-lab` workflow. Read [isolated-owned-lab-launcher.md](isolated-owned-lab-launcher.md)
-for ownership, closure semantics and remaining trust limits. The host keeps inert
-lab identity and a typed execution client; the worker owns the lab, management
-pipe, namespace pins, nested admission and fresh executors. No new cases, tools,
-targets, GUI or provider activation are introduced. R1–R4 and R5a/R5b stay closed.
+Current development branch: `feature/launcher-audit-witness`, from that verified
+main. The next necessary R5 slice independently verifies durable execution intent
+inside the launcher using a direct one-way channel from the isolated audit writer.
+Read [launch-audit-witness.md](launch-audit-witness.md) for ownership and trust limits.
+`--require-launch-audit` requires all existing isolated launch/approval/audit options;
+missing, forged, stale or mismatched witness data stops before admission/execution.
+No new provider, tool, target, workflow case or GUI is introduced. This verifies
+durability; authentication of fresh approval is still pending. Leave this new work
+ready for review without merging it.
 
-Implementation `7864e09` is published in
-[PR #21](https://github.com/0xsl0th/recon-cockpit/pull/21), targeting PR #20's branch
-`feature/isolated-fixture-launcher` for a focused dependent review. Each PR requires
-separate explicit merge authorization. After #20 merges, retarget #21 to main and
-review its resulting diff/checks before a separately authorized merge. Do not
-merge either as part of this continuation. The
-[PR #21 checks](https://github.com/0xsl0th/recon-cockpit/pull/21/checks) give current
-hosted status; this publication checkpoint changes documentation only, so local
-runtime/test evidence remains tied to `7864e09`.
+## R5 direct audit gate — completed review slice
 
-## R5 persistent-lab launcher — verified review slice
+The launcher independently checks the selected writer's fsynced intent through
+an exclusive one-way endpoint before admission or execution. This completes the
+durability part of precondition verification. It preserves the existing fixture
+and persistent-lab profiles, all six outcomes, card v2 and evidence inspection.
+Defaults stay unchanged. This does not authenticate producer consent claims.
+
+Full verification passed **3,146 portable tests in 86.26 seconds** and **362 Linux
+tests in 626.77 seconds**, with zero selected failures/errors/skips. This includes
+53 new portable cases and 35 Linux cases. Grammar, dependencies, local links,
+whitespace and post-run process cleanup passed. Full reports:
+`/tmp/recon-audit-witness-portable.xml`, `/tmp/recon-audit-witness-all-linux.xml`.
+The focused 35-case Linux run passed in 64.86 seconds. See
+[verification.md](verification.md) for commands, coverage and trust limits.
+
+## R5 persistent-lab launcher — merged checkpoint
 
 Completed confined custody for the existing persistent lab: fixed owner lifecycle,
 private management and namespace pins, separate admission and fresh executors.
@@ -91,20 +100,19 @@ five-job portable matrix.
 
 ## Remaining milestone gates
 
-1. Review and separately authorize the pending launcher merges.
-2. Complete the original remaining authorization integration: the launcher owns
-   launches and admission, but still trusts controller-established consent and
-   durable audit preconditions. Independently authenticated preconditions remain
-   unfinished; process separation alone does not satisfy them.
+1. Review the new durable-intent gate and separately authorize its merge.
+2. Independently authenticate fresh approval at the launch boundary. Controller
+   grant consumption remains trusted today; a durable producer claim is not proof
+   of human consent. Preserve the completed audit/admission/launcher contracts.
 3. Integrate narrowly bounded assessment planning with the completed R5a/R5b
    provider and money controls. The fixed ACK diagnostic is not that integration.
 4. Keep real-model comparison visibly pending until explicit authorization and
    reviewed data/model/credential/spend settings. Continue offline meanwhile.
 5. Then complete R6 corpus/evaluation consolidation, actual operator review,
    reproducible packaging and demonstration, disclosing any approved offline
-   fallback. Do not reopen completed milestones or add optional GUI/API scope.
+   fallback. Keep accepted milestones closed and optional GUI/API scope deferred.
 
-## R5 confined fixture launcher — reviewed, awaiting merge authorization
+## R5 confined fixture launcher — merged checkpoint
 
 In PR #20 alone, `--isolated-launcher` requires `--fixture` and all three isolated approval/audit/
 admission options. A fixed worker holds the admission client, privately redeems
@@ -126,7 +134,7 @@ All work used owned/mock fixtures and synthetic credentials; external calls and
 spend were zero.
 
 Implementation `838c4a1` is published in
-[PR #20](https://github.com/0xsl0th/recon-cockpit/pull/20), open against `main`.
+[PR #20](https://github.com/0xsl0th/recon-cockpit/pull/20), merged as `31d0a1f`.
 The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/20/checks) are the
 authoritative current hosted status. The follow-up checkpoint changes documentation
 only; local runtime/test evidence remains tied to `838c4a1`. Hosted portable CI

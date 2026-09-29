@@ -76,6 +76,14 @@ their other namespaces remain fresh. Host closure evidence uses the last
 acknowledged totals only after verified tree teardown. Consent/audit ordering
 remains a controller precondition; independent authentication is still pending.
 
+With [direct launch-audit verification](launch-audit-witness.md), the audit writer
+also holds the sole sending endpoint of a one-way seqpacket channel. The launcher
+receives its endpoint once during committed bootstrap and requires a matching,
+fresh, sequenced witness after the writer's fsync, before admission or execution.
+The host retains neither endpoint after startup; child executors receive neither.
+Producer event claims and fresh human consent remain separate from durability.
+Independent approval authentication is the next authority dependency.
+
 `SessionRunner` adds a single-use loop around that same controller. Its fixed
 `SessionMockProvider.propose(observation, control=...)` adapter supervises a
 bundled subprocess; the process receives JSON observation bytes only. Shared
