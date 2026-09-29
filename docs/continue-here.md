@@ -45,7 +45,7 @@ a confined worker. Read [isolated-approvals.md](isolated-approvals.md) for the
 authority decision; controller policy, audit-before-launch and executor checks
 remain mandatory. R1–R4, R5a/R5b and the merged audit slice remain closed.
 
-## R5 isolated approvals — current review preparation
+## R5 isolated approvals — open PR for review
 
 `--isolated-approvals` selects a fixed Linux worker for terminal review and
 ephemeral grant issuance/consumption. It composes with the merged audit worker
@@ -68,8 +68,11 @@ The final full suites passed **2,883 portable tests and 235 real Linux tests**,
 with zero selected failures/errors/skips. This includes 73 additional portable
 cases and 41 new Linux cases covering combined coordinator, approval, audit and
 executor behavior and all six existing workflow outcomes. See [verification.md](verification.md)
-for commands, runtimes, JUnit paths and limits. The branch is ready for a focused
-PR against main; hosted checks and review follow publication.
+for commands, runtimes, JUnit paths and limits. Implementation `0055f61` is
+published in [PR #18](https://github.com/0xsl0th/recon-cockpit/pull/18), open against
+`main`. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/18/checks)
+are the authoritative current hosted status. The follow-up checkpoint commit
+changes documentation only; do not repeat the completed local suites for it.
 Do not merge this work or enable live execution without a new explicit instruction.
 
 ## R5 confined audit persistence — merged checkpoint

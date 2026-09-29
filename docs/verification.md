@@ -75,6 +75,11 @@ integration precede R6; real-model acceptance remains explicitly gated. This wor
 is prepared for review, with no new merge authorized. Current publication state
 is recorded in [continue-here.md](continue-here.md).
 
+Runtime/test evidence above is tied to implementation `0055f61`, published in
+[PR #18](https://github.com/0xsl0th/recon-cockpit/pull/18) against main. The subsequent
+checkpoint update changes documentation only. Hosted portable checks complement
+the local Linux evidence; they do not run the kernel integration suite.
+
 ## R5 confined audit persistence — 29 September 2026
 
 Implemented on `feature/isolated-audit-writer`, from the corrected planning head
