@@ -61,6 +61,10 @@ documentation links and whitespace checks passed. Existing record schemas and
 provider/cost implementations are unchanged. Actual external provider calls and
 spend: **zero**. This work does not enable live providers, claim immutable storage
 against the host owner, or complete the remaining R5 authority/planning work.
+The portable workflow also admits PRs based on `docs/milestone-realignment`,
+so the focused dependent PR receives the existing five-job matrix. The runtime
+results above are tied to implementation `d918e5b`; this trigger update changes
+no runtime behavior.
 
 ## R5b controlled provider call — 29 September 2026
 
