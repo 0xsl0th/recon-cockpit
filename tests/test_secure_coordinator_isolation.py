@@ -18,6 +18,7 @@ import pytest
 from recon_cockpit.secure_agent import (coordinator_ipc as ipc, coordinator_isolation as isolation,
                                        coordinator_worker as worker, session_planner)
 from recon_cockpit.secure_agent.audit import AuditUnavailable
+from recon_cockpit.secure_agent.approvals import ApprovalUnavailable
 from recon_cockpit.secure_agent.coordinator_isolation import BOUNDARY_NAMES, LinuxCoordinator, LinuxOfflineCoordinator
 from recon_cockpit.secure_agent.execution import ExecutionControl, ExecutionStopped
 from recon_cockpit.secure_agent.isolation import IsolationUnavailable
@@ -103,7 +104,8 @@ def test_only_fixed_scenarios_are_selectable(scenario):
         LinuxCoordinator(scenario)
 
 
-@pytest.mark.parametrize("failure", [AuditUnavailable("private audit"), ExecutionStopped("session_cancelled")])
+@pytest.mark.parametrize("failure", [AuditUnavailable("private audit"), ExecutionStopped("session_cancelled"),
+                                     ApprovalUnavailable("private approval")])
 def test_callback_audit_and_control_errors_preserve_identity(launcher, monkeypatch, failure):
     def supervise(_argv, _raw, exchange, *, control, max_requests):
         return exchange(b"request", control=control)

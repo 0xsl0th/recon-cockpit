@@ -6,7 +6,7 @@ import threading
 from typing import Protocol
 from uuid import UUID
 
-from .approvals import ApprovalStore
+from .approvals import ApprovalStore, ApprovalUnavailable
 from .audit import AuditSink, AuditUnavailable
 from .evidence import EvidenceUnavailable
 from .execution import ExecutionControl, ExecutionStopped
@@ -61,6 +61,7 @@ class Controller:
         self.evidence = evidence
         self._lock = threading.Lock()
         self._audit_failed = False
+        self._approval_failed = False
         if session_id is not None:
             if type(session_id) is not str or str(UUID(session_id)) != session_id:
                 raise ValueError("invalid_session_id")
@@ -97,16 +98,22 @@ class Controller:
         """Trusted controller API. IPC accepts proposal data only, never kwargs.
 
         `interactive` is set by the trusted TTY UI, not a proposal field. The UI
-        owns the ApprovalStore. Dry-run still validates and audits the decision.
+        invokes the selected approval service. Dry-run still validates and audits the decision.
         """
         with self._lock:
+            if self._approval_failed:
+                raise ApprovalUnavailable("approval_previously_failed")
             if session_step is not None and (self.session_id is None or type(session_step) is not int
                                              or not 1 <= session_step <= 16):
                 raise ValueError("invalid_session_step")
             if execution_control is not None:
                 execution_control.check()
-            return self._submit(proposal, execute, approval_reference, interactive,
-                                execution_control, session_step)
+            try:
+                return self._submit(proposal, execute, approval_reference, interactive,
+                                    execution_control, session_step)
+            except ApprovalUnavailable:
+                self._approval_failed = True
+                raise
 
     def _submit(self, proposal, execute, approval_reference, interactive, control, session_step):
         base = {

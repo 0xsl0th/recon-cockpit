@@ -1,4 +1,4 @@
-"""Controller-only, in-memory human grants; never part of the planner interface."""
+"""Ephemeral human grants; never part of the planner interface."""
 
 from __future__ import annotations
 
@@ -11,6 +11,10 @@ from typing import Callable
 from .models import Action, Policy
 
 
+class ApprovalUnavailable(RuntimeError):
+    code = "approval_unavailable"
+
+
 @dataclass(frozen=True, slots=True)
 class Approval:
     reference: str
@@ -20,9 +24,9 @@ class Approval:
 
 
 class ApprovalStore:
-    """Single-session grants. Restarting the controller invalidates every grant.
+    """Single-session grants. Restarting the owning process invalidates every grant.
 
-    Only the trusted human UI calls issue(); no agent IPC can call it. Monotonic
+    Only the trusted UI/review worker calls issue(); no agent IPC can call it. Monotonic
     deadlines avoid wall-clock rollback. consume() burns a grant on any attempt,
     including a changed action or policy, and is atomic across caller threads.
     """

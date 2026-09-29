@@ -29,13 +29,53 @@ verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
 authorize activation, external targets, real credentials or a new merge.
 
-The implementation baseline is `main` at `1369166`. The corrected planning
-documents are in [PR #16](https://github.com/0xsl0th/recon-cockpit/pull/16), open
-with all five hosted checks passing. The next R5 implementation is on
-`feature/isolated-audit-writer`, based on PR #16's corrected head `2267e98`.
-Do not merge either branch without the operator's merge instruction.
+The verified implementation baseline is `main` at `5650b86`.
+[PR #16](https://github.com/0xsl0th/recon-cockpit/pull/16) merged as `4a19c51`;
+[PR #17](https://github.com/0xsl0th/recon-cockpit/pull/17) then merged as `5650b86`
+after retargeting to main. Review found no blocking issue; 287 focused portable
+and 28 real Linux audit tests passed again. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36509618421)
+passed, and the merged tree matches reviewed head `1d2b05c`. Do not repeat these
+merges. The operator authorized the next implementation and review preparation,
+not a new merge or live execution.
 
-## R5 confined audit persistence — current implementation
+Current development branch: `feature/isolated-approvals`, from that baseline.
+This bounded R5 change moves terminal review and single-use grant state into
+a confined worker. Read [isolated-approvals.md](isolated-approvals.md) for the
+authority decision; controller policy, audit-before-launch and executor checks
+remain mandatory. R1–R4, R5a/R5b and the merged audit slice remain closed.
+
+## R5 isolated approvals — open PR for review
+
+`--isolated-approvals` selects a fixed Linux worker for terminal review and
+ephemeral grant issuance/consumption. It composes with the merged audit worker
+for authority sessions and owned assessments. Bootstrap passes only the fixed
+policy/session/deadline and one terminal descriptor. There is no boolean approval,
+reset, policy-update, reconnect, executable selection or local fallback operation.
+The worker flushes old input, displays canonical review without rationale and
+requires a fresh random challenge. Grants bind the action/policy and worker's
+session, expire monotonically and burn on attempted use. Terminal input injection,
+new file opens and socket/process creation are denied after bootstrap.
+
+Construction and dry-run are inert for approvals; noninteractive execution cannot
+approve. Service faults permanently stop authority work. Cancellation/deadlines
+cover review and consumption, and cleanup reaps the worker. Policy authorization,
+accounting and launch decisions remain host-owned; full independent launch
+authorization is still pending R5 work. Scripted PTYs are owned mechanics
+fixtures, not evidence of actual human approval or operator acceptance.
+
+The final full suites passed **2,883 portable tests and 235 real Linux tests**,
+with zero selected failures/errors/skips. This includes 73 additional portable
+cases and 41 new Linux cases covering combined coordinator, approval, audit and
+executor behavior and all six existing workflow outcomes. See [verification.md](verification.md)
+for commands, runtimes, JUnit paths and limits. Implementation `0055f61` is
+published in [PR #18](https://github.com/0xsl0th/recon-cockpit/pull/18), open against
+`main`. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/18/checks)
+are the authoritative current hosted status. The follow-up checkpoint commit
+changes documentation only; do not repeat the completed local suites for it.
+Do not merge this work or enable live execution without a new explicit instruction.
+
+## R5 confined audit persistence — merged checkpoint
 
 Read [isolated-audit.md](isolated-audit.md). The explicit `--isolated-audit`
 option transfers one verified append descriptor to a fixed Linux worker for
@@ -54,8 +94,9 @@ cost controls are unchanged. All provider verification remains offline.
 
 Verification and publication evidence for this implementation is recorded in
 [verification.md](verification.md): **2,810 portable and 194 real Linux tests
-passed**, with zero selected failures/errors/skips. The implementation PR targets the
-planning branch while PR #16 remains open, keeping its runtime diff focused.
+passed**, with zero selected failures/errors/skips. PR #17 initially targeted
+the planning branch, then merged into main after PR #16; that publication
+sequence is complete.
 
 ## R5b controlled provider call — merged checkpoint
 
@@ -389,21 +430,22 @@ Planning uses synthetic responses.
   cancellation/deadlines, audit-before-execution and fail-closed behavior.
 - Never connect legacy host execution, arbitrary shell, credentials, broad mounts
   or Docker sockets to agents. Do not change host networking to pass tests.
-- Authority/UI/broker/audit/launcher still share a trusted host process. Hashes
-  detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP framing
-  limits remain documented.
-- The operator authorized the completed merges through PR #15.
+- The explicit audit and approval options use separate confined workers; policy,
+  accounting and launch decisions remain in the trusted host. Hashes detect
+  inconsistency, not host-owner tampering. R1 callback and R2 HTTP framing limits
+  remain documented.
+- The operator authorized the completed merges through PR #17.
   This does not authorize unrelated
   future merges, submission, messages, paid calls or external targets.
 
 ## Next continuation
 
-1. Start from the current priority and merged checkpoint above. PRs #6–#15 are
+1. Start from the current priority and merged checkpoint above. PRs #6–#17 are
    already merged. Inspect Git and hosted checks before publication; historical
    branch names and open-PR notes below earlier checkpoints are not current work.
-2. Review the confined audit persistence slice above. Continue the remaining R5
-   approval/authorization/launch separation by stating exactly which authority
-   leaves each process, then implement and verify the next bounded change with
+2. Review the isolated approval slice above; the audit slice is already merged.
+   Then continue the remaining R5 authorization/launch separation by stating
+   exactly which authority leaves each process, then implement and verify the next bounded change with
    owned fixtures. Preserve the existing tools and backend restrictions; do not
    schedule a general registry or R3/R4 expansion as a prerequisite. Complete
    the remaining R5 work before R6.

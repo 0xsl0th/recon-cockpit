@@ -6,6 +6,7 @@ from uuid import UUID
 
 from . import coordinator_ipc
 from .audit import AuditUnavailable
+from .approvals import ApprovalUnavailable
 from .execution import ExecutionStopped
 from .isolation import IsolationUnavailable, _namespaces, _runtime_files, _trusted_program
 from .planner_isolation import LinuxIsolatedMockProvider
@@ -91,7 +92,7 @@ synchronous code and must cooperate with the supplied cancellation/deadline.
                 raise ValueError("invalid_coordinator_result")
             control.check()
             return raw
-        except (ExecutionStopped, AuditUnavailable):
+        except (ExecutionStopped, AuditUnavailable, ApprovalUnavailable):
             self._boundary_checks = None
             raise
         except (OSError, RuntimeError, ValueError, TypeError, RecursionError, subprocess.SubprocessError):
