@@ -23,11 +23,14 @@ TCP capability. A second seccomp layer prevents reconnecting that capability or
 creating another socket. Only the trusted host opens the literal-IP connection;
 no live application command, assessment integration or GUI is enabled.
 
-Final local review and verification are recorded in [verification.md](verification.md).
-The next focused PR should remain open for review; merge approval for PR #14 does
-not authorize merging its successor. Inspect the branch head and current remote
-PR state before publication or any later merge. Activation and live billing
-validation require a later explicit operator instruction.
+Final local review and verification are recorded in [verification.md](verification.md):
+2,750 portable and 166 Linux tests passed with no selected failures/errors/skips.
+Implementation commit `50f51b2` is published in
+[PR #15](https://github.com/0xsl0th/recon-cockpit/pull/15), open against `main`.
+The publication checkpoint changes documentation only; inspect its exact head
+and current hosted checks when continuing. PR #15 should remain open for review;
+merge approval for PR #14 does not authorize merging its successor. Activation
+and live billing validation require a later explicit operator instruction.
 
 ## R5b provider cost ledger — historical publication checkpoint
 

@@ -70,6 +70,12 @@ availability, usage semantics and billing are not established by these fixtures.
 Production pricing remains explicit operator configuration. Live activation and
 validation are deferred to a later authorized step.
 
+Reviewed implementation `50f51b2` is published in
+[PR #15](https://github.com/0xsl0th/recon-cockpit/pull/15), left open for review.
+The follow-up publication checkpoint edits documentation only; these local
+runtime results remain tied to the implementation above. Inspect the PR's current
+head and hosted checks before any further publication or merge.
+
 ## R5b provider cost ledger — 28 September 2026
 
 Reviewed on `feature/provider-cost-ledger` from `0a9697f`, with the operator's
