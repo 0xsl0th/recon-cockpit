@@ -52,10 +52,15 @@ lab identity and a typed execution client; the worker owns the lab, management
 pipe, namespace pins, nested admission and fresh executors. No new cases, tools,
 targets, GUI or provider activation are introduced. R1–R4 and R5a/R5b stay closed.
 
-Prepare this dependent change for review against PR #20's branch. Each PR requires
-separate explicit merge authorization; after #20 merges, retarget the dependent
-PR to main and review its resulting diff/checks before any separately authorized
-merge. Do not merge either as part of this continuation.
+Implementation `7864e09` is published in
+[PR #21](https://github.com/0xsl0th/recon-cockpit/pull/21), targeting PR #20's branch
+`feature/isolated-fixture-launcher` for a focused dependent review. Each PR requires
+separate explicit merge authorization. After #20 merges, retarget #21 to main and
+review its resulting diff/checks before a separately authorized merge. Do not
+merge either as part of this continuation. The
+[PR #21 checks](https://github.com/0xsl0th/recon-cockpit/pull/21/checks) give current
+hosted status; this publication checkpoint changes documentation only, so local
+runtime/test evidence remains tied to `7864e09`.
 
 ## R5 persistent-lab launcher — verified review slice
 

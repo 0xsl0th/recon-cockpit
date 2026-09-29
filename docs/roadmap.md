@@ -171,7 +171,9 @@ reservations and one-use permits. The reviewed, unmerged
 the admission client, permit redemption, executor-envelope construction and
 supervision. Its dependent [persistent-lab integration](isolated-owned-lab-launcher.md)
 moves the existing lab owner, management pipe and namespace pins into that worker,
-preserving card v2 and all six cases. Both await separately authorized merges.
+preserving card v2 and all six cases. This dependent slice is published in
+[PR #21](https://github.com/0xsl0th/recon-cockpit/pull/21) (`7864e09`), with 3,093
+portable and 327 Linux tests passing. Both await separately authorized merges.
 
 The next dependency after those slices is independent consent/audit precondition
 integration: ordering remains controller-enforced today. Follow with bounded

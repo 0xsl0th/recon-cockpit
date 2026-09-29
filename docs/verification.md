@@ -9,7 +9,12 @@ launcher tests in 41.42 seconds**; no runtime correction was needed. Reports:
 `/tmp/recon-launcher-review-portable.xml`, `/tmp/recon-launcher-review-linux.xml`.
 PR #20 remains open; this continuation supplies no new merge authorization.
 
-Implemented its dependent slice on `feature/isolated-owned-lab-launcher`.
+Implemented its dependent slice as `7864e09` on
+`feature/isolated-owned-lab-launcher`, published in
+[PR #21](https://github.com/0xsl0th/recon-cockpit/pull/21) against PR #20's branch.
+The publication checkpoint changes documentation only; local test evidence stays
+bound to that implementation. Current hosted status is on the
+[PR checks](https://github.com/0xsl0th/recon-cockpit/pull/21/checks).
 `--isolated-launcher` now also composes with persistent `--owned-lab` workflows.
 The confined worker owns lab management, namespace pins, admission-client custody
 and fresh executor supervision; host requests cannot choose a namespace, lab,
