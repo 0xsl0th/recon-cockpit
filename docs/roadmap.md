@@ -12,14 +12,14 @@ become prerequisites for continuing R5. Finish the remaining R5 work, then R6,
 before additional product ideas. The [completion order below](#milestone-completion-order)
 is the current work queue. No new milestone or parallel GUI track is introduced.
 
-The verified implementation baseline is `main` at `5584efe`, after the authorized
-merge of PR #22 (direct durable-intent verification). PRs #16–#21 are also merged.
-Fresh review of #22's final head `1c26828` passed 372 portable and 35 Linux tests,
-its five hosted jobs passed, and all five post-merge main jobs passed. The reviewed
-tree was preserved exactly. These
-results establish the documented offline scope, not completion of live-model
-acceptance. Live execution remains disabled; development and verification use
-owned/mock fixtures only.
+The main baseline before PR #24 is `a87e5dd`, after the authorized
+merge of PR #23 (direct fresh-approval verification). PRs #16–#22 are also merged.
+Final head `6dc7a7d` passed review, all five hosted checks and a previously completed
+3,196-test portable / 406-test Linux verification. The merge tree is identical;
+all five post-merge main checks passed. PR #24's bounded mock planning slice is
+verified and authorized for merge as recorded below. These results establish
+offline scope, not live-model acceptance.
+Live calls remain disabled; development and verification use owned/mock fixtures.
 
 ### Earlier implementation checkpoints
 
@@ -157,7 +157,7 @@ does not claim that live-model acceptance or all of R5 is complete.
    remains unavailable, use the original explicitly disclosed offline fallback;
    it does not silently satisfy the live acceptance criterion.
 
-### Next bounded R5 work: further authority separation
+### Next bounded R5 work: assessment planning
 
 The first merged implementation is the [confined audit writer](isolated-audit.md): an
 explicit Linux option transfers audit persistence to a restricted worker and
@@ -174,25 +174,32 @@ and persistent lab management/namespace pins, preserving card v2 and all six cas
 With merged [independent durable-intent verification](launch-audit-witness.md),
 the isolated writer sends a direct witness after fsync, and the launcher checks it
 before admission or execution. [PR #22](https://github.com/0xsl0th/recon-cockpit/pull/22)
-completes the durability portion of precondition integration. The current
-[direct approval gate](launch-approval-witness.md) on `feature/launcher-approval-witness`
-is published as `457f164` in [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). It
-independently requires proof of a consumed grant from the approval worker,
-retains its original expiry and rechecks freshness after admission. It closes
-the remaining reliance on a host consent claim in the opt-in launch path; the
-fixed worker and terminal remain trusted. Full verification passed 3,196 portable
-and 406 Linux tests, with no selected failures/errors/skips, and independent
-review found no blocking issue. Leave #23 for operator review and separate merge
-authorization, then follow with bounded assessment planning on existing
-provider/cost controls and gated real-model acceptance.
-Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
-broader tools and lab scenarios remain deferred. The latest authorization covered
-PR #22 only; leave subsequent work for review and keep live execution disabled.
+completes the durability portion of precondition integration. The merged
+[direct approval gate](launch-approval-witness.md) in [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23)
+requires proof of a consumed grant from the approval worker, retains its original
+expiry and rechecks freshness after admission. It closes reliance on a host
+consent claim in the opt-in path; the fixed worker and terminal remain trusted.
 
-- Start with the original R5 requirement for narrowly scoped approval/launch and
-  audit interfaces. Record the current ownership and the exact authority leaving
-  each process before implementing the smallest boundary change. Do not create
-  a new submilestone or broaden tools, targets or data release as part of it.
+The current [bounded offline planning slice](bounded-assessment-planning.md) on
+`feature/bounded-assessment-planning`, published as `bb9e42c` in
+[PR #24](https://github.com/0xsl0th/recon-cockpit/pull/24), connects the existing workflow/evidence
+eligibility gate, explicit planning data release, isolated parser/coordinator and
+simulation monetary reservations/settlement to both independent launch checks.
+It uses finite owned mock responses and leaves the fixed ACK and R5a TLS contracts
+unchanged. Full verification passed 3,382 portable and 430 Linux tests, with zero
+selected failures/errors/skips; independent review has no remaining findings.
+The operator authorized review and merge of #24; review of `f24d313` found no
+blocking issue, and all five hosted jobs passed. The PR record gives its final
+merge state and commit. After merge, keep this mock slice closed and continue
+the planning transport and evaluation gates. Mock responses do not complete
+live-model acceptance.
+Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
+broader tools and lab scenarios remain deferred. The latest merge authorization
+covers PR #24 only; leave subsequent work for review and keep live calls disabled.
+
+- Preserve the merged narrowly scoped approval/launch and audit interfaces.
+  Record any necessary ownership change before extending the planning path.
+  Do not create a new submilestone or broaden tools, targets or data release.
 - Preserve fresh approval, independent authorization, cost reservations,
   audit acknowledgement before launch and independent executor validation.
   Moving functions into subprocesses alone does not establish a new boundary.

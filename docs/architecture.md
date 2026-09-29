@@ -127,6 +127,17 @@ trusted process; the coordinator cannot access it through filesystem, process
 memory or inherited descriptors. See [control-plane.md](control-plane.md) for
 the IPC state machines, compromise matrix and remaining privilege separation.
 
+The [bounded assessment-planning adapter](bounded-assessment-planning.md) composes
+these boundaries without changing their protocols. The evidence store durably
+selects an eligible workflow candidate; a separate explicit release codec
+constructs the planning descriptor. The host reserves simulated money and
+consumes one durable dispatch claim before a finite mock exchange. Recognized
+usage settles before bytes reach the unchanged isolated parser. The adapter
+matches its complete output to the eligible candidate before the coordinator
+receives a proposal. Audit/approval/admission/launcher authority remains separate.
+The adapter has no network or credential path, and default workflows retain
+their deterministic provider.
+
 ## Schema and policy
 
 Schema version `"1"` requires all action fields: UUID `action_id`, `tool_id`,

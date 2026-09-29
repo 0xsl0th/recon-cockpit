@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from contextlib import ExitStack, nullcontext
+from contextlib import ExitStack, contextmanager, nullcontext
 import json
 import os
 from pathlib import Path
@@ -111,6 +111,27 @@ def _admission_context(args, backend, audit=None, approvals=None):
     return AdmissionGatedBackend(backend)
 
 
+@contextmanager
+def _planning_context(args, session_id):
+    """A new, explicitly simulated account; never reopen or restore authority."""
+    if args.assessment_planning_offline is None:
+        yield None
+        return
+    from .assessment_planning_contract import DEFAULT_BUDGET_MICROUSD
+    from .cost_ledger import CostLedger
+
+    budget = (DEFAULT_BUDGET_MICROUSD if args.planning_budget_microusd is None
+              else args.planning_budget_microusd)
+    with CostLedger.create(args.planning_ledger, account_id="planning-account-" + session_id,
+                           limit_microusd=budget, mode="simulation") as ledger:
+        parent = ledger.account_id
+        for kind in ("engagement", "session", "agent", "action"):
+            scope_id = "planning-" + kind + "-" + session_id
+            ledger.add_scope(scope_id, parent_id=parent, kind=kind)
+            parent = scope_id
+        yield ledger, scope_id
+
+
 def _run_http_assessment(args, policy, audit):
     """Construct one fresh fixture authority with privately persisted evidence."""
     from uuid import uuid4
@@ -157,8 +178,16 @@ def _run_http_assessment(args, policy, audit):
           (backend if args.isolated_launcher and lab is not None else
            lab if lab is not None else nullcontext()) as lab, EvidenceStore(
             args.assessment_dir, session_id=session_id, policy=policy,
-            case=case, discovery=discovery, workflow=workflow, **evidence_options) as evidence):
-        provider = provider_type(case, audit, evidence)
+            case=case, discovery=discovery, workflow=workflow, **evidence_options) as evidence,
+          _planning_context(args, session_id) as planning):
+        if planning is None:
+            provider = provider_type(case, audit, evidence)
+        else:
+            from .assessment_planning import OwnedAssessmentPlanningProvider
+
+            ledger, scope_id = planning
+            provider = OwnedAssessmentPlanningProvider(case, audit, evidence, ledger,
+                scope_id=scope_id, scenario=args.assessment_planning_offline)
         runner = AuthoritySession(policy, audit, backend, coordinator, limits, session_id=session_id,
                                   provider=provider, evidence=evidence, approvals=approvals)
         previous_handlers = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
@@ -175,10 +204,13 @@ def _run_http_assessment(args, policy, audit):
             if lab is not None:
                 evidence.record_lab_closed(lab.close())
             report = evidence.finalize(summary)
+            planning_report = ({} if planning is None else {"planning": {
+                "mode": "simulation", "actual_provider_calls": 0, "live_calls_enabled": False,
+                "ledger_path": str(args.planning_ledger), "cost": ledger.report(scope_id)}})
         finally:
             for number, handler in previous_handlers.items():
                 signal.signal(number, handler)
-    _print({**summary, "provider": provider.name, "fixture_case": case,
+    _print({**summary, **planning_report, "provider": provider.name, "fixture_case": case,
             "assessment_outcome": report["outcome"], "assessment_id": report.get("assessment_id"),
             "report_paths": {"json": str(args.assessment_dir / "report.json"),
                              "markdown": str(args.assessment_dir / "report.md")},
@@ -195,6 +227,8 @@ def _run_http_assessment(args, policy, audit):
 def main(argv: list[str] | None = None) -> int:
     from .session_provider import SCENARIOS
     from .openai_broker import BrokerError
+    from .cost_contract import CostError, MAX_AMOUNT
+    from .assessment_planning_contract import SCENARIOS as PLANNING_SCENARIOS
     from .openai_fixtures import SCENARIOS as OPENAI_SCENARIOS
     from .coordinator_isolation import SCENARIOS as COORDINATOR_SCENARIOS
     from .isolation import IsolationUnavailable
@@ -231,6 +265,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--evaluation-max-seconds", type=int, help="absolute batch lifetime: 1-3600 seconds (default: 600)")
     parser.add_argument("--assessment-dir", type=Path,
                         help="new private directory for assessment artifacts, decisions and reports")
+    parser.add_argument("--assessment-planning-offline", choices=PLANNING_SCENARIOS,
+                        help="use bounded mock planning with simulated cost admission for a workflow")
+    parser.add_argument("--planning-ledger", type=Path,
+                        help="new private simulation ledger for --assessment-planning-offline")
+    parser.add_argument("--planning-budget-microusd", type=int,
+                        help="simulation account cap in microUSD; no actual provider spending")
     parser.add_argument("--openai-model", help="explicit model identifier for the offline request contract")
     parser.add_argument("--openai-max-output-tokens", type=int,
                         help="output token allowance per simulated request: 16–4096 (default: 1024)")
@@ -284,6 +324,21 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--require-launch-audit requires --isolated-launcher and all its prerequisites")
     if args.require_launch_approval and not args.require_launch_audit:
         parser.error("--require-launch-approval requires --require-launch-audit and all its prerequisites")
+    if args.assessment_planning_offline is not None:
+        if not args.workflow_assessment or not args.require_launch_approval:
+            parser.error("--assessment-planning-offline requires --workflow-assessment and --require-launch-approval")
+        if args.planning_ledger is None:
+            parser.error("--assessment-planning-offline requires a new --planning-ledger")
+        if args.session_max_seconds is not None and not 1 <= args.session_max_seconds <= 120:
+            parser.error("offline assessment planning requires --session-max-seconds between 1 and 120")
+        if args.assessment_dir is not None:
+            ledger_path, evidence_path = args.planning_ledger.resolve(), args.assessment_dir.resolve()
+            if ledger_path.is_relative_to(evidence_path) or evidence_path.is_relative_to(ledger_path):
+                parser.error("planning ledger and assessment evidence directories must be separate")
+    elif args.planning_ledger is not None or args.planning_budget_microusd is not None:
+        parser.error("planning ledger and budget options require --assessment-planning-offline")
+    if args.planning_budget_microusd is not None and not 0 <= args.planning_budget_microusd <= MAX_AMOUNT:
+        parser.error("--planning-budget-microusd must be between 0 and 1000000000000000")
     session_scenario = (args.session_mock or args.isolated_session_mock or offline_scenario
                         or args.control_plane_mock or assessment_case)
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
@@ -471,7 +526,7 @@ def main(argv: list[str] | None = None) -> int:
     except IsolationUnavailable:
         _print({"decision": "deny", "execution_status": "blocked", "reasons": ["isolation_unavailable"]})
         return 2
-    except (ValidationError, ValueError, BrokerError, OSError, subprocess.SubprocessError) as exc:
+    except (ValidationError, ValueError, BrokerError, CostError, OSError, subprocess.SubprocessError) as exc:
         _print({"decision": "deny", "execution_status": "blocked",
                 "reasons": [exc.code if isinstance(exc, ValidationError) else "configuration_or_input_error"]})
         return 2
