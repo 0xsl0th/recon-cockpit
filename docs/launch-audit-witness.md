@@ -2,8 +2,9 @@
 
 PRs #20 and #21 moved executor and persistent-lab custody into the confined
 launcher. The next necessary boundary is verification of launch preconditions.
-This slice makes durable execution intent independently verifiable; fresh human
-approval authentication remains a separate, subsequent R5 dependency.
+This slice makes durable execution intent independently verifiable. The separate
+[direct approval gate](launch-approval-witness.md) builds on it to authenticate
+fresh grant consumption at the launcher.
 
 `--require-launch-audit` requires the existing isolated launcher, admission,
 approval and audit options. Trusted bootstrap creates a one-way Unix seqpacket
@@ -39,7 +40,7 @@ identity/action/policy/backend changes, expiry/replay, lost fsync/ack/channel,
 endpoint custody/direction, cancellation/cleanup and all six workflow outcomes
 using only disconnected owned fixtures and synthetic credentials.
 
-After review, finish independent approval authentication, bounded assessment
+With the separate approval gate reviewed, follow with bounded assessment
 planning on R5a/R5b and explicitly gated real-model acceptance. R6 then consolidates
 evaluation, actual operator review, packaging and demonstration. Optional GUI/API,
 tool and lab expansion stays deferred.

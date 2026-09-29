@@ -82,7 +82,14 @@ receives its endpoint once during committed bootstrap and requires a matching,
 fresh, sequenced witness after the writer's fsync, before admission or execution.
 The host retains neither endpoint after startup; child executors receive neither.
 Producer event claims and fresh human consent remain separate from durability.
-Independent approval authentication is the next authority dependency.
+With [direct approval verification](launch-approval-witness.md), the approval
+worker also holds a sole sending endpoint, transferred during its lazy startup.
+Successful grant consumption emits proof with the original expiry. The launcher
+requires matching policy/action/session/source and sequences before admission,
+and rechecks freshness after redemption before execution. The controller's
+consumption reply no longer establishes consent at this boundary. Policy-allowed
+actions need no review. The terminal, fixed approval worker and bootstrap remain
+trusted. Bounded assessment planning on R5a/R5b is the next planned integration.
 
 `SessionRunner` adds a single-use loop around that same controller. Its fixed
 `SessionMockProvider.propose(observation, control=...)` adapter supervises a

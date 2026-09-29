@@ -27,8 +27,11 @@ This separates approval issuance and state; it does not yet make the executor
 independent of a compromised host launcher. Trusted bootstrap still chooses the
 policy and terminal, the host user controls that terminal, and a compromised
 approval worker could lie about human consent. Hashes bind requests, not human
-intent. Further launch authorization remains the next R5 boundary; bounded
-assessment planning follows before R6. No completed milestone is reopened.
+intent. The additional [direct launch-approval gate](launch-approval-witness.md)
+lets the confined launcher independently verify consumption and original grant
+expiry through a one-way endpoint. It requires the existing direct audit gate;
+the terminal and fixed worker remain trusted. Bounded assessment planning follows
+before R6. No completed milestone is reopened.
 
 ## Integration and verification scope
 

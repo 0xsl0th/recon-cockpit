@@ -184,19 +184,32 @@ def review(fd, action, policy, session_id, deadline):
 
 def main():
     fd = None
+    witness_channel = None
     try:
-        if len(sys.argv) != 6:
+        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] != 'launch-witness'):
             raise ValueError('invalid_approval_bootstrap')
-        _, host = bootstrap._arguments(['three_step', *sys.argv[2:]])
+        witnessed = len(sys.argv) == 7
+        _, host = bootstrap._arguments(['three_step', *sys.argv[2:6]])
         channel = socket.socket(fileno=0)
         if channel.family != socket.AF_UNIX or channel.type != socket.SOCK_SEQPACKET:
             raise ValueError('invalid_approval_channel')
         checks = bootstrap._bootstrap(host)
         channel.settimeout(5)
-        initial, fd = packet(channel, expect_fd=True)
+        if witnessed:
+            if __package__:
+                from . import approval_witness
+            else:
+                from approval_runtime import approval_witness
+            initial, descriptors = approval_witness.receive(channel, 2)
+            fd, witness_fd = descriptors
+            witness_channel = approval_witness.endpoint(witness_fd, initial.get('witness'), writer=True)
+        else:
+            initial, fd = packet(channel, expect_fd=True)
         if protocol.digest(initial) != sys.argv[1]:
             raise ValueError('approval_bootstrap_changed')
         policy = protocol.initial(initial, time.monotonic())
+        if ('witness' in initial) != witnessed:
+            raise ValueError('approval_witness_mode_changed')
         verify_terminal(fd, initial['terminal'])
         channel.setblocking(False)
         store = ApprovalStore()
@@ -207,7 +220,7 @@ def main():
         checks.update(descriptors_private=True, terminal_operations_restricted=True)
         print(protocol.encode({'version': '1', 'bootstrap_digest': sys.argv[1],
                                'ready': True, 'checks': checks}).decode('ascii'), flush=True)
-        sequence, reviews = 1, 0
+        sequence, reviews, witness_sequence = 1, 0, 0
         while True:
             ready_fd(channel, initial['deadline'])
             value, _ = packet(channel)
@@ -224,9 +237,19 @@ def main():
                     result = store.issue(action, policy).reference
             else:
                 # Burn first even when the requested policy has changed.
-                result = store.consume(value['reference'], action, policy)
+                if witnessed:
+                    result, grant = store.consume_with_grant(value['reference'], action, policy)
+                else:
+                    result = store.consume(value['reference'], action, policy)
                 if value['policy_digest'] != policy.digest:
                     result = 'approval_policy_changed'
+                if witnessed and result is None:
+                    proof = approval_witness.witness(initial, action, grant, witness_sequence+1,
+                                                     sequence, time.monotonic())
+                    encoded = protocol.encode(proof)
+                    if os.write(witness_channel.fileno(), encoded) != len(encoded):
+                        raise ValueError('approval_witness_short_write')
+                    witness_sequence += 1
             if time.monotonic() >= initial['deadline']:
                 raise ValueError('approval_deadline')
             print(protocol.encode(protocol.receipt(value, result)).decode('ascii'), flush=True)
@@ -236,6 +259,8 @@ def main():
         sys.stderr.write('approval_worker_refused\n')
         return 78
     finally:
+        if witness_channel is not None:
+            witness_channel.close()
         if fd is not None:
             os.close(fd)
 

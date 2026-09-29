@@ -51,7 +51,8 @@ def reference(value):
 
 
 def initial(value, now):
-    if (set(value) != {'version', 'broker_id', 'session_id', 'policy', 'deadline', 'terminal'}
+    fields = {'version', 'broker_id', 'session_id', 'policy', 'deadline', 'terminal'}
+    if (type(value) is not dict or set(value) not in (fields, fields | {'witness'})
             or value['version'] != '1'
             or type(value['deadline']) not in (int, float)
             or not math.isfinite(value['deadline'])
@@ -59,6 +60,9 @@ def initial(value, now):
             or type(value['terminal']) is not list or len(value['terminal']) != 3
             or any(type(item) is not int or item < 0 for item in value['terminal'])):
         raise ValueError('invalid_approval_init')
+    if 'witness' in value and (type(value['witness']) is not list or len(value['witness']) != 2
+            or any(type(item) is not int or item < 0 for item in value['witness'])):
+        raise ValueError('invalid_approval_witness_endpoint')
     identity(value['broker_id'])
     identity(value['session_id'])
     return parse_policy(value['policy'])

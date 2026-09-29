@@ -63,11 +63,15 @@ def runtime(value, *, owned_lab=False):
 
 def initial(value, now):
     if type(value) is not dict or set(value) not in ({'configuration', 'deadline', 'runtime'},
-                                                   {'configuration', 'deadline', 'runtime', 'audit_witness'}):
+            {'configuration', 'deadline', 'runtime', 'audit_witness'},
+            {'configuration', 'deadline', 'runtime', 'audit_witness', 'approval_witness'}):
         raise ValueError('invalid_launcher_init')
     if 'audit_witness' in value:
         from .audit_witness import manifest
         manifest(value['audit_witness'])
+    if 'approval_witness' in value:
+        from .approval_witness import manifest
+        manifest(value['approval_witness'])
     config = configuration(value['configuration'])
     admission.initial({'configuration': {k: v for k, v in config.items() if k != 'owned_lab'}, 'deadline': value['deadline']}, now)
     runtime(value['runtime'], owned_lab=config['profile'] == 'owned_lab')
