@@ -7,7 +7,11 @@ This development checkpoint never resumes an assessment or restores approvals.
 **Current implementation: resettable HarborDesk web lab.**
 The operator authorized this follow-on slice after the reviewed adapter/Nmap
 integration. Work is on `feature/resettable-web-lab` in `/tmp/recon-web-lab`,
-based on main `875c1a6`. Read [web-lab.md](web-lab.md) for the three variants,
+based on main `875c1a6`, in
+[PR #33](https://github.com/0xsl0th/recon-cockpit/pull/33). Implementation revision
+`98c0c35` passed 4,243 portable and 507 Linux tests, with no failures/errors/skips,
+and all five hosted checks. Later test-only counter and documentation changes
+preserve that application source. Read [web-lab.md](web-lab.md) for the three variants,
 runbook, limitations and the planned adversarial comparison. The new versioned
 fixture uses the same owned `127.0.0.1:8080`, existing Nmap/HTTP tools and
 3-action/60-second/18,432-byte ceiling. Planning remains deterministic and offline.

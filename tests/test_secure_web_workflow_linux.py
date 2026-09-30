@@ -59,5 +59,7 @@ def test_three_fresh_trials_with_real_tools_and_readonly_replay(tmp_path, monkey
         assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in evidence.iterdir()}
         closure = report['owned_lab']['closure']
         assert closure['status'] == 'closed' and closure['request_count'] == 2
-        assert closure['connection_count'] >= 3
+        # A fast Nmap reset may precede accept(); only the HTTP calls guarantee
+        # two accepted connections. TCP reachability is proved by Nmap's result.
+        assert closure['connection_count'] >= 2
     assert len(identities) == len(sessions) == 3

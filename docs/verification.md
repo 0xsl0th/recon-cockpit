@@ -3,7 +3,8 @@
 ## Resettable HarborDesk web lab — 30 September 2026
 
 The operator authorized the richer resettable owned scenario after PR #32.
-Implementation is on `feature/resettable-web-lab`, based on `875c1a6`.
+Implementation `98c0c35` is on `feature/resettable-web-lab`, based on `875c1a6`,
+in [PR #33](https://github.com/0xsl0th/recon-cockpit/pull/33).
 [web-lab.md](web-lab.md) documents the separate fixture/workflow identity,
 vulnerable/corrected/injected variants and mandatory authority gates. The source
 uses existing Nmap/HTTP tools, the same singleton owned scope and the unchanged
@@ -27,9 +28,22 @@ cleanup. Five approval tests covered a synthetic PTY grant, replay refusal,
 missing/forged direct consumed proof and two wrong bootstrap tags. These are
 scripted test grants, not human walkthrough or acceptance.
 
-The full portable and Linux regression suites are in progress. Their final
-results must be recorded before marking this change ready for review. Focused
-reports: `/tmp/recon-web-workflow-linux.xml` (six test cases including the nine
+The complete selections at implementation `98c0c35` passed **4,243 portable tests
+in 295.14 seconds** and **507 Linux integration tests in 1,072.23 seconds**, with
+zero failures/errors/skips in either selected suite. Independent JUnit inspection
+confirmed all **4,750** cases. Reports: `/tmp/recon-web-portable-full.xml` and
+`/tmp/recon-web-linux-full.xml`. All five
+[hosted checks on that implementation](https://github.com/0xsl0th/recon-cockpit/actions/runs/36768846374)
+also passed. Subsequent edits are checkpoint/verification text and a test-only
+counter correction: the workflow requires at least the two accepted HTTP
+connections, without assuming the Nmap connection was accepted before reset.
+Application source remains identical to `98c0c35`. All three corrected workflow
+tests (nine fresh real-tool trials) passed again; JUnit:
+`/tmp/recon-web-workflow-final.xml`. Consult the
+[PR #33 checks](https://github.com/0xsl0th/recon-cockpit/pull/33/checks) for the
+latest head before a merge decision. No merge authorization is claimed.
+
+Focused reports: `/tmp/recon-web-workflow-linux.xml` (six test cases including the nine
 workflow trials and the initial three approval tests),
 `/tmp/recon-web-approval-linux.xml` (all five approval cases), and
 `/tmp/recon-web-contract-evidence-portable.xml` (149 new/legacy contract checks).
