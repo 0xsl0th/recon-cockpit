@@ -1,5 +1,50 @@
 # Verification record
 
+## PR #28 review and merge — 30 September 2026
+
+The operator explicitly requested review and merge of the current PR, then
+continued work within the offline scope. Fresh independent review of
+`4ced75f9bf703fffdde2abe739f9fdf4858f682d` found no blockers or outstanding
+review comments. All five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36670287169)
+passed on that head. Main has no configured required checks; all five available
+jobs were verified. Saved rehearsal, accounting, packet hashes and the separate
+human decision agree with the documentation. The reviewed change contains only
+five Markdown files; no full local suite was repeated solely for documentation.
+
+The guarded merge completed at **04:54:53 UTC** as
+`f70e7eaae27d54b0504c655de97727adfd910f1b`; its tree exactly matches the reviewed
+head. Local `main` was fast-forwarded to that merge. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36670999757)
+passed. PR #28 stays closed. This merge authorization
+does not authorize publication, submission, paid calls or another PR merge.
+
+## Unsubmitted proposal reconciliation — 30 September 2026
+
+The follow-up branch `docs/accepted-offline-proposal` reconciles the Spanish
+[competition proposal](competition-proposal.md) with the accepted offline work.
+It replaces stale claims that planning/audit separation was pending and that
+service continuity was unverified. Current capability, the two 18-trial profiles,
+separate human rehearsal and local acceptance now agree with the saved records.
+Historical execution provenance remains `not_recorded`; the verification source
+pin is unchanged. The 3,878 portable packaging tests and prior 477 Linux results
+remain distinct historical verifications, not newly run tests for this draft.
+
+The [official competition page](https://www.palermo.edu/ingenieria/concurso-ciberseguridad/)
+was read on 30 September: the proposal deadline remains 15 November 2026 and
+final delivery 20 May 2027; the selected challenge and submission/delivery
+requirements are consistent with the draft. This verification did not register,
+submit, contact anyone or publish a release. The original confirmed team and
+architecture diagram are unchanged.
+
+Independent review found no blockers. Local Markdown file targets and
+`git diff --check` passed. The change is limited
+to the proposal, checkpoint, roadmap authorization note and this verification
+record. No runtime/test file or private packet/acceptance artifact changed, and
+no full local test suite was repeated solely for documentation. The draft is
+left for review; live-model work, optional additions and publication remain
+deferred.
+
 ## R6 offline operator rehearsal — 30 September 2026
 
 The operator answered “Yes, open the walkthrough” and personally controlled a
