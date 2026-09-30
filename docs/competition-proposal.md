@@ -1,6 +1,6 @@
 # Recon Cockpit — control verificable de agentes de pentesting
 
-**Propuesta para el jurado · 30 de septiembre de 2026 · Borrador no presentado**
+**Propuesta para el jurado · 30 de septiembre de 2026**
 
 Concurso de Desarrollo de Soluciones de Ciberseguridad 2026–2027 ·
 Facultad de Ingeniería, Universidad de Palermo.
@@ -189,7 +189,7 @@ el envío al concurso.
 
 ## 8. Integrante y responsabilidad
 
-Soy **Enrique Folte**, único integrante humano y contacto del proyecto. Soy
+Soy **Enrique Folte**, integrante y contacto del proyecto. Soy
 responsable de la arquitectura, las decisiones técnicas, la revisión del código,
 la evaluación de resultados y la presentación. Utilizo Codex como asistencia
 para arquitectura, código, pruebas y documentación; reviso sus aportes y asumo

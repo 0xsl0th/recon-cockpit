@@ -3,7 +3,6 @@
   margin: 19mm 18mm 20mm;
   @top-left { content: "RECON COCKPIT"; font: 8pt "DejaVu Sans"; color: #496173; }
   @top-right { content: "Propuesta · 30/09/2026"; font: 8pt "DejaVu Sans"; color: #496173; }
-  @bottom-left { content: "Borrador para revisión · No presentado"; font: 8pt "DejaVu Sans"; color: #496173; }
   @bottom-right { content: counter(page) " / " counter(pages); font: 8pt "DejaVu Sans"; color: #496173; }
 }
 @page architecture { size: A4 landscape; margin: 16mm 16mm 18mm; }

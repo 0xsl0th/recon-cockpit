@@ -151,7 +151,7 @@ def main():
     marker.decompose()
 
     html = '<!doctype html><html lang="es"><head><meta charset="utf-8">'
-    html += '<title>Recon Cockpit — propuesta de concurso (borrador)</title>'
+    html += '<title>Recon Cockpit — propuesta para el jurado</title>'
     html += '<meta name="author" content="Enrique Folte">'
     html += '<style>' + style.decode("utf-8") + '</style></head><body>' + str(soup) + '</body></html>'
     denied_fetches = []
