@@ -1,5 +1,88 @@
 # Verification record
 
+## R6 offline operator rehearsal — 30 September 2026
+
+The operator answered “Yes, open the walkthrough” and personally controlled a
+real QTerminal. The assistant supplied no terminal input, approval phrase or
+grant. The handoff used the existing CLI on clean merge `dd4bbe4`, owned case a
+at `127.0.0.1:8080`, the approval-required discovery policy, all isolated workers
+and both direct launch gates. Limits remained three steps, 60 seconds, 3,072
+reserved output bytes and a 55,326 microUSD **simulation** account. There were
+no paid calls, real credentials, external targets or VPN.
+
+Preparation replayed the existing 331-file candidate without changing its
+bytes, modes, identities or mtimes. Manifest SHA-256 remains
+`467decaa88ddb2861f8216973961f21dcff722e62a89b4ead46c370ae67f1ad7`;
+verification/reproduction source remains `070257b455f158eb06301fae143c0704ee02ee30`.
+The historical evaluation execution revision remains `not_recorded`. Both
+profiles still pass 18 trials and all six fingerprints agree. Changing only a
+disposable private copy's report to claim operator acceptance caused inspection
+to refuse with `release_packet_unavailable`. The original packet was unchanged.
+A fresh dry run also passed: no action execution or approval consumption, one
+settled owned TLS exchange, clean evidence replay and closed lab.
+
+The first terminal attempt timed out at the first approval after 60.003 seconds:
+zero approvals consumed, zero executions and zero lab connections/HTTP requests.
+One owned TLS planning exchange settled at 778 simulated microUSD with no hold.
+The operator reported distraction and requested another run. The fresh attempt
+used a new directory and new grants, preserving the same scope and limits.
+
+The fresh attempt completed at **04:33:42 UTC**, exit 0, in **50.011 seconds**.
+Session `93a71c5f-353c-4719-8894-d0696e48fd11` has three distinct approval
+consumptions before their matching executions, with matching action/session/
+policy bindings. TCP discovery and both GETs succeeded; independent evidence
+inspection exactly reproduced `seeded_diagnostic_metadata_exposed` with no
+integrity issues. The lab closed after three connections and two HTTP requests.
+Three owned TLS receipts record both processes reaped and all boundary checks
+true; the isolated-launcher close path verifies cleanup before recording lab
+closure. A subsequent host process check found no matching CLI or isolated
+worker processes.
+
+Read-only ledger inspection found three settled simulation attempts, **1,536
+fixture input tokens / 384 output tokens / 2,334 simulated microUSD**, with
+zero reserved funds, unresolved holds or overspend. Actual paid provider calls
+and spending were **zero**. Independent audit/evidence/accounting review found
+no blockers, and read-only inspection preserved saved bytes and mtimes.
+
+Private local records:
+
+- Preparation, dry run and timed-out attempt:
+  `.secure-agent/r6-operator-20260930-i7ou70cr`.
+- Successful fresh attempt:
+  `.secure-agent/r6-operator-20260930-retry-w4xi91nq`, including
+  `demo-start.json`, `demo-finished.json`, `audit.jsonl`, `evidence/` and
+  `planning-ledger/`.
+
+The operator subsequently confirmed in this session: **“I entered all 3 and it
+seemed straight forward”**. This is the actual human observation, distinct from
+the technical audit. After reviewing the linked evidence report and terminal
+rehearsal, the operator separately chose **“Accept the local offline candidate”**.
+The decision was recorded on 30 September. Its scope is the local
+offline candidate, evidence packet/runbook and rehearsal only; it does not
+authorize publication, a subsequent PR merge or live-model work. This session's
+project operator supplied the observation and decision; no separate identity
+attestation is claimed.
+
+The separate human review record is `operator-review.json` in the successful
+run directory. It binds the candidate path, manifest/archive hashes, verification
+source revision and demo session/revision to the actual words above. The
+immutable packet's pending review fields describe its creation state and have
+not been changed. R5 offline scope stays complete, the local offline R6 review
+is accepted, live-model work stays deferred, optional additions stay deferred,
+and publication is not authorized.
+No implementation changed and no full test suite was repeated for this record.
+
+## PR #27 completed merge — 30 September 2026
+
+Final documentation head `bbd33fd31533f4a213135d51f441a7fc78279cf9` passed fresh
+review without blockers or outstanding comments and all five
+[final hosted jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36667566229).
+The operator-authorized guarded merge is
+`dd4bbe456d5d2b0e92a2642c19969490149e6a3d` at 04:15:01 UTC; its tree exactly
+matches the reviewed head. All five
+[post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36667987075)
+also passed. PR #27 stays closed. The following pre-merge handoff is historical.
+
 ## PR #27 review and offline R5 handoff — 30 September 2026
 
 The operator authorized review and merge of PR #27 and asked whether offline R5

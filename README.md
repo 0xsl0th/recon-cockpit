@@ -54,13 +54,15 @@ Development, tests and demos make no paid model calls.
 The [offline planning evaluation](docs/planning-evaluation.md) adds
 `--evaluate-owned-planning` and read-only `--inspect-planning-evaluation`.
 It compares repeated cases with the preserved baseline, checking TLS cleanup,
-launch gates and one bounded simulation ledger. Live-model and actual operator
-acceptance remain pending.
+launch gates and one bounded simulation ledger. Live-model acceptance remains
+deferred; the local offline candidate has received separate operator acceptance.
 
 The [offline release packet and demo runbook](docs/offline-release-evidence.md)
 combine independently verified baseline/planning evidence with a pinned source
 snapshot. Packet creation and inspection are local and make no provider calls;
-real-model acceptance, actual operator review and release publication stay pending.
+the operator accepted the local candidate after the actual terminal rehearsal.
+Real-model acceptance and release publication remain deferred. See the
+[review record](docs/verification.md#r6-offline-operator-rehearsal--30-september-2026).
 
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 

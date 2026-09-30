@@ -4,24 +4,49 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current milestone: R5 offline scope complete; R6 operator review next.** The
+**Current milestone: R5 offline scope complete; R6 local offline candidate accepted.** The
 accepted provider/accounting, separated authority, owned planning and offline
 comparison work through PR #26 has no remaining necessary offline R5 blocker.
 Real-model integration, validation and acceptance remain deferred. Future live
 work needs reviewed data, model/endpoint, credential, egress and spending
 settings; it is not merely supplying an API key. No paid calls are authorized.
 
-**PR #27 review and merge authorization:** on 30 September the operator requested
-review and merge into `main` if the latest revision and checks pass. Fresh review
-of `c3242c0` found no blockers or outstanding comments, and all five
-[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36666520214)
-passed. This documentation-only checkpoint records the milestone handoff without
-changing runtime, tests or the saved source pin. Check the
-[PR's current state](https://github.com/0xsl0th/recon-cockpit/pull/27) and latest
-checks before completing the authorized merge; once merged, keep PR #27 closed
-and do not repeat it. Its next step is the actual R6 operator walkthrough and
-rehearsal described in [the runbook](offline-release-evidence.md), not more
-optional application features or live activation.
+**PR #27 is merged and stays closed.** Final head `bbd33fd` passed review with
+no blockers or outstanding comments and all five
+[final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36667566229).
+The authorized guarded merge is `dd4bbe4` at 04:15:01 UTC on 30 September;
+its tree exactly matches the reviewed head. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36667987075)
+passed. Do not repeat this merge or reopen the accepted packaging scope.
+
+**R6 terminal rehearsal and local candidate accepted.**
+The operator authorized opening the offline walkthrough and then a
+fresh attempt after distraction. The first attempt timed out at the first
+approval with no action executed. The fresh run on clean `dd4bbe4` completed
+three separately approved actions in **50.011 seconds**, validated synthetic
+case a and closed the owned lab. Independent replay found no integrity issues;
+the simulated ledger settled **2,334 microUSD**, with zero unresolved holds and
+zero paid/live calls. The assistant supplied no terminal responses. The operator
+confirmed: “I entered all 3 and it seemed straight forward”. After reviewing
+the linked report and rehearsal, the operator chose **“Accept the local offline
+candidate”** on 30 September. This closes the local evidence/rehearsal review;
+live-model work and release publication remain deferred.
+
+Private records: `.secure-agent/r6-operator-20260930-i7ou70cr` (preparation and
+timeout) and `.secure-agent/r6-operator-20260930-retry-w4xi91nq` (successful
+rehearsal). The packet replay and tampered-copy refusal passed without changing
+the original candidate. The actual human decision is recorded separately in
+[verification.md](verification.md) and the successful run's
+`operator-review.json`. The immutable packet retains its original pending
+fields; they describe its creation state. Do not alter or rebuild it merely to
+record acceptance. Live activation and release publication remain unauthorized.
+
+The documentation-only acceptance checkpoint is in
+[PR #28](https://github.com/0xsl0th/recon-cockpit/pull/28), branch
+`docs/r6-operator-rehearsal`, for review. See its current hosted checks before
+any later merge. The operator's candidate acceptance does not authorize this
+PR's merge. Runtime/tests are unchanged; local evidence replay, independent
+reviews, Markdown targets and whitespace checks passed.
 
 **PR #25 is merged and stays closed.** The operator authorized review and merge
 on 30 September. Final head `c7f7791` passed a fresh review with no blockers or
@@ -56,7 +81,7 @@ and `.secure-agent/planning-evaluation-20260930`. The saved runs did not record
 an execution commit; preserve that provenance limit. Read
 [planning-evaluation.md](planning-evaluation.md) and [verification.md](verification.md).
 
-**R6 evidence packet and demo runbook**, implementation
+**Merged R6 evidence packet and demo runbook**, implementation
 `46fc12a` in [PR #27](https://github.com/0xsl0th/recon-cockpit/pull/27), on
 `feature/offline-release-evidence` from `1605606`. Read
 [offline-release-evidence.md](offline-release-evidence.md). This bounded R6
@@ -87,10 +112,9 @@ Hosted CI exposed a background Git maintenance race in the new source test
 fixture; automatic fixture maintenance is now disabled, with the full read-only
 assertion preserved. All 82 source tests passed after correction. Runtime and
 Linux-selected tests match `46fc12a`. Do not rerun full local suites solely for
-checkpoint documentation. Next, review this
-packet/runbook and arrange the actual operator walkthrough. Do not fabricate
-operator acceptance, activate live models or publish/submit a release without
-the corresponding operator instruction.
+checkpoint documentation. The operator has now accepted this local candidate
+after the rehearsal above. Keep that scope closed; live activation and release
+publication/submission still require their corresponding operator instruction.
 
 **PR #24 is merged and stays closed.** Final head `9ccc910` passed review and
 all five hosted checks. Its merge is `4f9545c` at 22:38:18 UTC on 29 September;
@@ -126,7 +150,7 @@ the implementation. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pul
 show the final documentation checkpoint's status. Its merge authorization
 covered PR #24 only. Live calls and external targets remain disabled.
 
-## Current priority — R6 with live R5 work deferred
+## Current priority — preserve accepted offline work
 
 **The agreed offline R5 implementation and verification scope is complete.**
 R5a merged in PR #13, R5b in PRs #14/#15, the accepted authority/planning
@@ -137,8 +161,10 @@ PR #27 packages that evidence and the demo runbook as R6 preparation. Follow
 Preserve the accepted R1–R4 and offline R5 contracts and their documented limits.
 No necessary offline R5 blocker remains. Real-model integration/validation and
 acceptance stay explicitly deferred; fixtures do not complete the full live
-criterion. The next R6 gate is actual operator review/rehearsal and acceptance.
-A merged packet or scripted terminal fixture cannot supply that human decision.
+criterion. The operator has separately accepted the local R6 packet/runbook
+after the actual terminal rehearsal. This records a human decision, distinct
+from automated checks or per-action approvals. Publication remains pending;
+do not describe the candidate as a published release or live-model acceptance.
 Address an earlier contract only for a concrete dependency or regression.
 
 The separate budgeted-assessment proposal, general session-view API and GUI
@@ -319,7 +345,11 @@ focused portable cases passed again in 0.17 seconds
 full Linux evidence remains valid; see the PR checks for the corrected head's
 five-job portable matrix.
 
-## Remaining milestone gates
+## Historical milestone gates before PR #26
+
+This checklist is superseded by the current priority and next continuation.
+Offline evaluation, packaging and the terminal rehearsal below are now complete;
+do not repeat them as open work.
 
 1. Keep PRs #24 and #25's verified planning slices closed. Review the current
    offline evaluation of the integrated path.
@@ -798,24 +828,23 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator authorized the completed merges through PR #25. This does not
-  authorize PR #26 or other future merges, submission, messages, paid calls or
+- The operator authorized the completed merges through PR #27. This does not
+  authorize future merges, submission, messages, paid calls or
   external targets.
 
 ## Next continuation
 
-1. Start from the current priority and checkpoint above. PRs #6–#25 are already
+1. Start from the current priority and checkpoint above. PRs #6–#27 are already
    merged; historical branch names and earlier “next” notes are not current work.
-2. Review the offline integrated-planning evaluation and its saved comparison
-   against the preserved deterministic baseline. Keep accepted authority,
-   transport and accounting slices closed. Later merge authorization is separate.
+2. Preserve the completed offline comparison, accepted local packet, successful
+   approval-required terminal rehearsal and actual operator observations/decision.
+   Do not reopen the accepted local review or modify the immutable packet.
 3. R5 real-model acceptance remains pending while paid/live calls are prohibited.
-   Continue necessary R6 release/evaluation preparation under the disclosed
-   offline fallback, without claiming live or actual operator acceptance.
-   The next bounded R6 preparation is a reproducible offline release/evidence
-   packet and demonstration runbook using the existing corpus and saved reports.
-   It must list live-model validation and actual operator review as pending;
-   packaging alone does not complete R6 or authorize submission/deployment.
+   The reproducible packet and demo runbook are already merged and the local
+   offline candidate is accepted. Leave the documentation checkpoint ready for
+   review. Publication/submission and any later live experiment require their
+   corresponding operator instruction; no further optional feature is needed
+   to complete the accepted offline scope.
 4. Keep kernel verification separate from hosted portable CI. Record measured
    results and publication state; defer optional GUI/API, broader tools and new
    lab scenarios until the original milestones' acceptance gates are satisfied.
