@@ -1,5 +1,62 @@
 # Verification record
 
+## R5 offline planning evaluation — 30 September 2026
+
+The new [planning evaluation](planning-evaluation.md) preserves the deterministic
+baseline and independently grades the accepted owned TLS planning path, isolated
+launch gates and one bounded simulation ledger. Live calls, real credentials,
+external targets and paid inference remain disabled.
+
+The actual CLI default batch completed **18/18 trials in 124,159 ms**, with 51
+owned TLS exchanges/executions, 45 successful actions, 12 correct abstentions and
+zero unnecessary actions. It recorded 26,112 fixture input tokens, 6,528 output
+tokens and 39,678 simulated microUSD, with zero unresolved holds. All six semantic
+fingerprints match the independently inspected saved deterministic baseline.
+The new bundle is `.secure-agent/planning-evaluation-20260930`; inspection after
+the report-size correction exactly reproduced its report and preserved all 164
+file hashes and modification times. The original baseline was also unchanged.
+
+```sh
+.venv/bin/python -m recon_cockpit.secure_agent --evaluate-owned-planning \
+  --policy examples/secure-agent-evaluation-policy.json \
+  --evaluation-dir .secure-agent/planning-evaluation-20260930 --execute
+.venv/bin/python -m recon_cockpit.secure_agent \
+  --inspect-planning-evaluation .secure-agent/planning-evaluation-20260930
+```
+
+Independent review corrected a saved-rationale lookup (evidence intentionally
+omits rationale), added exact initial account/engagement journal checks and
+validated batch timestamps. The first real 18-trial replay exposed reuse of the
+proposal parser's 32 KiB limit for the 106,835-byte aggregate. Inspection now
+compares bounded canonical report bytes with freshly regraded evidence. Both
+18-trial and maximum 60-trial portable runtime batches pass replay and cache
+corruption checks; their two-test report is
+`/tmp/recon-planning-evaluation-batches.xml` (56.30 seconds).
+The strict grader's 89 tests passed in 35.60 seconds, including all six outcomes,
+ledger/audit/runtime mutations and failed-prefix cost binding. CLI/runtime tests
+passed 25 cases, and scheduler/storage checks passed 31.
+
+Final full portable and Linux verification is in progress before review-ready
+publication. An earlier Linux process loaded the pre-correction inspector and
+was explicitly stopped; cancellation-induced failures in that interrupted run
+are not verification evidence. A clean full run follows the correction. The
+separate focused Linux tool did not launch while awaiting sandbox escalation;
+no focused execution result is claimed. The full run includes all 11 new Linux
+cases.
+
+The selected policy permits unattended owned actions. These runs provide no
+human approval or live-model acceptance evidence. R5 real-model acceptance and
+R6 actual operator review remain pending; optional additions remain deferred.
+
+## PR #25 merge review — 30 September 2026
+
+Reviewed exact head `c7f77914ed6b70b6b680e8eded7719cf5c7e760d`; no blockers or
+outstanding comments. All five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36659466246)
+passed. The runtime tree was unchanged from implementation `30f2b2d`; saved JUnit
+reports confirmed 3,579 portable / 466 Linux tests with no failures/errors/skips.
+The operator-authorized guarded merge completed at 02:27:02 UTC as `636a067`.
+Local main fast-forwarded, and the merge tree equals the reviewed head.
+
 ## R5 owned TLS assessment planning — 30 September 2026
 
 Implementation `30f2b2d` in [PR #25](https://github.com/0xsl0th/recon-cockpit/pull/25)

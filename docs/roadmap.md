@@ -157,7 +157,7 @@ does not claim that live-model acceptance or all of R5 is complete.
    remains unavailable, use the original explicitly disclosed offline fallback;
    it does not silently satisfy the live acceptance criterion.
 
-### Next bounded R5 work: assessment planning
+### Bounded R5 integration and offline evaluation
 
 The first merged implementation is the [confined audit writer](isolated-audit.md): an
 explicit Linux option transfers audit persistence to a restricted worker and
@@ -190,14 +190,17 @@ unchanged. Full verification passed 3,382 portable and 430 Linux tests, with zer
 selected failures/errors/skips; independent review has no remaining findings.
 The operator authorized review and merge of #24; final head `9ccc910` passed
 review and all five hosted jobs, and merged as `4f9545c`. Keep this mock slice
-closed. The next [owned TLS slice](owned-tls-assessment-planning.md) sends the
+closed. The [owned TLS slice](owned-tls-assessment-planning.md), PR #25, merged as
+`636a067` after final head `c7f7791` passed review and all five checks. It sends the
 same approved descriptor through the disconnected fixture, preserves settlement
-before proposal release and verifies cleanup and transport failures. Offline
-evaluation of this combined path follows. Mock responses do not complete
+before proposal release and verifies cleanup and transport failures. The current
+[offline evaluation](planning-evaluation.md) compares this combined path with the
+preserved deterministic baseline using a separate versioned grader and shared
+batch simulation ledger. Mock responses do not complete
 live-model acceptance; paid calls remain disabled during ordinary development.
 Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
 broader tools and lab scenarios remain deferred. The latest merge authorization
-covers PR #24 only; leave subsequent work for review and keep live calls disabled.
+covers PR #25 only; leave subsequent work for review and keep live calls disabled.
 
 - Preserve the merged narrowly scoped approval/launch and audit interfaces.
   Record any necessary ownership change before extending the planning path.
