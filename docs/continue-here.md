@@ -4,6 +4,31 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
+**Current implementation: reviewed tool adapters and owned Nmap, ready for PR review.**
+The operator approved a common versioned interface for roughly 40 eventual
+reviewed, bundled tools, starting with a complete network-and-web workflow.
+The implementation worktree is `/tmp/recon-tool-adapters`, branch
+`feature/reviewed-tool-adapters`, based on main `8ae4aad`, in
+[PR #32](https://github.com/0xsl0th/recon-cockpit/pull/32). Documentation PR #31
+on `docs/proposal-author-voice` remains separate and unmerged; its local polished
+PDF is retained without changes. No merge or competition submission is authorized.
+
+The [new adapter contract and runbook](tool-adapters.md) describe one new
+`nmap_tcp_connect_v1` capability and a separately versioned Nmap-to-HTTP workflow.
+Existing TCP/HTTP contracts and accepted evidence stay intact. Runtime source
+is committed as `245c4d7`; later commits correct test classification and exact
+module allowlists. The new work awaits PR review and merge. Automated tests
+do not constitute operator acceptance; no new human walkthrough is claimed.
+All development stays in the owned, disconnected lab with deterministic
+planning. Model calls, credentials, external/VPN targets and spending remain
+disabled. The next sequence is this integration, a richer resettable local
+scenario, its adversarial comparison, and a separately authorized real-model
+pilot. Refresh the proposal with verified progress in early November rather than
+submitting the September snapshot. Target submission around 9 November after
+the operator's review. See [verification.md](verification.md) for the measured checks and the feature
+[PR #32 checks](https://github.com/0xsl0th/recon-cockpit/pull/32/checks) for the
+latest hosted status before any merge decision.
+
 **Current milestone: R5 offline scope complete; R6 local offline candidate accepted.** The
 accepted provider/accounting, separated authority, owned planning and offline
 comparison work through PR #26 has no remaining necessary offline R5 blocker.
@@ -58,7 +83,13 @@ exactly matches the reviewed head. All five
 [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36672797756)
 passed. The Spanish proposal reconciliation is complete; do not repeat it.
 
-**Local submission draft prepared and verified; not sent.** The operator
+**PR #30 merged; its earlier local draft remains a historical export.**
+Final head `1634097` merged as `8ae4aad` at 06:14:59 UTC on 30 September.
+Do not repeat that merge. PR #31 contains the subsequent jury-focused proposal
+and author-voice revisions; the latest polished PDF remains local and unchanged.
+No competition submission has occurred.
+
+For the earlier PR #30 export, the operator
 authorized a readable proposal PDF, an unsent email, references to the accepted
 evidence/runbook and this checkpoint update. Branch `docs/submission-draft-package`
 starts from `cba8059` and is tracked in
@@ -66,9 +97,7 @@ starts from `cba8059` and is tracked in
 supporting files are in `.secure-agent/submission-draft-20260930-final`; visual,
 content and privacy checks are complete. The earlier interrupted-work snapshot
 and `submission-draft-20260930-layout` are superseded. The PDF remains ignored
-and local; it is not part of the PR. The operator has now authorized review and
-merge of PR #30 if its latest revision and all available checks pass. Consult
-the PR for its current merge/check status before taking further action.
+and local; it was not part of the PR.
 The proposal text remains unchanged; the local PDF uses
 that full source revision for its document links. This document revision is
 distinct from the accepted packet's verification source `070257b` and the
