@@ -12,13 +12,15 @@ become prerequisites for continuing R5. Finish the remaining R5 work, then R6,
 before additional product ideas. The [completion order below](#milestone-completion-order)
 is the current work queue. No new milestone or parallel GUI track is introduced.
 
-The main baseline is `4f9545c`, after the authorized merge of PR #24 (bounded
-mock assessment planning). PRs #16–#23 are also merged. Final head `9ccc910`
-passed review and all five hosted checks; its runtime passed 3,382 portable and
-430 Linux tests. The merge tree is identical and all five post-merge main checks
-passed. The next [owned TLS planning integration](owned-tls-assessment-planning.md)
-preserves that release and monetary gate while exercising disconnected transport.
-These results establish offline scope, not live-model acceptance.
+The main baseline is `636a067`, after the authorized merge of PR #25
+([owned TLS planning integration](owned-tls-assessment-planning.md)). PRs #16–#24
+also remain merged. Final head `c7f7791` passed review and all five hosted checks;
+its runtime passed 3,579 portable and 466 Linux tests. The merge tree is identical,
+and all five post-merge main checks passed. The current
+[offline evaluation](planning-evaluation.md), PR #26, compares that integrated
+path with the preserved baseline. Its 3,726 portable and 477 Linux tests passed;
+leave it unmerged for review. These results establish offline scope, not
+live-model acceptance.
 Live calls remain disabled; development and verification use owned/mock fixtures.
 
 ### Earlier implementation checkpoints
@@ -211,9 +213,9 @@ covers PR #25 only; leave subsequent work for review and keep live calls disable
 - Verify denial, expiry, replay, cancellation, audit failure and cleanup with
   owned/mock fixtures and the affected Linux isolation checks. Preserve the
   existing R1–R4 assessment outcomes and R5a/R5b financial/provider invariants.
-- Follow with the remaining bounded planning integration and evaluation work
-  already required by R5. Keep real-model validation visibly pending until
-  separately authorized; all development and verification remains offline.
+- Review the integrated offline evaluation, then prepare the bounded R6 offline
+  release evidence and demo runbook. Keep real-model and actual operator
+  acceptance visibly pending; all development and verification remains offline.
 
 ### Additional ideas deferred until milestone completion
 

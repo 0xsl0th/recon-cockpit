@@ -90,9 +90,9 @@ which supersedes older “next step” notes in this file.
 
 Preserve the accepted R1–R4 implementations and their documented limits. Do not
 restart them or make broader capability-registry/finding-workflow extensions
-prerequisites for continuing R5. The next work is **bounded R5 planning
-integration** on the completed authority boundaries, followed by its evaluation
-gates, then R6 evaluation/release work. Address an earlier contract only when a
+prerequisites for continuing R5. The next work is **review of the integrated
+offline evaluation**, followed by bounded R6 release preparation under the
+disclosed offline fallback. Real-model and actual operator acceptance remain pending. Address an earlier contract only when a
 concrete dependency or regression requires it. R5a/R5b completion
 does not claim that all of R5 or real-model validation is complete.
 
@@ -747,14 +747,15 @@ Planning uses synthetic responses.
 - Never connect legacy host execution, arbitrary shell, credentials, broad mounts
   or Docker sockets to agents. Do not change host networking to pass tests.
 - The explicit audit, approval and admission options use separate confined
-  workers for persistence, grants and fixed policy/resource decisions. The new
-  fixture launcher owns nested admission and executor supervision; the host
-  still enforces consent/audit ordering and launches persistent labs. Hashes detect
-  inconsistency, not host-owner tampering. R1 callback and R2 HTTP framing limits
-  remain documented.
-- The operator authorized the completed merges through PR #19.
-  This does not authorize unrelated
-  future merges, submission, messages, paid calls or external targets.
+  workers for persistence, grants and fixed policy/resource decisions. The opt-in
+  launcher owns nested admission, executor supervision and persistent-lab
+  lifecycle/namespace pins. Direct audit and approval gates verify their workers'
+  preconditions; the host still owns assessment authority and selected policy.
+  Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
+  framing limits remain documented.
+- The operator authorized the completed merges through PR #25. This does not
+  authorize PR #26 or other future merges, submission, messages, paid calls or
+  external targets.
 
 ## Next continuation
 
