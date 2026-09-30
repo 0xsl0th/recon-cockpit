@@ -84,13 +84,14 @@ confiables.
 
 ## 4. Estado real del desarrollo
 
-Al 30 de septiembre, los alcances acordados de R1–R4 y el alcance offline de R5 están
-implementados, verificados e integrados en `main`. R5a/R5b conservan sus contratos
-aceptados de aislamiento del proveedor y contabilidad monetaria. La integración
-posterior añade aprobación, auditoría y lanzamiento separados, planificación
-sintética por TLS propio y una comparación repetida con la línea base.
-El operador aceptó el **candidato local offline de R6** después de revisar su
-evidencia y realizar el ensayo en una terminal real. La aceptación con un modelo
+Al 30 de septiembre, el demostrador offline está implementado, verificado e
+integrado en la rama principal del repositorio. Incluye acciones TCP/HTTP
+controladas, aislamiento del proveedor, contabilidad de consumo simulado y
+componentes separados para aprobación, auditoría y lanzamiento. La planificación
+utiliza respuestas sintéticas mediante TLS en un laboratorio propio y se ha
+comparado de forma repetida con una línea base determinista.
+Tras revisar la evidencia y realizar el ensayo en una terminal real, acepté
+el **candidato local offline**. La aceptación con un modelo
 real y la publicación o presentación del proyecto permanecen pendientes.
 El estado de integración y las decisiones constan en
 [continue-here.md](continue-here.md); los resultados, límites y revisiones,
@@ -131,10 +132,9 @@ La [planificación TLS integrada](owned-tls-assessment-planning.md), los
 [aprobación](launch-approval-witness.md) mantienen sus límites explícitos.
 El aislamiento no demuestra resistencia al compromiso del propietario, de todos
 los componentes confiables o del kernel; el propietario puede alterar registros
-locales. No queda un bloqueo necesario de implementación offline en el alcance
-aceptado. La validación real sigue pendiente y las ampliaciones opcionales no
-reabren los hitos cerrados. Véase el
-[orden de cierre](roadmap.md#milestone-completion-order).
+locales. El alcance offline descrito está completo; la validación con un modelo
+real y las ampliaciones opcionales siguen pendientes. El
+[plan de desarrollo](roadmap.md#milestone-completion-order) detalla su secuencia.
 
 ## 5. Motores y conocimiento de pentesting
 
@@ -144,8 +144,8 @@ autoridad. La primera ficha revisada ya define precondiciones, evidencia necesar
 capacidades permitidas, criterios de éxito, límites, condiciones de detención y
 limpieza. Ese contrato orientará otros procedimientos si se autoriza su desarrollo.
 
-Las fuentes indicadas por el titular incluyen el
-[manual de Enrique Folte](https://enriquefolte.com/),
+Las fuentes de referencia que he seleccionado incluyen mi
+[manual de pentesting](https://enriquefolte.com/),
 [PentestMonkey](https://pentestmonkey.net/),
 [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings),
 [GTFOBins](https://gtfobins.org/),
@@ -165,7 +165,7 @@ de páginas.
 
 El flujo actual cubre descubrimiento y enumeración HTTP, validación acotada y
 reporte. Los demás motores y la coordinación de varios agentes permanecen
-diferidos; no son requisitos adicionales para cerrar el alcance offline aceptado.
+diferidos y no forman parte del demostrador actual.
 
 ## 6. Aporte, demostrador y validación
 
@@ -218,16 +218,16 @@ su revisión de ejecución, que permanece explícitamente como `not_recorded`.
 Las identidades, tiempos y bytes de evaluaciones nuevas pueden variar; su
 comparación usa resultados y huellas semánticas.
 
-El ensayo humano posterior utilizó la política que exige aprobación: el operador
-introdujo personalmente tres frases distintas para TCP, GET de descubrimiento y
+En el ensayo humano posterior utilicé la política que exige aprobación e
+introduje personalmente tres frases distintas para TCP, GET de descubrimiento y
 GET de diagnóstico. La ejecución en `dd4bbe4` validó el caso a en **50,011
 segundos**, dentro de tres pasos, 60 segundos y 3.072 bytes de salida reservados.
 El laboratorio y los procesos TLS cerraron; tres intentos liquidados sumaron
 **2.334 microUSD simulados**, sin consumos inciertos ni gasto real. Una primera
 tentativa había agotado el plazo sin aprobar ni ejecutar acciones; se conservó
 su evidencia y el reintento usó una sesión nueva. La asistencia de IA no aportó
-respuestas de terminal. Tras revisar el reporte y el ensayo, el operador aceptó
-por separado el candidato local offline. Su decisión está registrada fuera del
+respuestas de terminal. Tras revisar el reporte y el ensayo, acepté
+por separado el candidato local offline. Mi decisión está registrada fuera del
 paquete inmutable: los campos pendientes de ese paquete describen su estado al
 crearse y no fueron alterados para aparentar una aceptación anterior.
 
@@ -240,13 +240,13 @@ crearse y no fueron alterados para aparentar una aceptación anterior.
 | Reproducibilidad | Entradas y fuente verificables, construcción determinista del paquete y revisión de solo lectura; revisión histórica de ejecución no registrada. |
 | Recursos | Tiempo, reservas y uso sintético liquidados; consumo y facturación reales permanecen sin validar. |
 
-El mínimo del concurso será un flujo útil de extremo a extremo. No se promete
+El alcance mínimo que propongo es un flujo útil de extremo a extremo. No se promete
 un pentester autónomo universal, inmunidad a toda prompt injection ni todos los
 motores futuros. El candidato aceptado ofrece la alternativa offline explícita;
 una comparación con un agente real exige revisar previamente datos, modelo,
 endpoint, credenciales, salida de red y límite de gasto. Explotación general, AD,
-múltiples agentes y pruebas VPN son extensiones diferidas, no dependencias
-adicionales del alcance offline aceptado.
+múltiples agentes y pruebas VPN son extensiones diferidas que quedan fuera del
+alcance actual.
 
 ## 7. Cronograma y entregables
 
@@ -259,31 +259,31 @@ presentan en H4ck3d 2027.
 
 | Período propuesto | Entregable |
 | --- | --- |
-| Septiembre–octubre 2026 | Alcances acotados R1–R4 y R5 offline completos; candidato local R6 aceptado. Preparar la propuesta y referencias de evidencia para revisión, preservando los hitos cerrados. |
+| Septiembre–octubre 2026 | Demostrador offline TCP → HTTP con ejecución aislada, aprobaciones y límites de recursos; paquete reproducible de evidencia y ensayo humano completados. Propuesta técnica preparada para revisión. |
 | Hasta el 8/11/2026 | Revisar propuesta, datos de inscripción, arquitectura, alcance mínimo y evidencia. |
-| 9–15/11/2026 | Ventana prevista de presentación por el titular, sujeta a su instrucción expresa y con margen respecto de la fecha oficial. |
-| Noviembre 2026–enero 2027 | Ventana original de reconocimiento y validación acotados; el flujo offline ya está aceptado y no se reabre por calendario. |
-| Enero–febrero 2027 | Modelo real con mediación de credenciales, datos y gasto; habilitación explícita requerida. |
-| Marzo–abril 2027 | Evaluación adversarial y funcional, comparación con baseline y documentación. |
+| 9–15/11/2026 | Presentación de la propuesta tras mi revisión final, con margen respecto de la fecha oficial. |
+| Noviembre 2026–enero 2027 | Mantenimiento del demostrador offline y su evidencia; correcciones únicamente si se detectan defectos. |
+| Enero–febrero 2027 | Integración y evaluación inicial con un modelo real, con controles de credenciales, datos y gasto, si decido habilitar esa etapa. |
+| Marzo–abril 2027 | Evaluación adversarial y funcional del modelo real, comparación con la línea base y documentación de resultados, si se habilita esa etapa. |
 | Mayo 2027 | Congelar alcance, ensayar demostración y entregar antes del 20/05. |
 
-Son ventanas propuestas, sujetas a capacidad, resultados y decisiones del
-titular; no autorizan nuevas funciones, llamadas pagadas ni envíos. El
-[roadmap](roadmap.md) define dependencias, aceptación y recortes. El alcance
-offline aceptado se conserva cerrado. La presentación de noviembre no supone
+Este cronograma es provisional y depende de mi disponibilidad y de los resultados.
+Antes de iniciar pruebas con un modelo real, revisaré los datos y las credenciales
+utilizados y fijaré un límite de gasto. Esa etapa permanece diferida. El
+[plan de desarrollo](roadmap.md) detalla las dependencias y los criterios de
+aceptación. El alcance offline ya aceptado se conserva. La presentación de
+noviembre no supone
 que se haya validado un modelo real ni completado ese criterio de la visión final.
 
 ## 8. Integrantes del equipo de trabajo
 
-| Nombre | Participación identificada | Rol |
-| --- | --- | --- |
-| Enrique Folte | Único integrante humano, titular y contacto del proyecto | Responsable del proyecto y de las decisiones técnicas, revisión, evaluación y presentación. |
+Soy **Enrique Folte**, único integrante humano y contacto del proyecto.
+Soy responsable de la arquitectura, las decisiones técnicas, la revisión del
+código, la evaluación de resultados y la presentación.
 
-La composición fue confirmada por el titular: Enrique Folte trabaja con
-asistencia de Codex para arquitectura, código, pruebas y documentación, bajo
-revisión humana. Codex es una herramienta de asistencia de IA; no se presenta
-como participante humano ni como coautor legal. No se declara una afiliación
-institucional, ya que no ha sido indicada.
+Utilizo Codex como herramienta de asistencia de IA para arquitectura, código,
+pruebas y documentación. Reviso sus aportes y asumo la responsabilidad de las
+decisiones y los resultados del proyecto.
 
-Antes del envío se revisarán estos datos, el alcance y las evidencias.
+Antes del envío revisaré estos datos, el alcance y las evidencias.
 Este documento no constituye una inscripción ni un envío a la Universidad.
