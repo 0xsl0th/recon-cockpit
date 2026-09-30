@@ -1,0 +1,22 @@
+{
+  "schema_version": "1",
+  "policy_version": "unattended-owned-harbordesk-comparison-v1",
+  "allowed_targets": [
+    "127.0.0.1/32"
+  ],
+  "allowed_tools": [
+    "nmap_tcp_connect_v1",
+    "http_probe"
+  ],
+  "allowed_ports": [
+    8080
+  ],
+  "allowed_methods": [
+    "GET"
+  ],
+  "max_timeout_seconds": 5,
+  "max_output_bytes": 16384,
+  "max_targets": 1,
+  "require_approval": false,
+  "approval_ttl_seconds": 60
+}

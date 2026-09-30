@@ -1,5 +1,22 @@
 # Verification record
 
+## PR #33 merge review — 30 September 2026
+
+The operator authorized review/merge of the current PR and continuation. Fresh
+independent reviews of exact head `aaa5c6aa8a33a3a2f627092a22104b16fbf50ad9`
+found no runtime/authority, contract/evidence or documentation blockers. GitHub
+had no outstanding review comments. Main has no configured required checks;
+all five available [final jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36771053368)
+passed. Independent saved JUnit inspection confirmed 4,243 portable and 507
+Linux cases, plus the corrected nine workflow trials, without failures/errors/skips.
+
+The guarded merge is `ed7d839d2ea9d711a81a76ddfa76eb41d928bf28` at
+21:02:55 UTC on 30 September. Merge and reviewed-head trees both equal
+`e09794f3b4a4306e7d95b8944aa70306320e3877`. The clean main checkout was
+fast-forwarded, and all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36776840618)
+passed. PR #33 stays closed; PR #31 and its local PDF remain separate.
+
 ## Resettable HarborDesk web lab — 30 September 2026
 
 The operator authorized the richer resettable owned scenario after PR #32.

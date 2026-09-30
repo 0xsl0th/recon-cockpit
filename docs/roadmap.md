@@ -18,10 +18,11 @@ history and acceptance criteria.
 
 **New implementation sequence:** the reviewed bundled-adapter interface and
 confined Nmap/HTTP workflow merged in PR #32 (`875c1a6`). The authorized current
-slice is the [resettable HarborDesk lab](web-lab.md), with vulnerable, corrected
-and injected-response variants. Next is a separate scripted adversarial
-comparison that measures refused out-of-scope proposals, legitimate completion
-and overhead; a bounded real-model evaluation follows only after authorization. Roughly 40 tools is a longer-term architecture target, not the scope
+slice is the [offline adversarial comparison](web-comparison.md). The
+[resettable HarborDesk lab](web-lab.md) merged in PR #33 (`ed7d839`). The comparison
+measures refused out-of-scope proposals, legitimate completion loss under the
+existing stop-on-denial policy, and matched decision latency. A bounded real-model
+evaluation follows only after authorization. Roughly 40 tools is a longer-term architecture target, not the scope
 of this increment. Third-party plugins, authenticated web/API and Windows/AD
 integrations remain deferred. Continue development through October and refresh
 the proposal with verified results in early November, targeting submission around
