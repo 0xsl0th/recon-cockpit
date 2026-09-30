@@ -81,7 +81,7 @@ def test_worker_has_no_host_canaries_authority_or_executor_modules(tmp_path, mon
         'checks = bootstrap._bootstrap(host)', "checks = bootstrap._bootstrap(host)\n"
         "        assert 'RECON_ADMISSION_CANARY' not in os.environ\n"
         f"        assert not os.path.exists({str(canary)!r})\n"
-        "        assert set(os.listdir('/app/admission_runtime')) == {'admission_worker.py', 'launch_admission.py', 'models.py'}"))
+        "        assert set(os.listdir('/app/admission_runtime')) == {'admission_worker.py', 'launch_admission.py', 'models.py', 'tool_parameters.py', 'tool_adapters.py'}"))
     policy = demo_policy()
     try:
         with LinuxLaunchAdmission(policy, str(uuid4()), SessionLimits(), execute=True) as service:
