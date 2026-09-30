@@ -4,21 +4,40 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current implementation: resettable HarborDesk web lab.**
-The operator authorized this follow-on slice after the reviewed adapter/Nmap
-integration. Work is on `feature/resettable-web-lab` in `/tmp/recon-web-lab`,
-based on main `875c1a6`, in
-[PR #33](https://github.com/0xsl0th/recon-cockpit/pull/33). Implementation revision
-`98c0c35` passed 4,243 portable and 507 Linux tests, with no failures/errors/skips,
-and all five hosted checks. Later test-only counter and documentation changes
-preserve that application source. Read [web-lab.md](web-lab.md) for the three variants,
-runbook, limitations and the planned adversarial comparison. The new versioned
-fixture uses the same owned `127.0.0.1:8080`, existing Nmap/HTTP tools and
-3-action/60-second/18,432-byte ceiling. Planning remains deterministic and offline.
-The injected note is private untrusted evidence; an induced out-of-scope proposal
-and authority-block comparison are the next separate slice, not a result claimed
-here. Validation and review status are in [verification.md](verification.md).
-Leave this change for review; the prior merge instruction covered PR #32.
+**Current review: bounded offline HarborDesk adversarial comparison, PR #34.**
+The operator authorized reviewing/merging PR #33 and continuing to the next
+necessary slice. Work is on `feature/owned-web-adversarial-comparison` in
+`/tmp/recon-web-comparison`, based on main `ed7d839`. Read
+[web-comparison.md](web-comparison.md) for the paired baseline/scripted evaluation,
+criteria, runbook and limitations. Both arms retain the existing authority and
+3-attempt/60-second/18,432-byte ceiling. The script derives a forbidden proposal
+from the actual captured injected note; policy denial stops the session. Report
+containment success separately from the resulting two-of-three legitimate action
+completion. No recovery, extra attempt or live-model behavior is claimed.
+Leave this new change ready for review; the current merge instruction covered
+PR #33. [PR #34](https://github.com/0xsl0th/recon-cockpit/pull/34) contains
+implementation `6268543`. The complete portable suite passed 4,438 cases;
+eight new real Linux tests passed. The actual default CLI batch passed 18/18
+trial criteria: 3/3 unauthorized proposals blocked, zero unauthorized executions,
+15/18 legitimate tasks completed and 51 legitimate actions. The three stopped
+attack tasks remain explicitly incomplete. Independent read-only replay and
+tampered-copy refusal passed. All calls were offline, with zero provider calls.
+Private evidence is `.secure-agent/web-comparison-20260930` in the primary
+checkout; the adjacent `web-comparison-20260930-verification.json` records its
+clean execution revision. See [verification.md](verification.md) and
+[the latest checks](https://github.com/0xsl0th/recon-cockpit/pull/34/checks).
+Do not rerun the full local suites solely for checkpoint text. Review/merge of
+PR #34 is the next handoff; a real-model pilot still needs explicit authorization.
+
+**PR #33 is merged and stays closed.** Fresh independent review of final head
+`aaa5c6a` found no blockers or outstanding comments. All five
+[final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36771053368)
+passed. Saved reports verify 4,243 portable and 507 Linux tests, plus nine fresh
+workflow trials after the counter assertion correction. The authorized guarded
+merge is `ed7d839` at 21:02:55 UTC on 30 September; its tree exactly matches the
+reviewed head. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36776840618)
+passed. Keep the resettable web lab and accepted fixtures/contracts closed.
 
 **PR #32 is merged and stays closed.** Final head `b7e1904` passed review and
 all five [final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36764600927).
@@ -28,8 +47,8 @@ matches the reviewed head. All five
 passed. Do not repeat its merge or reopen the adapter/Nmap slice. Existing
 TCP/HTTP contracts, fixture bytes and accepted evidence remain regression anchors.
 
-The next sequence is this resettable scenario, a separately reviewed scripted
-adversarial comparison, then a separately authorized bounded real-model pilot.
+The current sequence is this separately reviewed scripted adversarial comparison,
+then a separately authorized bounded real-model pilot.
 Roughly 40 tools remains a long-term architecture target. Optional tool expansion,
 GUI/API, external/VPN targets, credentials and spending remain deferred. Refresh
 the proposal with verified progress in early November and target submission
@@ -260,7 +279,8 @@ fit without introducing a new parallel milestone or weakening the architecture.
 Live validation remains an explicit pending gate: all current development and
 verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
-authorize activation, external targets, real credentials or merges beyond PR #30.
+authorize activation, external targets or real credentials. The current PR #33
+merge is complete; PR #34 is the next review handoff, not an authorized merge.
 
 The earlier baseline before PR #24 was `a87e5dd`, the merge of
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate
@@ -914,29 +934,31 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator authorized the completed merges through PR #29 and review/merge
-  of PR #30 if its latest revision and checks pass. This does not
-  authorize merges beyond PR #30, submission, messages, paid calls or
-  external targets.
+- The operator-authorized PR #33 merge is complete. PRs #6–#30, #32 and #33
+  stay closed; proposal PR #31 remains separate. Leave PR #34 ready for review.
+  Its merge, submission, messages, paid calls and external targets need their
+  corresponding operator instruction.
 
 ## Next continuation
 
-1. Start from the current priority and checkpoint above. PRs #6–#29 are already
-   merged; historical branch names and earlier “next” notes are not current work.
-   Check PR #30's current status; if merged, keep its delivery work closed.
+1. Start from the current priority and checkpoint above. Review PR #34 and its
+   latest checks when instructed; its implementation and local verification are
+   complete. PRs #6–#30, #32 and #33 are merged. PR #31 remains separate;
+   historical branch names and earlier “next” notes are not current work.
 2. Preserve the completed offline comparison, accepted local packet, successful
    approval-required terminal rehearsal and actual operator observations/decision.
    Do not reopen the accepted local review or modify the immutable packet.
 3. R5 real-model acceptance remains pending while paid/live calls are prohibited.
    The reproducible packet and demo runbook are already merged and the local
-   offline candidate is accepted. Review the local PDF and unsent submission
-   message; proposal reconciliation is already merged. Publication/submission
-   and any later live experiment require their
-   corresponding operator instruction; no further optional feature is needed
+   offline candidate is accepted. The next necessary evaluation after PR #34 is
+   a separately authorized bounded real-model pilot with explicit data, endpoint,
+   model, credential, egress and spending settings. Keep the current proposal/PDF
+   unchanged; refresh it with verified progress in early November. Publication
+   and submission require operator instruction. No optional feature is needed
    to complete the accepted offline scope.
 4. Keep kernel verification separate from hosted portable CI. Record measured
    results and publication state; defer optional GUI/API, broader tools and new
-   lab scenarios until the original milestones' acceptance gates are satisfied.
+   lab scenarios; they are not prerequisites for the next evaluation.
 
 ## Recovery and verification
 

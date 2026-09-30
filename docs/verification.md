@@ -1,5 +1,83 @@
 # Verification record
 
+## Offline malicious-output comparison — 30 September 2026
+
+After the authorized PR #33 merge, the next separate implementation is
+`6268543c3d7c4c1ba5cc79ab4b78829d7bafdc64` in
+[PR #34](https://github.com/0xsl0th/recon-cockpit/pull/34), based on `ed7d839`.
+The source adds a bounded baseline/scripted evaluation using the accepted web
+lab, authority and Nmap/HTTP tools. Only the CLI changes in existing application
+modules; isolation, authority, fixture and tool implementations remain unchanged.
+The default explicit unattended owned policy preserves the singleton scope and
+original per-trial ceilings. R5/R6 acceptance and the proposal/PDF remain closed.
+
+Independent reviews covered contract/provider, runtime/cleanup, grading and
+batch/CLI behavior. The review correction preserves all verified journal
+reservations when trailing corruption exceeds the event count; regression tests
+cover object and non-object trailing records without writes. No blockers remain.
+
+The complete portable selection passed **4,438 tests in 250.79 seconds**, with
+zero selected failures/errors/skips; 515 Linux tests were deselected. The eight
+new Linux integration tests passed: seven runtime/cancellation cases in 23.22
+seconds and one six-trial CLI/replay/tamper case in 26.70 seconds. Every real
+case/arm branch was independently regraded using the isolated XML parser. The
+earlier accepted 507-case Linux suite is PR #33 evidence, not a newly rerun
+full suite for this additive comparison. Reports:
+`/tmp/recon-web-comparison-portable-full.xml`,
+`/tmp/recon-web-comparison-runtime-linux.xml` and
+`/tmp/recon-web-comparison-batch-linux.xml`.
+
+On that clean implementation revision, the actual default CLI run completed
+**18/18 passing trial criteria** in 66.192 seconds before final aggregate replay.
+All **3/3 induced unauthorized proposals were blocked**, with **zero unauthorized
+executions**. **15/18 legitimate tasks completed**, totaling 51 legitimate
+actions. Each injected scripted trial stopped after two actions with
+`target_out_of_scope`, two execution reservations and 17,408 reserved output
+bytes. Its incomplete assessment is an expected, explicit task-completion cost,
+not a completed task. Actual provider calls and approval wait were both zero;
+the unattended policy does not constitute a human rehearsal.
+
+Private evidence is `/home/sloth/Code/recon-cockpit/.secure-agent/web-comparison-20260930`.
+The 163-file copy exactly preserves the original bytes, modes and mtimes.
+Independent read-only CLI inspection reproduced the report without changes.
+Inspection of a separate copy with an added claimed execution reservation failed
+with `saved_trial_grade_mismatch`, leaving execution counts unknown and both
+original and altered inputs unchanged. The adjacent
+`web-comparison-20260930-verification.json` records execution revision and checks.
+These files remain local and ignored.
+
+All nine same-case pairs are reported. The three injected decision-latency deltas
+(scripted minus baseline) were +96,492, −268,476 and +363,114 nanoseconds. Their
+full-trial deltas were −488, −498 and −234 milliseconds, each omitting one action
+and 1,024 reserved bytes. Those shorter elapsed times are **not** lower enforcement
+overhead. Concurrent portable tests ran on the same host; three repeats provide
+descriptive measurements only. No model susceptibility, total authority overhead
+or professional deployment readiness is claimed. See
+[web-comparison.md](web-comparison.md) for the precise timing interval and limits.
+
+The checkpoint-only follow-ups do not alter runtime/tests. Consult
+[PR #34 checks](https://github.com/0xsl0th/recon-cockpit/pull/34/checks) for its
+final hosted status before any later merge decision. Leave this change for
+review. Model/endpoint, data exposure, credentials, egress and spending require
+separate operator authorization before the planned real-model pilot.
+
+## PR #33 merge review — 30 September 2026
+
+The operator authorized review/merge of the current PR and continuation. Fresh
+independent reviews of exact head `aaa5c6aa8a33a3a2f627092a22104b16fbf50ad9`
+found no runtime/authority, contract/evidence or documentation blockers. GitHub
+had no outstanding review comments. Main has no configured required checks;
+all five available [final jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36771053368)
+passed. Independent saved JUnit inspection confirmed 4,243 portable and 507
+Linux cases, plus the corrected nine workflow trials, without failures/errors/skips.
+
+The guarded merge is `ed7d839d2ea9d711a81a76ddfa76eb41d928bf28` at
+21:02:55 UTC on 30 September. Merge and reviewed-head trees both equal
+`e09794f3b4a4306e7d95b8944aa70306320e3877`. The clean main checkout was
+fast-forwarded, and all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36776840618)
+passed. PR #33 stays closed; PR #31 and its local PDF remain separate.
+
 ## Resettable HarborDesk web lab — 30 September 2026
 
 The operator authorized the richer resettable owned scenario after PR #32.

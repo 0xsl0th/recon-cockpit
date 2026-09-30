@@ -276,8 +276,12 @@ def main(argv: list[str] | None = None) -> int:
                         help="repeat owned TLS planning with all isolated launch gates and simulated costs")
     source.add_argument("--inspect-planning-evaluation", type=Path,
                         help="regrade an owned planning batch and simulation ledger without execution or writes")
+    source.add_argument("--evaluate-web-comparison", action="store_true",
+                        help="compare baseline and scripted malicious-output proposals in the owned HarborDesk lab")
+    source.add_argument("--inspect-web-comparison", type=Path,
+                        help="regrade an offline HarborDesk comparison without execution or writes")
     parser.add_argument("--evaluation-dir", type=Path, help="fresh private batch directory; parent must exist")
-    parser.add_argument("--evaluation-repeats", type=int, help="repetitions of cases a-f: 1-10 (default: 3, 18 trials)")
+    parser.add_argument("--evaluation-repeats", type=int, help="repetitions of the selected owned corpus: 1-10 (default: 3, 18 trials)")
     parser.add_argument("--evaluation-max-seconds", type=int, help="absolute batch lifetime: 1-3600 seconds (default: 600)")
     parser.add_argument("--assessment-dir", type=Path,
                         help="new private directory for assessment artifacts, decisions and reports")
@@ -373,13 +377,15 @@ def main(argv: list[str] | None = None) -> int:
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
     broker_options = (args.broker_max_calls, args.broker_max_output_tokens, args.broker_max_request_bytes)
     evaluation_options = (args.evaluation_dir, args.evaluation_repeats, args.evaluation_max_seconds)
-    evaluation_run = args.evaluate_owned_lab or args.evaluate_owned_planning
-    evaluation_inspect = args.inspect_evaluation is not None or args.inspect_planning_evaluation is not None
-    if ((args.evaluate_owned_planning or args.inspect_planning_evaluation is not None)
+    evaluation_run = args.evaluate_owned_lab or args.evaluate_owned_planning or args.evaluate_web_comparison
+    evaluation_inspect = (args.inspect_evaluation is not None or args.inspect_planning_evaluation is not None
+                          or args.inspect_web_comparison is not None)
+    if ((args.evaluate_owned_planning or args.inspect_planning_evaluation is not None
+            or args.evaluate_web_comparison or args.inspect_web_comparison is not None)
             and args.audit != Path(".secure-agent/audit.jsonl")):
-        parser.error("planning evaluation fixes each trial's audit path inside the batch")
+        parser.error("planning/web evaluation fixes each trial's audit path inside the batch")
     if not evaluation_run and any(value is not None for value in evaluation_options):
-        parser.error("evaluation options require --evaluate-owned-lab or --evaluate-owned-planning")
+        parser.error("evaluation options require --evaluate-owned-lab, --evaluate-owned-planning or --evaluate-web-comparison")
     if evaluation_run and args.evaluation_dir is None:
         parser.error("evaluation requires --evaluation-dir")
     if (evaluation_run or evaluation_inspect) and (args.fixture or args.routed or args.owned_lab):
@@ -408,7 +414,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--inspect-assessment cannot select an execution mode or backend")
     try:
         if evaluation_inspect:
-            if args.inspect_planning_evaluation is not None:
+            if args.inspect_web_comparison is not None:
+                from .web_comparison import inspect_comparison
+
+                report = inspect_comparison(args.inspect_web_comparison)
+            elif args.inspect_planning_evaluation is not None:
                 from .planning_evaluation import inspect_planning_evaluation
 
                 report = inspect_planning_evaluation(args.inspect_planning_evaluation)
@@ -429,6 +439,10 @@ def main(argv: list[str] | None = None) -> int:
                 from .planning_evaluation import PlanningEvaluationRunner
 
                 runner_type = PlanningEvaluationRunner
+            if args.evaluate_web_comparison:
+                from .web_comparison import WebComparisonRunner
+
+                runner_type = WebComparisonRunner
             runner = runner_type(args.evaluation_dir, parse_policy(_read_bounded(args.policy)), limits)
             previous = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
             try:

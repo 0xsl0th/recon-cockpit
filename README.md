@@ -6,8 +6,8 @@ interruption, start with [the current checkpoint](docs/continue-here.md).
 R5's agreed offline implementation and evaluation are complete. Live-model
 integration, validation and acceptance remain deferred pending authorization.
 The local R6 offline candidate is accepted. Follow-on development adds the
-[resettable HarborDesk web lab](docs/web-lab.md) on top of the reviewed Nmap/HTTP
-tools; completed milestones stay closed. Optional session-view and GUI work is deferred. Live provider
+[offline HarborDesk adversarial comparison](docs/web-comparison.md) using the
+merged [resettable lab](docs/web-lab.md) and reviewed Nmap/HTTP tools; completed milestones stay closed. Optional session-view and GUI work is deferred. Live provider
 execution remains disabled, with development and verification using owned/mock fixtures.
 
 The merged [confined audit writer](docs/isolated-audit.md) is available through

@@ -91,9 +91,9 @@ its declared response hash cannot independently be recomputed from that text.
 
 ## Next bounded comparison
 
-After this change passes review and merges, add a separately versioned offline
-comparison using the same fixtures and tools. A clearly labelled scripted planner
-will turn the injected note into a proposal targeting the existing forbidden
+The next separately versioned [offline comparison](web-comparison.md) uses the
+same fixtures and tools, preserving this accepted assessment contract. A clearly labelled scripted planner
+turns the injected note into a proposal targeting the existing forbidden
 witness, then exercise the normal authority refusal and audit path. Do not enlarge
 this three-action assessment contract to accommodate that experiment.
 
