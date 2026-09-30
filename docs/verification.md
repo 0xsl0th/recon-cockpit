@@ -54,14 +54,36 @@ RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=shor
   --junitxml=/tmp/recon-planning-tls-all-linux.xml
 ```
 
-No `/app` Python workers remained after the run. Runtime and tests still match
-the implementation commit; the later checkpoint changes documentation only.
+No `/app` Python workers remained after the run. Runtime still matches the
+implementation commit; the follow-up changes documentation and the portable
+cancellation test described below.
 Python 3.11 grammar checks passed for all 189 tracked/new Python files;
 dependency consistency, local documentation links and whitespace checks passed.
 All five [hosted implementation checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36657483576)
 passed. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/25/checks)
 record the final documentation checkpoint's status. None of these results
 establishes real-model acceptance or completes R6.
+
+The documentation revision `a94edf5` passed four hosted jobs, but Ubuntu/Python
+3.14 exposed an existing cancellation-test timer race in
+`test_secure_openai_session.py`: a 50 ms timer could cancel before broker entry,
+so the test's assertion about an already reserved call targeted the wrong phase.
+The test now cancels from the scripted transport wait and asserts that dispatch
+and reservation have already occurred, using the real cancellation event and
+unchanged stop checks. The timeout branch and production code are unchanged.
+Independent review found no issue with this correction. All **232 focused
+session, authority and broker portable tests passed in 2.06 seconds**, with zero
+selected failures/errors/skips; three Linux cases were deselected:
+
+```sh
+.venv/bin/python -m pytest tests/test_secure_openai_session.py \
+  tests/test_secure_offline_authority.py tests/test_secure_openai_broker.py \
+  -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-planning-tls-cancellation-portable.xml
+```
+
+The full Linux evidence remains valid because its runtime and selected tests
+are unchanged. The PR checks show the corrected latest revision's hosted status.
 
 ## R5 bounded offline assessment planning — 29 September 2026
 

@@ -107,10 +107,18 @@ issues, now corrected and covered by regressions; the final review has no
 remaining blockers. Python 3.11 grammar (189 files), dependencies, local links
 and whitespace checks passed. All five
 [hosted checks on implementation `30f2b2d`](https://github.com/0xsl0th/recon-cockpit/actions/runs/36657483576)
-passed. This follow-up checkpoint changes documentation only; do not repeat
-full local suites solely for it. Reports: `/tmp/recon-planning-tls-all-portable.xml`,
+passed. Reports: `/tmp/recon-planning-tls-all-portable.xml`,
 `/tmp/recon-planning-tls-focused-linux.xml`, and
 `/tmp/recon-planning-tls-all-linux.xml`. See [verification.md](verification.md).
+
+Hosted CI on documentation revision `a94edf5` passed four jobs but found an
+existing 50 ms cancellation-test timer race on Ubuntu/Python 3.14. The test now
+cancels at the scripted transport wait and checks that reservation/dispatch
+already occurred. Production and Linux-selected tests are unchanged. All 232
+focused portable session/authority/broker tests passed in 2.06 seconds, with
+zero selected failures/errors/skips; independent review found no issue. Report:
+`/tmp/recon-planning-tls-cancellation-portable.xml`. The PR checks show the latest
+corrected revision; do not repeat full Linux verification solely for this test fix.
 
 After this slice is reviewed and separately authorized for merge, continue with
 the integrated path's offline evaluation against the preserved deterministic

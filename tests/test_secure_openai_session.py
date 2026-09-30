@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import sys
-import threading
 import time
 
 import pytest
@@ -266,18 +265,24 @@ def test_broker_budgets_stop_offline_session_before_third_send(make_session, lim
 
 
 @pytest.mark.parametrize("stop", ["session_cancelled", "session_timeout"])
-def test_offline_transport_delay_obeys_session_control(make_session, stop):
+def test_offline_transport_delay_obeys_session_control(make_session, monkeypatch, stop):
     runner, provider, backend, _path = make_session("timeout", session_limits=SessionLimits(max_runtime_seconds=1))
-    timer = threading.Timer(0.05, runner.cancel) if stop == "session_cancelled" else None
-    if timer is not None:
-        timer.start()
+    waits = []
+
+    def cancel_during_wait(seconds):
+        waits.append(seconds)
+        assert provider.broker._transport.calls == provider.broker.snapshot["calls_reserved"] == 1
+        runner.cancel()
+        return True
+
+    if stop == "session_cancelled":
+        # Cancel inside the scripted delay after reservation/audit. A timer can
+        # fire before broker entry on a busy runner and test a different phase.
+        monkeypatch.setattr(runner._cancelled, "wait", cancel_during_wait)
     started = time.monotonic()
-    try:
-        summary = runner.run(execute=True)
-    finally:
-        if timer is not None:
-            timer.cancel()
-            timer.join(timeout=1)
+    summary = runner.run(execute=True)
+    if stop == "session_cancelled":
+        assert waits == [0.05]
     assert time.monotonic() - started < 2
     assert summary["stop_reason"] == stop
     assert summary["steps_attempted"] == 1
