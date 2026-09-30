@@ -82,6 +82,7 @@ The fixed ACK diagnostic in `provider_pilot.py` and the R5a TLS provider
 foundation retain their existing contracts. The separate
 [owned TLS planning integration](owned-tls-assessment-planning.md) reuses this
 release/usage contract through a disconnected synthetic endpoint; the in-memory
-profile documented here remains unchanged. Real-model comparison still requires reviewed data, model, endpoint,
+profile documented here remains unchanged. Real-model comparison still requires
+reviewed data, model, endpoint,
 credential and spending choices plus explicit authorization. R6 follows the R5
 acceptance gates. Optional GUI/API/tool additions stay deferred.

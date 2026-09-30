@@ -12,14 +12,17 @@ passed. Runtime evidence remains 3,382 portable and 430 Linux tests, with zero
 selected failures/errors/skips. [PR #24](https://github.com/0xsl0th/recon-cockpit/pull/24)
 completed the bounded mock planning bridge. Later merges still require authorization.
 
-**Current work: owned TLS assessment planning**, on
+**Current work: owned TLS assessment planning**, implementation `30f2b2d` in
+[PR #25](https://github.com/0xsl0th/recon-cockpit/pull/25), on
 `feature/owned-tls-assessment-planning` from `4f9545c`. Read
 [owned-tls-assessment-planning.md](owned-tls-assessment-planning.md). The explicit
 `--assessment-planning-owned-tls` profile carries the existing closed descriptor
 through a disconnected TLS fixture with generated synthetic credentials. It
 reuses PR #24's evidence/monetary/proposal gate, preserves all independent launch
 checks and leaves the fixed ACK and original status-only profiles separate.
-Verification and publication are recorded below as they finish.
+Full verification passed; leave this PR unmerged for review. Its
+[checks page](https://github.com/0xsl0th/recon-cockpit/pull/25/checks) records hosted
+status for the latest revision. A merge needs separate operator authorization.
 
 On 30 September the operator agreed to continue development with paid live
 agents disabled. Finish necessary integration and offline evaluation first;
@@ -48,8 +51,7 @@ seconds**, with zero selected failures/errors/skips and no leftover workers.
 Independent review has no remaining findings; all five hosted jobs passed on
 the implementation. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/24/checks)
 show the final documentation checkpoint's status. Its merge authorization
-covered PR #24 only. Live calls and external
-targets remain disabled.
+covered PR #24 only. Live calls and external targets remain disabled.
 
 ## Current priority — continue R5 after completed R5a and R5b
 
@@ -98,18 +100,27 @@ This is a finite mock planning bridge, not actual model planning or live accepta
 ## R5 owned TLS planning — verification checkpoint
 
 The full portable suite passed **3,579 tests in 95.30 seconds**; the focused
-Linux suite passed **36 tests in 126.77 seconds**. Both reports have zero selected
-failures/errors/skips. Independent review found two cancellation bookkeeping
+Linux suite passed **36 tests in 126.77 seconds**, and full Linux regression
+passed **466 tests in 904.45 seconds**. All reports have zero selected
+failures/errors/skips, and no workers remained. Independent review found two cancellation bookkeeping
 issues, now corrected and covered by regressions; the final review has no
 remaining blockers. Python 3.11 grammar (189 files), dependencies, local links
-and whitespace checks passed. Full Linux regression and publication remain in
-progress. Reports: `/tmp/recon-planning-tls-all-portable.xml`,
-`/tmp/recon-planning-tls-focused-linux.xml`, and, when complete,
+and whitespace checks passed. All five
+[hosted checks on implementation `30f2b2d`](https://github.com/0xsl0th/recon-cockpit/actions/runs/36657483576)
+passed. This follow-up checkpoint changes documentation only; do not repeat
+full local suites solely for it. Reports: `/tmp/recon-planning-tls-all-portable.xml`,
+`/tmp/recon-planning-tls-focused-linux.xml`, and
 `/tmp/recon-planning-tls-all-linux.xml`. See [verification.md](verification.md).
 
 After this slice is reviewed and separately authorized for merge, continue with
 the integrated path's offline evaluation against the preserved deterministic
 baseline. Keep live model acceptance pending and optional additions deferred.
+Reuse the six-case scheduler, oracle, saved-evidence replay and semantic
+fingerprints, with a separate versioned grader for TLS receipts and persisted
+simulation accounting. Preserve the old baseline format and strict grader;
+do not silently ignore new audit events. An unattended fixture policy must be
+reported as approval not required by that selected policy, never as human
+approval evidence. Actual operator review remains an R6 gate.
 
 ## R5 bounded offline planning — merged checkpoint
 

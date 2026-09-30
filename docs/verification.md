@@ -2,7 +2,8 @@
 
 ## R5 owned TLS assessment planning — 30 September 2026
 
-The new [owned TLS planning profile](owned-tls-assessment-planning.md) composes
+Implementation `30f2b2d` in [PR #25](https://github.com/0xsl0th/recon-cockpit/pull/25)
+adds the [owned TLS planning profile](owned-tls-assessment-planning.md). It composes
 PR #24's saved-evidence and simulation monetary gates with a disconnected TLS
 fixture. It sends only the existing closed descriptor and uses generated
 synthetic credentials. Recognized usage settles before the isolated parser;
@@ -45,12 +46,22 @@ could emit a duplicate terminal event. Regression tests now require a fresh
 receipt per attempt and one terminal transport event. Final review found no
 remaining blockers.
 
-The full rootless Linux regression is running; do not treat the focused result
-as full-suite evidence. Its report is `/tmp/recon-planning-tls-all-linux.xml`.
+Full rootless Linux regression passed **466 tests in 904.45 seconds**, with
+3,579 portable tests deselected and zero selected failures/errors/skips:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
+  --junitxml=/tmp/recon-planning-tls-all-linux.xml
+```
+
+No `/app` Python workers remained after the run. Runtime and tests still match
+the implementation commit; the later checkpoint changes documentation only.
 Python 3.11 grammar checks passed for all 189 tracked/new Python files;
 dependency consistency, local documentation links and whitespace checks passed.
-Hosted portable checks and publication are recorded in the continuation
-checkpoint. None of these results establishes real-model acceptance or completes R6.
+All five [hosted implementation checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36657483576)
+passed. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/25/checks)
+record the final documentation checkpoint's status. None of these results
+establishes real-model acceptance or completes R6.
 
 ## R5 bounded offline assessment planning — 29 September 2026
 
