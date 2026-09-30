@@ -115,7 +115,7 @@ evidence, add discovery, then grow the workflow library and live planning.
 | R2 — smallest slice implemented | One HTTP assessment, minimal capability/evidence contracts and report | Makes the foundation useful and reveals the abstractions tools actually need. | Two-GET owned workflow, private execution/observation artifacts, draft reports and read-only crash inspection. |
 | R3 — accepted bounded scope merged | One isolated single-port TCP adapter | Adds a second typed capability without broadening old HTTP backends. | Owned TCP evidence gates HTTP; 1,977 portable and 96 Linux tests passed. Broader discovery remains future work. |
 | R4 — accepted first card/engine merged | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Existing six owned cases retain their outcomes with durable explanations of proposals, executions and stops. |
-| R5 — active; R5a and R5b complete | Isolated live-provider broker and further authority separation | Useful actions and a reproducible baseline provide a basis for model evaluation. | Complete the remaining authority/planning work; real-model validation remains gated on explicit approval. |
+| R5 — active; R5a and R5b complete | Isolated live-provider broker and further authority separation | Useful actions and a reproducible baseline provide a basis for model evaluation. | Review the integrated offline evaluation; real-model validation remains gated on explicit approval. |
 | R6 — baseline available; release work pending | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
 
 Tests and adversarial fixtures accompany every slice; R6 consolidates them.
@@ -139,12 +139,12 @@ does not claim that live-model acceptance or all of R5 is complete.
    hierarchical spending limits and first tightly controlled provider-call path.
    Their agreed verification is offline with owned/mock fixtures. Live execution
    remains disabled by default; its later activation does not reopen R5b.
-4. **Remaining R5 next:** complete the planned approval/authorization/launch/audit
-   separation and narrowly bounded assessment-planning integration on top of
-   R5a/R5b. Each change must state which authority leaves which process and verify
-   the new boundary with owned fixtures. Accounting needed for the original
-   end-to-end R5 acceptance belongs here. The fixed ACK diagnostic does not
-   establish assessment planning, and a GUI is not a dependency.
+4. **Bounded R5 integration merged through PR #25:** preserve the accepted
+   approval/authorization/launch/audit interfaces and owned assessment-planning
+   path on R5a/R5b. The current offline evaluation in PR #26 checks that combined
+   path against the preserved baseline, including persisted accounting and
+   launch preconditions. Keep its trust limits explicit; the fixed ACK diagnostic
+   does not establish assessment planning, and a GUI is not a dependency.
 5. **R5 live acceptance is gated:** real-model comparison still requires a later
    explicit operator instruction and reviewed data/model/credential/spend settings.
    This priority correction does not authorize paid or external provider calls,
@@ -400,9 +400,10 @@ does not establish live-model performance.
 ## R5: live AI and further privilege separation
 
 **Active milestone:** R5a (PR #13) and both parts of R5b (PRs #14 and #15) are
-complete within their agreed offline scope. The remaining work is further
-authority separation, bounded assessment-planning integration and the explicitly
-gated live-model evaluation described below.
+complete within their agreed offline scope. The bounded audit/approval/admission/
+launcher separation and owned assessment-planning integration are merged through
+PR #25. Keep those accepted contracts closed. PR #26 consolidates their offline
+evaluation; real-model acceptance remains the explicitly gated work below.
 
 The current constraint remains **live calls disabled**. Build transport and
 credential handling against controlled endpoints and synthetic secrets first.

@@ -36,13 +36,33 @@ The strict grader's 89 tests passed in 35.60 seconds, including all six outcomes
 ledger/audit/runtime mutations and failed-prefix cost binding. CLI/runtime tests
 passed 25 cases, and scheduler/storage checks passed 31.
 
-Final full portable and Linux verification is in progress before review-ready
-publication. An earlier Linux process loaded the pre-correction inspector and
-was explicitly stopped; cancellation-induced failures in that interrupted run
-are not verification evidence. A clean full run follows the correction. The
-separate focused Linux tool did not launch while awaiting sandbox escalation;
-no focused execution result is claimed. The full run includes all 11 new Linux
-cases.
+Final full verification of implementation `c2d4d0b` passed **3,726 portable tests
+in 210.53 seconds** and **477 rootless Linux tests in 972.80 seconds**, with zero
+selected failures/errors/skips. These include all 147 new portable and 11 new
+Linux cases. The latter verify real services and descendant cleanup, all six
+outcomes, shared cost caps and fresh trial scopes, saved-record tampering,
+cancellation/deadline stops and retained uncertain holds.
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-planning-evaluation-all-portable-final.xml
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short
+```
+
+The portable JUnit report has 3,726 cases and no failure/error/skipped elements.
+The complete Linux transcript is
+`/tmp/recon-planning-evaluation-all-linux.log`: 477 selected, all 477 passed.
+This clean final run supersedes the explicitly interrupted pre-correction run;
+no interrupted-run or unlaunched focused-run result is counted as verification.
+Python 3.11 grammar passed for 198 tracked files, dependencies and local
+Markdown links are consistent, and whitespace checks passed. A final host
+process check found no test or isolated `/app/` workers remaining.
+
+Independent final review found no blockers. All five
+[hosted checks on `c2d4d0b`](https://github.com/0xsl0th/recon-cockpit/actions/runs/36661988927)
+passed. [PR #26 checks](https://github.com/0xsl0th/recon-cockpit/pull/26/checks)
+show the latest documentation checkpoint's status. This follow-up changes
+only documentation; do not repeat full local suites solely for it.
 
 The selected policy permits unattended owned actions. These runs provide no
 human approval or live-model acceptance evidence. R5 real-model acceptance and

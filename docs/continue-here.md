@@ -12,17 +12,39 @@ confirm 3,579 portable and 466 Linux tests with zero selected failures/errors/sk
 The last two commits corrected existing portable test synchronization; runtime
 is identical to verified implementation `30f2b2d`. See
 [PR #25](https://github.com/0xsl0th/recon-cockpit/pull/25) and
-[verification.md](verification.md). Do not repeat this merge.
+[verification.md](verification.md). All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36659899487)
+passed. Do not repeat this merge.
 
-**Current work: offline owned TLS planning evaluation**, on
+**Current work: offline owned TLS planning evaluation**, implementation `c2d4d0b`
+in [PR #26](https://github.com/0xsl0th/recon-cockpit/pull/26), on
 `feature/owned-planning-evaluation` from `636a067`. Read
 [planning-evaluation.md](planning-evaluation.md). The explicit new evaluation
 profile repeats the preserved six-case oracle through the accepted planning,
 accounting and isolated launch path. It uses one bounded simulation account and
 independently grades saved TLS receipts, ledger events and assessment evidence.
 The old deterministic evaluation remains a separate unchanged reference.
-Implementation and verification are in progress; leave this subsequent slice
-unmerged for review. The latest merge authorization covers PR #25 only.
+Full verification passed **3,726 portable tests in 210.53 seconds** and **477
+Linux tests in 972.80 seconds**, with zero selected failures/errors/skips and no
+remaining workers. Independent final review has no blockers. All five
+[hosted implementation checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36661988927)
+passed; the [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/26/checks)
+show this documentation checkpoint's latest status. Leave PR #26 unmerged for
+review; the latest merge authorization covers PR #25 only.
+
+The actual CLI comparison passed **18/18 trials**, 51 TLS exchanges/executions,
+45 successful actions, 12 correct abstentions and zero unnecessary actions.
+Simulated usage was 39,678 microUSD with zero unresolved holds and zero real
+provider calls. All six semantic fingerprints match the independently inspected
+saved baseline. The private bundle is `.secure-agent/planning-evaluation-20260930`;
+actual read-only CLI inspection reproduced its report and preserved all 164 files'
+bytes and mtimes. Default-18 and maximum-60 portable batches also pass. Reports:
+`/tmp/recon-planning-evaluation-all-portable-final.xml` and
+`/tmp/recon-planning-evaluation-all-linux.log`; details and the corrected large
+aggregate replay case are in [verification.md](verification.md).
+
+The follow-up checkpoint changes documentation only; runtime/tests are identical
+to verified `c2d4d0b`. Do not rerun full local suites solely for this checkpoint.
 
 **PR #24 is merged and stays closed.** Final head `9ccc910` passed review and
 all five hosted checks. Its merge is `4f9545c` at 22:38:18 UTC on 29 September;
@@ -744,6 +766,10 @@ Planning uses synthetic responses.
 3. R5 real-model acceptance remains pending while paid/live calls are prohibited.
    Continue necessary R6 release/evaluation preparation under the disclosed
    offline fallback, without claiming live or actual operator acceptance.
+   The next bounded R6 preparation is a reproducible offline release/evidence
+   packet and demonstration runbook using the existing corpus and saved reports.
+   It must list live-model validation and actual operator review as pending;
+   packaging alone does not complete R6 or authorize submission/deployment.
 4. Keep kernel verification separate from hosted portable CI. Record measured
    results and publication state; defer optional GUI/API, broader tools and new
    lab scenarios until the original milestones' acceptance gates are satisfied.
