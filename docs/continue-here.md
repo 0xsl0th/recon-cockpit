@@ -120,6 +120,15 @@ zero selected failures/errors/skips; independent review found no issue. Report:
 `/tmp/recon-planning-tls-cancellation-portable.xml`. The PR checks show the latest
 corrected revision; do not repeat full Linux verification solely for this test fix.
 
+Revision `9d2387c` passed all Ubuntu jobs; macOS exposed a separate existing
+invalid-READY fixture self-exit race during cleanup. That fixture now stays alive
+until rejection and explicitly requires a reaped `SIGKILL` result. All 106
+coordinator/broker IPC portable tests passed in 4.24 seconds, zero failures/errors/skips,
+with independent review. Production cleanup is unchanged: the Darwin exception
+race remains separate, rather than being suppressed. Linux is still the sole
+isolated runtime. Details and report `/tmp/recon-planning-tls-ipc-portable.xml`
+are in [verification.md](verification.md); the PR checks give final hosted status.
+
 After this slice is reviewed and separately authorized for merge, continue with
 the integrated path's offline evaluation against the preserved deterministic
 baseline. Keep live model acceptance pending and optional additions deferred.

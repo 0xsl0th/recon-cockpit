@@ -139,9 +139,12 @@ def test_ready_and_first_request_may_share_one_read(processes):
     encode({"schema_version": "1", "boundary_checks": {}}),
 ])
 def test_unverified_ready_never_reaches_authority(processes, ready):
-    code = f"read(); send(5,{ready!r}); send(2,b'request')"
+    # Keep the invalid peer alive until rejection, rather than racing its own
+    # exit with group cleanup (Darwin can reject signalling a zombie group).
+    code = f"read(); os.write(1,frame(5,{ready!r})+frame(2,b'request')); read()"
     with pytest.raises(ipc.IPCError):
         ipc.supervise(command(code), b"init", lambda *_a, **_k: pytest.fail("no authority call"), control=control())
+    assert processes[0].returncode == -signal.SIGKILL
 
 
 @pytest.mark.parametrize("wire", [

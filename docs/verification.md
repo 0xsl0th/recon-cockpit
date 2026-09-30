@@ -56,7 +56,7 @@ RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=shor
 
 No `/app` Python workers remained after the run. Runtime still matches the
 implementation commit; the follow-up changes documentation and the portable
-cancellation test described below.
+fixtures described below.
 Python 3.11 grammar checks passed for all 189 tracked/new Python files;
 dependency consistency, local documentation links and whitespace checks passed.
 All five [hosted implementation checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36657483576)
@@ -84,6 +84,26 @@ selected failures/errors/skips; three Linux cases were deselected:
 
 The full Linux evidence remains valid because its runtime and selected tests
 are unchanged. The PR checks show the corrected latest revision's hosted status.
+
+Revision `9d2387c` passed all four Ubuntu jobs. macOS then exposed an unrelated
+existing invalid-READY fixture's self-exit race: boundary validation correctly
+rejected the peer, but Darwin refused a process-group signal as the child became
+a zombie during cleanup. The READY test now writes both invalid frames together
+and waits for a response, keeping the peer alive until the supervisor rejects
+and kills it. It additionally requires an already-reaped `SIGKILL` return code;
+the authority callback must still never run. Separate failed-exit and
+descendant-cleanup tests remain unchanged. This stabilizes that fixture, not the
+underlying Darwin cleanup exception race; no production cleanup exception is
+suppressed, and actual isolated execution remains Linux-only.
+
+Independent review accepted this narrow correction. All **106 coordinator and
+broker IPC portable tests passed in 4.24 seconds**, zero failures/errors/skips:
+
+```sh
+.venv/bin/python -m pytest tests/test_secure_coordinator_ipc.py \
+  tests/test_secure_broker_ipc.py -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-planning-tls-ipc-portable.xml
+```
 
 ## R5 bounded offline assessment planning — 29 September 2026
 
