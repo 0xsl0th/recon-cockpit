@@ -1,5 +1,66 @@
 # Verification record
 
+## Jury proposal, technical appendix and evaluation plan — 30 September 2026
+
+The operator requested a proposal grounded in repository evidence and written
+for the UP competition jury, with detailed audit/provenance/acceptance records
+in an appendix and a bounded real-model milestone. This is documentation and
+evaluation planning only; runtime, tests, accepted evidence and live settings
+are unchanged. The official call was rechecked for Challenge 4, required contents
+and the 15 November 2026 / 20 May 2027 deadlines.
+
+Read-only source reviews distinguished the response-triggered deterministic
+session planner, prerecorded provider responses independent of feedback, and
+the current integrated planner that excludes raw tool bodies and requires the
+host-selected candidate. Historical offline scores are not represented as
+real-model injection results. The appendix preserves the source/execution
+revision distinction, recorded hashes, simulated usage and separate human
+acceptance. No new empirical benchmark result is claimed.
+
+Independent evidence and experiment-design reviews identified and resolved:
+missing action identity on malformed proposals; the need for a new experimental
+fixture/evidence contract without weakening the accepted exact parser; witness
+counters measured after separately recorded startup checks; exposure-matched
+denominators; sessions-with-failure counts; and expected timeout/output-limit
+cases distinguished from global stop conditions. Review found no remaining
+material issues. Renderer/CSS review found no asset or privacy regression.
+
+The protocol proposes 36 evaluation sessions plus at most 2 preparation sessions,
+114 attempted calls and USD 5 total, with separate future authorization. It
+defines a deterministic utility reference, same-proposal inert shadow admission
+comparison and paired offline control microbenchmark. A scripted positive control
+is explicitly separated from model behavior. Zero-denominator blocking is not
+reported as 100%; failed infrastructure is not a correct abstention. The updated
+calendar preserves the accepted offline fallback and leaves the real-model
+milestone pending until actually integrated, authorized and evaluated.
+
+Final Spanish PDF:
+`.secure-agent/submission-draft-20260930-jury-final/recon-cockpit-propuesta-20260930.pdf`.
+It has **12 pages: six main pages and six appendix pages**. Source revision for
+both documents is `0047f377bdeaed0e721c9850302e1a3316577a06`; renderer/layout
+revision is `2c4364f`. PDF SHA-256:
+`6f1f905a11247a96f8c5df4be31639ce152c2256f42143a20063e557da781a17`.
+
+All **175 headings, paragraphs, list items and table cells** match extracted
+text. All **15 HTTPS annotations** and the internal appendix destination are
+valid; repository links are pinned to the document source revision. Language
+metadata is Spanish. Text, links and metadata contain no private filesystem
+paths or replacement characters. The main six pages contain no internal
+milestone codes, audit hashes or simulated cost figures. The revised conceptual
+diagram has **10 nodes and 13 directed edges**, including the denial path.
+All pages were visually inspected; the demonstration, metrics and schedule each
+start on their own page, with a separate appendix and intact tables.
+
+Both exported source files match their Git blobs and manifest hashes. A changed
+appendix is refused before output creation; an existing destination is refused
+without changes. Python 3.11 grammar, local links and whitespace checks passed.
+The renderer attempted zero asset retrievals. Previous Spanish/English exports
+and all 331 immutable packet files retain their bytes; packet modes, inodes and
+modification times also match the preserved inventory. No PDF is tracked in Git.
+No application suite, assessment, model call or approval ceremony was run, and
+no competition email or submission was sent for this task. The local
+`validation.json` records the checks; hosted CI must assess the current PR head.
+
 ## Proposal voice and deliverable revision — 30 September 2026
 
 The operator requested first-person wording for the team section and concrete
