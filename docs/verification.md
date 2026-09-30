@@ -1,5 +1,28 @@
 # Verification record
 
+## Final proposal presentation polish — 30 September 2026
+
+At the operator's request, section 8 now says “Soy Enrique Folte, integrante y
+contacto del proyecto.” The visible draft/not-submitted masthead and footer
+labels are removed, and the PDF title no longer contains a draft marker.
+Independent review of the three-file presentation diff found no issues.
+The appendix, evaluation protocol and application behavior are unchanged;
+internal unsent status and publication authorization remain accurate.
+
+The current local PDF is
+`.secure-agent/submission-ready-20260930-jury/recon-cockpit-propuesta-20260930.pdf`.
+Document sources, renderer and stylesheet are pinned to
+`c4acf63ff53e03bcaf6faf15d9d5911a5766eaa1`. It retains **12 pages**, with SHA-256
+`bf49f1ab65089ee23d9e0504edb9875be168b5eca93b020988eb9658e636558e`.
+All **175 text blocks**, **15 HTTPS annotations**, the internal appendix
+destination and manifest file hashes passed checks. Extracted text and metadata
+contain the requested team sentence and no draft/not-submitted/human-member
+labels, private paths or replacement characters. Spanish metadata and page
+numbering remain intact. Pages 1 and 6 were visually inspected with no clipping.
+The appendix and diagram match the previous export; asset retrieval attempts
+remain zero. Earlier local exports are preserved. No application tests, model
+calls, submission or publication were performed for this presentation edit.
+
 ## Jury proposal, technical appendix and evaluation plan — 30 September 2026
 
 The operator requested a proposal grounded in repository evidence and written

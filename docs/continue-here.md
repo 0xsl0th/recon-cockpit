@@ -87,12 +87,16 @@ the new experimental data/evidence contract is planned work. Keep the accepted
 offline scope closed and retain its demonstrator as the disclosed fallback.
 
 The current Spanish PDF is
-`.secure-agent/submission-draft-20260930-jury-final/recon-cockpit-propuesta-20260930.pdf`:
+`.secure-agent/submission-ready-20260930-jury/recon-cockpit-propuesta-20260930.pdf`:
 six jury-facing pages plus six appendix pages. Both document sources are pinned
-to `0047f377bdeaed0e721c9850302e1a3316577a06`; renderer/layout revision is
-`2c4364f`. All 175 text blocks, 15 HTTPS annotations and the internal appendix
-link passed checks; all twelve pages were visually inspected. SHA-256:
-`6f1f905a11247a96f8c5df4be31639ce152c2256f42143a20063e557da781a17`.
+to `c4acf63ff53e03bcaf6faf15d9d5911a5766eaa1`, also the renderer/layout revision.
+At the operator's request, section 8 says “Soy Enrique Folte, integrante y
+contacto del proyecto.” Visible draft/not-submitted labels and the PDF title's
+draft marker are removed. All 175 text blocks, 15 HTTPS annotations and the
+internal appendix link passed checks. The preceding layout's twelve pages were
+visually inspected; the two pages affected by the final wording changes were
+inspected again. SHA-256:
+`bf49f1ab65089ee23d9e0504edb9875be168b5eca93b020988eb9658e636558e`.
 The PDF remains ignored and local. Earlier Spanish exports and the English copy
 remain unchanged; the English copy does not include this new jury rewrite.
 The earlier English copy was sent only to the operator's own Gmail at their
@@ -114,13 +118,13 @@ not private raw evaluation records. It is the only proposed email attachment.
 
 ```sh
 python3 scripts/render_submission_draft.py \
-  --revision 0047f377bdeaed0e721c9850302e1a3316577a06 \
+  --revision c4acf63ff53e03bcaf6faf15d9d5911a5766eaa1 \
   --output .secure-agent/submission-draft-NEW
 ```
 
 The renderer refuses existing output directories and either document differing
 from the selected source revision. It does not install dependencies, run agents,
-submit email or publish a release. The dated draft remains for operator review;
+submit email or publish a release. The polished proposal remains local and unsent;
 submission/publication, live work and merges after PR #30 require their
 corresponding operator instruction. See [verification.md](verification.md) for
 the final local artifact and export checks.
