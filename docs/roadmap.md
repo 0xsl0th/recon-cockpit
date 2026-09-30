@@ -8,9 +8,23 @@ of implemented capabilities. Start the next session with
 and verification are complete. Keep R1–R4, R5a/R5b and the accepted authority,
 planning and evaluation contracts closed. Real-model integration, validation
 and acceptance remain deferred pending authorization. The local R6 candidate
-is accepted under the explicitly disclosed offline fallback; optional GUI/API, broader tools, cases
-and other product additions remain deferred. The
-[completion order below](#milestone-completion-order) is the current work queue.
+is accepted under the explicitly disclosed offline fallback. The operator has
+now authorized the [reviewed adapter/Nmap implementation](tool-adapters.md)
+as new work toward a professional network-and-web workflow. This does not
+retroactively expand completed milestones. Optional GUI/API, additional tools
+and other product additions remain deferred. The new implementation sequence
+below is the current work queue; the original milestone order is retained as
+history and acceptance criteria.
+
+**New implementation sequence:** establish a common versioned interface for
+reviewed bundled adapters; integrate one confined Nmap profile with the existing
+owned HTTP assessment; then prepare a richer resettable lab and its adversarial
+comparison. Roughly 40 tools is a longer-term architecture target, not the scope
+of this increment. Third-party plugins, authenticated web/API and Windows/AD
+integrations remain deferred. Continue development through October and refresh
+the proposal with verified results in early November, targeting submission around
+9 November. Public model use, spending and submission require their separate
+operator instructions. The proposal work in PR #31 remains separate and unmerged.
 
 The R5 offline baseline is `1605606`, the authorized merge of PR #26
 ([offline planning evaluation](planning-evaluation.md)). PRs #16–#26 remain
@@ -138,8 +152,9 @@ original live criterion.
 1. **Preserve the accepted R1–R4 baseline:** the authority path, owned HTTP and
    TCP workflow, versioned card/engine, persistent lab and 18-trial evaluation
    are merged. Keep their documented limits visible. A general capability
-   registry and broader finding workflows remain future work; they are not
-   automatic blockers for R5. Address an earlier contract only when a concrete
+   registry and broader finding workflows were not
+   automatic blockers for R5. The newly authorized bundled-adapter contract is
+   separate follow-on work. Address an earlier contract only when a concrete
    dependency or regression requires it, within the current milestone's scope.
 2. **R5a complete — PR #13:** preserve the isolated owned TLS provider boundary,
    synthetic credentials, explicit data release and bounded attempt accounting.
@@ -213,13 +228,14 @@ live-model acceptance; paid calls remain disabled during ordinary development.
 The offline R5 scope is complete; full R5 still has its deferred live integration
 and acceptance gate. R6's packet and runbook are merged in PR #27 and the
 operator accepted the local candidate after the terminal rehearsal. Publication
-is a separate pending decision. Optional GUI/session APIs, broader tools
-and lab scenarios remain deferred. The latest authorization covers review and
-merge of PR #30 if its latest revision and checks pass; keep live calls disabled.
+is a separate pending decision. Optional GUI/session APIs and broader tools
+remain deferred. The current follow-on authorization covers the reviewed
+adapter/Nmap implementation described above; keep live calls disabled.
 
 - Preserve the merged narrowly scoped approval/launch and audit interfaces.
   Record any necessary ownership change before extending the planning path.
-  Do not create a new submilestone or broaden tools, targets or data release.
+  Keep the new reviewed adapter profile separate from accepted milestone
+  contracts; it does not authorize broader targets or data release.
 - Preserve fresh approval, independent authorization, cost reservations,
   audit acknowledgement before launch and independent executor validation.
   Moving functions into subprocesses alone does not establish a new boundary.

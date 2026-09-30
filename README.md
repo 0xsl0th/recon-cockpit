@@ -142,7 +142,14 @@ must explicitly allow `tcp_connect`. The three execution records contribute to
 the draft report. See [the discovery contract](docs/discovery-assessment.md) for
 the command, evidence semantics and fixed topology.
 
-`--workflow-assessment` runs that path from a reviewed, versioned workflow card.
+`--nmap-assessment` adds a separately versioned, owned-lab workflow using a real
+confined Nmap TCP-connect scan followed by HTTP validation. Its reviewed adapter
+contract is the foundation for later bundled tools. All isolated approval,
+admission and audit gates are mandatory; no public model is enabled. See
+[reviewed tool adapters](docs/tool-adapters.md) for prerequisites, limits and the
+complete command. Existing assessment profiles and evidence remain compatible.
+
+`--workflow-assessment` runs the TCP-connect/HTTP path from a reviewed, versioned workflow card.
 The deterministic engine records the evidence and reason for each proposal or
 stop before requesting a synthetic provider reply. Reports distinguish proposed
 actions from executions and retain the card digest and decision trace. See

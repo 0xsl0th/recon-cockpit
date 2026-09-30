@@ -82,7 +82,7 @@ class _NestedAdmission(LinuxLaunchAdmission):
                                         if p not in {'/usr/bin/bwrap', '/usr/sbin/nft', '/usr/bin/nsenter'}]
 
 
-def boundary(host):
+def boundary(host, *, nmap_runtime=False):
     if (not ENTRY_DESCRIPTORS_VERIFIED or sys.platform != 'linux' or os.getuid() <= 0 or os.getgid() <= 0
             or any(os.readlink('/proc/self/ns/' + name) == identity for name, identity in host.items())):
         raise ValueError('invalid_launcher_namespaces')
@@ -97,7 +97,7 @@ def boundary(host):
     bootstrap._root_read_only()
     for kind, cap in ((resource.RLIMIT_AS, 256*1024*1024), (resource.RLIMIT_CPU, 30),
                       (resource.RLIMIT_NOFILE, 128), (resource.RLIMIT_CORE, 0),
-                      (resource.RLIMIT_FSIZE, 1048576), (resource.RLIMIT_NPROC, 64)):
+                      (resource.RLIMIT_FSIZE, 16*1048576 if nmap_runtime else 1048576), (resource.RLIMIT_NPROC, 64)):
         resource.setrlimit(kind, (cap, cap))
     # Unlike the admission worker, this trusted process must create children and
     # nested namespaces. It has no host network or filesystem to delegate.
@@ -126,6 +126,9 @@ def execute(action, config, closure, control, snapshot):
     for name, destination in (('models', '/app/recon_cockpit/secure_agent/models.py'),
                               ('executor_worker', '/app/executor_worker.py')):
         mounts += ['--ro-bind', str(directory / (name+'.py')), destination]
+    for module in ('tool_parameters', 'tool_adapters'):
+        mounts += ['--ro-bind', str(directory / (module+'.py')),
+                   '/app/recon_cockpit/secure_agent/'+module+'.py']
     index = argv.index('--remount-ro')
     argv[index:index] = mounts
     argv[-4:] = ['/usr/bin/python3', '-I', '-S', '/app/executor_worker.py', nonce, hashlib.sha256(raw).hexdigest()]
@@ -149,12 +152,13 @@ def main():
     witness_reader = None
     approval_reader = None
     try:
-        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions'}):
+        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions'}):
             raise ValueError('invalid_launcher_bootstrap')
         witnessed = len(sys.argv) == 7
-        approval_required = witnessed and sys.argv[6] == 'launch-preconditions'
+        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions'}
+        nmap_runtime = witnessed and sys.argv[6] == 'nmap-launch-preconditions'
         _, host = bootstrap._arguments(['three_step', *sys.argv[2:6]])
-        checks = boundary(host)
+        checks = boundary(host, nmap_runtime=True) if nmap_runtime else boundary(host)
         channel = socket.socket(fileno=0)
         if channel.family != socket.AF_UNIX or channel.type != socket.SOCK_SEQPACKET:
             raise ValueError('invalid_launcher_channel')
@@ -171,6 +175,8 @@ def main():
             raise ValueError('launcher_bootstrap_changed')
         try:
             config = protocol.initial(init, time.monotonic())
+            if (config['profile'] == 'owned_nmap_lab') != nmap_runtime:
+                raise ValueError('launcher_runtime_profile_changed')
             if ('audit_witness' in init) != witnessed:
                 raise ValueError('launcher_witness_mode_changed')
             if ('approval_witness' in init) != approval_required:
@@ -191,6 +197,9 @@ def main():
         if config['profile'] == 'owned_lab':
             from recon_cockpit.secure_agent.owned_launcher_runtime import ConfinedOwnedBackend
             owned = ConfinedOwnedBackend(config, init['runtime'])
+        elif config['profile'] == 'owned_nmap_lab':
+            from recon_cockpit.secure_agent.nmap_backend import ConfinedNmapBackend
+            owned = ConfinedNmapBackend(config, init['runtime'])
         with _NestedAdmission(config, init['runtime']) as gate, (owned.lab if owned is not None else nullcontext()):
             print(protocol.encode({'version': '1', 'ready': True, 'bootstrap_digest': sys.argv[1], 'checks': checks}).decode(), flush=True)
             sequence = 1

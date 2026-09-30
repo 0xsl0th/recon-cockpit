@@ -1,5 +1,84 @@
 # Verification record
 
+## PR #32 merge review — 30 September 2026
+
+The operator explicitly authorized reviewing PR #32 and merging its latest
+revision if review and checks pass. Fresh independent review of `36b2d96`
+checked the new runtime/executor/launcher boundaries, adapter compatibility,
+workflow and evidence behavior. The implementation review found no blocking
+issues or outstanding review comments. All five
+[hosted jobs on that revision](https://github.com/0xsl0th/recon-cockpit/actions/runs/36763227519)
+passed. Main has no configured required checks; all available jobs are checked.
+Saved local reports independently reconcile to 4,548 distinct passing cases,
+including every case in the final 495-test Linux selection.
+
+This review corrects the checkpoint's stale statement that no merge was
+authorized. Only the checkpoint and this record change; runtime, tests, proposal
+and private artifacts remain identical to the reviewed revision. The updated
+head must pass its own hosted checks before the guarded merge. Consult
+[PR #32](https://github.com/0xsl0th/recon-cockpit/pull/32) for the resulting head,
+check and merge status. PR #31, live work and publication remain separate.
+
+## Reviewed adapters and owned Nmap — 30 September 2026
+
+The operator authorized implementing the common bundled-adapter interface and
+one real confined Nmap-to-HTTP workflow. Implementation `245c4d7` is on
+`feature/reviewed-tool-adapters`, based on main `8ae4aad`; subsequent test-only
+corrections preserve that runtime. Review and latest hosted status are in
+[PR #32](https://github.com/0xsl0th/recon-cockpit/pull/32). The proposal in PR #31 remains separate.
+No model calls, external targets, credentials, spending, release or competition
+submission were enabled. This is follow-on development, not a reopening of the
+accepted R1–R6 offline contracts or a claim of professional deployment readiness.
+
+Independent reviews checked the shared contract, dedicated runtime/parser,
+authority integration and documentation. Review corrections preserve the
+original evidence deadline, pin and revalidate the runtime manifest, parse raw
+XML only in the isolated parser, independently enforce the 3-action/60-second/
+18,432-byte ceiling and distinguish the legacy TCP workflow from the new Nmap
+profile. No blocking source findings remain. Legacy action/policy digests and
+default proposal request bytes have golden compatibility checks.
+
+The complete local portable selection at implementation `245c4d7` passed
+**4,054 tests in 286.493 seconds**, without failures, errors or skips. One real
+Linux file-sealing test was subsequently moved to the integration selection;
+the final portable selection contains **4,053 tests**. Its parser-wrapper test
+uses explicit platform doubles so macOS requires no skip. Application source is
+unchanged by these test-only corrections. JUnit:
+`/tmp/recon-adapters-portable-245c4d7.xml`.
+
+The final new runtime/workflow selection passed **14 Linux tests in 34.654
+seconds**: real Nmap confinement, Python/loader escape refusal, output bounds,
+timeout, cancellation/reaping, isolated malformed-XML refusal, all six
+Nmap-to-HTTP outcomes and dry run. Three additional approval tests passed in
+**9.476 seconds**: a synthetic PTY grant permits one real Nmap launch; replay
+cannot reserve another; missing and forged consumed-grant proof are rejected
+before admission with zero reservations. These scripted grants are test inputs,
+not human consent or operator acceptance. The real sealed-descriptor test also
+passed after its classification change. Reports:
+`/tmp/recon-adapters-nmap-final.xml`,
+`/tmp/recon-adapters-nmap-approval-final.xml`,
+`/tmp/recon-adapters-sealed-runtime.xml`.
+
+The broad Linux regression run completed **491 cases in 999.87 seconds**:
+490 passed and one failed because the exact admission-worker module allowlist
+still expected the pre-refactor file set. Its corrected assertion permits only
+the two additional pure contract modules; host canaries and executor modules
+remain excluded. The complete **35-test admission suite passed in 50.783
+seconds** after that test-only correction. Reports:
+`/tmp/recon-adapters-linux.xml` and `/tmp/recon-adapters-admission-final.xml`.
+The passing results across these runs cover every case in the final **495-test
+Linux selection**, including the three new approval cases and reclassified
+sealing check. No additional source failure, error or selected skip remains.
+The full 491-case run was not repeated after this assertion-only correction.
+
+Python 3.11 grammar, local documentation links and whitespace checks passed.
+Only source, tests, the example policy and documentation are published. Private
+artifacts, PDFs and the immutable accepted R6 packet remain outside this change.
+The [adapter runbook](tool-adapters.md) documents runtime prerequisites, raw
+artifact interpretation, lower-bound connection counts, permitted re-execution
+within the sandbox and bounded read-only parser cancellation latency. The new
+human walkthrough, live-model acceptance and release publication are not claimed.
+
 ## PR #30 checkpoint review correction — 30 September 2026
 
 The operator authorized review and merge of PR #30 if its latest revision and

@@ -92,7 +92,7 @@ class LinuxApprovalService:
             argv.extend(('--ro-bind', source, destination))
         argv.extend(('--ro-bind', str(Path(__file__).with_name('planner_worker.py').resolve()),
                      '/app/planner_worker.py'))
-        for name in ('approval_worker', 'approval_protocol', 'approvals', 'models',
+        for name in ('approval_worker', 'approval_protocol', 'approvals', 'models', 'tool_parameters', 'tool_adapters',
                      *(('approval_witness', 'audit_witness', 'audit_protocol') if self._launch_witness else ())):
             argv.extend(('--ro-bind', str(Path(__file__).with_name(name + '.py').resolve()),
                          '/app/approval_runtime/' + name + '.py'))

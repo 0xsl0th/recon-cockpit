@@ -149,6 +149,7 @@ def test_command_mounts_only_fixed_codec_modules_and_safe_package_initializers(m
     assert set(app) == {
         "/app/recon_cockpit/__init__.py", "/app/recon_cockpit/secure_agent/__init__.py",
         "/app/recon_cockpit/secure_agent/models.py", "/app/recon_cockpit/secure_agent/session_protocol.py",
+        "/app/recon_cockpit/secure_agent/tool_parameters.py", "/app/recon_cockpit/secure_agent/tool_adapters.py",
         "/app/recon_cockpit/secure_agent/openai_protocol.py", "/app/recon_cockpit/secure_agent/broker_ipc.py",
         "/app/planner_worker.py", "/app/openai_worker.py",
     }

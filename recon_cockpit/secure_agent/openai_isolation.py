@@ -44,7 +44,7 @@ class LinuxOpenAIPlanner:
         # sandbox packages receive this existing docstring-only initializer.
         for destination in ("/app/recon_cockpit/__init__.py", "/app/recon_cockpit/secure_agent/__init__.py"):
             argv.extend(("--ro-bind", str((directory / "__init__.py").resolve()), destination))
-        for name in ("models", "session_protocol", "openai_protocol", "broker_ipc"):
+        for name in ("models", "tool_parameters", "tool_adapters", "session_protocol", "openai_protocol", "broker_ipc"):
             argv.extend(("--ro-bind", str((directory / (name + ".py")).resolve()),
                          "/app/recon_cockpit/secure_agent/" + name + ".py"))
         for name in ("planner_worker", "openai_worker"):
