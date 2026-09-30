@@ -260,6 +260,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="run the fixed owned HTTP assessment with private evidence; no live model")
     source.add_argument("--discovery-assessment", choices=tuple("abcdef"),
                         help="gate owned HTTP assessment on one TCP connection; policy must allow tcp_connect")
+    source.add_argument("--nmap-assessment", choices=tuple("abcdef"),
+                        help="run reviewed Nmap discovery and HTTP validation inside the owned lab")
     source.add_argument("--workflow-assessment", choices=tuple("abcdef"),
                         help="run the reviewed TCP-to-HTTP workflow card and record each decision")
     source.add_argument("--inspect-assessment", type=Path,
@@ -322,8 +324,18 @@ def main(argv: list[str] | None = None) -> int:
                                    help="keep one owned fixture alive across a workflow; reset on each run")
     args = parser.parse_args(argv)
     offline_scenario = args.openai_offline or args.control_plane_openai_offline
-    assessment_case = args.http_assessment or args.discovery_assessment or args.workflow_assessment
+    assessment_case = args.http_assessment or args.discovery_assessment or args.workflow_assessment or args.nmap_assessment
     authority_mode = args.control_plane_mock or args.control_plane_openai_offline or assessment_case
+    if args.nmap_assessment:
+        if not (args.owned_lab and args.isolated_audit and args.isolated_approvals
+                and args.isolated_launch_admission and args.isolated_launcher
+                and args.require_launch_audit and args.require_launch_approval):
+            parser.error("--nmap-assessment requires --owned-lab and all isolated launch/approval/audit gates")
+        from .nmap_contract import LIMITS
+        for value, ceiling in zip((args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes),
+                                  LIMITS.values()):
+            if value is not None and (not 1 <= value <= ceiling):
+                parser.error("Nmap session overrides may only shorten the reviewed 3-step/60-second/18432-byte profile")
     if args.isolated_audit and not authority_mode:
         parser.error("--isolated-audit requires an authority session or owned assessment")
     if args.isolated_approvals and not authority_mode:
@@ -386,8 +398,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("assessment requires --assessment-dir")
     if args.assessment_dir is not None and not assessment_case:
         parser.error("--assessment-dir requires --http-assessment, --discovery-assessment or --workflow-assessment")
-    if args.owned_lab and not args.workflow_assessment:
-        parser.error("--owned-lab requires --workflow-assessment")
+    if args.owned_lab and not (args.workflow_assessment or args.nmap_assessment):
+        parser.error("--owned-lab requires --workflow-assessment or --nmap-assessment")
     if assessment_case and args.execute and not (args.fixture or args.owned_lab):
         parser.error("executing an assessment requires --fixture or --owned-lab")
     if args.inspect_assessment and (args.execute or args.dry_run or args.fixture or args.routed or args.owned_lab):
@@ -430,8 +442,20 @@ def main(argv: list[str] | None = None) -> int:
             _print(report)
             return 0 if report["status"] in {"passed", "dry_run"} else 2
         if args.inspect_assessment is not None:
-            from .evidence import inspect_assessment
+            from .evidence import inspect_assessment, _read_private
 
+            from .models import load_json
+            manifest_fd = None
+            try:
+                manifest_fd = os.open(args.inspect_assessment, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+                manifest = load_json(_read_private(manifest_fd, "manifest.json", 8192))
+            except (OSError, ValueError, RecursionError):
+                manifest = {}  # The existing inspector reports malformed/missing evidence.
+            finally:
+                if manifest_fd is not None:
+                    os.close(manifest_fd)
+            if type(manifest) is dict and manifest.get("workflow") == "owned-nmap-http-assessment-v1":
+                from .nmap_evidence import inspect_assessment
             report = inspect_assessment(args.inspect_assessment)
             _print(report)
             return 0 if not report["integrity_issues"] else 2
@@ -448,6 +472,9 @@ def main(argv: list[str] | None = None) -> int:
             from .audit_isolation import LinuxAuditSink
             audit_type = LinuxAuditSink
         with audit_type(args.audit, **({'launch_witness': True} if args.require_launch_audit else {})) as audit, ExitStack() as services:
+            if args.nmap_assessment:
+                from .nmap_cli import run_assessment
+                return run_assessment(args, policy, audit)
             if assessment_case:
                 return _run_http_assessment(args, policy, audit)
             if session_scenario:

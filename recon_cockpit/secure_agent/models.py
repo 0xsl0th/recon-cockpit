@@ -14,50 +14,16 @@ from dataclasses import asdict, dataclass
 from typing import Any
 from uuid import UUID
 
+from .tool_parameters import (
+    HTTPParameters, NmapTCPParameters, TCPParameters, ValidationError,
+    MAX_TIMEOUT_SECONDS, MAX_OUTPUT_BYTES, SUPPORTED_METHODS,
+    _fields, _integer, _reject, _string,
+)
+from .tool_adapters import NMAP_TOOL_ID, SUPPORTED_TOOLS, get_adapter
+
 MAX_JSON_BYTES = 32_768
 MAX_TARGETS = 16
-MAX_TIMEOUT_SECONDS = 30
-MAX_OUTPUT_BYTES = 65_536
-SUPPORTED_TOOLS = ("http_probe", "tcp_connect")
-SUPPORTED_METHODS = ("GET", "HEAD")
 Network = ipaddress.IPv4Network | ipaddress.IPv6Network
-
-
-class ValidationError(ValueError):
-    """A machine-readable rejection that never echoes untrusted input."""
-
-    def __init__(self, code: str):
-        self.code = code
-        super().__init__(code)
-
-
-def _reject(code: str) -> None:
-    raise ValidationError(code)
-
-
-def _integer(value: Any, name: str, minimum: int, maximum: int) -> None:
-    if type(value) is not int or not minimum <= value <= maximum:
-        _reject(f"invalid_{name}")
-
-
-def _string(value: Any, name: str, minimum: int, maximum: int) -> None:
-    if type(value) is not str or not minimum <= len(value) <= maximum:
-        _reject(f"invalid_{name}")
-    # Reject surrogate code points, which are not valid UTF-8 text.
-    try:
-        value.encode("utf-8")
-    except UnicodeEncodeError:
-        _reject(f"invalid_{name}")
-
-
-def _fields(value: Any, names: set[str], name: str) -> dict[str, Any]:
-    if type(value) is not dict:
-        _reject(f"invalid_{name}")
-    if set(value) - names:
-        _reject(f"unknown_{name}_fields")
-    if names - set(value):
-        _reject(f"missing_{name}_fields")
-    return value
 
 
 def _object_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -137,53 +103,12 @@ def _canonical_target(value: str) -> str:
 
 
 @dataclass(frozen=True, slots=True)
-class HTTPParameters:
-    port: int
-    method: str
-    path: str
-    timeout_seconds: int
-    max_output_bytes: int
-
-    def __post_init__(self) -> None:
-        _integer(self.port, "port", 1, 65_535)
-        if type(self.method) is not str or self.method not in SUPPORTED_METHODS:
-            _reject("unsupported_http_method")
-        _string(self.path, "path", 1, 256)
-        if not re.fullmatch(r"/[A-Za-z0-9/_.-]*", self.path) or "//" in self.path:
-            _reject("invalid_path")
-        if any(segment in (".", "..") for segment in self.path.split("/")):
-            _reject("invalid_path")
-        _integer(self.timeout_seconds, "timeout_seconds", 1, MAX_TIMEOUT_SECONDS)
-        _integer(self.max_output_bytes, "max_output_bytes", 1, MAX_OUTPUT_BYTES)
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-@dataclass(frozen=True, slots=True)
-class TCPParameters:
-    """One bounded connection attempt; no payload, banner read, or port list."""
-
-    port: int
-    timeout_seconds: int
-    max_output_bytes: int
-
-    def __post_init__(self) -> None:
-        _integer(self.port, "port", 1, 65_535)
-        _integer(self.timeout_seconds, "timeout_seconds", 1, MAX_TIMEOUT_SECONDS)
-        _integer(self.max_output_bytes, "max_output_bytes", 1, MAX_OUTPUT_BYTES)
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-@dataclass(frozen=True, slots=True)
 class Action:
     schema_version: str
     action_id: str
     tool_id: str
     target: str
-    parameters: HTTPParameters | TCPParameters
+    parameters: HTTPParameters | TCPParameters | NmapTCPParameters
     rationale: str
 
     def __post_init__(self) -> None:
@@ -198,9 +123,11 @@ class Action:
         if type(self.tool_id) is not str or self.tool_id not in SUPPORTED_TOOLS:
             _reject("unsupported_tool")
         object.__setattr__(self, "target", _canonical_target(self.target))
-        parameter_type = HTTPParameters if self.tool_id == "http_probe" else TCPParameters
+        parameter_type = get_adapter(self.tool_id).parameter_type
         if type(self.parameters) is not parameter_type:
             _reject("invalid_parameters")
+        if self.tool_id == NMAP_TOOL_ID and ("/" in self.target or self.network.version != 4):
+            _reject("unsupported_nmap_target")
         _string(self.rationale, "rationale", 0, 1_000)
 
     def to_dict(self) -> dict[str, Any]:
@@ -326,13 +253,8 @@ def parse_action(value: dict[str, Any] | str | bytes) -> Action:
     tool_id = value["tool_id"]
     if type(tool_id) is not str or tool_id not in SUPPORTED_TOOLS:
         _reject("unsupported_tool")
-    fields = {"port", "timeout_seconds", "max_output_bytes"}
-    parameter_type = TCPParameters
-    if tool_id == "http_probe":
-        fields.update(("method", "path"))
-        parameter_type = HTTPParameters
-    parameters = _fields(value["parameters"], fields, "parameters")
-    return Action(**{**value, "parameters": parameter_type(**parameters)})
+    parameters = get_adapter(tool_id).parse_parameters(value["parameters"])
+    return Action(**{**value, "parameters": parameters})
 
 
 def parse_policy(value: dict[str, Any] | str | bytes) -> Policy:

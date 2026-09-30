@@ -11,7 +11,8 @@ CHECKS = frozenset({'namespaces_private', 'nonroot_identity', 'capabilities_drop
     'no_new_privs', 'root_read_only', 'descriptors_private', 'network_private'})
 PROFILES = {'fixture': 'linux-authorized-fixture-executor-v1',
             'discovery_fixture': 'linux-authorized-discovery-fixture-executor-v1',
-            'owned_lab': 'linux-authorized-owned-lab-executor-v1'}
+            'owned_lab': 'linux-authorized-owned-lab-executor-v1',
+            'owned_nmap_lab': 'linux-authorized-owned-nmap-lab-executor-v1'}
 
 
 def encode(value):
@@ -34,7 +35,7 @@ def decode(raw):
 
 
 def configuration(value):
-    if type(value) is dict and value.get('profile') == 'owned_lab':
+    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab'}:
         from .owned_lab_contract import validate_identity
         base = admission.configuration({key: item for key, item in value.items() if key != 'owned_lab'})
         return {**base, 'owned_lab': validate_identity(value.get('owned_lab'), case=base['case'])}
@@ -44,9 +45,12 @@ def configuration(value):
     return value
 
 
-def runtime(value, *, owned_lab=False):
-    if type(value) is not dict or set(value) != {'stdlib', 'files'}:
+def runtime(value, *, owned_lab=False, nmap=False):
+    if type(value) is not dict or set(value) != ({'stdlib', 'files', 'nmap_runtime'} if nmap else {'stdlib', 'files'}):
         raise ValueError('invalid_launcher_runtime')
+    if nmap:
+        from .nmap_runtime import validate_manifest
+        validate_manifest(value['nmap_runtime'])
     if type(value['stdlib']) is not str or not re.fullmatch(r'/usr/lib/python3\.\d+', value['stdlib']):
         raise ValueError('invalid_launcher_stdlib')
     paths = value['files']
@@ -74,7 +78,8 @@ def initial(value, now):
         manifest(value['approval_witness'])
     config = configuration(value['configuration'])
     admission.initial({'configuration': {k: v for k, v in config.items() if k != 'owned_lab'}, 'deadline': value['deadline']}, now)
-    runtime(value['runtime'], owned_lab=config['profile'] == 'owned_lab')
+    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab'},
+            nmap=config['profile'] == 'owned_nmap_lab')
     return config
 
 

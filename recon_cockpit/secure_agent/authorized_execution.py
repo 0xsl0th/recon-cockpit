@@ -66,6 +66,9 @@ class AuthorizedFixtureBackend(LinuxFixtureBackend):
         mounts.extend(("--ro-bind", str((directory / "models.py").resolve()),
                        "/app/recon_cockpit/secure_agent/models.py",
                        "--ro-bind", str((directory / "executor_worker.py").resolve()), "/app/executor_worker.py"))
+        for module in ("tool_parameters.py", "tool_adapters.py"):
+            mounts.extend(("--ro-bind", str((directory / module).resolve()),
+                           "/app/recon_cockpit/secure_agent/" + module))
         index = argv.index("--remount-ro")
         argv[index:index] = mounts
         argv[-4:] = ["/usr/bin/python3", "-I", "-S", "/app/executor_worker.py", nonce, context_digest]

@@ -238,6 +238,10 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
     def _runtime(self, control):
         return _runtime_files("/usr/bin/python3", None, control=control)
 
+    def _validate_result_context(self, result, *, action):
+        return validate_result_context(result, self._lab_identity,
+            previous=self._previous_context, tool_id=action.tool_id, execution_status=result["status"])
+
     def check_available(self, action=None):
         super().check_available(action)
         if action is not None and action.tool_id == "http_probe":
@@ -258,7 +262,7 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
         mounts = []
         for destination in ("/app/recon_cockpit/__init__.py", "/app/recon_cockpit/secure_agent/__init__.py"):
             mounts.extend(("--ro-bind", str((directory / "__init__.py").resolve()), destination))
-        for module in ("models.py", "executor_worker.py", "owned_lab_contract.py", "assessment_contract.py"):
+        for module in ("models.py", "tool_parameters.py", "tool_adapters.py", "executor_worker.py", "owned_lab_contract.py", "assessment_contract.py"):
             mounts.extend(("--ro-bind", str((directory / module).resolve()), "/app/recon_cockpit/secure_agent/" + module))
         # executor_worker imports its sibling worker when loaded as a package.
         mounts.extend(("--ro-bind", str((directory / "worker.py").resolve()), "/app/recon_cockpit/secure_agent/worker.py",
@@ -337,8 +341,7 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
                 counts = self.lab.snapshot(control, minimum_connections=minimum_connections,
                                            minimum_requests=minimum_requests)
                 result["owned_lab"] = {"identity": self._lab_identity, **counts}
-                self._previous_context = validate_result_context(result, self._lab_identity,
-                    previous=self._previous_context, tool_id=action.tool_id, execution_status=result["status"])
+                self._previous_context = self._validate_result_context(result, action=action)
             except (ValueError, UnicodeError, RecursionError) as exc:
                 raise IsolationUnavailable("Owned lab executor returned invalid evidence") from exc
             control.check()

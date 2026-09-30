@@ -83,7 +83,7 @@ def _command(stdlib, files, module):
     mounts = []
     for destination in ("/app/recon_cockpit/__init__.py", "/app/recon_cockpit/secure_agent/__init__.py"):
         mounts.extend(("--ro-bind", str((directory / "__init__.py").resolve()), destination))
-    for name in ("provider_contract.py", "openai_protocol.py", "models.py", "session_protocol.py"):
+    for name in ("provider_contract.py", "openai_protocol.py", "models.py", "tool_parameters.py", "tool_adapters.py", "session_protocol.py"):
         mounts.extend(("--ro-bind", str((directory / name).resolve()), "/app/recon_cockpit/secure_agent/" + name))
     for name in ("planner_worker.py", module):
         mounts.extend(("--ro-bind", str((directory / name).resolve()), "/app/" + name))
