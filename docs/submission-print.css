@@ -1,0 +1,30 @@
+@page {
+  size: A4;
+  margin: 19mm 18mm 20mm;
+  @top-left { content: "RECON COCKPIT"; font: 8pt "DejaVu Sans"; color: #496173; }
+  @top-right { content: "Propuesta · 30/09/2026"; font: 8pt "DejaVu Sans"; color: #496173; }
+  @bottom-left { content: "Borrador para revisión · No presentado"; font: 8pt "DejaVu Sans"; color: #496173; }
+  @bottom-right { content: counter(page) " / " counter(pages); font: 8pt "DejaVu Sans"; color: #496173; }
+}
+@page architecture { size: A4 landscape; margin: 16mm 16mm 18mm; }
+html { font: 10.5pt / 1.46 "DejaVu Sans", sans-serif; color: #20313e; }
+body { margin: 0; }
+h1 { font-size: 24pt; line-height: 1.15; color: #153c55; margin: 4mm 0 7mm; }
+h2 { font-size: 15pt; line-height: 1.22; color: #153c55; margin: 8mm 0 4mm; }
+h1, h2 { break-after: avoid; }
+p { margin: 0 0 3.5mm; orphans: 3; widows: 3; }
+a { color: #0b607d; text-decoration: underline; }
+strong { font-weight: bold; }
+code { font: 8.6pt "DejaVu Sans Mono", monospace; overflow-wrap: anywhere; }
+table { width: 100%; border-collapse: collapse; margin: 4mm 0 6mm; font-size: 9pt; line-height: 1.36; break-inside: avoid; }
+thead { display: table-header-group; }
+th { background: #e7f0f5; text-align: left; color: #163b51; }
+th, td { padding: 2.4mm; vertical-align: top; border: 0.25mm solid #b9cbd6; overflow-wrap: break-word; }
+tr { break-inside: avoid; }
+table th:first-child, table td:first-child { min-width: 22mm; }
+table:has(th:nth-child(2):last-child) { table-layout: fixed; }
+.architecture-page { page: architecture; break-before: page; break-after: page; }
+.architecture-page h2 { margin-top: 0; }
+.architecture-page p { margin-bottom: 3mm; }
+figure { margin: 0; text-align: center; }
+figure svg { max-width: 265mm; max-height: 150mm; width: 265mm; height: 150mm; }

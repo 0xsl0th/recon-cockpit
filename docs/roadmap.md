@@ -214,7 +214,7 @@ The offline R5 scope is complete; full R5 still has its deferred live integratio
 and acceptance gate. R6's packet and runbook are merged in PR #27 and the
 operator accepted the local candidate after the terminal rehearsal. Publication
 is a separate pending decision. Optional GUI/session APIs, broader tools
-and lab scenarios remain deferred. The latest merge authorization covers PR #28
+and lab scenarios remain deferred. The latest merge authorization covers PR #29
 only; keep live calls disabled.
 
 - Preserve the merged narrowly scoped approval/launch and audit interfaces.
