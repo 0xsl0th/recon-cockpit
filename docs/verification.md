@@ -1,5 +1,24 @@
 # Verification record
 
+## PR #32 merge review — 30 September 2026
+
+The operator explicitly authorized reviewing PR #32 and merging its latest
+revision if review and checks pass. Fresh independent review of `36b2d96`
+checked the new runtime/executor/launcher boundaries, adapter compatibility,
+workflow and evidence behavior. The implementation review found no blocking
+issues or outstanding review comments. All five
+[hosted jobs on that revision](https://github.com/0xsl0th/recon-cockpit/actions/runs/36763227519)
+passed. Main has no configured required checks; all available jobs are checked.
+Saved local reports independently reconcile to 4,548 distinct passing cases,
+including every case in the final 495-test Linux selection.
+
+This review corrects the checkpoint's stale statement that no merge was
+authorized. Only the checkpoint and this record change; runtime, tests, proposal
+and private artifacts remain identical to the reviewed revision. The updated
+head must pass its own hosted checks before the guarded merge. Consult
+[PR #32](https://github.com/0xsl0th/recon-cockpit/pull/32) for the resulting head,
+check and merge status. PR #31, live work and publication remain separate.
+
 ## Reviewed adapters and owned Nmap — 30 September 2026
 
 The operator authorized implementing the common bundled-adapter interface and

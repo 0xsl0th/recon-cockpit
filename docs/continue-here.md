@@ -4,20 +4,25 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current implementation: reviewed tool adapters and owned Nmap, ready for PR review.**
+**Current implementation: reviewed tool adapters and owned Nmap, PR #32.**
 The operator approved a common versioned interface for roughly 40 eventual
 reviewed, bundled tools, starting with a complete network-and-web workflow.
 The implementation worktree is `/tmp/recon-tool-adapters`, branch
 `feature/reviewed-tool-adapters`, based on main `8ae4aad`, in
 [PR #32](https://github.com/0xsl0th/recon-cockpit/pull/32). Documentation PR #31
 on `docs/proposal-author-voice` remains separate and unmerged; its local polished
-PDF is retained without changes. No merge or competition submission is authorized.
+PDF is retained without changes. The operator has authorized merging PR #32
+if its latest revision and checks pass. This authorization does not cover PR #31,
+competition submission or live-model work. Consult PR #32 for the current merge
+state; once merged, keep this adapter/Nmap slice closed and do not repeat it.
 
 The [new adapter contract and runbook](tool-adapters.md) describe one new
 `nmap_tcp_connect_v1` capability and a separately versioned Nmap-to-HTTP workflow.
 Existing TCP/HTTP contracts and accepted evidence stay intact. Runtime source
 is committed as `245c4d7`; later commits correct test classification and exact
-module allowlists. The new work awaits PR review and merge. Automated tests
+module allowlists. Fresh review found no blocking runtime or authority issues;
+the review record and final check links are in [verification.md](verification.md)
+and PR #32. Automated tests
 do not constitute operator acceptance; no new human walkthrough is claimed.
 All development stays in the owned, disconnected lab with deterministic
 planning. Model calls, credentials, external/VPN targets and spending remain
