@@ -21,6 +21,7 @@ import weasyprint
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL = ROOT / "docs/competition-proposal.md"
+APPENDIX = ROOT / "docs/competition-proposal-appendix.md"
 STYLE = ROOT / "docs/submission-print.css"
 EMAIL = ROOT / "docs/submission-email.txt"
 PDF_NAME = "recon-cockpit-propuesta-20260930.pdf"
@@ -89,20 +90,33 @@ def main():
         ["git", "show", f"{args.revision}:docs/competition-proposal.md"], cwd=ROOT)
     if source != expected:
         parser.error("Proposal bytes differ from the selected source revision")
+    appendix = APPENDIX.read_bytes()
+    expected_appendix = subprocess.check_output(
+        ["git", "show", f"{args.revision}:docs/competition-proposal-appendix.md"], cwd=ROOT)
+    if appendix != expected_appendix:
+        parser.error("Appendix bytes differ from the selected source revision")
     email = EMAIL.read_bytes()
     style = STYLE.read_bytes()
     output = args.output.resolve()
     output.mkdir(mode=0o700, parents=False, exist_ok=False)
 
-    md = source.decode("utf-8")
+    md = source.decode("utf-8") + "\n\n" + appendix.decode("utf-8")
     blocks = re.findall(r"```mermaid\n(.*?)```", md, re.S)
     if len(blocks) != 1:
         raise ValueError("Expected exactly one architecture diagram")
     svg, graph = diagram(blocks[0])
     md = md.replace("```mermaid\n" + blocks[0] + "```", '<div id="architecture"></div>')
-    soup = BeautifulSoup(markdown.markdown(md, extensions=["tables", "fenced_code"]), "html.parser")
+    soup = BeautifulSoup(markdown.markdown(md, extensions=["tables", "fenced_code", "toc"]), "html.parser")
+    appendix_heading = soup.find("h1", id="anexo-tecnico")
+    if appendix_heading is None:
+        raise ValueError("Missing technical appendix heading")
+    appendix_heading["class"] = ["appendix-title"]
     for anchor in soup.find_all("a", href=True):
         target = anchor["href"]
+        if target.startswith("#"):
+            if not soup.find(id=target[1:]):
+                raise ValueError("Missing internal document anchor")
+            continue
         if target.startswith("https://"):
             continue
         path, _, fragment = target.partition("#")
@@ -147,8 +161,10 @@ def main():
     (output / "architecture.svg").write_text(svg, encoding="utf-8")
     (output / "submission-email.txt").write_bytes(email)
     (output / "proposal-source.md").write_bytes(source)
+    (output / "appendix-source.md").write_bytes(appendix)
     refs = {
         "proposal": f"{REPOSITORY}/blob/{args.revision}/docs/competition-proposal.md",
+        "technical_appendix": f"{REPOSITORY}/blob/{args.revision}/docs/competition-proposal-appendix.md",
         "evidence_and_operator_record": f"{REPOSITORY}/blob/{args.revision}/docs/verification.md#r6-offline-operator-rehearsal--30-september-2026",
         "demo_runbook": f"{REPOSITORY}/blob/{args.revision}/docs/offline-release-evidence.md",
         "offline_comparison": f"{REPOSITORY}/blob/{args.revision}/docs/planning-evaluation.md",
@@ -170,6 +186,7 @@ def main():
     manifest = {
         "status": "local_unsent_submission_draft", "publication_authorized": False,
         "proposal_source_revision": args.revision, "proposal_source_sha256": digest(source),
+        "appendix_source_sha256": digest(appendix),
         "renderer_sha256": digest(Path(__file__).read_bytes()), "stylesheet_sha256": digest(style),
         "email_draft_sha256": digest(email), "pages": len(document.pages),
         "tools": {"python": sys.version.split()[0], "weasyprint": weasyprint.__version__,

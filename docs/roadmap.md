@@ -12,6 +12,13 @@ is accepted under the explicitly disclosed offline fallback; optional GUI/API, b
 and other product additions remain deferred. The
 [completion order below](#milestone-completion-order) is the current work queue.
 
+**Current documentation task:** prepare the jury-facing proposal and technical
+appendix, including the bounded real-model evaluation as a planned milestone.
+This authorizes documentation and experimental design only, not implementing
+the new data-release profile, enabling a provider, spending or changing controls.
+The existing offline candidate remains the disclosed fallback. See the
+[proposal](competition-proposal.md) and [protocol](competition-proposal-appendix.md).
+
 The R5 offline baseline is `1605606`, the authorized merge of PR #26
 ([offline planning evaluation](planning-evaluation.md)). PRs #16–#26 remain
 merged and closed. Both profiles pass 18 trials with matching semantic
@@ -457,20 +464,20 @@ a convincing report without evidence is not success.
 
 Confirmed on 22 September: Enrique Folte is the sole human participant and
 project contact, with Codex assisting development under his review. No other
-members or institutional affiliation are declared. These are target windows,
-not completed-capability claims. R1/R2, the smallest R3 slice and the first R4
-card/engine slice are merged. The windows below preserve the original schedule;
-they do not override the current R6 offline priority or reopen accepted scope.
+members or institutional affiliation are declared. The following schedule was
+revised for the jury proposal on 30 September. It preserves completed offline
+milestones and makes the separately authorized real-model pilot an explicit
+planned milestone. Neither the timetable nor this documentation task authorizes
+implementation, provider access or spending.
 
 | Target window | Outcome |
 | --- | --- |
-| September–October 2026 | R1–R4 bounded implementations, persistent lab and 18-trial baseline merged; offline R5 complete, live work deferred. Continue R6 under the disclosed offline fallback. |
-| Through 8 November | Finalize proposal and measured baseline; build repeatable owned evaluation where ready. Tool breadth is not a submission prerequisite. |
+| October–8 November 2026 | Review jury proposal, evidence appendix and adversarial protocol; retain the accepted offline demonstrator. |
 | 9–15 November | Human review and project submission; aim for 9 November for margin. |
-| 16 November–10 January 2027 | Complete R3/R4 and the lab assessment corpus. |
-| 11 January–28 February | R5 controls and explicitly approved live-model evaluation. |
-| 1 March–25 April | R6 repeated evaluation, operator review and documentation. |
-| 26 April–13 May | Freeze capabilities, reproduce release and rehearse. |
+| 16 November–10 January 2027 | Planned preparation of the bounded data-release profile, experimental adapter and paired fixtures; separately review provider/data/credential/egress/budget authorization. |
+| 11 January–28 February | Planned bounded real-model integration/evaluation: 36 assessment sessions, up to 2 preparation sessions, 114 calls and a proposed USD 5 aggregate cap. If unavailable, disclose the fallback without declaring live acceptance. |
+| 1 March–15 April | Analyze blocking, legitimate completion and control overhead; correct evidenced defects and verify changes. Additional live work requires fresh authorization. |
+| 16 April–13 May | Freeze scope, prepare technical package and rehearse with the offline fallback available. |
 | 14–20 May | Delivery buffer; no unvalidated expansion. |
 
 **Minimum final target:** one real-agent lab assessment using discovery and HTTP
