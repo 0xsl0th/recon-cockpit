@@ -18,9 +18,13 @@ merged and closed. Both profiles pass 18 trials with matching semantic
 fingerprints and no paid calls. These results establish offline integration,
 not real-model acceptance. [PR #27](https://github.com/0xsl0th/recon-cockpit/pull/27)
 adds the [local evidence packet and demo runbook](offline-release-evidence.md)
-as R6 preparation; the operator has authorized its reviewed merge. Its merge
-and current check status are recorded on the PR. Actual operator review,
-rehearsal, acceptance and release publication remain pending.
+as R6 preparation and is merged as `dd4bbe4`, with all five final and post-merge
+checks passing. The actual approval-required terminal rehearsal completed on
+30 September: three approved actions, seeded case a validated, no paid calls.
+The operator confirmed entering all three phrases and found it straightforward.
+The final packet/runbook decision remains pending;
+successful action approvals do not establish milestone acceptance. Release
+publication also remains pending and requires a separate instruction.
 Live calls remain disabled; development and verification use owned/mock fixtures.
 
 ### Earlier implementation checkpoints
@@ -204,8 +208,9 @@ preserved deterministic baseline using a separate versioned grader and shared
 batch simulation ledger. Mock responses do not complete
 live-model acceptance; paid calls remain disabled during ordinary development.
 The offline R5 scope is complete; full R5 still has its deferred live integration
-and acceptance gate. R6's packet and runbook are in PR #27; its next gate is
-actual operator review and rehearsal. Optional GUI/session APIs, broader tools
+and acceptance gate. R6's packet and runbook are merged in PR #27 and the
+terminal rehearsal is complete; its next gate is the operator's final
+packet/runbook decision. Optional GUI/session APIs, broader tools
 and lab scenarios remain deferred. The latest merge authorization covers PR #27
 only; keep live calls disabled.
 
