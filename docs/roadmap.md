@@ -16,10 +16,12 @@ and other product additions remain deferred. The new implementation sequence
 below is the current work queue; the original milestone order is retained as
 history and acceptance criteria.
 
-**New implementation sequence:** establish a common versioned interface for
-reviewed bundled adapters; integrate one confined Nmap profile with the existing
-owned HTTP assessment; then prepare a richer resettable lab and its adversarial
-comparison. Roughly 40 tools is a longer-term architecture target, not the scope
+**New implementation sequence:** the reviewed bundled-adapter interface and
+confined Nmap/HTTP workflow merged in PR #32 (`875c1a6`). The authorized current
+slice is the [resettable HarborDesk lab](web-lab.md), with vulnerable, corrected
+and injected-response variants. Next is a separate scripted adversarial
+comparison that measures refused out-of-scope proposals, legitimate completion
+and overhead; a bounded real-model evaluation follows only after authorization. Roughly 40 tools is a longer-term architecture target, not the scope
 of this increment. Third-party plugins, authenticated web/API and Windows/AD
 integrations remain deferred. Continue development through October and refresh
 the proposal with verified results in early November, targeting submission around

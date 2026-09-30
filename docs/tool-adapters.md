@@ -6,6 +6,9 @@ this increment adds only one Nmap profile alongside the existing TCP and HTTP
 capabilities. It does not declare professional deployment readiness or reopen
 accepted R1–R6 offline milestones.
 
+The follow-on [HarborDesk lab](web-lab.md) uses these same tools with a separate
+versioned fixture and workflow; the six cases documented here remain unchanged.
+
 ## Contract and authority
 
 The static adapter registry describes strict parameters, effects, resource and

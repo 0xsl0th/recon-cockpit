@@ -4,35 +4,38 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current implementation: reviewed tool adapters and owned Nmap, PR #32.**
-The operator approved a common versioned interface for roughly 40 eventual
-reviewed, bundled tools, starting with a complete network-and-web workflow.
-The implementation worktree is `/tmp/recon-tool-adapters`, branch
-`feature/reviewed-tool-adapters`, based on main `8ae4aad`, in
-[PR #32](https://github.com/0xsl0th/recon-cockpit/pull/32). Documentation PR #31
-on `docs/proposal-author-voice` remains separate and unmerged; its local polished
-PDF is retained without changes. The operator has authorized merging PR #32
-if its latest revision and checks pass. This authorization does not cover PR #31,
-competition submission or live-model work. Consult PR #32 for the current merge
-state; once merged, keep this adapter/Nmap slice closed and do not repeat it.
+**Current implementation: resettable HarborDesk web lab.**
+The operator authorized this follow-on slice after the reviewed adapter/Nmap
+integration. Work is on `feature/resettable-web-lab` in `/tmp/recon-web-lab`,
+based on main `875c1a6`, in
+[PR #33](https://github.com/0xsl0th/recon-cockpit/pull/33). Implementation revision
+`98c0c35` passed 4,243 portable and 507 Linux tests, with no failures/errors/skips,
+and all five hosted checks. Later test-only counter and documentation changes
+preserve that application source. Read [web-lab.md](web-lab.md) for the three variants,
+runbook, limitations and the planned adversarial comparison. The new versioned
+fixture uses the same owned `127.0.0.1:8080`, existing Nmap/HTTP tools and
+3-action/60-second/18,432-byte ceiling. Planning remains deterministic and offline.
+The injected note is private untrusted evidence; an induced out-of-scope proposal
+and authority-block comparison are the next separate slice, not a result claimed
+here. Validation and review status are in [verification.md](verification.md).
+Leave this change for review; the prior merge instruction covered PR #32.
 
-The [new adapter contract and runbook](tool-adapters.md) describe one new
-`nmap_tcp_connect_v1` capability and a separately versioned Nmap-to-HTTP workflow.
-Existing TCP/HTTP contracts and accepted evidence stay intact. Runtime source
-is committed as `245c4d7`; later commits correct test classification and exact
-module allowlists. Fresh review found no blocking runtime or authority issues;
-the review record and final check links are in [verification.md](verification.md)
-and PR #32. Automated tests
-do not constitute operator acceptance; no new human walkthrough is claimed.
-All development stays in the owned, disconnected lab with deterministic
-planning. Model calls, credentials, external/VPN targets and spending remain
-disabled. The next sequence is this integration, a richer resettable local
-scenario, its adversarial comparison, and a separately authorized real-model
-pilot. Refresh the proposal with verified progress in early November rather than
-submitting the September snapshot. Target submission around 9 November after
-the operator's review. See [verification.md](verification.md) for the measured checks and the feature
-[PR #32 checks](https://github.com/0xsl0th/recon-cockpit/pull/32/checks) for the
-latest hosted status before any merge decision.
+**PR #32 is merged and stays closed.** Final head `b7e1904` passed review and
+all five [final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36764600927).
+The guarded merge is `875c1a6` at 19:23:07 UTC on 30 September; its tree exactly
+matches the reviewed head. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36765297652)
+passed. Do not repeat its merge or reopen the adapter/Nmap slice. Existing
+TCP/HTTP contracts, fixture bytes and accepted evidence remain regression anchors.
+
+The next sequence is this resettable scenario, a separately reviewed scripted
+adversarial comparison, then a separately authorized bounded real-model pilot.
+Roughly 40 tools remains a long-term architecture target. Optional tool expansion,
+GUI/API, external/VPN targets, credentials and spending remain deferred. Refresh
+the proposal with verified progress in early November and target submission
+around 9 November after operator review. Documentation PR #31 on
+`docs/proposal-author-voice` remains separate and unmerged; the polished PDF stays
+local, ignored and unchanged. No competition submission or release is authorized.
 
 **Current milestone: R5 offline scope complete; R6 local offline candidate accepted.** The
 accepted provider/accounting, separated authority, owned planning and offline

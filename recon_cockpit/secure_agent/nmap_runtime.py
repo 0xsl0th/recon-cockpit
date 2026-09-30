@@ -163,7 +163,7 @@ os.execv(sys.argv[2],sys.argv[2:])
 """
 
 
-def _command(lab, bootstrap, manifest, descriptors, nonce, commitment):
+def _command(lab, bootstrap, manifest, descriptors, nonce, commitment, *, web=False):
     stdlib, files = bootstrap
     tool_destinations = {item["destination"] for item in manifest["files"]}
     argv = [_trusted_program("bwrap"), "--unshare-user", "--unshare-pid", "--unshare-ipc",
@@ -175,7 +175,7 @@ def _command(lab, bootstrap, manifest, descriptors, nonce, commitment):
         if destination not in tool_destinations and Path(destination).name not in {"nft", "bwrap", "nsenter"}:
             argv += ["--ro-bind", source, destination]
     directory = Path(__file__).parent
-    for name in MODULES:
+    for name in (*MODULES, *(('web_lab_contract', 'web_fixture') if web else ())):
         argv += ["--ro-bind", str(directory / (name + ".py")), "/app/recon_cockpit/secure_agent/" + name + ".py"]
     for destination in ("/app/recon_cockpit/__init__.py", "/app/recon_cockpit/secure_agent/__init__.py"):
         argv += ["--ro-bind", str(directory / "__init__.py"), destination]
@@ -259,7 +259,8 @@ def run_nmap_owned(*, lab, launch, control, closure=None):
     descriptors = _snapshot(manifest, control)
     try:
         code, stdout, stderr, reason = _capture_bounded(
-            _command(lab, bootstrap, manifest, descriptors, nonce, commitment), raw,
+            _command(lab, bootstrap, manifest, descriptors, nonce, commitment,
+                     **({'web': True} if launch['mode'] == 'owned_web_lab' else {})), raw,
             min(5, control.remaining()), MAX_OUTPUT_BYTES + len(prefix), control=control,
             pass_fds=(*lab._namespace_fds, *descriptors))
     finally:

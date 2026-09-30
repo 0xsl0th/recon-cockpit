@@ -262,6 +262,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="gate owned HTTP assessment on one TCP connection; policy must allow tcp_connect")
     source.add_argument("--nmap-assessment", choices=tuple("abcdef"),
                         help="run reviewed Nmap discovery and HTTP validation inside the owned lab")
+    source.add_argument("--web-assessment", choices=("vulnerable", "corrected", "injected"),
+                        help="run the resettable synthetic HarborDesk web assessment in the owned lab")
     source.add_argument("--workflow-assessment", choices=tuple("abcdef"),
                         help="run the reviewed TCP-to-HTTP workflow card and record each decision")
     source.add_argument("--inspect-assessment", type=Path,
@@ -324,13 +326,13 @@ def main(argv: list[str] | None = None) -> int:
                                    help="keep one owned fixture alive across a workflow; reset on each run")
     args = parser.parse_args(argv)
     offline_scenario = args.openai_offline or args.control_plane_openai_offline
-    assessment_case = args.http_assessment or args.discovery_assessment or args.workflow_assessment or args.nmap_assessment
+    assessment_case = args.http_assessment or args.discovery_assessment or args.workflow_assessment or args.nmap_assessment or args.web_assessment
     authority_mode = args.control_plane_mock or args.control_plane_openai_offline or assessment_case
-    if args.nmap_assessment:
+    if args.nmap_assessment or args.web_assessment:
         if not (args.owned_lab and args.isolated_audit and args.isolated_approvals
                 and args.isolated_launch_admission and args.isolated_launcher
                 and args.require_launch_audit and args.require_launch_approval):
-            parser.error("--nmap-assessment requires --owned-lab and all isolated launch/approval/audit gates")
+            parser.error("Nmap/web assessment requires --owned-lab and all isolated launch/approval/audit gates")
         from .nmap_contract import LIMITS
         for value, ceiling in zip((args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes),
                                   LIMITS.values()):
@@ -397,9 +399,9 @@ def main(argv: list[str] | None = None) -> int:
     if assessment_case and args.assessment_dir is None:
         parser.error("assessment requires --assessment-dir")
     if args.assessment_dir is not None and not assessment_case:
-        parser.error("--assessment-dir requires --http-assessment, --discovery-assessment or --workflow-assessment")
-    if args.owned_lab and not (args.workflow_assessment or args.nmap_assessment):
-        parser.error("--owned-lab requires --workflow-assessment or --nmap-assessment")
+        parser.error("--assessment-dir requires an assessment source")
+    if args.owned_lab and not (args.workflow_assessment or args.nmap_assessment or args.web_assessment):
+        parser.error("--owned-lab requires --workflow-assessment, --nmap-assessment or --web-assessment")
     if assessment_case and args.execute and not (args.fixture or args.owned_lab):
         parser.error("executing an assessment requires --fixture or --owned-lab")
     if args.inspect_assessment and (args.execute or args.dry_run or args.fixture or args.routed or args.owned_lab):
@@ -454,7 +456,7 @@ def main(argv: list[str] | None = None) -> int:
             finally:
                 if manifest_fd is not None:
                     os.close(manifest_fd)
-            if type(manifest) is dict and manifest.get("workflow") == "owned-nmap-http-assessment-v1":
+            if type(manifest) is dict and manifest.get("workflow") in ("owned-nmap-http-assessment-v1", "owned-web-assessment-v1"):
                 from .nmap_evidence import inspect_assessment
             report = inspect_assessment(args.inspect_assessment)
             _print(report)
@@ -472,7 +474,7 @@ def main(argv: list[str] | None = None) -> int:
             from .audit_isolation import LinuxAuditSink
             audit_type = LinuxAuditSink
         with audit_type(args.audit, **({'launch_witness': True} if args.require_launch_audit else {})) as audit, ExitStack() as services:
-            if args.nmap_assessment:
+            if args.nmap_assessment or args.web_assessment:
                 from .nmap_cli import run_assessment
                 return run_assessment(args, policy, audit)
             if assessment_case:

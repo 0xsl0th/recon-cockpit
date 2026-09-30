@@ -5,9 +5,9 @@ For project direction, see the [development roadmap](docs/roadmap.md) and
 interruption, start with [the current checkpoint](docs/continue-here.md).
 R5's agreed offline implementation and evaluation are complete. Live-model
 integration, validation and acceptance remain deferred pending authorization.
-The current priority is R6 under the disclosed offline fallback; see the
-[completion order](docs/roadmap.md#milestone-completion-order).
-Additional session-view and GUI work follows milestone completion. Live provider
+The local R6 offline candidate is accepted. Follow-on development adds the
+[resettable HarborDesk web lab](docs/web-lab.md) on top of the reviewed Nmap/HTTP
+tools; completed milestones stay closed. Optional session-view and GUI work is deferred. Live provider
 execution remains disabled, with development and verification using owned/mock fixtures.
 
 The merged [confined audit writer](docs/isolated-audit.md) is available through
