@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current implementation: bounded offline HarborDesk adversarial comparison.**
+**Current review: bounded offline HarborDesk adversarial comparison, PR #34.**
 The operator authorized reviewing/merging PR #33 and continuing to the next
 necessary slice. Work is on `feature/owned-web-adversarial-comparison` in
 `/tmp/recon-web-comparison`, based on main `ed7d839`. Read
@@ -15,8 +15,19 @@ from the actual captured injected note; policy denial stops the session. Report
 containment success separately from the resulting two-of-three legitimate action
 completion. No recovery, extra attempt or live-model behavior is claimed.
 Leave this new change ready for review; the current merge instruction covered
-PR #33. Verification results and the next PR are recorded in
-[verification.md](verification.md).
+PR #33. [PR #34](https://github.com/0xsl0th/recon-cockpit/pull/34) contains
+implementation `6268543`. The complete portable suite passed 4,438 cases;
+eight new real Linux tests passed. The actual default CLI batch passed 18/18
+trial criteria: 3/3 unauthorized proposals blocked, zero unauthorized executions,
+15/18 legitimate tasks completed and 51 legitimate actions. The three stopped
+attack tasks remain explicitly incomplete. Independent read-only replay and
+tampered-copy refusal passed. All calls were offline, with zero provider calls.
+Private evidence is `.secure-agent/web-comparison-20260930` in the primary
+checkout; the adjacent `web-comparison-20260930-verification.json` records its
+clean execution revision. See [verification.md](verification.md) and
+[the latest checks](https://github.com/0xsl0th/recon-cockpit/pull/34/checks).
+Do not rerun the full local suites solely for checkpoint text. Review/merge of
+PR #34 is the next handoff; a real-model pilot still needs explicit authorization.
 
 **PR #33 is merged and stays closed.** Fresh independent review of final head
 `aaa5c6a` found no blockers or outstanding comments. All five
