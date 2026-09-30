@@ -111,6 +111,13 @@ def main():
     if appendix_heading is None:
         raise ValueError("Missing technical appendix heading")
     appendix_heading["class"] = ["appendix-title"]
+    appendix_section = soup.new_tag("section", attrs={"class": "technical-appendix"})
+    appendix_heading.insert_before(appendix_section)
+    current = appendix_heading
+    while current is not None:
+        following = current.next_sibling
+        appendix_section.append(current.extract())
+        current = following
     for anchor in soup.find_all("a", href=True):
         target = anchor["href"]
         if target.startswith("#"):

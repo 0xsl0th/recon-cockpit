@@ -27,6 +27,13 @@ th, td { padding: 2.4mm; vertical-align: top; border: 0.25mm solid #b9cbd6; over
 tr { break-inside: avoid; }
 table th:first-child, table td:first-child { min-width: 22mm; }
 table:has(th:nth-child(2):last-child) { table-layout: fixed; }
+table:has(th:nth-child(2):last-child) th:first-child,
+table:has(th:nth-child(2):last-child) td:first-child { width: 29%; }
+.technical-appendix { font-size: 9.7pt; line-height: 1.4; }
+.technical-appendix table { font-size: 8.7pt; }
+h2[id="5-demostracion-para-el-jurado"],
+h2[id="6-evaluacion-acotada-con-un-modelo-real"],
+h2[id="7-cronograma-y-entregables"] { break-before: page; }
 .architecture-page { page: architecture; break-before: page; break-after: page; }
 .architecture-page h2 { margin-top: 0; }
 .architecture-page p { margin-bottom: 3mm; }
