@@ -65,7 +65,9 @@ def test_duplicate_and_incomplete_runtime_closures_are_refused():
         runtime.validate_manifest(value)
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="sealed runtime snapshots require Linux")
+@pytest.mark.integration
+@pytest.mark.skipif(os.environ.get("RECON_LINUX_INTEGRATION") != "1" or sys.platform != "linux",
+                    reason="set RECON_LINUX_INTEGRATION=1 for real sealed Linux descriptors")
 def test_runtime_is_copied_into_sealed_fds_and_digest_mismatch_never_launches(monkeypatch):
     import fcntl
     control = ExecutionControl(time.monotonic() + 10)
@@ -106,9 +108,9 @@ def test_expired_session_cannot_inspect_mount_or_spawn_runtime(monkeypatch):
         runtime.run_nmap_owned(lab=None, launch={}, control=ExecutionControl(time.monotonic() - 1))
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Linux parser wrapper")
 def test_evidence_reparse_preserves_original_deadline_and_avoids_tool_or_lab(monkeypatch):
     seen = []
+    monkeypatch.setattr(runtime.sys, "platform", "linux")
     monkeypatch.setattr(runtime.os, "geteuid", lambda: 1000)
     monkeypatch.setattr(runtime, "inspect_nmap_runtime", lambda *_: pytest.fail("no scanner runtime needed"))
     monkeypatch.setattr(runtime, "_runtime_files", lambda *a, **k: (seen.append(k["control"].deadline), "bootstrap"))
