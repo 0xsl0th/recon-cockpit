@@ -146,3 +146,11 @@ The [owned lab](owned-lab.md) and existing HTTP-framing limits continue to apply
 
 Measured verification and publication status are recorded in
 [verification.md](verification.md) and [continue-here.md](continue-here.md).
+
+## Integrated planning comparison
+
+The separate [offline planning evaluation](planning-evaluation.md) uses the same
+six-case oracle with owned TLS planning, persisted simulated costs and all
+isolated launch gates. Select it explicitly with `--evaluate-owned-planning`.
+This baseline's command, artifact identity and strict grader remain unchanged.
+Neither profile claims live-model quality or actual operator acceptance.

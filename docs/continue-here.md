@@ -4,25 +4,52 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**PR #24 is merged and stays closed.** Final head `9ccc910` passed review and
-all five hosted checks. The authorized merge is `4f9545c` at 22:38:18 UTC on
-29 September; its tree exactly matches the reviewed head. All five
-[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36640750168)
-passed. Runtime evidence remains 3,382 portable and 430 Linux tests, with zero
-selected failures/errors/skips. [PR #24](https://github.com/0xsl0th/recon-cockpit/pull/24)
-completed the bounded mock planning bridge. Later merges still require authorization.
+**PR #25 is merged and stays closed.** The operator authorized review and merge
+on 30 September. Final head `c7f7791` passed a fresh review with no blockers or
+outstanding comments and all five hosted checks. The guarded merge is `636a067`
+at 02:27:02 UTC; its tree exactly matches the reviewed head. Saved full reports
+confirm 3,579 portable and 466 Linux tests with zero selected failures/errors/skips.
+The last two commits corrected existing portable test synchronization; runtime
+is identical to verified implementation `30f2b2d`. See
+[PR #25](https://github.com/0xsl0th/recon-cockpit/pull/25) and
+[verification.md](verification.md). All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36659899487)
+passed. Do not repeat this merge.
 
-**Current work: owned TLS assessment planning**, implementation `30f2b2d` in
-[PR #25](https://github.com/0xsl0th/recon-cockpit/pull/25), on
-`feature/owned-tls-assessment-planning` from `4f9545c`. Read
-[owned-tls-assessment-planning.md](owned-tls-assessment-planning.md). The explicit
-`--assessment-planning-owned-tls` profile carries the existing closed descriptor
-through a disconnected TLS fixture with generated synthetic credentials. It
-reuses PR #24's evidence/monetary/proposal gate, preserves all independent launch
-checks and leaves the fixed ACK and original status-only profiles separate.
-Full verification passed; leave this PR unmerged for review. Its
-[checks page](https://github.com/0xsl0th/recon-cockpit/pull/25/checks) records hosted
-status for the latest revision. A merge needs separate operator authorization.
+**Current work: offline owned TLS planning evaluation**, implementation `c2d4d0b`
+in [PR #26](https://github.com/0xsl0th/recon-cockpit/pull/26), on
+`feature/owned-planning-evaluation` from `636a067`. Read
+[planning-evaluation.md](planning-evaluation.md). The explicit new evaluation
+profile repeats the preserved six-case oracle through the accepted planning,
+accounting and isolated launch path. It uses one bounded simulation account and
+independently grades saved TLS receipts, ledger events and assessment evidence.
+The old deterministic evaluation remains a separate unchanged reference.
+Full verification passed **3,726 portable tests in 210.53 seconds** and **477
+Linux tests in 972.80 seconds**, with zero selected failures/errors/skips and no
+remaining workers. Independent final review has no blockers. All five
+[hosted implementation checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36661988927)
+passed; the [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/26/checks)
+show this documentation checkpoint's latest status. Leave PR #26 unmerged for
+review; the latest merge authorization covers PR #25 only.
+
+The actual CLI comparison passed **18/18 trials**, 51 TLS exchanges/executions,
+45 successful actions, 12 correct abstentions and zero unnecessary actions.
+Simulated usage was 39,678 microUSD with zero unresolved holds and zero real
+provider calls. All six semantic fingerprints match the independently inspected
+saved baseline. The private bundle is `.secure-agent/planning-evaluation-20260930`;
+actual read-only CLI inspection reproduced its report and preserved all 164 files'
+bytes and mtimes. Default-18 and maximum-60 portable batches also pass. Reports:
+`/tmp/recon-planning-evaluation-all-portable-final.xml` and
+`/tmp/recon-planning-evaluation-all-linux.log`; details and the corrected large
+aggregate replay case are in [verification.md](verification.md).
+
+The follow-up checkpoint changes documentation only; runtime/tests are identical
+to verified `c2d4d0b`. Do not rerun full local suites solely for this checkpoint.
+
+**PR #24 is merged and stays closed.** Final head `9ccc910` passed review and
+all five hosted checks. Its merge is `4f9545c` at 22:38:18 UTC on 29 September;
+all five post-merge main checks passed. Runtime evidence remains 3,382 portable
+and 430 Linux tests. It completed the bounded mock planning bridge.
 
 On 30 September the operator agreed to continue development with paid live
 agents disabled. Finish necessary integration and offline evaluation first;
@@ -63,9 +90,9 @@ which supersedes older “next step” notes in this file.
 
 Preserve the accepted R1–R4 implementations and their documented limits. Do not
 restart them or make broader capability-registry/finding-workflow extensions
-prerequisites for continuing R5. The next work is **bounded R5 planning
-integration** on the completed authority boundaries, followed by its evaluation
-gates, then R6 evaluation/release work. Address an earlier contract only when a
+prerequisites for continuing R5. The next work is **review of the integrated
+offline evaluation**, followed by bounded R6 release preparation under the
+disclosed offline fallback. Real-model and actual operator acceptance remain pending. Address an earlier contract only when a
 concrete dependency or regression requires it. R5a/R5b completion
 does not claim that all of R5 or real-model validation is complete.
 
@@ -97,7 +124,7 @@ candidate. Missing/unknown usage retains a dispatch hold; known overruns settle
 before refusal. All six existing cases and both lab backends remain the scope.
 This is a finite mock planning bridge, not actual model planning or live acceptance.
 
-## R5 owned TLS planning — verification checkpoint
+## R5 owned TLS planning — merged checkpoint
 
 The full portable suite passed **3,579 tests in 95.30 seconds**; the focused
 Linux suite passed **36 tests in 126.77 seconds**, and full Linux regression
@@ -129,9 +156,8 @@ race remains separate, rather than being suppressed. Linux is still the sole
 isolated runtime. Details and report `/tmp/recon-planning-tls-ipc-portable.xml`
 are in [verification.md](verification.md); the PR checks give final hosted status.
 
-After this slice is reviewed and separately authorized for merge, continue with
-the integrated path's offline evaluation against the preserved deterministic
-baseline. Keep live model acceptance pending and optional additions deferred.
+PR #25 is now merged. The current slice implements the integrated path's
+offline evaluation against the preserved deterministic baseline. Keep live model acceptance pending and optional additions deferred.
 Reuse the six-case scheduler, oracle, saved-evidence replay and semantic
 fingerprints, with a separate versioned grader for TLS receipts and persisted
 simulation accounting. Preserve the old baseline format and strict grader;
@@ -250,14 +276,13 @@ five-job portable matrix.
 
 ## Remaining milestone gates
 
-1. Keep PR #24's verified mock planning slice closed. Review the owned TLS
-   planning integration, then continue the offline evaluation gate.
+1. Keep PRs #24 and #25's verified planning slices closed. Review the current
+   offline evaluation of the integrated path.
    Durable audit and fresh grant verification remain independent launch
    preconditions. A selected terminal/worker still cannot prove a human's
    identity or intent independently of that trusted environment.
 2. Preserve the completed audit, approval, admission and launcher contracts.
-3. Continue the remaining planning transport/integration and offline evaluation
-   gates on R5a/R5b after this mock bridge. Neither fixed ACK nor mock responses
+3. Complete the current offline evaluation gate on the accepted integrated path. Neither fixed ACK nor mock responses
    establish real-model performance.
 4. Keep real-model comparison visibly pending until explicit authorization and
    reviewed data/model/credential/spend settings. Continue offline meanwhile.
@@ -265,23 +290,11 @@ five-job portable matrix.
    reproducible packaging and demonstration, disclosing any approved offline
    fallback. Keep accepted milestones closed and optional GUI/API scope deferred.
 
-For the next planning slice, preserve the fixed ACK diagnostic's contract in
-`provider_pilot.py`. A bounded assessment proposal/release profile must be
-separate and exercised first through owned/mock responses, the existing isolated
-parser/coordinator, simulation monetary reservations/settlement and the completed
-launch preconditions. Preserve the deterministic workflow/evaluation baseline;
-model output supplies proposals, never policy, grants or finding truth. Existing
-R5a status-only release does not authorize exporting raw evidence, credentials or
-arbitrary engagement data. Live validation remains separately authorized.
-
-The current slice implements a separate owned-only assessment provider with the
-`bind_session`/`propose` interface consumed by `AuthoritySession`; keep
-`workflow.decide` and saved evidence authoritative for eligible actions and
-findings. Before releasing any proposal, verify the explicit assessment data
-profile and settle recognized usage against a simulation reservation; ambiguous
-dispatch failures retain their holds. Exercise the existing six cases and
-adversarial refusal/cancellation paths through both direct launch gates. This
-does not change the fixed ACK call or expand completed milestone scope.
+The completed planning integration preserves the fixed ACK diagnostic's contract
+and the old deterministic workflow/evaluation baseline. Its separate owned TLS
+profile releases only the approved canonical descriptor. Model output supplies
+proposals, never policy, grants or finding truth. Raw evidence, credentials,
+engagement text and real targets remain outside the release contract.
 
 ## R5 confined fixture launcher — merged checkpoint
 
@@ -734,35 +747,33 @@ Planning uses synthetic responses.
 - Never connect legacy host execution, arbitrary shell, credentials, broad mounts
   or Docker sockets to agents. Do not change host networking to pass tests.
 - The explicit audit, approval and admission options use separate confined
-  workers for persistence, grants and fixed policy/resource decisions. The new
-  fixture launcher owns nested admission and executor supervision; the host
-  still enforces consent/audit ordering and launches persistent labs. Hashes detect
-  inconsistency, not host-owner tampering. R1 callback and R2 HTTP framing limits
-  remain documented.
-- The operator authorized the completed merges through PR #19.
-  This does not authorize unrelated
-  future merges, submission, messages, paid calls or external targets.
+  workers for persistence, grants and fixed policy/resource decisions. The opt-in
+  launcher owns nested admission, executor supervision and persistent-lab
+  lifecycle/namespace pins. Direct audit and approval gates verify their workers'
+  preconditions; the host still owns assessment authority and selected policy.
+  Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
+  framing limits remain documented.
+- The operator authorized the completed merges through PR #25. This does not
+  authorize PR #26 or other future merges, submission, messages, paid calls or
+  external targets.
 
 ## Next continuation
 
-1. Start from the current priority and merged checkpoint above. PRs #6–#19 are
-   already merged. Inspect Git and hosted checks before publication; historical
-   branch names and open-PR notes below earlier checkpoints are not current work.
-2. Review the confined fixture-launcher slice; audit, approvals and admission are merged.
-   Then continue the remaining R5 authorization/launcher separation by stating
-   exactly which authority leaves each process, then implement and verify the
-   next bounded change with owned fixtures. Preserve existing tools and backend
-   restrictions; do not schedule a general registry or R3/R4 expansion as a
-   prerequisite. Persistent lab launch custody and independent precondition
-   authentication remain outside the fixture-only slice. Complete remaining R5
-   authority/planning work before R6.
-3. R5a and R5b are complete. Preserve them as regression references while
-   developing the remaining bounded planning integration. The synthetic ACK
-   path does not complete live assessment planning. Keep live acceptance pending
-   until the operator explicitly enables it; do not fill that gap with a GUI.
-4. Keep kernel verification separate from hosted portable CI and record measured
-   results/publication state for every slice. Revisit the additional ideas only
-   after the original milestone acceptance gates have been satisfied.
+1. Start from the current priority and checkpoint above. PRs #6–#25 are already
+   merged; historical branch names and earlier “next” notes are not current work.
+2. Review the offline integrated-planning evaluation and its saved comparison
+   against the preserved deterministic baseline. Keep accepted authority,
+   transport and accounting slices closed. Later merge authorization is separate.
+3. R5 real-model acceptance remains pending while paid/live calls are prohibited.
+   Continue necessary R6 release/evaluation preparation under the disclosed
+   offline fallback, without claiming live or actual operator acceptance.
+   The next bounded R6 preparation is a reproducible offline release/evidence
+   packet and demonstration runbook using the existing corpus and saved reports.
+   It must list live-model validation and actual operator review as pending;
+   packaging alone does not complete R6 or authorize submission/deployment.
+4. Keep kernel verification separate from hosted portable CI. Record measured
+   results and publication state; defer optional GUI/API, broader tools and new
+   lab scenarios until the original milestones' acceptance gates are satisfied.
 
 ## Recovery and verification
 

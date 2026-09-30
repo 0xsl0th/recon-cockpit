@@ -43,11 +43,17 @@ an allowlisted planning context and durable simulated cost admission before
 proposal release. It requires both direct launch gates and a new private ledger.
 Default deterministic workflows, provider contracts and live-call settings remain unchanged.
 
-The next [owned TLS planning integration](docs/owned-tls-assessment-planning.md)
+The merged [owned TLS planning integration](docs/owned-tls-assessment-planning.md)
 adds `--assessment-planning-owned-tls` for the same descriptor through a
 disconnected local TLS fixture. It uses generated synthetic credentials, the
 same simulation ledger and isolated parser, and all independent launch gates.
 Development, tests and demos make no paid model calls.
+
+The [offline planning evaluation](docs/planning-evaluation.md) adds
+`--evaluate-owned-planning` and read-only `--inspect-planning-evaluation`.
+It compares repeated cases with the preserved baseline, checking TLS cleanup,
+launch gates and one bounded simulation ledger. Live-model and actual operator
+acceptance remain pending.
 
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 

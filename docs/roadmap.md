@@ -12,13 +12,15 @@ become prerequisites for continuing R5. Finish the remaining R5 work, then R6,
 before additional product ideas. The [completion order below](#milestone-completion-order)
 is the current work queue. No new milestone or parallel GUI track is introduced.
 
-The main baseline is `4f9545c`, after the authorized merge of PR #24 (bounded
-mock assessment planning). PRs #16–#23 are also merged. Final head `9ccc910`
-passed review and all five hosted checks; its runtime passed 3,382 portable and
-430 Linux tests. The merge tree is identical and all five post-merge main checks
-passed. The next [owned TLS planning integration](owned-tls-assessment-planning.md)
-preserves that release and monetary gate while exercising disconnected transport.
-These results establish offline scope, not live-model acceptance.
+The main baseline is `636a067`, after the authorized merge of PR #25
+([owned TLS planning integration](owned-tls-assessment-planning.md)). PRs #16–#24
+also remain merged. Final head `c7f7791` passed review and all five hosted checks;
+its runtime passed 3,579 portable and 466 Linux tests. The merge tree is identical,
+and all five post-merge main checks passed. The current
+[offline evaluation](planning-evaluation.md), PR #26, compares that integrated
+path with the preserved baseline. Its 3,726 portable and 477 Linux tests passed;
+leave it unmerged for review. These results establish offline scope, not
+live-model acceptance.
 Live calls remain disabled; development and verification use owned/mock fixtures.
 
 ### Earlier implementation checkpoints
@@ -115,7 +117,7 @@ evidence, add discovery, then grow the workflow library and live planning.
 | R2 — smallest slice implemented | One HTTP assessment, minimal capability/evidence contracts and report | Makes the foundation useful and reveals the abstractions tools actually need. | Two-GET owned workflow, private execution/observation artifacts, draft reports and read-only crash inspection. |
 | R3 — accepted bounded scope merged | One isolated single-port TCP adapter | Adds a second typed capability without broadening old HTTP backends. | Owned TCP evidence gates HTTP; 1,977 portable and 96 Linux tests passed. Broader discovery remains future work. |
 | R4 — accepted first card/engine merged | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Existing six owned cases retain their outcomes with durable explanations of proposals, executions and stops. |
-| R5 — active; R5a and R5b complete | Isolated live-provider broker and further authority separation | Useful actions and a reproducible baseline provide a basis for model evaluation. | Complete the remaining authority/planning work; real-model validation remains gated on explicit approval. |
+| R5 — active; R5a and R5b complete | Isolated live-provider broker and further authority separation | Useful actions and a reproducible baseline provide a basis for model evaluation. | Review the integrated offline evaluation; real-model validation remains gated on explicit approval. |
 | R6 — baseline available; release work pending | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
 
 Tests and adversarial fixtures accompany every slice; R6 consolidates them.
@@ -139,12 +141,12 @@ does not claim that live-model acceptance or all of R5 is complete.
    hierarchical spending limits and first tightly controlled provider-call path.
    Their agreed verification is offline with owned/mock fixtures. Live execution
    remains disabled by default; its later activation does not reopen R5b.
-4. **Remaining R5 next:** complete the planned approval/authorization/launch/audit
-   separation and narrowly bounded assessment-planning integration on top of
-   R5a/R5b. Each change must state which authority leaves which process and verify
-   the new boundary with owned fixtures. Accounting needed for the original
-   end-to-end R5 acceptance belongs here. The fixed ACK diagnostic does not
-   establish assessment planning, and a GUI is not a dependency.
+4. **Bounded R5 integration merged through PR #25:** preserve the accepted
+   approval/authorization/launch/audit interfaces and owned assessment-planning
+   path on R5a/R5b. The current offline evaluation in PR #26 checks that combined
+   path against the preserved baseline, including persisted accounting and
+   launch preconditions. Keep its trust limits explicit; the fixed ACK diagnostic
+   does not establish assessment planning, and a GUI is not a dependency.
 5. **R5 live acceptance is gated:** real-model comparison still requires a later
    explicit operator instruction and reviewed data/model/credential/spend settings.
    This priority correction does not authorize paid or external provider calls,
@@ -157,7 +159,7 @@ does not claim that live-model acceptance or all of R5 is complete.
    remains unavailable, use the original explicitly disclosed offline fallback;
    it does not silently satisfy the live acceptance criterion.
 
-### Next bounded R5 work: assessment planning
+### Bounded R5 integration and offline evaluation
 
 The first merged implementation is the [confined audit writer](isolated-audit.md): an
 explicit Linux option transfers audit persistence to a restricted worker and
@@ -190,14 +192,17 @@ unchanged. Full verification passed 3,382 portable and 430 Linux tests, with zer
 selected failures/errors/skips; independent review has no remaining findings.
 The operator authorized review and merge of #24; final head `9ccc910` passed
 review and all five hosted jobs, and merged as `4f9545c`. Keep this mock slice
-closed. The next [owned TLS slice](owned-tls-assessment-planning.md) sends the
+closed. The [owned TLS slice](owned-tls-assessment-planning.md), PR #25, merged as
+`636a067` after final head `c7f7791` passed review and all five checks. It sends the
 same approved descriptor through the disconnected fixture, preserves settlement
-before proposal release and verifies cleanup and transport failures. Offline
-evaluation of this combined path follows. Mock responses do not complete
+before proposal release and verifies cleanup and transport failures. The current
+[offline evaluation](planning-evaluation.md) compares this combined path with the
+preserved deterministic baseline using a separate versioned grader and shared
+batch simulation ledger. Mock responses do not complete
 live-model acceptance; paid calls remain disabled during ordinary development.
 Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
 broader tools and lab scenarios remain deferred. The latest merge authorization
-covers PR #24 only; leave subsequent work for review and keep live calls disabled.
+covers PR #25 only; leave subsequent work for review and keep live calls disabled.
 
 - Preserve the merged narrowly scoped approval/launch and audit interfaces.
   Record any necessary ownership change before extending the planning path.
@@ -208,9 +213,9 @@ covers PR #24 only; leave subsequent work for review and keep live calls disable
 - Verify denial, expiry, replay, cancellation, audit failure and cleanup with
   owned/mock fixtures and the affected Linux isolation checks. Preserve the
   existing R1–R4 assessment outcomes and R5a/R5b financial/provider invariants.
-- Follow with the remaining bounded planning integration and evaluation work
-  already required by R5. Keep real-model validation visibly pending until
-  separately authorized; all development and verification remains offline.
+- Review the integrated offline evaluation, then prepare the bounded R6 offline
+  release evidence and demo runbook. Keep real-model and actual operator
+  acceptance visibly pending; all development and verification remains offline.
 
 ### Additional ideas deferred until milestone completion
 
@@ -397,9 +402,10 @@ does not establish live-model performance.
 ## R5: live AI and further privilege separation
 
 **Active milestone:** R5a (PR #13) and both parts of R5b (PRs #14 and #15) are
-complete within their agreed offline scope. The remaining work is further
-authority separation, bounded assessment-planning integration and the explicitly
-gated live-model evaluation described below.
+complete within their agreed offline scope. The bounded audit/approval/admission/
+launcher separation and owned assessment-planning integration are merged through
+PR #25. Keep those accepted contracts closed. PR #26 consolidates their offline
+evaluation; real-model acceptance remains the explicitly gated work below.
 
 The current constraint remains **live calls disabled**. Build transport and
 credential handling against controlled endpoints and synthetic secrets first.
