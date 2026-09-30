@@ -279,7 +279,8 @@ fit without introducing a new parallel milestone or weakening the architecture.
 Live validation remains an explicit pending gate: all current development and
 verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
-authorize activation, external targets, real credentials or merges beyond PR #30.
+authorize activation, external targets or real credentials. The current PR #33
+merge is complete; PR #34 is the next review handoff, not an authorized merge.
 
 The earlier baseline before PR #24 was `a87e5dd`, the merge of
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate
@@ -933,29 +934,31 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator authorized the completed merges through PR #29 and review/merge
-  of PR #30 if its latest revision and checks pass. This does not
-  authorize merges beyond PR #30, submission, messages, paid calls or
-  external targets.
+- The operator-authorized PR #33 merge is complete. PRs #6–#30, #32 and #33
+  stay closed; proposal PR #31 remains separate. Leave PR #34 ready for review.
+  Its merge, submission, messages, paid calls and external targets need their
+  corresponding operator instruction.
 
 ## Next continuation
 
-1. Start from the current priority and checkpoint above. PRs #6–#29 are already
-   merged; historical branch names and earlier “next” notes are not current work.
-   Check PR #30's current status; if merged, keep its delivery work closed.
+1. Start from the current priority and checkpoint above. Review PR #34 and its
+   latest checks when instructed; its implementation and local verification are
+   complete. PRs #6–#30, #32 and #33 are merged. PR #31 remains separate;
+   historical branch names and earlier “next” notes are not current work.
 2. Preserve the completed offline comparison, accepted local packet, successful
    approval-required terminal rehearsal and actual operator observations/decision.
    Do not reopen the accepted local review or modify the immutable packet.
 3. R5 real-model acceptance remains pending while paid/live calls are prohibited.
    The reproducible packet and demo runbook are already merged and the local
-   offline candidate is accepted. Review the local PDF and unsent submission
-   message; proposal reconciliation is already merged. Publication/submission
-   and any later live experiment require their
-   corresponding operator instruction; no further optional feature is needed
+   offline candidate is accepted. The next necessary evaluation after PR #34 is
+   a separately authorized bounded real-model pilot with explicit data, endpoint,
+   model, credential, egress and spending settings. Keep the current proposal/PDF
+   unchanged; refresh it with verified progress in early November. Publication
+   and submission require operator instruction. No optional feature is needed
    to complete the accepted offline scope.
 4. Keep kernel verification separate from hosted portable CI. Record measured
    results and publication state; defer optional GUI/API, broader tools and new
-   lab scenarios until the original milestones' acceptance gates are satisfied.
+   lab scenarios; they are not prerequisites for the next evaluation.
 
 ## Recovery and verification
 

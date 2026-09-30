@@ -55,7 +55,7 @@ descriptive measurements only. No model susceptibility, total authority overhead
 or professional deployment readiness is claimed. See
 [web-comparison.md](web-comparison.md) for the precise timing interval and limits.
 
-The checkpoint-only follow-up does not alter runtime/tests. Consult
+The checkpoint-only follow-ups do not alter runtime/tests. Consult
 [PR #34 checks](https://github.com/0xsl0th/recon-cockpit/pull/34/checks) for its
 final hosted status before any later merge decision. Leave this change for
 review. Model/endpoint, data exposure, credentials, egress and spending require
