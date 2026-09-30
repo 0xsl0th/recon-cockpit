@@ -1,5 +1,47 @@
 # Verification record
 
+## Proposal voice and deliverable revision — 30 September 2026
+
+The operator requested first-person wording for the team section and concrete
+deliverables without unexplained internal milestone labels. Proposal source
+`f9f4c98963a815ebb090a0d98230b9f7ff010bef` removes those labels, states Enrique's
+participation and actual rehearsal in his own voice, and distinguishes his
+proposed scope from competition requirements. The architecture, technical and
+measurement tables, measured figures and offline/live boundaries are unchanged.
+This is an editorial correction, not new implementation or another acceptance.
+
+The refreshed local export is
+`.secure-agent/submission-draft-20260930-author-review/recon-cockpit-propuesta-20260930.pdf`.
+It has **eight pages** and SHA-256
+`cdc33595e0a0fde920bf179df2168f01bf8744fc692e3a9672a0468236a3fb6e`.
+All **119 headings, paragraphs and table cells** appear in extracted text;
+the lower count reflects replacing the team table with first-person paragraphs.
+All **27 HTTPS links** passed checks, with repository references pinned to the
+new proposal commit. Spanish language metadata is retained; text, links and
+metadata contain no private filesystem paths or replacement characters. The
+original **11-node, 13-edge** architecture is unchanged. The renderer reported
+zero asset retrieval attempts, and all manifest output hashes match.
+
+The eight-page layout and the revised final page were visually reviewed, with
+no clipping or split tables. Local document links and whitespace checks passed.
+The earlier final PDF remains unchanged, as do all 331 accepted packet files
+(bytes, modes, inodes and modification times). Renderer, stylesheet, email,
+application code and tests are unchanged. No paid/live calls, submission or
+publication occurred; no application test suite was rerun for the wording edit.
+
+## PR #30 completed merge — 30 September 2026
+
+After correction of the stale checkpoint, final head `1634097` passed fresh
+independent review with no blockers or outstanding comments and all five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36676777225).
+Main had no configured required checks; all five available jobs were verified.
+The operator-authorized guarded merge is
+`8ae4aadf594cfc680f1c4ec530f35172d9cc94ad` at **06:14:59 UTC**; its tree exactly
+matches the reviewed head. Local main was synchronized and clean. All five
+[post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36677270493)
+passed. The PDF remained ignored and local; the email was not sent. PR #30
+stays closed, and subsequent merges require their own operator instruction.
+
 ## PR #30 checkpoint review correction — 30 September 2026
 
 The operator authorized review and merge of PR #30 if its latest revision and
