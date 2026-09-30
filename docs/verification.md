@@ -55,11 +55,21 @@ Private local records:
 
 The operator subsequently confirmed in this session: **“I entered all 3 and it
 seemed straight forward”**. This is the actual human observation, distinct from
-the technical audit. The final packet/runbook decision remains pending.
-Terminal action approvals are not milestone acceptance; the immutable packet's
-pending review fields have not been changed. Record any later actual human
-decision separately. R5 offline scope stays complete, live-model work stays
-deferred, optional additions stay deferred, and publication is not authorized.
+the technical audit. After reviewing the linked evidence report and terminal
+rehearsal, the operator separately chose **“Accept the local offline candidate”**.
+The decision was recorded on 30 September. Its scope is the local
+offline candidate, evidence packet/runbook and rehearsal only; it does not
+authorize publication, a subsequent PR merge or live-model work. This session's
+project operator supplied the observation and decision; no separate identity
+attestation is claimed.
+
+The separate human review record is `operator-review.json` in the successful
+run directory. It binds the candidate path, manifest/archive hashes, verification
+source revision and demo session/revision to the actual words above. The
+immutable packet's pending review fields describe its creation state and have
+not been changed. R5 offline scope stays complete, the local offline R6 review
+is accepted, live-model work stays deferred, optional additions stay deferred,
+and publication is not authorized.
 No implementation changed and no full test suite was repeated for this record.
 
 ## PR #27 completed merge — 30 September 2026

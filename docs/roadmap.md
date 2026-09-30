@@ -7,8 +7,8 @@ of implemented capabilities. Start the next session with
 **Current priority — 30 September 2026:** R5's agreed offline implementation
 and verification are complete. Keep R1–R4, R5a/R5b and the accepted authority,
 planning and evaluation contracts closed. Real-model integration, validation
-and acceptance remain deferred pending authorization. Proceed with R6 under the
-explicitly disclosed offline fallback; optional GUI/API, broader tools, cases
+and acceptance remain deferred pending authorization. The local R6 candidate
+is accepted under the explicitly disclosed offline fallback; optional GUI/API, broader tools, cases
 and other product additions remain deferred. The
 [completion order below](#milestone-completion-order) is the current work queue.
 
@@ -22,9 +22,9 @@ as R6 preparation and is merged as `dd4bbe4`, with all five final and post-merge
 checks passing. The actual approval-required terminal rehearsal completed on
 30 September: three approved actions, seeded case a validated, no paid calls.
 The operator confirmed entering all three phrases and found it straightforward.
-The final packet/runbook decision remains pending;
-successful action approvals do not establish milestone acceptance. Release
-publication also remains pending and requires a separate instruction.
+After reviewing the linked report and rehearsal, the operator separately chose
+“Accept the local offline candidate”. The evidence packet/rehearsal review is
+accepted; publication remains pending and requires a separate instruction.
 Live calls remain disabled; development and verification use owned/mock fixtures.
 
 ### Earlier implementation checkpoints
@@ -122,14 +122,15 @@ evidence, add discovery, then grow the workflow library and live planning.
 | R3 — accepted bounded scope merged | One isolated single-port TCP adapter | Adds a second typed capability without broadening old HTTP backends. | Owned TCP evidence gates HTTP; 1,977 portable and 96 Linux tests passed. Broader discovery remains future work. |
 | R4 — accepted first card/engine merged | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Existing six owned cases retain their outcomes with durable explanations of proposals, executions and stops. |
 | R5 — offline scope complete; live work deferred | Isolated live-provider broker and further authority separation | Useful actions and a reproducible baseline provide a basis for model evaluation. | Offline integration/evaluation merged; real-model validation remains gated on explicit approval. |
-| R6 — offline release preparation underway | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
+| R6 — local offline candidate accepted; publication deferred | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
 
 Tests and adversarial fixtures accompany every slice; R6 consolidates them.
 
 ## Milestone completion order
 
-The agreed offline R5 scope is complete; continue R6 under the disclosed offline
-fallback while live work remains deferred. Use the original requirements below
+The agreed offline R5 scope is complete and the local R6 candidate is accepted
+under the disclosed offline fallback. Live work and publication remain deferred.
+Use the original requirements below
 alongside the accepted bounded contracts; do not retroactively expand completed
 scope. Offline completion does not claim real-model acceptance or erase the
 original live criterion.
@@ -163,8 +164,10 @@ original live criterion.
    baseline grading is a foundation, not completion of R6. If live validation
    remains unavailable, use the original explicitly disclosed offline fallback;
    it does not silently satisfy the live acceptance criterion. The current
-   [evidence packet and runbook](offline-release-evidence.md) prepare that local
-   fallback; they do not claim operator acceptance or a published release.
+   [evidence packet and runbook](offline-release-evidence.md) provide that local
+   fallback. The operator has now accepted the local candidate after review and
+   rehearsal; the separate decision is recorded in the checkpoint. Publication
+   remains pending, and the original live acceptance criterion stays deferred.
 
 ### Bounded R5 integration and offline evaluation
 
@@ -209,8 +212,8 @@ batch simulation ledger. Mock responses do not complete
 live-model acceptance; paid calls remain disabled during ordinary development.
 The offline R5 scope is complete; full R5 still has its deferred live integration
 and acceptance gate. R6's packet and runbook are merged in PR #27 and the
-terminal rehearsal is complete; its next gate is the operator's final
-packet/runbook decision. Optional GUI/session APIs, broader tools
+operator accepted the local candidate after the terminal rehearsal. Publication
+is a separate pending decision. Optional GUI/session APIs, broader tools
 and lab scenarios remain deferred. The latest merge authorization covers PR #27
 only; keep live calls disabled.
 
@@ -223,8 +226,8 @@ only; keep live calls disabled.
 - Verify denial, expiry, replay, cancellation, audit failure and cleanup with
   owned/mock fixtures and the affected Linux isolation checks. Preserve the
   existing R1–R4 assessment outcomes and R5a/R5b financial/provider invariants.
-- Preserve the merged offline evaluation and review the R6 packet/runbook with
-  the actual operator. Keep real-model and operator acceptance visibly pending
+- Preserve the merged offline evaluation and accepted local R6 packet/runbook.
+  Keep real-model acceptance and publication visibly pending
   until each occurs; development and verification remain offline.
 
 ### Additional ideas deferred until milestone completion

@@ -7,6 +7,13 @@ The demonstration remains explicitly offline: no paid calls, real credentials,
 external targets or VPN. Accepted milestones remain closed; new tools, cases,
 GUI/API work and other optional additions remain deferred.
 
+The 30 September local candidate has since passed the actual terminal rehearsal
+and received the operator's separate acceptance. See the
+[review record](verification.md#r6-offline-operator-rehearsal--30-september-2026)
+and [current checkpoint](continue-here.md). The immutable packet retains its
+creation-time pending fields; acceptance is recorded separately. Publication
+and live-model work remain deferred.
+
 ## Prepare a local candidate
 
 Use a prepared Python 3.11+ environment with the repository dependencies already
@@ -125,14 +132,15 @@ For an actual approval-required demonstration, use the accepted
 with the approval-required example policy and fresh paths. Changing its dry run
 to execution requires the operator to choose to start the demo and answer the
 real terminal prompts. Never automate those answers or reuse old grants. That
-demonstration and final acceptance are still pending, not prerequisites for
-building or inspecting this offline packet.
+demonstration and final acceptance are separate from building or inspecting a
+packet; neither can be supplied by automation. The current candidate's completed
+rehearsal and decision are recorded in the checkpoint linked above.
 
 ## Remaining decisions
 
 A later real-model experiment requires explicit authorization for the released
 data, model/endpoint, credentials and spending limit. Publishing or submitting
-a release requires a separate instruction. The next review can accept or request
-changes to this local packet and runbook; actual operator review/rehearsal must
-occur before R6 is called complete. Use the disclosed offline fallback while
-live validation remains deferred, without marking the live criterion complete.
+a release requires a separate instruction. The local packet and runbook are
+accepted following actual operator review/rehearsal; preserve that accepted
+scope. Use the disclosed offline fallback while live validation remains deferred,
+without describing it as live acceptance or a published release.
