@@ -1,5 +1,19 @@
 # Verification record
 
+## PR #26 review and merge — 30 September 2026
+
+The operator authorized review and merge of the current PR. Final head
+`7e5c2ac2bb0ee4ca6742eca38d80c2f6e9142f6c` passed a fresh independent review
+with no blockers or outstanding reviews/comments. All five hosted jobs passed
+in [run 36663416736](https://github.com/0xsl0th/recon-cockpit/actions/runs/36663416736).
+The guarded merge is `1605606736620b1fa25c399078c574e0b84ed0a1` at
+03:22:20 UTC. Its tree exactly matches the reviewed head. Saved full reports
+confirm the 3,726 portable and 477 Linux successes below; final documentation
+commits did not change runtime/tests from `c2d4d0b`. Main has no configured
+required checks; all five available checks were nevertheless green before merge.
+All five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36664091986)
+also passed.
+
 ## R5 offline planning evaluation — 30 September 2026
 
 The new [planning evaluation](planning-evaluation.md) preserves the deterministic

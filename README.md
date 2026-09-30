@@ -55,6 +55,11 @@ It compares repeated cases with the preserved baseline, checking TLS cleanup,
 launch gates and one bounded simulation ledger. Live-model and actual operator
 acceptance remain pending.
 
+The [offline release packet and demo runbook](docs/offline-release-evidence.md)
+combine independently verified baseline/planning evidence with a pinned source
+snapshot. Packet creation and inspection are local and make no provider calls;
+real-model acceptance, actual operator review and release publication stay pending.
+
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 
 An additional entry point now accepts **deterministic mock agent** proposals and

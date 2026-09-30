@@ -12,15 +12,15 @@ become prerequisites for continuing R5. Finish the remaining R5 work, then R6,
 before additional product ideas. The [completion order below](#milestone-completion-order)
 is the current work queue. No new milestone or parallel GUI track is introduced.
 
-The main baseline is `636a067`, after the authorized merge of PR #25
-([owned TLS planning integration](owned-tls-assessment-planning.md)). PRs #16–#24
-also remain merged. Final head `c7f7791` passed review and all five hosted checks;
-its runtime passed 3,579 portable and 466 Linux tests. The merge tree is identical,
-and all five post-merge main checks passed. The current
-[offline evaluation](planning-evaluation.md), PR #26, compares that integrated
-path with the preserved baseline. Its 3,726 portable and 477 Linux tests passed;
-leave it unmerged for review. These results establish offline scope, not
-live-model acceptance.
+The main baseline is `1605606`, after the authorized merge of PR #26
+([offline planning evaluation](planning-evaluation.md)). PRs #16–#25 remain
+merged and closed. Final head `7e5c2ac` passed fresh review and all five hosted
+checks; its runtime passed 3,726 portable and 477 Linux tests. The merge tree
+matches the reviewed head. Both profiles pass 18 trials with matching semantic
+fingerprints and no paid calls. These results establish offline integration,
+not live-model acceptance. The next bounded R6 preparation slice is the
+[local evidence packet and demo runbook](offline-release-evidence.md), left for
+review. Actual operator acceptance and release publication remain pending.
 Live calls remain disabled; development and verification use owned/mock fixtures.
 
 ### Earlier implementation checkpoints
@@ -117,8 +117,8 @@ evidence, add discovery, then grow the workflow library and live planning.
 | R2 — smallest slice implemented | One HTTP assessment, minimal capability/evidence contracts and report | Makes the foundation useful and reveals the abstractions tools actually need. | Two-GET owned workflow, private execution/observation artifacts, draft reports and read-only crash inspection. |
 | R3 — accepted bounded scope merged | One isolated single-port TCP adapter | Adds a second typed capability without broadening old HTTP backends. | Owned TCP evidence gates HTTP; 1,977 portable and 96 Linux tests passed. Broader discovery remains future work. |
 | R4 — accepted first card/engine merged | Versioned workflow cards and one specialist engine | Turns references into tested branching, validation and stopping rules. | Existing six owned cases retain their outcomes with durable explanations of proposals, executions and stops. |
-| R5 — active; R5a and R5b complete | Isolated live-provider broker and further authority separation | Useful actions and a reproducible baseline provide a basis for model evaluation. | Review the integrated offline evaluation; real-model validation remains gated on explicit approval. |
-| R6 — baseline available; release work pending | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
+| R5 — active; R5a and R5b complete | Isolated live-provider broker and further authority separation | Useful actions and a reproducible baseline provide a basis for model evaluation. | Offline integration/evaluation merged; real-model validation remains gated on explicit approval. |
+| R6 — offline release preparation underway | Evaluation corpus, operator review, packaging and demonstration | Makes utility, enforcement and limits independently reviewable. | Reproducible release, evidence-backed report and rehearsed final demo. |
 
 Tests and adversarial fixtures accompany every slice; R6 consolidates them.
 
@@ -143,7 +143,7 @@ does not claim that live-model acceptance or all of R5 is complete.
    remains disabled by default; its later activation does not reopen R5b.
 4. **Bounded R5 integration merged through PR #25:** preserve the accepted
    approval/authorization/launch/audit interfaces and owned assessment-planning
-   path on R5a/R5b. The current offline evaluation in PR #26 checks that combined
+   path on R5a/R5b. The merged offline evaluation in PR #26 checks that combined
    path against the preserved baseline, including persisted accounting and
    launch preconditions. Keep its trust limits explicit; the fixed ACK diagnostic
    does not establish assessment planning, and a GUI is not a dependency.
@@ -157,7 +157,9 @@ does not claim that live-model acceptance or all of R5 is complete.
    reproducible release and rehearse the evidence-backed demonstration. Existing
    baseline grading is a foundation, not completion of R6. If live validation
    remains unavailable, use the original explicitly disclosed offline fallback;
-   it does not silently satisfy the live acceptance criterion.
+   it does not silently satisfy the live acceptance criterion. The current
+   [evidence packet and runbook](offline-release-evidence.md) prepare that local
+   fallback; they do not claim operator acceptance or a published release.
 
 ### Bounded R5 integration and offline evaluation
 
