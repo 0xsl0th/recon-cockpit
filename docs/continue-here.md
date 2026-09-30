@@ -41,12 +41,26 @@ the original candidate. The actual human decision is recorded separately in
 fields; they describe its creation state. Do not alter or rebuild it merely to
 record acceptance. Live activation and release publication remain unauthorized.
 
-The documentation-only acceptance checkpoint is in
-[PR #28](https://github.com/0xsl0th/recon-cockpit/pull/28), branch
-`docs/r6-operator-rehearsal`, for review. See its current hosted checks before
-any later merge. The operator's candidate acceptance does not authorize this
-PR's merge. Runtime/tests are unchanged; local evidence replay, independent
-reviews, Markdown targets and whitespace checks passed.
+**PR #28 is merged and stays closed.** The operator separately authorized its
+review and merge on 30 September. Final head `4ced75f` passed fresh independent
+review with no blockers or outstanding comments and all five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36670287169).
+The guarded merge is `f70e7ea` at 04:54:53 UTC; its tree exactly matches the
+reviewed head. Runtime/tests are unchanged. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36670999757)
+passed. Do not repeat this merge or operator review.
+
+**Current reviewable work: reconcile the unsubmitted competition proposal.**
+Branch `docs/accepted-offline-proposal` starts from `f70e7ea`. The Spanish
+[proposal](competition-proposal.md) now reflects the completed authority and
+planning integration, persistent lab, two verified offline evaluation profiles,
+source-pinned evidence and actual local candidate acceptance. This is delivery
+documentation within the existing scope, not another implementation milestone.
+The official proposal/final deadlines and required contents were rechecked on
+30 September. No runtime, tests, saved packet or acceptance record changes are
+needed. Local links, unchanged diagram/team details and whitespace checks passed.
+Keep the resulting draft ready for review; submission/publication, live
+work and any future PR merge need their corresponding operator instruction.
 
 **PR #25 is merged and stays closed.** The operator authorized review and merge
 on 30 September. Final head `c7f7791` passed a fresh review with no blockers or
@@ -174,7 +188,7 @@ fit without introducing a new parallel milestone or weakening the architecture.
 Live validation remains an explicit pending gate: all current development and
 verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
-authorize activation, external targets, real credentials or merges beyond PR #27.
+authorize activation, external targets, real credentials or merges beyond PR #28.
 
 The earlier baseline before PR #24 was `a87e5dd`, the merge of
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate
@@ -828,21 +842,21 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator authorized the completed merges through PR #27. This does not
+- The operator authorized the completed merges through PR #28. This does not
   authorize future merges, submission, messages, paid calls or
   external targets.
 
 ## Next continuation
 
-1. Start from the current priority and checkpoint above. PRs #6–#27 are already
+1. Start from the current priority and checkpoint above. PRs #6–#28 are already
    merged; historical branch names and earlier “next” notes are not current work.
 2. Preserve the completed offline comparison, accepted local packet, successful
    approval-required terminal rehearsal and actual operator observations/decision.
    Do not reopen the accepted local review or modify the immutable packet.
 3. R5 real-model acceptance remains pending while paid/live calls are prohibited.
    The reproducible packet and demo runbook are already merged and the local
-   offline candidate is accepted. Leave the documentation checkpoint ready for
-   review. Publication/submission and any later live experiment require their
+   offline candidate is accepted. Review the reconciled unsubmitted proposal
+   and checkpoint. Publication/submission and any later live experiment require their
    corresponding operator instruction; no further optional feature is needed
    to complete the accepted offline scope.
 4. Keep kernel verification separate from hosted portable CI. Record measured

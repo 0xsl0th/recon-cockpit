@@ -1,6 +1,6 @@
 # Recon Cockpit — agentes de pentesting con ejecución controlada
 
-**Borrador de propuesta · 29 de septiembre de 2026 · No presentado**
+**Borrador de propuesta · 30 de septiembre de 2026 · No presentado**
 
 Concurso de Desarrollo de Soluciones de Ciberseguridad 2026–2027,
 Facultad de Ingeniería, Universidad de Palermo.
@@ -74,7 +74,7 @@ flowchart TD
 | Ejecutores | Revalidar el lanzamiento y aplicar restricciones de red, archivos, procesos, tiempo y salida. |
 | Broker del proveedor | Mediar solicitudes, datos, credenciales y consumo; no conceder autoridad sobre herramientas. |
 | Evidencia y reporte | Conservar procedencia; no convertir una respuesta del modelo en prueba de éxito. |
-| Auditoría | Registrar intención antes de ejecutar; incorporar posteriormente almacenamiento con controles independientes. |
+| Auditoría | Persistir la intención antes de ejecutar y aportar al lanzador una comprobación independiente de ese registro; no conceder permisos. |
 
 Las comunicaciones entre procesos utilizan contratos explícitos y mensajes
 acotados. Futuros agentes especializados compartirán límites de evaluación
@@ -84,108 +84,65 @@ confiables.
 
 ## 4. Estado real del desarrollo
 
-La base previa, [PR #5](https://github.com/0xsl0th/recon-cockpit/pull/5),
-se integró en `main` como `bf3a359`. El 17 de septiembre de 2026 se revisaron e
-integraron R1, la planificación offline con autoridad
-([PR #6](https://github.com/0xsl0th/recon-cockpit/pull/6), `07af513`), y R2,
-la primera evaluación HTTP con evidencia y reporte
-([PR #7](https://github.com/0xsl0th/recon-cockpit/pull/7), `f85aaa9`). El 22 de
-septiembre se revisó e integró el tramo mínimo R3 de descubrimiento TCP seguido
-de evaluación HTTP ([PR #8](https://github.com/0xsl0th/recon-cockpit/pull/8),
-revisión `124300a`, merge `b1c7b67`). Pasaron las diez comprobaciones alojadas de
-la rama/PR y los cinco trabajos de main posteriores al merge. El 23 de septiembre
-se revisó e integró R4, la primera ficha de procedimiento versionada y su motor
-determinista ([PR #9](https://github.com/0xsl0th/recon-cockpit/pull/9), revisión
-`401cbe1`, merge `8673dc0`). Pasaron las diez comprobaciones previas al merge;
-una carrera temporal en una prueba de cancelación afectó uno de los cinco trabajos
-posteriores. La corrección de esa prueba se revisó e integró mediante
-[PR #10](https://github.com/0xsl0th/recon-cockpit/pull/10), merge `2b3527e`;
-pasaron los cinco trabajos posteriores de main.
-La [base del laboratorio propio persistente](owned-lab.md) está integrada en
-[PR #11](https://github.com/0xsl0th/recon-cockpit/pull/11), merge `7f316ce`:
-un servicio por evaluación, ejecutores nuevos por acción, reinicio mediante
-destrucción y creación, e identidad y contadores vinculados a la evidencia.
-La verificación local pasó **2.226 pruebas portables y 126 integraciones reales
-en Linux**, sin fallos, errores ni omisiones entre los casos seleccionados.
-Los resultados medidos constan en [verification.md](verification.md). El estado actual consta en
-[continue-here.md](continue-here.md).
+Al 30 de septiembre, los alcances acordados de R1–R4 y el alcance offline de R5 están
+implementados, verificados e integrados en `main`. R5a/R5b conservan sus contratos
+aceptados de aislamiento del proveedor y contabilidad monetaria. La integración
+posterior añade aprobación, auditoría y lanzamiento separados, planificación
+sintética por TLS propio y una comparación repetida con la línea base.
+El operador aceptó el **candidato local offline de R6** después de revisar su
+evidencia y realizar el ensayo en una terminal real. La aceptación con un modelo
+real y la publicación o presentación del proyecto permanecen pendientes.
+El estado de integración y las decisiones constan en
+[continue-here.md](continue-here.md); los resultados, límites y revisiones,
+en [verification.md](verification.md).
 
-La evaluación repetida de los seis casos, tres veces cada uno, se integró en
-[PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12): es una línea base
-sintética de 18 ensayos, no una evaluación de un modelo real. R5a y R5b están
-completos dentro de su alcance offline acordado y se integraron mediante PR #13, #14 y
-[PR #15](https://github.com/0xsl0th/recon-cockpit/pull/15), cuyo merge es `1369166`:
-aislamiento de credenciales/TLS, contabilidad monetaria durable y una petición
-sintética fija con admisión de gasto. La ejecución real sigue deshabilitada;
-toda verificación del proveedor utilizó fixtures propios, credenciales sintéticas
-y simulación. No hubo llamadas pagadas ni a proveedores externos.
-
-Por aclaración del operador del 29 de septiembre, R5 es el hito activo y R5a/R5b
-están completos. Se continúa el plan original desde ese punto: separación
-adicional de autoridad, integración acotada con la planificación y evaluación
-pendiente de R5, y después R6. Se conservan las implementaciones aceptadas de
-R1–R4 y sus límites; un registro general de capacidades y un ciclo más amplio de
-hallazgos no se convierten en requisitos previos para continuar R5.
-La interfaz gráfica y las nuevas vistas de sesión se reconsiderarán una vez
-completados los hitos originales. La aceptación con un modelo real permanece
-pendiente de una habilitación posterior y explícita; esta reorganización no la
-autoriza. Véase el [orden de cierre](roadmap.md#milestone-completion-order).
-
-| Implementado y verificado | Pendiente |
+| Implementado y verificado | Límite o trabajo diferido |
 | --- | --- |
-| Acciones TCP/HTTP tipadas, política restrictiva, aprobación caducable de un solo uso, auditoría previa y descriptores de capacidades revisadas. | Catálogo general y adaptadores adicionales. |
-| Sesiones simuladas limitadas y un flujo TCP → HTTP → diagnóstico guiado por evidencia; primera ficha versionada y motor determinista R4 integrados. | Integración con planificación dentro del R5 activo; los motores adicionales siguen como ampliación posterior. |
-| Coordinador aislado en Linux, autoridad externa y ejecutores de fixtures con IPC acotado. | Separar más responsabilidades del proceso confiable del host. |
-| Parser/broker offline, integración R1, frontera TLS con credenciales sintéticas, ledger monetario y petición fija controlada R5b, deshabilitada por defecto. | Integración con planificación de evaluaciones, separación adicional de autoridad y validación real de uso/facturación con autorización explícita. |
-| Conexión TCP aislada a un único servicio propio y sonda HTTP; laboratorio persistente por evaluación con reinicio limpio; backend HTTP separado para un IPv4/puerto autorizado, probado en una red propia. | Descubrimiento general, Nmap en modo seguro, topología multiservicio, sesiones remotas, pruebas VPN y herramientas autenticadas. |
-| Artefactos privados, observaciones vinculadas, reportes JSON/Markdown y detección de evidencia incompleta mediante inspección de solo lectura. | Ciclo de revisión más amplio, interfaz y auditoría independiente. |
+| Acciones TCP/HTTP tipadas, política restrictiva y flujo TCP → HTTP → diagnóstico con ficha versionada y decisiones respaldadas por evidencia. | Un único procedimiento y destino propio; catálogo general, más herramientas y motores, GUI y API de sesiones siguen diferidos. |
+| Ruta optativa con coordinador/parser, escritor de auditoría, aprobación terminal, admisión y lanzador aislados en Linux. El lanzador comprueba directamente el registro durable y la aprobación consumida de la acción exacta. | El host conserva la autoridad de evaluación y la política seleccionada; no se elimina la confianza en los componentes fijos, la terminal o el kernel. |
+| Planificación sintética mediante TLS desconectado, liberación explícita de datos y contabilidad con límites jerárquicos; el uso se liquida antes de liberar una propuesta. | Sin proveedor externo ni credencial real. Integración, calidad y facturación de un modelo real requieren autorización posterior. |
+| Laboratorio propio persistente durante una evaluación, con ejecutores nuevos por acción e identidad y contadores vinculados a los artefactos. | Cada nueva evaluación crea otra instancia; no hay reanudación, descubrimiento general, sesiones remotas ni pruebas VPN en esta ruta. |
+| Reportes JSON/Markdown e inspección independiente de evidencia; dos perfiles de 18 ensayos y paquete local reproducible con fuente fijada. | Los hashes comprueban consistencia local, no autenticidad frente al propietario del host ni exactitud general de un modelo. |
+| Ensayo con tres aprobaciones humanas reales y aceptación separada del candidato local, su evidencia y su guía de demostración. | No equivale a aceptar un modelo real ni autoriza publicación, inscripción o envío. |
 
-La validación local de R3 del 22 de septiembre registró **1.977 pruebas
-portables** en 16,76 segundos y **96 integraciones reales en Linux** en 187,79
-segundos, sin fallos, errores ni pruebas omitidas en las suites seleccionadas.
-El primer tramo R4, verificado el 23 de septiembre en su rama de desarrollo,
-pasó **2.134 pruebas portables y 109 integraciones reales en Linux**, también
-sin fallos, errores ni pruebas omitidas. Su revisión e integración se completaron
-ese mismo día; el fallo posterior de CI se registra por separado.
-Los comandos y límites constan en [verification.md](verification.md). El modo
-offline conecta broker, parser, coordinador y autoridad; conserva los modos
-anteriores como referencias de regresión. El cockpit interactivo utiliza Nmap en
-el host; no es un adaptador seguro para agentes y no se conectará directamente
-a ellos.
+La ruta integrada usa una [ficha v2](workflow-assessment.md) y un
+[laboratorio persistente](owned-lab.md). Intenta una conexión TCP a
+`127.0.0.1:8080`, sin datos de aplicación, banners, DNS, reintentos ni barrido.
+Solo una conexión válida habilita considerar el primer GET; no prueba identidad
+HTTP, permisos ni una vulnerabilidad. Hasta dos GET permiten descubrir y validar
+el diagnóstico del mismo caso. Cada acción vuelve a pasar por alcance, aprobación,
+presupuesto y ejecución aislada. El servicio propio persiste entre esas acciones;
+el lanzador controla su ciclo de vida y el reinicio destruye la instancia anterior.
+La inspección posterior no recupera procesos, aprobaciones ni presupuestos.
 
-La evaluación R3 intenta una conexión TCP a `127.0.0.1:8080`, sin enviar datos
-de aplicación, leer banners, resolver DNS, reintentar ni recorrer puertos.
-Solo la evidencia válida de conexión completada permite considerar el primer
-GET; no identifica HTTP, acredita permisos ni constituye un hallazgo. El flujo
-fijo continúa con hasta dos GET. El primero descubre un documento de diagnóstico;
-solo evidencia válida habilita la segunda consulta a la ruta permitida del mismo
-caso. Cada acción debe superar nuevamente los controles de autoridad, aprobación
-cuando corresponda, presupuesto y ejecución aislada. Cada ejecución recrea su
-propio namespace con el mismo servicio sembrado: no se ha demostrado persistencia
-ni continuidad del servicio entre acciones. Se verificaron
-seis variantes: metadatos sintéticos expuestos, ausencia del endpoint, documento
-malformado, demora, salida excesiva y descubrimiento hostil. El reporte distingue
-condición sembrada validada, no demostrada en ese endpoint e inconclusa. Conserva
-referencias a ejecuciones y artefactos; todo hallazgo queda pendiente de revisión
-del operador. No se afirma una vulnerabilidad general, un bypass de autenticación
-ni la autenticidad del contenido del servidor. Véanse
-[el contrato R3](discovery-assessment.md) y [el contrato HTTP R2](http-assessment.md).
-Este tramo no es descubrimiento general, un adaptador Nmap ni un motor de
-procedimientos reutilizable.
+Los seis casos conservan sus resultados: metadatos sembrados expuestos, endpoint
+ausente, documento malformado, demora, salida excesiva y descubrimiento inválido.
+Un reporte distingue condición sembrada validada, no demostrada en ese endpoint
+e inconclusa. Sus artefactos son resultados decodificados, no capturas exactas del
+tráfico HTTP. No se afirma una vulnerabilidad general, un bypass de autenticación
+ni autenticidad del contenido remoto. Los modos anteriores se conservan como
+referencias de regresión. El cockpit con Nmap ejecutado en el host sigue separado;
+no es un adaptador seguro para agentes.
 
-No se han validado modelos autónomos ni enviado solicitudes a una API real.
-La autoridad, interfaz humana, auditoría y lanzador aún comparten un proceso
-confiable. El aislamiento actual no demuestra resistencia al compromiso de ese
-proceso o del kernel. El propietario puede modificar los registros locales.
-Estos límites forman parte explícita de la evaluación.
+No hubo llamadas pagadas ni solicitudes a proveedores externos. Toda verificación
+del proveedor utilizó respuestas y credenciales sintéticas en fixtures propios.
+La [planificación TLS integrada](owned-tls-assessment-planning.md), los
+[testigos de auditoría](launch-audit-witness.md) y
+[aprobación](launch-approval-witness.md) mantienen sus límites explícitos.
+El aislamiento no demuestra resistencia al compromiso del propietario, de todos
+los componentes confiables o del kernel; el propietario puede alterar registros
+locales. No queda un bloqueo necesario de implementación offline en el alcance
+aceptado. La validación real sigue pendiente y las ampliaciones opcionales no
+reabren los hitos cerrados. Véase el
+[orden de cierre](roadmap.md#milestone-completion-order).
 
 ## 5. Motores y conocimiento de pentesting
 
 Un motor combina reglas de selección, conocimiento de una especialidad y
 contratos de herramientas. Puede utilizar un modelo sin convertirse en
-autoridad. Los procedimientos se convertirán en fichas revisadas: precondiciones,
-evidencia necesaria, capacidades permitidas, criterios de éxito, límites,
-condiciones de detención y obligaciones de limpieza.
+autoridad. La primera ficha revisada ya define precondiciones, evidencia necesaria,
+capacidades permitidas, criterios de éxito, límites, condiciones de detención y
+limpieza. Ese contrato orientará otros procedimientos si se autoriza su desarrollo.
 
 Las fuentes indicadas por el titular incluyen el
 [manual de Enrique Folte](https://enriquefolte.com/),
@@ -206,9 +163,9 @@ su política específica. Cada ficha conservará fuente, versión, atribución,
 revisión y casos de prueba; no se ejecutarán comandos extraídos directamente
 de páginas.
 
-La secuencia comienza por descubrimiento y enumeración HTTP, validación acotada
-y reporte. Los demás motores y la coordinación de varios agentes se incorporarán
-después de demostrar un flujo útil y verificable con un único agente.
+El flujo actual cubre descubrimiento y enumeración HTTP, validación acotada y
+reporte. Los demás motores y la coordinación de varios agentes permanecen
+diferidos; no son requisitos adicionales para cerrar el alcance offline aceptado.
 
 ## 6. Aporte, demostrador y validación
 
@@ -218,74 +175,103 @@ procedencia y fallos observables. Se usan mecanismos existentes de Linux; no se
 afirma haber inventado el aislamiento ni demostrado novedad académica frente a
 todo el estado del arte.
 
-El demostrador previsto realizará una evaluación acotada en un laboratorio
-propio: descubrir servicios, seleccionar enumeración pertinente, validar una
-condición sembrada y producir un hallazgo con evidencia y revisión. El mismo
-escenario incluirá respuestas manipuladas que intenten ampliar alcance,
-falsificar aprobaciones o inventar resultados. Se comparará una línea base
-determinista con un agente real cuando su integración esté habilitada.
+El demostrador offline ya ejecuta el flujo fijo y produce un reporte trazable.
+La [línea base determinista](evaluation.md) y la
+[evaluación de planificación TLS propia](planning-evaluation.md) se califican
+por separado a partir de sus artefactos guardados. Cada perfil repite los seis
+casos tres veces, con identidades nuevas, límites fijos y una política que permite
+ejecución desatendida en el laboratorio. Esos ensayos no acreditan aprobación
+humana ni calidad de un modelo real. Los resultados medidos son:
 
-El tramo fijo TCP → HTTP → diagnóstico y su reporte ya funcionan con
-planificación determinista y respuestas sintéticas del proveedor. El primer
-tramo R4 está revisado e integrado: una ficha versionada para ese mismo procedimiento,
-con precondiciones, evidencia necesaria, acciones permitidas y reglas de
-detención. Su motor registra qué evidencia respalda cada propuesta, distingue
-propuestas de ejecuciones y explica por qué se detiene la evaluación. Conserva
-los resultados de los seis casos y se detiene ante evidencia insuficiente,
-aprobación denegada o presupuesto agotado. Véase [el contrato R4](workflow-assessment.md).
-La base del laboratorio propio persistente conserva ese servicio durante la
-evaluación sin ampliar el destino permitido. Cada nueva evaluación crea una
-instancia distinta; la inspección de evidencia nunca restaura permisos ni procesos.
-La ficha v2 describe este ciclo de vida, mientras la ficha v1 conserva su contrato
-original. El [ejecutor de evaluaciones repetidas](evaluation.md) implementa ahora
-una línea base de 18 ensayos: seis casos, tres repeticiones, instancias nuevas y
-calificación independiente de la evidencia guardada. Agrega decisiones esperadas
-y observadas, aislamiento, limpieza y reservas de recursos en JSON y Markdown.
-Una interrupción o fallo de evidencia no recibe crédito como abstención correcta.
-La evaluación con un modelo real continúa pendiente.
+| Medida | Línea base | Planificación TLS propia |
+| --- | ---: | ---: |
+| Ensayos aprobados por el calificador | 18/18 | 18/18 |
+| Ejecuciones / acciones exitosas | 51 / 45 | 51 / 45 |
+| Condiciones sembradas validadas / no demostradas | 3 / 3 | 3 / 3 |
+| Abstenciones correctas / acciones innecesarias | 12 / 0 | 12 / 0 |
+| Intercambios TLS de planificación propios | No aplica | 51 |
 
-La implementación se revisó y fusionó con `main` mediante
-[PR #12](https://github.com/0xsl0th/recon-cockpit/pull/12), con 2.300 pruebas
-portables y 132 integraciones reales en Linux verificadas; las cinco tareas de CI
-del PR también pasaron. La línea base final pasó los
-18 ensayos en 72,004 segundos: tres validaciones, tres resultados no demostrados
-y doce abstenciones correctas, con inspección posterior sin modificar la evidencia.
+Las seis huellas semánticas coinciden entre perfiles y repeticiones. Un fallo de
+infraestructura o evidencia no recibe crédito como abstención correcta. El perfil
+TLS registra **26.112 tokens de entrada y 6.528 de salida de fixtures**, y
+**39.678 microUSD simulados**, sin reservas ni consumos inciertos pendientes.
+Las llamadas a proveedores reales y el gasto real son cero. Los tiempos medidos
+incluyen aislamiento y servicios locales; no representan latencia de un modelo.
 
-| Dimensión | Evidencia a obtener |
+La verificación local del empaquetado pasó **3.878 pruebas portables**. La ruta
+de ejecución conserva la evidencia previa de **477 integraciones reales en
+Linux**, obtenida para la evaluación integrada; no se repitió esa suite por los
+cambios posteriores de empaquetado o documentación. Los informes completos,
+las revisiones y la corrección de una carrera de mantenimiento Git en un fixture
+constan en [verification.md](verification.md). Estas cifras corresponden a
+verificaciones distintas y no deben presentarse como una nueva ejecución conjunta.
+
+El [paquete y guía de demostración](offline-release-evidence.md) reúnen los dos
+perfiles y un archivo tar de fuentes con 246 archivos dentro de un candidato privado
+de 331 archivos. Dos construcciones con las mismas entradas produjeron bytes
+idénticos; la inspección de solo lectura reprodujo el informe sin modificar las
+entradas. También se verificó la inspección desde la fuente archivada, sin
+metadatos Git y usando el entorno Python ya preparado. No es una instalación
+hermética ni una publicación. La fuente de verificación/reproducción está fijada
+a `070257b455f158eb06301fae143c0704ee02ee30`; los ensayos históricos no registraron
+su revisión de ejecución, que permanece explícitamente como `not_recorded`.
+Las identidades, tiempos y bytes de evaluaciones nuevas pueden variar; su
+comparación usa resultados y huellas semánticas.
+
+El ensayo humano posterior utilizó la política que exige aprobación: el operador
+introdujo personalmente tres frases distintas para TCP, GET de descubrimiento y
+GET de diagnóstico. La ejecución en `dd4bbe4` validó el caso a en **50,011
+segundos**, dentro de tres pasos, 60 segundos y 3.072 bytes de salida reservados.
+El laboratorio y los procesos TLS cerraron; tres intentos liquidados sumaron
+**2.334 microUSD simulados**, sin consumos inciertos ni gasto real. Una primera
+tentativa había agotado el plazo sin aprobar ni ejecutar acciones; se conservó
+su evidencia y el reintento usó una sesión nueva. La asistencia de IA no aportó
+respuestas de terminal. Tras revisar el reporte y el ensayo, el operador aceptó
+por separado el candidato local offline. Su decisión está registrada fuera del
+paquete inmutable: los campos pendientes de ese paquete describen su estado al
+crearse y no fueron alterados para aparentar una aceptación anterior.
+
+| Dimensión | Evidencia disponible y límite |
 | --- | --- |
-| Utilidad | Cobertura de condiciones sembradas, precisión de hallazgos y pasos necesarios; distinguir desconocido de descartado. |
-| Control | Cero ejecuciones no autorizadas en los casos de prueba, contrastadas con testigos propios de red y archivos. |
-| Procedencia | Todo hallazgo confirmado enlaza ejecuciones y artefactos suficientes; las afirmaciones sin prueba siguen siendo hipótesis. |
-| Robustez | Evaluar inyección en resultados y conocimiento, replay, salida excesiva, cancelación y fallos de auditoría. |
-| Reproducibilidad | Registrar configuración, versiones, escenario, modelo, repeticiones y variabilidad; informar fallos y pruebas omitidas. |
-| Recursos | Medir tiempo y llamadas; evaluar gasto real cuando exista un proveedor habilitado. |
+| Utilidad | Acuerdo en seis condiciones sembradas, con resultados no demostrados y abstenciones diferenciados; no mide precisión general ni autonomía real. |
+| Control | Pruebas de alcance, aprobación, lanzamiento y aislamiento, más tres aprobaciones humanas vinculadas a sus ejecuciones en el ensayo. |
+| Procedencia | Reportes enlazados a ejecuciones y artefactos; la inspección rechaza inconsistencias y evidencia corrupta aun con inventarios recalculados. |
+| Robustez | Casos propios de respuestas hostiles, replay, salida excesiva, cancelación y fallos de auditoría; no se afirma inmunidad universal a inyección. |
+| Reproducibilidad | Entradas y fuente verificables, construcción determinista del paquete y revisión de solo lectura; revisión histórica de ejecución no registrada. |
+| Recursos | Tiempo, reservas y uso sintético liquidados; consumo y facturación reales permanecen sin validar. |
 
 El mínimo del concurso será un flujo útil de extremo a extremo. No se promete
 un pentester autónomo universal, inmunidad a toda prompt injection ni todos los
-motores futuros. Explotación general, AD, múltiples agentes y pruebas VPN son
-extensiones, no dependencias de ese mínimo.
+motores futuros. El candidato aceptado ofrece la alternativa offline explícita;
+una comparación con un agente real exige revisar previamente datos, modelo,
+endpoint, credenciales, salida de red y límite de gasto. Explotación general, AD,
+múltiples agentes y pruebas VPN son extensiones diferidas, no dependencias
+adicionales del alcance offline aceptado.
 
 ## 7. Cronograma y entregables
 
 La convocatoria fija el **15 de noviembre de 2026** para presentar el proyecto y
 el **20 de mayo de 2027** para la entrega final. Solicita desafío, arquitectura e
-integrantes al inscribirse; para la etapa final, una solución funcional con
-validación, demostración y documentación. Los finalistas presentan en H4ck3d 2027.
-[Fuente oficial, consultada el 22/09/2026](https://www.palermo.edu/ingenieria/concurso-ciberseguridad/).
+integrantes al inscribirse; para la etapa final, una implementación funcional con
+evidencia de pruebas, demostración técnica y documentación. Los finalistas
+presentan en H4ck3d 2027.
+[Fuente oficial, consultada el 30/09/2026](https://www.palermo.edu/ingenieria/concurso-ciberseguridad/).
 
 | Período propuesto | Entregable |
 | --- | --- |
-| Septiembre–octubre 2026 | R1/R2, el tramo mínimo R3 y la primera ficha R4 integrados; laboratorio persistente y línea base repetida implementados. R5 activo, con R5a/R5b completos; continuar el trabajo restante de R5 y después R6. |
-| Hasta el 8/11/2026 | Cerrar propuesta, datos de inscripción, arquitectura, alcance mínimo y evidencia para revisión. |
-| 9–15/11/2026 | Presentación por el equipo, con margen respecto de la fecha oficial. |
-| Noviembre 2026–enero 2027 | Reconocimiento y validación acotados en laboratorio, con reporte. |
+| Septiembre–octubre 2026 | Alcances acotados R1–R4 y R5 offline completos; candidato local R6 aceptado. Preparar la propuesta y referencias de evidencia para revisión, preservando los hitos cerrados. |
+| Hasta el 8/11/2026 | Revisar propuesta, datos de inscripción, arquitectura, alcance mínimo y evidencia. |
+| 9–15/11/2026 | Ventana prevista de presentación por el titular, sujeta a su instrucción expresa y con margen respecto de la fecha oficial. |
+| Noviembre 2026–enero 2027 | Ventana original de reconocimiento y validación acotados; el flujo offline ya está aceptado y no se reabre por calendario. |
 | Enero–febrero 2027 | Modelo real con mediación de credenciales, datos y gasto; habilitación explícita requerida. |
 | Marzo–abril 2027 | Evaluación adversarial y funcional, comparación con baseline y documentación. |
 | Mayo 2027 | Congelar alcance, ensayar demostración y entregar antes del 20/05. |
 
-Son objetivos sujetos a capacidad del equipo y resultados. El
-[roadmap](roadmap.md) define dependencias, aceptación y recortes. La presentación
-de noviembre no supone que el desarrollo final ya esté completo.
+Son ventanas propuestas, sujetas a capacidad, resultados y decisiones del
+titular; no autorizan nuevas funciones, llamadas pagadas ni envíos. El
+[roadmap](roadmap.md) define dependencias, aceptación y recortes. El alcance
+offline aceptado se conserva cerrado. La presentación de noviembre no supone
+que se haya validado un modelo real ni completado ese criterio de la visión final.
 
 ## 8. Integrantes del equipo de trabajo
 
