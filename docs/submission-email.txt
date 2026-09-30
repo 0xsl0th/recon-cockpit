@@ -1,0 +1,38 @@
+BORRADOR PARA REVISIÓN DEL TITULAR — NO ENVIADO
+Fecha de preparación: 30 de septiembre de 2026
+
+Antes de enviar: Enrique Folte debe revisar el texto y el PDF, adjuntar el
+archivo indicado y autorizar expresamente el envío. Este borrador no constituye
+una inscripción. Los registros privados de evaluación no están incluidos como
+adjuntos. Copiar el correo a partir de la línea «Para».
+
+Para: ingenieria@palermo.edu
+Asunto: Propuesta para el Concurso de Ciberseguridad 2026–2027 — Recon Cockpit, Desafío 4
+Adjunto previsto: recon-cockpit-propuesta-20260930.pdf
+
+Estimado equipo de la Facultad de Ingeniería:
+
+Deseo presentar la propuesta «Recon Cockpit — agentes de pentesting con
+ejecución controlada» para el Desafío 4: Seguridad de agentes inteligentes
+autónomos, del Concurso de Desarrollo de Soluciones de Ciberseguridad 2026–2027.
+
+Soy Enrique Folte, único integrante humano y responsable del proyecto. Utilizo
+Codex como herramienta de asistencia para el desarrollo, bajo mi revisión.
+
+El prototipo offline implementa un flujo acotado TCP → HTTP en un laboratorio
+propio, con acciones tipadas, control de alcance, aprobaciones de un solo uso,
+ejecución aislada, límites de recursos y evidencia trazable. La evaluación usa
+casos sembrados y respuestas sintéticas del proveedor; también se completó un
+ensayo con aprobaciones humanas reales. No se realizaron llamadas pagadas ni se
+afirma haber validado el comportamiento de un modelo real.
+
+El PDF propuesto describe el desafío, la arquitectura, el integrante y el estado
+verificado del desarrollo, con referencias a la evidencia y a la guía de
+demostración. Distingue el candidato local offline aceptado del trabajo con
+modelos reales que permanece pendiente.
+
+Agradeceré que me indiquen si necesitan información adicional para evaluar la
+propuesta y confirmar su recepción.
+
+Saludos cordiales,
+Enrique Folte

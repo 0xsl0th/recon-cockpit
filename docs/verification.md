@@ -1,5 +1,82 @@
 # Verification record
 
+## PR #30 checkpoint review correction — 30 September 2026
+
+The operator authorized review and merge of PR #30 if its latest revision and
+checks pass. Fresh independent review of `5c9b47f` found an obsolete interruption
+snapshot at the top of the checkpoint, incorrectly describing the completed
+package as uncommitted and still awaiting visual review. The correction removes
+that snapshot, points to PR #30 and the verified final local export, and records
+the current conditional merge authorization. Renderer, stylesheet, email,
+proposal and private artifacts are unchanged. Refer to
+[PR #30](https://github.com/0xsl0th/recon-cockpit/pull/30) for the resulting head's
+review/check and merge status; the previous revision's passing CI does not cover
+this correction. Submission, publication and live work remain deferred.
+
+## Local submission draft export — 30 September 2026
+
+The operator authorized preparing a proposal PDF, unsent submission email and
+references to the existing evidence and demonstration guide. The branch
+`docs/submission-draft-package` adds only delivery tooling and documentation;
+it does not change application behavior or reopen the accepted offline scope.
+
+The actual export is
+`.secure-agent/submission-draft-20260930-final/recon-cockpit-propuesta-20260930.pdf`:
+**eight pages**, including one landscape architecture page. Its SHA-256 is
+`e8feeffab5d8133bb1a76b0d43dd3c33a600b7d0304acd0e47623e27cea0fc79`.
+The proposal bytes exactly match `cba8059e084655c355301d15dfd374505352c2b3`.
+All **124 headings, paragraphs and table cells** matched extracted PDF text;
+Spanish language metadata and accents are preserved. All eight pages were
+visually inspected, and the final raster bytes match those inspected pages.
+Tables remain together, and the original architecture's **11 nodes and 13
+directed edges**, including labels, are retained by the local vector rendering.
+The diagram source and confirmed team section remain unchanged.
+
+The **27 PDF links** use HTTPS; repository document links point to the full
+proposal source commit rather than a moving branch. Text, annotations and
+metadata contain no private filesystem paths. The repository is public; the
+actual private evaluation bundles are not attached or published. Local review
+notes separately identify the accepted packet and human decision, preserving
+the distinction between proposal source `cba8059`, packet verification source
+`070257b`, historical execution revision `not_recorded` and rehearsal `dd4bbe4`.
+
+The prepared host's Markdown, BeautifulSoup, WeasyPrint, Graphviz and DejaVu
+fonts rendered the PDF without installation or asset retrieval. The renderer
+blocks URL/file asset fetches; the final manifest reports zero attempts. It
+records tool versions and source/renderer/style/email/output hashes. This is
+a local document export, not a hermetic environment bundle or a promise of
+identical PDF bytes across exports. `validation.json` records the checks.
+The unsent email copy, original Markdown, HTML, SVG and review notes accompany
+the PDF locally; the PDF is the only proposed email attachment.
+
+Targeted checks confirmed that a mismatched source revision creates no output,
+an existing destination is refused without changing its files, and unsupported
+diagram syntax or undefined nodes fail rather than silently omitting content.
+Python 3.11 grammar, local document targets and whitespace checks passed. All
+331 accepted packet files retained identical bytes, modes, identities and
+modification times throughout preparation. No provider call, assessment run,
+approval prompt, email send or release publication occurred. No full application
+suite was repeated for this delivery task; the original verification remains
+the runtime evidence. Independent read-only review of the renderer, stylesheet,
+email, final manifest and PDF found no blockers.
+
+## PR #29 review and merge — 30 September 2026
+
+The operator explicitly requested review and merge of PR #29. Fresh independent
+review of `32d44af273b5b58ba5a37d6868324b39f64c3521` found no blockers or
+outstanding comments. All five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36671559852)
+passed. Main had no configured required checks; all five available jobs were
+verified. Local Markdown targets and whitespace checks passed; the four-file
+documentation change preserved the original diagram and confirmed team details.
+
+The guarded merge is `cba8059e084655c355301d15dfd374505352c2b3` at **05:18:21 UTC**;
+its tree exactly matches the reviewed head. Local main was synchronized and
+clean. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36672797756)
+passed. PR #29 stays closed. Publication/submission and live-model work remain
+deferred; no full local application suite was repeated for the documentation.
+
 ## PR #28 review and merge — 30 September 2026
 
 The operator explicitly requested review and merge of the current PR, then
