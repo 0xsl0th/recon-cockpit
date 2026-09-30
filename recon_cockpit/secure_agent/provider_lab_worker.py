@@ -43,17 +43,29 @@ def _unique(pairs):
     return result
 
 
-def read_request(source):
+def read_request(source, *, planning=False):
+    if type(planning) is not bool:
+        raise ValueError("invalid_provider_owner_request")
     raw = source.readline(8193)
     if len(raw) > 8192 or not raw.endswith(b"\n"):
         raise ValueError("invalid_provider_owner_request")
     value = json.loads(raw, object_pairs_hook=_unique)
-    if (type(value) is not dict or set(value) != {"scenario", "credential", "deadline", "host_namespaces"}
+    fields = {"scenario", "credential", "deadline", "host_namespaces"}
+    if planning:
+        fields.update(("planning", "planning_request_digest"))
+    if (type(value) is not dict or set(value) != fields
             or type(value["scenario"]) is not str or value["scenario"] not in SCENARIOS
             or type(value["credential"]) is not str or not re.fullmatch(r"synthetic-[a-f0-9]{64}", value["credential"])
             or type(value["deadline"]) not in {int, float} or not math.isfinite(value["deadline"])
             or not 0 < value["deadline"] - time.monotonic() <= 600):
         raise ValueError("invalid_provider_owner_request")
+    if planning:
+        from recon_cockpit.secure_agent import assessment_planning_tls_contract as planning_contract
+        configuration = planning_contract.context(value["planning"])
+        if (planning_contract.transport_scenario(configuration["scenario"]) != value["scenario"]
+                or type(value["planning_request_digest"]) is not str
+                or re.fullmatch(r"[a-f0-9]{64}", value["planning_request_digest"]) is None):
+            raise ValueError("invalid_provider_owner_request")
     identities = value["host_namespaces"]
     if (type(identities) is not dict or set(identities) != {"user", "net", "mnt", "pid"}
             or any(type(identity) is not str or re.fullmatch(name + r":\[\d+\]", identity) is None
@@ -74,7 +86,7 @@ def _listen(address):
         raise
 
 
-def _http_request(connection, credential):
+def _http_request(connection, credential, *, planning=None, request_digest=None):
     request = bytearray()
     while b"\r\n\r\n" not in request:
         if len(request) >= MAX_HEADER_BYTES:
@@ -110,12 +122,18 @@ def _http_request(connection, credential):
         if not data:
             raise ValueError("incomplete_provider_http_request")
         body += data
-    validate_request(body)
+    if planning is None:
+        validate_request(body)
+    else:
+        from recon_cockpit.secure_agent import assessment_planning_tls_contract as planning_contract
+        configuration = planning_contract.context(planning)
+        planning_contract.request_details(body, case=configuration["case"])
+        planning_contract.verify_request_digest(body, request_digest)
     return body
 
 
-def response(scenario, credential):
-    status, body, extra = 200, success_response(), b""
+def response(scenario, credential, *, planning_body=None):
+    status, body, extra = 200, success_response() if planning_body is None else planning_body, b""
     if scenario == "redirect":
         status, body = 302, b'{"redirect":"owned-witness"}'
         extra = b"Location: https://127.0.0.2:8444/v1/responses\r\n"
@@ -138,9 +156,11 @@ def response(scenario, credential):
 
 
 class Service:
-    def __init__(self, listener, context, scenario, credential, deadline):
+    def __init__(self, listener, context, scenario, credential, deadline, *, planning=None, request_digest=None):
         self.listener, self.context = listener, context
         self.scenario, self.credential, self.deadline = scenario, credential, deadline
+        self.planning = planning
+        self.request_digest = request_digest
         self.lock = threading.Lock()
         self.connections = self.requests = 0
         self.failed = False
@@ -156,12 +176,17 @@ class Service:
                 try:
                     connection.settimeout(worker._remaining(self.deadline, 5))
                     with self.context.wrap_socket(connection, server_side=True) as tls:
-                        _http_request(tls, self.credential)
+                        request = _http_request(tls, self.credential, planning=self.planning,
+                                                request_digest=self.request_digest)
                         with self.lock:
                             self.requests += 1
                         if self.scenario == "slow":
                             time.sleep(worker._remaining(self.deadline, 600))
-                        tls.sendall(response(self.scenario, self.credential))
+                        body = None
+                        if self.planning is not None:
+                            from recon_cockpit.secure_agent import assessment_planning_tls_contract as planning_contract
+                            body = planning_contract.response_body(request, self.planning)
+                        tls.sendall(response(self.scenario, self.credential, planning_body=body))
                 except (OSError, ValueError):
                     connection.close()
         except BaseException:
@@ -176,11 +201,15 @@ class Service:
 
 
 def main():
+    return _main()
+
+
+def _main(*, planning=False):
     listeners = []
     try:
         if not stat.S_ISFIFO(os.fstat(0).st_mode):
             raise ValueError("provider_owner_requires_private_pipe")
-        request = read_request(sys.stdin.buffer)
+        request = read_request(sys.stdin.buffer, planning=planning)
         worker.assert_private_namespaces(request["host_namespaces"])
         deadline = request["deadline"]
         worker._set_limits(worker._remaining(deadline, 600))
@@ -202,7 +231,8 @@ def main():
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True,
                        timeout=worker._remaining(deadline, 3), env={"PATH": "/usr/sbin:/usr/bin", "LC_ALL": "C"}, close_fds=True)
         worker.drop_privileges()
-        service = Service(listeners[0], context, request["scenario"], request["credential"], deadline)
+        service = Service(listeners[0], context, request["scenario"], request["credential"], deadline,
+                          planning=request.get("planning"), request_digest=request.get("planning_request_digest"))
         resource.setrlimit(resource.RLIMIT_NPROC, (1, 1))
         worker.install_syscall_filter()
         namespaces = {name: os.readlink(f"/proc/self/ns/{name}") for name in ("user", "net", "mnt", "pid")}

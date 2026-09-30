@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current priority — 29 September 2026:** continue the original milestone plan
+**Current priority — 30 September 2026:** continue the original milestone plan
 from the current R5 work. **R5a and R5b are complete and merged within their
 agreed offline scope.** The accepted R1–R4 implementations remain the baseline;
 broader capability-registry or finding-workflow ideas do not reopen them or
@@ -12,13 +12,13 @@ become prerequisites for continuing R5. Finish the remaining R5 work, then R6,
 before additional product ideas. The [completion order below](#milestone-completion-order)
 is the current work queue. No new milestone or parallel GUI track is introduced.
 
-The main baseline before PR #24 is `a87e5dd`, after the authorized
-merge of PR #23 (direct fresh-approval verification). PRs #16–#22 are also merged.
-Final head `6dc7a7d` passed review, all five hosted checks and a previously completed
-3,196-test portable / 406-test Linux verification. The merge tree is identical;
-all five post-merge main checks passed. PR #24's bounded mock planning slice is
-verified and authorized for merge as recorded below. These results establish
-offline scope, not live-model acceptance.
+The main baseline is `4f9545c`, after the authorized merge of PR #24 (bounded
+mock assessment planning). PRs #16–#23 are also merged. Final head `9ccc910`
+passed review and all five hosted checks; its runtime passed 3,382 portable and
+430 Linux tests. The merge tree is identical and all five post-merge main checks
+passed. The next [owned TLS planning integration](owned-tls-assessment-planning.md)
+preserves that release and monetary gate while exercising disconnected transport.
+These results establish offline scope, not live-model acceptance.
 Live calls remain disabled; development and verification use owned/mock fixtures.
 
 ### Earlier implementation checkpoints
@@ -180,7 +180,7 @@ requires proof of a consumed grant from the approval worker, retains its origina
 expiry and rechecks freshness after admission. It closes reliance on a host
 consent claim in the opt-in path; the fixed worker and terminal remain trusted.
 
-The current [bounded offline planning slice](bounded-assessment-planning.md) on
+The merged [bounded offline planning slice](bounded-assessment-planning.md) on
 `feature/bounded-assessment-planning`, published as `bb9e42c` in
 [PR #24](https://github.com/0xsl0th/recon-cockpit/pull/24), connects the existing workflow/evidence
 eligibility gate, explicit planning data release, isolated parser/coordinator and
@@ -188,11 +188,13 @@ simulation monetary reservations/settlement to both independent launch checks.
 It uses finite owned mock responses and leaves the fixed ACK and R5a TLS contracts
 unchanged. Full verification passed 3,382 portable and 430 Linux tests, with zero
 selected failures/errors/skips; independent review has no remaining findings.
-The operator authorized review and merge of #24; review of `f24d313` found no
-blocking issue, and all five hosted jobs passed. The PR record gives its final
-merge state and commit. After merge, keep this mock slice closed and continue
-the planning transport and evaluation gates. Mock responses do not complete
-live-model acceptance.
+The operator authorized review and merge of #24; final head `9ccc910` passed
+review and all five hosted jobs, and merged as `4f9545c`. Keep this mock slice
+closed. The next [owned TLS slice](owned-tls-assessment-planning.md) sends the
+same approved descriptor through the disconnected fixture, preserves settlement
+before proposal release and verifies cleanup and transport failures. Offline
+evaluation of this combined path follows. Mock responses do not complete
+live-model acceptance; paid calls remain disabled during ordinary development.
 Full R5 remains incomplete. R6 follows those gates; optional GUI/session APIs,
 broader tools and lab scenarios remain deferred. The latest merge authorization
 covers PR #24 only; leave subsequent work for review and keep live calls disabled.

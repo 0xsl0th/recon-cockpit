@@ -37,8 +37,19 @@ class OwnedAssessmentPlanningProvider:
     name = "owned-mock-assessment-planning-v1"
 
     def __init__(self, case, audit, evidence, ledger, *, scope_id, scenario="success"):
+        if type(scenario) is not str or scenario not in contract.SCENARIOS:
+            raise ValueError("invalid_owned_planning_configuration")
+        self._initialize(case, audit, evidence, ledger, scope_id=scope_id)
+        self._broker = OfflineOpenAIBroker(
+            contract.CONFIG, audit,
+            OfflineTransport(contract.replies(case, scenario, run_id=self._instance_id)),
+            BrokerLimits(max_calls=3, max_reserved_output_tokens=3 * contract.OUTPUT_LIMIT,
+                         max_request_bytes=3 * contract.INPUT_LIMIT),
+        )
+
+    def _initialize(self, case, audit, evidence, ledger, *, scope_id):
+        """Shared host evidence/accounting state; no transport or runtime entry."""
         if (type(case) is not str or case not in CASES
-                or type(scenario) is not str or scenario not in contract.SCENARIOS
                 or type(ledger) is not CostLedger or ledger.mode != "simulation"
                 or ledger.snapshot(scope_id)["kind"] != "action"
                 or ledger.snapshot(scope_id)["attempt_count"] != 0):
@@ -46,12 +57,6 @@ class OwnedAssessmentPlanningProvider:
         self._case, self._audit, self._evidence = case, audit, evidence
         self._ledger, self._scope_id = ledger, scope_id
         self._instance_id = uuid4().hex
-        self._broker = OfflineOpenAIBroker(
-            contract.CONFIG, audit,
-            OfflineTransport(contract.replies(case, scenario, run_id=self._instance_id)),
-            BrokerLimits(max_calls=3, max_reserved_output_tokens=3 * contract.OUTPUT_LIMIT,
-                         max_request_bytes=3 * contract.INPUT_LIMIT),
-        )
         self._planner = LinuxOpenAIPlanner()
         self._lock = threading.Lock()
         self._session_id = None

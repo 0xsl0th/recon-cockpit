@@ -37,11 +37,17 @@ witness directly from the audit worker before admission or execution.
 unexpired witness from the approval worker after single-use grant consumption.
 All verification remains offline; these options do not enable live providers.
 
-The next R5 [bounded assessment-planning slice](docs/bounded-assessment-planning.md)
+The merged R5 [bounded assessment-planning slice](docs/bounded-assessment-planning.md)
 adds explicit `--assessment-planning-offline` for repository-owned responses,
 an allowlisted planning context and durable simulated cost admission before
 proposal release. It requires both direct launch gates and a new private ledger.
 Default deterministic workflows, provider contracts and live-call settings remain unchanged.
+
+The next [owned TLS planning integration](docs/owned-tls-assessment-planning.md)
+adds `--assessment-planning-owned-tls` for the same descriptor through a
+disconnected local TLS fixture. It uses generated synthetic credentials, the
+same simulation ledger and isolated parser, and all independent launch gates.
+Development, tests and demos make no paid model calls.
 
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 

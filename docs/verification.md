@@ -1,5 +1,57 @@
 # Verification record
 
+## R5 owned TLS assessment planning — 30 September 2026
+
+The new [owned TLS planning profile](owned-tls-assessment-planning.md) composes
+PR #24's saved-evidence and simulation monetary gates with a disconnected TLS
+fixture. It sends only the existing closed descriptor and uses generated
+synthetic credentials. Recognized usage settles before the isolated parser;
+all direct launch checks remain required. No external provider call, real
+credential or paid inference was used.
+
+Full portable regression passed **3,579 tests in 95.30 seconds**, with 466 Linux
+tests deselected and zero selected failures/errors/skips:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-planning-tls-all-portable.xml
+```
+
+The 197 new portable cases cover exact request/profile binding, old-profile
+separation, immutable session/transport lifetime, closed receipt validation,
+ledger settlement/holds, audit loss, cancellation, concurrency and CLI refusal.
+
+Focused rootless Linux verification passed **36 tests in 126.77 seconds**, with
+zero failures/errors/skips:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest \
+  tests/test_secure_assessment_planning_tls_linux.py -m integration -x -v --tb=short \
+  --junitxml=/tmp/recon-planning-tls-focused-linux.xml
+```
+
+This covers all six outcomes across both backends, settlement before both direct
+launch gates, TLS/HTTP/credential-reflection failures, malformed or ambiguous
+usage, overruns, refusal/substitution, budget/audit refusal before transport,
+dry/noninteractive execution refusal, active-connection cancellation/deadlines,
+and actual descendant cleanup. Worker canaries check absent host credentials,
+files, inherited descriptors and authority/evidence/ledger mounts. Scripted PTYs
+establish approval mechanics, not actual operator acceptance.
+
+Independent review found and corrected two cancellation issues before final
+verification: a later failed exchange could expose an earlier receipt and mask
+the original stop; cancellation immediately after successful transport audit
+could emit a duplicate terminal event. Regression tests now require a fresh
+receipt per attempt and one terminal transport event. Final review found no
+remaining blockers.
+
+The full rootless Linux regression is running; do not treat the focused result
+as full-suite evidence. Its report is `/tmp/recon-planning-tls-all-linux.xml`.
+Python 3.11 grammar checks passed for all 189 tracked/new Python files;
+dependency consistency, local documentation links and whitespace checks passed.
+Hosted portable checks and publication are recorded in the continuation
+checkpoint. None of these results establishes real-model acceptance or completes R6.
+
 ## R5 bounded offline assessment planning — 29 September 2026
 
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23) passed final review at

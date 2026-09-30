@@ -1,19 +1,32 @@
-# Continue here — 29 September 2026
+# Continue here — 30 September 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**PR #24 review and merge are authorized.** On 29 September 2026, the operator
-requested review and merge into main if all checks pass. Review of `f24d313`
-found no blocking issues or outstanding comments; all five hosted jobs passed.
-Both existing full-suite reports were rechecked: 3,382 portable and 430 Linux
-tests, zero failures/errors/skips. No runtime correction was needed. This
-authorization update changes documentation only. The
-[PR record](https://github.com/0xsl0th/recon-cockpit/pull/24) gives the authoritative
-merge state and commit; after merge, keep this mock planning slice closed and
-continue the remaining planning transport/evaluation work below. Later merges
-and live validation still require authorization.
+**PR #24 is merged and stays closed.** Final head `9ccc910` passed review and
+all five hosted checks. The authorized merge is `4f9545c` at 22:38:18 UTC on
+29 September; its tree exactly matches the reviewed head. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36640750168)
+passed. Runtime evidence remains 3,382 portable and 430 Linux tests, with zero
+selected failures/errors/skips. [PR #24](https://github.com/0xsl0th/recon-cockpit/pull/24)
+completed the bounded mock planning bridge. Later merges still require authorization.
+
+**Current work: owned TLS assessment planning**, on
+`feature/owned-tls-assessment-planning` from `4f9545c`. Read
+[owned-tls-assessment-planning.md](owned-tls-assessment-planning.md). The explicit
+`--assessment-planning-owned-tls` profile carries the existing closed descriptor
+through a disconnected TLS fixture with generated synthetic credentials. It
+reuses PR #24's evidence/monetary/proposal gate, preserves all independent launch
+checks and leaves the fixed ACK and original status-only profiles separate.
+Verification and publication are recorded below as they finish.
+
+On 30 September the operator agreed to continue development with paid live
+agents disabled. Finish necessary integration and offline evaluation first;
+ordinary development, CI and demos must make no paid calls. A later small
+real-model experiment needs explicit approval of its data/model/endpoint,
+credential and spending limits. This does not authorize live activation or
+declare R5's real-model acceptance complete.
 
 **PR #23 is merged.** The operator authorized review and merge on 29 September
 2026. Final head `6dc7a7d` passed review with no blocking findings or outstanding
@@ -24,7 +37,7 @@ passed. The previously completed 3,196 portable and 406 Linux tests remain the
 runtime evidence; the final PR commit changed documentation only. PRs #16–#23
 are merged and stay closed.
 
-PR #24 branch: `feature/bounded-assessment-planning`, from `a87e5dd`. This verified
+Historical PR #24 branch: `feature/bounded-assessment-planning`, from `a87e5dd`. This verified
 R5 slice integrates a separate bounded mock planning adapter with
 explicit data release, the isolated parser/coordinator, simulation monetary
 admission and both direct launch gates. Implementation `bb9e42c` is published in
@@ -34,8 +47,8 @@ passed **3,382 portable tests in 86.69 seconds** and **430 Linux tests in 771.15
 seconds**, with zero selected failures/errors/skips and no leftover workers.
 Independent review has no remaining findings; all five hosted jobs passed on
 the implementation. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/24/checks)
-show the final documentation checkpoint's status. The latest merge authorization
-covers PR #24; it does not extend to subsequent work. Live calls and external
+show the final documentation checkpoint's status. Its merge authorization
+covered PR #24 only. Live calls and external
 targets remain disabled.
 
 ## Current priority — continue R5 after completed R5a and R5b
@@ -63,7 +76,7 @@ verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
 authorize activation, external targets, real credentials or a new merge.
 
-The main baseline before PR #24 is `a87e5dd`, the merge of
+The earlier baseline before PR #24 was `a87e5dd`, the merge of
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate
 requires proof from the fixed approval worker after single-use grant consumption,
 binds it to the exact action/session/policy and preserves the original expiry.
@@ -72,7 +85,7 @@ terminal, bootstrap and host/kernel remain trusted; scripted PTYs are mechanics
 fixtures, not actual operator acceptance. Read
 [launch-approval-witness.md](launch-approval-witness.md) for the ownership contract.
 
-The current planning slice leaves that boundary, the fixed ACK diagnostic and
+The merged mock planning slice leaves that boundary, the fixed ACK diagnostic and
 R5a's TLS/status-only contract unchanged. `--assessment-planning-offline` requires
 a workflow, both direct launch gates and a new private `--planning-ledger`.
 Only a canonical repository-authored planning descriptor is released. The
@@ -82,7 +95,23 @@ candidate. Missing/unknown usage retains a dispatch hold; known overruns settle
 before refusal. All six existing cases and both lab backends remain the scope.
 This is a finite mock planning bridge, not actual model planning or live acceptance.
 
-## R5 bounded offline planning — reviewed for authorized merge
+## R5 owned TLS planning — verification checkpoint
+
+The full portable suite passed **3,579 tests in 95.30 seconds**; the focused
+Linux suite passed **36 tests in 126.77 seconds**. Both reports have zero selected
+failures/errors/skips. Independent review found two cancellation bookkeeping
+issues, now corrected and covered by regressions; the final review has no
+remaining blockers. Python 3.11 grammar (189 files), dependencies, local links
+and whitespace checks passed. Full Linux regression and publication remain in
+progress. Reports: `/tmp/recon-planning-tls-all-portable.xml`,
+`/tmp/recon-planning-tls-focused-linux.xml`, and, when complete,
+`/tmp/recon-planning-tls-all-linux.xml`. See [verification.md](verification.md).
+
+After this slice is reviewed and separately authorized for merge, continue with
+the integrated path's offline evaluation against the preserved deterministic
+baseline. Keep live model acceptance pending and optional additions deferred.
+
+## R5 bounded offline planning — merged checkpoint
 
 Full suites and the focused 24-case Linux run passed. The new 186 portable cases
 cover release/privacy, usage recognition, money admission and lost acknowledgements,
@@ -193,8 +222,8 @@ five-job portable matrix.
 
 ## Remaining milestone gates
 
-1. Confirm PR #24's recorded merge, then keep the verified mock planning slice
-   closed and continue the remaining planning transport/evaluation gates.
+1. Keep PR #24's verified mock planning slice closed. Review the owned TLS
+   planning integration, then continue the offline evaluation gate.
    Durable audit and fresh grant verification remain independent launch
    preconditions. A selected terminal/worker still cannot prove a human's
    identity or intent independently of that trusted environment.

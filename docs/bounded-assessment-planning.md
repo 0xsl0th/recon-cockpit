@@ -79,8 +79,9 @@ before policy or evidence input. Inspect the resulting ledger with the existing
 read-only `recon_cockpit.secure_agent.cost_cli` command.
 
 The fixed ACK diagnostic in `provider_pilot.py` and the R5a TLS provider
-foundation retain their existing contracts. A future planning transport needs
-its own explicit release/usage contract and offline verification before any live
-activation. Real-model comparison still requires reviewed data, model, endpoint,
+foundation retain their existing contracts. The separate
+[owned TLS planning integration](owned-tls-assessment-planning.md) reuses this
+release/usage contract through a disconnected synthetic endpoint; the in-memory
+profile documented here remains unchanged. Real-model comparison still requires reviewed data, model, endpoint,
 credential and spending choices plus explicit authorization. R6 follows the R5
 acceptance gates. Optional GUI/API/tool additions stay deferred.
