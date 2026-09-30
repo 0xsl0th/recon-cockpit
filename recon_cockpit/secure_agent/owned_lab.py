@@ -50,7 +50,7 @@ class OwnedLab:
         if (type(session_id) is not str or str(UUID(session_id)) != session_id
                 or type(limits) is not SessionLimits or type(execute) is not bool):
             raise ValueError("invalid_owned_lab_configuration")
-        self._identity = identity(case, str(uuid4()))
+        self._identity = self._make_identity(case, str(uuid4()))
         self.session_id = session_id
         self.limits = SessionLimits(**asdict(limits))
         self.execute = execute
@@ -81,6 +81,16 @@ class OwnedLab:
 
     def __exit__(self, *_):
         self.close()
+
+    def _make_identity(self, case, instance_id):
+        return identity(case, instance_id)
+
+    def _validate_context(self, value, expected):
+        return validate_context(value, expected)
+
+    def _owner_request(self, host, control):
+        return {"case": self._identity["scenario"], "deadline": control.deadline,
+                "host_namespaces": host}
 
     def _owner_command(self, stdlib, files, info_fd):
         argv = LinuxFixtureBackend()._command(stdlib, files)
@@ -145,8 +155,7 @@ class OwnedLab:
                 proc = self._supervisor.launch("lab", self._owner_command(stdlib, files, info_w),
                                                pass_fds=(info_w,), stdin=subprocess.PIPE)
                 self._supervisor.close_fd(info_w)
-                proc.stdin.write(encode({"case": self._identity["scenario"], "deadline": control.deadline,
-                                         "host_namespaces": host}) + b"\n")
+                proc.stdin.write(encode(self._owner_request(host, control)) + b"\n")
                 ready = self._read_message()
                 self._supervisor.wait_for(lambda: "info" in self._supervisor.eof)
                 if (type(ready) is not dict or set(ready) != {"ready", "namespaces", "witness_baselines", "connection_count", "request_count"}
@@ -192,7 +201,7 @@ class OwnedLab:
                 if (type(value) is not dict or set(value) != {"sequence", "connection_count", "request_count"}
                         or type(value["sequence"]) is not int or value["sequence"] != self._sequence):
                     raise IsolationUnavailable("Owned lab counter acknowledgement is invalid")
-                context = validate_context({"identity": self.identity, **{key: value[key] for key in self._counts}}, self.identity)
+                context = self._validate_context({"identity": self.identity, **{key: value[key] for key in self._counts}}, self.identity)
                 if (any(context[key] < self._counts[key] for key in self._counts)
                         or context["connection_count"] < minimum_connections
                         or context["request_count"] < minimum_requests):
@@ -222,6 +231,7 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
     """Fixed-session launches; no supplied action can choose a lab or namespace."""
 
     name = BACKEND
+    _envelope_mode = "owned_lab"
 
     def __init__(self, policy, session_id, limits, lab, *, execute=False):
         super().__init__(policy, session_id, limits, execute=execute)
@@ -310,7 +320,7 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
                 "limits": asdict(self._limits), "limits_digest": self._limits_digest,
                 "deadline": control.deadline, "output_reserved_before": before,
                 "output_reserved_after": self._output, "host_namespaces": _namespaces()}
-            request = encode({"mode": "owned_lab", "launch": launch, "identity": self._lab_identity,
+            request = encode({"mode": self._envelope_mode, "launch": launch, "identity": self._lab_identity,
                               "namespaces": self.lab._lab_namespaces})
             if len(request) > MAX_OWNED_LAUNCH_BYTES:
                 raise IsolationUnavailable("Owned lab executor launch exceeds its bound")

@@ -26,7 +26,6 @@ from .evidence import (
 from .models import load_json, parse_action
 from .nmap_parser import PARSER_VERSION
 from . import nmap_runtime
-from .owned_lab_contract import validate_closure, validate_identity
 
 
 MAX_ARTIFACT_BYTES = 65_536
@@ -40,8 +39,30 @@ _RECORD_FIELDS = {"execution_id", "session_step", "action", "action_digest", "po
                   "observation", "artifact", "authority_observation_sha256", "result_metadata"}
 
 
+def _profile(name):
+    """Select only repository-reviewed contracts; never import a caller path."""
+    if name == "nmap":
+        return contract, workflow
+    if name == "web":
+        from . import web_assessment_contract, web_workflow
+
+        return web_assessment_contract, web_workflow
+    raise ValueError("unsupported_evidence_workflow_profile")
+
+
+def _manifest_profile(manifest):
+    if type(manifest) is not dict:
+        raise ValueError("invalid_evidence_manifest")
+    if manifest.get("workflow") == contract.WORKFLOW:
+        return _profile("nmap")
+    if manifest.get("workflow") == "owned-web-assessment-v1":
+        return _profile("web")
+    raise ValueError("unsupported_evidence_workflow")
+
+
 def _validated_result(record, result, manifest, previous, *, deadline=None):
     """Recompute observations from retained bytes, including on read-only replay."""
+    contract, _ = _manifest_profile(manifest)
     status = record["execution_status"]
     if type(result) is not dict or result.get("status") != status:
         raise ValueError("invalid_nmap_result_status")
@@ -96,6 +117,7 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
 
 
 def _summary(value, manifest, records, decisions):
+    contract, _ = _manifest_profile(manifest)
     keys = {"session_id", "session_status", "stop_reason", "steps_attempted",
             "actions_succeeded", "output_reserved_bytes", "mode"}
     result = {key: value[key] for key in keys}
@@ -118,13 +140,14 @@ def _summary(value, manifest, records, decisions):
 
 
 def _report(manifest, records, decisions, summary, terminal, closure, issues):
+    contract, _ = _manifest_profile(manifest)
     issues = sorted(set(issues))
     reason = "assessment_incomplete" if terminal is None else terminal["reason"]
     outcome = {"seeded_diagnostic_metadata_exposed": "validated",
                "diagnostic_endpoint_not_found": "not_demonstrated"}.get(reason, "inconclusive")
     if issues:
         outcome, reason = "inconclusive", "evidence_integrity_incomplete"
-    return {
+    report = {
         "schema_version": "1", "assessment_id": manifest["assessment_id"],
         "session_id": manifest["session_id"], "workflow": contract.WORKFLOW,
         "fixture_case": manifest["fixture_case"], "workflow_card": manifest["workflow_card"],
@@ -146,10 +169,20 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
             "No execution or authority is resumed by inspecting these files.",
         ],
     }
+    if contract.WORKFLOW == "owned-web-assessment-v1":
+        report["finding"]["title"] = "Synthetic HarborDesk diagnostic metadata available without authentication"
+        report["limitations"].extend([
+            "The injected variant retains hostile operator_note text as untrusted evidence; deterministic planning ignores it.",
+            "No model susceptibility, induced out-of-scope proposal, or paired adversarial comparison is demonstrated by this workflow.",
+            "HTTP observations use bounded decoded responses; they do not establish complete HTTP framing integrity or authenticate server content.",
+        ])
+    return report
 
 
 def _markdown(report):
-    lines = ["# Owned Nmap and HTTP assessment", "", "Outcome: **" + report["outcome"] + "**", "",
+    title = ("# Owned HarborDesk web assessment" if report["workflow"] == "owned-web-assessment-v1"
+             else "# Owned Nmap and HTTP assessment")
+    lines = [title, "", "Outcome: **" + report["outcome"] + "**", "",
              "Reason: `" + report["reason"] + "`", "", "Planning: deterministic and offline.", "",
              "## Evidence", ""]
     for item in report["finding"]["evidence"]:
@@ -163,7 +196,8 @@ def _markdown(report):
 class NmapEvidenceStore(EvidenceStore):
     """Reuse private file lifecycle only; all semantic contracts are versioned."""
 
-    def __init__(self, directory, *, session_id, policy, case, owned_lab, runtime_sha256=None, deadline=None):
+    def __init__(self, directory, *, session_id, policy, case, owned_lab, runtime_sha256=None, deadline=None,
+                 workflow_profile="nmap"):
         self.directory = Path(directory)
         self._fd = self._journal = None
         self._failed = self._finalized = False
@@ -172,10 +206,12 @@ class NmapEvidenceStore(EvidenceStore):
         self._lock = threading.Lock()
         self._deadline = deadline
         try:
+            contract, workflow = _profile(workflow_profile)
+            self._contract, self._workflow_contract = contract, workflow
             if not _uuid(session_id) or (runtime_sha256 is not None and not _digest(runtime_sha256)):
                 raise ValueError("invalid_nmap_evidence_configuration")
             contract.action(case, 1)
-            self._owned_lab = validate_identity(owned_lab, case=case)
+            self._owned_lab = contract.validate_identity(owned_lab, case=case)
             self._manifest = {
                 "schema_version": "1", "assessment_id": str(uuid4()), "session_id": session_id,
                 "workflow": contract.WORKFLOW, "fixture_case": case, "policy_digest": policy.digest,
@@ -198,6 +234,7 @@ class NmapEvidenceStore(EvidenceStore):
             raise EvidenceUnavailable("evidence_unavailable") from None
 
     def record_decision(self, step, observation):
+        workflow = self._workflow_contract
         with self._lock:
             try:
                 self._check()
@@ -220,6 +257,7 @@ class NmapEvidenceStore(EvidenceStore):
                 raise EvidenceUnavailable("evidence_unavailable") from None
 
     def start(self, action, policy, *, session_id, session_step, backend):
+        contract = self._contract
         with self._lock:
             try:
                 self._check()
@@ -270,7 +308,23 @@ class NmapEvidenceStore(EvidenceStore):
                 self._failed = True
                 raise EvidenceUnavailable("evidence_unavailable") from None
 
+    def record_lab_closed(self, receipt):
+        """Persist the selected reviewed lab's teardown receipt before findings."""
+        with self._lock:
+            try:
+                self._check()
+                if (self._lab_closure is not None
+                        or any(row["artifact"] is None for row in self._records)):
+                    raise ValueError("invalid_owned_lab_closure_order")
+                closure = self._contract.validate_closure(receipt, self._owned_lab, previous=self._lab_context)
+                self._emit({"event_type": "assessment_owned_lab_closed", "receipt": closure})
+                self._lab_closure = closure
+            except (OSError, RuntimeError, ValueError, TypeError, KeyError, RecursionError):
+                self._failed = True
+                raise EvidenceUnavailable("evidence_unavailable") from None
+
     def finalize(self, summary):
+        workflow = self._workflow_contract
         with self._lock:
             try:
                 self._check()
@@ -307,6 +361,7 @@ def inspect_evidence(directory):
                 if len(names) > 12:
                     raise ValueError("nmap_evidence_file_limit")
         manifest = load_json(_read_private(fd, "manifest.json", 8192))
+        contract, workflow = _manifest_profile(manifest)
         if (set(manifest) != {"schema_version", "assessment_id", "session_id", "workflow", "fixture_case",
                              "policy_digest", "created_at", "artifact_representation", "workflow_card",
                              "owned_lab", "runtime_sha256"}
@@ -318,7 +373,7 @@ def inspect_evidence(directory):
                 or manifest["workflow_card"] != workflow.card_identity()
                 or type(manifest["created_at"]) is not str or len(manifest["created_at"]) > 64):
             raise ValueError("invalid_nmap_manifest")
-        validate_identity(manifest["owned_lab"], case=manifest["fixture_case"])
+        contract.validate_identity(manifest["owned_lab"], case=manifest["fixture_case"])
         records, decisions, issues = [], [], []
         summary = terminal = terminal_summary = context = closure = latest_result = None
         referenced = {"manifest.json", "evidence.jsonl", "report.json", "report.md"}
@@ -349,7 +404,7 @@ def inspect_evidence(directory):
                 if kind == "assessment_owned_lab_closed":
                     if closure is not None or any(row["artifact"] is None for row in records):
                         raise ValueError("invalid_nmap_closure_order")
-                    closure = validate_closure(event["receipt"], manifest["owned_lab"], previous=context)
+                    closure = contract.validate_closure(event["receipt"], manifest["owned_lab"], previous=context)
                     continue
                 if kind == "assessment_workflow_terminal":
                     candidate = _summary(event["summary"], manifest, records, decisions)

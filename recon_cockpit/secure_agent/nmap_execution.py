@@ -27,12 +27,17 @@ def consume_launch(raw, nonce, context_digest, *, now=None):
     def constant(_):
         raise ValueError('invalid_nmap_constant')
     value = json.loads(raw.decode('ascii'), object_pairs_hook=_object_pairs, parse_constant=constant)
-    if type(value) is not dict or set(value) != {'mode', 'launch', 'identity', 'namespaces', 'runtime'} or value['mode'] != 'owned_nmap_lab':
+    if (type(value) is not dict or set(value) != {'mode', 'launch', 'identity', 'namespaces', 'runtime'}
+            or value['mode'] not in ('owned_nmap_lab', 'owned_web_lab')):
         raise ValueError('invalid_nmap_launch')
-    identity = validate_identity(value['identity'])
+    web = value['mode'] == 'owned_web_lab'
+    identity_validator = validate_identity
+    if web:
+        from .web_lab_contract import validate_identity as identity_validator
+    identity = identity_validator(value['identity'])
     launch = value['launch']
     if (type(launch) is not dict or set(launch) != LAUNCH_FIELDS
-            or launch['schema_version'] != '1' or launch['mode'] != 'nmap_owned'
+            or launch['schema_version'] != '1' or launch['mode'] != ('nmap_web_owned' if web else 'nmap_owned')
             or launch['execute'] is not True or launch['nonce'] != nonce
             or type(launch['session_id']) is not str or str(UUID(launch['session_id'])) != launch['session_id']):
         raise ValueError('invalid_nmap_authority')
@@ -51,7 +56,9 @@ def consume_launch(raw, nonce, context_digest, *, now=None):
         raise ValueError('nmap_expired_or_exhausted')
     action = parse_action(launch['action'])
     policy = parse_policy(launch['policy'])
-    if (action.tool_id != TOOL_ID or not profile_allows(action, identity['scenario'])
+    profile_allowed = (action.targets == ('127.0.0.1',) and action.parameters.to_dict() == PARAMETERS
+                       if web else profile_allows(action, identity['scenario']))
+    if (action.tool_id != TOOL_ID or not profile_allowed
             or action.to_dict() != launch['action'] or policy.to_dict() != launch['policy']
             or action.digest != launch['action_digest'] or policy.digest != launch['policy_digest']
             or policy.evaluate(action).decision == 'deny'):

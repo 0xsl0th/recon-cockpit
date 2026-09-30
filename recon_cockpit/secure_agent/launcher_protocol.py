@@ -12,7 +12,8 @@ CHECKS = frozenset({'namespaces_private', 'nonroot_identity', 'capabilities_drop
 PROFILES = {'fixture': 'linux-authorized-fixture-executor-v1',
             'discovery_fixture': 'linux-authorized-discovery-fixture-executor-v1',
             'owned_lab': 'linux-authorized-owned-lab-executor-v1',
-            'owned_nmap_lab': 'linux-authorized-owned-nmap-lab-executor-v1'}
+            'owned_nmap_lab': 'linux-authorized-owned-nmap-lab-executor-v1',
+            'owned_web_lab': 'linux-authorized-owned-web-lab-executor-v1'}
 
 
 def encode(value):
@@ -35,8 +36,10 @@ def decode(raw):
 
 
 def configuration(value):
-    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab'}:
+    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab'}:
         from .owned_lab_contract import validate_identity
+        if value['profile'] == 'owned_web_lab':
+            from .web_lab_contract import validate_identity
         base = admission.configuration({key: item for key, item in value.items() if key != 'owned_lab'})
         return {**base, 'owned_lab': validate_identity(value.get('owned_lab'), case=base['case'])}
     value = admission.configuration(value)
@@ -78,8 +81,8 @@ def initial(value, now):
         manifest(value['approval_witness'])
     config = configuration(value['configuration'])
     admission.initial({'configuration': {k: v for k, v in config.items() if k != 'owned_lab'}, 'deadline': value['deadline']}, now)
-    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab'},
-            nmap=config['profile'] == 'owned_nmap_lab')
+    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab'},
+            nmap=config['profile'] in {'owned_nmap_lab', 'owned_web_lab'})
     return config
 
 

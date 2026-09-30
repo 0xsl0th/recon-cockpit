@@ -16,6 +16,7 @@ from . import launch_admission as admission, launcher_protocol as protocol
 from .authorized_execution import AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend
 from .owned_lab import AuthorizedOwnedLabBackend
 from .nmap_backend import AuthorizedNmapOwnedBackend
+from .web_backend import AuthorizedWebLabBackend
 from .owned_lab_contract import validate_result_context, validate_closure
 from .execution import ExecutionControl, ExecutionStopped
 from .isolation import (IsolationUnavailable, LinuxFixtureBackend, _namespaces,
@@ -28,22 +29,22 @@ MODULES = ('launcher_worker', 'launcher_protocol', 'execution', 'models', 'tool_
            'isolation', 'routed', 'planner_isolation', 'planner_worker', 'session_provider')
 NMAP_MODULES = ('nmap_contract', 'nmap_backend', 'nmap_execution', 'nmap_runtime', 'nmap_worker',
                 'nmap_parser', 'nmap_parser_worker')
+WEB_MODULES = ('web_backend', 'web_lab', 'web_lab_worker', 'web_fixture', 'web_lab_contract', 'web_assessment_contract')
 OWNED_MODULES = ('owned_launcher_runtime', 'owned_lab', 'owned_lab_worker', 'owned_lab_executor',
                  'owned_lab_contract', 'assessment_contract', 'authorized_execution', 'session_limits', '__init__')
 
 
 class LinuxFixtureLauncher:
     def __init__(self, backend, *, audit=None, approvals=None):
-        if type(backend) not in {AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend, AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend}:
+        if type(backend) not in {AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend, AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend, AuthorizedWebLabBackend}:
             raise ValueError('unsupported_launcher_backend')
         self.name = backend.name
         self._nmap_manifest = getattr(backend, "_nmap_manifest", None)
-        owned = type(backend) in {AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend}
-        nmap = type(backend) is AuthorizedNmapOwnedBackend
+        owned = type(backend) in {AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend, AuthorizedWebLabBackend}
         self._config = protocol.configuration({'version': '1', 'service_id': str(uuid4()),
             'session_id': backend._session_id, 'policy': backend._policy.to_dict(),
             'limits': asdict(backend._limits), 'execute': backend._execute,
-            'profile': 'owned_nmap_lab' if nmap else 'owned_lab' if owned else backend.launch_mode,
+            'profile': 'owned_lab' if type(backend) is AuthorizedOwnedLabBackend else backend.launch_mode,
             'case': backend._lab_identity['scenario'] if owned else None,
             **({'owned_lab': backend._lab_identity} if owned else {})})
         self._control = self._channel = self._supervisor = self._checks = None
@@ -78,7 +79,7 @@ class LinuxFixtureLauncher:
 
     @property
     def identity(self):
-        if self._config['profile'] not in {'owned_lab', 'owned_nmap_lab'}:
+        if self._config['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab'}:
             raise ValueError('launcher_has_no_persistent_lab')
         return dict(self._config['owned_lab'])
 
@@ -101,7 +102,7 @@ class LinuxFixtureLauncher:
     def _runtime(self, control):
         stdlib, files = _runtime_files('/usr/bin/python3', _trusted_program('nft'), control=control)
         programs = [_trusted_program('bwrap')]
-        if self._config['profile'] in {'owned_lab', 'owned_nmap_lab'}:
+        if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab'}:
             programs.append(_trusted_program('nsenter'))
         listing = _runtime_probe([_trusted_program('ldd'), *programs], 5, 65536, control).decode('ascii')
         if 'not found' in listing:
@@ -114,12 +115,12 @@ class LinuxFixtureLauncher:
         by_destination = {destination: source for source, destination in files}
         files = [(by_destination[p], p) for p in sorted(by_destination)]
         closure = {'stdlib': stdlib, 'files': [p for _, p in files]}
-        nmap = self._config['profile'] == 'owned_nmap_lab'
+        nmap = self._config['profile'] in {'owned_nmap_lab', 'owned_web_lab'}
         if nmap:
             from .nmap_runtime import inspect_nmap_runtime, runtime_source_mounts
             closure['nmap_runtime'] = self._nmap_manifest if self._nmap_manifest is not None else inspect_nmap_runtime(control)
             files += runtime_source_mounts(closure['nmap_runtime'])
-        protocol.runtime(closure, owned_lab=self._config['profile'] in {'owned_lab', 'owned_nmap_lab'}, nmap=nmap)
+        protocol.runtime(closure, owned_lab=self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab'}, nmap=nmap)
         return closure, files
 
     def _command(self, closure, files, commitment):
@@ -132,7 +133,8 @@ class LinuxFixtureLauncher:
         for source, destination in files:
             argv += ['--ro-bind', source, destination]
         for name in (*MODULES,
-                     *(NMAP_MODULES if self._config['profile'] == 'owned_nmap_lab' else ()), *(OWNED_MODULES if self._config['profile'] in {'owned_lab', 'owned_nmap_lab'} else ()),
+                     *(WEB_MODULES if self._config['profile'] == 'owned_web_lab' else ()),
+                     *(NMAP_MODULES if self._config['profile'] in {'owned_nmap_lab', 'owned_web_lab'} else ()), *(OWNED_MODULES if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab'} else ()),
                      *(('audit_witness', 'audit_protocol') if self._witness_source is not None else ()),
                      *(('approval_witness', 'approval_protocol') if self._approval_source is not None else ())):
             argv += ['--ro-bind', str(Path(__file__).with_name(name+'.py').resolve()),
@@ -143,7 +145,8 @@ class LinuxFixtureLauncher:
             '/usr/bin/python3', '-I', '-S', '/app/recon_cockpit/secure_agent/launcher_worker.py',
             commitment, *(host[name] for name in ('user', 'net', 'mnt', 'pid'))]
         if self._approval_source is not None:
-            argv.append('nmap-launch-preconditions' if self._config['profile'] == 'owned_nmap_lab' else 'launch-preconditions')
+            argv.append({'owned_nmap_lab': 'nmap-launch-preconditions',
+                         'owned_web_lab': 'web-launch-preconditions'}.get(self._config['profile'], 'launch-preconditions'))
         elif self._witness_source is not None:
             argv.append('launch-witness')
         return argv
@@ -256,8 +259,10 @@ class LinuxFixtureLauncher:
             context_validator = validate_result_context
             if self._config['profile'] == 'owned_nmap_lab':
                 from .nmap_contract import validate_result_context as context_validator
+            elif self._config['profile'] == 'owned_web_lab':
+                from .web_assessment_contract import validate_result_context as context_validator
             lab_context = (context_validator(result, self.identity, previous=self._lab_context,
-                tool_id=action.tool_id, execution_status=result['status']) if self._config['profile'] in {'owned_lab', 'owned_nmap_lab'} else None)
+                tool_id=action.tool_id, execution_status=result['status']) if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab'} else None)
             expected = {'executions_reserved': self._snapshot['executions_reserved']+1,
                         'output_bytes_reserved': self._snapshot['output_bytes_reserved']+action.parameters.max_output_bytes}
             if (expected['output_bytes_reserved'] > self._config['limits']['max_output_bytes']
@@ -300,12 +305,15 @@ class LinuxFixtureLauncher:
         with self._lock:
             if not self._closed:
                 self._cleanup()
-            if self._config['profile'] in {'owned_lab', 'owned_nmap_lab'}:
+            if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab'}:
                 if not self._cleanup_verified:
                     raise IsolationUnavailable('Lab cleanup was not verified')
                 if self._lab_receipt is None:
                     context = self._lab_context or {'identity': self.identity, 'connection_count': 0, 'request_count': 0}
-                    self._lab_receipt = validate_closure({**context, 'status': 'closed'}, self.identity, previous=self._lab_context)
+                    closure_validator = validate_closure
+                    if self._config['profile'] == 'owned_web_lab':
+                        from .web_lab_contract import validate_closure as closure_validator
+                    self._lab_receipt = closure_validator({**context, 'status': 'closed'}, self.identity, previous=self._lab_context)
                 return {**self._lab_receipt, 'identity': self.identity}
 
     def __enter__(self):

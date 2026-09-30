@@ -1,5 +1,41 @@
 # Verification record
 
+## Resettable HarborDesk web lab — 30 September 2026
+
+The operator authorized the richer resettable owned scenario after PR #32.
+Implementation is on `feature/resettable-web-lab`, based on `875c1a6`.
+[web-lab.md](web-lab.md) documents the separate fixture/workflow identity,
+vulnerable/corrected/injected variants and mandatory authority gates. The source
+uses existing Nmap/HTTP tools, the same singleton owned scope and the unchanged
+3-action/60-second/18,432-byte ceiling. No model, credential, external target,
+spending, release or submission is enabled. Accepted offline milestones and the
+proposal/PDF remain unchanged.
+
+Independent review covered fixture/reset, strict HTTP interpretation, workflow
+predecessors, evidence replay, admission/executor checks, launcher witness binding
+and legacy behavior. Corrections made before broad regression testing fix an
+HTTP request-tag mismatch and structured refusal of malformed inspection
+workflow values. Existing Nmap report JSON/Markdown have golden byte checks.
+
+Focused actual Linux verification passed nine full workflow trials (three fresh
+instances per variant), with expected `validated`/`not_demonstrated`/`validated`
+outcomes, three successful actions, two HTTP requests and 18,432 reserved bytes
+per trial. Inspection left every evidence byte and mtime unchanged. The injected
+note appeared only in private decoded HTTP artifacts. Four lifecycle tests verified
+repeatable fixtures, zero starting counters, boundary checks and reset/cancellation
+cleanup. Five approval tests covered a synthetic PTY grant, replay refusal,
+missing/forged direct consumed proof and two wrong bootstrap tags. These are
+scripted test grants, not human walkthrough or acceptance.
+
+The full portable and Linux regression suites are in progress. Their final
+results must be recorded before marking this change ready for review. Focused
+reports: `/tmp/recon-web-workflow-linux.xml` (six test cases including the nine
+workflow trials and the initial three approval tests),
+`/tmp/recon-web-approval-linux.xml` (all five approval cases), and
+`/tmp/recon-web-contract-evidence-portable.xml` (149 new/legacy contract checks).
+An induced malicious-output proposal and baseline/overhead comparison remain the
+next separate slice. This increment alone provides no model-susceptibility result.
+
 ## PR #32 merge review — 30 September 2026
 
 The operator explicitly authorized reviewing PR #32 and merging its latest
@@ -12,12 +48,13 @@ passed. Main has no configured required checks; all available jobs are checked.
 Saved local reports independently reconcile to 4,548 distinct passing cases,
 including every case in the final 495-test Linux selection.
 
-This review corrects the checkpoint's stale statement that no merge was
-authorized. Only the checkpoint and this record change; runtime, tests, proposal
-and private artifacts remain identical to the reviewed revision. The updated
-head must pass its own hosted checks before the guarded merge. Consult
-[PR #32](https://github.com/0xsl0th/recon-cockpit/pull/32) for the resulting head,
-check and merge status. PR #31, live work and publication remain separate.
+The checkpoint correction became final head `b7e1904`; runtime/tests stayed
+identical to the reviewed revision. All five
+[final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36764600927)
+passed. The authorized guarded merge is `875c1a6` at 19:23:07 UTC on
+30 September; its tree exactly matches the reviewed head. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36765297652)
+passed. PR #32 stays closed. PR #31, live work and publication remain separate.
 
 ## Reviewed adapters and owned Nmap — 30 September 2026
 

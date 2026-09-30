@@ -15,6 +15,8 @@ class AuthorizedNmapOwnedBackend(AuthorizedOwnedLabBackend):
     supported_tools = (TOOL_ID, 'http_probe')
     launch_mode = 'owned_nmap_lab'
     _nmap_closure = None
+    _nmap_mode = 'owned_nmap_lab'
+    _nmap_launch_mode = 'nmap_owned'
 
     def check_available(self, action=None):
         if not self._execute or (action is not None and not profile_allows(action, self._lab_identity['scenario'])):
@@ -56,7 +58,7 @@ class AuthorizedNmapOwnedBackend(AuthorizedOwnedLabBackend):
             self._output += action.parameters.max_output_bytes
             self.lab.start(control)
             nonce = secrets.token_hex(32)
-            launch = {'schema_version': '1', 'mode': 'nmap_owned', 'execute': True,
+            launch = {'schema_version': '1', 'mode': self._nmap_launch_mode, 'execute': True,
                 'session_id': self._session_id, 'nonce': nonce, 'sequence': self._sequence,
                 'action': action.to_dict(), 'action_digest': action.digest,
                 'policy': self._policy.to_dict(), 'policy_digest': self._policy_digest,
@@ -64,7 +66,7 @@ class AuthorizedNmapOwnedBackend(AuthorizedOwnedLabBackend):
                 'deadline': control.deadline, 'output_reserved_before': before,
                 'output_reserved_after': self._output, 'host_namespaces': _namespaces()}
             from .nmap_runtime import run_nmap_owned
-            result = run_nmap_owned(lab=self.lab, launch={'mode': 'owned_nmap_lab', 'launch': launch,
+            result = run_nmap_owned(lab=self.lab, launch={'mode': self._nmap_mode, 'launch': launch,
                 'identity': self._lab_identity, 'namespaces': self.lab._lab_namespaces},
                 control=control, closure=self._nmap_closure)
             result['backend'] = self.name
