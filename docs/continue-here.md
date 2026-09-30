@@ -58,41 +58,73 @@ exactly matches the reviewed head. All five
 [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36672797756)
 passed. The Spanish proposal reconciliation is complete; do not repeat it.
 
-**Local submission draft prepared and verified; not sent.** The operator
-authorized a readable proposal PDF, an unsent email, references to the accepted
-evidence/runbook and this checkpoint update. Branch `docs/submission-draft-package`
-starts from `cba8059` and is tracked in
-[PR #30](https://github.com/0xsl0th/recon-cockpit/pull/30). The final PDF and
-supporting files are in `.secure-agent/submission-draft-20260930-final`; visual,
-content and privacy checks are complete. The earlier interrupted-work snapshot
-and `submission-draft-20260930-layout` are superseded. The PDF remains ignored
-and local; it is not part of the PR. The operator has now authorized review and
-merge of PR #30 if its latest revision and all available checks pass. Consult
-the PR for its current merge/check status before taking further action.
-The proposal text remains unchanged; the local PDF uses
-that full source revision for its document links. This document revision is
-distinct from the accepted packet's verification source `070257b` and the
-rehearsal's execution revision `dd4bbe4`.
+**PR #30 is merged and stays closed.** Final head `1634097` passed review after
+correcting the obsolete interruption checkpoint, with all five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36676777225)
+passing. The guarded merge is `8ae4aad` at 06:14:59 UTC; its tree exactly matches
+the reviewed head. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36677270493)
+passed. The local PDF was not included in Git or uploaded by the merge.
+
+**Current reviewable work: jury proposal and bounded evaluation plan.** The
+operator requested a repository-grounded rewrite centered on problem, contribution
+and demonstration, with detailed evidence moved into a technical appendix.
+This continues [PR #31](https://github.com/0xsl0th/recon-cockpit/pull/31) on
+`docs/proposal-author-voice`, based on `8ae4aad`; the PR's earlier wording-only
+scope is superseded. The work remains documentation and evaluation planning.
+No new live integration, data-release profile, fixture scenario or runtime
+control is implemented or authorized by this task.
+
+The [proposal](competition-proposal.md) distinguishes verified synthetic hostile
+follow-up rejection from a planned real-model experiment. The
+[technical appendix](competition-proposal-appendix.md) maps claims to evidence
+and specifies 36 paired-condition trials, up to 2 preparation sessions, a
+proposed 114-call/USD 5 aggregate ceiling, separate security/utility/overhead
+comparisons and failure accounting. These limits require later configuration
+review and explicit approval; they do not authorize spending. The current
+assessment planner excludes raw HTTP bodies and pins the host-selected action;
+the new experimental data/evidence contract is planned work. Keep the accepted
+offline scope closed and retain its demonstrator as the disclosed fallback.
+
+The current Spanish PDF is
+`.secure-agent/submission-ready-20260930-jury/recon-cockpit-propuesta-20260930.pdf`:
+six jury-facing pages plus six appendix pages. Both document sources are pinned
+to `c4acf63ff53e03bcaf6faf15d9d5911a5766eaa1`, also the renderer/layout revision.
+At the operator's request, section 8 says “Soy Enrique Folte, integrante y
+contacto del proyecto.” Visible draft/not-submitted labels and the PDF title's
+draft marker are removed. All 175 text blocks, 15 HTTPS annotations and the
+internal appendix link passed checks. The preceding layout's twelve pages were
+visually inspected; the two pages affected by the final wording changes were
+inspected again. SHA-256:
+`bf49f1ab65089ee23d9e0504edb9875be168b5eca93b020988eb9658e636558e`.
+The PDF remains ignored and local. Earlier Spanish exports and the English copy
+remain unchanged; the English copy does not include this new jury rewrite.
+The earlier English copy was sent only to the operator's own Gmail at their
+explicit request; the competition email remains unsent. Leave PR #31 ready for
+review; no merge beyond PR #30 or competition submission is authorized.
+The proposal revision is distinct from packet verification source `070257b`
+and rehearsal execution revision `dd4bbe4`.
 
 The [local renderer](../scripts/render_submission_draft.py) and
 [print stylesheet](submission-print.css) use the prepared host Python, Markdown,
 BeautifulSoup, WeasyPrint, Graphviz and DejaVu fonts. They are documentation
-tools, not new application dependencies. Asset retrieval is disabled; the
-architecture preserves the existing diagram's labels and directed edges. Output
-goes to a new private directory with a PDF, unsent copy of
-[the email draft](submission-email.txt), source/HTML/SVG, review notes and a hash
-manifest. Private evaluation records are referenced for the operator, not copied
-into proposed attachments. The PDF is the only proposed email attachment.
+tools, not new application dependencies. Asset retrieval is disabled. The updated
+conceptual diagram includes the denial path; future live integration is labeled.
+Both proposal and appendix must match the selected source revision. Output goes
+to a new private directory with the combined PDF, unsent copy of
+[the email draft](submission-email.txt), both Markdown sources, HTML/SVG,
+review notes and a hash manifest. The PDF includes summarized technical evidence,
+not private raw evaluation records. It is the only proposed email attachment.
 
 ```sh
 python3 scripts/render_submission_draft.py \
-  --revision cba8059e084655c355301d15dfd374505352c2b3 \
+  --revision c4acf63ff53e03bcaf6faf15d9d5911a5766eaa1 \
   --output .secure-agent/submission-draft-NEW
 ```
 
-The renderer refuses existing output directories and a proposal that differs
+The renderer refuses existing output directories and either document differing
 from the selected source revision. It does not install dependencies, run agents,
-submit email or publish a release. The dated draft remains for operator review;
+submit email or publish a release. The polished proposal remains local and unsent;
 submission/publication, live work and merges after PR #30 require their
 corresponding operator instruction. See [verification.md](verification.md) for
 the final local artifact and export checks.
@@ -877,23 +909,24 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator authorized the completed merges through PR #29 and review/merge
-  of PR #30 if its latest revision and checks pass. This does not
+- The operator authorized the completed merges through PR #30. This does not
   authorize merges beyond PR #30, submission, messages, paid calls or
   external targets.
 
 ## Next continuation
 
-1. Start from the current priority and checkpoint above. PRs #6–#29 are already
+1. Start from the current priority and checkpoint above. PRs #6–#30 are already
    merged; historical branch names and earlier “next” notes are not current work.
-   Check PR #30's current status; if merged, keep its delivery work closed.
+   Review PR #31's jury proposal, technical appendix and refreshed local PDF.
 2. Preserve the completed offline comparison, accepted local packet, successful
    approval-required terminal rehearsal and actual operator observations/decision.
    Do not reopen the accepted local review or modify the immutable packet.
 3. R5 real-model acceptance remains pending while paid/live calls are prohibited.
    The reproducible packet and demo runbook are already merged and the local
-   offline candidate is accepted. Review the local PDF and unsent submission
-   message; proposal reconciliation is already merged. Publication/submission
+   offline candidate is accepted. The real-model milestone and adversarial
+   evaluation are now explicitly planned; this documentation does not authorize
+   their implementation or execution. Review the local Spanish jury PDF and
+   unsent competition message. Publication/submission
    and any later live experiment require their
    corresponding operator instruction; no further optional feature is needed
    to complete the accepted offline scope.
