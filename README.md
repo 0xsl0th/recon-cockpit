@@ -3,9 +3,11 @@
 For project direction, see the [development roadmap](docs/roadmap.md) and
 [competition proposal](docs/competition-proposal.md). To resume work after an
 interruption, start with [the current checkpoint](docs/continue-here.md).
-Current priority is to finish R5, with R5a and R5b complete and merged, then R6.
-See the [completion order](docs/roadmap.md#milestone-completion-order);
-additional session-view and GUI work follows milestone completion. Live provider
+R5's agreed offline implementation and evaluation are complete. Live-model
+integration, validation and acceptance remain deferred pending authorization.
+The current priority is R6 under the disclosed offline fallback; see the
+[completion order](docs/roadmap.md#milestone-completion-order).
+Additional session-view and GUI work follows milestone completion. Live provider
 execution remains disabled, with development and verification using owned/mock fixtures.
 
 The merged [confined audit writer](docs/isolated-audit.md) is available through
@@ -54,6 +56,11 @@ The [offline planning evaluation](docs/planning-evaluation.md) adds
 It compares repeated cases with the preserved baseline, checking TLS cleanup,
 launch gates and one bounded simulation ledger. Live-model and actual operator
 acceptance remain pending.
+
+The [offline release packet and demo runbook](docs/offline-release-evidence.md)
+combine independently verified baseline/planning evidence with a pinned source
+snapshot. Packet creation and inspection are local and make no provider calls;
+real-model acceptance, actual operator review and release publication stay pending.
 
 ## Secure Agent Mode — bounded sessions and owned HTTP assessments
 

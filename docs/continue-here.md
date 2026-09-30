@@ -4,6 +4,25 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
+**Current milestone: R5 offline scope complete; R6 operator review next.** The
+accepted provider/accounting, separated authority, owned planning and offline
+comparison work through PR #26 has no remaining necessary offline R5 blocker.
+Real-model integration, validation and acceptance remain deferred. Future live
+work needs reviewed data, model/endpoint, credential, egress and spending
+settings; it is not merely supplying an API key. No paid calls are authorized.
+
+**PR #27 review and merge authorization:** on 30 September the operator requested
+review and merge into `main` if the latest revision and checks pass. Fresh review
+of `c3242c0` found no blockers or outstanding comments, and all five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36666520214)
+passed. This documentation-only checkpoint records the milestone handoff without
+changing runtime, tests or the saved source pin. Check the
+[PR's current state](https://github.com/0xsl0th/recon-cockpit/pull/27) and latest
+checks before completing the authorized merge; once merged, keep PR #27 closed
+and do not repeat it. Its next step is the actual R6 operator walkthrough and
+rehearsal described in [the runbook](offline-release-evidence.md), not more
+optional application features or live activation.
+
 **PR #25 is merged and stays closed.** The operator authorized review and merge
 on 30 September. Final head `c7f7791` passed a fresh review with no blockers or
 outstanding comments and all five hosted checks. The guarded merge is `636a067`
@@ -16,35 +35,62 @@ is identical to verified implementation `30f2b2d`. See
 [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36659899487)
 passed. Do not repeat this merge.
 
-**Current work: offline owned TLS planning evaluation**, implementation `c2d4d0b`
-in [PR #26](https://github.com/0xsl0th/recon-cockpit/pull/26), on
-`feature/owned-planning-evaluation` from `636a067`. Read
-[planning-evaluation.md](planning-evaluation.md). The explicit new evaluation
-profile repeats the preserved six-case oracle through the accepted planning,
-accounting and isolated launch path. It uses one bounded simulation account and
-independently grades saved TLS receipts, ledger events and assessment evidence.
-The old deterministic evaluation remains a separate unchanged reference.
-Full verification passed **3,726 portable tests in 210.53 seconds** and **477
-Linux tests in 972.80 seconds**, with zero selected failures/errors/skips and no
-remaining workers. Independent final review has no blockers. All five
-[hosted implementation checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36661988927)
-passed; the [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/26/checks)
-show this documentation checkpoint's latest status. Leave PR #26 unmerged for
-review; the latest merge authorization covers PR #25 only.
+**PR #26 is merged and stays closed.** The operator authorized review and merge
+on 30 September. Final head `7e5c2ac` passed fresh independent review with no
+blockers or outstanding comments and all five
+[final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36663416736).
+The guarded merge is `1605606` at 03:22:20 UTC; its tree exactly matches the
+reviewed head. Runtime/tests match verified implementation `c2d4d0b`: **3,726
+portable tests in 210.53 seconds** and **477 Linux tests in 972.80 seconds**,
+with zero selected failures/errors/skips. Do not repeat this merge or reopen
+its accepted offline evaluation scope. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36664091986)
+also passed.
 
-The actual CLI comparison passed **18/18 trials**, 51 TLS exchanges/executions,
+Its actual CLI comparison passed **18/18 trials**, 51 TLS exchanges/executions,
 45 successful actions, 12 correct abstentions and zero unnecessary actions.
 Simulated usage was 39,678 microUSD with zero unresolved holds and zero real
 provider calls. All six semantic fingerprints match the independently inspected
-saved baseline. The private bundle is `.secure-agent/planning-evaluation-20260930`;
-actual read-only CLI inspection reproduced its report and preserved all 164 files'
-bytes and mtimes. Default-18 and maximum-60 portable batches also pass. Reports:
-`/tmp/recon-planning-evaluation-all-portable-final.xml` and
-`/tmp/recon-planning-evaluation-all-linux.log`; details and the corrected large
-aggregate replay case are in [verification.md](verification.md).
+saved baseline. Private inputs are `.secure-agent/evaluation-baseline-20260924`
+and `.secure-agent/planning-evaluation-20260930`. The saved runs did not record
+an execution commit; preserve that provenance limit. Read
+[planning-evaluation.md](planning-evaluation.md) and [verification.md](verification.md).
 
-The follow-up checkpoint changes documentation only; runtime/tests are identical
-to verified `c2d4d0b`. Do not rerun full local suites solely for this checkpoint.
+**R6 evidence packet and demo runbook**, implementation
+`46fc12a` in [PR #27](https://github.com/0xsl0th/recon-cockpit/pull/27), on
+`feature/offline-release-evidence` from `1605606`. Read
+[offline-release-evidence.md](offline-release-evidence.md). This bounded R6
+preparation slice copies the two independently regraded default evaluations,
+pins a clean verification/reproduction source tree, verifies every input byte,
+and renders a deterministic comparison packet. It does not run agents, install
+packages, publish a release or declare operator acceptance. Final local
+verification passed **3,878 portable tests in 249.67 seconds**, with zero
+failures/errors/skips, including 82 source and 70 packet cases. Independent
+reviews have no remaining blockers. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/27/checks)
+show this checkpoint's latest hosted status. The latest merge authorization
+covers PR #27; it does not authorize a release publication or another merge.
+
+The actual CLI produced two byte-identical **331-file packets**, with **246
+source files** pinned to `070257b455f158eb06301fae143c0704ee02ee30`. Candidate:
+`.secure-agent/offline-release-evidence-20260930-final`. Read-only CLI inspection
+reproduced the report and preserved original input/packet bytes and mtimes.
+Inspection also passed from the archived source in a fresh directory without
+Git metadata, using the existing prepared environment. Both evaluations retain
+18 passing trials and six matching fingerprints; actual provider calls are zero.
+Execution/isolation code is unchanged; PR #26's 477-test Linux verification
+remains its accepted runtime evidence, not a newly run suite for this slice.
+
+Reports: `/tmp/recon-release-all-portable-final.xml`,
+`/tmp/recon-release-packet-smoke-final.json` and
+`/tmp/recon-release-archived-source-final.json`. See [verification.md](verification.md).
+Hosted CI exposed a background Git maintenance race in the new source test
+fixture; automatic fixture maintenance is now disabled, with the full read-only
+assertion preserved. All 82 source tests passed after correction. Runtime and
+Linux-selected tests match `46fc12a`. Do not rerun full local suites solely for
+checkpoint documentation. Next, review this
+packet/runbook and arrange the actual operator walkthrough. Do not fabricate
+operator acceptance, activate live models or publish/submit a release without
+the corresponding operator instruction.
 
 **PR #24 is merged and stays closed.** Final head `9ccc910` passed review and
 all five hosted checks. Its merge is `4f9545c` at 22:38:18 UTC on 29 September;
@@ -80,21 +126,20 @@ the implementation. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pul
 show the final documentation checkpoint's status. Its merge authorization
 covered PR #24 only. Live calls and external targets remain disabled.
 
-## Current priority — continue R5 after completed R5a and R5b
+## Current priority — R6 with live R5 work deferred
 
-The operator clarified that **R5 is the active milestone and R5a and R5b are
-complete**. R5a merged in PR #13; R5b's ledger and controlled provider-call path
-merged in PRs #14 and #15. Their agreed development and verification scope is
-offline. Follow [the roadmap's completion order](roadmap.md#milestone-completion-order),
-which supersedes older “next step” notes in this file.
+**The agreed offline R5 implementation and verification scope is complete.**
+R5a merged in PR #13, R5b in PRs #14/#15, the accepted authority/planning
+integration through PR #25, and its independent offline comparison in PR #26.
+PR #27 packages that evidence and the demo runbook as R6 preparation. Follow
+[the roadmap's completion order](roadmap.md#milestone-completion-order).
 
-Preserve the accepted R1–R4 implementations and their documented limits. Do not
-restart them or make broader capability-registry/finding-workflow extensions
-prerequisites for continuing R5. The next work is **review of the integrated
-offline evaluation**, followed by bounded R6 release preparation under the
-disclosed offline fallback. Real-model and actual operator acceptance remain pending. Address an earlier contract only when a
-concrete dependency or regression requires it. R5a/R5b completion
-does not claim that all of R5 or real-model validation is complete.
+Preserve the accepted R1–R4 and offline R5 contracts and their documented limits.
+No necessary offline R5 blocker remains. Real-model integration/validation and
+acceptance stay explicitly deferred; fixtures do not complete the full live
+criterion. The next R6 gate is actual operator review/rehearsal and acceptance.
+A merged packet or scripted terminal fixture cannot supply that human decision.
+Address an earlier contract only for a concrete dependency or regression.
 
 The separate budgeted-assessment proposal, general session-view API and GUI
 dashboard are deferred until the original milestones are complete. Accounting
@@ -103,7 +148,7 @@ fit without introducing a new parallel milestone or weakening the architecture.
 Live validation remains an explicit pending gate: all current development and
 verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
-authorize activation, external targets, real credentials or a new merge.
+authorize activation, external targets, real credentials or merges beyond PR #27.
 
 The earlier baseline before PR #24 was `a87e5dd`, the merge of
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate

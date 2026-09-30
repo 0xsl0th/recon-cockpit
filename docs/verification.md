@@ -1,5 +1,124 @@
 # Verification record
 
+## PR #27 review and offline R5 handoff — 30 September 2026
+
+The operator authorized review and merge of PR #27 and asked whether offline R5
+was now concluded. A fresh independent review of
+`c3242c04e48759381e3063dbe91943a04d679cb4` found no blockers or outstanding
+reviews/comments. All five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36666520214)
+passed. Saved JUnit and CLI summaries reproduce the counts and hashes below.
+Main has no configured required checks; all five available jobs were verified.
+
+The milestone audit found no remaining necessary offline R5 blocker: the
+accepted provider/accounting and authority/planning work is complete through
+PR #26's offline comparison. PR #27 is R6 evidence packaging and the runbook.
+Real-model integration, validation and acceptance remain explicitly deferred,
+with actual R6 operator review/rehearsal still pending. No paid calls, live
+activation, new capability or expanded milestone scope is authorized.
+
+This handoff correction changes documentation only. Runtime/tests remain
+identical to reviewed `c3242c0`, and the saved packet remains pinned to `070257b`.
+The [PR state and checks](https://github.com/0xsl0th/recon-cockpit/pull/27/checks)
+record the final checkpoint revision's hosted result before the authorized merge.
+No full local suite was repeated solely for this documentation update.
+
+## R6 offline release evidence candidate — 30 September 2026
+
+[PR #27](https://github.com/0xsl0th/recon-cockpit/pull/27), implementation
+`46fc12a`, adds the [local evidence packet and demo runbook](offline-release-evidence.md).
+It independently regrades the two accepted default evaluations and their private
+copies, binds all bytes to a canonical inventory, and verifies a deterministic
+source archive against its Git blobs, tree and raw commit object. It does not
+execute agents, install dependencies, fetch source or publish a release.
+
+Independent review found and corrected two packaging issues: unreviewed files
+beside the closed ledger are now refused, and the source repository must be the
+checkout running the verifier. Otherwise an unrelated clean tree could have been
+misrepresented as the verification source. Regressions cover those cases,
+rehashed corrupt evidence, races, private-file restrictions, links, bounds and
+pending acceptance fields. Final independent reviews have no remaining blockers.
+
+The initial hosted run passed four jobs but Ubuntu/Python 3.13 reported a
+fixture race in `test_build_is_deterministic_readonly_and_binds_real_git_objects`:
+Git's background maintenance removed `.git/objects/maintenance.lock` after the
+fixture's first snapshot. Archive bytes and metadata were identical. The fixture
+Git helper now disables automatic maintenance and garbage collection; the full
+repository bytes/mtime assertion is unchanged. All 82 source tests passed after
+this correction in 2.989 seconds, followed by 30 separate fresh determinism/read-only
+pytest invocations (21.39 seconds total), all passing. Reports:
+`/tmp/recon-release-source-maintenance-fix.xml` and
+`/tmp/recon-release-source-determinism-repeated.xml`. Production code and
+Linux-selected tests are unchanged.
+Failure log: `/tmp/recon-release-ci-failure.log`;
+[initial hosted run](https://github.com/0xsl0th/recon-cockpit/actions/runs/36665605288).
+
+Full local portable verification of `46fc12a` passed **3,878 tests in 249.67 seconds**, with
+zero failure/error/skipped elements in `/tmp/recon-release-all-portable-final.xml`.
+This includes **82 source tests** and **70 packet tests**. Python 3.11 grammar
+passed for 202 tracked Python files; dependencies, local Markdown links and
+whitespace checks passed. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/27/checks)
+show the latest hosted status.
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-release-all-portable-final.xml
+```
+
+No execution/isolation implementation changed. The accepted **477-test Linux
+run** from PR #26 remains runtime evidence; this read-only packaging slice did
+not launch a new kernel integration suite or count the old run as new testing.
+
+After the test fixture correction, the actual CLI rebuilt two final packets
+from the saved Linux bundles
+`.secure-agent/evaluation-baseline-20260924` and
+`.secure-agent/planning-evaluation-20260930`. Each has **331 files**, including
+**246 source files** in a **3,082,240-byte canonical archive**. Both builds
+produced identical packet bytes; a separate read-only CLI invocation exactly
+reproduced the report. All original input and inspected packet bytes and mtimes
+were preserved. The validated archive was also unpacked into a new private
+`/tmp/recon-release-source-final-7v7q_a2x` directory. Running the inspector from that
+source (confirmed by the imported module path), without Git metadata and with
+the prepared existing Python environment, reproduced the same report. This is
+not a fresh dependency installation or a hermetic environment test; summary:
+`/tmp/recon-release-archived-source-final.json`. Both profiles pass 18 trials with all
+six fingerprints matching,
+51 executions, 45 successful actions, 12 correct abstentions and no unnecessary
+actions. Planning reports 39,678 simulated microUSD, zero unresolved holds and
+zero actual provider calls. No new model experiment was performed.
+
+Verification/reproduction source: `070257b455f158eb06301fae143c0704ee02ee30`.
+Historical execution revision: **not recorded**, explicitly preserved in the
+packet. Later documentation commits do not alter this pin or claim to have
+produced those saved evaluations.
+
+| Local artifact | Value |
+| --- | --- |
+| Candidate directory | `.secure-agent/offline-release-evidence-20260930-final` |
+| Repeated build | `.secure-agent/offline-release-evidence-20260930-final-repeat` |
+| Archive SHA-256 | `799efac00b01684402658363b629e65b0ae42da69d14235c6403f9b51e9c8362` |
+| Manifest SHA-256 | `467decaa88ddb2861f8216973961f21dcff722e62a89b4ead46c370ae67f1ad7` |
+| Build times | 6.945 seconds and 7.037 seconds |
+| Read-only inspection | 1.921 seconds |
+| CLI verification summary | `/tmp/recon-release-packet-smoke-final.json` |
+
+The candidate remains local and unpublished. Actual operator review/rehearsal
+and live-model acceptance remain pending; automation has not supplied human
+consent. Paid calls, real credentials, external targets and VPN remain disabled.
+
+## PR #26 review and merge — 30 September 2026
+
+The operator authorized review and merge of the current PR. Final head
+`7e5c2ac2bb0ee4ca6742eca38d80c2f6e9142f6c` passed a fresh independent review
+with no blockers or outstanding reviews/comments. All five hosted jobs passed
+in [run 36663416736](https://github.com/0xsl0th/recon-cockpit/actions/runs/36663416736).
+The guarded merge is `1605606736620b1fa25c399078c574e0b84ed0a1` at
+03:22:20 UTC. Its tree exactly matches the reviewed head. Saved full reports
+confirm the 3,726 portable and 477 Linux successes below; final documentation
+commits did not change runtime/tests from `c2d4d0b`. Main has no configured
+required checks; all five available checks were nevertheless green before merge.
+All five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36664091986)
+also passed.
+
 ## R5 offline planning evaluation — 30 September 2026
 
 The new [planning evaluation](planning-evaluation.md) preserves the deterministic
