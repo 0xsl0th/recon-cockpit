@@ -1,5 +1,110 @@
 # Verification record
 
+## R5 owned TLS assessment planning — 30 September 2026
+
+Implementation `30f2b2d` in [PR #25](https://github.com/0xsl0th/recon-cockpit/pull/25)
+adds the [owned TLS planning profile](owned-tls-assessment-planning.md). It composes
+PR #24's saved-evidence and simulation monetary gates with a disconnected TLS
+fixture. It sends only the existing closed descriptor and uses generated
+synthetic credentials. Recognized usage settles before the isolated parser;
+all direct launch checks remain required. No external provider call, real
+credential or paid inference was used.
+
+Full portable regression passed **3,579 tests in 95.30 seconds**, with 466 Linux
+tests deselected and zero selected failures/errors/skips:
+
+```sh
+.venv/bin/python -m pytest -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-planning-tls-all-portable.xml
+```
+
+The 197 new portable cases cover exact request/profile binding, old-profile
+separation, immutable session/transport lifetime, closed receipt validation,
+ledger settlement/holds, audit loss, cancellation, concurrency and CLI refusal.
+
+Focused rootless Linux verification passed **36 tests in 126.77 seconds**, with
+zero failures/errors/skips:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest \
+  tests/test_secure_assessment_planning_tls_linux.py -m integration -x -v --tb=short \
+  --junitxml=/tmp/recon-planning-tls-focused-linux.xml
+```
+
+This covers all six outcomes across both backends, settlement before both direct
+launch gates, TLS/HTTP/credential-reflection failures, malformed or ambiguous
+usage, overruns, refusal/substitution, budget/audit refusal before transport,
+dry/noninteractive execution refusal, active-connection cancellation/deadlines,
+and actual descendant cleanup. Worker canaries check absent host credentials,
+files, inherited descriptors and authority/evidence/ledger mounts. Scripted PTYs
+establish approval mechanics, not actual operator acceptance.
+
+Independent review found and corrected two cancellation issues before final
+verification: a later failed exchange could expose an earlier receipt and mask
+the original stop; cancellation immediately after successful transport audit
+could emit a duplicate terminal event. Regression tests now require a fresh
+receipt per attempt and one terminal transport event. Final review found no
+remaining blockers.
+
+Full rootless Linux regression passed **466 tests in 904.45 seconds**, with
+3,579 portable tests deselected and zero selected failures/errors/skips:
+
+```sh
+RECON_LINUX_INTEGRATION=1 .venv/bin/python -m pytest -m integration -v --tb=short \
+  --junitxml=/tmp/recon-planning-tls-all-linux.xml
+```
+
+No `/app` Python workers remained after the run. Runtime still matches the
+implementation commit; the follow-up changes documentation and the portable
+fixtures described below.
+Python 3.11 grammar checks passed for all 189 tracked/new Python files;
+dependency consistency, local documentation links and whitespace checks passed.
+All five [hosted implementation checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36657483576)
+passed. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/25/checks)
+record the final documentation checkpoint's status. None of these results
+establishes real-model acceptance or completes R6.
+
+The documentation revision `a94edf5` passed four hosted jobs, but Ubuntu/Python
+3.14 exposed an existing cancellation-test timer race in
+`test_secure_openai_session.py`: a 50 ms timer could cancel before broker entry,
+so the test's assertion about an already reserved call targeted the wrong phase.
+The test now cancels from the scripted transport wait and asserts that dispatch
+and reservation have already occurred, using the real cancellation event and
+unchanged stop checks. The timeout branch and production code are unchanged.
+Independent review found no issue with this correction. All **232 focused
+session, authority and broker portable tests passed in 2.06 seconds**, with zero
+selected failures/errors/skips; three Linux cases were deselected:
+
+```sh
+.venv/bin/python -m pytest tests/test_secure_openai_session.py \
+  tests/test_secure_offline_authority.py tests/test_secure_openai_broker.py \
+  -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-planning-tls-cancellation-portable.xml
+```
+
+The full Linux evidence remains valid because its runtime and selected tests
+are unchanged. The PR checks show the corrected latest revision's hosted status.
+
+Revision `9d2387c` passed all four Ubuntu jobs. macOS then exposed an unrelated
+existing invalid-READY fixture's self-exit race: boundary validation correctly
+rejected the peer, but Darwin refused a process-group signal as the child became
+a zombie during cleanup. The READY test now writes both invalid frames together
+and waits for a response, keeping the peer alive until the supervisor rejects
+and kills it. It additionally requires an already-reaped `SIGKILL` return code;
+the authority callback must still never run. Separate failed-exit and
+descendant-cleanup tests remain unchanged. This stabilizes that fixture, not the
+underlying Darwin cleanup exception race; no production cleanup exception is
+suppressed, and actual isolated execution remains Linux-only.
+
+Independent review accepted this narrow correction. All **106 coordinator and
+broker IPC portable tests passed in 4.24 seconds**, zero failures/errors/skips:
+
+```sh
+.venv/bin/python -m pytest tests/test_secure_coordinator_ipc.py \
+  tests/test_secure_broker_ipc.py -m 'not integration' --strict-markers -ra \
+  --junitxml=/tmp/recon-planning-tls-ipc-portable.xml
+```
+
 ## R5 bounded offline assessment planning — 29 September 2026
 
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23) passed final review at

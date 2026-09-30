@@ -14,7 +14,6 @@ from .assessment_contract import CASES
 from .cost_contract import CostError, PriceCard, TokenUsage
 from .discovery_contract import discovery_action
 from .models import parse_action
-from .openai_broker import OfflineReply
 from .openai_protocol import OpenAIConfig, MAX_RESPONSE_BYTES, _decode_object, _observation
 from .workflow import WorkflowDecision, card, card_identity
 
@@ -86,6 +85,8 @@ def replies(case, scenario="success", *, run_id="fixture"):
     fresh UUID hex value for distinct sessions sharing one monetary ledger.
     Every adversarial scenario changes the first reply only; there is no retry.
     """
+    from .openai_broker import OfflineReply
+
     if (type(case) is not str or case not in CASES or type(scenario) is not str or scenario not in SCENARIOS
             or type(run_id) is not str or re.fullmatch(r"fixture|[a-f0-9]{32}", run_id) is None):
         raise ValueError("planning_fixture_invalid")

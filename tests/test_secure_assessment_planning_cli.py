@@ -23,8 +23,10 @@ def options(tmp_path):
 @pytest.mark.parametrize('fault', ['workflow', 'approval_gate', 'ledger', 'no_profile',
     'negative_budget', 'oversized_budget', 'planning_duration', 'live', 'model', 'same_directory',
     'ledger_in_evidence', 'evidence_in_ledger'])
-def test_invalid_planning_selection_refuses_before_policy_or_storage(tmp_path, monkeypatch, fault):
+@pytest.mark.parametrize('profile', ['--assessment-planning-offline', '--assessment-planning-owned-tls'])
+def test_invalid_planning_selection_refuses_before_policy_or_storage(tmp_path, monkeypatch, fault, profile):
     args = options(tmp_path)
+    args[args.index('--assessment-planning-offline')] = profile
     if fault == 'workflow':
         args[0] = '--http-assessment'
     elif fault == 'approval_gate':
@@ -33,7 +35,7 @@ def test_invalid_planning_selection_refuses_before_policy_or_storage(tmp_path, m
         index = args.index('--planning-ledger')
         del args[index:index+2]
     elif fault == 'no_profile':
-        index = args.index('--assessment-planning-offline')
+        index = args.index(profile)
         del args[index:index+2]
     elif fault in ('negative_budget', 'oversized_budget'):
         args += ['--planning-budget-microusd', '-1' if fault == 'negative_budget' else str(10**15+1)]
@@ -56,10 +58,13 @@ def test_invalid_planning_selection_refuses_before_policy_or_storage(tmp_path, m
     assert not list(tmp_path.iterdir())
 
 
-def test_new_planning_account_inherits_cap_and_cannot_resume(tmp_path):
+@pytest.mark.parametrize('profile', ['assessment_planning_offline', 'assessment_planning_owned_tls'])
+def test_new_planning_account_inherits_cap_and_cannot_resume(tmp_path, profile):
     directory = tmp_path/'money'
-    args = SimpleNamespace(assessment_planning_offline='success', planning_ledger=directory,
+    args = SimpleNamespace(assessment_planning_offline=None, assessment_planning_owned_tls=None,
+                           planning_ledger=directory,
                            planning_budget_microusd=12345)
+    setattr(args, profile, 'success')
     with cli._planning_context(args, str(uuid4())) as (ledger, scope):
         report = ledger.report(scope)
         assert report['summary']['mode'] == 'simulation'
@@ -82,3 +87,11 @@ def test_default_workflow_creates_no_planning_account(tmp_path, monkeypatch):
     monkeypatch.setattr(CostLedger, 'create', lambda *_args, **_kwargs: pytest.fail('ledger created'))
     with cli._planning_context(SimpleNamespace(assessment_planning_offline=None), str(uuid4())) as planning:
         assert planning is None
+
+
+def test_planning_profiles_cannot_be_combined(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, '_read_bounded', lambda *_: pytest.fail('policy read before refusal'))
+    with pytest.raises(SystemExit) as exc:
+        cli.main([*options(tmp_path), '--assessment-planning-owned-tls', 'success'])
+    assert exc.value.code == 2
+    assert not list(tmp_path.iterdir())

@@ -92,6 +92,19 @@ def _command(stdlib, files, module):
     return argv
 
 
+def _planning_mounts(argv, *, owner):
+    """Fixed pure contract modules plus the corresponding shared runtime."""
+    directory = Path(__file__).parent
+    mounts = []
+    for name in ("assessment_planning_tls_contract.py", "assessment_planning_contract.py",
+                 "assessment_contract.py", "discovery_contract.py", "workflow.py", "cost_contract.py"):
+        mounts.extend(("--ro-bind", str(directory / name), "/app/recon_cockpit/secure_agent/" + name))
+    runtime = "provider_lab_worker.py" if owner else "provider_worker.py"
+    mounts.extend(("--ro-bind", str(directory / runtime), "/app/" + runtime))
+    index = argv.index("--remount-ro")
+    argv[index:index] = mounts
+
+
 class LinuxOwnedProviderTransport:
     """Fixed scenarios only; constructing a transport performs no I/O."""
 
@@ -119,8 +132,23 @@ class LinuxOwnedProviderTransport:
             self._lock.release()
 
     def _exchange(self, request, *, control, context_digest):
+        return self._exchange_profile(request, control=control, context_digest=context_digest)
+
+    def _exchange_profile(self, request, *, control, context_digest, planning=None):
+        """Private runtime reuse for exactly two repository-owned profiles.
+
+        The public R5a entry point always selects its original status profile.
+        Planning uses separate fixed entrypoint files, never a validator plugin.
+        """
         self._last_receipt = None
-        validate_request(request)
+        if planning is None:
+            validate_request(request)
+        else:
+            from . import assessment_planning_tls_contract as planning_contract
+            planning = planning_contract.context(planning)
+            planning_contract.request_details(request, case=planning["case"])
+            if self.scenario != planning_contract.transport_scenario(planning["scenario"]):
+                raise ProviderError("provider_invalid_transport")
         if (type(control) is not ExecutionControl or control.clock is not time.monotonic
                 or type(context_digest) is not str or re.fullmatch(r"[a-f0-9]{64}", context_digest) is None):
             raise ProviderError("provider_invalid_control")
@@ -148,15 +176,22 @@ class LinuxOwnedProviderTransport:
             supervisor = _Supervisor(control.remaining(), 131072, control=control)
             info_r, info_w = supervisor.pipe()
             supervisor.watch(info_r, "info")
-            argv = _command(stdlib, files, "provider_lab_worker.py")
+            owner_module = "provider_lab_worker.py" if planning is None else "assessment_planning_tls_owner.py"
+            argv = _command(stdlib, files, owner_module)
+            if planning is not None:
+                _planning_mounts(argv, owner=True)
             argv[1:1] = ["--info-fd", str(info_w)]
             index = argv.index("--remount-ro")
             argv[index:index] = ["--ro-bind", str(directory / "server.crt"), "/run/provider/server.crt",
                                  "--ro-bind", str(directory / "server.key"), "/run/provider/server.key"]
             owner = supervisor.launch("owner", argv, pass_fds=(info_w,), stdin=subprocess.PIPE)
             supervisor.close_fd(info_w)
-            _send(supervisor, owner, encode({"scenario": self._scenario, "credential": credential,
-                  "deadline": control.deadline, "host_namespaces": host}) + b"\n")
+            owner_context = {"scenario": self._scenario, "credential": credential,
+                             "deadline": control.deadline, "host_namespaces": host}
+            if planning is not None:
+                owner_context["planning"] = planning
+                owner_context["planning_request_digest"] = hashlib.sha256(request).hexdigest()
+            _send(supervisor, owner, encode(owner_context) + b"\n")
             ready, offset = _message(supervisor, 0)
             supervisor.wait_for(lambda: "info" in supervisor.eof)
             if (type(ready) is not dict or set(ready) != {"ready", "namespaces", "witness_baselines"}
@@ -170,9 +205,16 @@ class LinuxOwnedProviderTransport:
                     or any(os.readlink(f"/proc/self/fd/{fd}") != lab[name]
                            for name, fd in zip(("user", "net"), pins))):
                 raise ProviderError("provider_isolation_failed")
-            launch = encode({"schema_version": "1", "request": request.decode("ascii"), "credential": credential,
-                             "ca_pem": ca, "deadline": control.deadline, "host_namespaces": host, "lab_namespaces": lab})
-            argv = _command(stdlib, [(s, d) for s, d in files if d != "/usr/sbin/nft"], "provider_worker.py")
+            launch_context = {"schema_version": "1", "request": request.decode("ascii"), "credential": credential,
+                              "ca_pem": ca, "deadline": control.deadline, "host_namespaces": host, "lab_namespaces": lab}
+            if planning is not None:
+                launch_context["planning"] = planning
+                launch_context["planning_request_digest"] = hashlib.sha256(request).hexdigest()
+            launch = encode(launch_context)
+            worker_module = "provider_worker.py" if planning is None else "assessment_planning_tls_worker.py"
+            argv = _command(stdlib, [(s, d) for s, d in files if d != "/usr/sbin/nft"], worker_module)
+            if planning is not None:
+                _planning_mounts(argv, owner=False)
             argv.remove("--unshare-net")
             index = argv.index("CAP_NET_ADMIN")
             del argv[index - 1:index + 1]

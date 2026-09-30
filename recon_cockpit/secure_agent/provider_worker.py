@@ -127,15 +127,20 @@ def _credential_reflected(raw, credential):
     return literal in unescaped
 
 
-def validate_launch(raw, context_digest):
+def validate_launch(raw, context_digest, *, planning=False):
+    if type(planning) is not bool:
+        raise ValueError("provider_invalid_launch")
     if (type(raw) is not bytes or len(raw) > MAX_LAUNCH_BYTES
             or type(context_digest) is not str
             or re.fullmatch(r"[a-f0-9]{64}", context_digest) is None
             or not hmac.compare_digest(hashlib.sha256(raw).hexdigest(), context_digest)):
         raise ValueError("provider_launch_mismatch")
     launch = _decode(raw)
-    if (set(launch) != {"schema_version", "request", "credential", "ca_pem", "deadline",
-                        "host_namespaces", "lab_namespaces"}
+    fields = {"schema_version", "request", "credential", "ca_pem", "deadline",
+              "host_namespaces", "lab_namespaces"}
+    if planning:
+        fields.update(("planning", "planning_request_digest"))
+    if (set(launch) != fields
             or launch["schema_version"] != "1"):
         raise ValueError("provider_invalid_launch")
     credential = launch["credential"]
@@ -145,7 +150,13 @@ def validate_launch(raw, context_digest):
     if type(request) is not str or not 1 <= len(request) <= MAX_REQUEST_BYTES:
         raise ValueError("provider_invalid_request")
     request = request.encode("ascii")
-    validate_request(request)
+    if planning:
+        from recon_cockpit.secure_agent import assessment_planning_tls_contract as planning_contract
+        configuration = planning_contract.context(launch["planning"])
+        planning_contract.request_details(request, case=configuration["case"])
+        planning_contract.verify_request_digest(request, launch["planning_request_digest"])
+    else:
+        validate_request(request)
     if _credential_reflected(request, credential):
         raise ValueError("provider_credential_in_request")
     ca = launch["ca_pem"]
@@ -373,12 +384,16 @@ def execute(launch):
 
 
 def main():
+    return _main()
+
+
+def _main(*, planning=False):
     try:
         if len(sys.argv) != 2 or not stat.S_ISFIFO(os.fstat(0).st_mode):
             raise ValueError("provider_worker_requires_authority_pipe")
         raw = sys.stdin.buffer.read(MAX_LAUNCH_BYTES + 1)
         sys.stdin.close()
-        launch = validate_launch(raw, sys.argv[1])
+        launch = validate_launch(raw, sys.argv[1], planning=planning)
         result = execute(launch)
         print(json.dumps(result, separators=(",", ":"), allow_nan=False), flush=True)
         return 0
