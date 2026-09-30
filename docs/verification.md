@@ -1,5 +1,27 @@
 # Verification record
 
+## PR #27 review and offline R5 handoff — 30 September 2026
+
+The operator authorized review and merge of PR #27 and asked whether offline R5
+was now concluded. A fresh independent review of
+`c3242c04e48759381e3063dbe91943a04d679cb4` found no blockers or outstanding
+reviews/comments. All five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36666520214)
+passed. Saved JUnit and CLI summaries reproduce the counts and hashes below.
+Main has no configured required checks; all five available jobs were verified.
+
+The milestone audit found no remaining necessary offline R5 blocker: the
+accepted provider/accounting and authority/planning work is complete through
+PR #26's offline comparison. PR #27 is R6 evidence packaging and the runbook.
+Real-model integration, validation and acceptance remain explicitly deferred,
+with actual R6 operator review/rehearsal still pending. No paid calls, live
+activation, new capability or expanded milestone scope is authorized.
+
+This handoff correction changes documentation only. Runtime/tests remain
+identical to reviewed `c3242c0`, and the saved packet remains pinned to `070257b`.
+The [PR state and checks](https://github.com/0xsl0th/recon-cockpit/pull/27/checks)
+record the final checkpoint revision's hosted result before the authorized merge.
+No full local suite was repeated solely for this documentation update.
+
 ## R6 offline release evidence candidate — 30 September 2026
 
 [PR #27](https://github.com/0xsl0th/recon-cockpit/pull/27), implementation

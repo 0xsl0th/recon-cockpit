@@ -4,6 +4,25 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
+**Current milestone: R5 offline scope complete; R6 operator review next.** The
+accepted provider/accounting, separated authority, owned planning and offline
+comparison work through PR #26 has no remaining necessary offline R5 blocker.
+Real-model integration, validation and acceptance remain deferred. Future live
+work needs reviewed data, model/endpoint, credential, egress and spending
+settings; it is not merely supplying an API key. No paid calls are authorized.
+
+**PR #27 review and merge authorization:** on 30 September the operator requested
+review and merge into `main` if the latest revision and checks pass. Fresh review
+of `c3242c0` found no blockers or outstanding comments, and all five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36666520214)
+passed. This documentation-only checkpoint records the milestone handoff without
+changing runtime, tests or the saved source pin. Check the
+[PR's current state](https://github.com/0xsl0th/recon-cockpit/pull/27) and latest
+checks before completing the authorized merge; once merged, keep PR #27 closed
+and do not repeat it. Its next step is the actual R6 operator walkthrough and
+rehearsal described in [the runbook](offline-release-evidence.md), not more
+optional application features or live activation.
+
 **PR #25 is merged and stays closed.** The operator authorized review and merge
 on 30 September. Final head `c7f7791` passed a fresh review with no blockers or
 outstanding comments and all five hosted checks. The guarded merge is `636a067`
@@ -37,7 +56,7 @@ and `.secure-agent/planning-evaluation-20260930`. The saved runs did not record
 an execution commit; preserve that provenance limit. Read
 [planning-evaluation.md](planning-evaluation.md) and [verification.md](verification.md).
 
-**Current work: local offline release evidence and demo runbook**, implementation
+**R6 evidence packet and demo runbook**, implementation
 `46fc12a` in [PR #27](https://github.com/0xsl0th/recon-cockpit/pull/27), on
 `feature/offline-release-evidence` from `1605606`. Read
 [offline-release-evidence.md](offline-release-evidence.md). This bounded R6
@@ -48,8 +67,8 @@ packages, publish a release or declare operator acceptance. Final local
 verification passed **3,878 portable tests in 249.67 seconds**, with zero
 failures/errors/skips, including 82 source and 70 packet cases. Independent
 reviews have no remaining blockers. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/27/checks)
-show this checkpoint's latest hosted status. Leave PR #27 unmerged for review;
-the latest merge authorization covers PR #26 only.
+show this checkpoint's latest hosted status. The latest merge authorization
+covers PR #27; it does not authorize a release publication or another merge.
 
 The actual CLI produced two byte-identical **331-file packets**, with **246
 source files** pinned to `070257b455f158eb06301fae143c0704ee02ee30`. Candidate:
@@ -107,23 +126,20 @@ the implementation. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pul
 show the final documentation checkpoint's status. Its merge authorization
 covered PR #24 only. Live calls and external targets remain disabled.
 
-## Current priority — continue R5 after completed R5a and R5b
+## Current priority — R6 with live R5 work deferred
 
-The operator clarified that **R5 is the active milestone and R5a and R5b are
-complete**. R5a merged in PR #13; R5b's ledger and controlled provider-call path
-merged in PRs #14 and #15. Their agreed development and verification scope is
-offline. Follow [the roadmap's completion order](roadmap.md#milestone-completion-order),
-which supersedes older “next step” notes in this file.
+**The agreed offline R5 implementation and verification scope is complete.**
+R5a merged in PR #13, R5b in PRs #14/#15, the accepted authority/planning
+integration through PR #25, and its independent offline comparison in PR #26.
+PR #27 packages that evidence and the demo runbook as R6 preparation. Follow
+[the roadmap's completion order](roadmap.md#milestone-completion-order).
 
-Preserve the accepted R1–R4 implementations and their documented limits. Do not
-restart them or make broader capability-registry/finding-workflow extensions
-prerequisites for continuing R5. The integrated offline evaluation is merged in
-PR #26. The next work is
-**review of the bounded R6 evidence packet and demo runbook** under the
-disclosed offline fallback. Real-model and actual operator acceptance remain
-pending. Address an earlier contract only when a concrete dependency or
-regression requires it. R5a/R5b completion
-does not claim that all of R5 or real-model validation is complete.
+Preserve the accepted R1–R4 and offline R5 contracts and their documented limits.
+No necessary offline R5 blocker remains. Real-model integration/validation and
+acceptance stay explicitly deferred; fixtures do not complete the full live
+criterion. The next R6 gate is actual operator review/rehearsal and acceptance.
+A merged packet or scripted terminal fixture cannot supply that human decision.
+Address an earlier contract only for a concrete dependency or regression.
 
 The separate budgeted-assessment proposal, general session-view API and GUI
 dashboard are deferred until the original milestones are complete. Accounting
@@ -132,7 +148,7 @@ fit without introducing a new parallel milestone or weakening the architecture.
 Live validation remains an explicit pending gate: all current development and
 verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
-authorize activation, external targets, real credentials or a new merge.
+authorize activation, external targets, real credentials or merges beyond PR #27.
 
 The earlier baseline before PR #24 was `a87e5dd`, the merge of
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate
