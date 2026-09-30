@@ -52,8 +52,8 @@ show this checkpoint's latest hosted status. Leave PR #27 unmerged for review;
 the latest merge authorization covers PR #26 only.
 
 The actual CLI produced two byte-identical **331-file packets**, with **246
-source files** pinned to `46fc12a0e295b48d9ed05d0d0c52e8d6e46ef0db`. Candidate:
-`.secure-agent/offline-release-evidence-20260930`. Read-only CLI inspection
+source files** pinned to `070257b455f158eb06301fae143c0704ee02ee30`. Candidate:
+`.secure-agent/offline-release-evidence-20260930-final`. Read-only CLI inspection
 reproduced the report and preserved original input/packet bytes and mtimes.
 Inspection also passed from the archived source in a fresh directory without
 Git metadata, using the existing prepared environment. Both evaluations retain
@@ -62,8 +62,8 @@ Execution/isolation code is unchanged; PR #26's 477-test Linux verification
 remains its accepted runtime evidence, not a newly run suite for this slice.
 
 Reports: `/tmp/recon-release-all-portable-final.xml`,
-`/tmp/recon-release-packet-smoke.json` and
-`/tmp/recon-release-archived-source.json`. See [verification.md](verification.md).
+`/tmp/recon-release-packet-smoke-final.json` and
+`/tmp/recon-release-archived-source-final.json`. See [verification.md](verification.md).
 Hosted CI exposed a background Git maintenance race in the new source test
 fixture; automatic fixture maintenance is now disabled, with the full read-only
 assertion preserved. All 82 source tests passed after correction. Runtime and

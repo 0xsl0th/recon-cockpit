@@ -46,37 +46,38 @@ No execution/isolation implementation changed. The accepted **477-test Linux
 run** from PR #26 remains runtime evidence; this read-only packaging slice did
 not launch a new kernel integration suite or count the old run as new testing.
 
-The actual CLI built two packets from the saved Linux bundles
+After the test fixture correction, the actual CLI rebuilt two final packets
+from the saved Linux bundles
 `.secure-agent/evaluation-baseline-20260924` and
 `.secure-agent/planning-evaluation-20260930`. Each has **331 files**, including
-**246 source files** in a **3,072,000-byte canonical archive**. Both builds
+**246 source files** in a **3,082,240-byte canonical archive**. Both builds
 produced identical packet bytes; a separate read-only CLI invocation exactly
 reproduced the report. All original input and inspected packet bytes and mtimes
 were preserved. The validated archive was also unpacked into a new private
-`/tmp/recon-release-source-x9il95b_` directory. Running the inspector from that
+`/tmp/recon-release-source-final-7v7q_a2x` directory. Running the inspector from that
 source (confirmed by the imported module path), without Git metadata and with
 the prepared existing Python environment, reproduced the same report. This is
 not a fresh dependency installation or a hermetic environment test; summary:
-`/tmp/recon-release-archived-source.json`. Both profiles pass 18 trials with all
+`/tmp/recon-release-archived-source-final.json`. Both profiles pass 18 trials with all
 six fingerprints matching,
 51 executions, 45 successful actions, 12 correct abstentions and no unnecessary
 actions. Planning reports 39,678 simulated microUSD, zero unresolved holds and
 zero actual provider calls. No new model experiment was performed.
 
-Verification/reproduction source: `46fc12a0e295b48d9ed05d0d0c52e8d6e46ef0db`.
+Verification/reproduction source: `070257b455f158eb06301fae143c0704ee02ee30`.
 Historical execution revision: **not recorded**, explicitly preserved in the
 packet. Later documentation commits do not alter this pin or claim to have
 produced those saved evaluations.
 
 | Local artifact | Value |
 | --- | --- |
-| Candidate directory | `.secure-agent/offline-release-evidence-20260930` |
-| Repeated build | `.secure-agent/offline-release-evidence-20260930-repeat` |
-| Archive SHA-256 | `694ff7051e4fd5838ad0fe1851b14c98e2758442d2aa5a375e52d96ce1b60ee7` |
-| Manifest SHA-256 | `a4daaa7642c5e1092463e7b8124d276131859f0b8e5b27118065faab67c9ac8f` |
-| Build times | 7.272 seconds and 6.874 seconds |
-| Read-only inspection | 1.804 seconds |
-| CLI verification summary | `/tmp/recon-release-packet-smoke.json` |
+| Candidate directory | `.secure-agent/offline-release-evidence-20260930-final` |
+| Repeated build | `.secure-agent/offline-release-evidence-20260930-final-repeat` |
+| Archive SHA-256 | `799efac00b01684402658363b629e65b0ae42da69d14235c6403f9b51e9c8362` |
+| Manifest SHA-256 | `467decaa88ddb2861f8216973961f21dcff722e62a89b4ead46c370ae67f1ad7` |
+| Build times | 6.945 seconds and 7.037 seconds |
+| Read-only inspection | 1.921 seconds |
+| CLI verification summary | `/tmp/recon-release-packet-smoke-final.json` |
 
 The candidate remains local and unpublished. Actual operator review/rehearsal
 and live-model acceptance remain pending; automation has not supplied human
