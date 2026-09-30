@@ -1,18 +1,5 @@
 # Continue here — 30 September 2026
 
-## Saved work in progress — submission package
-
-Saved on 20260930T053901Z at the operator's request before a usage limit. Branch
-`docs/submission-draft-package` contains three uncommitted new files: the local
-PDF renderer, print stylesheet and unsent Spanish email draft. The latest PDF
-and supporting files exist in `.secure-agent/submission-draft-20260930-layout`.
-The latest table-layout revision still needs final visual/content review.
-Detailed resume notes: `.secure-agent/submission-work-checkpoint-20260930T053901Z.txt`.
-No email was sent, release published, PR opened or commit made for this package.
-The checkpoint below predates this work; PR #29 is already merged as `cba8059`
-and its post-merge checks passed. Accepted offline milestones remain closed.
-
-
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
@@ -71,10 +58,18 @@ exactly matches the reviewed head. All five
 [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36672797756)
 passed. The Spanish proposal reconciliation is complete; do not repeat it.
 
-**Current delivery work: local submission draft, not sent.** The operator
+**Local submission draft prepared and verified; not sent.** The operator
 authorized a readable proposal PDF, an unsent email, references to the accepted
 evidence/runbook and this checkpoint update. Branch `docs/submission-draft-package`
-starts from `cba8059`. The proposal text remains unchanged; the local PDF uses
+starts from `cba8059` and is tracked in
+[PR #30](https://github.com/0xsl0th/recon-cockpit/pull/30). The final PDF and
+supporting files are in `.secure-agent/submission-draft-20260930-final`; visual,
+content and privacy checks are complete. The earlier interrupted-work snapshot
+and `submission-draft-20260930-layout` are superseded. The PDF remains ignored
+and local; it is not part of the PR. The operator has now authorized review and
+merge of PR #30 if its latest revision and all available checks pass. Consult
+the PR for its current merge/check status before taking further action.
+The proposal text remains unchanged; the local PDF uses
 that full source revision for its document links. This document revision is
 distinct from the accepted packet's verification source `070257b` and the
 rehearsal's execution revision `dd4bbe4`.
@@ -98,7 +93,7 @@ python3 scripts/render_submission_draft.py \
 The renderer refuses existing output directories and a proposal that differs
 from the selected source revision. It does not install dependencies, run agents,
 submit email or publish a release. The dated draft remains for operator review;
-submission/publication, live work and any future PR merge require their
+submission/publication, live work and merges after PR #30 require their
 corresponding operator instruction. See [verification.md](verification.md) for
 the final local artifact and export checks.
 
@@ -228,7 +223,7 @@ fit without introducing a new parallel milestone or weakening the architecture.
 Live validation remains an explicit pending gate: all current development and
 verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
-authorize activation, external targets, real credentials or merges beyond PR #29.
+authorize activation, external targets, real credentials or merges beyond PR #30.
 
 The earlier baseline before PR #24 was `a87e5dd`, the merge of
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate
@@ -882,14 +877,16 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator authorized the completed merges through PR #29. This does not
-  authorize future merges, submission, messages, paid calls or
+- The operator authorized the completed merges through PR #29 and review/merge
+  of PR #30 if its latest revision and checks pass. This does not
+  authorize merges beyond PR #30, submission, messages, paid calls or
   external targets.
 
 ## Next continuation
 
 1. Start from the current priority and checkpoint above. PRs #6–#29 are already
    merged; historical branch names and earlier “next” notes are not current work.
+   Check PR #30's current status; if merged, keep its delivery work closed.
 2. Preserve the completed offline comparison, accepted local packet, successful
    approval-required terminal rehearsal and actual operator observations/decision.
    Do not reopen the accepted local review or modify the immutable packet.

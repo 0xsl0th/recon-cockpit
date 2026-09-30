@@ -1,5 +1,18 @@
 # Verification record
 
+## PR #30 checkpoint review correction — 30 September 2026
+
+The operator authorized review and merge of PR #30 if its latest revision and
+checks pass. Fresh independent review of `5c9b47f` found an obsolete interruption
+snapshot at the top of the checkpoint, incorrectly describing the completed
+package as uncommitted and still awaiting visual review. The correction removes
+that snapshot, points to PR #30 and the verified final local export, and records
+the current conditional merge authorization. Renderer, stylesheet, email,
+proposal and private artifacts are unchanged. Refer to
+[PR #30](https://github.com/0xsl0th/recon-cockpit/pull/30) for the resulting head's
+review/check and merge status; the previous revision's passing CI does not cover
+this correction. Submission, publication and live work remain deferred.
+
 ## Local submission draft export — 30 September 2026
 
 The operator authorized preparing a proposal PDF, unsent submission email and
