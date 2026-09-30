@@ -19,8 +19,11 @@ def git(repository, *arguments):
     environment = {"PATH": os.defpath, "LC_ALL": "C", "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull,
         "GIT_AUTHOR_DATE": "2026-09-30T00:00:00+00:00", "GIT_COMMITTER_DATE": "2026-09-30T00:00:00+00:00"}
+    # Fixture commits must not leave background maintenance racing the full
+    # repository snapshot used to prove the production builder is read-only.
     command = ["git", "-C", str(repository), "-c", "user.name=Source Fixture", "-c",
                "user.email=fixture@example.invalid", "-c", "commit.gpgsign=false",
+               "-c", "maintenance.auto=false", "-c", "gc.auto=0",
                "-c", "core.hooksPath=" + os.devnull, *arguments]
     return subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                           env=environment).stdout

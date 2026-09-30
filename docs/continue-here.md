@@ -37,15 +37,41 @@ and `.secure-agent/planning-evaluation-20260930`. The saved runs did not record
 an execution commit; preserve that provenance limit. Read
 [planning-evaluation.md](planning-evaluation.md) and [verification.md](verification.md).
 
-**Current work: local offline release evidence and demo runbook**, on
+**Current work: local offline release evidence and demo runbook**, implementation
+`46fc12a` in [PR #27](https://github.com/0xsl0th/recon-cockpit/pull/27), on
 `feature/offline-release-evidence` from `1605606`. Read
 [offline-release-evidence.md](offline-release-evidence.md). This bounded R6
 preparation slice copies the two independently regraded default evaluations,
 pins a clean verification/reproduction source tree, verifies every input byte,
 and renders a deterministic comparison packet. It does not run agents, install
-packages, publish a release or declare operator acceptance. Verification and
-publication status will be recorded here before handoff. Leave the new work
-unmerged for review; the latest merge authorization covers PR #26 only.
+packages, publish a release or declare operator acceptance. Final local
+verification passed **3,878 portable tests in 249.67 seconds**, with zero
+failures/errors/skips, including 82 source and 70 packet cases. Independent
+reviews have no remaining blockers. The [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/27/checks)
+show this checkpoint's latest hosted status. Leave PR #27 unmerged for review;
+the latest merge authorization covers PR #26 only.
+
+The actual CLI produced two byte-identical **331-file packets**, with **246
+source files** pinned to `46fc12a0e295b48d9ed05d0d0c52e8d6e46ef0db`. Candidate:
+`.secure-agent/offline-release-evidence-20260930`. Read-only CLI inspection
+reproduced the report and preserved original input/packet bytes and mtimes.
+Inspection also passed from the archived source in a fresh directory without
+Git metadata, using the existing prepared environment. Both evaluations retain
+18 passing trials and six matching fingerprints; actual provider calls are zero.
+Execution/isolation code is unchanged; PR #26's 477-test Linux verification
+remains its accepted runtime evidence, not a newly run suite for this slice.
+
+Reports: `/tmp/recon-release-all-portable-final.xml`,
+`/tmp/recon-release-packet-smoke.json` and
+`/tmp/recon-release-archived-source.json`. See [verification.md](verification.md).
+Hosted CI exposed a background Git maintenance race in the new source test
+fixture; automatic fixture maintenance is now disabled, with the full read-only
+assertion preserved. All 82 source tests passed after correction. Runtime and
+Linux-selected tests match `46fc12a`. Do not rerun full local suites solely for
+checkpoint documentation. Next, review this
+packet/runbook and arrange the actual operator walkthrough. Do not fabricate
+operator acceptance, activate live models or publish/submit a release without
+the corresponding operator instruction.
 
 **PR #24 is merged and stays closed.** Final head `9ccc910` passed review and
 all five hosted checks. Its merge is `4f9545c` at 22:38:18 UTC on 29 September;
