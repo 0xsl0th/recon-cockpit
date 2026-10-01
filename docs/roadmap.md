@@ -4,30 +4,28 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current priority — 30 September 2026:** R5's agreed offline implementation
-and verification are complete. Keep R1–R4, R5a/R5b and the accepted authority,
-planning and evaluation contracts closed. Real-model integration, validation
-and acceptance remain deferred pending authorization. The local R6 candidate
-is accepted under the explicitly disclosed offline fallback. The operator has
-now authorized the [reviewed adapter/Nmap implementation](tool-adapters.md)
-as new work toward a professional network-and-web workflow. This does not
-retroactively expand completed milestones. Optional GUI/API, additional tools
-and other product additions remain deferred. The new implementation sequence
-below is the current work queue; the original milestone order is retained as
-history and acceptance criteria.
+**Current priority — 1 October 2026:** preserve the completed offline R5
+implementation and accepted local R6 candidate. PR #34's adversarial comparison
+merged as `17945db`; PRs #32/#33 supply the reviewed Nmap/HTTP tools and resettable
+HarborDesk lab. The operator authorized a minimal real-model integration and
+offline validation, followed by a PR and a concrete pilot approval decision.
+This does not reopen completed milestones or authorize paid calls.
 
-**New implementation sequence:** the reviewed bundled-adapter interface and
-confined Nmap/HTTP workflow merged in PR #32 (`875c1a6`). The authorized current
-slice is the [offline adversarial comparison](web-comparison.md). The
-[resettable HarborDesk lab](web-lab.md) merged in PR #33 (`ed7d839`). The comparison
-measures refused out-of-scope proposals, legitimate completion loss under the
-existing stop-on-denial policy, and matched decision latency. A bounded real-model
-evaluation follows only after authorization. Roughly 40 tools is a longer-term architecture target, not the scope
-of this increment. Third-party plugins, authenticated web/API and Windows/AD
-integrations remain deferred. Continue development through October and refresh
-the proposal with verified results in early November, targeting submission around
-9 November. Public model use, spending and submission require their separate
-operator instructions. The proposal work in PR #31 remains separate and unmerged.
+**Current implementation:** the [bounded model pilot](web-model-pilot.md) reuses
+the existing provider isolation, monetary ledger, authority, tools and evidence.
+One three-action Nmap → HTTP → evidence workflow is paired with a fresh protected
+scripted baseline. Completion, unnecessary refusals, denied proposals, unauthorized
+executions, usage/cost and latency are reported separately. A blocked unfinished
+task fails usefulness. The proposed three-session, nine-call, $1 pilot remains
+pending explicit approval of its actual endpoint, credential, data and spending.
+Offline fixture results establish integration behavior, not real-model quality.
+
+Roughly 40 tools remains a long-term target. Additional tools, GUI/API, third-party
+plugins, authenticated web/API, Windows/AD and external targets remain deferred.
+Continue focused development through October and refresh the proposal with
+verified results in early November, targeting submission around 9 November after
+operator review. Proposal PR #31 remains separate and unmerged; its local PDF is
+unchanged. Publication and submission require their own operator instructions.
 
 The R5 offline baseline is `1605606`, the authorized merge of PR #26
 ([offline planning evaluation](planning-evaluation.md)). PRs #16–#26 remain
@@ -433,19 +431,18 @@ Persistent lab operation does not establish live-model performance.
 
 ## R5: live AI and further privilege separation
 
-**Status: agreed offline scope complete; live-model work deferred.** R5a
+**Status: agreed offline scope complete; model integration prepared, live evaluation pending.** R5a
 (PR #13), R5b (PRs #14/#15), bounded audit/approval/admission/launcher separation
 and owned assessment planning through PR #25, and the offline comparison in
 PR #26 are accepted. Keep those contracts closed. PR #27 is R6 packaging and
 the runbook. No necessary offline R5 blocker remains.
 
-The original live criterion below remains pending. The current live-capable
-provider diagnostic is a separate fixed ACK path; assessment planning has no
-public endpoint or live activation flag. A later authorized slice must integrate
-and validate the real model with reviewed data, endpoint, credentials, egress,
-usage/pricing and spending limits, then perform the seeded comparison. This
-work is explicitly deferred, not represented as an API-key switch or completed
-by owned fixture results.
+The original live criterion below remains pending. The separate ACK diagnostic
+stays unchanged. The new [web-model integration](web-model-pilot.md) supplies a
+live-capable assessment path, validated only with owned TLS fixtures. Execution
+remains disabled by default. Its proposed pilot requires reviewed data, endpoint,
+credentials, egress, usage/pricing and spending settings before any paid call.
+Owned fixture results do not establish model performance or live acceptance.
 
 The current constraint remains **live calls disabled**. Build transport and
 credential handling against controlled endpoints and synthetic secrets first.
@@ -553,7 +550,7 @@ page retrieval was unavailable during this planning pass.
 - Enrique Folte is the confirmed sole human participant and contact; affiliation
   is unspecified. Review submission details before sending.
 - R1 channel topology is settled in [offline-authority.md](offline-authority.md).
-- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). Card v2 uses the [persistent lab foundation](owned-lab.md); the [evaluation runner](evaluation.md) measures repeated synthetic outcomes. Continue R6 from the completed offline R5 baseline; live integration and acceptance remain deferred.
+- R2's seeded diagnostic condition and R3's singleton owned topology are fixed in [http-assessment.md](http-assessment.md) and [discovery-assessment.md](discovery-assessment.md). Card v2 uses the [persistent lab foundation](owned-lab.md); the [evaluation runner](evaluation.md) measures repeated synthetic outcomes. Preserve the completed offline R5 and accepted local R6 baseline; the new model integration is separate work and live acceptance remains pending.
 - Later choose real-model/data/credential/spend settings.
 
 Reference identities and team composition are resolved. This plan does

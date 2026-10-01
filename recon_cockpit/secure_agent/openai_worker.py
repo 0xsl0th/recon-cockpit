@@ -20,23 +20,41 @@ def main():
 
         raw = broker_ipc.read_frame(sys.stdin.buffer, broker_ipc.INIT)
         init = openai_protocol._decode_object(raw, broker_ipc.MAX_INIT_BYTES)
-        if set(init) != {"schema_version", "config", "observation"} or init["schema_version"] != "1":
+        profile = init.get("profile", openai_protocol.LEGACY_PROPOSAL_PROFILE)
+        fields = {"schema_version", "config", "observation"}
+        if profile == openai_protocol.WEB_MODEL_PROFILE:
+            fields.add("profile")
+        elif "profile" in init:
+            raise ValueError("invalid profile")
+        if set(init) != fields or init["schema_version"] != "1":
             raise ValueError("invalid initialization")
         config = init["config"]
         if type(config) is not dict or set(config) != {"model", "max_output_tokens"}:
             raise ValueError("invalid configuration")
-        request = openai_protocol.build_request(openai_protocol.OpenAIConfig(**config),
-                                                openai_protocol._encode(init["observation"]))
+        arguments = (openai_protocol.OpenAIConfig(**config), openai_protocol._encode(init["observation"]))
+        request = (openai_protocol.build_request(*arguments, profile=profile)
+                   if profile == openai_protocol.WEB_MODEL_PROFILE else openai_protocol.build_request(*arguments))
         sys.stdout.buffer.write(broker_ipc.frame(broker_ipc.REQUEST, request))
         sys.stdout.buffer.flush()
         response = broker_ipc.read_frame(sys.stdin.buffer, broker_ipc.RESPONSE)
         if sys.stdin.buffer.read(1) != b"":
             raise ValueError("extra broker input")
-        proposal = openai_protocol.decode_response(response)
-        envelope = openai_protocol._encode({
-            "schema_version": "1", "proposal": openai_protocol._decode_object(proposal, 16384),
+        output_status = "proposal"
+        try:
+            proposal = (openai_protocol.decode_response(response, profile=profile)
+                        if profile == openai_protocol.WEB_MODEL_PROFILE else openai_protocol.decode_response(response))
+            proposal = openai_protocol._decode_object(proposal, 16384)
+        except openai_protocol.OpenAIProtocolError:
+            if profile != openai_protocol.WEB_MODEL_PROFILE:
+                raise
+            proposal, output_status = None, "invalid"
+        result = {
+            "schema_version": "1", "proposal": proposal,
             "boundary_checks": checks,
-        })
+        }
+        if profile == openai_protocol.WEB_MODEL_PROFILE:
+            result.update(profile=profile, output_status=output_status)
+        envelope = openai_protocol._encode(result)
         sys.stdout.buffer.write(broker_ipc.frame(broker_ipc.RESULT, envelope))
         sys.stdout.buffer.flush()
     except Exception:

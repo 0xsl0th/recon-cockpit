@@ -26,6 +26,7 @@ if __name__ == "__main__":
         raise SystemExit(78) from None
 
 import array
+import base64
 import ctypes
 import hashlib
 import hmac
@@ -51,9 +52,9 @@ else:
     )
 
 
-def packet(channel, deadline, *, expect_fd=False):
+def packet(channel, deadline, *, expect_fd=False, limit=MAX_PACKET):
     channel.settimeout(provider_worker._remaining(deadline))
-    data, ancillary, flags, _ = channel.recvmsg(MAX_PACKET, socket.CMSG_SPACE(4 * 4))
+    data, ancillary, flags, _ = channel.recvmsg(limit, socket.CMSG_SPACE(4 * 4))
     received = []
     try:
         for level, kind, raw in ancillary:
@@ -129,6 +130,22 @@ def reconnect_blocked(fd):
         raise ValueError("socket_reconnect_allowed")
 
 
+def web_response(value):
+    """Release only the proposal envelope, never arbitrary response metadata."""
+    from recon_cockpit.secure_agent.web_model_contract import MODEL, MAX_RESPONSE_BYTES, response_summary as summary
+
+    receipt = summary(value)
+    released = None
+    if receipt["output_status"] == "proposal":
+        released = encode({"object": "response", "model": MODEL, "service_tier": "default",
+            "status": "completed", "error": None, "incomplete_details": None,
+            "output": [{"type": "message", "role": "assistant", "status": "completed",
+                "content": [{"type": "output_text", "text": value["output"][0]["content"][0]["text"]}]}]})
+        if len(released) > MAX_RESPONSE_BYTES:
+            receipt["output_status"], released = "invalid", None
+    return receipt, None if released is None else base64.b64encode(released).decode("ascii")
+
+
 def exchange(raw, launch, credential):
     if (raw.family != socket.AF_INET or raw.getsockopt(socket.SOL_SOCKET, socket.SO_TYPE) != socket.SOCK_STREAM
             or raw.getpeername() != (launch["ip"], launch["port"])):
@@ -151,7 +168,7 @@ def exchange(raw, launch, credential):
         connection.do_handshake()
         if connection.selected_alpn_protocol() not in (None, "http/1.1"):
             raise ValueError("alpn_mismatch")
-        body = request_bytes()
+        body = launch["request"].encode("ascii") if "profile" in launch else request_bytes()
         headers = (f"POST /v1/responses HTTP/1.1\r\nHost: {name}\r\n"
                    f"Authorization: Bearer {credential}\r\nContent-Type: application/json\r\n"
                    "Accept: application/json\r\nAccept-Encoding: identity\r\nConnection: close\r\n"
@@ -159,23 +176,33 @@ def exchange(raw, launch, credential):
         connection.settimeout(provider_worker._remaining(deadline))
         connection.sendall(headers + body)
         response = provider_worker.read_response(connection, deadline, credential, allow_chunked=True)
-        return response_summary(provider_worker._decode(response))
+        value = provider_worker._decode(response)
+        return web_response(value) if "profile" in launch else response_summary(value)
 
 
 def main():
     try:
-        if len(sys.argv) != 2:
+        web_model = len(sys.argv) == 3 and sys.argv[2] == "web-model"
+        if len(sys.argv) != 2 and not web_model:
             raise ValueError
         channel = socket.socket(fileno=0)
         if channel.family != socket.AF_UNIX or channel.type != socket.SOCK_SEQPACKET:
             raise ValueError
-        launch, _ = packet(channel, time.monotonic() + 10)
+        launch, _ = packet(channel, time.monotonic() + 10, limit=65536 if web_model else MAX_PACKET)
+        fields = {"host_namespaces", "deadline", "ip", "port", "mode", "ca_digest"}
+        if web_model:
+            fields |= {"profile", "request"}
         if (not hmac.compare_digest(hashlib.sha256(encode(launch)).hexdigest(), sys.argv[1])
-                or set(launch) != {"host_namespaces", "deadline", "ip", "port", "mode", "ca_digest"}
+                or set(launch) != fields
                 or type(launch["deadline"]) not in (int, float) or not math.isfinite(launch["deadline"])
                 or not 0 < launch["deadline"] - time.monotonic() <= 120
                 or launch["mode"] not in {"live", "owned"}):
             raise ValueError
+        if web_model:
+            from recon_cockpit.secure_agent.web_model_contract import WEB_MODEL_PROFILE, validate_request
+            if launch["profile"] != WEB_MODEL_PROFILE or type(launch["request"]) is not str:
+                raise ValueError
+            validate_request(launch["request"].encode("ascii"))
         checks = isolate(launch)
         print(encode({"ready": True, "checks": checks}).decode("ascii"), flush=True)
         payload, fd = packet(channel, launch["deadline"], expect_fd=True)
@@ -185,8 +212,13 @@ def main():
             credential = validate_credential(payload["credential"], launch["mode"])
             channel.close()
             result = {"status": "ok", "http_status": 200, "summary": None}
+            if web_model:
+                result["response_b64"] = None
             try:
-                result["summary"] = exchange(raw, launch, credential)
+                if web_model:
+                    result["summary"], result["response_b64"] = exchange(raw, launch, credential)
+                else:
+                    result["summary"] = exchange(raw, launch, credential)
             except provider_worker.TransportFailure as exc:
                 result.update(status=exc.code, http_status=exc.http_status)
             except TimeoutError:
