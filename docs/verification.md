@@ -1,5 +1,25 @@
 # Verification record
 
+## PR #35 review handoff — 1 October 2026
+
+The operator authorized review and conditional merge, then a recommendation for
+what to tackle next. Fresh independent reviews of runtime/test head
+`e660466700bfbbafc690a78f0a2f67a0be70ce4c` found no blockers in the isolated
+transport/provider, accounting, runner, evidence or metric contracts. GitHub
+review and inline comments were empty. Saved reports independently confirm
+4,600 portable and 51 affected Linux tests with zero failures/errors/skips;
+runtime/tests/examples are identical to the clean CLI execution revision `03def1b`.
+
+This follow-up only aligns the checkpoint with the new merge authorization.
+Before merging, verify all five hosted checks on the final head and use a guarded
+merge bound to that exact head. The private
+`.secure-agent/pr35-merge-review.json` receipt in the primary checkout records
+the actual reviewed head, final checks, merge outcome and tree comparison.
+Consult [PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35) for shared state;
+if merged, do not repeat its review/merge or reopen accepted offline milestones.
+The next recommendation is the bounded pilot already defined in the runbook.
+Actual provider/model use, credentials and spending still require approval.
+
 ## Minimal model workflow integration — 1 October 2026
 
 The operator authorized review/merge of PR #34, a focused real-model integration,
@@ -66,7 +86,7 @@ receipt summaries and local file hashes; it is not hostile-host attestation.
 
 All private artifacts remain ignored. The follow-up documentation commit changes
 no runtime/tests; consult [PR #35 checks](https://github.com/0xsl0th/recon-cockpit/pull/35/checks)
-for its final hosted status. Leave PR #35 unmerged for review. The immutable
+for its final hosted status and the review handoff above for merge authorization. The immutable
 accepted R6 packet, proposal PR #31 and local PDF stay unchanged.
 
 ## PR #34 merge review — 30 September 2026

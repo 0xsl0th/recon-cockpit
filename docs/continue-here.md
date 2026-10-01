@@ -4,9 +4,12 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current review: [PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35), minimal real-model Nmap → HTTP → evidence integration.**
+**Current handoff: [PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35), minimal real-model Nmap → HTTP → evidence integration.**
 The operator authorized reviewing/merging PR #34, implementing this focused
-integration, completing offline validation and opening a PR. Work is on
+integration, completing offline validation and opening a PR. On 1 October the
+operator also authorized reviewing/merging PR #35 if its latest revision and
+checks pass, followed by a recommendation for the next step. That instruction
+does not activate the pilot or authorize additional implementation. Work is on
 `feature/web-model-pilot` in `/tmp/recon-web-model-pilot`, based on main `17945db`.
 Read [web-model-pilot.md](web-model-pilot.md) for the exact workflow, metrics,
 commands and proposed pilot. The new path reuses the existing isolated provider,
@@ -19,8 +22,11 @@ makes no paid calls and reads no real credential. Real-model quality remains
 unverified. The proposed first pilot has three model sessions, nine calls, no
 retries and one shared $1 admission ceiling. Present its actual endpoint/CA,
 credential source, synthetic data and success thresholds for operator approval
-before live execution. Leave this new implementation ready for review; merge
-permission covered PR #34 only. All 4,600 portable tests and 51 affected Linux
+before live execution. Verify PR #35's current GitHub state before continuing;
+if merged, keep it closed and do not repeat the merge. The local
+`.secure-agent/pr35-merge-review.json` receipt records the review/merge outcome;
+GitHub remains the shared source for its publication state. All 4,600 portable
+tests and 51 affected Linux
 tests passed without selected failures/errors/skips. See
 [verification.md](verification.md) for exact coverage and limits. Implementation
 `03def1b` produced two saved CLI runs: the successful three-action workflow and
@@ -60,8 +66,10 @@ matches the reviewed head. All five
 passed. Do not repeat its merge or reopen the adapter/Nmap slice. Existing
 TCP/HTTP contracts, fixture bytes and accepted evidence remain regression anchors.
 
-The current sequence is review of the prepared integration, then an explicitly
-authorized bounded real-model pilot.
+After the authorized PR #35 merge, the recommended next step is the already
+planned bounded real-model pilot. First obtain approval of the actual endpoint,
+credential source, synthetic data and spending ceiling. Do not expand mocks or
+tools while that decision is pending.
 Roughly 40 tools remains a long-term architecture target. Optional tool expansion,
 GUI/API, external/VPN targets, credentials and spending remain deferred. Refresh
 the proposal with verified progress in early November and target submission
@@ -293,7 +301,7 @@ Live validation remains an explicit pending gate: all current development and
 verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
 authorize activation, external targets or real credentials. PR #34
-is merged; the new model integration must remain ready for review.
+is merged; PR #35 may merge only after its latest review and checks pass.
 
 The earlier baseline before PR #24 was `a87e5dd`, the merge of
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate
@@ -948,15 +956,16 @@ Planning uses synthetic responses.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
 - The operator-authorized PR #34 merge is complete. PRs #6–#30 and #32–#34
-  stay closed; proposal PR #31 remains separate. Leave the model pilot PR ready for review.
-  Its merge, submission, messages, paid calls and external targets need their
-  corresponding operator instruction.
+  stay closed; proposal PR #31 remains separate. Review/merge of PR #35 is now
+  authorized if its latest revision and checks pass. Later merges, submission,
+  messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Review the new model integration PR and its latest checks when instructed.
-   PRs #6–#30 and #32–#34 are merged; proposal PR #31 remains separate. Historical
-   branch names and earlier “next” notes are not current work.
+1. Verify PR #35's GitHub state and the local merge-review receipt first. Its
+   review/merge is authorized conditional on the latest passing checks. If it is
+   merged, keep it closed. PRs #6–#30 and #32–#34 are already merged; proposal
+   PR #31 remains separate. Historical “next” notes are not current work.
 2. Preserve the completed offline comparison, accepted local packet, successful
    approval-required terminal rehearsal and actual operator decision. Do not
    reopen that review or modify the immutable accepted packet.
