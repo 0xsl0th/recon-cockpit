@@ -11,7 +11,22 @@ records fixed scope, hard resources and limitations. Accepted R5/offline R6,
 old tool profiles and the separate proposal/PDF remain unchanged. Credential
 setup, paid calls and live-model evaluation stay deferred until much later.
 Review PR: [#37](https://github.com/0xsl0th/recon-cockpit/pull/37); merge is pending
-the operator's instruction and review of its latest revision/checks.
+review of its latest revision/checks. The operator has authorized conditional
+merge, followed by a recommendation only. GitHub and the private
+`.secure-agent/pr37-merge-review.json` receipt record the final merge outcome.
+
+Fresh merge review found that the executed web-tool evidence path treated a
+missing manifest runtime digest as optional validation. It now requires a valid
+non-null runtime commitment before accepting an executed curl/ffuf result.
+Capture and replay regressions cover both tools; dry-run evidence remains valid
+without an executable runtime. This closes an evidence-binding gap, not an
+execution or approval bypass. The runtime/sandbox source is unchanged.
+Independent review of the fix found no remaining blocker. All 153 affected
+portable evidence/contract checks passed, including eight new regression cases.
+All ten actual owned curl/ffuf workflow and read-only replay cases passed again
+after the fix (`review-workflow-linux.xml` in the private validation directory).
+These reruns overlap the coverage below; they are not additional distinct Linux
+cases. Recheck all five hosted jobs on the final head before merging.
 
 Independent runtime/admission and CLI/evidence/lab reviews found no blockers.
 Actual execution exposed and resolved two ffuf integration details: Bubblewrap's

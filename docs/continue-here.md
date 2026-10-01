@@ -4,10 +4,12 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: practical tool coverage before deeper workflows.**
-Review handoff: [PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37),
-secure owned curl and ffuf coverage. It is open for review; the merge requires a
-separate operator instruction for this PR and passing latest checks.
+**Current authorized work: review and conditionally merge PR #37, then recommend
+the next step only.** The operator has now authorized merging
+[PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37), secure owned curl and
+ffuf coverage, after review and passing checks on the latest revision. Confirm
+its GitHub state and the private `.secure-agent/pr37-merge-review.json` receipt
+before acting; if merged, keep the batch closed and do not repeat the merge.
 The operator selected this priority on 1 October and authorized implementation,
 secure execution and owned-lab verification. The small batch is **curl HTTPS
 retrieval and ffuf content discovery**, described in [practical-web-tools.md](practical-web-tools.md).
@@ -18,14 +20,19 @@ checks before composing a deeper workflow. Reuse existing interactive tool
 semantics where practical, never its host subprocess runner as an agent boundary.
 Implementation `3ec1ef0` is complete: both actual tools run through all secure
 gates, with 23 new and 115 affected legacy Linux tests verified after documented
-test corrections, plus 249 final focused portable tests. The earlier full portable
-run passed 5,139 tests. Fresh clean-source CLI trials completed curl's one HTTPS
+test corrections, plus 251 focused portable tests after macOS fixture corrections.
+All five hosted jobs passed on `64d43ce`, with 5,149 tests on macOS. Fresh
+clean-source CLI trials completed curl's one HTTPS
 request and ffuf's eight paths; both closed and replayed without integrity issues.
 Private evidence: `.secure-agent/practical-web-tools-20261001` in the primary
 checkout. See [verification.md](verification.md) for exact coverage, corrections
-and timing limits. The next step is review of this batch, then selection of one
-deeper cross-tool workflow from the verified capabilities. Do not merge without
-the operator's instruction for this PR.
+and timing limits. Fresh merge review found a missing-runtime-commitment evidence
+edge case; executed tool records must bind to a non-null manifest digest. The
+fix and its regression checks must pass on the latest head before merge.
+After merging, recommend one deeper workflow from the verified capabilities:
+Nmap reachability, finite ffuf discovery, then HTTP header assessment of an
+observed and already allowlisted portal path, with one replayable report.
+Implementation of that next slice awaits a separate instruction.
 
 Credential setup, paid calls and live-model evaluation remain deferred until much
 later. Do not ask for a key, fund a ledger or enable a live provider.
@@ -988,9 +995,10 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Review [PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37) on
-   `feature/practical-web-tools` and its latest checks. The curl/ffuf batch is
-   implemented and owned-lab verified; merge awaits the operator's instruction.
+1. Check [PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37) and the private
+   merge receipt. The operator authorized review and conditional merge, then a
+   recommendation only. If still open, resolve review findings and require
+   passing checks on its latest head before merging. If merged, keep it closed.
    PR #36 is merged as `9a95d9a`; PRs #6–#30 and #32–#36 stay closed. Proposal
    PR #31 remains separate. Historical “next” notes are not current work.
 2. Preserve the completed offline comparison, accepted local packet, successful
@@ -1000,8 +1008,11 @@ Planning uses synthetic responses.
    explicitly resumes them. Development uses deterministic/owned mocks and no
    paid calls. Retain the existing usefulness, refusals, cost and latency metrics;
    blocked unfinished work still fails usefulness.
-4. After this tool batch is reviewed, choose one deeper cross-tool workflow from
-   the measured capabilities and remaining useful-work gaps. Do not add another
+4. After merge, recommend Nmap reachability → finite ffuf discovery → HTTP header
+   assessment of the observed allowlisted portal, with shared replayable evidence.
+   Measure legitimate completion, unnecessary refusal, unauthorized execution,
+   requests and latency against the same authorized tool sequence. The next
+   implementation needs its own instruction. Do not add another
    adapter or model-preparation layer by default. Keep the proposal/PDF unchanged
    until its planned early-November update. Defer GUI/API and external targets.
 5. Keep local kernel verification separate from hosted portable CI. Do not rerun

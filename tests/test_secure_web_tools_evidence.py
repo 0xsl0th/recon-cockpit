@@ -42,13 +42,15 @@ def manifest(tool):
         "files": sorted(files, key=lambda row: row["destination"])})
 
 
-def complete(path, case="curl-ok", status="succeeded"):
+def complete(path, case="curl-ok", status="succeeded", *, runtime_sha256=...):
     policy = parse_policy(json.loads(Path("examples/secure-agent-web-tools-policy.json").read_text()))
     action = parse_action(contract.action(case, 1))
     selected = manifest(action.tool_id)
     digest = runtime.manifest_digest(selected)
+    if runtime_sha256 is ...:
+        runtime_sha256 = digest
     with evidence.NmapEvidenceStore(path, session_id=str(uuid4()), policy=policy, case=case,
-            owned_lab=identity(case, str(uuid4())), workflow_profile="web_tools", runtime_sha256=digest) as store:
+            owned_lab=identity(case, str(uuid4())), workflow_profile="web_tools", runtime_sha256=runtime_sha256) as store:
         store.record_decision(1, _observation(1, None))
         execution = store.start(action, policy, session_id=store._manifest["session_id"],
                                 session_step=1, backend=contract.BACKEND)
@@ -113,6 +115,50 @@ def test_failed_tool_does_not_count_as_useful_completion(tmp_path):
     path = tmp_path / "evidence"
     report = complete(path, status="failed")
     assert report["outcome"] == "inconclusive" and report["summary"]["actions_succeeded"] == 0
+    assert evidence.inspect_evidence(path) == report
+
+
+@pytest.mark.parametrize("case", ["curl-ok", "ffuf-normal"])
+@pytest.mark.parametrize("status", ["succeeded", "failed"])
+def test_execution_capture_requires_a_precommitted_runtime(tmp_path, case, status):
+    path = tmp_path / "evidence"
+    with pytest.raises(EvidenceUnavailable):
+        complete(path, case, status, runtime_sha256=None)
+    assert not (path / "report.json").exists()
+    assert not list(path.glob("result-*.json"))
+
+
+@pytest.mark.parametrize("case", ["curl-ok", "ffuf-normal"])
+def test_replay_rejects_removing_execution_runtime_commitment(tmp_path, case):
+    path = tmp_path / "evidence"
+    complete(path, case)
+    value = json.loads((path / "manifest.json").read_bytes())
+    value["runtime_sha256"] = None
+    (path / "manifest.json").write_bytes(contract.encode(value))
+    before = {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
+    replay = evidence.inspect_evidence(path)
+    assert replay["outcome"] == "inconclusive"
+    assert "journal_or_artifact_incomplete" in replay["integrity_issues"]
+    assert replay["finding"]["tool_observation"] is None
+    assert replay["records"][0]["observation"] is None
+    assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
+
+
+@pytest.mark.parametrize("case", ["curl-ok", "ffuf-normal"])
+def test_dry_run_without_runtime_commitment_still_finalizes_and_replays(tmp_path, case):
+    path = tmp_path / "evidence"
+    session_id = str(uuid4())
+    owned = identity(case, str(uuid4()))
+    policy = parse_policy(json.loads(Path("examples/secure-agent-web-tools-policy.json").read_text()))
+    with evidence.NmapEvidenceStore(path, session_id=session_id, policy=policy, case=case,
+            owned_lab=owned, workflow_profile="web_tools", runtime_sha256=None) as store:
+        store.record_decision(1, _observation(1, None))
+        store.record_lab_closed({"identity": owned, "status": "closed", "connection_count": 0, "request_count": 0})
+        report = store.finalize({"session_id": session_id, "mode": "dry_run", "session_status": "completed",
+            "stop_reason": "coordinator_done", "steps_attempted": 1, "actions_succeeded": 0, "output_reserved_bytes": 0})
+    assert report["runtime_sha256"] is None
+    assert report["outcome"] == "inconclusive" and report["integrity_issues"] == []
+    assert report["reason"] == "dry_run_has_no_execution_evidence"
     assert evidence.inspect_evidence(path) == report
 
 

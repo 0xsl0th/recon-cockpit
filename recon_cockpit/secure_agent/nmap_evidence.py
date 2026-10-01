@@ -93,6 +93,10 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
         tool_id=record["action"]["tool_id"], execution_status=status,
     )
     if contract.WORKFLOW == "owned-web-tool-assessment-v1":
+        # None is valid for a dry-run manifest, but any execution receipt must
+        # bind to the runtime committed before execution, including failures.
+        if not _digest(manifest["runtime_sha256"]):
+            raise ValueError("web_tool_runtime_commitment_missing")
         tool_id = record["action"]["tool_id"]
         raw, _ = contract.validate_tool_result(result, tool_id=tool_id,
             execution_status=status, runtime_sha256=manifest["runtime_sha256"])
