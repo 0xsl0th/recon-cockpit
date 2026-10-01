@@ -1,24 +1,24 @@
 # Verification record
 
-## PR #35 review handoff — 1 October 2026
+## PR #35 merged and live work deferred — 1 October 2026
 
-The operator authorized review and conditional merge, then a recommendation for
-what to tackle next. Fresh independent reviews of runtime/test head
-`e660466700bfbbafc690a78f0a2f67a0be70ce4c` found no blockers in the isolated
-transport/provider, accounting, runner, evidence or metric contracts. GitHub
-review and inline comments were empty. Saved reports independently confirm
-4,600 portable and 51 affected Linux tests with zero failures/errors/skips;
-runtime/tests/examples are identical to the clean CLI execution revision `03def1b`.
+Final reviewed head `59ea9f33fac027bbc693ee8b2bb39564d3c65c1d` passed independent
+review with no blockers or outstanding GitHub comments. Runtime/tests/examples
+match implementation `03def1b`; saved validation confirms 4,600 portable and 51
+affected Linux tests with zero selected failures/errors/skips. All five
+[final hosted jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36796851542)
+passed before the guarded merge `98d6f1b` at 00:40:24 UTC. Reviewed and merged
+trees both equal `6ff6592d8c8f26213c3819d8939013b288e7fb9c`. All five
+[post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36797343742)
+passed. The private `.secure-agent/pr35-merge-review.json` receipt records this.
 
-This follow-up only aligns the checkpoint with the new merge authorization.
-Before merging, verify all five hosted checks on the final head and use a guarded
-merge bound to that exact head. The private
-`.secure-agent/pr35-merge-review.json` receipt in the primary checkout records
-the actual reviewed head, final checks, merge outcome and tree comparison.
-Consult [PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35) for shared state;
-if merged, do not repeat its review/merge or reopen accepted offline milestones.
-The next recommendation is the bounded pilot already defined in the runbook.
-Actual provider/model use, credentials and spending still require approval.
+The operator subsequently deferred credential setup and the real-model pilot
+until much later, retaining disabled live integration and mock validation while
+continuing practical tools/workflows. Preparation performed a public endpoint
+lookup and TLS certificate handshake only; no API request, paid model call or
+real credential read occurred. No live configuration or funded ledger was created.
+The next implementation is the bounded owned HTTP response-header assessment.
+PR #35 and the accepted offline R5/R6 milestones remain closed.
 
 ## Minimal model workflow integration — 1 October 2026
 

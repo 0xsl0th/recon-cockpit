@@ -65,17 +65,17 @@ def configuration(value):
     if (type(value) is not dict
             or set(value) != {'version', 'service_id', 'session_id', 'policy', 'limits', 'execute', 'profile', 'case'}
             or value['version'] != '1' or type(value['execute']) is not bool
-            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab'}
+            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'}
             or (value['profile'] in {'owned_lab', 'owned_nmap_lab'} and (type(value['case']) is not str or value['case'] not in 'abcdef'
                                                      or len(value['case']) != 1))
-            or (value['profile'] == 'owned_web_lab' and (type(value['case']) is not str
+            or (value['profile'] in {'owned_web_lab', 'owned_http_headers_lab'} and (type(value['case']) is not str
                 or value['case'] not in ('vulnerable', 'corrected', 'injected')))
-            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab'} and value['case'] is not None)):
+            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'} and value['case'] is not None)):
         raise ValueError('invalid_admission_configuration')
     identity(value['service_id'])
     identity(value['session_id'])
     limits(value['limits'])
-    if value['profile'] in {'owned_nmap_lab', 'owned_web_lab'} and any(
+    if value['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'} and any(
             value['limits'][key] > maximum for key, maximum in NMAP_SESSION_LIMITS.items()):
         raise ValueError('invalid_nmap_admission_limits')
     parse_policy(value['policy'])
@@ -140,8 +140,14 @@ def profile_allows(action, config):
     if action.parameters.port != 8080:
         return False
     if action.tool_id == 'nmap_tcp_connect_v1':
-        return (config['profile'] in {'owned_nmap_lab', 'owned_web_lab'} and action.parameters.to_dict() ==
+        return (config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'} and action.parameters.to_dict() ==
                 {'port': 8080, 'timeout_seconds': 5, 'max_output_bytes': 16384})
+    if config['profile'] == 'owned_http_headers_lab':
+        return (action.tool_id == 'http_headers_v1' and action.parameters.to_dict() == {
+            'port': 8080, 'method': 'GET', 'path': '/harbordesk/portal.html',
+            'timeout_seconds': 1, 'max_output_bytes': 2048})
+    if action.tool_id not in {'http_probe', 'tcp_connect'}:
+        return False
     if config['profile'] in {'owned_nmap_lab', 'owned_web_lab'} and action.tool_id != 'http_probe':
         return False
     if config['profile'] == 'owned_web_lab':

@@ -62,20 +62,24 @@ def validate_launch(raw, nonce, context_digest):
         raise ValueError("owned_lab_launch_mismatch")
     envelope = load_json(raw)
     if (type(envelope) is not dict or set(envelope) != {"mode", "launch", "identity", "namespaces"}
-            or envelope["mode"] not in {"owned_lab", "owned_web_lab"}):
+            or envelope["mode"] not in {"owned_lab", "owned_web_lab", "owned_http_headers_lab"}):
         raise ValueError("invalid_owned_lab_launch")
     web = envelope["mode"] == "owned_web_lab"
+    headers = envelope["mode"] == "owned_http_headers_lab"
     identity_validator = validate_identity
     if web:
         from recon_cockpit.secure_agent.web_lab_contract import validate_identity as identity_validator
+    elif headers:
+        from recon_cockpit.secure_agent.http_headers_lab_contract import validate_identity as identity_validator
     identity = identity_validator(envelope["identity"])
     launch = envelope["launch"]
-    if type(launch) is not dict or launch.get("mode") != "discovery_fixture":
+    if type(launch) is not dict or launch.get("mode") != ("http_headers_owned" if headers else "discovery_fixture"):
         raise ValueError("invalid_owned_lab_authority")
     # Reuse the already reviewed complete action/policy/session/budget verifier.
     # The outer commitment additionally binds this explicit runtime and owner.
     inner = encode(launch)
-    request, deadline = LaunchVerifier(nonce, hashlib.sha256(inner).hexdigest()).consume(inner)
+    request, deadline = LaunchVerifier(nonce, hashlib.sha256(inner).hexdigest(),
+                                      allow_http_headers=headers).consume(inner)
     namespaces = envelope["namespaces"]
     if (type(namespaces) is not dict or set(namespaces) != {"user", "net", "mnt", "pid"}
             or any(type(value) is not str or not re.fullmatch(name + r":\[\d+\]", value)
@@ -91,7 +95,7 @@ def validate_launch(raw, nonce, context_digest):
                 or parameters['method'] != 'GET' or parameters['timeout_seconds'] != 1
                 or parameters['max_output_bytes'] != 1024):
             raise ValueError('web_lab_case_or_profile_mismatch')
-    elif request.get("tool_id") != "tcp_connect":
+    elif not headers and request.get("tool_id") != "tcp_connect":
         parameters = request["parameters"]
         if (parameters["path"] not in {f"/assessment/{identity['scenario']}/index.json",
                                       f"/assessment/{identity['scenario']}/diagnostics.json"}
@@ -128,7 +132,14 @@ def execute(request, deadline, namespaces):
     worker.install_syscall_filter()
     worker._remaining(deadline, parameters["timeout_seconds"])
     checks = worker.verify_network_boundary(8080)
-    operation = worker.tcp_connect_probe if request.get("tool_id") == "tcp_connect" else worker.probe
+    if request.get("tool_id") == "tcp_connect":
+        operation = worker.tcp_connect_probe
+    elif request.get("tool_id") == "http_headers_v1":
+        from recon_cockpit.secure_agent.http_headers_operation import probe as operation
+    elif "tool_id" not in request:
+        operation = worker.probe
+    else:
+        raise ValueError("owned_lab_executor_capability_not_supported")
     result = operation(request["target"], parameters, deadline=deadline)
     result["boundary_checks"] = checks
     return result

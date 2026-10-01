@@ -77,6 +77,15 @@ class HTTPParameters:
 
 
 @dataclass(frozen=True, slots=True)
+class HTTPHeadersParameters(HTTPParameters):
+    """HTTP syntax for the versioned raw-response capability, not permission.
+
+    The reviewed executor independently narrows this to one fixed GET request.
+    Keeping a separate concrete type prevents accidental legacy dispatch.
+    """
+
+
+@dataclass(frozen=True, slots=True)
 class TCPParameters:
     """One bounded connection attempt; no payload, banner read, or port list."""
 

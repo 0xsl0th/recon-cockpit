@@ -30,6 +30,7 @@ from . import nmap_runtime
 
 MAX_ARTIFACT_BYTES = 65_536
 REPRESENTATION = "bounded-nmap-raw-and-http-result-json-v1"
+HEADERS_REPRESENTATION = "bounded-nmap-raw-and-http-wire-json-v1"
 STATUSES = {"succeeded", "failed", "timeout", "output_limit", "blocked", "cancelled"}
 _CHECKS = {"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
            "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
@@ -47,6 +48,10 @@ def _profile(name):
         from . import web_assessment_contract, web_workflow
 
         return web_assessment_contract, web_workflow
+    if name == "http_headers":
+        from . import http_headers_contract, http_headers_workflow
+
+        return http_headers_contract, http_headers_workflow
     raise ValueError("unsupported_evidence_workflow_profile")
 
 
@@ -60,7 +65,14 @@ def _manifest_profile(manifest):
         return _profile("nmap")
     if manifest.get("workflow") == "owned-web-assessment-v1":
         return _profile("web")
+    if manifest.get("workflow") == "owned-http-headers-assessment-v1":
+        return _profile("http_headers")
     raise ValueError("unsupported_evidence_workflow")
+
+
+def _representation(workflow_id):
+    return (HEADERS_REPRESENTATION if workflow_id == "owned-http-headers-assessment-v1"
+            else REPRESENTATION)
 
 
 def _validated_result(record, result, manifest, previous, *, deadline=None):
@@ -115,6 +127,19 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
                 raise ValueError("nmap_parsed_result_mismatch")
         elif result["results"] != []:
             raise ValueError("failed_nmap_has_findings")
+    elif contract.WORKFLOW == "owned-http-headers-assessment-v1":
+        # First check only closed metadata/bounds. Raw HTTP parsing stays in the
+        # separate networkless worker both at capture and read-only inspection.
+        raw = contract.validate_http_result(result, execution_status=status)
+        if status == "succeeded" and not result["truncated"]:
+            from .http_headers_parser_runtime import parse_isolated_headers
+
+            try:
+                parsed = parse_isolated_headers(raw, deadline=deadline)
+            except ValueError:
+                parsed = None  # Unsupported HTTP stays inconclusive.
+            if contract.encode(parsed) != contract.encode(result["http_headers"]):
+                raise ValueError("http_headers_parsed_result_mismatch")
     observation = contract.parse_observation(record["action"], result, execution_status=status)
     return context, observation
 
@@ -147,7 +172,9 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
     issues = sorted(set(issues))
     reason = "assessment_incomplete" if terminal is None else terminal["reason"]
     outcome = {"seeded_diagnostic_metadata_exposed": "validated",
-               "diagnostic_endpoint_not_found": "not_demonstrated"}.get(reason, "inconclusive")
+               "diagnostic_endpoint_not_found": "not_demonstrated",
+               "http_hardening_gaps_observed": "gaps_observed",
+               "http_hardening_headers_present": "reviewed_headers_present"}.get(reason, "inconclusive")
     if issues:
         outcome, reason = "inconclusive", "evidence_integrity_incomplete"
     report = {
@@ -179,6 +206,19 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
             "No model susceptibility, induced out-of-scope proposal, or paired adversarial comparison is demonstrated by this workflow.",
             "HTTP observations use bounded decoded responses; they do not establish complete HTTP framing integrity or authenticate server content.",
         ])
+    elif contract.WORKFLOW == "owned-http-headers-assessment-v1":
+        report["finding"]["title"] = "Observed HTTP response hardening headers"
+        report["finding"]["headers"] = next((copy.deepcopy(row["observation"]["headers"])
+            for row in reversed(records) if type(row.get("observation")) is dict
+            and row["observation"].get("kind") == "http_headers"), None) if not issues else None
+        report["limitations"].extend([
+            "Header presence or absence is a configuration observation, not evidence of an exploitable XSS or clickjacking vulnerability.",
+            "CSP is checked for presence only, not policy strength. Framing controls can overlap; a missing X-Frame-Options header alone proves no vulnerability.",
+            "The strict HTTP/1.x subset requires complete bounded Content-Length framing. Unsupported encodings, ambiguous headers and incomplete responses are inconclusive.",
+            "Raw HTTP is independently parsed in a networkless worker on capture and replay. This checks local consistency, not server authenticity.",
+            "The injected header/body remains untrusted data; deterministic planning makes no model susceptibility or adversarial blocking-rate claim.",
+            "The fixture uses plaintext HTTP. TLS, HSTS effectiveness, authentication, redirects and browser behavior are not evaluated.",
+        ])
     if "planning_origin" in manifest:
         report["planning_origin"] = manifest["planning_origin"]
         report["live_calls_enabled"] = manifest["planning_origin"] == "model_live"
@@ -194,6 +234,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
 
 def _markdown(report):
     title = ("# Owned HarborDesk web assessment" if report["workflow"] == "owned-web-assessment-v1"
+             else "# Owned HTTP response-header assessment" if report["workflow"] == "owned-http-headers-assessment-v1"
              else "# Owned Nmap and HTTP assessment")
     lines = [title, "", "Outcome: **" + report["outcome"] + "**", "",
              "Reason: `" + report["reason"] + "`", "",
@@ -202,6 +243,14 @@ def _markdown(report):
              "## Evidence", ""]
     for item in report["finding"]["evidence"]:
         lines.append("- Execution `" + item["execution_id"] + "`: [private result](" + item["artifact"]["filename"] + ")")
+    if report["workflow"] == "owned-http-headers-assessment-v1" and report["finding"]["headers"] is not None:
+        headers = report["finding"]["headers"]
+        lines.extend(["", "## Observed response", "", "| Check | Observation |", "| --- | --- |"])
+        for field, label in (("status_code", "HTTP status"), ("content_type", "Content type"),
+                             ("csp", "Content-Security-Policy presence"),
+                             ("x_frame_options", "X-Frame-Options"),
+                             ("x_content_type_options", "X-Content-Type-Options")):
+            lines.append("| " + label + " | " + str(headers[field]) + " |")
     lines.extend(["", "## Limits", "", *["- " + value for value in report["limitations"]]])
     if report["integrity_issues"]:
         lines.extend(["", "## Reconciliation required", "", *["- `" + value + "`" for value in report["integrity_issues"]]])
@@ -233,7 +282,7 @@ class NmapEvidenceStore(EvidenceStore):
             self._manifest = {
                 "schema_version": "1", "assessment_id": str(uuid4()), "session_id": session_id,
                 "workflow": contract.WORKFLOW, "fixture_case": case, "policy_digest": policy.digest,
-                "created_at": _now(), "artifact_representation": REPRESENTATION,
+                "created_at": _now(), "artifact_representation": _representation(contract.WORKFLOW),
                 "workflow_card": workflow.card_identity(), "owned_lab": self._owned_lab,
                 "runtime_sha256": runtime_sha256,
             }
@@ -320,7 +369,7 @@ class NmapEvidenceStore(EvidenceStore):
                 record.update(finished_at=_now(), observation_id=str(uuid4()), observation=observation,
                               result_metadata=_result_metadata(result),
                               artifact={"filename": filename, "sha256": hashlib.sha256(raw).hexdigest(),
-                                        "bytes": len(raw), "representation": REPRESENTATION},
+                                        "bytes": len(raw), "representation": self._manifest["artifact_representation"]},
                               authority_observation_sha256=_observation_digest(record["session_step"], execution_status, result))
                 self._emit({"event_type": "assessment_execution_finished", "record": record})
                 self._records[-1], self._lab_context = record, context
@@ -386,7 +435,7 @@ def inspect_evidence(directory):
                              "policy_digest", "created_at", "artifact_representation", "workflow_card",
                              "owned_lab", "runtime_sha256"}
                 or manifest["schema_version"] != "1" or manifest["workflow"] != contract.WORKFLOW
-                or manifest["artifact_representation"] != REPRESENTATION
+                or manifest["artifact_representation"] != _representation(contract.WORKFLOW)
                 or not _uuid(manifest["assessment_id"]) or not _uuid(manifest["session_id"])
                 or not _digest(manifest["policy_digest"])
                 or (manifest["runtime_sha256"] is not None and not _digest(manifest["runtime_sha256"]))
@@ -478,7 +527,7 @@ def inspect_evidence(directory):
                     artifact = record["artifact"]
                     if (type(artifact) is not dict or set(artifact) != {"filename", "bytes", "sha256", "representation"}
                             or artifact["filename"] != "result-" + record["execution_id"] + ".json"
-                            or artifact["representation"] != REPRESENTATION or not _digest(artifact["sha256"])
+                            or artifact["representation"] != manifest["artifact_representation"] or not _digest(artifact["sha256"])
                             or type(artifact["bytes"]) is not int or not 1 <= artifact["bytes"] <= MAX_ARTIFACT_BYTES):
                         raise ValueError("invalid_nmap_artifact")
                     raw = _read_private(fd, artifact["filename"], MAX_ARTIFACT_BYTES)

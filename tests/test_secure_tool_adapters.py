@@ -52,7 +52,7 @@ def test_existing_wire_digests_and_default_request_bytes_stay_unchanged():
 
 
 def test_registry_is_explicit_immutable_and_returns_detached_metadata():
-    assert tuple(ADAPTERS) == ("http_probe", "tcp_connect", NMAP_TOOL_ID)
+    assert tuple(ADAPTERS) == ("http_probe", "tcp_connect", NMAP_TOOL_ID, "http_headers_v1")
     with pytest.raises(TypeError):
         ADAPTERS["arbitrary"] = get_adapter(NMAP_TOOL_ID)
     adapter = get_adapter(NMAP_TOOL_ID)

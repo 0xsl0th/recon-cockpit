@@ -4,28 +4,30 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current priority — 1 October 2026:** preserve the completed offline R5
-implementation and accepted local R6 candidate. PR #34's adversarial comparison
-merged as `17945db`; PRs #32/#33 supply the reviewed Nmap/HTTP tools and resettable
-HarborDesk lab. The operator authorized a minimal real-model integration and
-offline validation, followed by a PR and a concrete pilot approval decision.
-This does not reopen completed milestones or authorize paid calls.
+**Current priority — 1 October 2026:** preserve completed offline R5 and the
+accepted local R6 candidate. PR #35's minimal model integration is merged as
+`98d6f1b`, following PR #34's adversarial comparison (`17945db`) and the reviewed
+Nmap/HTTP tools and HarborDesk lab in PRs #32/#33. The operator has now explicitly
+deferred credential setup and the live-model pilot until much later. Keep live
+integration disabled and validate with mocks while developing practical tools.
 
-**Current implementation:** the [bounded model pilot](web-model-pilot.md) reuses
-the existing provider isolation, monetary ledger, authority, tools and evidence.
-One three-action Nmap → HTTP → evidence workflow is paired with a fresh protected
-scripted baseline. Completion, unnecessary refusals, denied proposals, unauthorized
-executions, usage/cost and latency are reported separately. A blocked unfinished
-task fails usefulness. The proposed three-session, nine-call, $1 pilot remains
-pending explicit approval of its actual endpoint, credential, data and spending.
-Offline fixture results establish integration behavior, not real-model quality.
+**Current increment:** the [owned HTTP response-header workflow](http-headers-assessment.md)
+adds one bounded capability after Nmap reachability, retains raw response evidence
+and reports observed hardening gaps through independent replay. It uses a separate
+fixture/workflow version and all existing authority, approval and isolation gates.
+It makes no exploit, real-model or professional-readiness claim.
 
-Roughly 40 tools remains a long-term target. Additional tools, GUI/API, third-party
-plugins, authenticated web/API, Windows/AD and external targets remain deferred.
-Continue focused development through October and refresh the proposal with
-verified results in early November, targeting submission around 9 November after
-operator review. Proposal PR #31 remains separate and unmerged; its local PDF is
-unchanged. Publication and submission require their own operator instructions.
+The [bounded model pilot](web-model-pilot.md) remains prepared and deferred. Its
+usefulness, unnecessary refusals, denied proposals, unauthorized executions,
+usage/cost and latency metrics remain available. Blocking an unfinished task
+fails usefulness. No credential setup, paid call or provider funding is authorized.
+
+Roughly 40 tools remains a long-term target. Additional adapters, GUI/API,
+third-party plugins, authenticated web/API, Windows/AD and external targets remain
+deferred. Continue focused development through October and refresh the proposal
+with verified results in early November, targeting submission around 9 November
+after operator review. Proposal PR #31 remains separate and unmerged; its local
+PDF is unchanged. Publication and submission require their own instructions.
 
 The R5 offline baseline is `1605606`, the authorized merge of PR #26
 ([offline planning evaluation](planning-evaluation.md)). PRs #16–#26 remain
