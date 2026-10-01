@@ -5,6 +5,9 @@
 This development checkpoint never resumes an assessment or restores approvals.
 
 **Current authorized work: practical tool coverage before deeper workflows.**
+Review handoff: [PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37),
+secure owned curl and ffuf coverage. It is open for review; the merge requires a
+separate operator instruction for this PR and passing latest checks.
 The operator selected this priority on 1 October and authorized implementation,
 secure execution and owned-lab verification. The small batch is **curl HTTPS
 retrieval and ffuf content discovery**, described in [practical-web-tools.md](practical-web-tools.md).
@@ -985,10 +988,11 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Check PR #36's GitHub state and the private merge-review receipt first. Its
-   review/merge is authorized conditional on the latest passing checks; if merged,
-   keep it closed. PR #35 is merged as `98d6f1b`; PRs #6–#30 and #32–#35 stay
-   closed. Proposal PR #31 remains separate. Historical “next” notes are not current work.
+1. Review [PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37) on
+   `feature/practical-web-tools` and its latest checks. The curl/ffuf batch is
+   implemented and owned-lab verified; merge awaits the operator's instruction.
+   PR #36 is merged as `9a95d9a`; PRs #6–#30 and #32–#36 stay closed. Proposal
+   PR #31 remains separate. Historical “next” notes are not current work.
 2. Preserve the completed offline comparison, accepted local packet, successful
    approval-required terminal rehearsal and actual operator decision. Do not
    reopen that review or modify the immutable accepted packet.
@@ -996,9 +1000,10 @@ Planning uses synthetic responses.
    explicitly resumes them. Development uses deterministic/owned mocks and no
    paid calls. Retain the existing usefulness, refusals, cost and latency metrics;
    blocked unfinished work still fails usefulness.
-4. Review the new bounded header capability and practical owned workflow before
-   choosing another focused tool increment. Keep the proposal/PDF unchanged until
-   its planned early-November update. Defer GUI/API and external targets.
+4. After this tool batch is reviewed, choose one deeper cross-tool workflow from
+   the measured capabilities and remaining useful-work gaps. Do not add another
+   adapter or model-preparation layer by default. Keep the proposal/PDF unchanged
+   until its planned early-November update. Defer GUI/API and external targets.
 5. Keep local kernel verification separate from hosted portable CI. Do not rerun
    full suites solely for documentation changes. Publication, submission and
    subsequent implementation need their corresponding operator instructions.

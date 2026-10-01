@@ -7,6 +7,7 @@ the existing authority infrastructure. The host interactive runner is not used
 to execute agent proposals.
 
 Implementation `3ec1ef0` runs both real executables through the secure path.
+The batch is open for review in [PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37).
 Owned verification covers useful completion, negative cases, all approval gates,
 bounded output, cancellation and cleanup. Fresh saved trials completed 2/2 useful
 actions with zero unnecessary refusals and zero provider calls, then replayed

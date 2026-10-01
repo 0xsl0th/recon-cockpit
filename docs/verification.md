@@ -10,6 +10,8 @@ audit, admission and confined launcher path. The [runbook](practical-web-tools.m
 records fixed scope, hard resources and limitations. Accepted R5/offline R6,
 old tool profiles and the separate proposal/PDF remain unchanged. Credential
 setup, paid calls and live-model evaluation stay deferred until much later.
+Review PR: [#37](https://github.com/0xsl0th/recon-cockpit/pull/37); merge is pending
+the operator's instruction and review of its latest revision/checks.
 
 Independent runtime/admission and CLI/evidence/lab reviews found no blockers.
 Actual execution exposed and resolved two ffuf integration details: Bubblewrap's
