@@ -1,5 +1,69 @@
 # Verification record
 
+## Practical curl/ffuf coverage — 1 October 2026
+
+Implementation `3ec1ef07040c284b2896055009c8123070f327ea` on
+`feature/practical-web-tools`, based on main `9a95d9a`, adds two independent
+real-tool capabilities before deeper workflows: one certificate-verified curl
+HTTPS GET and eight fixed ffuf paths. Both use the existing authority, approval,
+audit, admission and confined launcher path. The [runbook](practical-web-tools.md)
+records fixed scope, hard resources and limitations. Accepted R5/offline R6,
+old tool profiles and the separate proposal/PDF remain unchanged. Credential
+setup, paid calls and live-model evaluation stay deferred until much later.
+
+Independent runtime/admission and CLI/evidence/lab reviews found no blockers.
+Actual execution exposed and resolved two ffuf integration details: Bubblewrap's
+supervisor must count toward the sixteen-task ceiling, and ffuf requires a fixed
+empty scraper directory despite scrapers being disabled. That directory is
+read-only and permits no configuration-file access. The native JSON parser now
+validates the observed canonical `FFUFHASH` position and discards it from findings.
+The negative thread-limit test verifies refusal when the actual limit is widened.
+
+| Coverage | Result | Private JUnit receipt basename |
+| --- | --- | --- |
+| Full local portable suite before final bounded integration corrections | 5,139 passed; no failures/errors/skips | `portable.xml` |
+| Final affected portable tool contracts, parsers, evidence, lab, runtime, CLI and single-action planning | 249 passed; no failures/errors/skips | `focused-final.xml` |
+| New actual workflows, approval/replay gates, kernel thread ceiling, cancellation, oversized output and private-input isolation | 23 distinct cases verified: 20 initial passes plus 3 corrected-test passes | `linux.xml`, `linux-corrections.xml` |
+| Existing Nmap/HTTP-header workflows/parsers/gates, launcher and admission | 115 distinct cases verified: 114 initial passes; all 3 stop cases passed after correcting their test hook | `legacy-linux.xml`, `launcher-stop-linux.xml` |
+
+The **138 affected Linux cases** are not a full Linux-suite run. Original failed
+receipts are retained. New test corrections align malformed-response expectations
+with curl's own rejection and update two instrumentation anchors after extracting
+the execution environment helper; production limits were not weakened. The legacy
+stop test's old string replacement no longer inserted its stall. Its replacement
+now asserts the current dispatch anchor exists and actually stalls the executor;
+production legacy code is unchanged. Initial cancel/concurrent results are
+superseded by their corrected passes. HTTP report rendering was also made
+independent of dictionary ordering so read-only replay remains identical.
+
+Two fresh actual CLI runs from clean `3ec1ef0` saved evidence under
+`.secure-agent/practical-web-tools-20261001/runs` in the primary checkout:
+
+| Tool trial | Useful outcome | Requests | CLI wall time |
+| --- | --- | --- | --- |
+| `curl-ok` | `response_observed` | 1 | 2.886 s |
+| `ffuf-normal` | `paths_observed`, all eight statuses retained | 8 | 4.641 s |
+
+Both completed their sole action, had distinct disposable lab identities, closed
+successfully and replayed without integrity issues or file/mtime changes.
+Useful completion is **2/2**, unnecessary refusals **0/2**, actual provider calls
+and cost **zero** in these saved positive trials. These are local descriptive
+timings including secure infrastructure, not a paired authority-overhead benchmark
+or a general effectiveness rate. Negative fixtures also cover untrusted TLS,
+redirects, malicious text, ambiguous framing, wildcard responses and stalls.
+Blocking a normal useful trial would fail acceptance.
+
+The runs use an explicit unattended synthetic owned validation policy. The
+shipped policy requires fresh approval; scripted approval tests do not claim
+human consent or a new operator acceptance. No real credential was read or
+configured. Runtime hashes, raw evidence, receipts, review notes and measured
+cost/timing records remain private and ignored. Compile, dependency and whitespace
+checks pass. Hosted PR checks provide the final portable matrix for review.
+
+PR #36 remains merged as `9a95d9a`; all five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36801648147)
+passed. Its history below is preserved rather than reopening accepted scope.
+
 ## Owned HTTP response-header assessment — 1 October 2026
 
 Implementation `473e989` on `feature/owned-http-headers-assessment`, based on main

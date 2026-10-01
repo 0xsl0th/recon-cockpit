@@ -13,6 +13,17 @@ based on main `9a95d9a`. Each adapter must work independently through the existi
 approval, audit, admission and confined launcher path and pass real owned-lab
 checks before composing a deeper workflow. Reuse existing interactive tool
 semantics where practical, never its host subprocess runner as an agent boundary.
+Implementation `3ec1ef0` is complete: both actual tools run through all secure
+gates, with 23 new and 115 affected legacy Linux tests verified after documented
+test corrections, plus 249 final focused portable tests. The earlier full portable
+run passed 5,139 tests. Fresh clean-source CLI trials completed curl's one HTTPS
+request and ffuf's eight paths; both closed and replayed without integrity issues.
+Private evidence: `.secure-agent/practical-web-tools-20261001` in the primary
+checkout. See [verification.md](verification.md) for exact coverage, corrections
+and timing limits. The next step is review of this batch, then selection of one
+deeper cross-tool workflow from the verified capabilities. Do not merge without
+the operator's instruction for this PR.
+
 Credential setup, paid calls and live-model evaluation remain deferred until much
 later. Do not ask for a key, fund a ledger or enable a live provider.
 

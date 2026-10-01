@@ -198,8 +198,11 @@ def descendants(pid):
 
 @pytest.mark.parametrize('stop', ['cancel', 'deadline', 'concurrent'])
 def test_stop_reaps_active_executor_and_nested_admission(tmp_path, monkeypatch, stop):
-    instrument(tmp_path, monkeypatch, lambda source: source.replace(
-        'result = (worker.execute_tcp_connect', 'time.sleep(30)\n        result = (worker.execute_tcp_connect'), 'executor_worker')
+    def stall(source):
+        anchor = '        if request.get("tool_id") == "tcp_connect":'
+        assert source.count(anchor) == 1
+        return source.replace(anchor, '        time.sleep(30)\n' + anchor)
+    instrument(tmp_path, monkeypatch, stall, 'executor_worker')
     cancelled = threading.Event()
     control = ExecutionControl(time.monotonic()+(2 if stop == 'deadline' else 20), cancelled)
     with ThreadPoolExecutor(max_workers=1) as pool, service() as launcher:

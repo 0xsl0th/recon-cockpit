@@ -6,10 +6,13 @@ uses both programs; secure integration reuses their enumeration semantics and
 the existing authority infrastructure. The host interactive runner is not used
 to execute agent proposals.
 
-Implementation and owned-lab verification are in progress. A registered adapter
-or passing mock is not evidence that its executable works through confinement.
-See [verification.md](verification.md) and [continue-here.md](continue-here.md)
-for the final measured status.
+Implementation `3ec1ef0` runs both real executables through the secure path.
+Owned verification covers useful completion, negative cases, all approval gates,
+bounded output, cancellation and cleanup. Fresh saved trials completed 2/2 useful
+actions with zero unnecessary refusals and zero provider calls, then replayed
+without modifying evidence. This is a small deterministic fixture result, not a
+statistical model evaluation. See [verification.md](verification.md) and
+[continue-here.md](continue-here.md) for receipts and review status.
 
 | Tool | Fixed initial scope | Useful result |
 | --- | --- | --- |
