@@ -25,7 +25,9 @@ accepted contracts and evidence. Private merge receipt:
 `.secure-agent/pr38-merge-review.json`; B1 evidence:
 `.secure-agent/network-tools-20261001`, both in the primary checkout.
 
-**Current batch B2: SSH host keys and anonymous LDAP RootDSE.** Development is in
+**Current batch B2: SSH host keys and anonymous LDAP RootDSE.**
+Review [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39) and its latest checks.
+Implementation `77395fe` is in
 `/tmp/recon-secure-ssh-ldap-tools`, branch `feature/secure-ssh-ldap-tools`, based on
 merged main `5436dd6`. Reuse the network-tool execution and evidence infrastructure,
 with one fixed `ssh-keyscan` or `ldapsearch` action per fresh owned lab. No host
@@ -37,6 +39,10 @@ cases (19 new B2, 108 existing), with no final failures/errors/skips. Both tools
 completed useful real execution and independently replayed evidence. Initial SSH
 stdout-banner parsing was corrected before the successful full protocol run.
 See [ssh-ldap-tools.md](ssh-ldap-tools.md) and [verification.md](verification.md).
+Clean-source trials from `77395fe` completed useful work 2/2, with zero unnecessary
+refusals, one protocol event per tool and closed labs. Independent replay matched
+both B2 reports and both accepted B1 bundles without writes. SSH/LDAP CLI times
+were 2.557/2.580 seconds, descriptive only. Provider calls/cost were zero.
 Private receipts: `.secure-agent/ssh-ldap-tools-20261001` in the primary checkout.
 New PR merge requires its corresponding operator instruction.
 

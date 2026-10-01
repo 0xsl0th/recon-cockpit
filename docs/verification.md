@@ -10,7 +10,8 @@ limitations. The broader coverage milestone stays open; B3 anonymous SMB share
 metadata is next because it adds a missing protocol family with an existing
 interactive `smbclient` integration.
 
-The source is on `feature/secure-ssh-ldap-tools`, based on `5436dd6`. Both new
+Implementation `77395fe` is on `feature/secure-ssh-ldap-tools`, based on `5436dd6`;
+review handoff: [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39). Both new
 profiles keep one action, fixed owned TCP scope, a five-second tool deadline,
 60-second session ceiling and 8,192 combined output bytes. SSH collects a single
 2048-bit RSA key and computes a fingerprint without claiming trust or login.
@@ -50,8 +51,17 @@ affected Linux launcher/admission and existing HTTP/curl/ffuf checks passed in
 in these final runs. Receipts: `portable.xml`, `legacy-linux.xml`,
 `workflow-linux.xml` and `enforcement-linux.xml`. Python 3.11 syntax, compile,
 dependency consistency, changed documentation links and whitespace checks passed.
-The normal clean-source B2 receipts are added at handoff. Hosted checks must pass
-on the final PR revision before a later authorized merge. No human acceptance is claimed by automated grants. Model credentials,
+Two clean-source trials from `77395fe` retained private raw evidence under
+`.secure-agent/ssh-ldap-tools-20261001/runs`. SSH returned `host_key_observed` in
+2.557 seconds; LDAP returned `rootdse_observed` in 2.580 seconds. Both completed
+one useful action and one protocol event, closed their labs and replayed identically
+without changing file bytes or mtimes. Legitimate completion was 2/2, unnecessary
+refusals 0/2, and provider calls/cost zero. These descriptive CLI timings do not
+measure comparative overhead. The same clean source also replayed the two accepted
+B1 bundles byte-for-byte with no writes or integrity issues. Independent source
+comparison preserved all nine B1 fixture specs/actions and the original card and
+capability descriptor. `verification.json` records exact source and receipts.
+Hosted checks must pass on the final PR revision before a later authorized merge. No human acceptance is claimed by automated grants. Model credentials,
 paid calls and live-model evaluation stay deferred; deeper composition and
 comparative benchmarking wait for all required coverage rows. R5/local R6 and
 the separate proposal/PDF remain unchanged.

@@ -7,7 +7,8 @@ Finishing one batch selects the next coverage gap, not a workflow project.
 Completed offline R5 and accepted local R6 remain closed.
 
 [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38) merged as `5436dd6`: B1
-DNS/TLS is accepted. B2 SSH/LDAP is the current implementation batch, followed by
+DNS/TLS is accepted. [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39) contains
+the locally verified B2 SSH/LDAP batch, followed by
 B3 anonymous SMB share metadata. Main has 8 secure capabilities backed by 5 external
 programs; B2 adds two locally verified capabilities/programs, pending review/merge.
 It is not yet counted as accepted main coverage.
