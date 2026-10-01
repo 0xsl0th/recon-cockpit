@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: bounded owned HTTP response-header assessment.** The operator
+**Current handoff: [PR #36](https://github.com/0xsl0th/recon-cockpit/pull/36), bounded owned HTTP response-header assessment.** The operator
 explicitly deferred credential setup and the live-model pilot until much later:
 keep live integration disabled, validate with mocks, and continue practical
 tool/workflow development. Do not ask for a key, fund a provider ledger or prepare
@@ -12,8 +12,13 @@ live activation as the next task. Work is on `feature/owned-http-headers-assessm
 in `/tmp/recon-http-headers`, based on main `98d6f1b`. The slice adds one fixed
 HTTP capability after existing Nmap discovery, with raw response evidence and
 independent replay. Existing tool contracts, offline R5 and accepted local R6 stay
-closed. Review status and validation are recorded below and in
-[verification.md](verification.md); this new branch is not authorized to merge.
+closed. Implementation `473e989` passed independent review, 4,898 portable tests
+and 99 affected Linux tests. Three fresh CLI demos completed both actions and replayed without integrity
+issues; private evidence is `.secure-agent/http-headers-20261001` in the primary
+checkout. See [verification.md](verification.md) for exact coverage and receipts.
+The PR is for review and is not authorized to merge. Check its latest hosted
+checks before any later authorized merge; the final documentation update changes
+no runtime or tests.
 
 **[PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35) is merged and stays closed.**
 Final reviewed head `59ea9f3` passed independent review and all five

@@ -1,5 +1,62 @@
 # Verification record
 
+## Owned HTTP response-header assessment — 1 October 2026
+
+Implementation `473e989` on `feature/owned-http-headers-assessment`, based on main
+`98d6f1b`, adds `http_headers_v1` and a separate two-action owned workflow. Nmap
+reachability gates a fixed GET of the synthetic HTML portal. The native adapter
+retains bounded wire bytes; a separate networkless parser releases only finite
+header observations. Capture and inspection independently reconcile those facts
+with raw evidence. Missing headers are hardening observations, not validated
+exploits. See the [runbook](http-headers-assessment.md) and
+[PR #36](https://github.com/0xsl0th/recon-cockpit/pull/36). This PR remains open
+for operator review; check its latest hosted status before any authorized merge.
+
+The operator explicitly deferred credential setup and the real-model pilot until
+much later. This work uses deterministic proposals and owned fixtures. Live
+configuration remains disabled, no provider ledger is funded and no real key is
+read. The accepted offline R5/R6 milestones stay closed; proposal PR #31 and the
+local PDF are unchanged.
+
+Independent reviews of contract/parser, runtime/admission/launcher and
+CLI/evidence/documentation found no blockers. Review also tightened a receipt
+edge case: an empty captured response cannot claim transport success. The strict
+validator rejects it even when outer hashes are recomputed.
+
+Validation receipts are local, not committed artifacts:
+
+| Coverage | Result | Receipt |
+| --- | --- | --- |
+| Final full portable run on `473e989` | 4,898 passed; zero selected failures/errors/skips | `/tmp/recon-http-headers-portable-final.xml` |
+| New full workflows and approval gates, plus existing web/Nmap approval tests | 17 passed | `/tmp/recon-http-headers-gates-workflow-linux.xml` |
+| Actual networkless HTTP parser, malformed input, denied network/process/file access, deadlines and cleanup | 17 passed | `/tmp/recon-http-headers-parser-linux.xml` |
+| Existing Nmap/web workflows, owned launcher and admission regressions | 65 passed | `/tmp/recon-http-headers-legacy-linux.xml` |
+
+The **99 affected Linux tests** have no failures/errors/skips; this is not a new
+full 567-test Linux-suite result. Portable doubles establish contracts, not kernel
+isolation. Tests exercise required grants and consumed-proof witnesses, replay
+refusal, old-profile substitution and an out-of-scope proposal denied and audited
+before launch. Scripted approval fixtures do not record human consent.
+
+Three fresh actual CLI runs on clean `473e989` saved private evidence at
+`.secure-agent/http-headers-20261001` in the primary checkout. Each used an explicit
+unattended owned validation policy; the shipped policy still requires fresh
+human approvals. Each completed two actions and exactly one HTTP request, closed
+its own lab, and passed read-only evidence replay without integrity issues:
+
+| Case | Observation | Actions | Session time |
+| --- | --- | --- | --- |
+| Vulnerable | `gaps_observed` | 2/2 | 2.830 s |
+| Corrected | `reviewed_headers_present` | 2/2 | 2.824 s |
+| Injected | `gaps_observed` | 2/2 | 2.866 s |
+
+The packet's `verification.json` binds source, unique lab identities, closure and
+report hashes; files are private and ignored. The hostile body remains only in
+raw evidence. It neither changes scope nor enters report prose. These timings
+are descriptive local session measurements, not model latency or authority
+benchmarks. Actual provider calls and paid calls: **zero**. No new operator
+acceptance, competition submission or release publication is claimed.
+
 ## PR #35 merged and live work deferred — 1 October 2026
 
 Final reviewed head `59ea9f33fac027bbc693ee8b2bb39564d3c65c1d` passed independent
