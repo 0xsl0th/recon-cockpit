@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current review: minimal real-model Nmap → HTTP → evidence integration.**
+**Current review: [PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35), minimal real-model Nmap → HTTP → evidence integration.**
 The operator authorized reviewing/merging PR #34, implementing this focused
 integration, completing offline validation and opening a PR. Work is on
 `feature/web-model-pilot` in `/tmp/recon-web-model-pilot`, based on main `17945db`.
@@ -22,7 +22,15 @@ credential source, synthetic data and success thresholds for operator approval
 before live execution. Leave this new implementation ready for review; merge
 permission covered PR #34 only. All 4,600 portable tests and 51 affected Linux
 tests passed without selected failures/errors/skips. See
-[verification.md](verification.md) for exact coverage and limits.
+[verification.md](verification.md) for exact coverage and limits. Implementation
+`03def1b` produced two saved CLI runs: the successful three-action workflow and
+the blocked injected proposal with only two actions completed. Private evidence
+is `.secure-agent/web-model-owned-20261001` and
+`.secure-agent/web-model-blocked-20261001` in the primary checkout; the adjacent
+`web-model-20261001-verification.json` records source and receipts. These are
+owned simulations, not real-model results. Consult
+[PR #35 checks](https://github.com/0xsl0th/recon-cockpit/pull/35/checks) for final
+hosted status; this documentation follow-up does not change runtime or tests.
 
 **PR #34 is merged and stays closed.** Fresh independent review of exact head
 `7494b7fe230c9f6ab73366fa746afcc306935426` found no blockers or outstanding comments.
