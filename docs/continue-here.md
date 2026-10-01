@@ -16,9 +16,14 @@ closed. Implementation `473e989` passed independent review, 4,898 portable tests
 and 99 affected Linux tests. Three fresh CLI demos completed both actions and replayed without integrity
 issues; private evidence is `.secure-agent/http-headers-20261001` in the primary
 checkout. See [verification.md](verification.md) for exact coverage and receipts.
-The PR is for review and is not authorized to merge. Check its latest hosted
-checks before any later authorized merge; the final documentation update changes
-no runtime or tests.
+The operator now authorizes review and merge if the latest revision and all
+checks pass, then asks for a next-step recommendation. That instruction does not
+authorize implementing another slice. Fresh independent parser/evidence and
+runtime/launch reviews found no blockers in `d5e0228`; the runtime and tests match
+`473e989`. This checkpoint update changes documentation only. The actual merge
+outcome is recorded in GitHub and the private `.secure-agent/pr36-merge-review.json`
+receipt in the primary checkout. If PR #36 is merged, keep it closed and do not
+repeat its merge or reopen accepted milestones.
 
 **[PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35) is merged and stays closed.**
 Final reviewed head `59ea9f3` passed independent review and all five
@@ -957,15 +962,16 @@ Planning uses synthetic responses.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
 - The operator-authorized PR #35 merge is complete. PRs #6–#30 and #32–#35
-  stay closed; proposal PR #31 remains separate. The current HTTP header
-  branch is for review. Later merges, submission,
+  stay closed; proposal PR #31 remains separate. PR #36 now has conditional
+  review/merge authorization. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Read the current HTTP header PR and verification record before continuing.
-   PR #35 is merged as `98d6f1b`; PRs #6–#30 and #32–#35 stay closed. Proposal
-   PR #31 remains separate. Historical “next” notes are not current work.
+1. Check PR #36's GitHub state and the private merge-review receipt first. Its
+   review/merge is authorized conditional on the latest passing checks; if merged,
+   keep it closed. PR #35 is merged as `98d6f1b`; PRs #6–#30 and #32–#35 stay
+   closed. Proposal PR #31 remains separate. Historical “next” notes are not current work.
 2. Preserve the completed offline comparison, accepted local packet, successful
    approval-required terminal rehearsal and actual operator decision. Do not
    reopen that review or modify the immutable accepted packet.
@@ -977,8 +983,8 @@ Planning uses synthetic responses.
    choosing another focused tool increment. Keep the proposal/PDF unchanged until
    its planned early-November update. Defer GUI/API and external targets.
 5. Keep local kernel verification separate from hosted portable CI. Do not rerun
-   full suites solely for documentation changes. Merging this new PR, publication
-   and submission need their corresponding operator instructions.
+   full suites solely for documentation changes. Publication, submission and
+   subsequent implementation need their corresponding operator instructions.
 
 ## Recovery and verification
 

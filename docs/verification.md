@@ -9,8 +9,16 @@ retains bounded wire bytes; a separate networkless parser releases only finite
 header observations. Capture and inspection independently reconcile those facts
 with raw evidence. Missing headers are hardening observations, not validated
 exploits. See the [runbook](http-headers-assessment.md) and
-[PR #36](https://github.com/0xsl0th/recon-cockpit/pull/36). This PR remains open
-for operator review; check its latest hosted status before any authorized merge.
+[PR #36](https://github.com/0xsl0th/recon-cockpit/pull/36). The latest operator
+instruction authorizes conditional review/merge, followed by a recommendation
+only. Fresh independent parser/evidence/workflow and runtime/admission/launcher
+reviews of `d5e0228` found no blockers. All five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36800202193)
+passed on that head; runtime/tests/examples match `473e989`. GitHub reviews,
+conversation comments and inline comments were empty at review. Recheck final
+checks after this documentation-only update, and bind the merge to that exact
+head. The private `.secure-agent/pr36-merge-review.json` receipt records the actual
+merge outcome and tree comparison; GitHub remains the shared source for PR state.
 
 The operator explicitly deferred credential setup and the real-model pilot until
 much later. This work uses deterministic proposals and owned fixtures. Live
