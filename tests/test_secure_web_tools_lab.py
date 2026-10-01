@@ -14,7 +14,7 @@ from recon_cockpit.secure_agent import web_tools_fixture as fixture, web_tools_t
 from recon_cockpit.secure_agent import web_tools_lab_contract as lab_contract
 from recon_cockpit.secure_agent import web_tools_contract as contract
 from recon_cockpit.secure_agent import web_tools_lab_worker as owner
-from recon_cockpit.secure_agent import web_tools_runtime, web_tools_parser_runtime
+from recon_cockpit.secure_agent import web_tools_backend, web_tools_runtime, web_tools_parser_runtime
 from recon_cockpit.secure_agent.execution import ExecutionControl, ExecutionStopped
 from recon_cockpit.secure_agent.isolation import IsolationUnavailable, LinuxFixtureBackend
 from recon_cockpit.secure_agent.models import parse_action, parse_policy
@@ -151,6 +151,9 @@ def _backend(monkeypatch, case, *, requests=None, status="succeeded", parsed=Tru
     manifest = {"tool_id": action.tool_id}
     backend._web_tools_manifest = manifest
     calls = []
+    host_namespaces = {name: name + ":[100]" for name in ("user", "net", "mnt", "pid")}
+    lab._lab_namespaces = {name: name + ":[200]" for name in host_namespaces}
+    monkeypatch.setattr(web_tools_backend, "_namespaces", lambda: dict(host_namespaces))
     monkeypatch.setattr(LinuxFixtureBackend, "check_available", lambda *_: None)
     monkeypatch.setattr(lab, "_check_available", lambda: None)
     monkeypatch.setattr(lab, "start", lambda control: calls.append(("start", control)))
@@ -180,6 +183,11 @@ def test_backend_binds_pin_authority_and_completed_request_count(monkeypatch, ca
     launched = next(value for kind, value in calls if kind == "runtime")
     assert launched["manifest"] is backend._web_tools_manifest
     assert launched["control"] is control
+    assert launched["launch"]["launch"]["host_namespaces"] == {
+        name: name + ":[100]" for name in ("user", "net", "mnt", "pid")}
+    assert launched["launch"]["namespaces"] == backend.lab._lab_namespaces
+    assert all(launched["launch"]["namespaces"][name] != identity
+               for name, identity in launched["launch"]["launch"]["host_namespaces"].items())
     assert launched["launch"]["launch"]["action_digest"] == action.digest
     assert launched["launch"]["launch"]["output_reserved_after"] == 8192
     assert next(value for kind, value in calls if kind == "snapshot") == {"minimum_connections": minimum, "minimum_requests": minimum}

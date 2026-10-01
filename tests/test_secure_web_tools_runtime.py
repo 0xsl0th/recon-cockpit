@@ -12,6 +12,7 @@ from recon_cockpit.secure_agent import launch_admission as admission, launcher_p
 from recon_cockpit.secure_agent import web_tools_runtime as runtime
 from recon_cockpit.secure_agent.executor_worker import digest, encode
 from recon_cockpit.secure_agent.execution import ExecutionControl, ExecutionStopped
+from recon_cockpit.secure_agent.isolation import IsolationUnavailable
 from recon_cockpit.secure_agent.models import parse_action, parse_policy
 from recon_cockpit.secure_agent.web_tools_contract import LIMITS, action
 from recon_cockpit.secure_agent.web_tools_execution import consume_launch
@@ -177,9 +178,18 @@ def test_launcher_profile_cannot_mount_the_other_tool_manifest():
 
 
 def test_expired_session_never_inspects_or_starts_a_tool(monkeypatch):
+    monkeypatch.setattr(runtime, "sys", SimpleNamespace(platform="linux"))
     monkeypatch.setattr(runtime, "inspect_tool_runtime", lambda *_: pytest.fail("expired runtime inspected"))
     with pytest.raises(ExecutionStopped):
         runtime.run_web_tool_owned(lab=None, launch={}, control=ExecutionControl(time.monotonic() - 1))
+
+
+@pytest.mark.parametrize("platform", ["darwin", "win32"])
+def test_unsupported_platform_never_inspects_or_starts_a_tool(monkeypatch, platform):
+    monkeypatch.setattr(runtime, "sys", SimpleNamespace(platform=platform))
+    monkeypatch.setattr(runtime, "inspect_tool_runtime", lambda *_: pytest.fail("unsupported runtime inspected"))
+    with pytest.raises(IsolationUnavailable, match="require Linux authority control"):
+        runtime.run_web_tool_owned(lab=None, launch={}, control=ExecutionControl(time.monotonic() + 60))
 
 
 def test_manifest_size_ceiling_keeps_maximum_capture_receipt_bounded():

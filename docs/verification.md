@@ -25,6 +25,7 @@ The negative thread-limit test verifies refusal when the actual limit is widened
 | --- | --- | --- |
 | Full local portable suite before final bounded integration corrections | 5,139 passed; no failures/errors/skips | `portable.xml` |
 | Final affected portable tool contracts, parsers, evidence, lab, runtime, CLI and single-action planning | 249 passed; no failures/errors/skips | `focused-final.xml` |
+| Affected portable suite after macOS fixture corrections and unsupported-platform checks | 251 passed; no failures/errors/skips | `portable-corrections.xml` |
 | New actual workflows, approval/replay gates, kernel thread ceiling, cancellation, oversized output and private-input isolation | 23 distinct cases verified: 20 initial passes plus 3 corrected-test passes | `linux.xml`, `linux-corrections.xml` |
 | Existing Nmap/HTTP-header workflows/parsers/gates, launcher and admission | 115 distinct cases verified: 114 initial passes; all 3 stop cases passed after correcting their test hook | `legacy-linux.xml`, `launcher-stop-linux.xml` |
 
@@ -61,6 +62,14 @@ human consent or a new operator acceptance. No real credential was read or
 configured. Runtime hashes, raw evidence, receipts, review notes and measured
 cost/timing records remain private and ignored. Compile, dependency and whitespace
 checks pass. Hosted PR checks provide the final portable matrix for review.
+
+The first final hosted matrix passed all four Ubuntu jobs but exposed ten macOS
+test failures: backend doubles still read Linux namespace paths, and a deadline
+test reached the platform guard before its intended assertion. The portable
+fixtures now supply explicit namespace/platform doubles, with separate tests
+confirming unsupported platforms refuse execution. Production isolation and
+Linux-only execution requirements are unchanged; the corrected head must pass
+the complete hosted matrix before merge.
 
 PR #36 remains merged as `9a95d9a`; all five
 [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36801648147)
