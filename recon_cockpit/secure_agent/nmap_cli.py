@@ -114,7 +114,8 @@ def run_assessment(args, policy, audit):
         'assessment_outcome': report['outcome'], 'assessment_id': report['assessment_id'],
         'report_paths': {'json': str(args.assessment_dir / 'report.json'),
                          'markdown': str(args.assessment_dir / 'report.md')},
-        'capability': capability(), 'live_calls_enabled': False,
+        'capability': capability(case) if workflow_profile == 'network_tools' else capability(),
+        'live_calls_enabled': False,
         'actual_provider_calls': 0, 'workflow_card': report['workflow_card'],
         'coordinator_boundary_checks': coordinator.boundary_checks})
     return 0 if summary['session_status'] == 'completed' else 2

@@ -149,3 +149,13 @@ class DigDNSParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class OpenSSLTLSParameters(TCPParameters):
     """Bounds for the fixed verified TLS handshake; no caller TLS options."""
+
+
+@dataclass(frozen=True, slots=True)
+class SSHHostKeysParameters(TCPParameters):
+    """Bounds for one fixed RSA host-key observation, without authentication."""
+
+
+@dataclass(frozen=True, slots=True)
+class LDAPRootDSEParameters(TCPParameters):
+    """Bounds for one fixed anonymous RootDSE query, without follow-up searches."""

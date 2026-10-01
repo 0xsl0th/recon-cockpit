@@ -10,20 +10,25 @@ from .models import load_json, parse_action
 from .http_headers_workflow import _uuid
 
 
-def card():
+def card(case=None):
+    if case is not None and (type(case) is not str or case not in contract.B1_CASES + contract.B2_CASES):
+        raise ValueError("invalid_network_tools_case")
+    version = "2" if case in contract.B2_CASES else "1"
+    cases = contract.B2_CASES if version == "2" else contract.B1_CASES
     return {
-        "schema_version": "1", "workflow_id": contract.WORKFLOW, "workflow_version": "1",
+        "schema_version": "1", "workflow_id": contract.WORKFLOW, "workflow_version": version,
         "planning": "deterministic_offline_single_tool", "live_calls_enabled": False,
         "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
         "limits": dict(contract.LIMITS),
         "action_digests": {case: [parse_action(contract.action(case, 1)).digest]
-                           for case in contract.CASES},
+                           for case in cases},
     }
 
 
-def card_identity():
-    return {"id": contract.WORKFLOW, "version": "1",
-            "sha256": hashlib.sha256(contract.encode(card())).hexdigest()}
+def card_identity(case=None):
+    selected = card(case)
+    return {"id": contract.WORKFLOW, "version": selected["workflow_version"],
+            "sha256": hashlib.sha256(contract.encode(selected)).hexdigest()}
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,15 +39,17 @@ class ToolDecision:
     _action: bytes | None = None
     _references: tuple = ()
     done: bool = True
+    _case: str | None = None
 
     @property
     def action(self):
         return None if self._action is None else json.loads(self._action)
 
     def to_dict(self):
+        identity = card_identity(self._case)
         return {
             "schema_version": "1", "workflow_id": contract.WORKFLOW,
-            "workflow_version": "1", "workflow_digest": card_identity()["sha256"],
+            "workflow_version": identity["version"], "workflow_digest": identity["sha256"],
             "decision_kind": self.decision_kind, "step": self.step, "reason": self.reason,
             "action_digest": None if self._action is None else parse_action(self.action).digest,
             "predecessors": [{"execution_id": execution, "observation_id": observation}
@@ -56,27 +63,27 @@ def decide(case, step, records, observation):
     if (type(records) not in (tuple, list) or records
             or type(observation) is not bytes
             or observation != contract.encode({"step": 1, "untrusted_observation": None})):
-        return ToolDecision(1, "stop", "invalid_initial_tool_context")
+        return ToolDecision(1, "stop", "invalid_initial_tool_context", _case=case)
     return ToolDecision(1, "propose", "single_scoped_tool_trial",
-                        contract.encode(contract.action(case, 1)))
+                        contract.encode(contract.action(case, 1)), _case=case)
 
 
 def terminal_decision(case, records, summary):
     expected = parse_action(contract.action(case, 1))
     step = summary["steps_attempted"] + 1
     if summary["mode"] == "dry_run":
-        return ToolDecision(step, "stop", "dry_run_has_no_execution_evidence")
+        return ToolDecision(step, "stop", "dry_run_has_no_execution_evidence", _case=case)
     if summary["session_status"] != "completed":
-        return ToolDecision(step, "stop", "session_stopped")
+        return ToolDecision(step, "stop", "session_stopped", _case=case)
     if type(records) not in (list, tuple) or len(records) != 1:
-        return ToolDecision(step, "stop", "tool_evidence_missing")
+        return ToolDecision(step, "stop", "tool_evidence_missing", _case=case)
     row = records[0]
     if (type(row) is not dict or type(row.get("session_step")) is not int or row["session_step"] != 1
             or not _uuid(row.get("execution_id")) or not _uuid(row.get("observation_id"))
             or row.get("action_digest") != expected.digest
             or row.get("action") != {k: v for k, v in expected.to_dict().items() if k != "rationale"}
             or row.get("execution_status") != "succeeded"):
-        return ToolDecision(step, "stop", "tool_execution_not_succeeded")
+        return ToolDecision(step, "stop", "tool_execution_not_succeeded", _case=case)
     reason = "tool_evidence_inconclusive"
     observation = row.get("observation")
     try:
@@ -86,7 +93,7 @@ def terminal_decision(case, records, summary):
     except (ValueError, TypeError, KeyError):
         pass
     return ToolDecision(step, "stop", reason,
-                        _references=((row["execution_id"], row["observation_id"]),))
+                        _references=((row["execution_id"], row["observation_id"]),), _case=case)
 
 
 class NetworkToolsProvider:

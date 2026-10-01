@@ -225,6 +225,9 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_name_not_found": "name_not_found",
                "dns_no_answer_observed": "no_answer_observed",
                "tls_handshake_verified": "handshake_verified",
+               "ssh_host_key_observed": "host_key_observed",
+               "ldap_rootdse_observed": "rootdse_observed",
+               "ldap_empty_rootdse_observed": "empty_rootdse_observed",
                "content_paths_observed": "paths_observed",
                "no_successful_content_paths_observed": "no_successful_paths_observed"}.get(reason, "inconclusive")
     if issues:
@@ -235,7 +238,10 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
         "fixture_case": manifest["fixture_case"], "workflow_card": manifest["workflow_card"],
         "outcome": outcome, "reason": reason, "live_calls_enabled": False,
         "planning": "deterministic offline workflow with evidence-gated proposals",
-        "capability": contract.capability_descriptor(), "runtime_sha256": manifest["runtime_sha256"],
+        "capability": (contract.capability_descriptor(manifest["fixture_case"])
+                       if contract.WORKFLOW == "owned-network-tool-assessment-v1"
+                       else contract.capability_descriptor()),
+        "runtime_sha256": manifest["runtime_sha256"],
         "records": copy.deepcopy(records), "decisions": copy.deepcopy(decisions),
         "terminal_decision": copy.deepcopy(terminal), "summary": copy.deepcopy(summary),
         "owned_lab": {"identity": manifest["owned_lab"], "closure": copy.deepcopy(closure)},
@@ -297,6 +303,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
             "Normalized observations cannot select a new target or tool. No model susceptibility or comparative performance claim is made.",
             "Protocol counters are last acknowledged totals and connections are lower bounds. Inspection never resumes execution or restores authority.",
         ]
+        if manifest["fixture_case"].startswith(("ssh-", "ldap-")):
+            report["limitations"] = [
+                "This single executable trial uses a disconnected synthetic fixture; it is not professional engagement or real-model validation.",
+                "SSH collects one RSA host key and computes its SHA256 fingerprint. The key is untrusted; collection does not establish server identity, login or SSH session support.",
+                "LDAP uses one anonymous base-scope RootDSE search with fixed attributes; it does not authenticate, enumerate accounts or follow referrals.",
+                "Both output channels are bounded and independently parsed without network on capture and replay. Hashes reconcile local evidence, not external authenticity.",
+                "Normalized observations cannot select a new target or tool. No model susceptibility or comparative performance claim is made.",
+                "Protocol counters count completed SSH key replies or validated LDAP RootDSE searches, not authenticated sessions. Connections are lower bounds; inspection never restores authority.",
+            ]
     if "planning_origin" in manifest:
         report["planning_origin"] = manifest["planning_origin"]
         report["live_calls_enabled"] = manifest["planning_origin"] == "model_live"
@@ -360,6 +375,15 @@ def _markdown(report):
             lines.extend(["", "## TLS observation", "", "| Check | Observation |", "| --- | --- |"])
             for field in ("protocol", "cipher", "verification", "peer_name"):
                 lines.append("| " + field + " | `" + details[field] + "` |")
+        elif type(details) is dict and details.get("kind") == "ssh_host_keys":
+            lines.extend(["", "## Observed SSH host key", "", "| Field | Observation |", "| --- | --- |"])
+            for field in ("key_type", "key_bits", "fingerprint_sha256", "trust"):
+                lines.append("| " + field + " | `" + str(details[field]) + "` |")
+        elif type(details) is dict and details.get("kind") == "ldap_rootdse":
+            lines.extend(["", "## Anonymous LDAP RootDSE", "", "| Attribute | Observation |", "| --- | --- |"])
+            for field in ("naming_contexts", "supported_ldap_versions", "supported_sasl_mechanisms"):
+                lines.append("| " + field + " | `" + (", ".join(details[field]) or "not advertised") + "` |")
+            lines.append("| vendor_name | `" + (details["vendor_name"] or "not advertised") + "` |")
     lines.extend(["", "## Limits", "", *["- " + value for value in report["limitations"]]])
     if report["integrity_issues"]:
         lines.extend(["", "## Reconciliation required", "", *["- `" + value + "`" for value in report["integrity_issues"]]])
@@ -392,7 +416,8 @@ class NmapEvidenceStore(EvidenceStore):
                 "schema_version": "1", "assessment_id": str(uuid4()), "session_id": session_id,
                 "workflow": contract.WORKFLOW, "fixture_case": case, "policy_digest": policy.digest,
                 "created_at": _now(), "artifact_representation": _representation(contract.WORKFLOW),
-                "workflow_card": workflow.card_identity(), "owned_lab": self._owned_lab,
+                "workflow_card": (workflow.card_identity(case) if workflow_profile == "network_tools"
+                                  else workflow.card_identity()), "owned_lab": self._owned_lab,
                 "runtime_sha256": runtime_sha256,
             }
             if planning_origin is not None:
@@ -548,7 +573,8 @@ def inspect_evidence(directory):
                 or not _uuid(manifest["assessment_id"]) or not _uuid(manifest["session_id"])
                 or not _digest(manifest["policy_digest"])
                 or (manifest["runtime_sha256"] is not None and not _digest(manifest["runtime_sha256"]))
-                or manifest["workflow_card"] != workflow.card_identity()
+                or manifest["workflow_card"] != (workflow.card_identity(manifest["fixture_case"])
+                    if contract.WORKFLOW == "owned-network-tool-assessment-v1" else workflow.card_identity())
                 or type(manifest["created_at"]) is not str or len(manifest["created_at"]) > 64):
             raise ValueError("invalid_nmap_manifest")
         contract.validate_identity(manifest["owned_lab"], case=manifest["fixture_case"])

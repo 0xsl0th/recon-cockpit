@@ -1,4 +1,4 @@
-"""Pinned dig/OpenSSL executables for the disconnected single-action network lab.
+"""Pinned DNS/TLS/SSH/LDAP executables for the disconnected single-action network lab.
 
 Only reviewed executable, library and compiled fixture data bytes enter the
 tool filesystem. Neither a proposal nor tool output chooses files or argv.
@@ -23,13 +23,16 @@ from .isolation import IsolationUnavailable, _capture_bounded, _runtime_probe, _
 PROFILE = "network-tools-runtime-v1"
 DIG = "dig_dns_query_v1"
 OPENSSL = "openssl_tls_handshake_v1"
+SSH = "ssh_host_keys_v1"
+LDAP = "ldap_rootdse_v1"
 MAX_OUTPUT_BYTES = 8192
 MAX_RUNTIME_BYTES = 64 * 1024 * 1024
 MAX_FILE_BYTES = 16 * 1024 * 1024
 MAX_MANIFEST_BYTES = 12288
 READY_PREFIX = b"RECON_NETWORK_TOOL_READY_V1 "
 LIBRARY = re.compile(r"/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*\.?\Z")
-EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl"}
+EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
+               SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch"}
 FIXED_ARGV = {
     DIG: ("/tool/dig", "-r", "-4", "@127.0.0.1", "-p", "8080", "harbordesk.test.", "A",
           "+tcp", "+norecurse", "+tries=1", "+time=2", "+nosearch", "+noedns",
@@ -39,6 +42,11 @@ FIXED_ARGV = {
           "-servername", "harbordesk.test", "-verify_hostname", "harbordesk.test",
           "-verify_return_error", "-CAfile", "/tool/data/fixture-ca.pem", "-no-CApath", "-no-CAstore",
           "-tls1_3", "-ciphersuites", "TLS_AES_256_GCM_SHA384", "-brief", "-no_ign_eof"),
+    SSH: ("/tool/ssh-keyscan", "-4", "-T", "2", "-p", "8080", "-t", "rsa", "127.0.0.1"),
+    LDAP: ("/tool/ldapsearch", "-x", "-LLL", "-P", "3", "-H", "ldap://127.0.0.1:8080",
+           "-s", "base", "-b", "", "-a", "never", "-l", "2", "-z", "1",
+           "-o", "nettimeout=2", "-o", "ldif_wrap=no", "(objectClass=*)",
+           "namingContexts", "supportedLDAPVersion", "supportedSASLMechanisms", "vendorName"),
 }
 MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
@@ -57,6 +65,9 @@ def execution_environment(tool_id):
     value = {"LC_ALL": "C", "OPENSSL_CONF": "/dev/null", "MALLOC_ARENA_MAX": "1"}
     if tool_id == DIG:
         value["UV_THREADPOOL_SIZE"] = "1"
+    if tool_id == LDAP:
+        # Disable every system/user LDAP default before libldap initializes.
+        value["LDAPNOINIT"] = "1"
     return value
 
 
@@ -67,6 +78,8 @@ def _compiled(tool_id):
     if tool_id == DIG:
         # No host resolver, search list, or user configuration enters the tool.
         return "compiled:resolver", "/etc/resolv.conf", b"# fixed TCP nameserver supplied by reviewed argv\n"
+    if tool_id in (SSH, LDAP):
+        return None  # These profiles need no configuration, credentials, or trust file.
     raise ValueError("unsupported_network_tool")
 
 
@@ -77,10 +90,12 @@ def validate_manifest(value, *, tool_id=None):
             or (tool_id is not None and value["tool_id"] != tool_id)
             or value["executable"] != FIXED_ARGV[value["tool_id"]][0]
             or type(value["interpreter"]) is not str or not LIBRARY.fullmatch(value["interpreter"])
-            or type(value["files"]) is not list or not 3 <= len(value["files"]) <= 48
+            or type(value["files"]) is not list
+            or not (3 if value["tool_id"] in (DIG, OPENSSL) else 2) <= len(value["files"]) <= 48
             or len(encode(value)) > MAX_MANIFEST_BYTES):
         raise ValueError("invalid_network_tool_manifest")
-    source_name, destination_name, compiled = _compiled(value["tool_id"])
+    data = _compiled(value["tool_id"])
+    source_name, destination_name, compiled = data if data is not None else (None, None, None)
     destinations, total = set(), 0
     for item in value["files"]:
         if (type(item) is not dict or set(item) != {"source", "destination", "sha256", "size"}
@@ -92,7 +107,7 @@ def validate_manifest(value, *, tool_id=None):
         source, destination = item["source"], item["destination"]
         if destination == value["executable"]:
             accepted = source == EXECUTABLES[value["tool_id"]]
-        elif destination == destination_name:
+        elif data is not None and destination == destination_name:
             accepted = (source == source_name and item["size"] == len(compiled)
                         and item["sha256"] == hashlib.sha256(compiled).hexdigest())
         else:
@@ -101,7 +116,8 @@ def validate_manifest(value, *, tool_id=None):
             raise ValueError("invalid_network_tool_runtime_path")
         destinations.add(destination)
         total += item["size"]
-    if (total > MAX_RUNTIME_BYTES or not {value["executable"], destination_name, value["interpreter"]} <= destinations
+    required = {value["executable"], value["interpreter"]} | ({destination_name} if data is not None else set())
+    if (total > MAX_RUNTIME_BYTES or not required <= destinations
             or value["files"] != sorted(value["files"], key=lambda item: item["destination"])):
         raise ValueError("invalid_network_tool_runtime_closure")
     return value
@@ -132,9 +148,11 @@ def inspect_tool_runtime(tool_id, control):
         raw = _read_regular(source)
         files.append({"source": source, "destination": destination, "size": len(raw),
                       "sha256": hashlib.sha256(raw).hexdigest()})
-    source, destination, raw = _compiled(tool_id)
-    files.append({"source": source, "destination": destination, "size": len(raw),
-                  "sha256": hashlib.sha256(raw).hexdigest()})
+    data = _compiled(tool_id)
+    if data is not None:
+        source, destination, raw = data
+        files.append({"source": source, "destination": destination, "size": len(raw),
+                      "sha256": hashlib.sha256(raw).hexdigest()})
     return validate_manifest({"version": "1", "profile": PROFILE, "tool_id": tool_id,
         "executable": FIXED_ARGV[tool_id][0], "interpreter": interpreters[0],
         "files": sorted(files, key=lambda item: item["destination"])})
@@ -147,7 +165,8 @@ def runtime_source_mounts(manifest):
 
 def _snapshot(manifest, control):
     validate_manifest(manifest)
-    source, _, raw = _compiled(manifest["tool_id"])
+    data = _compiled(manifest["tool_id"])
+    source, _, raw = data if data is not None else (None, None, None)
     return sealed_snapshots(manifest, source, raw, control)
 
 

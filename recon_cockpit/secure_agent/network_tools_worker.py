@@ -1,4 +1,4 @@
-"""One independently authorized dig/OpenSSL exec under a distinct confinement profile.
+"""One independently authorized network-tool exec under a distinct confinement profile.
 
 Unlike the existing Python-only workers this profile permits exec of its small
 read/execute allowlist. It does not claim seccomp counts or prohibits re-exec.
@@ -73,7 +73,7 @@ def landlock(manifest):
 
 
 def syscall_filter(tool_id):
-    if tool_id not in (runtime.DIG, runtime.OPENSSL):
+    if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP):
         raise ValueError("unsupported_network_tool")
     common.syscall_filter(allow_threads=tool_id == runtime.DIG)
 

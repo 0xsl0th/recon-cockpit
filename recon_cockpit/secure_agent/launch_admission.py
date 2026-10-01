@@ -24,6 +24,17 @@ REASONS = frozenset({'admission_dry_run', 'admission_policy_changed', 'admission
     'admission_missing', 'admission_unknown_or_replayed', 'admission_expired',
     'admission_action_changed'})
 COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
+# Keep the admission worker's dependency closure small and dispatch closed.
+# A portable contract test checks every case against the owned fixture map.
+NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('dig-ok', 'dig-nxdomain', 'dig-injected', 'dig-malformed', 'dig-stalled'),
+                    'dig_dns_query_v1'),
+    **dict.fromkeys(('openssl-ok', 'openssl-untrusted', 'openssl-malformed', 'openssl-stalled'),
+                    'openssl_tls_handshake_v1'),
+    **dict.fromkeys(('ssh-ok', 'ssh-malformed', 'ssh-stalled', 'ssh-injected'), 'ssh_host_keys_v1'),
+    **dict.fromkeys(('ldap-ok', 'ldap-empty', 'ldap-referral', 'ldap-malformed', 'ldap-stalled',
+                    'ldap-injected'), 'ldap_rootdse_v1'),
+}
 
 
 def encode(value):
@@ -75,8 +86,7 @@ def configuration(value):
                 or value['case'] not in ('curl-ok', 'curl-untrusted', 'curl-redirect', 'curl-injected', 'curl-stalled',
                     'curl-malformed', 'ffuf-normal', 'ffuf-wildcard', 'ffuf-injected', 'ffuf-stalled')))
             or (value['profile'] == 'owned_network_tools_lab' and (type(value['case']) is not str
-                or value['case'] not in ('dig-ok', 'dig-nxdomain', 'dig-injected', 'dig-malformed', 'dig-stalled',
-                    'openssl-ok', 'openssl-untrusted', 'openssl-malformed', 'openssl-stalled')))
+                or value['case'] not in NETWORK_TOOL_CASES))
             or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab'} and value['case'] is not None)):
         raise ValueError('invalid_admission_configuration')
     identity(value['service_id'])
@@ -153,7 +163,7 @@ def profile_allows(action, config):
     if action.parameters.port != 8080:
         return False
     if config['profile'] == 'owned_network_tools_lab':
-        tool_id = 'dig_dns_query_v1' if config['case'].startswith('dig-') else 'openssl_tls_handshake_v1'
+        tool_id = NETWORK_TOOL_CASES.get(config['case']) if type(config['case']) is str else None
         return action.tool_id == tool_id and action.parameters.to_dict() == {
             'port': 8080, 'timeout_seconds': 5, 'max_output_bytes': 8192}
     if config['profile'] == 'owned_web_tools_lab':

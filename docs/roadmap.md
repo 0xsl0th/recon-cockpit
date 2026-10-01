@@ -19,7 +19,9 @@ The preceding suggestion to compose Nmap, ffuf and headers after PR #37 is
 superseded by the operator's broader coverage priority.
 
 The inventory baseline is PR #37, merged as `ba0d6f8`: 10 interactive executable
-families versus 6 secure capabilities backed by only 3 external programs. See the
+families versus 6 secure capabilities backed by 3 external programs. PR #38 adds
+accepted DNS/TLS coverage, bringing main to 8 capabilities backed by 5 external
+programs. B2 adds SSH key collection and anonymous LDAP RootDSE next. See the
 [inventory and completion gates](secure-tool-coverage.md) for exact distinctions,
 product gaps and deferred modes. Roughly 40 tools remains the longer-term product
 direction, not a claim that 40 integrations exist or a reason to duplicate tools.
@@ -27,8 +29,8 @@ direction, not a claim that 40 integrations exist or a reason to duplicate tools
 | Priority | Required batch | Completion criterion beyond common gates G1–G6 |
 | --- | --- | --- |
 | B0 — accepted | TCP/Nmap, HTTP/headers, curl HTTPS and finite ffuf | Preserve the existing bounded owned execution and evidence; PRs #36/#37 stay closed. |
-| B1 — current | dig DNS and OpenSSL TLS | Fixed nonrecursive A query and verified TLS handshake; structured useful output, negative cases, actual confinement and replay. |
-| B2 | ssh-keyscan and ldapsearch RootDSE | Fixed key collection and anonymous base-scope metadata; no login or referrals. |
+| B1 — accepted in PR #38 | dig DNS and OpenSSL TLS | Fixed nonrecursive A query and verified TLS handshake; structured useful output, negative cases, actual confinement and replay. |
+| B2 — current | ssh-keyscan and ldapsearch RootDSE | Fixed key collection and anonymous base-scope metadata; no login or referrals. |
 | B3 | smbclient | Anonymous bounded share metadata; no file operations. |
 | B4 | rpcinfo and showmount | Bounded RPC/export observations without following endpoints or mounting. |
 | B5 | curl FTP and SMTP capability query | Fixed finite listing and banner/EHLO/QUIT; no file transfer, mail or authentication. |

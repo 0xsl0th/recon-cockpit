@@ -14,7 +14,7 @@ from recon_cockpit.secure_agent.executor_worker import digest, encode
 from recon_cockpit.secure_agent.execution import ExecutionControl, ExecutionStopped
 from recon_cockpit.secure_agent.isolation import IsolationUnavailable
 from recon_cockpit.secure_agent.models import parse_action, parse_policy
-from recon_cockpit.secure_agent.network_tools_contract import LIMITS, action
+from recon_cockpit.secure_agent.network_tools_contract import CASES, LIMITS, action
 from recon_cockpit.secure_agent.network_tools_execution import consume_launch
 from recon_cockpit.secure_agent.network_tools_lab_contract import identity
 from recon_cockpit.secure_agent.network_tools_worker import clone_denials
@@ -22,10 +22,10 @@ from recon_cockpit.secure_agent.network_tools_worker import _landlock_permission
 
 
 def manifest(tool_id=runtime.DIG):
-    source, destination, raw = runtime._compiled(tool_id)
     entries = [(runtime.EXECUTABLES[tool_id], runtime.FIXED_ARGV[tool_id][0], b"data"),
-               ("/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2", "/lib64/ld-linux-x86-64.so.2", b"data"),
-               (source, destination, raw)]
+               ("/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2", "/lib64/ld-linux-x86-64.so.2", b"data")]
+    if runtime._compiled(tool_id) is not None:
+        entries.append(runtime._compiled(tool_id))
     return {"version": "1", "profile": runtime.PROFILE, "tool_id": tool_id,
             "executable": runtime.FIXED_ARGV[tool_id][0], "interpreter": "/lib64/ld-linux-x86-64.so.2",
             "files": [{"source": src, "destination": dst, "size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
@@ -34,7 +34,7 @@ def manifest(tool_id=runtime.DIG):
 
 def policy():
     return parse_policy({"schema_version": "1", "policy_version": "test-network-tool-v1",
-        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL],
+        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP],
         "allowed_ports": [8080], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
         "max_output_bytes": 8192, "max_targets": 1, "require_approval": True, "approval_ttl_seconds": 60})
 
@@ -68,7 +68,7 @@ def recommit(value):
         value["launch"][field + "_digest"] = digest(value["launch"][field])
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "dig-nxdomain", "openssl-ok", "openssl-untrusted"])
+@pytest.mark.parametrize("case", CASES)
 def test_independent_launch_validator_accepts_only_the_selected_fixed_tool(case):
     value = envelope(case)
     request, deadline, namespaces, runtime_digest = verify(value)
@@ -77,7 +77,7 @@ def test_independent_launch_validator_accepts_only_the_selected_fixed_tool(case)
     assert admission.profile_allows(parse_action(action(case)), configuration(case))
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok"])
 @pytest.mark.parametrize("fault", ["mode", "inner_mode", "identity", "manifest", "namespace", "deadline",
     "sequence", "reservation", "policy", "action", "limit"])
 def test_fresh_commitments_do_not_bypass_fixed_authority(case, fault):
@@ -102,8 +102,8 @@ def test_fresh_commitments_do_not_bypass_fixed_authority(case, fault):
 
 @pytest.mark.parametrize("profile,case", [("fixture", None), ("discovery_fixture", None), ("owned_lab", "a"),
     ("owned_nmap_lab", "a"), ("owned_web_lab", "vulnerable"), ("owned_http_headers_lab", "vulnerable"), ("owned_web_tools_lab", "curl-ok")])
-def test_existing_profiles_never_admit_either_new_tool(profile, case):
-    for selected in ("dig-ok", "openssl-ok"):
+def test_existing_profiles_never_admit_network_tools(profile, case):
+    for selected in ("dig-ok", "openssl-ok", "ssh-ok", "ldap-ok"):
         assert not admission.profile_allows(parse_action(action(selected)), {"profile": profile, "case": case})
 
 
@@ -213,7 +213,7 @@ def test_manifest_size_ceiling_keeps_maximum_capture_receipt_bounded():
     with pytest.raises(ValueError): runtime.validate_manifest(value)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP])
 def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
     selected = manifest(tool_id)
     environment = runtime.execution_environment(tool_id)
@@ -225,14 +225,19 @@ def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
             b"# fixed TCP nameserver supplied by reviewed argv\n")
         assert permissions["/etc/resolv.conf"] == 4
         assert environment["UV_THREADPOOL_SIZE"] == "1"
-    else:
+    elif tool_id == runtime.OPENSSL:
         assert permissions["/tool/data/fixture-ca.pem"] == 4
         assert "/etc/resolv.conf" not in permissions
+    else:
+        assert runtime._compiled(tool_id) is None
+        assert not any(path.startswith(("/etc/", "/tool/data", "/tool/config")) for path in permissions)
+        assert (environment.get("LDAPNOINIT") == "1") == (tool_id == runtime.LDAP)
     assert "/usr/bin/python3" not in permissions
-    assert not any("tls_fixture" in path or ".digrc" in path or "ssl/certs" in path for path in permissions)
+    assert not any("_fixture" in path or ".digrc" in path or "ssl/certs" in path for path in permissions)
 
 
-@pytest.mark.parametrize("tool_id,threads", [(runtime.DIG, True), (runtime.OPENSSL, False)])
+@pytest.mark.parametrize("tool_id,threads", [(runtime.DIG, True), (runtime.OPENSSL, False),
+                                            (runtime.SSH, False), (runtime.LDAP, False)])
 def test_only_dig_selects_the_bounded_thread_filter(monkeypatch, tool_id, threads):
     from recon_cockpit.secure_agent import network_tools_worker as worker
     selected = []
@@ -243,7 +248,7 @@ def test_only_dig_selects_the_bounded_thread_filter(monkeypatch, tool_id, thread
         worker.syscall_filter("ffuf_content_discovery_v1")
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok"])
 def test_runtime_retains_and_binds_both_output_channels(monkeypatch, case):
     monkeypatch.setattr(runtime, "sys", SimpleNamespace(platform="linux"))
     launch = envelope(case)
@@ -263,3 +268,90 @@ def test_runtime_retains_and_binds_both_output_channels(monkeypatch, case):
     assert result["provenance"]["output_sha256"] == hashlib.sha256(stdout).hexdigest()
     assert result["provenance"]["stderr_sha256"] == hashlib.sha256(stderr).hexdigest()
     assert result["provenance"]["runtime_sha256"] == runtime.manifest_digest(selected)
+
+
+def test_admission_case_map_matches_the_closed_owned_contract():
+    assert set(admission.NETWORK_TOOL_CASES) == set(CASES)
+    for case in CASES:
+        assert admission.NETWORK_TOOL_CASES[case] == action(case)["tool_id"]
+        assert admission.configuration(configuration(case))["case"] == case
+    for case in ("ssh-other", "ldap-other", "openssl-other", "dig-other", "", None, []):
+        config = configuration()
+        config["case"] = case
+        with pytest.raises(ValueError):
+            admission.configuration(config)
+        assert not admission.profile_allows(parse_action(action("openssl-ok")), config)
+
+
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok"])
+@pytest.mark.parametrize("other_case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok"])
+def test_all_network_tools_bind_case_action_and_manifest_independently(case, other_case):
+    if case == other_case:
+        return
+    assert not admission.profile_allows(parse_action(action(other_case)), configuration(case))
+    value = envelope(case)
+    value["runtime"] = manifest(action(other_case)["tool_id"])
+    with pytest.raises(ValueError):
+        verify(value)
+    value = envelope(case)
+    value["launch"]["action"] = action(other_case)
+    value["runtime"] = manifest(action(other_case)["tool_id"])
+    recommit(value)
+    with pytest.raises(ValueError):
+        verify(value)
+    config = {**configuration(case), "owned_lab": identity(case, str(uuid4()))}
+    closure = {"stdlib": "/usr/lib/python3.13", "files": ["/usr/bin/python3", "/usr/sbin/nft", "/usr/bin/bwrap", "/usr/bin/nsenter"],
+               "network_tools_runtime": manifest(action(other_case)["tool_id"])}
+    with pytest.raises(ValueError, match="runtime_changed"):
+        launcher_protocol.initial({"configuration": config, "runtime": closure, "deadline": 130}, 100)
+
+
+@pytest.mark.parametrize("tool_id", [runtime.SSH, runtime.LDAP])
+def test_ssh_ldap_manifests_require_only_the_selected_elf_and_libraries(tool_id):
+    value = manifest(tool_id)
+    assert runtime.validate_manifest(value, tool_id=tool_id) == value
+    assert runtime._compiled(tool_id) is None
+    assert len(runtime.runtime_source_mounts(value)) == 2
+    for destination in ("/etc/ldap/ldap.conf", "/etc/ssh/ssh_config", "/etc/ssh/moduli",
+                        "/tool/data/fixture-ca.pem", "/tool/config/ldap.conf"):
+        changed = deepcopy(value)
+        changed["files"].append({"source": destination, "destination": destination,
+            "size": 4, "sha256": hashlib.sha256(b"data").hexdigest()})
+        changed["files"].sort(key=lambda row: row["destination"])
+        with pytest.raises(ValueError):
+            runtime.validate_manifest(changed)
+    for index in range(len(value["files"])):
+        changed = deepcopy(value)
+        changed["files"].pop(index)
+        with pytest.raises(ValueError):
+            runtime.validate_manifest(changed)
+    changed = deepcopy(value)
+    executable = next(row for row in changed["files"] if row["destination"] == changed["executable"])
+    executable["source"] = runtime.EXECUTABLES[runtime.LDAP if tool_id == runtime.SSH else runtime.SSH]
+    with pytest.raises(ValueError):
+        runtime.validate_manifest(changed)
+
+
+def test_ssh_ldap_fixed_commands_disable_config_authentication_and_referrals():
+    ssh = runtime.FIXED_ARGV[runtime.SSH]
+    assert ssh == ("/tool/ssh-keyscan", "-4", "-T", "2", "-p", "8080", "-t", "rsa", "127.0.0.1")
+    ldap = runtime.FIXED_ARGV[runtime.LDAP]
+    assert ldap[:5] == ("/tool/ldapsearch", "-x", "-LLL", "-P", "3")
+    for flag, value in (("-H", "ldap://127.0.0.1:8080"), ("-s", "base"), ("-b", ""),
+                        ("-a", "never"), ("-l", "2"), ("-z", "1")):
+        assert ldap[ldap.index(flag) + 1] == value
+    assert tuple(ldap[index + 1] for index, arg in enumerate(ldap) if arg == "-o") == ("nettimeout=2", "ldif_wrap=no")
+    assert ldap[-5:] == ("(objectClass=*)", "namingContexts", "supportedLDAPVersion", "supportedSASLMechanisms", "vendorName")
+    assert not {"-C", "-D", "-w", "-W", "-y", "-Y", "-X", "-U", "-Z", "-ZZ", "-f", "-t"} & set(ldap)
+    assert runtime.execution_environment(runtime.LDAP)["LDAPNOINIT"] == "1"
+
+
+@pytest.mark.parametrize("tool_id", [runtime.SSH, runtime.LDAP])
+def test_new_tool_command_never_mounts_owner_private_fixture_material(monkeypatch, tool_id):
+    monkeypatch.setattr(runtime, "_trusted_program", lambda name: "/usr/bin/" + name)
+    argv = runtime._command(SimpleNamespace(_namespace_fds=(10, 11)),
+        ("/usr/lib/python3.13", [("/usr/bin/python3", "/usr/bin/python3")]),
+        manifest(tool_id), [20, 21], "a" * 64, "b" * 64)
+    assert argv.count("--ro-bind-data") == 2
+    assert not any("network_tools_ssh_fixture" in item or "web_tools_tls_fixture" in item for item in argv)
+    assert not any("/etc/ssh" in item or "/etc/ldap" in item or "fixture-ca.pem" in item for item in argv)

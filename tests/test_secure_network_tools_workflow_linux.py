@@ -34,11 +34,23 @@ def linux_only():
     ('openssl-untrusted', 'inconclusive', 0, 0),
     ('openssl-malformed', 'inconclusive', 0, 0),
     ('openssl-stalled', 'inconclusive', 0, 0),
+    ('ssh-ok', 'host_key_observed', 1, 1),
+    ('ssh-injected', 'host_key_observed', 1, 1),
+    ('ssh-malformed', 'inconclusive', 0, 0),
+    ('ssh-stalled', 'inconclusive', 0, 0),
+    ('ldap-ok', 'rootdse_observed', 1, 1),
+    ('ldap-empty', 'empty_rootdse_observed', 1, 1),
+    ('ldap-injected', 'rootdse_observed', 1, 1),
+    ('ldap-referral', 'inconclusive', 0, 1),
+    ('ldap-malformed', 'inconclusive', 0, 1),
+    ('ldap-stalled', 'inconclusive', 0, 1),
 ])
 def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys, record_property, case, outcome, success, requests):
     monkeypatch.setattr(NetworkToolsLab, 'start', lambda *_: pytest.fail('host lab started'))
     monkeypatch.setattr(AuthorizedNetworkToolsBackend, 'run', lambda *a, **k: pytest.fail('host tool executed'))
-    policy = json.loads(Path('examples/secure-agent-network-tools-policy.json').read_text())
+    policy_file = ('examples/secure-agent-ssh-ldap-policy.json' if case.startswith(('ssh-', 'ldap-'))
+                   else 'examples/secure-agent-network-tools-policy.json')
+    policy = json.loads(Path(policy_file).read_text())
     policy.update(policy_version='synthetic-network-tools-unattended-test-v1', require_approval=False)
     policy_path = tmp_path / 'policy.json'
     policy_path.write_text(json.dumps(policy))
