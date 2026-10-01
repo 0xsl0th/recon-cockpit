@@ -12,7 +12,10 @@ support is distinct from secure execution. The milestone stays open until every
 required row has actual useful owned-lab execution, structured results, replayable
 evidence, verified enforcement, independent review and an authorized merge.
 
-**Current batch B1: dig DNS queries and OpenSSL TLS handshakes.** Development is in
+**Current batch B1: dig DNS queries and OpenSSL TLS handshakes.**
+Review [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38) and its latest
+checks before the operator-authorized merge; no merge instruction has been given
+for this PR yet. Development is in
 `/tmp/recon-secure-network-tools`, branch `feature/secure-network-tools`, based on
 main `ba0d6f8`. Each tool is an independently usable single-action profile against
 a fresh disconnected owned fixture. Reuse existing runtime, authority and evidence

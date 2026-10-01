@@ -1,6 +1,7 @@
 # Owned DNS and TLS tools
 
 This is B1 of the [secure-tool coverage milestone](secure-tool-coverage.md).
+Review handoff: [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38).
 It adds two independent executable capabilities, not a cross-tool workflow.
 Both use the existing authority, fresh approval, durable audit, launch admission
 and confined launcher. They run only in a fresh disconnected owned namespace.

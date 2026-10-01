@@ -6,6 +6,9 @@ benchmarks. This milestone stays open across successive implementation batches.
 Finishing one batch selects the next coverage gap, not a workflow project.
 Completed offline R5 and accepted local R6 remain closed.
 
+Current implementation handoff: [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38),
+B1 DNS/TLS, verified locally and awaiting review/merge. B2 SSH/LDAP is next.
+
 ## What the inventory measures
 
 The inventory baseline is main `ba0d6f8` (PR #37). Interactive support means the
