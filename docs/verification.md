@@ -10,7 +10,7 @@ backed by 3 external programs. B1 adds independent dig and OpenSSL profiles;
 [the runbook](network-tools.md) records their exact limits. The milestone remains
 open, and B2's SSH host keys/LDAP RootDSE is the next coverage priority after B1.
 
-Work is on `feature/secure-network-tools`, based on main `ba0d6f8`. No provider,
+Implementation `24ae696` is on `feature/secure-network-tools`, based on main `ba0d6f8`. No provider,
 credential, external target, comparison benchmark or cross-tool workflow was
 activated. Accepted offline R5/local R6, old tool profiles and the proposal PDF
 remain unchanged. The new profiles have one action, fixed owned TCP scope and
@@ -47,6 +47,16 @@ original argument lists, bounds and filters remain unchanged. No descriptor,
 mock or skipped test is presented as actual execution. Hosted CI must pass on the
 final PR revision before merge. Private receipts live in
 `.secure-agent/network-tools-20261001/validation` in the primary checkout.
+
+Two clean-source CLI trials from `24ae696` saved private evidence under
+`.secure-agent/network-tools-20261001/runs`. dig completed one DNS question with
+`answer_observed` in 2.807 seconds; OpenSSL completed one TLS handshake with
+`handshake_verified` in 2.586 seconds. Both labs closed, and independent replay
+matched reports without changing evidence bytes or mtimes. Useful completion was
+2/2 and unnecessary refusals 0/2 for these positive trials. Calls and provider cost
+were zero. These are descriptive CLI timings, not a comparative benchmark.
+They use an explicitly labelled unattended synthetic policy; the shipped policy
+still requires fresh approval, and no human acceptance is claimed.
 
 PR #37 remains merged as `ba0d6f8`; all five
 [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36809908913)
