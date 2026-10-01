@@ -11,20 +11,36 @@ Nmap/HTTP tools and HarborDesk lab in PRs #32/#33. The operator has now explicit
 deferred credential setup and the live-model pilot until much later. Keep live
 integration disabled and validate with mocks while developing practical tools.
 
-**Current increment:** the [owned HTTP response-header workflow](http-headers-assessment.md)
-adds one bounded capability after Nmap reachability, retains raw response evidence
-and reports observed hardening gaps through independent replay. It uses a separate
-fixture/workflow version and all existing authority, approval and isolation gates.
-It makes no exploit, real-model or professional-readiness claim.
+**Current priority: practical tool coverage before deeper workflows.** PR #36's
+[HTTP response-header assessment](http-headers-assessment.md) is merged as
+`9a95d9a`; its accepted scope stays closed. The next small batch is
+[curl HTTPS retrieval and ffuf content discovery](practical-web-tools.md).
+These close two concrete gaps: inspecting a certificate-verified HTTPS response
+and discovering paths beyond a preselected URL. Both tools already appear in the
+interactive cockpit. Reuse their read-only enumeration semantics and the secure
+authority infrastructure; the interactive host runner is not a secure executor.
+
+| Order | Bounded addition | Completion gate |
+| --- | --- | --- |
+| 1 | curl: one HTTPS GET with fixed hostname/address and owned fixture CA | Real executable through all secure launch gates; useful response evidence; refusal of untrusted TLS; no redirect following; bounded failure/cleanup and independent replay. |
+| 2 | ffuf: eight pinned paths, serial requests, no recursion | Real executable through the same authority path; complete finite coverage and conservative wildcard handling; separately verified thread/resource confinement; replay and cleanup. |
+| 3 — after both work | One deeper cross-tool workflow using the verified adapters | Choose from measured tool results and capability gaps; do not multiply workflow scaffolding before the tools work. |
+
+Verify each adapter in the disconnected owned lab as it lands, including useful
+completion, unnecessary refusal, request/output bounds, latency and cleanup.
+Provider cost stays zero. A descriptor, mock or passing parser test alone does
+not establish a working secure tool. Nmap service identification is deferred:
+its implicit NSE version scripts require a separate reviewed runtime closure.
+This batch does not claim professional engagement readiness.
 
 The [bounded model pilot](web-model-pilot.md) remains prepared and deferred. Its
 usefulness, unnecessary refusals, denied proposals, unauthorized executions,
 usage/cost and latency metrics remain available. Blocking an unfinished task
 fails usefulness. No credential setup, paid call or provider funding is authorized.
 
-Roughly 40 tools remains a long-term target. Additional adapters, GUI/API,
-third-party plugins, authenticated web/API, Windows/AD and external targets remain
-deferred. Continue focused development through October and refresh the proposal
+Roughly 40 tools remains a long-term target. Adapters beyond this selected batch,
+GUI/API, third-party plugins, authenticated web/API, Windows/AD and external targets
+remain deferred. Continue focused tool development through October and refresh the proposal
 with verified results in early November, targeting submission around 9 November
 after operator review. Proposal PR #31 remains separate and unmerged; its local
 PDF is unchanged. Publication and submission require their own instructions.
@@ -126,11 +142,13 @@ all ten hosted branch/PR checks passed. See [verification.md](verification.md).
 | Audit and bounded feedback | No secure engagement evidence store, finding lifecycle or report provenance. |
 | Legacy cockpit and Nmap workflows | Useful precedents; the host runner is not an agent-safe tool boundary. |
 
-## Recommended order and why
+## Original milestone order — historical
 
-**Build one complete path before multiplying engines.** Compose the existing
-provider and authority boundaries, produce one useful HTTP assessment with
-evidence, add discovery, then grow the workflow library and live planning.
+The original sequence built one complete path through the provider and authority
+boundaries before expanding the workflow library. Those bounded milestones are
+now closed as recorded below. The current tool-first sequence above governs new
+development; credential setup, paid calls and live evaluation remain deferred
+until much later.
 
 | Priority | Build | Why now | Exit evidence |
 | --- | --- | --- | --- |
