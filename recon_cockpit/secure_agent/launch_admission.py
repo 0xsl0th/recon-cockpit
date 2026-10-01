@@ -66,7 +66,7 @@ def configuration(value):
     if (type(value) is not dict
             or set(value) != {'version', 'service_id', 'session_id', 'policy', 'limits', 'execute', 'profile', 'case'}
             or value['version'] != '1' or type(value['execute']) is not bool
-            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab'}
+            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab'}
             or (value['profile'] in {'owned_lab', 'owned_nmap_lab'} and (type(value['case']) is not str or value['case'] not in 'abcdef'
                                                      or len(value['case']) != 1))
             or (value['profile'] in {'owned_web_lab', 'owned_http_headers_lab'} and (type(value['case']) is not str
@@ -74,7 +74,10 @@ def configuration(value):
             or (value['profile'] == 'owned_web_tools_lab' and (type(value['case']) is not str
                 or value['case'] not in ('curl-ok', 'curl-untrusted', 'curl-redirect', 'curl-injected', 'curl-stalled',
                     'curl-malformed', 'ffuf-normal', 'ffuf-wildcard', 'ffuf-injected', 'ffuf-stalled')))
-            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab'} and value['case'] is not None)):
+            or (value['profile'] == 'owned_network_tools_lab' and (type(value['case']) is not str
+                or value['case'] not in ('dig-ok', 'dig-nxdomain', 'dig-injected', 'dig-malformed', 'dig-stalled',
+                    'openssl-ok', 'openssl-untrusted', 'openssl-malformed', 'openssl-stalled')))
+            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab'} and value['case'] is not None)):
         raise ValueError('invalid_admission_configuration')
     identity(value['service_id'])
     identity(value['session_id'])
@@ -85,6 +88,9 @@ def configuration(value):
     if value['profile'] == 'owned_web_tools_lab' and any(
             value['limits'][key] > maximum for key, maximum in WEB_TOOLS_LIMITS.items()):
         raise ValueError('invalid_web_tools_admission_limits')
+    if value['profile'] == 'owned_network_tools_lab' and any(
+            value['limits'][key] > maximum for key, maximum in {'max_steps': 1, 'max_runtime_seconds': 60, 'max_output_bytes': 8192}.items()):
+        raise ValueError('invalid_network_tools_admission_limits')
     parse_policy(value['policy'])
     return deepcopy(value)
 
@@ -146,6 +152,10 @@ def profile_allows(action, config):
         return action.tool_id == 'http_probe'
     if action.parameters.port != 8080:
         return False
+    if config['profile'] == 'owned_network_tools_lab':
+        tool_id = 'dig_dns_query_v1' if config['case'].startswith('dig-') else 'openssl_tls_handshake_v1'
+        return action.tool_id == tool_id and action.parameters.to_dict() == {
+            'port': 8080, 'timeout_seconds': 5, 'max_output_bytes': 8192}
     if config['profile'] == 'owned_web_tools_lab':
         tool_id, parameters = ((CURL_TOOL_ID, CURL_PARAMETERS) if config['case'].startswith('curl-')
                                else (FFUF_TOOL_ID, FFUF_PARAMETERS))

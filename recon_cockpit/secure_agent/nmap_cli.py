@@ -49,6 +49,14 @@ def run_assessment(args, policy, audit):
         case = args.web_tool_assessment
         lab_type, backend_type, provider_type = WebToolsLab, AuthorizedWebToolsBackend, WebToolsProvider
         workflow_profile = 'web_tools'
+    elif getattr(args, 'network_tool_assessment', None):
+        from .network_tools_lab import NetworkToolsLab
+        from .network_tools_backend import AuthorizedNetworkToolsBackend
+        from .network_tools_workflow import NetworkToolsProvider
+        from .network_tools_contract import capability_descriptor as capability, LIMITS as limits_profile
+        case = args.network_tool_assessment
+        lab_type, backend_type, provider_type = NetworkToolsLab, AuthorizedNetworkToolsBackend, NetworkToolsProvider
+        workflow_profile = 'network_tools'
 
     overrides = {key: value for key, value in zip(
         ('max_steps', 'max_runtime_seconds', 'max_output_bytes'),
@@ -60,7 +68,11 @@ def run_assessment(args, policy, audit):
     deadline = time.monotonic() + limits.max_runtime_seconds
     runtime_manifest = None
     if args.execute:
-        if workflow_profile == 'web_tools':
+        if workflow_profile == 'network_tools':
+            from .network_tools_runtime import inspect_tool_runtime
+            from .network_tools_contract import action
+            runtime_manifest = inspect_tool_runtime(action(case, 1)['tool_id'], ExecutionControl(deadline))
+        elif workflow_profile == 'web_tools':
             from .web_tools_runtime import inspect_tool_runtime
             from .web_tools_contract import action
             runtime_manifest = inspect_tool_runtime(action(case, 1)['tool_id'], ExecutionControl(deadline))
@@ -71,7 +83,9 @@ def run_assessment(args, policy, audit):
     coordinator = LinuxOfflineCoordinator()
     lab = lab_type(case, session_id, limits, execute=args.execute)
     original_backend = backend_type(policy, session_id, limits, lab, execute=args.execute)
-    if workflow_profile == 'web_tools':
+    if workflow_profile == 'network_tools':
+        original_backend._network_tools_manifest = runtime_manifest
+    elif workflow_profile == 'web_tools':
         original_backend._web_tools_manifest = runtime_manifest
     else:
         original_backend._nmap_manifest = runtime_manifest

@@ -15,7 +15,8 @@ from typing import Any
 from uuid import UUID
 
 from .tool_parameters import (
-    CurlHTTPSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
+    CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
+    OpenSSLTLSParameters,
     NmapTCPParameters, TCPParameters, ValidationError,
     MAX_TIMEOUT_SECONDS, MAX_OUTPUT_BYTES, SUPPORTED_METHODS,
     _fields, _integer, _reject, _string,
@@ -109,7 +110,7 @@ class Action:
     action_id: str
     tool_id: str
     target: str
-    parameters: HTTPParameters | HTTPHeadersParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters
+    parameters: HTTPParameters | HTTPHeadersParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters
     rationale: str
 
     def __post_init__(self) -> None:

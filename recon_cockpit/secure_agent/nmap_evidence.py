@@ -55,6 +55,9 @@ def _profile(name):
     if name == "web_tools":
         from . import web_tools_contract, web_tools_workflow
         return web_tools_contract, web_tools_workflow
+    if name == "network_tools":
+        from . import network_tools_contract, network_tools_workflow
+        return network_tools_contract, network_tools_workflow
     raise ValueError("unsupported_evidence_workflow_profile")
 
 
@@ -72,10 +75,14 @@ def _manifest_profile(manifest):
         return _profile("http_headers")
     if manifest.get("workflow") == "owned-web-tool-assessment-v1":
         return _profile("web_tools")
+    if manifest.get("workflow") == "owned-network-tool-assessment-v1":
+        return _profile("network_tools")
     raise ValueError("unsupported_evidence_workflow")
 
 
 def _representation(workflow_id):
+    if workflow_id == "owned-network-tool-assessment-v1":
+        return "bounded-network-tool-output-json-v1"
     if workflow_id == "owned-web-tool-assessment-v1":
         return "bounded-web-tool-output-json-v1"
     return (HEADERS_REPRESENTATION if workflow_id == "owned-http-headers-assessment-v1"
@@ -92,7 +99,21 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
         result, manifest["owned_lab"], previous=previous,
         tool_id=record["action"]["tool_id"], execution_status=status,
     )
-    if contract.WORKFLOW == "owned-web-tool-assessment-v1":
+    if contract.WORKFLOW == "owned-network-tool-assessment-v1":
+        if not _digest(manifest["runtime_sha256"]):
+            raise ValueError("network_tool_runtime_commitment_missing")
+        tool_id = record["action"]["tool_id"]
+        stdout, stderr = contract.validate_tool_result(result, tool_id=tool_id,
+            execution_status=status, runtime_sha256=manifest["runtime_sha256"])
+        if status == "succeeded":
+            from .network_tools_parser_runtime import parse_isolated_tool
+            try:
+                parsed = parse_isolated_tool(tool_id, stdout, stderr, deadline=deadline)
+            except ValueError:
+                parsed = None
+            if contract.encode(parsed) != contract.encode(result["tool_observation"]):
+                raise ValueError("network_tool_parsed_result_mismatch")
+    elif contract.WORKFLOW == "owned-web-tool-assessment-v1":
         # None is valid for a dry-run manifest, but any execution receipt must
         # bind to the runtime committed before execution, including failures.
         if not _digest(manifest["runtime_sha256"]):
@@ -200,6 +221,10 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "http_hardening_gaps_observed": "gaps_observed",
                "http_hardening_headers_present": "reviewed_headers_present",
                "https_response_observed": "response_observed",
+               "dns_answer_observed": "answer_observed",
+               "dns_name_not_found": "name_not_found",
+               "dns_no_answer_observed": "no_answer_observed",
+               "tls_handshake_verified": "handshake_verified",
                "content_paths_observed": "paths_observed",
                "no_successful_content_paths_observed": "no_successful_paths_observed"}.get(reason, "inconclusive")
     if issues:
@@ -259,6 +284,19 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
             "Injected response text is untrusted data; this deterministic single-action trial does not measure model susceptibility.",
             "Request counters are last acknowledged totals and connections are lower bounds. Inspection never resumes execution or restores authority.",
         ]
+    if contract.WORKFLOW == "owned-network-tool-assessment-v1":
+        report["planning"] = "one deterministic offline tool action; no cross-tool planning"
+        report["finding"]["title"] = "Bounded owned network-tool observation"
+        report["finding"]["tool_observation"] = (copy.deepcopy(records[0]["observation"])
+            if not issues and len(records) == 1 else None)
+        report["limitations"] = [
+            "This single executable trial uses a disconnected synthetic fixture; it is not professional engagement or real-model validation.",
+            "DNS queries use one fixed name, record type and TCP server. No recursive lookup, search, zone transfer or address follow-up is authorized.",
+            "TLS records one verified handshake against a fixed fixture hostname and CA; it is not a general certificate inventory or protocol/cipher weakness scan.",
+            "Both output channels are bounded and independently parsed without network on capture and replay. Hashes reconcile local evidence, not external authenticity.",
+            "Normalized observations cannot select a new target or tool. No model susceptibility or comparative performance claim is made.",
+            "Protocol counters are last acknowledged totals and connections are lower bounds. Inspection never resumes execution or restores authority.",
+        ]
     if "planning_origin" in manifest:
         report["planning_origin"] = manifest["planning_origin"]
         report["live_calls_enabled"] = manifest["planning_origin"] == "model_live"
@@ -273,7 +311,8 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
 
 
 def _markdown(report):
-    title = ("# Owned single web-tool trial" if report["workflow"] == "owned-web-tool-assessment-v1"
+    title = ("# Owned single network-tool trial" if report["workflow"] == "owned-network-tool-assessment-v1"
+             else "# Owned single web-tool trial" if report["workflow"] == "owned-web-tool-assessment-v1"
              else "# Owned HarborDesk web assessment" if report["workflow"] == "owned-web-assessment-v1"
              else "# Owned HTTP response-header assessment" if report["workflow"] == "owned-http-headers-assessment-v1"
              else "# Owned Nmap and HTTP assessment")
@@ -307,6 +346,20 @@ def _markdown(report):
             for row in details["responses"]:
                 lines.append("| `" + row["path"] + "` | " + str(row["status_code"])
                              + " | " + str(row["bytes"]) + " |")
+    if report["workflow"] == "owned-network-tool-assessment-v1":
+        observation = report["finding"].get("tool_observation")
+        details = observation.get("details") if type(observation) is dict else None
+        if type(details) is dict and details.get("kind") == "dns_query":
+            lines.extend(["", "## DNS observation", "", "Query: `" + details["query_name"]
+                          + "` / `" + details["query_type"] + "` over TCP.", "",
+                          "Status: `" + details["status"] + "`.", "",
+                          "| Answer | TTL |", "| --- | --- |"])
+            for row in details["answers"]:
+                lines.append("| `" + row["address"] + "` | " + str(row["ttl"]) + " |")
+        elif type(details) is dict and details.get("kind") == "tls_handshake":
+            lines.extend(["", "## TLS observation", "", "| Check | Observation |", "| --- | --- |"])
+            for field in ("protocol", "cipher", "verification", "peer_name"):
+                lines.append("| " + field + " | `" + details[field] + "` |")
     lines.extend(["", "## Limits", "", *["- " + value for value in report["limitations"]]])
     if report["integrity_issues"]:
         lines.extend(["", "## Reconciliation required", "", *["- `" + value + "`" for value in report["integrity_issues"]]])

@@ -4,38 +4,52 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: review and conditionally merge PR #37, then recommend
-the next step only.** The operator has now authorized merging
-[PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37), secure owned curl and
-ffuf coverage, after review and passing checks on the latest revision. Confirm
-its GitHub state and the private `.secure-agent/pr37-merge-review.json` receipt
-before acting; if merged, keep the batch closed and do not repeat the merge.
-The operator selected this priority on 1 October and authorized implementation,
-secure execution and owned-lab verification. The small batch is **curl HTTPS
-retrieval and ffuf content discovery**, described in [practical-web-tools.md](practical-web-tools.md).
-Work is on `feature/practical-web-tools` in `/tmp/recon-practical-web-tools`,
-based on main `9a95d9a`. Each adapter must work independently through the existing
-approval, audit, admission and confined launcher path and pass real owned-lab
-checks before composing a deeper workflow. Reuse existing interactive tool
-semantics where practical, never its host subprocess runner as an agent boundary.
-Implementation `3ec1ef0` is complete: both actual tools run through all secure
-gates, with 23 new and 115 affected legacy Linux tests verified after documented
-test corrections, plus 251 focused portable tests after macOS fixture corrections.
-All five hosted jobs passed on `64d43ce`, with 5,149 tests on macOS. Fresh
-clean-source CLI trials completed curl's one HTTPS
-request and ffuf's eight paths; both closed and replayed without integrity issues.
-Private evidence: `.secure-agent/practical-web-tools-20261001` in the primary
-checkout. See [verification.md](verification.md) for exact coverage, corrections
-and timing limits. Fresh merge review found a missing-runtime-commitment evidence
-edge case; executed tool records must bind to a non-null manifest digest. The
-fix and its regression checks must pass on the latest head before merge.
-After merging, recommend one deeper workflow from the verified capabilities:
-Nmap reachability, finite ffuf discovery, then HTTP header assessment of an
-observed and already allowlisted portal path, with one replayable report.
-Implementation of that next slice awaits a separate instruction.
+**Current authorized work: broader secure-tool coverage across successive batches.**
+The operator superseded the previous Nmap → ffuf → header workflow suggestion.
+Use [secure-tool-coverage.md](secure-tool-coverage.md) for the repository inventory,
+prioritized required checklist B0–B8 and completion gates G1–G6. Interactive
+support is distinct from secure execution. The milestone stays open until every
+required row has actual useful owned-lab execution, structured results, replayable
+evidence, verified enforcement, independent review and an authorized merge.
+
+**Current batch B1: dig DNS queries and OpenSSL TLS handshakes.** Development is in
+`/tmp/recon-secure-network-tools`, branch `feature/secure-network-tools`, based on
+main `ba0d6f8`. Each tool is an independently usable single-action profile against
+a fresh disconnected owned fixture. Reuse existing runtime, authority and evidence
+infrastructure; no host runner fallback or arbitrary executable/plugin inputs.
+DNS uses a fixed nonrecursive A query over TCP. TLS uses a fixed hostname and
+fixture CA, with no client credentials or application request. Both tools now have actual owned execution, structured output, evidence replay
+and enforcement verification. Local validation passed 294 final focused portable
+checks and 119 distinct affected Linux cases (23 new, 96 existing). The initial
+full portable run passed 5,442 tests; final hosted checks must cover the subsequent
+partial-output receipt correction. B1 is review-pending, not accepted main
+coverage. See [network-tools.md](network-tools.md) and [verification.md](verification.md).
+Private evidence is retained under `.secure-agent/network-tools-20261001` in the
+primary checkout. Neither row is complete until review and authorized merge.
+
+After B1, prioritize the next unchecked tool gap: currently B2's ssh-keyscan host
+keys and ldapsearch anonymous RootDSE. Reassess that order against measured results
+and prerequisite complexity at each batch handoff. Do not switch to deeper
+workflow composition or comparative/paired benchmarking until all required
+coverage rows are complete. Keep per-tool useful completion, unnecessary refusal,
+request/output/resource bounds, descriptive latency and cleanup checks now.
+Blocking normal useful work cannot satisfy completion.
 
 Credential setup, paid calls and live-model evaluation remain deferred until much
-later. Do not ask for a key, fund a ledger or enable a live provider.
+later. Do not ask for a key, fund a ledger or enable a live provider. Preserve
+completed offline R5, accepted local R6 and the separate proposal/PDF.
+
+**[PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37) is merged and stays closed.**
+Reviewed head `924f2ea` merged as `ba0d6f8` at 03:18:31 UTC on 1 October. The merge
+tree exactly matches the reviewed tree and local main was updated cleanly. All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36809471476)
+and all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36809908913)
+passed. Review fixed the missing-runtime-commitment evidence edge case; 153 affected
+portable checks and all ten owned-tool cases passed after the fix. The final macOS
+job passed 5,157 portable tests. Earlier independent execution verified 23 new and
+115 affected legacy Linux cases. Private receipts remain
+`.secure-agent/pr37-merge-review.json` and `.secure-agent/practical-web-tools-20261001`
+in the primary checkout. Keep its bounded curl/ffuf contracts closed.
 
 **[PR #36](https://github.com/0xsl0th/recon-cockpit/pull/36) is merged and stays closed.**
 Final reviewed head `3d29142` merged as `9a95d9a` at 01:33:15 UTC on 1 October;
@@ -97,13 +111,12 @@ matches the reviewed head. All five
 passed. Do not repeat its merge or reopen the adapter/Nmap slice. Existing
 TCP/HTTP contracts, fixture bytes and accepted evidence remain regression anchors.
 
-The current batch fills HTTPS inspection and finite path-discovery gaps. curl
-performs one verified HTTPS GET; ffuf checks eight pinned paths with no recursion,
-redirects or caller-supplied wordlists. ffuf requires its own thread-capable profile;
-accepted Nmap/native runtime limits stay unchanged. Track useful completion,
-unnecessary refusals, bounded requests/output, latency, cleanup and evidence replay.
-Only after both real tools pass these gates should deeper workflows be selected.
-Roughly 40 tools remains a long-term target, not this batch's scope.
+The broader coverage milestone replaces the earlier two-tool stopping point.
+The [inventory](secure-tool-coverage.md) records existing interactive and secure
+support, required next capabilities and later professional-use gaps. Roughly
+40 tools remains a long-term target; executable counts do not replace protocol
+coverage or verification. Deeper workflows and comparative benchmarks remain
+explicitly deferred until the required checklist is complete.
 
 Refresh the proposal with verified progress in early November and target submission
 around 9 November after operator review. Documentation PR #31 on
@@ -995,29 +1008,30 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Check [PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37) and the private
-   merge receipt. The operator authorized review and conditional merge, then a
-   recommendation only. If still open, resolve review findings and require
-   passing checks on its latest head before merging. If merged, keep it closed.
-   PR #36 is merged as `9a95d9a`; PRs #6–#30 and #32–#36 stay closed. Proposal
-   PR #31 remains separate. Historical “next” notes are not current work.
-2. Preserve the completed offline comparison, accepted local packet, successful
-   approval-required terminal rehearsal and actual operator decision. Do not
-   reopen that review or modify the immutable accepted packet.
-3. Keep credential setup and the real-model pilot deferred until the operator
-   explicitly resumes them. Development uses deterministic/owned mocks and no
-   paid calls. Retain the existing usefulness, refusals, cost and latency metrics;
-   blocked unfinished work still fails usefulness.
-4. After merge, recommend Nmap reachability → finite ffuf discovery → HTTP header
-   assessment of the observed allowlisted portal, with shared replayable evidence.
-   Measure legitimate completion, unnecessary refusal, unauthorized execution,
-   requests and latency against the same authorized tool sequence. The next
-   implementation needs its own instruction. Do not add another
-   adapter or model-preparation layer by default. Keep the proposal/PDF unchanged
-   until its planned early-November update. Defer GUI/API and external targets.
-5. Keep local kernel verification separate from hosted portable CI. Do not rerun
-   full suites solely for documentation changes. Publication, submission and
-   subsequent implementation need their corresponding operator instructions.
+1. Resume the broader [secure-tool coverage milestone](secure-tool-coverage.md).
+   Check the current branch/PR and private handoff before repeating work. B1 adds
+   dig/OpenSSL independently; after its verified review/merge, choose the next
+   unchecked tool row (currently B2 SSH keys/LDAP RootDSE). PRs #6–#30 and #32–#37
+   stay closed. Proposal PR #31 remains separate.
+2. Require G1–G6 for every required row: actual owned execution, useful structured
+   output, strict authority, replayable evidence, enforcement/cleanup and reviewed
+   source/checks. Keep interactive-only, implemented-unverified, review-pending
+   and accepted statuses distinct. Never count mocks or skips as execution.
+3. Keep deeper composition and comparative benchmarking deferred until B0–B8 are
+   complete. Record per-tool useful completion/refusals, requests, bounds, latency
+   and cleanup as correctness evidence; blocked useful work fails completion.
+4. Keep model credentials, paid calls and live evaluation deferred until much
+   later. Preserve the accepted offline R5/R6 packet, terminal rehearsal and owner
+   decision; do not repeat acceptance or alter immutable evidence.
+5. Continue successive small coverage batches under the current development
+   instruction, leaving each implementation ready for review. Merge a new PR only
+   under its corresponding operator instruction. Reprioritize the remaining tool
+   gaps after each batch with a recorded reason; do not quietly remove required
+   rows. External targets, real service credentials, intrusive activity, release
+   publication and competition submission retain their separate authorization.
+6. Keep the proposal/PDF unchanged until its planned early-November update. Avoid
+   GUI/API work, optional duplicate tools and provider-preparation detours. Keep
+   local kernel validation separate from hosted portable CI.
 
 ## Recovery and verification
 

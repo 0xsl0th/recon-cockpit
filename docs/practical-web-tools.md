@@ -77,8 +77,10 @@ output bounds, cancellation and cleanup. Record latency and request counts;
 provider calls and cost remain zero. An adapter that blocks all useful work
 does not pass.
 
-After both adapters pass, select one deeper workflow using their measured
-capabilities. Nmap service identification, broad crawling, additional tools,
-credential setup, paid calls and live-model evaluation remain later work. This
+The accepted curl/ffuf batch is B0 of the current
+[broader secure-tool coverage milestone](secure-tool-coverage.md). Continue the
+next unchecked tool batch; deeper composition and comparative benchmarking wait
+until that milestone is complete. Credential setup, paid calls and live-model
+evaluation remain deferred until much later. This
 batch does not reopen accepted offline R5/local R6 milestones, change the local
 competition PDF or authorize external assessments or publication.

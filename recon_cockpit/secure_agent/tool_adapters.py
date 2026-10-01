@@ -12,7 +12,8 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 from .tool_parameters import (
-    CurlHTTPSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
+    CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
+    OpenSSLTLSParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -46,6 +47,11 @@ CURL_PARAMETERS = MappingProxyType({
 })
 FFUF_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 10, "max_output_bytes": 8192})
 WEB_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
+DIG_TOOL_ID = "dig_dns_query_v1"
+OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
+DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,6 +145,22 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "bounded_threads", "no_child_processes",
          "pinned_dictionary", "no_redirect_following"),
+    ),
+    DIG_TOOL_ID: ToolAdapter(
+        DIG_TOOL_ID, DigDNSParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "query_owned_fixture_dns", "owned-dig-dns-v1",
+        "bounded-dig-dns-result-v1", "dig-dns-text-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "bounded_threads", "no_child_processes",
+         "fixed_dns_question", "tcp_only", "no_recursive_resolution"),
+    ),
+    OPENSSL_TOOL_ID: ToolAdapter(
+        OPENSSL_TOOL_ID, OpenSSLTLSParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_fixture_tls_handshake", "owned-openssl-tls-v1",
+        "bounded-openssl-tls-result-v1", "openssl-tls-brief-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
+         "fixed_tls_name", "no_application_request"),
     ),
 })
 SUPPORTED_TOOLS = tuple(ADAPTERS)
