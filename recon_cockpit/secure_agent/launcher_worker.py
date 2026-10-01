@@ -82,7 +82,7 @@ class _NestedAdmission(LinuxLaunchAdmission):
                                         if p not in {'/usr/bin/bwrap', '/usr/sbin/nft', '/usr/bin/nsenter'}]
 
 
-def boundary(host, *, nmap_runtime=False):
+def boundary(host, *, nmap_runtime=False, web_tools_runtime=False):
     if (not ENTRY_DESCRIPTORS_VERIFIED or sys.platform != 'linux' or os.getuid() <= 0 or os.getgid() <= 0
             or any(os.readlink('/proc/self/ns/' + name) == identity for name, identity in host.items())):
         raise ValueError('invalid_launcher_namespaces')
@@ -95,9 +95,10 @@ def boundary(host, *, nmap_runtime=False):
     bootstrap._zero_capabilities()
     bootstrap._no_new_privileges()
     bootstrap._root_read_only()
-    for kind, cap in ((resource.RLIMIT_AS, 256*1024*1024), (resource.RLIMIT_CPU, 30),
+    address_space = (2048 if web_tools_runtime else 256) * 1024 * 1024
+    for kind, cap in ((resource.RLIMIT_AS, address_space), (resource.RLIMIT_CPU, 30),
                       (resource.RLIMIT_NOFILE, 128), (resource.RLIMIT_CORE, 0),
-                      (resource.RLIMIT_FSIZE, 16*1048576 if nmap_runtime else 1048576), (resource.RLIMIT_NPROC, 64)):
+                      (resource.RLIMIT_FSIZE, 16*1048576 if nmap_runtime or web_tools_runtime else 1048576), (resource.RLIMIT_NPROC, 64)):
         resource.setrlimit(kind, (cap, cap))
     # Unlike the admission worker, this trusted process must create children and
     # nested namespaces. It has no host network or filesystem to delegate.
@@ -152,13 +153,15 @@ def main():
     witness_reader = None
     approval_reader = None
     try:
-        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions'}):
+        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions'}):
             raise ValueError('invalid_launcher_bootstrap')
         witnessed = len(sys.argv) == 7
-        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions'}
+        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions'}
         nmap_runtime = witnessed and sys.argv[6] in {'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions'}
+        web_tools_runtime = witnessed and sys.argv[6] == 'web-tools-launch-preconditions'
         _, host = bootstrap._arguments(['three_step', *sys.argv[2:6]])
-        checks = boundary(host, nmap_runtime=True) if nmap_runtime else boundary(host)
+        checks = (boundary(host, web_tools_runtime=True) if web_tools_runtime else
+                  boundary(host, nmap_runtime=True) if nmap_runtime else boundary(host))
         channel = socket.socket(fileno=0)
         if channel.family != socket.AF_UNIX or channel.type != socket.SOCK_SEQPACKET:
             raise ValueError('invalid_launcher_channel')
@@ -176,8 +179,9 @@ def main():
         try:
             config = protocol.initial(init, time.monotonic())
             expected_tag = {'owned_nmap_lab': 'nmap-launch-preconditions', 'owned_web_lab': 'web-launch-preconditions',
-                            'owned_http_headers_lab': 'http-headers-launch-preconditions'}.get(config['profile'])
-            if ((expected_tag is not None) != nmap_runtime
+                            'owned_http_headers_lab': 'http-headers-launch-preconditions',
+                            'owned_web_tools_lab': 'web-tools-launch-preconditions'}.get(config['profile'])
+            if ((expected_tag is not None) != (nmap_runtime or web_tools_runtime)
                     or (expected_tag is not None and sys.argv[6] != expected_tag)):
                 raise ValueError('launcher_runtime_profile_changed')
             if ('audit_witness' in init) != witnessed:
@@ -209,6 +213,9 @@ def main():
         elif config['profile'] == 'owned_http_headers_lab':
             from recon_cockpit.secure_agent.http_headers_backend import ConfinedHTTPHeadersBackend
             owned = ConfinedHTTPHeadersBackend(config, init['runtime'])
+        elif config['profile'] == 'owned_web_tools_lab':
+            from recon_cockpit.secure_agent.web_tools_backend import ConfinedWebToolsBackend
+            owned = ConfinedWebToolsBackend(config, init['runtime'])
         with _NestedAdmission(config, init['runtime']) as gate, (owned.lab if owned is not None else nullcontext()):
             print(protocol.encode({'version': '1', 'ready': True, 'bootstrap_digest': sys.argv[1], 'checks': checks}).decode(), flush=True)
             sequence = 1

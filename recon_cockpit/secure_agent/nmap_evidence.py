@@ -52,6 +52,9 @@ def _profile(name):
         from . import http_headers_contract, http_headers_workflow
 
         return http_headers_contract, http_headers_workflow
+    if name == "web_tools":
+        from . import web_tools_contract, web_tools_workflow
+        return web_tools_contract, web_tools_workflow
     raise ValueError("unsupported_evidence_workflow_profile")
 
 
@@ -67,10 +70,14 @@ def _manifest_profile(manifest):
         return _profile("web")
     if manifest.get("workflow") == "owned-http-headers-assessment-v1":
         return _profile("http_headers")
+    if manifest.get("workflow") == "owned-web-tool-assessment-v1":
+        return _profile("web_tools")
     raise ValueError("unsupported_evidence_workflow")
 
 
 def _representation(workflow_id):
+    if workflow_id == "owned-web-tool-assessment-v1":
+        return "bounded-web-tool-output-json-v1"
     return (HEADERS_REPRESENTATION if workflow_id == "owned-http-headers-assessment-v1"
             else REPRESENTATION)
 
@@ -85,7 +92,23 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
         result, manifest["owned_lab"], previous=previous,
         tool_id=record["action"]["tool_id"], execution_status=status,
     )
-    if record["action"]["tool_id"] == contract.TOOL_ID:
+    if contract.WORKFLOW == "owned-web-tool-assessment-v1":
+        # None is valid for a dry-run manifest, but any execution receipt must
+        # bind to the runtime committed before execution, including failures.
+        if not _digest(manifest["runtime_sha256"]):
+            raise ValueError("web_tool_runtime_commitment_missing")
+        tool_id = record["action"]["tool_id"]
+        raw, _ = contract.validate_tool_result(result, tool_id=tool_id,
+            execution_status=status, runtime_sha256=manifest["runtime_sha256"])
+        if status == "succeeded":
+            from .web_tools_parser_runtime import parse_isolated_tool
+            try:
+                parsed = parse_isolated_tool(tool_id, raw, deadline=deadline)
+            except ValueError:
+                parsed = None
+            if contract.encode(parsed) != contract.encode(result["tool_observation"]):
+                raise ValueError("web_tool_parsed_result_mismatch")
+    elif record["action"]["tool_id"] == contract.TOOL_ID:
         if set(result) != {"status", "results", "bytes_received", "truncated", "boundary_checks",
                            "raw_xml_base64", "raw_stderr_base64", "provenance", "backend", "owned_lab"}:
             raise ValueError("invalid_nmap_result_fields")
@@ -155,7 +178,8 @@ def _summary(value, manifest, records, decisions):
             or type(result["stop_reason"]) is not str
             or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", result["stop_reason"])):
         raise ValueError("invalid_nmap_summary")
-    for field, maximum in (("steps_attempted", 3), ("actions_succeeded", 3),
+    for field, maximum in (("steps_attempted", contract.LIMITS["max_steps"]),
+                            ("actions_succeeded", contract.LIMITS["max_steps"]),
                             ("output_reserved_bytes", contract.LIMITS["max_output_bytes"])):
         if type(result[field]) is not int or not 0 <= result[field] <= maximum:
             raise ValueError("invalid_nmap_summary")
@@ -174,7 +198,10 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
     outcome = {"seeded_diagnostic_metadata_exposed": "validated",
                "diagnostic_endpoint_not_found": "not_demonstrated",
                "http_hardening_gaps_observed": "gaps_observed",
-               "http_hardening_headers_present": "reviewed_headers_present"}.get(reason, "inconclusive")
+               "http_hardening_headers_present": "reviewed_headers_present",
+               "https_response_observed": "response_observed",
+               "content_paths_observed": "paths_observed",
+               "no_successful_content_paths_observed": "no_successful_paths_observed"}.get(reason, "inconclusive")
     if issues:
         outcome, reason = "inconclusive", "evidence_integrity_incomplete"
     report = {
@@ -219,6 +246,19 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
             "The injected header/body remains untrusted data; deterministic planning makes no model susceptibility or adversarial blocking-rate claim.",
             "The fixture uses plaintext HTTP. TLS, HSTS effectiveness, authentication, redirects and browser behavior are not evaluated.",
         ])
+    if contract.WORKFLOW == "owned-web-tool-assessment-v1":
+        report["planning"] = "one deterministic offline tool action; no cross-tool planning"
+        report["finding"]["title"] = "Bounded owned web-tool observation"
+        report["finding"]["tool_observation"] = (copy.deepcopy(records[0]["observation"])
+            if not issues and len(records) == 1 else None)
+        report["limitations"] = [
+            "This trial runs one real executable against a disconnected synthetic owned fixture; it is not professional engagement or real-model validation.",
+            "curl verifies the fixed fixture hostname and CA. It does not assess general TLS configuration, certificate inventories or browsers.",
+            "ffuf checks only eight pinned paths. A non-404 control response is inconclusive; a differing status does not establish a vulnerability or defeat every soft-404 pattern.",
+            "Tool output is independently parsed in a networkless worker on capture and replay; retained hashes establish local consistency, not external authenticity.",
+            "Injected response text is untrusted data; this deterministic single-action trial does not measure model susceptibility.",
+            "Request counters are last acknowledged totals and connections are lower bounds. Inspection never resumes execution or restores authority.",
+        ]
     if "planning_origin" in manifest:
         report["planning_origin"] = manifest["planning_origin"]
         report["live_calls_enabled"] = manifest["planning_origin"] == "model_live"
@@ -233,7 +273,8 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
 
 
 def _markdown(report):
-    title = ("# Owned HarborDesk web assessment" if report["workflow"] == "owned-web-assessment-v1"
+    title = ("# Owned single web-tool trial" if report["workflow"] == "owned-web-tool-assessment-v1"
+             else "# Owned HarborDesk web assessment" if report["workflow"] == "owned-web-assessment-v1"
              else "# Owned HTTP response-header assessment" if report["workflow"] == "owned-http-headers-assessment-v1"
              else "# Owned Nmap and HTTP assessment")
     lines = [title, "", "Outcome: **" + report["outcome"] + "**", "",
@@ -251,6 +292,21 @@ def _markdown(report):
                              ("x_frame_options", "X-Frame-Options"),
                              ("x_content_type_options", "X-Content-Type-Options")):
             lines.append("| " + label + " | " + str(headers[field]) + " |")
+    if report["workflow"] == "owned-web-tool-assessment-v1":
+        observation = report["finding"].get("tool_observation")
+        details = observation.get("details") if type(observation) is dict else None
+        if type(details) is dict and details.get("kind") == "curl_https":
+            lines.extend(["", "## HTTPS response", "",
+                          "| Check | Observation |", "| --- | --- |"])
+            for name in ("status_code", "content_type", "csp", "x_frame_options", "x_content_type_options"):
+                lines.append("| " + name + " | " + str(details["headers"][name]) + " |")
+        elif type(details) is dict and details.get("kind") == "ffuf_content":
+            lines.extend(["", "## Finite path coverage", "",
+                          "Baseline: `" + details["baseline"] + "`.", "",
+                          "| Path | HTTP status | Reported bytes |", "| --- | --- | --- |"])
+            for row in details["responses"]:
+                lines.append("| `" + row["path"] + "` | " + str(row["status_code"])
+                             + " | " + str(row["bytes"]) + " |")
     lines.extend(["", "## Limits", "", *["- " + value for value in report["limitations"]]])
     if report["integrity_issues"]:
         lines.extend(["", "## Reconciliation required", "", *["- `" + value + "`" for value in report["integrity_issues"]]])

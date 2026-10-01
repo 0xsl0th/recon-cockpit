@@ -86,6 +86,28 @@ class HTTPHeadersParameters(HTTPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class CurlHTTPSParameters(HTTPParameters):
+    """Typed HTTPS request syntax; the reviewed profile fixes every value."""
+
+
+@dataclass(frozen=True, slots=True)
+class FFufParameters:
+    """Bounds for one immutable dictionary against one reviewed HTTP origin."""
+
+    port: int
+    timeout_seconds: int
+    max_output_bytes: int
+
+    def __post_init__(self) -> None:
+        _integer(self.port, "port", 1, 65_535)
+        _integer(self.timeout_seconds, "timeout_seconds", 1, MAX_TIMEOUT_SECONDS)
+        _integer(self.max_output_bytes, "max_output_bytes", 1, MAX_OUTPUT_BYTES)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
 class TCPParameters:
     """One bounded connection attempt; no payload, banner read, or port list."""
 

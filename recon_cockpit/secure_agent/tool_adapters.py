@@ -12,7 +12,8 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 from .tool_parameters import (
-    HTTPHeadersParameters, HTTPParameters, NmapTCPParameters, TCPParameters, _fields, _reject,
+    CurlHTTPSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
+    NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
 
@@ -37,6 +38,14 @@ HTTP_HEADERS_PARAMETERS = MappingProxyType({
     "port": 8080, "method": "GET", "path": HTTP_HEADERS_PATH,
     "timeout_seconds": 1, "max_output_bytes": 2048,
 })
+CURL_TOOL_ID = "curl_https_get_v1"
+FFUF_TOOL_ID = "ffuf_content_discovery_v1"
+CURL_PARAMETERS = MappingProxyType({
+    "port": 8080, "method": "GET", "path": "/harbordesk/portal.html",
+    "timeout_seconds": 3, "max_output_bytes": 8192,
+})
+FFUF_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 10, "max_output_bytes": 8192})
+WEB_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,7 +74,7 @@ class ToolAdapter:
             "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 30},
             "max_output_bytes": {"type": "integer", "minimum": 1, "maximum": 65536},
         }
-        if self.tool_id in ("http_probe", HTTP_HEADERS_TOOL_ID):
+        if self.tool_id in ("http_probe", HTTP_HEADERS_TOOL_ID, CURL_TOOL_ID):
             properties.update({
                 "method": {"type": "string", "enum": ["GET", "HEAD"]},
                 "path": {"type": "string", "minLength": 1, "maxLength": 256},
@@ -113,6 +122,23 @@ ADAPTERS = MappingProxyType({
         "bounded-http-headers-result-v1", "http-headers-v1",
         ("private_namespaces", "scoped_network_filter", "no_process_execution",
          "no_redirect_following", "bounded_raw_response"),
+    ),
+    CURL_TOOL_ID: ToolAdapter(
+        CURL_TOOL_ID, CurlHTTPSParameters,
+        ("port", "method", "path", "timeout_seconds", "max_output_bytes"),
+        "read_owned_fixture_https", "owned-curl-https-v1",
+        "bounded-curl-wire-result-v1", "curl-https-http-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
+         "no_redirect_following", "bounded_raw_response"),
+    ),
+    FFUF_TOOL_ID: ToolAdapter(
+        FFUF_TOOL_ID, FFufParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "discover_owned_fixture_http_paths", "owned-ffuf-content-v1",
+        "bounded-ffuf-json-result-v1", "ffuf-content-json-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "bounded_threads", "no_child_processes",
+         "pinned_dictionary", "no_redirect_following"),
     ),
 })
 SUPPORTED_TOOLS = tuple(ADAPTERS)

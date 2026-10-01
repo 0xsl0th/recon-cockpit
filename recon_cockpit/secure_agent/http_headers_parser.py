@@ -78,7 +78,13 @@ def parse_http_headers(raw: bytes, *, truncated: bool = False) -> dict:
     encodings and close-delimited responses are outside this capability.
     CSP is a presence observation only; its policy strength is not evaluated.
     """
-    if (type(raw) is not bytes or not raw or len(raw) > MAX_RESPONSE_BYTES
+    return _parse_bounded_http_headers(raw, maximum=MAX_RESPONSE_BYTES, truncated=truncated)
+
+
+def _parse_bounded_http_headers(raw: bytes, *, maximum: int, truncated: bool = False) -> dict:
+    """Shared framing implementation; only trusted callers choose their cap."""
+    if (type(maximum) is not int or not 1 <= maximum <= 8192
+            or type(raw) is not bytes or not raw or len(raw) > maximum
             or type(truncated) is not bool or truncated):
         raise ValueError("invalid_http_headers_size")
     header, marker, body = raw.partition(b"\r\n\r\n")

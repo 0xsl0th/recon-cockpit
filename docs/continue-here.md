@@ -4,26 +4,49 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current handoff: [PR #36](https://github.com/0xsl0th/recon-cockpit/pull/36), bounded owned HTTP response-header assessment.** The operator
-explicitly deferred credential setup and the live-model pilot until much later:
-keep live integration disabled, validate with mocks, and continue practical
-tool/workflow development. Do not ask for a key, fund a provider ledger or prepare
-live activation as the next task. Work is on `feature/owned-http-headers-assessment`
-in `/tmp/recon-http-headers`, based on main `98d6f1b`. The slice adds one fixed
-HTTP capability after existing Nmap discovery, with raw response evidence and
-independent replay. Existing tool contracts, offline R5 and accepted local R6 stay
-closed. Implementation `473e989` passed independent review, 4,898 portable tests
-and 99 affected Linux tests. Three fresh CLI demos completed both actions and replayed without integrity
-issues; private evidence is `.secure-agent/http-headers-20261001` in the primary
-checkout. See [verification.md](verification.md) for exact coverage and receipts.
-The operator now authorizes review and merge if the latest revision and all
-checks pass, then asks for a next-step recommendation. That instruction does not
-authorize implementing another slice. Fresh independent parser/evidence and
-runtime/launch reviews found no blockers in `d5e0228`; the runtime and tests match
-`473e989`. This checkpoint update changes documentation only. The actual merge
-outcome is recorded in GitHub and the private `.secure-agent/pr36-merge-review.json`
-receipt in the primary checkout. If PR #36 is merged, keep it closed and do not
-repeat its merge or reopen accepted milestones.
+**Current authorized work: review and conditionally merge PR #37, then recommend
+the next step only.** The operator has now authorized merging
+[PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37), secure owned curl and
+ffuf coverage, after review and passing checks on the latest revision. Confirm
+its GitHub state and the private `.secure-agent/pr37-merge-review.json` receipt
+before acting; if merged, keep the batch closed and do not repeat the merge.
+The operator selected this priority on 1 October and authorized implementation,
+secure execution and owned-lab verification. The small batch is **curl HTTPS
+retrieval and ffuf content discovery**, described in [practical-web-tools.md](practical-web-tools.md).
+Work is on `feature/practical-web-tools` in `/tmp/recon-practical-web-tools`,
+based on main `9a95d9a`. Each adapter must work independently through the existing
+approval, audit, admission and confined launcher path and pass real owned-lab
+checks before composing a deeper workflow. Reuse existing interactive tool
+semantics where practical, never its host subprocess runner as an agent boundary.
+Implementation `3ec1ef0` is complete: both actual tools run through all secure
+gates, with 23 new and 115 affected legacy Linux tests verified after documented
+test corrections, plus 251 focused portable tests after macOS fixture corrections.
+All five hosted jobs passed on `64d43ce`, with 5,149 tests on macOS. Fresh
+clean-source CLI trials completed curl's one HTTPS
+request and ffuf's eight paths; both closed and replayed without integrity issues.
+Private evidence: `.secure-agent/practical-web-tools-20261001` in the primary
+checkout. See [verification.md](verification.md) for exact coverage, corrections
+and timing limits. Fresh merge review found a missing-runtime-commitment evidence
+edge case; executed tool records must bind to a non-null manifest digest. The
+fix and its regression checks must pass on the latest head before merge.
+After merging, recommend one deeper workflow from the verified capabilities:
+Nmap reachability, finite ffuf discovery, then HTTP header assessment of an
+observed and already allowlisted portal path, with one replayable report.
+Implementation of that next slice awaits a separate instruction.
+
+Credential setup, paid calls and live-model evaluation remain deferred until much
+later. Do not ask for a key, fund a ledger or enable a live provider.
+
+**[PR #36](https://github.com/0xsl0th/recon-cockpit/pull/36) is merged and stays closed.**
+Final reviewed head `3d29142` merged as `9a95d9a` at 01:33:15 UTC on 1 October;
+the merge tree exactly matches the reviewed tree. All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36801243417)
+and all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36801648147)
+passed. Its implementation passed independent review, 4,898 portable tests and
+99 affected Linux tests. Three fresh two-action CLI demos replayed without integrity
+issues. Private evidence remains `.secure-agent/http-headers-20261001`, with the
+merge receipt `.secure-agent/pr36-merge-review.json` in the primary checkout.
+Do not repeat that merge or expand its accepted scope retroactively.
 
 **[PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35) is merged and stays closed.**
 Final reviewed head `59ea9f3` passed independent review and all five
@@ -74,10 +97,14 @@ matches the reviewed head. All five
 passed. Do not repeat its merge or reopen the adapter/Nmap slice. Existing
 TCP/HTTP contracts, fixture bytes and accepted evidence remain regression anchors.
 
-The next reviewable increment is the [HTTP header workflow](http-headers-assessment.md).
-It runs real tools only against the disconnected owned fixture, with deterministic
-proposals. Roughly 40 tools remains a long-term architecture target; additional
-adapters, GUI/API, external/VPN targets and live-model spending remain deferred.
+The current batch fills HTTPS inspection and finite path-discovery gaps. curl
+performs one verified HTTPS GET; ffuf checks eight pinned paths with no recursion,
+redirects or caller-supplied wordlists. ffuf requires its own thread-capable profile;
+accepted Nmap/native runtime limits stay unchanged. Track useful completion,
+unnecessary refusals, bounded requests/output, latency, cleanup and evidence replay.
+Only after both real tools pass these gates should deeper workflows be selected.
+Roughly 40 tools remains a long-term target, not this batch's scope.
+
 Refresh the proposal with verified progress in early November and target submission
 around 9 November after operator review. Documentation PR #31 on
 `docs/proposal-author-voice` remains separate and unmerged; the polished PDF stays
@@ -968,10 +995,12 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Check PR #36's GitHub state and the private merge-review receipt first. Its
-   review/merge is authorized conditional on the latest passing checks; if merged,
-   keep it closed. PR #35 is merged as `98d6f1b`; PRs #6–#30 and #32–#35 stay
-   closed. Proposal PR #31 remains separate. Historical “next” notes are not current work.
+1. Check [PR #37](https://github.com/0xsl0th/recon-cockpit/pull/37) and the private
+   merge receipt. The operator authorized review and conditional merge, then a
+   recommendation only. If still open, resolve review findings and require
+   passing checks on its latest head before merging. If merged, keep it closed.
+   PR #36 is merged as `9a95d9a`; PRs #6–#30 and #32–#36 stay closed. Proposal
+   PR #31 remains separate. Historical “next” notes are not current work.
 2. Preserve the completed offline comparison, accepted local packet, successful
    approval-required terminal rehearsal and actual operator decision. Do not
    reopen that review or modify the immutable accepted packet.
@@ -979,9 +1008,13 @@ Planning uses synthetic responses.
    explicitly resumes them. Development uses deterministic/owned mocks and no
    paid calls. Retain the existing usefulness, refusals, cost and latency metrics;
    blocked unfinished work still fails usefulness.
-4. Review the new bounded header capability and practical owned workflow before
-   choosing another focused tool increment. Keep the proposal/PDF unchanged until
-   its planned early-November update. Defer GUI/API and external targets.
+4. After merge, recommend Nmap reachability → finite ffuf discovery → HTTP header
+   assessment of the observed allowlisted portal, with shared replayable evidence.
+   Measure legitimate completion, unnecessary refusal, unauthorized execution,
+   requests and latency against the same authorized tool sequence. The next
+   implementation needs its own instruction. Do not add another
+   adapter or model-preparation layer by default. Keep the proposal/PDF unchanged
+   until its planned early-November update. Defer GUI/API and external targets.
 5. Keep local kernel verification separate from hosted portable CI. Do not rerun
    full suites solely for documentation changes. Publication, submission and
    subsequent implementation need their corresponding operator instructions.

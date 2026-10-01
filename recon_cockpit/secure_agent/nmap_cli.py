@@ -40,23 +40,41 @@ def run_assessment(args, policy, audit):
         lab_type, backend_type, provider_type = HTTPHeadersLab, AuthorizedHTTPHeadersBackend, HTTPHeadersProvider
         workflow_profile = 'http_headers'
 
+    limits_profile = LIMITS
+    if getattr(args, 'web_tool_assessment', None):
+        from .web_tools_lab import WebToolsLab
+        from .web_tools_backend import AuthorizedWebToolsBackend
+        from .web_tools_workflow import WebToolsProvider
+        from .web_tools_contract import capability_descriptor as capability, LIMITS as limits_profile
+        case = args.web_tool_assessment
+        lab_type, backend_type, provider_type = WebToolsLab, AuthorizedWebToolsBackend, WebToolsProvider
+        workflow_profile = 'web_tools'
+
     overrides = {key: value for key, value in zip(
         ('max_steps', 'max_runtime_seconds', 'max_output_bytes'),
         (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)) if value is not None}
-    limits = SessionLimits(**{**LIMITS, **overrides})
+    limits = SessionLimits(**{**limits_profile, **overrides})
     session_id = str(uuid4())
     from .execution import ExecutionControl
     from .nmap_contract import encode
     deadline = time.monotonic() + limits.max_runtime_seconds
     runtime_manifest = None
     if args.execute:
-        from .nmap_runtime import inspect_nmap_runtime
-        runtime_manifest = inspect_nmap_runtime(ExecutionControl(deadline))
+        if workflow_profile == 'web_tools':
+            from .web_tools_runtime import inspect_tool_runtime
+            from .web_tools_contract import action
+            runtime_manifest = inspect_tool_runtime(action(case, 1)['tool_id'], ExecutionControl(deadline))
+        else:
+            from .nmap_runtime import inspect_nmap_runtime
+            runtime_manifest = inspect_nmap_runtime(ExecutionControl(deadline))
     runtime_sha256 = None if runtime_manifest is None else hashlib.sha256(encode(runtime_manifest)).hexdigest()
     coordinator = LinuxOfflineCoordinator()
     lab = lab_type(case, session_id, limits, execute=args.execute)
     original_backend = backend_type(policy, session_id, limits, lab, execute=args.execute)
-    original_backend._nmap_manifest = runtime_manifest
+    if workflow_profile == 'web_tools':
+        original_backend._web_tools_manifest = runtime_manifest
+    else:
+        original_backend._nmap_manifest = runtime_manifest
     with (_approval_context(args, policy, session_id) as approvals,
           _admission_context(args, original_backend, audit, approvals) as backend,
           NmapEvidenceStore(args.assessment_dir, session_id=session_id, policy=policy,

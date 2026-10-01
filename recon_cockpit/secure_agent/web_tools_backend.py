@@ -1,0 +1,147 @@
+"""Single-action authority adapter for fixed, reviewed curl and ffuf profiles."""
+
+import base64
+from dataclasses import asdict
+import secrets
+import time
+
+from .execution import ExecutionControl
+from .isolation import IsolationUnavailable, LinuxFixtureBackend, _namespaces, _trusted_program
+from .models import Action, Policy, parse_action, parse_policy
+from .owned_lab import AuthorizedOwnedLabBackend
+from .session_limits import SessionLimits
+from .web_tools_lab import WebToolsLab
+from .web_tools_lab_contract import BACKEND, validate_context, validate_identity
+
+
+class AuthorizedWebToolsBackend(AuthorizedOwnedLabBackend):
+    name = BACKEND
+    supported_tools = ("curl_https_get_v1", "ffuf_content_discovery_v1")
+    launch_mode = _envelope_mode = "owned_web_tools_lab"
+    _executor_mode = "web_tools_owned"
+    _closure = None
+    _web_tools_manifest = None
+
+    def _accept_lab(self, lab):
+        return type(lab) is WebToolsLab
+
+    def check_available(self, action=None):
+        from .web_tools_contract import profile_allows
+        if not self._execute or (action is not None and not profile_allows(action, self._lab_identity["scenario"])):
+            raise IsolationUnavailable("Owned web tool profile denied")
+        LinuxFixtureBackend.check_available(self, action)
+        self.lab._check_available()
+
+    def run(self, action, policy, *, control=None):
+        if not self._lock.acquire(blocking=False):
+            raise IsolationUnavailable("Web tool executor authority is already running")
+        try:
+            if (not self._execute or type(control) is not ExecutionControl or control.clock is not time.monotonic
+                    or type(action) is not Action or type(policy) is not Policy):
+                raise IsolationUnavailable("Invalid web tool authority context")
+            control.check()
+            action, policy = parse_action(action.to_dict()), parse_policy(policy.to_dict())
+            if (policy.digest != self._policy_digest or self._policy.digest != self._policy_digest
+                    or self._limits.digest != self._limits_digest or self._policy.evaluate(action).decision == "deny"
+                    or self.lab.identity != self._lab_identity):
+                raise IsolationUnavailable("Web tool authority changed")
+            if self._control is None:
+                if control.remaining() > self._limits.max_runtime_seconds:
+                    raise IsolationUnavailable("Web tool deadline exceeds authority")
+                self._control = control
+            elif control is not self._control:
+                raise IsolationUnavailable("Web tool authority cannot be replaced")
+            if (self._sequence >= self._limits.max_steps
+                    or self._output + action.parameters.max_output_bytes > self._limits.max_output_bytes):
+                raise IsolationUnavailable("Web tool authority budget exhausted")
+            self.check_available(action)
+            from .web_tools_runtime import run_web_tool_owned, validate_manifest
+            manifest = validate_manifest(self._web_tools_manifest, tool_id=action.tool_id)
+            before = self._output
+            self._sequence += 1
+            self._output += action.parameters.max_output_bytes
+            self.lab.start(control)
+            launch = {"schema_version": "1", "mode": self._executor_mode, "execute": True,
+                "session_id": self._session_id, "nonce": secrets.token_hex(32), "sequence": self._sequence,
+                "action": action.to_dict(), "action_digest": action.digest,
+                "policy": self._policy.to_dict(), "policy_digest": self._policy_digest,
+                "limits": asdict(self._limits), "limits_digest": self._limits_digest,
+                "deadline": control.deadline, "output_reserved_before": before,
+                "output_reserved_after": self._output, "host_namespaces": _namespaces()}
+            runtime_closure = self._closure
+            if runtime_closure is not None and runtime_closure["web_tools_runtime"] != manifest:
+                raise IsolationUnavailable("Web tool runtime pin changed")
+            result = run_web_tool_owned(lab=self.lab,
+                launch={"mode": self._envelope_mode, "launch": launch, "identity": self._lab_identity,
+                        "namespaces": self.lab._lab_namespaces}, control=control, closure=runtime_closure,
+                manifest=manifest)
+            result["backend"] = self.name
+            result["tool_observation"] = None
+            if result["status"] == "succeeded" and result["truncated"] is False:
+                from .web_tools_parser_runtime import parse_isolated_tool_output
+                try:
+                    result["tool_observation"] = parse_isolated_tool_output(action.tool_id,
+                        base64.b64decode(result["raw_output_base64"], validate=True),
+                        control=control, closure=runtime_closure)
+                except ValueError:
+                    # Successful process exit alone cannot establish useful work.
+                    result["tool_observation"] = None
+            expected = (8 if action.tool_id == "ffuf_content_discovery_v1" else 1)
+            minimum = expected if result["tool_observation"] is not None else 0
+            counts = self.lab.snapshot(control, minimum_connections=minimum, minimum_requests=minimum)
+            context = validate_context({"identity": self._lab_identity, **counts}, self._lab_identity)
+            if (context["request_count"] > expected
+                    or (result["tool_observation"] is not None and context["request_count"] != expected)
+                    or (self._lab_identity["scenario"] == "curl-untrusted" and context["request_count"] != 0)):
+                raise IsolationUnavailable("Web tool request count mismatched its fixed profile")
+            result["owned_lab"] = context
+            from .web_tools_contract import validate_result_context
+            self._previous_context = validate_result_context(result, self._lab_identity,
+                previous=self._previous_context, tool_id=action.tool_id, execution_status=result["status"])
+            control.check()
+            return result
+        except BaseException:
+            self.lab.close()
+            raise
+        finally:
+            self._lock.release()
+
+
+class ConfinedWebToolsLab(WebToolsLab):
+    def __init__(self, config, closure):
+        super().__init__(config["case"], config["session_id"], SessionLimits(**config["limits"]),
+                         execute=config["execute"])
+        self._identity = validate_identity(config["owned_lab"], case=config["case"])
+        self._closure = closure
+
+    def _runtime(self, control):
+        from .owned_launcher_runtime import runtime
+        control.check()
+        return runtime(self._closure, owner=True)
+
+    def _check_available(self):
+        for name in ("bwrap", "nft", "nsenter"):
+            _trusted_program(name)
+
+
+class ConfinedWebToolsBackend(AuthorizedWebToolsBackend):
+    def __init__(self, config, closure):
+        self._config, self._closure = config, closure
+        self._web_tools_manifest = closure["web_tools_runtime"]
+        lab = ConfinedWebToolsLab(config, closure)
+        super().__init__(parse_policy(config["policy"]), config["session_id"], SessionLimits(**config["limits"]),
+                         lab, execute=config["execute"])
+
+    def _accept_lab(self, lab):
+        return type(lab) is ConfinedWebToolsLab
+
+    def _runtime(self, control):
+        from .owned_launcher_runtime import runtime
+        control.check()
+        return runtime(self._closure, owner=False)
+
+    def check_available(self, action=None):
+        from .web_tools_contract import profile_allows
+        if not self._execute or (action is not None and not profile_allows(action, self._lab_identity["scenario"])):
+            raise IsolationUnavailable("Confined web tool profile denied")
+        self.lab._check_available()
