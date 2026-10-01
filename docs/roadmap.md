@@ -4,46 +4,55 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current priority — 1 October 2026:** preserve completed offline R5 and the
-accepted local R6 candidate. PR #35's minimal model integration is merged as
-`98d6f1b`, following PR #34's adversarial comparison (`17945db`) and the reviewed
-Nmap/HTTP tools and HarborDesk lab in PRs #32/#33. The operator has now explicitly
-deferred credential setup and the live-model pilot until much later. Keep live
-integration disabled and validate with mocks while developing practical tools.
+**Current milestone — broader secure-tool coverage (1 October 2026).**
+Work through the [prioritized coverage checklist](secure-tool-coverage.md) in
+successive small implementation batches. Each tool must execute usefully through
+the secure path in the disconnected owned lab, return validated structured results,
+retain independently replayable evidence and pass its enforcement checks.
+Interactive command support, mocks and adapter descriptors do not count as secure
+execution support. After every batch, select the next unchecked tool-coverage gap.
 
-**Current priority: practical tool coverage before deeper workflows.** PR #36's
-[HTTP response-header assessment](http-headers-assessment.md) is merged as
-`9a95d9a`; its accepted scope stays closed. The next small batch is
-[curl HTTPS retrieval and ffuf content discovery](practical-web-tools.md).
-These close two concrete gaps: inspecting a certificate-verified HTTPS response
-and discovering paths beyond a preselected URL. Both tools already appear in the
-interactive cockpit. Reuse their read-only enumeration semantics and the secure
-authority infrastructure; the interactive host runner is not a secure executor.
+**Deeper workflow composition and comparative benchmarking are deferred until this
+coverage milestone is complete.** Per-tool correctness, useful completion,
+unnecessary refusal, bounds, descriptive latency and cleanup remain required now.
+The preceding suggestion to compose Nmap, ffuf and headers after PR #37 is
+superseded by the operator's broader coverage priority.
 
-| Order | Bounded addition | Completion gate |
+The inventory baseline is PR #37, merged as `ba0d6f8`: 10 interactive executable
+families versus 6 secure capabilities backed by only 3 external programs. See the
+[inventory and completion gates](secure-tool-coverage.md) for exact distinctions,
+product gaps and deferred modes. Roughly 40 tools remains the longer-term product
+direction, not a claim that 40 integrations exist or a reason to duplicate tools.
+
+| Priority | Required batch | Completion criterion beyond common gates G1–G6 |
 | --- | --- | --- |
-| 1 | curl: one HTTPS GET with fixed hostname/address and owned fixture CA | Real executable through all secure launch gates; useful response evidence; refusal of untrusted TLS; no redirect following; bounded failure/cleanup and independent replay. |
-| 2 | ffuf: eight pinned paths, serial requests, no recursion | Real executable through the same authority path; complete finite coverage and conservative wildcard handling; separately verified thread/resource confinement; replay and cleanup. |
-| 3 — after both work | One deeper cross-tool workflow using the verified adapters | Choose from measured tool results and capability gaps; do not multiply workflow scaffolding before the tools work. |
+| B0 — accepted | TCP/Nmap, HTTP/headers, curl HTTPS and finite ffuf | Preserve the existing bounded owned execution and evidence; PRs #36/#37 stay closed. |
+| B1 — current | dig DNS and OpenSSL TLS | Fixed nonrecursive A query and verified TLS handshake; structured useful output, negative cases, actual confinement and replay. |
+| B2 | ssh-keyscan and ldapsearch RootDSE | Fixed key collection and anonymous base-scope metadata; no login or referrals. |
+| B3 | smbclient | Anonymous bounded share metadata; no file operations. |
+| B4 | rpcinfo and showmount | Bounded RPC/export observations without following endpoints or mounting. |
+| B5 | curl FTP and SMTP capability query | Fixed finite listing and banner/EHLO/QUIT; no file transfer, mail or authentication. |
+| B6 | curl Docker/WinRM metadata | Fixed read-only endpoint observations; no container or remote-session operations. |
+| B7 | Nmap service identification | Reviewed, pinned probe/NSE runtime closure; never silently enable broad `-sV`. |
+| B8 | kerbrute synthetic principal enumeration | Owned KDC, fixed finite users and request cap; no passwords, spraying or ticket extraction. |
 
-Verify each adapter in the disconnected owned lab as it lands, including useful
-completion, unnecessary refusal, request/output bounds, latency and cleanup.
-Provider cost stays zero. A descriptor, mock or passing parser test alone does
-not establish a working secure tool. Nmap service identification is deferred:
-its implicit NSE version scripts require a separate reviewed runtime closure.
-This batch does not claim professional engagement readiness.
+The [full checklist](secure-tool-coverage.md#prioritized-coverage-checklist) is the
+source of row-level status. Completion requires every required row B0–B8 to meet
+G1–G6, including actual useful execution, evidence replay, enforced limits,
+independent review and an authorized merge. Do not close the milestone after B1,
+count skipped/mocked checks as executed, or silently defer required rows to finish.
+Reprioritize unchecked rows after each batch with a recorded reason.
 
-The [bounded model pilot](web-model-pilot.md) remains prepared and deferred. Its
-usefulness, unnecessary refusals, denied proposals, unauthorized executions,
-usage/cost and latency metrics remain available. Blocking an unfinished task
-fails usefulness. No credential setup, paid call or provider funding is authorized.
+The [bounded model pilot](web-model-pilot.md) remains available but disabled.
+Credential setup, paid calls, provider funding and live-model evaluation stay
+deferred until much later; do not ask for a key during tool development. Completed
+offline R5 and the accepted local R6 candidate remain closed. Broader authenticated,
+intrusive and external-target product capabilities retain separate authorization.
 
-Roughly 40 tools remains a long-term target. Adapters beyond this selected batch,
-GUI/API, third-party plugins, authenticated web/API, Windows/AD and external targets
-remain deferred. Continue focused tool development through October and refresh the proposal
-with verified results in early November, targeting submission around 9 November
-after operator review. Proposal PR #31 remains separate and unmerged; its local
-PDF is unchanged. Publication and submission require their own instructions.
+Continue focused tool coverage through October. Refresh the proposal with verified
+results in early November, targeting submission around 9 November after operator
+review. Proposal PR #31 remains separate and unmerged; its local PDF is unchanged.
+GUI/API, publication and competition submission remain separate later decisions.
 
 The R5 offline baseline is `1605606`, the authorized merge of PR #26
 ([offline planning evaluation](planning-evaluation.md)). PRs #16–#26 remain

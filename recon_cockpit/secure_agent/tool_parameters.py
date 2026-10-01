@@ -139,3 +139,13 @@ class NmapTCPParameters:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class DigDNSParameters(TCPParameters):
+    """Bounds for the fixed owned DNS-over-TCP query; no caller query syntax."""
+
+
+@dataclass(frozen=True, slots=True)
+class OpenSSLTLSParameters(TCPParameters):
+    """Bounds for the fixed verified TLS handshake; no caller TLS options."""

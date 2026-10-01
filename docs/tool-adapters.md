@@ -133,9 +133,11 @@ consent or operator acceptance.
 
 ## Following work
 
-After review of this integration, prepare the richer resettable local web
-scenario, then its paired malicious-output comparison. Authenticated web/API,
-Windows/AD, broader discovery and further adapters remain later work. Live model
-access, credentials, external/VPN targets and spending retain their separate
-approval gates. Update the competition proposal with verified results in early
-November; no submission is performed by this implementation.
+The web scenario and its offline comparison are already accepted. The current
+[secure-tool coverage milestone](secure-tool-coverage.md) governs subsequent
+adapter batches and distinguishes interactive from secure support. Finish its
+required checklist before deeper workflow composition or comparative benchmarking.
+Live model credentials, paid calls and evaluation remain deferred until much later.
+External/VPN targets, real service credentials and intrusive modes retain separate
+authorization. Update the competition proposal with verified results in early
+November; no submission is performed by tool development.

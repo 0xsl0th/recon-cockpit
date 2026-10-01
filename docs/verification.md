@@ -1,5 +1,67 @@
 # Verification record
 
+## Secure coverage B1: DNS and TLS — 1 October 2026
+
+The operator made broader secure-tool coverage the active milestone and deferred
+deeper workflow composition and comparative benchmarking until the required
+checklist is complete. The [inventory and gates](secure-tool-coverage.md) distinguish
+10 interactive executable families from the baseline's 6 secure capabilities
+backed by 3 external programs. B1 adds independent dig and OpenSSL profiles;
+[the runbook](network-tools.md) records their exact limits. The milestone remains
+open, and B2's SSH host keys/LDAP RootDSE is the next coverage priority after B1.
+
+Implementation `24ae696` is on `feature/secure-network-tools`, based on main `ba0d6f8`. No provider,
+credential, external target, comparison benchmark or cross-tool workflow was
+activated. Accepted offline R5/local R6, old tool profiles and the proposal PDF
+remain unchanged. The new profiles have one action, fixed owned TCP scope and
+finite strict results. Both raw channels bind to the committed runtime and are
+independently parsed on capture and replay.
+
+| Coverage | Result | Private receipt basename |
+| --- | --- | --- |
+| Full local portable run before the final partial-output receipt correction | 5,442 passed; no failures/errors/skips | `portable.xml` |
+| Final focused CLI, contracts, parser, runtime, lab, evidence and single-action checks | 294 passed; no failures/errors/skips | `focused-final.xml` |
+| New actual tools, negative fixtures, approval/replay gates, task limit, cancellation, private-input isolation and output pressure | 23 distinct cases verified: 20 initial passes plus 3 corrected-case passes | `linux.xml`, `corrected-linux.xml` |
+| Existing curl/ffuf, fixture launcher, admission and Nmap runtime | 96 passed; no selected failures/errors/skips | `legacy-linux.xml` |
+
+The **119 affected Linux cases** are not a full Linux-suite result. Earlier failed
+receipts remain retained. The actual BIND client succeeds while emitting one
+specific denied-socket startup diagnostic; only that exact reviewed line is
+accepted with otherwise valid DNS output. Unknown diagnostics remain inconclusive
+and the socket filter is unchanged. OpenSSL's verified facts are carried on
+stderr, which is independently replayed. CLI inspection now selects the new
+closed evidence profile explicitly.
+
+Native dig may exit zero for malformed output; the test now distinguishes process
+success from useful parsed evidence. Actual output pressure proved bounded
+capture can discard the overflowing chunk and retain fewer bytes than the cap.
+Only the new receipt contract was corrected to accept truthful shorter truncated
+captures, with unchanged 8,192-byte ceiling, reservation, hashes and stop reason.
+The real pressure tests now capture and replay those receipts, require no useful
+observation and verify read-only inspection. No captured bytes are invented.
+
+Independent reviews of runtime/launcher, parser/contracts, CLI/evidence and
+lab/backend found no remaining blockers after that correction. Review compared
+the shared staging and kernel helper extraction with the accepted implementations;
+original argument lists, bounds and filters remain unchanged. No descriptor,
+mock or skipped test is presented as actual execution. Hosted CI must pass on the
+final PR revision before merge. Private receipts live in
+`.secure-agent/network-tools-20261001/validation` in the primary checkout.
+
+Two clean-source CLI trials from `24ae696` saved private evidence under
+`.secure-agent/network-tools-20261001/runs`. dig completed one DNS question with
+`answer_observed` in 2.807 seconds; OpenSSL completed one TLS handshake with
+`handshake_verified` in 2.586 seconds. Both labs closed, and independent replay
+matched reports without changing evidence bytes or mtimes. Useful completion was
+2/2 and unnecessary refusals 0/2 for these positive trials. Calls and provider cost
+were zero. These are descriptive CLI timings, not a comparative benchmark.
+They use an explicitly labelled unattended synthetic policy; the shipped policy
+still requires fresh approval, and no human acceptance is claimed.
+
+PR #37 remains merged as `ba0d6f8`; all five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36809908913)
+passed. Its final reviewed tree and historical evidence remain closed.
+
 ## Practical curl/ffuf coverage — 1 October 2026
 
 Implementation `3ec1ef07040c284b2896055009c8123070f327ea` on

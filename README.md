@@ -12,11 +12,15 @@ with usefulness, safety, cost and latency measurements against a fresh protected
 baseline. Validation uses owned TLS fixtures; real-model results remain pending.
 The operator has deferred credential setup and the live pilot until much later;
 live integration stays disabled. The [HTTP response-header assessment](docs/http-headers-assessment.md)
-is merged. Current development prioritizes [practical tool coverage](docs/practical-web-tools.md):
-curl HTTPS retrieval and bounded ffuf content discovery, each verified independently
-through secure execution in the disconnected owned lab. Deeper cross-tool workflows
-follow after both tools work. Completed milestones stay closed; credential setup,
-paid calls, live evaluation, session-view and GUI work remain deferred.
+is merged. The current milestone is [broader secure-tool coverage](docs/secure-tool-coverage.md),
+with a repository inventory, prioritized checklist and explicit completion gates.
+Nmap, curl and ffuf have bounded secure profiles; the next batch adds independent
+DNS/TLS inspection. After each batch, prioritize the next tool gap. Deeper workflow
+composition and comparative benchmarking wait until the coverage milestone is
+complete. Per-tool useful execution, evidence and enforcement checks continue now.
+Completed R5/R6 scope stays closed; credentials, paid calls and live-model
+evaluation remain deferred until much later.
+
 
 The merged [confined audit writer](docs/isolated-audit.md) is available through
 `--isolated-audit`. The merged [isolated terminal approval](docs/isolated-approvals.md) is selected

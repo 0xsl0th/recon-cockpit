@@ -15,7 +15,8 @@ PROFILES = {'fixture': 'linux-authorized-fixture-executor-v1',
             'owned_nmap_lab': 'linux-authorized-owned-nmap-lab-executor-v1',
             'owned_web_lab': 'linux-authorized-owned-web-lab-executor-v1',
             'owned_http_headers_lab': 'linux-authorized-owned-http-headers-executor-v1',
-            'owned_web_tools_lab': 'linux-authorized-owned-web-tools-executor-v1'}
+            'owned_web_tools_lab': 'linux-authorized-owned-web-tools-executor-v1',
+            'owned_network_tools_lab': 'linux-authorized-owned-network-tools-executor-v1'}
 
 
 def encode(value):
@@ -38,7 +39,7 @@ def decode(raw):
 
 
 def configuration(value):
-    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab'}:
+    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab'}:
         from .owned_lab_contract import validate_identity
         if value['profile'] == 'owned_web_lab':
             from .web_lab_contract import validate_identity
@@ -46,6 +47,8 @@ def configuration(value):
             from .http_headers_lab_contract import validate_identity
         elif value['profile'] == 'owned_web_tools_lab':
             from .web_tools_lab_contract import validate_identity
+        elif value['profile'] == 'owned_network_tools_lab':
+            from .network_tools_lab_contract import validate_identity
         base = admission.configuration({key: item for key, item in value.items() if key != 'owned_lab'})
         return {**base, 'owned_lab': validate_identity(value.get('owned_lab'), case=base['case'])}
     value = admission.configuration(value)
@@ -54,9 +57,10 @@ def configuration(value):
     return value
 
 
-def runtime(value, *, owned_lab=False, nmap=False, web_tools=False):
-    fields = {'stdlib', 'files'} | ({'nmap_runtime'} if nmap else set()) | ({'web_tools_runtime'} if web_tools else set())
-    if type(value) is not dict or set(value) != fields or (nmap and web_tools):
+def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tools=False):
+    fields = ({'stdlib', 'files'} | ({'nmap_runtime'} if nmap else set()) |
+              ({'web_tools_runtime'} if web_tools else set()) | ({'network_tools_runtime'} if network_tools else set()))
+    if type(value) is not dict or set(value) != fields or (sum((nmap, web_tools, network_tools)) > 1):
         raise ValueError('invalid_launcher_runtime')
     if nmap:
         from .nmap_runtime import validate_manifest
@@ -64,6 +68,9 @@ def runtime(value, *, owned_lab=False, nmap=False, web_tools=False):
     if web_tools:
         from .web_tools_runtime import validate_manifest
         validate_manifest(value['web_tools_runtime'])
+    if network_tools:
+        from .network_tools_runtime import validate_manifest
+        validate_manifest(value['network_tools_runtime'])
     if type(value['stdlib']) is not str or not re.fullmatch(r'/usr/lib/python3\.\d+', value['stdlib']):
         raise ValueError('invalid_launcher_stdlib')
     paths = value['files']
@@ -91,13 +98,17 @@ def initial(value, now):
         manifest(value['approval_witness'])
     config = configuration(value['configuration'])
     admission.initial({'configuration': {k: v for k, v in config.items() if k != 'owned_lab'}, 'deadline': value['deadline']}, now)
-    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab'},
+    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab'},
             nmap=config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'},
-            web_tools=config['profile'] == 'owned_web_tools_lab')
+            web_tools=config['profile'] == 'owned_web_tools_lab', network_tools=config['profile'] == 'owned_network_tools_lab')
     if config['profile'] == 'owned_web_tools_lab':
         from .web_tools_contract import action
         if value['runtime']['web_tools_runtime']['tool_id'] != action(config['case'], 1)['tool_id']:
             raise ValueError('launcher_web_tool_runtime_changed')
+    if config['profile'] == 'owned_network_tools_lab':
+        from .network_tools_contract import action
+        if value['runtime']['network_tools_runtime']['tool_id'] != action(config['case'], 1)['tool_id']:
+            raise ValueError('launcher_network_tool_runtime_changed')
     return config
 
 

@@ -1,0 +1,128 @@
+"""One deterministic reviewed action per tool trial; no cross-tool planning."""
+
+from dataclasses import dataclass
+import hashlib
+import json
+import threading
+
+from . import network_tools_contract as contract
+from .models import load_json, parse_action
+from .http_headers_workflow import _uuid
+
+
+def card():
+    return {
+        "schema_version": "1", "workflow_id": contract.WORKFLOW, "workflow_version": "1",
+        "planning": "deterministic_offline_single_tool", "live_calls_enabled": False,
+        "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+        "limits": dict(contract.LIMITS),
+        "action_digests": {case: [parse_action(contract.action(case, 1)).digest]
+                           for case in contract.CASES},
+    }
+
+
+def card_identity():
+    return {"id": contract.WORKFLOW, "version": "1",
+            "sha256": hashlib.sha256(contract.encode(card())).hexdigest()}
+
+
+@dataclass(frozen=True, slots=True)
+class ToolDecision:
+    step: int
+    decision_kind: str
+    reason: str
+    _action: bytes | None = None
+    _references: tuple = ()
+    done: bool = True
+
+    @property
+    def action(self):
+        return None if self._action is None else json.loads(self._action)
+
+    def to_dict(self):
+        return {
+            "schema_version": "1", "workflow_id": contract.WORKFLOW,
+            "workflow_version": "1", "workflow_digest": card_identity()["sha256"],
+            "decision_kind": self.decision_kind, "step": self.step, "reason": self.reason,
+            "action_digest": None if self._action is None else parse_action(self.action).digest,
+            "predecessors": [{"execution_id": execution, "observation_id": observation}
+                             for execution, observation in self._references],
+        }
+
+
+def decide(case, step, records, observation):
+    if type(case) is not str or case not in contract.CASES or type(step) is not int or step != 1:
+        raise ValueError("invalid_network_tool_step")
+    if (type(records) not in (tuple, list) or records
+            or type(observation) is not bytes
+            or observation != contract.encode({"step": 1, "untrusted_observation": None})):
+        return ToolDecision(1, "stop", "invalid_initial_tool_context")
+    return ToolDecision(1, "propose", "single_scoped_tool_trial",
+                        contract.encode(contract.action(case, 1)))
+
+
+def terminal_decision(case, records, summary):
+    expected = parse_action(contract.action(case, 1))
+    step = summary["steps_attempted"] + 1
+    if summary["mode"] == "dry_run":
+        return ToolDecision(step, "stop", "dry_run_has_no_execution_evidence")
+    if summary["session_status"] != "completed":
+        return ToolDecision(step, "stop", "session_stopped")
+    if type(records) not in (list, tuple) or len(records) != 1:
+        return ToolDecision(step, "stop", "tool_evidence_missing")
+    row = records[0]
+    if (type(row) is not dict or type(row.get("session_step")) is not int or row["session_step"] != 1
+            or not _uuid(row.get("execution_id")) or not _uuid(row.get("observation_id"))
+            or row.get("action_digest") != expected.digest
+            or row.get("action") != {k: v for k, v in expected.to_dict().items() if k != "rationale"}
+            or row.get("execution_status") != "succeeded"):
+        return ToolDecision(step, "stop", "tool_execution_not_succeeded")
+    reason = "tool_evidence_inconclusive"
+    observation = row.get("observation")
+    try:
+        if (type(observation) is dict and observation == contract.classify_tool(
+                expected.tool_id, observation.get("details"))):
+            reason = observation["reason"]
+    except (ValueError, TypeError, KeyError):
+        pass
+    return ToolDecision(step, "stop", reason,
+                        _references=((row["execution_id"], row["observation_id"]),))
+
+
+class NetworkToolsProvider:
+    name = "deterministic-owned-single-network-tool"
+    boundary_checks = None
+
+    def __init__(self, case, evidence):
+        contract.action(case, 1)
+        self.case, self._evidence = case, evidence
+        self._lock = threading.Lock()
+        self._session_id = None
+        self._closed = False
+
+    def bind_session(self, session_id):
+        with self._lock:
+            if self._closed or self._session_id is not None or not _uuid(session_id):
+                raise ValueError("invalid_network_tool_provider_binding")
+            self._session_id = session_id
+
+    def close(self):
+        with self._lock:
+            self._closed = True
+
+    def propose(self, observation, *, control):
+        if not self._lock.acquire(blocking=False):
+            raise RuntimeError("network_tool_provider_already_running")
+        try:
+            control.check()
+            if self._closed or self._session_id is None:
+                raise RuntimeError("network_tool_provider_closed")
+            if (type(observation) is not bytes or len(observation) > 8192
+                    or load_json(observation) != {"step": 1, "untrusted_observation": None}):
+                raise ValueError("invalid_network_tool_observation")
+            decision = self._evidence.record_decision(1, observation)
+            control.check()
+            return contract.encode({"schema_version": "1", "action": decision.action, "done": True})
+        finally:
+            self._closed = True
+            self._lock.release()
