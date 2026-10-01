@@ -56,13 +56,14 @@ def _hex(value):
 class LaunchVerifier:
     """Consume exactly one request against the fresh launch's trusted context."""
 
-    def __init__(self, nonce, context_digest, *, clock=time.monotonic):
-        if not _hex(nonce) or not _hex(context_digest):
+    def __init__(self, nonce, context_digest, *, clock=time.monotonic, allow_http_headers=False):
+        if not _hex(nonce) or not _hex(context_digest) or type(allow_http_headers) is not bool:
             raise ValueError("invalid_executor_context")
         self._nonce = nonce
         self._context_digest = context_digest
         self._clock = clock
         self._used = False
+        self._allow_http_headers = allow_http_headers
 
     def consume(self, raw: bytes) -> tuple[dict, float]:
         if self._used:
@@ -73,8 +74,9 @@ class LaunchVerifier:
         if not hmac.compare_digest(hashlib.sha256(raw).hexdigest(), self._context_digest):
             raise ValueError("executor_context_mismatch")
         envelope = load_json(raw)
+        modes = ("http_headers_owned",) if self._allow_http_headers else ("fixture", "discovery_fixture")
         if (set(envelope) != LAUNCH_FIELDS or envelope["schema_version"] != "1"
-                or envelope["mode"] not in ("fixture", "discovery_fixture") or envelope["execute"] is not True
+                or envelope["mode"] not in modes or envelope["execute"] is not True
                 or not _hex(envelope["nonce"])
                 or not hmac.compare_digest(envelope["nonce"], self._nonce)):
             raise ValueError("invalid_executor_launch")
@@ -83,6 +85,8 @@ class LaunchVerifier:
             raise ValueError("invalid_executor_session")
         limits = envelope["limits"]
         ceilings = {"max_steps": 16, "max_runtime_seconds": 600, "max_output_bytes": 16 * 65536}
+        if self._allow_http_headers:
+            ceilings = {"max_steps": 3, "max_runtime_seconds": 60, "max_output_bytes": 18432}
         if (type(limits) is not dict or set(limits) != set(ceilings)
                 or any(type(limits[name]) is not int or not 1 <= limits[name] <= maximum
                        for name, maximum in ceilings.items())
@@ -109,6 +113,10 @@ class LaunchVerifier:
         if envelope["mode"] == "discovery_fixture" and (
                 action.tool_id not in ("http_probe", "tcp_connect") or action.parameters.port != 8080):
             raise ValueError("executor_discovery_fixture_only")
+        if self._allow_http_headers and (action.tool_id != "http_headers_v1"
+                or action.parameters.to_dict() != {"port": 8080, "method": "GET",
+                    "path": "/harbordesk/portal.html", "timeout_seconds": 1, "max_output_bytes": 2048}):
+            raise ValueError("executor_http_headers_profile_only")
         before, after = envelope["output_reserved_before"], envelope["output_reserved_after"]
         if (type(before) is not int or type(after) is not int
                 or not 0 <= before < after <= limits["max_output_bytes"]
@@ -122,6 +130,8 @@ class LaunchVerifier:
             raise ValueError("invalid_executor_namespaces")
         request = {"target": "127.0.0.1", "parameters": action.parameters.to_dict(),
                    "verify_boundary": True, "host_namespaces": host}
+        if self._allow_http_headers:
+            return {**request, "tool_id": "http_headers_v1"}, deadline
         if action.tool_id == "tcp_connect":
             request["tool_id"] = "tcp_connect"
             return worker.validate_tcp_request(encode(request)), deadline
@@ -137,8 +147,12 @@ def main() -> int:
         raw = sys.stdin.buffer.read(MAX_LAUNCH_BYTES + 1)
         sys.stdin.close()
         request, deadline = verifier.consume(raw)
-        result = (worker.execute_tcp_connect(request, deadline=deadline)
-                  if request.get("tool_id") == "tcp_connect" else worker.execute(request, deadline=deadline))
+        if request.get("tool_id") == "tcp_connect":
+            result = worker.execute_tcp_connect(request, deadline=deadline)
+        elif "tool_id" not in request:
+            result = worker.execute(request, deadline=deadline)
+        else:
+            raise ValueError("executor_capability_not_supported")
         sys.stdout.write(json.dumps(result, separators=(",", ":")) + "\n")
         sys.stdout.flush()
         return 0

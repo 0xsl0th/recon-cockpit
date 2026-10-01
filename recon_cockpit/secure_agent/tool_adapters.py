@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 from .tool_parameters import (
-    HTTPParameters, NmapTCPParameters, TCPParameters, _fields, _reject,
+    HTTPHeadersParameters, HTTPParameters, NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
 
@@ -30,6 +30,13 @@ NMAP_EXECUTABLE = "/tool/nmap"
 NMAP_DATA_DIRECTORY = "/tool/data"
 LEGACY_PROPOSAL_PROFILE = "legacy-v1"
 NMAP_PROPOSAL_PROFILE = "owned-nmap-http-v1"
+HTTP_HEADERS_TOOL_ID = "http_headers_v1"
+HTTP_HEADERS_EXECUTION_PROFILE = "owned-http-headers-v1"
+HTTP_HEADERS_PATH = "/harbordesk/portal.html"
+HTTP_HEADERS_PARAMETERS = MappingProxyType({
+    "port": 8080, "method": "GET", "path": HTTP_HEADERS_PATH,
+    "timeout_seconds": 1, "max_output_bytes": 2048,
+})
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,7 +65,7 @@ class ToolAdapter:
             "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 30},
             "max_output_bytes": {"type": "integer", "minimum": 1, "maximum": 65536},
         }
-        if self.tool_id == "http_probe":
+        if self.tool_id in ("http_probe", HTTP_HEADERS_TOOL_ID):
             properties.update({
                 "method": {"type": "string", "enum": ["GET", "HEAD"]},
                 "path": {"type": "string", "minLength": 1, "maxLength": 256},
@@ -98,6 +105,14 @@ ADAPTERS = MappingProxyType({
         "bounded-nmap-xml-result-v1", "nmap-tcp-connect-xml-v1",
         ("private_namespaces", "scoped_network_filter", "pinned_nmap_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "no_raw_sockets"),
+    ),
+    HTTP_HEADERS_TOOL_ID: ToolAdapter(
+        HTTP_HEADERS_TOOL_ID, HTTPHeadersParameters,
+        ("port", "method", "path", "timeout_seconds", "max_output_bytes"),
+        "read_owned_fixture_http_response", HTTP_HEADERS_EXECUTION_PROFILE,
+        "bounded-http-headers-result-v1", "http-headers-v1",
+        ("private_namespaces", "scoped_network_filter", "no_process_execution",
+         "no_redirect_following", "bounded_raw_response"),
     ),
 })
 SUPPORTED_TOOLS = tuple(ADAPTERS)

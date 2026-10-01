@@ -3,7 +3,11 @@
 This integration connects one existing HarborDesk workflow to a real-model-capable
 provider transport. Development and validation use owned TLS fixtures and synthetic
 responses. **No real-model evaluation, credential access or paid call has occurred.**
-The proposed live pilot below requires operator approval. The accepted offline
+**Operator decision, 1 October 2026: defer credential setup and the live pilot
+until much later.** Keep live integration disabled and continue practical owned
+tool/workflow development with mocks. The configuration below is a deferred plan,
+not a pending request for a key or permission. Activation requires the operator
+to resume this work and approve freshly reviewed settings. The accepted offline
 R5/R6 milestones remain closed; their evidence is the fallback demonstration.
 
 ## One workflow, reused infrastructure
@@ -80,7 +84,7 @@ is a separate adjacent `-costs` directory. Existing output or ledger directories
 are never overwritten. SIGINT/SIGTERM cancel current authority work and reap
 workers; partial cost/evidence records are retained.
 
-## Proposed first live pilot — pending approval
+## Deferred first live pilot
 
 | Setting | Proposal |
 | --- | --- |

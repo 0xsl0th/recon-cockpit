@@ -232,6 +232,8 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
 
     name = BACKEND
     _envelope_mode = "owned_lab"
+    _executor_mode = "discovery_fixture"
+    _http_tools = ("http_probe",)
 
     def __init__(self, policy, session_id, limits, lab, *, execute=False):
         super().__init__(policy, session_id, limits, execute=execute)
@@ -313,7 +315,7 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
             self._output += action.parameters.max_output_bytes
             self.lab.start(control)
             nonce = secrets.token_hex(32)
-            launch = {"schema_version": "1", "mode": "discovery_fixture", "execute": True,
+            launch = {"schema_version": "1", "mode": self._executor_mode, "execute": True,
                 "session_id": self._session_id, "nonce": nonce, "sequence": self._sequence,
                 "action": action.to_dict(), "action_digest": action.digest,
                 "policy": self._policy.to_dict(), "policy_digest": self._policy_digest,
@@ -347,7 +349,7 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
                 # owner before acknowledging continuity, independent of scheduling.
                 settled = result["status"] == "succeeded" or result["status"] == "output_limit"
                 minimum_connections = previous["connection_count"] + int(settled)
-                minimum_requests = previous["request_count"] + int(settled and action.tool_id == "http_probe")
+                minimum_requests = previous["request_count"] + int(settled and action.tool_id in self._http_tools)
                 counts = self.lab.snapshot(control, minimum_connections=minimum_connections,
                                            minimum_requests=minimum_requests)
                 result["owned_lab"] = {"identity": self._lab_identity, **counts}

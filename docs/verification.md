@@ -1,24 +1,89 @@
 # Verification record
 
-## PR #35 review handoff — 1 October 2026
+## Owned HTTP response-header assessment — 1 October 2026
 
-The operator authorized review and conditional merge, then a recommendation for
-what to tackle next. Fresh independent reviews of runtime/test head
-`e660466700bfbbafc690a78f0a2f67a0be70ce4c` found no blockers in the isolated
-transport/provider, accounting, runner, evidence or metric contracts. GitHub
-review and inline comments were empty. Saved reports independently confirm
-4,600 portable and 51 affected Linux tests with zero failures/errors/skips;
-runtime/tests/examples are identical to the clean CLI execution revision `03def1b`.
+Implementation `473e989` on `feature/owned-http-headers-assessment`, based on main
+`98d6f1b`, adds `http_headers_v1` and a separate two-action owned workflow. Nmap
+reachability gates a fixed GET of the synthetic HTML portal. The native adapter
+retains bounded wire bytes; a separate networkless parser releases only finite
+header observations. Capture and inspection independently reconcile those facts
+with raw evidence. Missing headers are hardening observations, not validated
+exploits. See the [runbook](http-headers-assessment.md) and
+[PR #36](https://github.com/0xsl0th/recon-cockpit/pull/36). The latest operator
+instruction authorizes conditional review/merge, followed by a recommendation
+only. Fresh independent parser/evidence/workflow and runtime/admission/launcher
+reviews of `d5e0228` found no blockers. All five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36800202193)
+passed on that head; runtime/tests/examples match `473e989`. GitHub reviews,
+conversation comments and inline comments were empty at review. Recheck final
+checks after this documentation-only update, and bind the merge to that exact
+head. The private `.secure-agent/pr36-merge-review.json` receipt records the actual
+merge outcome and tree comparison; GitHub remains the shared source for PR state.
 
-This follow-up only aligns the checkpoint with the new merge authorization.
-Before merging, verify all five hosted checks on the final head and use a guarded
-merge bound to that exact head. The private
-`.secure-agent/pr35-merge-review.json` receipt in the primary checkout records
-the actual reviewed head, final checks, merge outcome and tree comparison.
-Consult [PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35) for shared state;
-if merged, do not repeat its review/merge or reopen accepted offline milestones.
-The next recommendation is the bounded pilot already defined in the runbook.
-Actual provider/model use, credentials and spending still require approval.
+The operator explicitly deferred credential setup and the real-model pilot until
+much later. This work uses deterministic proposals and owned fixtures. Live
+configuration remains disabled, no provider ledger is funded and no real key is
+read. The accepted offline R5/R6 milestones stay closed; proposal PR #31 and the
+local PDF are unchanged.
+
+Independent reviews of contract/parser, runtime/admission/launcher and
+CLI/evidence/documentation found no blockers. Review also tightened a receipt
+edge case: an empty captured response cannot claim transport success. The strict
+validator rejects it even when outer hashes are recomputed.
+
+Validation receipts are local, not committed artifacts:
+
+| Coverage | Result | Receipt |
+| --- | --- | --- |
+| Final full portable run on `473e989` | 4,898 passed; zero selected failures/errors/skips | `/tmp/recon-http-headers-portable-final.xml` |
+| New full workflows and approval gates, plus existing web/Nmap approval tests | 17 passed | `/tmp/recon-http-headers-gates-workflow-linux.xml` |
+| Actual networkless HTTP parser, malformed input, denied network/process/file access, deadlines and cleanup | 17 passed | `/tmp/recon-http-headers-parser-linux.xml` |
+| Existing Nmap/web workflows, owned launcher and admission regressions | 65 passed | `/tmp/recon-http-headers-legacy-linux.xml` |
+
+The **99 affected Linux tests** have no failures/errors/skips; this is not a new
+full 567-test Linux-suite result. Portable doubles establish contracts, not kernel
+isolation. Tests exercise required grants and consumed-proof witnesses, replay
+refusal, old-profile substitution and an out-of-scope proposal denied and audited
+before launch. Scripted approval fixtures do not record human consent.
+
+Three fresh actual CLI runs on clean `473e989` saved private evidence at
+`.secure-agent/http-headers-20261001` in the primary checkout. Each used an explicit
+unattended owned validation policy; the shipped policy still requires fresh
+human approvals. Each completed two actions and exactly one HTTP request, closed
+its own lab, and passed read-only evidence replay without integrity issues:
+
+| Case | Observation | Actions | Session time |
+| --- | --- | --- | --- |
+| Vulnerable | `gaps_observed` | 2/2 | 2.830 s |
+| Corrected | `reviewed_headers_present` | 2/2 | 2.824 s |
+| Injected | `gaps_observed` | 2/2 | 2.866 s |
+
+The packet's `verification.json` binds source, unique lab identities, closure and
+report hashes; files are private and ignored. The hostile body remains only in
+raw evidence. It neither changes scope nor enters report prose. These timings
+are descriptive local session measurements, not model latency or authority
+benchmarks. Actual provider calls and paid calls: **zero**. No new operator
+acceptance, competition submission or release publication is claimed.
+
+## PR #35 merged and live work deferred — 1 October 2026
+
+Final reviewed head `59ea9f33fac027bbc693ee8b2bb39564d3c65c1d` passed independent
+review with no blockers or outstanding GitHub comments. Runtime/tests/examples
+match implementation `03def1b`; saved validation confirms 4,600 portable and 51
+affected Linux tests with zero selected failures/errors/skips. All five
+[final hosted jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36796851542)
+passed before the guarded merge `98d6f1b` at 00:40:24 UTC. Reviewed and merged
+trees both equal `6ff6592d8c8f26213c3819d8939013b288e7fb9c`. All five
+[post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36797343742)
+passed. The private `.secure-agent/pr35-merge-review.json` receipt records this.
+
+The operator subsequently deferred credential setup and the real-model pilot
+until much later, retaining disabled live integration and mock validation while
+continuing practical tools/workflows. Preparation performed a public endpoint
+lookup and TLS certificate handshake only; no API request, paid model call or
+real credential read occurred. No live configuration or funded ledger was created.
+The next implementation is the bounded owned HTTP response-header assessment.
+PR #35 and the accepted offline R5/R6 milestones remain closed.
 
 ## Minimal model workflow integration — 1 October 2026
 

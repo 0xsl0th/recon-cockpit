@@ -10,9 +10,11 @@ demonstration. The new [bounded model pilot](docs/web-model-pilot.md) connects o
 Nmap → HTTP → evidence workflow to the existing confined provider transport,
 with usefulness, safety, cost and latency measurements against a fresh protected
 baseline. Validation uses owned TLS fixtures; real-model results remain pending.
-Live execution is disabled by default and requires separate operator approval of
-data, endpoint, credentials and spending. Completed milestones stay closed;
-optional tools, session-view and GUI work remain deferred.
+The operator has deferred credential setup and the live pilot until much later;
+live integration stays disabled. Current development adds a bounded
+[HTTP response-header assessment](docs/http-headers-assessment.md), using real tools
+inside the disconnected owned lab, deterministic proposals and replayable evidence.
+Completed milestones stay closed; broader tools, session-view and GUI work remain deferred.
 
 The merged [confined audit writer](docs/isolated-audit.md) is available through
 `--isolated-audit`. The merged [isolated terminal approval](docs/isolated-approvals.md) is selected

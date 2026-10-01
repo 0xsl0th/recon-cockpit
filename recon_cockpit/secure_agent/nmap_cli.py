@@ -31,6 +31,14 @@ def run_assessment(args, policy, audit):
         case = args.web_assessment
         lab_type, backend_type, provider_type = WebLab, AuthorizedWebLabBackend, WebProvider
         workflow_profile = 'web'
+    elif args.http_headers_assessment:
+        from .http_headers_lab import HTTPHeadersLab
+        from .http_headers_backend import AuthorizedHTTPHeadersBackend
+        from .http_headers_workflow import HTTPHeadersProvider
+        from .http_headers_contract import capability_descriptor as capability
+        case = args.http_headers_assessment
+        lab_type, backend_type, provider_type = HTTPHeadersLab, AuthorizedHTTPHeadersBackend, HTTPHeadersProvider
+        workflow_profile = 'http_headers'
 
     overrides = {key: value for key, value in zip(
         ('max_steps', 'max_runtime_seconds', 'max_output_bytes'),

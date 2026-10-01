@@ -152,11 +152,11 @@ def main():
     witness_reader = None
     approval_reader = None
     try:
-        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions'}):
+        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions'}):
             raise ValueError('invalid_launcher_bootstrap')
         witnessed = len(sys.argv) == 7
-        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions'}
-        nmap_runtime = witnessed and sys.argv[6] in {'nmap-launch-preconditions', 'web-launch-preconditions'}
+        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions'}
+        nmap_runtime = witnessed and sys.argv[6] in {'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions'}
         _, host = bootstrap._arguments(['three_step', *sys.argv[2:6]])
         checks = boundary(host, nmap_runtime=True) if nmap_runtime else boundary(host)
         channel = socket.socket(fileno=0)
@@ -175,7 +175,8 @@ def main():
             raise ValueError('launcher_bootstrap_changed')
         try:
             config = protocol.initial(init, time.monotonic())
-            expected_tag = {'owned_nmap_lab': 'nmap-launch-preconditions', 'owned_web_lab': 'web-launch-preconditions'}.get(config['profile'])
+            expected_tag = {'owned_nmap_lab': 'nmap-launch-preconditions', 'owned_web_lab': 'web-launch-preconditions',
+                            'owned_http_headers_lab': 'http-headers-launch-preconditions'}.get(config['profile'])
             if ((expected_tag is not None) != nmap_runtime
                     or (expected_tag is not None and sys.argv[6] != expected_tag)):
                 raise ValueError('launcher_runtime_profile_changed')
@@ -205,6 +206,9 @@ def main():
         elif config['profile'] == 'owned_web_lab':
             from recon_cockpit.secure_agent.web_backend import ConfinedWebBackend
             owned = ConfinedWebBackend(config, init['runtime'])
+        elif config['profile'] == 'owned_http_headers_lab':
+            from recon_cockpit.secure_agent.http_headers_backend import ConfinedHTTPHeadersBackend
+            owned = ConfinedHTTPHeadersBackend(config, init['runtime'])
         with _NestedAdmission(config, init['runtime']) as gate, (owned.lab if owned is not None else nullcontext()):
             print(protocol.encode({'version': '1', 'ready': True, 'bootstrap_digest': sys.argv[1], 'checks': checks}).decode(), flush=True)
             sequence = 1

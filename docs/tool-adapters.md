@@ -8,6 +8,9 @@ accepted R1–R6 offline milestones.
 
 The follow-on [HarborDesk lab](web-lab.md) uses these same tools with a separate
 versioned fixture and workflow; the six cases documented here remain unchanged.
+The separate [HTTP response-header assessment](http-headers-assessment.md) adds
+`http_headers_v1` with fixed wire capture and networkless parsing. It preserves
+the existing `http_probe` contract and exposes no new provider schema.
 
 ## Contract and authority
 

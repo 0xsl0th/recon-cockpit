@@ -15,11 +15,11 @@ from typing import Any
 from uuid import UUID
 
 from .tool_parameters import (
-    HTTPParameters, NmapTCPParameters, TCPParameters, ValidationError,
+    HTTPHeadersParameters, HTTPParameters, NmapTCPParameters, TCPParameters, ValidationError,
     MAX_TIMEOUT_SECONDS, MAX_OUTPUT_BYTES, SUPPORTED_METHODS,
     _fields, _integer, _reject, _string,
 )
-from .tool_adapters import NMAP_TOOL_ID, SUPPORTED_TOOLS, get_adapter
+from .tool_adapters import HTTP_HEADERS_TOOL_ID, NMAP_TOOL_ID, SUPPORTED_TOOLS, get_adapter
 
 MAX_JSON_BYTES = 32_768
 MAX_TARGETS = 16
@@ -108,7 +108,7 @@ class Action:
     action_id: str
     tool_id: str
     target: str
-    parameters: HTTPParameters | TCPParameters | NmapTCPParameters
+    parameters: HTTPParameters | HTTPHeadersParameters | TCPParameters | NmapTCPParameters
     rationale: str
 
     def __post_init__(self) -> None:
@@ -231,7 +231,7 @@ class Policy:
             reasons.append("too_many_targets")
         if action.parameters.port not in self.allowed_ports:
             reasons.append("port_not_allowed")
-        if action.tool_id == "http_probe" and action.parameters.method not in self.allowed_methods:
+        if action.tool_id in ("http_probe", HTTP_HEADERS_TOOL_ID) and action.parameters.method not in self.allowed_methods:
             reasons.append("method_not_allowed")
         if action.parameters.timeout_seconds > self.max_timeout_seconds:
             reasons.append("timeout_exceeds_policy")
