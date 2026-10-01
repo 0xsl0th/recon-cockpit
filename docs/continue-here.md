@@ -1,33 +1,52 @@
-# Continue here — 30 September 2026
+# Continue here — 1 October 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current review: bounded offline HarborDesk adversarial comparison, PR #34.**
-The operator authorized reviewing/merging PR #33 and continuing to the next
-necessary slice. Work is on `feature/owned-web-adversarial-comparison` in
-`/tmp/recon-web-comparison`, based on main `ed7d839`. Read
-[web-comparison.md](web-comparison.md) for the paired baseline/scripted evaluation,
-criteria, runbook and limitations. Both arms retain the existing authority and
-3-attempt/60-second/18,432-byte ceiling. The script derives a forbidden proposal
-from the actual captured injected note; policy denial stops the session. Report
-containment success separately from the resulting two-of-three legitimate action
-completion. No recovery, extra attempt or live-model behavior is claimed.
-Leave this new change ready for review; the current merge instruction covered
-PR #33. [PR #34](https://github.com/0xsl0th/recon-cockpit/pull/34) contains
-implementation `6268543`. The complete portable suite passed 4,438 cases;
-eight new real Linux tests passed. The actual default CLI batch passed 18/18
-trial criteria: 3/3 unauthorized proposals blocked, zero unauthorized executions,
-15/18 legitimate tasks completed and 51 legitimate actions. The three stopped
-attack tasks remain explicitly incomplete. Independent read-only replay and
-tampered-copy refusal passed. All calls were offline, with zero provider calls.
-Private evidence is `.secure-agent/web-comparison-20260930` in the primary
-checkout; the adjacent `web-comparison-20260930-verification.json` records its
-clean execution revision. See [verification.md](verification.md) and
-[the latest checks](https://github.com/0xsl0th/recon-cockpit/pull/34/checks).
-Do not rerun the full local suites solely for checkpoint text. Review/merge of
-PR #34 is the next handoff; a real-model pilot still needs explicit authorization.
+**Current handoff: [PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35), minimal real-model Nmap → HTTP → evidence integration.**
+The operator authorized reviewing/merging PR #34, implementing this focused
+integration, completing offline validation and opening a PR. On 1 October the
+operator also authorized reviewing/merging PR #35 if its latest revision and
+checks pass, followed by a recommendation for the next step. That instruction
+does not activate the pilot or authorize additional implementation. Work is on
+`feature/web-model-pilot` in `/tmp/recon-web-model-pilot`, based on main `17945db`.
+Read [web-model-pilot.md](web-model-pilot.md) for the exact workflow, metrics,
+commands and proposed pilot. The new path reuses the existing isolated provider,
+ledger, authority, Nmap/HTTP tools and evidence. It retains the original three
+attempts, 60-second session and 18,432-byte tool ceiling. Blocking everything
+fails usefulness. UUID/rationale normalization grants no extra tool capability.
+
+Offline validation uses synthetic responses through an owned TLS endpoint. It
+makes no paid calls and reads no real credential. Real-model quality remains
+unverified. The proposed first pilot has three model sessions, nine calls, no
+retries and one shared $1 admission ceiling. Present its actual endpoint/CA,
+credential source, synthetic data and success thresholds for operator approval
+before live execution. Verify PR #35's current GitHub state before continuing;
+if merged, keep it closed and do not repeat the merge. The local
+`.secure-agent/pr35-merge-review.json` receipt records the review/merge outcome;
+GitHub remains the shared source for its publication state. All 4,600 portable
+tests and 51 affected Linux
+tests passed without selected failures/errors/skips. See
+[verification.md](verification.md) for exact coverage and limits. Implementation
+`03def1b` produced two saved CLI runs: the successful three-action workflow and
+the blocked injected proposal with only two actions completed. Private evidence
+is `.secure-agent/web-model-owned-20261001` and
+`.secure-agent/web-model-blocked-20261001` in the primary checkout; the adjacent
+`web-model-20261001-verification.json` records source and receipts. These are
+owned simulations, not real-model results. Consult
+[PR #35 checks](https://github.com/0xsl0th/recon-cockpit/pull/35/checks) for final
+hosted status; this documentation follow-up does not change runtime or tests.
+
+**PR #34 is merged and stays closed.** Fresh independent review of exact head
+`7494b7fe230c9f6ab73366fa746afcc306935426` found no blockers or outstanding comments.
+All five [final jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36782099190)
+passed. The guarded merge is `17945db` at 23:46:20 UTC on 30 September; its tree
+exactly matches the reviewed head. All five
+[post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36792805339)
+passed. Preserve its 18-trial offline comparison and private evidence at
+`.secure-agent/web-comparison-20260930` in the primary checkout. Do not repeat
+that merge or reopen its accepted comparison scope.
 
 **PR #33 is merged and stays closed.** Fresh independent review of final head
 `aaa5c6a` found no blockers or outstanding comments. All five
@@ -47,8 +66,10 @@ matches the reviewed head. All five
 passed. Do not repeat its merge or reopen the adapter/Nmap slice. Existing
 TCP/HTTP contracts, fixture bytes and accepted evidence remain regression anchors.
 
-The current sequence is this separately reviewed scripted adversarial comparison,
-then a separately authorized bounded real-model pilot.
+After the authorized PR #35 merge, the recommended next step is the already
+planned bounded real-model pilot. First obtain approval of the actual endpoint,
+credential source, synthetic data and spending ceiling. Do not expand mocks or
+tools while that decision is pending.
 Roughly 40 tools remains a long-term architecture target. Optional tool expansion,
 GUI/API, external/VPN targets, credentials and spending remain deferred. Refresh
 the proposal with verified progress in early November and target submission
@@ -59,9 +80,9 @@ local, ignored and unchanged. No competition submission or release is authorized
 **Current milestone: R5 offline scope complete; R6 local offline candidate accepted.** The
 accepted provider/accounting, separated authority, owned planning and offline
 comparison work through PR #26 has no remaining necessary offline R5 blocker.
-Real-model integration, validation and acceptance remain deferred. Future live
-work needs reviewed data, model/endpoint, credential, egress and spending
-settings; it is not merely supplying an API key. No paid calls are authorized.
+The minimal model integration is prepared; real-model validation and acceptance
+remain pending. Live work needs reviewed data, model/endpoint, credential, egress
+and spending settings; it is not merely supplying an API key. No paid calls are authorized.
 
 **PR #27 is merged and stays closed.** Final head `bbd33fd` passed review with
 no blockers or outstanding comments and all five
@@ -264,8 +285,8 @@ PR #27 packages that evidence and the demo runbook as R6 preparation. Follow
 [the roadmap's completion order](roadmap.md#milestone-completion-order).
 
 Preserve the accepted R1–R4 and offline R5 contracts and their documented limits.
-No necessary offline R5 blocker remains. Real-model integration/validation and
-acceptance stay explicitly deferred; fixtures do not complete the full live
+No necessary offline R5 blocker remains. The newly authorized model integration
+is separate follow-on work; real-model validation and acceptance remain pending; fixtures do not complete the full live
 criterion. The operator has separately accepted the local R6 packet/runbook
 after the actual terminal rehearsal. This records a human decision, distinct
 from automated checks or per-action approvals. Publication remains pending;
@@ -279,8 +300,8 @@ fit without introducing a new parallel milestone or weakening the architecture.
 Live validation remains an explicit pending gate: all current development and
 verification must use owned/mock fixtures, no paid or external provider calls,
 and live execution disabled by default. This sequencing instruction does not
-authorize activation, external targets or real credentials. The current PR #33
-merge is complete; PR #34 is the next review handoff, not an authorized merge.
+authorize activation, external targets or real credentials. PR #34
+is merged; PR #35 may merge only after its latest review and checks pass.
 
 The earlier baseline before PR #24 was `a87e5dd`, the merge of
 [PR #23](https://github.com/0xsl0th/recon-cockpit/pull/23). The direct approval gate
@@ -934,31 +955,30 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #33 merge is complete. PRs #6–#30, #32 and #33
-  stay closed; proposal PR #31 remains separate. Leave PR #34 ready for review.
-  Its merge, submission, messages, paid calls and external targets need their
-  corresponding operator instruction.
+- The operator-authorized PR #34 merge is complete. PRs #6–#30 and #32–#34
+  stay closed; proposal PR #31 remains separate. Review/merge of PR #35 is now
+  authorized if its latest revision and checks pass. Later merges, submission,
+  messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Start from the current priority and checkpoint above. Review PR #34 and its
-   latest checks when instructed; its implementation and local verification are
-   complete. PRs #6–#30, #32 and #33 are merged. PR #31 remains separate;
-   historical branch names and earlier “next” notes are not current work.
+1. Verify PR #35's GitHub state and the local merge-review receipt first. Its
+   review/merge is authorized conditional on the latest passing checks. If it is
+   merged, keep it closed. PRs #6–#30 and #32–#34 are already merged; proposal
+   PR #31 remains separate. Historical “next” notes are not current work.
 2. Preserve the completed offline comparison, accepted local packet, successful
-   approval-required terminal rehearsal and actual operator observations/decision.
-   Do not reopen the accepted local review or modify the immutable packet.
-3. R5 real-model acceptance remains pending while paid/live calls are prohibited.
-   The reproducible packet and demo runbook are already merged and the local
-   offline candidate is accepted. The next necessary evaluation after PR #34 is
-   a separately authorized bounded real-model pilot with explicit data, endpoint,
-   model, credential, egress and spending settings. Keep the current proposal/PDF
-   unchanged; refresh it with verified progress in early November. Publication
-   and submission require operator instruction. No optional feature is needed
-   to complete the accepted offline scope.
-4. Keep kernel verification separate from hosted portable CI. Record measured
-   results and publication state; defer optional GUI/API, broader tools and new
-   lab scenarios; they are not prerequisites for the next evaluation.
+   approval-required terminal rehearsal and actual operator decision. Do not
+   reopen that review or modify the immutable accepted packet.
+3. The next execution gate is approval of the concrete three-session model pilot
+   in [web-model-pilot.md](web-model-pilot.md): actual endpoint/CA, credential source,
+   synthetic data, thresholds and $1 shared ceiling. No paid call or real key read
+   is authorized yet. Keep usefulness separate from containment; all-refusal fails.
+4. Record live results honestly if execution is later approved; retain the offline
+   demonstration as fallback. Keep the proposal/PDF unchanged until its planned
+   early-November update. Defer optional tools, GUI/API and broader lab scenarios.
+5. Keep local kernel verification separate from hosted portable CI. Do not rerun
+   full suites solely for documentation changes. Publication and submission need
+   their corresponding operator instructions.
 
 ## Recovery and verification
 

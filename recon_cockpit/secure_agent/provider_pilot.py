@@ -38,9 +38,9 @@ def _control(control):
         raise PilotError("pilot_invalid_control")
 
 
-def _send_packet(channel, data, supervisor, fd=None):
+def _send_packet(channel, data, supervisor, fd=None, *, limit=MAX_PACKET):
     ancillary = [] if fd is None else [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array("i", [fd]))]
-    if len(data) > MAX_PACKET:
+    if len(data) > limit:
         raise PilotError("pilot_invalid_config")
     channel.setblocking(False)
     while True:
@@ -106,14 +106,26 @@ class LinuxPilotTransport:
         self._credential_file, self._synthetic = credential_file, synthetic_credential
         self._used = False
         self._lock = threading.Lock()
+        self._boundary_checks = None
+        self._cleanup_verified = False
 
     @property
     def config(self):
         return self._config
 
     def exchange(self, *, control, authorize):
+        return self._exchange(control=control, authorize=authorize)
+
+    def _exchange(self, *, control, authorize, web_request=None):
         if not self.config.enabled:
             raise PilotError("pilot_disabled")
+        # A closed, opt-in profile; the accepted ACK launch stays unchanged.
+        if web_request is not None:
+            from .web_model_contract import WEB_MODEL_PROFILE, validate_request
+            try:
+                validate_request(web_request)
+            except (ValueError, TypeError):
+                raise PilotError("pilot_invalid_config") from None
         _control(control)
         with self._lock:
             if self._used:
@@ -133,20 +145,28 @@ class LinuxPilotTransport:
             launch = {"host_namespaces": _namespaces(), "deadline": control.deadline,
                       "ip": self.config.ip, "port": self.config.port, "mode": self.config.mode,
                       "ca_digest": hashlib.sha256(self._ca.encode("ascii")).hexdigest()}
+            if web_request is not None:
+                launch.update(profile=WEB_MODEL_PROFILE, request=web_request.decode("ascii"))
             argv = _command(stdlib, files, "provider_pilot_worker.py")
             directory = Path(__file__).parent
             mounts = ["--ro-bind", str(ca_path), "/run/provider/ca.pem",
                       "--ro-bind", str(directory / "provider_worker.py"), "/app/provider_worker.py"]
             for name in ("provider_pilot_contract.py", "cost_contract.py"):
                 mounts += ["--ro-bind", str(directory / name), "/app/recon_cockpit/secure_agent/" + name]
+            if web_request is not None:
+                mounts += ["--ro-bind", str(directory / "web_model_contract.py"),
+                           "/app/recon_cockpit/secure_agent/web_model_contract.py"]
             index = argv.index("--remount-ro")
             argv[index:index] = mounts
             argv.append(hashlib.sha256(encode(launch)).hexdigest())
-            supervisor = _Supervisor(control.remaining(), 16384, control=control)
+            if web_request is not None:
+                argv.append("web-model")
+            supervisor = _Supervisor(control.remaining(), 131072 if web_request is not None else 16384,
+                                     control=control)
             channel, child = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
             process = supervisor.launch("worker", argv, stdin=child)
             child.close()
-            _send_packet(channel, encode(launch), supervisor)
+            _send_packet(channel, encode(launch), supervisor, limit=65536 if web_request is not None else MAX_PACKET)
             supervisor.wait_for(lambda: b"\n" in supervisor.buffers["worker_out"] or
                                 process.poll() is not None and "worker_out" in supervisor.eof, worker_may_exit=True)
             if b"\n" not in supervisor.buffers["worker_out"]:
@@ -157,6 +177,7 @@ class LinuxPilotTransport:
                     or type(ready["checks"]) is not dict or set(ready["checks"]) != CHECKS
                     or any(v is not True for v in ready["checks"].values())):
                 raise PilotError("pilot_invalid_receipt")
+            self._boundary_checks = dict(ready["checks"])
             # This callback durably consumes the one-time ledger send claim.
             authorize()
             control.check()
@@ -193,6 +214,7 @@ class LinuxPilotTransport:
                 finally:
                     if temporary is not None:
                         temporary.cleanup()
+            self._cleanup_verified = True
 
 
 def _summary(receipt):

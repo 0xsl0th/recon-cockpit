@@ -53,6 +53,9 @@ def _profile(name):
 def _manifest_profile(manifest):
     if type(manifest) is not dict:
         raise ValueError("invalid_evidence_manifest")
+    if "planning_origin" in manifest and (manifest.get("workflow") != "owned-web-assessment-v1"
+            or manifest["planning_origin"] not in ("model_owned", "model_live")):
+        raise ValueError("invalid_evidence_planning_origin")
     if manifest.get("workflow") == contract.WORKFLOW:
         return _profile("nmap")
     if manifest.get("workflow") == "owned-web-assessment-v1":
@@ -176,6 +179,16 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
             "No model susceptibility, induced out-of-scope proposal, or paired adversarial comparison is demonstrated by this workflow.",
             "HTTP observations use bounded decoded responses; they do not establish complete HTTP framing integrity or authenticate server content.",
         ])
+    if "planning_origin" in manifest:
+        report["planning_origin"] = manifest["planning_origin"]
+        report["live_calls_enabled"] = manifest["planning_origin"] == "model_live"
+        report["planning"] = ("bounded model proposals; deterministic workflow evidence validation; "
+                              + ("live provider" if report["live_calls_enabled"] else "owned synthetic provider"))
+        report["limitations"][0] = "Only the owned synthetic HarborDesk workflow is evaluated; no professional engagement readiness is claimed."
+        report["limitations"][5:7] = [
+            "The injected note remains untrusted data. Model decisions and call accounting are recorded in the enclosing pilot report.",
+            "This evidence replay validates tool results and workflow eligibility, not model quality, cost or latency by itself.",
+        ]
     return report
 
 
@@ -183,7 +196,9 @@ def _markdown(report):
     title = ("# Owned HarborDesk web assessment" if report["workflow"] == "owned-web-assessment-v1"
              else "# Owned Nmap and HTTP assessment")
     lines = [title, "", "Outcome: **" + report["outcome"] + "**", "",
-             "Reason: `" + report["reason"] + "`", "", "Planning: deterministic and offline.", "",
+             "Reason: `" + report["reason"] + "`", "",
+             ("Planning: " + report["planning"] + "." if "planning_origin" in report
+              else "Planning: deterministic and offline."), "",
              "## Evidence", ""]
     for item in report["finding"]["evidence"]:
         lines.append("- Execution `" + item["execution_id"] + "`: [private result](" + item["artifact"]["filename"] + ")")
@@ -197,7 +212,7 @@ class NmapEvidenceStore(EvidenceStore):
     """Reuse private file lifecycle only; all semantic contracts are versioned."""
 
     def __init__(self, directory, *, session_id, policy, case, owned_lab, runtime_sha256=None, deadline=None,
-                 workflow_profile="nmap"):
+                 workflow_profile="nmap", planning_origin=None):
         self.directory = Path(directory)
         self._fd = self._journal = None
         self._failed = self._finalized = False
@@ -207,6 +222,9 @@ class NmapEvidenceStore(EvidenceStore):
         self._deadline = deadline
         try:
             contract, workflow = _profile(workflow_profile)
+            if planning_origin is not None and (workflow_profile != "web"
+                    or planning_origin not in ("model_owned", "model_live")):
+                raise ValueError("invalid_evidence_planning_origin")
             self._contract, self._workflow_contract = contract, workflow
             if not _uuid(session_id) or (runtime_sha256 is not None and not _digest(runtime_sha256)):
                 raise ValueError("invalid_nmap_evidence_configuration")
@@ -219,6 +237,8 @@ class NmapEvidenceStore(EvidenceStore):
                 "workflow_card": workflow.card_identity(), "owned_lab": self._owned_lab,
                 "runtime_sha256": runtime_sha256,
             }
+            if planning_origin is not None:
+                self._manifest["planning_origin"] = planning_origin
             self.directory.mkdir(mode=0o700, parents=True, exist_ok=False)
             self._fd = os.open(self.directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
             self._write_new("manifest.json", contract.encode(self._manifest), MAX_REPORT_BYTES)
@@ -362,7 +382,7 @@ def inspect_evidence(directory):
                     raise ValueError("nmap_evidence_file_limit")
         manifest = load_json(_read_private(fd, "manifest.json", 8192))
         contract, workflow = _manifest_profile(manifest)
-        if (set(manifest) != {"schema_version", "assessment_id", "session_id", "workflow", "fixture_case",
+        if (set(manifest) - {"planning_origin"} != {"schema_version", "assessment_id", "session_id", "workflow", "fixture_case",
                              "policy_digest", "created_at", "artifact_representation", "workflow_card",
                              "owned_lab", "runtime_sha256"}
                 or manifest["schema_version"] != "1" or manifest["workflow"] != contract.WORKFLOW

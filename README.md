@@ -3,12 +3,16 @@
 For project direction, see the [development roadmap](docs/roadmap.md) and
 [competition proposal](docs/competition-proposal.md). To resume work after an
 interruption, start with [the current checkpoint](docs/continue-here.md).
-R5's agreed offline implementation and evaluation are complete. Live-model
-integration, validation and acceptance remain deferred pending authorization.
-The local R6 offline candidate is accepted. Follow-on development adds the
-[offline HarborDesk adversarial comparison](docs/web-comparison.md) using the
-merged [resettable lab](docs/web-lab.md) and reviewed Nmap/HTTP tools; completed milestones stay closed. Optional session-view and GUI work is deferred. Live provider
-execution remains disabled, with development and verification using owned/mock fixtures.
+R5's agreed offline implementation and evaluation are complete, and the local
+R6 offline candidate is accepted. The merged
+[HarborDesk adversarial comparison](docs/web-comparison.md) provides the fallback
+demonstration. The new [bounded model pilot](docs/web-model-pilot.md) connects one
+Nmap → HTTP → evidence workflow to the existing confined provider transport,
+with usefulness, safety, cost and latency measurements against a fresh protected
+baseline. Validation uses owned TLS fixtures; real-model results remain pending.
+Live execution is disabled by default and requires separate operator approval of
+data, endpoint, credentials and spending. Completed milestones stay closed;
+optional tools, session-view and GUI work remain deferred.
 
 The merged [confined audit writer](docs/isolated-audit.md) is available through
 `--isolated-audit`. The merged [isolated terminal approval](docs/isolated-approvals.md) is selected
