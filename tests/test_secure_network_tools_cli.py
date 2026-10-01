@@ -9,15 +9,17 @@ GATES = ['--owned-lab','--isolated-audit','--isolated-approvals','--isolated-lau
          '--isolated-launcher','--require-launch-audit','--require-launch-approval']
 
 
-def arguments(tmp_path):
-    return ['--network-tool-assessment','dig-ok','--assessment-dir',str(tmp_path/'evidence'),
-            '--audit',str(tmp_path/'audit.jsonl'),'--policy','examples/secure-agent-network-tools-policy.json']
+def arguments(tmp_path, case="dig-ok"):
+    policy = "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    return ['--network-tool-assessment',case,'--assessment-dir',str(tmp_path/'evidence'),
+            '--audit',str(tmp_path/'audit.jsonl'),'--policy','examples/secure-agent-' + policy + '-policy.json']
 
 
+@pytest.mark.parametrize('case', ['dig-ok', 'ssh-ok', 'ldap-ok'])
 @pytest.mark.parametrize('missing',GATES)
-def test_each_launch_gate_required_before_side_effects(tmp_path,missing):
+def test_each_launch_gate_required_before_side_effects(tmp_path,missing,case):
     with pytest.raises(SystemExit) as error:
-        cli.main([*arguments(tmp_path),*(gate for gate in GATES if gate!=missing)])
+        cli.main([*arguments(tmp_path, case),*(gate for gate in GATES if gate!=missing)])
     assert error.value.code==2
     assert not list(tmp_path.iterdir())
 
@@ -48,3 +50,11 @@ def test_existing_provider_profiles_cannot_be_selected(tmp_path,flag):
         cli.main([*arguments(tmp_path),*GATES,flag,scenario])
     assert error.value.code==2
     assert not list(tmp_path.iterdir())
+
+
+def test_owned_ssh_ldap_policy_keeps_fresh_approval_and_separate_scope():
+    value=json.loads(Path('examples/secure-agent-ssh-ldap-policy.json').read_text())
+    assert value['require_approval'] is True
+    assert value['allowed_targets']==['127.0.0.1/32']
+    assert value['allowed_ports']==[8080]
+    assert value['allowed_tools']==['ssh_host_keys_v1','ldap_rootdse_v1']

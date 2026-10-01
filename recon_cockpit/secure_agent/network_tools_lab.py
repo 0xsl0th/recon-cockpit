@@ -24,7 +24,8 @@ class NetworkToolsLab(OwnedLab):
         argv = super()._owner_command(stdlib, files, info_fd)
         directory = Path(__file__).resolve().parent
         mounts = []
-        for name in ("network_tools_lab_worker.py", "network_tools_fixture.py", "web_tools_tls_fixture.py"):
+        for name in ("network_tools_lab_worker.py", "network_tools_fixture.py", "web_tools_tls_fixture.py",
+                     "network_tools_ssh_fixture.py"):
             mounts += ["--ro-bind", str(directory / name), "/app/" + name]
         argv[argv.index("--remount-ro"):argv.index("--remount-ro")] = mounts
         argv[-1] = "/app/network_tools_lab_worker.py"

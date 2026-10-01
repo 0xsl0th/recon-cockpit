@@ -1,19 +1,27 @@
-"""Bounded DNS and verified TLS transcript facts for fixed owned profiles."""
+"""Bounded DNS, TLS, SSH and LDAP facts for fixed owned tool profiles."""
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import ipaddress
 import re
 
 
 DIG_TOOL_ID = "dig_dns_query_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
-PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1"}
+SSH_TOOL_ID = "ssh_host_keys_v1"
+LDAP_TOOL_ID = "ldap_rootdse_v1"
+PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
+    SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
 TLS_PROTOCOLS = frozenset({"TLSv1.3"})
 TLS_CIPHERS = frozenset({"TLS_AES_256_GCM_SHA384"})
+LDAP_VALUES = {"naming_contexts": ("dc=harbordesk,dc=test",), "supported_ldap_versions": ("3",),
+    "supported_sasl_mechanisms": ("PLAIN",)}
+LDAP_VENDOR = "HarborDesk synthetic directory"
 # The pinned BIND build probes a denied socket family during startup. This
 # exact nonfatal diagnostic is retained in raw evidence, never released as data.
 DIG_DENIED_PROBE = b"net.c:136:try_proto(): socket(): Operation not permitted (1)\n"
@@ -33,11 +41,73 @@ def _integer(value, maximum):
     return type(value) is int and 0 <= value <= maximum
 
 
+def _base64(value, maximum):
+    if type(value) is not str or not value or len(value) > maximum:
+        raise ValueError("invalid_network_tool_base64")
+    try:
+        raw = base64.b64decode(value, validate=True)
+        if base64.b64encode(raw).decode("ascii") != value:
+            raise ValueError("invalid_network_tool_base64")
+        return raw
+    except (ValueError, UnicodeError):
+        raise ValueError("invalid_network_tool_base64") from None
+
+
+def _ssh_key_facts(encoded):
+    """Validate the fixed RSA serialization; no host-authenticity assertion."""
+    raw = _base64(encoded, 1024)
+    values, offset = [], 0
+    for _ in range(3):
+        if len(raw) - offset < 4:
+            raise ValueError("invalid_ssh_key_blob")
+        size = int.from_bytes(raw[offset:offset + 4], "big")
+        offset += 4
+        if not 1 <= size <= 257 or offset + size > len(raw):
+            raise ValueError("invalid_ssh_key_blob")
+        values.append(raw[offset:offset + size])
+        offset += size
+    if offset != len(raw) or values[0] != b"ssh-rsa":
+        raise ValueError("invalid_ssh_key_blob")
+    integers = []
+    for value in values[1:]:
+        # RFC4251 positive mpints have one sign byte only when needed.
+        if value[0] & 128 or (value[0] == 0 and (len(value) == 1 or not value[1] & 128)):
+            raise ValueError("invalid_ssh_key_integer")
+        integers.append(int.from_bytes(value, "big"))
+    exponent, modulus = integers
+    if exponent != 65537 or modulus.bit_length() != 2048 or modulus % 2 != 1:
+        raise ValueError("unsupported_ssh_rsa_profile")
+    return {"key_bits": modulus.bit_length(),
+        "fingerprint_sha256": "SHA256:" + base64.b64encode(hashlib.sha256(raw).digest()).decode("ascii").rstrip("=")}
+
+
 def validate_result(tool_id, value):
     """The complete closed schema released by the networkless parser."""
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id == SSH_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "key_type", "key_base64", "key_bits", "fingerprint_sha256", "trust"}
+                or value["kind"] != "ssh_host_keys" or value["key_type"] != "ssh-rsa"
+                or value["trust"] != "unverified" or type(value["key_bits"]) is not int):
+            raise ValueError("invalid_network_tool_observation")
+        facts = _ssh_key_facts(value["key_base64"])
+        if any(value[key] != item for key, item in facts.items()):
+            raise ValueError("invalid_ssh_key_facts")
+        return dict(value)
+    if tool_id == LDAP_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "rootdse_present", "naming_contexts",
+                "supported_ldap_versions", "supported_sasl_mechanisms", "vendor_name"}
+                or value["kind"] != "ldap_rootdse" or value["rootdse_present"] is not True
+                or value["vendor_name"] not in (None, LDAP_VENDOR)):
+            raise ValueError("invalid_network_tool_observation")
+        for field, allowed in LDAP_VALUES.items():
+            rows = value[field]
+            if (type(rows) is not list or len(rows) > len(allowed)
+                    or any(type(item) is not str or item not in allowed for item in rows)
+                    or rows != sorted(set(rows))):
+                raise ValueError("invalid_ldap_attribute")
+        return {**value, **{field: list(value[field]) for field in LDAP_VALUES}}
     if tool_id == OPENSSL_TOOL_ID:
         if (set(value) != {"parser_version", "kind", "protocol", "cipher", "verification", "peer_name"}
                 or value["kind"] != "tls_handshake" or type(value["protocol"]) is not str
@@ -150,9 +220,69 @@ def _parse_tls(output, stderr):
         "verification": "verified", "peer_name": TLS_NAME})
 
 
+def _parse_ssh(output, stderr):
+    banner = re.compile(r"# 127\.0\.0\.1:8080 SSH-2\.0-[\x20-\x7e]{1,200}")
+    if stderr:
+        diagnostic = _lines(stderr)
+        if (len(diagnostic) != 1 or len(stderr.splitlines()) != 1
+                or banner.fullmatch(diagnostic[0]) is None):
+            raise ValueError("unexpected_ssh_diagnostics")
+    lines = _lines(output)
+    if len(lines) != len(output.splitlines()):
+        raise ValueError("invalid_ssh_keyscan_output")
+    if len(lines) == 2 and banner.fullmatch(lines[0]) is not None:
+        if stderr:
+            raise ValueError("duplicate_ssh_banner")
+        lines = lines[1:]
+    if len(lines) != 1:
+        raise ValueError("invalid_ssh_key_count")
+    match = re.fullmatch(r"\[127\.0\.0\.1\]:8080 ssh-rsa ([A-Za-z0-9+/=]{1,1024})", lines[0])
+    if match is None:
+        raise ValueError("invalid_ssh_keyscan_output")
+    encoded = match.group(1)
+    return validate_result(SSH_TOOL_ID, {"parser_version": parser_version(SSH_TOOL_ID),
+        "kind": "ssh_host_keys", "key_type": "ssh-rsa", "key_base64": encoded,
+        **_ssh_key_facts(encoded), "trust": "unverified"})
+
+
+def _parse_ldap(output, stderr):
+    if (stderr or not output.endswith(b"\n\n")
+            or b"" in output.split(b"\n")[:-2]):
+        raise ValueError("invalid_ldap_ldif")
+    lines = _lines(output)
+    if not lines or lines[0] not in ("dn:", "dn: "):
+        raise ValueError("invalid_ldap_rootdse")
+    attributes = {"namingContexts": "naming_contexts", "supportedLDAPVersion": "supported_ldap_versions",
+        "supportedSASLMechanisms": "supported_sasl_mechanisms", "vendorName": "vendor_name"}
+    result = {"parser_version": parser_version(LDAP_TOOL_ID), "kind": "ldap_rootdse", "rootdse_present": True,
+        "naming_contexts": [], "supported_ldap_versions": [], "supported_sasl_mechanisms": [], "vendor_name": None}
+    seen = set()
+    for line in lines[1:]:
+        match = re.fullmatch(r"([A-Za-z]+)(: |:: )([^\r\n]{1,1400})", line)
+        if match is None or match.group(1) not in set(attributes) | {"description"}:
+            raise ValueError("unsupported_ldap_attribute")
+        name, separator, text = match.groups()
+        if name in seen:
+            raise ValueError("duplicate_ldap_attribute")
+        seen.add(name)
+        if separator == ":: ":
+            try:
+                text = _base64(text, 1400).decode("ascii")
+            except UnicodeError:
+                raise ValueError("unsupported_ldap_attribute_value") from None
+        if not 1 <= len(text) <= 1024 or any(not 32 <= ord(char) <= 126 for char in text):
+            raise ValueError("unsupported_ldap_attribute_value")
+        if name == "description":
+            continue  # Retain only in hashed raw evidence, never as instructions.
+        field = attributes[name]
+        result[field] = text if field == "vendor_name" else [text]
+    return validate_result(LDAP_TOOL_ID, result)
+
+
 def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=False):
     parser_version(tool_id)
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
             or len(output) + len(stderr) > MAX_OUTPUT_BYTES or type(truncated) is not bool or truncated):
         raise ValueError("invalid_network_tool_output_size")
-    return _parse_dns(output, stderr) if tool_id == DIG_TOOL_ID else _parse_tls(output, stderr)
+    return {DIG_TOOL_ID: _parse_dns, OPENSSL_TOOL_ID: _parse_tls,
+            SSH_TOOL_ID: _parse_ssh, LDAP_TOOL_ID: _parse_ldap}[tool_id](output, stderr)

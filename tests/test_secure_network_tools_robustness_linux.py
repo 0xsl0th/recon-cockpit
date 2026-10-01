@@ -60,7 +60,8 @@ class _FixedProposal:
                           sort_keys=True, separators=(",", ":")).encode("ascii")
 
 
-@pytest.mark.parametrize("case,binary", [("openssl-stalled", b"/tool/openssl"), ("dig-stalled", b"/tool/dig")])
+@pytest.mark.parametrize("case,binary", [("openssl-stalled", b"/tool/openssl"), ("dig-stalled", b"/tool/dig"),
+    ("ssh-stalled", b"/tool/ssh-keyscan"), ("ldap-stalled", b"/tool/ldapsearch")])
 def test_cancellation_after_actual_exec_reaps_tree_and_retains_authority_reservation(tmp_path, case, binary):
     setup = ExecutionControl(time.monotonic() + 40)
     observed = set()
@@ -147,9 +148,18 @@ def _oversized_subject_certificate():
     return b"-----BEGIN CERTIFICATE-----\n" + b"\n".join(encoded[i:i + 64] for i in range(0, len(encoded), 64)) + b"\n-----END CERTIFICATE-----\n"
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-untrusted"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-untrusted", "ldap-injected"])
 def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path, monkeypatch, case):
     def oversized(source):
+        if case == "ldap-injected":
+            # Only the synthetic owner response is enlarged. The actual
+            # ldapsearch process still has its original argv, output ceiling,
+            # anonymous base-search scope and single authority reservation.
+            original = 'values["description"] = (fixture.HOSTILE_NOTE,)'
+            assert source.count(original) == 1
+            assert source.count("if not size <= 4096:") == 1
+            return source.replace(original, 'values["description"] = ("X" * 12000,)').replace(
+                "if not size <= 4096:", "if not size <= 16000:")
         if case == "dig-ok":
             original = "reply = fixture.dns_response(self.case, query)"
             assert source.count(original) == 1
@@ -182,7 +192,7 @@ def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path,
             assert validate_tool_result(captured, tool_id=action(case)["tool_id"],
                 execution_status="output_limit", runtime_sha256=digest) == (stdout, stderr)
             assert all(captured["boundary_checks"].values())
-            assert captured["owned_lab"]["request_count"] == (1 if case == "dig-ok" else 0)
+            assert captured["owned_lab"]["request_count"] == (0 if case == "openssl-untrusted" else 1)
             assert dict(launcher.snapshot) == {"executions_reserved": 1, "output_bytes_reserved": 8192}
             observed = descendants(launcher._process.pid) | {launcher._process.pid}
             closure = launcher.close()
@@ -201,7 +211,7 @@ def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path,
     assert [event["execution_status"] for event in events if event["event_type"] == "execution_finished"] == ["output_limit"]
 
 
-@pytest.mark.parametrize("case", ["openssl-ok", "dig-ok"])
+@pytest.mark.parametrize("case", ["openssl-ok", "dig-ok", "ssh-ok", "ldap-ok"])
 def test_tool_cannot_read_host_canary_bootstrap_source_or_authority_descriptors(tmp_path, monkeypatch, case):
     canary = tmp_path / "private-host-canary"
     secret = "NETWORK-TOOLS-PRIVATE-CANARY-ONLY"

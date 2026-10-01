@@ -14,8 +14,8 @@ The operator has deferred credential setup and the live pilot until much later;
 live integration stays disabled. The [HTTP response-header assessment](docs/http-headers-assessment.md)
 is merged. The current milestone is [broader secure-tool coverage](docs/secure-tool-coverage.md),
 with a repository inventory, prioritized checklist and explicit completion gates.
-Nmap, curl and ffuf have bounded secure profiles; the next batch adds independent
-DNS/TLS inspection. After each batch, prioritize the next tool gap. Deeper workflow
+Nmap, curl, ffuf, dig and OpenSSL have accepted bounded secure profiles. The current
+batch adds [SSH host keys and anonymous LDAP RootDSE](docs/ssh-ldap-tools.md). After each batch, prioritize the next tool gap. Deeper workflow
 composition and comparative benchmarking wait until the coverage milestone is
 complete. Per-tool useful execution, evidence and enforcement checks continue now.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

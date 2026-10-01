@@ -13,7 +13,7 @@ from types import MappingProxyType
 
 from .tool_parameters import (
     CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
-    OpenSSLTLSParameters,
+    OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -49,8 +49,12 @@ FFUF_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 10, "max_ou
 WEB_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 DIG_TOOL_ID = "dig_dns_query_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
+SSH_TOOL_ID = "ssh_host_keys_v1"
+LDAP_TOOL_ID = "ldap_rootdse_v1"
 DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+LDAP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
@@ -161,6 +165,22 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
          "fixed_tls_name", "no_application_request"),
+    ),
+    SSH_TOOL_ID: ToolAdapter(
+        SSH_TOOL_ID, SSHHostKeysParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_fixture_ssh_host_key", "owned-ssh-host-keys-v1",
+        "bounded-ssh-host-key-result-v1", "ssh-keyscan-rsa-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_rsa_key_type",
+         "no_authentication", "no_host_trust_claim"),
+    ),
+    LDAP_TOOL_ID: ToolAdapter(
+        LDAP_TOOL_ID, LDAPRootDSEParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "read_owned_fixture_ldap_rootdse", "owned-ldap-rootdse-v1",
+        "bounded-ldap-rootdse-result-v1", "ldap-rootdse-ldif-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "anonymous_rootdse_only",
+         "fixed_attribute_list", "no_referral_following"),
     ),
 })
 SUPPORTED_TOOLS = tuple(ADAPTERS)

@@ -54,7 +54,8 @@ def test_existing_wire_digests_and_default_request_bytes_stay_unchanged():
 def test_registry_is_explicit_immutable_and_returns_detached_metadata():
     assert tuple(ADAPTERS) == ("http_probe", "tcp_connect", NMAP_TOOL_ID, "http_headers_v1",
                               "curl_https_get_v1", "ffuf_content_discovery_v1",
-                              "dig_dns_query_v1", "openssl_tls_handshake_v1")
+                               "dig_dns_query_v1", "openssl_tls_handshake_v1",
+                               "ssh_host_keys_v1", "ldap_rootdse_v1")
     with pytest.raises(TypeError):
         ADAPTERS["arbitrary"] = get_adapter(NMAP_TOOL_ID)
     adapter = get_adapter(NMAP_TOOL_ID)

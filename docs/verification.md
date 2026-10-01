@@ -1,5 +1,71 @@
 # Verification record
 
+## Secure coverage B2: SSH host keys and LDAP RootDSE — 1 October 2026
+
+PR #38 was reviewed and merged at `5436dd6`; all five final PR and post-merge main
+checks passed. The reviewed and merged trees match. B1 DNS/TLS is accepted and
+stays closed. B2 reuses that secure execution family for actual `ssh-keyscan` and
+`ldapsearch` processes; [the runbook](ssh-ldap-tools.md) records exact bounds and
+limitations. The broader coverage milestone stays open; B3 anonymous SMB share
+metadata is next because it adds a missing protocol family with an existing
+interactive `smbclient` integration.
+
+Implementation `77395fe` is on `feature/secure-ssh-ldap-tools`, based on `5436dd6`;
+review handoff: [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39). Both new
+profiles keep one action, fixed owned TCP scope, a five-second tool deadline,
+60-second session ceiling and 8,192 combined output bytes. SSH collects a single
+2048-bit RSA key and computes a fingerprint without claiming trust or login.
+LDAP validates an anonymous base-scope RootDSE search, with a distinct dn-only
+empty-entry outcome and no referral following. The synthetic SSH service performs
+a genuine bounded key exchange, using deliberately public fixture key material;
+it implements no encrypted session, authentication or channels. Its signature
+has an independently authored cryptographic test vector, without adding a runtime
+dependency or reading a real key. No owner/process boundary was weakened.
+
+The initial two-tool smoke run completed both real processes, but SSH was correctly
+reported inconclusive because its stdout banner comment was not supported by the
+initial parser. The corrected parser accepts one bounded comment before the key
+on stdout or alone on stderr, rejects duplicates and discards banner content
+from normalized observations. LDAP framing now rejects attributes outside a single
+entry. The original failed smoke receipt is retained; subsequent real cases pass.
+
+Validation receipts are private under
+`.secure-agent/ssh-ldap-tools-20261001/validation` in the primary checkout.
+All 19 network protocol cases pass (10 new B2, 9 B1), including useful normal work,
+empty RootDSE, hostile text, malformed output, referrals, stalls, structured
+reports and independent read-only replay. All 23 network enforcement cases pass
+(9 new B2, 14 B1), including fresh approval consumption/replay denial, missing-proof
+refusal, observed actual-exec cancellation and cleanup, private input/descriptor
+isolation and output pressure. LDAP output pressure uses the real `ldapsearch`
+with an enlarged synthetic response and preserves a truthful bounded receipt;
+SSH oversized protocol input is refused, without claiming an 8,192-byte SSH
+capture event. These results are selected Linux checks, not a full Linux suite.
+
+Independent runtime, fixture/parser, contract and evidence reviews found no
+remaining blockers. Accepted B1 action/card/descriptor/fixture identities and
+its shipped policy remain unchanged; B2 has a separate card and example policy.
+The full portable suite passed **5,711 tests** in 306.560 seconds; 85 additional
+affected Linux launcher/admission and existing HTTP/curl/ffuf checks passed in
+157.158 seconds. Together with the 19 protocol and 23 enforcement cases, this is
+**127 selected Linux tests** (19 new B2, 108 existing), with no failures/errors/skips
+in these final runs. Receipts: `portable.xml`, `legacy-linux.xml`,
+`workflow-linux.xml` and `enforcement-linux.xml`. Python 3.11 syntax, compile,
+dependency consistency, changed documentation links and whitespace checks passed.
+Two clean-source trials from `77395fe` retained private raw evidence under
+`.secure-agent/ssh-ldap-tools-20261001/runs`. SSH returned `host_key_observed` in
+2.557 seconds; LDAP returned `rootdse_observed` in 2.580 seconds. Both completed
+one useful action and one protocol event, closed their labs and replayed identically
+without changing file bytes or mtimes. Legitimate completion was 2/2, unnecessary
+refusals 0/2, and provider calls/cost zero. These descriptive CLI timings do not
+measure comparative overhead. The same clean source also replayed the two accepted
+B1 bundles byte-for-byte with no writes or integrity issues. Independent source
+comparison preserved all nine B1 fixture specs/actions and the original card and
+capability descriptor. `verification.json` records exact source and receipts.
+Hosted checks must pass on the final PR revision before a later authorized merge. No human acceptance is claimed by automated grants. Model credentials,
+paid calls and live-model evaluation stay deferred; deeper composition and
+comparative benchmarking wait for all required coverage rows. R5/local R6 and
+the separate proposal/PDF remain unchanged.
+
 ## Secure coverage B1: DNS and TLS — 1 October 2026
 
 The operator made broader secure-tool coverage the active milestone and deferred

@@ -12,6 +12,7 @@ import time
 
 if __package__:
     from . import owned_lab_worker as owner, network_tools_fixture as fixture, web_tools_tls_fixture as tls_material
+    from . import network_tools_ssh_fixture as ssh_fixture
 else:
     def _load(name, filename):
         spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -21,6 +22,7 @@ else:
     owner = _load("network_tools_fixed_owner", "owned_lab_worker.py")
     fixture = _load("network_tools_fixed_fixture", "network_tools_fixture.py")
     tls_material = _load("network_tools_fixed_tls", "web_tools_tls_fixture.py")
+    ssh_fixture = _load("network_tools_fixed_ssh", "network_tools_ssh_fixture.py")
 
 
 def read_request(source):
@@ -77,11 +79,123 @@ def read_dns_query(connection):
     return fixture.validate_dns_query(_read_exact(connection, size))
 
 
+def _ber(tag, body):
+    size = len(body)
+    if not size <= 4096:
+        raise ValueError("ldap_fixture_size_limit")
+    length = bytes([size]) if size < 128 else b"\x82" + struct.pack("!H", size)
+    return bytes([tag]) + length + body
+
+
+def _ldap_tlv(raw, offset=0):
+    if offset + 2 > len(raw):
+        raise ValueError("ldap_fixture_incomplete")
+    tag, size = raw[offset:offset + 2]
+    offset += 2
+    if size & 0x80:
+        count = size & 0x7f
+        if not 1 <= count <= 2 or offset + count > len(raw):
+            raise ValueError("ldap_fixture_length")
+        size = int.from_bytes(raw[offset:offset + count], "big")
+        offset += count
+    if size > 4096 or offset + size > len(raw):
+        raise ValueError("ldap_fixture_size_limit")
+    return tag, raw[offset:offset + size], offset + size
+
+
+def _ldap_message(connection):
+    header = _read_exact(connection, 2)
+    if header[0] != 0x30:
+        raise ValueError("ldap_fixture_sequence")
+    size = header[1]
+    if size & 0x80:
+        count = size & 0x7f
+        if not 1 <= count <= 2:
+            raise ValueError("ldap_fixture_length")
+        size = int.from_bytes(_read_exact(connection, count), "big")
+    if not 1 <= size <= 4096:
+        raise ValueError("ldap_fixture_size_limit")
+    raw = _read_exact(connection, size)
+    tag, message_id, offset = _ldap_tlv(raw)
+    if (tag != 2 or not 1 <= len(message_id) <= 4 or message_id[0] & 0x80
+            or not 1 <= int.from_bytes(message_id, "big") <= 0x7fffffff):
+        raise ValueError("ldap_fixture_message_id")
+    operation, body, end = _ldap_tlv(raw, offset)
+    if end != len(raw):
+        raise ValueError("ldap_fixture_controls_forbidden")
+    return message_id, operation, body
+
+
+def _ldap_reply(message_id, operation, body):
+    return _ber(0x30, _ber(2, message_id) + _ber(operation, body))
+
+
+def _ldap_search_valid(body):
+    expected = ((4, b""), (10, b"\x00"), (10, b"\x00"), (2, b"\x01"), (2, b"\x02"),
+                (1, b"\x00"), (0x87, b"objectClass"))
+    offset = 0
+    for wanted_tag, wanted_body in expected:
+        tag, value, offset = _ldap_tlv(body, offset)
+        if (tag, value) != (wanted_tag, wanted_body):
+            raise ValueError("ldap_fixture_search_scope")
+    tag, attributes, offset = _ldap_tlv(body, offset)
+    if tag != 0x30 or offset != len(body):
+        raise ValueError("ldap_fixture_attributes")
+    offset, names = 0, []
+    while offset < len(attributes):
+        tag, name, offset = _ldap_tlv(attributes, offset)
+        if tag != 4:
+            raise ValueError("ldap_fixture_attribute")
+        names.append(name)
+    if tuple(names) != tuple(name.encode("ascii") for name in fixture.LDAP_ATTRIBUTES):
+        raise ValueError("ldap_fixture_attributes")
+
+
+def _ldap_entry(case):
+    values = {} if case == "ldap-empty" else dict(fixture.LDAP_VALUES)
+    if case == "ldap-injected":
+        values["description"] = (fixture.HOSTILE_NOTE,)
+    attributes = b"".join(_ber(0x30, _ber(4, name.encode("ascii")) + _ber(0x31,
+        b"".join(_ber(4, value.encode("ascii")) for value in entries))) for name, entries in values.items())
+    return _ber(4, b"") + _ber(0x30, attributes)
+
+
 class NetworkToolsService(owner.Service):
     def __init__(self, request, listener):
         self.deadline = request["deadline"]
         self.context = tls_context(request["case"]) if request["case"].startswith("openssl-") else None
         super().__init__(request["case"], listener)
+
+    def _ldap(self, connection):
+        message_id, operation, body = _ldap_message(connection)
+        if operation != 0x60 or body != b"\x02\x01\x03\x04\x00\x80\x00":
+            raise ValueError("ldap_fixture_anonymous_bind_only")
+        success = b"\x0a\x01\x00\x04\x00\x04\x00"
+        connection.sendall(_ldap_reply(message_id, 0x61, success))
+        search_id, operation, body = _ldap_message(connection)
+        if operation != 0x63 or search_id == message_id:
+            raise ValueError("ldap_fixture_single_search")
+        _ldap_search_valid(body)
+        with self.condition:
+            self.requests += 1
+            self.condition.notify_all()
+        if self.case == "ldap-stalled":
+            time.sleep(owner.worker._remaining(self.deadline, 60))
+            return
+        if self.case == "ldap-malformed":
+            connection.sendall(b"\x30\x80\x02\x01\x02")  # Indefinite/incomplete BER is unsupported.
+            return
+        if self.case == "ldap-referral":
+            result = b"\x0a\x01\x0a\x04\x00\x04\x00" + _ber(0xa3, _ber(4, fixture.LDAP_REFERRAL.encode("ascii")))
+            connection.sendall(_ldap_reply(search_id, 0x65, result))
+        else:
+            connection.sendall(_ldap_reply(search_id, 0x64, _ldap_entry(self.case))
+                               + _ldap_reply(search_id, 0x65, success))
+        # One optional unbind closes the connection. No second query, SASL,
+        # StartTLS, authentication or controls are accepted.
+        unbind_id, operation, body = _ldap_message(connection)
+        if operation != 0x42 or body or unbind_id in (message_id, search_id):
+            raise ValueError("ldap_fixture_unbind_only")
 
     def _serve(self):
         try:
@@ -93,7 +207,21 @@ class NetworkToolsService(owner.Service):
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.context is None:
+                    if self.case.startswith("ssh-"):
+                        if self.case == "ssh-stalled":
+                            time.sleep(owner.worker._remaining(self.deadline, 60))
+                        elif self.case == "ssh-malformed":
+                            connection.sendall(b"SSH-2.0-HarborDesk_owned_fixture\r\n\xff\xff\xff\xff")
+                        else:
+                            banner = fixture.SSH_BANNER + (b" " + fixture.HOSTILE_NOTE.encode("ascii")
+                                if self.case == "ssh-injected" else b"")
+                            ssh_fixture.serve(connection, banner=banner, deadline=self.deadline)
+                            with self.condition:
+                                self.requests += 1
+                                self.condition.notify_all()
+                    elif self.case.startswith("ldap-"):
+                        self._ldap(connection)
+                    elif self.context is None:
                         query = read_dns_query(connection)
                         with self.condition:
                             self.requests += 1

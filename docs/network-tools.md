@@ -1,7 +1,7 @@
 # Owned DNS and TLS tools
 
 This is B1 of the [secure-tool coverage milestone](secure-tool-coverage.md).
-Review handoff: [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38).
+Accepted in [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38), merge `5436dd6`.
 It adds two independent executable capabilities, not a cross-tool workflow.
 Both use the existing authority, fresh approval, durable audit, launch admission
 and confined launcher. They run only in a fresh disconnected owned namespace.
@@ -88,6 +88,6 @@ Latency is descriptive per-tool timing; comparative benchmarking is deferred.
 
 These profiles do not establish recursive/UDP DNS support, broad TLS assessment,
 certificate inventories or professional engagement readiness. After this batch,
-prioritize B2's missing SSH/LDAP tool coverage, subject to its own prerequisite
-review. Keep the broader milestone open. Deeper workflows, comparative benchmarks,
+continue [B2 SSH/LDAP tool coverage](ssh-ldap-tools.md). B2 uses separate action
+contracts and retains B1 evidence compatibility. Keep the broader milestone open. Deeper workflows, comparative benchmarks,
 model credentials, paid calls and live-model evaluation remain deferred.

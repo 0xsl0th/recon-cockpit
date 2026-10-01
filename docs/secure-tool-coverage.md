@@ -6,8 +6,12 @@ benchmarks. This milestone stays open across successive implementation batches.
 Finishing one batch selects the next coverage gap, not a workflow project.
 Completed offline R5 and accepted local R6 remain closed.
 
-Current implementation handoff: [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38),
-B1 DNS/TLS, verified locally and awaiting review/merge. B2 SSH/LDAP is next.
+[PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38) merged as `5436dd6`: B1
+DNS/TLS is accepted. [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39) contains
+the locally verified B2 SSH/LDAP batch, followed by
+B3 anonymous SMB share metadata. Main has 8 secure capabilities backed by 5 external
+programs; B2 adds two locally verified capabilities/programs, pending review/merge.
+It is not yet counted as accepted main coverage.
 
 ## What the inventory measures
 
@@ -67,10 +71,10 @@ such and is not counted as accepted main coverage.
 | B0 | TCP reachability and Nmap TCP profile | [x] Accepted | Existing owned success/failure, enforced scope and independently replayed XML. Preserve accepted profiles. |
 | B0 | HTTP retrieval, response headers, verified HTTPS retrieval | [x] Accepted | Native HTTP/header and curl cases complete useful requests; malformed responses and untrusted TLS remain inconclusive/refused. |
 | B0 | Finite web path discovery | [x] Accepted in PR #37 | ffuf records all eight paths; wildcard/partial output does not claim useful coverage. |
-| B1 — current | DNS records with dig | [ ] Verified locally; review/merge pending | One fixed A query over TCP to the owned server; answer and NXDOMAIN distinguished; no recursion, search, zone transfer or follow-up to returned addresses. |
-| B1 — current | TLS handshake with OpenSSL | [ ] Verified locally; review/merge pending | Fixed hostname/CA, verified negotiation and structured protocol/cipher facts; reject untrusted/malformed peers; no HTTP, client credential or protocol-scan claim. |
-| B2 | SSH host keys with ssh-keyscan | [ ] Planned | One fixed key type and endpoint; validate bounded key/fingerprint output; no login or trust-on-first-use claim. |
-| B2 | LDAP RootDSE with ldapsearch | [ ] Planned | Anonymous base query with fixed attributes; structured entries; referrals, arbitrary DNs and user enumeration disabled. |
+| B1 | DNS records with dig | [x] Accepted in PR #38 | One fixed A query over TCP to the owned server; answer and NXDOMAIN distinguished; no recursion, search, zone transfer or follow-up to returned addresses. |
+| B1 | TLS handshake with OpenSSL | [x] Accepted in PR #38 | Fixed hostname/CA, verified negotiation and structured protocol/cipher facts; reject untrusted/malformed peers; no HTTP, client credential or protocol-scan claim. |
+| B2 — current | SSH host keys with ssh-keyscan | [ ] Verified locally; review/merge pending | One fixed key type and endpoint; validate bounded key/fingerprint output; no login or trust-on-first-use claim. |
+| B2 — current | LDAP RootDSE with ldapsearch | [ ] Verified locally; review/merge pending | Anonymous base query with fixed attributes; structured entries; referrals, arbitrary DNs and user enumeration disabled. |
 | B3 | SMB share metadata with smbclient | [ ] Planned | Anonymous finite listing against owned SMB; no credential discovery, file retrieval, writes or remote execution. |
 | B4 | RPC program metadata with rpcinfo | [ ] Planned | Bounded read-only query to owned rpcbind; results never authorize connections to advertised endpoints. |
 | B4 | NFS export metadata with showmount | [ ] Planned | Bounded export listing against owned mount service; no mounts or reads from exports. |

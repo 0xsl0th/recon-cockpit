@@ -12,31 +12,46 @@ support is distinct from secure execution. The milestone stays open until every
 required row has actual useful owned-lab execution, structured results, replayable
 evidence, verified enforcement, independent review and an authorized merge.
 
-**Current batch B1: dig DNS queries and OpenSSL TLS handshakes.**
-Review [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38) and its latest
-checks before the operator-authorized merge; no merge instruction has been given
-for this PR yet. Development is in
-`/tmp/recon-secure-network-tools`, branch `feature/secure-network-tools`, based on
-main `ba0d6f8`. Each tool is an independently usable single-action profile against
-a fresh disconnected owned fixture. Reuse existing runtime, authority and evidence
-infrastructure; no host runner fallback or arbitrary executable/plugin inputs.
-DNS uses a fixed nonrecursive A query over TCP. TLS uses a fixed hostname and
-fixture CA, with no client credentials or application request. Both tools now have actual owned execution, structured output, evidence replay
-and enforcement verification. Local validation passed 294 final focused portable
-checks and 119 distinct affected Linux cases (23 new, 96 existing). The initial
-full portable run passed 5,442 tests; final hosted checks must cover the subsequent
-partial-output receipt correction. B1 is review-pending, not accepted main
-coverage. See [network-tools.md](network-tools.md) and [verification.md](verification.md).
-Private evidence is retained under `.secure-agent/network-tools-20261001` in the
-primary checkout. Neither row is complete until review and authorized merge.
+**PR #38 is merged and B1 is accepted.** Reviewed head `0e2a0d7` merged as
+`5436dd6` at 04:11:12 UTC on 1 October. Its merge tree exactly matches the reviewed
+revision. Fresh runtime and parser/evidence reviews found no blockers; all five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36812445171)
+passed, with no outstanding GitHub review comments. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36813934553)
+also passed. The final hosted macOS run
+passed 5,451 portable tests. Local B1 receipts cover 119 distinct affected Linux
+cases, including real dig/OpenSSL execution and read-only replay. Preserve these
+accepted contracts and evidence. Private merge receipt:
+`.secure-agent/pr38-merge-review.json`; B1 evidence:
+`.secure-agent/network-tools-20261001`, both in the primary checkout.
 
-After B1, prioritize the next unchecked tool gap: currently B2's ssh-keyscan host
-keys and ldapsearch anonymous RootDSE. Reassess that order against measured results
-and prerequisite complexity at each batch handoff. Do not switch to deeper
-workflow composition or comparative/paired benchmarking until all required
-coverage rows are complete. Keep per-tool useful completion, unnecessary refusal,
-request/output/resource bounds, descriptive latency and cleanup checks now.
-Blocking normal useful work cannot satisfy completion.
+**Current batch B2: SSH host keys and anonymous LDAP RootDSE.**
+Review [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39) and its latest checks.
+Implementation `77395fe` is in
+`/tmp/recon-secure-ssh-ldap-tools`, branch `feature/secure-ssh-ldap-tools`, based on
+merged main `5436dd6`. Reuse the network-tool execution and evidence infrastructure,
+with one fixed `ssh-keyscan` or `ldapsearch` action per fresh owned lab. No host
+runner fallback, login, credentials or referral following. Preserve B1 workflow
+card, fixture identities and saved-evidence replay when extending the family.
+B2 is implemented and verified locally, pending review/merge; it is not yet
+accepted main coverage. Validation passed 5,711 portable and 127 selected Linux
+cases (19 new B2, 108 existing), with no final failures/errors/skips. Both tools
+completed useful real execution and independently replayed evidence. Initial SSH
+stdout-banner parsing was corrected before the successful full protocol run.
+See [ssh-ldap-tools.md](ssh-ldap-tools.md) and [verification.md](verification.md).
+Clean-source trials from `77395fe` completed useful work 2/2, with zero unnecessary
+refusals, one protocol event per tool and closed labs. Independent replay matched
+both B2 reports and both accepted B1 bundles without writes. SSH/LDAP CLI times
+were 2.557/2.580 seconds, descriptive only. Provider calls/cost were zero.
+Private receipts: `.secure-agent/ssh-ldap-tools-20261001` in the primary checkout.
+New PR merge requires its corresponding operator instruction.
+
+After B2 passes the required gates and review, prioritize B3's anonymous bounded
+SMB share metadata via `smbclient`. This is the next missing protocol family with
+an existing interactive integration. Reassess prerequisite findings at handoff.
+Do not switch to deeper composition or comparative/paired benchmarking until all
+required coverage rows are complete. Per-tool useful completion, unnecessary
+refusal, bounds, descriptive latency and cleanup remain required now.
 
 Credential setup, paid calls and live-model evaluation remain deferred until much
 later. Do not ask for a key, fund a ledger or enable a live provider. Preserve
@@ -1004,17 +1019,16 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #35 merge is complete. PRs #6–#30 and #32–#35
-  stay closed; proposal PR #31 remains separate. PR #36 now has conditional
-  review/merge authorization. Additional implementation, later merges, submission,
+- The operator-authorized PR #38 merge is complete. PRs #6–#30 and #32–#38
+  stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
 1. Resume the broader [secure-tool coverage milestone](secure-tool-coverage.md).
-   Check the current branch/PR and private handoff before repeating work. B1 adds
-   dig/OpenSSL independently; after its verified review/merge, choose the next
-   unchecked tool row (currently B2 SSH keys/LDAP RootDSE). PRs #6–#30 and #32–#37
+   Check the current branch/PR and private handoff before repeating work. B1 is
+   accepted; finish B2 SSH keys/LDAP RootDSE, then choose the next unchecked row
+   (currently B3 anonymous SMB metadata). PRs #6–#30 and #32–#38
    stay closed. Proposal PR #31 remains separate.
 2. Require G1–G6 for every required row: actual owned execution, useful structured
    output, strict authority, replayable evidence, enforcement/cleanup and reviewed

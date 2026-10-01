@@ -1,4 +1,4 @@
-"""Fixed single-action dig/OpenSSL contracts; observations confer no authority."""
+"""Fixed single-action network-tool contracts; observations confer no authority."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from uuid import NAMESPACE_URL, uuid5
 from .assessment_contract import _ACTION_FIELDS
 from .models import Action, parse_action
 from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSSL_PARAMETERS,
+                            SSH_TOOL_ID, LDAP_TOOL_ID, SSH_PARAMETERS, LDAP_PARAMETERS,
                             NETWORK_TOOLS_LIMITS, get_adapter)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
                                      validate_identity)
@@ -22,7 +23,13 @@ PROFILE = "owned_network_tools_lab"
 WORKFLOW = "owned-network-tool-assessment-v1"
 LIMITS = dict(NETWORK_TOOLS_LIMITS)
 PARAMETERS = {DIG_TOOL_ID: dict(DIG_PARAMETERS), OPENSSL_TOOL_ID: dict(OPENSSL_PARAMETERS)}
-PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1"}
+PARAMETERS.update({SSH_TOOL_ID: dict(SSH_PARAMETERS), LDAP_TOOL_ID: dict(LDAP_PARAMETERS)})
+PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
+    SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1"}
+B1_CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
+            "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled")
+B2_CASES = ("ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
+            "ldap-ok", "ldap-empty", "ldap-referral", "ldap-malformed", "ldap-stalled", "ldap-injected")
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -53,7 +60,20 @@ def profile_allows(value, case):
             and value.parameters.to_dict() == PARAMETERS[value.tool_id])
 
 
-def capability_descriptor():
+def capability_descriptor(case=None):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES):
+        raise ValueError("invalid_network_tools_case")
+    if case in B2_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(tool).to_dict() for tool in (SSH_TOOL_ID, LDAP_TOOL_ID)],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "ssh": {"key_type": "ssh-rsa", "key_bits": 2048, "authentication": False, "trust": "unverified"},
+            "ldap": {"base_dn": "", "scope": "base", "filter": "(objectClass=*)", "bind": "anonymous",
+                "attributes": ["namingContexts", "supportedLDAPVersion", "supportedSASLMechanisms", "vendorName"],
+                "referrals": "not_followed"},
+            "parser_versions": {tool: PARSER_VERSIONS[tool] for tool in (SSH_TOOL_ID, LDAP_TOOL_ID)}}
+    # Preserve the accepted B1 descriptor byte-for-byte for saved evidence.
     return {"schema_version": "1", "workflow_id": WORKFLOW,
         "capabilities": [get_adapter(tool).to_dict() for tool in (DIG_TOOL_ID, OPENSSL_TOOL_ID)],
         "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
@@ -61,7 +81,7 @@ def capability_descriptor():
         "dns_question": {"name": QUERY_NAME, "type": "A", "transport": "tcp", "recursion": False},
         "tls": {"name": TLS_NAME, "protocol": "TLSv1.3", "cipher": "TLS_AES_256_GCM_SHA384",
                 "ca_sha256": hashlib.sha256(CA_PEM).hexdigest(), "application_requests": False},
-        "parser_versions": dict(PARSER_VERSIONS)}
+        "parser_versions": {tool: PARSER_VERSIONS[tool] for tool in (DIG_TOOL_ID, OPENSSL_TOOL_ID)}}
 
 
 def validate_result_context(result, expected, *, previous=None, tool_id, execution_status):
@@ -74,7 +94,8 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
     connections = context["connection_count"] - before["connection_count"]
     requests = context["request_count"] - before["request_count"]
     if (not 0 <= connections <= 1 or not 0 <= requests <= 1
-            or (expected["scenario"] in {"openssl-untrusted", "openssl-malformed", "openssl-stalled"} and requests != 0)
+            or (expected["scenario"] in {"openssl-untrusted", "openssl-malformed", "openssl-stalled",
+                                         "ssh-malformed", "ssh-stalled"} and requests != 0)
             or (execution_status == "succeeded" and result.get("tool_observation") is not None and requests != 1)):
         raise ValueError("network_tools_request_continuity_mismatch")
     return context
@@ -150,6 +171,13 @@ def classify_tool(tool_id, normalized):
     normalized = validate_result(tool_id, normalized)
     if tool_id == OPENSSL_TOOL_ID:
         return _observation(tool_id, "handshake_verified", "tls_handshake_verified", normalized)
+    if tool_id == SSH_TOOL_ID:
+        return _observation(tool_id, "host_key_observed", "ssh_host_key_observed", normalized)
+    if tool_id == LDAP_TOOL_ID:
+        present = any(normalized[field] for field in ("naming_contexts", "supported_ldap_versions",
+            "supported_sasl_mechanisms", "vendor_name"))
+        return _observation(tool_id, "rootdse_observed" if present else "empty_rootdse_observed",
+            "ldap_rootdse_observed" if present else "ldap_empty_rootdse_observed", normalized)
     if normalized["status"] == "NXDOMAIN":
         return _observation(tool_id, "name_not_found", "dns_name_not_found", normalized)
     found = bool(normalized["answers"])

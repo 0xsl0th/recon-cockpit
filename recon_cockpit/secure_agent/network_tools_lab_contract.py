@@ -21,6 +21,29 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith(("ssh-", "ldap-")):
+        from . import network_tools_fixture as fixture
+        ssh = case.startswith("ssh-")
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-ssh-ldap-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "ssh_kex" if ssh else "ldap"}],
+            "ssh": {"public_key_sha256": hashlib.sha256(fixture.SSH_PUBLIC_BLOB).hexdigest(),
+                    "key_type": "ssh-rsa", "key_bits": 2048, "kex": "diffie-hellman-group14-sha256",
+                    "signature": "rsa-sha2-256", "banner": fixture.SSH_BANNER.decode("ascii"),
+                    "session": "ends_before_newkeys_and_userauth"} if ssh else None,
+            "ldap": {"version": 3, "bind_dn": "", "bind_secret": "", "base_dn": "", "scope": "base",
+                     "filter": "(objectClass=*)", "attributes": list(fixture.LDAP_ATTRIBUTES),
+                     "values": {} if case == "ldap-empty" else fixture.LDAP_VALUES,
+                     "referral": fixture.LDAP_REFERRAL if case == "ldap-referral" else None,
+                     "aliases": "never", "size_limit": 1, "time_limit": 2} if not ssh else None,
+            "injected_note": fixture.HOSTILE_NOTE if case.endswith("-injected") else None,
+            "behavior": "stall_before_response" if case.endswith("-stalled") else "malformed_response"
+                        if case.endswith("-malformed") else "fixed_response",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "ssh_host_key_replies_sent" if ssh else "validated_rootdse_searches",
+            "connection_evidence": "accepted_connections_lower_bound"}
     dns = case.startswith("dig-")
     return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
         "fixture_marker": FIXTURE_MARKER, "tool_id": tool,
