@@ -49,7 +49,12 @@ transfer or remote execution. SMB IPC metadata traffic does not authorize access
 to listed shares. [The SMB runbook](smb-tools.md) describes the bounded profile.
 Native footer-only output cannot distinguish empty, denied and malformed replies;
 these stay inconclusive. Useful completion requires both reviewed share rows.
-B3 is undergoing final validation, not accepted coverage.
+Implementation `fbcf0ac` passed independent review, 5,945 distinct portable and
+168 selected Linux checks. A clean normal trial completed useful work (1/1,
+zero unnecessary refusals) in 3.926 seconds with closed/read-only replay; all four
+accepted B1/B2 bundles replayed unchanged. See [verification.md](verification.md).
+B3 is ready for PR review, not accepted coverage; final hosted checks and an
+operator-authorized merge remain required.
 Private handoff: `.secure-agent/smb-tools-20261002/handoff.json` in the primary
 checkout. Leave the implementation reviewable with actual execution, structured
 results, independent replay, enforced limits and cleanup. A new PR needs its own

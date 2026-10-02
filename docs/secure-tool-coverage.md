@@ -76,7 +76,7 @@ such and is not counted as accepted main coverage.
 | B1 | TLS handshake with OpenSSL | [x] Accepted in PR #38 | Fixed hostname/CA, verified negotiation and structured protocol/cipher facts; reject untrusted/malformed peers; no HTTP, client credential or protocol-scan claim. |
 | B2 | SSH host keys with ssh-keyscan | [x] Accepted in PR #39 | One fixed key type and endpoint; validate bounded key/fingerprint output; no login or trust-on-first-use claim. |
 | B2 | LDAP RootDSE with ldapsearch | [x] Accepted in PR #39 | Anonymous base query with fixed attributes; structured entries; referrals, arbitrary DNs and user enumeration disabled. |
-| B3 — current | SMB share metadata with smbclient | [ ] Validation/review pending | Actual anonymous finite listing and replay in the owned lab; native empty/denied/malformed ambiguity stays inconclusive. No credentials, file retrieval, writes or remote execution. |
+| B3 — current | SMB share metadata with smbclient | [ ] Implemented; PR review/merge pending | Actual anonymous finite listing and replay in the owned lab; native empty/denied/malformed ambiguity stays inconclusive. No credentials, file retrieval, writes or remote execution. |
 | B4 | RPC program metadata with rpcinfo | [ ] Planned | Bounded read-only query to owned rpcbind; results never authorize connections to advertised endpoints. |
 | B4 | NFS export metadata with showmount | [ ] Planned | Bounded export listing against owned mount service; no mounts or reads from exports. |
 | B5 | Anonymous FTP listing with curl | [ ] Planned | Fixed passive control/data bounds and one finite listing; no uploads/downloads or unapproved passive destinations. |
