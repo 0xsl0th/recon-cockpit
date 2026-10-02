@@ -21,6 +21,22 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("smb-"):
+        from . import network_tools_fixture as fixture
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-smb-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "smb2"}],
+            "smb": {"dialect": "SMB2_02", "session": "anonymous_only", "tree": "IPC$",
+                "pipe": "srvsvc", "operation": "NetrShareEnum", "level": 1,
+                "shares": fixture.smb_shares(case), "filesystem": False, "credentials": False,
+                "signing": False, "encryption": False, "max_frame_bytes": 8192, "max_messages": 24},
+            "behavior": "stall_after_validated_query" if case == "smb-stalled" else "malformed_response"
+                        if case == "smb-malformed" else "access_denied" if case == "smb-denied" else "fixed_response",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_level1_share_enumerations",
+            "connection_evidence": "accepted_connections_lower_bound"}
     if case.startswith(("ssh-", "ldap-")):
         from . import network_tools_fixture as fixture
         ssh = case.startswith("ssh-")

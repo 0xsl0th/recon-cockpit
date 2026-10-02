@@ -34,6 +34,8 @@ NETWORK_TOOL_CASES = {
     **dict.fromkeys(('ssh-ok', 'ssh-malformed', 'ssh-stalled', 'ssh-injected'), 'ssh_host_keys_v1'),
     **dict.fromkeys(('ldap-ok', 'ldap-empty', 'ldap-referral', 'ldap-malformed', 'ldap-stalled',
                     'ldap-injected'), 'ldap_rootdse_v1'),
+    **dict.fromkeys(('smb-ok', 'smb-empty', 'smb-denied', 'smb-injected', 'smb-malformed',
+                    'smb-stalled'), 'smb_share_list_v1'),
 }
 
 

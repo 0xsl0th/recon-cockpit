@@ -6,12 +6,13 @@ benchmarks. This milestone stays open across successive implementation batches.
 Finishing one batch selects the next coverage gap, not a workflow project.
 Completed offline R5 and accepted local R6 remain closed.
 
-[PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38) merged as `5436dd6`: B1
-DNS/TLS is accepted. [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39) contains
-the locally verified B2 SSH/LDAP batch, followed by
-B3 anonymous SMB share metadata. Main has 8 secure capabilities backed by 5 external
-programs; B2 adds two locally verified capabilities/programs, pending review/merge.
-It is not yet counted as accepted main coverage.
+[PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38) accepted B1 DNS/TLS.
+[PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39) merged as `79abaab` and
+accepted B2 SSH/LDAP; its final and post-merge checks passed. Main now has
+**10 secure capabilities backed by 7 external programs**. B3 anonymous SMB share
+metadata is the current implementation batch. B4 RPC/NFS metadata follows it.
+B3 remains unaccepted until actual execution, evidence, enforcement, review and
+an authorized merge complete all gates.
 
 ## What the inventory measures
 
@@ -48,8 +49,8 @@ not an arbitrary executable count or the full professional product scope.
 | ldapsearch | RootDSE and user/group search suggestions | None | Fixed anonymous base-scope RootDSE; broader searches/referrals are separate scope. |
 | kerbrute | Supplied-user enumeration suggestion | None | Finite synthetic principal enumeration against an owned KDC; no password testing. |
 | Native TCP, HTTP and header adapters | No separate executable integration | `tcp_connect`, `http_probe`, `http_headers_v1` in accepted owned profiles | These existing narrow contracts remain regression anchors. |
-| dig | New integration candidate; no current menu command | None | Fixed nonrecursive DNS record query; current batch. |
-| OpenSSL | New integration candidate; no current menu command | None | Structured verified TLS handshake metadata; current batch. |
+| dig | New integration candidate; no current menu command | None | Fixed nonrecursive DNS record query accepted in B1; additional DNS modes remain later scope. |
+| OpenSSL | New integration candidate; no current menu command | None | Structured verified TLS handshake metadata accepted in B1; broader TLS assessment remains later scope. |
 | rpcinfo / showmount | Nmap RPC/NFS suggestions exist; these clients are not integrated | None | Fixed RPC program metadata and NFS export listing without mounting. |
 | SMTP capability query | Nmap `smtp-commands` suggestion | None | Bounded banner/EHLO/QUIT, no mail, authentication or recipient probing. |
 | Docker API / WinRM metadata | curl suggestions | None for these services | Fixed read-only metadata endpoints and authentication-scheme observations, no container operations or shell sessions. |
@@ -73,9 +74,9 @@ such and is not counted as accepted main coverage.
 | B0 | Finite web path discovery | [x] Accepted in PR #37 | ffuf records all eight paths; wildcard/partial output does not claim useful coverage. |
 | B1 | DNS records with dig | [x] Accepted in PR #38 | One fixed A query over TCP to the owned server; answer and NXDOMAIN distinguished; no recursion, search, zone transfer or follow-up to returned addresses. |
 | B1 | TLS handshake with OpenSSL | [x] Accepted in PR #38 | Fixed hostname/CA, verified negotiation and structured protocol/cipher facts; reject untrusted/malformed peers; no HTTP, client credential or protocol-scan claim. |
-| B2 — current | SSH host keys with ssh-keyscan | [ ] Verified locally; review/merge pending | One fixed key type and endpoint; validate bounded key/fingerprint output; no login or trust-on-first-use claim. |
-| B2 — current | LDAP RootDSE with ldapsearch | [ ] Verified locally; review/merge pending | Anonymous base query with fixed attributes; structured entries; referrals, arbitrary DNs and user enumeration disabled. |
-| B3 | SMB share metadata with smbclient | [ ] Planned | Anonymous finite listing against owned SMB; no credential discovery, file retrieval, writes or remote execution. |
+| B2 | SSH host keys with ssh-keyscan | [x] Accepted in PR #39 | One fixed key type and endpoint; validate bounded key/fingerprint output; no login or trust-on-first-use claim. |
+| B2 | LDAP RootDSE with ldapsearch | [x] Accepted in PR #39 | Anonymous base query with fixed attributes; structured entries; referrals, arbitrary DNs and user enumeration disabled. |
+| B3 — current | SMB share metadata with smbclient | [ ] [PR #40](https://github.com/0xsl0th/recon-cockpit/pull/40), review/merge pending | Actual anonymous finite listing and replay in the owned lab; native empty/denied/malformed ambiguity stays inconclusive. No credentials, file retrieval, writes or remote execution. |
 | B4 | RPC program metadata with rpcinfo | [ ] Planned | Bounded read-only query to owned rpcbind; results never authorize connections to advertised endpoints. |
 | B4 | NFS export metadata with showmount | [ ] Planned | Bounded export listing against owned mount service; no mounts or reads from exports. |
 | B5 | Anonymous FTP listing with curl | [ ] Planned | Fixed passive control/data bounds and one finite listing; no uploads/downloads or unapproved passive destinations. |

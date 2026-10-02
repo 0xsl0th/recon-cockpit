@@ -11,10 +11,10 @@ from .http_headers_workflow import _uuid
 
 
 def card(case=None):
-    if case is not None and (type(case) is not str or case not in contract.B1_CASES + contract.B2_CASES):
+    if case is not None and (type(case) is not str or case not in contract.B1_CASES + contract.B2_CASES + contract.B3_CASES):
         raise ValueError("invalid_network_tools_case")
-    version = "2" if case in contract.B2_CASES else "1"
-    cases = contract.B2_CASES if version == "2" else contract.B1_CASES
+    version = "3" if case in contract.B3_CASES else "2" if case in contract.B2_CASES else "1"
+    cases = contract.B3_CASES if version == "3" else contract.B2_CASES if version == "2" else contract.B1_CASES
     return {
         "schema_version": "1", "workflow_id": contract.WORKFLOW, "workflow_version": version,
         "planning": "deterministic_offline_single_tool", "live_calls_enabled": False,

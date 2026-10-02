@@ -1,6 +1,6 @@
 # Owned SSH host keys and LDAP RootDSE
 
-Review handoff: [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39).
+Accepted in [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39), merge `79abaab`.
 B2 extends the [secure-tool coverage checklist](secure-tool-coverage.md) with two
 independently invoked capabilities. Both reuse the reviewed authority, approval,
 audit, admission, launcher, parser and evidence machinery. Each runs a real

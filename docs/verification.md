@@ -1,5 +1,68 @@
 # Verification record
 
+## Secure coverage B3: anonymous SMB share metadata — 2 October 2026
+
+PR #39 merged as `79abaab` with all five final PR and post-merge checks passing;
+B2 SSH/LDAP remains accepted. B3 adds `smb_share_list_v1` using the actual installed
+`smbclient`, a finite anonymous IPC$/srvsvc fixture, and the existing secure
+network-tool execution and evidence path. [The runbook](smb-tools.md) records the
+exact invocation, runtime limits and owned-lab limitations. B3 remains pending
+review/merge; B4 RPC/NFS metadata is the next checklist gap.
+
+Normal and hostile-comment cases produce only the two reviewed share names/types.
+The native client returns identical footer-only output for valid empty listings,
+access denial and some malformed exchanges, sometimes with exit zero. These
+remain inconclusive; the parser requires both reviewed share rows and never uses
+the fixture label to infer success or absence. Stalled/partial/unknown output also
+cannot establish useful completion. Hostile comments remain bounded raw evidence
+and cannot select targets, tools or follow-up actions. This is a finite synthetic
+SMB2_02 enumeration profile, not a production SMB importer or file-access feature.
+
+The pinned native dependency closure requires a separate compact SMB manifest
+and larger staging-only limits. Existing B1/B2 manifests, workflow cards, fixture
+identities, runtime limits and policies remain unchanged. Native SMB keeps its
+256 MiB address-space bound, zero writable files, fixed destination filter and
+no-child/no-thread boundary. No real credential, host SMB runner, provider call,
+external target or paid service is involved.
+
+Private validation receipts are in `.secure-agent/smb-tools-20261002` in the
+primary checkout. Independent runtime/launcher and fixture/parser/evidence reviews
+found no blockers. Implementation `fbcf0ac` is on `feature/secure-smb-coverage`,
+based on `79abaab`; review handoff: [PR #40](https://github.com/0xsl0th/recon-cockpit/pull/40).
+Local validation passed **5,945 distinct portable tests**:
+the full run passed 5,943 in 327.880 seconds, followed by a 116-case final fixture
+run containing the two subsequently added alternate-pipe tests. No portable
+failure, error or skip occurred. Receipts: `validation/portable.xml` and
+`validation/fixture-final.xml`.
+
+**168 distinct selected Linux checks** passed: 25 real network-tool/replay cases,
+28 network enforcement cases, and 115 affected launcher/admission and legacy
+HTTP/curl/ffuf cases. These include six new SMB protocol cases and five new SMB
+enforcement cases. The first SMB output-pressure test supplied an invalid oversized
+RPC fragment, which the client rejected before printing enough output. The
+corrected test instruments only the owner to send seven valid fragments; actual
+`smbclient` then reaches the unchanged 8,192-byte cap, retains a truthful truncated
+receipt and releases no observation. The original failed receipt remains private;
+27 enforcement passes plus the corrected pressure pass cover all 28 cases.
+Receipts: `workflow-linux.xml`, `enforcement-linux.xml`, `pressure-corrected.xml`
+and `legacy-linux.xml` under `validation/`. Python 3.11 syntax, compile, dependency
+consistency, changed documentation links and whitespace checks also passed.
+
+The clean-source normal trial from `fbcf0ac` completed useful share discovery in
+3.926 seconds, with one logical protocol event, a closed lab and identical
+read-only replay (file bytes and mtimes unchanged). Legitimate completion was
+1/1; unnecessary refusals were 0/1. Provider calls and actual provider cost were
+zero. This is one synthetic correctness trial; its local CLI wall time includes
+secure infrastructure and is not a comparative overhead measurement. Empty-list
+ambiguity is an explicit limitation, not a measured absence success.
+`runs/smb-ok/evidence` retains the private raw artifacts; `verification.json`
+records the exact source. The same clean source replayed all four accepted
+DNS/TLS/SSH/LDAP bundles identically without writes or integrity issues.
+Hosted checks must pass on the final PR revision before an authorized merge.
+Automated grants do not claim human acceptance. Deeper workflows and comparative
+benchmarks remain deferred until B0–B8 meet G1–G6; model credentials, paid calls and
+live-model evaluation remain deferred until much later. R5/local R6 stay closed.
+
 ## Secure coverage B2: SSH host keys and LDAP RootDSE — 1 October 2026
 
 PR #38 was reviewed and merged at `5436dd6`; all five final PR and post-merge main

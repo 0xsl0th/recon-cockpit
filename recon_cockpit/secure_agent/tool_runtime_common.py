@@ -9,14 +9,14 @@ from .isolation import IsolationUnavailable
 MAX_FILE_BYTES = 16 * 1024 * 1024
 
 
-def _read_regular(source):
+def _read_regular(source, *, maximum=MAX_FILE_BYTES):
     descriptor = os.open(source, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
     try:
         info = os.fstat(descriptor)
-        if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= MAX_FILE_BYTES:
+        if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= maximum:
             raise IsolationUnavailable("Web tool runtime contains an invalid file")
         with os.fdopen(os.dup(descriptor), "rb") as stream:
-            raw = stream.read(MAX_FILE_BYTES + 1)
+            raw = stream.read(maximum + 1)
         if len(raw) != info.st_size:
             raise IsolationUnavailable("Web tool runtime changed during inspection")
         return raw
@@ -24,13 +24,15 @@ def _read_regular(source):
         os.close(descriptor)
 
 
-def sealed_snapshots(manifest, compiled_source, compiled, control):
+def sealed_snapshots(manifest, compiled_source, compiled, control, *, maximum_file_bytes=MAX_FILE_BYTES):
     import fcntl
     descriptors = []
     try:
         for item in manifest["files"]:
             control.check()
-            raw = compiled if item["source"] == compiled_source else _read_regular(item["source"])
+            raw = (compiled if item["source"] == compiled_source else
+                   _read_regular(item["source"]) if maximum_file_bytes == MAX_FILE_BYTES else
+                   _read_regular(item["source"], maximum=maximum_file_bytes))
             if len(raw) != item["size"] or hashlib.sha256(raw).hexdigest() != item["sha256"]:
                 raise IsolationUnavailable("Web tool runtime differs from its pinned manifest")
             fd = os.memfd_create("recon-web-tool-runtime", os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
@@ -57,5 +59,3 @@ for name in os.listdir('/proc/self/fd'):
             if exc.errno != 9: raise
 os.execv(sys.argv[2],sys.argv[2:])
 """
-
-

@@ -47,9 +47,14 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     elif case.startswith("ssh-"):
         assert definition["ssh"]["public_key_sha256"] == hashlib.sha256(fixture.SSH_PUBLIC_BLOB).hexdigest()
         assert definition["request_count_means"] == "ssh_host_key_replies_sent"
-    else:
+    elif case.startswith("ldap-"):
         assert definition["ldap"]["base_dn"] == "" and definition["ldap"]["scope"] == "base"
         assert definition["request_count_means"] == "validated_rootdse_searches"
+    else:
+        assert definition["smb"]["dialect"] == "SMB2_02"
+        assert definition["smb"]["filesystem"] is False and definition["smb"]["credentials"] is False
+        assert definition["smb"]["shares"] == fixture.smb_shares(case)
+        assert definition["request_count_means"] == "validated_level1_share_enumerations"
     assert lab_contract.validate_identity(first.identity, case=case) == first.identity
     assert first.close() == first.close()
     with pytest.raises(IsolationUnavailable): first.__enter__()

@@ -228,6 +228,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "ssh_host_key_observed": "host_key_observed",
                "ldap_rootdse_observed": "rootdse_observed",
                "ldap_empty_rootdse_observed": "empty_rootdse_observed",
+               "smb_shares_observed": "shares_observed",
                "content_paths_observed": "paths_observed",
                "no_successful_content_paths_observed": "no_successful_paths_observed"}.get(reason, "inconclusive")
     if issues:
@@ -312,6 +313,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Normalized observations cannot select a new target or tool. No model susceptibility or comparative performance claim is made.",
                 "Protocol counters count completed SSH key replies or validated LDAP RootDSE searches, not authenticated sessions. Connections are lower bounds; inspection never restores authority.",
             ]
+        if manifest["fixture_case"].startswith("smb-"):
+            report["limitations"] = [
+                "This single executable trial uses a disconnected synthetic fixture; it is not professional engagement or real-model validation.",
+                "SMB collects a finite anonymous share list through the fixed IPC metadata endpoint. Share names do not establish file access or authorize traversal, transfers, writes or remote execution.",
+                "The fixture implements only the reviewed anonymous SMB protocol exchange; no real account, credential testing, domain discovery or external target is involved.",
+                "Both output channels are bounded and independently parsed without network on capture and replay. Share comments remain untrusted raw evidence and are excluded from normalized findings.",
+                "The native client can emit identical output for empty, denied or malformed listings; these remain inconclusive. Normalized results cannot select another target, share or tool.",
+                "Counters record validated share-enumeration requests; connections are acknowledged lower bounds. Hashes reconcile local evidence, and inspection never restores authority.",
+            ]
     if "planning_origin" in manifest:
         report["planning_origin"] = manifest["planning_origin"]
         report["live_calls_enabled"] = manifest["planning_origin"] == "model_live"
@@ -384,6 +394,11 @@ def _markdown(report):
             for field in ("naming_contexts", "supported_ldap_versions", "supported_sasl_mechanisms"):
                 lines.append("| " + field + " | `" + (", ".join(details[field]) or "not advertised") + "` |")
             lines.append("| vendor_name | `" + (details["vendor_name"] or "not advertised") + "` |")
+        elif type(details) is dict and details.get("kind") == "smb_share_list":
+            lines.extend(["", "## Anonymous SMB share metadata", "", "Status: `" + details["status"] + "`.",
+                          "", "| Share | Type |", "| --- | --- |"])
+            for share in details["shares"]:
+                lines.append("| `" + share["name"] + "` | `" + share["type"] + "` |")
     lines.extend(["", "## Limits", "", *["- " + value for value in report["limitations"]]])
     if report["integrity_issues"]:
         lines.extend(["", "## Reconciliation required", "", *["- `" + value + "`" for value in report["integrity_issues"]]])

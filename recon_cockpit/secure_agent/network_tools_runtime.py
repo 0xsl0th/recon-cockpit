@@ -1,4 +1,4 @@
-"""Pinned DNS/TLS/SSH/LDAP executables for the disconnected single-action network lab.
+"""Pinned DNS/TLS/SSH/LDAP/SMB executables for the disconnected single-action lab.
 
 Only reviewed executable, library and compiled fixture data bytes enter the
 tool filesystem. Neither a proposal nor tool output chooses files or argv.
@@ -25,6 +25,26 @@ DIG = "dig_dns_query_v1"
 OPENSSL = "openssl_tls_handshake_v1"
 SSH = "ssh_host_keys_v1"
 LDAP = "ldap_rootdse_v1"
+SMB = "smb_share_list_v1"
+SMB_PROFILE = "network-tools-smb-runtime-v1"
+SMB_MAX_FILES = 160
+SMB_MAX_RUNTIME_BYTES = 128 * 1024 * 1024
+SMB_MAX_FILE_BYTES = 40 * 1024 * 1024
+SMB_MAX_MANIFEST_BYTES = 18432
+# Roots are closed distribution-library directories, never caller mount roots.
+SMB_ROOTS = ("/lib", "/lib64", "/usr/lib", "/usr/lib64",
+    "/lib/x86_64-linux-gnu", "/usr/lib/x86_64-linux-gnu",
+    "/lib/x86_64-linux-gnu/samba", "/usr/lib/x86_64-linux-gnu/samba",
+    "/lib/aarch64-linux-gnu", "/usr/lib/aarch64-linux-gnu",
+    "/lib/aarch64-linux-gnu/samba", "/usr/lib/aarch64-linux-gnu/samba")
+SMB_CONFIG = (b"[global]\nclient min protocol = SMB2_02\nclient max protocol = SMB2_02\n"
+    b"client ipc min protocol = SMB2_02\nclient ipc max protocol = SMB2_02\n"
+    b"client signing = disabled\nclient ipc signing = disabled\nclient smb encrypt = off\n"
+    # The fixed -I address bypasses resolution; no resolver file or UDP socket
+    # is available. Explicit IP/mask also avoids interface discovery sockets.
+    b"client use kerberos = off\ndisable netbios = yes\nname resolve order = host\n"
+    b"interfaces = 127.0.0.1/8\n"
+    b"workgroup = WORKGROUP\nnetbios name = RECONLAB\n")
 MAX_OUTPUT_BYTES = 8192
 MAX_RUNTIME_BYTES = 64 * 1024 * 1024
 MAX_FILE_BYTES = 16 * 1024 * 1024
@@ -32,7 +52,7 @@ MAX_MANIFEST_BYTES = 12288
 READY_PREFIX = b"RECON_NETWORK_TOOL_READY_V1 "
 LIBRARY = re.compile(r"/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*\.?\Z")
 EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
-               SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch"}
+               SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch", SMB: "/usr/bin/smbclient"}
 FIXED_ARGV = {
     DIG: ("/tool/dig", "-r", "-4", "@127.0.0.1", "-p", "8080", "harbordesk.test.", "A",
           "+tcp", "+norecurse", "+tries=1", "+time=2", "+nosearch", "+noedns",
@@ -47,6 +67,8 @@ FIXED_ARGV = {
            "-s", "base", "-b", "", "-a", "never", "-l", "2", "-z", "1",
            "-o", "nettimeout=2", "-o", "ldif_wrap=no", "(objectClass=*)",
            "namingContexts", "supportedLDAPVersion", "supportedSASLMechanisms", "vendorName"),
+    SMB: ("/tool/smbclient", "-L", "127.0.0.1", "-I", "127.0.0.1", "-p", "8080",
+          "-U", "%", "-N", "-g", "-t", "2", "--use-kerberos=off", "-s", "/tool/data/smb.conf"),
 }
 MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
@@ -80,27 +102,92 @@ def _compiled(tool_id):
         return "compiled:resolver", "/etc/resolv.conf", b"# fixed TCP nameserver supplied by reviewed argv\n"
     if tool_id in (SSH, LDAP):
         return None  # These profiles need no configuration, credentials, or trust file.
+    if tool_id == SMB:
+        return "compiled:smb-config", "/tool/data/smb.conf", SMB_CONFIG
     raise ValueError("unsupported_network_tool")
 
 
+def _compact_files(files):
+    roots = sorted({str(Path(row[key]).parent) for row in files for key in ("source", "destination")
+                    if LIBRARY.fullmatch(row[key])})
+    if any(root not in SMB_ROOTS for root in roots):
+        raise ValueError("unsupported_smb_library_root")
+    def short(path):
+        parent = str(Path(path).parent)
+        return str(roots.index(parent)) + ":" + Path(path).name if parent in roots else path
+    return roots, [[short(row["source"]), None if row["source"] == row["destination"] else short(row["destination"]),
+                    row["size"], row["sha256"]] for row in files]
+
+
+def compact_manifest(value):
+    """Encode SMB's larger pinned closure without enlarging the JSON boundary."""
+    if value["tool_id"] != SMB:
+        return value
+    roots, rows = _compact_files(value["files"])
+    return {**value, "profile": SMB_PROFILE, "roots": roots, "files": rows}
+
+
+def _expanded_files(value):
+    if value.get("tool_id") != SMB:
+        return value["files"]
+    roots = value.get("roots")
+    if (type(roots) is not list or not roots or len(roots) > len(SMB_ROOTS)
+            or any(type(root) is not str or root not in SMB_ROOTS for root in roots)
+            or roots != sorted(set(roots))):
+        raise ValueError("invalid_smb_manifest_roots")
+    def expand(path):
+        if type(path) is not str:
+            raise ValueError("invalid_smb_runtime_path")
+        match = re.fullmatch(r"(0|[1-9][0-9]?):([A-Za-z0-9_.+-]+)", path)
+        if match is not None:
+            index = int(match[1])
+            if index >= len(roots):
+                raise ValueError("invalid_smb_runtime_root")
+            return roots[index] + "/" + match[2]
+        if path not in (EXECUTABLES[SMB], FIXED_ARGV[SMB][0], "compiled:smb-config", "/tool/data/smb.conf"):
+            raise ValueError("invalid_smb_runtime_path")
+        return path
+    files = []
+    for row in value["files"]:
+        if type(row) is not list or len(row) != 4:
+            raise ValueError("invalid_smb_runtime_row")
+        source = expand(row[0])
+        destination = source if row[1] is None else expand(row[1])
+        files.append({"source": source, "destination": destination, "size": row[2], "sha256": row[3]})
+    if _compact_files(files) != (roots, value["files"]):
+        raise ValueError("noncanonical_smb_runtime_rows")
+    return files
+
+
+def runtime_files(manifest):
+    validate_manifest(manifest)
+    return _expanded_files(manifest)
+
+
+def read_runtime_file(path, tool_id):
+    return (_read_regular(path, maximum=SMB_MAX_FILE_BYTES) if tool_id == SMB else _read_regular(path))
+
+
 def validate_manifest(value, *, tool_id=None):
-    if (type(value) is not dict or set(value) != {"version", "profile", "tool_id", "executable", "interpreter", "files"}
-            or value["version"] != "1" or value["profile"] != PROFILE
+    smb = type(value) is dict and value.get("tool_id") == SMB
+    if (type(value) is not dict or set(value) != {"version", "profile", "tool_id", "executable", "interpreter", "files"} | ({"roots"} if smb else set())
+            or value["version"] != "1" or value["profile"] != (SMB_PROFILE if smb else PROFILE)
             or type(value["tool_id"]) is not str or value["tool_id"] not in EXECUTABLES
             or (tool_id is not None and value["tool_id"] != tool_id)
             or value["executable"] != FIXED_ARGV[value["tool_id"]][0]
             or type(value["interpreter"]) is not str or not LIBRARY.fullmatch(value["interpreter"])
             or type(value["files"]) is not list
-            or not (3 if value["tool_id"] in (DIG, OPENSSL) else 2) <= len(value["files"]) <= 48
-            or len(encode(value)) > MAX_MANIFEST_BYTES):
+            or not (3 if value["tool_id"] in (DIG, OPENSSL, SMB) else 2) <= len(value["files"]) <= (SMB_MAX_FILES if smb else 48)
+            or len(encode(value)) > (SMB_MAX_MANIFEST_BYTES if smb else MAX_MANIFEST_BYTES)):
         raise ValueError("invalid_network_tool_manifest")
     data = _compiled(value["tool_id"])
     source_name, destination_name, compiled = data if data is not None else (None, None, None)
     destinations, total = set(), 0
-    for item in value["files"]:
+    files = _expanded_files(value)
+    for item in files:
         if (type(item) is not dict or set(item) != {"source", "destination", "sha256", "size"}
                 or type(item["source"]) is not str or type(item["destination"]) is not str
-                or type(item["size"]) is not int or not 1 <= item["size"] <= MAX_FILE_BYTES
+                or type(item["size"]) is not int or not 1 <= item["size"] <= (SMB_MAX_FILE_BYTES if smb else MAX_FILE_BYTES)
                 or type(item["sha256"]) is not str or not re.fullmatch(r"[a-f0-9]{64}", item["sha256"])
                 or any(".." in item[key] or "//" in item[key] for key in ("source", "destination"))):
             raise ValueError("invalid_network_tool_runtime_file")
@@ -117,8 +204,8 @@ def validate_manifest(value, *, tool_id=None):
         destinations.add(destination)
         total += item["size"]
     required = {value["executable"], value["interpreter"]} | ({destination_name} if data is not None else set())
-    if (total > MAX_RUNTIME_BYTES or not required <= destinations
-            or value["files"] != sorted(value["files"], key=lambda item: item["destination"])):
+    if (total > (SMB_MAX_RUNTIME_BYTES if smb else MAX_RUNTIME_BYTES) or not required <= destinations
+            or files != sorted(files, key=lambda item: item["destination"])):
         raise ValueError("invalid_network_tool_runtime_closure")
     return value
 
@@ -145,7 +232,7 @@ def inspect_tool_runtime(tool_id, control):
     files = []
     for source, destination in entries:
         control.check()
-        raw = _read_regular(source)
+        raw = read_runtime_file(source, tool_id)
         files.append({"source": source, "destination": destination, "size": len(raw),
                       "sha256": hashlib.sha256(raw).hexdigest()})
     data = _compiled(tool_id)
@@ -153,13 +240,13 @@ def inspect_tool_runtime(tool_id, control):
         source, destination, raw = data
         files.append({"source": source, "destination": destination, "size": len(raw),
                       "sha256": hashlib.sha256(raw).hexdigest()})
-    return validate_manifest({"version": "1", "profile": PROFILE, "tool_id": tool_id,
+    return validate_manifest(compact_manifest({"version": "1", "profile": PROFILE, "tool_id": tool_id,
         "executable": FIXED_ARGV[tool_id][0], "interpreter": interpreters[0],
-        "files": sorted(files, key=lambda item: item["destination"])})
+        "files": sorted(files, key=lambda item: item["destination"])}))
 
 
 def runtime_source_mounts(manifest):
-    return [(path, path) for path in sorted({item["source"] for item in validate_manifest(manifest)["files"]
+    return [(path, path) for path in sorted({item["source"] for item in runtime_files(manifest)
                                             if not item["source"].startswith("compiled:")})]
 
 
@@ -167,12 +254,16 @@ def _snapshot(manifest, control):
     validate_manifest(manifest)
     data = _compiled(manifest["tool_id"])
     source, _, raw = data if data is not None else (None, None, None)
+    if manifest["tool_id"] == SMB:
+        return sealed_snapshots({**manifest, "files": runtime_files(manifest)}, source, raw, control,
+                                maximum_file_bytes=SMB_MAX_FILE_BYTES)
     return sealed_snapshots(manifest, source, raw, control)
 
 
 def _command(lab, bootstrap, manifest, descriptors, nonce, commitment):
     stdlib, files = bootstrap
-    tool_paths = {item["destination"] for item in manifest["files"]}
+    tool_files = runtime_files(manifest)
+    tool_paths = {item["destination"] for item in tool_files}
     argv = [_trusted_program("bwrap"), "--unshare-user", "--unshare-pid", "--unshare-ipc",
             "--unshare-uts", "--unshare-cgroup", "--uid", "0", "--gid", "0", "--cap-drop", "ALL",
             "--cap-add", "CAP_SETPCAP", "--die-with-parent", "--new-session", "--clearenv",
@@ -187,7 +278,7 @@ def _command(lab, bootstrap, manifest, descriptors, nonce, commitment):
         argv += ["--ro-bind", str(directory / (name + ".py")), "/app/recon_cockpit/secure_agent/" + name + ".py"]
     for destination in ("/app/recon_cockpit/__init__.py", "/app/recon_cockpit/secure_agent/__init__.py"):
         argv += ["--ro-bind", str(directory / "__init__.py"), destination]
-    for item, fd in zip(manifest["files"], descriptors):
+    for item, fd in zip(tool_files, descriptors):
         mode = "0555" if item["destination"] in {manifest["executable"], manifest["interpreter"]} else "0444"
         argv += ["--perms", mode, "--ro-bind-data", str(fd), item["destination"]]
     argv += ["--remount-ro", "/proc", "--remount-ro", "/dev", "--remount-ro", "/",

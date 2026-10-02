@@ -1,4 +1,4 @@
-# Continue here — 1 October 2026
+# Continue here — 2 October 2026
 
 ## Read this first
 
@@ -25,33 +25,48 @@ accepted contracts and evidence. Private merge receipt:
 `.secure-agent/pr38-merge-review.json`; B1 evidence:
 `.secure-agent/network-tools-20261001`, both in the primary checkout.
 
-**Current batch B2: SSH host keys and anonymous LDAP RootDSE.**
-Review [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39) and its latest checks.
-Implementation `77395fe` is in
-`/tmp/recon-secure-ssh-ldap-tools`, branch `feature/secure-ssh-ldap-tools`, based on
-merged main `5436dd6`. Reuse the network-tool execution and evidence infrastructure,
-with one fixed `ssh-keyscan` or `ldapsearch` action per fresh owned lab. No host
-runner fallback, login, credentials or referral following. Preserve B1 workflow
-card, fixture identities and saved-evidence replay when extending the family.
-B2 is implemented and verified locally, pending review/merge; it is not yet
-accepted main coverage. Validation passed 5,711 portable and 127 selected Linux
-cases (19 new B2, 108 existing), with no final failures/errors/skips. Both tools
-completed useful real execution and independently replayed evidence. Initial SSH
-stdout-banner parsing was corrected before the successful full protocol run.
-See [ssh-ldap-tools.md](ssh-ldap-tools.md) and [verification.md](verification.md).
-Clean-source trials from `77395fe` completed useful work 2/2, with zero unnecessary
-refusals, one protocol event per tool and closed labs. Independent replay matched
-both B2 reports and both accepted B1 bundles without writes. SSH/LDAP CLI times
-were 2.557/2.580 seconds, descriptive only. Provider calls/cost were zero.
-Private receipts: `.secure-agent/ssh-ldap-tools-20261001` in the primary checkout.
-New PR merge requires its corresponding operator instruction.
+**PR #39 is merged and B2 is accepted.** Reviewed head `11405a3` merged as
+`79abaab` at 23:57:28 UTC on 1 October. Fresh runtime/enforcement and
+parser/contracts/evidence reviews found no blockers. All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36815728346)
+and all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36943515375)
+passed. The merge tree exactly matches the reviewed revision; keep B2 closed.
+Validation passed 5,711 portable and 127 selected Linux tests (19 new B2 and
+108 existing), plus two useful clean-source trials with read-only replay and
+unchanged accepted B1 evidence. Private receipts remain
+`.secure-agent/pr39-merge-review.json` and `.secure-agent/ssh-ldap-tools-20261001`
+in the primary checkout. See [ssh-ldap-tools.md](ssh-ldap-tools.md).
 
-After B2 passes the required gates and review, prioritize B3's anonymous bounded
-SMB share metadata via `smbclient`. This is the next missing protocol family with
-an existing interactive integration. Reassess prerequisite findings at handoff.
-Do not switch to deeper composition or comparative/paired benchmarking until all
-required coverage rows are complete. Per-tool useful completion, unnecessary
-refusal, bounds, descriptive latency and cleanup remain required now.
+**Current authorized batch B3: bounded anonymous SMB share metadata.**
+Development is in `/tmp/recon-secure-smb-coverage`, branch
+`feature/secure-smb-coverage`, based on merged main `79abaab`. The implementation runs one real
+`smbclient` listing inside a disconnected owned fixture through the existing
+network-tool authority, approval, audit, admission, launcher and evidence path.
+The larger SMB dependency closure needs its own bounded manifest/staging profile;
+keep existing B1/B2 runtime limits and saved-evidence identities unchanged.
+There is no host runner fallback, credential testing, share traversal, file
+transfer or remote execution. SMB IPC metadata traffic does not authorize access
+to listed shares. [The SMB runbook](smb-tools.md) describes the bounded profile.
+Native footer-only output cannot distinguish empty, denied and malformed replies;
+these stay inconclusive. Useful completion requires both reviewed share rows.
+Implementation `fbcf0ac` passed independent review, 5,945 distinct portable and
+168 selected Linux checks. A clean normal trial completed useful work (1/1,
+zero unnecessary refusals) in 3.926 seconds with closed/read-only replay; all four
+accepted B1/B2 bundles replayed unchanged. See [verification.md](verification.md).
+Review handoff: [PR #40](https://github.com/0xsl0th/recon-cockpit/pull/40).
+B3 is ready for PR review, not accepted coverage; final hosted checks and an
+operator-authorized merge remain required.
+Private handoff: `.secure-agent/smb-tools-20261002/handoff.json` in the primary
+checkout. Leave the implementation reviewable with actual execution, structured
+results, independent replay, enforced limits and cleanup. A new PR needs its own
+operator merge instruction.
+
+After B3 meets G1–G6, prioritize B4 RPC/NFS metadata (`rpcinfo` and `showmount`):
+the next missing protocol family in the checklist, with no mounts or connections
+to advertised endpoints. Record any prerequisite-driven change in order.
+Deeper composition and comparative benchmarking remain deferred until all required
+coverage rows are complete. Per-tool useful completion, unnecessary refusals,
+bounds, descriptive latency and cleanup remain required now.
 
 Credential setup, paid calls and live-model evaluation remain deferred until much
 later. Do not ask for a key, fund a ledger or enable a live provider. Preserve
@@ -1019,16 +1034,16 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #38 merge is complete. PRs #6–#30 and #32–#38
+- The operator-authorized PR #39 merge is complete. PRs #6–#30 and #32–#39
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
 1. Resume the broader [secure-tool coverage milestone](secure-tool-coverage.md).
-   Check the current branch/PR and private handoff before repeating work. B1 is
-   accepted; finish B2 SSH keys/LDAP RootDSE, then choose the next unchecked row
-   (currently B3 anonymous SMB metadata). PRs #6–#30 and #32–#38
+   Check the current branch/PR and private handoff before repeating work. B1/B2 are
+   accepted; finish B3 anonymous SMB metadata, then choose the next unchecked row
+   (currently B4 RPC/NFS metadata). PRs #6–#30 and #32–#39
    stay closed. Proposal PR #31 remains separate.
 2. Require G1–G6 for every required row: actual owned execution, useful structured
    output, strict authority, replayable evidence, enforcement/cleanup and reviewed

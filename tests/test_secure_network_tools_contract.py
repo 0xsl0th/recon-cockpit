@@ -11,7 +11,7 @@ from recon_cockpit.secure_agent import network_tools_contract as contract
 from recon_cockpit.secure_agent import network_tools_parser as parser
 from recon_cockpit.secure_agent import network_tools_runtime as runtime
 from recon_cockpit.secure_agent.models import (DigDNSParameters, OpenSSLTLSParameters,
-    SSHHostKeysParameters, LDAPRootDSEParameters, ValidationError, parse_action, parse_policy)
+    SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters, ValidationError, parse_action, parse_policy)
 from recon_cockpit.secure_agent.tool_adapters import LEGACY_PROPOSAL_PROFILE, NMAP_PROPOSAL_PROFILE, proposal_tools
 from recon_cockpit.secure_agent.network_tools_fixture import CA_PEM, QUERY_NAME, TLS_NAME
 from recon_cockpit.secure_agent.network_tools_lab_contract import identity
@@ -28,9 +28,9 @@ def manifest(tool_id):
         source, destination, compiled = data
         files.append({"source": source, "destination": destination, "size": len(compiled),
                       "sha256": hashlib.sha256(compiled).hexdigest()})
-    return runtime.validate_manifest({"version": "1", "profile": runtime.PROFILE, "tool_id": tool_id,
+    return runtime.validate_manifest(runtime.compact_manifest({"version": "1", "profile": runtime.PROFILE, "tool_id": tool_id,
         "executable": runtime.FIXED_ARGV[tool_id][0], "interpreter": interpreter,
-        "files": sorted(files, key=lambda item: item["destination"])})
+        "files": sorted(files, key=lambda item: item["destination"])}))
 
 
 def receipt(tool_id=contract.DIG_TOOL_ID, *, status="succeeded", raw=None, stderr=b""):
@@ -62,11 +62,12 @@ def policy(**changes):
 def test_case_selects_exact_typed_single_action_and_existing_policy_gates(case):
     action = parse_action(contract.action(case))
     expected = {"dig": contract.DIG_TOOL_ID, "openssl": contract.OPENSSL_TOOL_ID,
-                "ssh": contract.SSH_TOOL_ID, "ldap": contract.LDAP_TOOL_ID}[case.split("-")[0]]
+                "ssh": contract.SSH_TOOL_ID, "ldap": contract.LDAP_TOOL_ID,
+                "smb": contract.SMB_TOOL_ID}[case.split("-")[0]]
     assert action.tool_id == expected and action.target == "127.0.0.1"
     assert type(action.parameters) is {contract.DIG_TOOL_ID: DigDNSParameters,
         contract.OPENSSL_TOOL_ID: OpenSSLTLSParameters, contract.SSH_TOOL_ID: SSHHostKeysParameters,
-        contract.LDAP_TOOL_ID: LDAPRootDSEParameters}[expected]
+        contract.LDAP_TOOL_ID: LDAPRootDSEParameters, contract.SMB_TOOL_ID: SMBShareListParameters}[expected]
     assert contract.profile_allows(action, case)
     assert policy().evaluate(action).decision == "approval_required"
     assert policy(allowed_methods=[]).evaluate(action).decision == "approval_required"

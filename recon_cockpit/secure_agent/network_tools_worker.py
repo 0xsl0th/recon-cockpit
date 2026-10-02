@@ -47,8 +47,8 @@ else:
 
 def verify_files(manifest):
     runtime.validate_manifest(manifest)
-    for item in manifest["files"]:
-        raw = runtime._read_regular(item["destination"])
+    for item in runtime.runtime_files(manifest):
+        raw = runtime.read_runtime_file(item["destination"], manifest["tool_id"])
         if len(raw) != item["size"] or hashlib.sha256(raw).hexdigest() != item["sha256"]:
             raise ValueError("network_tool_mounted_runtime_mismatch")
         if item["destination"] == manifest["executable"] and not raw.startswith(b"\x7fELF"):
@@ -58,7 +58,7 @@ def verify_files(manifest):
 
 
 def _landlock_permissions(manifest):
-    permissions = {item["destination"]: 4 for item in manifest["files"]}
+    permissions = {item["destination"]: 4 for item in runtime.runtime_files(manifest)}
     permissions[manifest["executable"]] |= 1
     permissions[manifest["interpreter"]] |= 1
     permissions.update({"/dev/null": 6, "/dev/urandom": 4, "/dev/random": 4,
@@ -73,7 +73,7 @@ def landlock(manifest):
 
 
 def syscall_filter(tool_id):
-    if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP):
+    if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB):
         raise ValueError("unsupported_network_tool")
     common.syscall_filter(allow_threads=tool_id == runtime.DIG)
 
