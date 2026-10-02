@@ -935,7 +935,7 @@ also passed. PR #27 stays closed. The following pre-merge handoff is historical.
 The operator authorized review and merge of PR #27 and asked whether offline R5
 was now concluded. A fresh independent review of
 `c3242c04e48759381e3063dbe91943a04d679cb4` found no blockers or outstanding
-reviews/comments. All five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36666520215)
+reviews/comments. All five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36666520214)
 passed. Saved JUnit and CLI summaries reproduce the counts and hashes below.
 Main has no configured required checks; all five available jobs were verified.
 
@@ -1489,7 +1489,7 @@ stop/no-execution/cost assertions. No production code changed. Reverification:
   --junitxml=/tmp/recon-authority-cancel-portable.xml
 ```
 
-**215 passed in 0.98 seconds.** Full Linux verification above remains applicable;
+**214 passed in 0.98 seconds.** Full Linux verification above remains applicable;
 the PR checks report the corrected head's hosted portable matrix.
 
 The direct gate proves durable intent from the selected writer, not truth of a

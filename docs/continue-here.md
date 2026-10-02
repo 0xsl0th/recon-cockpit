@@ -534,7 +534,7 @@ Hosted CI on `d5616d5` passed four matrix jobs but exposed an existing timer rac
 on Ubuntu/Python 3.14: cancellation could precede mock transport entry, so the
 test's reserved-call assertion tested the wrong phase. The test now cancels at
 the scripted transport wait and asserts that the call is already reserved. All
-**215 offline-authority and broker tests passed in 0.98 seconds** after this
+**214 offline-authority and broker tests passed in 0.98 seconds** after this
 test-only correction (`/tmp/recon-authority-cancel-portable.xml`). Production is
 unchanged; the full Linux evidence remained valid. All five hosted jobs passed
 on corrected final head `1c26828`, which was reviewed and merged as recorded above.
