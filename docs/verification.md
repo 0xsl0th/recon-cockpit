@@ -28,7 +28,8 @@ external target or paid service is involved.
 Private validation receipts are in `.secure-agent/smb-tools-20261002` in the
 primary checkout. Independent runtime/launcher and fixture/parser/evidence reviews
 found no blockers. Implementation `fbcf0ac` is on `feature/secure-smb-coverage`,
-based on `79abaab`. Local validation passed **5,945 distinct portable tests**:
+based on `79abaab`; review handoff: [PR #40](https://github.com/0xsl0th/recon-cockpit/pull/40).
+Local validation passed **5,945 distinct portable tests**:
 the full run passed 5,943 in 327.880 seconds, followed by a 116-case final fixture
 run containing the two subsequently added alternate-pipe tests. No portable
 failure, error or skip occurred. Receipts: `validation/portable.xml` and
