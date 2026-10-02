@@ -64,7 +64,7 @@ Private receipts: `.secure-agent/pr41-merge-review.json` and
 `.secure-agent/rpc-nfs-tools-20261002` in the primary checkout. Main now has
 13 accepted secure capabilities backed by 10 external programs.
 
-**B5 is implemented and lab-verified; PR review and an authorized merge remain.**
+**B5 is implemented and lab-verified in [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42); review/merge remain.**
 Development is in `/tmp/recon-secure-ftp-smtp-coverage`, branch
 `feature/secure-ftp-smtp-coverage`, based on merged main `6623aa0`.
 [The runbook](ftp-smtp-tools.md) covers `curl_ftp_list_v1` and
@@ -88,10 +88,14 @@ accepted cards, policies and evidence identities are preserved. Full portable
 validation passed 6,755 tests; 50 real network workflow cases and 49 network
 enforcement checks and 140 affected legacy Linux checks passed (239 Linux total),
 with no selected skips/failures/errors. See [verification.md](verification.md) for
-complete validation and clean-source evidence receipts.
+complete validation and clean-source evidence receipts. Implementation `e3f5056`
+completed four normal/empty trials with 4/4 useful completion, zero unnecessary
+refusals, no paid/provider calls, closed labs and identical read-only replay. All
+nine accepted B1–B4 bundles replayed without changing bytes or mtimes. Final
+PR checks must pass on the latest revision before an authorized merge.
 
 Private handoff: `.secure-agent/ftp-smtp-tools-20261002/handoff.json` in the primary
-checkout. B5's new PR is for review; its merge requires a separate operator
+checkout. PR #42 is for review; its merge requires a separate operator
 instruction. B5 is not yet accepted main coverage. After G1–G6, prioritize
 B6 Docker/WinRM metadata, then B7 bounded Nmap service identification and B8
 synthetic Kerberos principal enumeration. B6 fills missing service families with

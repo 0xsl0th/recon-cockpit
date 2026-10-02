@@ -7,7 +7,7 @@ post-merge main checks passed, and its merge tree matches reviewed head `670c891
 B0–B4 remain accepted. B5 adds `curl_ftp_list_v1` and
 `curl_smtp_capabilities_v1` through the existing secure execution/evidence path.
 See [ftp-smtp-tools.md](ftp-smtp-tools.md). This candidate is lab-verified and
-pending PR review and an authorized merge. Main remains at 13 accepted secure
+pending review in [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42) and an authorized merge. Main remains at 13 accepted secure
 capabilities backed by 10 programs; accepting B5 would yield 15 capabilities
 backed by the same 10 programs.
 
@@ -50,6 +50,19 @@ JUnit receipts are `validation/portable.xml`, `workflow-linux.xml`,
 `enforcement-linux.xml` and `legacy-linux.xml`; `validation-summary.json` records
 their counts, durations and digests. Hosted checks must pass on the final PR
 revision before a later authorized merge.
+
+Clean-source execution at `e3f5056ce86ceb055a20c22fd908c2f9a52fc612` completed
+**4/4 legitimate normal/empty tasks**, with **zero unnecessary refusals**, closed
+labs, independent raw reparsing and matching read-only replay. FTP normal/empty
+CLI times were 2.876/2.866 seconds; SMTP normal/empty times were 2.908/2.846 seconds.
+All nine accepted B1–B4 bundles (including B4's two empty results) replayed exactly,
+without changes to file bytes or modification times. Provider calls and actual
+provider cost were zero. `verification.json` records exact source, runtime/action/
+policy/artifact bindings, counters, digests and compatibility receipts.
+The first receipt helper failed on the report's intentionally omitted rationale;
+it was corrected to reconstruct the exact deterministic proposal and verify its
+digest. That initial successful native capture is preserved in
+`debug/clean-verifier-attempt-1`; application code did not change.
 
 Private evidence is under `.secure-agent/ftp-smtp-tools-20261002` in the primary
 checkout. Development captures remain under `debug`; they are not clean-source

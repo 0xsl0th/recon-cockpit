@@ -13,7 +13,7 @@ accepted B2 SSH/LDAP; its final and post-merge checks passed. Main reached
 accepted B3 anonymous SMB metadata at `775352e`. [PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41)
 accepted B4 RPC/NFS metadata at `6623aa0`, bringing main to **13 secure capabilities
 backed by 10 external programs**. B5 FTP/SMTP is implemented and lab-verified,
-pending PR review and an authorized merge. Both profiles reuse curl; accepting
+pending review in [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42) and an authorized merge. Both profiles reuse curl; accepting
 B5 would bring main to **15 capabilities backed by the same 10 external programs**.
 Its unchecked rows remain unaccepted until G6 is complete.
 

@@ -2,7 +2,7 @@
 
 B5 extends the [secure-tool coverage checklist](secure-tool-coverage.md) with two
 independently invoked curl profiles. Implementation and owned-lab validation are
-complete; the batch remains pending PR review and an authorized merge.
+complete; [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42) remains pending review and an authorized merge.
 Both profiles reuse policy, approval, audit, admission, the confined native
 launcher, networkless parsing and private evidence replay.
 
@@ -63,6 +63,12 @@ query; connection counts are acknowledged lower bounds. Inspection is read-only
 and never restores execution authority. Dry runs start no lab or native client.
 
 ## Verification and next gap
+
+Validation passed 6,755 portable and 239 selected Linux checks with no selected
+failures/errors/skips. Clean source `e3f5056` completed all four normal/empty
+trials, with zero unnecessary refusals and matching read-only replay; all nine
+accepted B1–B4 bundles remained byte/mtime-identical. These are four synthetic
+correctness trials, not a statistical or professional readiness claim.
 
 [verification.md](verification.md) records useful real execution, negative cases,
 independent replay, actual approval/enforcement/resource checks and cleanup.

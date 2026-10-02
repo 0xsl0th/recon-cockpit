@@ -26,7 +26,7 @@ main to 10 secure capabilities backed by 7 external programs. PR #40 accepts B3
 SMB metadata, bringing main to 11 capabilities backed by 8 external programs.
 PR #41 accepts B4 RPC/NFS metadata at `6623aa0`, bringing main to 13 capabilities
 backed by 10 external programs. B5 FTP/SMTP is implemented and lab-verified,
-pending PR review/merge; it reuses curl and would add two capabilities without a
+pending review/merge in [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42); it reuses curl and would add two capabilities without a
 new executable family. B6 Docker/WinRM metadata is the next gap because its fixed
 read-only observations reuse the existing curl/HTTP infrastructure. See the
 [inventory and completion gates](secure-tool-coverage.md) for exact distinctions,
