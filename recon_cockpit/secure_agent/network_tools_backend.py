@@ -17,7 +17,8 @@ from .network_tools_lab_contract import BACKEND, validate_context, validate_iden
 class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
     name = BACKEND
     supported_tools = ("dig_dns_query_v1", "openssl_tls_handshake_v1", "ssh_host_keys_v1", "ldap_rootdse_v1", "smb_share_list_v1",
-                       "rpcinfo_dump_v1", "showmount_exports_v1", "curl_ftp_list_v1", "curl_smtp_capabilities_v1")
+                       "rpcinfo_dump_v1", "showmount_exports_v1", "curl_ftp_list_v1", "curl_smtp_capabilities_v1",
+                       "curl_docker_ping_v1", "curl_docker_version_v1", "curl_winrm_metadata_v1")
     launch_mode = _envelope_mode = "owned_network_tools_lab"
     _executor_mode = "network_tools_owned"
     _closure = None

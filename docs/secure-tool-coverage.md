@@ -12,10 +12,12 @@ accepted B2 SSH/LDAP; its final and post-merge checks passed. Main reached
 **11 secure capabilities backed by 8 external programs** after [PR #40](https://github.com/0xsl0th/recon-cockpit/pull/40)
 accepted B3 anonymous SMB metadata at `775352e`. [PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41)
 accepted B4 RPC/NFS metadata at `6623aa0`, bringing main to **13 secure capabilities
-backed by 10 external programs**. B5 FTP/SMTP is implemented and lab-verified,
-pending review in [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42) and an authorized merge. Both profiles reuse curl; accepting
-B5 would bring main to **15 capabilities backed by the same 10 external programs**.
-Its unchecked rows remain unaccepted until G6 is complete.
+backed by 10 external programs**. [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42)
+accepted B5 FTP/SMTP at `38cbd43`, bringing main to **15 secure capabilities backed
+by the same 10 programs**. B6 Docker/WinRM is lab-verified and pending PR
+review/merge in [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43): three fixed curl profiles cover health, version and unauthenticated
+endpoint metadata independently. Acceptance would bring main to **18 capabilities
+backed by the same 10 programs**.
 
 ## What the inventory measures
 
@@ -82,10 +84,10 @@ such and is not counted as accepted main coverage.
 | B3 | SMB share metadata with smbclient | [x] Accepted in PR #40 | Actual anonymous finite listing and replay in the owned lab; native empty/denied/malformed ambiguity stays inconclusive. No credentials, file retrieval, writes or remote execution. |
 | B4 | RPC program metadata with rpcinfo | [x] Accepted in PR #41 | Real fixed TCP listing and explicit empty result replay in the owned lab; advertised ports remain metadata, with no follow-up. |
 | B4 | NFS export metadata with showmount | [x] Accepted in PR #41 | Real export/empty listing and replay; malformed/hostile groups stay inconclusive and unapproved discovered ports are blocked. No mounts or export reads. |
-| B5 — current | Anonymous FTP listing with curl | [ ] Lab-verified; PR review/merge pending | Real fixed NLST and valid empty result with complete control evidence; both connections stay on the predeclared endpoint. Forbidden passive IP/port blocked; no transfers. |
-| B5 — current | SMTP advertised capabilities with curl | [ ] Lab-verified; PR review/merge pending | Real EHLO capabilities and valid no-extension result, followed by QUIT. Rejected EHLO/HELO, malformed and hostile replies remain inconclusive; no mail/auth/account probing. |
-| B6 | Docker API metadata with curl | [ ] Planned | Fixed read-only health/version endpoints; bounded structured JSON; no container lifecycle, filesystem or command endpoints. |
-| B6 | WinRM endpoint metadata with curl | [ ] Planned | One fixed unauthenticated endpoint response; report status/authentication schemes; no login, SOAP operations or shell. |
+| B5 | Anonymous FTP listing with curl | [x] Accepted in PR #42 | Real fixed NLST and valid empty result with complete control evidence; both connections stay on the predeclared endpoint. Forbidden passive IP/port blocked; no transfers. |
+| B5 | SMTP advertised capabilities with curl | [x] Accepted in PR #42 | Real EHLO capabilities and valid no-extension result, followed by QUIT. Rejected EHLO/HELO, malformed and hostile replies remain inconclusive; no mail/auth/account probing. |
+| B6 — current | Docker API metadata with curl | [ ] Lab-verified; PR review/merge pending | Separate fixed GET profiles for /_ping and /version; complete health and bounded JSON observations, no container lifecycle, filesystem or command endpoints. |
+| B6 — current | WinRM endpoint metadata with curl | [ ] Lab-verified; PR review/merge pending | One fixed unauthenticated endpoint response; report status/authentication schemes; no login, SOAP operations or shell. |
 | B7 | Nmap service identification | [ ] Planned, closure review required | Finite reviewed service probes and any implicit NSE/version behavior must be explicitly pinned and constrained; preserve the old TCP-only profile. No generic `-sV` switch without that review. |
 | B8 | Kerberos principal enumeration with kerbrute | [ ] Planned, owned KDC prerequisite | Fixed short synthetic principal list, bounded requests, structured exists/unknown results, no passwords, spraying, ticket extraction or real directory. |
 
@@ -97,11 +99,14 @@ move a required row to deferred work to claim milestone completion. Keep each PR
 small enough for an independent review; stop a tool on unsupported prerequisites
 without falling back to the host runner. A blocked tool does not complete its row.
 
-After B5, prioritize **B6 Docker/WinRM metadata**: it fills two missing service
+**B6 Docker/WinRM metadata is current**: it fills two missing service
 families while reusing existing interactive curl suggestions and the verified
 secure HTTP/native runtime. Keep each operation independently invoked and limited
 to fixed read-only metadata; no Docker socket, container action or remote session.
-B7's probe-runtime review and B8's owned KDC remain the following required gaps.
+After B6, prioritize **B7 bounded Nmap service identification**: the accepted
+TCP-only profile still cannot identify a service. Review and pin the finite
+probe/NSE runtime before enabling it. B8's owned KDC and synthetic principal
+enumeration follow; neither gap is waived.
 
 ## Completion gates for every required capability
 

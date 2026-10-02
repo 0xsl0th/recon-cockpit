@@ -10,12 +10,13 @@ GATES = ['--owned-lab','--isolated-audit','--isolated-approvals','--isolated-lau
 
 
 def arguments(tmp_path, case="dig-ok"):
-    policy = "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy = "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     return ['--network-tool-assessment',case,'--assessment-dir',str(tmp_path/'evidence'),
             '--audit',str(tmp_path/'audit.jsonl'),'--policy','examples/secure-agent-' + policy + '-policy.json']
 
 
-@pytest.mark.parametrize('case', ['dig-ok', 'ssh-ok', 'ldap-ok', 'smb-ok', 'rpc-ok', 'nfs-ok', 'ftp-ok', 'smtp-ok'])
+@pytest.mark.parametrize('case', ['dig-ok', 'ssh-ok', 'ldap-ok', 'smb-ok', 'rpc-ok', 'nfs-ok', 'ftp-ok', 'smtp-ok',
+    'docker-ping-ok', 'docker-version-ok', 'winrm-ok'])
 @pytest.mark.parametrize('missing',GATES)
 def test_each_launch_gate_required_before_side_effects(tmp_path,missing,case):
     with pytest.raises(SystemExit) as error:
@@ -81,4 +82,13 @@ def test_shipped_ftp_smtp_policy_keeps_fresh_approval_and_fixed_scope():
     assert value['require_approval'] is True and value['approval_ttl_seconds'] == 60
     assert value['allowed_targets'] == ['127.0.0.1/32'] and value['allowed_ports'] == [8080]
     assert value['allowed_tools'] == ['curl_ftp_list_v1', 'curl_smtp_capabilities_v1']
+    assert value['max_timeout_seconds'] == 5 and value['max_output_bytes'] == 8192
+
+
+def test_shipped_docker_winrm_policy_keeps_fresh_approval_and_metadata_only_scope():
+    value = json.loads(Path('examples/secure-agent-docker-winrm-policy.json').read_text())
+    assert value['require_approval'] is True and value['approval_ttl_seconds'] == 60
+    assert value['allowed_targets'] == ['127.0.0.1/32'] and value['allowed_ports'] == [8080]
+    assert value['allowed_tools'] == ['curl_docker_ping_v1', 'curl_docker_version_v1', 'curl_winrm_metadata_v1']
+    assert value['allowed_methods'] == ['GET']
     assert value['max_timeout_seconds'] == 5 and value['max_output_bytes'] == 8192

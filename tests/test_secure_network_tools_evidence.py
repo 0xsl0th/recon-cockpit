@@ -42,6 +42,10 @@ def manifest(tool):
 
 def transcript(case):
     from recon_cockpit.secure_agent.network_tools_fixture import SSH_PUBLIC_KEY_BASE64, LDAP_VALUES
+    if case.startswith(("docker-", "winrm-")):
+        from test_secure_network_tools_b6 import response, SUCCESS_CASES
+        from recon_cockpit.secure_agent.network_tools_fixture import http_metadata_response
+        return (response(case) if case in SUCCESS_CASES else http_metadata_response(case)), b""
     if case.startswith("ftp-"):
         from test_secure_network_tools_b5 import ftp_output
         return ftp_output(empty=case == "ftp-empty", injected=case == "ftp-injected")
@@ -84,7 +88,7 @@ def transcript(case):
 
 
 def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
-    policy_file = "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     action = parse_action(contract.action(case, 1))
     selected = manifest(action.tool_id)
@@ -131,7 +135,10 @@ def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
     ("rpc-empty", "rpc_empty_registrations_observed"), ("nfs-ok", "nfs_exports_observed"),
     ("nfs-empty", "nfs_empty_exports_observed"),
     ("ftp-ok", "ftp_names_observed"), ("ftp-empty", "ftp_empty_listing_observed"),
-    ("smtp-ok", "smtp_capabilities_observed"), ("smtp-empty", "smtp_no_extensions_observed")])
+    ("smtp-ok", "smtp_capabilities_observed"), ("smtp-empty", "smtp_no_extensions_observed"),
+    ("docker-ping-ok", "docker_ping_observed"), ("docker-version-ok", "docker_version_metadata_observed"),
+    ("docker-version-empty", "docker_no_version_metadata_observed"), ("winrm-ok", "winrm_auth_schemes_observed"),
+    ("winrm-no-auth", "winrm_no_auth_schemes_observed")])
 def test_raw_evidence_replays_without_writes_and_reports_finite_facts(tmp_path, case, outcome):
     path = tmp_path / "evidence"
     report = complete(path, case)
@@ -143,7 +150,7 @@ def test_raw_evidence_replays_without_writes_and_reports_finite_facts(tmp_path, 
     assert "127.0.0.2" not in (path / "report.md").read_text()
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 def test_cli_selects_network_evidence_inspector(tmp_path, capsys, case):
     from recon_cockpit.secure_agent import cli
     path = tmp_path / "evidence"
@@ -193,7 +200,7 @@ def test_failed_tool_does_not_count_as_useful_completion(tmp_path):
     assert evidence.inspect_evidence(path) == report
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 @pytest.mark.parametrize("status", ["succeeded", "failed"])
 def test_execution_capture_requires_a_precommitted_runtime(tmp_path, case, status):
     path = tmp_path / "evidence"
@@ -203,7 +210,7 @@ def test_execution_capture_requires_a_precommitted_runtime(tmp_path, case, statu
     assert not list(path.glob("result-*.json"))
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 def test_replay_rejects_removing_execution_runtime_commitment(tmp_path, case):
     path = tmp_path / "evidence"
     complete(path, case)
@@ -219,12 +226,12 @@ def test_replay_rejects_removing_execution_runtime_commitment(tmp_path, case):
     assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 def test_dry_run_without_runtime_commitment_still_finalizes_and_replays(tmp_path, case):
     path = tmp_path / "evidence"
     session_id = str(uuid4())
     owned = identity(case, str(uuid4()))
-    policy_file = "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     with evidence.NmapEvidenceStore(path, session_id=session_id, policy=policy, case=case,
             owned_lab=owned, workflow_profile="network_tools", runtime_sha256=None) as store:
@@ -346,7 +353,7 @@ def test_b4_rehashed_results_cannot_invent_metadata_or_omit_enforcement(tmp_path
     assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
 
 
-@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 def test_native_channel_identity_survives_recomputed_capture_hashes(tmp_path, case):
     path = tmp_path / "evidence"
     complete(path, case)
@@ -361,7 +368,7 @@ def test_native_channel_identity_survives_recomputed_capture_hashes(tmp_path, ca
     assert "journal_or_artifact_incomplete" in report["integrity_issues"]
 
 
-@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 def test_native_missing_artifact_or_owner_closure_cannot_publish_metadata(tmp_path, case):
     path = tmp_path / "evidence"
     original = complete(path, case)
@@ -402,7 +409,7 @@ def test_nfs_hostile_export_group_stays_raw_and_never_counts_as_useful_completio
     assert b"127.0.0.2" in base64.b64decode(retained["raw_output_base64"])
 
 
-@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 def test_native_parser_custody_unavailable_prevents_report_commit(tmp_path, monkeypatch, case):
     from recon_cockpit.secure_agent.isolation import IsolationUnavailable
     def fail(*args, **kwargs):
@@ -460,9 +467,9 @@ def test_b5_replay_rejects_missing_native_completion_even_after_capture_rehash(t
     assert "journal_or_artifact_incomplete" in report["integrity_issues"]
 
 
-@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 @pytest.mark.parametrize("legacy_case", ["dig-ok", "ssh-ok", "smb-ok", "rpc-ok"])
-def test_b5_cannot_relabel_native_evidence_as_any_accepted_card(tmp_path, case, legacy_case):
+def test_native_evidence_cannot_relabel_as_earlier_accepted_card(tmp_path, case, legacy_case):
     from recon_cockpit.secure_agent.network_tools_workflow import card_identity
     path = tmp_path / "evidence"
     complete(path, case)
@@ -473,8 +480,8 @@ def test_b5_cannot_relabel_native_evidence_as_any_accepted_card(tmp_path, case, 
         evidence.inspect_evidence(path)
 
 
-@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok"])
-def test_b5_failed_native_execution_never_counts_as_useful_completion(tmp_path, case):
+@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
+def test_failed_native_execution_never_counts_as_useful_completion(tmp_path, case):
     path = tmp_path / "evidence"
     report = complete(path, case, status="failed")
     assert report["outcome"] == "inconclusive" and report["summary"]["actions_succeeded"] == 0
@@ -482,8 +489,8 @@ def test_b5_failed_native_execution_never_counts_as_useful_completion(tmp_path, 
     assert evidence.inspect_evidence(path) == report
 
 
-@pytest.mark.parametrize("case", ["ftp-injected", "smtp-injected"])
-def test_b5_hostile_native_text_is_retained_only_raw_and_never_useful_completion(tmp_path, case):
+@pytest.mark.parametrize("case", ["ftp-injected", "smtp-injected", "docker-ping-injected", "docker-version-injected", "winrm-injected"])
+def test_hostile_native_text_is_retained_only_raw_and_never_useful_completion(tmp_path, case):
     path = tmp_path / "evidence"
     report = complete(path, case)
     assert report["outcome"] == "inconclusive"
@@ -494,3 +501,65 @@ def test_b5_hostile_native_text_is_retained_only_raw_and_never_useful_completion
     artifact = report["records"][0]["artifact"]["filename"]
     retained = json.loads((path / artifact).read_bytes())
     assert b"127.0.0.2" in base64.b64decode(retained["raw_output_base64"])
+
+
+@pytest.mark.parametrize("case,change", [
+    ("docker-ping-ok", lambda r: r["tool_observation"].update(health="unavailable")),
+    ("docker-version-ok", lambda r: r["tool_observation"]["metadata"].update(version="99.1.2")),
+    ("docker-version-ok", lambda r: r["tool_observation"].update(metadata={})),
+    ("docker-version-empty", lambda r: r["tool_observation"]["metadata"].update(version="27.0.0")),
+    ("winrm-ok", lambda r: r["tool_observation"].update(auth_schemes=[])),
+    ("winrm-no-auth", lambda r: r["tool_observation"].update(status_code=401, auth_schemes=["negotiate", "ntlm"])),
+    ("docker-ping-ok", lambda r: r["owned_lab"].update(request_count=0)),
+    ("docker-version-ok", lambda r: r["owned_lab"].update(connection_count=2)),
+    ("winrm-ok", lambda r: r["boundary_checks"].update(forbidden_port_blocked=False)),
+    ("winrm-ok", lambda r: r["provenance"].update(exit_code=22)),
+])
+def test_b6_rehashed_metadata_never_overrides_independent_raw_replay(tmp_path, case, change):
+    path = tmp_path / "evidence"
+    complete(path, case)
+    mutate_result(path, 1, change)
+    before = {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
+    report = evidence.inspect_evidence(path)
+    assert report["outcome"] == "inconclusive" and report["finding"]["tool_observation"] is None
+    assert "journal_or_artifact_incomplete" in report["integrity_issues"]
+    assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
+
+
+@pytest.mark.parametrize("case", ["docker-ping-ok", "docker-version-ok", "docker-version-empty", "winrm-ok", "winrm-no-auth"])
+@pytest.mark.parametrize("mutation", [lambda raw: raw[:-1], lambda raw: raw + b"unexpected",
+    lambda raw: raw.replace(b"Connection: close", b"Connection: close\r\nContent-Length: 0")])
+def test_b6_replay_requires_complete_unambiguous_http_even_after_rehash(tmp_path, case, mutation):
+    path = tmp_path / "evidence"
+    complete(path, case)
+    def change(result):
+        raw = mutation(base64.b64decode(result["raw_output_base64"]))
+        result["raw_output_base64"] = base64.b64encode(raw).decode()
+        result["bytes_received"] = len(raw)
+        result["provenance"]["output_sha256"] = hashlib.sha256(raw).hexdigest()
+    mutate_result(path, 1, change)
+    report = evidence.inspect_evidence(path)
+    assert report["outcome"] == "inconclusive" and report["finding"]["tool_observation"] is None
+    assert "journal_or_artifact_incomplete" in report["integrity_issues"]
+
+
+@pytest.mark.parametrize("case", ["docker-ping-ok", "docker-version-ok", "winrm-ok"])
+def test_b6_cannot_claim_accepted_b5_card_identity(tmp_path, case):
+    from recon_cockpit.secure_agent.network_tools_workflow import card_identity
+    path = tmp_path / "evidence"
+    complete(path, case)
+    manifest = json.loads((path / "manifest.json").read_bytes())
+    manifest["workflow_card"] = card_identity("ftp-ok")
+    (path / "manifest.json").write_bytes(contract.encode(manifest))
+    with pytest.raises(EvidenceUnavailable):
+        evidence.inspect_evidence(path)
+
+
+@pytest.mark.parametrize("case", ["docker-ping-unavailable", "docker-ping-redirect-ip", "docker-ping-redirect-port",
+    "docker-version-redirect-ip", "docker-version-redirect-port", "winrm-redirect-ip", "winrm-redirect-port"])
+def test_b6_zero_exit_for_http_refusal_or_redirect_never_counts_as_useful(tmp_path, case):
+    path = tmp_path / "evidence"
+    report = complete(path, case)
+    assert report["summary"]["actions_succeeded"] == 1
+    assert report["outcome"] == "inconclusive" and report["finding"]["tool_observation"]["details"] is None
+    assert evidence.inspect_evidence(path) == report

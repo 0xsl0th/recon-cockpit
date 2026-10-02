@@ -33,7 +33,7 @@ def manifest(tool_id=runtime.DIG):
 
 def policy():
     return parse_policy({"schema_version": "1", "policy_version": "test-network-tool-v1",
-        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP],
+        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM],
         "allowed_ports": [8080, 111], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
         "max_output_bytes": 8192, "max_targets": 1, "require_approval": True, "approval_ttl_seconds": 60})
 
@@ -76,7 +76,7 @@ def test_independent_launch_validator_accepts_only_the_selected_fixed_tool(case)
     assert admission.profile_allows(parse_action(action(case)), configuration(case))
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 @pytest.mark.parametrize("fault", ["mode", "inner_mode", "identity", "manifest", "namespace", "deadline",
     "sequence", "reservation", "policy", "action", "limit"])
 def test_fresh_commitments_do_not_bypass_fixed_authority(case, fault):
@@ -102,7 +102,7 @@ def test_fresh_commitments_do_not_bypass_fixed_authority(case, fault):
 @pytest.mark.parametrize("profile,case", [("fixture", None), ("discovery_fixture", None), ("owned_lab", "a"),
     ("owned_nmap_lab", "a"), ("owned_web_lab", "vulnerable"), ("owned_http_headers_lab", "vulnerable"), ("owned_web_tools_lab", "curl-ok")])
 def test_existing_profiles_never_admit_network_tools(profile, case):
-    for selected in ("dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"):
+    for selected in ("dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"):
         assert not admission.profile_allows(parse_action(action(selected)), {"profile": profile, "case": case})
 
 
@@ -212,7 +212,7 @@ def test_manifest_size_ceiling_keeps_maximum_capture_receipt_bounded():
     with pytest.raises(ValueError): runtime.validate_manifest(value)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM])
 def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
     selected = manifest(tool_id)
     environment = runtime.execution_environment(tool_id)
@@ -248,7 +248,8 @@ def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
 @pytest.mark.parametrize("tool_id,threads", [(runtime.DIG, True), (runtime.OPENSSL, False),
                                             (runtime.SSH, False), (runtime.LDAP, False), (runtime.SMB, False),
                                             (runtime.RPCINFO, False), (runtime.SHOWMOUNT, False),
-                                            (runtime.FTP, False), (runtime.SMTP, False)])
+                                            (runtime.FTP, False), (runtime.SMTP, False),
+                                            (runtime.DOCKER_PING, False), (runtime.DOCKER_VERSION, False), (runtime.WINRM, False)])
 def test_only_dig_selects_the_bounded_thread_filter(monkeypatch, tool_id, threads):
     from recon_cockpit.secure_agent import network_tools_worker as worker
     selected = []
@@ -259,7 +260,7 @@ def test_only_dig_selects_the_bounded_thread_filter(monkeypatch, tool_id, thread
         worker.syscall_filter("ffuf_content_discovery_v1")
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 def test_runtime_retains_and_binds_both_output_channels(monkeypatch, case):
     monkeypatch.setattr(runtime, "sys", SimpleNamespace(platform="linux"))
     launch = envelope(case)
@@ -286,7 +287,7 @@ def test_admission_case_map_matches_the_closed_owned_contract():
     for case in CASES:
         assert admission.NETWORK_TOOL_CASES[case] == action(case)["tool_id"]
         assert admission.configuration(configuration(case))["case"] == case
-    for case in ("ssh-other", "ldap-other", "openssl-other", "dig-other", "ftp-other", "smtp-other", "", None, []):
+    for case in ("ssh-other", "ldap-other", "openssl-other", "dig-other", "ftp-other", "smtp-other", "docker-ping-other", "docker-version-other", "winrm-other", "", None, []):
         config = configuration()
         config["case"] = case
         with pytest.raises(ValueError):
@@ -294,8 +295,8 @@ def test_admission_case_map_matches_the_closed_owned_contract():
         assert not admission.profile_allows(parse_action(action("openssl-ok")), config)
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
-@pytest.mark.parametrize("other_case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
+@pytest.mark.parametrize("other_case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 def test_all_network_tools_bind_case_action_and_manifest_independently(case, other_case):
     if case == other_case:
         return
@@ -456,15 +457,16 @@ def test_additional_compiled_staging_rejects_replacement_or_host_file_authority(
             object(), additional_compiled=additional)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.FTP, runtime.SMTP])
-def test_ftp_smtp_manifest_has_no_configuration_and_cannot_import_credentials(monkeypatch, tool_id):
+@pytest.mark.parametrize("tool_id", [runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM])
+def test_curl_metadata_manifest_has_no_configuration_and_cannot_import_credentials(monkeypatch, tool_id):
     value = manifest(tool_id)
     assert runtime.validate_manifest(value, tool_id=tool_id) == value
     assert runtime.compiled_files(tool_id) == ()
     assert runtime.EXECUTABLES[tool_id] == "/usr/bin/curl"
     assert value["executable"] == "/tool/curl"
     for path in ("/etc/curlrc", "/root/.curlrc", "/root/.netrc", "/etc/resolv.conf",
-                 "/etc/hosts", "/etc/ssl/certs", "/tool/config/curlrc", "compiled:curl-config"):
+                 "/etc/hosts", "/etc/ssl/certs", "/tool/config/curlrc", "compiled:curl-config",
+                 "/var/run/docker.sock", "/root/.docker/config.json", "/tmp/krb5cc_1000"):
         changed = deepcopy(value)
         changed["files"].append({"source": path, "destination": path,
             "size": 4, "sha256": hashlib.sha256(b"data").hexdigest()})
@@ -477,8 +479,9 @@ def test_ftp_smtp_manifest_has_no_configuration_and_cannot_import_credentials(mo
         value, [20, 21], "a" * 64, "b" * 64)
     assert argv.count("--ro-bind-data") == 2
     assert "CAP_NET_BIND_SERVICE" not in argv and "CAP_NET_ADMIN" not in argv
-    assert "network_tools_ftp_smtp_fixture" not in runtime.MODULES
-    assert not any("network_tools_ftp_smtp_fixture" in arg for arg in argv)
+    for owner_module in ("network_tools_ftp_smtp_fixture", "network_tools_http_metadata_fixture"):
+        assert owner_module not in runtime.MODULES
+        assert not any(owner_module in arg for arg in argv)
     assert set(runtime.execution_environment(tool_id)) == {"LC_ALL", "OPENSSL_CONF", "MALLOC_ARENA_MAX"}
 
 
@@ -520,3 +523,58 @@ def test_ftp_smtp_admission_does_not_accept_advertised_endpoints(case, target, p
     except ValueError:
         return
     assert not admission.profile_allows(selected, configuration(case))
+
+
+@pytest.mark.parametrize("tool_id,path", [(runtime.DOCKER_PING, "/_ping"),
+    (runtime.DOCKER_VERSION, "/version"), (runtime.WINRM, "/wsman")])
+def test_http_metadata_commands_are_fixed_unauthenticated_gets_without_redirects(tool_id, path):
+    argv = runtime.FIXED_ARGV[tool_id]
+    assert argv[:2] == ("/tool/curl", "--disable")
+    assert {"--silent", "--show-error", "--ipv4", "--globoff", "--http1.1", "--include"} <= set(argv)
+    for flag, value in (("--proto", "=http"), ("--proto-redir", "=http"),
+                        ("--noproxy", "*"), ("--proxy", ""), ("--connect-timeout", "1"),
+                        ("--max-time", "3"), ("--max-filesize", "8192"), ("--retry", "0"),
+                        ("--max-redirs", "0"), ("--request", "GET"), ("--header", "Connection: close"),
+                        ("--user-agent", "recon-cockpit-b6/1")):
+        assert argv.count(flag) == 1 and argv[argv.index(flag) + 1] == value
+    assert argv[-1] == "http://127.0.0.1:8080" + path
+    assert not {"--location", "--location-trusted", "--fail", "--fail-with-body", "--config",
+                "--netrc", "--netrc-optional", "--netrc-file", "--user", "--proxy-user",
+                "--negotiate", "--ntlm", "--anyauth", "--oauth2-bearer", "--delegation",
+                "--unix-socket", "--abstract-unix-socket", "--upload-file", "--data",
+                "--data-binary", "--form", "--cookie", "--cookie-jar", "--cert", "--key",
+                "--resolve", "--connect-to", "--output", "--remote-name", "--remote-header-name"} & set(argv)
+
+
+@pytest.mark.parametrize("case", ["docker-ping-ok", "docker-version-ok", "winrm-ok"])
+@pytest.mark.parametrize("target,port", [("127.0.0.1", 2375), ("127.0.0.1", 2376),
+    ("127.0.0.1", 5985), ("127.0.0.1", 5986), ("127.0.0.1", 8081), ("127.0.0.2", 8080)])
+def test_http_metadata_admission_does_not_accept_default_or_advertised_endpoints(case, target, port):
+    proposal = action(case)
+    proposal["target"], proposal["parameters"]["port"] = target, port
+    selected = parse_action(proposal)
+    assert not admission.profile_allows(selected, configuration(case))
+
+
+@pytest.mark.parametrize("case", ["docker-ping-ok", "docker-version-ok", "winrm-ok"])
+@pytest.mark.parametrize("field,value", [("path", "/containers/json"), ("url", "http://127.0.0.2:8080/"),
+    ("method", "POST"), ("headers", {"Authorization": "Basic eA=="}), ("body", "CreateShell"),
+    ("socket", "/var/run/docker.sock"), ("credentials", "operator")])
+def test_http_metadata_parameters_cannot_select_paths_mutations_or_credentials(case, field, value):
+    proposal = action(case)
+    proposal["parameters"][field] = value
+    with pytest.raises(ValueError):
+        parse_action(proposal)
+
+
+def test_http_metadata_fixture_stays_out_of_native_and_parser_closures(monkeypatch):
+    from recon_cockpit.secure_agent import launcher_isolation, network_tools_parser_runtime as parser
+    assert "network_tools_http_metadata_fixture" in launcher_isolation.NETWORK_TOOLS_MODULES
+    assert "network_tools_http_metadata_fixture" not in runtime.MODULES
+    monkeypatch.setattr(parser, "_trusted_program", lambda name: "/usr/bin/" + name)
+    monkeypatch.setattr(parser, "_namespaces", lambda: dict.fromkeys(("user", "net", "mnt", "pid"), "ns:[1]"))
+    for tool_id in (runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM):
+        argv = parser._command(tool_id, ("/usr/lib/python3.13", [("/usr/bin/python3", "/usr/bin/python3"),
+                                                                ("/usr/bin/curl", "/usr/bin/curl")]))
+        assert "/usr/bin/curl" not in argv
+        assert not any("network_tools_http_metadata_fixture" in arg for arg in argv)

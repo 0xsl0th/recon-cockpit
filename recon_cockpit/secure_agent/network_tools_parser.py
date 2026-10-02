@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import ipaddress
+import json
 import re
 
 
@@ -17,10 +18,14 @@ RPCINFO_TOOL_ID = "rpcinfo_dump_v1"
 SHOWMOUNT_TOOL_ID = "showmount_exports_v1"
 FTP_TOOL_ID = "curl_ftp_list_v1"
 SMTP_TOOL_ID = "curl_smtp_capabilities_v1"
+DOCKER_PING_TOOL_ID = "curl_docker_ping_v1"
+DOCKER_VERSION_TOOL_ID = "curl_docker_version_v1"
+WINRM_TOOL_ID = "curl_winrm_metadata_v1"
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
-    FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1"}
+    FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1", DOCKER_PING_TOOL_ID: "curl-docker-ping-v1",
+    DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -39,6 +44,10 @@ FTP_COMPLETE_CONTROL = (b"220 HarborDesk synthetic FTP\r\n"
     b'257 "/" is the fixture directory\r\n'
     b"227 Entering Passive Mode (127,0,0,1,31,144)\r\n"
     b"200 ASCII listing mode\r\n150 Opening finite name listing\r\n226 Listing complete\r\n")
+DOCKER_FIELDS = {"Version": "version", "ApiVersion": "api_version", "MinAPIVersion": "min_api_version",
+    "Os": "os", "Arch": "arch"}
+DOCKER_VERSION = re.compile(r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}(?:[-+][A-Za-z0-9][A-Za-z0-9.-]{0,15})?")
+DOCKER_API_VERSION = re.compile(r"[0-9]{1,3}\.[0-9]{1,3}")
 SMB_SHARES = {"PUBLIC": "Disk", "IPC$": "IPC"}
 # The minimal native closure omits optional legacy charset modules. This exact
 # startup warning is nonfatal; arbitrary diagnostics cannot become observations.
@@ -108,6 +117,34 @@ def validate_result(tool_id, value):
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id == DOCKER_PING_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "status_code", "health"}
+                or value["kind"] != "docker_ping" or type(value["status_code"]) is not int
+                or value["status_code"] != 200 or value["health"] != "ok"):
+            raise ValueError("invalid_docker_ping")
+        return dict(value)
+    if tool_id == DOCKER_VERSION_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "status_code", "metadata"}
+                or value["kind"] != "docker_version" or type(value["status_code"]) is not int
+                or value["status_code"] != 200 or type(value["metadata"]) is not dict):
+            raise ValueError("invalid_docker_version")
+        metadata = value["metadata"]
+        if metadata and (set(metadata) != set(DOCKER_FIELDS.values())
+                or any(type(item) is not str for item in metadata.values())
+                or DOCKER_VERSION.fullmatch(metadata["version"]) is None
+                or DOCKER_API_VERSION.fullmatch(metadata["api_version"]) is None
+                or DOCKER_API_VERSION.fullmatch(metadata["min_api_version"]) is None
+                or metadata["os"] not in {"linux", "windows"} or metadata["arch"] not in {"amd64", "arm64"}):
+            raise ValueError("invalid_docker_version_metadata")
+        return {**value, "metadata": dict(metadata)}
+    if tool_id == WINRM_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "status_code", "auth_schemes"}
+                or value["kind"] != "winrm_metadata" or type(value["status_code"]) is not int
+                or type(value["auth_schemes"]) is not list
+                or (value["status_code"], value["auth_schemes"]) not in
+                   ((401, ["negotiate", "ntlm"]), (405, []))):
+            raise ValueError("invalid_winrm_metadata")
+        return {**value, "auth_schemes": list(value["auth_schemes"])}
     if tool_id == FTP_TOOL_ID:
         if (set(value) != {"parser_version", "kind", "entries"} or value["kind"] != "ftp_listing"
                 or type(value["entries"]) is not list or len(value["entries"]) > len(FTP_NAMES)):
@@ -478,6 +515,86 @@ def _parse_smtp(output, stderr):
         "kind": "smtp_capabilities", "capabilities": sorted(capabilities)})
 
 
+def _metadata_http_response(output, stderr):
+    """One complete fixed-format HTTP response; every retained byte is checked."""
+    if stderr or output.count(b"\r\n\r\n") != 1:
+        raise ValueError("invalid_metadata_http_response")
+    head, body = output.split(b"\r\n\r\n")
+    lines = head.split(b"\r\n")
+    if not 4 <= len(lines) <= 5 or len(head) > 2048:
+        raise ValueError("invalid_metadata_http_headers")
+    statuses = {b"HTTP/1.1 200 OK": 200, b"HTTP/1.1 401 Unauthorized": 401,
+        b"HTTP/1.1 405 Method Not Allowed": 405}
+    if lines[0] not in statuses:
+        raise ValueError("unsupported_metadata_http_status")
+    headers = {}
+    for line in lines[1:]:
+        if (b": " not in line or any(byte < 32 or byte > 126 for byte in line)
+                or line.startswith(b" ")):
+            raise ValueError("invalid_metadata_http_header")
+        name, value = line.split(b": ", 1)
+        name = name.lower()
+        if name not in {b"content-type", b"content-length", b"connection", b"www-authenticate", b"allow"} or name in headers:
+            raise ValueError("unsupported_metadata_http_header")
+        headers[name] = value
+    if (not {b"content-type", b"content-length", b"connection"} <= set(headers)
+            or headers[b"connection"] != b"close"
+            or re.fullmatch(rb"0|[1-9][0-9]{0,3}", headers[b"content-length"]) is None
+            or int(headers[b"content-length"]) != len(body)):
+        raise ValueError("incomplete_metadata_http_response")
+    return statuses[lines[0]], headers, body
+
+
+def _parse_docker_ping(output, stderr):
+    status, headers, body = _metadata_http_response(output, stderr)
+    if (status != 200 or set(headers) != {b"content-type", b"content-length", b"connection"}
+            or headers[b"content-type"] != b"text/plain" or body != b"OK"):
+        raise ValueError("invalid_docker_ping_response")
+    return validate_result(DOCKER_PING_TOOL_ID, {"parser_version": parser_version(DOCKER_PING_TOOL_ID),
+        "kind": "docker_ping", "status_code": status, "health": "ok"})
+
+
+def _json_unique_object(pairs):
+    result = {}
+    for key, item in pairs:
+        if key in result:
+            raise ValueError("duplicate_docker_version_field")
+        result[key] = item
+    return result
+
+
+def _parse_docker_version(output, stderr):
+    status, headers, body = _metadata_http_response(output, stderr)
+    if (status != 200 or set(headers) != {b"content-type", b"content-length", b"connection"}
+            or headers[b"content-type"] != b"application/json"):
+        raise ValueError("invalid_docker_version_response")
+    try:
+        raw = json.loads(body.decode("ascii"), object_pairs_hook=_json_unique_object)
+    except (ValueError, UnicodeError, RecursionError):
+        raise ValueError("invalid_docker_version_json") from None
+    if type(raw) is not dict or (raw and set(raw) != set(DOCKER_FIELDS)):
+        raise ValueError("unsupported_docker_version_fields")
+    return validate_result(DOCKER_VERSION_TOOL_ID, {"parser_version": parser_version(DOCKER_VERSION_TOOL_ID),
+        "kind": "docker_version", "status_code": status,
+        "metadata": {DOCKER_FIELDS[key]: value for key, value in raw.items()}})
+
+
+def _parse_winrm_metadata(output, stderr):
+    status, headers, body = _metadata_http_response(output, stderr)
+    extra = b"www-authenticate" if status == 401 else b"allow"
+    if (body or headers[b"content-type"] != b"text/plain"
+            or set(headers) != {b"content-type", b"content-length", b"connection", extra}):
+        raise ValueError("invalid_winrm_metadata_response")
+    if status == 401 and headers[extra] == b"Negotiate, NTLM":
+        schemes = ["negotiate", "ntlm"]
+    elif status == 405 and headers[extra] == b"POST":
+        schemes = []
+    else:
+        raise ValueError("unsupported_winrm_metadata")
+    return validate_result(WINRM_TOOL_ID, {"parser_version": parser_version(WINRM_TOOL_ID),
+        "kind": "winrm_metadata", "status_code": status, "auth_schemes": schemes})
+
+
 def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=False):
     parser_version(tool_id)
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
@@ -486,4 +603,5 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
     return {DIG_TOOL_ID: _parse_dns, OPENSSL_TOOL_ID: _parse_tls,
             SSH_TOOL_ID: _parse_ssh, LDAP_TOOL_ID: _parse_ldap, SMB_TOOL_ID: _parse_smb,
             RPCINFO_TOOL_ID: _parse_rpcinfo, SHOWMOUNT_TOOL_ID: _parse_showmount,
-            FTP_TOOL_ID: _parse_ftp, SMTP_TOOL_ID: _parse_smtp}[tool_id](output, stderr)
+            FTP_TOOL_ID: _parse_ftp, SMTP_TOOL_ID: _parse_smtp, DOCKER_PING_TOOL_ID: _parse_docker_ping,
+            DOCKER_VERSION_TOOL_ID: _parse_docker_version, WINRM_TOOL_ID: _parse_winrm_metadata}[tool_id](output, stderr)

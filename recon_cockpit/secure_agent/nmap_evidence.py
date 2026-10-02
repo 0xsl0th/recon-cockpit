@@ -237,6 +237,11 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "ftp_empty_listing_observed": "ftp_empty_listing_observed",
                "smtp_capabilities_observed": "smtp_capabilities_observed",
                "smtp_no_extensions_observed": "smtp_no_extensions_observed",
+               "docker_ping_observed": "docker_ping_observed",
+               "docker_version_metadata_observed": "docker_version_metadata_observed",
+               "docker_no_version_metadata_observed": "docker_no_version_metadata_observed",
+               "winrm_auth_schemes_observed": "winrm_auth_schemes_observed",
+               "winrm_no_auth_schemes_observed": "winrm_no_auth_schemes_observed",
                "content_paths_observed": "paths_observed",
                "no_successful_content_paths_observed": "no_successful_paths_observed"}.get(reason, "inconclusive")
     if issues:
@@ -348,6 +353,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
             ]
+        if manifest["fixture_case"].startswith(("docker-", "winrm-")):
+            report["limitations"] = [
+                "This single fixed GET uses a disconnected synthetic HTTP fixture; it does not establish a real Docker or WinRM service, general compatibility or professional engagement readiness.",
+                "Docker health and version are separate capabilities. An OK reply or version fields are endpoint observations, not authority to access a Docker socket, inspect containers or perform lifecycle operations.",
+                "WinRM records only the fixed endpoint response status and reviewed advertised authentication schemes. It does not test authentication, send SOAP or create a remote session.",
+                "Both raw channels are independently reparsed without network. Complete bounded HTTP framing is required; empty version metadata and missing authentication advertisements describe only this response, not service-wide absence or disabled authentication.",
+                "Redirect locations and hostile output remain untrusted raw evidence. They cannot choose targets, paths, methods, credentials or follow-up actions; unsupported or partial replies remain inconclusive.",
+                "The fixture has no Docker or WinRM backend. Counters record one validated fixed GET; accepted connections are acknowledged lower bounds, and inspection never restores execution authority.",
+            ]
     if "planning_origin" in manifest:
         report["planning_origin"] = manifest["planning_origin"]
         report["live_calls_enabled"] = manifest["planning_origin"] == "model_live"
@@ -430,6 +444,21 @@ def _markdown(report):
             lines.extend("| " + capability + " |" for capability in details["capabilities"])
             if not details["capabilities"]:
                 lines.extend(["", "The complete validated EHLO reply advertises no extensions."])
+        elif type(details) is dict and details.get("kind") == "docker_ping":
+            lines.extend(["", "## Docker health endpoint response", "",
+                          "The fixed endpoint returned a complete HTTP 200 response with `OK`."])
+        elif type(details) is dict and details.get("kind") == "docker_version":
+            lines.extend(["", "## Docker version endpoint metadata", "", "| Field | Observation |", "| --- | --- |"])
+            for field, value in details["metadata"].items():
+                lines.append("| " + field + " | `" + value + "` |")
+            if not details["metadata"]:
+                lines.extend(["", "The complete JSON response contains no reviewed version fields."])
+        elif type(details) is dict and details.get("kind") == "winrm_metadata":
+            lines.extend(["", "## WinRM endpoint response", "", "HTTP status: `" + str(details["status_code"]) + "`.",
+                          "", "| Advertised authentication scheme |", "| --- |"])
+            lines.extend("| " + scheme + " |" for scheme in details["auth_schemes"])
+            if not details["auth_schemes"]:
+                lines.extend(["", "This response advertises no reviewed authentication schemes; authentication was not attempted."])
         elif type(details) is dict and details.get("kind") == "rpc_registrations":
             lines.extend(["", "## RPC registration metadata", "", "| Program | Version | Transport | Port |",
                           "| --- | --- | --- | --- |"])

@@ -17,8 +17,8 @@ with a repository inventory, prioritized checklist and explicit completion gates
 Nmap, curl, ffuf, dig, OpenSSL, SSH key collection, LDAP RootDSE and
 [anonymous SMB share metadata](docs/smb-tools.md) have accepted bounded secure
 profiles. [RPC registration and NFS export metadata](docs/rpc-nfs-tools.md) are also accepted.
-The current batch adds [bounded FTP listing and SMTP capability discovery](docs/ftp-smtp-tools.md),
-with actual owned-lab validation and a separate review gate.
+[Bounded FTP listing and SMTP capability discovery](docs/ftp-smtp-tools.md) are accepted.
+The current batch adds [fixed Docker health/version and WinRM endpoint metadata](docs/docker-winrm-tools.md).
 After each batch, prioritize the next tool gap. Deeper workflow
 composition and comparative benchmarking wait until the coverage milestone is
 complete. Per-tool useful execution, evidence and enforcement checks continue now.

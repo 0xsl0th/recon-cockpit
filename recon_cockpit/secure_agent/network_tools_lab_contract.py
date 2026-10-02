@@ -21,6 +21,28 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith(("docker-ping-", "docker-version-", "winrm-")):
+        from . import network_tools_fixture as fixture
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-docker-winrm-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "http_metadata"}],
+            "http": {"method": "GET", "path": fixture.HTTP_METADATA_PATHS[tool], "version": "HTTP/1.1",
+                "host": "127.0.0.1:8080", "user_agent": fixture.HTTP_METADATA_USER_AGENT,
+                "accept": "*/*", "connection": "close", "request_body": False,
+                "redirect_followup": False, "authentication": False, "soap": False,
+                "backend": False, "docker_socket": False, "container_operations": False,
+                "remote_session": False, "max_request_bytes": fixture.HTTP_METADATA_MAX_REQUEST_BYTES},
+            "response_sha256": None if case.endswith("-stalled") else hashlib.sha256(
+                fixture.http_metadata_response(case)).hexdigest(),
+            "behavior": "stall_after_validated_query" if case.endswith("-stalled") else "malformed_response"
+                if case.endswith("-malformed") else "advertise_forbidden_destination"
+                if case.endswith(("-redirect-ip", "-redirect-port")) else "fixed_response",
+            "max_connections": 1, "max_requests": 1,
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_fixed_http_gets",
+            "connection_evidence": "accepted_connections_lower_bound"}
     if case.startswith(("ftp-", "smtp-")):
         from . import network_tools_fixture as fixture
         ftp = case.startswith("ftp-")
