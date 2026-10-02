@@ -93,7 +93,7 @@ closed. Main now has **18 accepted secure capabilities backed by 10 programs**.
 Private receipt: `.secure-agent/pr43-merge-review.json`; B6 evidence remains
 `.secure-agent/docker-winrm-tools-20261002` in the primary checkout.
 
-**B7 bounded Nmap service identification is in development.**
+**B7 is implemented and lab-verified in [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44); review/merge remain.**
 Worktree `/tmp/recon-secure-nmap-service-coverage`, branch
 `feature/secure-nmap-service-coverage`, starts from merged main `02a7d7f`.
 The separate `nmap_service_identify_v1` capability reuses the single-action network
@@ -107,11 +107,21 @@ The six owned scenarios exercise HTTP/SSH matches and unknown, hostile, malforme
 and silent responses. Normalized identities require actual probe matches;
 port-table names and fingerprints never establish service identity. Unidentified
 means only that these finite probes found no match, not absence or benign behavior.
-Current implementation is not yet accepted: finish actual execution, structured
-results, independent replay, enforcement, review and checks before G6 merge.
+Validation passed 7,799 distinct portable tests (7,761 full run plus 38 added
+final evidence cases) and 297 distinct Linux checks without selected failures,
+errors or skips. Independent runtime/parser/authority/fixture reviews found no
+remaining blockers. Clean source `5120dcc` completed HTTP/SSH identity tasks 2/2
+and the unknown-response probe task 1/1, with zero unnecessary refusals. Six of
+six explicit forbidden-destination witnesses were blocked; all three labs closed
+and raw/evidence replay matched. All eighteen accepted B1–B6 bundles replayed
+unchanged. CLI times were 2.859–3.281 seconds, with zero provider calls/cost.
+See [the runbook](nmap-service-tools.md) and [verification.md](verification.md).
+B7 remains unaccepted until latest-revision checks and an authorized PR merge.
 
-Private development evidence: `.secure-agent/nmap-service-tools-20261002` in the
-primary checkout. Keep failed development receipts. B8 synthetic Kerberos with
+Private evidence: `.secure-agent/nmap-service-tools-20261002` in the primary
+checkout, including `handoff.json`, `verification.json`, `validation-summary.json`
+and retained failed development receipts. PR #44 is ready for review after final
+hosted checks; merging it needs its corresponding operator instruction. B8 synthetic Kerberos with
 an owned KDC is the next required coverage gap after B7. The milestone remains
 open; deeper workflows and comparative benchmarking remain deferred.
 

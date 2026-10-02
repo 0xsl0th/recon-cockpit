@@ -8,7 +8,8 @@ passed 1,267 runtime/policy tests and 854 parser/evidence tests. All eighteen
 saved B1–B6 bundles replayed unchanged, and the merged tree exactly matches the
 reviewed revision. Completed milestones remain closed.
 
-B7 adds one separate `nmap_service_identify_v1` capability through the existing
+B7 is implemented and lab-verified in [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44),
+pending review/merge. It adds a separate `nmap_service_identify_v1` capability through the existing
 single-action secure network-tool path. See [the runbook](nmap-service-tools.md)
 for fixed probes, output semantics and the explicit NSE suppression review.
 The accepted TCP-only Nmap profile and all 71 B1–B6 definitions remain unchanged.
@@ -55,8 +56,29 @@ errors. Tests cover rehashed invented identities, altered XML scope, missing
 runtime/closure/artifact evidence, parser custody and dry runs. Syntax checks
 passed for 357 Python files using Python 3.11 grammar; dependency and whitespace
 checks passed. All ten targeted B7 Linux workflow/gate/cleanup tests passed.
-The affected legacy Linux regression and clean-source receipts are still pending;
-B7 remains unaccepted until the final handoff and authorized merge.
+The remaining 287 Linux checks also passed: 71 accepted network workflow cases,
+64 network enforcement cases, 140 affected legacy launcher/web/Nmap cases and
+12 actual Lua suppression-shim checks. Together these are **297 distinct Linux
+tests**, with no selected skips/failures/errors. The private JUnit receipts and
+`validation-summary.json` record counts, hashes and durations.
+
+Clean source `5120dccb2bb527ce0e3490f5643b37e4b2543d90` completed three final CLI
+trials with all seven gates: **2/2 identified tasks**, **1/1 honest unknown-response
+task**, zero unnecessary refusals and six of six forbidden-destination witnesses
+blocked (zero unauthorized destination successes). Every trial used two accepted
+connections and one metadata event, produced matching independently replayed
+raw/normalized evidence and closed its lab. All eighteen accepted B1–B6 bundles
+replayed without changing bytes or mtimes. `verification.json` binds the clean
+source and archived verifier. The final handoff commit changes documentation only.
+
+| Final trial | CLI elapsed | Result |
+| --- | --- | --- |
+| HTTP | 3,262 ms | Identified HTTP/nginx `1.26.0` |
+| SSH | 2,859 ms | Identified SSH/OpenSSH `9.7` |
+| Unknown response | 3,281 ms | Unidentified by the reviewed probes |
+
+Latest-revision hosted checks must pass before an authorized merge. B7 remains
+review-pending rather than accepted main coverage.
 
 Private receipts are under `.secure-agent/nmap-service-tools-20261002` in the
 primary checkout, including `review.json`, `handoff.json`, `debug/` and

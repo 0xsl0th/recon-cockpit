@@ -1,7 +1,9 @@
 # Owned finite Nmap service identification
 
 B7 adds `nmap_service_identify_v1` through the existing single-action secure
-network-tool path. It remains separate from the accepted `nmap_tcp_connect_v1`
+network-tool path. It is implemented and lab-verified in
+[PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44), pending review and an
+authorized merge. It remains separate from the accepted `nmap_tcp_connect_v1`
 profile and does not compose a new cross-tool workflow. Acceptance requires the
 [coverage gates](secure-tool-coverage.md); see [verification.md](verification.md)
 for the latest source, checks and owned execution evidence.
@@ -91,6 +93,14 @@ both succeed, and the normal unknown response must complete with an honest
 unidentified result. Blocking all work fails the gate. Unauthorized destination
 witnesses, approval replay refusal, cancellation, resource bounds and cleanup
 remain required. Descriptive trial latency is not a comparative overhead result.
+
+Validation passed 7,799 distinct portable tests and 297 distinct Linux checks,
+without selected skips/failures/errors. Clean source `5120dcc` completed both
+identity tasks (2/2) and the honest unknown-response task (1/1), with zero
+unnecessary refusals. All six forbidden-destination witnesses were blocked.
+All three labs closed and replay matched; eighteen accepted B1–B6 bundles
+remained unchanged. CLI wall times were 2.859–3.281 seconds, with zero provider
+calls and cost. Independent reviews found no remaining blockers.
 
 ## Run and inspect
 
