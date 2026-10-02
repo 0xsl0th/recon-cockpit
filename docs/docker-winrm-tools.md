@@ -2,7 +2,7 @@
 
 B6 extends the [secure-tool coverage checklist](secure-tool-coverage.md) with
 three independently invoked curl profiles. Implementation and actual owned-lab
-validation are complete; PR review and an authorized merge remain.
+validation are complete; [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43) awaits review and an authorized merge.
 The profiles reuse the existing policy, fresh approval, audit, admission,
 confined native launcher, networkless parser and private evidence replay.
 
@@ -83,6 +83,9 @@ Read-only inspection never restores an approval, budget or execution session.
 Validation passed 7,444 portable and 275 distinct selected Linux tests, with no
 selected skips, errors or failures. The 36 B6 cases were rerun after explicit-GET
 policy enforcement was tightened. Independent reviews found no remaining blockers.
+Clean source `1e58600` completed all five useful-result trials, with zero
+unnecessary refusals, closed labs and matching independent replay. All thirteen
+accepted B1–B5 bundles remained byte/mtime-identical.
 
 [verification.md](verification.md) records actual native output, structured results,
 raw replay, useful completion/refusals, enforcement and cleanup. Automated grants

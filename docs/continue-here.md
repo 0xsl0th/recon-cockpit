@@ -80,7 +80,7 @@ bundles, without changing bytes or mtimes. All 36 B1–B4 definitions remained e
 Private receipts: `.secure-agent/pr42-merge-review.json` and
 `.secure-agent/ftp-smtp-tools-20261002` in the primary checkout.
 
-**B6 is implemented and lab-verified; PR review and an authorized merge remain.**
+**B6 is implemented and lab-verified in [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43); review/merge remain.**
 Development is in `/tmp/recon-secure-docker-winrm-coverage`, branch
 `feature/secure-docker-winrm-coverage`, based on merged main `38cbd43`.
 Use three independently invoked fixed curl profiles: `curl_docker_ping_v1`
@@ -105,9 +105,13 @@ startup and requiring explicit GET policy permission. Final validation passed
 7,444 portable and 275 distinct Linux tests without selected failures/errors/skips,
 including a successful rerun of all 36 B6 cases after the policy fix. See
 [the runbook](docker-winrm-tools.md) and [verification.md](verification.md).
+Clean source `1e58600` completed 5/5 useful tasks with zero unnecessary refusals,
+closed labs and matching read-only raw/evidence replay. All thirteen accepted
+B1–B5 bundles remained byte/mtime-identical. Provider calls and actual cost were
+zero. Final hosted checks must pass on the latest PR revision before merge.
 
 Private handoff: `.secure-agent/docker-winrm-tools-20261002/handoff.json` in the
-primary checkout. Leave the B6 PR ready for review; its merge requires a separate
+primary checkout. PR #43 is the review handoff; its merge requires a separate
 operator instruction. B6 is not yet accepted main coverage. After G1–G6,
 prioritize B7 bounded Nmap service identification, then B8 synthetic Kerberos
 principal enumeration. B7 is the next gap because useful bounded service identity

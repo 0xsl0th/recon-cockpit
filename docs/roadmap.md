@@ -27,7 +27,7 @@ SMB metadata, bringing main to 11 capabilities backed by 8 external programs.
 PR #41 accepts B4 RPC/NFS metadata at `6623aa0`, bringing main to 13 capabilities
 backed by 10 external programs. PR #42 accepts B5 FTP/SMTP at `38cbd43`, bringing
 main to 15 capabilities backed by the same 10 programs. B6 Docker/WinRM is
-lab-verified and pending PR review/merge: three fixed read-only GET profiles reuse
+lab-verified and pending review/merge in [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43): three fixed read-only GET profiles reuse
 curl for health, version and endpoint metadata. B7's bounded Nmap service identification is the next missing capability,
 followed by B8 synthetic Kerberos enumeration. See the
 [inventory and completion gates](secure-tool-coverage.md) for exact distinctions,

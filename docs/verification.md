@@ -10,8 +10,8 @@ unchanged. Keep B0–B5 accepted. B6 implements three independently invoked curl
 profiles: `curl_docker_ping_v1`, `curl_docker_version_v1` and
 `curl_winrm_metadata_v1`. See [docker-winrm-tools.md](docker-winrm-tools.md).
 Main remains at 15 accepted secure capabilities backed by 10 external programs;
-accepting B6 would bring those counts to 18 and 10. B6 still requires PR review
-and an authorized merge.
+accepting B6 would bring those counts to 18 and 10. [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43) is the review handoff;
+B6 still requires review and an authorized merge.
 
 Each profile fixes one HTTP/1.1 GET to `127.0.0.1:8080`: `/_ping`, `/version` or
 `/wsman`. The two Docker endpoints are separate capabilities, preserving the
@@ -61,6 +61,17 @@ The complete final-source portable suite passed **7,444 tests** without selected
 skips, failures or errors; its receipt is `validation/portable-final.xml`. The
 earlier pre-policy-tightening run is retained separately. Python 3.11 syntax,
 dependency consistency, local documentation links and whitespace checks passed.
+
+Clean-source execution at `1e58600781ca4e98b6a72952d15808f7787b0e9d` completed
+**5/5 legitimate tasks**, with **zero unnecessary refusals**, closed owners,
+independent raw reparsing and identical read-only replay. Docker ping took 2.791
+seconds; version normal/empty took 2.896/2.860 seconds; WinRM challenge/no-auth
+advertisement trials took 2.773/2.810 seconds. Each used one connection and GET.
+All thirteen accepted B1–B5 bundles replayed identically without changing file
+bytes or modification times. `verification.json` records exact source, runtime,
+action/policy/artifact bindings, raw hashes, counters, timings and compatibility.
+These five synthetic correctness trials are not a statistical service-coverage
+or comparative performance claim.
 
 Private receipts are under `.secure-agent/docker-winrm-tools-20261002` in the
 primary checkout. JUnit files are in `validation`; `linux-validation-summary.json`

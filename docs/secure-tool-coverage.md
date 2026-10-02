@@ -15,7 +15,7 @@ accepted B4 RPC/NFS metadata at `6623aa0`, bringing main to **13 secure capabili
 backed by 10 external programs**. [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42)
 accepted B5 FTP/SMTP at `38cbd43`, bringing main to **15 secure capabilities backed
 by the same 10 programs**. B6 Docker/WinRM is lab-verified and pending PR
-review/merge: three fixed curl profiles cover health, version and unauthenticated
+review/merge in [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43): three fixed curl profiles cover health, version and unauthenticated
 endpoint metadata independently. Acceptance would bring main to **18 capabilities
 backed by the same 10 programs**.
 
