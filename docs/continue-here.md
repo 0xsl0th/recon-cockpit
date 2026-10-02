@@ -51,37 +51,55 @@ and malformed replies remain inconclusive. Private receipt:
 in the primary checkout. Main has 11 secure capabilities backed by 8 external
 programs; the broader coverage milestone remains open.
 
-**[PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41): B4 RPC/NFS metadata, pending review and merge.**
-Implementation is in `/tmp/recon-secure-rpc-nfs-coverage`, branch
-`feature/secure-rpc-nfs-coverage`, based on merged main `775352e`. The two
-independently invoked profiles use real `rpcinfo` and `showmount` through all
-existing secure gates. [The runbook](rpc-nfs-tools.md) records their fixed TCP
-`127.0.0.1:111` topology, compiled transport/service tables and finite discovery.
-Normal and valid empty cases complete one metadata query using two connections.
-Malformed replies stay inconclusive; returned endpoints never expand permission.
-No mount, file access, credential, host-service fallback or external target exists.
+**[PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41) is merged and B4 is accepted.**
+Reviewed head `670c891` merged as `6623aa0` at 02:39:43 UTC on 2 October. Fresh
+runtime/fixture and parser/evidence reviews found no blockers; all five final
+[PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36955342509) passed,
+with 6,348 portable tests per job and no outstanding review comments. The merge
+tree matches the reviewed tree. [Post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36956656745)
+also passed all five jobs. Keep B4's fixed RPC/NFS metadata contracts closed.
+Local evidence covers 215 distinct Linux checks, 4/4 useful normal/empty trials,
+zero unnecessary refusals and unchanged replay of all five B1–B3 bundles.
+Private receipts: `.secure-agent/pr41-merge-review.json` and
+`.secure-agent/rpc-nfs-tools-20261002` in the primary checkout. Main now has
+13 accepted secure capabilities backed by 10 external programs.
 
-Independent runtime, fixture, parser and evidence reviews found no blockers.
-All 6,348 portable tests and 215 distinct Linux checks passed: 36 network-tool
-workflow cases, 39 enforcement cases and 140 affected legacy cases. Four
-clean-source trials at `a7b5d147ef37628912393ab76d6e81fa1a32cdc6` completed 4/4
-legitimate normal/empty tasks with zero unnecessary refusals, closed evidence
-and read-only replay. All five accepted B1–B3 evidence bundles replay unchanged.
-Local CLI elapsed times were 2.558–2.635 seconds; provider calls and cost were zero.
-B0–B3 cards, descriptors, specifications and limits remain unchanged. Private
-handoff and receipts: `.secure-agent/rpc-nfs-tools-20261002` in the primary checkout.
-Development failures stay separate from clean-source acceptance evidence.
+**B5 is implemented and lab-verified; PR review and an authorized merge remain.**
+Development is in `/tmp/recon-secure-ftp-smtp-coverage`, branch
+`feature/secure-ftp-smtp-coverage`, based on merged main `6623aa0`.
+[The runbook](ftp-smtp-tools.md) covers `curl_ftp_list_v1` and
+`curl_smtp_capabilities_v1`: one action, five-second tool deadline, 60-second
+session and 8,192 combined bytes. Both reuse curl, so acceptance would bring main
+to 15 secure capabilities backed by the same 10 external programs.
 
-PR #41 is the review handoff. Recheck its latest revision and hosted checks
-before any merge; merging requires a separate operator instruction. B4 is not yet accepted coverage. Main remains at 11 secure
-capabilities backed by 8 programs; the candidate adds two of each. The checklist
-remains open through B5–B8, and completed offline milestones stay closed.
+Actual curl FTP uses one control and one passive data connection on the same
+predeclared `127.0.0.1:8080` listener. A fixed public anonymous NLST returns only
+finite names, with complete control evidence required for normal or empty results.
+There is no file backend or transfer operation. SMTP records fixed greeting/EHLO
+capabilities, then quits; curl's benign HELO fallback after rejection was measured
+and remains inconclusive. No mail, authentication or account probing is enabled.
+Hostile text, malformed output and unapproved passive IP/port advertisements do
+not produce useful observations or grant follow-up authority.
 
-After B4 meets G1–G6, prioritize B5 FTP/SMTP metadata: bounded anonymous FTP
-listing and SMTP banner/EHLO/QUIT, without file transfer, mail or authentication.
-Deeper composition and comparative benchmarking remain deferred until all required
-coverage rows are complete. Per-tool useful completion, unnecessary refusals,
-bounds, descriptive latency and cleanup remain required now.
+Independent runtime/fixture and parser/evidence reviews found no remaining
+blockers. Review tightened independent FTP replay counters to match live backend
+requirements. All 36 B1–B4 fixture specifications remain byte-identical, and their
+accepted cards, policies and evidence identities are preserved. Full portable
+validation passed 6,755 tests; 50 real network workflow cases and 49 network
+enforcement checks and 140 affected legacy Linux checks passed (239 Linux total),
+with no selected skips/failures/errors. See [verification.md](verification.md) for
+complete validation and clean-source evidence receipts.
+
+Private handoff: `.secure-agent/ftp-smtp-tools-20261002/handoff.json` in the primary
+checkout. B5's new PR is for review; its merge requires a separate operator
+instruction. B5 is not yet accepted main coverage. After G1–G6, prioritize
+B6 Docker/WinRM metadata, then B7 bounded Nmap service identification and B8
+synthetic Kerberos principal enumeration. B6 fills missing service families with
+existing curl/HTTP infrastructure and fixed read-only metadata, without Docker
+sockets, container actions or remote sessions. The broader coverage milestone
+remains open. Deeper composition and comparative benchmarking wait until required
+coverage is complete; per-tool usefulness, unnecessary refusals and timing remain
+required now.
 
 Credential setup, paid calls and live-model evaluation remain deferred until much
 later. Do not ask for a key, fund a ledger or enable a live provider. Preserve
@@ -1049,16 +1067,16 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #39 merge is complete. PRs #6–#30 and #32–#39
+- The operator-authorized PR #41 merge is complete. PRs #6–#30 and #32–#41
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
 1. Resume the broader [secure-tool coverage milestone](secure-tool-coverage.md).
-   Check the current branch/PR and private handoff before repeating work. B1/B2 are
-   accepted; finish B3 anonymous SMB metadata, then choose the next unchecked row
-   (currently B4 RPC/NFS metadata). PRs #6–#30 and #32–#39
+   Check the current branch/PR and private handoff before repeating work. B0–B4 are
+   accepted; finish the B5 FTP/SMTP review handoff, then choose the next unchecked row
+   (B6 Docker/WinRM metadata). PRs #6–#30 and #32–#41
    stay closed. Proposal PR #31 remains separate.
 2. Require G1–G6 for every required row: actual owned execution, useful structured
    output, strict authority, replayable evidence, enforcement/cleanup and reviewed

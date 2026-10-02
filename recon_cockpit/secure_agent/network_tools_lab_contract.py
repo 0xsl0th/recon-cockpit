@@ -21,6 +21,34 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith(("ftp-", "smtp-")):
+        from . import network_tools_fixture as fixture
+        ftp = case.startswith("ftp-")
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-ftp-smtp-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080,
+                          "protocol": "ftp_control_and_passive_data" if ftp else "smtp"}],
+            "ftp": {"user": fixture.FTP_USER, "password": fixture.FTP_PASSWORD,
+                "operation": "NLST", "directory": "/", "passive_target": "127.0.0.2" if case == "ftp-passive-ip" else "127.0.0.1",
+                "passive_port": 8081 if case == "ftp-passive-port" else 8080,
+                "names": () if case == "ftp-empty" else fixture.FTP_NAMES,
+                "injected_name": fixture.HOSTILE_NOTE if case == "ftp-injected" else None,
+                "filesystem": False, "file_transfer": False, "credentials": "fixed_public_anonymous_identity"} if ftp else None,
+            "smtp": {"domain": fixture.SMTP_DOMAIN, "operation": "EHLO_then_QUIT",
+                "capabilities": () if case == "smtp-empty" else fixture.SMTP_CAPABILITIES,
+                "injected_note": fixture.HOSTILE_NOTE if case == "smtp-injected" else None,
+                "helo_fallback": case == "smtp-rejected", "authentication": False,
+                "mail": False, "account_probing": False} if not ftp else None,
+            "behavior": "stall_after_validated_query" if case.endswith("-stalled") else "malformed_response"
+                if case.endswith("-malformed") else "access_denied" if case.endswith(("-denied", "-rejected"))
+                else "advertise_forbidden_destination" if case.startswith("ftp-passive-") else "fixed_response",
+            "max_line_bytes": fixture.FTP_SMTP_MAX_LINE_BYTES, "max_commands": fixture.FTP_SMTP_MAX_COMMANDS,
+            "max_connections": 2 if ftp else 1,
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_nlst_commands" if ftp else "validated_ehlo_commands",
+            "connection_evidence": "accepted_connections_lower_bound"}
     if case.startswith(("rpc-", "nfs-")):
         from . import network_tools_fixture as rpc
         listing = case.startswith("rpc-")
@@ -129,7 +157,8 @@ def validate_identity(value, *, case=None):
 
 def validate_context(value, expected):
     expected = validate_identity(expected)
-    connection_limit = 4 if expected["scenario"].startswith(("rpc-", "nfs-")) else 1
+    connection_limit = (4 if expected["scenario"].startswith(("rpc-", "nfs-"))
+                        else 2 if expected["scenario"].startswith("ftp-") else 1)
     if (type(value) is not dict or set(value) != {"identity", "connection_count", "request_count"}
             or validate_identity(value["identity"]) != expected
             or type(value["connection_count"]) is not int or not 0 <= value["connection_count"] <= connection_limit

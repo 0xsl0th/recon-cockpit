@@ -1,5 +1,71 @@
 # Verification record
 
+## Secure coverage B5: anonymous FTP listing and SMTP capabilities — 2 October 2026
+
+PR #41 was reviewed and merged as `6623aa0`; its five final PR checks and five
+post-merge main checks passed, and its merge tree matches reviewed head `670c891`.
+B0–B4 remain accepted. B5 adds `curl_ftp_list_v1` and
+`curl_smtp_capabilities_v1` through the existing secure execution/evidence path.
+See [ftp-smtp-tools.md](ftp-smtp-tools.md). This candidate is lab-verified and
+pending PR review and an authorized merge. Main remains at 13 accepted secure
+capabilities backed by 10 programs; accepting B5 would yield 15 capabilities
+backed by the same 10 programs.
+
+Both actual native clients are curl with fixed arguments and no host configuration,
+credentials, proxy or retry. FTP uses a fixed public anonymous identity and one
+NLST; control and passive data share the predeclared `127.0.0.1:8080` listener.
+No firewall endpoint is added, and active mode/EPSV are disabled. The complete
+native control transcript through `226` is retained on stderr and names on stdout.
+SMTP records greeting/EHLO replies and QUIT on stdout. Curl's harmless HELO
+fallback after a rejected EHLO was observed; that refusal cannot prove useful
+capability discovery. The fixture has no file or mail backend.
+
+Normal and empty FTP cases each use two accepted connections and one validated
+NLST. Normal and no-extension SMTP cases each use one connection and one EHLO.
+Empty results require complete native success framing. Hostile text is preserved
+only in raw evidence and leaves the result inconclusive. Denied, malformed,
+partial and stalled replies likewise cannot prove absence. Both forbidden FTP
+passive destinations (IP and port) are blocked by the unchanged kernel filter;
+no forbidden witness receives a connection and no NLST is recorded. Native
+output pressure, cancellation and cleanup retain existing bounds. Process exit
+zero alone never counts as useful completion.
+
+Independent runtime/fixture and parser/evidence reviews found no remaining
+blockers. They identified and corrected a replay counter mismatch: normalized
+FTP listings now independently require two connection receipts, and denied or
+forbidden-passive cases require zero listing requests. Tamper tests cover those
+counters, channel swaps, stripped final replies despite rehashing, fabricated
+metadata, missing runtime commitments and old-card relabeling. All 36 accepted
+B1–B4 fixture specification encodings remain byte-identical; existing cards,
+policies, runtime bounds and capability identities remain unchanged.
+
+Validation passed **6,755 portable tests**, **50 real network workflow cases**,
+**49 network enforcement cases**, and **140 affected legacy Linux tests**:
+**239 distinct selected Linux checks** in total, with no selected skips, failures
+or errors. The native selection includes 14 new B5 protocol cases and 10 new B5
+enforcement cases. Legacy checks cover shared owner/admission/launcher and existing
+HTTP/header, Nmap, curl and ffuf profiles. Python 3.11 syntax, dependency
+consistency, local documentation links and whitespace checks passed. The private
+JUnit receipts are `validation/portable.xml`, `workflow-linux.xml`,
+`enforcement-linux.xml` and `legacy-linux.xml`; `validation-summary.json` records
+their counts, durations and digests. Hosted checks must pass on the final PR
+revision before a later authorized merge.
+
+Private evidence is under `.secure-agent/ftp-smtp-tools-20261002` in the primary
+checkout. Development captures remain under `debug`; they are not clean-source
+acceptance receipts. No real credentials, external targets, provider calls, paid
+calls or live-model evaluation were used. Automated test grants are synthetic
+validation, not human acceptance. Local CLI wall times are descriptive correctness
+measurements, not comparative security overhead. The topology and closed parser
+vocabulary establish finite synthetic-lab support, not general FTP/SMTP service
+compatibility or professional engagement readiness.
+
+B6 Docker/WinRM metadata is next because it fills missing service families while
+reusing existing curl/HTTP infrastructure and interactive suggestions. B6–B8
+remain required; deeper workflows and comparative benchmarking wait for the full
+coverage milestone. Model credentials and paid evaluation remain deferred until
+much later; offline R5/local R6 and the separate proposal/PDF remain closed.
+
 ## Secure coverage B4: RPC registrations and NFS export metadata — 2 October 2026
 
 The base is merged main `775352e` (PR #40). B0–B3 remain accepted. B4 adds

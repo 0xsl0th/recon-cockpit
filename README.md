@@ -16,7 +16,9 @@ is merged. The current milestone is [broader secure-tool coverage](docs/secure-t
 with a repository inventory, prioritized checklist and explicit completion gates.
 Nmap, curl, ffuf, dig, OpenSSL, SSH key collection, LDAP RootDSE and
 [anonymous SMB share metadata](docs/smb-tools.md) have accepted bounded secure
-profiles. The current batch adds [RPC registration and NFS export metadata](docs/rpc-nfs-tools.md).
+profiles. [RPC registration and NFS export metadata](docs/rpc-nfs-tools.md) are also accepted.
+The current batch adds [bounded FTP listing and SMTP capability discovery](docs/ftp-smtp-tools.md),
+with actual owned-lab validation and a separate review gate.
 After each batch, prioritize the next tool gap. Deeper workflow
 composition and comparative benchmarking wait until the coverage milestone is
 complete. Per-tool useful execution, evidence and enforcement checks continue now.

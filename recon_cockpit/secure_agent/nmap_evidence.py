@@ -233,6 +233,10 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "rpc_empty_registrations_observed": "rpc_empty_registrations_observed",
                "nfs_exports_observed": "nfs_exports_observed",
                "nfs_empty_exports_observed": "nfs_empty_exports_observed",
+               "ftp_names_observed": "ftp_names_observed",
+               "ftp_empty_listing_observed": "ftp_empty_listing_observed",
+               "smtp_capabilities_observed": "smtp_capabilities_observed",
+               "smtp_no_extensions_observed": "smtp_no_extensions_observed",
                "content_paths_observed": "paths_observed",
                "no_successful_content_paths_observed": "no_successful_paths_observed"}.get(reason, "inconclusive")
     if issues:
@@ -335,6 +339,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The owned fixture supports only reviewed registration discovery and export metadata operations; it is not a general rpcbind, MOUNT or NFS filesystem service.",
                 "Request counters count validated registration dumps or export queries; bounded discovery exchanges are excluded. Connections are acknowledged lower bounds. Inspection never restores authority.",
             ]
+        if manifest["fixture_case"].startswith(("ftp-", "smtp-")):
+            report["limitations"] = [
+                "This single executable trial uses a disconnected synthetic FTP/SMTP fixture; it is not professional engagement or real-model validation.",
+                "FTP lists only fixed synthetic root names with a public anonymous identity. Names and passive advertisements never authorize transfers, traversal or new network endpoints.",
+                "SMTP records advertised capabilities from a fixed greeting and EHLO query, then quits. No authentication, mail, recipient or account probing is authorized.",
+                "Both bounded raw channels are independently reparsed without network. Complete native success framing is required; process exit alone does not establish useful or empty results.",
+                "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
+                "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
+            ]
     if "planning_origin" in manifest:
         report["planning_origin"] = manifest["planning_origin"]
         report["live_calls_enabled"] = manifest["planning_origin"] == "model_live"
@@ -407,6 +420,16 @@ def _markdown(report):
             for field in ("naming_contexts", "supported_ldap_versions", "supported_sasl_mechanisms"):
                 lines.append("| " + field + " | `" + (", ".join(details[field]) or "not advertised") + "` |")
             lines.append("| vendor_name | `" + (details["vendor_name"] or "not advertised") + "` |")
+        elif type(details) is dict and details.get("kind") == "ftp_listing":
+            lines.extend(["", "## FTP name listing", "", "| Name |", "| --- |"])
+            lines.extend("| " + row["name"] + " |" for row in details["entries"])
+            if not details["entries"]:
+                lines.extend(["", "The complete validated listing contains no names."])
+        elif type(details) is dict and details.get("kind") == "smtp_capabilities":
+            lines.extend(["", "## SMTP advertised capabilities", "", "| Capability |", "| --- |"])
+            lines.extend("| " + capability + " |" for capability in details["capabilities"])
+            if not details["capabilities"]:
+                lines.extend(["", "The complete validated EHLO reply advertises no extensions."])
         elif type(details) is dict and details.get("kind") == "rpc_registrations":
             lines.extend(["", "## RPC registration metadata", "", "| Program | Version | Transport | Port |",
                           "| --- | --- | --- | --- |"])

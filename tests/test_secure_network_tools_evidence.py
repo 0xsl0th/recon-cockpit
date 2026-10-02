@@ -42,6 +42,12 @@ def manifest(tool):
 
 def transcript(case):
     from recon_cockpit.secure_agent.network_tools_fixture import SSH_PUBLIC_KEY_BASE64, LDAP_VALUES
+    if case.startswith("ftp-"):
+        from test_secure_network_tools_b5 import ftp_output
+        return ftp_output(empty=case == "ftp-empty", injected=case == "ftp-injected")
+    if case.startswith("smtp-"):
+        from test_secure_network_tools_b5 import smtp_output
+        return smtp_output(empty=case == "smtp-empty", injected=case == "smtp-injected")
     if case.startswith("rpc-"):
         from test_secure_network_tools_b4 import rpc_output
         return rpc_output(empty=case == "rpc-empty", injected=case == "rpc-injected"), b""
@@ -78,7 +84,7 @@ def transcript(case):
 
 
 def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
-    policy_file = "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     action = parse_action(contract.action(case, 1))
     selected = manifest(action.tool_id)
@@ -98,7 +104,7 @@ def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
             except ValueError:
                 pass  # Actual backend preserves successful but uninterpretable bytes.
 
-        counts = {"identity": store._manifest["owned_lab"], "connection_count": 1, "request_count": 1}
+        counts = {"identity": store._manifest["owned_lab"], "connection_count": 2 if case.startswith("ftp-") else 1, "request_count": 1}
         value = {"status": status, "results": [], "tool_observation": normalized,
             "bytes_received": len(raw) + len(stderr), "truncated": False,
             "raw_output_base64": base64.b64encode(raw).decode(), "raw_stderr_base64": base64.b64encode(stderr).decode(),
@@ -123,7 +129,9 @@ def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
     ("smb-injected", "shares_observed"),
     ("rpc-ok", "rpc_registrations_observed"), ("rpc-injected", "rpc_registrations_observed"),
     ("rpc-empty", "rpc_empty_registrations_observed"), ("nfs-ok", "nfs_exports_observed"),
-    ("nfs-empty", "nfs_empty_exports_observed")])
+    ("nfs-empty", "nfs_empty_exports_observed"),
+    ("ftp-ok", "ftp_names_observed"), ("ftp-empty", "ftp_empty_listing_observed"),
+    ("smtp-ok", "smtp_capabilities_observed"), ("smtp-empty", "smtp_no_extensions_observed")])
 def test_raw_evidence_replays_without_writes_and_reports_finite_facts(tmp_path, case, outcome):
     path = tmp_path / "evidence"
     report = complete(path, case)
@@ -135,7 +143,7 @@ def test_raw_evidence_replays_without_writes_and_reports_finite_facts(tmp_path, 
     assert "127.0.0.2" not in (path / "report.md").read_text()
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
 def test_cli_selects_network_evidence_inspector(tmp_path, capsys, case):
     from recon_cockpit.secure_agent import cli
     path = tmp_path / "evidence"
@@ -185,7 +193,7 @@ def test_failed_tool_does_not_count_as_useful_completion(tmp_path):
     assert evidence.inspect_evidence(path) == report
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
 @pytest.mark.parametrize("status", ["succeeded", "failed"])
 def test_execution_capture_requires_a_precommitted_runtime(tmp_path, case, status):
     path = tmp_path / "evidence"
@@ -195,7 +203,7 @@ def test_execution_capture_requires_a_precommitted_runtime(tmp_path, case, statu
     assert not list(path.glob("result-*.json"))
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
 def test_replay_rejects_removing_execution_runtime_commitment(tmp_path, case):
     path = tmp_path / "evidence"
     complete(path, case)
@@ -211,12 +219,12 @@ def test_replay_rejects_removing_execution_runtime_commitment(tmp_path, case):
     assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
 def test_dry_run_without_runtime_commitment_still_finalizes_and_replays(tmp_path, case):
     path = tmp_path / "evidence"
     session_id = str(uuid4())
     owned = identity(case, str(uuid4()))
-    policy_file = "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     with evidence.NmapEvidenceStore(path, session_id=session_id, policy=policy, case=case,
             owned_lab=owned, workflow_profile="network_tools", runtime_sha256=None) as store:
@@ -338,8 +346,8 @@ def test_b4_rehashed_results_cannot_invent_metadata_or_omit_enforcement(tmp_path
     assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
 
 
-@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok"])
-def test_b4_channel_identity_survives_recomputed_capture_hashes(tmp_path, case):
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+def test_native_channel_identity_survives_recomputed_capture_hashes(tmp_path, case):
     path = tmp_path / "evidence"
     complete(path, case)
     def change(result):
@@ -353,8 +361,8 @@ def test_b4_channel_identity_survives_recomputed_capture_hashes(tmp_path, case):
     assert "journal_or_artifact_incomplete" in report["integrity_issues"]
 
 
-@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok"])
-def test_b4_missing_artifact_or_owner_closure_cannot_publish_metadata(tmp_path, case):
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+def test_native_missing_artifact_or_owner_closure_cannot_publish_metadata(tmp_path, case):
     path = tmp_path / "evidence"
     original = complete(path, case)
     rows = [json.loads(line) for line in (path / "evidence.jsonl").read_text().splitlines()]
@@ -394,8 +402,8 @@ def test_nfs_hostile_export_group_stays_raw_and_never_counts_as_useful_completio
     assert b"127.0.0.2" in base64.b64decode(retained["raw_output_base64"])
 
 
-@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok"])
-def test_b4_parser_custody_unavailable_prevents_report_commit(tmp_path, monkeypatch, case):
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+def test_native_parser_custody_unavailable_prevents_report_commit(tmp_path, monkeypatch, case):
     from recon_cockpit.secure_agent.isolation import IsolationUnavailable
     def fail(*args, **kwargs):
         raise IsolationUnavailable("parser refused")
@@ -403,3 +411,86 @@ def test_b4_parser_custody_unavailable_prevents_report_commit(tmp_path, monkeypa
     with pytest.raises(EvidenceUnavailable):
         complete(tmp_path / "evidence", case)
     assert not (tmp_path / "evidence" / "report.json").exists()
+
+
+@pytest.mark.parametrize("case,change", [
+    ("ftp-ok", lambda r: r["tool_observation"]["entries"][0].update(name="/etc/passwd")),
+    ("ftp-ok", lambda r: r["tool_observation"].update(entries=[])),
+    ("ftp-empty", lambda r: r["tool_observation"]["entries"].append({"name": "reports"})),
+    ("smtp-ok", lambda r: r["tool_observation"]["capabilities"].append("AUTH PLAIN")),
+    ("smtp-ok", lambda r: r["tool_observation"].update(capabilities=[])),
+    ("smtp-empty", lambda r: r["tool_observation"]["capabilities"].append("PIPELINING")),
+    ("ftp-ok", lambda r: r["owned_lab"].update(request_count=0)),
+    ("ftp-ok", lambda r: r["owned_lab"].update(connection_count=1)),
+    ("ftp-ok", lambda r: r["owned_lab"].update(connection_count=3)),
+    ("smtp-ok", lambda r: r["owned_lab"].update(request_count=0)),
+    ("smtp-ok", lambda r: r["owned_lab"].update(connection_count=2)),
+    ("ftp-ok", lambda r: r["boundary_checks"].update(forbidden_port_blocked=False)),
+    ("smtp-ok", lambda r: r["boundary_checks"].update(forbidden_ip_blocked=False)),
+])
+def test_b5_rehashed_metadata_cannot_invent_listing_capabilities_or_enforcement(tmp_path, case, change):
+    path = tmp_path / "evidence"
+    complete(path, case)
+    mutate_result(path, 1, change)
+    before = {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
+    report = evidence.inspect_evidence(path)
+    assert report["outcome"] == "inconclusive"
+    assert report["finding"]["tool_observation"] is None
+    assert "journal_or_artifact_incomplete" in report["integrity_issues"]
+    assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
+
+
+@pytest.mark.parametrize("case", ["ftp-ok", "ftp-empty", "smtp-ok", "smtp-empty"])
+def test_b5_replay_rejects_missing_native_completion_even_after_capture_rehash(tmp_path, case):
+    path = tmp_path / "evidence"
+    complete(path, case)
+    def change(result):
+        field = "raw_stderr_base64" if case.startswith("ftp-") else "raw_output_base64"
+        hash_field = "stderr_sha256" if case.startswith("ftp-") else "output_sha256"
+        end = b"226 Listing complete\r\n" if case.startswith("ftp-") else b"221 Goodbye\r\n"
+        original = base64.b64decode(result[field])
+        raw = original.replace(end, b"")
+        result[field] = base64.b64encode(raw).decode()
+        result["bytes_received"] -= len(original) - len(raw)
+        result["provenance"][hash_field] = hashlib.sha256(raw).hexdigest()
+    mutate_result(path, 1, change)
+    report = evidence.inspect_evidence(path)
+    assert report["outcome"] == "inconclusive"
+    assert report["finding"]["tool_observation"] is None
+    assert "journal_or_artifact_incomplete" in report["integrity_issues"]
+
+
+@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("legacy_case", ["dig-ok", "ssh-ok", "smb-ok", "rpc-ok"])
+def test_b5_cannot_relabel_native_evidence_as_any_accepted_card(tmp_path, case, legacy_case):
+    from recon_cockpit.secure_agent.network_tools_workflow import card_identity
+    path = tmp_path / "evidence"
+    complete(path, case)
+    value = json.loads((path / "manifest.json").read_bytes())
+    value["workflow_card"] = card_identity(legacy_case)
+    (path / "manifest.json").write_bytes(contract.encode(value))
+    with pytest.raises(EvidenceUnavailable):
+        evidence.inspect_evidence(path)
+
+
+@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok"])
+def test_b5_failed_native_execution_never_counts_as_useful_completion(tmp_path, case):
+    path = tmp_path / "evidence"
+    report = complete(path, case, status="failed")
+    assert report["outcome"] == "inconclusive" and report["summary"]["actions_succeeded"] == 0
+    assert report["finding"]["tool_observation"]["details"] is None
+    assert evidence.inspect_evidence(path) == report
+
+
+@pytest.mark.parametrize("case", ["ftp-injected", "smtp-injected"])
+def test_b5_hostile_native_text_is_retained_only_raw_and_never_useful_completion(tmp_path, case):
+    path = tmp_path / "evidence"
+    report = complete(path, case)
+    assert report["outcome"] == "inconclusive"
+    assert report["finding"]["tool_observation"]["classification"] == "inconclusive"
+    assert report["finding"]["tool_observation"]["details"] is None
+    assert evidence.inspect_evidence(path) == report
+    assert "127.0.0.2" not in (path / "report.md").read_text()
+    artifact = report["records"][0]["artifact"]["filename"]
+    retained = json.loads((path / artifact).read_bytes())
+    assert b"127.0.0.2" in base64.b64decode(retained["raw_output_base64"])

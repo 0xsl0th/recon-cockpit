@@ -14,6 +14,7 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             SSH_TOOL_ID, LDAP_TOOL_ID, SSH_PARAMETERS, LDAP_PARAMETERS,
                             SMB_TOOL_ID, SMB_PARAMETERS, RPCINFO_TOOL_ID, SHOWMOUNT_TOOL_ID,
                             RPCINFO_PARAMETERS, SHOWMOUNT_PARAMETERS,
+                            FTP_TOOL_ID, SMTP_TOOL_ID, FTP_PARAMETERS, SMTP_PARAMETERS,
                             NETWORK_TOOLS_LIMITS, get_adapter)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
                                      validate_identity)
@@ -28,9 +29,11 @@ PARAMETERS = {DIG_TOOL_ID: dict(DIG_PARAMETERS), OPENSSL_TOOL_ID: dict(OPENSSL_P
 PARAMETERS.update({SSH_TOOL_ID: dict(SSH_PARAMETERS), LDAP_TOOL_ID: dict(LDAP_PARAMETERS)})
 PARAMETERS[SMB_TOOL_ID] = dict(SMB_PARAMETERS)
 PARAMETERS.update({RPCINFO_TOOL_ID: dict(RPCINFO_PARAMETERS), SHOWMOUNT_TOOL_ID: dict(SHOWMOUNT_PARAMETERS)})
+PARAMETERS.update({FTP_TOOL_ID: dict(FTP_PARAMETERS), SMTP_TOOL_ID: dict(SMTP_PARAMETERS)})
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
-    RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1"}
+    RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
+    FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1"}
 B1_CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
             "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled")
 B2_CASES = ("ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
@@ -38,6 +41,9 @@ B2_CASES = ("ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
 B3_CASES = ("smb-ok", "smb-empty", "smb-denied", "smb-injected", "smb-malformed", "smb-stalled")
 B4_CASES = ("rpc-ok", "rpc-empty", "rpc-injected", "rpc-malformed", "rpc-stalled",
             "nfs-ok", "nfs-empty", "nfs-injected", "nfs-malformed", "nfs-stalled", "nfs-redirected")
+B5_CASES = ("ftp-ok", "ftp-empty", "ftp-denied", "ftp-injected", "ftp-malformed", "ftp-stalled",
+            "ftp-passive-ip", "ftp-passive-port", "smtp-ok", "smtp-empty", "smtp-injected",
+            "smtp-malformed", "smtp-rejected", "smtp-stalled")
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -69,8 +75,19 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in B5_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(tool).to_dict() for tool in (FTP_TOOL_ID, SMTP_TOOL_ID)],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "ftp": {"operation": "NLST", "login": "fixed_anonymous", "file_transfer": False,
+                "control_endpoint": "127.0.0.1:8080", "data_endpoint": "127.0.0.1:8080",
+                "metadata_followup": False},
+            "smtp": {"operation": "EHLO", "authentication": False, "mail_submission": False,
+                "capabilities": "advertised_only"},
+            "parser_versions": {tool: PARSER_VERSIONS[tool] for tool in (FTP_TOOL_ID, SMTP_TOOL_ID)}}
     if case in B4_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(tool).to_dict() for tool in (RPCINFO_TOOL_ID, SHOWMOUNT_TOOL_ID)],
@@ -118,10 +135,14 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
     before = {"connection_count": 0, "request_count": 0} if previous is None else validate_context(previous, expected)
     connections = context["connection_count"] - before["connection_count"]
     requests = context["request_count"] - before["request_count"]
-    connection_limit = 4 if expected["scenario"] in B4_CASES else 1
+    connection_limit = (4 if expected["scenario"] in B4_CASES else
+                        2 if expected["scenario"].startswith("ftp-") else 1)
     if (not 0 <= connections <= connection_limit or not 0 <= requests <= 1
             or (expected["scenario"] in {"openssl-untrusted", "openssl-malformed", "openssl-stalled",
-                                         "ssh-malformed", "ssh-stalled"} and requests != 0)
+                                         "ssh-malformed", "ssh-stalled", "ftp-denied",
+                                         "ftp-passive-ip", "ftp-passive-port"} and requests != 0)
+            or (expected["scenario"].startswith("ftp-") and result.get("tool_observation") is not None
+                and connections != 2)
             or (execution_status == "succeeded" and result.get("tool_observation") is not None and requests != 1)):
         raise ValueError("network_tools_request_continuity_mismatch")
     return context
@@ -195,6 +216,12 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == FTP_TOOL_ID:
+        reason = "ftp_names_observed" if normalized["entries"] else "ftp_empty_listing_observed"
+        return _observation(tool_id, reason, reason, normalized)
+    if tool_id == SMTP_TOOL_ID:
+        reason = "smtp_capabilities_observed" if normalized["capabilities"] else "smtp_no_extensions_observed"
+        return _observation(tool_id, reason, reason, normalized)
     if tool_id == RPCINFO_TOOL_ID:
         present = bool(normalized["registrations"])
         return _observation(tool_id, "rpc_registrations_observed" if present else "rpc_empty_registrations_observed",

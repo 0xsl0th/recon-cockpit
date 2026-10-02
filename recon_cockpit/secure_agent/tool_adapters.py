@@ -14,7 +14,7 @@ from types import MappingProxyType
 from .tool_parameters import (
     CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
     OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
-    RPCInfoDumpParameters, ShowmountExportsParameters,
+    RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -55,6 +55,8 @@ LDAP_TOOL_ID = "ldap_rootdse_v1"
 SMB_TOOL_ID = "smb_share_list_v1"
 RPCINFO_TOOL_ID = "rpcinfo_dump_v1"
 SHOWMOUNT_TOOL_ID = "showmount_exports_v1"
+FTP_TOOL_ID = "curl_ftp_list_v1"
+SMTP_TOOL_ID = "curl_smtp_capabilities_v1"
 DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -62,6 +64,8 @@ LDAP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_out
 SMB_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 RPCINFO_PARAMETERS = MappingProxyType({"port": 111, "timeout_seconds": 5, "max_output_bytes": 8192})
 SHOWMOUNT_PARAMETERS = MappingProxyType({"port": 111, "timeout_seconds": 5, "max_output_bytes": 8192})
+FTP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+SMTP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
@@ -212,6 +216,22 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
          "export_metadata_only", "no_mount_or_file_access"),
+    ),
+    FTP_TOOL_ID: ToolAdapter(
+        FTP_TOOL_ID, CurlFTPListParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "list_owned_fixture_ftp_names", "owned-curl-ftp-list-v1",
+        "bounded-curl-ftp-list-result-v1", "curl-ftp-list-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_control_and_data_endpoint",
+         "anonymous_name_listing_only", "no_file_transfer", "no_followup_to_metadata"),
+    ),
+    SMTP_TOOL_ID: ToolAdapter(
+        SMTP_TOOL_ID, CurlSMTPCapabilitiesParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_fixture_smtp_capabilities", "owned-curl-smtp-capabilities-v1",
+        "bounded-curl-smtp-capabilities-result-v1", "curl-smtp-capabilities-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
+         "capability_metadata_only", "no_authentication", "no_mail_submission"),
     ),
 })
 SUPPORTED_TOOLS = tuple(ADAPTERS)

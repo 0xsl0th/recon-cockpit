@@ -54,6 +54,13 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert definition["rpc"]["filesystem"] is False and definition["rpc"]["mount"] is False
         assert definition["topology"] == [{"target": "127.0.0.1", "port": 111, "protocol": "onc_rpc_tcp"}]
         assert definition["request_count_means"] == ("validated_portmapper_dumps" if case.startswith("rpc-") else "validated_mount_exports")
+    elif case.startswith(("ftp-", "smtp-")):
+        assert definition["max_connections"] == (2 if case.startswith("ftp-") else 1)
+        assert definition["request_count_means"] == ("validated_nlst_commands" if case.startswith("ftp-") else "validated_ehlo_commands")
+        if case.startswith("ftp-"):
+            assert definition["ftp"]["filesystem"] is False and definition["ftp"]["file_transfer"] is False
+        else:
+            assert definition["smtp"]["mail"] is False and definition["smtp"]["authentication"] is False
     else:
         assert definition["smb"]["dialect"] == "SMB2_02"
         assert definition["smb"]["filesystem"] is False and definition["smb"]["credentials"] is False

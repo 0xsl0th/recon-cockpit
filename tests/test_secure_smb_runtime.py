@@ -117,7 +117,7 @@ def test_smb_closure_limits_apply_independently():
     with pytest.raises(ValueError): runtime.validate_manifest(value)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.RPCINFO, runtime.SHOWMOUNT])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP])
 def test_existing_manifests_keep_their_schema_and_lower_limits(tool_id):
     value = expanded(tool_id)
     raw = runtime.encode(value)
@@ -149,7 +149,7 @@ def test_smb_fixed_command_is_anonymous_and_cannot_select_a_share_or_shell():
     assert not {"HOME", "USER", "PASSWD", "PASSWD_FD", "PASSWD_FILE", "KRB5CCNAME"} & set(runtime.execution_environment(runtime.SMB))
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP])
 def test_read_and_snapshot_caps_expand_only_for_smb(monkeypatch, tool_id):
     calls = []
     monkeypatch.setattr(runtime, "_read_regular", lambda path, **kw: calls.append((path, kw)))
@@ -175,7 +175,7 @@ def test_shared_reader_still_refuses_oversized_files_without_explicit_smb_cap(tm
     assert len(common._read_regular(str(path), maximum=runtime.SMB_MAX_FILE_BYTES)) == common.MAX_FILE_BYTES + 1
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP])
 def test_smb_large_staging_does_not_expand_native_tool_limits(monkeypatch, tool_id):
     applied = {}
     monkeypatch.setattr(worker.resource, "getrlimit", lambda kind: (worker.resource.RLIM_INFINITY,) * 2)
@@ -209,7 +209,7 @@ def test_outer_smb_staging_caps_leave_existing_profiles_unchanged(monkeypatch, s
 
 @pytest.mark.parametrize("profile,tool_id", [("fixture", None), ("owned_lab", None), ("owned_nmap_lab", None),
     ("owned_web_lab", None), ("owned_http_headers_lab", None), ("owned_web_tools_lab", None),
-    *[("owned_network_tools_lab", tool) for tool in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT)]])
+    *[("owned_network_tools_lab", tool) for tool in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP)]])
 def test_larger_bootstrap_tag_is_bound_to_the_smb_closure(profile, tool_id):
     config = {"profile": profile}
     closure = {"network_tools_runtime": runtime.compact_manifest(expanded(tool_id))} if tool_id else {}

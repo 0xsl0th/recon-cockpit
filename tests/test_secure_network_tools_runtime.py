@@ -33,7 +33,7 @@ def manifest(tool_id=runtime.DIG):
 
 def policy():
     return parse_policy({"schema_version": "1", "policy_version": "test-network-tool-v1",
-        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT],
+        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP],
         "allowed_ports": [8080, 111], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
         "max_output_bytes": 8192, "max_targets": 1, "require_approval": True, "approval_ttl_seconds": 60})
 
@@ -76,7 +76,7 @@ def test_independent_launch_validator_accepts_only_the_selected_fixed_tool(case)
     assert admission.profile_allows(parse_action(action(case)), configuration(case))
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
 @pytest.mark.parametrize("fault", ["mode", "inner_mode", "identity", "manifest", "namespace", "deadline",
     "sequence", "reservation", "policy", "action", "limit"])
 def test_fresh_commitments_do_not_bypass_fixed_authority(case, fault):
@@ -102,7 +102,7 @@ def test_fresh_commitments_do_not_bypass_fixed_authority(case, fault):
 @pytest.mark.parametrize("profile,case", [("fixture", None), ("discovery_fixture", None), ("owned_lab", "a"),
     ("owned_nmap_lab", "a"), ("owned_web_lab", "vulnerable"), ("owned_http_headers_lab", "vulnerable"), ("owned_web_tools_lab", "curl-ok")])
 def test_existing_profiles_never_admit_network_tools(profile, case):
-    for selected in ("dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"):
+    for selected in ("dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"):
         assert not admission.profile_allows(parse_action(action(selected)), {"profile": profile, "case": case})
 
 
@@ -212,7 +212,7 @@ def test_manifest_size_ceiling_keeps_maximum_capture_receipt_bounded():
     with pytest.raises(ValueError): runtime.validate_manifest(value)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP])
 def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
     selected = manifest(tool_id)
     environment = runtime.execution_environment(tool_id)
@@ -247,7 +247,8 @@ def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
 
 @pytest.mark.parametrize("tool_id,threads", [(runtime.DIG, True), (runtime.OPENSSL, False),
                                             (runtime.SSH, False), (runtime.LDAP, False), (runtime.SMB, False),
-                                            (runtime.RPCINFO, False), (runtime.SHOWMOUNT, False)])
+                                            (runtime.RPCINFO, False), (runtime.SHOWMOUNT, False),
+                                            (runtime.FTP, False), (runtime.SMTP, False)])
 def test_only_dig_selects_the_bounded_thread_filter(monkeypatch, tool_id, threads):
     from recon_cockpit.secure_agent import network_tools_worker as worker
     selected = []
@@ -258,7 +259,7 @@ def test_only_dig_selects_the_bounded_thread_filter(monkeypatch, tool_id, thread
         worker.syscall_filter("ffuf_content_discovery_v1")
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
 def test_runtime_retains_and_binds_both_output_channels(monkeypatch, case):
     monkeypatch.setattr(runtime, "sys", SimpleNamespace(platform="linux"))
     launch = envelope(case)
@@ -285,7 +286,7 @@ def test_admission_case_map_matches_the_closed_owned_contract():
     for case in CASES:
         assert admission.NETWORK_TOOL_CASES[case] == action(case)["tool_id"]
         assert admission.configuration(configuration(case))["case"] == case
-    for case in ("ssh-other", "ldap-other", "openssl-other", "dig-other", "", None, []):
+    for case in ("ssh-other", "ldap-other", "openssl-other", "dig-other", "ftp-other", "smtp-other", "", None, []):
         config = configuration()
         config["case"] = case
         with pytest.raises(ValueError):
@@ -293,8 +294,8 @@ def test_admission_case_map_matches_the_closed_owned_contract():
         assert not admission.profile_allows(parse_action(action("openssl-ok")), config)
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
-@pytest.mark.parametrize("other_case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("other_case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
 def test_all_network_tools_bind_case_action_and_manifest_independently(case, other_case):
     if case == other_case:
         return
@@ -453,3 +454,69 @@ def test_additional_compiled_staging_rejects_replacement_or_host_file_authority(
     with pytest.raises(IsolationUnavailable, match="Invalid additional compiled"):
         common.sealed_snapshots({"files": []}, "compiled:resolver", b"first",
             object(), additional_compiled=additional)
+
+
+@pytest.mark.parametrize("tool_id", [runtime.FTP, runtime.SMTP])
+def test_ftp_smtp_manifest_has_no_configuration_and_cannot_import_credentials(monkeypatch, tool_id):
+    value = manifest(tool_id)
+    assert runtime.validate_manifest(value, tool_id=tool_id) == value
+    assert runtime.compiled_files(tool_id) == ()
+    assert runtime.EXECUTABLES[tool_id] == "/usr/bin/curl"
+    assert value["executable"] == "/tool/curl"
+    for path in ("/etc/curlrc", "/root/.curlrc", "/root/.netrc", "/etc/resolv.conf",
+                 "/etc/hosts", "/etc/ssl/certs", "/tool/config/curlrc", "compiled:curl-config"):
+        changed = deepcopy(value)
+        changed["files"].append({"source": path, "destination": path,
+            "size": 4, "sha256": hashlib.sha256(b"data").hexdigest()})
+        changed["files"].sort(key=lambda row: row["destination"])
+        with pytest.raises(ValueError):
+            runtime.validate_manifest(changed)
+    monkeypatch.setattr(runtime, "_trusted_program", lambda name: "/usr/bin/" + name)
+    argv = runtime._command(SimpleNamespace(_namespace_fds=(10, 11)),
+        ("/usr/lib/python3.13", [("/usr/bin/python3", "/usr/bin/python3")]),
+        value, [20, 21], "a" * 64, "b" * 64)
+    assert argv.count("--ro-bind-data") == 2
+    assert "CAP_NET_BIND_SERVICE" not in argv and "CAP_NET_ADMIN" not in argv
+    assert "network_tools_ftp_smtp_fixture" not in runtime.MODULES
+    assert not any("network_tools_ftp_smtp_fixture" in arg for arg in argv)
+    assert set(runtime.execution_environment(tool_id)) == {"LC_ALL", "OPENSSL_CONF", "MALLOC_ARENA_MAX"}
+
+
+@pytest.mark.parametrize("tool_id,protocol", [(runtime.FTP, "ftp"), (runtime.SMTP, "smtp")])
+def test_curl_metadata_commands_disable_config_proxy_retry_redirect_and_transfer(tool_id, protocol):
+    argv = runtime.FIXED_ARGV[tool_id]
+    assert argv[:2] == ("/tool/curl", "--disable")
+    assert {"--silent", "--show-error", "--ipv4", "--globoff"} <= set(argv)
+    for flag, value in (("--proto", "=" + protocol), ("--proto-redir", "=" + protocol),
+                        ("--noproxy", "*"), ("--proxy", ""), ("--connect-timeout", "1"),
+                        ("--max-time", "3"), ("--max-filesize", "8192"), ("--retry", "0")):
+        assert argv.count(flag) == 1 and argv[argv.index(flag) + 1] == value
+    assert not {"--location", "--config", "--netrc", "--netrc-optional", "--netrc-file", "--upload-file",
+                "--data", "--form", "--mail-from", "--mail-rcpt", "--quote", "--prequote",
+                "--postquote", "--ftp-port", "--ftp-create-dirs", "--remote-name", "--remote-header-name",
+                "--ssl", "--ssl-reqd", "--oauth2-bearer", "--login-options"} & set(argv)
+    if tool_id == runtime.FTP:
+        assert argv[-1] == "ftp://127.0.0.1:8080/"
+        assert {"--ftp-pasv", "--disable-epsv", "--no-ftp-skip-pasv-ip", "--list-only"} <= set(argv)
+        assert argv[argv.index("--ftp-method") + 1] == "nocwd"
+        assert argv[argv.index("--user") + 1] == "anonymous:anonymous@"
+        assert argv[argv.index("--dump-header") + 1] == "%"
+    else:
+        assert argv[-1] == "smtp://127.0.0.1:8080/reconlab"
+        assert argv[argv.index("--request") + 1] == "QUIT"
+        assert argv[argv.index("--dump-header") + 1] == "-"
+        assert argv[argv.index("--output") + 1] == "/dev/null"
+        assert "--user" not in argv
+
+
+@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("target,port", [("127.0.0.1", 21), ("127.0.0.1", 25),
+    ("127.0.0.1", 111), ("127.0.0.1", 8081), ("127.0.0.2", 8080)])
+def test_ftp_smtp_admission_does_not_accept_advertised_endpoints(case, target, port):
+    proposal = action(case)
+    proposal["target"], proposal["parameters"]["port"] = target, port
+    try:
+        selected = parse_action(proposal)
+    except ValueError:
+        return
+    assert not admission.profile_allows(selected, configuration(case))

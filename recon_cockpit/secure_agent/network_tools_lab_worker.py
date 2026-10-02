@@ -15,6 +15,7 @@ if __package__:
     from . import network_tools_ssh_fixture as ssh_fixture
     from . import network_tools_smb_fixture as smb_fixture
     from . import network_tools_rpc_fixture as rpc_fixture
+    from . import network_tools_ftp_smtp_fixture as ftp_smtp_fixture
 else:
     def _load(name, filename):
         spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -27,6 +28,7 @@ else:
     ssh_fixture = _load("network_tools_fixed_ssh", "network_tools_ssh_fixture.py")
     smb_fixture = _load("network_tools_fixed_smb", "network_tools_smb_fixture.py")
     rpc_fixture = _load("network_tools_fixed_rpc", "network_tools_rpc_fixture.py")
+    ftp_smtp_fixture = _load("network_tools_fixed_ftp_smtp", "network_tools_ftp_smtp_fixture.py")
 
 
 def read_request(source):
@@ -177,6 +179,13 @@ class NetworkToolsService(owner.Service):
             self.requests += 1
             self.condition.notify_all()
 
+    def _ftp_data_connected(self):
+        with self.condition:
+            if self.connections != 1:
+                raise ValueError("ftp_fixture_data_connection_limit")
+            self.connections += 1
+            self.condition.notify_all()
+
     def _ldap(self, connection):
         message_id, operation, body = _ldap_message(connection)
         if operation != 0x60 or body != b"\x02\x01\x03\x04\x00\x80\x00":
@@ -215,13 +224,23 @@ class NetworkToolsService(owner.Service):
                 if self.rpc is not None and self.connections >= rpc_fixture.MAX_CONNECTIONS:
                     raw.close()
                     raise RuntimeError("rpc_fixture_connection_limit")
+                if self.case.startswith(("ftp-", "smtp-")) and self.connections:
+                    raw.close()
+                    raise RuntimeError("ftp_smtp_fixture_connection_limit")
                 with self.condition:
                     self.connections += 1
                     self.condition.notify_all()
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.rpc is not None:
+                    if self.case.startswith("ftp-"):
+                        ftp_smtp_fixture.serve_ftp(connection, self.listener, case=self.case,
+                            deadline=self.deadline, on_listing=self._smb_enumerated,
+                            on_data_connection=self._ftp_data_connected)
+                    elif self.case.startswith("smtp-"):
+                        ftp_smtp_fixture.serve_smtp(connection, case=self.case, deadline=self.deadline,
+                            on_ehlo=self._smb_enumerated)
+                    elif self.rpc is not None:
                         if self.connections > rpc_fixture.MAX_CONNECTIONS:
                             raise ValueError("rpc_fixture_connection_limit")
                         rpc_fixture.serve(connection, self.rpc, self.deadline)
