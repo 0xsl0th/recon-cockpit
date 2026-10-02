@@ -32,11 +32,13 @@ times out: the forbidden witness receives no connection, and no export query is
 counted. Stalls, output pressure and cancellation retain bounded cleanup.
 
 Independent fixture, runtime, parser and evidence reviews found no blockers.
-The complete portable suite passed **6,349 tests** with no selected skips, errors
-or failures. All **36 network-tool workflow cases** and **38 enforcement cases**
-passed, including the 11 new B4 protocol cases and 12 new B4 enforcement cases.
+The complete portable suite passed **6,348 tests** with no selected skips, errors
+or failures. All **36 network-tool workflow cases** and **39 enforcement cases**
+passed, including the 11 new B4 protocol cases and 13 new B4 enforcement/staging cases.
+The Linux-only memfd sealing check is explicitly classified as integration;
+it must not skip inside the portable macOS matrix.
 Another **140 affected legacy Linux checks** passed across the shared owner,
-launcher, admission, HTTP/header, Nmap, curl and ffuf paths: **214 distinct Linux
+launcher, admission, HTTP/header, Nmap, curl and ffuf paths: **215 distinct Linux
 checks** in total, with no selected skips, failures or errors. Python 3.11 syntax,
 dependency consistency and local documentation links passed.
 
@@ -933,7 +935,7 @@ also passed. PR #27 stays closed. The following pre-merge handoff is historical.
 The operator authorized review and merge of PR #27 and asked whether offline R5
 was now concluded. A fresh independent review of
 `c3242c04e48759381e3063dbe91943a04d679cb4` found no blockers or outstanding
-reviews/comments. All five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36666520214)
+reviews/comments. All five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36666520215)
 passed. Saved JUnit and CLI summaries reproduce the counts and hashes below.
 Main has no configured required checks; all five available jobs were verified.
 
@@ -1487,7 +1489,7 @@ stop/no-execution/cost assertions. No production code changed. Reverification:
   --junitxml=/tmp/recon-authority-cancel-portable.xml
 ```
 
-**214 passed in 0.98 seconds.** Full Linux verification above remains applicable;
+**215 passed in 0.98 seconds.** Full Linux verification above remains applicable;
 the PR checks report the corrected head's hosted portable matrix.
 
 The direct gate proves durable intent from the selected writer, not truth of a

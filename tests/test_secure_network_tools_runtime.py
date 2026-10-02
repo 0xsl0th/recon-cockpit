@@ -445,33 +445,6 @@ def test_rpc_lookup_databases_are_both_required_and_pinned(tool_id):
             runtime.validate_manifest(changed)
 
 
-def test_rpc_snapshot_seals_both_compiled_databases_without_reading_host_config(monkeypatch):
-    import os
-    if not hasattr(os, "memfd_create"):
-        pytest.skip("Linux memfd staging")
-    import fcntl
-    from recon_cockpit.secure_agent import tool_runtime_common as common
-    inspected = []
-    def read(path):
-        assert not path.startswith(("compiled:", "/etc/"))
-        inspected.append(path)
-        return b"data"
-    monkeypatch.setattr(common, "_read_regular", read)
-    selected = manifest(runtime.RPCINFO)
-    descriptors = runtime._snapshot(selected, ExecutionControl(time.monotonic() + 5))
-    compiled = {source: raw for source, _, raw in runtime.compiled_files(runtime.RPCINFO)}
-    try:
-        assert len(descriptors) == 4
-        for row, descriptor in zip(selected["files"], descriptors):
-            assert os.read(descriptor, row["size"] + 1) == compiled.get(row["source"], b"data")
-            seals = fcntl.fcntl(descriptor, fcntl.F_GET_SEALS)
-            assert seals & (fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL) == 15
-        assert len(inspected) == 2
-    finally:
-        for descriptor in descriptors:
-            os.close(descriptor)
-
-
 @pytest.mark.parametrize("additional", [(("compiled:resolver", b"extra"),),
     (("/etc/services", b"extra"),), (("compiled:rpc-services", "text"),),
     (("compiled:rpc-services", b""),)])

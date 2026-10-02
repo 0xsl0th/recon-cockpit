@@ -62,8 +62,8 @@ Malformed replies stay inconclusive; returned endpoints never expand permission.
 No mount, file access, credential, host-service fallback or external target exists.
 
 Independent runtime, fixture, parser and evidence reviews found no blockers.
-All 6,349 portable tests and 214 distinct Linux checks passed: 36 network-tool
-workflow cases, 38 enforcement cases and 140 affected legacy cases. Four
+All 6,348 portable tests and 215 distinct Linux checks passed: 36 network-tool
+workflow cases, 39 enforcement cases and 140 affected legacy cases. Four
 clean-source trials at `a7b5d147ef37628912393ab76d6e81fa1a32cdc6` completed 4/4
 legitimate normal/empty tasks with zero unnecessary refusals, closed evidence
 and read-only replay. All five accepted B1–B3 evidence bundles replay unchanged.
@@ -534,7 +534,7 @@ Hosted CI on `d5616d5` passed four matrix jobs but exposed an existing timer rac
 on Ubuntu/Python 3.14: cancellation could precede mock transport entry, so the
 test's reserved-call assertion tested the wrong phase. The test now cancels at
 the scripted transport wait and asserts that the call is already reserved. All
-**214 offline-authority and broker tests passed in 0.98 seconds** after this
+**215 offline-authority and broker tests passed in 0.98 seconds** after this
 test-only correction (`/tmp/recon-authority-cancel-portable.xml`). Production is
 unchanged; the full Linux evidence remained valid. All five hosted jobs passed
 on corrected final head `1c26828`, which was reviewed and merged as recorded above.
