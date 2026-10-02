@@ -24,9 +24,11 @@ accepted DNS/TLS coverage, bringing main to 8 capabilities backed by 5 external
 programs. PR #39 accepts B2 SSH host keys and anonymous LDAP RootDSE, bringing
 main to 10 secure capabilities backed by 7 external programs. PR #40 accepts B3
 SMB metadata, bringing main to 11 capabilities backed by 8 external programs.
-B4 RPC/NFS metadata is implemented and verified in
-[PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41), pending review and an
-authorized merge. B5 FTP/SMTP follows it. See the
+PR #41 accepts B4 RPC/NFS metadata at `6623aa0`, bringing main to 13 capabilities
+backed by 10 external programs. B5 FTP/SMTP is implemented and lab-verified,
+pending review/merge in [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42); it reuses curl and would add two capabilities without a
+new executable family. B6 Docker/WinRM metadata is the next gap because its fixed
+read-only observations reuse the existing curl/HTTP infrastructure. See the
 [inventory and completion gates](secure-tool-coverage.md) for exact distinctions,
 product gaps and deferred modes. Roughly 40 tools remains the longer-term product
 direction, not a claim that 40 integrations exist or a reason to duplicate tools.
@@ -37,8 +39,8 @@ direction, not a claim that 40 integrations exist or a reason to duplicate tools
 | B1 — accepted in PR #38 | dig DNS and OpenSSL TLS | Fixed nonrecursive A query and verified TLS handshake; structured useful output, negative cases, actual confinement and replay. |
 | B2 — accepted in PR #39 | ssh-keyscan and ldapsearch RootDSE | Fixed key collection and anonymous base-scope metadata; no login or referrals. |
 | B3 — accepted in PR #40 | smbclient | Anonymous bounded share metadata through the fixed IPC endpoint; no share traversal, file transfer or remote execution. |
-| B4 — PR #41 pending review/merge | rpcinfo and showmount | Bounded RPC/export observations; advertisements cannot authorize endpoints, and no mounting is permitted. |
-| B5 | curl FTP and SMTP capability query | Fixed finite listing and banner/EHLO/QUIT; no file transfer, mail or authentication. |
+| B4 — accepted in PR #41 | rpcinfo and showmount | Bounded RPC/export observations; advertisements cannot authorize endpoints, and no mounting is permitted. |
+| B5 — review/merge pending | curl FTP and SMTP capability query | Real fixed listing and EHLO results, valid empty observations, replay and enforcement verified; no file transfer, mail or authentication. |
 | B6 | curl Docker/WinRM metadata | Fixed read-only endpoint observations; no container or remote-session operations. |
 | B7 | Nmap service identification | Reviewed, pinned probe/NSE runtime closure; never silently enable broad `-sV`. |
 | B8 | kerbrute synthetic principal enumeration | Owned KDC, fixed finite users and request cap; no passwords, spraying or ticket extraction. |

@@ -1,8 +1,8 @@
 # Owned RPC registration and NFS export metadata
 
 B4 extends the [secure-tool coverage checklist](secure-tool-coverage.md) with two
-independently invoked native tools. It is implemented and remains pending
-[review and an authorized merge in PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41).
+independently invoked native tools. It was accepted in
+[PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41), merged as `6623aa0`.
 Both profiles reuse the existing policy, approval, audit,
 admission, confined launcher, networkless parser and private evidence path.
 

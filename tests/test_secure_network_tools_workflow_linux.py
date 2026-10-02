@@ -63,11 +63,26 @@ def linux_only():
     ('nfs-malformed', 'inconclusive', 0, 1),
     ('nfs-stalled', 'inconclusive', 0, 1),
     ('nfs-redirected', 'inconclusive', 0, 0),
+    ('ftp-ok', 'ftp_names_observed', 1, 1),
+    ('ftp-empty', 'ftp_empty_listing_observed', 1, 1),
+    ('ftp-denied', 'inconclusive', 0, 0),
+    ('ftp-injected', 'inconclusive', 1, 1),
+    ('ftp-malformed', 'inconclusive', 0, 1),
+    ('ftp-stalled', 'inconclusive', 0, 1),
+    ('ftp-passive-ip', 'inconclusive', 0, 0),
+    ('ftp-passive-port', 'inconclusive', 0, 0),
+    ('smtp-ok', 'smtp_capabilities_observed', 1, 1),
+    ('smtp-empty', 'smtp_no_extensions_observed', 1, 1),
+    ('smtp-injected', 'inconclusive', 1, 1),
+    ('smtp-malformed', 'inconclusive', 0, 1),
+    ('smtp-rejected', 'inconclusive', 0, 1),
+    ('smtp-stalled', 'inconclusive', 0, 1),
 ])
 def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys, record_property, case, outcome, success, requests):
     monkeypatch.setattr(NetworkToolsLab, 'start', lambda *_: pytest.fail('host lab started'))
     monkeypatch.setattr(AuthorizedNetworkToolsBackend, 'run', lambda *a, **k: pytest.fail('host tool executed'))
-    policy_file = ('examples/secure-agent-rpc-nfs-policy.json' if case.startswith(('rpc-', 'nfs-'))
+    policy_file = ('examples/secure-agent-ftp-smtp-policy.json' if case.startswith(('ftp-', 'smtp-'))
+                   else 'examples/secure-agent-rpc-nfs-policy.json' if case.startswith(('rpc-', 'nfs-'))
                    else 'examples/secure-agent-smb-policy.json' if case.startswith('smb-')
                    else 'examples/secure-agent-ssh-ldap-policy.json' if case.startswith(('ssh-', 'ldap-'))
                    else 'examples/secure-agent-network-tools-policy.json')
@@ -104,6 +119,11 @@ def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys
         # Discovery connections carry no metadata-task count and do not
         # authorize a second endpoint or a MOUNT procedure.
         assert closure['connection_count'] == (1 if case == 'nfs-redirected' else 2)
+        record_property('accepted_connection_count', closure['connection_count'])
+    if case.startswith(('ftp-', 'smtp-')):
+        expected_connections = (2 if case.startswith('ftp-') and case not in
+            ('ftp-denied', 'ftp-passive-ip', 'ftp-passive-port') else 1)
+        assert closure['connection_count'] == expected_connections
         record_property('accepted_connection_count', closure['connection_count'])
     row = report['records'][0]
     artifact = json.loads((evidence / row['artifact']['filename']).read_text())

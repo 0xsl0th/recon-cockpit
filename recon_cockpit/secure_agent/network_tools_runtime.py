@@ -28,6 +28,8 @@ LDAP = "ldap_rootdse_v1"
 SMB = "smb_share_list_v1"
 RPCINFO = "rpcinfo_dump_v1"
 SHOWMOUNT = "showmount_exports_v1"
+FTP = "curl_ftp_list_v1"
+SMTP = "curl_smtp_capabilities_v1"
 # No UDP, IPv6, local sockets, host transport defaults or dynamic netids.
 RPC_NETCONFIG = b"tcp tpi_cots_ord v inet tcp - -\n"
 # The native clients resolve these service names even for a numeric host.
@@ -60,7 +62,8 @@ READY_PREFIX = b"RECON_NETWORK_TOOL_READY_V1 "
 LIBRARY = re.compile(r"/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*\.?\Z")
 EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
                SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch", SMB: "/usr/bin/smbclient",
-               RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount"}
+               RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount",
+               FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl"}
 FIXED_ARGV = {
     DIG: ("/tool/dig", "-r", "-4", "@127.0.0.1", "-p", "8080", "harbordesk.test.", "A",
           "+tcp", "+norecurse", "+tries=1", "+time=2", "+nosearch", "+noedns",
@@ -79,6 +82,17 @@ FIXED_ARGV = {
           "-U", "%", "-N", "-g", "-t", "2", "--use-kerberos=off", "-s", "/tool/data/smb.conf"),
     RPCINFO: ("/tool/rpcinfo", "-p", "127.0.0.1"),
     SHOWMOUNT: ("/tool/showmount", "-e", "127.0.0.1"),
+    FTP: ("/tool/curl", "--disable", "--silent", "--show-error", "--ipv4", "--globoff",
+          "--proto", "=ftp", "--proto-redir", "=ftp", "--noproxy", "*", "--proxy", "",
+          "--connect-timeout", "1", "--max-time", "3", "--max-filesize", "8192", "--retry", "0",
+          "--ftp-pasv", "--disable-epsv", "--no-ftp-skip-pasv-ip", "--ftp-method", "nocwd",
+          "--list-only", "--user", "anonymous:anonymous@", "--dump-header", "%",
+          "ftp://127.0.0.1:8080/"),
+    SMTP: ("/tool/curl", "--disable", "--silent", "--show-error", "--ipv4", "--globoff",
+           "--proto", "=smtp", "--proto-redir", "=smtp", "--noproxy", "*", "--proxy", "",
+           "--connect-timeout", "1", "--max-time", "3", "--max-filesize", "8192", "--retry", "0",
+           "--request", "QUIT", "--dump-header", "-", "--output", "/dev/null",
+           "smtp://127.0.0.1:8080/reconlab"),
 }
 MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
@@ -110,7 +124,7 @@ def _compiled(tool_id):
     if tool_id == DIG:
         # No host resolver, search list, or user configuration enters the tool.
         return "compiled:resolver", "/etc/resolv.conf", b"# fixed TCP nameserver supplied by reviewed argv\n"
-    if tool_id in (SSH, LDAP):
+    if tool_id in (SSH, LDAP, FTP, SMTP):
         return None  # These profiles need no configuration, credentials, or trust file.
     if tool_id == SMB:
         return "compiled:smb-config", "/tool/data/smb.conf", SMB_CONFIG

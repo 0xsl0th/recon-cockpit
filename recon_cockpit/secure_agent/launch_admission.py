@@ -40,6 +40,10 @@ NETWORK_TOOL_CASES = {
                     'rpcinfo_dump_v1'),
     **dict.fromkeys(('nfs-ok', 'nfs-empty', 'nfs-injected', 'nfs-malformed', 'nfs-stalled',
                     'nfs-redirected'), 'showmount_exports_v1'),
+    **dict.fromkeys(('ftp-ok', 'ftp-empty', 'ftp-denied', 'ftp-injected', 'ftp-malformed',
+                    'ftp-stalled', 'ftp-passive-ip', 'ftp-passive-port'), 'curl_ftp_list_v1'),
+    **dict.fromkeys(('smtp-ok', 'smtp-empty', 'smtp-injected', 'smtp-malformed',
+                    'smtp-rejected', 'smtp-stalled'), 'curl_smtp_capabilities_v1'),
 }
 
 

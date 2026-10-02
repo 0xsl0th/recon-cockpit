@@ -174,3 +174,13 @@ class RPCInfoDumpParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class ShowmountExportsParameters(TCPParameters):
     """Bounds for fixed export metadata at one endpoint, without mounting."""
+
+
+@dataclass(frozen=True, slots=True)
+class CurlFTPListParameters(TCPParameters):
+    """Bounds for one fixed anonymous filename listing, without file transfer."""
+
+
+@dataclass(frozen=True, slots=True)
+class CurlSMTPCapabilitiesParameters(TCPParameters):
+    """Bounds for one fixed SMTP capability query, without authentication or mail."""

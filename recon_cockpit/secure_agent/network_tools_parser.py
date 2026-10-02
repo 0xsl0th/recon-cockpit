@@ -1,4 +1,4 @@
-"""Bounded DNS, TLS, SSH, LDAP, SMB, RPC and NFS facts for fixed owned tool profiles."""
+"""Bounded protocol metadata for fixed owned native tool profiles."""
 
 from __future__ import annotations
 
@@ -15,9 +15,12 @@ LDAP_TOOL_ID = "ldap_rootdse_v1"
 SMB_TOOL_ID = "smb_share_list_v1"
 RPCINFO_TOOL_ID = "rpcinfo_dump_v1"
 SHOWMOUNT_TOOL_ID = "showmount_exports_v1"
+FTP_TOOL_ID = "curl_ftp_list_v1"
+SMTP_TOOL_ID = "curl_smtp_capabilities_v1"
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
-    RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1"}
+    RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
+    FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -29,6 +32,13 @@ LDAP_VENDOR = "HarborDesk synthetic directory"
 RPC_HEADER = "   program vers proto   port  service"
 NFS_PATHS = frozenset({"/srv/harbordesk/public", "/srv/harbordesk/reports"})
 NFS_GROUPS = frozenset({"127.0.0.1"})
+FTP_NAMES = frozenset({"public.txt", "reports"})
+SMTP_CAPABILITIES = frozenset({"8BITMIME", "PIPELINING", "SIZE 1048576"})
+FTP_COMPLETE_CONTROL = (b"220 HarborDesk synthetic FTP\r\n"
+    b"331 Anonymous identity only\r\n230 Anonymous fixture session\r\n"
+    b'257 "/" is the fixture directory\r\n'
+    b"227 Entering Passive Mode (127,0,0,1,31,144)\r\n"
+    b"200 ASCII listing mode\r\n150 Opening finite name listing\r\n226 Listing complete\r\n")
 SMB_SHARES = {"PUBLIC": "Disk", "IPC$": "IPC"}
 # The minimal native closure omits optional legacy charset modules. This exact
 # startup warning is nonfatal; arbitrary diagnostics cannot become observations.
@@ -98,6 +108,26 @@ def validate_result(tool_id, value):
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id == FTP_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "entries"} or value["kind"] != "ftp_listing"
+                or type(value["entries"]) is not list or len(value["entries"]) > len(FTP_NAMES)):
+            raise ValueError("invalid_network_tool_observation")
+        names = []
+        for row in value["entries"]:
+            if (type(row) is not dict or set(row) != {"name"}
+                    or type(row["name"]) is not str or row["name"] not in FTP_NAMES):
+                raise ValueError("invalid_ftp_name")
+            names.append(row["name"])
+        if names != sorted(set(names)):
+            raise ValueError("invalid_ftp_name_order")
+        return {**value, "entries": [dict(row) for row in value["entries"]]}
+    if tool_id == SMTP_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "capabilities"} or value["kind"] != "smtp_capabilities"
+                or type(value["capabilities"]) is not list or len(value["capabilities"]) > len(SMTP_CAPABILITIES)
+                or any(type(item) is not str or item not in SMTP_CAPABILITIES for item in value["capabilities"])
+                or value["capabilities"] != sorted(set(value["capabilities"]))):
+            raise ValueError("invalid_smtp_capabilities")
+        return {**value, "capabilities": list(value["capabilities"])}
     if tool_id == RPCINFO_TOOL_ID:
         if (set(value) != {"parser_version", "kind", "registrations"}
                 or value["kind"] != "rpc_registrations" or type(value["registrations"]) is not list
@@ -408,6 +438,46 @@ def _parse_showmount(output, stderr):
         "kind": "nfs_exports", "exports": sorted(exports, key=lambda row: row["path"])})
 
 
+def _parse_ftp(output, stderr):
+    # curl's pinned --dump-header channel retains the complete successful
+    # anonymous control exchange. Empty stdout alone never establishes absence.
+    if stderr != FTP_COMPLETE_CONTROL:
+        raise ValueError("invalid_ftp_control_transcript")
+    names = [] if output == b"" else _lines(output)
+    if (len(names) != len(output.splitlines()) or len(names) > len(FTP_NAMES)
+            or any(name not in FTP_NAMES for name in names)):
+        raise ValueError("unsupported_ftp_listing")
+    return validate_result(FTP_TOOL_ID, {"parser_version": parser_version(FTP_TOOL_ID),
+        "kind": "ftp_listing", "entries": [{"name": name} for name in sorted(names)]})
+
+
+def _parse_smtp(output, stderr):
+    if stderr or not output.endswith(b"\r\n"):
+        raise ValueError("invalid_smtp_transcript")
+    lines = output[:-2].split(b"\r\n")
+    if (not 3 <= len(lines) <= 6 or lines[0] != b"220 harbordesk.test ESMTP synthetic fixture"
+            or lines[-1] != b"221 Goodbye"):
+        raise ValueError("invalid_smtp_transcript")
+    if len(lines) == 3:
+        if lines[1] != b"250 harbordesk.test":
+            raise ValueError("invalid_smtp_empty_reply")
+        return validate_result(SMTP_TOOL_ID, {"parser_version": parser_version(SMTP_TOOL_ID),
+            "kind": "smtp_capabilities", "capabilities": []})
+    if lines[1] != b"250-harbordesk.test":
+        raise ValueError("invalid_smtp_reply_sequence")
+    capabilities = []
+    for index, line in enumerate(lines[2:-1]):
+        prefix = b"250 " if index == len(lines) - 4 else b"250-"
+        if not line.startswith(prefix):
+            raise ValueError("invalid_smtp_reply_sequence")
+        try:
+            capabilities.append(line[4:].decode("ascii"))
+        except UnicodeError:
+            raise ValueError("invalid_smtp_capability") from None
+    return validate_result(SMTP_TOOL_ID, {"parser_version": parser_version(SMTP_TOOL_ID),
+        "kind": "smtp_capabilities", "capabilities": sorted(capabilities)})
+
+
 def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=False):
     parser_version(tool_id)
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
@@ -415,4 +485,5 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
         raise ValueError("invalid_network_tool_output_size")
     return {DIG_TOOL_ID: _parse_dns, OPENSSL_TOOL_ID: _parse_tls,
             SSH_TOOL_ID: _parse_ssh, LDAP_TOOL_ID: _parse_ldap, SMB_TOOL_ID: _parse_smb,
-            RPCINFO_TOOL_ID: _parse_rpcinfo, SHOWMOUNT_TOOL_ID: _parse_showmount}[tool_id](output, stderr)
+            RPCINFO_TOOL_ID: _parse_rpcinfo, SHOWMOUNT_TOOL_ID: _parse_showmount,
+            FTP_TOOL_ID: _parse_ftp, SMTP_TOOL_ID: _parse_smtp}[tool_id](output, stderr)

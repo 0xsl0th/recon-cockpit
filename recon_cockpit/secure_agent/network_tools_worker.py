@@ -74,7 +74,7 @@ def landlock(manifest):
 
 def syscall_filter(tool_id):
     if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB,
-                       runtime.RPCINFO, runtime.SHOWMOUNT):
+                       runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP):
         raise ValueError("unsupported_network_tool")
     common.syscall_filter(allow_threads=tool_id == runtime.DIG)
 
