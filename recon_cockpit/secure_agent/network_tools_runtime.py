@@ -1,4 +1,4 @@
-"""Pinned DNS/TLS/SSH/LDAP/SMB executables for the disconnected single-action lab.
+"""Pinned network metadata executables for the disconnected single-action lab.
 
 Only reviewed executable, library and compiled fixture data bytes enter the
 tool filesystem. Neither a proposal nor tool output chooses files or argv.
@@ -26,6 +26,13 @@ OPENSSL = "openssl_tls_handshake_v1"
 SSH = "ssh_host_keys_v1"
 LDAP = "ldap_rootdse_v1"
 SMB = "smb_share_list_v1"
+RPCINFO = "rpcinfo_dump_v1"
+SHOWMOUNT = "showmount_exports_v1"
+# No UDP, IPv6, local sockets, host transport defaults or dynamic netids.
+RPC_NETCONFIG = b"tcp tpi_cots_ord v inet tcp - -\n"
+# The native clients resolve these service names even for a numeric host.
+# Only the single preauthorized TCP endpoint exists in this synthetic database.
+RPC_SERVICES = b"sunrpc 111/tcp rpcbind portmapper\n"
 SMB_PROFILE = "network-tools-smb-runtime-v1"
 SMB_MAX_FILES = 160
 SMB_MAX_RUNTIME_BYTES = 128 * 1024 * 1024
@@ -52,7 +59,8 @@ MAX_MANIFEST_BYTES = 12288
 READY_PREFIX = b"RECON_NETWORK_TOOL_READY_V1 "
 LIBRARY = re.compile(r"/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*\.?\Z")
 EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
-               SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch", SMB: "/usr/bin/smbclient"}
+               SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch", SMB: "/usr/bin/smbclient",
+               RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount"}
 FIXED_ARGV = {
     DIG: ("/tool/dig", "-r", "-4", "@127.0.0.1", "-p", "8080", "harbordesk.test.", "A",
           "+tcp", "+norecurse", "+tries=1", "+time=2", "+nosearch", "+noedns",
@@ -69,6 +77,8 @@ FIXED_ARGV = {
            "namingContexts", "supportedLDAPVersion", "supportedSASLMechanisms", "vendorName"),
     SMB: ("/tool/smbclient", "-L", "127.0.0.1", "-I", "127.0.0.1", "-p", "8080",
           "-U", "%", "-N", "-g", "-t", "2", "--use-kerberos=off", "-s", "/tool/data/smb.conf"),
+    RPCINFO: ("/tool/rpcinfo", "-p", "127.0.0.1"),
+    SHOWMOUNT: ("/tool/showmount", "-e", "127.0.0.1"),
 }
 MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
@@ -104,7 +114,18 @@ def _compiled(tool_id):
         return None  # These profiles need no configuration, credentials, or trust file.
     if tool_id == SMB:
         return "compiled:smb-config", "/tool/data/smb.conf", SMB_CONFIG
+    if tool_id in (RPCINFO, SHOWMOUNT):
+        return "compiled:rpc-netconfig", "/etc/netconfig", RPC_NETCONFIG
     raise ValueError("unsupported_network_tool")
+
+
+def compiled_files(tool_id):
+    """Retain existing profiles' bytes; B4 requires two fixed lookup files."""
+    first = _compiled(tool_id)
+    files = () if first is None else (first,)
+    if tool_id in (RPCINFO, SHOWMOUNT):
+        files += (("compiled:rpc-services", "/etc/services", RPC_SERVICES),)
+    return files
 
 
 def _compact_files(files):
@@ -177,11 +198,10 @@ def validate_manifest(value, *, tool_id=None):
             or value["executable"] != FIXED_ARGV[value["tool_id"]][0]
             or type(value["interpreter"]) is not str or not LIBRARY.fullmatch(value["interpreter"])
             or type(value["files"]) is not list
-            or not (3 if value["tool_id"] in (DIG, OPENSSL, SMB) else 2) <= len(value["files"]) <= (SMB_MAX_FILES if smb else 48)
+            or not 2 + len(compiled_files(value["tool_id"])) <= len(value["files"]) <= (SMB_MAX_FILES if smb else 48)
             or len(encode(value)) > (SMB_MAX_MANIFEST_BYTES if smb else MAX_MANIFEST_BYTES)):
         raise ValueError("invalid_network_tool_manifest")
-    data = _compiled(value["tool_id"])
-    source_name, destination_name, compiled = data if data is not None else (None, None, None)
+    compiled = {destination: (source, raw) for source, destination, raw in compiled_files(value["tool_id"])}
     destinations, total = set(), 0
     files = _expanded_files(value)
     for item in files:
@@ -194,16 +214,17 @@ def validate_manifest(value, *, tool_id=None):
         source, destination = item["source"], item["destination"]
         if destination == value["executable"]:
             accepted = source == EXECUTABLES[value["tool_id"]]
-        elif data is not None and destination == destination_name:
-            accepted = (source == source_name and item["size"] == len(compiled)
-                        and item["sha256"] == hashlib.sha256(compiled).hexdigest())
+        elif destination in compiled:
+            source_name, data = compiled[destination]
+            accepted = (source == source_name and item["size"] == len(data)
+                        and item["sha256"] == hashlib.sha256(data).hexdigest())
         else:
             accepted = bool(LIBRARY.fullmatch(source) and LIBRARY.fullmatch(destination))
         if not accepted or destination in destinations:
             raise ValueError("invalid_network_tool_runtime_path")
         destinations.add(destination)
         total += item["size"]
-    required = {value["executable"], value["interpreter"]} | ({destination_name} if data is not None else set())
+    required = {value["executable"], value["interpreter"]} | set(compiled)
     if (total > (SMB_MAX_RUNTIME_BYTES if smb else MAX_RUNTIME_BYTES) or not required <= destinations
             or files != sorted(files, key=lambda item: item["destination"])):
         raise ValueError("invalid_network_tool_runtime_closure")
@@ -235,9 +256,7 @@ def inspect_tool_runtime(tool_id, control):
         raw = read_runtime_file(source, tool_id)
         files.append({"source": source, "destination": destination, "size": len(raw),
                       "sha256": hashlib.sha256(raw).hexdigest()})
-    data = _compiled(tool_id)
-    if data is not None:
-        source, destination, raw = data
+    for source, destination, raw in compiled_files(tool_id):
         files.append({"source": source, "destination": destination, "size": len(raw),
                       "sha256": hashlib.sha256(raw).hexdigest()})
     return validate_manifest(compact_manifest({"version": "1", "profile": PROFILE, "tool_id": tool_id,
@@ -257,6 +276,9 @@ def _snapshot(manifest, control):
     if manifest["tool_id"] == SMB:
         return sealed_snapshots({**manifest, "files": runtime_files(manifest)}, source, raw, control,
                                 maximum_file_bytes=SMB_MAX_FILE_BYTES)
+    if manifest["tool_id"] in (RPCINFO, SHOWMOUNT):
+        additional = tuple((source, raw) for source, _, raw in compiled_files(manifest["tool_id"])[1:])
+        return sealed_snapshots(manifest, source, raw, control, additional_compiled=additional)
     return sealed_snapshots(manifest, source, raw, control)
 
 
@@ -270,6 +292,9 @@ def _command(lab, bootstrap, manifest, descriptors, nonce, commitment):
             "--setenv", "LC_ALL", "C", "--setenv", "MALLOC_ARENA_MAX", "1",
             "--chdir", "/", "--proc", "/proc", "--dev", "/dev",
             "--ro-bind", stdlib, stdlib]
+    if manifest["tool_id"] in (RPCINFO, SHOWMOUNT):
+        # AUTH_SYS may contain a machine name; never expose the host identity.
+        argv += ["--hostname", "reconlab"]
     for source, destination in files:
         if destination not in tool_paths and Path(destination).name not in {"nft", "bwrap", "nsenter"}:
             argv += ["--ro-bind", source, destination]

@@ -21,6 +21,34 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith(("rpc-", "nfs-")):
+        from . import network_tools_fixture as rpc
+        listing = case.startswith("rpc-")
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-rpc-nfs-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 111, "protocol": "onc_rpc_tcp"}],
+            "rpc": {"rpc_version": 2, "portmapper_version": 2,
+                "operation": "DUMP" if listing else "EXPORT", "mount_versions": [1, 3],
+                "discovery": "PMAP_GETPORT_or_RPCB_GETADDR_fixed_program",
+                "discovery_programs": [[100000, 2]] if listing else [[100005, 1], [100005, 3]],
+                "discovery_owner": "fixed_libtirpc_string_or_empty",
+                "authentication": "AUTH_NULL_or_synthetic_AUTH_SYS_reconlab_uid0_gid0",
+                "discovered_port": 112 if case == "nfs-redirected" else 111,
+                "registrations": () if case == "rpc-empty" else rpc.RPC_REGISTRATIONS +
+                    ((rpc.RPC_INJECTED_REGISTRATION,) if case == "rpc-injected" else ()),
+                "exports": () if case == "nfs-empty" else rpc.NFS_EXPORTS,
+                "injected_group": rpc.NFS_HOSTILE_GROUP if case == "nfs-injected" else None,
+                "filesystem": False, "credentials": False, "mount": False,
+                "max_frame_bytes": rpc.RPC_MAX_FRAME_BYTES, "max_calls": rpc.RPC_MAX_CALLS,
+                "max_connections": rpc.RPC_MAX_CONNECTIONS},
+            "behavior": "stall_after_validated_query" if case.endswith("-stalled") else "malformed_response"
+                        if case.endswith("-malformed") else "advertise_forbidden_port" if case == "nfs-redirected" else "fixed_response",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_portmapper_dumps" if listing else "validated_mount_exports",
+            "discovery_requests": "bounded_and_excluded_from_metadata_count",
+            "connection_evidence": "accepted_connections_lower_bound"}
     if case.startswith("smb-"):
         from . import network_tools_fixture as fixture
         return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
@@ -101,9 +129,11 @@ def validate_identity(value, *, case=None):
 
 def validate_context(value, expected):
     expected = validate_identity(expected)
+    connection_limit = 4 if expected["scenario"].startswith(("rpc-", "nfs-")) else 1
     if (type(value) is not dict or set(value) != {"identity", "connection_count", "request_count"}
             or validate_identity(value["identity"]) != expected
-            or any(type(value[k]) is not int or not 0 <= value[k] <= 1 for k in ("connection_count", "request_count"))
+            or type(value["connection_count"]) is not int or not 0 <= value["connection_count"] <= connection_limit
+            or type(value["request_count"]) is not int or not 0 <= value["request_count"] <= 1
             or value["request_count"] > value["connection_count"]):
         raise ValueError("invalid_network_tools_lab_context")
     return copy.deepcopy(value)

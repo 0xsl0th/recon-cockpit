@@ -14,6 +14,7 @@ if __package__:
     from . import owned_lab_worker as owner, network_tools_fixture as fixture, web_tools_tls_fixture as tls_material
     from . import network_tools_ssh_fixture as ssh_fixture
     from . import network_tools_smb_fixture as smb_fixture
+    from . import network_tools_rpc_fixture as rpc_fixture
 else:
     def _load(name, filename):
         spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -25,6 +26,7 @@ else:
     tls_material = _load("network_tools_fixed_tls", "web_tools_tls_fixture.py")
     ssh_fixture = _load("network_tools_fixed_ssh", "network_tools_ssh_fixture.py")
     smb_fixture = _load("network_tools_fixed_smb", "network_tools_smb_fixture.py")
+    rpc_fixture = _load("network_tools_fixed_rpc", "network_tools_rpc_fixture.py")
 
 
 def read_request(source):
@@ -166,6 +168,8 @@ class NetworkToolsService(owner.Service):
     def __init__(self, request, listener):
         self.deadline = request["deadline"]
         self.context = tls_context(request["case"]) if request["case"].startswith("openssl-") else None
+        self.rpc = (rpc_fixture.Exchange(request["case"], self._smb_enumerated)
+                    if request["case"].startswith(("rpc-", "nfs-")) else None)
         super().__init__(request["case"], listener)
 
     def _smb_enumerated(self):
@@ -208,13 +212,20 @@ class NetworkToolsService(owner.Service):
         try:
             while True:
                 raw, _ = self.listener.accept()
+                if self.rpc is not None and self.connections >= rpc_fixture.MAX_CONNECTIONS:
+                    raw.close()
+                    raise RuntimeError("rpc_fixture_connection_limit")
                 with self.condition:
                     self.connections += 1
                     self.condition.notify_all()
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.case.startswith("smb-"):
+                    if self.rpc is not None:
+                        if self.connections > rpc_fixture.MAX_CONNECTIONS:
+                            raise ValueError("rpc_fixture_connection_limit")
+                        rpc_fixture.serve(connection, self.rpc, self.deadline)
+                    elif self.case.startswith("smb-"):
                         smb_fixture.serve(connection, case=self.case, shares=fixture.smb_shares(self.case),
                             deadline=self.deadline, on_enumeration=self._smb_enumerated)
                     elif self.case.startswith("ssh-"):
@@ -266,6 +277,12 @@ class NetworkToolsService(owner.Service):
 class NetworkToolsOwner(owner.Owner):
     def read_request(self, source):
         return read_request(source)
+
+    def service_port(self, request):
+        return rpc_fixture.PORT if request["case"].startswith(("rpc-", "nfs-")) else super().service_port(request)
+
+    def firewall_rules(self, request):
+        return rpc_fixture.firewall_rules() if request["case"].startswith(("rpc-", "nfs-")) else super().firewall_rules(request)
 
     def create_service(self, request, listener):
         return NetworkToolsService(request, listener)

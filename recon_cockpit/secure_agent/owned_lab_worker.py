@@ -137,6 +137,12 @@ class Owner:
     def create_service(self, request, listener):
         return Service(request["case"], listener)
 
+    def service_port(self, request):
+        return 8080
+
+    def firewall_rules(self, request):
+        return worker.firewall_rules("127.0.0.1", 8080)
+
     def run(self):
         listeners = []
         try:
@@ -148,7 +154,8 @@ class Owner:
             worker._set_limits(worker._remaining(deadline, 600))
             signal.signal(signal.SIGALRM, worker._deadline)
             signal.setitimer(signal.ITIMER_REAL, worker._remaining(deadline, 600))
-            for address in (("127.0.0.1", 8080), ("127.0.0.2", 8080), ("127.0.0.1", 8081)):
+            port = self.service_port(request)
+            for address in (("127.0.0.1", port), ("127.0.0.2", port), ("127.0.0.1", port + 1)):
                 listeners.append(_listen(address))
             # Demonstrate both forbidden witnesses really accept before filtering.
             # The allowed service is untouched, so only actions advance its counters.
@@ -158,7 +165,7 @@ class Owner:
                     connection.connect(listener.getsockname())
                     accepted, _ = listener.accept()
                     accepted.close()
-            subprocess.run(["/usr/sbin/nft", "-f", "-"], input=worker.firewall_rules("127.0.0.1", 8080).encode("ascii"),
+            subprocess.run(["/usr/sbin/nft", "-f", "-"], input=self.firewall_rules(request).encode("ascii"),
                            stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True,
                            timeout=worker._remaining(deadline, 3), env={"PATH": "/usr/sbin:/usr/bin", "LC_ALL": "C"},
                            close_fds=True)

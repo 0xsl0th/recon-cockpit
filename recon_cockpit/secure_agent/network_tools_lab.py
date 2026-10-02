@@ -1,4 +1,4 @@
-"""Disposable DNS or TLS service for one reviewed native tool action."""
+"""Disposable owned service for one reviewed network metadata tool action."""
 
 from pathlib import Path
 
@@ -22,10 +22,16 @@ class NetworkToolsLab(OwnedLab):
 
     def _owner_command(self, stdlib, files, info_fd):
         argv = super()._owner_command(stdlib, files, info_fd)
+        if self._identity["scenario"].startswith(("rpc-", "nfs-")):
+            # Only the owner needs to bind fixed ports 111/112 in its fresh
+            # network namespace. Owner.run drops every capability before
+            # starting the service; native clients never receive this grant.
+            index = argv.index("--die-with-parent")
+            argv[index:index] = ["--cap-add", "CAP_NET_BIND_SERVICE"]
         directory = Path(__file__).resolve().parent
         mounts = []
         for name in ("network_tools_lab_worker.py", "network_tools_fixture.py", "web_tools_tls_fixture.py",
-                     "network_tools_ssh_fixture.py", "network_tools_smb_fixture.py"):
+                     "network_tools_ssh_fixture.py", "network_tools_smb_fixture.py", "network_tools_rpc_fixture.py"):
             mounts += ["--ro-bind", str(directory / name), "/app/" + name]
         argv[argv.index("--remount-ro"):argv.index("--remount-ro")] = mounts
         argv[-1] = "/app/network_tools_lab_worker.py"

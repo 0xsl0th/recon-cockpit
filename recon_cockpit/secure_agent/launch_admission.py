@@ -36,6 +36,10 @@ NETWORK_TOOL_CASES = {
                     'ldap-injected'), 'ldap_rootdse_v1'),
     **dict.fromkeys(('smb-ok', 'smb-empty', 'smb-denied', 'smb-injected', 'smb-malformed',
                     'smb-stalled'), 'smb_share_list_v1'),
+    **dict.fromkeys(('rpc-ok', 'rpc-empty', 'rpc-injected', 'rpc-malformed', 'rpc-stalled'),
+                    'rpcinfo_dump_v1'),
+    **dict.fromkeys(('nfs-ok', 'nfs-empty', 'nfs-injected', 'nfs-malformed', 'nfs-stalled',
+                    'nfs-redirected'), 'showmount_exports_v1'),
 }
 
 
@@ -158,16 +162,19 @@ def receipt(value, outcome):
 
 
 def profile_allows(action, config):
-    if action.targets != ('127.0.0.1',) or not 1024 <= action.parameters.port <= 65534:
+    if action.targets != ('127.0.0.1',):
+        return False
+    if config['profile'] == 'owned_network_tools_lab':
+        tool_id = NETWORK_TOOL_CASES.get(config['case']) if type(config['case']) is str else None
+        return action.tool_id == tool_id and action.parameters.to_dict() == {
+            'port': 111 if tool_id in ('rpcinfo_dump_v1', 'showmount_exports_v1') else 8080,
+            'timeout_seconds': 5, 'max_output_bytes': 8192}
+    if not 1024 <= action.parameters.port <= 65534:
         return False
     if config['profile'] == 'fixture':
         return action.tool_id == 'http_probe'
     if action.parameters.port != 8080:
         return False
-    if config['profile'] == 'owned_network_tools_lab':
-        tool_id = NETWORK_TOOL_CASES.get(config['case']) if type(config['case']) is str else None
-        return action.tool_id == tool_id and action.parameters.to_dict() == {
-            'port': 8080, 'timeout_seconds': 5, 'max_output_bytes': 8192}
     if config['profile'] == 'owned_web_tools_lab':
         tool_id, parameters = ((CURL_TOOL_ID, CURL_PARAMETERS) if config['case'].startswith('curl-')
                                else (FFUF_TOOL_ID, FFUF_PARAMETERS))

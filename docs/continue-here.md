@@ -37,33 +37,48 @@ unchanged accepted B1 evidence. Private receipts remain
 `.secure-agent/pr39-merge-review.json` and `.secure-agent/ssh-ldap-tools-20261001`
 in the primary checkout. See [ssh-ldap-tools.md](ssh-ldap-tools.md).
 
-**Current authorized batch B3: bounded anonymous SMB share metadata.**
-Development is in `/tmp/recon-secure-smb-coverage`, branch
-`feature/secure-smb-coverage`, based on merged main `79abaab`. The implementation runs one real
-`smbclient` listing inside a disconnected owned fixture through the existing
-network-tool authority, approval, audit, admission, launcher and evidence path.
-The larger SMB dependency closure needs its own bounded manifest/staging profile;
-keep existing B1/B2 runtime limits and saved-evidence identities unchanged.
-There is no host runner fallback, credential testing, share traversal, file
-transfer or remote execution. SMB IPC metadata traffic does not authorize access
-to listed shares. [The SMB runbook](smb-tools.md) describes the bounded profile.
-Native footer-only output cannot distinguish empty, denied and malformed replies;
-these stay inconclusive. Useful completion requires both reviewed share rows.
-Implementation `fbcf0ac` passed independent review, 5,945 distinct portable and
-168 selected Linux checks. A clean normal trial completed useful work (1/1,
-zero unnecessary refusals) in 3.926 seconds with closed/read-only replay; all four
-accepted B1/B2 bundles replayed unchanged. See [verification.md](verification.md).
-Review handoff: [PR #40](https://github.com/0xsl0th/recon-cockpit/pull/40).
-B3 is ready for PR review, not accepted coverage; final hosted checks and an
-operator-authorized merge remain required.
-Private handoff: `.secure-agent/smb-tools-20261002/handoff.json` in the primary
-checkout. Leave the implementation reviewable with actual execution, structured
-results, independent replay, enforced limits and cleanup. A new PR needs its own
-operator merge instruction.
+**PR #40 is merged and B3 is accepted.** Reviewed head `58fca54` merged as
+`775352e` at 01:23:31 UTC on 2 October. Fresh runtime/launcher and
+fixture/parser/evidence reviews found no blockers; the merge tree matches the
+reviewed tree. All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36948177611)
+and all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36950712204)
+passed. Each hosted job passed 5,945 portable tests. Local validation also covers
+168 selected Linux cases and a clean normal trial with useful completion 1/1,
+zero unnecessary refusals, closed/read-only replay and unchanged B1/B2 bundles.
+Keep B3 closed within [its finite SMB scope](smb-tools.md): native empty, denied
+and malformed replies remain inconclusive. Private receipt:
+`.secure-agent/pr40-merge-review.json`; evidence: `.secure-agent/smb-tools-20261002`
+in the primary checkout. Main has 11 secure capabilities backed by 8 external
+programs; the broader coverage milestone remains open.
 
-After B3 meets G1–G6, prioritize B4 RPC/NFS metadata (`rpcinfo` and `showmount`):
-the next missing protocol family in the checklist, with no mounts or connections
-to advertised endpoints. Record any prerequisite-driven change in order.
+**[PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41): B4 RPC/NFS metadata, pending review and merge.**
+Implementation is in `/tmp/recon-secure-rpc-nfs-coverage`, branch
+`feature/secure-rpc-nfs-coverage`, based on merged main `775352e`. The two
+independently invoked profiles use real `rpcinfo` and `showmount` through all
+existing secure gates. [The runbook](rpc-nfs-tools.md) records their fixed TCP
+`127.0.0.1:111` topology, compiled transport/service tables and finite discovery.
+Normal and valid empty cases complete one metadata query using two connections.
+Malformed replies stay inconclusive; returned endpoints never expand permission.
+No mount, file access, credential, host-service fallback or external target exists.
+
+Independent runtime, fixture, parser and evidence reviews found no blockers.
+All 6,348 portable tests and 215 distinct Linux checks passed: 36 network-tool
+workflow cases, 39 enforcement cases and 140 affected legacy cases. Four
+clean-source trials at `a7b5d147ef37628912393ab76d6e81fa1a32cdc6` completed 4/4
+legitimate normal/empty tasks with zero unnecessary refusals, closed evidence
+and read-only replay. All five accepted B1–B3 evidence bundles replay unchanged.
+Local CLI elapsed times were 2.558–2.635 seconds; provider calls and cost were zero.
+B0–B3 cards, descriptors, specifications and limits remain unchanged. Private
+handoff and receipts: `.secure-agent/rpc-nfs-tools-20261002` in the primary checkout.
+Development failures stay separate from clean-source acceptance evidence.
+
+PR #41 is the review handoff. Recheck its latest revision and hosted checks
+before any merge; merging requires a separate operator instruction. B4 is not yet accepted coverage. Main remains at 11 secure
+capabilities backed by 8 programs; the candidate adds two of each. The checklist
+remains open through B5–B8, and completed offline milestones stay closed.
+
+After B4 meets G1–G6, prioritize B5 FTP/SMTP metadata: bounded anonymous FTP
+listing and SMTP banner/EHLO/QUIT, without file transfer, mail or authentication.
 Deeper composition and comparative benchmarking remain deferred until all required
 coverage rows are complete. Per-tool useful completion, unnecessary refusals,
 bounds, descriptive latency and cleanup remain required now.

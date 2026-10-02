@@ -54,7 +54,7 @@ def boundary(tmp_path, control, *, case="dig-ok", approval_required=True):
             yield audit, approvals, launcher, policy, session
 
 
-@pytest.mark.parametrize("case,requests", [("dig-ok", 1), ("openssl-ok", 1), ("ssh-ok", 1), ("ldap-ok", 1), ("smb-ok", 1)])
+@pytest.mark.parametrize("case,requests", [("dig-ok", 1), ("openssl-ok", 1), ("ssh-ok", 1), ("ldap-ok", 1), ("smb-ok", 1), ("rpc-ok", 1), ("nfs-ok", 1)])
 def test_required_grant_is_consumed_once_for_real_tool(tmp_path, terminal, case, requests):
     control = ExecutionControl(time.monotonic() + 40)
     selected = parse_action(action(case))
@@ -75,7 +75,7 @@ def test_required_grant_is_consumed_once_for_real_tool(tmp_path, terminal, case,
     assert sum(row["event_type"] == "approval_consumed" for row in events) == 1
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
 def test_missing_consumed_proof_blocks_before_nested_admission(tmp_path, monkeypatch, case):
     instrument(tmp_path, monkeypatch, lambda source: source.replace("granted = gate.admit(",
         "os.write(2, b'UNEXPECTED-NETWORK-TOOLS-ADMISSION')\n                granted = gate.admit("))
@@ -127,3 +127,31 @@ def test_existing_bootstrap_tags_cannot_relabel_new_profile(tmp_path, monkeypatc
         assert result["execution_status"] == "blocked"
         assert dict(launcher.snapshot) == {"executions_reserved": 0, "output_bytes_reserved": 0}
         assert launcher.close()["request_count"] == 0
+
+
+def test_rpc_snapshot_seals_both_compiled_databases_without_reading_host_config(monkeypatch):
+    import os
+    assert hasattr(os, "memfd_create")
+    import fcntl
+    from recon_cockpit.secure_agent import tool_runtime_common as common
+    from recon_cockpit.secure_agent import network_tools_runtime as runtime
+    from test_secure_network_tools_runtime import manifest
+    inspected = []
+    def read(path):
+        assert not path.startswith(("compiled:", "/etc/"))
+        inspected.append(path)
+        return b"data"
+    monkeypatch.setattr(common, "_read_regular", read)
+    selected = manifest(runtime.RPCINFO)
+    descriptors = runtime._snapshot(selected, ExecutionControl(time.monotonic() + 5))
+    compiled = {source: raw for source, _, raw in runtime.compiled_files(runtime.RPCINFO)}
+    try:
+        assert len(descriptors) == 4
+        for row, descriptor in zip(selected["files"], descriptors):
+            assert os.read(descriptor, row["size"] + 1) == compiled.get(row["source"], b"data")
+            seals = fcntl.fcntl(descriptor, fcntl.F_GET_SEALS)
+            assert seals & (fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL) == 15
+        assert len(inspected) == 2
+    finally:
+        for descriptor in descriptors:
+            os.close(descriptor)

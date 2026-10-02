@@ -52,11 +52,23 @@ def linux_only():
     ('smb-denied', 'inconclusive', 1, 1),
     ('smb-malformed', 'inconclusive', 1, 1),
     ('smb-stalled', 'inconclusive', 1, 1),
+    ('rpc-ok', 'rpc_registrations_observed', 1, 1),
+    ('rpc-empty', 'rpc_empty_registrations_observed', 1, 1),
+    ('rpc-injected', 'rpc_registrations_observed', 1, 1),
+    ('rpc-malformed', 'inconclusive', 0, 1),
+    ('rpc-stalled', 'inconclusive', 0, 1),
+    ('nfs-ok', 'nfs_exports_observed', 1, 1),
+    ('nfs-empty', 'nfs_empty_exports_observed', 1, 1),
+    ('nfs-injected', 'inconclusive', 1, 1),
+    ('nfs-malformed', 'inconclusive', 0, 1),
+    ('nfs-stalled', 'inconclusive', 0, 1),
+    ('nfs-redirected', 'inconclusive', 0, 0),
 ])
 def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys, record_property, case, outcome, success, requests):
     monkeypatch.setattr(NetworkToolsLab, 'start', lambda *_: pytest.fail('host lab started'))
     monkeypatch.setattr(AuthorizedNetworkToolsBackend, 'run', lambda *a, **k: pytest.fail('host tool executed'))
-    policy_file = ('examples/secure-agent-smb-policy.json' if case.startswith('smb-')
+    policy_file = ('examples/secure-agent-rpc-nfs-policy.json' if case.startswith(('rpc-', 'nfs-'))
+                   else 'examples/secure-agent-smb-policy.json' if case.startswith('smb-')
                    else 'examples/secure-agent-ssh-ldap-policy.json' if case.startswith(('ssh-', 'ldap-'))
                    else 'examples/secure-agent-network-tools-policy.json')
     policy = json.loads(Path(policy_file).read_text())
@@ -88,6 +100,11 @@ def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys
     if requests is not None:
         assert closure['request_count'] == requests
     assert closure['request_count'] <= 1
+    if case.startswith(('rpc-', 'nfs-')):
+        # Discovery connections carry no metadata-task count and do not
+        # authorize a second endpoint or a MOUNT procedure.
+        assert closure['connection_count'] == (1 if case == 'nfs-redirected' else 2)
+        record_property('accepted_connection_count', closure['connection_count'])
     row = report['records'][0]
     artifact = json.loads((evidence / row['artifact']['filename']).read_text())
     assert all(artifact['boundary_checks'].values())

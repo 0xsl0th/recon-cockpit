@@ -229,6 +229,10 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "ldap_rootdse_observed": "rootdse_observed",
                "ldap_empty_rootdse_observed": "empty_rootdse_observed",
                "smb_shares_observed": "shares_observed",
+               "rpc_registrations_observed": "rpc_registrations_observed",
+               "rpc_empty_registrations_observed": "rpc_empty_registrations_observed",
+               "nfs_exports_observed": "nfs_exports_observed",
+               "nfs_empty_exports_observed": "nfs_empty_exports_observed",
                "content_paths_observed": "paths_observed",
                "no_successful_content_paths_observed": "no_successful_paths_observed"}.get(reason, "inconclusive")
     if issues:
@@ -322,6 +326,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The native client can emit identical output for empty, denied or malformed listings; these remain inconclusive. Normalized results cannot select another target, share or tool.",
                 "Counters record validated share-enumeration requests; connections are acknowledged lower bounds. Hashes reconcile local evidence, and inspection never restores authority.",
             ]
+        if manifest["fixture_case"].startswith(("rpc-", "nfs-")):
+            report["limitations"] = [
+                "This single executable trial uses a disconnected synthetic RPC/NFS fixture; it is not professional engagement or real-model validation.",
+                "RPC registrations and NFS exports are metadata only. Advertised endpoints, paths and access groups never grant permission to connect, mount, traverse or read files.",
+                "The fixed TCP endpoint and transport configuration are authorized before execution. Native service discovery cannot expand that network scope.",
+                "Both raw output channels are bounded and independently reparsed without network. Unsupported formats, malformed or partial results remain inconclusive.",
+                "The owned fixture supports only reviewed registration discovery and export metadata operations; it is not a general rpcbind, MOUNT or NFS filesystem service.",
+                "Request counters count validated registration dumps or export queries; bounded discovery exchanges are excluded. Connections are acknowledged lower bounds. Inspection never restores authority.",
+            ]
     if "planning_origin" in manifest:
         report["planning_origin"] = manifest["planning_origin"]
         report["live_calls_enabled"] = manifest["planning_origin"] == "model_live"
@@ -394,6 +407,19 @@ def _markdown(report):
             for field in ("naming_contexts", "supported_ldap_versions", "supported_sasl_mechanisms"):
                 lines.append("| " + field + " | `" + (", ".join(details[field]) or "not advertised") + "` |")
             lines.append("| vendor_name | `" + (details["vendor_name"] or "not advertised") + "` |")
+        elif type(details) is dict and details.get("kind") == "rpc_registrations":
+            lines.extend(["", "## RPC registration metadata", "", "| Program | Version | Transport | Port |",
+                          "| --- | --- | --- | --- |"])
+            for entry in details["registrations"]:
+                lines.append("| " + " | ".join(str(entry[key]) for key in ("program", "version", "transport", "port")) + " |")
+            if not details["registrations"]:
+                lines.extend(["", "No registrations were returned by the validated listing."])
+        elif type(details) is dict and details.get("kind") == "nfs_exports":
+            lines.extend(["", "## NFS export metadata", "", "| Export | Advertised groups |", "| --- | --- |"])
+            for entry in details["exports"]:
+                lines.append("| `" + entry["path"] + "` | `" + (", ".join(entry["groups"]) or "everyone") + "` |")
+            if not details["exports"]:
+                lines.extend(["", "No exports were returned by the validated listing."])
         elif type(details) is dict and details.get("kind") == "smb_share_list":
             lines.extend(["", "## Anonymous SMB share metadata", "", "Status: `" + details["status"] + "`.",
                           "", "| Share | Type |", "| --- | --- |"])

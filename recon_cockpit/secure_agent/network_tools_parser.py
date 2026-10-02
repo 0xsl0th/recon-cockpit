@@ -1,4 +1,4 @@
-"""Bounded DNS, TLS, SSH, LDAP and SMB facts for fixed owned tool profiles."""
+"""Bounded DNS, TLS, SSH, LDAP, SMB, RPC and NFS facts for fixed owned tool profiles."""
 
 from __future__ import annotations
 
@@ -13,8 +13,11 @@ OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
 SMB_TOOL_ID = "smb_share_list_v1"
+RPCINFO_TOOL_ID = "rpcinfo_dump_v1"
+SHOWMOUNT_TOOL_ID = "showmount_exports_v1"
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
-    SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1"}
+    SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
+    RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -23,6 +26,9 @@ TLS_CIPHERS = frozenset({"TLS_AES_256_GCM_SHA384"})
 LDAP_VALUES = {"naming_contexts": ("dc=harbordesk,dc=test",), "supported_ldap_versions": ("3",),
     "supported_sasl_mechanisms": ("PLAIN",)}
 LDAP_VENDOR = "HarborDesk synthetic directory"
+RPC_HEADER = "   program vers proto   port  service"
+NFS_PATHS = frozenset({"/srv/harbordesk/public", "/srv/harbordesk/reports"})
+NFS_GROUPS = frozenset({"127.0.0.1"})
 SMB_SHARES = {"PUBLIC": "Disk", "IPC$": "IPC"}
 # The minimal native closure omits optional legacy charset modules. This exact
 # startup warning is nonfatal; arbitrary diagnostics cannot become observations.
@@ -92,6 +98,41 @@ def validate_result(tool_id, value):
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id == RPCINFO_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "registrations"}
+                or value["kind"] != "rpc_registrations" or type(value["registrations"]) is not list
+                or len(value["registrations"]) > 16):
+            raise ValueError("invalid_network_tool_observation")
+        rows = []
+        for row in value["registrations"]:
+            if (type(row) is not dict or set(row) != {"program", "version", "transport", "port"}
+                    or not _integer(row["program"], 4294967295)
+                    or not _integer(row["version"], 4294967295)
+                    or row["transport"] not in ("tcp", "udp")
+                    or not _integer(row["port"], 65535) or row["port"] == 0):
+                raise ValueError("invalid_rpc_registration")
+            rows.append((row["program"], row["version"], row["transport"], row["port"]))
+        if rows != sorted(set(rows)):
+            raise ValueError("invalid_rpc_registration_order")
+        return {**value, "registrations": [dict(row) for row in value["registrations"]]}
+    if tool_id == SHOWMOUNT_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "exports"}
+                or value["kind"] != "nfs_exports" or type(value["exports"]) is not list
+                or len(value["exports"]) > len(NFS_PATHS)):
+            raise ValueError("invalid_network_tool_observation")
+        paths = []
+        for row in value["exports"]:
+            if (type(row) is not dict or set(row) != {"path", "groups"}
+                    or type(row["path"]) is not str or row["path"] not in NFS_PATHS
+                    or type(row["groups"]) is not list or len(row["groups"]) > len(NFS_GROUPS)
+                    or any(type(group) is not str or group not in NFS_GROUPS for group in row["groups"])
+                    or row["groups"] != sorted(set(row["groups"]))):
+                raise ValueError("invalid_nfs_export")
+            paths.append(row["path"])
+        if paths != sorted(set(paths)):
+            raise ValueError("invalid_nfs_export_order")
+        return {**value, "exports": [{"path": row["path"], "groups": list(row["groups"])}
+                                      for row in value["exports"]]}
     if tool_id == SMB_TOOL_ID:
         if (set(value) != {"parser_version", "kind", "status", "shares"}
                 or value["kind"] != "smb_share_list" or value["status"] != "listed"
@@ -326,10 +367,52 @@ def _parse_smb(output, stderr):
         "shares": sorted(shares, key=lambda item: item["name"])})
 
 
+def _parse_rpcinfo(output, stderr):
+    if stderr:
+        raise ValueError("unexpected_rpcinfo_diagnostics")
+    if output == b"No remote programs registered.\n":
+        return validate_result(RPCINFO_TOOL_ID, {"parser_version": parser_version(RPCINFO_TOOL_ID),
+            "kind": "rpc_registrations", "registrations": []})
+    lines = _lines(output)
+    if (len(lines) != len(output.splitlines()) or not 2 <= len(lines) <= 17
+            or lines[0] != RPC_HEADER):
+        raise ValueError("invalid_rpcinfo_transcript")
+    rows = []
+    for line in lines[1:]:
+        match = re.fullmatch(r"[ \t]+(0|[1-9][0-9]{0,9})[ \t]+(0|[1-9][0-9]{0,9})"
+            r"[ \t]+(tcp|udp)[ \t]+([1-9][0-9]{0,4})", line)
+        if match is None:
+            raise ValueError("unsupported_rpcinfo_registration")
+        program, version, transport, port = match.groups()
+        rows.append({"program": int(program), "version": int(version), "transport": transport, "port": int(port)})
+    return validate_result(RPCINFO_TOOL_ID, {"parser_version": parser_version(RPCINFO_TOOL_ID),
+        "kind": "rpc_registrations", "registrations": sorted(rows,
+            key=lambda row: (row["program"], row["version"], row["transport"], row["port"]))})
+
+
+def _parse_showmount(output, stderr):
+    if stderr:
+        raise ValueError("unexpected_showmount_diagnostics")
+    lines = _lines(output)
+    if (len(lines) != len(output.splitlines()) or not 1 <= len(lines) <= len(NFS_PATHS) + 1
+            or lines[0] != "Export list for 127.0.0.1:"):
+        raise ValueError("invalid_showmount_transcript")
+    exports = []
+    for line in lines[1:]:
+        match = re.fullmatch(r"(/srv/harbordesk/(?:public|reports)) +(127\.0\.0\.1|\(everyone\))", line)
+        if match is None:
+            raise ValueError("unsupported_nfs_export")
+        path, group = match.groups()
+        exports.append({"path": path, "groups": [] if group == "(everyone)" else [group]})
+    return validate_result(SHOWMOUNT_TOOL_ID, {"parser_version": parser_version(SHOWMOUNT_TOOL_ID),
+        "kind": "nfs_exports", "exports": sorted(exports, key=lambda row: row["path"])})
+
+
 def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=False):
     parser_version(tool_id)
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
             or len(output) + len(stderr) > MAX_OUTPUT_BYTES or type(truncated) is not bool or truncated):
         raise ValueError("invalid_network_tool_output_size")
     return {DIG_TOOL_ID: _parse_dns, OPENSSL_TOOL_ID: _parse_tls,
-            SSH_TOOL_ID: _parse_ssh, LDAP_TOOL_ID: _parse_ldap, SMB_TOOL_ID: _parse_smb}[tool_id](output, stderr)
+            SSH_TOOL_ID: _parse_ssh, LDAP_TOOL_ID: _parse_ldap, SMB_TOOL_ID: _parse_smb,
+            RPCINFO_TOOL_ID: _parse_rpcinfo, SHOWMOUNT_TOOL_ID: _parse_showmount}[tool_id](output, stderr)
