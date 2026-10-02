@@ -18,13 +18,13 @@ from .tool_parameters import (
     CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
     OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
-    CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters,
+    CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     NmapTCPParameters, TCPParameters, ValidationError,
     MAX_TIMEOUT_SECONDS, MAX_OUTPUT_BYTES, SUPPORTED_METHODS,
     _fields, _integer, _reject, _string,
 )
 from .tool_adapters import (CURL_TOOL_ID, FFUF_TOOL_ID, HTTP_HEADERS_TOOL_ID, NMAP_TOOL_ID,
-    DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID, SUPPORTED_TOOLS, get_adapter)
+    DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID, NMAP_SERVICE_TOOL_ID, SUPPORTED_TOOLS, get_adapter)
 
 MAX_JSON_BYTES = 32_768
 MAX_TARGETS = 16
@@ -113,7 +113,7 @@ class Action:
     action_id: str
     tool_id: str
     target: str
-    parameters: HTTPParameters | HTTPHeadersParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | SSHHostKeysParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlDockerVersionParameters | CurlWinRMMetadataParameters
+    parameters: HTTPParameters | HTTPHeadersParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | SSHHostKeysParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlDockerVersionParameters | CurlWinRMMetadataParameters | NmapServiceParameters
     rationale: str
 
     def __post_init__(self) -> None:
@@ -238,7 +238,7 @@ class Policy:
             reasons.append("port_not_allowed")
         if action.tool_id in ("http_probe", HTTP_HEADERS_TOOL_ID, CURL_TOOL_ID) and action.parameters.method not in self.allowed_methods:
             reasons.append("method_not_allowed")
-        if action.tool_id in (FFUF_TOOL_ID, DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID) and "GET" not in self.allowed_methods:
+        if action.tool_id in (FFUF_TOOL_ID, DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID, NMAP_SERVICE_TOOL_ID) and "GET" not in self.allowed_methods:
             reasons.append("method_not_allowed")
         if action.parameters.timeout_seconds > self.max_timeout_seconds:
             reasons.append("timeout_exceeds_policy")

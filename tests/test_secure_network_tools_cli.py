@@ -10,13 +10,13 @@ GATES = ['--owned-lab','--isolated-audit','--isolated-approvals','--isolated-lau
 
 
 def arguments(tmp_path, case="dig-ok"):
-    policy = "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy = "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     return ['--network-tool-assessment',case,'--assessment-dir',str(tmp_path/'evidence'),
             '--audit',str(tmp_path/'audit.jsonl'),'--policy','examples/secure-agent-' + policy + '-policy.json']
 
 
 @pytest.mark.parametrize('case', ['dig-ok', 'ssh-ok', 'ldap-ok', 'smb-ok', 'rpc-ok', 'nfs-ok', 'ftp-ok', 'smtp-ok',
-    'docker-ping-ok', 'docker-version-ok', 'winrm-ok'])
+    'docker-ping-ok', 'docker-version-ok', 'winrm-ok', 'nmap-service-http'])
 @pytest.mark.parametrize('missing',GATES)
 def test_each_launch_gate_required_before_side_effects(tmp_path,missing,case):
     with pytest.raises(SystemExit) as error:

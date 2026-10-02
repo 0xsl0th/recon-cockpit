@@ -21,6 +21,26 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("nmap-service-"):
+        from . import network_tools_fixture as fixture
+        response = fixture.nmap_service_response(case)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-nmap-service-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "finite_service_probes"}],
+            "service": {"initial_connection": "tcp_connect_scan_requires_empty_eof",
+                "banner": "SSH-2.0-OpenSSH_9.7" if case == "nmap-service-ssh" else None,
+                "query_sha256": None if case == "nmap-service-ssh" else hashlib.sha256(fixture.NMAP_SERVICE_GET).hexdigest(),
+                "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+                "null_probe": "no_payload", "application_probe": "GET / HTTP/1.0",
+                "authentication": False, "backend": False, "credentials": False,
+                "tls": False, "rpc": False, "script_operations": False, "followup": False},
+            "behavior": "stall_after_validated_query" if response is None else "fixed_response",
+            "max_connections": fixture.NMAP_SERVICE_MAX_CONNECTIONS, "max_requests": 1,
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "ssh_banner_replies_sent" if case == "nmap-service-ssh" else "validated_fixed_http_gets",
+            "connection_evidence": "accepted_connections_lower_bound"}
     if case.startswith(("docker-ping-", "docker-version-", "winrm-")):
         from . import network_tools_fixture as fixture
         return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
@@ -179,7 +199,8 @@ def validate_identity(value, *, case=None):
 
 def validate_context(value, expected):
     expected = validate_identity(expected)
-    connection_limit = (4 if expected["scenario"].startswith(("rpc-", "nfs-"))
+    connection_limit = (3 if expected["scenario"].startswith("nmap-service-")
+                        else 4 if expected["scenario"].startswith(("rpc-", "nfs-"))
                         else 2 if expected["scenario"].startswith("ftp-") else 1)
     if (type(value) is not dict or set(value) != {"identity", "connection_count", "request_count"}
             or validate_identity(value["identity"]) != expected

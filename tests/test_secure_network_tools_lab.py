@@ -54,6 +54,11 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert definition["rpc"]["filesystem"] is False and definition["rpc"]["mount"] is False
         assert definition["topology"] == [{"target": "127.0.0.1", "port": 111, "protocol": "onc_rpc_tcp"}]
         assert definition["request_count_means"] == ("validated_portmapper_dumps" if case.startswith("rpc-") else "validated_mount_exports")
+    elif case.startswith("nmap-service-"):
+        assert definition["max_connections"] == 3 and definition["max_requests"] == 1
+        assert definition["service"]["initial_connection"] == "tcp_connect_scan_requires_empty_eof"
+        assert all(definition["service"][key] is False for key in (
+            "authentication", "backend", "credentials", "tls", "rpc", "script_operations", "followup"))
     elif case.startswith(("docker-ping-", "docker-version-", "winrm-")):
         assert definition["max_connections"] == definition["max_requests"] == 1
         assert definition["request_count_means"] == "validated_fixed_http_gets"

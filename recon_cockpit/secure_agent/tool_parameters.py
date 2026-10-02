@@ -199,3 +199,8 @@ class CurlDockerVersionParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class CurlWinRMMetadataParameters(TCPParameters):
     """Bounds for one unauthenticated metadata GET, without WS-Man operations."""
+
+
+@dataclass(frozen=True, slots=True)
+class NmapServiceParameters(TCPParameters):
+    """Bounds for finite compiled service probes, with no caller scan options."""

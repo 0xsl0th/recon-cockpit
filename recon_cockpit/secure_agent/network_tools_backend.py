@@ -18,7 +18,7 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
     name = BACKEND
     supported_tools = ("dig_dns_query_v1", "openssl_tls_handshake_v1", "ssh_host_keys_v1", "ldap_rootdse_v1", "smb_share_list_v1",
                        "rpcinfo_dump_v1", "showmount_exports_v1", "curl_ftp_list_v1", "curl_smtp_capabilities_v1",
-                       "curl_docker_ping_v1", "curl_docker_version_v1", "curl_winrm_metadata_v1")
+                       "curl_docker_ping_v1", "curl_docker_version_v1", "curl_winrm_metadata_v1", "nmap_service_identify_v1")
     launch_mode = _envelope_mode = "owned_network_tools_lab"
     _executor_mode = "network_tools_owned"
     _closure = None
@@ -91,7 +91,7 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
                     result["tool_observation"] = None
             expected = 1
             minimum = expected if result["tool_observation"] is not None else 0
-            connections = minimum * (2 if self._lab_identity["scenario"].startswith("ftp-") else 1)
+            connections = minimum * (2 if self._lab_identity["scenario"].startswith(("ftp-", "nmap-service-")) else 1)
             counts = self.lab.snapshot(control, minimum_connections=connections, minimum_requests=minimum)
             context = validate_context({"identity": self._lab_identity, **counts}, self._lab_identity)
             if (context["request_count"] > expected

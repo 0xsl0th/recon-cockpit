@@ -55,7 +55,7 @@ def boundary(tmp_path, control, *, case="dig-ok", approval_required=True):
 
 
 @pytest.mark.parametrize("case,requests", [("dig-ok", 1), ("openssl-ok", 1), ("ssh-ok", 1), ("ldap-ok", 1), ("smb-ok", 1), ("rpc-ok", 1), ("nfs-ok", 1), ("ftp-ok", 1), ("smtp-ok", 1),
-    ("docker-ping-ok", 1), ("docker-version-ok", 1), ("winrm-ok", 1)])
+    ("docker-ping-ok", 1), ("docker-version-ok", 1), ("winrm-ok", 1), ("nmap-service-http", 1)])
 def test_required_grant_is_consumed_once_for_real_tool(tmp_path, terminal, case, requests):
     control = ExecutionControl(time.monotonic() + 40)
     selected = parse_action(action(case))
@@ -77,7 +77,7 @@ def test_required_grant_is_consumed_once_for_real_tool(tmp_path, terminal, case,
 
 
 @pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok",
-    "docker-ping-ok", "docker-version-ok", "winrm-ok"])
+    "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http"])
 def test_missing_consumed_proof_blocks_before_nested_admission(tmp_path, monkeypatch, case):
     instrument(tmp_path, monkeypatch, lambda source: source.replace("granted = gate.admit(",
         "os.write(2, b'UNEXPECTED-NETWORK-TOOLS-ADMISSION')\n                granted = gate.admit("))

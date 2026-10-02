@@ -13,7 +13,7 @@ from recon_cockpit.secure_agent import network_tools_runtime as runtime
 from recon_cockpit.secure_agent.models import (DigDNSParameters, OpenSSLTLSParameters,
     SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters, RPCInfoDumpParameters, ShowmountExportsParameters,
     CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
-    CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, ValidationError, parse_action, parse_policy)
+    CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters, ValidationError, parse_action, parse_policy)
 from recon_cockpit.secure_agent.tool_adapters import LEGACY_PROPOSAL_PROFILE, NMAP_PROPOSAL_PROFILE, proposal_tools
 from recon_cockpit.secure_agent.network_tools_fixture import CA_PEM, QUERY_NAME, TLS_NAME
 from recon_cockpit.secure_agent.network_tools_lab_contract import identity
@@ -65,7 +65,7 @@ def test_case_selects_exact_typed_single_action_and_existing_policy_gates(case):
                 "ssh": contract.SSH_TOOL_ID, "ldap": contract.LDAP_TOOL_ID,
                 "smb": contract.SMB_TOOL_ID, "rpc": contract.RPCINFO_TOOL_ID,
                 "nfs": contract.SHOWMOUNT_TOOL_ID, "ftp": contract.FTP_TOOL_ID,
-                "smtp": contract.SMTP_TOOL_ID, "winrm": contract.WINRM_TOOL_ID,
+                "smtp": contract.SMTP_TOOL_ID, "winrm": contract.WINRM_TOOL_ID, "nmap": contract.NMAP_SERVICE_TOOL_ID,
                 "docker": contract.DOCKER_PING_TOOL_ID if case.startswith("docker-ping-") else contract.DOCKER_VERSION_TOOL_ID}[case.split("-")[0]]
     assert action.tool_id == expected and action.target == "127.0.0.1"
     assert type(action.parameters) is {contract.DIG_TOOL_ID: DigDNSParameters,
@@ -74,10 +74,10 @@ def test_case_selects_exact_typed_single_action_and_existing_policy_gates(case):
         contract.RPCINFO_TOOL_ID: RPCInfoDumpParameters, contract.SHOWMOUNT_TOOL_ID: ShowmountExportsParameters,
         contract.FTP_TOOL_ID: CurlFTPListParameters, contract.SMTP_TOOL_ID: CurlSMTPCapabilitiesParameters,
         contract.DOCKER_PING_TOOL_ID: CurlDockerPingParameters, contract.DOCKER_VERSION_TOOL_ID: CurlDockerVersionParameters,
-        contract.WINRM_TOOL_ID: CurlWinRMMetadataParameters}[expected]
+        contract.WINRM_TOOL_ID: CurlWinRMMetadataParameters, contract.NMAP_SERVICE_TOOL_ID: NmapServiceParameters}[expected]
     assert contract.profile_allows(action, case)
     assert policy().evaluate(action).decision == "approval_required"
-    if case in contract.B6_CASES:
+    if case in contract.B6_CASES + contract.B7_CASES:
         assert policy(allowed_methods=[]).evaluate(action).reasons == ("method_not_allowed",)
     else:
         assert policy(allowed_methods=[]).evaluate(action).decision == "approval_required"

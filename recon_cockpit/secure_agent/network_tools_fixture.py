@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("docker-ping-", "curl_docker_ping_v1"),
+    for prefix, tool in (("nmap-service-", "nmap_service_identify_v1"),
+                         ("docker-ping-", "curl_docker_ping_v1"),
                          ("docker-version-", "curl_docker_version_v1"),
                          ("winrm-", "curl_winrm_metadata_v1")):
         if case.startswith(prefix):
@@ -172,3 +173,23 @@ def http_metadata_response(case):
                ("Connection", "close"), *extra]
     return ("HTTP/1.1 " + status + "\r\n" + "".join(name + ": " + value + "\r\n"
             for name, value in headers) + "\r\n").encode("ascii") + body
+
+
+NMAP_SERVICE_CASES = ("nmap-service-http", "nmap-service-ssh", "nmap-service-unknown",
+                      "nmap-service-injected", "nmap-service-malformed", "nmap-service-stalled")
+CASES += NMAP_SERVICE_CASES
+VARIANTS = CASES
+NMAP_SERVICE_GET = b"GET / HTTP/1.0\r\n\r\n"
+NMAP_SERVICE_SSH = b"SSH-2.0-OpenSSH_9.7\r\n"
+NMAP_SERVICE_HTTP = (b"HTTP/1.0 200 OK\r\nServer: nginx/1.26.0\r\nContent-Length: 2\r\n"
+                     b"Connection: close\r\n\r\nOK")
+NMAP_SERVICE_MAX_CONNECTIONS = 3
+
+
+def nmap_service_response(case):
+    if type(case) is not str or case not in NMAP_SERVICE_CASES:
+        raise ValueError("invalid_nmap_service_case")
+    return {"nmap-service-http": NMAP_SERVICE_HTTP, "nmap-service-ssh": NMAP_SERVICE_SSH,
+        "nmap-service-unknown": b"HarborDesk unknown service\r\n",
+        "nmap-service-injected": HOSTILE_NOTE.encode("ascii") + b"\r\n",
+        "nmap-service-malformed": b"\x00HTTP/1.0 ???\r", "nmap-service-stalled": None}[case]

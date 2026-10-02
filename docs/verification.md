@@ -1,5 +1,75 @@
 # Verification record
 
+## B7 finite Nmap service identification — 2 October 2026
+
+B6 was accepted by [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43) at
+`02a7d7f`; all five final and post-merge checks passed. Fresh independent reviews
+passed 1,267 runtime/policy tests and 854 parser/evidence tests. All eighteen
+saved B1–B6 bundles replayed unchanged, and the merged tree exactly matches the
+reviewed revision. Completed milestones remain closed.
+
+B7 adds one separate `nmap_service_identify_v1` capability through the existing
+single-action secure network-tool path. See [the runbook](nmap-service-tools.md)
+for fixed probes, output semantics and the explicit NSE suppression review.
+The accepted TCP-only Nmap profile and all 71 B1–B6 definitions remain unchanged.
+Main has 18 accepted capabilities/10 external programs; this candidate adds one
+capability backed by the same Nmap executable family, pending review and merge.
+
+Actual confined Nmap 7.95 runs, through all seven launch gates, observed:
+
+| Owned case | Result | Accepted connections | Metadata events |
+| --- | --- | --- | --- |
+| HTTP | `http`, advertised nginx `1.26.0` | 2 | 1 fixed GET |
+| SSH | `ssh`, advertised OpenSSH `9.7` | 2 | 1 banner reply |
+| Unknown | Unidentified by the finite probe set | 2 | 1 fixed GET |
+| Hostile text | Unidentified; fingerprint text excluded from findings | 2 | 1 fixed GET |
+| Malformed service bytes | Unidentified; no service identity invented | 2 | 1 fixed GET |
+| Silent service | Unidentified after bounded probe wait | 2 | 1 fixed GET |
+
+Each completed XML capture is 1,376–1,621 bytes with empty stderr, all ten native
+boundary witnesses true and a closed owned lab. These results do not distinguish
+the causes of nonmatching responses or prove absence, harmlessness, authenticated
+identity, installed software versions or vulnerabilities. The fixture has no
+login, application backend or external egress. No provider/paid call occurred.
+
+Review and actual execution resolved four issues before handoff:
+
+- Nmap normalizes absent script arguments to an empty string. The pinned shim
+  now requires that exact value, retaining all script/rule/phase restrictions.
+- Nmap requires `tcpwrappedms` of at least 100 ms; the finite probe file now
+  meets that bound. The earlier 50 ms trial failed before service probes.
+- Evidence reports explicitly preserve identified versus unidentified outcomes.
+- The owner rejects a second metadata operation before request dispatch, while
+  preserving the allowed empty scan/NULL-probe reconnect sequence.
+
+The initial failed trials remain private development evidence. They are not
+counted as useful completion. Independent reviews checked runtime/filesystem
+closure, parser, authority, counters, evidence and documentation. No remaining
+blocker was found. Native Lua tests exercise the actual suppression shim;
+script arguments, scripts and broader scan phases are rejected.
+
+Local portable validation passed **7,799 distinct tests**: a complete 7,761-test
+run plus 38 added B7 evidence checks in the final focused run (368 passed,
+including repeated existing cases). There were no selected skips, failures or
+errors. Tests cover rehashed invented identities, altered XML scope, missing
+runtime/closure/artifact evidence, parser custody and dry runs. Syntax checks
+passed for 357 Python files using Python 3.11 grammar; dependency and whitespace
+checks passed. All ten targeted B7 Linux workflow/gate/cleanup tests passed.
+The affected legacy Linux regression and clean-source receipts are still pending;
+B7 remains unaccepted until the final handoff and authorized merge.
+
+Private receipts are under `.secure-agent/nmap-service-tools-20261002` in the
+primary checkout, including `review.json`, `handoff.json`, `debug/` and
+`validation/`. Raw captures and audit records stay local. Automated grants are
+synthetic test instrumentation, not operator acceptance. Trial times are
+descriptive CLI wall time, not a comparative authority-overhead benchmark.
+
+B8 synthetic Kerberos principal enumeration with an owned KDC remains the next
+required coverage gap. Deeper workflows and comparative benchmarking stay
+deferred until required coverage is complete. Model credentials, paid calls,
+live evaluation and proposal/PDF changes remain deferred until much later.
+
+
 ## Secure coverage B6: Docker health/version and WinRM endpoint metadata — 2 October 2026
 
 PR #42 was reviewed and merged as `38cbd43`; all five final PR checks and all
