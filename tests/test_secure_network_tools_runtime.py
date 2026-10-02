@@ -24,8 +24,7 @@ from recon_cockpit.secure_agent.network_tools_worker import _landlock_permission
 def manifest(tool_id=runtime.DIG):
     entries = [(runtime.EXECUTABLES[tool_id], runtime.FIXED_ARGV[tool_id][0], b"data"),
                ("/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2", "/lib64/ld-linux-x86-64.so.2", b"data")]
-    if runtime._compiled(tool_id) is not None:
-        entries.append(runtime._compiled(tool_id))
+    entries.extend(runtime.compiled_files(tool_id))
     return runtime.compact_manifest({"version": "1", "profile": runtime.PROFILE, "tool_id": tool_id,
             "executable": runtime.FIXED_ARGV[tool_id][0], "interpreter": "/lib64/ld-linux-x86-64.so.2",
             "files": [{"source": src, "destination": dst, "size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
@@ -34,8 +33,8 @@ def manifest(tool_id=runtime.DIG):
 
 def policy():
     return parse_policy({"schema_version": "1", "policy_version": "test-network-tool-v1",
-        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB],
-        "allowed_ports": [8080], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
+        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT],
+        "allowed_ports": [8080, 111], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
         "max_output_bytes": 8192, "max_targets": 1, "require_approval": True, "approval_ttl_seconds": 60})
 
 
@@ -77,7 +76,7 @@ def test_independent_launch_validator_accepts_only_the_selected_fixed_tool(case)
     assert admission.profile_allows(parse_action(action(case)), configuration(case))
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
 @pytest.mark.parametrize("fault", ["mode", "inner_mode", "identity", "manifest", "namespace", "deadline",
     "sequence", "reservation", "policy", "action", "limit"])
 def test_fresh_commitments_do_not_bypass_fixed_authority(case, fault):
@@ -103,7 +102,7 @@ def test_fresh_commitments_do_not_bypass_fixed_authority(case, fault):
 @pytest.mark.parametrize("profile,case", [("fixture", None), ("discovery_fixture", None), ("owned_lab", "a"),
     ("owned_nmap_lab", "a"), ("owned_web_lab", "vulnerable"), ("owned_http_headers_lab", "vulnerable"), ("owned_web_tools_lab", "curl-ok")])
 def test_existing_profiles_never_admit_network_tools(profile, case):
-    for selected in ("dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"):
+    for selected in ("dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"):
         assert not admission.profile_allows(parse_action(action(selected)), {"profile": profile, "case": case})
 
 
@@ -122,7 +121,7 @@ def test_case_binding_and_single_reservation_are_independently_checked():
         with pytest.raises(ValueError): admission.configuration(changed)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.RPCINFO, runtime.SHOWMOUNT])
 def test_manifest_pins_compiled_data_and_rejects_unreviewed_paths(tool_id):
     original = manifest(tool_id)
     assert runtime.validate_manifest(original, tool_id=tool_id) == original
@@ -213,7 +212,7 @@ def test_manifest_size_ceiling_keeps_maximum_capture_receipt_bounded():
     with pytest.raises(ValueError): runtime.validate_manifest(value)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT])
 def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
     selected = manifest(tool_id)
     environment = runtime.execution_environment(tool_id)
@@ -228,6 +227,12 @@ def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
     elif tool_id == runtime.OPENSSL:
         assert permissions["/tool/data/fixture-ca.pem"] == 4
         assert "/etc/resolv.conf" not in permissions
+    elif tool_id in (runtime.RPCINFO, runtime.SHOWMOUNT):
+        assert runtime._compiled(tool_id) == ("compiled:rpc-netconfig", "/etc/netconfig",
+            b"tcp tpi_cots_ord v inet tcp - -\n")
+        assert permissions["/etc/netconfig"] == 4
+        assert permissions["/etc/services"] == 4
+        assert not {"/etc/rpc", "/etc/protocols", "/etc/resolv.conf"} & set(permissions)
     elif tool_id == runtime.SMB:
         assert permissions["/tool/data/smb.conf"] == 4
         assert "/etc/resolv.conf" not in permissions
@@ -241,7 +246,8 @@ def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
 
 
 @pytest.mark.parametrize("tool_id,threads", [(runtime.DIG, True), (runtime.OPENSSL, False),
-                                            (runtime.SSH, False), (runtime.LDAP, False), (runtime.SMB, False)])
+                                            (runtime.SSH, False), (runtime.LDAP, False), (runtime.SMB, False),
+                                            (runtime.RPCINFO, False), (runtime.SHOWMOUNT, False)])
 def test_only_dig_selects_the_bounded_thread_filter(monkeypatch, tool_id, threads):
     from recon_cockpit.secure_agent import network_tools_worker as worker
     selected = []
@@ -252,7 +258,7 @@ def test_only_dig_selects_the_bounded_thread_filter(monkeypatch, tool_id, thread
         worker.syscall_filter("ffuf_content_discovery_v1")
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
 def test_runtime_retains_and_binds_both_output_channels(monkeypatch, case):
     monkeypatch.setattr(runtime, "sys", SimpleNamespace(platform="linux"))
     launch = envelope(case)
@@ -287,8 +293,8 @@ def test_admission_case_map_matches_the_closed_owned_contract():
         assert not admission.profile_allows(parse_action(action("openssl-ok")), config)
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"])
-@pytest.mark.parametrize("other_case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
+@pytest.mark.parametrize("other_case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
 def test_all_network_tools_bind_case_action_and_manifest_independently(case, other_case):
     if case == other_case:
         return
@@ -359,3 +365,118 @@ def test_new_tool_command_never_mounts_owner_private_fixture_material(monkeypatc
     assert argv.count("--ro-bind-data") == 2
     assert not any("network_tools_ssh_fixture" in item or "web_tools_tls_fixture" in item for item in argv)
     assert not any("/etc/ssh" in item or "/etc/ldap" in item or "fixture-ca.pem" in item for item in argv)
+
+
+@pytest.mark.parametrize("tool_id", [runtime.RPCINFO, runtime.SHOWMOUNT])
+def test_rpc_metadata_has_only_fixed_tcp_transport_and_synthetic_hostname(monkeypatch, tool_id):
+    monkeypatch.setattr(runtime, "_trusted_program", lambda name: "/usr/bin/" + name)
+    selected = manifest(tool_id)
+    argv = runtime._command(SimpleNamespace(_namespace_fds=(10, 11)),
+        ("/usr/lib/python3.13", [("/usr/bin/python3", "/usr/bin/python3")]),
+        selected, [20, 21, 22, 23], "a" * 64, "b" * 64)
+    assert argv[argv.index("--hostname") + 1] == "reconlab"
+    assert "--unshare-uts" in argv and "CAP_NET_ADMIN" not in argv
+    assert argv.count("--ro-bind-data") == 4
+    assert not any("network_tools_rpc_fixture" in arg for arg in argv)
+    assert runtime.FIXED_ARGV[tool_id] == (("/tool/rpcinfo", "-p", "127.0.0.1")
+        if tool_id == runtime.RPCINFO else ("/tool/showmount", "-e", "127.0.0.1"))
+    assert set(runtime.execution_environment(tool_id)) == {"LC_ALL", "OPENSSL_CONF", "MALLOC_ARENA_MAX"}
+    assert {row["destination"] for row in selected["files"] if row["source"].startswith("compiled:")} == {"/etc/netconfig", "/etc/services"}
+    for path in ("/etc/protocols", "/etc/rpc", "/etc/hosts", "/etc/krb5.conf", "/tmp/ccache"):
+        changed = deepcopy(selected)
+        changed["files"].append({"source": path, "destination": path, "size": 4,
+            "sha256": hashlib.sha256(b"data").hexdigest()})
+        changed["files"].sort(key=lambda row: row["destination"])
+        with pytest.raises(ValueError):
+            runtime.validate_manifest(changed)
+
+
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok"])
+@pytest.mark.parametrize("port", [80, 110, 112, 8080, 65534])
+def test_rpc_admission_never_accepts_a_discovered_or_substituted_port(case, port):
+    proposal = action(case)
+    proposal["parameters"]["port"] = port
+    # Strict tool parameter parsing may reject before admission; if parseable,
+    # a broad policy still cannot authorize another execution endpoint.
+    try:
+        selected = parse_action(proposal)
+    except ValueError:
+        return
+    assert not admission.profile_allows(selected, configuration(case))
+
+
+@pytest.mark.parametrize("port", [True, None, 0, 80, 112, 8081, "111"])
+def test_common_witness_does_not_accept_arbitrary_ports(monkeypatch, port):
+    from recon_cockpit.secure_agent import tool_worker_common as common
+    monkeypatch.setattr(common.worker, "verify_network_boundary", lambda *_: pytest.fail("invalid witness invoked"))
+    with pytest.raises(ValueError, match="unsupported_tool_boundary_port"):
+        common._witnesses(port=port)
+
+
+@pytest.mark.parametrize("explicit,expected", [(None, 8080), (8080, 8080), (111, 111)])
+def test_common_witness_preserves_default_and_uses_only_explicit_fixed_rpc_port(monkeypatch, explicit, expected):
+    from recon_cockpit.secure_agent import tool_worker_common as common
+    class WitnessObserved(Exception):
+        pass
+    def witness(port):
+        assert port == expected
+        raise WitnessObserved
+    monkeypatch.setattr(common.worker, "verify_network_boundary", witness)
+    with pytest.raises(WitnessObserved):
+        common._witnesses(**({} if explicit is None else {"port": explicit}))
+
+
+@pytest.mark.parametrize("tool_id", [runtime.RPCINFO, runtime.SHOWMOUNT])
+def test_rpc_lookup_databases_are_both_required_and_pinned(tool_id):
+    assert runtime.compiled_files(tool_id) == (
+        ("compiled:rpc-netconfig", "/etc/netconfig", b"tcp tpi_cots_ord v inet tcp - -\n"),
+        ("compiled:rpc-services", "/etc/services", b"sunrpc 111/tcp rpcbind portmapper\n"))
+    original = manifest(tool_id)
+    for source, destination, _ in runtime.compiled_files(tool_id):
+        for field, changed_value in (("source", "/etc/services"), ("sha256", "b" * 64), ("size", 1)):
+            changed = deepcopy(original)
+            row = next(row for row in changed["files"] if row["destination"] == destination)
+            row[field] = changed_value
+            with pytest.raises(ValueError):
+                runtime.validate_manifest(changed)
+        changed = deepcopy(original)
+        changed["files"] = [row for row in changed["files"] if row["source"] != source]
+        with pytest.raises(ValueError):
+            runtime.validate_manifest(changed)
+
+
+def test_rpc_snapshot_seals_both_compiled_databases_without_reading_host_config(monkeypatch):
+    import os
+    if not hasattr(os, "memfd_create"):
+        pytest.skip("Linux memfd staging")
+    import fcntl
+    from recon_cockpit.secure_agent import tool_runtime_common as common
+    inspected = []
+    def read(path):
+        assert not path.startswith(("compiled:", "/etc/"))
+        inspected.append(path)
+        return b"data"
+    monkeypatch.setattr(common, "_read_regular", read)
+    selected = manifest(runtime.RPCINFO)
+    descriptors = runtime._snapshot(selected, ExecutionControl(time.monotonic() + 5))
+    compiled = {source: raw for source, _, raw in runtime.compiled_files(runtime.RPCINFO)}
+    try:
+        assert len(descriptors) == 4
+        for row, descriptor in zip(selected["files"], descriptors):
+            assert os.read(descriptor, row["size"] + 1) == compiled.get(row["source"], b"data")
+            seals = fcntl.fcntl(descriptor, fcntl.F_GET_SEALS)
+            assert seals & (fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL) == 15
+        assert len(inspected) == 2
+    finally:
+        for descriptor in descriptors:
+            os.close(descriptor)
+
+
+@pytest.mark.parametrize("additional", [(("compiled:resolver", b"extra"),),
+    (("/etc/services", b"extra"),), (("compiled:rpc-services", "text"),),
+    (("compiled:rpc-services", b""),)])
+def test_additional_compiled_staging_rejects_replacement_or_host_file_authority(additional):
+    from recon_cockpit.secure_agent import tool_runtime_common as common
+    with pytest.raises(IsolationUnavailable, match="Invalid additional compiled"):
+        common.sealed_snapshots({"files": []}, "compiled:resolver", b"first",
+            object(), additional_compiled=additional)

@@ -164,3 +164,13 @@ class LDAPRootDSEParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class SMBShareListParameters(TCPParameters):
     """Bounds for one fixed anonymous share listing, without share access."""
+
+
+@dataclass(frozen=True, slots=True)
+class RPCInfoDumpParameters(TCPParameters):
+    """Bounds for one fixed RPC registration dump, without service follow-up."""
+
+
+@dataclass(frozen=True, slots=True)
+class ShowmountExportsParameters(TCPParameters):
+    """Bounds for fixed export metadata at one endpoint, without mounting."""

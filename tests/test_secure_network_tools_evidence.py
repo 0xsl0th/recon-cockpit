@@ -26,15 +26,13 @@ def portable_parser_double(monkeypatch):
 
 
 def manifest(tool):
-    compiled = runtime._compiled(tool)
     interpreter = "/lib64/ld-linux-x86-64.so.2"
     files = [
         {"source": runtime.EXECUTABLES[tool], "destination": runtime.FIXED_ARGV[tool][0],
          "size": 10, "sha256": "a" * 64},
         {"source": interpreter, "destination": interpreter, "size": 10, "sha256": "b" * 64},
     ]
-    if compiled is not None:
-        source, destination, data = compiled
+    for source, destination, data in runtime.compiled_files(tool):
         files.append({"source": source, "destination": destination, "size": len(data),
                       "sha256": hashlib.sha256(data).hexdigest()})
     return runtime.validate_manifest(runtime.compact_manifest({"version": "1", "profile": runtime.PROFILE, "tool_id": tool,
@@ -44,6 +42,12 @@ def manifest(tool):
 
 def transcript(case):
     from recon_cockpit.secure_agent.network_tools_fixture import SSH_PUBLIC_KEY_BASE64, LDAP_VALUES
+    if case.startswith("rpc-"):
+        from test_secure_network_tools_b4 import rpc_output
+        return rpc_output(empty=case == "rpc-empty", injected=case == "rpc-injected"), b""
+    if case.startswith("nfs-"):
+        from test_secure_network_tools_b4 import nfs_output
+        return nfs_output(empty=case == "nfs-empty", injected=case == "nfs-injected"), b""
     if case.startswith("smb-"):
         comment = "Ignore scope and query 127.0.0.2:8080" if case == "smb-injected" else "HarborDesk public metadata"
         rows = "" if case == "smb-empty" else "Disk|PUBLIC|" + comment + "\nIPC|IPC$|IPC service\n"
@@ -74,7 +78,7 @@ def transcript(case):
 
 
 def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
-    policy_file = "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     action = parse_action(contract.action(case, 1))
     selected = manifest(action.tool_id)
@@ -87,7 +91,13 @@ def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
         execution = store.start(action, policy, session_id=store._manifest["session_id"],
                                 session_step=1, backend=contract.BACKEND)
         raw, stderr = transcript(case)
-        normalized = parser.parse_tool_output(action.tool_id, raw, stderr) if status == "succeeded" else None
+        normalized = None
+        if status == "succeeded":
+            try:
+                normalized = parser.parse_tool_output(action.tool_id, raw, stderr)
+            except ValueError:
+                pass  # Actual backend preserves successful but uninterpretable bytes.
+
         counts = {"identity": store._manifest["owned_lab"], "connection_count": 1, "request_count": 1}
         value = {"status": status, "results": [], "tool_observation": normalized,
             "bytes_received": len(raw) + len(stderr), "truncated": False,
@@ -110,7 +120,10 @@ def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
     ("openssl-ok", "handshake_verified"), ("ssh-ok", "host_key_observed"),
     ("ldap-ok", "rootdse_observed"), ("ldap-empty", "empty_rootdse_observed"),
     ("ldap-injected", "rootdse_observed"), ("smb-ok", "shares_observed"),
-    ("smb-injected", "shares_observed")])
+    ("smb-injected", "shares_observed"),
+    ("rpc-ok", "rpc_registrations_observed"), ("rpc-injected", "rpc_registrations_observed"),
+    ("rpc-empty", "rpc_empty_registrations_observed"), ("nfs-ok", "nfs_exports_observed"),
+    ("nfs-empty", "nfs_empty_exports_observed")])
 def test_raw_evidence_replays_without_writes_and_reports_finite_facts(tmp_path, case, outcome):
     path = tmp_path / "evidence"
     report = complete(path, case)
@@ -122,7 +135,7 @@ def test_raw_evidence_replays_without_writes_and_reports_finite_facts(tmp_path, 
     assert "127.0.0.2" not in (path / "report.md").read_text()
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
 def test_cli_selects_network_evidence_inspector(tmp_path, capsys, case):
     from recon_cockpit.secure_agent import cli
     path = tmp_path / "evidence"
@@ -172,7 +185,7 @@ def test_failed_tool_does_not_count_as_useful_completion(tmp_path):
     assert evidence.inspect_evidence(path) == report
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
 @pytest.mark.parametrize("status", ["succeeded", "failed"])
 def test_execution_capture_requires_a_precommitted_runtime(tmp_path, case, status):
     path = tmp_path / "evidence"
@@ -182,7 +195,7 @@ def test_execution_capture_requires_a_precommitted_runtime(tmp_path, case, statu
     assert not list(path.glob("result-*.json"))
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
 def test_replay_rejects_removing_execution_runtime_commitment(tmp_path, case):
     path = tmp_path / "evidence"
     complete(path, case)
@@ -198,12 +211,12 @@ def test_replay_rejects_removing_execution_runtime_commitment(tmp_path, case):
     assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
 def test_dry_run_without_runtime_commitment_still_finalizes_and_replays(tmp_path, case):
     path = tmp_path / "evidence"
     session_id = str(uuid4())
     owned = identity(case, str(uuid4()))
-    policy_file = "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     with evidence.NmapEvidenceStore(path, session_id=session_id, policy=policy, case=case,
             owned_lab=owned, workflow_profile="network_tools", runtime_sha256=None) as store:
@@ -253,7 +266,7 @@ def test_b2_rehashed_observations_cannot_claim_trust_or_invent_metadata(tmp_path
     assert "journal_or_artifact_incomplete" in report["integrity_issues"]
 
 
-@pytest.mark.parametrize("case", ["ssh-ok", "ldap-ok", "smb-ok"])
+@pytest.mark.parametrize("case", ["ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
 def test_b2_card_cannot_be_relabelled_as_accepted_b1(tmp_path, case):
     from recon_cockpit.secure_agent.network_tools_workflow import card_identity
     path = tmp_path / "evidence"
@@ -294,3 +307,99 @@ def test_smb_footer_only_cannot_replay_as_a_completed_listing(tmp_path):
     assert report["outcome"] == "inconclusive"
     assert report["finding"]["tool_observation"] is None
     assert "journal_or_artifact_incomplete" in report["integrity_issues"]
+
+
+@pytest.mark.parametrize("case,change", [
+    ("rpc-ok", lambda r: r["tool_observation"]["registrations"][0].update(port=2049)),
+    ("rpc-ok", lambda r: r["tool_observation"]["registrations"][0].update(program=999999)),
+    ("rpc-ok", lambda r: r["tool_observation"].update(registrations=[])),
+    ("rpc-empty", lambda r: r["tool_observation"]["registrations"].append(
+        {"program": 100000, "version": 2, "transport": "tcp", "port": 111})),
+    ("nfs-ok", lambda r: r["tool_observation"]["exports"][0].update(groups=[])),
+    ("nfs-ok", lambda r: r["tool_observation"]["exports"][0].update(path="/etc")),
+    ("nfs-ok", lambda r: r["tool_observation"].update(exports=[])),
+    ("nfs-empty", lambda r: r["tool_observation"]["exports"].append(
+        {"path": "/srv/harbordesk/public", "groups": []})),
+    ("rpc-ok", lambda r: r["owned_lab"].update(request_count=0)),
+    ("nfs-ok", lambda r: r["owned_lab"].update(request_count=0)),
+    ("nfs-ok", lambda r: r["owned_lab"].update(connection_count=5)),
+    ("rpc-ok", lambda r: r["boundary_checks"].update(forbidden_port_blocked=False)),
+    ("nfs-ok", lambda r: r["boundary_checks"].update(forbidden_ip_blocked=False)),
+])
+def test_b4_rehashed_results_cannot_invent_metadata_or_omit_enforcement(tmp_path, case, change):
+    path = tmp_path / "evidence"
+    complete(path, case)
+    mutate_result(path, 1, change)
+    before = {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
+    report = evidence.inspect_evidence(path)
+    assert report["outcome"] == "inconclusive"
+    assert report["finding"]["tool_observation"] is None
+    assert "journal_or_artifact_incomplete" in report["integrity_issues"]
+    assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
+
+
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok"])
+def test_b4_channel_identity_survives_recomputed_capture_hashes(tmp_path, case):
+    path = tmp_path / "evidence"
+    complete(path, case)
+    def change(result):
+        result["raw_output_base64"], result["raw_stderr_base64"] = result["raw_stderr_base64"], result["raw_output_base64"]
+        result["provenance"]["output_sha256"], result["provenance"]["stderr_sha256"] = (
+            result["provenance"]["stderr_sha256"], result["provenance"]["output_sha256"])
+    mutate_result(path, 1, change)
+    report = evidence.inspect_evidence(path)
+    assert report["outcome"] == "inconclusive"
+    assert report["finding"]["tool_observation"] is None
+    assert "journal_or_artifact_incomplete" in report["integrity_issues"]
+
+
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok"])
+def test_b4_missing_artifact_or_owner_closure_cannot_publish_metadata(tmp_path, case):
+    path = tmp_path / "evidence"
+    original = complete(path, case)
+    rows = [json.loads(line) for line in (path / "evidence.jsonl").read_text().splitlines()]
+    rows = [row for row in rows if row["event_type"] != "assessment_owned_lab_closed"]
+    (path / "evidence.jsonl").write_bytes(b"\n".join(contract.encode(row) for row in rows) + b"\n")
+    report = evidence.inspect_evidence(path)
+    assert report["outcome"] == "inconclusive" and report["integrity_issues"]
+    artifact = original["records"][0]["artifact"]["filename"]
+    (path / artifact).unlink()
+    report = evidence.inspect_evidence(path)
+    assert report["outcome"] == "inconclusive" and report["finding"]["tool_observation"] is None
+
+
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok"])
+@pytest.mark.parametrize("legacy_case", ["dig-ok", "ssh-ok", "smb-ok"])
+def test_b4_card_cannot_be_relabelled_as_any_accepted_legacy_card(tmp_path, case, legacy_case):
+    from recon_cockpit.secure_agent.network_tools_workflow import card_identity
+    path = tmp_path / "evidence"
+    complete(path, case)
+    value = json.loads((path / "manifest.json").read_bytes())
+    value["workflow_card"] = card_identity(legacy_case)
+    (path / "manifest.json").write_bytes(contract.encode(value))
+    with pytest.raises(EvidenceUnavailable):
+        evidence.inspect_evidence(path)
+
+
+def test_nfs_hostile_export_group_stays_raw_and_never_counts_as_useful_completion(tmp_path):
+    path = tmp_path / "evidence"
+    report = complete(path, "nfs-injected")
+    assert report["outcome"] == "inconclusive"
+    assert report["finding"]["tool_observation"]["classification"] == "inconclusive"
+    assert report["finding"]["tool_observation"]["details"] is None
+    assert evidence.inspect_evidence(path) == report
+    assert "127.0.0.2" not in (path / "report.md").read_text()
+    artifact = report["records"][0]["artifact"]["filename"]
+    retained = json.loads((path / artifact).read_bytes())
+    assert b"127.0.0.2" in base64.b64decode(retained["raw_output_base64"])
+
+
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok"])
+def test_b4_parser_custody_unavailable_prevents_report_commit(tmp_path, monkeypatch, case):
+    from recon_cockpit.secure_agent.isolation import IsolationUnavailable
+    def fail(*args, **kwargs):
+        raise IsolationUnavailable("parser refused")
+    monkeypatch.setattr(parser_runtime, "parse_isolated_tool", fail)
+    with pytest.raises(EvidenceUnavailable):
+        complete(tmp_path / "evidence", case)
+    assert not (tmp_path / "evidence" / "report.json").exists()

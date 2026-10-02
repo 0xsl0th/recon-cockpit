@@ -50,6 +50,10 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     elif case.startswith("ldap-"):
         assert definition["ldap"]["base_dn"] == "" and definition["ldap"]["scope"] == "base"
         assert definition["request_count_means"] == "validated_rootdse_searches"
+    elif case.startswith(("rpc-", "nfs-")):
+        assert definition["rpc"]["filesystem"] is False and definition["rpc"]["mount"] is False
+        assert definition["topology"] == [{"target": "127.0.0.1", "port": 111, "protocol": "onc_rpc_tcp"}]
+        assert definition["request_count_means"] == ("validated_portmapper_dumps" if case.startswith("rpc-") else "validated_mount_exports")
     else:
         assert definition["smb"]["dialect"] == "SMB2_02"
         assert definition["smb"]["filesystem"] is False and definition["smb"]["credentials"] is False
@@ -371,3 +375,22 @@ def test_ldap_rejects_authentication_search_expansion_and_unbounded_ber(fault):
     service = _ldap_service("ldap-ok")
     with pytest.raises(ValueError): service._ldap(_MemoryConnection(bind + search))
     assert service.requests == 0
+
+
+@pytest.mark.parametrize("case", ["rpc-ok", "rpc-empty", "nfs-ok", "nfs-redirected"])
+def test_only_rpc_nfs_owner_setup_gets_fixed_low_port_binding_capability(monkeypatch, case):
+    from recon_cockpit.secure_agent.owned_lab import OwnedLab
+    base = ["/usr/bin/bwrap", "--cap-drop", "ALL", "--cap-add", "CAP_NET_ADMIN",
+            "--cap-add", "CAP_SETPCAP", "--die-with-parent", "--remount-ro", "/",
+            "/usr/bin/python3", "-I", "-S", "/app/owned_lab_worker.py"]
+    monkeypatch.setattr(OwnedLab, "_owner_command", lambda *_: list(base))
+    limits = SessionLimits(**contract.LIMITS)
+    old = NetworkToolsLab("dig-ok", str(uuid4()), limits)._owner_command("/usr/lib/python3.11", [], 9)
+    selected = NetworkToolsLab(case, str(uuid4()), limits)._owner_command("/usr/lib/python3.11", [], 9)
+    assert "CAP_NET_BIND_SERVICE" not in old
+    index = selected.index("CAP_NET_BIND_SERVICE")
+    assert selected[index - 1] == "--cap-add" and selected.count("CAP_NET_BIND_SERVICE") == 1
+    del selected[index - 1:index + 1]
+    assert selected == old
+    for prior_case in ("openssl-ok", "ssh-ok", "ldap-ok", "smb-ok"):
+        assert NetworkToolsLab(prior_case, str(uuid4()), limits)._owner_command("/usr/lib/python3.11", [], 9) == old

@@ -11,7 +11,7 @@ from recon_cockpit.secure_agent import network_tools_contract as contract
 from recon_cockpit.secure_agent import network_tools_parser as parser
 from recon_cockpit.secure_agent import network_tools_runtime as runtime
 from recon_cockpit.secure_agent.models import (DigDNSParameters, OpenSSLTLSParameters,
-    SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters, ValidationError, parse_action, parse_policy)
+    SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters, RPCInfoDumpParameters, ShowmountExportsParameters, ValidationError, parse_action, parse_policy)
 from recon_cockpit.secure_agent.tool_adapters import LEGACY_PROPOSAL_PROFILE, NMAP_PROPOSAL_PROFILE, proposal_tools
 from recon_cockpit.secure_agent.network_tools_fixture import CA_PEM, QUERY_NAME, TLS_NAME
 from recon_cockpit.secure_agent.network_tools_lab_contract import identity
@@ -19,13 +19,11 @@ from test_secure_network_tools_parser import dns_output, tls_output
 
 
 def manifest(tool_id):
-    data = runtime._compiled(tool_id)
     interpreter = "/lib64/ld-linux-x86-64.so.2"
     files = [{"source": runtime.EXECUTABLES[tool_id], "destination": runtime.FIXED_ARGV[tool_id][0],
               "size": 1, "sha256": "a" * 64},
              {"source": interpreter, "destination": interpreter, "size": 1, "sha256": "b" * 64}]
-    if data is not None:
-        source, destination, compiled = data
+    for source, destination, compiled in runtime.compiled_files(tool_id):
         files.append({"source": source, "destination": destination, "size": len(compiled),
                       "sha256": hashlib.sha256(compiled).hexdigest()})
     return runtime.validate_manifest(runtime.compact_manifest({"version": "1", "profile": runtime.PROFILE, "tool_id": tool_id,
@@ -53,7 +51,7 @@ def receipt(tool_id=contract.DIG_TOOL_ID, *, status="succeeded", raw=None, stder
 def policy(**changes):
     return parse_policy({"schema_version": "1", "policy_version": "web-tools-test-v1",
         "allowed_targets": ["127.0.0.1/32"], "allowed_tools": list(contract.PARAMETERS),
-        "allowed_ports": [8080], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
+        "allowed_ports": [8080, 111], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
         "max_output_bytes": 8192, "max_targets": 1, "require_approval": True,
         "approval_ttl_seconds": 60, **changes})
 
@@ -63,11 +61,13 @@ def test_case_selects_exact_typed_single_action_and_existing_policy_gates(case):
     action = parse_action(contract.action(case))
     expected = {"dig": contract.DIG_TOOL_ID, "openssl": contract.OPENSSL_TOOL_ID,
                 "ssh": contract.SSH_TOOL_ID, "ldap": contract.LDAP_TOOL_ID,
-                "smb": contract.SMB_TOOL_ID}[case.split("-")[0]]
+                "smb": contract.SMB_TOOL_ID, "rpc": contract.RPCINFO_TOOL_ID,
+                "nfs": contract.SHOWMOUNT_TOOL_ID}[case.split("-")[0]]
     assert action.tool_id == expected and action.target == "127.0.0.1"
     assert type(action.parameters) is {contract.DIG_TOOL_ID: DigDNSParameters,
         contract.OPENSSL_TOOL_ID: OpenSSLTLSParameters, contract.SSH_TOOL_ID: SSHHostKeysParameters,
-        contract.LDAP_TOOL_ID: LDAPRootDSEParameters, contract.SMB_TOOL_ID: SMBShareListParameters}[expected]
+        contract.LDAP_TOOL_ID: LDAPRootDSEParameters, contract.SMB_TOOL_ID: SMBShareListParameters,
+        contract.RPCINFO_TOOL_ID: RPCInfoDumpParameters, contract.SHOWMOUNT_TOOL_ID: ShowmountExportsParameters}[expected]
     assert contract.profile_allows(action, case)
     assert policy().evaluate(action).decision == "approval_required"
     assert policy(allowed_methods=[]).evaluate(action).decision == "approval_required"

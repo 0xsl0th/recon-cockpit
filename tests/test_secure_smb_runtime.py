@@ -17,8 +17,7 @@ from recon_cockpit.secure_agent.isolation import IsolationUnavailable
 def expanded(tool_id=runtime.SMB):
     entries = [(runtime.EXECUTABLES[tool_id], runtime.FIXED_ARGV[tool_id][0], b"elf"),
                ("/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2", "/lib64/ld-linux-x86-64.so.2", b"loader")]
-    if runtime._compiled(tool_id) is not None:
-        entries.append(runtime._compiled(tool_id))
+    entries.extend(runtime.compiled_files(tool_id))
     return {"version": "1", "profile": runtime.PROFILE, "tool_id": tool_id,
         "executable": runtime.FIXED_ARGV[tool_id][0], "interpreter": "/lib64/ld-linux-x86-64.so.2",
         "files": [{"source": src, "destination": dst, "size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
@@ -118,7 +117,7 @@ def test_smb_closure_limits_apply_independently():
     with pytest.raises(ValueError): runtime.validate_manifest(value)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.RPCINFO, runtime.SHOWMOUNT])
 def test_existing_manifests_keep_their_schema_and_lower_limits(tool_id):
     value = expanded(tool_id)
     raw = runtime.encode(value)
@@ -150,7 +149,7 @@ def test_smb_fixed_command_is_anonymous_and_cannot_select_a_share_or_shell():
     assert not {"HOME", "USER", "PASSWD", "PASSWD_FD", "PASSWD_FILE", "KRB5CCNAME"} & set(runtime.execution_environment(runtime.SMB))
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT])
 def test_read_and_snapshot_caps_expand_only_for_smb(monkeypatch, tool_id):
     calls = []
     monkeypatch.setattr(runtime, "_read_regular", lambda path, **kw: calls.append((path, kw)))
@@ -162,7 +161,10 @@ def test_read_and_snapshot_caps_expand_only_for_smb(monkeypatch, tool_id):
     runtime._snapshot(selected, object())
     args, kwargs = captured[0]
     assert args[0]["files"] == runtime.runtime_files(selected)
-    assert kwargs == ({"maximum_file_bytes": 40 * 1024 * 1024} if tool_id == runtime.SMB else {})
+    expected = ({"maximum_file_bytes": 40 * 1024 * 1024} if tool_id == runtime.SMB else
+                {"additional_compiled": (("compiled:rpc-services", runtime.RPC_SERVICES),)}
+                if tool_id in (runtime.RPCINFO, runtime.SHOWMOUNT) else {})
+    assert kwargs == expected
 
 
 def test_shared_reader_still_refuses_oversized_files_without_explicit_smb_cap(tmp_path):
@@ -173,7 +175,7 @@ def test_shared_reader_still_refuses_oversized_files_without_explicit_smb_cap(tm
     assert len(common._read_regular(str(path), maximum=runtime.SMB_MAX_FILE_BYTES)) == common.MAX_FILE_BYTES + 1
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT])
 def test_smb_large_staging_does_not_expand_native_tool_limits(monkeypatch, tool_id):
     applied = {}
     monkeypatch.setattr(worker.resource, "getrlimit", lambda kind: (worker.resource.RLIM_INFINITY,) * 2)
@@ -207,7 +209,7 @@ def test_outer_smb_staging_caps_leave_existing_profiles_unchanged(monkeypatch, s
 
 @pytest.mark.parametrize("profile,tool_id", [("fixture", None), ("owned_lab", None), ("owned_nmap_lab", None),
     ("owned_web_lab", None), ("owned_http_headers_lab", None), ("owned_web_tools_lab", None),
-    *[("owned_network_tools_lab", tool) for tool in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB)]])
+    *[("owned_network_tools_lab", tool) for tool in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT)]])
 def test_larger_bootstrap_tag_is_bound_to_the_smb_closure(profile, tool_id):
     config = {"profile": profile}
     closure = {"network_tools_runtime": runtime.compact_manifest(expanded(tool_id))} if tool_id else {}

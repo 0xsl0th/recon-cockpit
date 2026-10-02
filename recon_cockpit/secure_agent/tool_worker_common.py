@@ -176,8 +176,11 @@ def _thread_bound_witness():
             raise RuntimeError("web_tool_thread_cleanup_failed")
 
 
-def _witnesses():
-    worker.verify_network_boundary(8080)
+def _witnesses(*, port=8080):
+    # Only the two reviewed fixed owner profiles can select a witness port.
+    if type(port) is not int or port not in (8080, 111):
+        raise ValueError("unsupported_tool_boundary_port")
+    worker.verify_network_boundary(port)
     try:
         process = os.fork()
     except PermissionError:
@@ -203,5 +206,4 @@ def _witnesses():
     else:
         os.close(descriptor)
         raise RuntimeError("web_tool_root_writable")
-
 

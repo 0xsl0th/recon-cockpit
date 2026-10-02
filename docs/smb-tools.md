@@ -3,7 +3,7 @@
 B3 extends the [secure-tool coverage checklist](secure-tool-coverage.md) with
 `smb_share_list_v1`. It invokes the installed `smbclient` through the existing
 policy, approval, audit, admission, confined launcher and evidence path. The
-interactive host runner is not a fallback. B3 remains pending review and merge.
+interactive host runner is not a fallback. B3 is accepted in [PR #40](https://github.com/0xsl0th/recon-cockpit/pull/40), merge `775352e`.
 
 The fixed action lists shares anonymously on a fresh disconnected owned
 `127.0.0.1:8080` fixture. SMB2_02, the endpoint, empty username/password, workgroup,

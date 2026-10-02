@@ -1,5 +1,55 @@
 # Verification record
 
+## Secure coverage B4: RPC registrations and NFS export metadata — 2 October 2026
+
+The base is merged main `775352e` (PR #40). B0–B3 remain accepted. B4 adds
+`rpcinfo_dump_v1` and `showmount_exports_v1` as independently invoked, bounded
+native profiles through the existing policy, approval, audit, admission, launcher,
+networkless parser and evidence path. See [rpc-nfs-tools.md](rpc-nfs-tools.md).
+B4 remains pending review and an authorized merge; B5 FTP/SMTP is the next gap.
+Main still has 11 accepted capabilities backed by 8 external programs; this
+candidate would bring those counts to 13 and 10 after acceptance.
+
+The real clients require fixed rpcbind discovery before their metadata query.
+Both contact only the preauthorized TCP `127.0.0.1:111`; the synthetic service
+multiplexes discovery and MOUNT export metadata at that endpoint. The fixture
+caps connections at four, calls at eight, discovery calls at three and the
+metadata query at one. Minimal transport and service-name tables are compiled,
+hashed and sealed; host RPC configuration is absent. The fixture owner receives
+`CAP_NET_BIND_SERVICE` solely to bind its private listeners and drops all
+capabilities before service startup. The clients receive no extra capability.
+All existing native memory/process/file/output bounds remain intact.
+
+Native normal and empty RPC/NFS runs each use two accepted connections and one
+validated DUMP or EXPORT. Empty RPC prints an explicit no-programs result; empty
+NFS prints its complete export header with no rows. Malformed replies instead
+exit unsuccessfully with decode diagnostics, so they cannot establish absence.
+RPC advertisement of port 112 is retained as numeric metadata without a follow-up.
+An injected NFS access-group string is retained only in raw evidence and the
+result stays inconclusive. When discovery advertises port 112, the native client
+times out: the forbidden witness receives no connection, and no export query is
+counted. Stalls, output pressure and cancellation retain bounded cleanup.
+
+Independent fixture, runtime, parser and evidence reviews found no blockers.
+The complete portable suite passed **6,349 tests** with no selected skips, errors
+or failures. All **36 network-tool workflow cases** and **38 enforcement cases**
+passed, including the 11 new B4 protocol cases and 12 new B4 enforcement cases.
+Python 3.11 syntax, dependency consistency and local documentation links passed.
+
+This establishes synthetic metadata coverage, not mounts, file access, general
+NFS service coverage or professional engagement readiness. No credentials,
+external targets, provider calls, paid calls or live-model evaluation were used.
+Process success alone is not useful completion: malformed, hostile or unsupported
+output cannot produce a normalized finding. Automated test grants are not human
+acceptance. Local elapsed times are descriptive CLI timings, not comparative
+security overhead measurements.
+
+Private validation and clean-source receipts are under
+`.secure-agent/rpc-nfs-tools-20261002` in the primary checkout. Development failures
+are retained separately under `debug`; they are not acceptance evidence. The
+coverage checklist stays open through B5–B8. Deeper workflows and comparative
+benchmarking remain deferred, as do model credentials and paid evaluation.
+
 ## Secure coverage B3: anonymous SMB share metadata — 2 October 2026
 
 PR #39 merged as `79abaab` with all five final PR and post-merge checks passing;

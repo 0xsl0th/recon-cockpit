@@ -22,8 +22,9 @@ The inventory baseline is PR #37, merged as `ba0d6f8`: 10 interactive executable
 families versus 6 secure capabilities backed by 3 external programs. PR #38 adds
 accepted DNS/TLS coverage, bringing main to 8 capabilities backed by 5 external
 programs. PR #39 accepts B2 SSH host keys and anonymous LDAP RootDSE, bringing
-main to 10 secure capabilities backed by 7 external programs. B3 SMB share metadata
-is the current batch. See the
+main to 10 secure capabilities backed by 7 external programs. PR #40 accepts B3
+SMB metadata, bringing main to 11 capabilities backed by 8 external programs.
+B4 RPC/NFS metadata is the current batch. See the
 [inventory and completion gates](secure-tool-coverage.md) for exact distinctions,
 product gaps and deferred modes. Roughly 40 tools remains the longer-term product
 direction, not a claim that 40 integrations exist or a reason to duplicate tools.
@@ -33,8 +34,8 @@ direction, not a claim that 40 integrations exist or a reason to duplicate tools
 | B0 — accepted | TCP/Nmap, HTTP/headers, curl HTTPS and finite ffuf | Preserve the existing bounded owned execution and evidence; PRs #36/#37 stay closed. |
 | B1 — accepted in PR #38 | dig DNS and OpenSSL TLS | Fixed nonrecursive A query and verified TLS handshake; structured useful output, negative cases, actual confinement and replay. |
 | B2 — accepted in PR #39 | ssh-keyscan and ldapsearch RootDSE | Fixed key collection and anonymous base-scope metadata; no login or referrals. |
-| B3 — current | smbclient | Anonymous bounded share metadata through the fixed IPC endpoint; no share traversal, file transfer or remote execution. |
-| B4 | rpcinfo and showmount | Bounded RPC/export observations without following endpoints or mounting. |
+| B3 — accepted in PR #40 | smbclient | Anonymous bounded share metadata through the fixed IPC endpoint; no share traversal, file transfer or remote execution. |
+| B4 — current | rpcinfo and showmount | Bounded RPC/export observations; advertisements cannot authorize endpoints, and no mounting is permitted. |
 | B5 | curl FTP and SMTP capability query | Fixed finite listing and banner/EHLO/QUIT; no file transfer, mail or authentication. |
 | B6 | curl Docker/WinRM metadata | Fixed read-only endpoint observations; no container or remote-session operations. |
 | B7 | Nmap service identification | Reviewed, pinned probe/NSE runtime closure; never silently enable broad `-sV`. |

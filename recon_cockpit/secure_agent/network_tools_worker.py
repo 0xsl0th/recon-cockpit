@@ -73,7 +73,8 @@ def landlock(manifest):
 
 
 def syscall_filter(tool_id):
-    if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB):
+    if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB,
+                       runtime.RPCINFO, runtime.SHOWMOUNT):
         raise ValueError("unsupported_network_tool")
     common.syscall_filter(allow_threads=tool_id == runtime.DIG)
 
@@ -110,7 +111,10 @@ def main():
         _limits(request["tool_id"])
         worker.drop_privileges()
         syscall_filter(request["tool_id"])
-        _witnesses()
+        if request["tool_id"] in (runtime.RPCINFO, runtime.SHOWMOUNT):
+            _witnesses(port=111)
+        else:
+            _witnesses()
         if request["tool_id"] == runtime.DIG:
             _thread_bound_witness()
         # The authority stdin and any loader-retained descriptors are gone.

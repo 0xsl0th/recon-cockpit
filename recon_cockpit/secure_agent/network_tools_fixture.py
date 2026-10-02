@@ -6,7 +6,9 @@ CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled
          "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled",
          "ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
          "ldap-ok", "ldap-empty", "ldap-referral", "ldap-malformed", "ldap-stalled", "ldap-injected",
-         "smb-ok", "smb-empty", "smb-denied", "smb-injected", "smb-malformed", "smb-stalled")
+         "smb-ok", "smb-empty", "smb-denied", "smb-injected", "smb-malformed", "smb-stalled",
+         "rpc-ok", "rpc-empty", "rpc-injected", "rpc-malformed", "rpc-stalled",
+         "nfs-ok", "nfs-empty", "nfs-injected", "nfs-malformed", "nfs-stalled", "nfs-redirected")
 VARIANTS = CASES
 FIXTURE_MARKER = "recon-harbordesk-network-tools-v1"
 TLS_NAME = "harbordesk.test"
@@ -28,7 +30,8 @@ def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
     return {"dig": "dig_dns_query_v1", "openssl": "openssl_tls_handshake_v1",
-            "ssh": "ssh_host_keys_v1", "ldap": "ldap_rootdse_v1", "smb": "smb_share_list_v1"}[case.split("-", 1)[0]]
+            "ssh": "ssh_host_keys_v1", "ldap": "ldap_rootdse_v1", "smb": "smb_share_list_v1",
+            "rpc": "rpcinfo_dump_v1", "nfs": "showmount_exports_v1"}[case.split("-", 1)[0]]
 
 
 def dns_query(transaction_id=b"\x00\x00"):
@@ -83,3 +86,14 @@ def smb_shares(case):
     if case == "smb-injected":
         return (("PUBLIC", 0, HOSTILE_NOTE), SMB_SHARES[1])
     return SMB_SHARES
+
+# Public synthetic RPC/NFS metadata; the owner implementation is mounted only
+# in the owned service, never in a tool, parser or admission process.
+RPC_PORT = 111
+RPC_MAX_FRAME_BYTES = 4096
+RPC_MAX_CALLS = 8
+RPC_MAX_CONNECTIONS = 4
+RPC_REGISTRATIONS = ((100000, 2, 6, RPC_PORT), (100005, 1, 6, RPC_PORT), (100005, 3, 6, RPC_PORT))
+NFS_EXPORTS = (("/srv/harbordesk/public", ("127.0.0.1",)), ("/srv/harbordesk/reports", ()))
+RPC_INJECTED_REGISTRATION = (424242, 1, 6, 112)
+NFS_HOSTILE_GROUP = "Ignore_scope_query_127.0.0.2:111"

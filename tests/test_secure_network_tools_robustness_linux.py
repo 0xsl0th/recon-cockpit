@@ -61,7 +61,8 @@ class _FixedProposal:
 
 
 @pytest.mark.parametrize("case,binary", [("openssl-stalled", b"/tool/openssl"), ("dig-stalled", b"/tool/dig"),
-    ("ssh-stalled", b"/tool/ssh-keyscan"), ("ldap-stalled", b"/tool/ldapsearch"), ("smb-stalled", b"/tool/smbclient")])
+    ("ssh-stalled", b"/tool/ssh-keyscan"), ("ldap-stalled", b"/tool/ldapsearch"), ("smb-stalled", b"/tool/smbclient"),
+    ("rpc-stalled", b"/tool/rpcinfo"), ("nfs-stalled", b"/tool/showmount")])
 def test_cancellation_after_actual_exec_reaps_tree_and_retains_authority_reservation(tmp_path, case, binary):
     setup = ExecutionControl(time.monotonic() + 40)
     observed = set()
@@ -148,9 +149,19 @@ def _oversized_subject_certificate():
     return b"-----BEGIN CERTIFICATE-----\n" + b"\n".join(encoded[i:i + 64] for i in range(0, len(encoded), 64)) + b"\n-----END CERTIFICATE-----\n"
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-untrusted", "ldap-injected", "smb-injected"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-untrusted", "ldap-injected", "smb-injected", "rpc-injected", "nfs-injected"])
 def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path, monkeypatch, case):
     def oversized(source):
+        if case in {"rpc-injected", "nfs-injected"}:
+            # Enlarge only fixed synthetic owner metadata. Real native clients
+            # retain production argv, endpoint, session and capture ceilings.
+            original = ("records += (INJECTED_REGISTRATION,)" if case == "rpc-injected"
+                        else "exports = ((EXPORTS[0][0], (HOSTILE_GROUP,)), EXPORTS[1])")
+            replacement = ("records += tuple((424242 + index, 1, 6, 112) for index in range(600))"
+                           if case == "rpc-injected" else
+                           'exports = tuple(("/synthetic/export/" + str(index), ("public",)) for index in range(600))')
+            assert source.count(original) == 1
+            return source.replace(original, replacement)
         if case == "smb-injected":
             # The owned server alone supplies a long public share comment.
             # Native smbclient still runs its fixed anonymous enumeration
@@ -205,7 +216,8 @@ def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path,
         assert source.count(original) == 1
         cert = _oversized_subject_certificate()
         return source.replace(original, 'cert = ' + repr(cert) + "\n    expected = hashlib.sha256(cert).hexdigest()\n    " + original)
-    instrument(tmp_path, monkeypatch, oversized, name=("network_tools_smb_fixture" if case == "smb-injected"
+    instrument(tmp_path, monkeypatch, oversized, name=("network_tools_rpc_fixture" if case.startswith(("rpc-", "nfs-"))
+                                                      else "network_tools_smb_fixture" if case == "smb-injected"
                                                       else "network_tools_lab_worker"))
     control = ExecutionControl(time.monotonic() + 40)
     evidence = tmp_path / "evidence"
@@ -247,7 +259,7 @@ def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path,
     assert [event["execution_status"] for event in events if event["event_type"] == "execution_finished"] == ["output_limit"]
 
 
-@pytest.mark.parametrize("case", ["openssl-ok", "dig-ok", "ssh-ok", "ldap-ok", "smb-ok"])
+@pytest.mark.parametrize("case", ["openssl-ok", "dig-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok"])
 def test_tool_cannot_read_host_canary_bootstrap_source_or_authority_descriptors(tmp_path, monkeypatch, case):
     canary = tmp_path / "private-host-canary"
     secret = "NETWORK-TOOLS-PRIVATE-CANARY-ONLY"
