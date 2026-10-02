@@ -237,6 +237,8 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "ftp_empty_listing_observed": "ftp_empty_listing_observed",
                "smtp_capabilities_observed": "smtp_capabilities_observed",
                "smtp_no_extensions_observed": "smtp_no_extensions_observed",
+               "nmap_service_identified": "nmap_service_identified",
+               "nmap_service_unidentified": "nmap_service_unidentified",
                "docker_ping_observed": "docker_ping_observed",
                "docker_version_metadata_observed": "docker_version_metadata_observed",
                "docker_no_version_metadata_observed": "docker_no_version_metadata_observed",
@@ -353,6 +355,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
             ]
+        if manifest["fixture_case"].startswith("nmap-service-"):
+            report["limitations"] = [
+                "This finite service-identification trial uses a disconnected synthetic endpoint; it is not general Nmap coverage, authenticated identity or professional engagement validation.",
+                "Only a TCP connect scan, NULL banner wait and one compiled HTTP GET probe are available. Pinned data and a no-op NSE entrypoint exclude host probe databases, version scripts, plugins, TLS upgrades and RPC follow-ups.",
+                "An identified service is a match to reviewed response patterns. Advertised product/version values are untrusted metadata, not verified software inventory or vulnerability evidence.",
+                "Unidentified means no match from this finite probe set. Silent, hostile, malformed and unfamiliar service replies may have the same native result; it does not prove service absence or benign behavior.",
+                "Complete singleton XML is independently reparsed without network. Port-table guesses and raw fingerprints are excluded from findings; output never grants another target, port or action.",
+                "Counters distinguish the empty connect scan from a sent banner or validated fixed GET. Connections are acknowledged lower bounds; inspection never restores execution authority. No model or comparative overhead claim is made.",
+            ]
         if manifest["fixture_case"].startswith(("docker-", "winrm-")):
             report["limitations"] = [
                 "This single fixed GET uses a disconnected synthetic HTTP fixture; it does not establish a real Docker or WinRM service, general compatibility or professional engagement readiness.",
@@ -444,6 +455,15 @@ def _markdown(report):
             lines.extend("| " + capability + " |" for capability in details["capabilities"])
             if not details["capabilities"]:
                 lines.extend(["", "The complete validated EHLO reply advertises no extensions."])
+        elif type(details) is dict and details.get("kind") == "service_identification":
+            lines.extend(["", "## Finite service identification", "", "Result: `" + details["identification"] + "`."])
+            service = details["service"]
+            if service is not None:
+                lines.extend(["", "| Field | Observed match |", "| --- | --- |"])
+                for field in ("name", "product", "version"):
+                    lines.append("| " + field + " | `" + (service[field] or "not retained") + "` |")
+            else:
+                lines.extend(["", "The completed finite probe set produced no reviewed service match; this does not establish absence."])
         elif type(details) is dict and details.get("kind") == "docker_ping":
             lines.extend(["", "## Docker health endpoint response", "",
                           "The fixed endpoint returned a complete HTTP 200 response with `OK`."])

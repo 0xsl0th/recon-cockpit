@@ -63,7 +63,7 @@ def _landlock_permissions(manifest):
     permissions[manifest["interpreter"]] |= 1
     permissions.update({"/dev/null": 6, "/dev/urandom": 4, "/dev/random": 4,
                         "/proc/self/status": 4})
-    if manifest["tool_id"] == runtime.OPENSSL:
+    if manifest["tool_id"] in (runtime.OPENSSL, runtime.NMAP_SERVICE):
         permissions["/tool/data"] = 8
     return permissions
 
@@ -75,7 +75,7 @@ def landlock(manifest):
 def syscall_filter(tool_id):
     if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB,
                        runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP,
-                       runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM):
+                       runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE):
         raise ValueError("unsupported_network_tool")
     common.syscall_filter(allow_threads=tool_id == runtime.DIG)
 

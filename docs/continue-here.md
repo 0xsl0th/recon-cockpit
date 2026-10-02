@@ -80,45 +80,50 @@ bundles, without changing bytes or mtimes. All 36 B1–B4 definitions remained e
 Private receipts: `.secure-agent/pr42-merge-review.json` and
 `.secure-agent/ftp-smtp-tools-20261002` in the primary checkout.
 
-**B6 is implemented and lab-verified in [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43); review/merge remain.**
-Development is in `/tmp/recon-secure-docker-winrm-coverage`, branch
-`feature/secure-docker-winrm-coverage`, based on merged main `38cbd43`.
-Use three independently invoked fixed curl profiles: `curl_docker_ping_v1`
-(`/_ping`), `curl_docker_version_v1` (`/version`) and `curl_winrm_metadata_v1`
-(`/wsman`). This preserves one GET/connection/action and covers both Docker
-endpoints without adding argument selectors or deeper workflow composition.
-Each keeps the owned `127.0.0.1:8080` endpoint, five-second tool deadline,
-60-second session and 8,192 combined bytes. Reuse existing authority, native
-confinement, networkless parsing and evidence replay.
-Require explicit GET in the policy as well as the exact target, port and tool;
-empty/HEAD-only method lists deny these profiles.
+**[PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43) is merged and B6 is accepted.**
+Reviewed head `81c97ef` merged as `02a7d7f` at 04:04:38 UTC on 2 October.
+Fresh runtime/policy and parser/evidence reviews found no blockers (1,267 and
+854 focused portable tests). All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36961755646)
+passed, as did all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36962953259).
+The merge tree exactly matches the reviewed tree. All eighteen saved
+bundles replayed with matching reports and unchanged bytes/mtimes. B6 receipts
+cover 7,444 portable and 275 distinct Linux tests and 5/5 useful trials with zero
+unnecessary refusals. Keep [the three fixed metadata profiles](docker-winrm-tools.md)
+closed. Main now has **18 accepted secure capabilities backed by 10 programs**.
+Private receipt: `.secure-agent/pr43-merge-review.json`; B6 evidence remains
+`.secure-agent/docker-winrm-tools-20261002` in the primary checkout.
 
-The real curl profiles verify complete bounded HTTP framing, version JSON and
-advertised auth schemes, with distinct normal/empty observations. An OK or
-version response does not identify a genuine Docker service; no auth header on
-one WinRM response does not mean authentication is disabled. Returned locations,
-headers and values never authorize another request. The fixture has no Docker
-socket, container backend, SOAP implementation, credential or remote session.
-All 50 B1–B5 definitions and accepted evidence identities remain unchanged.
-Independent reviews found no remaining blockers after fixing isolated owner
-startup and requiring explicit GET policy permission. Final validation passed
-7,444 portable and 275 distinct Linux tests without selected failures/errors/skips,
-including a successful rerun of all 36 B6 cases after the policy fix. See
-[the runbook](docker-winrm-tools.md) and [verification.md](verification.md).
-Clean source `1e58600` completed 5/5 useful tasks with zero unnecessary refusals,
-closed labs and matching read-only raw/evidence replay. All thirteen accepted
-B1–B5 bundles remained byte/mtime-identical. Provider calls and actual cost were
-zero. Final hosted checks must pass on the latest PR revision before merge.
+**B7 is implemented and lab-verified in [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44); review/merge remain.**
+Worktree `/tmp/recon-secure-nmap-service-coverage`, branch
+`feature/secure-nmap-service-coverage`, starts from merged main `02a7d7f`.
+The separate `nmap_service_identify_v1` capability reuses the single-action network
+tool path: numeric owned endpoint, five-second tool deadline, 60-second session,
+8,192 combined bytes and explicit GET policy permission. It compiles a NULL banner
+probe and fixed HTTP GET, tiny lookup files and a reviewed no-op NSE entrypoint.
+Nmap initializes NSE implicitly under `-sV`; host script databases and probe files
+must never enter this runtime. The accepted TCP-only Nmap profile stays unchanged.
 
-Private handoff: `.secure-agent/docker-winrm-tools-20261002/handoff.json` in the
-primary checkout. PR #43 is the review handoff; its merge requires a separate
-operator instruction. B6 is not yet accepted main coverage. After G1–G6,
-prioritize B7 bounded Nmap service identification, then B8 synthetic Kerberos
-principal enumeration. B7 is the next gap because useful bounded service identity
-extends the existing TCP-only profile; its probe/NSE runtime needs explicit review.
-The broader coverage milestone stays open. Deeper composition and comparative
-benchmarking wait until required coverage is complete; per-tool usefulness,
-unnecessary refusals and descriptive timing remain required now.
+The six owned scenarios exercise HTTP/SSH matches and unknown, hostile, malformed
+and silent responses. Normalized identities require actual probe matches;
+port-table names and fingerprints never establish service identity. Unidentified
+means only that these finite probes found no match, not absence or benign behavior.
+Validation passed 7,799 distinct portable tests (7,761 full run plus 38 added
+final evidence cases) and 297 distinct Linux checks without selected failures,
+errors or skips. Independent runtime/parser/authority/fixture reviews found no
+remaining blockers. Clean source `5120dcc` completed HTTP/SSH identity tasks 2/2
+and the unknown-response probe task 1/1, with zero unnecessary refusals. Six of
+six explicit forbidden-destination witnesses were blocked; all three labs closed
+and raw/evidence replay matched. All eighteen accepted B1–B6 bundles replayed
+unchanged. CLI times were 2.859–3.281 seconds, with zero provider calls/cost.
+See [the runbook](nmap-service-tools.md) and [verification.md](verification.md).
+B7 remains unaccepted until latest-revision checks and an authorized PR merge.
+
+Private evidence: `.secure-agent/nmap-service-tools-20261002` in the primary
+checkout, including `handoff.json`, `verification.json`, `validation-summary.json`
+and retained failed development receipts. PR #44 is ready for review after final
+hosted checks; merging it needs its corresponding operator instruction. B8 synthetic Kerberos with
+an owned KDC is the next required coverage gap after B7. The milestone remains
+open; deeper workflows and comparative benchmarking remain deferred.
 
 Credential setup, paid calls and live-model evaluation remain deferred until much
 later. Do not ask for a key, fund a ledger or enable a live provider. Preserve
@@ -1086,16 +1091,16 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #42 merge is complete. PRs #6–#30 and #32–#42
+- The operator-authorized PR #43 merge is complete. PRs #6–#30 and #32–#43
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
 1. Resume the broader [secure-tool coverage milestone](secure-tool-coverage.md).
-   Check the current branch/PR and private handoff before repeating work. B0–B5 are
-   accepted; finish B6 Docker/WinRM metadata, then choose the next unchecked row
-   (B7 bounded Nmap service identification). PRs #6–#30 and #32–#42
+   Check the current branch/PR and private handoff before repeating work. B0–B6 are
+   accepted; finish B7 bounded Nmap service identification, then choose the next unchecked row
+   (B8 synthetic Kerberos principal enumeration). PRs #6–#30 and #32–#43
    stay closed. Proposal PR #31 remains separate.
 2. Require G1–G6 for every required row: actual owned execution, useful structured
    output, strict authority, replayable evidence, enforcement/cleanup and reviewed

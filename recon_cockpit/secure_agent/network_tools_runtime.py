@@ -33,6 +33,41 @@ SMTP = "curl_smtp_capabilities_v1"
 DOCKER_PING = "curl_docker_ping_v1"
 DOCKER_VERSION = "curl_docker_version_v1"
 WINRM = "curl_winrm_metadata_v1"
+NMAP_SERVICE = "nmap_service_identify_v1"
+# A distribution may put a wrapper at /usr/bin/nmap. Only these two ELF
+# locations are eligible, and only this new profile resolves the alternative.
+NMAP_SERVICE_EXECUTABLES = ("/usr/bin/nmap", "/usr/lib/nmap/nmap")
+# The service name deliberately carries no port-derived product guess.
+NMAP_SERVICE_SERVICES = b"unknown 8080/tcp 1.0\n"
+NMAP_SERVICE_PROTOCOLS = b"tcp 6 TCP\n"
+NMAP_SERVICE_PROBES = (
+    b"# Reviewed TCP NULL and one fixed metadata GET; no SSL, UDP or RPC probes.\n"
+    b"Probe TCP NULL q||\n"
+    b"totalwaitms 400\n"
+    b"tcpwrappedms 100\n"
+    br"match ssh m%^SSH-2\.0-OpenSSH_([0-9]{1,3}(?:\.[0-9]{1,3}){0,2})\r\n$% p/OpenSSH/ v/$1/" + b"\n"
+    b"Probe TCP GetRequest q|GET / HTTP/1.0\\r\\n\\r\\n|\n"
+    b"ports 8080\n"
+    b"rarity 1\n"
+    b"totalwaitms 700\n"
+    br"match http m%^HTTP/1\.[01] [1-5][0-9]{2} [A-Za-z][A-Za-z ]{0,47}\r\nServer: nginx/([0-9]{1,3}(?:\.[0-9]{1,3}){0,2})\r\n% p/nginx/ v/$1/" + b"\n"
+    br"match http m%^HTTP/1\.[01] [1-5][0-9]{2} [A-Za-z][A-Za-z ]{0,47}\r\nServer: Apache/([0-9]{1,3}(?:\.[0-9]{1,3}){0,2})\r\n% p/Apache httpd/ v/$1/" + b"\n"
+    br"match http m%^HTTP/1\.[01] [1-5][0-9]{2} [A-Za-z][A-Za-z ]{0,47}\r\n%" + b"\n"
+)
+# -sV initializes NSE even without --script. Replace its entrypoint with a
+# byte-pinned, deny-all shim: no script database, modules, IO or callbacks.
+# The native engine must expose exactly the reviewed version-only mode.
+NMAP_SERVICE_NSE_SHIM = (
+    b"local engine, rules = ...\n"
+    b"assert(type(engine) == 'table' and engine.scriptversion == true)\n"
+    b"assert(engine.default == false and engine.scriptupdatedb == false and engine.scripthelp == false)\n"
+    # Nmap validates absent CLI arguments into an empty string before NSE.
+    b"assert(engine.scriptargs == '' and engine.scriptargsfile == nil)\n"
+    b"assert(type(rules) == 'table' and next(rules) == nil)\n"
+    b"return function(hosts, phase)\n"
+    b"  assert(type(hosts) == 'table' and #hosts <= 1 and phase == 'NSE_SCAN')\n"
+    b"end\n"
+)
 # No UDP, IPv6, local sockets, host transport defaults or dynamic netids.
 RPC_NETCONFIG = b"tcp tpi_cots_ord v inet tcp - -\n"
 # The native clients resolve these service names even for a numeric host.
@@ -67,8 +102,13 @@ EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
                SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch", SMB: "/usr/bin/smbclient",
                RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount",
                FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl",
-               DOCKER_PING: "/usr/bin/curl", DOCKER_VERSION: "/usr/bin/curl", WINRM: "/usr/bin/curl"}
+               DOCKER_PING: "/usr/bin/curl", DOCKER_VERSION: "/usr/bin/curl", WINRM: "/usr/bin/curl",
+               NMAP_SERVICE: "/usr/bin/nmap"}
 FIXED_ARGV = {
+    NMAP_SERVICE: ("/tool/nmap", "--unprivileged", "-sT", "-sV", "--version-intensity", "0",
+          "-Pn", "-n", "-p", "8080", "--max-retries", "0", "--max-parallelism", "1",
+          "--host-timeout", "3s", "--datadir", "/tool/data", "--no-stylesheet",
+          "-oX", "-", "127.0.0.1"),
     DIG: ("/tool/dig", "-r", "-4", "@127.0.0.1", "-p", "8080", "harbordesk.test.", "A",
           "+tcp", "+norecurse", "+tries=1", "+time=2", "+nosearch", "+noedns",
           "+nobadcookie", "+noadflag", "+nocdflag", "+noall", "+comments", "+question",
@@ -137,6 +177,8 @@ def execution_environment(tool_id):
 
 
 def _compiled(tool_id):
+    if tool_id == NMAP_SERVICE:
+        return "compiled:nmap-service-services", "/tool/data/nmap-services", NMAP_SERVICE_SERVICES
     if tool_id == OPENSSL:
         from .network_tools_fixture import CA_PEM
         return "compiled:fixture-ca", "/tool/data/fixture-ca.pem", CA_PEM
@@ -153,11 +195,15 @@ def _compiled(tool_id):
 
 
 def compiled_files(tool_id):
-    """Retain existing profiles' bytes; B4 requires two fixed lookup files."""
+    """Retain existing profiles' bytes and close new profiles over fixed data."""
     first = _compiled(tool_id)
     files = () if first is None else (first,)
     if tool_id in (RPCINFO, SHOWMOUNT):
         files += (("compiled:rpc-services", "/etc/services", RPC_SERVICES),)
+    if tool_id == NMAP_SERVICE:
+        files += (("compiled:nmap-service-protocols", "/tool/data/nmap-protocols", NMAP_SERVICE_PROTOCOLS),
+                  ("compiled:nmap-service-probes", "/tool/data/nmap-service-probes", NMAP_SERVICE_PROBES),
+                  ("compiled:nmap-service-nse-disabled", "/tool/data/nse_main.lua", NMAP_SERVICE_NSE_SHIM))
     return files
 
 
@@ -246,7 +292,8 @@ def validate_manifest(value, *, tool_id=None):
             raise ValueError("invalid_network_tool_runtime_file")
         source, destination = item["source"], item["destination"]
         if destination == value["executable"]:
-            accepted = source == EXECUTABLES[value["tool_id"]]
+            accepted = (source in NMAP_SERVICE_EXECUTABLES if value["tool_id"] == NMAP_SERVICE
+                        else source == EXECUTABLES[value["tool_id"]])
         elif destination in compiled:
             source_name, data = compiled[destination]
             accepted = (source == source_name and item["size"] == len(data)
@@ -274,7 +321,20 @@ def inspect_tool_runtime(tool_id, control):
         raise ValueError("unsupported_network_tool")
     control.check()
     executable = EXECUTABLES[tool_id]
-    if not _read_regular(executable).startswith(b"\x7fELF"):
+    if tool_id == NMAP_SERVICE:
+        executable = None
+        for candidate in NMAP_SERVICE_EXECUTABLES:
+            control.check()
+            if Path(candidate).is_file():
+                resolved = str(Path(candidate).resolve(strict=True))
+                if resolved not in NMAP_SERVICE_EXECUTABLES:
+                    raise IsolationUnavailable("Unreviewed Nmap service executable location")
+                if _read_regular(resolved).startswith(b"\x7fELF"):
+                    executable = resolved
+                    break
+        if executable is None:
+            raise IsolationUnavailable("A supported distribution Nmap ELF is required; wrappers are refused")
+    elif not _read_regular(executable).startswith(b"\x7fELF"):
         raise IsolationUnavailable("A distribution ELF network tool is required")
     listing = _runtime_probe([_trusted_program("ldd"), executable], 3, 32768, control).decode("ascii")
     paths = sorted(set(re.findall(r"(?:=>\s+)?(/[^\s]+)\s+\(", listing)))
@@ -309,7 +369,7 @@ def _snapshot(manifest, control):
     if manifest["tool_id"] == SMB:
         return sealed_snapshots({**manifest, "files": runtime_files(manifest)}, source, raw, control,
                                 maximum_file_bytes=SMB_MAX_FILE_BYTES)
-    if manifest["tool_id"] in (RPCINFO, SHOWMOUNT):
+    if manifest["tool_id"] in (RPCINFO, SHOWMOUNT, NMAP_SERVICE):
         additional = tuple((source, raw) for source, _, raw in compiled_files(manifest["tool_id"])[1:])
         return sealed_snapshots(manifest, source, raw, control, additional_compiled=additional)
     return sealed_snapshots(manifest, source, raw, control)

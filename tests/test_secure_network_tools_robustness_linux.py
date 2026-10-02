@@ -64,7 +64,7 @@ class _FixedProposal:
     ("ssh-stalled", b"/tool/ssh-keyscan"), ("ldap-stalled", b"/tool/ldapsearch"), ("smb-stalled", b"/tool/smbclient"),
     ("rpc-stalled", b"/tool/rpcinfo"), ("nfs-stalled", b"/tool/showmount"),
     ("ftp-stalled", b"/tool/curl"), ("smtp-stalled", b"/tool/curl"),
-    ("docker-ping-stalled", b"/tool/curl"), ("docker-version-stalled", b"/tool/curl"), ("winrm-stalled", b"/tool/curl")])
+    ("docker-ping-stalled", b"/tool/curl"), ("docker-version-stalled", b"/tool/curl"), ("winrm-stalled", b"/tool/curl"), ("nmap-service-stalled", b"/tool/nmap")])
 def test_cancellation_after_actual_exec_reaps_tree_and_retains_authority_reservation(tmp_path, case, binary):
     setup = ExecutionControl(time.monotonic() + 40)
     observed = set()
@@ -280,7 +280,7 @@ def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path,
 
 
 @pytest.mark.parametrize("case", ["openssl-ok", "dig-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok",
-    "docker-ping-ok", "docker-version-ok", "winrm-ok"])
+    "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http"])
 def test_tool_cannot_read_host_canary_bootstrap_source_or_authority_descriptors(tmp_path, monkeypatch, case):
     canary = tmp_path / "private-host-canary"
     secret = "NETWORK-TOOLS-PRIVATE-CANARY-ONLY"

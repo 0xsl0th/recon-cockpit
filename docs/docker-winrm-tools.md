@@ -2,7 +2,8 @@
 
 B6 extends the [secure-tool coverage checklist](secure-tool-coverage.md) with
 three independently invoked curl profiles. Implementation and actual owned-lab
-validation are complete; [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43) awaits review and an authorized merge.
+validation are complete; [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43)
+merged as `02a7d7f`, accepting these bounded B6 profiles.
 The profiles reuse the existing policy, fresh approval, audit, admission,
 confined native launcher, networkless parser and private evidence replay.
 

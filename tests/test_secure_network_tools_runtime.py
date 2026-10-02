@@ -33,7 +33,7 @@ def manifest(tool_id=runtime.DIG):
 
 def policy():
     return parse_policy({"schema_version": "1", "policy_version": "test-network-tool-v1",
-        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM],
+        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE],
         "allowed_ports": [8080, 111], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
         "max_output_bytes": 8192, "max_targets": 1, "require_approval": True, "approval_ttl_seconds": 60})
 
@@ -76,7 +76,7 @@ def test_independent_launch_validator_accepts_only_the_selected_fixed_tool(case)
     assert admission.profile_allows(parse_action(action(case)), configuration(case))
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http"])
 @pytest.mark.parametrize("fault", ["mode", "inner_mode", "identity", "manifest", "namespace", "deadline",
     "sequence", "reservation", "policy", "action", "limit"])
 def test_fresh_commitments_do_not_bypass_fixed_authority(case, fault):
@@ -102,7 +102,7 @@ def test_fresh_commitments_do_not_bypass_fixed_authority(case, fault):
 @pytest.mark.parametrize("profile,case", [("fixture", None), ("discovery_fixture", None), ("owned_lab", "a"),
     ("owned_nmap_lab", "a"), ("owned_web_lab", "vulnerable"), ("owned_http_headers_lab", "vulnerable"), ("owned_web_tools_lab", "curl-ok")])
 def test_existing_profiles_never_admit_network_tools(profile, case):
-    for selected in ("dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"):
+    for selected in ("dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http"):
         assert not admission.profile_allows(parse_action(action(selected)), {"profile": profile, "case": case})
 
 
@@ -212,7 +212,7 @@ def test_manifest_size_ceiling_keeps_maximum_capture_receipt_bounded():
     with pytest.raises(ValueError): runtime.validate_manifest(value)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE])
 def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
     selected = manifest(tool_id)
     environment = runtime.execution_environment(tool_id)
@@ -233,6 +233,10 @@ def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
         assert permissions["/etc/netconfig"] == 4
         assert permissions["/etc/services"] == 4
         assert not {"/etc/rpc", "/etc/protocols", "/etc/resolv.conf"} & set(permissions)
+    elif tool_id == runtime.NMAP_SERVICE:
+        assert {"/tool/data/nmap-services", "/tool/data/nmap-protocols",
+                "/tool/data/nmap-service-probes", "/tool/data/nse_main.lua"} <= set(permissions)
+        assert not any(path.startswith("/etc/") for path in permissions)
     elif tool_id == runtime.SMB:
         assert permissions["/tool/data/smb.conf"] == 4
         assert "/etc/resolv.conf" not in permissions
@@ -249,7 +253,7 @@ def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
                                             (runtime.SSH, False), (runtime.LDAP, False), (runtime.SMB, False),
                                             (runtime.RPCINFO, False), (runtime.SHOWMOUNT, False),
                                             (runtime.FTP, False), (runtime.SMTP, False),
-                                            (runtime.DOCKER_PING, False), (runtime.DOCKER_VERSION, False), (runtime.WINRM, False)])
+                                            (runtime.DOCKER_PING, False), (runtime.DOCKER_VERSION, False), (runtime.WINRM, False), (runtime.NMAP_SERVICE, False)])
 def test_only_dig_selects_the_bounded_thread_filter(monkeypatch, tool_id, threads):
     from recon_cockpit.secure_agent import network_tools_worker as worker
     selected = []
@@ -260,7 +264,7 @@ def test_only_dig_selects_the_bounded_thread_filter(monkeypatch, tool_id, thread
         worker.syscall_filter("ffuf_content_discovery_v1")
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http"])
 def test_runtime_retains_and_binds_both_output_channels(monkeypatch, case):
     monkeypatch.setattr(runtime, "sys", SimpleNamespace(platform="linux"))
     launch = envelope(case)
@@ -287,7 +291,7 @@ def test_admission_case_map_matches_the_closed_owned_contract():
     for case in CASES:
         assert admission.NETWORK_TOOL_CASES[case] == action(case)["tool_id"]
         assert admission.configuration(configuration(case))["case"] == case
-    for case in ("ssh-other", "ldap-other", "openssl-other", "dig-other", "ftp-other", "smtp-other", "docker-ping-other", "docker-version-other", "winrm-other", "", None, []):
+    for case in ("ssh-other", "ldap-other", "openssl-other", "dig-other", "ftp-other", "smtp-other", "docker-ping-other", "docker-version-other", "winrm-other", "nmap-service-other", "", None, []):
         config = configuration()
         config["case"] = case
         with pytest.raises(ValueError):
@@ -295,8 +299,8 @@ def test_admission_case_map_matches_the_closed_owned_contract():
         assert not admission.profile_allows(parse_action(action("openssl-ok")), config)
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
-@pytest.mark.parametrize("other_case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http"])
+@pytest.mark.parametrize("other_case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http"])
 def test_all_network_tools_bind_case_action_and_manifest_independently(case, other_case):
     if case == other_case:
         return

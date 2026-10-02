@@ -27,6 +27,8 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('nmap-service-http', 'nmap-service-ssh', 'nmap-service-unknown',
+                    'nmap-service-injected', 'nmap-service-malformed', 'nmap-service-stalled'), 'nmap_service_identify_v1'),
     **dict.fromkeys(('dig-ok', 'dig-nxdomain', 'dig-injected', 'dig-malformed', 'dig-stalled'),
                     'dig_dns_query_v1'),
     **dict.fromkeys(('openssl-ok', 'openssl-untrusted', 'openssl-malformed', 'openssl-stalled'),

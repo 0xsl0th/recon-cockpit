@@ -58,7 +58,7 @@ def test_registry_is_explicit_immutable_and_returns_detached_metadata():
                                "ssh_host_keys_v1", "ldap_rootdse_v1", "smb_share_list_v1",
                                "rpcinfo_dump_v1", "showmount_exports_v1",
                                "curl_ftp_list_v1", "curl_smtp_capabilities_v1",
-                               "curl_docker_ping_v1", "curl_docker_version_v1", "curl_winrm_metadata_v1")
+                               "curl_docker_ping_v1", "curl_docker_version_v1", "nmap_service_identify_v1", "curl_winrm_metadata_v1")
     with pytest.raises(TypeError):
         ADAPTERS["arbitrary"] = get_adapter(NMAP_TOOL_ID)
     adapter = get_adapter(NMAP_TOOL_ID)

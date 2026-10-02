@@ -23,6 +23,12 @@ def linux_only():
 
 
 @pytest.mark.parametrize('case,outcome,success,requests', [
+    ('nmap-service-http', 'nmap_service_identified', 1, 1),
+    ('nmap-service-ssh', 'nmap_service_identified', 1, 1),
+    ('nmap-service-unknown', 'nmap_service_unidentified', 1, 1),
+    ('nmap-service-injected', 'nmap_service_unidentified', 1, 1),
+    ('nmap-service-malformed', 'nmap_service_unidentified', 1, 1),
+    ('nmap-service-stalled', 'nmap_service_unidentified', 1, 1),
     ('dig-ok', 'answer_observed', 1, 1),
     ('dig-nxdomain', 'name_not_found', 1, 1),
     ('dig-injected', 'answer_observed', 1, 1),
@@ -102,7 +108,8 @@ def linux_only():
 def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys, record_property, case, outcome, success, requests):
     monkeypatch.setattr(NetworkToolsLab, 'start', lambda *_: pytest.fail('host lab started'))
     monkeypatch.setattr(AuthorizedNetworkToolsBackend, 'run', lambda *a, **k: pytest.fail('host tool executed'))
-    policy_file = ('examples/secure-agent-docker-winrm-policy.json' if case.startswith(('docker-ping-', 'docker-version-', 'winrm-'))
+    policy_file = ('examples/secure-agent-nmap-service-policy.json' if case.startswith('nmap-service-')
+                   else 'examples/secure-agent-docker-winrm-policy.json' if case.startswith(('docker-ping-', 'docker-version-', 'winrm-'))
                    else 'examples/secure-agent-ftp-smtp-policy.json' if case.startswith(('ftp-', 'smtp-'))
                    else 'examples/secure-agent-rpc-nfs-policy.json' if case.startswith(('rpc-', 'nfs-'))
                    else 'examples/secure-agent-smb-policy.json' if case.startswith('smb-')
@@ -137,6 +144,9 @@ def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys
     if requests is not None:
         assert closure['request_count'] == requests
     assert closure['request_count'] <= 1
+    if case.startswith('nmap-service-'):
+        assert closure['connection_count'] == 2
+        record_property('accepted_connection_count', closure['connection_count'])
     if case.startswith(('docker-ping-', 'docker-version-', 'winrm-')):
         assert closure['connection_count'] == 1
         record_property('accepted_connection_count', closure['connection_count'])

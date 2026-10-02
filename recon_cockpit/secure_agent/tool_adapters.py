@@ -15,7 +15,7 @@ from .tool_parameters import (
     CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
     OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
-    CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters,
+    CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -61,6 +61,7 @@ SMTP_TOOL_ID = "curl_smtp_capabilities_v1"
 DOCKER_PING_TOOL_ID = "curl_docker_ping_v1"
 DOCKER_VERSION_TOOL_ID = "curl_docker_version_v1"
 WINRM_TOOL_ID = "curl_winrm_metadata_v1"
+NMAP_SERVICE_TOOL_ID = "nmap_service_identify_v1"
 DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -73,6 +74,7 @@ SMTP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_out
 DOCKER_PING_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 DOCKER_VERSION_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 WINRM_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+NMAP_SERVICE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
@@ -257,6 +259,15 @@ ADAPTERS = MappingProxyType({
          "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
          "fixed_metadata_get_only", "no_authentication", "no_redirect_following",
          "no_daemon_or_wsman_operations", "no_followup_to_metadata"),
+    ),
+    NMAP_SERVICE_TOOL_ID: ToolAdapter(
+        NMAP_SERVICE_TOOL_ID, NmapServiceParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "identify_owned_fixture_service", "owned-nmap-service-identification-v1",
+        "bounded-nmap-service-result-v1", "nmap-service-xml-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
+         "finite_compiled_service_probes", "nse_scripts_disabled", "no_authentication",
+         "no_followup_to_metadata"),
     ),
     WINRM_TOOL_ID: ToolAdapter(
         WINRM_TOOL_ID, CurlWinRMMetadataParameters, ("port", "timeout_seconds", "max_output_bytes"),

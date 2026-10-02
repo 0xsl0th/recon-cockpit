@@ -21,11 +21,13 @@ SMTP_TOOL_ID = "curl_smtp_capabilities_v1"
 DOCKER_PING_TOOL_ID = "curl_docker_ping_v1"
 DOCKER_VERSION_TOOL_ID = "curl_docker_version_v1"
 WINRM_TOOL_ID = "curl_winrm_metadata_v1"
+NMAP_SERVICE_TOOL_ID = "nmap_service_identify_v1"
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
     FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1", DOCKER_PING_TOOL_ID: "curl-docker-ping-v1",
-    DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1"}
+    DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1",
+    NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -117,6 +119,8 @@ def validate_result(tool_id, value):
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id == NMAP_SERVICE_TOOL_ID:
+        return _nmap_service_parser().validate_result(value)
     if tool_id == DOCKER_PING_TOOL_ID:
         if (set(value) != {"parser_version", "kind", "status_code", "health"}
                 or value["kind"] != "docker_ping" or type(value["status_code"]) is not int
@@ -595,6 +599,21 @@ def _parse_winrm_metadata(output, stderr):
         "kind": "winrm_metadata", "status_code": status, "auth_schemes": schemes})
 
 
+def _nmap_service_parser():
+    # The networkless worker imports the mounted parser as a standalone module.
+    if __package__:
+        from . import network_tools_nmap_parser
+    else:
+        import network_tools_nmap_parser
+    return network_tools_nmap_parser
+
+
+def _parse_nmap_service(output, stderr):
+    if stderr:
+        raise ValueError("unexpected_nmap_service_stderr")
+    return _nmap_service_parser().parse_nmap_service_xml(output)
+
+
 def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=False):
     parser_version(tool_id)
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
@@ -604,4 +623,5 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             SSH_TOOL_ID: _parse_ssh, LDAP_TOOL_ID: _parse_ldap, SMB_TOOL_ID: _parse_smb,
             RPCINFO_TOOL_ID: _parse_rpcinfo, SHOWMOUNT_TOOL_ID: _parse_showmount,
             FTP_TOOL_ID: _parse_ftp, SMTP_TOOL_ID: _parse_smtp, DOCKER_PING_TOOL_ID: _parse_docker_ping,
-            DOCKER_VERSION_TOOL_ID: _parse_docker_version, WINRM_TOOL_ID: _parse_winrm_metadata}[tool_id](output, stderr)
+            DOCKER_VERSION_TOOL_ID: _parse_docker_version, WINRM_TOOL_ID: _parse_winrm_metadata,
+            NMAP_SERVICE_TOOL_ID: _parse_nmap_service}[tool_id](output, stderr)
