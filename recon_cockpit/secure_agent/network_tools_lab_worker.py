@@ -13,6 +13,7 @@ import time
 if __package__:
     from . import owned_lab_worker as owner, network_tools_fixture as fixture, web_tools_tls_fixture as tls_material
     from . import network_tools_ssh_fixture as ssh_fixture
+    from . import network_tools_smb_fixture as smb_fixture
 else:
     def _load(name, filename):
         spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -23,6 +24,7 @@ else:
     fixture = _load("network_tools_fixed_fixture", "network_tools_fixture.py")
     tls_material = _load("network_tools_fixed_tls", "web_tools_tls_fixture.py")
     ssh_fixture = _load("network_tools_fixed_ssh", "network_tools_ssh_fixture.py")
+    smb_fixture = _load("network_tools_fixed_smb", "network_tools_smb_fixture.py")
 
 
 def read_request(source):
@@ -166,6 +168,11 @@ class NetworkToolsService(owner.Service):
         self.context = tls_context(request["case"]) if request["case"].startswith("openssl-") else None
         super().__init__(request["case"], listener)
 
+    def _smb_enumerated(self):
+        with self.condition:
+            self.requests += 1
+            self.condition.notify_all()
+
     def _ldap(self, connection):
         message_id, operation, body = _ldap_message(connection)
         if operation != 0x60 or body != b"\x02\x01\x03\x04\x00\x80\x00":
@@ -207,7 +214,10 @@ class NetworkToolsService(owner.Service):
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.case.startswith("ssh-"):
+                    if self.case.startswith("smb-"):
+                        smb_fixture.serve(connection, case=self.case, shares=fixture.smb_shares(self.case),
+                            deadline=self.deadline, on_enumeration=self._smb_enumerated)
+                    elif self.case.startswith("ssh-"):
                         if self.case == "ssh-stalled":
                             time.sleep(owner.worker._remaining(self.deadline, 60))
                         elif self.case == "ssh-malformed":

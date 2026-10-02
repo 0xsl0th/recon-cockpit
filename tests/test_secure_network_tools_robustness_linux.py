@@ -61,7 +61,7 @@ class _FixedProposal:
 
 
 @pytest.mark.parametrize("case,binary", [("openssl-stalled", b"/tool/openssl"), ("dig-stalled", b"/tool/dig"),
-    ("ssh-stalled", b"/tool/ssh-keyscan"), ("ldap-stalled", b"/tool/ldapsearch")])
+    ("ssh-stalled", b"/tool/ssh-keyscan"), ("ldap-stalled", b"/tool/ldapsearch"), ("smb-stalled", b"/tool/smbclient")])
 def test_cancellation_after_actual_exec_reaps_tree_and_retains_authority_reservation(tmp_path, case, binary):
     setup = ExecutionControl(time.monotonic() + 40)
     observed = set()
@@ -148,9 +148,43 @@ def _oversized_subject_certificate():
     return b"-----BEGIN CERTIFICATE-----\n" + b"\n".join(encoded[i:i + 64] for i in range(0, len(encoded), 64)) + b"\n-----END CERTIFICATE-----\n"
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-untrusted", "ldap-injected"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-untrusted", "ldap-injected", "smb-injected"])
 def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path, monkeypatch, case):
     def oversized(source):
+        if case == "smb-injected":
+            # The owned server alone supplies a long public share comment.
+            # Native smbclient still runs its fixed anonymous enumeration
+            # with the production output, action and execution ceilings.
+            original = 'response = share_response(self.shares, denied=self.case == "smb-denied")'
+            assert source.count(original) == 1
+            assert source.count("len(comment) > 256") == 1
+            source = source.replace("len(comment) > 256", "len(comment) > 12000").replace(
+                original, 'response = share_response((("PUBLIC", 0, "X" * 12000), ("IPC$", 3, "IPC service")))')
+            # Keep each reply within the negotiated 4280-byte RPC fragment
+            # ceiling. Returning one oversized RPC fragment is correctly
+            # rejected by the client before it ever prints the comment.
+            original = 'return _rpc_packet(2, call, struct.pack("<IHBB", len(response), context, 0, 0) + response)'
+            assert source.count(original) == 1
+            fragmented = '''fragments = []
+        for offset in range(0, len(response), 4000):
+            chunk = response[offset:offset + 4000]
+            fragment = _rpc_packet(2, call, struct.pack("<IHBB", len(response) - offset, context, 0, 0) + chunk)
+            flags = (1 if offset == 0 else 0) | (2 if offset + 4000 >= len(response) else 0)
+            fragments.append(fragment[:3] + bytes([flags]) + fragment[4:])
+        self.pressure_remaining = fragments[1:]
+        return fragments[0]'''
+            source = source.replace(original, fragmented)
+            assert source.count('        self.pending = None\n') == 2
+            source = source.replace('        self.pending = None\n',
+                                    '        self.pending = None\n        self.pressure_remaining = []\n', 1)
+            original = '            result = self.rpc(request)\n'
+            assert source.count(original) == 1
+            source = source.replace(original, original
+                + '            self.pending = self.pressure_remaining.pop(0) if self.pressure_remaining else None\n')
+            original = '            self.pending = None\n'
+            assert source.count(original) == 1
+            return source.replace(original,
+                '            self.pending = self.pressure_remaining.pop(0) if self.pressure_remaining else None\n')
         if case == "ldap-injected":
             # Only the synthetic owner response is enlarged. The actual
             # ldapsearch process still has its original argv, output ceiling,
@@ -171,7 +205,8 @@ def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path,
         assert source.count(original) == 1
         cert = _oversized_subject_certificate()
         return source.replace(original, 'cert = ' + repr(cert) + "\n    expected = hashlib.sha256(cert).hexdigest()\n    " + original)
-    instrument(tmp_path, monkeypatch, oversized, name="network_tools_lab_worker")
+    instrument(tmp_path, monkeypatch, oversized, name=("network_tools_smb_fixture" if case == "smb-injected"
+                                                      else "network_tools_lab_worker"))
     control = ExecutionControl(time.monotonic() + 40)
     evidence = tmp_path / "evidence"
     with boundary(tmp_path, control, case=case, approval_required=False) as (audit, approvals, launcher, policy, session):
@@ -182,10 +217,11 @@ def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path,
             store.record_decision(1, b'{"step":1,"untrusted_observation":null}')
             result = Controller(policy, audit, launcher, approvals, session_id=session, evidence=store).submit(
                 action(case), execute=True, interactive=False, execution_control=control, session_step=1)
-            assert result["execution_status"] == "output_limit", result
             captured = result["untrusted_result"]
             stdout = base64.b64decode(captured["raw_output_base64"], validate=True)
             stderr = base64.b64decode(captured["raw_stderr_base64"], validate=True)
+            assert result["execution_status"] == "output_limit", (result["execution_status"],
+                len(stdout), stdout[:256], len(stderr), stderr[:256])
             assert captured["truncated"] is True and captured["tool_observation"] is None
             assert captured["provenance"]["stop_reason"] == "output_limit"
             assert 0 <= captured["bytes_received"] == len(stdout) + len(stderr) <= 8192
@@ -211,7 +247,7 @@ def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path,
     assert [event["execution_status"] for event in events if event["event_type"] == "execution_finished"] == ["output_limit"]
 
 
-@pytest.mark.parametrize("case", ["openssl-ok", "dig-ok", "ssh-ok", "ldap-ok"])
+@pytest.mark.parametrize("case", ["openssl-ok", "dig-ok", "ssh-ok", "ldap-ok", "smb-ok"])
 def test_tool_cannot_read_host_canary_bootstrap_source_or_authority_descriptors(tmp_path, monkeypatch, case):
     canary = tmp_path / "private-host-canary"
     secret = "NETWORK-TOOLS-PRIVATE-CANARY-ONLY"
@@ -231,7 +267,7 @@ def test_tool_cannot_read_host_canary_bootstrap_source_or_authority_descriptors(
             else:
                 os.close(leaked)
                 raise RuntimeError('unexpected_private_file')
-        for candidate in range(3, 128):
+        for candidate in range(3, {256 if case.startswith('smb-') else 128}):
             try:
                 os.fstat(candidate)
             except OSError as exc:

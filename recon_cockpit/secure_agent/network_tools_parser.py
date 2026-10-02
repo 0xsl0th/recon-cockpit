@@ -1,4 +1,4 @@
-"""Bounded DNS, TLS, SSH and LDAP facts for fixed owned tool profiles."""
+"""Bounded DNS, TLS, SSH, LDAP and SMB facts for fixed owned tool profiles."""
 
 from __future__ import annotations
 
@@ -12,8 +12,9 @@ DIG_TOOL_ID = "dig_dns_query_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
+SMB_TOOL_ID = "smb_share_list_v1"
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
-    SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1"}
+    SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -22,6 +23,11 @@ TLS_CIPHERS = frozenset({"TLS_AES_256_GCM_SHA384"})
 LDAP_VALUES = {"naming_contexts": ("dc=harbordesk,dc=test",), "supported_ldap_versions": ("3",),
     "supported_sasl_mechanisms": ("PLAIN",)}
 LDAP_VENDOR = "HarborDesk synthetic directory"
+SMB_SHARES = {"PUBLIC": "Disk", "IPC$": "IPC"}
+# The minimal native closure omits optional legacy charset modules. This exact
+# startup warning is nonfatal; arbitrary diagnostics cannot become observations.
+SMB_CHARSET_WARNING = b"dos charset 'CP850' unavailable - using ASCII\n"
+SMB_LISTING_FOOTER = "SMB1 disabled -- no workgroup available"
 # The pinned BIND build probes a denied socket family during startup. This
 # exact nonfatal diagnostic is retained in raw evidence, never released as data.
 DIG_DENIED_PROBE = b"net.c:136:try_proto(): socket(): Operation not permitted (1)\n"
@@ -86,6 +92,21 @@ def validate_result(tool_id, value):
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id == SMB_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "status", "shares"}
+                or value["kind"] != "smb_share_list" or value["status"] != "listed"
+                or type(value["shares"]) is not list or len(value["shares"]) != len(SMB_SHARES)):
+            raise ValueError("invalid_network_tool_observation")
+        names = []
+        for row in value["shares"]:
+            if (type(row) is not dict or set(row) != {"name", "type"}
+                    or type(row["name"]) is not str or row["name"] not in SMB_SHARES
+                    or row["type"] != SMB_SHARES[row["name"]]):
+                raise ValueError("invalid_smb_share")
+            names.append(row["name"])
+        if names != sorted(set(names)):
+            raise ValueError("invalid_smb_share_order")
+        return {**value, "shares": [dict(row) for row in value["shares"]]}
     if tool_id == SSH_TOOL_ID:
         if (set(value) != {"parser_version", "kind", "key_type", "key_base64", "key_bits", "fingerprint_sha256", "trust"}
                 or value["kind"] != "ssh_host_keys" or value["key_type"] != "ssh-rsa"
@@ -279,10 +300,36 @@ def _parse_ldap(output, stderr):
     return validate_result(LDAP_TOOL_ID, result)
 
 
+def _parse_smb(output, stderr):
+    if stderr not in (b"", SMB_CHARSET_WARNING):
+        raise ValueError("unexpected_smb_diagnostics")
+    lines = _lines(output)
+    if (len(lines) != len(output.splitlines()) or not lines
+            or lines[-1] != SMB_LISTING_FOOTER or len(lines) > len(SMB_SHARES) + 1):
+        raise ValueError("invalid_smb_share_transcript")
+    shares = []
+    for line in lines[:-1]:
+        fields = line.split("|", 2)
+        if (len(fields) != 3 or fields[1] not in SMB_SHARES
+                or fields[0] != SMB_SHARES[fields[1]] or len(fields[2]) > 1024
+                or any(not 32 <= ord(char) <= 126 for char in fields[2])):
+            raise ValueError("unsupported_smb_share_row")
+        # Server-supplied comments remain only in the bounded raw evidence.
+        shares.append({"name": fields[1], "type": fields[0]})
+    if len(shares) != len(SMB_SHARES):
+        # The native client can suppress RPC errors and exit zero with this
+        # footer alone or an incomplete list. Only the complete reviewed fixture
+        # listing establishes useful success; absence remains inconclusive.
+        raise ValueError("smb_share_listing_unconfirmed")
+    return validate_result(SMB_TOOL_ID, {"parser_version": parser_version(SMB_TOOL_ID),
+        "kind": "smb_share_list", "status": "listed",
+        "shares": sorted(shares, key=lambda item: item["name"])})
+
+
 def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=False):
     parser_version(tool_id)
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
             or len(output) + len(stderr) > MAX_OUTPUT_BYTES or type(truncated) is not bool or truncated):
         raise ValueError("invalid_network_tool_output_size")
     return {DIG_TOOL_ID: _parse_dns, OPENSSL_TOOL_ID: _parse_tls,
-            SSH_TOOL_ID: _parse_ssh, LDAP_TOOL_ID: _parse_ldap}[tool_id](output, stderr)
+            SSH_TOOL_ID: _parse_ssh, LDAP_TOOL_ID: _parse_ldap, SMB_TOOL_ID: _parse_smb}[tool_id](output, stderr)

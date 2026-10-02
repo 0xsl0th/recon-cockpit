@@ -159,3 +159,8 @@ class SSHHostKeysParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class LDAPRootDSEParameters(TCPParameters):
     """Bounds for one fixed anonymous RootDSE query, without follow-up searches."""
+
+
+@dataclass(frozen=True, slots=True)
+class SMBShareListParameters(TCPParameters):
+    """Bounds for one fixed anonymous share listing, without share access."""

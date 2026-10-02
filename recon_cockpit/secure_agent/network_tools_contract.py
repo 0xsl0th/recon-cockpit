@@ -12,6 +12,7 @@ from .assessment_contract import _ACTION_FIELDS
 from .models import Action, parse_action
 from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSSL_PARAMETERS,
                             SSH_TOOL_ID, LDAP_TOOL_ID, SSH_PARAMETERS, LDAP_PARAMETERS,
+                            SMB_TOOL_ID, SMB_PARAMETERS,
                             NETWORK_TOOLS_LIMITS, get_adapter)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
                                      validate_identity)
@@ -24,12 +25,14 @@ WORKFLOW = "owned-network-tool-assessment-v1"
 LIMITS = dict(NETWORK_TOOLS_LIMITS)
 PARAMETERS = {DIG_TOOL_ID: dict(DIG_PARAMETERS), OPENSSL_TOOL_ID: dict(OPENSSL_PARAMETERS)}
 PARAMETERS.update({SSH_TOOL_ID: dict(SSH_PARAMETERS), LDAP_TOOL_ID: dict(LDAP_PARAMETERS)})
+PARAMETERS[SMB_TOOL_ID] = dict(SMB_PARAMETERS)
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
-    SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1"}
+    SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1"}
 B1_CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
             "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled")
 B2_CASES = ("ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
             "ldap-ok", "ldap-empty", "ldap-referral", "ldap-malformed", "ldap-stalled", "ldap-injected")
+B3_CASES = ("smb-ok", "smb-empty", "smb-denied", "smb-injected", "smb-malformed", "smb-stalled")
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -61,8 +64,16 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in B3_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(SMB_TOOL_ID).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "smb": {"operation": "anonymous_share_listing", "file_share_access": False,
+                "comments": "discarded", "metadata_followup": False},
+            "parser_versions": {SMB_TOOL_ID: PARSER_VERSIONS[SMB_TOOL_ID]}}
     if case in B2_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(tool).to_dict() for tool in (SSH_TOOL_ID, LDAP_TOOL_ID)],
@@ -178,6 +189,8 @@ def classify_tool(tool_id, normalized):
             "supported_sasl_mechanisms", "vendor_name"))
         return _observation(tool_id, "rootdse_observed" if present else "empty_rootdse_observed",
             "ldap_rootdse_observed" if present else "ldap_empty_rootdse_observed", normalized)
+    if tool_id == SMB_TOOL_ID:
+        return _observation(tool_id, "shares_observed", "smb_shares_observed", normalized)
     if normalized["status"] == "NXDOMAIN":
         return _observation(tool_id, "name_not_found", "dns_name_not_found", normalized)
     found = bool(normalized["answers"])

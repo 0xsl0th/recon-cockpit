@@ -269,7 +269,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="one bounded curl or ffuf action in the disconnected owned lab")
     from .network_tools_lab_contract import CASES as NETWORK_TOOL_CASES
     source.add_argument("--network-tool-assessment", choices=NETWORK_TOOL_CASES,
-                        help="one bounded DNS, TLS, SSH key or LDAP RootDSE action in the disconnected owned lab")
+                        help="one bounded DNS, TLS, SSH key, LDAP RootDSE or SMB share-list action in the disconnected owned lab")
     source.add_argument("--http-headers-assessment", choices=("vulnerable", "corrected", "injected"),
                         help="assess bounded HTTP response headers after owned Nmap discovery; no live model")
     source.add_argument("--workflow-assessment", choices=tuple("abcdef"),

@@ -41,7 +41,7 @@ WEB_TOOLS_MODULES = ('web_tools_backend', 'web_tools_lab', 'web_tools_lab_worker
     'web_tools_execution', 'web_tools_worker', 'web_tools_parser', 'web_tools_parser_runtime',
     'web_tools_parser_worker', 'http_headers_parser', 'tool_runtime_common', 'tool_worker_common')
 NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_tools_lab_worker',
-    'network_tools_fixture', 'web_tools_tls_fixture', 'network_tools_ssh_fixture', 'network_tools_lab_contract',
+    'network_tools_fixture', 'web_tools_tls_fixture', 'network_tools_ssh_fixture', 'network_tools_smb_fixture', 'network_tools_lab_contract',
     'network_tools_contract', 'network_tools_runtime', 'network_tools_execution', 'network_tools_worker',
     'network_tools_parser', 'network_tools_parser_runtime', 'network_tools_parser_worker',
     'tool_runtime_common', 'tool_worker_common')
@@ -181,11 +181,7 @@ class LinuxFixtureLauncher:
             '/usr/bin/python3', '-I', '-S', '/app/recon_cockpit/secure_agent/launcher_worker.py',
             commitment, *(host[name] for name in ('user', 'net', 'mnt', 'pid'))]
         if self._approval_source is not None:
-            argv.append({'owned_nmap_lab': 'nmap-launch-preconditions',
-                         'owned_web_lab': 'web-launch-preconditions',
-                         'owned_http_headers_lab': 'http-headers-launch-preconditions',
-                         'owned_web_tools_lab': 'web-tools-launch-preconditions',
-                         'owned_network_tools_lab': 'network-tools-launch-preconditions'}.get(self._config['profile'], 'launch-preconditions'))
+            argv.append(protocol.runtime_tag(self._config, closure) or 'launch-preconditions')
         elif self._witness_source is not None:
             argv.append('launch-witness')
         return argv

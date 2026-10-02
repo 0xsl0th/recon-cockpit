@@ -44,11 +44,20 @@ def linux_only():
     ('ldap-referral', 'inconclusive', 0, 1),
     ('ldap-malformed', 'inconclusive', 0, 1),
     ('ldap-stalled', 'inconclusive', 0, 1),
+    ('smb-ok', 'shares_observed', 1, 1),
+    ('smb-injected', 'shares_observed', 1, 1),
+    # Native smbclient may return zero and only a workgroup footer for all
+    # three cases. Neither exit status nor the fixture label proves absence.
+    ('smb-empty', 'inconclusive', 1, 1),
+    ('smb-denied', 'inconclusive', 1, 1),
+    ('smb-malformed', 'inconclusive', 1, 1),
+    ('smb-stalled', 'inconclusive', 1, 1),
 ])
 def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys, record_property, case, outcome, success, requests):
     monkeypatch.setattr(NetworkToolsLab, 'start', lambda *_: pytest.fail('host lab started'))
     monkeypatch.setattr(AuthorizedNetworkToolsBackend, 'run', lambda *a, **k: pytest.fail('host tool executed'))
-    policy_file = ('examples/secure-agent-ssh-ldap-policy.json' if case.startswith(('ssh-', 'ldap-'))
+    policy_file = ('examples/secure-agent-smb-policy.json' if case.startswith('smb-')
+                   else 'examples/secure-agent-ssh-ldap-policy.json' if case.startswith(('ssh-', 'ldap-'))
                    else 'examples/secure-agent-network-tools-policy.json')
     policy = json.loads(Path(policy_file).read_text())
     policy.update(policy_version='synthetic-network-tools-unattended-test-v1', require_approval=False)

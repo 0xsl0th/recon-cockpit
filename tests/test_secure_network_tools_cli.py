@@ -10,12 +10,12 @@ GATES = ['--owned-lab','--isolated-audit','--isolated-approvals','--isolated-lau
 
 
 def arguments(tmp_path, case="dig-ok"):
-    policy = "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy = "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     return ['--network-tool-assessment',case,'--assessment-dir',str(tmp_path/'evidence'),
             '--audit',str(tmp_path/'audit.jsonl'),'--policy','examples/secure-agent-' + policy + '-policy.json']
 
 
-@pytest.mark.parametrize('case', ['dig-ok', 'ssh-ok', 'ldap-ok'])
+@pytest.mark.parametrize('case', ['dig-ok', 'ssh-ok', 'ldap-ok', 'smb-ok'])
 @pytest.mark.parametrize('missing',GATES)
 def test_each_launch_gate_required_before_side_effects(tmp_path,missing,case):
     with pytest.raises(SystemExit) as error:
@@ -58,3 +58,11 @@ def test_owned_ssh_ldap_policy_keeps_fresh_approval_and_separate_scope():
     assert value['allowed_targets']==['127.0.0.1/32']
     assert value['allowed_ports']==[8080]
     assert value['allowed_tools']==['ssh_host_keys_v1','ldap_rootdse_v1']
+
+
+def test_owned_smb_policy_requires_fresh_approval_and_only_share_metadata():
+    value=json.loads(Path('examples/secure-agent-smb-policy.json').read_text())
+    assert value['require_approval'] is True
+    assert value['allowed_targets']==['127.0.0.1/32']
+    assert value['allowed_ports']==[8080]
+    assert value['allowed_tools']==['smb_share_list_v1']

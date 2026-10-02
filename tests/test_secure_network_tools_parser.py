@@ -195,7 +195,8 @@ def test_preexpired_or_cancelled_parser_does_not_discover_runtime(monkeypatch, c
 def test_parser_command_has_private_network_and_no_tool_mount(monkeypatch):
     monkeypatch.setattr(runtime, "_trusted_program", lambda name: "/usr/bin/" + name)
     monkeypatch.setattr(runtime, "_namespaces", lambda: {name: name for name in ("user", "net", "mnt", "pid")})
-    argv = runtime._command(parser.OPENSSL_TOOL_ID, ("/stdlib", [("/usr/bin/openssl", "/tool/openssl"), ("/usr/bin/dig", "/tool/dig")]))
+    argv = runtime._command(parser.OPENSSL_TOOL_ID, ("/stdlib", [("/usr/bin/openssl", "/tool/openssl"),
+        ("/usr/bin/dig", "/tool/dig"), ("/usr/bin/smbclient", "/tool/smbclient")]))
     assert "--unshare-net" in argv and "--clearenv" in argv and "--cap-drop" in argv
-    assert "/tool/openssl" not in argv and "/tool/dig" not in argv
+    assert "/tool/openssl" not in argv and "/tool/dig" not in argv and "/tool/smbclient" not in argv
     assert argv[-5:] == [parser.OPENSSL_TOOL_ID, "user", "net", "mnt", "pid"]

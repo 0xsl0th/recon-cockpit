@@ -1,5 +1,38 @@
 # Verification record
 
+## Secure coverage B3: anonymous SMB share metadata — 2 October 2026
+
+PR #39 merged as `79abaab` with all five final PR and post-merge checks passing;
+B2 SSH/LDAP remains accepted. B3 adds `smb_share_list_v1` using the actual installed
+`smbclient`, a finite anonymous IPC$/srvsvc fixture, and the existing secure
+network-tool execution and evidence path. [The runbook](smb-tools.md) records the
+exact invocation, runtime limits and owned-lab limitations. B3 remains pending
+review/merge; B4 RPC/NFS metadata is the next checklist gap.
+
+Normal and hostile-comment cases produce only the two reviewed share names/types.
+The native client returns identical footer-only output for valid empty listings,
+access denial and some malformed exchanges, sometimes with exit zero. These
+remain inconclusive; the parser requires both reviewed share rows and never uses
+the fixture label to infer success or absence. Stalled/partial/unknown output also
+cannot establish useful completion. Hostile comments remain bounded raw evidence
+and cannot select targets, tools or follow-up actions. This is a finite synthetic
+SMB2_02 enumeration profile, not a production SMB importer or file-access feature.
+
+The pinned native dependency closure requires a separate compact SMB manifest
+and larger staging-only limits. Existing B1/B2 manifests, workflow cards, fixture
+identities, runtime limits and policies remain unchanged. Native SMB keeps its
+256 MiB address-space bound, zero writable files, fixed destination filter and
+no-child/no-thread boundary. No real credential, host SMB runner, provider call,
+external target or paid service is involved.
+
+Private validation receipts are in `.secure-agent/smb-tools-20261002` in the
+primary checkout. Independent runtime/launcher and fixture/parser/evidence reviews
+found no blockers. Full validation and clean-source receipts are being finalized;
+this section will record their exact counts and revision before PR handoff.
+Automated grants do not claim human acceptance. Deeper workflows and comparative
+benchmarks remain deferred until B0–B8 meet G1–G6; model credentials, paid calls and
+live-model evaluation remain deferred until much later. R5/local R6 stay closed.
+
 ## Secure coverage B2: SSH host keys and LDAP RootDSE — 1 October 2026
 
 PR #38 was reviewed and merged at `5436dd6`; all five final PR and post-merge main

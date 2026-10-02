@@ -13,7 +13,7 @@ from types import MappingProxyType
 
 from .tool_parameters import (
     CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
-    OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters,
+    OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -51,10 +51,12 @@ DIG_TOOL_ID = "dig_dns_query_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
+SMB_TOOL_ID = "smb_share_list_v1"
 DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 LDAP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+SMB_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
@@ -181,6 +183,14 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "anonymous_rootdse_only",
          "fixed_attribute_list", "no_referral_following"),
+    ),
+    SMB_TOOL_ID: ToolAdapter(
+        SMB_TOOL_ID, SMBShareListParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "list_owned_fixture_smb_shares", "owned-smb-share-list-v1",
+        "bounded-smb-share-list-result-v1", "smb-share-list-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "anonymous_share_listing_only",
+         "no_file_share_access", "no_followup_to_metadata"),
     ),
 })
 SUPPORTED_TOOLS = tuple(ADAPTERS)

@@ -5,7 +5,8 @@ import struct
 CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
          "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled",
          "ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
-         "ldap-ok", "ldap-empty", "ldap-referral", "ldap-malformed", "ldap-stalled", "ldap-injected")
+         "ldap-ok", "ldap-empty", "ldap-referral", "ldap-malformed", "ldap-stalled", "ldap-injected",
+         "smb-ok", "smb-empty", "smb-denied", "smb-injected", "smb-malformed", "smb-stalled")
 VARIANTS = CASES
 FIXTURE_MARKER = "recon-harbordesk-network-tools-v1"
 TLS_NAME = "harbordesk.test"
@@ -27,7 +28,7 @@ def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
     return {"dig": "dig_dns_query_v1", "openssl": "openssl_tls_handshake_v1",
-            "ssh": "ssh_host_keys_v1", "ldap": "ldap_rootdse_v1"}[case.split("-", 1)[0]]
+            "ssh": "ssh_host_keys_v1", "ldap": "ldap_rootdse_v1", "smb": "smb_share_list_v1"}[case.split("-", 1)[0]]
 
 
 def dns_query(transaction_id=b"\x00\x00"):
@@ -71,3 +72,14 @@ LDAP_ATTRIBUTES = ("namingContexts", "supportedLDAPVersion", "supportedSASLMecha
 LDAP_VALUES = {"namingContexts": ("dc=harbordesk,dc=test",), "supportedLDAPVersion": ("3",),
                "supportedSASLMechanisms": ("PLAIN",), "vendorName": ("HarborDesk synthetic directory",)}
 LDAP_REFERRAL = "ldap://127.0.0.2:8080/"
+SMB_SHARES = (("PUBLIC", 0, "HarborDesk public metadata"), ("IPC$", 3, "IPC service"))
+
+
+def smb_shares(case):
+    if tool_for_case(case) != "smb_share_list_v1":
+        raise ValueError("invalid_network_tools_smb_case")
+    if case in ("smb-empty", "smb-denied"):
+        return ()
+    if case == "smb-injected":
+        return (("PUBLIC", 0, HOSTILE_NOTE), SMB_SHARES[1])
+    return SMB_SHARES
