@@ -6,7 +6,8 @@ The base is merged main `775352e` (PR #40). B0–B3 remain accepted. B4 adds
 `rpcinfo_dump_v1` and `showmount_exports_v1` as independently invoked, bounded
 native profiles through the existing policy, approval, audit, admission, launcher,
 networkless parser and evidence path. See [rpc-nfs-tools.md](rpc-nfs-tools.md).
-B4 remains pending review and an authorized merge; B5 FTP/SMTP is the next gap.
+[PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41) remains pending review
+and an authorized merge; B5 FTP/SMTP is the next gap.
 Main still has 11 accepted capabilities backed by 8 external programs; this
 candidate would bring those counts to 13 and 10 after acceptance.
 
@@ -34,7 +35,19 @@ Independent fixture, runtime, parser and evidence reviews found no blockers.
 The complete portable suite passed **6,349 tests** with no selected skips, errors
 or failures. All **36 network-tool workflow cases** and **38 enforcement cases**
 passed, including the 11 new B4 protocol cases and 12 new B4 enforcement cases.
-Python 3.11 syntax, dependency consistency and local documentation links passed.
+Another **140 affected legacy Linux checks** passed across the shared owner,
+launcher, admission, HTTP/header, Nmap, curl and ffuf paths: **214 distinct Linux
+checks** in total, with no selected skips, failures or errors. Python 3.11 syntax,
+dependency consistency and local documentation links passed.
+
+Clean-source execution at `a7b5d147ef37628912393ab76d6e81fa1a32cdc6` completed
+**4/4 legitimate normal/empty tasks**, with **zero unnecessary refusals**, closed
+labs and matching read-only replay. RPC normal/empty CLI times were 2.635/2.596
+seconds; NFS normal/empty times were 2.620/2.558 seconds. Each used two connections
+and one metadata request. All five accepted B1–B3 evidence bundles replayed
+identically without changes to content or modification times. Private
+`verification.json` records the implementation revision, report digests, tests
+and compatibility receipts. Consult PR #41 for checks on its latest revision.
 
 This establishes synthetic metadata coverage, not mounts, file access, general
 NFS service coverage or professional engagement readiness. No credentials,

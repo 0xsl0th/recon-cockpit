@@ -2,7 +2,8 @@
 
 B4 extends the [secure-tool coverage checklist](secure-tool-coverage.md) with two
 independently invoked native tools. It is implemented and remains pending
-review and an authorized merge. Both profiles reuse the existing policy, approval, audit,
+[review and an authorized merge in PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41).
+Both profiles reuse the existing policy, approval, audit,
 admission, confined launcher, networkless parser and private evidence path.
 
 | Capability | Fixed native action | Intended structured result |

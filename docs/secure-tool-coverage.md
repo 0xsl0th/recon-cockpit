@@ -11,7 +11,8 @@ Completed offline R5 and accepted local R6 remain closed.
 accepted B2 SSH/LDAP; its final and post-merge checks passed. Main now has
 **11 secure capabilities backed by 8 external programs** after [PR #40](https://github.com/0xsl0th/recon-cockpit/pull/40)
 accepted B3 anonymous SMB metadata at `775352e`, with final and post-merge checks
-passing. B4 RPC/NFS metadata is current; B5 FTP/SMTP follows it. B4 stays unaccepted
+passing. [PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41) contains B4 RPC/NFS
+metadata; B5 FTP/SMTP follows it. B4 stays unaccepted
 until actual execution, evidence, enforcement, review and an authorized merge
 complete all gates.
 
@@ -78,8 +79,8 @@ such and is not counted as accepted main coverage.
 | B2 | SSH host keys with ssh-keyscan | [x] Accepted in PR #39 | One fixed key type and endpoint; validate bounded key/fingerprint output; no login or trust-on-first-use claim. |
 | B2 | LDAP RootDSE with ldapsearch | [x] Accepted in PR #39 | Anonymous base query with fixed attributes; structured entries; referrals, arbitrary DNs and user enumeration disabled. |
 | B3 | SMB share metadata with smbclient | [x] Accepted in PR #40 | Actual anonymous finite listing and replay in the owned lab; native empty/denied/malformed ambiguity stays inconclusive. No credentials, file retrieval, writes or remote execution. |
-| B4 — current | RPC program metadata with rpcinfo | [ ] Implemented; review/merge pending | Real fixed TCP listing and explicit empty result replay in the owned lab; advertised ports remain metadata, with no follow-up. |
-| B4 — current | NFS export metadata with showmount | [ ] Implemented; review/merge pending | Real export/empty listing and replay; malformed/hostile groups stay inconclusive and unapproved discovered ports are blocked. No mounts or export reads. |
+| B4 — current | RPC program metadata with rpcinfo | [ ] Verified candidate in PR #41; review/merge pending | Real fixed TCP listing and explicit empty result replay in the owned lab; advertised ports remain metadata, with no follow-up. |
+| B4 — current | NFS export metadata with showmount | [ ] Verified candidate in PR #41; review/merge pending | Real export/empty listing and replay; malformed/hostile groups stay inconclusive and unapproved discovered ports are blocked. No mounts or export reads. |
 | B5 | Anonymous FTP listing with curl | [ ] Planned | Fixed passive control/data bounds and one finite listing; no uploads/downloads or unapproved passive destinations. |
 | B5 | SMTP advertised capabilities | [ ] Planned | Reviewed Nmap script closure or a narrow native adapter, selected when this batch starts; bounded banner/EHLO/QUIT, no message or account probing. |
 | B6 | Docker API metadata with curl | [ ] Planned | Fixed read-only health/version endpoints; bounded structured JSON; no container lifecycle, filesystem or command endpoints. |

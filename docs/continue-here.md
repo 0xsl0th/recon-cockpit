@@ -51,7 +51,7 @@ and malformed replies remain inconclusive. Private receipt:
 in the primary checkout. Main has 11 secure capabilities backed by 8 external
 programs; the broader coverage milestone remains open.
 
-**Current batch B4: RPC registrations and NFS export metadata, pending review.**
+**[PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41): B4 RPC/NFS metadata, pending review and merge.**
 Implementation is in `/tmp/recon-secure-rpc-nfs-coverage`, branch
 `feature/secure-rpc-nfs-coverage`, based on merged main `775352e`. The two
 independently invoked profiles use real `rpcinfo` and `showmount` through all
@@ -62,15 +62,18 @@ Malformed replies stay inconclusive; returned endpoints never expand permission.
 No mount, file access, credential, host-service fallback or external target exists.
 
 Independent runtime, fixture, parser and evidence reviews found no blockers.
-All 6,349 portable tests, 36 actual network-tool workflow cases and 38
-enforcement cases passed; affected legacy checks are being completed for the
-handoff.
+All 6,349 portable tests and 214 distinct Linux checks passed: 36 network-tool
+workflow cases, 38 enforcement cases and 140 affected legacy cases. Four
+clean-source trials at `a7b5d147ef37628912393ab76d6e81fa1a32cdc6` completed 4/4
+legitimate normal/empty tasks with zero unnecessary refusals, closed evidence
+and read-only replay. All five accepted B1–B3 evidence bundles replay unchanged.
+Local CLI elapsed times were 2.558–2.635 seconds; provider calls and cost were zero.
 B0–B3 cards, descriptors, specifications and limits remain unchanged. Private
 handoff and receipts: `.secure-agent/rpc-nfs-tools-20261002` in the primary checkout.
 Development failures stay separate from clean-source acceptance evidence.
 
-Leave the new PR ready for review; its merge requires a separate operator
-instruction. B4 is not yet accepted coverage. Main remains at 11 secure
+PR #41 is the review handoff. Recheck its latest revision and hosted checks
+before any merge; merging requires a separate operator instruction. B4 is not yet accepted coverage. Main remains at 11 secure
 capabilities backed by 8 programs; the candidate adds two of each. The checklist
 remains open through B5–B8, and completed offline milestones stay closed.
 
