@@ -54,6 +54,14 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert definition["rpc"]["filesystem"] is False and definition["rpc"]["mount"] is False
         assert definition["topology"] == [{"target": "127.0.0.1", "port": 111, "protocol": "onc_rpc_tcp"}]
         assert definition["request_count_means"] == ("validated_portmapper_dumps" if case.startswith("rpc-") else "validated_mount_exports")
+    elif case.startswith(("docker-ping-", "docker-version-", "winrm-")):
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["request_count_means"] == "validated_fixed_http_gets"
+        assert definition["http"]["method"] == "GET"
+        assert definition["http"]["path"] == fixture.HTTP_METADATA_PATHS[fixture.tool_for_case(case)]
+        assert all(definition["http"][key] is False for key in (
+            "request_body", "redirect_followup", "authentication", "soap", "backend",
+            "docker_socket", "container_operations", "remote_session"))
     elif case.startswith(("ftp-", "smtp-")):
         assert definition["max_connections"] == (2 if case.startswith("ftp-") else 1)
         assert definition["request_count_means"] == ("validated_nlst_commands" if case.startswith("ftp-") else "validated_ehlo_commands")

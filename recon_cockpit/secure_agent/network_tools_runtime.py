@@ -30,6 +30,9 @@ RPCINFO = "rpcinfo_dump_v1"
 SHOWMOUNT = "showmount_exports_v1"
 FTP = "curl_ftp_list_v1"
 SMTP = "curl_smtp_capabilities_v1"
+DOCKER_PING = "curl_docker_ping_v1"
+DOCKER_VERSION = "curl_docker_version_v1"
+WINRM = "curl_winrm_metadata_v1"
 # No UDP, IPv6, local sockets, host transport defaults or dynamic netids.
 RPC_NETCONFIG = b"tcp tpi_cots_ord v inet tcp - -\n"
 # The native clients resolve these service names even for a numeric host.
@@ -63,7 +66,8 @@ LIBRARY = re.compile(r"/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*\.
 EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
                SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch", SMB: "/usr/bin/smbclient",
                RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount",
-               FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl"}
+               FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl",
+               DOCKER_PING: "/usr/bin/curl", DOCKER_VERSION: "/usr/bin/curl", WINRM: "/usr/bin/curl"}
 FIXED_ARGV = {
     DIG: ("/tool/dig", "-r", "-4", "@127.0.0.1", "-p", "8080", "harbordesk.test.", "A",
           "+tcp", "+norecurse", "+tries=1", "+time=2", "+nosearch", "+noedns",
@@ -93,6 +97,21 @@ FIXED_ARGV = {
            "--connect-timeout", "1", "--max-time", "3", "--max-filesize", "8192", "--retry", "0",
            "--request", "QUIT", "--dump-header", "-", "--output", "/dev/null",
            "smtp://127.0.0.1:8080/reconlab"),
+    DOCKER_PING: ("/tool/curl", "--disable", "--silent", "--show-error", "--ipv4", "--globoff",
+           "--http1.1", "--proto", "=http", "--proto-redir", "=http", "--noproxy", "*", "--proxy", "",
+           "--connect-timeout", "1", "--max-time", "3", "--max-filesize", "8192", "--retry", "0",
+           "--max-redirs", "0", "--include", "--request", "GET", "--header", "Connection: close",
+           "--user-agent", "recon-cockpit-b6/1", "http://127.0.0.1:8080/_ping"),
+    DOCKER_VERSION: ("/tool/curl", "--disable", "--silent", "--show-error", "--ipv4", "--globoff",
+           "--http1.1", "--proto", "=http", "--proto-redir", "=http", "--noproxy", "*", "--proxy", "",
+           "--connect-timeout", "1", "--max-time", "3", "--max-filesize", "8192", "--retry", "0",
+           "--max-redirs", "0", "--include", "--request", "GET", "--header", "Connection: close",
+           "--user-agent", "recon-cockpit-b6/1", "http://127.0.0.1:8080/version"),
+    WINRM: ("/tool/curl", "--disable", "--silent", "--show-error", "--ipv4", "--globoff",
+           "--http1.1", "--proto", "=http", "--proto-redir", "=http", "--noproxy", "*", "--proxy", "",
+           "--connect-timeout", "1", "--max-time", "3", "--max-filesize", "8192", "--retry", "0",
+           "--max-redirs", "0", "--include", "--request", "GET", "--header", "Connection: close",
+           "--user-agent", "recon-cockpit-b6/1", "http://127.0.0.1:8080/wsman"),
 }
 MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
@@ -124,7 +143,7 @@ def _compiled(tool_id):
     if tool_id == DIG:
         # No host resolver, search list, or user configuration enters the tool.
         return "compiled:resolver", "/etc/resolv.conf", b"# fixed TCP nameserver supplied by reviewed argv\n"
-    if tool_id in (SSH, LDAP, FTP, SMTP):
+    if tool_id in (SSH, LDAP, FTP, SMTP, DOCKER_PING, DOCKER_VERSION, WINRM):
         return None  # These profiles need no configuration, credentials, or trust file.
     if tool_id == SMB:
         return "compiled:smb-config", "/tool/data/smb.conf", SMB_CONFIG

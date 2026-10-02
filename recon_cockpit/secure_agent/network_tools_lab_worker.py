@@ -16,6 +16,7 @@ if __package__:
     from . import network_tools_smb_fixture as smb_fixture
     from . import network_tools_rpc_fixture as rpc_fixture
     from . import network_tools_ftp_smtp_fixture as ftp_smtp_fixture
+    from . import network_tools_http_metadata_fixture as http_metadata_fixture
 else:
     def _load(name, filename):
         spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -29,6 +30,7 @@ else:
     smb_fixture = _load("network_tools_fixed_smb", "network_tools_smb_fixture.py")
     rpc_fixture = _load("network_tools_fixed_rpc", "network_tools_rpc_fixture.py")
     ftp_smtp_fixture = _load("network_tools_fixed_ftp_smtp", "network_tools_ftp_smtp_fixture.py")
+    http_metadata_fixture = _load("network_tools_fixed_http_metadata", "network_tools_http_metadata_fixture.py")
 
 
 def read_request(source):
@@ -224,16 +226,19 @@ class NetworkToolsService(owner.Service):
                 if self.rpc is not None and self.connections >= rpc_fixture.MAX_CONNECTIONS:
                     raw.close()
                     raise RuntimeError("rpc_fixture_connection_limit")
-                if self.case.startswith(("ftp-", "smtp-")) and self.connections:
+                if self.case.startswith(("ftp-", "smtp-", "docker-ping-", "docker-version-", "winrm-")) and self.connections:
                     raw.close()
-                    raise RuntimeError("ftp_smtp_fixture_connection_limit")
+                    raise RuntimeError("single_metadata_fixture_connection_limit")
                 with self.condition:
                     self.connections += 1
                     self.condition.notify_all()
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.case.startswith("ftp-"):
+                    if self.case.startswith(("docker-ping-", "docker-version-", "winrm-")):
+                        http_metadata_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            on_request=self._smb_enumerated)
+                    elif self.case.startswith("ftp-"):
                         ftp_smtp_fixture.serve_ftp(connection, self.listener, case=self.case,
                             deadline=self.deadline, on_listing=self._smb_enumerated,
                             on_data_connection=self._ftp_data_connected)

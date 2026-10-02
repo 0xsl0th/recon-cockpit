@@ -44,6 +44,14 @@ NETWORK_TOOL_CASES = {
                     'ftp-stalled', 'ftp-passive-ip', 'ftp-passive-port'), 'curl_ftp_list_v1'),
     **dict.fromkeys(('smtp-ok', 'smtp-empty', 'smtp-injected', 'smtp-malformed',
                     'smtp-rejected', 'smtp-stalled'), 'curl_smtp_capabilities_v1'),
+    **dict.fromkeys(('docker-ping-ok', 'docker-ping-unavailable', 'docker-ping-injected',
+                    'docker-ping-malformed', 'docker-ping-stalled', 'docker-ping-redirect-ip',
+                    'docker-ping-redirect-port'), 'curl_docker_ping_v1'),
+    **dict.fromkeys(('docker-version-ok', 'docker-version-empty', 'docker-version-injected',
+                    'docker-version-malformed', 'docker-version-stalled', 'docker-version-redirect-ip',
+                    'docker-version-redirect-port'), 'curl_docker_version_v1'),
+    **dict.fromkeys(('winrm-ok', 'winrm-no-auth', 'winrm-injected', 'winrm-malformed',
+                    'winrm-stalled', 'winrm-redirect-ip', 'winrm-redirect-port'), 'curl_winrm_metadata_v1'),
 }
 
 

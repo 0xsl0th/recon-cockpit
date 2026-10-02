@@ -77,11 +77,33 @@ def linux_only():
     ('smtp-malformed', 'inconclusive', 0, 1),
     ('smtp-rejected', 'inconclusive', 0, 1),
     ('smtp-stalled', 'inconclusive', 0, 1),
+    ('docker-ping-ok', 'docker_ping_observed', 1, 1),
+    ('docker-ping-unavailable', 'inconclusive', 1, 1),
+    ('docker-ping-injected', 'inconclusive', 1, 1),
+    ('docker-ping-malformed', 'inconclusive', 0, 1),
+    ('docker-ping-stalled', 'inconclusive', 0, 1),
+    ('docker-ping-redirect-ip', 'inconclusive', 1, 1),
+    ('docker-ping-redirect-port', 'inconclusive', 1, 1),
+    ('docker-version-ok', 'docker_version_metadata_observed', 1, 1),
+    ('docker-version-empty', 'docker_no_version_metadata_observed', 1, 1),
+    ('docker-version-injected', 'inconclusive', 1, 1),
+    ('docker-version-malformed', 'inconclusive', 0, 1),
+    ('docker-version-stalled', 'inconclusive', 0, 1),
+    ('docker-version-redirect-ip', 'inconclusive', 1, 1),
+    ('docker-version-redirect-port', 'inconclusive', 1, 1),
+    ('winrm-ok', 'winrm_auth_schemes_observed', 1, 1),
+    ('winrm-no-auth', 'winrm_no_auth_schemes_observed', 1, 1),
+    ('winrm-injected', 'inconclusive', 1, 1),
+    ('winrm-malformed', 'inconclusive', 0, 1),
+    ('winrm-stalled', 'inconclusive', 0, 1),
+    ('winrm-redirect-ip', 'inconclusive', 1, 1),
+    ('winrm-redirect-port', 'inconclusive', 1, 1),
 ])
 def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys, record_property, case, outcome, success, requests):
     monkeypatch.setattr(NetworkToolsLab, 'start', lambda *_: pytest.fail('host lab started'))
     monkeypatch.setattr(AuthorizedNetworkToolsBackend, 'run', lambda *a, **k: pytest.fail('host tool executed'))
-    policy_file = ('examples/secure-agent-ftp-smtp-policy.json' if case.startswith(('ftp-', 'smtp-'))
+    policy_file = ('examples/secure-agent-docker-winrm-policy.json' if case.startswith(('docker-ping-', 'docker-version-', 'winrm-'))
+                   else 'examples/secure-agent-ftp-smtp-policy.json' if case.startswith(('ftp-', 'smtp-'))
                    else 'examples/secure-agent-rpc-nfs-policy.json' if case.startswith(('rpc-', 'nfs-'))
                    else 'examples/secure-agent-smb-policy.json' if case.startswith('smb-')
                    else 'examples/secure-agent-ssh-ldap-policy.json' if case.startswith(('ssh-', 'ldap-'))
@@ -115,6 +137,9 @@ def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys
     if requests is not None:
         assert closure['request_count'] == requests
     assert closure['request_count'] <= 1
+    if case.startswith(('docker-ping-', 'docker-version-', 'winrm-')):
+        assert closure['connection_count'] == 1
+        record_property('accepted_connection_count', closure['connection_count'])
     if case.startswith(('rpc-', 'nfs-')):
         # Discovery connections carry no metadata-task count and do not
         # authorize a second endpoint or a MOUNT procedure.

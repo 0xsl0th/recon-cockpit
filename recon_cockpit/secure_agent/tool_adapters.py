@@ -15,6 +15,7 @@ from .tool_parameters import (
     CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
     OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
+    CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -57,6 +58,9 @@ RPCINFO_TOOL_ID = "rpcinfo_dump_v1"
 SHOWMOUNT_TOOL_ID = "showmount_exports_v1"
 FTP_TOOL_ID = "curl_ftp_list_v1"
 SMTP_TOOL_ID = "curl_smtp_capabilities_v1"
+DOCKER_PING_TOOL_ID = "curl_docker_ping_v1"
+DOCKER_VERSION_TOOL_ID = "curl_docker_version_v1"
+WINRM_TOOL_ID = "curl_winrm_metadata_v1"
 DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -66,6 +70,9 @@ RPCINFO_PARAMETERS = MappingProxyType({"port": 111, "timeout_seconds": 5, "max_o
 SHOWMOUNT_PARAMETERS = MappingProxyType({"port": 111, "timeout_seconds": 5, "max_output_bytes": 8192})
 FTP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SMTP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+DOCKER_PING_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+DOCKER_VERSION_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+WINRM_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
@@ -232,6 +239,33 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
          "capability_metadata_only", "no_authentication", "no_mail_submission"),
+    ),
+    DOCKER_PING_TOOL_ID: ToolAdapter(
+        DOCKER_PING_TOOL_ID, CurlDockerPingParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_fixture_docker_ping", "owned-curl-docker-ping-v1",
+        "bounded-curl-docker-ping-result-v1", "curl-docker-ping-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
+         "fixed_metadata_get_only", "no_authentication", "no_redirect_following",
+         "no_daemon_or_wsman_operations", "no_followup_to_metadata"),
+    ),
+    DOCKER_VERSION_TOOL_ID: ToolAdapter(
+        DOCKER_VERSION_TOOL_ID, CurlDockerVersionParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "read_owned_fixture_docker_version", "owned-curl-docker-version-v1",
+        "bounded-curl-docker-version-result-v1", "curl-docker-version-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
+         "fixed_metadata_get_only", "no_authentication", "no_redirect_following",
+         "no_daemon_or_wsman_operations", "no_followup_to_metadata"),
+    ),
+    WINRM_TOOL_ID: ToolAdapter(
+        WINRM_TOOL_ID, CurlWinRMMetadataParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_fixture_winrm_metadata", "owned-curl-winrm-metadata-v1",
+        "bounded-curl-winrm-metadata-result-v1", "curl-winrm-metadata-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
+         "fixed_metadata_get_only", "no_authentication", "no_redirect_following",
+         "no_daemon_or_wsman_operations", "no_followup_to_metadata"),
     ),
 })
 SUPPORTED_TOOLS = tuple(ADAPTERS)

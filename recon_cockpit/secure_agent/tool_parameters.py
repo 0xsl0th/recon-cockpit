@@ -184,3 +184,18 @@ class CurlFTPListParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class CurlSMTPCapabilitiesParameters(TCPParameters):
     """Bounds for one fixed SMTP capability query, without authentication or mail."""
+
+
+@dataclass(frozen=True, slots=True)
+class CurlDockerPingParameters(TCPParameters):
+    """Bounds for the fixed unauthenticated Docker-compatible ping request."""
+
+
+@dataclass(frozen=True, slots=True)
+class CurlDockerVersionParameters(TCPParameters):
+    """Bounds for fixed advertised version metadata without daemon control."""
+
+
+@dataclass(frozen=True, slots=True)
+class CurlWinRMMetadataParameters(TCPParameters):
+    """Bounds for one unauthenticated metadata GET, without WS-Man operations."""

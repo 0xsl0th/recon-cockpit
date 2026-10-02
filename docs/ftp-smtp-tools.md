@@ -2,7 +2,7 @@
 
 B5 extends the [secure-tool coverage checklist](secure-tool-coverage.md) with two
 independently invoked curl profiles. Implementation and owned-lab validation are
-complete; [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42) remains pending review and an authorized merge.
+complete; [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42) was reviewed and merged as `38cbd43`. B5 is accepted within the bounded scope below.
 Both profiles reuse policy, approval, audit, admission, the confined native
 launcher, networkless parsing and private evidence replay.
 

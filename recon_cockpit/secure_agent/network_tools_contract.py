@@ -15,6 +15,8 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             SMB_TOOL_ID, SMB_PARAMETERS, RPCINFO_TOOL_ID, SHOWMOUNT_TOOL_ID,
                             RPCINFO_PARAMETERS, SHOWMOUNT_PARAMETERS,
                             FTP_TOOL_ID, SMTP_TOOL_ID, FTP_PARAMETERS, SMTP_PARAMETERS,
+                            DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID,
+                            DOCKER_PING_PARAMETERS, DOCKER_VERSION_PARAMETERS, WINRM_PARAMETERS,
                             NETWORK_TOOLS_LIMITS, get_adapter)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
                                      validate_identity)
@@ -30,10 +32,13 @@ PARAMETERS.update({SSH_TOOL_ID: dict(SSH_PARAMETERS), LDAP_TOOL_ID: dict(LDAP_PA
 PARAMETERS[SMB_TOOL_ID] = dict(SMB_PARAMETERS)
 PARAMETERS.update({RPCINFO_TOOL_ID: dict(RPCINFO_PARAMETERS), SHOWMOUNT_TOOL_ID: dict(SHOWMOUNT_PARAMETERS)})
 PARAMETERS.update({FTP_TOOL_ID: dict(FTP_PARAMETERS), SMTP_TOOL_ID: dict(SMTP_PARAMETERS)})
+PARAMETERS.update({DOCKER_PING_TOOL_ID: dict(DOCKER_PING_PARAMETERS),
+                   DOCKER_VERSION_TOOL_ID: dict(DOCKER_VERSION_PARAMETERS), WINRM_TOOL_ID: dict(WINRM_PARAMETERS)})
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
-    FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1"}
+    FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1", DOCKER_PING_TOOL_ID: "curl-docker-ping-v1",
+    DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1"}
 B1_CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
             "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled")
 B2_CASES = ("ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
@@ -44,6 +49,9 @@ B4_CASES = ("rpc-ok", "rpc-empty", "rpc-injected", "rpc-malformed", "rpc-stalled
 B5_CASES = ("ftp-ok", "ftp-empty", "ftp-denied", "ftp-injected", "ftp-malformed", "ftp-stalled",
             "ftp-passive-ip", "ftp-passive-port", "smtp-ok", "smtp-empty", "smtp-injected",
             "smtp-malformed", "smtp-rejected", "smtp-stalled")
+B6_CASES = tuple("docker-ping-" + suffix for suffix in ("ok", "unavailable", "injected", "malformed", "stalled", "redirect-ip", "redirect-port")) + tuple(
+    "docker-version-" + suffix for suffix in ("ok", "empty", "injected", "malformed", "stalled", "redirect-ip", "redirect-port")) + tuple(
+    "winrm-" + suffix for suffix in ("ok", "no-auth", "injected", "malformed", "stalled", "redirect-ip", "redirect-port"))
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -75,8 +83,20 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in B6_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(tool).to_dict() for tool in (DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID)],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "http": {"method": "GET", "paths": {DOCKER_PING_TOOL_ID: "/_ping",
+                DOCKER_VERSION_TOOL_ID: "/version", WINRM_TOOL_ID: "/wsman"}, "redirects": False,
+                "authentication": False, "metadata_followup": False},
+            "docker": {"advertised_metadata_only": True, "daemon_identity_verified": False, "daemon_control": False},
+            "winrm": {"advertised_schemes_only": True, "service_identity_verified": False,
+                "authentication_verified": False, "wsman_operations": False},
+            "parser_versions": {tool: PARSER_VERSIONS[tool] for tool in (DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID)}}
     if case in B5_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(tool).to_dict() for tool in (FTP_TOOL_ID, SMTP_TOOL_ID)],
@@ -216,6 +236,14 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == DOCKER_PING_TOOL_ID:
+        return _observation(tool_id, "docker_ping_observed", "docker_ping_observed", normalized)
+    if tool_id == DOCKER_VERSION_TOOL_ID:
+        reason = "docker_version_metadata_observed" if normalized["metadata"] else "docker_no_version_metadata_observed"
+        return _observation(tool_id, reason, reason, normalized)
+    if tool_id == WINRM_TOOL_ID:
+        reason = "winrm_auth_schemes_observed" if normalized["auth_schemes"] else "winrm_no_auth_schemes_observed"
+        return _observation(tool_id, reason, reason, normalized)
     if tool_id == FTP_TOOL_ID:
         reason = "ftp_names_observed" if normalized["entries"] else "ftp_empty_listing_observed"
         return _observation(tool_id, reason, reason, normalized)

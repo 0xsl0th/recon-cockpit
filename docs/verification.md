@@ -1,5 +1,84 @@
 # Verification record
 
+## Secure coverage B6: Docker health/version and WinRM endpoint metadata — 2 October 2026
+
+PR #42 was reviewed and merged as `38cbd43`; all five final PR checks and all
+five post-merge main checks passed. The merge tree exactly matches reviewed head
+`b682b3c`. Fresh runtime/fixture and parser/evidence reviews passed 549 and 641
+focused tests, validated all four B5 artifacts and replayed nine prior bundles
+unchanged. Keep B0–B5 accepted. B6 implements three independently invoked curl
+profiles: `curl_docker_ping_v1`, `curl_docker_version_v1` and
+`curl_winrm_metadata_v1`. See [docker-winrm-tools.md](docker-winrm-tools.md).
+Main remains at 15 accepted secure capabilities backed by 10 external programs;
+accepting B6 would bring those counts to 18 and 10. B6 still requires PR review
+and an authorized merge.
+
+Each profile fixes one HTTP/1.1 GET to `127.0.0.1:8080`: `/_ping`, `/version` or
+`/wsman`. The two Docker endpoints are separate capabilities, preserving the
+single-request/action contract. Policy must explicitly allow GET as well as the
+fixed tool, target and port. Curl imports no host configuration or credential,
+uses no proxy or retry and does not follow redirects. No Docker socket, daemon,
+container backend, SOAP implementation, authentication exchange or remote session
+exists in the owned fixture. Native memory/process/file/network limits remain
+unchanged.
+
+Actual curl preserves complete response framing on stdout with empty stderr in
+normal cases. Ping returns HTTP 200 and `OK`; version returns bounded JSON fields.
+A complete empty JSON object establishes only that this response has no reviewed
+version fields. WinRM's HTTP 401 advertises Negotiate/NTLM without attempting
+login; its HTTP 405 response with no challenges does not prove authentication is
+disabled. All useful cases use one accepted connection and one validated GET.
+The closed response shapes establish synthetic endpoint metadata, not genuine
+Docker/WinRM identification, general service compatibility or professional
+engagement readiness.
+
+All six forbidden-IP/port redirect scenarios retain raw HTTP 302 evidence and
+remain inconclusive; curl never follows them, and the forbidden witnesses receive
+no connection. These are client redirect-refusal checks, separate from the native
+kernel destination witnesses. Hostile metadata cannot grant authority or become a
+finding. Failed, malformed, stalled and truncated output cannot invent useful
+results or absence; zero process exit alone is insufficient. Real oversized-header
+capture, cancellation, fresh-grant consumption/replay denial, missing-proof
+refusal, private-file isolation and teardown were exercised for all three profiles.
+
+Two implementation findings were resolved before handoff. Initial native attempts
+failed closed before tool execution because the owner-only fixture imported its
+sibling by name under isolated Python. It now uses the existing explicit file-loader
+pattern, with a portable `python -I -S` regression outside the repository. Final
+review also required the B6 fixed GETs to honor the policy method list, matching
+existing ffuf behavior: empty/HEAD-only policies deny and POST-only remains invalid.
+Recomputed launch commitments without GET also deny. Independent runtime/fixture,
+parser/evidence and final policy reviews found no remaining blockers. All 50
+B1–B5 specifications, cards, descriptors and actions remain byte-identical.
+
+The native suite passed **71 network workflow**, **64 network enforcement** and
+**140 affected legacy** checks: **275 distinct selected Linux checks**, with no
+selected skips, failures or errors. All **36 B6 cases** (21 protocol and 15
+enforcement) were rerun successfully after the explicit-GET policy change; these
+are repeats within the 275, not extra distinct tests. Legacy checks cover the
+shared owner/admission/launcher and existing HTTP/header, Nmap, curl and ffuf paths.
+The complete final-source portable suite passed **7,444 tests** without selected
+skips, failures or errors; its receipt is `validation/portable-final.xml`. The
+earlier pre-policy-tightening run is retained separately. Python 3.11 syntax,
+dependency consistency, local documentation links and whitespace checks passed.
+
+Private receipts are under `.secure-agent/docker-winrm-tools-20261002` in the
+primary checkout. JUnit files are in `validation`; `linux-validation-summary.json`
+records counts, digests and timings. Initial failed bootstrap captures remain
+under `debug` and are not acceptance evidence. Hosted checks must pass on the
+latest PR revision before a later authorized merge. Automated test grants are
+synthetic validation, not human approval or local-release acceptance. Provider
+calls and actual provider cost remain zero. Descriptive CLI elapsed times are
+not comparative security overhead measurements.
+
+B7 bounded Nmap service identification is next because the accepted TCP-only
+profile does not identify a service; review and pin its finite probe/NSE behavior
+before enabling it. B8 synthetic Kerberos enumeration and its owned KDC follow.
+Deeper workflows and comparative benchmarking stay deferred until required
+coverage is complete. Model credentials, paid calls and live-model evaluation
+remain deferred until much later. Offline R5/local R6 and the separate proposal/PDF
+remain closed.
+
 ## Secure coverage B5: anonymous FTP listing and SMTP capabilities — 2 October 2026
 
 PR #41 was reviewed and merged as `6623aa0`; its five final PR checks and five

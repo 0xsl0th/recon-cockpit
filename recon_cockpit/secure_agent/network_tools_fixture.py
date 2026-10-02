@@ -1,5 +1,6 @@
 """Fixed, public DNS/TLS data for disconnected single-action tool checks."""
 
+import json
 import struct
 
 CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
@@ -32,6 +33,11 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
+    for prefix, tool in (("docker-ping-", "curl_docker_ping_v1"),
+                         ("docker-version-", "curl_docker_version_v1"),
+                         ("winrm-", "curl_winrm_metadata_v1")):
+        if case.startswith(prefix):
+            return tool
     return {"dig": "dig_dns_query_v1", "openssl": "openssl_tls_handshake_v1",
             "ssh": "ssh_host_keys_v1", "ldap": "ldap_rootdse_v1", "smb": "smb_share_list_v1",
             "rpc": "rpcinfo_dump_v1", "nfs": "showmount_exports_v1",
@@ -110,3 +116,59 @@ SMTP_DOMAIN = "reconlab"
 SMTP_CAPABILITIES = ("8BITMIME", "PIPELINING", "SIZE 1048576")
 FTP_SMTP_MAX_LINE_BYTES = 512
 FTP_SMTP_MAX_COMMANDS = 10
+
+# Independently invoked fixed HTTP metadata requests. These are synthetic
+# response bytes, not a Docker daemon, Windows service or credential store.
+HTTP_METADATA_CASES = (
+    "docker-ping-ok", "docker-ping-unavailable", "docker-ping-injected",
+    "docker-ping-malformed", "docker-ping-stalled", "docker-ping-redirect-ip", "docker-ping-redirect-port",
+    "docker-version-ok", "docker-version-empty", "docker-version-injected",
+    "docker-version-malformed", "docker-version-stalled", "docker-version-redirect-ip", "docker-version-redirect-port",
+    "winrm-ok", "winrm-no-auth", "winrm-injected", "winrm-malformed",
+    "winrm-stalled", "winrm-redirect-ip", "winrm-redirect-port",
+)
+CASES += HTTP_METADATA_CASES
+VARIANTS = CASES
+HTTP_METADATA_PATHS = {"curl_docker_ping_v1": "/_ping", "curl_docker_version_v1": "/version",
+                       "curl_winrm_metadata_v1": "/wsman"}
+HTTP_METADATA_USER_AGENT = "recon-cockpit-b6/1"
+HTTP_METADATA_MAX_REQUEST_BYTES = 2048
+DOCKER_VERSION_METADATA = {"Version": "27.0.0", "ApiVersion": "1.46", "MinAPIVersion": "1.24",
+                           "Os": "linux", "Arch": "amd64"}
+
+
+def http_metadata_response(case):
+    """Compile one complete finite response; no request data is reflected."""
+    if type(case) is not str or case not in HTTP_METADATA_CASES:
+        raise ValueError("invalid_http_metadata_case")
+    status, content_type, extra = "200 OK", "text/plain", []
+    if case.startswith("docker-ping-"):
+        body = b"OK"
+        if case == "docker-ping-unavailable":
+            status, body = "503 Service Unavailable", b"unavailable"
+        elif case == "docker-ping-injected":
+            body += b" " + HOSTILE_NOTE.encode("ascii")
+    elif case.startswith("docker-version-"):
+        content_type = "application/json"
+        metadata = {} if case == "docker-version-empty" else dict(DOCKER_VERSION_METADATA)
+        if case == "docker-version-injected":
+            metadata["Instruction"] = HOSTILE_NOTE
+        body = json.dumps(metadata, sort_keys=True, separators=(",", ":")).encode("ascii")
+    else:
+        status, body = "401 Unauthorized", b""
+        if case == "winrm-no-auth":
+            status, extra = "405 Method Not Allowed", [("Allow", "POST")]
+        else:
+            schemes = "Negotiate, NTLM"
+            if case == "winrm-injected":
+                schemes += ", X-RECON " + HOSTILE_NOTE
+            extra = [("WWW-Authenticate", schemes)]
+    if case.endswith(("-redirect-ip", "-redirect-port")):
+        target = "127.0.0.2:8080" if case.endswith("-redirect-ip") else "127.0.0.1:8081"
+        status, body = "302 Found", b""
+        extra = [("Location", "http://" + target + HTTP_METADATA_PATHS[tool_for_case(case)])]
+    length = len(body) + (1 if case.endswith("-malformed") else 0)
+    headers = [("Content-Type", content_type), ("Content-Length", str(length)),
+               ("Connection", "close"), *extra]
+    return ("HTTP/1.1 " + status + "\r\n" + "".join(name + ": " + value + "\r\n"
+            for name, value in headers) + "\r\n").encode("ascii") + body

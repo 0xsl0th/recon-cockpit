@@ -63,7 +63,8 @@ class _FixedProposal:
 @pytest.mark.parametrize("case,binary", [("openssl-stalled", b"/tool/openssl"), ("dig-stalled", b"/tool/dig"),
     ("ssh-stalled", b"/tool/ssh-keyscan"), ("ldap-stalled", b"/tool/ldapsearch"), ("smb-stalled", b"/tool/smbclient"),
     ("rpc-stalled", b"/tool/rpcinfo"), ("nfs-stalled", b"/tool/showmount"),
-    ("ftp-stalled", b"/tool/curl"), ("smtp-stalled", b"/tool/curl")])
+    ("ftp-stalled", b"/tool/curl"), ("smtp-stalled", b"/tool/curl"),
+    ("docker-ping-stalled", b"/tool/curl"), ("docker-version-stalled", b"/tool/curl"), ("winrm-stalled", b"/tool/curl")])
 def test_cancellation_after_actual_exec_reaps_tree_and_retains_authority_reservation(tmp_path, case, binary):
     setup = ExecutionControl(time.monotonic() + 40)
     observed = set()
@@ -150,9 +151,17 @@ def _oversized_subject_certificate():
     return b"-----BEGIN CERTIFICATE-----\n" + b"\n".join(encoded[i:i + 64] for i in range(0, len(encoded), 64)) + b"\n-----END CERTIFICATE-----\n"
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-untrusted", "ldap-injected", "smb-injected", "rpc-injected", "nfs-injected", "ftp-injected", "smtp-injected"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-untrusted", "ldap-injected", "smb-injected", "rpc-injected", "nfs-injected", "ftp-injected", "smtp-injected",
+    "docker-ping-injected", "docker-version-injected", "winrm-injected"])
 def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path, monkeypatch, case):
     def oversized(source):
+        if case.startswith(("docker-ping-", "docker-version-", "winrm-")):
+            original = "payload = fixture.http_metadata_response(case)"
+            assert source.count(original) == 1
+            # Pressure retained headers while keeping the declared body below
+            # curl's independent max-filesize limit. No argv/scope change.
+            return source.replace(original, original + '\n    payload = payload.replace(b"\\r\\n\\r\\n", '
+                'b"\\r\\nX-Pressure: " + b"X" * 12000 + b"\\r\\n\\r\\n", 1)')
         if case in {"ftp-injected", "smtp-injected"}:
             original = ('names += (fixture.HOSTILE_NOTE,)' if case == "ftp-injected"
                         else 'lines += ("X-RECON " + fixture.HOSTILE_NOTE,)')
@@ -225,7 +234,8 @@ def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path,
         assert source.count(original) == 1
         cert = _oversized_subject_certificate()
         return source.replace(original, 'cert = ' + repr(cert) + "\n    expected = hashlib.sha256(cert).hexdigest()\n    " + original)
-    instrument(tmp_path, monkeypatch, oversized, name=("network_tools_ftp_smtp_fixture" if case.startswith(("ftp-", "smtp-"))
+    instrument(tmp_path, monkeypatch, oversized, name=("network_tools_http_metadata_fixture" if case.startswith(("docker-ping-", "docker-version-", "winrm-"))
+                                                      else "network_tools_ftp_smtp_fixture" if case.startswith(("ftp-", "smtp-"))
                                                       else "network_tools_rpc_fixture" if case.startswith(("rpc-", "nfs-"))
                                                       else "network_tools_smb_fixture" if case == "smb-injected"
                                                       else "network_tools_lab_worker"))
@@ -269,7 +279,8 @@ def test_actual_tool_oversized_output_is_truncated_without_observation(tmp_path,
     assert [event["execution_status"] for event in events if event["event_type"] == "execution_finished"] == ["output_limit"]
 
 
-@pytest.mark.parametrize("case", ["openssl-ok", "dig-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok"])
+@pytest.mark.parametrize("case", ["openssl-ok", "dig-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok",
+    "docker-ping-ok", "docker-version-ok", "winrm-ok"])
 def test_tool_cannot_read_host_canary_bootstrap_source_or_authority_descriptors(tmp_path, monkeypatch, case):
     canary = tmp_path / "private-host-canary"
     secret = "NETWORK-TOOLS-PRIVATE-CANARY-ONLY"

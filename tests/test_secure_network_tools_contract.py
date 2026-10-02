@@ -12,7 +12,8 @@ from recon_cockpit.secure_agent import network_tools_parser as parser
 from recon_cockpit.secure_agent import network_tools_runtime as runtime
 from recon_cockpit.secure_agent.models import (DigDNSParameters, OpenSSLTLSParameters,
     SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters, RPCInfoDumpParameters, ShowmountExportsParameters,
-    CurlFTPListParameters, CurlSMTPCapabilitiesParameters, ValidationError, parse_action, parse_policy)
+    CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
+    CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, ValidationError, parse_action, parse_policy)
 from recon_cockpit.secure_agent.tool_adapters import LEGACY_PROPOSAL_PROFILE, NMAP_PROPOSAL_PROFILE, proposal_tools
 from recon_cockpit.secure_agent.network_tools_fixture import CA_PEM, QUERY_NAME, TLS_NAME
 from recon_cockpit.secure_agent.network_tools_lab_contract import identity
@@ -64,16 +65,22 @@ def test_case_selects_exact_typed_single_action_and_existing_policy_gates(case):
                 "ssh": contract.SSH_TOOL_ID, "ldap": contract.LDAP_TOOL_ID,
                 "smb": contract.SMB_TOOL_ID, "rpc": contract.RPCINFO_TOOL_ID,
                 "nfs": contract.SHOWMOUNT_TOOL_ID, "ftp": contract.FTP_TOOL_ID,
-                "smtp": contract.SMTP_TOOL_ID}[case.split("-")[0]]
+                "smtp": contract.SMTP_TOOL_ID, "winrm": contract.WINRM_TOOL_ID,
+                "docker": contract.DOCKER_PING_TOOL_ID if case.startswith("docker-ping-") else contract.DOCKER_VERSION_TOOL_ID}[case.split("-")[0]]
     assert action.tool_id == expected and action.target == "127.0.0.1"
     assert type(action.parameters) is {contract.DIG_TOOL_ID: DigDNSParameters,
         contract.OPENSSL_TOOL_ID: OpenSSLTLSParameters, contract.SSH_TOOL_ID: SSHHostKeysParameters,
         contract.LDAP_TOOL_ID: LDAPRootDSEParameters, contract.SMB_TOOL_ID: SMBShareListParameters,
         contract.RPCINFO_TOOL_ID: RPCInfoDumpParameters, contract.SHOWMOUNT_TOOL_ID: ShowmountExportsParameters,
-        contract.FTP_TOOL_ID: CurlFTPListParameters, contract.SMTP_TOOL_ID: CurlSMTPCapabilitiesParameters}[expected]
+        contract.FTP_TOOL_ID: CurlFTPListParameters, contract.SMTP_TOOL_ID: CurlSMTPCapabilitiesParameters,
+        contract.DOCKER_PING_TOOL_ID: CurlDockerPingParameters, contract.DOCKER_VERSION_TOOL_ID: CurlDockerVersionParameters,
+        contract.WINRM_TOOL_ID: CurlWinRMMetadataParameters}[expected]
     assert contract.profile_allows(action, case)
     assert policy().evaluate(action).decision == "approval_required"
-    assert policy(allowed_methods=[]).evaluate(action).decision == "approval_required"
+    if case in contract.B6_CASES:
+        assert policy(allowed_methods=[]).evaluate(action).reasons == ("method_not_allowed",)
+    else:
+        assert policy(allowed_methods=[]).evaluate(action).decision == "approval_required"
     assert policy(allowed_ports=[]).evaluate(action).reasons == ("port_not_allowed",)
     assert contract.LIMITS == {"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192}
     with pytest.raises(ValueError):
