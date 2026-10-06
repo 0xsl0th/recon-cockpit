@@ -1,4 +1,4 @@
-"""Trusted, lazy client for fixed Linux terminal review and opaque grants."""
+"""Trusted, lazy client for fixed Linux review workers and opaque grants."""
 
 import array
 import os
@@ -25,13 +25,17 @@ def _open_terminal():
 class LinuxApprovalService:
     """One immutable session, no issue/reset/reconnect or local fallback.
 
-    Construction is inert. Only the trusted UI's first review opens /dev/tty
-    and starts the fixed worker. The worker owns all grant state and input.
+    Construction is inert. The first review starts the fixed selected worker:
+    the terminal frontend opens /dev/tty, while graphical_v1 owns a local window.
+    Each worker owns all grant state and input; neither frontend has an answer RPC.
     """
 
-    def __init__(self, policy, session_id, *, launch_witness=False):
+    def __init__(self, policy, session_id, *, launch_witness=False, frontend='terminal'):
         if type(launch_witness) is not bool:
             raise ValueError('invalid_approval_witness_mode')
+        if type(frontend) is not str or frontend not in {'terminal', 'graphical_v1'}:
+            raise ValueError('invalid_approval_frontend')
+        self._frontend = frontend
         self._launch_witness = launch_witness
         self._witness_writer = None
         self._witness_taken = False
@@ -112,6 +116,10 @@ class LinuxApprovalService:
         if control.remaining() > protocol.MAX_LIFETIME:
             raise ApprovalUnavailable('approval_lifetime_limit')
         self._control = control
+        if self._frontend == 'graphical_v1':
+            from .graphical_approval_isolation import start
+            start(self, control)
+            return
         LinuxIsolatedMockProvider().check_available()
         stdlib, files = _runtime_files('/usr/bin/python3', None, control=control)
         self._supervisor = _Supervisor(10, 65536, control=control)

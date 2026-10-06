@@ -81,10 +81,12 @@ action. It does not display mock online agents, signing claims, vulnerabilities
 inferred from product versions, or invented cost. Known recorded zero is distinct
 from an unavailable metric.
 
-The next step is the separately reviewed [exact-action approval channel](desktop-approval-plan.md)
-before enabling actual desktop execution. Keep the [shared service](shared-assessment-service.md)
-and isolated authority as the execution path; no widget command or tool output
-becomes an execution request. New secure-tool batches follow the GUI milestone.
+The separate [exact-action reviewer](graphical-approvals.md) is implemented for
+review, with an opt-in owned-fixture walkthrough entry point. Its implementation
+review and personal approval/denial/cancellation walkthrough precede a desktop
+Execute control. Keep the [shared service](shared-assessment-service.md) and
+isolated authority as the execution path; no widget command or tool output becomes
+an execution request. New secure-tool batches follow the GUI milestone.
 
 Model credentials, paid calls and live-model evaluation remain deferred until much
 later. Accepted B0–B8, configurable scope and offline R5/local R6 stay closed.

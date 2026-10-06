@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — desktop dry-run session lifecycle (6 October 2026).**
+**Current slice — isolated graphical exact-action review (6 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -52,19 +52,25 @@ strict scope import/validation/private export, read-only saved-evidence replay,
 distinct draft/recorded scope, bounded literal observations and tested close
 behavior. Its accepted local evidence covers 9,823 portable and six actual Tk cases.
 
-Priority **2c is current**, split into two reviewable steps:
+Priority **2c remains current**, with these explicit acceptance steps:
 
-- **Session lifecycle:** start a fresh shared-service dry run, observe real
-  policy decisions, request cancellation, wait for cleanup and independently
-  replay saved evidence. Use new private paths, immutable scope, the existing
-  approval-required policy and fixed session limits. No tool execution, approval
-  input or simulated successor evidence is added. A dry run cannot count as a
-  completed useful workflow. Validate portable lifecycle failures and actual Tk
-  with the real Linux authority controls before submitting this slice for review.
-- **Execution and approval:** implement and separately review the
-  [exact-action graphical approval design](desktop-approval-plan.md), including
-  input custody, fresh bindings, denial/cancellation, real owned-tool execution
-  and a personal walkthrough. Until then the CLI remains the execution interface.
+- **Session lifecycle — accepted in [PR #51](https://github.com/0xsl0th/recon-cockpit/pull/51).**
+  Merge `972afac` matches the reviewed tree; all five final and post-merge checks
+  passed. Fresh dry-run start, observed decisions, cancellation, cleanup and
+  independent replay passed 9,837 portable and 11 actual Tk cases. Every desktop
+  request still uses `execute=False`; dry runs cannot count as useful completion.
+- **Isolated graphical reviewer — implemented for review.** The
+  [reviewer runbook](graphical-approvals.md) documents its separate window, fresh
+  challenge, one-use exact-action grants, original launch witness and graph-only
+  audit records. The opt-in shared-service path exercises the existing four-action
+  owned workflow through all seven gates. Native scripted input verifies behavior;
+  it does not establish personal approval. Existing terminal behavior remains the
+  default. Runtime support is currently the documented local Linux/X11 layout.
+- **Personal walkthrough, then desktop execution — outstanding.** After reviewing
+  the isolated implementation, personally exercise approval, denial and pending
+  cancellation using the prepared entry point. Record the observed results before
+  adding a desktop Execute control through the same shared service. Do not attach
+  to a real network, restore grants or claim professional readiness in this step.
 
 This remains part of priority 2; dry-run controls do not complete the GUI milestone.
 Successive tool batches stay priority 3 and target remaining internal-network/web

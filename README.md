@@ -41,8 +41,10 @@ light/dark scope preparation, saved evidence and fresh dry-run sessions with
 observed progress and cancellation. Launch `python -m recon_cockpit.gui` from a
 graphical session; dry runs require the supported Linux isolation environment.
 They execute no tools and do not establish useful completion. Tool execution and
-personal approval remain in the CLI pending the [desktop approval design](docs/desktop-approval-plan.md)
-and its separate implementation review. Follow the [priority table](docs/roadmap.md).
+personal approval remain in the CLI for the ordinary desktop flow. A separate
+[isolated graphical reviewer](docs/graphical-approvals.md) and explicit owned-lab
+walkthrough entry point are implemented for review; GUI execution awaits review
+and a personal walkthrough. Follow the [priority table](docs/roadmap.md).
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

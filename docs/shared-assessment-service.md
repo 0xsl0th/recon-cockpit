@@ -1,13 +1,14 @@
 # Shared assessment service
 
-This application layer lets the terminal and a future GUI use the same configurable
-owned HTTP/SSH assessment. It adds no tool, target, provider, network attachment or
-approval channel. Read [the owned-lab contract](configurable-owned-lab.md) for the
+This application layer lets terminal and desktop adapters use the same configurable
+owned HTTP/SSH assessment. The optional [graphical reviewer](graphical-approvals.md)
+adds a fixed approval surface without adding a tool, target, provider or network attachment. Read [the owned-lab contract](configurable-owned-lab.md) for the
 four actions, enforced limits and interpretation of results.
 
 `ConfigurableAssessmentRequest` accepts bounded scope/policy JSON bytes, new evidence
 and audit paths, an execution flag (default false), and optional shorter
-`SessionLimits`. Construction validates and detaches inputs before file writes or
+`SessionLimits`. `approval_frontend` defaults to `terminal`; `graphical_v1` requires
+execution and an approval-required policy. Construction validates and detaches inputs before file writes or
 process creation. No caller may expand the four-step, 60-second, 26,624-byte ceilings.
 
 `ConfigurableAssessmentService(request)` supplies `run()`, `cancel()` and
@@ -23,10 +24,11 @@ execution; it cannot reset budgets or restore an old session.
 The service always owns the isolated audit with a launch witness, isolated approval
 service with a launch witness, and isolated launcher/admission path. Callers cannot
 supply a backend, provider, grant, restored deadline, arbitrary approval callback or
-weaker audit service through this API. The terminal approval worker remains the
-sole approval channel; `interactive_terminal=True` does not itself grant approval.
-The supplied example policies require fresh personal approval. Automated lab tests
-use explicitly fixture-only unattended policies and do not establish human review.
+weaker audit service through this API. The selected terminal or graphical worker
+owns its input, grant store and witness sender. `interactive_terminal=True` does
+not itself grant approval and cannot be combined with `graphical_v1`. The supplied
+example policies require fresh personal approval. Automated tests use explicitly
+labeled fixture input or unattended fixture policies and do not establish human review.
 
 Snapshots contain validated scope, a scope digest, session identity, observed state,
 up to four public step summaries and the final result when available. Each returned
@@ -53,7 +55,7 @@ open an execution policy, restore approvals, resume execution or modify artifact
 Reports retain their current integrity checks and disclosed limitations.
 
 This is trusted in-process application code, not a sandbox for a hostile frontend.
-The future GUI must use these operations rather than calling legacy host execution.
-GUI layout, an observed proposal/approval bridge and GUI launch controls remain later
-reviewable slices. Both [Swiss Industrial references](gui-design-references.md)
+The desktop uses these operations for dry-run lifecycle and saved inspection.
+Actual GUI launch controls remain disabled until graphical-review implementation
+review and a personal walkthrough. No view calls legacy host execution. Both [Swiss Industrial references](gui-design-references.md)
 remain the visual starting point. Model credentials and paid calls stay deferred.
