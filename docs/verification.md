@@ -1,5 +1,49 @@
 # Verification record
 
+## Configurable owned HTTP/SSH scope — 6 October 2026
+
+Based on accepted main `fc477d0`, this slice adds exact operator scope for two
+disconnected endpoint fixtures. It preserves the accepted v1 contracts and uses
+the existing approval, audit, admission and launcher path for all four actions.
+Independent lab/authority and runtime/parser reviews found no execution-boundary
+blockers. Evidence review corrected prior-counter validation, dry-run replay,
+failure poisoning and summary/journal reconciliation before final validation.
+
+Local Linux validation passed **117 distinct tests**: four new full-path cases
+and 113 affected existing admission, launcher, owned-lab, service/web and native
+NSE-shim regressions, with no selected failures or skips. The final configurable
+run followed the last runtime strictness fix; 217 focused parser/runtime tests
+also passed. The full portable suite and hosted checks are pending at this
+implementation handoff; record their final results before marking the PR ready.
+
+| Scope example | Useful actions | Blocked listening destinations | HTTP / SSH acknowledged totals | Session elapsed |
+| --- | --- | --- | --- | --- |
+| Primary | 4/4 | 12/12 | Each: 3 connections, 2 requests | 8.740 s |
+| Alternate addresses/ports/path | 4/4 | 12/12 | Each: 3 connections, 2 requests | 8.921 s |
+
+Both useful runs reported **zero unnecessary refusals, zero provider calls and
+zero cost**. Incomplete or denied sessions do not earn success; unnecessary
+refusals remain ungraded for those sessions. Timings are local session durations,
+not measurements against an unprotected baseline. Required noninteractive
+approval prevented launcher startup; cancellation after native Nmap started
+reaped its descendants and owners. Both new useful reports replayed unchanged,
+and all **27 accepted B1–B8/service-web bundles** replayed with identical report
+content and unchanged bytes, mtimes and modes.
+
+Private receipts are under `.secure-agent/configurable-owned-20261006/` in the
+primary checkout: `configurable-linux-reviewed.xml`, `regression-linux-results.xml`,
+`native-reviewed/`, `accepted-replay.json` and the portable result once complete.
+Development failures are retained: an empty header descriptor-list bootstrap
+issue was fixed, and the initial Linux test assertion incorrectly assumed SSH
+stdout began with the key rather than its legitimate banner. Those failed runs
+are not final acceptance evidence. No live model, real-network, authenticated
+service or personal walkthrough acceptance is claimed.
+
+PR #47 was separately reviewed and merged as `fc477d0`, matching its reviewed
+tree; all five final checks passed. Post-merge checks passed on attempt 2 after
+a macOS test-peer lifetime race. This slice fixes only that fixture lifetime,
+retaining exact rejection/kill assertions and descendant cleanup behavior.
+
 ## Owned Nmap service → ffuf → headers workflow — 6 October 2026
 
 Implementation `a1a186bdf2b1d42059716365de80abae9e0cd723`, based on accepted

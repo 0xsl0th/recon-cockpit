@@ -26,6 +26,8 @@ PROGRAMS = {
     "ldap_rootdse_v1": "ldapsearch", "smb_share_list_v1": "smbclient",
     "rpcinfo_dump_v1": "rpcinfo", "showmount_exports_v1": "showmount",
     "kerbrute_userenum_v1": "kerbrute",
+    "configurable_nmap_service_v1": "nmap", "configurable_http_headers_v1": None,
+    "configurable_ssh_host_keys_v1": "ssh-keyscan",
 }
 NORMAL_NETWORK_CASES = {
     "dig_dns_query_v1": ("dig-ok", "network-tools"),
@@ -51,6 +53,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def accepted_recipe(tool):
     """Use the existing action constructors as an oracle, not catalog helpers."""
+    if tool.startswith("configurable_"):
+        from recon_cockpit.secure_agent import configurable_contract as contract
+        scope_file = "examples/secure-agent-configurable-scope.json"
+        scope = json.loads((ROOT / scope_file).read_text())
+        return ("--configurable-assessment", scope_file, "configurable", contract.WORKFLOW,
+                [contract.action(scope, step) for step in range(1, 5)], contract.LIMITS)
     if tool in NORMAL_NETWORK_CASES:
         from recon_cockpit.secure_agent import network_tools_contract as contract
         case, policy = NORMAL_NETWORK_CASES[tool]
@@ -88,7 +96,7 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
     assert result["runtime_availability"] == "not_checked"
     ids = [row["tool_id"] for row in result["tools"]]
     assert ids == sorted(PROGRAMS) == sorted(ADAPTERS)
-    assert result["capability_count"] == len(ids) == 20
+    assert result["capability_count"] == len(ids) == 23
     families = {row["external_program"] for row in result["tools"] if row["external_program"] is not None}
     assert families == set(PROGRAMS.values()) - {None}
     assert result["external_program_count"] == len(families) == 11
@@ -110,7 +118,8 @@ def test_owned_actions_parameters_and_session_budgets_match_the_existing_contrac
     assert result["external_program"] == PROGRAMS[tool]
     selected = [value["parameters"] for value in actions if value["tool_id"] == tool]
     assert result["fixed_parameters"] == selected
-    assert result["owned_scope"] == {"target": "127.0.0.1", "port": selected[0]["port"], "owned_lab_only": True}
+    selected_action = next(value for value in actions if value["tool_id"] == tool)
+    assert result["owned_scope"] == {"target": selected_action["target"], "port": selected[0]["port"], "owned_lab_only": True}
     run = result["run"]
     assert (run["selector"], run["case"], run["workflow_id"]) == (selector, case, workflow)
     assert run["actions"] == [public_action(value, step) for step, value in enumerate(actions, 1)]

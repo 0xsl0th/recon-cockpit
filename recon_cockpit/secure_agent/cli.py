@@ -297,6 +297,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="one bounded network-tool action in the disconnected owned lab, including synthetic Kerberos reports")
     source.add_argument("--service-web-assessment", choices=("vulnerable", "corrected", "injected"),
                         help="run fixed Nmap service identification, ffuf discovery and HTTP headers in one owned lab")
+    source.add_argument("--configurable-assessment", type=Path,
+                        help="declare HTTP/SSH addresses, ports and path for two disconnected owned endpoint fixtures")
     source.add_argument("--http-headers-assessment", choices=("vulnerable", "corrected", "injected"),
                         help="assess bounded HTTP response headers after owned Nmap discovery; no live model")
     source.add_argument("--workflow-assessment", choices=tuple("abcdef"),
@@ -369,15 +371,18 @@ def main(argv: list[str] | None = None) -> int:
     offline_scenario = args.openai_offline or args.control_plane_openai_offline
     assessment_case = (args.http_assessment or args.discovery_assessment or args.workflow_assessment
                        or args.nmap_assessment or args.web_assessment or args.http_headers_assessment
-                       or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment)
+                       or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment
+                       or args.configurable_assessment)
     authority_mode = args.control_plane_mock or args.control_plane_openai_offline or assessment_case
     if (args.nmap_assessment or args.web_assessment or args.http_headers_assessment
-            or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment):
+            or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment or args.configurable_assessment):
         if not (args.owned_lab and args.isolated_audit and args.isolated_approvals
                 and args.isolated_launch_admission and args.isolated_launcher
                 and args.require_launch_audit and args.require_launch_approval):
             parser.error("Nmap/web assessment requires --owned-lab and all isolated launch/approval/audit gates")
-        if args.service_web_assessment:
+        if args.configurable_assessment:
+            from .configurable_contract import LIMITS
+        elif args.service_web_assessment:
             from .service_web_contract import LIMITS
         elif args.network_tool_assessment:
             from .network_tools_contract import LIMITS
@@ -455,7 +460,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--assessment-dir requires an assessment source")
     if args.owned_lab and not (args.workflow_assessment or args.nmap_assessment
                                or args.web_assessment or args.http_headers_assessment
-                               or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment):
+                               or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment
+                               or args.configurable_assessment):
         parser.error("--owned-lab requires an owned workflow or tool assessment")
     if assessment_case and args.execute and not (args.fixture or args.owned_lab):
         parser.error("executing an assessment requires --fixture or --owned-lab")
@@ -524,6 +530,8 @@ def main(argv: list[str] | None = None) -> int:
                     "owned-web-tool-assessment-v1", "owned-network-tool-assessment-v1",
                     "owned-service-web-assessment-v1"):
                 from .nmap_evidence import inspect_assessment
+            elif type(manifest) is dict and manifest.get("workflow") == "configurable-owned-http-ssh-v1":
+                from .configurable_evidence import inspect_assessment
             report = inspect_assessment(args.inspect_assessment)
             _print(report)
             return 0 if not report["integrity_issues"] else 2
@@ -540,6 +548,9 @@ def main(argv: list[str] | None = None) -> int:
             from .audit_isolation import LinuxAuditSink
             audit_type = LinuxAuditSink
         with audit_type(args.audit, **({'launch_witness': True} if args.require_launch_audit else {})) as audit, ExitStack() as services:
+            if args.configurable_assessment:
+                from .configurable_cli import run_assessment
+                return run_assessment(args, policy, audit)
             if (args.nmap_assessment or args.web_assessment or args.http_headers_assessment
                     or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment):
                 from .nmap_cli import run_assessment

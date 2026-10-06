@@ -99,7 +99,7 @@ def configuration(value):
     if (type(value) is not dict
             or set(value) != {'version', 'service_id', 'session_id', 'policy', 'limits', 'execute', 'profile', 'case'}
             or value['version'] != '1' or type(value['execute']) is not bool
-            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'}
+            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'}
             or (value['profile'] in {'owned_lab', 'owned_nmap_lab'} and (type(value['case']) is not str or value['case'] not in 'abcdef'
                                                      or len(value['case']) != 1))
             or (value['profile'] in {'owned_web_lab', 'owned_http_headers_lab', 'owned_service_web_lab'} and (type(value['case']) is not str
@@ -109,7 +109,7 @@ def configuration(value):
                     'curl-malformed', 'ffuf-normal', 'ffuf-wildcard', 'ffuf-injected', 'ffuf-stalled')))
             or (value['profile'] == 'owned_network_tools_lab' and (type(value['case']) is not str
                 or value['case'] not in NETWORK_TOOL_CASES))
-            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'} and value['case'] is not None)):
+            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'} and value['case'] is not None)):
         raise ValueError('invalid_admission_configuration')
     identity(value['service_id'])
     identity(value['session_id'])
@@ -126,6 +126,13 @@ def configuration(value):
     if value['profile'] == 'owned_service_web_lab' and any(
             value['limits'][key] > maximum for key, maximum in {'max_steps': 3, 'max_runtime_seconds': 60, 'max_output_bytes': 18432}.items()):
         raise ValueError('invalid_service_web_admission_limits')
+    if value['profile'] == 'configurable_owned_lab':
+        from . import configurable_contract
+        from .configurable_scope import validate_scope
+
+        validate_scope(value['case'])
+        if any(value['limits'][key] > maximum for key, maximum in configurable_contract.LIMITS.items()):
+            raise ValueError('invalid_configurable_admission_limits')
     parse_policy(value['policy'])
     return deepcopy(value)
 
@@ -181,6 +188,10 @@ def receipt(value, outcome):
 
 
 def profile_allows(action, config):
+    if config['profile'] == 'configurable_owned_lab':
+        from .configurable_contract import profile_allows as configurable_allows
+
+        return configurable_allows(action, config['case'])
     if action.targets != ('127.0.0.1',):
         return False
     if config['profile'] == 'owned_service_web_lab':
@@ -270,6 +281,9 @@ class AdmissionState:
         elif (self.config['profile'] == 'owned_service_web_lab' and self._steps < 3
                 and action.tool_id != ('nmap_service_identify_v1', 'ffuf_content_discovery_v1', 'http_headers_v1')[self._steps]):
             reason = 'admission_profile_denied'
+        elif (self.config['profile'] == 'configurable_owned_lab'
+                and not self._configurable_step_allows(action)):
+            reason = 'admission_profile_denied'
         elif self._steps >= self.config['limits']['max_steps']:
             reason = 'admission_step_limit'
         elif self._output + action.parameters.max_output_bytes > self.config['limits']['max_output_bytes']:
@@ -281,3 +295,8 @@ class AdmissionState:
             self._permits[permit] = (action.digest, self._policy.digest, min(now + PERMIT_SECONDS, self._deadline))
         return {'permit': permit, 'reason': reason,
                 'snapshot': {'executions_reserved': self._steps, 'output_bytes_reserved': self._output}}
+
+    def _configurable_step_allows(self, action):
+        from .configurable_contract import step_for_action
+
+        return step_for_action(self.config['case'], action) == self._steps + 1

@@ -63,6 +63,9 @@ DOCKER_VERSION_TOOL_ID = "curl_docker_version_v1"
 WINRM_TOOL_ID = "curl_winrm_metadata_v1"
 NMAP_SERVICE_TOOL_ID = "nmap_service_identify_v1"
 KERBRUTE_TOOL_ID = "kerbrute_userenum_v1"
+CONFIGURABLE_NMAP_TOOL_ID = "configurable_nmap_service_v1"
+CONFIGURABLE_HEADERS_TOOL_ID = "configurable_http_headers_v1"
+CONFIGURABLE_SSH_TOOL_ID = "configurable_ssh_host_keys_v1"
 DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -106,7 +109,7 @@ class ToolAdapter:
             "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 30},
             "max_output_bytes": {"type": "integer", "minimum": 1, "maximum": 65536},
         }
-        if self.tool_id in ("http_probe", HTTP_HEADERS_TOOL_ID, CURL_TOOL_ID):
+        if self.tool_id in ("http_probe", HTTP_HEADERS_TOOL_ID, CURL_TOOL_ID, CONFIGURABLE_HEADERS_TOOL_ID):
             properties.update({
                 "method": {"type": "string", "enum": ["GET", "HEAD"]},
                 "path": {"type": "string", "minLength": 1, "maxLength": 256},
@@ -288,6 +291,29 @@ ADAPTERS = MappingProxyType({
          "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
          "fixed_metadata_get_only", "no_authentication", "no_redirect_following",
          "no_daemon_or_wsman_operations", "no_followup_to_metadata"),
+    ),
+    CONFIGURABLE_NMAP_TOOL_ID: ToolAdapter(
+        CONFIGURABLE_NMAP_TOOL_ID, NmapServiceParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "identify_declared_owned_endpoint", "configurable-owned-endpoint-v1",
+        "configurable-service-result-v1", "configurable-nmap-service-xml-v1",
+        ("immutable_operator_scope", "private_endpoint_namespace", "scoped_network_filter",
+         "pinned_tool_runtime", "finite_compiled_service_probes", "nse_scripts_disabled",
+         "no_authentication", "no_external_connectivity"),
+    ),
+    CONFIGURABLE_HEADERS_TOOL_ID: ToolAdapter(
+        CONFIGURABLE_HEADERS_TOOL_ID, HTTPHeadersParameters,
+        ("port", "method", "path", "timeout_seconds", "max_output_bytes"),
+        "observe_declared_owned_http_headers", "configurable-owned-endpoint-v1",
+        "configurable-header-result-v1", "configurable-http-headers-v1",
+        ("immutable_operator_scope", "private_endpoint_namespace", "scoped_network_filter",
+         "no_redirect_following", "no_authentication", "no_external_connectivity"),
+    ),
+    CONFIGURABLE_SSH_TOOL_ID: ToolAdapter(
+        CONFIGURABLE_SSH_TOOL_ID, SSHHostKeysParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_declared_owned_ssh_host_key", "configurable-owned-endpoint-v1",
+        "configurable-ssh-result-v1", "configurable-ssh-keyscan-v1",
+        ("immutable_operator_scope", "private_endpoint_namespace", "scoped_network_filter",
+         "pinned_tool_runtime", "no_authentication", "no_external_connectivity"),
     ),
 })
 SUPPORTED_TOOLS = tuple(ADAPTERS)

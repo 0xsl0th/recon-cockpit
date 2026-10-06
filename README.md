@@ -25,12 +25,16 @@ profiles. [RPC registration and NFS export metadata](docs/rpc-nfs-tools.md) are 
 with client-report limitations preserved. The merged
 [read-only CLI catalog](docs/secure-tool-catalog.md) lists accepted profiles,
 shows their exact scope and supplies existing owned-lab dry-run recipes. The
-current follow-on is a bounded [Nmap → ffuf → HTTP header workflow](docs/service-web-assessment.md)
+accepted follow-on is a bounded [Nmap → ffuf → HTTP header workflow](docs/service-web-assessment.md)
 using three existing capabilities in one disconnected owned lab. Complete
 service and path-discovery evidence gates the next fixed action. This separate
-workflow has passed local validation and is open for review in
-[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47); broader composition,
-comparative benchmarking and optional tools remain later slices.
+workflow merged in [PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47).
+Current work adds [configurable HTTP/SSH owned endpoint fixtures](docs/configurable-owned-lab.md)
+with exact operator scope and the same isolated authority path. Three new
+configurable profiles reuse existing programs; they do not enable real-network
+attachment. The [priority table](docs/roadmap.md) then calls for shared CLI/GUI
+services and an initial GUI using the saved [Swiss Industrial references](docs/gui-design-references.md).
+Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.
 
