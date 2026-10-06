@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — shared CLI/GUI assessment services (6 October 2026).**
+**Current slice — initial offline desktop GUI (6 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -38,16 +38,25 @@ completed 8/8 legitimate actions and blocked 24/24 listening forbidden destinati
 The catalog now has 23 accepted profiles using the same 11 external programs.
 Keep this scope closed and preserve its existing contracts.
 
-Priority **2a** extracts a [shared assessment service](shared-assessment-service.md)
-for the configurable workflow and a read-only saved-evidence inspector. Completion
-requires independent request/limit validation, mandatory isolated authority
-services, detached session/progress views, single-use sessions, cancellation and
-cleanup from a worker thread, unchanged CLI results, useful native execution and
-unchanged evidence replay. This step does not expose an API server or GUI approval
-channel. Priority **2b** will build the initial GUI using the saved mockups, starting
-with scope configuration and evidence/session views. Execution and fresh approval
-controls must use the same reviewed authority services; design their interaction
-before enabling GUI launch. Tool batches remain priority 3.
+Priority **2a is accepted** in [PR #49](https://github.com/0xsl0th/recon-cockpit/pull/49),
+merged as `db42cd1` after review and five passing final checks. The
+[shared service](shared-assessment-service.md) owns immutable requests, mandatory
+isolated authority services, detached views and single-use cancellation/cleanup.
+Read-only inspection preserves existing report semantics. All eight targeted
+native cases and 9,722 portable tests passed; accepted contracts remain closed.
+
+Priority **2b is current**: the [initial offline desktop](desktop-gui.md) uses both
+saved mockups for scope preparation and saved session/evidence views. Completion
+requires working light/dark themes, strict scope import/validation/private export,
+actual saved-evidence replay, distinct draft/recorded scope, responsive single-reader
+inspection, visible incomplete/integrity states, literal tool data and tested close
+behavior. It creates no execution or approval service and opens no HTTP listener.
+
+Priority **2c follows review**: connect GUI session start, observed progress and
+cancellation to the shared service; design and verify fresh exact-action approval
+before enabling GUI execution. This remains part of priority 2, not a claim that
+the first read-only desktop completes the GUI milestone. Tool batches remain
+priority 3 and target remaining internal-network/web capabilities.
 
 Paired baseline/authority benchmarking and richer workflow decisions remain later
 work; descriptive local latency cannot establish authority overhead. The accepted scope

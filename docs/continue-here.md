@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: shared CLI/GUI assessment services (priority 2a).**
+**Current authorized work: initial offline desktop GUI (priority 2b).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -29,21 +29,37 @@ isolated fixture addresses, not permission to attach to an internal network.
 Preserve private receipts at `.secure-agent/configurable-owned-20261006/`, including
 the retained initial development/macOS test failures. Do not repeat the merge.
 
-The current branch is `feature/shared-assessment-service` in
-`/tmp/recon-shared-assessment-service`, based on `5f046eb`. It extracts the
-[shared assessment service](shared-assessment-service.md) for the existing
-four-action workflow plus read-only inspection. The service owns required authority
-controls, detached progress/state and cancellation; the CLI retains signals and
-JSON rendering. GUI construction and a GUI approval channel are subsequent work.
-Local validation passed **9,722 portable tests and 8 distinct Linux cases**.
-Three completed service/CLI workflows produced 12/12 useful actions and 36/36
-blocked listening-destination witnesses, zero unnecessary refusals/provider calls/
-cost, and 29 accepted evidence bundles replayed unchanged through both entry points.
-Cancellation and observer failure after native startup both close the lab and reap
-processes. Independent review found no remaining blockers; 95 focused checks passed.
-The new implementation is left for review, not merged. Current commit, PR URL and
-hosted checks are in the private `.secure-agent/shared-service-20261006/handoff.json`.
-See [verification](verification.md) for exact scope and retained development failures.
+**[PR #49](https://github.com/0xsl0th/recon-cockpit/pull/49) is merged and accepted.**
+Reviewed head `c036d6ccd3e47be6f3f57e750cafe41693b3f456` merged as
+`db42cd1ddecc45c0c3c743e7fe52514b8009a6da` on 6 October at 04:46:52 UTC.
+Trees match (`a9c7a9b89d2067e5b054e7045a23da1fd6cc8292`). Fresh service/authority
+and CLI/inspection reviews found no blockers; 95 focused and 517 historical
+regression cases passed (overlapping sets). All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37414241668)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37415326000)
+passed. Preserve `.secure-agent/pr49-merge-review.json` and the accepted shared
+service; do not repeat the merge. Its 9,722 portable tests, eight native cases,
+12/12 useful actions, 36/36 forbidden witnesses and 29 unchanged evidence replays
+remain accepted under their disclosed local/hosted and source distinctions.
+
+The current branch is `feature/offline-desktop-gui` in `/tmp/recon-offline-desktop-gui`,
+based on `db42cd1`. The [desktop runbook](desktop-gui.md) describes three working
+pages: Overview, Scope and Evidence, with light/dark themes based on the mocks.
+A single background reader uses the shared saved-evidence inspector; scope drafts
+reuse the existing strict contract and remain separate from saved session scope.
+The GUI starts no authority, executor, approval service, listener or model call.
+Session start/cancellation and GUI approval interaction remain priority 2c.
+
+Local validation passed **9,823 portable cases and six actual Tk cases**, with no
+selected failures or skips. Seven private screenshots were checked at 1360×900 and
+1280×800; the accepted evidence stayed unchanged, with zero new assessments/calls.
+Independent review found no remaining blockers.
+
+Final validation, screenshots, exact head and the new PR link are recorded in
+`.secure-agent/gui-20261006/` in the primary checkout. The new work is left for
+review and is not part of accepted main until its corresponding merge instruction.
+The source mockups and generated screenshots stay outside Git. The proposal/PDF
+and separate PR #31 remain unchanged.
 
 Both user-created Swiss Industrial PNGs were inspected and privately preserved.
 [GUI design notes](gui-design-references.md) record the original Downloads paths,
@@ -1209,31 +1225,30 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #48 merge is complete. PRs #6–#30 and #32–#48
+- The operator-authorized PR #49 merge is complete. PRs #6–#30 and #32–#49
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Review the latest shared-service PR and its checks using
-   `.secure-agent/shared-service-20261006/` in the primary checkout. PR #48 and all
-   earlier accepted milestones remain closed. Proposal PR #31 remains separate.
-2. Preserve exact four-action scope, per-endpoint isolation, all seven gates,
-   predecessor checks, raw evidence replay and cleanup. The shared service is a
-   trusted application component, not an authority boundary against host code.
-3. After review and the corresponding merge instruction, implement priority 2b:
-   a small initial GUI using the [saved light/dark designs](gui-design-references.md).
-   Use shared scope/session/evidence services; design exact-action approval before
-   enabling GUI execution. Do not recreate authority logic or fabricate pending
-   approvals, online agents, confidence/signing or model cost.
-4. Later tool batches target internal-network/web capability gaps, with actual
-   owned-lab execution, structured results, evidence and enforcement for each.
-   The eventual 40+ program ambition does not reopen B0–B8 or impose a B9 quota.
-5. Keep paid calls, model credentials and live evaluation deferred. External
-   targets, real service credentials, intrusive activity, publication and
+1. Review the latest offline desktop PR and checks using `.secure-agent/gui-20261006/`.
+   PR #49 and earlier accepted milestones stay closed; PR #31 remains separate.
+2. Use [the desktop runbook](desktop-gui.md) to review both themes, draft scope and
+   actual saved evidence. Do not count inspection as new execution or human approval.
+   Preserve scope/report separation, literal bounded display, private exports,
+   read-only replay and complete reader cleanup on window close.
+3. After the corresponding review and merge, implement priority 2c: shared-service
+   session start/progress/cancellation, with a reviewed exact-action approval
+   interaction before enabling GUI execution. Keep authority controls outside UI
+   widgets; no arbitrary commands, restored approvals or alternate execution path.
+4. Subsequent tool batches target internal-network/web capability gaps, with owned
+   execution, structured results, evidence and enforcement for each capability.
+   The eventual 40+ program ambition does not reopen B0–B8 or add a B9 quota.
+5. Model credentials, paid calls and live evaluation stay deferred until much later.
+   External targets, real service credentials, intrusive activity, publication and
    competition submission require their corresponding authorization.
-6. Keep the proposal/PDF unchanged until its planned early-November update.
-   Distinguish local kernel validation from portable CI and keep mockup PNGs private.
+6. Preserve the proposal/PDF until the planned early-November update. Keep private
+   mockups/screenshots out of Git and local GUI/kernel evidence distinct from CI.
 
 ## Recovery and verification
 
