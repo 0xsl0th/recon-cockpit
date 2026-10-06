@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — initial offline desktop GUI (6 October 2026).**
+**Current slice — desktop dry-run session lifecycle (6 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -45,18 +45,30 @@ isolated authority services, detached views and single-use cancellation/cleanup.
 Read-only inspection preserves existing report semantics. All eight targeted
 native cases and 9,722 portable tests passed; accepted contracts remain closed.
 
-Priority **2b is current**: the [initial offline desktop](desktop-gui.md) uses both
-saved mockups for scope preparation and saved session/evidence views. Completion
-requires working light/dark themes, strict scope import/validation/private export,
-actual saved-evidence replay, distinct draft/recorded scope, responsive single-reader
-inspection, visible incomplete/integrity states, literal tool data and tested close
-behavior. It creates no execution or approval service and opens no HTTP listener.
+Priority **2b is accepted** in [PR #50](https://github.com/0xsl0th/recon-cockpit/pull/50),
+merged as `7efa9d8` after fresh review and all five final checks. All five
+post-merge jobs also passed. The [desktop](desktop-gui.md) has both themes,
+strict scope import/validation/private export, read-only saved-evidence replay,
+distinct draft/recorded scope, bounded literal observations and tested close
+behavior. Its accepted local evidence covers 9,823 portable and six actual Tk cases.
 
-Priority **2c follows review**: connect GUI session start, observed progress and
-cancellation to the shared service; design and verify fresh exact-action approval
-before enabling GUI execution. This remains part of priority 2, not a claim that
-the first read-only desktop completes the GUI milestone. Tool batches remain
-priority 3 and target remaining internal-network/web capabilities.
+Priority **2c is current**, split into two reviewable steps:
+
+- **Session lifecycle:** start a fresh shared-service dry run, observe real
+  policy decisions, request cancellation, wait for cleanup and independently
+  replay saved evidence. Use new private paths, immutable scope, the existing
+  approval-required policy and fixed session limits. No tool execution, approval
+  input or simulated successor evidence is added. A dry run cannot count as a
+  completed useful workflow. Validate portable lifecycle failures and actual Tk
+  with the real Linux authority controls before submitting this slice for review.
+- **Execution and approval:** implement and separately review the
+  [exact-action graphical approval design](desktop-approval-plan.md), including
+  input custody, fresh bindings, denial/cancellation, real owned-tool execution
+  and a personal walkthrough. Until then the CLI remains the execution interface.
+
+This remains part of priority 2; dry-run controls do not complete the GUI milestone.
+Successive tool batches stay priority 3 and target remaining internal-network/web
+capabilities. The professional engagement lifecycle remains priority 4.
 
 Paired baseline/authority benchmarking and richer workflow decisions remain later
 work; descriptive local latency cannot establish authority overhead. The accepted scope

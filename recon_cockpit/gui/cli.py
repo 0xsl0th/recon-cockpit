@@ -30,7 +30,8 @@ def main(argv=None):
             window.refresh()
         root.mainloop()
     finally:
-        # Window close waits for replay. No execution or daemon worker is ever
-        # started by this adapter; interpreter exit also joins a reader on error.
+        # Window close cancels authority and waits for cleanup/replay. On an
+        # exceptional mainloop exit, cancellation is still requested here and
+        # the non-daemon worker remains owned until it returns.
         controller.close()
     return 0

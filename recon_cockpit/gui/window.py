@@ -1,7 +1,7 @@
-"""Local Tk views for scope preparation and read-only saved evidence.
+"""Local Tk views for scope, dry-run lifecycle and saved evidence.
 
-The controller owns validation and inspection. This module displays text only;
-there is deliberately no assessment launch or approval operation.
+The controller owns validation, dry-run orchestration and evidence inspection.
+There is deliberately no tool-execution or approval operation in these widgets.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from .themes import palette
 
 
 class CockpitWindow:
-    """Swiss Industrial desktop shell around the shared read-only controller."""
+    """Swiss Industrial desktop shell around the shared offline controller."""
 
     FIELD_NAMES = ("scope_id", "http_target", "http_port", "http_path", "ssh_target", "ssh_port")
 
@@ -144,7 +144,7 @@ class CockpitWindow:
         self._label(notes, "LOCAL WORKSPACE", size=8, bold=True,
                     color=c["rail_muted"]).pack(anchor="w", pady=(0, 10))
         self._label(notes, "●  Saved evidence", size=10, color=c["rail_text"]).pack(anchor="w")
-        self._label(notes, "Scope preparation\nRead-only inspection", size=9,
+        self._label(notes, "Scope preparation\nDry-run planning\nEvidence inspection", size=9,
                     color=c["rail_muted"], justify="left").pack(anchor="w", pady=(7, 18))
         self._label(notes, "Know more.\nTake informed action.", size=10, bold=True,
                     color=c["rail_text"], justify="left").pack(anchor="w")
@@ -250,8 +250,17 @@ class CockpitWindow:
         page.grid_columnconfigure(1, weight=2)
         page.grid_rowconfigure(2, weight=3)
         page.grid_rowconfigure(3, weight=2)
-        self._heading(page, "Assessment overview", "Inspect completed work and its recorded boundaries.").grid(
-            row=0, column=0, columnspan=2, sticky="ew", pady=(0, 16))
+        self._heading(page, "Assessment overview", "Inspect saved work or rehearse the owned-lab plan.").grid(
+            row=0, column=0, sticky="ew", pady=(0, 16))
+        controls = self._frame(page, color=self.colors["background"])
+        controls.grid(row=0, column=1, sticky="e", pady=(0, 16))
+        self.buttons["start_dry_run"] = self._button(controls, "Start dry run…", self._start_dry_run,
+                                                        primary=True)
+        self.buttons["start_dry_run"].grid(row=0, column=0, padx=(0, 8))
+        self.buttons["cancel_session"] = self._button(controls, "Cancel session", self._cancel_session)
+        self.buttons["cancel_session"].grid(row=0, column=1)
+        self._label(controls, "No tool execution or approvals", size=8, color=self.colors["muted"]).grid(
+            row=1, column=0, columnspan=2, sticky="e", pady=(4, 0))
         metrics = self._frame(page, color=self.colors["background"])
         metrics.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 14))
         self.metric_titles = []
@@ -270,7 +279,7 @@ class CockpitWindow:
             detail.pack(anchor="w", padx=11, pady=(5, 12))
             self.metrics_labels.append(value)
             self.metrics_details.append(detail)
-        timeline = self._card(page, "Recorded timeline")
+        timeline = self._card(page, "Session timeline")
         timeline.grid(row=2, column=0, sticky="nsew", padx=(0, 7), pady=(0, 13))
         timeline.grid_rowconfigure(2, weight=1)
         self.timeline_state = self._label(timeline, "Open an evidence folder to inspect a saved assessment.",
@@ -278,7 +287,7 @@ class CockpitWindow:
         self.timeline_state.grid(row=1, column=0, sticky="ew", pady=(0, 9))
         frame, self.timeline = self._table(timeline, height=6)
         frame.grid(row=2, column=0, sticky="nsew", padx=1)
-        detail = self._card(page, "Recorded action")
+        detail = self._card(page, "Action detail")
         detail.grid(row=2, column=1, sticky="nsew", padx=(7, 0), pady=(0, 13))
         detail.grid_rowconfigure(1, weight=1)
         frame, self.selected_detail = self._text(detail, height=10, mono=True)
@@ -298,7 +307,7 @@ class CockpitWindow:
         page.grid_columnconfigure(0, weight=1)
         page.grid_columnconfigure(1, weight=1)
         page.grid_rowconfigure(4, weight=1)
-        self._heading(page, "Prepare owned scope", "Configure two disconnected fixture endpoints for the existing CLI workflow.").grid(
+        self._heading(page, "Prepare owned scope", "Configure two disconnected fixture endpoints for a dry run or CLI execution.").grid(
             row=0, column=0, columnspan=2, sticky="ew", pady=(0, 16))
         identity = self._card(page, "Scope identity")
         identity.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 12))
@@ -394,8 +403,14 @@ class CockpitWindow:
         if snapshot["scope"] != self._last_scope:
             self._fill_scope(snapshot["scope"])
         self.error_var.set(safe_text(snapshot["error"]) if snapshot.get("error") else "")
-        self.status_var.set("Finishing evidence inspection…" if self._closing else safe_text(snapshot.get("status", "Ready")))
-        self.buttons["load_evidence"].configure(state="disabled" if snapshot["busy"] or self._closing else "normal")
+        self.status_var.set("Finishing background work and cleanup…" if self._closing else safe_text(snapshot.get("status", "Ready")))
+        busy = snapshot["busy"]
+        for name in ("load_evidence", "start_dry_run"):
+            self.buttons[name].configure(state="disabled" if busy or self._closing else "normal")
+        session = snapshot.get("session")
+        cancellable = (snapshot.get("operation") == "session" and busy and session is not None
+                       and session.get("phase") == "running" and not session.get("cancel_requested"))
+        self.buttons["cancel_session"].configure(state="normal" if cancellable and not self._closing else "disabled")
         preview = snapshot.get("preview", {})
         lines = [str(preview.get("notice", "Scope preparation does not launch an assessment.")), ""]
         for row in preview.get("rows", []):
@@ -411,19 +426,78 @@ class CockpitWindow:
         if preview.get("scope_sha256"):
             lines += ["", "Scope digest: " + preview["scope_sha256"]]
         self._set_text(self.scope_preview, "\n".join(lines))
-        self._render_report(snapshot.get("report"), snapshot.get("path"))
-        if snapshot["busy"]:
+        report = snapshot.get("report")
+        self._render_report(report, snapshot.get("path"))
+        if report is None and session is not None:
+            self._render_session(session)
+        elif report is not None and session is not None and session.get("phase") in {"failed", "stopped"}:
+            label = "FAILED" if session["phase"] == "failed" else "STOPPED"
+            self.timeline_state.configure(text=f"DRY RUN {label} · Saved evidence",
+                                          foreground=self.colors["error"] if label == "FAILED" else self.colors["muted"])
+        elif busy and snapshot.get("operation") != "session":
             self.engagement_label.configure(text="Replaying saved evidence…")
-            self.timeline_state.configure(text="Inspecting recorded artifacts. No assessment is running.")
+            self.timeline_state.configure(text="Inspecting recorded artifacts. No assessment is running.",
+                                          foreground=self.colors["muted"])
             self.evidence_path.configure(text=safe_text(snapshot.get("path")))
+
+    def _render_session(self, session):
+        """Display observed dry-run progress without claiming useful execution."""
+        scope = session.get("scope") or {}
+        self.engagement_label.configure(text=safe_text(scope.get("scope_id", "Owned-lab dry run"))[:55])
+        phase = session.get("phase")
+        failed = phase in {"failed", "replay_failed"}
+        if phase == "failed":
+            state = "DRY RUN FAILED · No verified outcome"
+        elif phase == "replay_failed":
+            state = "EVIDENCE REPLAY FAILED · No verified outcome"
+        elif phase == "stopped":
+            state = "DRY RUN STOPPED · No tool execution"
+        elif phase == "replaying":
+            state = "DRY RUN · Replaying final evidence"
+        elif session.get("cancel_requested") and phase == "running":
+            state = "DRY RUN · Cancellation requested; waiting for cleanup"
+        else:
+            state = "DRY RUN · " + safe_text(session.get("state", phase or "Preparing"))
+        self.timeline_state.configure(text=state, foreground=self.colors["error"] if failed else self.colors["muted"])
+        directory = safe_text(session.get("session_dir", "Preparing a private session folder"))
+        self.evidence_path.configure(text=directory)
+        live_metrics = (("Dry run", "No legitimate tool work is executed."),
+                        ("0", "Dry-run decisions do not count as useful actions."),
+                        ("Unavailable", "Not graded for a dry run."),
+                        ("—", "Model access is disabled."),
+                        ("—", "Final recorded duration appears after evidence replay."))
+        for index, (value, detail) in enumerate(live_metrics):
+            self.metrics_labels[index].configure(text=value)
+            self.metrics_details[index].configure(text=detail)
+        lines = ["Mode  Dry run · no tool execution", "State  " + safe_text(session.get("state", "Preparing")),
+                 "Session  " + safe_text(session.get("session_id", "Preparing")), "", "Session scope"]
+        for name in ("http", "ssh"):
+            endpoint = scope.get(name)
+            if endpoint:
+                destination = safe_text(endpoint.get("target")) + ":" + safe_text(endpoint.get("port"))
+                if name == "http":
+                    destination += "  GET " + safe_text(endpoint.get("path"))
+                lines.append(name.upper() + "  " + destination)
+        lines += ["", "Folder  " + directory]
+        if session.get("scope_sha256"):
+            lines += ["Scope digest  " + safe_text(session["scope_sha256"])]
+        if session.get("stop_reason"):
+            lines += ["Stop reason  " + safe_text(session["stop_reason"])]
+        self._set_text(self.bundle_detail, "\n".join(lines))
+        self._set_text(self.limitations,
+            "This session rehearses the owned-lab plan. No tools, model calls or approval grants are issued.\n\n"
+            "Progress is provisional until final evidence replay. Dry-run decisions are not legitimate task completion.\n\n"
+            "The session uses its captured scope. Editing the draft does not change the current session.")
+        self._replace_rows(session.get("steps", []))
 
     def _render_report(self, report, path):
         if report is None:
             self.engagement_label.configure(text="Local evidence workspace")
-            self.timeline_state.configure(text="Open an evidence folder to inspect a saved assessment.")
+            self.timeline_state.configure(text="Start a dry run or open an evidence folder.",
+                                          foreground=self.colors["muted"])
             self.evidence_path.configure(text="No evidence folder selected")
             self._set_text(self.bundle_detail, "No saved assessment loaded.\n\nOpen a private evidence folder to inspect its recorded actions and outcomes.")
-            self._set_text(self.limitations, "This desktop prepares scope and reads saved evidence.\n\nExecution and personal approvals remain in the CLI. Model credentials and paid calls remain deferred.")
+            self._set_text(self.limitations, "This desktop prepares scope, rehearses dry-run plans and reads saved evidence.\n\nTool execution and personal approvals remain in the CLI. Model credentials and paid calls remain deferred.")
             self._set_text(self.selected_detail, "Select a recorded action to view its exact destination and observation.\n\nTool output is displayed as untrusted text.")
             self._set_text(self.evidence_detail, "No observation selected.")
             for widget in self.metrics_labels:
@@ -500,7 +574,7 @@ class CockpitWindow:
             self.scope_feedback.set("Scope is invalid. Check the ID, private IPv4 addresses, ports and path.")
             self.error_var.set(safe_text(str(exc)))
             return False
-        self.scope_feedback.set("Valid draft · four bounded actions. Export to use with the CLI.")
+        self.scope_feedback.set("Valid draft · four bounded actions. Ready for a dry run or export.")
         self.refresh()
         return True
 
@@ -543,6 +617,31 @@ class CockpitWindow:
             except (ValueError, OSError, RuntimeError) as exc:
                 self.error_var.set("Could not inspect evidence: " + safe_text(str(exc)))
 
+    def _start_dry_run(self):
+        if self._closing or self.controller.snapshot()["busy"]:
+            return
+        if not self.validate_scope():
+            self.show_page("scope")
+            return
+        path = filedialog.askdirectory(parent=self.root, title="Choose a parent folder for a new private dry-run session",
+                                        mustexist=True)
+        if path:
+            try:
+                self.controller.start_dry_run(Path(path))
+                self.show_page("overview")
+                self.refresh()
+            except (ValueError, OSError, RuntimeError) as exc:
+                self.error_var.set("Could not start dry run: " + safe_text(str(exc)))
+
+    def _cancel_session(self):
+        if self._closing:
+            return
+        try:
+            self.controller.cancel_session()
+            self.refresh()
+        except (ValueError, OSError, RuntimeError) as exc:
+            self.error_var.set("Could not cancel session: " + safe_text(str(exc)))
+
     def _poll(self):
         self._after_id = None
         if self._closed:
@@ -562,7 +661,7 @@ class CockpitWindow:
         if self.controller.close():
             self._finish_close()
         else:
-            self.status_var.set("Finishing evidence inspection…")
+            self.status_var.set("Finishing background work and cleanup…")
             for button in self.buttons.values():
                 button.configure(state="disabled")
 

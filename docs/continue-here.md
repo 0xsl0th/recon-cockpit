@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: initial offline desktop GUI (priority 2b).**
+**Current authorized work: desktop dry-run session lifecycle (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -42,24 +42,44 @@ service; do not repeat the merge. Its 9,722 portable tests, eight native cases,
 12/12 useful actions, 36/36 forbidden witnesses and 29 unchanged evidence replays
 remain accepted under their disclosed local/hosted and source distinctions.
 
-The current branch is `feature/offline-desktop-gui` in `/tmp/recon-offline-desktop-gui`,
-based on `db42cd1`. The [desktop runbook](desktop-gui.md) describes three working
-pages: Overview, Scope and Evidence, with light/dark themes based on the mocks.
-A single background reader uses the shared saved-evidence inspector; scope drafts
-reuse the existing strict contract and remain separate from saved session scope.
-The GUI starts no authority, executor, approval service, listener or model call.
-Session start/cancellation and GUI approval interaction remain priority 2c.
+**[PR #50](https://github.com/0xsl0th/recon-cockpit/pull/50) is merged and accepted.**
+Reviewed head `c6108d09936694e600c30173148bb91431832ce2` merged as
+`7efa9d851e8f0698b92618d94327d51157ecfa15` on 6 October at 05:15:35 UTC.
+Trees match (`6ddc2a302491e071ac22b9feda87c1b567da612c`). Fresh controller/evidence
+and UI/receipt reviews found no blockers; 101 GUI portable and 93 inspection/evidence
+cases passed (overlapping review sets). All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37416444887)
+and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37417644593)
+passed. Private merge receipt: `.secure-agent/pr50-merge-review.json`.
+Its first desktop, 9,823 portable cases and six actual Tk cases remain accepted;
+private evidence and seven screenshots remain at `.secure-agent/gui-20261006/`.
+Do not repeat the merge.
 
-Local validation passed **9,823 portable cases and six actual Tk cases**, with no
-selected failures or skips. Seven private screenshots were checked at 1360×900 and
-1280×800; the accepted evidence stayed unchanged, with zero new assessments/calls.
-Independent review found no remaining blockers.
+The current branch is `feature/desktop-session-lifecycle` in
+`/tmp/recon-desktop-session-lifecycle`, based on `7efa9d8`. The
+[desktop runbook](desktop-gui.md) now covers fresh dry-run start, observed progress,
+cancellation and close through the accepted shared service, followed by independent
+saved-evidence replay. Every request freezes its scope, requires approval in policy,
+hardcodes `execute=False`, and uses a new private folder. No tool executes, approval
+prompt opens, or model call occurs. Follow-ups stop without real predecessor evidence;
+one reviewed proposal must not be presented as four useful actions.
 
-Final validation, screenshots, exact head and the new PR link are recorded in
-`.secure-agent/gui-20261006/` in the primary checkout. The new work is left for
-review and is not part of accepted main until its corresponding merge instruction.
-The source mockups and generated screenshots stay outside Git. The proposal/PDF
-and separate PR #31 remain unchanged.
+One worker owns start through cleanup and replay. Scope drafts remain independent
+of session scope, and failures cannot display stale successful metrics. The
+[next approval design](desktop-approval-plan.md) is planning only: actual desktop
+execution stays disabled until its separate exact-action input boundary is reviewed
+and verified. This dry-run slice does not complete priority 2 or add a new tool.
+
+Local validation passed **9,837 portable cases and 11 actual Tk cases**, with no
+selected failures/errors/skips. The native set includes four real dry runs plus
+one labeled startup-failure double; six other cases preserve saved-evidence behavior.
+No tool executed, no personal approval was entered, and no provider call occurred.
+
+Final tests, screenshots, source hashes, exact head and the new PR link are recorded
+in `.secure-agent/gui-session-20261006/` in the primary checkout. The subsequent PR
+is left for review, unmerged. Keep local Linux/Tk evidence distinct from portable CI
+and retain development failures honestly. Private images stay outside Git. The
+proposal/PDF and separate PR #31 remain unchanged.
 
 Both user-created Swiss Industrial PNGs were inspected and privately preserved.
 [GUI design notes](gui-design-references.md) record the original Downloads paths,
@@ -1225,25 +1245,29 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #49 merge is complete. PRs #6–#30 and #32–#49
+- The operator-authorized PR #50 merge is complete. PRs #6–#30 and #32–#50
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Review the latest offline desktop PR and checks using `.secure-agent/gui-20261006/`.
-   PR #49 and earlier accepted milestones stay closed; PR #31 remains separate.
-2. Use [the desktop runbook](desktop-gui.md) to review both themes, draft scope and
-   actual saved evidence. Do not count inspection as new execution or human approval.
-   Preserve scope/report separation, literal bounded display, private exports,
-   read-only replay and complete reader cleanup on window close.
-3. After the corresponding review and merge, implement priority 2c: shared-service
-   session start/progress/cancellation, with a reviewed exact-action approval
-   interaction before enabling GUI execution. Keep authority controls outside UI
-   widgets; no arbitrary commands, restored approvals or alternate execution path.
-4. Subsequent tool batches target internal-network/web capability gaps, with owned
-   execution, structured results, evidence and enforcement for each capability.
-   The eventual 40+ program ambition does not reopen B0–B8 or add a B9 quota.
+1. Review the latest desktop dry-run lifecycle PR and checks using
+   `.secure-agent/gui-session-20261006/`. PR #50 and earlier accepted milestones
+   stay closed; PR #31 remains separate. Do not merge the new PR without the
+   corresponding merge instruction.
+2. Review Start dry run, observed progress, captured scope, cancellation and close
+   in [the runbook](desktop-gui.md). Keep `execute=False`, approval-required policy,
+   fresh private paths, fixed limits and independent final evidence replay. A
+   dry run is not a useful completed workflow or a personal approval walkthrough.
+3. Next implement the remaining priority 2c [approval boundary](desktop-approval-plan.md)
+   in a separate reviewable slice before enabling graphical execution. Preserve
+   worker input/grant/witness custody, exact-action freshness, audit/admission and
+   complete cleanup. No PTY answer forwarding, arbitrary callback, saved grant,
+   policy weakening or alternate execution path.
+4. Then extend secure coverage toward the internal-network/web product scope.
+   Each new capability needs actual owned-lab execution, structured results,
+   evidence and enforcement. The eventual 40+ program ambition does not reopen
+   B0–B8 or create a B9 quota. Deeper composition/benchmarking remain later work.
 5. Model credentials, paid calls and live evaluation stay deferred until much later.
    External targets, real service credentials, intrusive activity, publication and
    competition submission require their corresponding authorization.
