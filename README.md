@@ -28,8 +28,9 @@ shows their exact scope and supplies existing owned-lab dry-run recipes. The
 current follow-on is a bounded [Nmap → ffuf → HTTP header workflow](docs/service-web-assessment.md)
 using three existing capabilities in one disconnected owned lab. Complete
 service and path-discovery evidence gates the next fixed action. This separate
-workflow is under validation; broader composition, comparative benchmarking and
-optional tools remain later slices.
+workflow has passed local validation and is open for review in
+[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47); broader composition,
+comparative benchmarking and optional tools remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.
 

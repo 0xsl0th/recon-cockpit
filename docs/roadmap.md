@@ -28,7 +28,11 @@ witnesses and a reviewed PR. Record legitimate completion, unnecessary refusals,
 blocked unauthorized destination attempts, actual provider cost and local CLI
 latency. The injected case must retain hostile metadata in raw ffuf evidence
 while completing legitimate work; it is deterministic content handling, not a
-real-model injection evaluation. Native validation is in progress.
+real-model injection evaluation. Local validation is complete in
+[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47): 3/3 useful native
+workflows, 9/9 actions, 18/18 blocked destination witnesses, no unnecessary
+refusals, no provider calls/cost and unchanged evidence replay. The slice remains
+open for review and its corresponding merge instruction. See [verification](verification.md).
 
 This slice has no comparative arm. Paired baseline/authority benchmarking and
 richer workflow decisions remain separate later work; descriptive local latency

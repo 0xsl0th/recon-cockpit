@@ -4,8 +4,9 @@
 persistent, disconnected owned lab: Nmap service identification → ffuf path
 discovery → HTTP header evidence. Each tool has a useful job, and complete
 predecessor evidence is required before the next fixed action can be proposed.
-The implementation is a separate workflow under validation; see
-[verification](verification.md) for completed checks. The accepted B0–B8 coverage,
+The implementation is a separate workflow in
+[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47), with local validation
+complete; see [verification](verification.md) for results and limits. The accepted B0–B8 coverage,
 R5 and local offline R6 milestones remain closed.
 
 Planning is deterministic and offline. This workflow does not read model

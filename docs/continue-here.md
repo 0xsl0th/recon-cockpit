@@ -18,21 +18,37 @@ and all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/a
 passed. Preserve the [catalog](secure-tool-catalog.md), its accepted recipes and
 all existing tool contracts. Private receipt: `.secure-agent/pr46-merge-review.json`.
 
-New implementation is in `/tmp/recon-owned-tool-workflow`, branch
-`feature/owned-tool-workflow`, based on merged main `0d5cbdc`. It composes the
-three existing capabilities in a separate shared owned lab, with fixed actions,
+**[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47) is the new workflow review handoff.**
+Implementation `a1a186b` is in `/tmp/recon-owned-tool-workflow`, branch
+`feature/owned-tool-workflow`, based on merged main `0d5cbdc`. It composes three
+existing capabilities in a separate shared owned lab, with fixed actions,
 three-step/60-second/18,432-byte session limits and independently replayed evidence.
-The scenario corpus is vulnerable, corrected and injected metadata; useful
-completion must accompany enforcement checks. No comparison arm or real-model
-claim is part of this slice. Implementation and native validation are in progress;
-private development receipts are `.secure-agent/service-web-20261006` in the
-primary checkout. An initial native attempt stopped before publishing complete
-evidence; it is retained and does not count as successful execution.
+Nmap must identify HTTP before ffuf; complete fixed-path discovery must establish
+the portal before its header GET. All seven gates remain mandatory.
 
-Leave the new workflow PR ready for review; a later merge needs its corresponding
-instruction. Optional tool expansion and comparative benchmarking remain later
-work. Model credentials, paid calls and live evaluation remain deferred until
-much later; do not prepare credentials or enable a live provider. Keep the
+Local validation passed **8,776 portable and 128 distinct Linux tests** (nine new
+workflow cases and 119 affected regressions). Independent runtime/authority and
+CLI/evidence reviews found no blockers. Clean-source vulnerable, corrected and
+injected trials completed **3/3 useful workflows and 9/9 actions**, with zero
+unnecessary refusals and zero provider calls/cost. All **18/18 forbidden-destination
+witnesses** were blocked; each lab closed after ten requests and eleven connections.
+CLI process wall times were 7.589–7.660 seconds, a descriptive local measurement,
+not a paired overhead benchmark. Hostile metadata remains in raw ffuf evidence;
+this does not claim a model-induced proposal. All three new reports and all
+24 accepted B1–B8 bundles replayed unchanged.
+
+Private receipts are `.secure-agent/service-web-20261006` in the primary checkout:
+`verification.json`, `validation-summary.json`, `verification-script.py`,
+`validation/`, `runs/` and the latest `handoff.json`. Development failures are
+retained, including the fixed initial Nmap empty-connection reset and test/verifier
+assertion errors; they do not count as final acceptance. See
+[the runbook](service-web-assessment.md) and [verification record](verification.md).
+Check the latest PR head, reviews and hosted checks before any authorized merge.
+This new PR stays open for review; no personal walkthrough acceptance is claimed.
+
+Optional tool expansion, broader composition and comparative benchmarking remain
+later work. Model credentials, paid calls and live evaluation remain deferred
+until much later; do not prepare credentials or enable a live provider. Keep the
 proposal/PDF unchanged.
 
 **PR #38 is merged and B1 is accepted.** Reviewed head `0e2a0d7` merged as
@@ -254,7 +270,7 @@ The completed broader coverage milestone superseded the earlier two-tool
 stopping point. The [inventory](secure-tool-coverage.md) records interactive and
 secure support, accepted B0–B8 scope and later professional-use gaps. Roughly
 40 tools remains a long-term target; executable counts do not replace protocol
-coverage or verification. The current catalog slice preserves these boundaries.
+coverage or verification. The accepted catalog and current workflow preserve these boundaries.
 
 Refresh the proposal with verified progress in early November and target submission
 around 9 November after operator review. Documentation PR #31 on
@@ -1145,21 +1161,22 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Check the current workflow branch/PR and private handoff before repeating work.
-   PR #46, B0–B8 and offline R5/local R6 are closed. PRs #6–#30 and #32–#46 stay
-   closed; proposal PR #31 remains separate.
-2. Complete and review the separately versioned owned Nmap service → ffuf →
-   header workflow. Preserve accepted single-tool profiles, invocations and
-   parsers; all seven approval/audit/admission/launcher gates remain required.
-3. Verify useful actual execution in all three declared fixture cases, raw
-   evidence/replay, fixed request/output/resource bounds, negative authority
-   tests and cleanup. Record legitimate completion, unnecessary refusals, safety,
-   zero actual provider cost and descriptive latency. Mocks, skips and blocked
-   legitimate work do not count as successful execution. Injected metadata is
-   deterministic content-handling evidence, not model-induced proposal evidence.
-4. Leave the workflow PR ready for operator review and its corresponding merge
-   instruction. Optional tools, broader composition and comparative benchmarking
-   remain outside this slice; do not reopen accepted milestones.
+1. Review [PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47) at its latest
+   head and inspect the private handoff/checks before repeating work. PR #46,
+   B0–B8 and offline R5/local R6 are closed. PRs #6–#30 and #32–#46 stay closed;
+   proposal PR #31 remains separate.
+2. Preserve the new workflow's exact three actions and predecessor gates, both
+   runtime commitments, same-lab counters, independently replayed raw evidence,
+   and all seven approval/audit/admission/launcher gates. Existing single-tool
+   contracts and catalog recipes are unchanged.
+3. Local validation is complete; use the saved receipts. Mocks, skipped cases or
+   blocked legitimate work do not establish useful execution. Injected metadata
+   is deterministic content handling, not a model-induced proposal. Actual zero
+   provider cost and descriptive latency are not simulated costs or a benchmark.
+4. Merge only under its corresponding instruction after fresh review and passing
+   checks. Then select the next bounded practical gap from the evidence; optional
+   tools, broader composition and comparative benchmarking are separate later
+   slices. Do not reopen completed milestones.
 5. Keep model credentials, paid calls and live evaluation deferred until much
    later. External targets, real service credentials, intrusive activity,
    publication and competition submission retain their separate authorization.
