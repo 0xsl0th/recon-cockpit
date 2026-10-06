@@ -11,8 +11,8 @@ evidence, enforced limits, independent review and operator-authorized merges.
 Interactive support remains distinct from secure execution; closure does not
 establish the full professional product.
 
-The next bounded implementation is a [read-only CLI catalog](secure-tool-catalog.md).
-Expose all 20 accepted capabilities with fixed parameters, native/executable
+The current implementation is a [read-only CLI catalog](secure-tool-catalog.md),
+prepared for separate review. It exposes all 20 accepted capabilities with fixed parameters, native/executable
 identity, parser/profile versions, action and session limits, report caveats and
 existing owned-lab dry-run recipes. Recipes must disclose multi-action selectors
 and retain every existing gate. Listing or describing a tool must work without

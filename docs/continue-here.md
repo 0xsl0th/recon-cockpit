@@ -15,7 +15,11 @@ Implementation is in `/tmp/recon-secure-tool-catalog`, branch
 `feature/secure-tool-catalog`, based on merged main `47d70a2`. The
 [catalog](secure-tool-catalog.md) lists the accepted profiles and describes their
 exact parameters, limits, result semantics and existing owned-lab dry-run recipes.
-It does not inspect host prerequisites or create execution authority. Leave this
+It does not inspect host prerequisites or create execution authority. Clean
+implementation `8abb502` passed 8,399 portable tests and all 19 distinct recipes
+through the isolated dry-run path, each with unchanged evidence replay and zero
+tool executions/provider calls. Private receipts and the latest `handoff.json`
+are in `.secure-agent/tool-catalog-20261006` in the primary checkout. Leave this
 slice ready for review; a later merge requires its corresponding instruction.
 Deeper workflow composition, comparative benchmarking and optional additions are
 outside this slice. Model credentials, paid calls and live evaluation remain much

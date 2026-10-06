@@ -1,5 +1,59 @@
 # Verification record
 
+## Read-only secure-tool catalog — 6 October 2026
+
+Implementation `8abb502df13f75530babba4cb6e110b079cb5808` adds `--list-tools`
+and `--describe-tool TOOL_ID`. The catalog derives identity/schema/profile/parser
+metadata from the registry and exact recipe actions from existing pure contracts.
+A reviewed mapping supplies executable families, normal selectors, policies,
+runbooks and report caveats. All 20 accepted capabilities and 11 external programs
+are represented; shared TCP/HTTP examples produce 19 distinct recipes.
+
+The new CLI branch returns before policy, audit, evidence or execution handling.
+Every explicitly supplied non-catalog option is rejected, including policy/audit
+values equal to defaults and abbreviated execution flags. Listing/describing does
+not inspect host prerequisites or read credentials. Tests run the catalog from an
+empty working directory without installed tools, check a non-Linux platform and
+use a fresh-process guard against runtime imports, user-data reads, networking,
+process launch and file writes. The catalog is descriptive and cannot grant
+execution authority.
+
+Validation passed the complete **8,399-test portable suite**, with no failures,
+errors or selected skips, in 243.50 seconds. The 762 integration cases were
+intentionally deselected. This includes **213 new catalog cases** (66 contract
+and 147 CLI cases); the earlier 503-case focused CLI regression run overlaps the
+complete suite. Python 3.11 grammar, dependency consistency, local documentation
+links and `git diff --check` also passed.
+
+On the same clean implementation, all **19/19 distinct generated recipes** ran
+through the existing isolated Linux path with their shipped approval-required
+policies, all seven gates and explicit `--dry-run`. They completed as dry runs,
+recorded zero successful actions, remained inconclusive with
+`dry_run_has_no_execution_evidence`, and produced no tool result artifacts.
+Every saved bundle independently replayed without integrity issues or changes
+to bytes, modes or mtimes. No personal approval was requested or synthesized.
+These checks validate recipes and isolated preparation/evidence behavior; they
+are not new native tool executions or comparative performance measurements.
+Actual B0–B8 execution evidence remains in the accepted records below.
+
+Private receipts are in `.secure-agent/tool-catalog-20261006` in the primary
+checkout: `validation/portable.xml`, `validation-summary.json`, the archived
+`verification-script.py`, `recipe-verification.json` and `runs/<tool>/evidence`.
+The portable JUnit SHA-256 is
+`e79cb3fcdc0beb5dadcf4225c884b003e816be796cce92770c05ae5dcf4588ed`;
+the verifier SHA-256 is
+`fb9d7102783e6c5313606fa6c6a0e00462115f30c90c7d41d97449dae18449e5`.
+Local hashes detect inconsistency, not host-owner tampering. Final review and
+hosted-check outcomes are recorded in the PR and private handoff; the catalog
+is not accepted on main until its corresponding authorized merge.
+
+No accepted action, policy, workflow card, parser, executable/runtime profile,
+lab fixture or evidence format changed. The other production change is the
+catalog CLI branch and updated help. Credentials, paid calls and live-model
+work remain deferred; provider calls and cost were zero. Deeper workflow and
+benchmark work, optional tools, accepted R5/R6 scope and the proposal/PDF remain
+outside this slice. See [the catalog runbook](secure-tool-catalog.md).
+
 ## PR #45 acceptance and coverage closure — 6 October 2026
 
 [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45) merged as `47d70a2`
