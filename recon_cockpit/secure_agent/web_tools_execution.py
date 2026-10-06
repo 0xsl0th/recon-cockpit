@@ -24,6 +24,9 @@ def consume_launch(raw, nonce, context_digest, *, now=None):
             or not hmac.compare_digest(hashlib.sha256(raw).hexdigest(), context_digest)):
         raise ValueError("web_tool_launch_commitment_mismatch")
     value = load_json(raw)
+    if type(value) is dict and value.get("mode") == "owned_service_web_lab":
+        from .service_web_execution import consume_launch as consume_service_web
+        return consume_service_web(raw, nonce, context_digest, now=now, expected_tool="ffuf_content_discovery_v1")
     if (set(value) != {"mode", "launch", "identity", "namespaces", "runtime"}
             or value["mode"] != "owned_web_tools_lab"):
         raise ValueError("invalid_web_tool_launch")

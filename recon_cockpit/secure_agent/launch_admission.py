@@ -11,7 +11,7 @@ from uuid import UUID
 
 from .models import load_json, parse_action, parse_policy
 from .tool_adapters import (NMAP_SESSION_LIMITS, WEB_TOOLS_LIMITS, CURL_TOOL_ID, FFUF_TOOL_ID,
-                            CURL_PARAMETERS, FFUF_PARAMETERS)
+                            CURL_PARAMETERS, FFUF_PARAMETERS, NMAP_SERVICE_PARAMETERS, HTTP_HEADERS_PARAMETERS)
 
 MAX_PACKET = 32768
 MAX_REQUESTS = 32
@@ -99,17 +99,17 @@ def configuration(value):
     if (type(value) is not dict
             or set(value) != {'version', 'service_id', 'session_id', 'policy', 'limits', 'execute', 'profile', 'case'}
             or value['version'] != '1' or type(value['execute']) is not bool
-            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab'}
+            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'}
             or (value['profile'] in {'owned_lab', 'owned_nmap_lab'} and (type(value['case']) is not str or value['case'] not in 'abcdef'
                                                      or len(value['case']) != 1))
-            or (value['profile'] in {'owned_web_lab', 'owned_http_headers_lab'} and (type(value['case']) is not str
+            or (value['profile'] in {'owned_web_lab', 'owned_http_headers_lab', 'owned_service_web_lab'} and (type(value['case']) is not str
                 or value['case'] not in ('vulnerable', 'corrected', 'injected')))
             or (value['profile'] == 'owned_web_tools_lab' and (type(value['case']) is not str
                 or value['case'] not in ('curl-ok', 'curl-untrusted', 'curl-redirect', 'curl-injected', 'curl-stalled',
                     'curl-malformed', 'ffuf-normal', 'ffuf-wildcard', 'ffuf-injected', 'ffuf-stalled')))
             or (value['profile'] == 'owned_network_tools_lab' and (type(value['case']) is not str
                 or value['case'] not in NETWORK_TOOL_CASES))
-            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab'} and value['case'] is not None)):
+            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'} and value['case'] is not None)):
         raise ValueError('invalid_admission_configuration')
     identity(value['service_id'])
     identity(value['session_id'])
@@ -123,6 +123,9 @@ def configuration(value):
     if value['profile'] == 'owned_network_tools_lab' and any(
             value['limits'][key] > maximum for key, maximum in {'max_steps': 1, 'max_runtime_seconds': 60, 'max_output_bytes': 8192}.items()):
         raise ValueError('invalid_network_tools_admission_limits')
+    if value['profile'] == 'owned_service_web_lab' and any(
+            value['limits'][key] > maximum for key, maximum in {'max_steps': 3, 'max_runtime_seconds': 60, 'max_output_bytes': 18432}.items()):
+        raise ValueError('invalid_service_web_admission_limits')
     parse_policy(value['policy'])
     return deepcopy(value)
 
@@ -180,6 +183,11 @@ def receipt(value, outcome):
 def profile_allows(action, config):
     if action.targets != ('127.0.0.1',):
         return False
+    if config['profile'] == 'owned_service_web_lab':
+        parameters = {'nmap_service_identify_v1': NMAP_SERVICE_PARAMETERS,
+                      'ffuf_content_discovery_v1': FFUF_PARAMETERS, 'http_headers_v1': HTTP_HEADERS_PARAMETERS}
+        return (type(config.get('case')) is str and config['case'] in ('vulnerable', 'corrected', 'injected')
+                and action.tool_id in parameters and action.parameters.to_dict() == parameters[action.tool_id])
     if config['profile'] == 'owned_network_tools_lab':
         tool_id = NETWORK_TOOL_CASES.get(config['case']) if type(config['case']) is str else None
         return action.tool_id == tool_id and action.parameters.to_dict() == {
@@ -258,6 +266,9 @@ class AdmissionState:
         elif self._policy.evaluate(action).decision == 'deny':
             reason = 'admission_policy_denied'
         elif not profile_allows(action, self.config):
+            reason = 'admission_profile_denied'
+        elif (self.config['profile'] == 'owned_service_web_lab' and self._steps < 3
+                and action.tool_id != ('nmap_service_identify_v1', 'ffuf_content_discovery_v1', 'http_headers_v1')[self._steps]):
             reason = 'admission_profile_denied'
         elif self._steps >= self.config['limits']['max_steps']:
             reason = 'admission_step_limit'

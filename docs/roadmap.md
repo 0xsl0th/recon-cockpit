@@ -4,28 +4,42 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — discover and inspect accepted secure tools (6 October 2026).**
+**Current slice — one evidence-gated owned service/web workflow (6 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
-G1–G6, including useful real owned-lab execution, structured results, replayable
-evidence, enforced limits, independent review and operator-authorized merges.
-Interactive support remains distinct from secure execution; closure does not
-establish the full professional product.
+G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
+[PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
+[read-only catalog](secure-tool-catalog.md) at `0d5cbdc`; all five final and
+post-merge checks passed. Preserve its recipes and the accepted tool contracts.
+Interactive support remains distinct from secure execution, and these bounded
+milestones do not establish the full professional product.
 
-The current implementation is a [read-only CLI catalog](secure-tool-catalog.md),
-prepared for separate review. It exposes all 20 accepted capabilities with fixed parameters, native/executable
-identity, parser/profile versions, action and session limits, report caveats and
-existing owned-lab dry-run recipes. Recipes must disclose multi-action selectors
-and retain every existing gate. Listing or describing a tool must work without
-Linux, installed binaries, policies, credentials, approvals or file writes.
+The next implementation composes three existing capabilities in one separately
+versioned [owned service/web workflow](service-web-assessment.md): Nmap service
+identification → finite ffuf discovery → HTTP headers. Only a complete HTTP
+service match can unlock ffuf, and only complete non-wildcard discovery of the
+fixed portal can unlock its fixed header GET. The authority independently checks
+all actions, sequence, policy, session limits and predecessor results. No observed
+URL, advertised service or hostile metadata can change the fixed actions.
 
-Completion requires deterministic catalog/recipe validation, regression checks,
-an independent review and a reviewable PR. No execution contract is expanded.
-After this slice is accepted, the next candidate is one bounded Nmap service
-identification → finite ffuf discovery → header workflow, using the accepted
-tools in a separately versioned owned-lab profile. Deeper composition and paired
-benchmarking remain outside the catalog slice; comparative usefulness, unnecessary
-refusals, safety, cost and latency must accompany that later workflow evaluation.
-Optional tools and a forty-tool quota do not become implicit prerequisites.
+Completion requires actual execution of all three tools in each vulnerable,
+corrected and injected-metadata fixture, useful structured findings, bounded
+requests/output, closed labs, independent read-only evidence replay, enforcement
+witnesses and a reviewed PR. Record legitimate completion, unnecessary refusals,
+blocked unauthorized destination attempts, actual provider cost and local CLI
+latency. The injected case must retain hostile metadata in raw ffuf evidence
+while completing legitimate work; it is deterministic content handling, not a
+real-model injection evaluation. Local validation is complete in
+[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47): 3/3 useful native
+workflows, 9/9 actions, 18/18 blocked destination witnesses, no unnecessary
+refusals, no provider calls/cost and unchanged evidence replay. The slice remains
+open for review and its corresponding merge instruction. See [verification](verification.md).
+
+This slice has no comparative arm. Paired baseline/authority benchmarking and
+richer workflow decisions remain separate later work; descriptive local latency
+cannot establish authority overhead. Optional tools and a forty-tool quota do
+not become prerequisites. Choose the next bounded gap only after reviewing this
+workflow's evidence; keep completed coverage, offline R5 and accepted local R6
+closed.
 
 The inventory baseline is PR #37, merged as `ba0d6f8`: 10 interactive executable
 families versus 6 secure capabilities backed by 3 external programs. PR #38 adds
@@ -68,8 +82,8 @@ deferred until much later; do not ask for a key during tool development. Complet
 offline R5 and the accepted local R6 candidate remain closed. Broader authenticated,
 intrusive and external-target product capabilities retain separate authorization.
 
-Through October, make accepted tools accessible via the catalog, then take the
-next bounded workflow through review and owned-lab validation. Refresh the proposal
+Through October, take the bounded service/web workflow through review and
+owned-lab validation, building on the accepted catalog. Refresh the proposal
 with verified results in early November, targeting submission around 9 November
 after operator review. Proposal PR #31 remains separate and unmerged; its local PDF is unchanged.
 GUI/API, publication and competition submission remain separate later decisions.

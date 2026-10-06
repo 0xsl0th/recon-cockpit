@@ -1,5 +1,78 @@
 # Verification record
 
+## Owned Nmap service → ffuf → headers workflow — 6 October 2026
+
+Implementation `a1a186bdf2b1d42059716365de80abae9e0cd723`, based on accepted
+main `0d5cbdc`, adds one separate shared-lab workflow in
+[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47). Existing capability
+parameters, executable arguments, parsers and catalog recipes remain unchanged.
+Complete HTTP identification gates finite discovery; complete non-wildcard portal
+evidence gates the final fixed header GET. Both executable manifests are pinned
+before execution. Admission, launcher, backend and native/owner phases enforce
+the ordered profile and cumulative limits independently.
+
+The complete portable run passed **8,776 tests**, with 771 integration cases
+intentionally deselected and no selected failures, errors or skips. Linux
+validation passed **128 distinct cases**: nine new workflow/authority cases and
+119 affected existing Nmap, ffuf, headers, admission and launcher regressions.
+Independent CLI/evidence and runtime/authority reviews found no blockers; their
+973- and 991-test focused runs overlap the full suite. Hosted CI is portable;
+these native enforcement results are local Linux evidence.
+
+| Clean-source owned case | Useful outcome | Actions | Requests / connections | Combined output bytes | CLI process wall time |
+| --- | --- | --- | --- | --- | --- |
+| Vulnerable | `gaps_observed` | 3/3 | 10 / 11 | 4,113 | 7.589 s |
+| Corrected | `reviewed_headers_present` | 3/3 | 10 / 11 | 4,238 | 7.660 s |
+| Injected metadata | `gaps_observed` | 3/3 | 10 / 11 | 4,377 | 7.590 s |
+
+Useful completion was **3/3 workflows and 9/9 actions**, with **zero unnecessary
+refusals**. All **18/18 deliberate forbidden-IP/port witness attempts** were
+blocked; none reached an unauthorized destination. Every retained result reports
+its required enforcement checks, and all three labs closed with matching totals.
+The injected ffuf artifact retains the hostile Content-Type parameter in its
+line-delimited JSON; normalized observations and fixed follow-up actions exclude
+that instruction. Raw tool/header reparsing and read-only report replay matched.
+All **24 accepted B1–B8 bundles** also replayed without changing bytes or mtimes.
+
+Actual provider calls and cost were **zero**. No real credentials were read or
+live integration enabled. Timing includes local CLI startup and the secure path;
+the internal `elapsed_ms` values are 7,101, 7,154 and 7,094 respectively. There is
+no comparison arm, so neither measure establishes authority overhead. This is
+deterministic hostile-content handling, not evidence of model susceptibility or
+an induced out-of-scope proposal. Header observations do not prove exploitability.
+
+Validation used an explicitly unattended synthetic policy; the shipped policy
+still requires fresh personal approval for each action. Automated witnesses and
+negative approval tests do not constitute an operator rehearsal or acceptance.
+The initial native fixture rejected Nmap's first empty TCP reset. The fix permits
+only that first reset before any application bytes; partial/later resets and
+other errors still fail closed. Negative fixture tests cover that distinction.
+The first combined Linux receipt retains one test-only failure from treating
+ffuf NDJSON as one JSON document; all nine new Linux tests subsequently passed.
+Two auxiliary-verifier assertion errors (parameter-map indexing and assuming
+empty ffuf diagnostic output) are also retained separately. They required no
+production changes and do not count as final validation.
+
+Private evidence is `.secure-agent/service-web-20261006` in the primary checkout:
+`verification.json`, `validation-summary.json`, archived `verification-script.py`,
+`validation/`, `runs/<case>/evidence`, retained `development/` failures and the
+latest `handoff.json`. Hashes and runtime commitments establish local consistency,
+not host-owner tamper resistance. [The runbook](service-web-assessment.md) states
+scope, commands, completion criteria and report limits. The workflow is open for
+review; B0–B8, offline R5 and accepted local R6 remain closed. Credentials, paid
+calls, live-model evaluation, optional tools and broader benchmarking remain deferred.
+
+## PR #46 catalog acceptance — 6 October 2026
+
+[PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) merged at 02:24:31 UTC
+as `0d5cbdc67b87cb2c8fc43522dfbe86e59e875352` after fresh review of `ef1cadb`.
+The reviewed and merged tree is `705d6866c9a2dfe61ce081cbbd629fe75c1edf89`.
+Fresh reviews found no blockers; 213 focused tests passed and all 19 saved dry-run
+bundles replayed unchanged. All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37403185851)
+and all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37403977730)
+passed. The catalog is accepted; preserve its recipes and inert behavior.
+Private merge receipt: `.secure-agent/pr46-merge-review.json`.
+
 ## Read-only secure-tool catalog — 6 October 2026
 
 Implementation `8abb502df13f75530babba4cb6e110b079cb5808` adds `--list-tools`
@@ -44,8 +117,8 @@ The portable JUnit SHA-256 is
 the verifier SHA-256 is
 `fb9d7102783e6c5313606fa6c6a0e00462115f30c90c7d41d97449dae18449e5`.
 Local hashes detect inconsistency, not host-owner tampering. Final review and
-hosted-check outcomes are recorded in the PR and private handoff; the catalog
-is not accepted on main until its corresponding authorized merge.
+hosted-check outcomes are recorded in the PR and private handoff; PR #46
+subsequently accepted the catalog as recorded above.
 
 No accepted action, policy, workflow card, parser, executable/runtime profile,
 lab fixture or evidence format changed. The other production change is the

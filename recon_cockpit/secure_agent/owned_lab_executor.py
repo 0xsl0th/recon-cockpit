@@ -61,6 +61,11 @@ def validate_launch(raw, nonce, context_digest):
             or not hmac.compare_digest(hashlib.sha256(raw).hexdigest(), context_digest)):
         raise ValueError("owned_lab_launch_mismatch")
     envelope = load_json(raw)
+    if type(envelope) is dict and envelope.get("mode") == "owned_service_web_lab":
+        from recon_cockpit.secure_agent.service_web_execution import consume_launch
+        request, deadline, namespaces, _ = consume_launch(
+            raw, nonce, context_digest, expected_tool="http_headers_v1")
+        return request, deadline, namespaces
     if (type(envelope) is not dict or set(envelope) != {"mode", "launch", "identity", "namespaces"}
             or envelope["mode"] not in {"owned_lab", "owned_web_lab", "owned_http_headers_lab"}):
         raise ValueError("invalid_owned_lab_launch")

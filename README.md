@@ -22,11 +22,15 @@ profiles. [RPC registration and NFS export metadata](docs/rpc-nfs-tools.md) are 
 [Fixed Docker health/version and WinRM endpoint metadata](docs/docker-winrm-tools.md) are accepted.
 [Finite Nmap service identification](docs/nmap-service-tools.md) is accepted in PR #44.
 [Synthetic Kerberos principal reports](docs/kerberos-tools.md) are accepted in PR #45,
-with client-report limitations preserved. The current follow-on is a
-[read-only CLI catalog](docs/secure-tool-catalog.md): list accepted profiles,
-inspect their exact scope and find existing owned-lab dry-run recipes. Deeper
-workflow composition, comparative benchmarking and optional tools remain later
-slices.
+with client-report limitations preserved. The merged
+[read-only CLI catalog](docs/secure-tool-catalog.md) lists accepted profiles,
+shows their exact scope and supplies existing owned-lab dry-run recipes. The
+current follow-on is a bounded [Nmap → ffuf → HTTP header workflow](docs/service-web-assessment.md)
+using three existing capabilities in one disconnected owned lab. Complete
+service and path-discovery evidence gates the next fixed action. This separate
+workflow has passed local validation and is open for review in
+[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47); broader composition,
+comparative benchmarking and optional tools remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.
 
@@ -169,6 +173,16 @@ contract is the foundation for later bundled tools. All isolated approval,
 admission and audit gates are mandatory; no public model is enabled. See
 [reviewed tool adapters](docs/tool-adapters.md) for prerequisites, limits and the
 complete command. Existing assessment profiles and evidence remain compatible.
+
+`--service-web-assessment` composes the accepted Nmap service-identification,
+ffuf and HTTP-header capabilities in one persistent owned lab. A complete HTTP
+service observation gates eight fixed path checks; complete non-wildcard discovery
+with a successful fixed portal gates its header request. The three-action session
+keeps every approval, admission and audit gate, and records useful completion,
+raw/structured evidence, elapsed time and zero provider calls/cost. The injected
+variant retains hostile ffuf metadata while deterministic planning stays fixed.
+See [the service/web workflow](docs/service-web-assessment.md) for the policy,
+commands, validation criteria and limits. It does not enable a model provider.
 
 `--workflow-assessment` runs the TCP-connect/HTTP path from a reviewed, versioned workflow card.
 The deterministic engine records the evidence and reason for each proposal or
