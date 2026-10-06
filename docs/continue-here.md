@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: personal graphical walkthrough (priority 2c).**
+**Current authorized work: fix graphical phrase copy/paste, then retry the personal walkthrough (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -93,8 +93,13 @@ useful workflow completion. There is no desktop Execute control yet, no restored
 approval and no personal graphical walkthrough receipt. The prepared command is
 plan-only by default; see the runbook for explicit owned-fixture execution.
 
-**Current continuation:** personally exercise four approvals, a fresh
-denial session and a fresh cancellation session. Record the owner's observations
+**Current continuation:** the phrase copy/paste correction is implemented for
+review. A read-only selectable field and explicit Copy button leave the answer
+empty until the operator pastes; Approve once remains separate. All 45 native
+graphical tests passed, including actual confined copy/paste, stale-phrase rejection
+and 4/4 useful clipboard-driven actions with 12/12 forbidden destinations blocked.
+After validation and review, personally retry four approvals, a fresh denial
+session and a fresh cancellation session. Record the owner's observations
 separately from scripted test input. Then add the desktop execution controls through
 the same shared service and finish priority 2 acceptance. Subsequent secure-tool
 batches remain priority 3; real network attachment needs separate authorization.
@@ -106,11 +111,14 @@ with no selected failures/errors/skips. Scripted graphical review completed
 **4/4 useful actions**, blocked **12/12 listening forbidden destinations**,
 recorded zero unnecessary refusals/provider calls/cost and replayed unchanged.
 Native elapsed time was 8,569 ms; it is not personal-review latency or a benchmark.
-The personal walkthrough terminal was opened with a separate owner-controlled
-`start` prompt before each session. No session starts merely from opening it.
-Private progress/results live under `.secure-agent/graphical-owner-20261006/`;
-inspect them and obtain the owner's observations before recording acceptance.
-No personal walkthrough completion is claimed by this checkpoint. Keep local
+The initial personal walkthrough exposed a usability defect: the phrase was a
+nonselectable label, and the owner reported being unable to copy/paste it. Both
+started sessions timed out with zero grants consumed and zero tool launches; the
+cancellation session did not start. These are unsuccessful trials, not approval,
+denial or cancellation acceptance. Retain their private evidence and feedback in
+`.secure-agent/graphical-owner-20261006/`. The screenshot and copy-fix validation
+belong in `.secure-agent/graphical-copy-20261006/`. Personal acceptance remains
+outstanding; no retry has been claimed. Keep local
 Linux/Tk evidence distinct from portable CI and retain earlier validation receipts.
 Private images stay outside Git. The proposal/PDF and separate PR #31 remain unchanged.
 

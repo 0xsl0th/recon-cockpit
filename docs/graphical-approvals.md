@@ -18,8 +18,11 @@ The separate worker owns its Tk window, fresh challenge, grant store and direct
 launcher-witness sender. Its screen displays the exact tool profile, target,
 port, method/path where present, timeout/output limits, session, policy scope and
 both action/policy digests. Planner rationale is omitted; displayed fields use
-literal ASCII JSON escaping. The operator types a new phrase and chooses
-**Approve once**. Return never approves. Deny, window close, stale/incorrect input,
+literal ASCII JSON escaping. The phrase is shown in a selectable read-only field.
+The operator can choose **Copy phrase**, paste it into the answer field with
+**Ctrl+V**, and then choose **Approve once**, or type the phrase manually.
+Copying or pasting alone never supplies approval. Return never approves.
+Deny, window close, stale/incorrect input,
 channel activity/loss and the original session deadline cannot supply a grant.
 
 The authority channel retains only bounded `review` and `consume` requests with
@@ -58,6 +61,13 @@ input came from a human against a compromised host, display server or privileged
 client. The display capability belongs only to the reviewer, not to planners,
 tools, the launcher or their namespaces. Existing model/service credential setup,
 paid calls and external network attachment remain deferred.
+
+Copying is an explicit operation on the trusted local desktop clipboard. Selecting
+the read-only phrase does not overwrite the primary selection. The reviewer does
+not automatically replace or clear unrelated clipboard contents. A copied phrase
+may remain on the clipboard after review, but it cannot approve a later prompt:
+each review generates a fresh challenge and still requires an explicit approval.
+Clipboard content does not enter audit or evidence records.
 
 ## Shared-service integration
 
@@ -108,7 +118,12 @@ four exact actions, then use a fresh session to deny an action and another to
 cancel while a prompt is pending. Record what was displayed and whether the
 prompts, destinations and cleanup were clear. Do not reuse automated test input
 or label it personal acceptance. The prepared entry point does not itself record
-that this walkthrough has happened. No owner walkthrough has been claimed here.
+that this walkthrough has happened. No personal usability acceptance is claimed here.
+
+The first personal attempt exposed the nonselectable label and ended without any
+approved tool execution. The copy/paste correction must be validated and personally
+retried; the initial timeouts do not establish usability acceptance. Preserve those
+receipts separately from the corrected run.
 
 ## Validation interpretation
 

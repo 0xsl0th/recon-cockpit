@@ -1,5 +1,48 @@
 # Verification record
 
+## Graphical approval copy/paste correction — 6 October 2026
+
+The initial personal walkthrough exposed a usability defect: the fresh challenge
+was a nonselectable label. The owner reported being unable to copy/paste it. Both
+started sessions ended at the unchanged 60-second deadline with zero consumed
+grants and zero tool launches; the cancellation session was not started. Preserve
+those unsuccessful trials in `.secure-agent/graphical-owner-20261006/`. They do not
+establish successful personal approval, denial, cancellation or usability acceptance.
+
+The correction uses a selectable read-only phrase field and an explicit **Copy
+phrase** button. Copy sets only the clipboard and answer-field focus, with a
+Ctrl+V hint. It does not fill the answer or approve. Normal paste retains the
+128-character input limit, and **Approve once** remains a separate action.
+Copy is disabled outside an active unexpired review; cleanup clears local fields
+without reading/restoring or clearing unrelated clipboard content. Existing X11
+trust, runtime restrictions, protocol, grants, witnesses and limits remain intact.
+
+**45 native Linux/Tk tests passed in 40.43 seconds**, with no failures/errors/skips:
+29 actual confined-worker/workflow cases and 16 direct-view cases on a private
+Xvfb display with TCP disabled. Tests exercise Copy and paste after the worker's
+restrictions are installed, copy-only denial, stale clipboard rejection, one-use
+grants, expiry/cancel/channel failures and the existing adversarial requests.
+Direct-view cases include scripted Ctrl+C/Ctrl+V key events, read-only selection,
+oversized paste rejection, inactive/expired copy preserving unrelated clipboard,
+and Return leaving approval pending. Test callback assertion failures now exit
+the fixture worker, so they cannot masquerade as expected denials.
+
+Both the existing typed-input fixture and the new clipboard fixture completed
+**4/4 useful actions** with **12/12 forbidden destination checks blocked** per run,
+zero unnecessary refusals, zero provider calls/cost and unchanged independent
+evidence replay. Elapsed times were 8,373 ms and 8,840 ms respectively. These are
+descriptive runs with scripted test input; they are not a paired overhead benchmark
+or personal approval. No operator challenge is entered by automation on the real
+desktop. A fresh personal retry remains necessary before desktop execution controls.
+
+The final source hashes, JUnit, owned evidence and two inspected screenshots at
+900×740 and 780×650 are private under `.secure-agent/graphical-copy-20261006/`.
+The initial four-case confined clipboard run and separate 16-case direct-view run
+remain development evidence; use `native-final-results.xml` for the combined final
+run. Read-only phrase, Copy button, answer field and both decision controls fit
+at both tested sizes. Fresh source review found no security blocker. Python 3.11
+syntax and whitespace checks passed. Model credentials and paid calls remain deferred.
+
 ## PR #52 acceptance and personal walkthrough preparation — 6 October 2026
 
 Fresh runtime/protocol and worker/view reviews found no blockers at

@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — personal graphical walkthrough (6 October 2026).**
+**Current slice — graphical approval usability and personal walkthrough (6 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -70,7 +70,10 @@ Priority **2c remains current**, with these explicit acceptance steps:
   it does not establish personal approval. Existing terminal behavior remains the
   default. Runtime support is currently the documented local Linux/X11 layout.
 - **Personal walkthrough, then desktop execution — outstanding.** Personally
-  exercise approval, denial and pending
+  retry after fixing the nonselectable phrase reported by the owner. Copy/paste
+  must remain separate from explicit approval, with unchanged bindings and limits.
+  The initial two sessions timed out with zero tool launches and do not establish
+  acceptance. Exercise approval, denial and pending
   cancellation using the prepared entry point. Record the observed results before
   adding a desktop Execute control through the same shared service. Do not attach
   to a real network, restore grants or claim professional readiness in this step.
