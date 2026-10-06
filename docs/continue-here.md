@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: fix graphical phrase copy/paste, then retry the personal walkthrough (priority 2c).**
+**Current authorized work: review the corrected graphical input path, then retry the personal walkthrough (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -93,14 +93,22 @@ useful workflow completion. There is no desktop Execute control yet, no restored
 approval and no personal graphical walkthrough receipt. The prepared command is
 plan-only by default; see the runbook for explicit owned-fixture execution.
 
-**Current continuation:** the phrase copy/paste correction is implemented for
-review. A read-only selectable field and explicit Copy button leave the answer
-empty until the operator pastes; Approve once remains separate. All 45 native
-graphical tests passed, including actual confined copy/paste, stale-phrase rejection
-and 4/4 useful clipboard-driven actions with 12/12 forbidden destinations blocked.
-After validation and review, personally retry four approvals, a fresh denial
-session and a fresh cancellation session. Record the owner's observations
-separately from scripted test input. Then add the desktop execution controls through
+**Current continuation:** PR #53 contains a validated correction for a personal
+retry failure and remains a draft pending personal acceptance. Copy/paste worked,
+but the approval trial stopped after one action
+with `approval_unavailable`; the denial-labeled trial stopped with the same error
+and zero actions. The cancellation-labeled trial completed two actions before
+the 60-second timeout; it does not establish successful cancellation. Preserve
+these unsuccessful trials in `.secure-agent/graphical-owner-copy-20261006/`.
+The earlier 45 native tests used scripted input and missed these gestures. Real
+XTEST input reproduced Tab and double-click selection trying to load deferred
+Tcl/Tk helpers after the filesystem-open seal. The correction loads only the
+fixed focus/word helpers before sealing, keeping the restrictions unchanged.
+All 51 native and 112 focused portable checks passed, including six genuine
+XTEST interaction regressions and both four-action workflow modes. All three
+failed owner bundles independently replay as incomplete without integrity issues.
+Review the correction and hosted checks before another personal retry. Record the owner's observations separately from
+scripted test input. After personal acceptance, add desktop execution controls through
 the same shared service and finish priority 2 acceptance. Subsequent secure-tool
 batches remain priority 3; real network attachment needs separate authorization.
 
@@ -118,7 +126,7 @@ cancellation session did not start. These are unsuccessful trials, not approval,
 denial or cancellation acceptance. Retain their private evidence and feedback in
 `.secure-agent/graphical-owner-20261006/`. The screenshot and copy-fix validation
 belong in `.secure-agent/graphical-copy-20261006/`. Personal acceptance remains
-outstanding; no retry has been claimed. Keep local
+outstanding; the subsequent retry failed as described above. Keep local
 Linux/Tk evidence distinct from portable CI and retain earlier validation receipts.
 Private images stay outside Git. The proposal/PDF and separate PR #31 remain unchanged.
 

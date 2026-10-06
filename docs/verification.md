@@ -1,5 +1,53 @@
 # Verification record
 
+## Personal graphical retry failure — 6 October 2026
+
+At PR #53 head `b045a24252f54b11f131f39514e9afdc0926b65d`, the owner could copy
+and paste the phrase, but the real desktop retry exposed another failure. The
+approval-labeled session completed one action, then stopped with
+`approval_unavailable` after 28,311 ms. The denial-labeled session stopped with
+the same error after 5,998 ms, with no actions. The cancellation-labeled session
+completed two actions, then reached the 60-second limit (60,038 ms elapsed).
+Stage labels describe intended tests; they do not prove denial or cancellation.
+None of these trials establishes successful personal walkthrough acceptance.
+All used zero provider calls and zero model cost.
+
+Private Xvfb tests with real XTEST input reproduced a concrete cause: Tab needs
+Tk's deferred `focus.tcl` helpers, and double-click selection in the phrase or
+action details needs Tcl's deferred `word.tcl` helpers. Loading these files after
+the worker's filesystem-open seal is denied. Tk's binding error reaches stderr,
+and the authority correctly stops with `approval_unavailable`. Basic mouse clicks
+and Copy → Ctrl+V → Approve worked, including a private XFWM/clipboard-manager
+session. The original trial logs do not identify the owner's exact triggering
+gesture; this reproduction establishes the defect without inventing that detail.
+
+The correction preloads and verifies eight fixed focus/word helper commands
+before sealing, leaving existing commands intact on repeated warmup. It changes
+no filesystem/network restrictions, approval protocol, grants, witnesses or limits.
+The original private five-case reproduction had three failures before the fix
+and none afterward. Six repository regressions drive the unmodified worker with
+real XTEST Tab/Shift-Tab, double-click selection and word navigation/deletion;
+each requires the review to remain pending before a separate approval or denial.
+
+**51 native Linux/Tk cases passed in 48.08 seconds**, without failures, errors or
+skips. Both existing typed-input and clipboard workflow modes completed 4/4 useful
+actions, blocked 12/12 forbidden destinations per mode and replayed unchanged,
+with zero unnecessary refusals/provider calls/cost. Elapsed times were 8,603 ms
+and 8,625 ms; these are scripted-fixture timings, not human latency or a paired
+benchmark. **112 focused portable tests passed.** Independent source reviews
+found no blocker. Final receipts use `helpers-native-results.xml` and
+`helpers-portable-focused.xml` under `.secure-agent/graphical-copy-20261006/`;
+the original failing and corrected reproductions are retained there separately.
+
+All three failed owner bundles independently replay as incomplete without
+integrity issues, with unchanged file hashes. Replay requires the existing
+isolated parsers; the earlier sandbox-limited reconciliation result is retained
+separately. PR #53 remains a draft pending personal acceptance. Earlier native
+scripted-input and hosted portable checks passed, but did not cover these gestures.
+Preserve private logs, bundles, screenshot and `failure-summary.json` under
+`.secure-agent/graphical-owner-copy-20261006/`. The fix is ready for review before
+another personal retry. Ordinary desktop execution remains disabled.
+
 ## Graphical approval copy/paste correction — 6 October 2026
 
 The initial personal walkthrough exposed a usability defect: the fresh challenge

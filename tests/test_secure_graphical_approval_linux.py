@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 import os
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 import threading
 import time
@@ -39,6 +41,84 @@ def action():
     return parse_action({'schema_version': '1', 'action_id': str(uuid4()), 'tool_id': 'http_probe',
         'target': '127.0.0.1', 'parameters': {'port': 8080, 'method': 'GET', 'path': '/',
         'timeout_seconds': 1, 'max_output_bytes': 1024}, 'rationale': 'untrusted-hidden-rationale'})
+
+
+@pytest.mark.parametrize('gesture,answer', [
+    ('tab', 'deny'), ('reverse_tab', 'approve'), ('double_phrase', 'deny'),
+    ('double_details', 'approve'), ('entry_word_keys', 'approve'), ('details_word_keys', 'deny'),
+])
+def test_real_x_input_traversal_and_selection_survive_worker_seal(gesture, answer):
+    """XTEST drives unmodified worker bindings, including Tcl lazy-load paths.
+
+    This requires xdotool on the opted-in owned display. It never reads the
+    challenge into the host test or invokes a widget's command directly.
+    """
+    executable = shutil.which('xdotool')
+    assert executable, 'owned graphical interaction validation requires xdotool'
+
+    def xinput(*arguments, check=True):
+        return subprocess.run([executable, *(str(value) for value in arguments)],
+            check=check, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=3)
+
+    proposed, policy = action(), demo_policy(approval=True)
+    control = ExecutionControl(time.monotonic() + 12)
+    with LinuxApprovalService(policy, str(uuid4()), frontend='graphical_v1') as service:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            pending = executor.submit(service.review, proposed, policy, control=control)
+            window = None
+            wait_until = time.monotonic() + 5
+            while time.monotonic() < wait_until and not pending.done():
+                found = xinput('search', '--onlyvisible', '--name',
+                               '^Recon Cockpit \\| Review exact action$', check=False)
+                if found.returncode == 0 and found.stdout.strip():
+                    identifiers = found.stdout.splitlines()
+                    assert len(identifiers) == 1, 'expected one review window on the owned display'
+                    window = identifiers[0]
+                    break
+                time.sleep(.04)
+            assert window is not None, 'private graphical review window did not open'
+            geometry = xinput('getwindowgeometry', '--shell', window).stdout
+            assert 'WIDTH=900\n' in geometry and 'HEIGHT=740\n' in geometry
+            xinput('windowfocus', window)
+            time.sleep(.1)
+
+            def click(x, y, repeat=1):
+                xinput('mousemove', '--window', window, x, y)
+                time.sleep(.04)
+                xinput('click', '--repeat', repeat, '--delay', 90, 1)
+
+            if gesture == 'tab':
+                xinput('key', 'Tab')
+            elif gesture == 'reverse_tab':
+                xinput('key', 'shift+Tab')
+            elif gesture == 'double_phrase':
+                click(100, 574, 2)
+            elif gesture == 'double_details':
+                click(95, 110, 2)
+            elif gesture == 'entry_word_keys':
+                click(814, 573)  # Copy moves focus to the still-empty answer.
+                xinput('key', 'ctrl+v', 'ctrl+Left', 'ctrl+shift+Right', 'ctrl+BackSpace')
+                xinput('key', 'Home', 'shift+End', 'BackSpace')
+            else:
+                click(95, 110)
+                xinput('key', 'ctrl+Right', 'ctrl+Left', 'ctrl+shift+Right')
+            time.sleep(.2)
+            # Traversal/selection must leave the original pending review alive.
+            assert not pending.done(), 'ordinary widget interaction ended the review'
+            if answer == 'approve':
+                click(814, 573)
+                xinput('key', 'ctrl+v')
+                click(802, 700)
+            else:
+                click(686, 700)
+            reference = pending.result(timeout=5)
+            assert bool(reference) == (answer == 'approve')
+            if reference:
+                assert service.consume(reference, proposed, policy) is None
+        assert service.boundary_checks == dict.fromkeys(graphical.CHECKS, True)
+        assert not service._supervisor.buffers['worker_err']
+        process = service._process
+    assert process.poll() is not None
 
 
 def instrument(tmp_path, monkeypatch, *, answer='approve', extra=''):

@@ -48,7 +48,10 @@ regular file owned by the operator and not writable by other users. The mounted
 socket identity and actual connected AF_UNIX peer must match the bootstrap.
 
 The worker establishes its intentional X11 connection and warms Tk before its
-final restrictions. It then verifies private namespaces, dropped capabilities,
+final restrictions. Warmup explicitly loads and verifies the fixed focus and word
+helpers used by Tab/Shift-Tab, double-click selection and word navigation. These
+helpers must already be available when filesystem opens are sealed; repeated
+warmup leaves loaded helpers intact. It then verifies private namespaces, dropped capabilities,
 no new privileges, a read-only root and blocked socket/process/namespace creation.
 Additional restrictions block filesystem opens, new connections/listeners and
 FD-passing operations during review. Tk's remote `send` interface is removed,
@@ -121,9 +124,12 @@ or label it personal acceptance. The prepared entry point does not itself record
 that this walkthrough has happened. No personal usability acceptance is claimed here.
 
 The first personal attempt exposed the nonselectable label and ended without any
-approved tool execution. The copy/paste correction must be validated and personally
-retried; the initial timeouts do not establish usability acceptance. Preserve those
-receipts separately from the corrected run.
+approved tool execution. The copy/paste correction worked in a subsequent personal
+retry, but the reviewer returned `approval_unavailable`; another session timed out.
+PR #53 preloads the required fixed helpers and passes the native real-input
+regressions; it remains a draft pending personal acceptance. Review the correction
+and hosted checks before retrying. Neither set of unsuccessful trials
+establishes usability acceptance; preserve them separately from automated evidence.
 
 ## Validation interpretation
 
@@ -133,6 +139,12 @@ witness; it is not an owner approval receipt. Separate direct-view tests verify
 literal rendering, disabled remote Tcl sends, fresh/stale/pretyped input, Return,
 close, channel loss and deadlines. Portable doubles establish API/protocol behavior
 only. Existing terminal and shared-service regressions remain required.
+
+Six additional native cases require `xdotool` on that private display. They drive
+the unmodified confined worker through real XTEST Tab/Shift-Tab, double-click
+selection and word-navigation/deletion events. Each gesture must leave the review
+pending until a separate mouse approval or denial. These tests never interact
+with the owner's display or establish personal acceptance.
 
 The useful trial must complete 4/4 actions with structured evidence and independent
 replay, zero unnecessary refusals and all 12 listening forbidden destinations

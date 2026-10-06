@@ -151,6 +151,17 @@ class ReviewWindow:
         """Load fonts/widget paths while the worker still permits setup access."""
         if self._closed:
             raise ValueError("graphical_review_closed")
+        # Tk leaves keyboard traversal and word-selection helpers lazy. Real
+        # Tab/double-click/Ctrl-arrow bindings otherwise try to read focus.tcl or
+        # word.tcl after the worker has sealed filesystem opens. Load only these
+        # fixed helpers, and skip existing commands so repeated warmup is inert.
+        for name in ("tk_focusNext", "tk_focusPrev", "tk::FocusOK",
+                     "tcl_wordBreakAfter", "tcl_wordBreakBefore", "tcl_endOfWord",
+                     "tcl_startOfNextWord", "tcl_startOfPreviousWord"):
+            if not self._root.tk.call("info", "commands", name):
+                self._root.tk.call("auto_load", name)
+            if not self._root.tk.call("info", "commands", name):
+                raise ValueError("graphical_interaction_helpers_missing")
         self._root.update_idletasks()
         self._pump()
 

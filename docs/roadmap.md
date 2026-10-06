@@ -69,11 +69,15 @@ Priority **2c remains current**, with these explicit acceptance steps:
   owned workflow through all seven gates. Native scripted input verifies behavior;
   it does not establish personal approval. Existing terminal behavior remains the
   default. Runtime support is currently the documented local Linux/X11 layout.
-- **Personal walkthrough, then desktop execution — outstanding.** Personally
-  retry after fixing the nonselectable phrase reported by the owner. Copy/paste
-  must remain separate from explicit approval, with unchanged bindings and limits.
-  The initial two sessions timed out with zero tool launches and do not establish
-  acceptance. Exercise approval, denial and pending
+- **Personal walkthrough, then desktop execution — outstanding.** PR #53 fixes
+  phrase selection/copying, but its personal retry exposed `approval_unavailable`
+  on the real desktop despite passing scripted tests. Private real-input tests
+  reproduced deferred focus/word helpers loading after filesystem sealing; the
+  correction preloads only those helpers. All 51 native and 112 focused portable
+  checks pass. Review the correction and hosted checks before another owner retry.
+  Copy/paste must remain separate
+  from explicit approval, with unchanged bindings and limits. Initial timeouts
+  and the subsequent failed retry do not establish acceptance. Exercise approval, denial and pending
   cancellation using the prepared entry point. Record the observed results before
   adding a desktop Execute control through the same shared service. Do not attach
   to a real network, restore grants or claim professional readiness in this step.
