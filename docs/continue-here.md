@@ -106,7 +106,7 @@ unidentified outcomes. Main now has **19 accepted secure capabilities backed by
 10 programs**. Private receipts: `.secure-agent/pr44-merge-review.json` and
 `.secure-agent/nmap-service-tools-20261002` in the primary checkout.
 
-**B8 synthetic Kerberos is the current and final required coverage batch.**
+**B8 synthetic Kerberos is implemented and lab-verified in [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45).**
 Worktree `/tmp/recon-secure-kerberos-coverage`, branch
 `feature/secure-kerberos-coverage`, starts from merged main `fcb9419`.
 The separate `kerbrute_userenum_v1` profile runs the real executable against an
@@ -123,8 +123,21 @@ spoof scenario makes that limitation visible; it does not count as verified
 negative discovery or successful injection detection. No result grants follow-up
 authority. See [kerberos-tools.md](kerberos-tools.md).
 
-Implementation validation is in progress. B8 and the broader milestone remain
-open through independent review, passing latest checks and an authorized merge.
+Clean source `de40f28` completed both legitimate reporting tasks 2/2 with zero
+unnecessary refusals, plus a separately counted spoof-ambiguity demonstration.
+All six forbidden-destination witnesses were blocked; all three labs closed,
+raw evidence/replay matched, and all 21 accepted bundles replayed unchanged.
+CLI times were 2.854–2.982 seconds, with zero provider calls/cost. Local validation
+passed 8,198 distinct portable and 252 distinct Linux tests, with no selected
+failures, errors or skips. Independent reviews found no remaining blockers.
+
+Private evidence is `.secure-agent/kerberos-tools-20261002` in the primary
+checkout (work began 2 October; final validation 6 October). It includes
+`verification.json`, `validation-summary.json`, the archived verifier, retained
+failed development/test-instrumentation receipts and the latest `handoff.json`.
+See [verification.md](verification.md). PR #45 is prepared for review after its
+final hosted checks. B8 and the broader milestone remain open through the latest
+review/checks and the corresponding authorized merge.
 No required protocol row follows B8: after its acceptance, reconcile gates G1–G6
 and present the next bounded product slice for review. Roughly forty tools remains
 a long-term direction, not a claim that this finite milestone delivers the full

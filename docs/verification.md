@@ -1,5 +1,112 @@
 # Verification record
 
+## B8 synthetic Kerberos coverage — 6 October 2026
+
+[PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44) accepted B7 at `fcb9419`
+after fresh review of `f81c444`; its merge tree matches the reviewed revision.
+All five [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36965365612)
+and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36966387286)
+passed. Fresh reviews passed 1,147 runtime/policy and 836 parser/evidence tests;
+twelve additional recomputed-policy cases confirmed GET enforcement. All 21
+B1–B7 bundles replayed unchanged. Private merge receipt:
+`.secure-agent/pr44-merge-review.json` in the primary checkout. B7 stays closed.
+
+B8 is implemented and lab-verified in [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45),
+pending latest review/checks and an authorized merge. The clean implementation
+revision is `de40f283a449a639f299a4d4ed7f4fb685b99186`. The separate
+`kerbrute_userenum_v1` capability queries only two compiled synthetic names against
+an error-only owned KDC. Main has 19 accepted capabilities/10 programs; acceptance
+of this candidate would make 20/11. All 77 accepted B1–B7 specs, cards,
+descriptors and actions remain exact; an aggregate regression pins their hash to
+`d52fefa1868fb80d2b632c5d246e64350d8e6ba833c16083a112b09d9c3a0cae`.
+See [the runbook](kerberos-tools.md) for the bounded invocation and limitations.
+
+### Actual native behavior and metrics
+
+| Scenario | Structured result | Connections / validated AS-REQs | Meaning |
+| --- | --- | --- | --- |
+| Normal | Tool reports exists, unknown | 2 / 2 | Complete finite reporting task. |
+| All unknown | Tool reports unknown, unknown | 2 / 2 | Complete finite reporting task, no authenticated absence claim. |
+| Spoofed error text | Tool reports unknown, unknown | 2 / 2 | Native error-string ambiguity demonstrated; not verified negative discovery or successful injection detection. |
+| Denied, generic hostile, malformed | Inconclusive despite native exit zero | 2 / 2 each | Complete valid reports are required before useful work is counted. |
+| Stalled | Timeout, inconclusive | 1 / 1 | Five-second native deadline and cleanup enforced. |
+
+The two legitimate clean-source reporting tasks completed **2/2**, with **zero
+unnecessary refusals**. The separate spoof trial demonstrated the known ambiguity
+**1/1**. All three clean trials closed their labs and independently reparsed and
+replayed their evidence without changing bytes or mtimes. All **6/6** explicit
+forbidden-IP/port witness attempts were blocked, with zero unauthorized destination
+successes. No provider call, cost, live integration or real credential read occurred.
+
+Clean-source CLI times were **2,982 ms normal**, **2,854 ms all unknown** and
+**2,875 ms spoof**. These local timings include secure infrastructure, under
+concurrent development validation; they are descriptive, not an authority-overhead
+benchmark. Complete normal output is 649 bytes; all-unknown and spoof output are
+654 bytes, with empty stderr. Each action retains the 8,192-byte combined cap,
+one-action/60-second session, fixed endpoint and two-request ceiling.
+
+The four-file runtime totals 11,406,848 bytes, with digest
+`be1306080d3125bae70b8ab9e50eb730c464e5f6b190827facddd39c959edd0d`.
+The B8-only launcher tag permits a 2 GiB virtual address-space ceiling; the native
+worker retains sixteen tasks, 64 descriptors, zero filesystem writes and
+`GOMAXPROCS=1`/`GOMEMLIMIT=64MiB`. Actual negative kernel tests confirmed widened
+UDP permission and a widened task cap trigger their production witnesses before
+exec, and both normal/Kerberos launcher-tag substitutions stop before reservations.
+No prior tool's limits or authority were expanded.
+
+### Validation and retained receipts
+
+Local validation passed **8,198 distinct portable tests** (8,162 full run plus
+36 final cases) and **252 distinct Linux tests**, with no selected failures,
+errors or skips. The Linux union is 11 B8 workflow/gate/cleanup tests, four
+additional B8 kernel tests and 237 accepted-tool/launcher regressions. The latter
+includes all 77 accepted B1–B7 native scenarios. Pytest emitted only the known
+JUnit `record_property` compatibility warnings.
+
+| Receipt | Passing cases | SHA-256 |
+| --- | --- | --- |
+| `validation/portable.xml` | 8162 | `5e87ab22011e03848334ea2ccf2afb0fe3f03e5813ea24833bafd75e6268f09a` |
+| `validation/final-focused.xml` | 584 | `4968ef31e491b8787dcc72061bc4576c3ded7faaec3ba888abb5fc13a001c2cc` |
+| `validation/b8-linux.xml` | 11 | `fa70a7c0e933bd6c0114e2662623db2de27cedcc4e47ce84de37351f64340a7c` |
+| `validation/b8-extra-linux.xml` | 4 | `dc318c581a724ad55ddfb08749f5b6cc043a6d4ff510e28a52d5d9c55f3f4289` |
+| `validation/regression-linux.xml` | 237 | `0f84395e6567a5abc5b83bab795f0250d36de96e3671152ea3cd875d58a52c0a` |
+
+Python 3.11 grammar validation, dependency consistency, local Markdown-link
+checks and `git diff --check` passed. Hosted PR checks run the complete portable
+suite on Linux Python 3.11–3.14 and macOS Python 3.14; final CI status is recorded
+in the PR and the private handoff, separately from local kernel evidence.
+
+Independent reviews covered runtime/launcher, fixture, parser, authority,
+counters, evidence and current documentation with no remaining blockers. Actual
+Kerbrute output matched the strict parser in every scenario. The spoof and genuine
+unknown logs differ only in timestamps/elapsed time: the normalized observation
+therefore keeps `semantics: tool_report_only` and `authentication_verified: false`.
+The Markdown report carries the same caveat and both per-principal reports.
+
+Private evidence remains `.secure-agent/kerberos-tools-20261002` in the primary
+checkout; its name records when work began, with final validation on 6 October.
+`verification.json`, the archived `verification-script.py`, validation JUnit/logs,
+review receipts and `runs/<case>/evidence` contain the exact source and artifacts.
+The verifier hash is
+`180e2a7e30dcbad9ea70d651e57511a62a02bf8c46ea9c0ec6b0db2b4c25bdb6`.
+It replayed all 21 accepted B1–B7 bundles unchanged. These files remain local and
+ignored by Git; automated unattended grants are explicitly synthetic test
+instrumentation, not human acceptance or reusable approval.
+
+Two initial development failures remain retained: Go could not reserve memory
+under the inherited 256 MiB launcher cap, and the strict KDC initially rejected
+the serializer's exactly empty PA-DATA container. The fixes are scoped to B8's
+checked launcher tag and acceptance of omitted/exactly empty PA-DATA; credential
+entries remain forbidden. Two failed kernel-test instrumentation receipts are
+also retained separately from the final passing tests. No failed or skipped run
+is counted as completion.
+
+B8 and the broader coverage milestone remain open through G6. After authorized
+acceptance, reconcile the full finite checklist and present the next bounded
+product slice. Optional tools, deeper workflow composition, comparative
+benchmarking, model credentials, paid calls and live evaluation remain deferred.
+The accepted offline R5/local R6 and proposal/PDF remain unchanged.
+
 ## B7 finite Nmap service identification — 2 October 2026
 
 B6 was accepted by [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43) at

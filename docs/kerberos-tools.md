@@ -2,9 +2,9 @@
 
 B8 adds `kerbrute_userenum_v1` to the existing single-action secure tool path.
 It is the final required protocol-family row in the
-[coverage checklist](secure-tool-coverage.md). Implementation and validation are
-in progress; acceptance still requires independent review, latest checks and an
-authorized merge. Main's accepted B0–B7 capabilities remain unchanged.
+[coverage checklist](secure-tool-coverage.md). It is implemented and lab-verified in
+[PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45); acceptance still requires
+latest review/checks and an authorized merge. Main's accepted B0–B7 capabilities remain unchanged.
 
 This profile runs the real Kerbrute executable against an owned synthetic KDC
 at `127.0.0.1:8080`. Its compiled list contains only `fixture-a` and `fixture-b`,
@@ -115,7 +115,14 @@ zero unnecessary refusals on those tasks, bounded output, matching replay and
 closed labs. The spoof trial is tracked separately. Forbidden IP/port witnesses
 must be blocked with zero unauthorized destination successes. Report descriptive
 CLI latency and zero provider calls/cost; comparative overhead remains deferred.
-See [verification.md](verification.md) for final receipts when validation completes.
+Local validation passed 8,198 distinct portable and 252 distinct Linux tests,
+including all seven actual B8 scenarios and enforcement/cleanup cases. Clean
+source `de40f28` completed both legitimate reporting tasks 2/2 with zero
+unnecessary refusals; the spoof demonstration is counted separately. All six
+forbidden-destination witnesses were blocked, all labs closed and all 21 accepted
+bundles replayed unchanged. See [verification.md](verification.md) for exact
+receipts and limits; hosted portable checks remain distinct from local kernel
+execution evidence.
 
 Credentials, paid calls, live-model evaluation, external directories, deeper
 workflows and optional tools remain deferred. After B8 acceptance, reconcile the

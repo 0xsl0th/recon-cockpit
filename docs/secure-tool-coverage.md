@@ -19,7 +19,8 @@ at `02a7d7f`, bringing main to **18 secure capabilities backed by the same 10
 programs**. [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44) accepted B7
 bounded Nmap service identification at `fcb9419`; all final and post-merge checks
 passed. Main now has **19 accepted capabilities backed by 10 programs**.
-B8 synthetic Kerberos is being implemented and verified. Acceptance would bring
+B8 synthetic Kerberos is implemented and lab-verified in
+[PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45), awaiting review/merge. Acceptance would bring
 main to **20 capabilities backed by 11 programs**; its row remains open through G6.
 
 ## What the inventory measures
@@ -92,7 +93,7 @@ such and is not counted as accepted main coverage.
 | B6 | Docker API metadata with curl | [x] Accepted in PR #43 | Separate fixed GET profiles for /_ping and /version; complete health and bounded JSON observations, no container lifecycle, filesystem or command endpoints. |
 | B6 | WinRM endpoint metadata with curl | [x] Accepted in PR #43 | One fixed unauthenticated endpoint response; report status/authentication schemes; no login, SOAP operations or shell. |
 | B7 | Nmap service identification | [x] Accepted in PR #44 | Real Nmap HTTP/SSH matches and honest unidentified results from two compiled probes and a pinned no-op NSE entrypoint. Structured XML replay, policy/approval/enforcement and cleanup verified; old TCP-only profile preserved. |
-| B8 — current | Kerberos principal enumeration with kerbrute | [ ] Implementation and validation in progress | Real Kerbrute against an error-only owned KDC, two compiled synthetic names, two requests, structured tool-reported exists/unknown with the error-text ambiguity disclosed. No passwords, spraying, ticket extraction or real directory. |
+| B8 — current | Kerberos principal enumeration with kerbrute | [ ] Lab-verified; PR #45 review/merge pending | Real Kerbrute against an error-only owned KDC, two compiled synthetic names, two requests, structured tool-reported exists/unknown with the error-text ambiguity disclosed. No passwords, spraying, ticket extraction or real directory. |
 
 Batch order follows missing protocol families and existing interactive precedents,
 then runtime/fixture complexity. At each batch handoff, compare the remaining

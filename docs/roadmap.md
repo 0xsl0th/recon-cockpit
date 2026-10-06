@@ -32,8 +32,9 @@ at `02a7d7f`, bringing main to 18 capabilities backed by 10 programs.
 service identification at `fcb9419`, bringing main to **19 capabilities backed by
 10 programs**. Final and post-merge checks passed; preserve its finite probe
 contract. B8 synthetic Kerberos is the current, final required protocol-family
-batch: real Kerbrute, two compiled names, an owned error-only KDC and explicit
-limits on the meaning of tool-reported exists/unknown. See [the runbook](kerberos-tools.md).
+batch, lab-verified in [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45):
+real Kerbrute, two compiled names, an owned error-only KDC and explicit limits
+on the meaning of tool-reported exists/unknown. Review/merge remain. See [the runbook](kerberos-tools.md).
 
 | Priority | Required batch | Completion criterion beyond common gates G1–G6 |
 | --- | --- | --- |
