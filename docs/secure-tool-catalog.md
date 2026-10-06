@@ -83,7 +83,8 @@ means no match from the finite probes. Advertised ports, names, paths and scheme
 never authorize follow-up actions.
 
 The [coverage checklist](secure-tool-coverage.md) is closed under those accepted
-limits. This catalog changes usability only. The next candidate is a separately
-versioned bounded Nmap service → ffuf → headers workflow; deeper composition,
-comparative benchmarking and optional tools remain outside this slice. Model
+limits. This catalog was accepted in PR #46 at `0d5cbdc` and changes usability
+only. A separately versioned [Nmap service → ffuf → headers workflow](service-web-assessment.md)
+is the current follow-on; the catalog recipes retain their accepted behavior.
+Broader composition, comparative benchmarking and optional tools remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

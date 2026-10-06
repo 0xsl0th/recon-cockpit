@@ -58,6 +58,15 @@ def run_assessment(args, policy, audit):
         lab_type, backend_type, provider_type = NetworkToolsLab, AuthorizedNetworkToolsBackend, NetworkToolsProvider
         workflow_profile = 'network_tools'
 
+    if getattr(args, 'service_web_assessment', None):
+        from .service_web_lab import ServiceWebLab
+        from .service_web_backend import AuthorizedServiceWebBackend
+        from .service_web_workflow import ServiceWebProvider
+        from .service_web_contract import capability_descriptor as capability, LIMITS as limits_profile
+        case = args.service_web_assessment
+        lab_type, backend_type, provider_type = ServiceWebLab, AuthorizedServiceWebBackend, ServiceWebProvider
+        workflow_profile = 'service_web'
+
     overrides = {key: value for key, value in zip(
         ('max_steps', 'max_runtime_seconds', 'max_output_bytes'),
         (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)) if value is not None}
@@ -65,10 +74,17 @@ def run_assessment(args, policy, audit):
     session_id = str(uuid4())
     from .execution import ExecutionControl
     from .nmap_contract import encode
-    deadline = time.monotonic() + limits.max_runtime_seconds
+    started = time.monotonic()
+    deadline = started + limits.max_runtime_seconds
     runtime_manifest = None
+    runtime_bindings = None
     if args.execute:
-        if workflow_profile == 'network_tools':
+        if workflow_profile == 'service_web':
+            from .service_web_runtime import inspect_service_web_runtime
+            runtime_manifest = inspect_service_web_runtime(ExecutionControl(deadline))
+            runtime_bindings = {tool_id: hashlib.sha256(encode(value)).hexdigest()
+                                for tool_id, value in runtime_manifest.items()}
+        elif workflow_profile == 'network_tools':
             from .network_tools_runtime import inspect_tool_runtime
             from .network_tools_contract import action
             runtime_manifest = inspect_tool_runtime(action(case, 1)['tool_id'], ExecutionControl(deadline))
@@ -79,11 +95,14 @@ def run_assessment(args, policy, audit):
         else:
             from .nmap_runtime import inspect_nmap_runtime
             runtime_manifest = inspect_nmap_runtime(ExecutionControl(deadline))
-    runtime_sha256 = None if runtime_manifest is None else hashlib.sha256(encode(runtime_manifest)).hexdigest()
+    runtime_sha256 = None if runtime_manifest is None else hashlib.sha256(
+        encode(runtime_bindings if workflow_profile == 'service_web' else runtime_manifest)).hexdigest()
     coordinator = LinuxOfflineCoordinator()
     lab = lab_type(case, session_id, limits, execute=args.execute)
     original_backend = backend_type(policy, session_id, limits, lab, execute=args.execute)
-    if workflow_profile == 'network_tools':
+    if workflow_profile == 'service_web':
+        original_backend._service_web_manifests = runtime_manifest
+    elif workflow_profile == 'network_tools':
         original_backend._network_tools_manifest = runtime_manifest
     elif workflow_profile == 'web_tools':
         original_backend._web_tools_manifest = runtime_manifest
@@ -93,7 +112,8 @@ def run_assessment(args, policy, audit):
           _admission_context(args, original_backend, audit, approvals) as backend,
           NmapEvidenceStore(args.assessment_dir, session_id=session_id, policy=policy,
                            case=case, owned_lab=lab.identity, workflow_profile=workflow_profile,
-                           runtime_sha256=runtime_sha256, deadline=deadline) as evidence):
+                           runtime_sha256=runtime_sha256, deadline=deadline,
+                           **({'runtime_bindings': runtime_bindings} if workflow_profile == 'service_web' else {})) as evidence):
         provider = provider_type(case, evidence)
         runner = AuthoritySession(policy, audit, backend, coordinator, limits,
             session_id=session_id, provider=provider, evidence=evidence, approvals=approvals, deadline=deadline)
@@ -117,5 +137,9 @@ def run_assessment(args, policy, audit):
         'capability': capability(case) if workflow_profile == 'network_tools' else capability(),
         'live_calls_enabled': False,
         'actual_provider_calls': 0, 'workflow_card': report['workflow_card'],
-        'coordinator_boundary_checks': coordinator.boundary_checks})
+        'coordinator_boundary_checks': coordinator.boundary_checks,
+        **({'elapsed_ms': round((time.monotonic() - started) * 1000),
+            'actual_cost_microusd': 0,
+            'legitimate_task_completed': report['outcome'] in ('gaps_observed', 'reviewed_headers_present')}
+           if workflow_profile == 'service_web' else {})})
     return 0 if summary['session_status'] == 'completed' else 2

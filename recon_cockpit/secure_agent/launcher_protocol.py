@@ -16,11 +16,13 @@ PROFILES = {'fixture': 'linux-authorized-fixture-executor-v1',
             'owned_web_lab': 'linux-authorized-owned-web-lab-executor-v1',
             'owned_http_headers_lab': 'linux-authorized-owned-http-headers-executor-v1',
             'owned_web_tools_lab': 'linux-authorized-owned-web-tools-executor-v1',
-            'owned_network_tools_lab': 'linux-authorized-owned-network-tools-executor-v1'}
+            'owned_network_tools_lab': 'linux-authorized-owned-network-tools-executor-v1',
+            'owned_service_web_lab': 'linux-authorized-owned-service-web-executor-v1'}
 RUNTIME_TAGS = {'owned_nmap_lab': 'nmap-launch-preconditions', 'owned_web_lab': 'web-launch-preconditions',
     'owned_http_headers_lab': 'http-headers-launch-preconditions',
     'owned_web_tools_lab': 'web-tools-launch-preconditions',
-    'owned_network_tools_lab': 'network-tools-launch-preconditions'}
+    'owned_network_tools_lab': 'network-tools-launch-preconditions',
+    'owned_service_web_lab': 'service-web-launch-preconditions'}
 
 
 def runtime_tag(config, closure):
@@ -60,7 +62,7 @@ def decode(raw):
 
 
 def configuration(value):
-    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab'}:
+    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'}:
         from .owned_lab_contract import validate_identity
         if value['profile'] == 'owned_web_lab':
             from .web_lab_contract import validate_identity
@@ -70,6 +72,8 @@ def configuration(value):
             from .web_tools_lab_contract import validate_identity
         elif value['profile'] == 'owned_network_tools_lab':
             from .network_tools_lab_contract import validate_identity
+        elif value['profile'] == 'owned_service_web_lab':
+            from .service_web_lab_contract import validate_identity
         base = admission.configuration({key: item for key, item in value.items() if key != 'owned_lab'})
         return {**base, 'owned_lab': validate_identity(value.get('owned_lab'), case=base['case'])}
     value = admission.configuration(value)
@@ -78,10 +82,11 @@ def configuration(value):
     return value
 
 
-def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tools=False):
+def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tools=False, service_web=False):
     fields = ({'stdlib', 'files'} | ({'nmap_runtime'} if nmap else set()) |
-              ({'web_tools_runtime'} if web_tools else set()) | ({'network_tools_runtime'} if network_tools else set()))
-    if type(value) is not dict or set(value) != fields or (sum((nmap, web_tools, network_tools)) > 1):
+              ({'web_tools_runtime'} if web_tools else set()) | ({'network_tools_runtime'} if network_tools else set()) |
+              ({'service_web_runtime'} if service_web else set()))
+    if type(value) is not dict or set(value) != fields or (sum((nmap, web_tools, network_tools, service_web)) > 1):
         raise ValueError('invalid_launcher_runtime')
     if nmap:
         from .nmap_runtime import validate_manifest
@@ -92,6 +97,9 @@ def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tool
     if network_tools:
         from .network_tools_runtime import validate_manifest
         validate_manifest(value['network_tools_runtime'])
+    if service_web:
+        from .service_web_runtime import validate_manifests
+        validate_manifests(value['service_web_runtime'])
     if type(value['stdlib']) is not str or not re.fullmatch(r'/usr/lib/python3\.\d+', value['stdlib']):
         raise ValueError('invalid_launcher_stdlib')
     paths = value['files']
@@ -119,9 +127,10 @@ def initial(value, now):
         manifest(value['approval_witness'])
     config = configuration(value['configuration'])
     admission.initial({'configuration': {k: v for k, v in config.items() if k != 'owned_lab'}, 'deadline': value['deadline']}, now)
-    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab'},
+    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'},
             nmap=config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'},
-            web_tools=config['profile'] == 'owned_web_tools_lab', network_tools=config['profile'] == 'owned_network_tools_lab')
+            web_tools=config['profile'] == 'owned_web_tools_lab', network_tools=config['profile'] == 'owned_network_tools_lab',
+            service_web=config['profile'] == 'owned_service_web_lab')
     if config['profile'] == 'owned_web_tools_lab':
         from .web_tools_contract import action
         if value['runtime']['web_tools_runtime']['tool_id'] != action(config['case'], 1)['tool_id']:
@@ -142,6 +151,9 @@ def request(value, config, sequence):
             or value['policy_digest'] != admission.digest(config['policy'])):
         raise ValueError('invalid_launcher_request')
     action = parse_action(value['action'])
+    if (config['profile'] == 'owned_service_web_lab' and
+            action.tool_id != ('nmap_service_identify_v1', 'ffuf_content_discovery_v1', 'http_headers_v1')[sequence - 1]):
+        raise ValueError('invalid_launcher_service_web_step')
     if not admission.profile_allows(action, config):
         raise ValueError('invalid_launcher_action')
     return action

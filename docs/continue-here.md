@@ -4,26 +4,36 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: a read-only secure-tool catalog and owned-run recipes.**
-The [finite B0–B8 coverage milestone](secure-tool-coverage.md) is closed after
-PR #45's authorized merge, with 20 secure capabilities backed by 11 external
-programs. Its G1–G6 reconciliation preserves report limitations and distinguishes
-interactive commands from secure execution. Completed offline R5 and accepted
-local R6 stay closed.
+**Current authorized work: one bounded Nmap service → ffuf → HTTP headers workflow.**
+The finite [B0–B8 coverage milestone](secure-tool-coverage.md) is closed, with 20
+secure capabilities backed by 11 external programs. Offline R5 and accepted local
+R6 also stay closed. No required B9 or tool quota has been added.
 
-Implementation is in `/tmp/recon-secure-tool-catalog`, branch
-`feature/secure-tool-catalog`, based on merged main `47d70a2`. The
-[catalog](secure-tool-catalog.md) lists the accepted profiles and describes their
-exact parameters, limits, result semantics and existing owned-lab dry-run recipes.
-It does not inspect host prerequisites or create execution authority. Clean
-implementation `8abb502` passed 8,399 portable tests and all 19 distinct recipes
-through the isolated dry-run path, each with unchanged evidence replay and zero
-tool executions or live/paid model calls. Private receipts and the latest `handoff.json`
-are in `.secure-agent/tool-catalog-20261006` in the primary checkout. Leave this
-slice ready for review; a later merge requires its corresponding instruction.
-Deeper workflow composition, comparative benchmarking and optional additions are
-outside this slice. Model credentials, paid calls and live evaluation remain much
-later; no credential preparation is needed.
+**[PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) is merged and the read-only catalog is accepted.**
+Reviewed head `ef1cadb` merged as `0d5cbdc` at 02:24:31 UTC on 6 October, with an
+identical tree. Fresh production/CLI and evidence/documentation reviews found no
+blockers; 213 focused tests passed and all 19 saved dry-run bundles replayed
+unchanged. All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37403185851)
+and all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37403977730)
+passed. Preserve the [catalog](secure-tool-catalog.md), its accepted recipes and
+all existing tool contracts. Private receipt: `.secure-agent/pr46-merge-review.json`.
+
+New implementation is in `/tmp/recon-owned-tool-workflow`, branch
+`feature/owned-tool-workflow`, based on merged main `0d5cbdc`. It composes the
+three existing capabilities in a separate shared owned lab, with fixed actions,
+three-step/60-second/18,432-byte session limits and independently replayed evidence.
+The scenario corpus is vulnerable, corrected and injected metadata; useful
+completion must accompany enforcement checks. No comparison arm or real-model
+claim is part of this slice. Implementation and native validation are in progress;
+private development receipts are `.secure-agent/service-web-20261006` in the
+primary checkout. An initial native attempt stopped before publishing complete
+evidence; it is retained and does not count as successful execution.
+
+Leave the new workflow PR ready for review; a later merge needs its corresponding
+instruction. Optional tool expansion and comparative benchmarking remain later
+work. Model credentials, paid calls and live evaluation remain deferred until
+much later; do not prepare credentials or enable a live provider. Keep the
+proposal/PDF unchanged.
 
 **PR #38 is merged and B1 is accepted.** Reviewed head `0e2a0d7` merged as
 `5436dd6` at 04:11:12 UTC on 1 October. Its merge tree exactly matches the reviewed
@@ -1129,36 +1139,33 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #45 merge is complete. PRs #6–#30 and #32–#45
+- The operator-authorized PR #46 merge is complete. PRs #6–#30 and #32–#46
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Check the current catalog branch/PR and private handoff before repeating work.
-   B0–B8 and offline R5/local R6 are closed. PRs #6–#30 and #32–#45 stay closed;
-   proposal PR #31 remains separate.
-2. Finish review/checks of the [read-only catalog](secure-tool-catalog.md), preserving
-   all existing actions, policies, cards and runtime profiles. A recipe is neither
-   execution evidence nor approval. Leave its PR ready for the operator's review;
-   merge only under the corresponding instruction.
-3. After catalog acceptance, consider the bounded Nmap service → ffuf → headers
-   workflow recorded in the roadmap. It needs a separately reviewed shared owned
-   lab and authority profile; do not widen accepted single-tool profiles in place.
-   Broader composition, comparative benchmarking and optional tool additions stay
-   outside the catalog work.
-4. Keep model credentials, paid calls and live evaluation deferred until much
-   later. Preserve the accepted offline R5/R6 packet, terminal rehearsal and owner
-   decision; do not repeat acceptance or alter immutable evidence.
-5. Future tool or workflow slices must retain actual useful owned execution,
-   structured results, replayable evidence, enforcement and cleanup. Record
-   legitimate completion, unnecessary refusals, bounds, costs and latency. Mocks,
-   skipped tests and blocked legitimate tasks do not count as successful work.
-   External targets, real service credentials, intrusive activity, publication
-   and competition submission retain their separate authorization.
+1. Check the current workflow branch/PR and private handoff before repeating work.
+   PR #46, B0–B8 and offline R5/local R6 are closed. PRs #6–#30 and #32–#46 stay
+   closed; proposal PR #31 remains separate.
+2. Complete and review the separately versioned owned Nmap service → ffuf →
+   header workflow. Preserve accepted single-tool profiles, invocations and
+   parsers; all seven approval/audit/admission/launcher gates remain required.
+3. Verify useful actual execution in all three declared fixture cases, raw
+   evidence/replay, fixed request/output/resource bounds, negative authority
+   tests and cleanup. Record legitimate completion, unnecessary refusals, safety,
+   zero actual provider cost and descriptive latency. Mocks, skips and blocked
+   legitimate work do not count as successful execution. Injected metadata is
+   deterministic content-handling evidence, not model-induced proposal evidence.
+4. Leave the workflow PR ready for operator review and its corresponding merge
+   instruction. Optional tools, broader composition and comparative benchmarking
+   remain outside this slice; do not reopen accepted milestones.
+5. Keep model credentials, paid calls and live evaluation deferred until much
+   later. External targets, real service credentials, intrusive activity,
+   publication and competition submission retain their separate authorization.
 6. Keep the proposal/PDF unchanged until its planned early-November update. Avoid
-   GUI/API work, duplicate tools and provider-preparation detours. Keep local kernel
-   validation separate from hosted portable CI.
+   GUI/API and provider-preparation detours. Keep local kernel validation separate
+   from hosted portable CI.
 
 ## Recovery and verification
 

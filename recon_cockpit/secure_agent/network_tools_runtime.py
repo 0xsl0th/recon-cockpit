@@ -385,7 +385,7 @@ def _snapshot(manifest, control):
     return sealed_snapshots(manifest, source, raw, control)
 
 
-def _command(lab, bootstrap, manifest, descriptors, nonce, commitment):
+def _command(lab, bootstrap, manifest, descriptors, nonce, commitment, *, service_web=False):
     stdlib, files = bootstrap
     tool_files = runtime_files(manifest)
     tool_paths = {item["destination"] for item in tool_files}
@@ -402,7 +402,9 @@ def _command(lab, bootstrap, manifest, descriptors, nonce, commitment):
         if destination not in tool_paths and Path(destination).name not in {"nft", "bwrap", "nsenter"}:
             argv += ["--ro-bind", source, destination]
     directory = Path(__file__).parent
-    for name in MODULES:
+    extra_modules = (("service_web_execution", "service_web_contract", "service_web_lab_contract",
+                      "service_web_fixture", "http_headers_fixture", "web_tools_fixture") if service_web else ())
+    for name in (*MODULES, *extra_modules):
         argv += ["--ro-bind", str(directory / (name + ".py")), "/app/recon_cockpit/secure_agent/" + name + ".py"]
     for destination in ("/app/recon_cockpit/__init__.py", "/app/recon_cockpit/secure_agent/__init__.py"):
         argv += ["--ro-bind", str(directory / "__init__.py"), destination]
@@ -440,7 +442,9 @@ def run_network_tool_owned(*, lab, launch, control, closure=None, manifest=None)
     descriptors = _snapshot(manifest, control)
     try:
         code, stdout, stderr, reason = _capture_bounded(
-            _command(lab, bootstrap, manifest, descriptors, launch["launch"]["nonce"], commitment), raw,
+            (_command(lab, bootstrap, manifest, descriptors, launch["launch"]["nonce"], commitment, service_web=True)
+             if launch.get("mode") == "owned_service_web_lab" else
+             _command(lab, bootstrap, manifest, descriptors, launch["launch"]["nonce"], commitment)), raw,
             min(launch["launch"]["action"]["parameters"]["timeout_seconds"], control.remaining()),
             MAX_OUTPUT_BYTES + len(prefix), control=control, pass_fds=(*lab._namespace_fds, *descriptors))
     finally:

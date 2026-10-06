@@ -7,9 +7,11 @@ and comparative benchmarks. The gate reconciliation below closes that finite
 milestone; it does not certify general professional deployment. Completed offline
 R5 and accepted local R6 also remain closed.
 
-The current follow-on is a [read-only secure-tool catalog](secure-tool-catalog.md)
-that exposes the accepted profiles and existing owned-lab recipes. Optional tool
-expansion, deeper composition and comparative benchmarking are later slices.
+The [read-only secure-tool catalog](secure-tool-catalog.md) is accepted in PR #46
+at `0d5cbdc`. The current follow-on is one separately versioned
+[Nmap service → ffuf → headers workflow](service-web-assessment.md), reusing three
+accepted capabilities in an owned lab. Optional tool expansion, broader workflow
+composition and comparative benchmarking remain later slices.
 
 [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38) accepted B1 DNS/TLS.
 [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39) merged as `79abaab` and

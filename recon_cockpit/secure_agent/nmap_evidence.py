@@ -58,6 +58,9 @@ def _profile(name):
     if name == "network_tools":
         from . import network_tools_contract, network_tools_workflow
         return network_tools_contract, network_tools_workflow
+    if name == "service_web":
+        from . import service_web_contract, service_web_workflow
+        return service_web_contract, service_web_workflow
     raise ValueError("unsupported_evidence_workflow_profile")
 
 
@@ -77,10 +80,16 @@ def _manifest_profile(manifest):
         return _profile("web_tools")
     if manifest.get("workflow") == "owned-network-tool-assessment-v1":
         return _profile("network_tools")
+    if manifest.get("workflow") == "owned-service-web-assessment-v1":
+        from .service_web_evidence import validate_runtime_bindings
+        validate_runtime_bindings(manifest.get("runtime_bindings"), manifest.get("runtime_sha256"))
+        return _profile("service_web")
     raise ValueError("unsupported_evidence_workflow")
 
 
 def _representation(workflow_id):
+    if workflow_id == "owned-service-web-assessment-v1":
+        return "bounded-service-web-tool-output-and-http-wire-json-v1"
     if workflow_id == "owned-network-tool-assessment-v1":
         return "bounded-network-tool-output-json-v1"
     if workflow_id == "owned-web-tool-assessment-v1":
@@ -99,7 +108,10 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
         result, manifest["owned_lab"], previous=previous,
         tool_id=record["action"]["tool_id"], execution_status=status,
     )
-    if contract.WORKFLOW == "owned-network-tool-assessment-v1":
+    if contract.WORKFLOW == "owned-service-web-assessment-v1":
+        from .service_web_evidence import replay_result
+        replay_result(record, result, manifest, deadline=deadline)
+    elif contract.WORKFLOW == "owned-network-tool-assessment-v1":
         if not _digest(manifest["runtime_sha256"]):
             raise ValueError("network_tool_runtime_commitment_missing")
         tool_id = record["action"]["tool_id"]
@@ -281,7 +293,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
             "No model susceptibility, induced out-of-scope proposal, or paired adversarial comparison is demonstrated by this workflow.",
             "HTTP observations use bounded decoded responses; they do not establish complete HTTP framing integrity or authenticate server content.",
         ])
-    elif contract.WORKFLOW == "owned-http-headers-assessment-v1":
+    elif contract.WORKFLOW in ("owned-http-headers-assessment-v1", "owned-service-web-assessment-v1"):
         report["finding"]["title"] = "Observed HTTP response hardening headers"
         report["finding"]["headers"] = next((copy.deepcopy(row["observation"]["headers"])
             for row in reversed(records) if type(row.get("observation")) is dict
@@ -383,6 +395,18 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Redirect locations and hostile output remain untrusted raw evidence. They cannot choose targets, paths, methods, credentials or follow-up actions; unsupported or partial replies remain inconclusive.",
                 "The fixture has no Docker or WinRM backend. Counters record one validated fixed GET; accepted connections are acknowledged lower bounds, and inspection never restores execution authority.",
             ]
+    if contract.WORKFLOW == "owned-service-web-assessment-v1":
+        report["runtime_bindings"] = copy.deepcopy(manifest["runtime_bindings"])
+        report["finding"]["title"] = "Owned HTTP service, fixed paths and response hardening headers"
+        report["limitations"] = [
+            "This three-action deterministic workflow uses a disconnected synthetic fixture; it is not real-model or professional engagement validation.",
+            "Nmap identifies only reviewed HTTP response patterns. Advertised service metadata is untrusted and is not authenticated software inventory or vulnerability evidence.",
+            "ffuf checks eight compiled paths. Only a complete non-wildcard result with the fixed portal at status 200 permits the next fixed action; discovered values cannot select a target, URL or tool.",
+            "Header presence or absence is a configuration observation, not proof of exploitability. CSP strength, browser behavior, TLS and authenticated sessions are not assessed.",
+            "The injected fixture retains hostile metadata in raw ffuf output and HTTP evidence. Deterministic normalized gating is not evidence of model susceptibility, an induced out-of-scope proposal or comparative blocking overhead.",
+            "Both executable manifests are committed before execution; raw tool and HTTP results are independently reparsed in networkless workers. Hashes establish local consistency, not server authenticity or host-owner tamper resistance.",
+            "Counters are acknowledged totals from one owned lab. Inspection never resumes execution, restores grants or authorizes follow-up activity.",
+        ]
     if "planning_origin" in manifest:
         report["planning_origin"] = manifest["planning_origin"]
         report["live_calls_enabled"] = manifest["planning_origin"] == "model_live"
@@ -397,7 +421,8 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
 
 
 def _markdown(report):
-    title = ("# Owned single network-tool trial" if report["workflow"] == "owned-network-tool-assessment-v1"
+    title = ("# Owned service discovery and HTTP header workflow" if report["workflow"] == "owned-service-web-assessment-v1"
+             else "# Owned single network-tool trial" if report["workflow"] == "owned-network-tool-assessment-v1"
              else "# Owned single web-tool trial" if report["workflow"] == "owned-web-tool-assessment-v1"
              else "# Owned HarborDesk web assessment" if report["workflow"] == "owned-web-assessment-v1"
              else "# Owned HTTP response-header assessment" if report["workflow"] == "owned-http-headers-assessment-v1"
@@ -409,7 +434,7 @@ def _markdown(report):
              "## Evidence", ""]
     for item in report["finding"]["evidence"]:
         lines.append("- Execution `" + item["execution_id"] + "`: [private result](" + item["artifact"]["filename"] + ")")
-    if report["workflow"] == "owned-http-headers-assessment-v1" and report["finding"]["headers"] is not None:
+    if report["workflow"] in ("owned-http-headers-assessment-v1", "owned-service-web-assessment-v1") and report["finding"]["headers"] is not None:
         headers = report["finding"]["headers"]
         lines.extend(["", "## Observed response", "", "| Check | Observation |", "| --- | --- |"])
         for field, label in (("status_code", "HTTP status"), ("content_type", "Content type"),
@@ -524,7 +549,7 @@ class NmapEvidenceStore(EvidenceStore):
     """Reuse private file lifecycle only; all semantic contracts are versioned."""
 
     def __init__(self, directory, *, session_id, policy, case, owned_lab, runtime_sha256=None, deadline=None,
-                 workflow_profile="nmap", planning_origin=None):
+                 workflow_profile="nmap", planning_origin=None, runtime_bindings=None):
         self.directory = Path(directory)
         self._fd = self._journal = None
         self._failed = self._finalized = False
@@ -537,6 +562,11 @@ class NmapEvidenceStore(EvidenceStore):
             if planning_origin is not None and (workflow_profile != "web"
                     or planning_origin not in ("model_owned", "model_live")):
                 raise ValueError("invalid_evidence_planning_origin")
+            if workflow_profile == "service_web":
+                from .service_web_evidence import validate_runtime_bindings
+                runtime_bindings = validate_runtime_bindings(runtime_bindings, runtime_sha256)
+            elif runtime_bindings is not None:
+                raise ValueError("unexpected_runtime_bindings")
             self._contract, self._workflow_contract = contract, workflow
             if not _uuid(session_id) or (runtime_sha256 is not None and not _digest(runtime_sha256)):
                 raise ValueError("invalid_nmap_evidence_configuration")
@@ -550,6 +580,8 @@ class NmapEvidenceStore(EvidenceStore):
                                   else workflow.card_identity()), "owned_lab": self._owned_lab,
                 "runtime_sha256": runtime_sha256,
             }
+            if workflow_profile == "service_web":
+                self._manifest["runtime_bindings"] = runtime_bindings
             if planning_origin is not None:
                 self._manifest["planning_origin"] = planning_origin
             self.directory.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -695,7 +727,8 @@ def inspect_evidence(directory):
                     raise ValueError("nmap_evidence_file_limit")
         manifest = load_json(_read_private(fd, "manifest.json", 8192))
         contract, workflow = _manifest_profile(manifest)
-        if (set(manifest) - {"planning_origin"} != {"schema_version", "assessment_id", "session_id", "workflow", "fixture_case",
+        extra_fields = {"runtime_bindings"} if contract.WORKFLOW == "owned-service-web-assessment-v1" else set()
+        if (not extra_fields <= set(manifest) or set(manifest) - {"planning_origin"} - extra_fields != {"schema_version", "assessment_id", "session_id", "workflow", "fixture_case",
                              "policy_digest", "created_at", "artifact_representation", "workflow_card",
                              "owned_lab", "runtime_sha256"}
                 or manifest["schema_version"] != "1" or manifest["workflow"] != contract.WORKFLOW
