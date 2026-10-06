@@ -1,5 +1,31 @@
 # Verification record
 
+## PR #52 acceptance and personal walkthrough preparation — 6 October 2026
+
+Fresh runtime/protocol and worker/view reviews found no blockers at
+`7b547941b812e1f7fc9c598c756b540aff9fc1b6`. Additional review checks passed 35 actual
+graphical/workflow tests, 57 portable view/witness tests and 137 service/protocol
+tests (overlapping sets). All 14 source hashes, the screenshot and eight saved
+evidence hashes matched the existing receipts; JUnit confirmed 9,949 portable
+and 125 native cases with no selected failures/errors/skips. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37422834741)
+passed. The reviewed head merged as `21054db4d44098e8541c4c9a5edbf82dd3c0e0b5`
+at 06:26:28 UTC; reviewed and merged trees match
+`88af19e00da06de2a3253b69c3033b64f068159e`.
+All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37423742151)
+also passed.
+
+A private launcher opens the accepted walkthrough entry point in three fresh
+sessions for personal approval, denial and cancellation. It waits for the operator
+to type `start` before each session, never supplies review input, retains the
+60-second session limit and saves progress under
+`.secure-agent/graphical-owner-20261006/`. Local display/socket/cookie availability
+was checked without printing cookie bytes. Opening this launcher establishes no
+personal approval or acceptance. The owner must complete the sessions and describe
+the observed prompts, destinations, timing and cleanup before usability acceptance
+is recorded. Ordinary desktop execution remains disabled; model credentials and
+paid calls remain deferred. Merge receipt: `.secure-agent/pr52-merge-review.json`.
+
 ## Isolated graphical exact-action reviewer — 6 October 2026
 
 Based on accepted PR #51 merge `972afac`, this slice adds a fixed graphical

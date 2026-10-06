@@ -2,8 +2,9 @@
 
 This slice implements a local graphical approval worker and connects it to the
 shared configurable owned-lab service. The main desktop still offers dry runs and
-saved evidence only. Its Execute control remains absent pending implementation
-review and a personal walkthrough; this does not complete the GUI milestone.
+saved evidence only. The implementation was accepted in
+[PR #52](https://github.com/0xsl0th/recon-cockpit/pull/52). Its Execute control remains
+absent pending a personal walkthrough; this does not complete the GUI milestone.
 
 `LinuxApprovalService(..., frontend="graphical_v1")` selects a fixed worker.
 The default remains `terminal`, with the existing terminal protocol unchanged.

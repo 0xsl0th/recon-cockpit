@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — isolated graphical exact-action review (6 October 2026).**
+**Current slice — personal graphical walkthrough (6 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -59,15 +59,18 @@ Priority **2c remains current**, with these explicit acceptance steps:
   passed. Fresh dry-run start, observed decisions, cancellation, cleanup and
   independent replay passed 9,837 portable and 11 actual Tk cases. Every desktop
   request still uses `execute=False`; dry runs cannot count as useful completion.
-- **Isolated graphical reviewer — implemented for review.** The
+- **Isolated graphical reviewer — accepted in [PR #52](https://github.com/0xsl0th/recon-cockpit/pull/52).**
+  Merge `21054db` matches the reviewed tree; fresh reviews and all five final/post-merge
+  checks passed. Accepted evidence covers 9,949 portable and 125 native cases,
+  4/4 useful actions and 12/12 blocked destination checks with zero provider cost. The
   [reviewer runbook](graphical-approvals.md) documents its separate window, fresh
   challenge, one-use exact-action grants, original launch witness and graph-only
   audit records. The opt-in shared-service path exercises the existing four-action
   owned workflow through all seven gates. Native scripted input verifies behavior;
   it does not establish personal approval. Existing terminal behavior remains the
   default. Runtime support is currently the documented local Linux/X11 layout.
-- **Personal walkthrough, then desktop execution — outstanding.** After reviewing
-  the isolated implementation, personally exercise approval, denial and pending
+- **Personal walkthrough, then desktop execution — outstanding.** Personally
+  exercise approval, denial and pending
   cancellation using the prepared entry point. Record the observed results before
   adding a desktop Execute control through the same shared service. Do not attach
   to a real network, restore grants or claim professional readiness in this step.

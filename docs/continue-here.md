@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: isolated graphical exact-action review (priority 2c).**
+**Current authorized work: personal graphical walkthrough (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -67,10 +67,21 @@ passed. Its 9,837 portable and 11 actual Tk cases remain accepted, with zero too
 execution or provider calls. Preserve `.secure-agent/pr51-merge-review.json` and
 `.secure-agent/gui-session-20261006/`; do not repeat the merge.
 
-The current branch is `feature/graphical-approval-reviewer` in
-`/tmp/recon-graphical-approval-reviewer`, based on `972afac`. The separate
-[graphical reviewer](graphical-approvals.md) and opt-in shared-service path are
-implemented for review. The worker owns its local window, fresh challenge,
+**[PR #52](https://github.com/0xsl0th/recon-cockpit/pull/52) is merged and accepted.**
+Reviewed head `7b547941b812e1f7fc9c598c756b540aff9fc1b6` merged as
+`21054db4d44098e8541c4c9a5edbf82dd3c0e0b5` on 6 October at 06:26:28 UTC.
+Trees match (`88af19e00da06de2a3253b69c3033b64f068159e`). Fresh runtime/protocol
+and worker/view reviews found no blockers. Additional review validation passed
+35 actual graphical/workflow tests, 57 portable view/witness tests and 137
+service/protocol tests (overlapping sets). All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37422834741)
+and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37423742151)
+passed. Preserve `.secure-agent/pr52-merge-review.json`; do not repeat the merge.
+
+The current branch is `feature/desktop-execution-walkthrough` in
+`/tmp/recon-desktop-execution-walkthrough`, based on `21054db`. The accepted
+[graphical reviewer](graphical-approvals.md) and opt-in shared-service path keep
+their existing scope. The worker owns its local window, fresh challenge,
 one-use grants and existing direct launcher witness. Only the reviewer receives
 one explicitly scoped local X11 socket/cookie capability; the host and desktop
 remain trusted. No main-window affirmative-answer operation exists. Review intent
@@ -82,22 +93,26 @@ useful workflow completion. There is no desktop Execute control yet, no restored
 approval and no personal graphical walkthrough receipt. The prepared command is
 plan-only by default; see the runbook for explicit owned-fixture execution.
 
-**Next after implementation review:** personally exercise four approvals, a fresh
+**Current continuation:** personally exercise four approvals, a fresh
 denial session and a fresh cancellation session. Record the owner's observations
 separately from scripted test input. Then add the desktop execution controls through
 the same shared service and finish priority 2 acceptance. Subsequent secure-tool
 batches remain priority 3; real network attachment needs separate authorization.
 
-Validation receipts, screenshots, source hashes, exact head and the new PR link
-belong in `.secure-agent/graphical-approval-20261006/` in the primary checkout.
+Accepted validation receipts, screenshots and source hashes remain in
+`.secure-agent/graphical-approval-20261006/` in the primary checkout.
 Final local validation passed **9,949 portable and 125 native Linux/Tk cases**,
 with no selected failures/errors/skips. Scripted graphical review completed
 **4/4 useful actions**, blocked **12/12 listening forbidden destinations**,
 recorded zero unnecessary refusals/provider calls/cost and replayed unchanged.
 Native elapsed time was 8,569 ms; it is not personal-review latency or a benchmark.
-The new PR stays unmerged for review. Keep local Linux/Tk evidence distinct from
-portable CI and retain earlier validation receipts. Private images stay outside
-Git. The proposal/PDF and separate PR #31 remain unchanged.
+The personal walkthrough terminal was opened with a separate owner-controlled
+`start` prompt before each session. No session starts merely from opening it.
+Private progress/results live under `.secure-agent/graphical-owner-20261006/`;
+inspect them and obtain the owner's observations before recording acceptance.
+No personal walkthrough completion is claimed by this checkpoint. Keep local
+Linux/Tk evidence distinct from portable CI and retain earlier validation receipts.
+Private images stay outside Git. The proposal/PDF and separate PR #31 remain unchanged.
 
 Both user-created Swiss Industrial PNGs were inspected and privately preserved.
 [GUI design notes](gui-design-references.md) record the original Downloads paths,
