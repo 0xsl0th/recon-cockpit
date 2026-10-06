@@ -1,5 +1,32 @@
 # Verification record
 
+## PR #45 acceptance and coverage closure — 6 October 2026
+
+[PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45) merged as `47d70a2`
+at 01:59:42 UTC after fresh review of `9edec213`. The reviewed and merged trees
+are identical (`8e08e6db6420c81b1880e815eaf8639d6ce53768`). All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37401053840)
+passed, as did all five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37401942532).
+No outstanding review comments or blockers remained at merge.
+
+Fresh runtime/authority review passed 1,338 focused portable checks and verified
+35 recomputed policy-denial scenarios through both admission and launch
+consumption, without reservations. Independent parser/evidence review passed
+998 focused portable checks and replayed all 24 saved B1–B8 bundles with matching
+reports, no integrity issues and unchanged bytes, modes and mtimes. These focused
+runs are overlapping review checks, not additions to the 8,186-test portable suite
+or the 252 distinct selected Linux cases recorded below. Actual native runs were
+already validated on the unchanged implementation; the final revisions only
+corrected documentation.
+
+The private merge receipt is `.secure-agent/pr45-merge-review.json`; the B8
+`handoff.json` now records `accepted_merged`. B0–B8 are closed under the
+[explicit G1–G6 reconciliation](secure-tool-coverage.md#gate-reconciliation--accepted-b0b8),
+with 20 capabilities and 11 external programs. Kerbrute results remain untrusted
+client reports, not verified account facts. The read-only catalog is a separate
+follow-on; accepted profiles, offline R5/local R6 and proposal/PDF stay unchanged.
+
 ## B8 synthetic Kerberos coverage — 6 October 2026
 
 [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44) accepted B7 at `fcb9419`
@@ -11,12 +38,12 @@ twelve additional recomputed-policy cases confirmed GET enforcement. All 21
 B1–B7 bundles replayed unchanged. Private merge receipt:
 `.secure-agent/pr44-merge-review.json` in the primary checkout. B7 stays closed.
 
-B8 is implemented and lab-verified in [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45),
-pending latest review/checks and an authorized merge. The clean implementation
+B8 was implemented and lab-verified in [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45);
+its subsequent acceptance is recorded above. The clean implementation
 revision is `de40f283a449a639f299a4d4ed7f4fb685b99186`. The separate
 `kerbrute_userenum_v1` capability queries only two compiled synthetic names against
-an error-only owned KDC. Main has 19 accepted capabilities/10 programs; acceptance
-of this candidate would make 20/11. All 77 accepted B1–B7 specs, cards,
+an error-only owned KDC. The candidate brought main from 19 capabilities/10
+programs to 20/11 when accepted. All 77 accepted B1–B7 specs, cards,
 descriptors and actions remain exact; an aggregate regression pins their hash to
 `d52fefa1868fb80d2b632c5d246e64350d8e6ba833c16083a112b09d9c3a0cae`.
 See [the runbook](kerberos-tools.md) for the bounded invocation and limitations.
@@ -80,7 +107,8 @@ suite on Linux Python 3.11–3.14 and macOS Python 3.14; final CI status is reco
 in the PR and the private handoff, separately from local kernel evidence. The
 [first completed final-code CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/37400333462)
 passed all five jobs at `7c65170`; the subsequent correction changes only
-documentation counts. Latest-head checks remain required before handoff.
+documentation counts. All five final checks passed at `9edec213` before the
+authorized merge recorded above.
 
 Independent reviews covered runtime/launcher, fixture, parser, authority,
 counters, evidence and current documentation with no remaining blockers. Actual
@@ -107,10 +135,10 @@ entries remain forbidden. Two failed kernel-test instrumentation receipts are
 also retained separately from the final passing tests. No failed or skipped run
 is counted as completion.
 
-B8 and the broader coverage milestone remain open through G6. After authorized
-acceptance, reconcile the full finite checklist and present the next bounded
-product slice. Optional tools, deeper workflow composition, comparative
-benchmarking, model credentials, paid calls and live evaluation remain deferred.
+B8 subsequently passed G6 and closed the finite coverage milestone, as recorded
+above. Optional tools, deeper workflow composition, comparative benchmarking,
+model credentials, paid calls and live evaluation remain deferred during the
+read-only catalog follow-on.
 The accepted offline R5/local R6 and proposal/PDF remain unchanged.
 
 ## B7 finite Nmap service identification — 2 October 2026

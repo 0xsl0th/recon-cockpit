@@ -1,10 +1,15 @@
 # Secure-tool coverage milestone
 
-Current priority, selected by the operator on 1 October 2026: broaden independently
-usable secure tools before composing deeper workflows or running comparative
-benchmarks. This milestone stays open across successive implementation batches.
-Finishing one batch selects the next coverage gap, not a workflow project.
-Completed offline R5 and accepted local R6 remain closed.
+**Closed on 6 October 2026:** all required rows B0–B8 are accepted on main,
+with 20 bounded secure capabilities backed by 11 external programs. The operator's
+1 October priority was to broaden useful secure coverage before deeper workflows
+and comparative benchmarks. The gate reconciliation below closes that finite
+milestone; it does not certify general professional deployment. Completed offline
+R5 and accepted local R6 also remain closed.
+
+The current follow-on is a [read-only secure-tool catalog](secure-tool-catalog.md)
+that exposes the accepted profiles and existing owned-lab recipes. Optional tool
+expansion, deeper composition and comparative benchmarking are later slices.
 
 [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38) accepted B1 DNS/TLS.
 [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39) merged as `79abaab` and
@@ -18,10 +23,10 @@ by the same 10 programs**. [PR #43](https://github.com/0xsl0th/recon-cockpit/pul
 at `02a7d7f`, bringing main to **18 secure capabilities backed by the same 10
 programs**. [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44) accepted B7
 bounded Nmap service identification at `fcb9419`; all final and post-merge checks
-passed. Main now has **19 accepted capabilities backed by 10 programs**.
-B8 synthetic Kerberos is implemented and lab-verified in
-[PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45), awaiting review/merge. Acceptance would bring
-main to **20 capabilities backed by 11 programs**; its row remains open through G6.
+passed. [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45) accepted B8
+synthetic Kerberos at `47d70a2`, after fresh review and all five final checks.
+Main now has **20 accepted capabilities backed by 11 programs**. Native TCP,
+HTTP and header adapters account for three capabilities without another program.
 
 ## What the inventory measures
 
@@ -93,7 +98,7 @@ such and is not counted as accepted main coverage.
 | B6 | Docker API metadata with curl | [x] Accepted in PR #43 | Separate fixed GET profiles for /_ping and /version; complete health and bounded JSON observations, no container lifecycle, filesystem or command endpoints. |
 | B6 | WinRM endpoint metadata with curl | [x] Accepted in PR #43 | One fixed unauthenticated endpoint response; report status/authentication schemes; no login, SOAP operations or shell. |
 | B7 | Nmap service identification | [x] Accepted in PR #44 | Real Nmap HTTP/SSH matches and honest unidentified results from two compiled probes and a pinned no-op NSE entrypoint. Structured XML replay, policy/approval/enforcement and cleanup verified; old TCP-only profile preserved. |
-| B8 — current | Kerberos principal enumeration with kerbrute | [ ] Lab-verified; PR #45 review/merge pending | Real Kerbrute against an error-only owned KDC, two compiled synthetic names, two requests, structured tool-reported exists/unknown with the error-text ambiguity disclosed. No passwords, spraying, ticket extraction or real directory. |
+| B8 | Kerberos principal enumeration with kerbrute | [x] Accepted in PR #45 | Real Kerbrute against an error-only owned KDC, two compiled synthetic names, two requests, structured tool-reported exists/unknown with the error-text ambiguity disclosed. No passwords, spraying, ticket extraction or real directory. |
 
 Batch order follows missing protocol families and existing interactive precedents,
 then runtime/fixture complexity. At each batch handoff, compare the remaining
@@ -103,18 +108,17 @@ move a required row to deferred work to claim milestone completion. Keep each PR
 small enough for an independent review; stop a tool on unsupported prerequisites
 without falling back to the host runner. A blocked tool does not complete its row.
 
-**B8 synthetic Kerberos is the last required protocol-family gap.** Reuse the
-interactive Kerbrute precedent through a separate secure profile and a finite
-owned error-only KDC. A real executable run, complete structured tool reports,
-closed/replayable evidence and enforcement must all pass. The response-spoof
-scenario documents a vendor limitation: an unknown report is not proof that a
-principal is absent. Do not count that scenario as verified negative discovery.
+**B8 closes the final required protocol-family gap.** Its accepted scope is
+finite synthetic Kerbrute reporting through an error-only owned KDC. The
+response-spoof scenario documents a vendor limitation: an unknown report is not
+proof that a principal is absent. It is neither verified negative discovery nor
+successful injection detection. No tool report expands execution authority.
 
-After B8 is accepted, reconcile every G1–G6 gate before closing this finite
-milestone. There is no hidden required B9 or automatic expansion to forty tools.
-Present the next bounded product slice for review then; authenticated tools,
-optional additions, deeper workflows and comparative benchmarks are not part of
-this batch. Model credentials, paid calls and live evaluation remain much later.
+There is no hidden required B9 or automatic expansion to forty tools. The next
+slice makes these accepted profiles discoverable through the read-only catalog;
+it leaves authenticated tools, optional additions, deeper workflows and
+comparative benchmarks for separately reviewed work. Model credentials, paid
+calls and live evaluation remain much later.
 
 ## Completion gates for every required capability
 
@@ -128,7 +132,9 @@ this batch. Model credentials, paid calls and live evaluation remain much later.
    skipped execution, a descriptor or a mock cannot satisfy this gate.
 3. **G3 — structured results.** Bounded stdout and stderr feed a confined parser;
    finite validated fields represent the useful result. Malformed, partial,
-   oversized and hostile output cannot invent findings or expand scope.
+   oversized and hostile output cannot invent findings or expand scope. A
+   validated tool report is labelled as such wherever the client cannot establish
+   the underlying fact; it must not be promoted to a verified finding.
 4. **G4 — evidence.** Save private raw artifacts and runtime/action/policy bindings;
    independent read-only replay agrees with normalized results, tampering is
    rejected, and dry runs never claim execution. Published docs contain accurate
@@ -152,6 +158,27 @@ cleanup and descriptive elapsed time. Normal work blocked by the boundary fails
 G2. Provider calls and actual cost must remain zero. These checks continue now;
 **deeper workflow composition and comparative/paired benchmarking wait until the
 coverage milestone is complete**. Existing accepted comparisons remain closed.
+
+## Gate reconciliation — accepted B0–B8
+
+The accepted runbooks and [verification record](verification.md) retain each
+batch's source, actual executions, negative cases and private receipts. Earlier
+accepted evidence was preserved; the final PR #45 review independently replayed
+all 24 saved B1–B8 bundles without changing bytes, modes or mtimes.
+
+| Gate | Closure evidence and limits |
+| --- | --- |
+| G1 | Each registered capability has a fixed versioned action, parameter validation and authority profile. B8 review additionally recomputed 35 policy-denial cases through admission and native launch consumption. Interactive host commands remain outside this claim. |
+| G2 | Every required capability has actual useful disconnected owned-lab execution in its accepted batch. B8 completed both legitimate reporting tasks, with zero unnecessary refusals; its spoof case is counted separately. No mock or skipped run substitutes for execution. |
+| G3 | Confined parsers produce bounded structured observations with explicit semantics. Kerbrute's `tool_report_only`/`authentication_verified: false` fields mean a faithful client report, not verified principal existence/absence. SMB ambiguities remain inconclusive; complete unmatched Nmap scans remain explicitly unidentified by the finite probes. No accepted observation grants follow-up authority. |
+| G4 | Private raw artifacts and action/policy/runtime bindings support independent replay. All 24 final saved bundles replayed unchanged. Hashes establish local consistency, not protection against a malicious host owner. |
+| G5 | Each batch passed applicable actual Linux confinement, request/output/resource bounds, gate refusal and cleanup checks. B8 added UDP/task-limit witnesses and blocked all six clean-trial forbidden-destination probes. Earlier accepted profiles remain regression anchors. |
+| G6 | B0's accepted baseline and PRs #38–#45 have independent reviews, passing checks and operator-authorized merges. PR #45's reviewed head `9edec213` and merge `47d70a2` have identical trees. No required row remains review-pending. |
+
+This closure concerns the documented bounded capabilities. It makes no claim of
+semantic immunity to every malicious service response, arbitrary executable-mode
+coverage, real-model acceptance or external engagement readiness. The catalog
+follow-on is a usability change and does not reopen these accepted contracts.
 
 ## Product scope after core coverage
 

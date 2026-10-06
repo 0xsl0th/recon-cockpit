@@ -4,19 +4,28 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current milestone — broader secure-tool coverage (1 October 2026).**
-Work through the [prioritized coverage checklist](secure-tool-coverage.md) in
-successive small implementation batches. Each tool must execute usefully through
-the secure path in the disconnected owned lab, return validated structured results,
-retain independently replayable evidence and pass its enforcement checks.
-Interactive command support, mocks and adapter descriptors do not count as secure
-execution support. After every batch, select the next unchecked tool-coverage gap.
+**Current slice — discover and inspect accepted secure tools (6 October 2026).**
+The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
+G1–G6, including useful real owned-lab execution, structured results, replayable
+evidence, enforced limits, independent review and operator-authorized merges.
+Interactive support remains distinct from secure execution; closure does not
+establish the full professional product.
 
-**Deeper workflow composition and comparative benchmarking are deferred until this
-coverage milestone is complete.** Per-tool correctness, useful completion,
-unnecessary refusal, bounds, descriptive latency and cleanup remain required now.
-The preceding suggestion to compose Nmap, ffuf and headers after PR #37 is
-superseded by the operator's broader coverage priority.
+The next bounded implementation is a [read-only CLI catalog](secure-tool-catalog.md).
+Expose all 20 accepted capabilities with fixed parameters, native/executable
+identity, parser/profile versions, action and session limits, report caveats and
+existing owned-lab dry-run recipes. Recipes must disclose multi-action selectors
+and retain every existing gate. Listing or describing a tool must work without
+Linux, installed binaries, policies, credentials, approvals or file writes.
+
+Completion requires deterministic catalog/recipe validation, regression checks,
+an independent review and a reviewable PR. No execution contract is expanded.
+After this slice is accepted, the next candidate is one bounded Nmap service
+identification → finite ffuf discovery → header workflow, using the accepted
+tools in a separately versioned owned-lab profile. Deeper composition and paired
+benchmarking remain outside the catalog slice; comparative usefulness, unnecessary
+refusals, safety, cost and latency must accompany that later workflow evaluation.
+Optional tools and a forty-tool quota do not become implicit prerequisites.
 
 The inventory baseline is PR #37, merged as `ba0d6f8`: 10 interactive executable
 families versus 6 secure capabilities backed by 3 external programs. PR #38 adds
@@ -31,10 +40,10 @@ at `02a7d7f`, bringing main to 18 capabilities backed by 10 programs.
 [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44) accepted B7 bounded Nmap
 service identification at `fcb9419`, bringing main to **19 capabilities backed by
 10 programs**. Final and post-merge checks passed; preserve its finite probe
-contract. B8 synthetic Kerberos is the current, final required protocol-family
-batch, lab-verified in [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45):
-real Kerbrute, two compiled names, an owned error-only KDC and explicit limits
-on the meaning of tool-reported exists/unknown. Review/merge remain. See [the runbook](kerberos-tools.md).
+contract. [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45) accepted B8
+synthetic Kerberos at `47d70a2`: real Kerbrute, two compiled names, an owned
+error-only KDC and explicit limits on tool-reported exists/unknown. Main now has
+**20 accepted capabilities backed by 11 programs**. See [the runbook](kerberos-tools.md).
 
 | Priority | Required batch | Completion criterion beyond common gates G1–G6 |
 | --- | --- | --- |
@@ -46,17 +55,12 @@ on the meaning of tool-reported exists/unknown. Review/merge remain. See [the ru
 | B5 — accepted in PR #42 | curl FTP and SMTP capability query | Real fixed listing and EHLO results, valid empty observations, replay and enforcement verified; no file transfer, mail or real credentials. |
 | B6 — accepted | curl Docker/WinRM metadata | Separate fixed /_ping, /version and /wsman GETs with bounded observations; no Docker socket, container or remote-session operations. |
 | B7 — accepted in PR #44 | Nmap service identification | Actual HTTP/SSH matches, bounded unidentified results, compiled probes and no-op NSE entrypoint; old TCP-only profile unchanged. |
-| B8 — current | kerbrute synthetic principal enumeration | Owned error-only KDC, two fixed names/requests, complete tool reports, error-text ambiguity disclosed, actual execution and enforcement; no passwords, spraying or tickets. |
+| B8 — accepted in PR #45 | kerbrute synthetic principal enumeration | Owned error-only KDC, two fixed names/requests, complete tool reports, error-text ambiguity disclosed, actual execution and enforcement; no passwords, spraying or tickets. |
 
 The [full checklist](secure-tool-coverage.md#prioritized-coverage-checklist) is the
-source of row-level status. Completion requires every required row B0–B8 to meet
-G1–G6, including actual useful execution, evidence replay, enforced limits,
-independent review and an authorized merge. Do not close the milestone after B1,
-count skipped/mocked checks as executed, or silently defer required rows to finish.
-Reprioritize unchecked rows after each batch with a recorded reason. B8 is the
-last required row; after its authorized acceptance, reconcile all gates and
-present the next bounded product slice before starting optional expansion or
-deferred workflow/benchmark work.
+source of row-level status and the [gate reconciliation](secure-tool-coverage.md#gate-reconciliation--accepted-b0b8)
+records closure. No required row was dropped or moved to deferred work. Preserve
+those accepted profiles and their limitations; no required B9 follows B8.
 
 The [bounded model pilot](web-model-pilot.md) remains available but disabled.
 Credential setup, paid calls, provider funding and live-model evaluation stay
@@ -64,9 +68,10 @@ deferred until much later; do not ask for a key during tool development. Complet
 offline R5 and the accepted local R6 candidate remain closed. Broader authenticated,
 intrusive and external-target product capabilities retain separate authorization.
 
-Continue focused tool coverage through October. Refresh the proposal with verified
-results in early November, targeting submission around 9 November after operator
-review. Proposal PR #31 remains separate and unmerged; its local PDF is unchanged.
+Through October, make accepted tools accessible via the catalog, then take the
+next bounded workflow through review and owned-lab validation. Refresh the proposal
+with verified results in early November, targeting submission around 9 November
+after operator review. Proposal PR #31 remains separate and unmerged; its local PDF is unchanged.
 GUI/API, publication and competition submission remain separate later decisions.
 
 The R5 offline baseline is `1605606`, the authorized merge of PR #26

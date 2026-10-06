@@ -12,18 +12,21 @@ with usefulness, safety, cost and latency measurements against a fresh protected
 baseline. Validation uses owned TLS fixtures; real-model results remain pending.
 The operator has deferred credential setup and the live pilot until much later;
 live integration stays disabled. The [HTTP response-header assessment](docs/http-headers-assessment.md)
-is merged. The current milestone is [broader secure-tool coverage](docs/secure-tool-coverage.md),
-with a repository inventory, prioritized checklist and explicit completion gates.
+is merged. The finite [secure-tool coverage milestone](docs/secure-tool-coverage.md)
+is complete: all B0–B8 rows are accepted, with 20 secure capabilities backed by
+11 external programs and explicit completion evidence.
 Nmap, curl, ffuf, dig, OpenSSL, SSH key collection, LDAP RootDSE and
 [anonymous SMB share metadata](docs/smb-tools.md) have accepted bounded secure
 profiles. [RPC registration and NFS export metadata](docs/rpc-nfs-tools.md) are also accepted.
 [Bounded FTP listing and SMTP capability discovery](docs/ftp-smtp-tools.md) are accepted.
 [Fixed Docker health/version and WinRM endpoint metadata](docs/docker-winrm-tools.md) are accepted.
 [Finite Nmap service identification](docs/nmap-service-tools.md) is accepted in PR #44.
-The current final coverage batch adds [synthetic Kerberos principal reports](docs/kerberos-tools.md).
-After each batch, prioritize the next tool gap. Deeper workflow
-composition and comparative benchmarking wait until the coverage milestone is
-complete. Per-tool useful execution, evidence and enforcement checks continue now.
+[Synthetic Kerberos principal reports](docs/kerberos-tools.md) are accepted in PR #45,
+with client-report limitations preserved. The current follow-on is a
+[read-only CLI catalog](docs/secure-tool-catalog.md): list accepted profiles,
+inspect their exact scope and find existing owned-lab dry-run recipes. Deeper
+workflow composition, comparative benchmarking and optional tools remain later
+slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.
 
