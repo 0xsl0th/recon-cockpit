@@ -21,6 +21,12 @@ the final strict-boolean receipt regression was added; the final 217-test focuse
 run covers that change. The PR's hosted matrix checks the complete latest
 revision on Linux/Python 3.11–3.14 and macOS/Python 3.14; inspect its check results
 before review/merge rather than treating local Linux evidence as hosted CI.
+The first hosted matrix passed all four Linux jobs (9,646 tests each) but exposed
+17 macOS failures from two missing portable-test doubles: namespace discovery
+and the runtime platform selector. Those fixtures now supply explicit test facts;
+54 focused tests pass and production code is unchanged. The original macOS
+peer-lifetime regression passed. Retain `initial-macos-ci-failure.log`; final
+hosted validation must use the corrected PR head.
 
 | Scope example | Useful actions | Blocked listening destinations | HTTP / SSH acknowledged totals | Session elapsed |
 | --- | --- | --- | --- | --- |

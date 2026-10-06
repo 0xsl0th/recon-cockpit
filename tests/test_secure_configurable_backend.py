@@ -19,6 +19,9 @@ from test_secure_configurable_contract import observation, result
 from test_secure_configurable_runtime import manifests
 
 
+HOST_NAMESPACES = {name: name + ":[100]" for name in ("user", "net", "mnt", "pid")}
+
+
 def setup_backend(monkeypatch, *, limits=None, execute=True):
     limits = limits or SessionLimits(**contract.LIMITS)
     policy = contract.policy_for_scope(scope(), require_approval=False)
@@ -26,6 +29,8 @@ def setup_backend(monkeypatch, *, limits=None, execute=True):
     backend = backend_module.AuthorizedConfigurableBackend(policy, lab.session_id, limits, lab, execute=execute)
     backend._configurable_manifests = manifests()
     calls, snapshots = [], []
+    # The transport is fake, so this portable fixture must not inspect /proc.
+    monkeypatch.setattr(backend_module, "_namespaces", lambda: dict(HOST_NAMESPACES))
     monkeypatch.setattr(backend, "check_available", lambda *_: [lab.endpoint_lab(name) for name in ("http", "ssh")])
     for name in ("http", "ssh"):
         selected = lab.endpoint_lab(name)
@@ -71,6 +76,8 @@ def test_complete_useful_work_preserves_owner_selection_scope_and_each_runtime(m
         assert backend.snapshot["executions_reserved"] == step
         assert backend.snapshot["output_bytes_reserved"] == contract.OUTPUT_RESERVATIONS[step]
         assert calls[-1]["lab"].endpoint_name == contract.ENDPOINTS[step - 1]
+        assert calls[-1]["launch"]["launch"]["host_namespaces"] == HOST_NAMESPACES
+        assert calls[-1]["launch"]["launch"]["host_namespaces"] is not HOST_NAMESPACES
         assert calls[-1]["closure"]["configurable_runtime"] == (None if step == 2 else manifests()[contract.TOOL_IDS[step - 1]])
     assert snapshots == [("http", 2, 1), ("http", 3, 2), ("ssh", 2, 1), ("ssh", 3, 2)]
     receipt = backend.close()

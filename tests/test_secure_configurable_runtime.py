@@ -131,6 +131,9 @@ def test_listening_boundary_witness_requires_drop_not_unreachable_socket(monkeyp
 
 def test_header_worker_reply_cannot_relabel_integer_as_boundary_proof(monkeypatch):
     import json
+    # Exercise reply validation portably; namespace launch and capture below
+    # are doubles, so the actual host platform is irrelevant to this test.
+    monkeypatch.setattr(runtime.sys, "platform", "linux")
     lab = SimpleNamespace(_check=lambda control: None, _verify_pins=lambda: None,
                           _runtime=lambda control: ("/stdlib", []), _namespace_fds=(30, 31))
     selected = action(scope(), 2)

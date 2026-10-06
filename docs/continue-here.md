@@ -20,13 +20,16 @@ The [runbook](configurable-owned-lab.md) defines completion and exact limitation
 
 **[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) is the new review handoff.**
 Implementation is `065e0ee0eadff12acc2fef3d56eded5a0f6c5d61`; later checkpoint
-commits do not change execution code. Local validation has 117 distinct Linux cases passing, two complete
+and test-portability commits do not change execution code. Local validation has 117 distinct Linux cases passing, two complete
 4/4-action scope examples, 24/24 forbidden-destination witnesses, required
 noninteractive approval blocking, cancellation cleanup and 27 unchanged accepted
 evidence replays. The full portable run passed 9,645 tests; 217 focused checks
 cover the subsequent strict-boolean receipt regression. See [verification](verification.md)
 for the source/test distinction, and inspect PR #48's latest hosted checks plus
 the private `handoff.json` before any merge. Preserve the private failure receipts.
+The first hosted matrix passed all four Linux jobs; two portable-test fixtures
+needed explicit namespace/platform doubles for macOS. Their corrections passed
+54 focused tests. The original peer-lifetime race test passed on macOS.
 This PR remains separate from accepted main and requires fresh review and its
 corresponding merge instruction.
 

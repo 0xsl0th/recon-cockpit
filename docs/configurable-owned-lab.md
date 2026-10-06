@@ -38,6 +38,11 @@ filter installation. Only the selected endpoint pair is permitted afterward.
 
 ## Run and inspect
 
+Execution and confined evidence replay require the existing unprivileged Linux
+isolation prerequisites (Bubblewrap, nftables and nsenter), distribution Nmap
+and ssh-keyscan. Catalog descriptions and portable contract tests also run on
+macOS; native endpoint execution remains Linux-only.
+
 Use a fresh private directory under `.secure-agent`; never reuse an evidence
 directory. The command below records proposals without executing tools:
 
