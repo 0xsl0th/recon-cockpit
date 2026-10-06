@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: desktop dry-run session lifecycle (priority 2c).**
+**Current authorized work: isolated graphical exact-action review (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -55,31 +55,49 @@ Its first desktop, 9,823 portable cases and six actual Tk cases remain accepted;
 private evidence and seven screenshots remain at `.secure-agent/gui-20261006/`.
 Do not repeat the merge.
 
-The current branch is `feature/desktop-session-lifecycle` in
-`/tmp/recon-desktop-session-lifecycle`, based on `7efa9d8`. The
-[desktop runbook](desktop-gui.md) now covers fresh dry-run start, observed progress,
-cancellation and close through the accepted shared service, followed by independent
-saved-evidence replay. Every request freezes its scope, requires approval in policy,
-hardcodes `execute=False`, and uses a new private folder. No tool executes, approval
-prompt opens, or model call occurs. Follow-ups stop without real predecessor evidence;
-one reviewed proposal must not be presented as four useful actions.
+**[PR #51](https://github.com/0xsl0th/recon-cockpit/pull/51) is merged and accepted.**
+Reviewed head `411612dfa4ac1d0fb64ef83f8b2b120af741d465` merged as
+`972afac9ddc8fa1c0211e84fd13509fba8580218` on 6 October at 05:47:38 UTC.
+Trees match (`3f04290cc5f4d4789db93bd8d76c21b029755351`). Fresh lifecycle and UI
+reviews found no blockers; 109 lifecycle and 115 GUI cases passed (overlapping
+sets), and source/screenshot receipts matched. All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37418950338)
+and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37420312524)
+passed. Its 9,837 portable and 11 actual Tk cases remain accepted, with zero tool
+execution or provider calls. Preserve `.secure-agent/pr51-merge-review.json` and
+`.secure-agent/gui-session-20261006/`; do not repeat the merge.
 
-One worker owns start through cleanup and replay. Scope drafts remain independent
-of session scope, and failures cannot display stale successful metrics. The
-[next approval design](desktop-approval-plan.md) is planning only: actual desktop
-execution stays disabled until its separate exact-action input boundary is reviewed
-and verified. This dry-run slice does not complete priority 2 or add a new tool.
+The current branch is `feature/graphical-approval-reviewer` in
+`/tmp/recon-graphical-approval-reviewer`, based on `972afac`. The separate
+[graphical reviewer](graphical-approvals.md) and opt-in shared-service path are
+implemented for review. The worker owns its local window, fresh challenge,
+one-use grants and existing direct launcher witness. Only the reviewer receives
+one explicitly scoped local X11 socket/cookie capability; the host and desktop
+remain trusted. No main-window affirmative-answer operation exists. Review intent
+and outcome must reach isolated audit before any grant can be consumed.
 
-Local validation passed **9,837 portable cases and 11 actual Tk cases**, with no
-selected failures/errors/skips. The native set includes four real dry runs plus
-one labeled startup-failure double; six other cases preserve saved-evidence behavior.
-No tool executed, no personal approval was entered, and no provider call occurred.
+The ordinary desktop still uses `execute=False` with immutable scope, an
+approval-required policy and new private paths. Its dry runs cannot count as
+useful workflow completion. There is no desktop Execute control yet, no restored
+approval and no personal graphical walkthrough receipt. The prepared command is
+plan-only by default; see the runbook for explicit owned-fixture execution.
 
-Final tests, screenshots, source hashes, exact head and the new PR link are recorded
-in `.secure-agent/gui-session-20261006/` in the primary checkout. The subsequent PR
-is left for review, unmerged. Keep local Linux/Tk evidence distinct from portable CI
-and retain development failures honestly. Private images stay outside Git. The
-proposal/PDF and separate PR #31 remain unchanged.
+**Next after implementation review:** personally exercise four approvals, a fresh
+denial session and a fresh cancellation session. Record the owner's observations
+separately from scripted test input. Then add the desktop execution controls through
+the same shared service and finish priority 2 acceptance. Subsequent secure-tool
+batches remain priority 3; real network attachment needs separate authorization.
+
+Validation receipts, screenshots, source hashes, exact head and the new PR link
+belong in `.secure-agent/graphical-approval-20261006/` in the primary checkout.
+Final local validation passed **9,949 portable and 125 native Linux/Tk cases**,
+with no selected failures/errors/skips. Scripted graphical review completed
+**4/4 useful actions**, blocked **12/12 listening forbidden destinations**,
+recorded zero unnecessary refusals/provider calls/cost and replayed unchanged.
+Native elapsed time was 8,569 ms; it is not personal-review latency or a benchmark.
+The new PR stays unmerged for review. Keep local Linux/Tk evidence distinct from
+portable CI and retain earlier validation receipts. Private images stay outside
+Git. The proposal/PDF and separate PR #31 remain unchanged.
 
 Both user-created Swiss Industrial PNGs were inspected and privately preserved.
 [GUI design notes](gui-design-references.md) record the original Downloads paths,

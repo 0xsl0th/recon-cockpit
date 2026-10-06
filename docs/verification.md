@@ -1,5 +1,75 @@
 # Verification record
 
+## Isolated graphical exact-action reviewer — 6 October 2026
+
+Based on accepted PR #51 merge `972afac`, this slice adds a fixed graphical
+frontend to `LinuxApprovalService`, an explicit shared-service selector and a
+plan-only-by-default walkthrough command. The separate worker owns its window,
+fresh challenge, grant store and original launcher witness. Review/consume keep
+their existing bounded protocol; no affirmative answer operation is added. The
+ordinary desktop remains `execute=False` and has no Execute control.
+
+The full portable suite passed **9,949 cases**, with **826 integration cases
+deselected**, no selected failures/errors/skips, in **323.96 seconds**. Selection,
+bootstrap/cookie parsing, immutable requests, fixed mounts, literal rendering,
+denial/unavailable routing, audit failures and plan-only defaults are covered.
+These portable cases do not establish OS confinement or personal approval.
+
+**125 native Linux/Tk cases passed in 197.56 seconds**, without selected failures,
+errors or skips: 25 new confined-worker/workflow cases, one real memfd-sealing
+case, ten direct Tk view cases and 89 existing terminal-approval, witness and
+shared-service regressions. The private Xvfb display had TCP disabled. Worker
+cases use explicitly instrumented test-only input; production has no automation
+switch. Neither these tests nor the direct-view screenshot constitute owner
+approval or personal usability acceptance.
+
+The final real graphical owned workflow completed **4/4 actions**, with four
+consumed grants, four launch starts, structured artifacts and unchanged independent
+replay. All **12/12 listening forbidden destinations** were blocked (cross-service,
+wrong address and wrong port for each action). Useful completion was true,
+unnecessary refusals were zero, and actual provider calls/cost were zero. The
+reported elapsed time was **8,569 ms**, including scripted test interaction. There
+is no comparison baseline; this is not a human-review latency or authority-overhead
+benchmark. Denial and pending cancellation produced zero unapproved launches and
+closed the reviewer. Existing launcher/audit/admission witnesses remain mandatory.
+
+The new audit assertions require exactly four graphical review-request and
+grant-issued outcome records, bound to the session/action/policy and excluding
+challenge answers and grant references. Portable fault injection at either review
+audit append prevents even grant consumption, closes controls, leaves no finalized
+report and forbids service reuse. Other cases reject changed, expired, replayed,
+cross-worker, malformed and forged requests; stale/pretyped input and Enter cannot
+approve. Actual worker checks include descriptor custody, host canary isolation,
+read-only runtime, private namespaces, capability/syscall restrictions and the
+single intentionally mounted X11 connection. The host and desktop remain trusted.
+
+Native receipts, preserved owned evidence, source hashes and the inspected
+900×740 direct-view screenshot are private under
+`.secure-agent/graphical-approval-20261006/` in the primary checkout. Final receipts
+are `portable-results.xml`, `native-reviewed-results.xml`, `native-reviewed-tests/`,
+`validated-source.json` and `verification.json`. Earlier ten-case, 25-case and
+125-case baseline runs remain separate; the final native run includes the later
+review-audit changes. The earlier JUnit property-format warning is avoided by
+using legacy JUnit for the final property-bearing native run.
+A separate read-only replay also matched the report and every saved file hash
+under native Linux permissions. The same check inside the restricted development
+sandbox returned reconciliation-required because its isolated parser could not
+start there; that environmental result is retained in the private receipt.
+
+Independent lifecycle/security and UI/evidence reviews found no remaining
+blockers. Python 3.11 syntax, dependency consistency and local documentation-link
+checks passed. The [runbook](graphical-approvals.md) documents the supported local
+Linux/X11 resource layout, trust limits and prepared personal walkthrough. Hosted
+CI is portable and cannot substitute for these native receipts. The owner's
+walkthrough and ordinary desktop execution controls remain outstanding.
+
+PR #51 itself merged with matching reviewed/merge trees and all five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37418950338)
+and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37420312524)
+passing. Preserve `.secure-agent/pr51-merge-review.json`, accepted B0–B8 and offline
+R5/local R6. Model/service credentials, paid calls and real network attachment
+remain deferred; no proposal, PDF or private image is published in this slice.
+
 ## Desktop dry-run session lifecycle — 6 October 2026
 
 Based on accepted PR #50 merge `7efa9d8`, this slice connects the desktop to the

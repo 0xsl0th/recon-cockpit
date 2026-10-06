@@ -3,7 +3,7 @@
 This is trusted application code, not a network API or a Python plugin boundary.
 Every run creates fresh authority and uses the existing isolated audit, approval,
 admission and launcher path. Views contain data only; they cannot resume work or
-restore approval. The sole approval input remains the isolated terminal worker.
+restore approval. The selected isolated reviewer owns its own approval input.
 """
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ class ConfigurableAssessmentRequest:
     audit_path: Path
     execute: bool = False
     limits: SessionLimits | None = None
+    approval_frontend: str = "terminal"
 
     def __post_init__(self):
         if type(self.scope_json) is not bytes:
@@ -42,6 +43,9 @@ class ConfigurableAssessmentRequest:
             raise ValueError("invalid_assessment_policy_bytes")
         if type(self.execute) is not bool:
             raise ValueError("invalid_assessment_mode")
+        if (type(self.approval_frontend) is not str
+                or self.approval_frontend not in {"terminal", "graphical_v1"}):
+            raise ValueError("invalid_assessment_approval_frontend")
         if not isinstance(self.assessment_dir, Path) or not isinstance(self.audit_path, Path):
             raise ValueError("invalid_assessment_paths")
         limits = SessionLimits(**contract.LIMITS) if self.limits is None else self.limits
@@ -52,6 +56,8 @@ class ConfigurableAssessmentRequest:
             raise ValueError("assessment_limits_exceed_profile")
         scope = load_scope(self.scope_json)
         policy = parse_policy(self.policy_json)
+        if self.approval_frontend == "graphical_v1" and (not self.execute or not policy.require_approval):
+            raise ValueError("graphical_assessment_requires_execution_and_approval")
         object.__setattr__(self, "scope_json", contract.encode(scope))
         object.__setattr__(self, "policy_json", contract.encode(policy.to_dict()))
         object.__setattr__(self, "assessment_dir", Path(self.assessment_dir))
@@ -108,6 +114,8 @@ class ConfigurableAssessmentService:
             raise ValueError("invalid_assessment_interactivity")
         if on_step is not None and not callable(on_step):
             raise ValueError("invalid_assessment_observer")
+        if interactive_terminal and self._request.approval_frontend == "graphical_v1":
+            raise ValueError("assessment_approval_frontends_conflict")
         if not self._run_lock.acquire(blocking=False):
             raise RuntimeError("assessment_already_running")
         try:
@@ -150,6 +158,7 @@ class ConfigurableAssessmentService:
         from .configurable_runtime import inspect_configurable_runtime
 
         request = self._request
+        graphical_review = request.approval_frontend == "graphical_v1"
         scope, policy = load_scope(request.scope_json), parse_policy(request.policy_json)
         started = time.monotonic()
         deadline = started + request.limits.max_runtime_seconds
@@ -168,7 +177,10 @@ class ConfigurableAssessmentService:
         # CLI callers. No flags or alternate service implementations are exposed.
         with LinuxAuditSink(request.audit_path, launch_witness=True) as audit:
             control.check()
-            with LinuxApprovalService(policy, self._session_id, launch_witness=True) as approvals:
+            approval_options = {"launch_witness": True}
+            if graphical_review:
+                approval_options["frontend"] = "graphical_v1"
+            with LinuxApprovalService(policy, self._session_id, **approval_options) as approvals:
                 control.check()
                 with LinuxFixtureLauncher(original, audit=audit, approvals=approvals) as backend:
                     control.check()
@@ -200,15 +212,33 @@ class ConfigurableAssessmentService:
                                     self.cancel()
                                     raise
 
-                        def terminal_approval(controller, raw, *, control):
-                            if not sys.stdin.isatty() or not sys.stdout.isatty():
+                        def isolated_approval(controller, raw, *, control):
+                            if not graphical_review and (not sys.stdin.isatty() or not sys.stdout.isatty()):
                                 return None
-                            return controller.approvals.review(parse_action(raw), controller.policy,
-                                                               control=control)
+                            proposed = parse_action(raw)
+                            if not graphical_review:
+                                return controller.approvals.review(proposed, controller.policy, control=control)
+                            context = {"session_id": self._session_id, "action_id": proposed.action_id,
+                                "action_digest": proposed.digest, "policy_digest": policy.digest,
+                                "policy_version": policy.policy_version, "frontend": "graphical_v1"}
+                            # Record intent before opening the reviewer. The audit
+                            # stores bindings/outcome, never its phrase or grant.
+                            audit.emit({**context, "event_type": "graphical_review_requested"})
+                            try:
+                                reference = controller.approvals.review(proposed, controller.policy, control=control)
+                            except ExecutionStopped as exc:
+                                audit.emit({**context, "event_type": "graphical_review_finished", "outcome": exc.reason})
+                                raise
+                            except Exception:
+                                audit.emit({**context, "event_type": "graphical_review_finished", "outcome": "unavailable"})
+                                raise
+                            audit.emit({**context, "event_type": "graphical_review_finished",
+                                        "outcome": "grant_issued" if reference is not None else "denied"})
+                            return reference
 
                         summary = runner.run(execute=request.execute,
-                            interactive=(interactive_terminal and sys.stdin.isatty() and sys.stdout.isatty()),
-                            approval=terminal_approval, on_step=record)
+                            interactive=(graphical_review or (interactive_terminal and sys.stdin.isatty() and sys.stdout.isatty())),
+                            approval=isolated_approval, on_step=record)
                         # AuthoritySession converts some callback exceptions into
                         # a stopped summary. A failed application observer must
                         # never become a normal, finalized service result.

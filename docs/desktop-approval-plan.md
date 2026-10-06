@@ -1,17 +1,20 @@
 # Desktop execution and exact-action approval plan
 
-This is a design and acceptance checklist, not an implemented approval channel.
+This checklist guided the [graphical reviewer implementation](graphical-approvals.md).
+The worker and opt-in shared-service path are implemented for review; the personal
+walkthrough and ordinary GUI Execute control remain outstanding.
 The desktop session slice runs the existing service with `execute=False` and
 `interactive_terminal=False`. Its generated policy still requires approval.
 Starting a preview, viewing a proposed action, cancelling, or inspecting saved
 evidence supplies no approval and cannot start a tool. Credentials, paid calls,
 external targets and authenticated or intrusive actions remain deferred.
 
-## Boundary already implemented
+## Accepted terminal baseline
 
 The [shared service](shared-assessment-service.md) creates fresh authority, audit,
-approval, admission and launcher services for each session. Its only current
-approval interaction is the isolated terminal reviewer. The trusted caller must
+approval, admission and launcher services for each session. Before this slice,
+approval interaction used only the isolated terminal reviewer. For that default
+frontend, the trusted caller must
 request terminal interaction and have an actual interactive terminal; an
 `approval_required` policy decision alone does not mean that a prompt exists.
 
@@ -31,7 +34,7 @@ Relevant implementation: [approval isolation](../recon_cockpit/secure_agent/appr
 [grant store](../recon_cockpit/secure_agent/approvals.py), and
 [launch witness](../recon_cockpit/secure_agent/approval_witness.py).
 
-## Proposed next execution slice
+## Execution design and review requirements
 
 Keep the first execution integration within the same four-action, disconnected
 HTTP/SSH fixture workflow and its existing limits. There is no batch approval,
@@ -40,7 +43,7 @@ Do not enable a desktop Execute control merely by setting `interactive=True`,
 adding a callback that returns a reference, forwarding text to a PTY, or weakening
 the generated policy.
 
-The intended graphical design uses a separate trusted review helper. That helper
+The graphical design uses a separate trusted review helper. That helper
 owns its review window and receives the operator's input directly. The main
 desktop can request review of the authority's pending action and display progress;
 it cannot submit an affirmative answer, manufacture a grant, or write the launch
@@ -68,7 +71,7 @@ keep graphical execution disabled and retain the existing terminal workflow.
 Use the existing grant and launcher witness semantics wherever they apply. Add a
 versioned, bounded review transport only where graphical ownership requires it;
 keep the terminal protocol compatible. The shared assessment service remains the
-only assessment entry point and must construct the selected fixed reviewer itself,
+only assessment entry point and constructs the selected fixed reviewer itself,
 rather than accepting an arbitrary approval callback or injected approval store.
 
 ## Review transaction and lifecycle
@@ -109,7 +112,7 @@ An unanswered review is neither a successful approval nor a tool refusal inferre
 from missing evidence. Automated input proves protocol behavior only; label it as
 a test fixture and never as the owner's personal acceptance.
 
-## Required evidence before enabling execution
+## Required evidence before enabling ordinary desktop execution
 
 - **Custody:** demonstrate that no exposed main-GUI operation, planner or tool
   channel can submit affirmative input or a consumption witness. Verify descriptor ownership, peer
@@ -133,8 +136,8 @@ a test fixture and never as the owner's personal acceptance.
   that includes approval and denial, confirms the displayed destination/action,
   and observes cancellation. Keep this receipt separate from automated GUI tests.
   Do not fill or click the owner's approval on their behalf.
-- **Review gate:** a separate implementation PR must review the input transport,
-  authorization bindings and native evidence above before graphical execution is
-  enabled. Any new desktop permission or broader assessment authorization must
+- **Review gate:** the separate implementation PR must review the input transport,
+  authorization bindings and native evidence above before an ordinary desktop
+  Execute control is enabled. Any new desktop permission or broader assessment authorization must
   be presented concretely. The current preview milestone does not satisfy this
   gate or reopen accepted offline milestones.
