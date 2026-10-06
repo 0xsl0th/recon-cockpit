@@ -2,7 +2,9 @@
 
 ## Configurable owned HTTP/SSH scope — 6 October 2026
 
-Based on accepted main `fc477d0`, this slice adds exact operator scope for two
+Implementation `065e0ee0eadff12acc2fef3d56eded5a0f6c5d61` in
+[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48), based on accepted main
+`fc477d0`, adds exact operator scope for two
 disconnected endpoint fixtures. It preserves the accepted v1 contracts and uses
 the existing approval, audit, admission and launcher path for all four actions.
 Independent lab/authority and runtime/parser reviews found no execution-boundary
@@ -13,8 +15,12 @@ Local Linux validation passed **117 distinct tests**: four new full-path cases
 and 113 affected existing admission, launcher, owned-lab, service/web and native
 NSE-shim regressions, with no selected failures or skips. The final configurable
 run followed the last runtime strictness fix; 217 focused parser/runtime tests
-also passed. The full portable suite and hosted checks are pending at this
-implementation handoff; record their final results before marking the PR ready.
+also passed. The full portable run passed **9,645 tests**, with 775 integration
+cases deselected and no selected failures, errors or skips. That run began before
+the final strict-boolean receipt regression was added; the final 217-test focused
+run covers that change. The PR's hosted matrix checks the complete latest
+revision on Linux/Python 3.11–3.14 and macOS/Python 3.14; inspect its check results
+before review/merge rather than treating local Linux evidence as hosted CI.
 
 | Scope example | Useful actions | Blocked listening destinations | HTTP / SSH acknowledged totals | Session elapsed |
 | --- | --- | --- | --- | --- |
@@ -32,7 +38,8 @@ content and unchanged bytes, mtimes and modes.
 
 Private receipts are under `.secure-agent/configurable-owned-20261006/` in the
 primary checkout: `configurable-linux-reviewed.xml`, `regression-linux-results.xml`,
-`native-reviewed/`, `accepted-replay.json` and the portable result once complete.
+`native-reviewed/`, `accepted-replay.json`, `portable-results.xml` and the current
+`handoff.json`/`verification.json` receipts.
 Development failures are retained: an empty header descriptor-list bootstrap
 issue was fixed, and the initial Linux test assertion incorrectly assumed SSH
 stdout began with the key rather than its legitimate banner. Those failed runs

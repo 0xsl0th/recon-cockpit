@@ -18,11 +18,17 @@ Scope, sequence, policy, limits, runtime and owner identities are checked across
 the existing seven gates. It does not attach to a shared or real internal network.
 The [runbook](configurable-owned-lab.md) defines completion and exact limitations.
 
-Local validation currently has 117 distinct Linux cases passing, two complete
+**[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) is the new review handoff.**
+Implementation is `065e0ee0eadff12acc2fef3d56eded5a0f6c5d61`; later checkpoint
+commits do not change execution code. Local validation has 117 distinct Linux cases passing, two complete
 4/4-action scope examples, 24/24 forbidden-destination witnesses, required
 noninteractive approval blocking, cancellation cleanup and 27 unchanged accepted
-evidence replays. Full portable validation and hosted checks are pending; see
-[verification](verification.md) and preserve the private failure receipts.
+evidence replays. The full portable run passed 9,645 tests; 217 focused checks
+cover the subsequent strict-boolean receipt regression. See [verification](verification.md)
+for the source/test distinction, and inspect PR #48's latest hosted checks plus
+the private `handoff.json` before any merge. Preserve the private failure receipts.
+This PR remains separate from accepted main and requires fresh review and its
+corresponding merge instruction.
 
 Both user-created Swiss Industrial PNGs were inspected and privately preserved.
 [GUI design notes](gui-design-references.md) record the original Downloads paths,
@@ -1194,7 +1200,7 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Review the configurable HTTP/SSH branch and its latest PR head/checks, using
+1. Review [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) at its latest head/checks, using
    the handoff at `.secure-agent/configurable-owned-20261006/` in the primary
    checkout. PR #47, the catalog, B0–B8 and offline R5/local R6 are closed.
    Proposal PR #31 remains separate and unchanged.
