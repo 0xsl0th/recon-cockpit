@@ -18,7 +18,7 @@ exact parameters, limits, result semantics and existing owned-lab dry-run recipe
 It does not inspect host prerequisites or create execution authority. Clean
 implementation `8abb502` passed 8,399 portable tests and all 19 distinct recipes
 through the isolated dry-run path, each with unchanged evidence replay and zero
-tool executions/provider calls. Private receipts and the latest `handoff.json`
+tool executions or live/paid model calls. Private receipts and the latest `handoff.json`
 are in `.secure-agent/tool-catalog-20261006` in the primary checkout. Leave this
 slice ready for review; a later merge requires its corresponding instruction.
 Deeper workflow composition, comparative benchmarking and optional additions are

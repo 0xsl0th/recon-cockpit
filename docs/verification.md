@@ -50,7 +50,9 @@ is not accepted on main until its corresponding authorized merge.
 No accepted action, policy, workflow card, parser, executable/runtime profile,
 lab fixture or evidence format changed. The other production change is the
 catalog CLI branch and updated help. Credentials, paid calls and live-model
-work remain deferred; provider calls and cost were zero. Deeper workflow and
+work remain deferred; live/paid model calls and actual cost were zero. The shared
+TCP/HTTP dry run still records an existing offline simulated broker exchange;
+this is not a claim of zero local planner/provider activity. Deeper workflow and
 benchmark work, optional tools, accepted R5/R6 scope and the proposal/PDF remain
 outside this slice. See [the catalog runbook](secure-tool-catalog.md).
 
