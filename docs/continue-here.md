@@ -4,13 +4,26 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: broader secure-tool coverage across successive batches.**
-The operator superseded the previous Nmap → ffuf → header workflow suggestion.
-Use [secure-tool-coverage.md](secure-tool-coverage.md) for the repository inventory,
-prioritized required checklist B0–B8 and completion gates G1–G6. Interactive
-support is distinct from secure execution. The milestone stays open until every
-required row has actual useful owned-lab execution, structured results, replayable
-evidence, verified enforcement, independent review and an authorized merge.
+**Current authorized work: a read-only secure-tool catalog and owned-run recipes.**
+The [finite B0–B8 coverage milestone](secure-tool-coverage.md) is closed after
+PR #45's authorized merge, with 20 secure capabilities backed by 11 external
+programs. Its G1–G6 reconciliation preserves report limitations and distinguishes
+interactive commands from secure execution. Completed offline R5 and accepted
+local R6 stay closed.
+
+Implementation is in `/tmp/recon-secure-tool-catalog`, branch
+`feature/secure-tool-catalog`, based on merged main `47d70a2`. The
+[catalog](secure-tool-catalog.md) lists the accepted profiles and describes their
+exact parameters, limits, result semantics and existing owned-lab dry-run recipes.
+It does not inspect host prerequisites or create execution authority. Clean
+implementation `8abb502` passed 8,399 portable tests and all 19 distinct recipes
+through the isolated dry-run path, each with unchanged evidence replay and zero
+tool executions or live/paid model calls. Private receipts and the latest `handoff.json`
+are in `.secure-agent/tool-catalog-20261006` in the primary checkout. Leave this
+slice ready for review; a later merge requires its corresponding instruction.
+Deeper workflow composition, comparative benchmarking and optional additions are
+outside this slice. Model credentials, paid calls and live evaluation remain much
+later; no credential preparation is needed.
 
 **PR #38 is merged and B1 is accepted.** Reviewed head `0e2a0d7` merged as
 `5436dd6` at 04:11:12 UTC on 1 October. Its merge tree exactly matches the reviewed
@@ -106,9 +119,18 @@ unidentified outcomes. Main now has **19 accepted secure capabilities backed by
 10 programs**. Private receipts: `.secure-agent/pr44-merge-review.json` and
 `.secure-agent/nmap-service-tools-20261002` in the primary checkout.
 
-**B8 synthetic Kerberos is implemented and lab-verified in [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45).**
-Worktree `/tmp/recon-secure-kerberos-coverage`, branch
-`feature/secure-kerberos-coverage`, starts from merged main `fcb9419`.
+**[PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45) is merged and B8 is accepted.**
+Reviewed head `9edec213` merged as `47d70a2` at 01:59:42 UTC on 6 October.
+The merge tree exactly matches the reviewed tree. Fresh runtime/authority and
+parser/evidence reviews found no blockers, with 1,338 and 998 focused portable
+checks plus 35 recomputed policy-denial cases. All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37401053840)
+passed, and all 24 saved B1–B8 bundles replayed unchanged. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37401942532)
+also passed.
+Private merge receipt: `.secure-agent/pr45-merge-review.json` in the primary
+checkout. Keep B8 closed within its documented report-level semantics.
+
 The separate `kerbrute_userenum_v1` profile runs the real executable against an
 owned error-only KDC at `127.0.0.1:8080`. Only `fixture-a` and `fixture-b` in
 `HARBORDESK.TEST` can be queried, with two requests, one tool action, a five-second
@@ -135,14 +157,12 @@ Private evidence is `.secure-agent/kerberos-tools-20261002` in the primary
 checkout (work began 2 October; final validation 6 October). It includes
 `verification.json`, `validation-summary.json`, the archived verifier, retained
 failed development/test-instrumentation receipts and the latest `handoff.json`.
-See [verification.md](verification.md). PR #45 is prepared for review after its
-final hosted checks. B8 and the broader milestone remain open through the latest
-review/checks and the corresponding authorized merge.
-No required protocol row follows B8: after its acceptance, reconcile gates G1–G6
-and present the next bounded product slice for review. Roughly forty tools remains
-a long-term direction, not a claim that this finite milestone delivers the full
-professional product. Deeper workflows and comparative benchmarking stay deferred
-while B8 is open; optional capabilities remain deferred.
+See [verification.md](verification.md). All required B0–B8 rows now satisfy
+G1–G6 under the [recorded reconciliation](secure-tool-coverage.md#gate-reconciliation--accepted-b0b8).
+There is no required B9. Roughly forty tools remains a long-term direction, not
+a claim that this finite milestone delivers the full professional product. The
+catalog makes the accepted coverage usable without broadening it; optional
+capabilities and deeper workflow/benchmark work remain later slices.
 
 Credential setup, paid calls and live-model evaluation remain deferred until much
 later. Do not ask for a key, fund a ledger or enable a live provider. Preserve
@@ -220,12 +240,11 @@ matches the reviewed head. All five
 passed. Do not repeat its merge or reopen the adapter/Nmap slice. Existing
 TCP/HTTP contracts, fixture bytes and accepted evidence remain regression anchors.
 
-The broader coverage milestone replaces the earlier two-tool stopping point.
-The [inventory](secure-tool-coverage.md) records existing interactive and secure
-support, required next capabilities and later professional-use gaps. Roughly
+The completed broader coverage milestone superseded the earlier two-tool
+stopping point. The [inventory](secure-tool-coverage.md) records interactive and
+secure support, accepted B0–B8 scope and later professional-use gaps. Roughly
 40 tools remains a long-term target; executable counts do not replace protocol
-coverage or verification. Deeper workflows and comparative benchmarks remain
-explicitly deferred until the required checklist is complete.
+coverage or verification. The current catalog slice preserves these boundaries.
 
 Refresh the proposal with verified progress in early November and target submission
 around 9 November after operator review. Documentation PR #31 on
@@ -1110,36 +1129,36 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #44 merge is complete. PRs #6–#30 and #32–#44
+- The operator-authorized PR #45 merge is complete. PRs #6–#30 and #32–#45
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Resume the broader [secure-tool coverage milestone](secure-tool-coverage.md).
-   Check the current branch/PR and private handoff before repeating work. B0–B7 are
-   accepted; finish B8 synthetic Kerberos principal reports through review and an
-   authorized merge, then reconcile all milestone gates. PRs #6–#30 and #32–#44
-   stay closed. Proposal PR #31 remains separate.
-2. Require G1–G6 for every required row: actual owned execution, useful structured
-   output, strict authority, replayable evidence, enforcement/cleanup and reviewed
-   source/checks. Keep interactive-only, implemented-unverified, review-pending
-   and accepted statuses distinct. Never count mocks or skips as execution.
-3. Keep deeper composition and comparative benchmarking deferred until B0–B8 are
-   complete. Record per-tool useful completion/refusals, requests, bounds, latency
-   and cleanup as correctness evidence; blocked useful work fails completion.
+1. Check the current catalog branch/PR and private handoff before repeating work.
+   B0–B8 and offline R5/local R6 are closed. PRs #6–#30 and #32–#45 stay closed;
+   proposal PR #31 remains separate.
+2. Finish review/checks of the [read-only catalog](secure-tool-catalog.md), preserving
+   all existing actions, policies, cards and runtime profiles. A recipe is neither
+   execution evidence nor approval. Leave its PR ready for the operator's review;
+   merge only under the corresponding instruction.
+3. After catalog acceptance, consider the bounded Nmap service → ffuf → headers
+   workflow recorded in the roadmap. It needs a separately reviewed shared owned
+   lab and authority profile; do not widen accepted single-tool profiles in place.
+   Broader composition, comparative benchmarking and optional tool additions stay
+   outside the catalog work.
 4. Keep model credentials, paid calls and live evaluation deferred until much
    later. Preserve the accepted offline R5/R6 packet, terminal rehearsal and owner
    decision; do not repeat acceptance or alter immutable evidence.
-5. Continue successive small coverage batches under the current development
-   instruction, leaving each implementation ready for review. Merge a new PR only
-   under its corresponding operator instruction. Reprioritize the remaining tool
-   gaps after each batch with a recorded reason; do not quietly remove required
-   rows. External targets, real service credentials, intrusive activity, release
-   publication and competition submission retain their separate authorization.
+5. Future tool or workflow slices must retain actual useful owned execution,
+   structured results, replayable evidence, enforcement and cleanup. Record
+   legitimate completion, unnecessary refusals, bounds, costs and latency. Mocks,
+   skipped tests and blocked legitimate tasks do not count as successful work.
+   External targets, real service credentials, intrusive activity, publication
+   and competition submission retain their separate authorization.
 6. Keep the proposal/PDF unchanged until its planned early-November update. Avoid
-   GUI/API work, optional duplicate tools and provider-preparation detours. Keep
-   local kernel validation separate from hosted portable CI.
+   GUI/API work, duplicate tools and provider-preparation detours. Keep local kernel
+   validation separate from hosted portable CI.
 
 ## Recovery and verification
 

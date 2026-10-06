@@ -34,6 +34,27 @@ def _print(outcome: dict) -> None:
                       if key != "untrusted_result"}, sort_keys=True, ensure_ascii=True))
 
 
+def _run_tool_catalog(parser, args, argv) -> int:
+    # Parse explicit options again without defaults or abbreviation. Comparing
+    # parsed values with defaults would miss an explicitly supplied policy or
+    # audit path, and a catalog request must never silently ignore such options.
+    catalog_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+    selection = catalog_parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--list-tools", action="store_true")
+    selection.add_argument("--describe-tool")
+    _, incompatible = catalog_parser.parse_known_args(argv)
+    if incompatible:
+        parser.error("tool catalog commands cannot be combined with other options")
+    from .tool_catalog import describe_tool, list_tools
+
+    try:
+        result = list_tools() if args.list_tools else describe_tool(args.describe_tool)
+    except ValueError:
+        parser.error("unknown tool identifier; use --list-tools to see the catalog")
+    _print(result)
+    return 0
+
+
 def _human_approval(controller: Controller, raw: bytes | str, *, control=None) -> str | None:
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         return None
@@ -244,6 +265,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Secure Agent Mode: isolated actions and bounded mock sessions")
     parser.add_argument("--policy", type=Path, default=Path("examples/secure-agent-policy.json"))
     source = parser.add_mutually_exclusive_group()
+    source.add_argument("--list-tools", action="store_true",
+                        help="list bundled secure capabilities as JSON without reading policy or executing tools")
+    source.add_argument("--describe-tool", metavar="TOOL_ID",
+                        help="describe one secure capability, its limits and owned-lab recipe without execution")
     source.add_argument("--mock", action="store_true", help="use the deterministic mock (default)")
     source.add_argument("--proposal", type=Path, help="read strictly bounded untrusted action JSON")
     source.add_argument("--session-mock", choices=SCENARIOS,
@@ -269,7 +294,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="one bounded curl or ffuf action in the disconnected owned lab")
     from .network_tools_lab_contract import CASES as NETWORK_TOOL_CASES
     source.add_argument("--network-tool-assessment", choices=NETWORK_TOOL_CASES,
-                        help="one bounded DNS, TLS, SSH key, LDAP RootDSE, SMB, RPC, NFS, FTP, SMTP, Docker, WinRM metadata or Nmap service-identification action in the disconnected owned lab")
+                        help="one bounded network-tool action in the disconnected owned lab, including synthetic Kerberos reports")
     source.add_argument("--http-headers-assessment", choices=("vulnerable", "corrected", "injected"),
                         help="assess bounded HTTP response headers after owned Nmap discovery; no live model")
     source.add_argument("--workflow-assessment", choices=tuple("abcdef"),
@@ -337,6 +362,8 @@ def main(argv: list[str] | None = None) -> int:
     backend_selection.add_argument("--owned-lab", action="store_true",
                                    help="keep one owned fixture alive across a workflow; reset on each run")
     args = parser.parse_args(argv)
+    if args.list_tools or args.describe_tool is not None:
+        return _run_tool_catalog(parser, args, argv)
     offline_scenario = args.openai_offline or args.control_plane_openai_offline
     assessment_case = (args.http_assessment or args.discovery_assessment or args.workflow_assessment
                        or args.nmap_assessment or args.web_assessment or args.http_headers_assessment

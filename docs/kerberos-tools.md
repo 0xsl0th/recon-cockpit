@@ -2,9 +2,10 @@
 
 B8 adds `kerbrute_userenum_v1` to the existing single-action secure tool path.
 It is the final required protocol-family row in the
-[coverage checklist](secure-tool-coverage.md). It is implemented and lab-verified in
-[PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45); acceptance still requires
-latest review/checks and an authorized merge. Main's accepted B0–B7 capabilities remain unchanged.
+[coverage checklist](secure-tool-coverage.md), accepted in
+[PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45), merged as `47d70a2` on
+6 October after fresh review and all five final checks. Its reviewed and merged
+trees match; accepted B0–B7 capabilities remain unchanged.
 
 This profile runs the real Kerbrute executable against an owned synthetic KDC
 at `127.0.0.1:8080`. Its compiled list contains only `fixture-a` and `fixture-b`,
@@ -125,5 +126,6 @@ receipts and limits; hosted portable checks remain distinct from local kernel
 execution evidence.
 
 Credentials, paid calls, live-model evaluation, external directories, deeper
-workflows and optional tools remain deferred. After B8 acceptance, reconcile the
-finite milestone gates and present the next bounded product slice for review.
+workflows and optional tools remain deferred. B0–B8 are closed under the
+[recorded gate reconciliation](secure-tool-coverage.md#gate-reconciliation--accepted-b0b8).
+The next slice is the [read-only tool catalog](secure-tool-catalog.md).
