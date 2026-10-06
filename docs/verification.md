@@ -1,6 +1,69 @@
 # Verification record
 
+## Shared CLI/GUI assessment service — 6 October 2026
+
+Based on accepted PR #48 merge `5f046eb`, this slice extracts application lifecycle
+and saved-evidence inspection without changing tool contracts, scope, policies,
+approval input or executor protocols. Direct callers now get the same mandatory
+isolated audit, approval, admission and launcher path as the terminal. CLI signals
+remain in the terminal adapter; service execution works from a worker thread.
+
+The full local portable suite passed **9,722 tests**, with 778 integration cases
+deselected at collection and no selected failures, errors or skips (304.98 seconds).
+The fourth native service case was added after this portable collection; it is
+covered by the separate final native run and hosted collection.
+
+Independent service/CLI review found no remaining blockers; 95 focused service,
+CLI and inspection checks passed. A review finding about swallowed progress-callback
+exceptions was fixed: the service cancels, propagates the error after cleanup and
+never finalizes a report from that failure, including in dry-run mode.
+
+Native validation passed **8 distinct Linux cases**: four direct-service cases and
+four existing configurable CLI cases. The final direct-service run followed the
+observer-error fix. All selected cases passed without skips. One initial test
+assertion expected `cancelled` instead of the existing `session_cancelled` reason;
+the assertion was corrected and the failure retained. No production cancellation
+change was needed for that result.
+
+| Completed route | Useful actions | Blocked listening destinations | Session elapsed |
+| --- | --- | --- | --- |
+| Shared service on worker thread | 4/4 | 12/12 | 8.004 s |
+| CLI primary scope | 4/4 | 12/12 | 8.105 s |
+| CLI alternate scope | 4/4 | 12/12 | 8.136 s |
+
+All three workflows report zero unnecessary refusals, provider calls and cost.
+These are descriptive local times, not a comparative overhead benchmark. Tests
+also verify approval-required noninteractive refusal before launch, cancellation
+after actual Nmap starts, process reaping, closed owners and replayable cancelled
+reports. Observer failure after a successful Nmap action permits no second launch,
+closes both owners, rejects reuse and retains real partial evidence; inspection
+identifies unfinished evidence without manufacturing a final report.
+
+The shared inspector and CLI independently replayed **29 accepted bundles**
+(27 B1–B8/service-web plus both PR #48 scope examples), with identical reports and
+unchanged file bytes, mtimes and modes. Portable tests cover immutable request
+validation, shortened ceilings, mandatory gate construction, concurrent-start
+refusal, cancellation during setup, detached progress/result snapshots, exceptions,
+signal restoration and malformed/private evidence dispatch. Python 3.11 syntax,
+relative documentation links and whitespace checks passed.
+
+Private receipts are `.secure-agent/shared-service-20261006/` in the primary
+checkout: `service-native-final-results.xml`, `service-native-final-verification.json`,
+`service-native-results.xml`, `accepted-replay.json`, `validated-production.json`
+and the final portable/CI handoff. Local kernel evidence is separate from hosted
+portable checks. No GUI, new approval channel, attached network, personal approval
+rehearsal, authenticated operation or model call is claimed.
+
 ## Configurable owned HTTP/SSH scope — 6 October 2026
+
+PR #48 was reviewed and merged as `5f046eb`, preserving reviewed head `5260b695`'s
+tree. Independent reviews found no blockers; 652 configurable authority, 363
+existing authority and 276 workflow/evidence/parser/CLI focused checks passed.
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37411904045)
+passed 9,646 portable tests each, and all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37413359372)
+also passed. Preserve this accepted slice. The details below retain the earlier
+local/hosted validation history rather than counting corrected failures as passes.
 
 Implementation `065e0ee0eadff12acc2fef3d56eded5a0f6c5d61` in
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48), based on accepted main

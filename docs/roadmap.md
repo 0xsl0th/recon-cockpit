@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — configurable owned HTTP/SSH scope (6 October 2026).**
+**Current slice — shared CLI/GUI assessment services (6 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -18,8 +18,7 @@ versioned [service/web workflow](service-web-assessment.md) at `fc477d0`:
 3/3 useful native workflows, 9/9 actions, 18/18 blocked destination witnesses,
 zero unnecessary refusals/provider calls/cost and unchanged evidence replay.
 Preserve its three fixed actions and predecessor gates. All five final checks
-passed; post-merge checks passed after one macOS fixture-race retry. The current
-slice also fixes that test's peer lifetime without weakening production cleanup.
+passed; post-merge checks passed after one macOS fixture-race retry. PR #48 fixed that test's peer lifetime without weakening production cleanup.
 
 Enrique selected **internal networks with web services** as the first professional
 engagement focus and authorized the following implementation order. The eventual
@@ -28,14 +27,31 @@ claim that today's bounded fixtures support professional engagements.
 
 | Priority | Implementation | Completion and boundary |
 | --- | --- | --- |
-| 1 — current | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
-| 2 — next | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
+| 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
+| 2 — current | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
 | 3 — successive batches | Extend secure tool coverage toward the intended product | Prioritize remaining engagement capabilities, not executable count; each tool needs actual owned-lab execution, structured results, evidence and enforcement. Keep interactive support distinct from secure support. |
 | 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
+[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
+after review and all five final portable jobs passed. Its two varied manifests
+completed 8/8 legitimate actions and blocked 24/24 listening forbidden destinations.
+The catalog now has 23 accepted profiles using the same 11 external programs.
+Keep this scope closed and preserve its existing contracts.
+
+Priority **2a** extracts a [shared assessment service](shared-assessment-service.md)
+for the configurable workflow and a read-only saved-evidence inspector. Completion
+requires independent request/limit validation, mandatory isolated authority
+services, detached session/progress views, single-use sessions, cancellation and
+cleanup from a worker thread, unchanged CLI results, useful native execution and
+unchanged evidence replay. This step does not expose an API server or GUI approval
+channel. Priority **2b** will build the initial GUI using the saved mockups, starting
+with scope configuration and evidence/session views. Execution and fresh approval
+controls must use the same reviewed authority services; design their interaction
+before enabling GUI launch. Tool batches remain priority 3.
+
 Paired baseline/authority benchmarking and richer workflow decisions remain later
-work; descriptive local latency cannot establish authority overhead. The current
-slice adds three configurable profiles using existing programs, without changing
+work; descriptive local latency cannot establish authority overhead. The accepted scope
+slice added three configurable profiles using existing programs, without changing
 accepted v1 contracts or reopening B0–B8, offline R5 or accepted local R6.
 
 The inventory baseline is PR #37, merged as `ba0d6f8`: 10 interactive executable

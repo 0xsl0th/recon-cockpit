@@ -4,34 +4,46 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: configurable owned HTTP/SSH scope, then shared CLI/GUI services.**
-The finite [B0–B8 coverage milestone](secure-tool-coverage.md) is closed, with 20
-secure capabilities backed by 11 external programs. Offline R5 and accepted local
-R6 also stay closed. No required B9 or tool quota has been added.
+**Current authorized work: shared CLI/GUI assessment services (priority 2a).**
+The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
+accepted local R6 stay closed. Enrique selected **internal networks with web
+services** and authorized continuing the [roadmap priority table](roadmap.md).
+Credentials, paid calls and live-model evaluation remain deferred until much later.
 
-Enrique selected **internal networks with web services** for the first professional
-engagement focus and authorized the [roadmap priority table](roadmap.md). This
-branch implements its first slice in `/tmp/recon-configurable-owned-lab`, branch
-`feature/configurable-owned-lab`, based on `fc477d0`: Nmap HTTP → declared header
-GET, then Nmap SSH → public key collection in two disconnected endpoint owners.
-Scope, sequence, policy, limits, runtime and owner identities are checked across
-the existing seven gates. It does not attach to a shared or real internal network.
-The [runbook](configurable-owned-lab.md) defines completion and exact limitations.
+**[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) is merged and accepted.**
+Reviewed head `5260b695f0ec461009a92997fc6ee4af838bb397` merged as
+`5f046eb782e11554bf28cc6ffe237c6018b5b026` on 6 October at 04:21:57 UTC.
+Reviewed and merged trees match (`d2e3035edcb292f0f1f26b40dd5f8b3a43cd8b48`).
+Independent authority and evidence reviews found no blockers; fresh focused sets
+passed 652 configurable authority, 363 existing authority and 276 workflow/evidence/
+parser/CLI cases. All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37411904045)
+passed 9,646 portable tests each. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37413359372)
+also passed. The merge receipt is `.secure-agent/pr48-merge-review.json`.
 
-**[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) is the new review handoff.**
-Implementation is `065e0ee0eadff12acc2fef3d56eded5a0f6c5d61`; later checkpoint
-and test-portability commits do not change execution code. Local validation has 117 distinct Linux cases passing, two complete
-4/4-action scope examples, 24/24 forbidden-destination witnesses, required
-noninteractive approval blocking, cancellation cleanup and 27 unchanged accepted
-evidence replays. The full portable run passed 9,645 tests; 217 focused checks
-cover the subsequent strict-boolean receipt regression. See [verification](verification.md)
-for the source/test distinction, and inspect PR #48's latest hosted checks plus
-the private `handoff.json` before any merge. Preserve the private failure receipts.
-The first hosted matrix passed all four Linux jobs; two portable-test fixtures
-needed explicit namespace/platform doubles for macOS. Their corrections passed
-54 focused tests. The original peer-lifetime race test passed on macOS.
-This PR remains separate from accepted main and requires fresh review and its
-corresponding merge instruction.
+PR #48 implements exact configurable HTTP/SSH scope through all seven gates in
+two disconnected endpoint owners. Local validation passed 117 Linux cases,
+8/8 useful actions over two manifests, 24/24 forbidden-destination witnesses,
+approval blocking, cancellation cleanup and 27 unchanged accepted evidence replays.
+The catalog has 23 accepted profiles using 11 external programs. These are
+isolated fixture addresses, not permission to attach to an internal network.
+Preserve private receipts at `.secure-agent/configurable-owned-20261006/`, including
+the retained initial development/macOS test failures. Do not repeat the merge.
+
+The current branch is `feature/shared-assessment-service` in
+`/tmp/recon-shared-assessment-service`, based on `5f046eb`. It extracts the
+[shared assessment service](shared-assessment-service.md) for the existing
+four-action workflow plus read-only inspection. The service owns required authority
+controls, detached progress/state and cancellation; the CLI retains signals and
+JSON rendering. GUI construction and a GUI approval channel are subsequent work.
+Local validation passed **9,722 portable tests and 8 distinct Linux cases**.
+Three completed service/CLI workflows produced 12/12 useful actions and 36/36
+blocked listening-destination witnesses, zero unnecessary refusals/provider calls/
+cost, and 29 accepted evidence bundles replayed unchanged through both entry points.
+Cancellation and observer failure after native startup both close the lab and reap
+processes. Independent review found no remaining blockers; 95 focused checks passed.
+The new implementation is left for review, not merged. Current commit, PR URL and
+hosted checks are in the private `.secure-agent/shared-service-20261006/handoff.json`.
+See [verification](verification.md) for exact scope and retained development failures.
 
 Both user-created Swiss Industrial PNGs were inspected and privately preserved.
 [GUI design notes](gui-design-references.md) record the original Downloads paths,
@@ -1197,35 +1209,31 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #46 merge is complete. PRs #6–#30 and #32–#46
+- The operator-authorized PR #48 merge is complete. PRs #6–#30 and #32–#48
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Review [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) at its latest head/checks, using
-   the handoff at `.secure-agent/configurable-owned-20261006/` in the primary
-   checkout. PR #47, the catalog, B0–B8 and offline R5/local R6 are closed.
-   Proposal PR #31 remains separate and unchanged.
-2. Preserve the full scope commitment, exact four actions, per-endpoint owner
-   identities, listening witnesses, predecessor gates, independent raw replay,
-   cancellation/cleanup and all seven approval/audit/admission/launcher gates.
-   Existing v1 profiles stay fixed. Configured RFC1918 addresses name isolated
-   fixtures; they do not authorize real network attachment.
-3. Use saved validation receipts. Mocks, skipped cases or blocked legitimate work
-   do not establish useful execution. Zero provider cost and local elapsed time
-   are actual offline measurements, not a comparative overhead benchmark.
-4. Leave the new PR for review. After its separately authorized merge, follow
-   [priority 2](roadmap.md): shared CLI/GUI application services and a small GUI
-   using both [saved mockups](gui-design-references.md). Subsequent tool batches
-   target internal-network/web capability gaps; 40+ programs is a longer-term
-   product ambition, not a prerequisite or a reopened B9 milestone.
-5. Keep model credentials, paid calls and live evaluation deferred until much
-   later. External targets, real service credentials, intrusive activity,
-   publication and competition submission retain their separate authorization.
-6. Keep the proposal/PDF unchanged until its planned early-November update. Avoid
-   provider-preparation detours. Keep local kernel validation separate from hosted
-   portable CI and keep user-created mock images private.
+1. Review the latest shared-service PR and its checks using
+   `.secure-agent/shared-service-20261006/` in the primary checkout. PR #48 and all
+   earlier accepted milestones remain closed. Proposal PR #31 remains separate.
+2. Preserve exact four-action scope, per-endpoint isolation, all seven gates,
+   predecessor checks, raw evidence replay and cleanup. The shared service is a
+   trusted application component, not an authority boundary against host code.
+3. After review and the corresponding merge instruction, implement priority 2b:
+   a small initial GUI using the [saved light/dark designs](gui-design-references.md).
+   Use shared scope/session/evidence services; design exact-action approval before
+   enabling GUI execution. Do not recreate authority logic or fabricate pending
+   approvals, online agents, confidence/signing or model cost.
+4. Later tool batches target internal-network/web capability gaps, with actual
+   owned-lab execution, structured results, evidence and enforcement for each.
+   The eventual 40+ program ambition does not reopen B0–B8 or impose a B9 quota.
+5. Keep paid calls, model credentials and live evaluation deferred. External
+   targets, real service credentials, intrusive activity, publication and
+   competition submission require their corresponding authorization.
+6. Keep the proposal/PDF unchanged until its planned early-November update.
+   Distinguish local kernel validation from portable CI and keep mockup PNGs private.
 
 ## Recovery and verification
 
