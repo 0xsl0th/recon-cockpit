@@ -115,7 +115,7 @@ zero unnecessary refusals on those tasks, bounded output, matching replay and
 closed labs. The spoof trial is tracked separately. Forbidden IP/port witnesses
 must be blocked with zero unauthorized destination successes. Report descriptive
 CLI latency and zero provider calls/cost; comparative overhead remains deferred.
-Local validation passed 8,198 distinct portable and 252 distinct Linux tests,
+Validation passed the complete 8,186-test portable suite and 252 distinct Linux tests,
 including all seven actual B8 scenarios and enforcement/cleanup cases. Clean
 source `de40f28` completed both legitimate reporting tasks 2/2 with zero
 unnecessary refusals; the spoof demonstration is counted separately. All six

@@ -56,8 +56,11 @@ No prior tool's limits or authority were expanded.
 
 ### Validation and retained receipts
 
-Local validation passed **8,198 distinct portable tests** (8,162 full run plus
-36 final cases) and **252 distinct Linux tests**, with no selected failures,
+The complete hosted suite passed **8,186 portable tests**. Local receipts cover
+8,162 full-run passes and 584 final focused passes; twelve parametrized fixture
+case IDs changed when empty PA-DATA support landed, so their raw ID union must
+not be counted as additional distinct tests. Local validation also passed
+**252 distinct Linux tests**, with no selected failures,
 errors or skips. The Linux union is 11 B8 workflow/gate/cleanup tests, four
 additional B8 kernel tests and 237 accepted-tool/launcher regressions. The latter
 includes all 77 accepted B1–B7 native scenarios. Pytest emitted only the known
@@ -74,7 +77,10 @@ JUnit `record_property` compatibility warnings.
 Python 3.11 grammar validation, dependency consistency, local Markdown-link
 checks and `git diff --check` passed. Hosted PR checks run the complete portable
 suite on Linux Python 3.11–3.14 and macOS Python 3.14; final CI status is recorded
-in the PR and the private handoff, separately from local kernel evidence.
+in the PR and the private handoff, separately from local kernel evidence. The
+[first completed final-code CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/37400333462)
+passed all five jobs at `7c65170`; the subsequent correction changes only
+documentation counts. Latest-head checks remain required before handoff.
 
 Independent reviews covered runtime/launcher, fixture, parser, authority,
 counters, evidence and current documentation with no remaining blockers. Actual

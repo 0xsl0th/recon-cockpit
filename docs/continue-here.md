@@ -127,8 +127,8 @@ Clean source `de40f28` completed both legitimate reporting tasks 2/2 with zero
 unnecessary refusals, plus a separately counted spoof-ambiguity demonstration.
 All six forbidden-destination witnesses were blocked; all three labs closed,
 raw evidence/replay matched, and all 21 accepted bundles replayed unchanged.
-CLI times were 2.854–2.982 seconds, with zero provider calls/cost. Local validation
-passed 8,198 distinct portable and 252 distinct Linux tests, with no selected
+CLI times were 2.854–2.982 seconds, with zero provider calls/cost. Validation
+passed the complete 8,186-test portable suite and 252 distinct Linux tests, with no selected
 failures, errors or skips. Independent reviews found no remaining blockers.
 
 Private evidence is `.secure-agent/kerberos-tools-20261002` in the primary
