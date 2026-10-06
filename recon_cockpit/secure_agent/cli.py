@@ -513,28 +513,14 @@ def main(argv: list[str] | None = None) -> int:
             _print(report)
             return 0 if report["status"] in {"passed", "dry_run"} else 2
         if args.inspect_assessment is not None:
-            from .evidence import inspect_assessment, _read_private
+            from .assessment_inspection import inspect_saved_assessment
 
-            from .models import load_json
-            manifest_fd = None
-            try:
-                manifest_fd = os.open(args.inspect_assessment, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-                manifest = load_json(_read_private(manifest_fd, "manifest.json", 8192))
-            except (OSError, ValueError, RecursionError):
-                manifest = {}  # The existing inspector reports malformed/missing evidence.
-            finally:
-                if manifest_fd is not None:
-                    os.close(manifest_fd)
-            if type(manifest) is dict and manifest.get("workflow") in (
-                    "owned-nmap-http-assessment-v1", "owned-web-assessment-v1", "owned-http-headers-assessment-v1",
-                    "owned-web-tool-assessment-v1", "owned-network-tool-assessment-v1",
-                    "owned-service-web-assessment-v1"):
-                from .nmap_evidence import inspect_assessment
-            elif type(manifest) is dict and manifest.get("workflow") == "configurable-owned-http-ssh-v1":
-                from .configurable_evidence import inspect_assessment
-            report = inspect_assessment(args.inspect_assessment)
+            report = inspect_saved_assessment(args.inspect_assessment)
             _print(report)
             return 0 if not report["integrity_issues"] else 2
+        if args.configurable_assessment:
+            from .configurable_cli import run_assessment
+            return run_assessment(args)
         policy = parse_policy(_read_bounded(args.policy))
         backend = None
         if args.fixture and not authority_mode:
@@ -548,9 +534,6 @@ def main(argv: list[str] | None = None) -> int:
             from .audit_isolation import LinuxAuditSink
             audit_type = LinuxAuditSink
         with audit_type(args.audit, **({'launch_witness': True} if args.require_launch_audit else {})) as audit, ExitStack() as services:
-            if args.configurable_assessment:
-                from .configurable_cli import run_assessment
-                return run_assessment(args, policy, audit)
             if (args.nmap_assessment or args.web_assessment or args.http_headers_assessment
                     or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment):
                 from .nmap_cli import run_assessment

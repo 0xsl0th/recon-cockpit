@@ -61,3 +61,81 @@ def test_dry_run_never_inspects_native_runtime_or_claims_work(tmp_path, monkeypa
     assert cli.main(["--inspect-assessment", str(directory)]) == 0
     assert json.loads(capsys.readouterr().out)["integrity_issues"] == []
     assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns, p.stat().st_mode) for p in directory.iterdir()}
+
+
+@pytest.mark.parametrize("outcome,exit_code", [("completed", 0), ("dry_run", 0), ("incomplete", 2)])
+def test_terminal_adapter_uses_shared_service_and_restores_signal_handlers(
+        tmp_path, monkeypatch, capsys, outcome, exit_code):
+    import signal
+    from recon_cockpit.secure_agent import configurable_cli
+
+    previous = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
+    observed = []
+
+    class Service:
+        def __init__(self, request):
+            assert request.execute is False
+            assert request.limits.max_steps == 4
+            assert request.assessment_dir == tmp_path / "evidence"
+            self.cancelled = False
+
+        def cancel(self):
+            self.cancelled = True
+
+        def snapshot(self):
+            return {"session_id": "test-terminal-session"}
+
+        def run(self, *, interactive_terminal, on_step):
+            assert type(interactive_terminal) is bool
+            for number in previous:
+                assert signal.getsignal(number) is not previous[number]
+            signal.getsignal(signal.SIGINT)(signal.SIGINT, None)
+            assert self.cancelled
+            on_step({"step": 1, "execution_status": "dry_run"})
+            observed.append(True)
+            return {"assessment_outcome": outcome, "live_calls_enabled": False}
+
+    monkeypatch.setattr(configurable_cli, "ConfigurableAssessmentService", Service)
+    monkeypatch.setattr(cli, "parse_policy", lambda *_: pytest.fail("generic CLI policy path"))
+    monkeypatch.setattr(cli, "AuditSink", lambda *_: pytest.fail("generic CLI audit path"))
+    assert cli.main([*arguments(tmp_path), *GATES, "--dry-run"]) == exit_code
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["assessment_outcome"] == outcome
+    assert json.loads(captured.err)["session_id"] == "test-terminal-session"
+    assert observed == [True]
+    assert all(signal.getsignal(number) is handler for number, handler in previous.items())
+
+
+@pytest.mark.parametrize("reason", ["session_cancelled", "session_timeout"])
+def test_setup_stop_is_structured_and_terminal_handlers_are_restored(tmp_path, monkeypatch, capsys, reason):
+    import signal
+    from recon_cockpit.secure_agent import configurable_cli
+    from recon_cockpit.secure_agent.execution import ExecutionStopped
+
+    previous = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
+
+    class Service:
+        def __init__(self, request):
+            pass
+
+        def cancel(self):
+            pass
+
+        def run(self, **kwargs):
+            raise ExecutionStopped(reason)
+
+    monkeypatch.setattr(configurable_cli, "ConfigurableAssessmentService", Service)
+    assert cli.main([*arguments(tmp_path), *GATES, "--execute"]) == 2
+    assert json.loads(capsys.readouterr().out)["reasons"] == [reason]
+    assert not list(tmp_path.iterdir())
+    assert all(signal.getsignal(number) is handler for number, handler in previous.items())
+
+
+def test_invalid_scope_is_rejected_before_opening_audit(tmp_path, capsys):
+    scope = tmp_path / "scope.json"
+    scope.write_text('{"unrecognized": true}')
+    args = arguments(tmp_path)
+    args[1] = str(scope)
+    assert cli.main([*args, *GATES, "--dry-run"]) == 2
+    assert json.loads(capsys.readouterr().out)["execution_status"] == "blocked"
+    assert list(tmp_path.iterdir()) == [scope]

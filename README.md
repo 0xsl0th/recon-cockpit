@@ -29,11 +29,15 @@ accepted follow-on is a bounded [Nmap → ffuf → HTTP header workflow](docs/se
 using three existing capabilities in one disconnected owned lab. Complete
 service and path-discovery evidence gates the next fixed action. This separate
 workflow merged in [PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47).
-Current work adds [configurable HTTP/SSH owned endpoint fixtures](docs/configurable-owned-lab.md)
-with exact operator scope and the same isolated authority path. Three new
-configurable profiles reuse existing programs; they do not enable real-network
-attachment. The [priority table](docs/roadmap.md) then calls for shared CLI/GUI
-services and an initial GUI using the saved [Swiss Industrial references](docs/gui-design-references.md).
+[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) accepted
+[configurable HTTP/SSH owned endpoint fixtures](docs/configurable-owned-lab.md)
+with exact operator scope and the same isolated authority path. Its three
+configurable profiles reuse existing programs without real-network attachment.
+The [shared application service](docs/shared-assessment-service.md) now supplies
+validated requests, detached progress/session views, cancellation and read-only
+evidence inspection to the CLI and future GUI. The next interface will use the
+saved [Swiss Industrial references](docs/gui-design-references.md) and follow the
+[priority table](docs/roadmap.md).
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.
