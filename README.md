@@ -19,7 +19,8 @@ Nmap, curl, ffuf, dig, OpenSSL, SSH key collection, LDAP RootDSE and
 profiles. [RPC registration and NFS export metadata](docs/rpc-nfs-tools.md) are also accepted.
 [Bounded FTP listing and SMTP capability discovery](docs/ftp-smtp-tools.md) are accepted.
 [Fixed Docker health/version and WinRM endpoint metadata](docs/docker-winrm-tools.md) are accepted.
-The current batch adds [finite Nmap service identification](docs/nmap-service-tools.md).
+[Finite Nmap service identification](docs/nmap-service-tools.md) is accepted in PR #44.
+The current final coverage batch adds [synthetic Kerberos principal reports](docs/kerberos-tools.md).
 After each batch, prioritize the next tool gap. Deeper workflow
 composition and comparative benchmarking wait until the coverage milestone is
 complete. Per-tool useful execution, evidence and enforcement checks continue now.

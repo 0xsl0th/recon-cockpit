@@ -23,6 +23,13 @@ def linux_only():
 
 
 @pytest.mark.parametrize('case,outcome,success,requests', [
+    ('kerberos-ok', 'kerberos_principal_reports_observed', 1, 2),
+    ('kerberos-empty', 'kerberos_principal_reports_observed', 1, 2),
+    ('kerberos-spoof', 'kerberos_principal_reports_observed', 1, 2),
+    ('kerberos-denied', 'inconclusive', 1, None),
+    ('kerberos-injected', 'inconclusive', 1, 2),
+    ('kerberos-malformed', 'inconclusive', 1, 2),
+    ('kerberos-stalled', 'inconclusive', 0, 1),
     ('nmap-service-http', 'nmap_service_identified', 1, 1),
     ('nmap-service-ssh', 'nmap_service_identified', 1, 1),
     ('nmap-service-unknown', 'nmap_service_unidentified', 1, 1),
@@ -108,7 +115,8 @@ def linux_only():
 def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys, record_property, case, outcome, success, requests):
     monkeypatch.setattr(NetworkToolsLab, 'start', lambda *_: pytest.fail('host lab started'))
     monkeypatch.setattr(AuthorizedNetworkToolsBackend, 'run', lambda *a, **k: pytest.fail('host tool executed'))
-    policy_file = ('examples/secure-agent-nmap-service-policy.json' if case.startswith('nmap-service-')
+    policy_file = ('examples/secure-agent-kerberos-policy.json' if case.startswith('kerberos-')
+                   else 'examples/secure-agent-nmap-service-policy.json' if case.startswith('nmap-service-')
                    else 'examples/secure-agent-docker-winrm-policy.json' if case.startswith(('docker-ping-', 'docker-version-', 'winrm-'))
                    else 'examples/secure-agent-ftp-smtp-policy.json' if case.startswith(('ftp-', 'smtp-'))
                    else 'examples/secure-agent-rpc-nfs-policy.json' if case.startswith(('rpc-', 'nfs-'))
@@ -143,7 +151,11 @@ def test_real_tool_and_independent_readonly_replay(tmp_path, monkeypatch, capsys
     record_property('protocol_progress_count', closure['request_count'])
     if requests is not None:
         assert closure['request_count'] == requests
-    assert closure['request_count'] <= 1
+    assert closure['request_count'] <= (2 if case.startswith('kerberos-') else 1)
+    if case.startswith('kerberos-'):
+        assert 1 <= closure['connection_count'] <= 2
+        if outcome == 'kerberos_principal_reports_observed':
+            assert closure['connection_count'] == closure['request_count'] == 2
     if case.startswith('nmap-service-'):
         assert closure['connection_count'] == 2
         record_property('accepted_connection_count', closure['connection_count'])

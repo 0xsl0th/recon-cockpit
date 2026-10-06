@@ -21,6 +21,28 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("kerberos-"):
+        from . import network_tools_fixture as kerberos
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-kerberos-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "kerberos_tcp"}],
+            "kerberos": {"realm": kerberos.KERBEROS_REALM, "principals": list(kerberos.KERBEROS_PRINCIPALS),
+                "operation": "initial_as_req_without_preauth", "response_type": "KRB_ERROR_only",
+                "response_sha256": [None if case.endswith("-stalled") else hashlib.sha256(
+                    kerberos.response_for(case, name)).hexdigest() for name in kerberos.KERBEROS_PRINCIPALS],
+                "passwords": False, "tickets": False, "real_directory": False,
+                "preauthentication_credentials": False, "followup": False,
+                "reports_are_verified_principals": False,
+                "unknown_report_error_text_ambiguity": True},
+            "behavior": "stall_after_validated_query" if case.endswith("-stalled") else "malformed_response"
+                if case.endswith("-malformed") else "fixed_error_response",
+            "max_request_bytes": kerberos.KERBEROS_MAX_REQUEST_BYTES,
+            "max_connections": kerberos.KERBEROS_MAX_CONNECTIONS, "max_requests": kerberos.KERBEROS_MAX_REQUESTS,
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_initial_as_req_messages",
+            "connection_evidence": "accepted_connections_lower_bound"}
     if case.startswith("nmap-service-"):
         from . import network_tools_fixture as fixture
         response = fixture.nmap_service_response(case)
@@ -199,13 +221,14 @@ def validate_identity(value, *, case=None):
 
 def validate_context(value, expected):
     expected = validate_identity(expected)
-    connection_limit = (3 if expected["scenario"].startswith("nmap-service-")
+    request_limit = 2 if expected["scenario"].startswith("kerberos-") else 1
+    connection_limit = (2 if expected["scenario"].startswith("kerberos-") else 3 if expected["scenario"].startswith("nmap-service-")
                         else 4 if expected["scenario"].startswith(("rpc-", "nfs-"))
                         else 2 if expected["scenario"].startswith("ftp-") else 1)
     if (type(value) is not dict or set(value) != {"identity", "connection_count", "request_count"}
             or validate_identity(value["identity"]) != expected
             or type(value["connection_count"]) is not int or not 0 <= value["connection_count"] <= connection_limit
-            or type(value["request_count"]) is not int or not 0 <= value["request_count"] <= 1
+            or type(value["request_count"]) is not int or not 0 <= value["request_count"] <= request_limit
             or value["request_count"] > value["connection_count"]):
         raise ValueError("invalid_network_tools_lab_context")
     return copy.deepcopy(value)

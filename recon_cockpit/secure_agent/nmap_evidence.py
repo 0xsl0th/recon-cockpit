@@ -237,6 +237,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "ftp_empty_listing_observed": "ftp_empty_listing_observed",
                "smtp_capabilities_observed": "smtp_capabilities_observed",
                "smtp_no_extensions_observed": "smtp_no_extensions_observed",
+               "kerberos_principal_reports_observed": "kerberos_principal_reports_observed",
                "nmap_service_identified": "nmap_service_identified",
                "nmap_service_unidentified": "nmap_service_unidentified",
                "docker_ping_observed": "docker_ping_observed",
@@ -355,6 +356,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
             ]
+        if manifest["fixture_case"].startswith("kerberos-"):
+            report["limitations"] = [
+                "This fixed two-name Kerbrute trial uses a disconnected synthetic error-only KDC, not a real directory or professional engagement.",
+                "Results are tool reports, not verified principal existence, absence or authentication. Kerbrute can turn hostile error text containing KDC_ERR_C_PRINCIPAL_UNKNOWN into an ordinary unknown-user report; stdout cannot distinguish that case.",
+                "The fixture validates initial AS-REQ messages and returns bounded KRB-ERROR responses or the declared malformed/silent test behavior. No password, preauthentication credential, ticket issuance, extraction or spraying is available in this owned profile.",
+                "Stock Kerbrute attempts UDP before TCP. The unchanged TCP-only syscall filter rejects UDP; the fixed TCP fallback reaches only the approved numeric endpoint.",
+                "The complete two-principal log and matching completion summary are independently reparsed without network. Partial, unsupported, denied and generic hostile logs remain inconclusive; output never authorizes follow-up work.",
+                "Counters record validated initial AS-REQ messages, at most two; connections are acknowledged lower bounds. Hashes reconcile local evidence, inspection never restores authority, and no model or comparative overhead claim is made.",
+            ]
         if manifest["fixture_case"].startswith("nmap-service-"):
             report["limitations"] = [
                 "This finite service-identification trial uses a disconnected synthetic endpoint; it is not general Nmap coverage, authenticated identity or professional engagement validation.",
@@ -455,6 +465,13 @@ def _markdown(report):
             lines.extend("| " + capability + " |" for capability in details["capabilities"])
             if not details["capabilities"]:
                 lines.extend(["", "The complete validated EHLO reply advertises no extensions."])
+        elif type(details) is dict and details.get("kind") == "kerberos_principal_reports":
+            lines.extend(["", "## Kerberos tool reports", "",
+                "Tool reports only; principal existence, absence and authentication are not verified.",
+                "Hostile error text can cause an ordinary unknown report; see the limitations below.",
+                "", "| Synthetic principal | Kerbrute reported status |", "| --- | --- |"])
+            lines.extend("| `" + row["principal"] + "` | `" + row["reported_status"] + "` |"
+                         for row in details["principals"])
         elif type(details) is dict and details.get("kind") == "service_identification":
             lines.extend(["", "## Finite service identification", "", "Result: `" + details["identification"] + "`."])
             service = details["service"]

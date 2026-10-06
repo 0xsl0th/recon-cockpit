@@ -34,6 +34,8 @@ DOCKER_PING = "curl_docker_ping_v1"
 DOCKER_VERSION = "curl_docker_version_v1"
 WINRM = "curl_winrm_metadata_v1"
 NMAP_SERVICE = "nmap_service_identify_v1"
+KERBRUTE = "kerbrute_userenum_v1"
+KERBRUTE_PRINCIPALS = b"fixture-a\nfixture-b\n"
 # A distribution may put a wrapper at /usr/bin/nmap. Only these two ELF
 # locations are eligible, and only this new profile resolves the alternative.
 NMAP_SERVICE_EXECUTABLES = ("/usr/bin/nmap", "/usr/lib/nmap/nmap")
@@ -103,8 +105,10 @@ EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
                RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount",
                FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl",
                DOCKER_PING: "/usr/bin/curl", DOCKER_VERSION: "/usr/bin/curl", WINRM: "/usr/bin/curl",
-               NMAP_SERVICE: "/usr/bin/nmap"}
+               NMAP_SERVICE: "/usr/bin/nmap", KERBRUTE: "/usr/local/bin/kerbrute"}
 FIXED_ARGV = {
+    KERBRUTE: ("/tool/kerbrute", "userenum", "--dc", "127.0.0.1:8080", "--domain", "harbordesk.test",
+          "--threads", "1", "--safe", "--verbose", "/tool/data/principals.txt"),
     NMAP_SERVICE: ("/tool/nmap", "--unprivileged", "-sT", "-sV", "--version-intensity", "0",
           "-Pn", "-n", "-p", "8080", "--max-retries", "0", "--max-parallelism", "1",
           "--host-timeout", "3s", "--datadir", "/tool/data", "--no-stylesheet",
@@ -173,10 +177,16 @@ def execution_environment(tool_id):
     if tool_id == LDAP:
         # Disable every system/user LDAP default before libldap initializes.
         value["LDAPNOINIT"] = "1"
+    if tool_id == KERBRUTE:
+        # Go reserves virtual address space independently of its live heap.
+        # The worker also enforces the reviewed task and address-space caps.
+        value.update(GOMAXPROCS="1", GOMEMLIMIT="64MiB")
     return value
 
 
 def _compiled(tool_id):
+    if tool_id == KERBRUTE:
+        return "compiled:kerbrute-principals", "/tool/data/principals.txt", KERBRUTE_PRINCIPALS
     if tool_id == NMAP_SERVICE:
         return "compiled:nmap-service-services", "/tool/data/nmap-services", NMAP_SERVICE_SERVICES
     if tool_id == OPENSSL:

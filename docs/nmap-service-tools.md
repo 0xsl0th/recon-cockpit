@@ -1,10 +1,10 @@
 # Owned finite Nmap service identification
 
 B7 adds `nmap_service_identify_v1` through the existing single-action secure
-network-tool path. It is implemented and lab-verified in
-[PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44), pending review and an
-authorized merge. It remains separate from the accepted `nmap_tcp_connect_v1`
-profile and does not compose a new cross-tool workflow. Acceptance requires the
+network-tool path. It was accepted in
+[PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44), merged as `fcb9419` after
+fresh review and passing final and post-merge checks. It remains separate from the accepted `nmap_tcp_connect_v1`
+profile and does not compose a new cross-tool workflow. It satisfies the
 [coverage gates](secure-tool-coverage.md); see [verification.md](verification.md)
 for the latest source, checks and owned execution evidence.
 
@@ -121,10 +121,14 @@ python -m recon_cockpit.secure_agent \
   --inspect-assessment .secure-agent/NEW-nmap-service-evidence
 ```
 
-B8 synthetic Kerberos principal enumeration with an owned KDC is the next
-required gap after B7 acceptance. Deeper composition and comparative benchmarks
+B8 synthetic Kerberos principal reports with an owned KDC are the current
+required gap. Deeper composition and comparative benchmarks
 wait for the coverage milestone. Model credentials, paid calls and live-model
 evaluation remain deferred until much later. Real credentials, external targets,
 intrusive actions, publication and competition submission keep their separate
 authorization boundaries. The accepted offline R5/local R6 and proposal PDF stay
 closed.
+
+Accepted in [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44), merged as
+`fcb9419` after fresh review and passing final checks. All five post-merge checks
+also passed. Preserve this accepted scope; B8 is tracked in [the checkpoint](continue-here.md).
