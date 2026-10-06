@@ -36,3 +36,12 @@ The first GUI must show actual offline state and zero provider calls where that
 is the observed state. Do not imply authenticated findings, signatures, paid
 models or professional engagement readiness without supporting implementation
 and evidence. Credentials and live models remain deferred.
+
+## Initial implementation
+
+The [offline desktop](desktop-gui.md) carries the two themes, navigation rail,
+orange accents, metric cards, timeline, right-hand recorded-action panel and lower
+evidence/context panels into actual Tk widgets. Only Overview, Scope and Evidence
+navigation is shown because those pages work in this slice. Existing saved data
+supplies the display; the mock's live agents and approval buttons are not simulated.
+The PNG references remain private and are not embedded in the application.

@@ -1,5 +1,51 @@
 # Verification record
 
+## Initial offline desktop GUI — 6 October 2026
+
+Based on accepted main `db42cd1`, the desktop adds local scope preparation and
+saved-evidence views using both Swiss Industrial themes. The controller calls the
+existing shared read-only inspector from one worker; scope forms reuse the exact
+configurable contract. It creates no assessment, approval service, legacy command,
+listener or model call. Existing authority and tool contracts are unchanged.
+
+Independent controller/presenter review found no blockers after correcting duplicate
+display-row IDs for malformed records. **101 focused portable cases passed** for
+strict scope forms, bounded literal presentation, missing/contradictory metrics,
+corrupt/unfinished/dry-run state, asynchronous errors/close, private no-overwrite
+exports and GUI startup without Tk/display. The full local portable suite passed
+**9,823 tests**, with 785 integration cases deselected, no selected failures/errors/
+skips, in **312.02 seconds**. Final production hashes match the actual Tk run.
+
+**Six actual Tk cases passed**, with no failures/errors/skips, in **8.455 seconds**
+on a private Xvfb display with TCP disabled. Tests exercise three pages, both
+themes, invalid/valid scope, import/export, background replay, corrupt evidence,
+failed inspection clearing a prior success, row-selection synchronization and
+window close waiting for the reader. Execution/approval constructors and legacy
+runners are guarded against use during these checks. The original accepted native
+bundle remains unchanged in bytes, modes and mtimes. Corruption uses a temporary
+copy. Displaying its 4/4 useful actions and 8.004-second duration describes earlier
+accepted work; the GUI run executes **zero new assessments and zero provider calls**.
+
+Seven private screenshots were visually inspected at **1360×900 and 1280×800**,
+covering dark/light overview plus scope and evidence views. Key controls, metrics
+and all four recorded rows fit; longer details scroll. Product observations lead
+the selected-action panel; technical IDs remain below. Draft and recorded scope
+remain distinct. No fabricated online agents, pending approvals, authenticated
+vulnerabilities or signing/confidence claims are shown.
+
+Private receipts are `.secure-agent/gui-20261006/` in the primary checkout:
+`desktop-final-results.xml`, `desktop-verification.json`, `screenshots/`, and the
+portable/CI handoff. Earlier assertion-only failures from concurrent presenter
+wording changes remain in `desktop-initial-results.xml` and
+`desktop-development-cost-label.xml`; final validation uses the frozen source.
+Python 3.11 syntax, documentation links and whitespace checks passed. Hosted CI
+is portable and does not substitute for these actual Linux desktop tests.
+
+PR #49 was separately reviewed and merged as `db42cd1`, with identical reviewed
+and merge trees. All five final and post-merge jobs passed; fresh 95 focused and
+517 historical regression cases passed (overlap). Its implementation stays closed.
+See [the desktop runbook](desktop-gui.md) for supported operations and limitations.
+
 ## Shared CLI/GUI assessment service — 6 October 2026
 
 Based on accepted PR #48 merge `5f046eb`, this slice extracts application lifecycle
