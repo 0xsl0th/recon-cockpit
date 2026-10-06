@@ -1,10 +1,17 @@
 # Discover accepted secure tools
 
 The read-only CLI catalog makes the accepted B0–B8 profiles discoverable without
-starting an assessment. It contains 20 capabilities backed by 11 external
+starting an assessment. The accepted B0–B8 baseline contains 20 capabilities backed by 11 external
 programs; the native TCP, HTTP and header adapters are capabilities without a
 separate executable. These counts describe bounded secure profiles, not arbitrary
 modes of each program or production engagement readiness.
+
+The configurable HTTP/SSH slice adds three separately versioned profiles of
+existing implementations: Nmap identification, HTTP headers and SSH host keys.
+The branch catalog therefore lists **23 profiles using the same 11 programs**.
+Their recipes point to an explicit scope file and the
+[configurable owned-lab runbook](configurable-owned-lab.md); no existing recipe
+or accepted execution contract is broadened.
 
 From the repository root, with the project installed:
 

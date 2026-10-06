@@ -35,6 +35,13 @@ def _network(program, case, policy, runbook, *limitations):
 
 
 _ENTRIES = MappingProxyType({
+    **{tool: _Entry(program, "--configurable-assessment", "examples/secure-agent-configurable-scope.json",
+        "examples/secure-agent-configurable-policy.json", "docs/configurable-owned-lab.md",
+        ("Two disconnected owned endpoint fixtures; declared addresses never attach to real internal networks.",
+         "Nmap identification gates HTTP headers or public SSH host-key collection; no credentials or login."))
+       for tool, program in ((adapters.CONFIGURABLE_NMAP_TOOL_ID, "nmap"),
+                             (adapters.CONFIGURABLE_HEADERS_TOOL_ID, None),
+                             (adapters.CONFIGURABLE_SSH_TOOL_ID, "ssh-keyscan"))},
     "tcp_connect": _Entry(None, "--workflow-assessment", "a",
         "examples/secure-agent-discovery-policy.json", "docs/workflow-assessment.md",
         ("One TCP connection establishes reachability only, not service identity.",
@@ -139,6 +146,13 @@ def list_tools():
 
 def _recipe_actions(entry):
     """Reuse pure accepted action constructors, never executor/runtime modules."""
+    if entry.selector == "--configurable-assessment":
+        from . import configurable_contract as contract
+        # Reviewed example data only: catalog commands never read scope files.
+        scope = {"schema_version": "1", "scope_id": "owned-http-ssh-primary",
+                 "http": {"target": "10.77.0.10", "port": 8080, "path": "/harbordesk/portal.html"},
+                 "ssh": {"target": "10.77.0.20", "port": 2222}}
+        return contract.WORKFLOW, dict(contract.LIMITS), [contract.action(scope, step) for step in range(1, 5)]
     if entry.selector == "--workflow-assessment":
         from .discovery_contract import discovery_action
         from .owned_lab_contract import capability_descriptor

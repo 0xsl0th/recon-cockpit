@@ -21,6 +21,7 @@ from .http_headers_backend import AuthorizedHTTPHeadersBackend
 from .web_tools_backend import AuthorizedWebToolsBackend
 from .network_tools_backend import AuthorizedNetworkToolsBackend
 from .service_web_backend import AuthorizedServiceWebBackend
+from .configurable_backend import AuthorizedConfigurableBackend
 from .owned_lab_contract import validate_result_context, validate_closure
 from .execution import ExecutionControl, ExecutionStopped
 from .isolation import (IsolationUnavailable, LinuxFixtureBackend, _namespaces,
@@ -53,25 +54,31 @@ NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_
 SERVICE_WEB_MODULES = tuple(dict.fromkeys((*NETWORK_TOOLS_MODULES, *WEB_TOOLS_MODULES, *HTTP_HEADERS_MODULES, *NMAP_MODULES,
     'service_web_backend', 'service_web_contract', 'service_web_runtime', 'service_web_execution',
     'service_web_lab', 'service_web_lab_worker', 'service_web_lab_contract', 'service_web_fixture')))
+CONFIGURABLE_MODULES = tuple(dict.fromkeys((*NETWORK_TOOLS_MODULES, *HTTP_HEADERS_MODULES, *NMAP_MODULES,
+    'configurable_scope', 'configurable_contract', 'configurable_backend', 'configurable_execution',
+    'configurable_runtime', 'configurable_worker', 'configurable_parser', 'configurable_parser_runtime',
+    'configurable_parser_worker', 'configurable_lab', 'configurable_lab_worker', 'configurable_lab_contract')))
 OWNED_MODULES = ('owned_launcher_runtime', 'owned_lab', 'owned_lab_worker', 'owned_lab_executor',
                  'owned_lab_contract', 'assessment_contract', 'authorized_execution', 'session_limits', '__init__')
 
 
 class LinuxFixtureLauncher:
     def __init__(self, backend, *, audit=None, approvals=None):
-        if type(backend) not in {AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend, AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend, AuthorizedWebLabBackend, AuthorizedHTTPHeadersBackend, AuthorizedWebToolsBackend, AuthorizedNetworkToolsBackend, AuthorizedServiceWebBackend}:
+        if type(backend) not in {AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend, AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend, AuthorizedWebLabBackend, AuthorizedHTTPHeadersBackend, AuthorizedWebToolsBackend, AuthorizedNetworkToolsBackend, AuthorizedServiceWebBackend, AuthorizedConfigurableBackend}:
             raise ValueError('unsupported_launcher_backend')
         self.name = backend.name
         self._nmap_manifest = getattr(backend, "_nmap_manifest", None)
         self._web_tools_manifest = getattr(backend, "_web_tools_manifest", None)
         self._network_tools_manifest = getattr(backend, "_network_tools_manifest", None)
         self._service_web_manifests = getattr(backend, "_service_web_manifests", None)
-        owned = type(backend) in {AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend, AuthorizedWebLabBackend, AuthorizedHTTPHeadersBackend, AuthorizedWebToolsBackend, AuthorizedNetworkToolsBackend, AuthorizedServiceWebBackend}
+        self._configurable_manifests = getattr(backend, "_configurable_manifests", None)
+        owned = type(backend) in {AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend, AuthorizedWebLabBackend, AuthorizedHTTPHeadersBackend, AuthorizedWebToolsBackend, AuthorizedNetworkToolsBackend, AuthorizedServiceWebBackend, AuthorizedConfigurableBackend}
         self._config = protocol.configuration({'version': '1', 'service_id': str(uuid4()),
             'session_id': backend._session_id, 'policy': backend._policy.to_dict(),
             'limits': asdict(backend._limits), 'execute': backend._execute,
             'profile': 'owned_lab' if type(backend) is AuthorizedOwnedLabBackend else backend.launch_mode,
-            'case': backend._lab_identity['scenario'] if owned else None,
+            'case': (backend.scope if type(backend) is AuthorizedConfigurableBackend
+                     else backend._lab_identity['scenario'] if owned else None),
             **({'owned_lab': backend._lab_identity} if owned else {})})
         self._control = self._channel = self._supervisor = self._checks = None
         self._snapshot = {'executions_reserved': 0, 'output_bytes_reserved': 0}
@@ -105,8 +112,11 @@ class LinuxFixtureLauncher:
 
     @property
     def identity(self):
-        if self._config['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'}:
+        if self._config['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'}:
             raise ValueError('launcher_has_no_persistent_lab')
+        if self._config['profile'] == 'configurable_owned_lab':
+            from .configurable_lab_contract import validate_assessment_identity
+            return validate_assessment_identity(self._config['owned_lab'], scope=self._config['case'])
         return dict(self._config['owned_lab'])
 
     @property
@@ -128,7 +138,7 @@ class LinuxFixtureLauncher:
     def _runtime(self, control):
         stdlib, files = _runtime_files('/usr/bin/python3', _trusted_program('nft'), control=control)
         programs = [_trusted_program('bwrap')]
-        if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'}:
+        if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'}:
             programs.append(_trusted_program('nsenter'))
         listing = _runtime_probe([_trusted_program('ldd'), *programs], 5, 65536, control).decode('ascii')
         if 'not found' in listing:
@@ -168,7 +178,13 @@ class LinuxFixtureLauncher:
             closure['service_web_runtime'] = (inspect_service_web_runtime(control) if self._service_web_manifests is None
                 else validate_manifests(self._service_web_manifests))
             files += runtime_source_mounts(closure['service_web_runtime'])
-        protocol.runtime(closure, owned_lab=self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'}, nmap=nmap, web_tools=web_tools, network_tools=network_tools, service_web=service_web)
+        configurable = self._config['profile'] == 'configurable_owned_lab'
+        if configurable:
+            from .configurable_runtime import inspect_configurable_runtime, runtime_source_mounts, validate_manifests
+            closure['configurable_runtime'] = (inspect_configurable_runtime(control) if self._configurable_manifests is None
+                else validate_manifests(self._configurable_manifests))
+            files += runtime_source_mounts(closure['configurable_runtime'])
+        protocol.runtime(closure, owned_lab=self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'}, nmap=nmap, web_tools=web_tools, network_tools=network_tools, service_web=service_web, configurable=configurable)
         return closure, files
 
     def _command(self, closure, files, commitment):
@@ -186,7 +202,8 @@ class LinuxFixtureLauncher:
                      *(WEB_TOOLS_MODULES if self._config['profile'] == 'owned_web_tools_lab' else ()),
                      *(NETWORK_TOOLS_MODULES if self._config['profile'] == 'owned_network_tools_lab' else ()),
                      *(SERVICE_WEB_MODULES if self._config['profile'] == 'owned_service_web_lab' else ()),
-                     *(NMAP_MODULES if self._config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'} else ()), *(OWNED_MODULES if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'} else ()),
+                     *(CONFIGURABLE_MODULES if self._config['profile'] == 'configurable_owned_lab' else ()),
+                     *(NMAP_MODULES if self._config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'} else ()), *(OWNED_MODULES if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'} else ()),
                      *(('audit_witness', 'audit_protocol') if self._witness_source is not None else ()),
                      *(('approval_witness', 'approval_protocol') if self._approval_source is not None else ())):
             argv += ['--ro-bind', str(Path(__file__).with_name(name+'.py').resolve()),
@@ -320,8 +337,10 @@ class LinuxFixtureLauncher:
                 from .network_tools_contract import validate_result_context as context_validator
             elif self._config['profile'] == 'owned_service_web_lab':
                 from .service_web_contract import validate_result_context as context_validator
+            elif self._config['profile'] == 'configurable_owned_lab':
+                from .configurable_contract import validate_result_context as context_validator
             lab_context = (context_validator(result, self.identity, previous=self._lab_context,
-                tool_id=action.tool_id, execution_status=result['status']) if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'} else None)
+                tool_id=action.tool_id, execution_status=result['status']) if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'} else None)
             expected = {'executions_reserved': self._snapshot['executions_reserved']+1,
                         'output_bytes_reserved': self._snapshot['output_bytes_reserved']+action.parameters.max_output_bytes}
             if (expected['output_bytes_reserved'] > self._config['limits']['max_output_bytes']
@@ -364,10 +383,19 @@ class LinuxFixtureLauncher:
         with self._lock:
             if not self._closed:
                 self._cleanup()
-            if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab'}:
+            if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'}:
                 if not self._cleanup_verified:
                     raise IsolationUnavailable('Lab cleanup was not verified')
                 if self._lab_receipt is None:
+                    if self._config['profile'] == 'configurable_owned_lab':
+                        from .configurable_lab_contract import validate_assessment_closure
+                        previous = None if self._lab_context is None else self._lab_context['endpoints']
+                        endpoints = previous or {name: {'identity': item, 'connection_count': 0, 'request_count': 0}
+                            for name, item in self.identity['endpoints'].items()}
+                        self._lab_receipt = validate_assessment_closure({'identity': self.identity, 'status': 'closed',
+                            'endpoints': {name: {**item, 'status': 'closed'} for name, item in endpoints.items()}},
+                            self.identity, previous=previous)
+                        return self._lab_receipt
                     context = self._lab_context or {'identity': self.identity, 'connection_count': 0, 'request_count': 0}
                     closure_validator = validate_closure
                     if self._config['profile'] == 'owned_web_lab':

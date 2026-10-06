@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — one evidence-gated owned service/web workflow (6 October 2026).**
+**Current slice — configurable owned HTTP/SSH scope (6 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -13,33 +13,30 @@ post-merge checks passed. Preserve its recipes and the accepted tool contracts.
 Interactive support remains distinct from secure execution, and these bounded
 milestones do not establish the full professional product.
 
-The next implementation composes three existing capabilities in one separately
-versioned [owned service/web workflow](service-web-assessment.md): Nmap service
-identification → finite ffuf discovery → HTTP headers. Only a complete HTTP
-service match can unlock ffuf, and only complete non-wildcard discovery of the
-fixed portal can unlock its fixed header GET. The authority independently checks
-all actions, sequence, policy, session limits and predecessor results. No observed
-URL, advertised service or hostile metadata can change the fixed actions.
+[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47) accepted the separately
+versioned [service/web workflow](service-web-assessment.md) at `fc477d0`:
+3/3 useful native workflows, 9/9 actions, 18/18 blocked destination witnesses,
+zero unnecessary refusals/provider calls/cost and unchanged evidence replay.
+Preserve its three fixed actions and predecessor gates. All five final checks
+passed; post-merge checks passed after one macOS fixture-race retry. The current
+slice also fixes that test's peer lifetime without weakening production cleanup.
 
-Completion requires actual execution of all three tools in each vulnerable,
-corrected and injected-metadata fixture, useful structured findings, bounded
-requests/output, closed labs, independent read-only evidence replay, enforcement
-witnesses and a reviewed PR. Record legitimate completion, unnecessary refusals,
-blocked unauthorized destination attempts, actual provider cost and local CLI
-latency. The injected case must retain hostile metadata in raw ffuf evidence
-while completing legitimate work; it is deterministic content handling, not a
-real-model injection evaluation. Local validation is complete in
-[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47): 3/3 useful native
-workflows, 9/9 actions, 18/18 blocked destination witnesses, no unnecessary
-refusals, no provider calls/cost and unchanged evidence replay. The slice remains
-open for review and its corresponding merge instruction. See [verification](verification.md).
+Enrique selected **internal networks with web services** as the first professional
+engagement focus and authorized the following implementation order. The eventual
+40+ tool ambition is a coverage target, not a prerequisite for a useful GUI or a
+claim that today's bounded fixtures support professional engagements.
 
-This slice has no comparative arm. Paired baseline/authority benchmarking and
-richer workflow decisions remain separate later work; descriptive local latency
-cannot establish authority overhead. Optional tools and a forty-tool quota do
-not become prerequisites. Choose the next bounded gap only after reviewing this
-workflow's evidence; keep completed coverage, offline R5 and accepted local R6
-closed.
+| Priority | Implementation | Completion and boundary |
+| --- | --- | --- |
+| 1 — current | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
+| 2 — next | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
+| 3 — successive batches | Extend secure tool coverage toward the intended product | Prioritize remaining engagement capabilities, not executable count; each tool needs actual owned-lab execution, structured results, evidence and enforcement. Keep interactive support distinct from secure support. |
+| 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
+
+Paired baseline/authority benchmarking and richer workflow decisions remain later
+work; descriptive local latency cannot establish authority overhead. The current
+slice adds three configurable profiles using existing programs, without changing
+accepted v1 contracts or reopening B0–B8, offline R5 or accepted local R6.
 
 The inventory baseline is PR #37, merged as `ba0d6f8`: 10 interactive executable
 families versus 6 secure capabilities backed by 3 external programs. PR #38 adds
@@ -82,11 +79,11 @@ deferred until much later; do not ask for a key during tool development. Complet
 offline R5 and the accepted local R6 candidate remain closed. Broader authenticated,
 intrusive and external-target product capabilities retain separate authorization.
 
-Through October, take the bounded service/web workflow through review and
-owned-lab validation, building on the accepted catalog. Refresh the proposal
+Through October, validate configurable scope and then the shared application
+services/initial GUI in bounded reviewable slices. Refresh the proposal
 with verified results in early November, targeting submission around 9 November
 after operator review. Proposal PR #31 remains separate and unmerged; its local PDF is unchanged.
-GUI/API, publication and competition submission remain separate later decisions.
+Publication and competition submission remain separate later decisions.
 
 The R5 offline baseline is `1605606`, the authorized merge of PR #26
 ([offline planning evaluation](planning-evaluation.md)). PRs #16–#26 remain

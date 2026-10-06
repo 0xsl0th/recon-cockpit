@@ -4,10 +4,40 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: one bounded Nmap service → ffuf → HTTP headers workflow.**
+**Current authorized work: configurable owned HTTP/SSH scope, then shared CLI/GUI services.**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md) is closed, with 20
 secure capabilities backed by 11 external programs. Offline R5 and accepted local
 R6 also stay closed. No required B9 or tool quota has been added.
+
+Enrique selected **internal networks with web services** for the first professional
+engagement focus and authorized the [roadmap priority table](roadmap.md). This
+branch implements its first slice in `/tmp/recon-configurable-owned-lab`, branch
+`feature/configurable-owned-lab`, based on `fc477d0`: Nmap HTTP → declared header
+GET, then Nmap SSH → public key collection in two disconnected endpoint owners.
+Scope, sequence, policy, limits, runtime and owner identities are checked across
+the existing seven gates. It does not attach to a shared or real internal network.
+The [runbook](configurable-owned-lab.md) defines completion and exact limitations.
+
+**[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) is the new review handoff.**
+Implementation is `065e0ee0eadff12acc2fef3d56eded5a0f6c5d61`; later checkpoint
+and test-portability commits do not change execution code. Local validation has 117 distinct Linux cases passing, two complete
+4/4-action scope examples, 24/24 forbidden-destination witnesses, required
+noninteractive approval blocking, cancellation cleanup and 27 unchanged accepted
+evidence replays. The full portable run passed 9,645 tests; 217 focused checks
+cover the subsequent strict-boolean receipt regression. See [verification](verification.md)
+for the source/test distinction, and inspect PR #48's latest hosted checks plus
+the private `handoff.json` before any merge. Preserve the private failure receipts.
+The first hosted matrix passed all four Linux jobs; two portable-test fixtures
+needed explicit namespace/platform doubles for macOS. Their corrections passed
+54 focused tests. The original peer-lifetime race test passed on macOS.
+This PR remains separate from accepted main and requires fresh review and its
+corresponding merge instruction.
+
+Both user-created Swiss Industrial PNGs were inspected and privately preserved.
+[GUI design notes](gui-design-references.md) record the original Downloads paths,
+private copies and intended light/dark layout. The images are not in Git. GUI
+work must reuse the authority path and display real offline state, not treat the
+mockup's example costs, agents or verification labels as implemented features.
 
 **[PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) is merged and the read-only catalog is accepted.**
 Reviewed head `ef1cadb` merged as `0d5cbdc` at 02:24:31 UTC on 6 October, with an
@@ -18,9 +48,19 @@ and all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/a
 passed. Preserve the [catalog](secure-tool-catalog.md), its accepted recipes and
 all existing tool contracts. Private receipt: `.secure-agent/pr46-merge-review.json`.
 
-**[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47) is the new workflow review handoff.**
-Implementation `a1a186b` is in `/tmp/recon-owned-tool-workflow`, branch
-`feature/owned-tool-workflow`, based on merged main `0d5cbdc`. It composes three
+**[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47) is merged and accepted.**
+Reviewed head `81d8fe15505203e6080e0fa4667254694dbfffbf` merged as
+`fc477d03a9feb59f2a2c851d7b95146c0d2922ae` on 6 October at 03:13:12 UTC;
+the reviewed and merged trees match (`93bdb355fcf55a7a49c21f8b794e72d0a896a0b3`).
+Fresh authority/runtime and evidence reviews found no blockers (943 and 690
+overlapping focused checks); nine native checks and 27 unchanged evidence
+replays passed. All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37406744203)
+passed. All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37407943234)
+passed on attempt 2: the first attempt hit a macOS malformed-peer cleanup race.
+The original failure is retained; this branch fixes the test peer lifetime while
+preserving production cleanup and descendant-process checks.
+
+Implementation `a1a186b` composes three
 existing capabilities in a separate shared owned lab, with fixed actions,
 three-step/60-second/18,432-byte session limits and independently replayed evidence.
 Nmap must identify HTTP before ffuf; complete fixed-path discovery must establish
@@ -43,10 +83,12 @@ Private receipts are `.secure-agent/service-web-20261006` in the primary checkou
 retained, including the fixed initial Nmap empty-connection reset and test/verifier
 assertion errors; they do not count as final acceptance. See
 [the runbook](service-web-assessment.md) and [verification record](verification.md).
-Check the latest PR head, reviews and hosted checks before any authorized merge.
-This new PR stays open for review; no personal walkthrough acceptance is claimed.
+The merge review is retained at `.secure-agent/pr47-merge-review.json` and
+`.secure-agent/pr47-review-20261006/`. Preserve this accepted workflow; do not
+repeat its implementation or claim a personal walkthrough of the new slice.
 
-Optional tool expansion, broader composition and comparative benchmarking remain
+Follow the new priority table for shared application services, initial GUI and
+later tool batches. Broader composition and comparative benchmarking remain
 later work. Model credentials, paid calls and live evaluation remain deferred
 until much later; do not prepare credentials or enable a live provider. Keep the
 proposal/PDF unchanged.
@@ -1161,28 +1203,29 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Review [PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47) at its latest
-   head and inspect the private handoff/checks before repeating work. PR #46,
-   B0–B8 and offline R5/local R6 are closed. PRs #6–#30 and #32–#46 stay closed;
-   proposal PR #31 remains separate.
-2. Preserve the new workflow's exact three actions and predecessor gates, both
-   runtime commitments, same-lab counters, independently replayed raw evidence,
-   and all seven approval/audit/admission/launcher gates. Existing single-tool
-   contracts and catalog recipes are unchanged.
-3. Local validation is complete; use the saved receipts. Mocks, skipped cases or
-   blocked legitimate work do not establish useful execution. Injected metadata
-   is deterministic content handling, not a model-induced proposal. Actual zero
-   provider cost and descriptive latency are not simulated costs or a benchmark.
-4. Merge only under its corresponding instruction after fresh review and passing
-   checks. Then select the next bounded practical gap from the evidence; optional
-   tools, broader composition and comparative benchmarking are separate later
-   slices. Do not reopen completed milestones.
+1. Review [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) at its latest head/checks, using
+   the handoff at `.secure-agent/configurable-owned-20261006/` in the primary
+   checkout. PR #47, the catalog, B0–B8 and offline R5/local R6 are closed.
+   Proposal PR #31 remains separate and unchanged.
+2. Preserve the full scope commitment, exact four actions, per-endpoint owner
+   identities, listening witnesses, predecessor gates, independent raw replay,
+   cancellation/cleanup and all seven approval/audit/admission/launcher gates.
+   Existing v1 profiles stay fixed. Configured RFC1918 addresses name isolated
+   fixtures; they do not authorize real network attachment.
+3. Use saved validation receipts. Mocks, skipped cases or blocked legitimate work
+   do not establish useful execution. Zero provider cost and local elapsed time
+   are actual offline measurements, not a comparative overhead benchmark.
+4. Leave the new PR for review. After its separately authorized merge, follow
+   [priority 2](roadmap.md): shared CLI/GUI application services and a small GUI
+   using both [saved mockups](gui-design-references.md). Subsequent tool batches
+   target internal-network/web capability gaps; 40+ programs is a longer-term
+   product ambition, not a prerequisite or a reopened B9 milestone.
 5. Keep model credentials, paid calls and live evaluation deferred until much
    later. External targets, real service credentials, intrusive activity,
    publication and competition submission retain their separate authorization.
 6. Keep the proposal/PDF unchanged until its planned early-November update. Avoid
-   GUI/API and provider-preparation detours. Keep local kernel validation separate
-   from hosted portable CI.
+   provider-preparation detours. Keep local kernel validation separate from hosted
+   portable CI and keep user-created mock images private.
 
 ## Recovery and verification
 

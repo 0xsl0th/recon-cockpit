@@ -1,0 +1,25 @@
+{
+  "schema_version": "1",
+  "policy_version": "configurable-owned-v1",
+  "allowed_targets": [
+    "172.23.0.10",
+    "172.23.0.20"
+  ],
+  "allowed_tools": [
+    "configurable_nmap_service_v1",
+    "configurable_http_headers_v1",
+    "configurable_ssh_host_keys_v1"
+  ],
+  "allowed_ports": [
+    18080,
+    12222
+  ],
+  "allowed_methods": [
+    "GET"
+  ],
+  "max_timeout_seconds": 5,
+  "max_output_bytes": 8192,
+  "max_targets": 1,
+  "require_approval": true,
+  "approval_ttl_seconds": 60
+}
