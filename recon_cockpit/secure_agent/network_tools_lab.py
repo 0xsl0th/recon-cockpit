@@ -33,7 +33,7 @@ class NetworkToolsLab(OwnedLab):
         for name in ("network_tools_lab_worker.py", "network_tools_fixture.py", "web_tools_tls_fixture.py",
                      "network_tools_ssh_fixture.py", "network_tools_smb_fixture.py", "network_tools_rpc_fixture.py",
                      "network_tools_ftp_smtp_fixture.py", "network_tools_http_metadata_fixture.py",
-                     "network_tools_nmap_fixture.py"):
+                     "network_tools_nmap_fixture.py", "network_tools_kerberos_fixture.py"):
             mounts += ["--ro-bind", str(directory / name), "/app/" + name]
         argv[argv.index("--remount-ro"):argv.index("--remount-ro")] = mounts
         argv[-1] = "/app/network_tools_lab_worker.py"

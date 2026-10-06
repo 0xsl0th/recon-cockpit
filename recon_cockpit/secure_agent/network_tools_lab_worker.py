@@ -18,6 +18,7 @@ if __package__:
     from . import network_tools_ftp_smtp_fixture as ftp_smtp_fixture
     from . import network_tools_http_metadata_fixture as http_metadata_fixture
     from . import network_tools_nmap_fixture as nmap_service_fixture
+    from . import network_tools_kerberos_fixture as kerberos_fixture
 else:
     def _load(name, filename):
         spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -33,6 +34,7 @@ else:
     ftp_smtp_fixture = _load("network_tools_fixed_ftp_smtp", "network_tools_ftp_smtp_fixture.py")
     http_metadata_fixture = _load("network_tools_fixed_http_metadata", "network_tools_http_metadata_fixture.py")
     nmap_service_fixture = _load("network_tools_fixed_nmap_service", "network_tools_nmap_fixture.py")
+    kerberos_fixture = _load("network_tools_fixed_kerberos", "network_tools_kerberos_fixture.py")
 
 
 def read_request(source):
@@ -176,6 +178,8 @@ class NetworkToolsService(owner.Service):
         self.context = tls_context(request["case"]) if request["case"].startswith("openssl-") else None
         self.rpc = (rpc_fixture.Exchange(request["case"], self._smb_enumerated)
                     if request["case"].startswith(("rpc-", "nfs-")) else None)
+        self.kerberos = (kerberos_fixture.Exchange(request["case"], self._smb_enumerated)
+                         if request["case"].startswith("kerberos-") else None)
         super().__init__(request["case"], listener)
 
     def _smb_enumerated(self):
@@ -225,6 +229,10 @@ class NetworkToolsService(owner.Service):
         try:
             while True:
                 raw, _ = self.listener.accept()
+                if self.case.startswith("kerberos-") and (self.connections >= fixture.KERBEROS_MAX_CONNECTIONS
+                        or self.requests >= fixture.KERBEROS_MAX_REQUESTS):
+                    raw.close()
+                    raise RuntimeError("kerberos_fixture_exchange_limit")
                 if self.rpc is not None and self.connections >= rpc_fixture.MAX_CONNECTIONS:
                     raw.close()
                     raise RuntimeError("rpc_fixture_connection_limit")
@@ -243,7 +251,9 @@ class NetworkToolsService(owner.Service):
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.case.startswith("nmap-service-"):
+                    if self.case.startswith("kerberos-"):
+                        kerberos_fixture.serve(connection, self.kerberos, self.deadline)
+                    elif self.case.startswith("nmap-service-"):
                         nmap_service_fixture.serve(connection, case=self.case, connection_index=self.connections,
                             deadline=self.deadline, on_metadata=self._smb_enumerated)
                     elif self.case.startswith(("docker-ping-", "docker-version-", "winrm-")):

@@ -16,7 +16,7 @@ from .tool_parameters import (
     OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
-    NmapTCPParameters, TCPParameters, _fields, _reject,
+    KerbruteUserenumParameters, NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
 
@@ -62,6 +62,7 @@ DOCKER_PING_TOOL_ID = "curl_docker_ping_v1"
 DOCKER_VERSION_TOOL_ID = "curl_docker_version_v1"
 WINRM_TOOL_ID = "curl_winrm_metadata_v1"
 NMAP_SERVICE_TOOL_ID = "nmap_service_identify_v1"
+KERBRUTE_TOOL_ID = "kerbrute_userenum_v1"
 DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -75,6 +76,7 @@ DOCKER_PING_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "
 DOCKER_VERSION_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 WINRM_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NMAP_SERVICE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+KERBRUTE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
@@ -259,6 +261,15 @@ ADAPTERS = MappingProxyType({
          "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
          "fixed_metadata_get_only", "no_authentication", "no_redirect_following",
          "no_daemon_or_wsman_operations", "no_followup_to_metadata"),
+    ),
+    KERBRUTE_TOOL_ID: ToolAdapter(
+        KERBRUTE_TOOL_ID, KerbruteUserenumParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "enumerate_owned_synthetic_principal_reports", "owned-kerbrute-userenum-v1",
+        "bounded-kerbrute-userenum-result-v1", "kerbrute-userenum-text-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "bounded_threads", "no_child_processes", "fixed_tcp_endpoint",
+         "compiled_synthetic_principals", "no_passwords_or_spraying", "synthetic_error_only_kdc",
+         "tool_report_only", "no_followup_to_metadata"),
     ),
     NMAP_SERVICE_TOOL_ID: ToolAdapter(
         NMAP_SERVICE_TOOL_ID, NmapServiceParameters, ("port", "timeout_seconds", "max_output_bytes"),

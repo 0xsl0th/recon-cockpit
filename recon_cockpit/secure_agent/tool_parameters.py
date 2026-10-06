@@ -204,3 +204,8 @@ class CurlWinRMMetadataParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class NmapServiceParameters(TCPParameters):
     """Bounds for finite compiled service probes, with no caller scan options."""
+
+
+@dataclass(frozen=True, slots=True)
+class KerbruteUserenumParameters(TCPParameters):
+    """Bounds for two compiled synthetic names; no caller realm, list or secrets."""

@@ -30,6 +30,7 @@ import errno
 import hashlib
 import json
 import resource
+import socket
 import stat
 import time
 
@@ -75,14 +76,17 @@ def landlock(manifest):
 def syscall_filter(tool_id):
     if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB,
                        runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP,
-                       runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE):
+                       runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE,
+                       runtime.KERBRUTE):
         raise ValueError("unsupported_network_tool")
-    common.syscall_filter(allow_threads=tool_id == runtime.DIG)
+    common.syscall_filter(allow_threads=tool_id in (runtime.DIG, runtime.KERBRUTE))
 
 
 def _limits(tool_id):
-    address_space = 256 * 1024 * 1024
+    address_space = (2048 if tool_id == runtime.KERBRUTE else 256) * 1024 * 1024
     threads = 16 if tool_id == runtime.DIG else 1
+    if tool_id == runtime.KERBRUTE:
+        threads = 16
     for kind, maximum in ((resource.RLIMIT_AS, address_space), (resource.RLIMIT_CPU, 5),
                            (resource.RLIMIT_NOFILE, 64), (resource.RLIMIT_NPROC, threads),
                            (resource.RLIMIT_CORE, 0), (resource.RLIMIT_FSIZE, 0)):
@@ -96,6 +100,17 @@ clone_denials = common.clone_denials
 _namespace_task_count = common._namespace_task_count
 _thread_bound_witness = common._thread_bound_witness
 _witnesses = common._witnesses
+
+
+def _kerberos_transport_witness():
+    # The stock client attempts UDP before TCP; it must fail at socket creation
+    # without emitting a packet. Only its bounded TCP fallback may reach the lab.
+    try:
+        descriptor = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    except PermissionError:
+        return
+    descriptor.close()
+    raise RuntimeError("kerbrute_udp_socket_allowed")
 
 
 def main():
@@ -116,8 +131,10 @@ def main():
             _witnesses(port=111)
         else:
             _witnesses()
-        if request["tool_id"] == runtime.DIG:
+        if request["tool_id"] in (runtime.DIG, runtime.KERBRUTE):
             _thread_bound_witness()
+        if request["tool_id"] == runtime.KERBRUTE:
+            _kerberos_transport_witness()
         # The authority stdin and any loader-retained descriptors are gone.
         sys.stdin.close()
         for name in os.listdir("/proc/self/fd"):

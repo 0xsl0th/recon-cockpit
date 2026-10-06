@@ -42,6 +42,9 @@ def manifest(tool):
 
 def transcript(case):
     from recon_cockpit.secure_agent.network_tools_fixture import SSH_PUBLIC_KEY_BASE64, LDAP_VALUES
+    if case.startswith("kerberos-"):
+        from test_secure_network_tools_b8_parser import transcript as kerberos_transcript
+        return kerberos_transcript(empty=case != "kerberos-ok"), b""
     if case.startswith("nmap-service-"):
         from test_secure_network_tools_b7_parser import transcript as nmap_transcript
         return nmap_transcript(case), b""
@@ -91,7 +94,7 @@ def transcript(case):
 
 
 def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
-    policy_file = "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     action = parse_action(contract.action(case, 1))
     selected = manifest(action.tool_id)
@@ -111,7 +114,7 @@ def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
             except ValueError:
                 pass  # Actual backend preserves successful but uninterpretable bytes.
 
-        counts = {"identity": store._manifest["owned_lab"], "connection_count": 2 if case.startswith(("ftp-", "nmap-service-")) else 1, "request_count": 1}
+        counts = {"identity": store._manifest["owned_lab"], "connection_count": 2 if case.startswith(("ftp-", "nmap-service-", "kerberos-")) else 1, "request_count": 2 if case.startswith("kerberos-") else 1}
         value = {"status": status, "results": [], "tool_observation": normalized,
             "bytes_received": len(raw) + len(stderr), "truncated": False,
             "raw_output_base64": base64.b64encode(raw).decode(), "raw_stderr_base64": base64.b64encode(stderr).decode(),
@@ -128,7 +131,7 @@ def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
             "actions_succeeded": int(status == "succeeded"), "output_reserved_bytes": 8192})
 
 
-@pytest.mark.parametrize("case,outcome", [("nmap-service-http", "nmap_service_identified"), ("nmap-service-ssh", "nmap_service_identified"), ("nmap-service-unknown", "nmap_service_unidentified"), ("dig-ok", "answer_observed"),
+@pytest.mark.parametrize("case,outcome", [("kerberos-ok", "kerberos_principal_reports_observed"), ("kerberos-empty", "kerberos_principal_reports_observed"), ("kerberos-spoof", "kerberos_principal_reports_observed"), ("nmap-service-http", "nmap_service_identified"), ("nmap-service-ssh", "nmap_service_identified"), ("nmap-service-unknown", "nmap_service_unidentified"), ("dig-ok", "answer_observed"),
     ("dig-nxdomain", "name_not_found"), ("dig-injected", "answer_observed"),
     ("openssl-ok", "handshake_verified"), ("ssh-ok", "host_key_observed"),
     ("ldap-ok", "rootdse_observed"), ("ldap-empty", "empty_rootdse_observed"),
@@ -153,7 +156,7 @@ def test_raw_evidence_replays_without_writes_and_reports_finite_facts(tmp_path, 
     assert "127.0.0.2" not in (path / "report.md").read_text()
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown", "kerberos-ok", "kerberos-empty", "kerberos-spoof"])
 def test_cli_selects_network_evidence_inspector(tmp_path, capsys, case):
     from recon_cockpit.secure_agent import cli
     path = tmp_path / "evidence"
@@ -203,7 +206,7 @@ def test_failed_tool_does_not_count_as_useful_completion(tmp_path):
     assert evidence.inspect_evidence(path) == report
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown", "kerberos-ok", "kerberos-empty", "kerberos-spoof"])
 @pytest.mark.parametrize("status", ["succeeded", "failed"])
 def test_execution_capture_requires_a_precommitted_runtime(tmp_path, case, status):
     path = tmp_path / "evidence"
@@ -213,7 +216,7 @@ def test_execution_capture_requires_a_precommitted_runtime(tmp_path, case, statu
     assert not list(path.glob("result-*.json"))
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown", "kerberos-ok", "kerberos-empty", "kerberos-spoof"])
 def test_replay_rejects_removing_execution_runtime_commitment(tmp_path, case):
     path = tmp_path / "evidence"
     complete(path, case)
@@ -229,12 +232,12 @@ def test_replay_rejects_removing_execution_runtime_commitment(tmp_path, case):
     assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
 
 
-@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown"])
+@pytest.mark.parametrize("case", ["dig-ok", "openssl-ok", "ssh-ok", "ldap-ok", "smb-ok", "rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown", "kerberos-ok", "kerberos-empty", "kerberos-spoof"])
 def test_dry_run_without_runtime_commitment_still_finalizes_and_replays(tmp_path, case):
     path = tmp_path / "evidence"
     session_id = str(uuid4())
     owned = identity(case, str(uuid4()))
-    policy_file = "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     with evidence.NmapEvidenceStore(path, session_id=session_id, policy=policy, case=case,
             owned_lab=owned, workflow_profile="network_tools", runtime_sha256=None) as store:
@@ -356,7 +359,7 @@ def test_b4_rehashed_results_cannot_invent_metadata_or_omit_enforcement(tmp_path
     assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
 
 
-@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown"])
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown", "kerberos-ok", "kerberos-empty", "kerberos-spoof"])
 def test_native_channel_identity_survives_recomputed_capture_hashes(tmp_path, case):
     path = tmp_path / "evidence"
     complete(path, case)
@@ -371,7 +374,7 @@ def test_native_channel_identity_survives_recomputed_capture_hashes(tmp_path, ca
     assert "journal_or_artifact_incomplete" in report["integrity_issues"]
 
 
-@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown"])
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown", "kerberos-ok", "kerberos-empty", "kerberos-spoof"])
 def test_native_missing_artifact_or_owner_closure_cannot_publish_metadata(tmp_path, case):
     path = tmp_path / "evidence"
     original = complete(path, case)
@@ -412,7 +415,7 @@ def test_nfs_hostile_export_group_stays_raw_and_never_counts_as_useful_completio
     assert b"127.0.0.2" in base64.b64decode(retained["raw_output_base64"])
 
 
-@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown"])
+@pytest.mark.parametrize("case", ["rpc-ok", "nfs-ok", "ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown", "kerberos-ok", "kerberos-empty", "kerberos-spoof"])
 def test_native_parser_custody_unavailable_prevents_report_commit(tmp_path, monkeypatch, case):
     from recon_cockpit.secure_agent.isolation import IsolationUnavailable
     def fail(*args, **kwargs):
@@ -470,7 +473,7 @@ def test_b5_replay_rejects_missing_native_completion_even_after_capture_rehash(t
     assert "journal_or_artifact_incomplete" in report["integrity_issues"]
 
 
-@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown"])
+@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown", "kerberos-ok", "kerberos-empty", "kerberos-spoof"])
 @pytest.mark.parametrize("legacy_case", ["dig-ok", "ssh-ok", "smb-ok", "rpc-ok"])
 def test_native_evidence_cannot_relabel_as_earlier_accepted_card(tmp_path, case, legacy_case):
     from recon_cockpit.secure_agent.network_tools_workflow import card_identity
@@ -483,7 +486,7 @@ def test_native_evidence_cannot_relabel_as_earlier_accepted_card(tmp_path, case,
         evidence.inspect_evidence(path)
 
 
-@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown"])
+@pytest.mark.parametrize("case", ["ftp-ok", "smtp-ok", "docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown", "kerberos-ok", "kerberos-empty", "kerberos-spoof"])
 def test_failed_native_execution_never_counts_as_useful_completion(tmp_path, case):
     path = tmp_path / "evidence"
     report = complete(path, case, status="failed")
@@ -546,7 +549,7 @@ def test_b6_replay_requires_complete_unambiguous_http_even_after_rehash(tmp_path
     assert "journal_or_artifact_incomplete" in report["integrity_issues"]
 
 
-@pytest.mark.parametrize("case", ["docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown"])
+@pytest.mark.parametrize("case", ["docker-ping-ok", "docker-version-ok", "winrm-ok", "nmap-service-http", "nmap-service-unknown", "kerberos-ok", "kerberos-empty", "kerberos-spoof"])
 def test_b6_cannot_claim_accepted_b5_card_identity(tmp_path, case):
     from recon_cockpit.secure_agent.network_tools_workflow import card_identity
     path = tmp_path / "evidence"
@@ -603,3 +606,29 @@ def test_b7_raw_xml_reparse_rejects_scope_change_even_with_recomputed_hash(tmp_p
     report = evidence.inspect_evidence(path)
     assert report['outcome'] == 'inconclusive'
     assert report['finding']['tool_observation'] is None and report['integrity_issues']
+
+
+@pytest.mark.parametrize('case', ['kerberos-ok', 'kerberos-empty', 'kerberos-spoof'])
+def test_kerberos_human_report_preserves_results_and_vendor_ambiguity(tmp_path, case):
+    report = complete(tmp_path / 'evidence', case)
+    markdown = (tmp_path / 'evidence' / 'report.md').read_text()
+    assert '| `fixture-a` | `' + ('exists' if case == 'kerberos-ok' else 'unknown') + '` |' in markdown
+    assert '| `fixture-b` | `unknown` |' in markdown
+    assert 'principal existence, absence and authentication are not verified' in markdown
+    assert 'KDC_ERR_C_PRINCIPAL_UNKNOWN' in markdown
+    assert report['finding']['tool_observation']['details']['semantics'] == 'tool_report_only'
+
+
+@pytest.mark.parametrize('mutation', [
+    lambda r: r['tool_observation'].update(authentication_verified=True),
+    lambda r: r['tool_observation'].update(semantics='verified'),
+    lambda r: r['tool_observation']['principals'][0].update(reported_status='unknown'),
+    lambda r: r['tool_observation']['principals'][0].update(principal='administrator'),
+    lambda r: r['owned_lab'].update(request_count=1),
+    lambda r: r['owned_lab'].update(connection_count=3),
+])
+def test_kerberos_replay_rejects_changed_reports_and_protocol_counts(tmp_path, mutation):
+    path = tmp_path / 'evidence'
+    complete(path, 'kerberos-ok')
+    mutate_result(path, 1, mutation)
+    assert evidence.inspect_evidence(path)['integrity_issues']

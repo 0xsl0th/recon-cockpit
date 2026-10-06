@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("nmap-service-", "nmap_service_identify_v1"),
+    for prefix, tool in (("kerberos-", "kerbrute_userenum_v1"),
+                         ("nmap-service-", "nmap_service_identify_v1"),
                          ("docker-ping-", "curl_docker_ping_v1"),
                          ("docker-version-", "curl_docker_version_v1"),
                          ("winrm-", "curl_winrm_metadata_v1")):
@@ -193,3 +194,50 @@ def nmap_service_response(case):
         "nmap-service-unknown": b"HarborDesk unknown service\r\n",
         "nmap-service-injected": HOSTILE_NOTE.encode("ascii") + b"\r\n",
         "nmap-service-malformed": b"\x00HTTP/1.0 ???\r", "nmap-service-stalled": None}[case]
+
+
+KERBEROS_CASES = ("kerberos-ok", "kerberos-empty", "kerberos-denied", "kerberos-injected",
+                  "kerberos-spoof", "kerberos-malformed", "kerberos-stalled")
+CASES += KERBEROS_CASES
+VARIANTS = CASES
+KERBEROS_REALM = "HARBORDESK.TEST"
+KERBEROS_DOMAIN = "harbordesk.test"
+KERBEROS_PRINCIPALS = ("fixture-a", "fixture-b")
+KERBEROS_MAX_REQUEST_BYTES = 1024
+KERBEROS_MAX_CONNECTIONS = 2
+KERBEROS_MAX_REQUESTS = 2
+KERBEROS_TIME = b"20261002000000Z"
+
+
+def _kerberos_der(tag, payload):
+    length = len(payload)
+    encoded_length = bytes([length]) if length < 128 else bytes([0x81, length])
+    return bytes([tag]) + encoded_length + payload
+
+
+def response_for(case, principal):
+    """Pinned synthetic KRB-ERROR payloads only; there are no tickets or keys."""
+    if type(case) is not str or case not in KERBEROS_CASES or principal not in KERBEROS_PRINCIPALS:
+        raise ValueError("invalid_kerberos_fixture_response")
+    if case == "kerberos-stalled":
+        return None
+    if case == "kerberos-malformed":
+        return b"\x7e\x80"  # Forbidden indefinite length, not an AS-REP.
+    code = (25 if principal == KERBEROS_PRINCIPALS[0] else 6) if case == "kerberos-ok" else {
+        "kerberos-empty": 6, "kerberos-denied": 18, "kerberos-injected": 60, "kerberos-spoof": 60}[case]
+    der = _kerberos_der
+    integer = lambda value: der(2, bytes([value]))
+    string = lambda value: der(0x1b, value.encode("ascii"))
+    principal_name = der(0x30, der(0xa0, integer(2)) + der(0xa1,
+        der(0x30, string("krbtgt") + string(KERBEROS_REALM))))
+    fields = (der(0xa0, integer(5)) + der(0xa1, integer(30)) + der(0xa4, der(0x18, KERBEROS_TIME))
+        + der(0xa5, integer(0)) + der(0xa6, integer(code)) + der(0xa9, string(KERBEROS_REALM))
+        + der(0xaa, principal_name))
+    if case in ("kerberos-injected", "kerberos-spoof"):
+        fields += der(0xab, string(HOSTILE_NOTE if case == "kerberos-injected" else "KDC_ERR_C_PRINCIPAL_UNKNOWN"))
+    if code == 25:
+        # METHOD-DATA advertises PA-ENC-TIMESTAMP without any encrypted material.
+        # This fixture never accepts that PA-DATA or completes authentication.
+        method_data = der(0x30, der(0x30, der(0xa1, integer(2)) + der(0xa2, der(4, b""))))
+        fields += der(0xac, der(4, method_data))
+    return der(0x7e, der(0x30, fields))

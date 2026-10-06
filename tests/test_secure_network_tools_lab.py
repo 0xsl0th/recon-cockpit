@@ -54,6 +54,12 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert definition["rpc"]["filesystem"] is False and definition["rpc"]["mount"] is False
         assert definition["topology"] == [{"target": "127.0.0.1", "port": 111, "protocol": "onc_rpc_tcp"}]
         assert definition["request_count_means"] == ("validated_portmapper_dumps" if case.startswith("rpc-") else "validated_mount_exports")
+    elif case.startswith("kerberos-"):
+        assert definition["max_connections"] == definition["max_requests"] == 2
+        assert definition["request_count_means"] == "validated_initial_as_req_messages"
+        assert definition["kerberos"]["principals"] == ["fixture-a", "fixture-b"]
+        assert definition["kerberos"]["response_type"] == "KRB_ERROR_only"
+        assert definition["kerberos"]["reports_are_verified_principals"] is False
     elif case.startswith("nmap-service-"):
         assert definition["max_connections"] == 3 and definition["max_requests"] == 1
         assert definition["service"]["initial_connection"] == "tcp_connect_scan_requires_empty_eof"

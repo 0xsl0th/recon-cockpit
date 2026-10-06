@@ -16,10 +16,12 @@ backed by 10 external programs**. [PR #42](https://github.com/0xsl0th/recon-cock
 accepted B5 FTP/SMTP at `38cbd43`, bringing main to **15 secure capabilities backed
 by the same 10 programs**. [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43) accepted B6 Docker/WinRM
 at `02a7d7f`, bringing main to **18 secure capabilities backed by the same 10
-programs**. B7 bounded Nmap service identification is implemented and lab-verified
-in [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44), pending review/merge.
-Accepting it would bring main to **19 capabilities backed by the same 10 programs**.
-Its row remains unchecked until G6 is complete.
+programs**. [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44) accepted B7
+bounded Nmap service identification at `fcb9419`; all final and post-merge checks
+passed. Main now has **19 accepted capabilities backed by 10 programs**.
+B8 synthetic Kerberos is implemented and lab-verified in
+[PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45), awaiting review/merge. Acceptance would bring
+main to **20 capabilities backed by 11 programs**; its row remains open through G6.
 
 ## What the inventory measures
 
@@ -90,8 +92,8 @@ such and is not counted as accepted main coverage.
 | B5 | SMTP advertised capabilities with curl | [x] Accepted in PR #42 | Real EHLO capabilities and valid no-extension result, followed by QUIT. Rejected EHLO/HELO, malformed and hostile replies remain inconclusive; no mail/auth/account probing. |
 | B6 | Docker API metadata with curl | [x] Accepted in PR #43 | Separate fixed GET profiles for /_ping and /version; complete health and bounded JSON observations, no container lifecycle, filesystem or command endpoints. |
 | B6 | WinRM endpoint metadata with curl | [x] Accepted in PR #43 | One fixed unauthenticated endpoint response; report status/authentication schemes; no login, SOAP operations or shell. |
-| B7 — current | Nmap service identification | [ ] Lab-verified; PR #44 review/merge pending | Real Nmap HTTP/SSH matches and honest unidentified results from two compiled probes and a pinned no-op NSE entrypoint. Structured XML replay, policy/approval/enforcement and cleanup verified; old TCP-only profile preserved. |
-| B8 | Kerberos principal enumeration with kerbrute | [ ] Planned, owned KDC prerequisite | Fixed short synthetic principal list, bounded requests, structured exists/unknown results, no passwords, spraying, ticket extraction or real directory. |
+| B7 | Nmap service identification | [x] Accepted in PR #44 | Real Nmap HTTP/SSH matches and honest unidentified results from two compiled probes and a pinned no-op NSE entrypoint. Structured XML replay, policy/approval/enforcement and cleanup verified; old TCP-only profile preserved. |
+| B8 — current | Kerberos principal enumeration with kerbrute | [ ] Lab-verified; PR #45 review/merge pending | Real Kerbrute against an error-only owned KDC, two compiled synthetic names, two requests, structured tool-reported exists/unknown with the error-text ambiguity disclosed. No passwords, spraying, ticket extraction or real directory. |
 
 Batch order follows missing protocol families and existing interactive precedents,
 then runtime/fixture complexity. At each batch handoff, compare the remaining
@@ -101,15 +103,18 @@ move a required row to deferred work to claim milestone completion. Keep each PR
 small enough for an independent review; stop a tool on unsupported prerequisites
 without falling back to the host runner. A blocked tool does not complete its row.
 
-**B7 bounded Nmap service identification is awaiting review/merge**: it fills the remaining
-service-identity gap beyond the accepted TCP-only profile. A separate capability
-uses compiled finite banner/HTTP probes and a reviewed no-op NSE entrypoint;
-implicit version scripts and host probe databases remain excluded. This does not
-expand the accepted TCP-only contract or compose a deeper workflow.
+**B8 synthetic Kerberos is the last required protocol-family gap.** Reuse the
+interactive Kerbrute precedent through a separate secure profile and a finite
+owned error-only KDC. A real executable run, complete structured tool reports,
+closed/replayable evidence and enforcement must all pass. The response-spoof
+scenario documents a vendor limitation: an unknown report is not proof that a
+principal is absent. Do not count that scenario as verified negative discovery.
 
-After B7, prioritize **B8 synthetic Kerberos principal enumeration**. It is the
-last required protocol-family gap and needs a finite owned KDC before any real
-kerbrute execution can count. No real directory, password testing or credentials.
+After B8 is accepted, reconcile every G1–G6 gate before closing this finite
+milestone. There is no hidden required B9 or automatic expansion to forty tools.
+Present the next bounded product slice for review then; authenticated tools,
+optional additions, deeper workflows and comparative benchmarks are not part of
+this batch. Model credentials, paid calls and live evaluation remain much later.
 
 ## Completion gates for every required capability
 

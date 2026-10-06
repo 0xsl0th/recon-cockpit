@@ -1,4 +1,4 @@
-# Continue here — 2 October 2026
+# Continue here — 6 October 2026
 
 ## Read this first
 
@@ -93,37 +93,56 @@ closed. Main now has **18 accepted secure capabilities backed by 10 programs**.
 Private receipt: `.secure-agent/pr43-merge-review.json`; B6 evidence remains
 `.secure-agent/docker-winrm-tools-20261002` in the primary checkout.
 
-**B7 is implemented and lab-verified in [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44); review/merge remain.**
-Worktree `/tmp/recon-secure-nmap-service-coverage`, branch
-`feature/secure-nmap-service-coverage`, starts from merged main `02a7d7f`.
-The separate `nmap_service_identify_v1` capability reuses the single-action network
-tool path: numeric owned endpoint, five-second tool deadline, 60-second session,
-8,192 combined bytes and explicit GET policy permission. It compiles a NULL banner
-probe and fixed HTTP GET, tiny lookup files and a reviewed no-op NSE entrypoint.
-Nmap initializes NSE implicitly under `-sV`; host script databases and probe files
-must never enter this runtime. The accepted TCP-only Nmap profile stays unchanged.
+**[PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44) is merged and B7 is accepted.**
+Reviewed head `f81c444` merged as `fcb9419` at 04:51:36 UTC on 2 October.
+Fresh runtime/policy/fixture and parser/evidence reviews found no blockers;
+1,147 and 836 focused portable checks passed, plus twelve recomputed-policy
+checks confirmed GET remains required. All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36965365612)
+and all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36966387286)
+passed. The merge tree exactly matches the reviewed tree. Twenty-one saved
+bundles replayed unchanged: three B7 and eighteen accepted B1–B6. Keep B7's
+[finite Nmap service profiles](nmap-service-tools.md) closed, including honest
+unidentified outcomes. Main now has **19 accepted secure capabilities backed by
+10 programs**. Private receipts: `.secure-agent/pr44-merge-review.json` and
+`.secure-agent/nmap-service-tools-20261002` in the primary checkout.
 
-The six owned scenarios exercise HTTP/SSH matches and unknown, hostile, malformed
-and silent responses. Normalized identities require actual probe matches;
-port-table names and fingerprints never establish service identity. Unidentified
-means only that these finite probes found no match, not absence or benign behavior.
-Validation passed 7,799 distinct portable tests (7,761 full run plus 38 added
-final evidence cases) and 297 distinct Linux checks without selected failures,
-errors or skips. Independent runtime/parser/authority/fixture reviews found no
-remaining blockers. Clean source `5120dcc` completed HTTP/SSH identity tasks 2/2
-and the unknown-response probe task 1/1, with zero unnecessary refusals. Six of
-six explicit forbidden-destination witnesses were blocked; all three labs closed
-and raw/evidence replay matched. All eighteen accepted B1–B6 bundles replayed
-unchanged. CLI times were 2.859–3.281 seconds, with zero provider calls/cost.
-See [the runbook](nmap-service-tools.md) and [verification.md](verification.md).
-B7 remains unaccepted until latest-revision checks and an authorized PR merge.
+**B8 synthetic Kerberos is implemented and lab-verified in [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45).**
+Worktree `/tmp/recon-secure-kerberos-coverage`, branch
+`feature/secure-kerberos-coverage`, starts from merged main `fcb9419`.
+The separate `kerbrute_userenum_v1` profile runs the real executable against an
+owned error-only KDC at `127.0.0.1:8080`. Only `fixture-a` and `fixture-b` in
+`HARBORDESK.TEST` can be queried, with two requests, one tool action, a five-second
+tool deadline, 60-second session and 8,192 combined output bytes. The KDC has no
+real directory, passwords or ticket-issuing path. Stock Kerbrute tries UDP; the
+TCP-only filter rejects it and confines the subsequent TCP fallback.
 
-Private evidence: `.secure-agent/nmap-service-tools-20261002` in the primary
-checkout, including `handoff.json`, `verification.json`, `validation-summary.json`
-and retained failed development receipts. PR #44 is ready for review after final
-hosted checks; merging it needs its corresponding operator instruction. B8 synthetic Kerberos with
-an owned KDC is the next required coverage gap after B7. The milestone remains
-open; deeper workflows and comparative benchmarking remain deferred.
+Results explicitly mean **tool-reported exists/unknown**, not authenticated
+principal facts. Kerbrute's error-string classification can turn a generic error
+containing `KDC_ERR_C_PRINCIPAL_UNKNOWN` into an ordinary unknown report. The
+spoof scenario makes that limitation visible; it does not count as verified
+negative discovery or successful injection detection. No result grants follow-up
+authority. See [kerberos-tools.md](kerberos-tools.md).
+
+Clean source `de40f28` completed both legitimate reporting tasks 2/2 with zero
+unnecessary refusals, plus a separately counted spoof-ambiguity demonstration.
+All six forbidden-destination witnesses were blocked; all three labs closed,
+raw evidence/replay matched, and all 21 accepted bundles replayed unchanged.
+CLI times were 2.854–2.982 seconds, with zero provider calls/cost. Validation
+passed the complete 8,186-test portable suite and 252 distinct Linux tests, with no selected
+failures, errors or skips. Independent reviews found no remaining blockers.
+
+Private evidence is `.secure-agent/kerberos-tools-20261002` in the primary
+checkout (work began 2 October; final validation 6 October). It includes
+`verification.json`, `validation-summary.json`, the archived verifier, retained
+failed development/test-instrumentation receipts and the latest `handoff.json`.
+See [verification.md](verification.md). PR #45 is prepared for review after its
+final hosted checks. B8 and the broader milestone remain open through the latest
+review/checks and the corresponding authorized merge.
+No required protocol row follows B8: after its acceptance, reconcile gates G1–G6
+and present the next bounded product slice for review. Roughly forty tools remains
+a long-term direction, not a claim that this finite milestone delivers the full
+professional product. Deeper workflows and comparative benchmarking stay deferred
+while B8 is open; optional capabilities remain deferred.
 
 Credential setup, paid calls and live-model evaluation remain deferred until much
 later. Do not ask for a key, fund a ledger or enable a live provider. Preserve
@@ -1091,16 +1110,16 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #43 merge is complete. PRs #6–#30 and #32–#43
+- The operator-authorized PR #44 merge is complete. PRs #6–#30 and #32–#44
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
 1. Resume the broader [secure-tool coverage milestone](secure-tool-coverage.md).
-   Check the current branch/PR and private handoff before repeating work. B0–B6 are
-   accepted; finish B7 bounded Nmap service identification, then choose the next unchecked row
-   (B8 synthetic Kerberos principal enumeration). PRs #6–#30 and #32–#43
+   Check the current branch/PR and private handoff before repeating work. B0–B7 are
+   accepted; finish B8 synthetic Kerberos principal reports through review and an
+   authorized merge, then reconcile all milestone gates. PRs #6–#30 and #32–#44
    stay closed. Proposal PR #31 remains separate.
 2. Require G1–G6 for every required row: actual owned execution, useful structured
    output, strict authority, replayable evidence, enforcement/cleanup and reviewed

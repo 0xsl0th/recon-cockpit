@@ -17,7 +17,7 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             FTP_TOOL_ID, SMTP_TOOL_ID, FTP_PARAMETERS, SMTP_PARAMETERS,
                             DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID,
                             DOCKER_PING_PARAMETERS, DOCKER_VERSION_PARAMETERS, WINRM_PARAMETERS,
-                            NMAP_SERVICE_TOOL_ID, NMAP_SERVICE_PARAMETERS, NETWORK_TOOLS_LIMITS, get_adapter)
+                            NMAP_SERVICE_TOOL_ID, NMAP_SERVICE_PARAMETERS, KERBRUTE_TOOL_ID, KERBRUTE_PARAMETERS, NETWORK_TOOLS_LIMITS, get_adapter)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
                                      validate_identity)
 from .network_tools_fixture import QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case
@@ -35,11 +35,12 @@ PARAMETERS.update({FTP_TOOL_ID: dict(FTP_PARAMETERS), SMTP_TOOL_ID: dict(SMTP_PA
 PARAMETERS.update({DOCKER_PING_TOOL_ID: dict(DOCKER_PING_PARAMETERS),
                    DOCKER_VERSION_TOOL_ID: dict(DOCKER_VERSION_PARAMETERS), WINRM_TOOL_ID: dict(WINRM_PARAMETERS)})
 PARAMETERS[NMAP_SERVICE_TOOL_ID] = dict(NMAP_SERVICE_PARAMETERS)
+PARAMETERS[KERBRUTE_TOOL_ID] = dict(KERBRUTE_PARAMETERS)
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
     FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1", DOCKER_PING_TOOL_ID: "curl-docker-ping-v1",
-    DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1", NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1"}
+    DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1", NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1"}
 B1_CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
             "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled")
 B2_CASES = ("ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
@@ -54,6 +55,7 @@ B6_CASES = tuple("docker-ping-" + suffix for suffix in ("ok", "unavailable", "in
     "docker-version-" + suffix for suffix in ("ok", "empty", "injected", "malformed", "stalled", "redirect-ip", "redirect-port")) + tuple(
     "winrm-" + suffix for suffix in ("ok", "no-auth", "injected", "malformed", "stalled", "redirect-ip", "redirect-port"))
 B7_CASES = tuple("nmap-service-" + suffix for suffix in ("http", "ssh", "unknown", "injected", "malformed", "stalled"))
+B8_CASES = tuple("kerberos-" + suffix for suffix in ("ok", "empty", "denied", "injected", "spoof", "malformed", "stalled"))
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -85,8 +87,19 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in B8_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(KERBRUTE_TOOL_ID).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "kerberos": {"realm": "HARBORDESK.TEST", "principals": ["fixture-a", "fixture-b"],
+                "max_requests": 2, "threads": 1, "transport": "tcp_after_udp_denied_by_seccomp",
+                "operation": "initial_as_req_without_preauth", "passwords": False, "spraying": False,
+                "tickets": False, "authentication_verified": False, "results": "tool_report_only",
+                "unknown_report_can_be_spoofed_by_error_text": True, "metadata_followup": False},
+            "parser_versions": {KERBRUTE_TOOL_ID: PARSER_VERSIONS[KERBRUTE_TOOL_ID]}}
     if case in B7_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(NMAP_SERVICE_TOOL_ID).to_dict()],
@@ -168,16 +181,17 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
     before = {"connection_count": 0, "request_count": 0} if previous is None else validate_context(previous, expected)
     connections = context["connection_count"] - before["connection_count"]
     requests = context["request_count"] - before["request_count"]
-    connection_limit = (3 if expected["scenario"] in B7_CASES else 4 if expected["scenario"] in B4_CASES else
+    request_limit = 2 if expected["scenario"] in B8_CASES else 1
+    connection_limit = (2 if expected["scenario"] in B8_CASES else 3 if expected["scenario"] in B7_CASES else 4 if expected["scenario"] in B4_CASES else
                         2 if expected["scenario"].startswith("ftp-") else 1)
-    if (not 0 <= connections <= connection_limit or not 0 <= requests <= 1
+    if (not 0 <= connections <= connection_limit or not 0 <= requests <= request_limit
             or (expected["scenario"] in {"openssl-untrusted", "openssl-malformed", "openssl-stalled",
                                          "ssh-malformed", "ssh-stalled", "ftp-denied",
                                          "ftp-passive-ip", "ftp-passive-port"} and requests != 0)
             or (expected["scenario"].startswith("ftp-") and result.get("tool_observation") is not None
                 and connections != 2)
             or (expected["scenario"] in B7_CASES and result.get("tool_observation") is not None and connections < 2)
-            or (execution_status == "succeeded" and result.get("tool_observation") is not None and requests != 1)):
+            or (execution_status == "succeeded" and result.get("tool_observation") is not None and requests != request_limit)):
         raise ValueError("network_tools_request_continuity_mismatch")
     return context
 
@@ -250,6 +264,8 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == KERBRUTE_TOOL_ID:
+        return _observation(tool_id, "kerberos_principal_reports_observed", "kerberos_principal_reports_observed", normalized)
     if tool_id == NMAP_SERVICE_TOOL_ID:
         reason = "nmap_service_identified" if normalized["identification"] == "identified" else "nmap_service_unidentified"
         return _observation(tool_id, reason, reason, normalized)
