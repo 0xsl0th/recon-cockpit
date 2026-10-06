@@ -14,6 +14,7 @@ import unicodedata
 
 from recon_cockpit.secure_agent import configurable_contract as contract
 from recon_cockpit.secure_agent.configurable_scope import load_scope, scope_digest
+from recon_cockpit.secure_agent.models import parse_action
 
 FIELD_NAMES = ("scope_id", "http_target", "http_port", "http_path", "ssh_target", "ssh_port")
 MAX_ROWS = 16
@@ -104,6 +105,33 @@ def scope_fields(scope):
     return {"scope_id": value["scope_id"], "http_target": value["http"]["target"],
         "http_port": str(value["http"]["port"]), "http_path": value["http"]["path"],
         "ssh_target": value["ssh"]["target"], "ssh_port": str(value["ssh"]["port"])}
+
+
+def present_session(snapshot, *, phase, cancel_requested, directory):
+    """Observed lifecycle only; no evidence grade or completed-work inference.
+
+    Match observed action digests to the frozen scope instead of guessing from
+    row order. A policy's approval requirement is never a live approval prompt.
+    """
+    scope = _validated_scope(snapshot["scope"])
+    actions = {parse_action(contract.action(scope, index)).digest: contract.action(scope, index)
+               for index in range(1, 5)}
+    rows = []
+    for index, step in enumerate(snapshot.get("steps", [])[:4], 1):
+        action = actions.get(step.get("action_digest"))
+        endpoint = None if action is None else f"{action['target']}:{action['parameters']['port']}"
+        rows.append({"id": f"session-{index}", "step": safe_text(step.get("step")),
+            "tool": _TOOL_LABELS.get(action["tool_id"], "Unknown action") if action else "Unknown action",
+            "target": safe_text(endpoint), "status": safe_text(step.get("execution_status")),
+            "detail": "Observed dry-run decision; no tool executed.\n"
+                "Approval requirements describe policy, not a pending human prompt.\n\n"
+                + _bounded_json({"action": action, "decision": step.get("decision"),
+                    "execution_status": step.get("execution_status"), "reasons": step.get("reasons")})})
+    return {"mode": "dry_run", "phase": phase, "state": safe_text(snapshot["state"]),
+        "session_id": safe_text(snapshot["session_id"]), "scope": scope,
+        "scope_sha256": scope_digest(scope), "steps": rows,
+        "stop_reason": snapshot.get("stop_reason"), "cancel_requested": bool(cancel_requested),
+        "session_dir": safe_text(str(directory))}
 
 
 def _bounded_json(value):

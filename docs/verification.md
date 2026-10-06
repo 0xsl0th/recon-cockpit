@@ -1,5 +1,59 @@
 # Verification record
 
+## Desktop dry-run session lifecycle — 6 October 2026
+
+Based on accepted PR #50 merge `7efa9d8`, this slice connects the desktop to the
+existing shared service with `execute=False` and `interactive_terminal=False`.
+It freezes scope, generates the unchanged approval-required policy, creates a
+fresh private session folder and owns run/cleanup/replay in one worker. All
+existing tool, authority, approval and evidence contracts remain unchanged.
+
+The full local portable suite passed **9,837 cases**, with **790 integration cases
+deselected**, no selected failures/errors/skips, in **258.53 seconds**. Fourteen new
+portable tests cover private/fresh paths, unsupported/unsafe destinations, request
+limits, scope custody, actual one-proposal dry-run behavior, cancellation before
+startup/after a step, close while replaying, distinct failures, recovery and bounded
+literal progress. Existing service and GUI regression cases remain passing.
+
+**Eleven actual Tk cases passed** with no failures/errors/skips in **12.65 seconds**
+on a private Xvfb display with TCP disabled. Six preserve saved-evidence behavior;
+five new cases exercise desktop session lifecycle. Four use real shared authority
+and isolated audit/coordinator controls. A clearly labeled test-only observer latch
+holds a real first policy decision for progress, theme/draft, cancellation and
+close checks; another case injects a final replay failure after a real run. The
+fifth uses an explicit startup failure double. Constructors remain real where the
+service runs, while endpoint/tool launch, runtime inspection and approval input/
+consumption are guarded against use. Audit workers and the desktop worker finish
+before closure; private paths and unchanged independent replay are checked.
+
+These trials execute **zero tools and zero provider calls**, record **zero useful
+actions**, and do not claim successful task completion, human approval, refusal
+quality or comparative overhead. The configured workflow stops after the first
+policy-reviewed proposal because follow-ups need real predecessor evidence.
+Existing accepted 4/4 native evidence is only inspected and remains unchanged.
+The desktop still cannot execute or approve a tool; the
+[graphical approval plan](desktop-approval-plan.md) describes the remaining gate.
+
+Ten private screenshots cover both themes, saved views and new running/finished
+states at 1360×900 and 1280×800. Controls and metrics fit, session scope stays
+separate from edited drafts, and failed replay cannot display verified success.
+Source hashes, images, JUnit and retained native bundles are under
+`.secure-agent/gui-session-20261006/` in the primary checkout. The initial seven
+portable development failures came from using the scope-only encoder for policy;
+the existing contract encoder fixed them. This is retained in development notes.
+The five-case development Tk run also passed before the combined final run.
+
+Fresh independent lifecycle/security and UI reviews found no remaining blockers.
+Python 3.11 syntax, documentation links, dependency consistency and whitespace
+checks passed. Hosted CI is portable and does not substitute for local Linux/Tk
+validation. The new PR is left unmerged for review; exact head and final CI are in
+the private handoff. The checkpoint keeps B0–B8, R5, local R6 and PR #50 closed.
+
+PR #50 itself merged with matching reviewed/merge trees; all five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37416444887)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37417644593)
+passed. Its merge receipt is `.secure-agent/pr50-merge-review.json`.
+
 ## Initial offline desktop GUI — 6 October 2026
 
 Based on accepted main `db42cd1`, the desktop adds local scope preparation and

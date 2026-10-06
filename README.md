@@ -35,13 +35,14 @@ with exact operator scope and the same isolated authority path. Its three
 configurable profiles reuse existing programs without real-network attachment.
 The [shared application service](docs/shared-assessment-service.md) now supplies
 validated requests, detached progress/session views, cancellation and read-only
-evidence inspection to the CLI and future GUI. The next interface will use the
-saved [Swiss Industrial references](docs/gui-design-references.md) and follow the
-[priority table](docs/roadmap.md).
-The first [offline desktop](docs/desktop-gui.md) now provides light/dark scope
-preparation and saved-session/evidence views; launch it with
-`python -m recon_cockpit.gui` from a graphical session. Execution and personal
-approval remain in the CLI.
+evidence inspection to both interfaces. The [offline desktop](docs/desktop-gui.md)
+uses the saved [Swiss Industrial references](docs/gui-design-references.md) for
+light/dark scope preparation, saved evidence and fresh dry-run sessions with
+observed progress and cancellation. Launch `python -m recon_cockpit.gui` from a
+graphical session; dry runs require the supported Linux isolation environment.
+They execute no tools and do not establish useful completion. Tool execution and
+personal approval remain in the CLI pending the [desktop approval design](docs/desktop-approval-plan.md)
+and its separate implementation review. Follow the [priority table](docs/roadmap.md).
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.
