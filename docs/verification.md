@@ -1,5 +1,47 @@
 # Verification record
 
+## Corrected reviewer retry and simpler rehearsal — 6 October 2026
+
+Fresh review of `5970a1086cbc4978c7eeb3a71d740dcf5ca221df` found no blockers;
+source hashes matched the 51 native and 112 focused portable receipts. All five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37429201956)
+passed. GitHub rejected formal self-approval because the active account is the
+PR author. The private review receipt is `.secure-agent/pr53-review.json`.
+
+The next owner retry produced no `approval_unavailable` events, but both started
+sessions reached the original deadline. The approval-labeled stage completed
+2/4 actions in 60,027 ms; its first two reviews took 27.45 and 16.81 seconds,
+leaving 11.36 seconds at the third review before timeout. The denial-labeled stage
+completed one action in 60,036 ms: a 36.45-second first review issued a grant, and
+the next review timed out after 20.30 seconds. No denial was recorded. Cancellation
+was not started. Both reports are incomplete, record closed labs and list no
+integrity issues; the three executed artifacts each record 11/11 true boundary
+checks. Provider calls and actual cost are zero. Stage labels do not establish
+which user interactions occurred.
+
+The owner confirmed that the copy/paste or three-session instructions were
+confusing. Preserve those observations and unsuccessful results in
+`.secure-agent/graphical-owner-helpers-20261006/`. Personal acceptance remains
+outstanding; PR #53 stays draft. The next rehearsal selects one case per launch,
+starts with one approval and pauses for owner feedback before denial or cancellation.
+It reuses the existing service with one step, 60 seconds and 8,192 bytes; a successful
+first action ends at `step_limit` and does not complete the four-action assessment.
+Keep controls-rehearsal evidence distinct from full-workflow completion and
+scripted validation. Ordinary desktop execution remains disabled.
+
+Three private native cases validated this smaller request on an owned Xvfb
+display in 6.77 seconds. Approval completed one action and stopped at `step_limit`
+(3,785 ms); denial completed zero and stopped at `action_blocked` (1,143 ms);
+pending-review cancellation completed zero and stopped at `session_cancelled`
+(1,126 ms). All three retained incomplete full-assessment outcomes, closed labs,
+zero provider calls/cost and unchanged independent replay. Only the approved case
+consumed a grant and launched a tool; its result passed all 11 boundary checks.
+These are scripted test results, not owner input. The private launcher request
+exactly matches this tested configuration. Receipts and evidence are retained in
+`.secure-agent/graphical-single-action-20261006/validation/`. The launcher shows
+only the selected case, waits for the owner to start, records actual audit counts,
+reports unexpected behavior without acceptance and handles early interruptions.
+
 ## Personal graphical retry failure — 6 October 2026
 
 At PR #53 head `b045a24252f54b11f131f39514e9afdc0926b65d`, the owner could copy

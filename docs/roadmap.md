@@ -81,6 +81,11 @@ Priority **2c remains current**, with these explicit acceptance steps:
   cancellation using the prepared entry point. Record the observed results before
   adding a desktop Execute control through the same shared service. Do not attach
   to a real network, restore grants or claim professional readiness in this step.
+  The corrected retry reached the 60-second limit without the earlier reviewer
+  error, and the owner reported confusing copy/paste or three-session instructions.
+  First rehearse one control interaction at a time using the existing stricter
+  one-step/60-second/8,192-byte request, pausing for feedback between cases.
+  This is a usability rehearsal, not full four-action personal acceptance.
 
 This remains part of priority 2; dry-run controls do not complete the GUI milestone.
 Successive tool batches stay priority 3 and target remaining internal-network/web

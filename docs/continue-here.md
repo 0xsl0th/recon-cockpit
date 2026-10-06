@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: review the corrected graphical input path, then retry the personal walkthrough (priority 2c).**
+**Current authorized work: simplify the personal graphical rehearsal to one case at a time (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -93,22 +93,30 @@ useful workflow completion. There is no desktop Execute control yet, no restored
 approval and no personal graphical walkthrough receipt. The prepared command is
 plan-only by default; see the runbook for explicit owned-fixture execution.
 
-**Current continuation:** PR #53 contains a validated correction for a personal
-retry failure and remains a draft pending personal acceptance. Copy/paste worked,
-but the approval trial stopped after one action
-with `approval_unavailable`; the denial-labeled trial stopped with the same error
-and zero actions. The cancellation-labeled trial completed two actions before
-the 60-second timeout; it does not establish successful cancellation. Preserve
-these unsuccessful trials in `.secure-agent/graphical-owner-copy-20261006/`.
-The earlier 45 native tests used scripted input and missed these gestures. Real
-XTEST input reproduced Tab and double-click selection trying to load deferred
-Tcl/Tk helpers after the filesystem-open seal. The correction loads only the
-fixed focus/word helpers before sealing, keeping the restrictions unchanged.
-All 51 native and 112 focused portable checks passed, including six genuine
-XTEST interaction regressions and both four-action workflow modes. All three
-failed owner bundles independently replay as incomplete without integrity issues.
-Review the correction and hosted checks before another personal retry. Record the owner's observations separately from
-scripted test input. After personal acceptance, add desktop execution controls through
+**Current continuation:** PR #53's implementation at `5970a108` passed fresh
+review, 51 native and 112 focused portable tests, and all five hosted checks.
+GitHub rejected formal self-approval because the active account owns the PR.
+The corrected personal retry did not repeat `approval_unavailable`, but both
+started sessions timed out: two actions completed in the approval-labeled stage
+and one in the denial-labeled stage; cancellation never started. The owner
+confirmed that the copy/paste or three-session instructions were confusing.
+Preserve `.secure-agent/graphical-owner-helpers-20261006/`; this is not acceptance.
+
+Replace automatic progression through three cases with one explicitly selected
+case per private rehearsal. Start with one Nmap approval, then pause for feedback
+before a separate denial or cancellation case. The existing service accepts the
+stricter limits of one step, 60 seconds and 8,192 output bytes, with every authority
+gate unchanged. A successful single action ends at `step_limit`; the four-action
+assessment remains incomplete. This diagnoses personal use of the controls and
+must not substitute for full four-action personal acceptance. The full workflow's
+existing automated evidence remains separate. Do not increase or reset deadlines.
+Current private launcher: `/tmp/recon-graphical-single-action.py`; start only a
+reviewed, validated revision and let the owner enter all approval input.
+
+Retain earlier failed trials in `.secure-agent/graphical-owner-copy-20261006/` and
+the helper-fix evidence in `.secure-agent/graphical-copy-20261006/`. Record the
+owner's observations separately from scripted test input. After full personal
+acceptance, add desktop execution controls through
 the same shared service and finish priority 2 acceptance. Subsequent secure-tool
 batches remain priority 3; real network attachment needs separate authorization.
 

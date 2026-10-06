@@ -131,6 +131,14 @@ regressions; it remains a draft pending personal acceptance. Review the correcti
 and hosted checks before retrying. Neither set of unsuccessful trials
 establishes usability acceptance; preserve them separately from automated evidence.
 
+The next corrected retry hit the original session deadline, and the owner found
+the copy/paste or three-session instructions confusing. Use one explicit rehearsal
+case at a time, with feedback before the next case. The private rehearsal uses the
+same service and graphical frontend with stricter one-step/60-second/8,192-byte
+limits. Its first-action approval stops at `step_limit`; evidence correctly marks
+the full assessment incomplete. Denial and cancellation use separate fresh cases.
+Do not call this full four-action personal acceptance or reset/increase deadlines.
+
 ## Validation interpretation
 
 Native tests use an owned Xvfb display with TCP disabled. Scripted test-only Tk
