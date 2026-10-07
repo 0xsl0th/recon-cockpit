@@ -25,6 +25,7 @@ if __package__:
     from . import network_tools_dns_srv_fixture as dns_srv_fixture
     from . import network_tools_rdp_fixture as rdp_fixture
     from . import network_tools_smb2_fixture as smb2_fixture
+    from . import network_tools_smtp_tls_fixture as smtp_tls_fixture
 else:
     def _load(name, filename):
         spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -47,6 +48,7 @@ else:
     dns_srv_fixture = _load("network_tools_fixed_dns_srv", "network_tools_dns_srv_fixture.py")
     rdp_fixture = _load("network_tools_fixed_rdp", "network_tools_rdp_fixture.py")
     smb2_fixture = _load("network_tools_fixed_smb2", "network_tools_smb2_fixture.py")
+    smtp_tls_fixture = _load("network_tools_fixed_smtp_tls", "network_tools_smtp_tls_fixture.py")
 
 
 def read_request(source):
@@ -64,9 +66,9 @@ def read_request(source):
 
 def tls_context(case):
     if (fixture.tool_for_case(case) != "openssl_tls_handshake_v1"
-            and case not in fixture.DATABASE_TLS_CASES):
+            and case not in fixture.DATABASE_TLS_CASES + fixture.SMTP_TLS_CASES):
         raise ValueError("invalid_network_tools_tls_case")
-    untrusted = case == "openssl-untrusted" or case in ("postgresql-tls-untrusted", "mysql-tls-untrusted")
+    untrusted = case == "openssl-untrusted" or case in ("postgresql-tls-untrusted", "mysql-tls-untrusted", "smtp-tls-untrusted")
     cert = tls_material.UNTRUSTED_SERVER_CERT_PEM if untrusted else tls_material.SERVER_CERT_PEM
     expected = fixture.UNTRUSTED_SERVER_CERT_SHA256 if untrusted else fixture.SERVER_CERT_SHA256
     if hashlib.sha256(cert).hexdigest() != expected:
@@ -190,7 +192,7 @@ class NetworkToolsService(owner.Service):
     def __init__(self, request, listener):
         self.deadline = request["deadline"]
         self.context = (tls_context(request["case"]) if request["case"].startswith("openssl-")
-                        or request["case"] in fixture.DATABASE_TLS_CASES else None)
+                        or request["case"] in fixture.DATABASE_TLS_CASES + fixture.SMTP_TLS_CASES else None)
         self.rpc = (rpc_fixture.Exchange(request["case"], self._smb_enumerated)
                     if request["case"].startswith(("rpc-", "nfs-")) else None)
         self.kerberos = (kerberos_fixture.Exchange(request["case"], self._smb_enumerated)
@@ -267,7 +269,10 @@ class NetworkToolsService(owner.Service):
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.case in fixture.SMB2_CASES:
+                    if self.case in fixture.SMTP_TLS_CASES:
+                        smtp_tls_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            context=self.context, on_request=self._smb_enumerated)
+                    elif self.case in fixture.SMB2_CASES:
                         smb2_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.RDP_CASES:

@@ -21,6 +21,37 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("smtp-tls-"):
+        from . import network_tools_fixture as fixture
+        dialogue = fixture.smtp_tls_dialogue(case)
+        complete = case in fixture.SMTP_TLS_COMPLETE_CASES
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-smtp-starttls-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "smtp_starttls"}],
+            "command_sha256": [hashlib.sha256(value).hexdigest()
+                for value in (fixture.SMTP_TLS_EHLO, fixture.SMTP_TLS_STARTTLS)],
+            "response_sha256": {name: None if value is None else hashlib.sha256(value).hexdigest()
+                for name, value in dialogue.items()},
+            "malformed_tls_sha256": hashlib.sha256(TLS_MALFORMED_BYTES).hexdigest()
+                if case == "smtp-tls-malformed" else None,
+            "ehlo_name": TLS_NAME, "tls_name": TLS_NAME, "tls_protocol": "TLSv1.3",
+            "ca_sha256": hashlib.sha256(CA_PEM).hexdigest(),
+            "certificate_sha256": UNTRUSTED_SERVER_CERT_SHA256 if case == "smtp-tls-untrusted" else SERVER_CERT_SHA256,
+            "max_fixture_plaintext_bytes": fixture.SMTP_TLS_MAX_PLAINTEXT_BYTES,
+            "max_commands": 2, "max_connections": 1, "max_requests": 1,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_ehlo_starttls_then_tls13_and_clean_close_notify" if complete
+                else "validated_ehlo_and_starttls_before_negative_response",
+            "counter_includes_clean_tls_close": complete,
+            "connection_evidence": "accepted_connections_lower_bound",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "authentication": False, "credentials": False, "mail": False, "recipient_probing": False,
+            "tls_application_requests": False, "plaintext_session": False,
+            "client_validates_smtp_reply_codes": False, "client_requires_starttls_advertisement": False,
+            "full_smtp_dialogue_retained": False, "fragmented_ready_reply_may_fail": True,
+            "service_identity_claim": False, "vulnerability_claim": False,
+            "behavior": case.removeprefix("smtp-tls-")}
     if case.startswith("smb2-"):
         from . import network_tools_fixture as fixture
         response = fixture.smb2_response(case)

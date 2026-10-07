@@ -73,8 +73,8 @@ The runtime is limited to the
 exact reviewed Linux Ruby 3.3 x86-64 files; early write-half-close can limit server
 compatibility. There is no new GUI workflow or real-network attachment.
 
-The current C6 [SMB2 negotiation candidate](smb2-negotiation-tools.md) adds
-`smb2_negotiate_metadata_v1`, bringing this branch to **31 profiles using the same
+The accepted C6 [SMB2 negotiation profile](smb2-negotiation-tools.md) adds
+`smb2_negotiate_metadata_v1`, bringing accepted main to **31 profiles using the same
 14 programs**. The repository-owned Ruby adapter sends one fixed 108-byte request
 offering SMB 2.1 and 3.0.2 with client capabilities zero, closes its write side and
 reads one response frame of at most 4,100 bytes. Supported negotiation metadata
@@ -82,9 +82,17 @@ permits an opaque security or error buffer of at most 256 bytes; bounded raw
 evidence can retain rejected frames with larger buffers. Peer bytes remain
 uninterpreted data. No SESSION_SETUP, authentication, NTLM challenge collection
 workflow, credentials, login, share access or follow-up is available. Local
-validation and source review passed; acceptance remains pending. Catalog visibility
-does not establish acceptance,
+validation, source review and all five final/post-merge jobs passed; C6 is
+accepted in PR #60 at `aa65bff7`. Catalog visibility does not establish
 arbitrary server compatibility, signing enforcement or service identity.
+
+The C7 [SMTP STARTTLS candidate](smtp-starttls-tools.md) adds one bounded
+profile through existing OpenSSL, for **32 profiles using the same 14 programs**.
+It sends fixed EHLO/STARTTLS, verifies the fixture CA/name and records clean TLS
+closure without authentication, mail or application requests. Structured output
+means verified TLS only; SMTP reply codes, advertisement and product identity
+are not verified. Full portable, native/usefulness, enforcement and evidence
+checks are required before acceptance. C7 remains pending review and merge.
 
 From the repository root, with the project installed:
 
@@ -100,6 +108,7 @@ python -m recon_cockpit.secure_agent --describe-tool whatweb_http_fingerprint_v1
 python -m recon_cockpit.secure_agent --describe-tool dig_dns_srv_v1
 python -m recon_cockpit.secure_agent --describe-tool rdp_initial_negotiation_v1
 python -m recon_cockpit.secure_agent --describe-tool smb2_negotiate_metadata_v1
+python -m recon_cockpit.secure_agent --describe-tool smtp_starttls_handshake_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -222,6 +231,6 @@ accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C6 candidate. Further composition and comparative benchmarking
+the current C7 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

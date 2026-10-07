@@ -20,7 +20,7 @@ from .tool_parameters import (
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters,
-    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, RDPInitialParameters, SMB2NegotiateParameters,
+    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters,
     NmapTCPParameters, TCPParameters, ValidationError,
     MAX_TIMEOUT_SECONDS, MAX_OUTPUT_BYTES, SUPPORTED_METHODS,
     _fields, _integer, _reject, _string,

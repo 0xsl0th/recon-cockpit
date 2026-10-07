@@ -1,11 +1,33 @@
 # Verification record
 
+## PR #60 review and merge — 7 October 2026
+
+**C6 is accepted in [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60).**
+Reviewed head `b2d5fce0` merged as `aa65bff7` on 7 October at 21:46:24 UTC;
+reviewed and merged trees match `bbccb66ce76107cf2febb4f4c66b6964a5634a25`.
+Independent authority/runtime and evidence reviews found no blockers. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37688048570)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37691744431)
+passed. Preserve 12,654 portable and 56 native tests, 5/5 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations,
+140/140 boundary fields and 52 accepted-bundle replays. Accepted main now has
+**31 profiles using 14 programs**. C6 stays closed; private review receipt:
+`.secure-agent/pr60-merge-review.json`.
+
+Review verified all 524 source hashes, 14 native/seven clean/52 accepted reports,
+88 artifacts and five inherited receipt hashes. Independent authority review
+passed 507 focused tests and rejected 154 commitment-recomputed mutations;
+evidence review passed 355 focused tests. These are review checks, not a claim
+of fresh native execution during merge review. No required branch rules or inline
+comments were configured; all five matrix jobs plus source review were the merge
+gate. No formal GitHub approval is claimed.
+
 ## C6 owned SMB2 negotiation metadata — 7 October 2026
 
 [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60) adds one repository-owned
-Ruby socket adapter based on accepted main `846e459`. The candidate has **31
-bounded profiles using 14 external programs**; main remains 30/14 until an
-authorized merge. B0–B8, C1–C5, offline R5, accepted local R6 and the initial owned
+Ruby socket adapter based on accepted main `846e459`. Its accepted merge
+`aa65bff7` brings main to **31 bounded profiles using 14 external programs**.
+B0–B8, C1–C6, offline R5, accepted local R6 and the initial owned
 GUI remain closed. This batch adds no GUI controls or professional deployment claim.
 
 The [runbook](smb2-negotiation-tools.md) fixes a 108-byte SMB2 NEGOTIATE offer of
@@ -73,11 +95,9 @@ pytest directories and failed its 14-case denominator; the corrected helper
 excludes pytest's current-directory symlink and reconciles all 14. No safety
 boundary was weakened to obtain a passing result.
 
-Final hosted checks and an authorized merge remain acceptance gates. After C6
-review, reassess fixed SMTP STARTTLS pre-authentication using the existing OpenSSL
-runtime; inspect actual wire behavior before selecting another batch. Credentials,
-paid/live-model calls, external engagements, deeper workflows and comparative
-benchmarking remain deferred.
+C6 is accepted in PR #60; see the review/merge receipt above. C7 SMTP STARTTLS
+is the separate follow-on candidate. Credentials, paid/live-model calls, external
+engagements, deeper workflows and comparative benchmarking remain deferred.
 
 ## PR #59 review and merge — 7 October 2026
 

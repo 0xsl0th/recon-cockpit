@@ -5,7 +5,8 @@ the existing secure single-action CLI, sealed runtime and evidence path. It adds
 one capability to the accepted 30-profile inventory, for 31 profiles using the
 same 14 external programs. Ruby remains a supporting runtime. The operation is
 available through the owned CLI, not the GUI. Local validation and source review passed as
-recorded below; final hosted checks and an authorized merge remain pending.
+recorded below. PR #60 merged as `aa65bff7` after independent review and all five
+final hosted checks passed; all five post-merge checks passed. C6 is closed.
 
 ## Fixed operation and meaning
 

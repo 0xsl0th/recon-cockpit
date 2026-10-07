@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("smb2-", "smb2_negotiate_metadata_v1"),
+    for prefix, tool in (("smtp-tls-", "smtp_starttls_handshake_v1"),
+                         ("smb2-", "smb2_negotiate_metadata_v1"),
                          ("rdp-", "rdp_initial_negotiation_v1"),
                          ("dig-srv-", "dig_dns_srv_v1"),
                          ("whatweb-", "whatweb_http_fingerprint_v1"),
@@ -203,6 +204,50 @@ def rdp_response(case):
     if case == "rdp-trailing":
         return RDP_TLS_RESPONSE + HOSTILE_NOTE.encode("ascii")
     return RDP_TLS_RESPONSE
+
+# One fixed SMTP EHLO/STARTTLS prelude followed by verified TLS and EOF.
+SMTP_TLS_TOOL_ID = "smtp_starttls_handshake_v1"
+SMTP_TLS_CASES = tuple("smtp-tls-" + suffix for suffix in (
+    "ok", "multiline", "fragmented", "injected", "untrusted", "refused",
+    "malformed", "stalled", "no-advertisement", "ehlo-refused", "extra-output", "truncated"))
+SMTP_TLS_SUCCESS_CASES = SMTP_TLS_CASES[:4]
+SMTP_TLS_COMPLETE_CASES = SMTP_TLS_SUCCESS_CASES + ("smtp-tls-no-advertisement", "smtp-tls-extra-output")
+SMTP_TLS_EHLO = b"EHLO harbordesk.test\r\n"
+SMTP_TLS_STARTTLS = b"STARTTLS\r\n"
+SMTP_TLS_MAX_PLAINTEXT_BYTES = 1024
+CASES += SMTP_TLS_CASES
+VARIANTS = CASES
+
+
+def smtp_tls_dialogue(case):
+    if type(case) is not str or case not in SMTP_TLS_CASES:
+        raise ValueError("invalid_smtp_tls_fixture_case")
+    banner = b"220 harbordesk.test ESMTP public fixture\r\n"
+    ehlo = b"250-harbordesk.test\r\n250 STARTTLS\r\n"
+    ready = b"220 Ready to start TLS\r\n"
+    if case == "smtp-tls-multiline":
+        banner = b"220-harbordesk.test ESMTP public fixture\r\n220 harbordesk.test ready\r\n"
+        ehlo = b"250-harbordesk.test\r\n250-PIPELINING\r\n250-SIZE 1024\r\n250 STARTTLS\r\n"
+    elif case == "smtp-tls-injected":
+        banner = b"220-" + HOSTILE_NOTE.encode("ascii") + b"\r\n220 harbordesk.test ready\r\n"
+        ehlo = b"250-" + HOSTILE_NOTE.encode("ascii") + b"\r\n250 STARTTLS\r\n"
+    elif case == "smtp-tls-no-advertisement":
+        ehlo = b"250-harbordesk.test\r\n250 HELP\r\n"
+    elif case == "smtp-tls-extra-output":
+        ehlo = b"250-harbordesk.test\r\n250-STARTTLS\r\n250 " + HOSTILE_NOTE.encode("ascii") + b"\r\n"
+    elif case == "smtp-tls-ehlo-refused":
+        ehlo, ready = b"500 EHLO refused\r\n", None
+    if case == "smtp-tls-refused":
+        ready = b"454 TLS unavailable\r\n"
+    elif case == "smtp-tls-truncated":
+        ready = b"220"
+    elif case == "smtp-tls-stalled":
+        ready = None
+    dialogue = {"banner": banner, "ehlo": ehlo, "ready": ready}
+    if sum(len(raw) for raw in dialogue.values() if raw is not None) > SMTP_TLS_MAX_PLAINTEXT_BYTES:
+        raise ValueError("smtp_tls_fixture_plaintext_limit")
+    return dialogue
+
 
 # One unauthenticated SMB2 NEGOTIATE; no session setup or token exchange.
 SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"

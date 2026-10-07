@@ -249,3 +249,8 @@ class RDPInitialParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class SMB2NegotiateParameters(TCPParameters):
     """One fixed SMB2 negotiation offer; no authentication or share access."""
+
+
+@dataclass(frozen=True, slots=True)
+class SMTPStartTLSParameters(TCPParameters):
+    """Fixed SMTP STARTTLS handshake; no authentication or mail commands."""
