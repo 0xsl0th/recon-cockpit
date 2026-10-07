@@ -21,6 +21,39 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("rdp-"):
+        from . import network_tools_fixture as fixture
+        response = fixture.rdp_response(case)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-rdp-initial-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "rdp_initial_tcp"}],
+            "request_sha256": hashlib.sha256(fixture.RDP_REQUEST).hexdigest(),
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "requested_protocols": ["tls"], "negotiation_request_flags": 0,
+            "max_request_bytes": fixture.RDP_MAX_REQUEST_BYTES,
+            "max_frame_bytes": fixture.RDP_MAX_FRAME_BYTES,
+            "max_response_bytes": fixture.RDP_MAX_RESPONSE_BYTES,
+            "max_connections": 1, "max_requests": 1, "max_client_frames": 1,
+            "client_write_half_close_before_response": True,
+            "client_write_half_close_is_owned_profile_constraint": True,
+            "behavior": "stall_after_validated_request" if case == "rdp-stalled"
+                else "fragmented_response" if case == "rdp-fragmented"
+                else "hostile_trailing_bytes_not_consumed" if case == "rdp-trailing"
+                else "malformed_x224_confirm" if case == "rdp-malformed"
+                else "unoffered_protocol" if case == "rdp-unoffered"
+                else "unknown_failure_code" if case == "rdp-unknown-failure"
+                else "truncated_response" if case == "rdp-truncated"
+                else "oversized_frame_header" if case == "rdp-oversized" else "fixed_response",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_fixed_initial_requests_followed_by_client_write_eof_before_response",
+            "connection_evidence": "accepted_connections_lower_bound",
+            "udp": False, "retries": False, "followup": False, "tls_handshake": False,
+            "credssp": False, "credentials": False, "authentication": False,
+            "mcs": False, "remote_session": False, "clipboard": False, "channels": False,
+            "service_identity_claim": False, "vulnerability_claim": False,
+            "trailing_bytes_inspected": False}
     if case.startswith("dig-srv-"):
         from . import network_tools_fixture as fixture
         response = fixture.dns_srv_response(case, fixture.dns_srv_query())

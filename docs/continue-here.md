@@ -4,22 +4,37 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), priority 3
-secure-tool coverage, C4 bounded DNS SRV metadata.**
-Work is on `feature/dns-srv-coverage` in `/tmp/recon-dns-srv-coverage`,
-based on accepted main `fdfe6e833799cdb15877c1314069af492d3d07d3`. See the
+**Current work: priority 3 secure-tool coverage, C5 bounded RDP initial negotiation.**
+Work is on `feature/rdp-negotiation-coverage` in `/tmp/recon-rdp-negotiation-coverage`,
+based on accepted main `6080a5c`. See the
 [successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C4 runbook](dns-srv-tools.md). The candidate adds `dig_dns_srv_v1` using the
-accepted dig runtime for one fixed nonrecursive TCP question. Ten scenarios cover
-four ordinary useful outcomes, one separate hostile-metadata robustness trial
-and five negative/bounds cases. Native validation passed 25 selected tests;
-independent clean-source trials completed all useful tasks and replayed 40
-accepted bundles unchanged. All 11,428 portable tests passed. Review the PR's
-latest revision and hosted checks; final review/checks and merge remain pending.
-Accepted main has 28 profiles using 14 programs; the C4 candidate has
-29 using the same 14. Leave the new PR ready for review; this continuation does
-not automatically merge it. Finite RDP initial negotiation is the next gap to
-reassess after C4 closes, not an automatically committed expansion.
+and [C5 runbook](rdp-negotiation-tools.md). The candidate adds
+`rdp_initial_negotiation_v1`: one fixed 19-byte TLS offer, a write-half-close and
+only the first bounded reply frame. The repository-owned Ruby adapter uses the
+existing sealed runtime and authority path, with no TLS handshake, CredSSP, NTLM,
+authentication or remote session. Its 13 cases separate five ordinary useful
+outcomes, two useful robustness trials and six inconclusive outcomes.
+C5 validation and review remain pending. Accepted main has 29 profiles using
+14 programs; the C5 candidate has 30 using the same 14. Ruby is supporting runtime,
+not an additional third-party assessment program. The exact reviewed Linux
+Ruby 3.3 x86-64 layout and early write-half-close limit compatibility. Leave the
+candidate ready for review; this continuation does not automatically merge it.
+After C5 closes, reassess bounded SMB2 negotiation metadata as a candidate;
+no next-batch implementation is implied.
+
+**[PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) is merged and C4 is closed.**
+Reviewed head `65810b8` merged as `6080a5c` on 7 October at 19:36:01 UTC.
+Trees match `fbb7092085e169f499d364355bf11c75c4ca2fcb`; all 502 validated source
+hashes matched. Independent authority/runtime, parser/evidence and regression
+reviews passed 1,328, 821 and 422 focused tests respectively, with no blockers.
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37673798024)
+passed 11,428 tests each. The
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37675710586)
+also passed all five jobs. Preserve the 25 native tests, 4/4 ordinary completions,
+the separate useful hostile-metadata trial, zero unnecessary refusals,
+20/20 blocked destinations and 40 unchanged accepted evidence replays.
+Private receipts remain under `.secure-agent/dns-srv-20261007/`.
+Do not repeat the merge or broaden the accepted SRV profile.
 
 **[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57) is merged and C3 is closed.**
 Reviewed head `cf69f4e` merged as `fdfe6e833799cdb15877c1314069af492d3d07d3`
@@ -255,7 +270,7 @@ replayed unchanged. Preserve `.secure-agent/database-tls-20261007/`, including
 not a comparative overhead benchmark. The shipped policies still require fresh
 personal approval; automated synthetic grants do not claim owner acceptance.
 
-**Current continuation: C4 fixed DNS SRV metadata with dig.** One synthetic TCP
+**Accepted C4: fixed DNS SRV metadata with dig.** One synthetic TCP
 question, `_ldap._tcp.harbordesk.test. IN SRV`, returns at most four typed
 priority/weight/port/target/TTL rows. Results mean only untrusted DNS service
 advertisements. NODATA, NXDOMAIN and a sole zero-valued root target are distinct
@@ -291,15 +306,41 @@ failure separately. The selector correction passed 86 focused tests and changed
 only that older portable test. Production/native source remains the clean-source
 `0c6dcf5` implementation; of the 502 files in the validation source index, only
 that test differs in the final index. Preserve both indexes and private receipts.
-Final PR review, hosted checks and merge remain pending. Descriptive latency and
-byte counts do not establish comparative overhead.
+Independent final reviews passed 1,328 authority/runtime, 821 parser/evidence and
+422 regression tests. All five final hosted jobs passed 11,428 tests each;
+reviewed `65810b8` and merge `6080a5c` have identical trees. C4 is accepted at
+29 profiles using 14 programs. Descriptive latency and byte counts do not
+establish comparative overhead.
 
-Accepted main has 28 profiles using 14 programs; C4's candidate has 29/14. Reassess
-RDP initial negotiation after C4 closes, without credentials, NTLM collection or
-default NSE scripts. No RDP runtime or committed batch is claimed. Broader SQL
-readiness, authenticated operations and real network attachment remain later
-boundary work. This is progress toward the 40+ tool direction, not professional
-pentest readiness.
+**Current continuation: C5 fixed RDP initial negotiation.** The 19-byte request
+offers TLS only at the owned endpoint. The client closes its write side before
+reading a single 11- or 19-byte response, with a two-second absolute operation
+deadline. Raw bytes go to the independent parser; selected protocol, flags and
+known failures are `untrusted_rdp_negotiation_metadata`. TLS selection, explicit
+standard RDP, legacy confirmation, NLA-required failure and Entra-required failure
+form five ordinary useful tasks. Fragmented responses and a valid frame followed
+by hostile trailing data form two separate robustness tasks. Malformed, unoffered,
+unknown-failure, truncated, oversized and stalled responses remain inconclusive.
+The trailing-data trial proves no follow-up; the client does not inspect its tail.
+
+C5 validation and review remain pending. All 13 scenarios need actual execution,
+one validated request/connection, witnessed write-half-close, enforced bounds,
+closed owners, blocked destinations and unchanged replay. Preserve every authority
+gate and the fresh-approval policy. No TLS/CredSSP/NTLM, authentication, session,
+verified identity or exhaustive protocol-support result is claimed. The exact
+reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
+adapter, not another third-party program. The candidate count is 30 profiles/14
+programs; it adds no GUI workflow or real-network attachment.
+
+After C5 closes, reassess one bounded SMB2 NEGOTIATE exchange for dialect,
+security-mode and capability metadata. The accepted B3 share-list profile already
+uses smbclient; the candidate gap is a separately constrained exchange before
+session setup. Select a pinned adapter or client and owned fixture only after
+reviewing incremental usefulness and the exact finite operation. No SESSION_SETUP,
+NTLM collection, login or share access is included, and no implementation is
+committed. Broader SQL readiness, authenticated operations and real network
+attachment remain later boundary work. This is progress toward the 40+ tool
+direction, not professional pentest readiness.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,

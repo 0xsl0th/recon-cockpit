@@ -122,8 +122,8 @@ Model credentials, paid calls and live evaluation remain much later.
 
 ## Successive product coverage batches
 
-Priority 3 follows the accepted initial GUI. Accepted main has **28 bounded profiles
-from 14 external programs** after C3 in PR #57. Installed binaries and interactive
+Priority 3 follows the accepted initial GUI. Accepted main has **29 bounded profiles
+from 14 external programs** after C4 in PR #58. Installed binaries and interactive
 commands do not satisfy secure coverage. The following rows distinguish existing
 integration from a candidate secure profile.
 
@@ -134,12 +134,13 @@ integration from a candidate secure profile.
 | C2 | PostgreSQL pre-authentication TLS; existing secure OpenSSL runtime, no interactive database integration | One fixed SSLRequest followed by fixture-CA/name-verified TLS 1.3 and clean close without application data; structured handshake-only evidence, refusal/untrusted/malformed/stalled/injected cases, replay and G1–G6. No startup/login/SQL/readiness claim. | [x] Accepted in PR #56. |
 | C2 | MySQL pre-authentication TLS; same existing OpenSSL runtime, no interactive database integration | Read one bounded initial greeting, send fixed SSLRequest, verify TLS 1.3 and close without application data; hostile greeting version remains inert, no account/auth-plugin/login/SQL operation; honest fragmented-greeting limitation, replay and G1–G6. | [x] Accepted in PR #56. |
 | C3 | HTTP application fingerprinting; WhatWeb has no interactive integration | One fixed GET with five passive plugins and a finite sealed Ruby/WhatWeb runtime; ordinary hints and no-hints tasks both complete, hostile/meta redirects stay inert, all eleven scenarios retain scope/bounds/closure, structured untrusted evidence and G1–G6. | [x] Accepted in PR #57. |
-| C4 — current | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed `_ldap._tcp.harbordesk.test. IN SRV` question over TCP; at most four typed priority/weight/port/target/TTL rows; 4/4 ordinary record/NODATA/NXDOMAIN/unavailable completions with zero unnecessary refusals, separate injected-metadata usefulness, all ten scenarios with actual queries, enforced bounds, evidence and G1–G6. No recursion or advertised endpoint follow-up. | Portable/native validation and independent replay passed; [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) final review/checks and merge pending. |
-| Next gap to reassess after C4 | RDP initial protocol negotiation; no existing interactive or secure profile | Select one bounded client operation and owned fixture before implementation; typed selected-protocol/failure metadata, actual useful execution, evidence and G1–G6. No authentication, NTLM collection or remote session. | Reassessment candidate; no execution capability or committed batch claimed. |
+| C4 | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed `_ldap._tcp.harbordesk.test. IN SRV` question over TCP; at most four typed priority/weight/port/target/TTL rows; 4/4 ordinary record/NODATA/NXDOMAIN/unavailable completions with zero unnecessary refusals, separate injected-metadata usefulness, all ten scenarios with actual queries, enforced bounds, evidence and G1–G6. No recursion or advertised endpoint follow-up. | [x] Accepted in [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), merge `6080a5c`; all five final and post-merge jobs passed. |
+| C5 — current | RDP initial protocol negotiation; repository-owned Ruby socket adapter, no interactive profile | One fixed 19-byte TLS offer, write-half-close and first bounded reply only; five ordinary useful outcomes, two separate robustness completions and six inconclusive cases with actual requests, typed metadata, enforced bounds, evidence and G1–G6. No TLS/CredSSP/NTLM, authentication or remote session. | Implementation candidate; validation and review pending. |
+| Next gap to reassess after C5 | SMB2 negotiation metadata; accepted B3 smbclient profile lists anonymous shares but does not expose a separate negotiation-only contract | Assess one finite NEGOTIATE exchange for dialect/security-mode/capability metadata with a pinned adapter or existing client and an owned fixture. No SESSION_SETUP, NTLM collection, login or share access; require actual usefulness, evidence and G1–G6 before claiming coverage. | Reassessment candidate; no implementation or committed batch claimed. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 
-C1–C3 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
+C1–C4 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
 TCP SNMP does not establish UDP coverage. C2 reuses the existing single-action
 authority, OpenSSL runtime, strict TLS parser and evidence infrastructure. Its two
 profiles brought accepted main to **27 profiles from the same 13 programs**.
@@ -194,7 +195,7 @@ hosted jobs before the authorized `fdfe6e8` merge; all five post-merge jobs also
 passed. The reviewed `cf69f4e` and merge
 trees match; all 494 validated source hashes matched. C3's G6 is closed.
 
-C4 now adds fixed SRV metadata while reusing accepted dig infrastructure. The
+C4 accepted fixed SRV metadata while reusing the existing dig infrastructure. The
 [C4 runbook](dns-srv-tools.md) defines ten cases and separate usefulness criteria:
 four ordinary completions and one injected-metadata robustness completion.
 Malformed, excess-record, refused, stalled and output-pressure cases stay
@@ -217,13 +218,45 @@ deselected and zero failures/errors/skips, in 298.681 seconds. The first run's
 one failure was a stale older-fixture snapshot selector; its test-only correction
 passed 86 focused tests and left production/native source unchanged.
 
-C4's candidate contains **29 profiles from the same 14 programs**. Final PR
-review, hosted checks and merge remain open gates;
-the profile's presence in the catalog does not establish completion. Returned
-targets and ports remain untrusted evidence, never automatic scope. Reassess
-finite RDP initial negotiation after C4 closes, with no authentication or NTLM
-collection implied. Do not add a required new B milestone, automatically commit
-the next batch or broaden accepted profiles to pursue an executable count.
+C4 brought accepted main to **29 profiles from the same 14 programs**. Independent
+reviews passed 1,328 authority/runtime, 821 parser/evidence and 422 regression
+tests; all 502 validated source hashes matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37673798024)
+passed 11,428 tests each. Reviewed `65810b8` merged as `6080a5c` on 7 October at
+19:36:01 UTC with identical tree `fbb7092085e169f499d364355bf11c75c4ca2fcb`.
+All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37675710586)
+also passed. Returned targets and ports remain untrusted evidence, never automatic
+scope. C4's G6 is closed.
+
+The [C5 runbook](rdp-negotiation-tools.md) binds `rdp_initial_negotiation_v1` to
+one repository-owned Ruby socket operation in the existing confined runtime.
+It sends a fixed TLS offer, closes its write side and reads only the first
+11- or 19-byte confirmation. The two-second absolute operation deadline sits
+within the existing five-second tool limit. The owned fixture must witness one
+exact request and write-half-close. No TLS handshake, CredSSP, NTLM, authentication
+or session can follow; metadata does not prove identity or all supported protocols.
+
+C5 validation and review remain pending. Five ordinary cases cover TLS selection,
+explicit standard RDP, legacy confirmation, NLA-required failure and Entra-required
+failure. Fragmented replies and valid first frames followed by hostile trailing
+data form two separate robustness completions. Six negative cases cover malformed,
+unoffered, unknown-failure, truncated, oversized and stalled replies. Every case
+needs actual execution, enforced bounds, closed ownership and unchanged replay;
+no startup failure counts as a negative success. Trailing data is not inspected,
+so that trial makes no injection-detection claim.
+
+The candidate contains **30 profiles using the same 14 external programs**. Ruby
+is supporting runtime for a repository adapter, not a new third-party assessment
+tool. Exact reviewed Linux Ruby 3.3 x86-64 files and early write-half-close limit
+compatibility; there is no new GUI workflow or real-network attachment.
+
+Reassess bounded SMB2 negotiation only after C5 closes. It is a distinct candidate
+from accepted B3 share listing: the proposed metadata belongs to the initial
+[SMB2 NEGOTIATE response](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/63abf97c-0d09-47e2-88d6-6bfa552949a5).
+Select the exact finite request, client and fixture before implementation, with
+no session setup, NTLM collection, login or share access. Do not add a required
+new B milestone, automatically commit this next batch or broaden accepted profiles
+to pursue an executable count.
 
 Each batch records useful completion and unnecessary refusals as well as blocked
 unauthorized attempts, request counts, elapsed time and zero provider cost. A normal

@@ -1,5 +1,30 @@
 # Verification record
 
+## PR #58 review and merge — 7 October 2026
+
+C4 DNS SRV metadata is closed. Reviewed head `65810b8e9f447cf63ef1bed88b0a7987ad35fe7b`
+merged as `6080a5c5e4d2f5cde00415299c259f212813d40b` at 19:36:01 UTC.
+Reviewed and merged trees match `fbb7092085e169f499d364355bf11c75c4ca2fcb`.
+Independent authority/runtime review passed 1,328 focused portable tests;
+parser/evidence review passed 821 focused and 422 regression tests. No blockers
+were found. All 502 recorded source hashes and native/clean-source receipt hashes
+matched. The ten saved native C4 artifacts independently reparsed with matching
+raw captures, runtime bindings, counters and outcomes.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37673798024)
+passed 11,428 tests each, and all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37675710586)
+passed. No branch check rules or unresolved inline review comments were present;
+all five matrix jobs and independent source review were the merge gate. No GitHub
+formal approval is claimed. The private merge receipt is
+`.secure-agent/pr58-merge-review.json`.
+
+Preserve C4's 25 native tests, 4/4 ordinary completions, separate 1/1 robustness
+completion, zero unnecessary refusals, 20/20 blocked destinations and 40 unchanged
+accepted-bundle replays. The evidence remains under
+`.secure-agent/dns-srv-20261007/`. Do not repeat the merge or reopen C4.
+
+
 ## Desktop Execute owned lab — 7 October 2026
 
 The `feature/desktop-owned-execution` slice starts the existing four-action owned

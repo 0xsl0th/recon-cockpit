@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("dig-srv-", "dig_dns_srv_v1"),
+    for prefix, tool in (("rdp-", "rdp_initial_negotiation_v1"),
+                         ("dig-srv-", "dig_dns_srv_v1"),
                          ("whatweb-", "whatweb_http_fingerprint_v1"),
                          ("postgresql-tls-", "postgresql_tls_handshake_v1"),
                          ("mysql-tls-", "mysql_tls_handshake_v1"),
@@ -154,6 +155,53 @@ def dns_srv_response(case, query):
     if len(response) > DNS_SRV_MAX_RESPONSE_BYTES:
         raise ValueError("dns_srv_response_limit")
     return response
+
+
+# One initial X.224 negotiation, followed by a client write-half-close. The
+# synthetic server never speaks TLS, CredSSP, MCS, authentication or a session.
+RDP_TOOL_ID = "rdp_initial_negotiation_v1"
+RDP_REQUEST = bytes.fromhex("030000130ee000000000000100080001000000")
+RDP_CASES = tuple("rdp-" + suffix for suffix in (
+    "tls", "standard", "legacy", "nla-required", "entra-required", "fragmented", "trailing",
+    "malformed", "unoffered", "unknown-failure", "truncated", "stalled", "oversized"))
+RDP_SUCCESS_CASES = RDP_CASES[:7]
+RDP_MAX_REQUEST_BYTES = 19
+RDP_MAX_FRAME_BYTES = 19
+RDP_MAX_RESPONSE_BYTES = 128  # Includes finite hostile bytes beyond the first frame.
+RDP_TLS_RESPONSE = bytes.fromhex("030000130ed000000000000200080001000000")
+CASES += RDP_CASES
+VARIANTS = CASES
+
+
+def validate_rdp_request(request):
+    if type(request) is not bytes or request != RDP_REQUEST:
+        raise ValueError("invalid_rdp_initial_request")
+    return request
+
+
+def rdp_response(case):
+    if type(case) is not str or case not in RDP_CASES:
+        raise ValueError("invalid_rdp_fixture_case")
+    if case == "rdp-stalled":
+        return None
+    if case == "rdp-legacy":
+        return bytes.fromhex("0300000b06d00000000000")
+    if case == "rdp-standard":
+        return RDP_TLS_RESPONSE[:-4] + struct.pack("<I", 0)
+    if case in ("rdp-nla-required", "rdp-entra-required", "rdp-unknown-failure"):
+        failure = {"rdp-nla-required": 5, "rdp-entra-required": 7, "rdp-unknown-failure": 8}[case]
+        return RDP_TLS_RESPONSE[:11] + struct.pack("<BBHI", 3, 0, 8, failure)
+    if case == "rdp-unoffered":
+        return RDP_TLS_RESPONSE[:-4] + struct.pack("<I", 2)
+    if case == "rdp-malformed":
+        return RDP_TLS_RESPONSE[:5] + b"\xe0" + RDP_TLS_RESPONSE[6:]
+    if case == "rdp-truncated":
+        return RDP_TLS_RESPONSE[:10]
+    if case == "rdp-oversized":
+        return b"\x03\x00\x00\x14" + RDP_TLS_RESPONSE[4:] + b"\x00"
+    if case == "rdp-trailing":
+        return RDP_TLS_RESPONSE + HOSTILE_NOTE.encode("ascii")
+    return RDP_TLS_RESPONSE
 
 SSH_PUBLIC_BLOB = b'\x00\x00\x00\x07ssh-rsa\x00\x00\x00\x03\x01\x00\x01\x00\x00\x01\x01\x00\xb1<&o>>\x82I\xda\x16\r\xcb:\xb5\xbaHl|g\xf7\xdc4\x1a \t\xe0\xef\xfb\x93\xbc\xd0sNi\x9c\xcd\xad\xa7\xaf\xeaP\xae\x82]\x9a\x95\xda\x90\xb9\xf9\x10`\xdb\xf4\xf8\x94E\xbb\x17E\x94p\xb1\xe2\x98\xfa\x96Y\xaa\xc7\t\xe6zo\xe3C\xd4]Ta\xad\x1a\xcf\x83\xfe\xfa\xeb\xc3GF\x16\xbf\x94\xde\xaafN\xbc\x08d\xf6\xeb\xc3q\xfeG&y\xd1\x1a\xa7\x96\x1c\xafof\xdc\x03\x12iYd\xfa\xfdG\xb2\xa7Jd\x99w<\x9e\x7fV/\xb2\x8b\xe8QH5\xc2\x81DC\xa5\x81\x18Y\xfd\xbf\x100B\xd5i\xba\x98s\x98Y\xf8\xa7\xa0\x11_\xf1\xe4\xcf\xe1=\x02\xa7T\xd8\xa5\xebki\xfc\x12\xb41\x02\x90h\xe8\xdbq\x10\x88\x1e\x05\xdc\x04e;\xfc\xebF\xc0g\xfe\xad\xad\x8c\x11d\xf9\xcb\xd0,\x0cJ\xcc<\xf1\xc2T\xc1\x1c\x03\xc2\xbfFb\x199p\xd1&\xee\t\x0f\x1a]\xec\x16\x98\x17\x14\x16-f\xaf\xbf`\xe5\xaax\xee\xfb\x1a\x07='
 SSH_PUBLIC_KEY_BASE64 = 'AAAAB3NzaC1yc2EAAAADAQABAAABAQCxPCZvPj6CSdoWDcs6tbpIbHxn99w0GiAJ4O/7k7zQc05pnM2tp6/qUK6CXZqV2pC5+RBg2/T4lEW7F0WUcLHimPqWWarHCeZ6b+ND1F1UYa0az4P++uvDR0YWv5TeqmZOvAhk9uvDcf5HJnnRGqeWHK9vZtwDEmlZZPr9R7KnSmSZdzyef1YvsovoUUg1woFEQ6WBGFn9vxAwQtVpuphzmFn4p6ARX/Hkz+E9AqdU2KXra2n8ErQxApBo6NtxEIgeBdwEZTv860bAZ/6trYwRZPnL0CwMSsw88cJUwRwDwr9GYhk5cNEm7gkPGl3sFpgXFBYtZq+/YOWqeO77Ggc9'
