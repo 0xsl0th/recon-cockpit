@@ -4,18 +4,19 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: priority 3 secure-tool coverage, C3 bounded WhatWeb HTTP fingerprinting.**
+**Current work: [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57), priority 3
+secure-tool coverage, C3 bounded WhatWeb HTTP fingerprinting.**
 Work is on `feature/whatweb-coverage` in `/tmp/recon-whatweb-coverage`,
 based on accepted main `9603a54`. See the
 [successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C3 runbook](whatweb-tools.md). Native execution and evidence validation are
-in progress; startup failures cannot establish useful or negative-case success.
-The first smoke attempt hit the launcher's descriptor ceiling while sealing the
-larger runtime closure. The separate WhatWeb launcher bound was corrected;
-actual execution still needs validation. Rootless tool limits and accepted tool
-profiles remain unchanged. Keep failed receipts alongside subsequent results.
-Candidate catalog entries do not count as accepted main coverage. Complete local
-validation and leave a PR ready for review; its final hosted checks and a later
+and [C3 runbook](whatweb-tools.md). Clean implementation
+`0bdd9b6324d3c10d1a426c51aaf491abdf51d92a` passed 11,109 portable and 39 selected native tests and
+independent useful-execution/evidence verification. Both ordinary and both
+robustness tasks completed, with zero unnecessary refusals. Earlier descriptor-ceiling startup failures
+remain private and separate from successful native trials; the scoped launcher
+correction did not increase native tool limits or change accepted profiles.
+Candidate catalog entries do not count as accepted main coverage. Leave a PR
+ready for review; its final hosted checks and a later
 authorized merge remain acceptance gates. The next planned batch is C4 DNS SRV.
 
 **[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56) is merged and C2 is closed.**
@@ -184,8 +185,9 @@ desktop bundles replayed unchanged with closed fixtures/processes and zero provi
 calls/cost. Both themes passed at 1120×720. Independent source reviews found no
 remaining blockers. These are scripted tests, not new personal acceptance.
 
-**Current continuation:** complete C3's actual owned-lab validation, then open a
-reviewable implementation PR. Do not automatically merge that new PR. Profile
+**Current continuation:** review [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57)
+and check hosted results on its latest revision. Do not automatically merge
+the new C3 PR. Profile
 `whatweb_http_fingerprint_v1` uses the secure single-action CLI path for one
 GET of `/harbordesk/portal.html` at disconnected `127.0.0.1:8080`. The five
 passive plugins are Title, HTTPServer, X-Powered-By, MetaGenerator and JQuery.
@@ -201,15 +203,34 @@ vulnerabilities. Literal hostile metadata cannot choose targets or follow-up wor
 The parser requires the exact request configuration and closed bounded schema;
 redirects, denied, malformed, incomplete and oversized results are inconclusive.
 
-The [C3 runbook](whatweb-tools.md) defines eleven scenarios. Ordinary `whatweb-ok`
-and `whatweb-no-hints` must complete 2/2 with zero unnecessary refusals; injected
-metadata and meta redirects must separately preserve useful completion. Every
-actual scenario must retain one connection/request, enforce scope and bounds,
-close its owner and replay unchanged. Grant replay rejection, missing proofs,
-cancellation after real execution, private-input isolation, UDP denial and thread
-ceilings remain required. Startup failure is not a successful negative result.
-Save failed attempts and later receipts privately under `.secure-agent/whatweb-20261007/`.
-Portable tests alone cannot complete G2–G6.
+The complete portable suite passed **11,109 tests**, with 914 integration cases
+deselected and zero failures/errors/skips. JUnit duration was **299.271 seconds**;
+the pytest terminal summary includes additional runner overhead at 299.54 seconds.
+The private receipt is `.secure-agent/whatweb-20261007/portable-final.xml`.
+
+The [C3 runbook](whatweb-tools.md) defines eleven scenarios. Final native
+validation passed **39 tests** in 156.861 seconds, with zero selected failures,
+errors or skips: 17 C3 cases plus 22 accepted-tool regressions. Ordinary
+`whatweb-ok` and `whatweb-no-hints` completed 2/2 with zero unnecessary refusals;
+injected metadata and meta redirects separately completed 2/2. All eleven
+scenario bundles replayed unchanged, closed at one connection/validated GET,
+and passed 22/22 forbidden-destination witnesses plus 110/110 boundary fields.
+Grant consumption/replay rejection, missing-proof denial, cancellation after
+actual execution, private-input isolation, UDP refusal and thread ceilings passed.
+The real JSON output-pressure case stopped at the cap with only two bytes
+retained; no useful observation was invented.
+
+Independent verification at clean `0bdd9b6` repeated both ordinary and both
+robustness trials, with zero unnecessary refusals and 8/8 blocked destinations.
+All four new bundles and 36 accepted bundles replayed identically through both
+inspectors without changing bytes, modification times or modes. Ordinary wall
+times were 4,322/4,338 ms; robustness times were 4,313/4,537 ms. These are local
+descriptive measurements, not comparative overhead. Calls/cost stayed zero.
+Receipt: `.secure-agent/whatweb-20261007/clean-source-0bdd9b63-949y69_c/verification.json`.
+The unattended synthetic policy does not claim personal approval; the shipped
+policy still requires it. Keep earlier failed startup/native attempts and the
+initial portable failure separately; its 16 failures were stale test selectors
+and mappings, corrected without changing the validated production code.
 
 Accepted C2 evidence remains closed at 10,776 portable and 28 native cases,
 2/2 ordinary TLS tasks, 24/24 blocked destinations and 33 prior evidence bundles

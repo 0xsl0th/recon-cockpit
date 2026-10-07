@@ -169,7 +169,10 @@ deferred, as do model credentials and paid/live-model evaluation.
 
 C3 now implements [bounded HTTP application fingerprinting with WhatWeb](whatweb-tools.md).
 Its five reviewed passive plugins, pinned runtime and one-request bounds are a
-separate candidate; actual execution and evidence validation must pass before
-acceptance. Broader SQL readiness and authenticated database operations require their
+separate candidate. All 11,109 portable and 39 selected native tests passed.
+Independent trials completed both ordinary and both robustness tasks, blocked 8/8 forbidden
+destinations and replayed 36 accepted bundles unchanged. Final review, hosted
+checks and merge remain acceptance gates. Broader SQL readiness and authenticated
+database operations require their
 own later design and relevant authorization. Follow the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [checkpoint](continue-here.md) without reopening accepted milestones.

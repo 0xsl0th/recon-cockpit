@@ -1,9 +1,11 @@
 # Owned HTTP application fingerprinting with WhatWeb
 
-C3 adds candidate profile `whatweb_http_fingerprint_v1` through the existing
+C3 in [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57) adds candidate
+profile `whatweb_http_fingerprint_v1` through the existing
 single-action secure CLI path. It uses installed WhatWeb 0.6.3 and Ruby 3.3.8
-with a finite pinned file closure. Actual Linux validation, independent review
-and merge remain required before acceptance. Accepted main has 27 profiles using
+with a finite pinned file closure. Actual Linux validation and independent source
+review passed; PR review, hosted checks and merge remain acceptance gates.
+Accepted main has 27 profiles using
 13 external programs; this candidate has 28 profiles using 14 programs.
 
 The profile permits one GET of `/harbordesk/portal.html` at the disconnected owned
@@ -91,6 +93,13 @@ successful negative tests.
 
 Record useful completion, unnecessary refusals, blocked actions, descriptive
 wall time, zero provider cost and evidence integrity in [verification.md](verification.md).
+Local validation passed 39 native tests, including 17 C3 cases and 22 accepted
+regressions. Both ordinary tasks completed, both hostile-metadata/meta-redirect
+tasks separately completed, all 22 forbidden-destination witnesses blocked,
+and all eleven scenario bundles replayed unchanged. Four additional clean-source
+trials repeated useful completion and blocked 8/8 destinations; all 36 accepted
+bundles replayed unchanged through both inspectors. All provider calls and cost
+were zero. These automated trials do not claim new personal acceptance.
 Comparative overhead, deeper workflows, model credentials and paid/live-model
 evaluation remain deferred. Completed B0–B8, C1, C2, offline R5, accepted local R6
 and the initial GUI milestones stay closed.

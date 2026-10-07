@@ -127,8 +127,14 @@ plugins and execution. Structured output means only untrusted application hints;
 a complete no-hints response must count as useful completion, not technology
 absence. Ordinary usefulness must be 2/2 with zero unnecessary refusals, with
 separate hostile-metadata/meta-redirect trials and eleven total scenarios.
-Actual execution, evidence replay, enforcement, review and merge remain gates;
-startup failure cannot stand in for a successful negative test. The candidate
+The complete portable suite passed 11,109 tests with no failures/errors/skips
+(914 integration cases deselected). Local native validation passed 39 tests:
+17 C3 cases and 22 accepted-tool regressions. All eleven scenarios retained their declared meanings, one
+connection/GET, closed owners and unchanged replay; 22/22 forbidden destinations
+blocked. Independent clean-source trials completed 2/2 ordinary and 2/2 robustness
+tasks with zero unnecessary refusals, blocked 8/8 destinations and replayed 36
+accepted bundles unchanged. Final PR review, hosted checks and merge remain gates.
+Earlier startup failures remain recorded separately. The candidate
 has **28 profiles using 14 programs** and adds no GUI workflow or real-network
 attachment. Credentials and paid/live-model calls remain deferred.
 

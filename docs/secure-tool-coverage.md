@@ -133,7 +133,7 @@ integration from a candidate secure profile.
 | C1 | SNMP system metadata; snmpget, no interactive menu integration | One v2c TCP GetRequest of three fixed system OIDs with public synthetic community; complete typed values/noSuchObject, no walks/writes/UDP/custom community; actual useful execution, adversarial cases, replay and G1–G6. | [x] Accepted in PR #55. |
 | C2 | PostgreSQL pre-authentication TLS; existing secure OpenSSL runtime, no interactive database integration | One fixed SSLRequest followed by fixture-CA/name-verified TLS 1.3 and clean close without application data; structured handshake-only evidence, refusal/untrusted/malformed/stalled/injected cases, replay and G1–G6. No startup/login/SQL/readiness claim. | [x] Accepted in PR #56. |
 | C2 | MySQL pre-authentication TLS; same existing OpenSSL runtime, no interactive database integration | Read one bounded initial greeting, send fixed SSLRequest, verify TLS 1.3 and close without application data; hostile greeting version remains inert, no account/auth-plugin/login/SQL operation; honest fragmented-greeting limitation, replay and G1–G6. | [x] Accepted in PR #56. |
-| C3 — current | HTTP application fingerprinting; WhatWeb candidate, no interactive integration | One fixed GET with five passive plugins and a finite sealed Ruby/WhatWeb runtime; ordinary hints and no-hints tasks both complete, hostile/meta redirects stay inert, all eleven scenarios retain scope/bounds/closure, structured untrusted evidence and G1–G6. | Candidate implemented; actual execution, evidence validation and review gates open. |
+| C3 — current | HTTP application fingerprinting; WhatWeb candidate, no interactive integration | One fixed GET with five passive plugins and a finite sealed Ruby/WhatWeb runtime; ordinary hints and no-hints tasks both complete, hostile/meta redirects stay inert, all eleven scenarios retain scope/bounds/closure, structured untrusted evidence and G1–G6. | Actual owned execution and replay passed; final review, hosted checks and merge pending. |
 | C4 — next | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed synthetic SRV question over TCP; bounded typed priority/weight/port/target rows, honest NODATA/NXDOMAIN, no recursion or follow-up to advertised endpoints; actual useful owned execution, hostile/malformed/bounds cases, evidence and G1–G6. | Planned; no additional execution capability claimed. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -178,6 +178,17 @@ and input/output pressure remain inconclusive. All eleven cases need actual nati
 execution, one connection/request, enforced bounds, closed owners and unchanged
 replay; startup failures cannot satisfy a negative case. C3's candidate contains
 **28 profiles from 14 programs**, with no broader GUI or network attachment claim.
+
+C3's complete portable suite passed **11,109 tests**, with zero failures/errors/skips
+and 914 integration cases deselected. The JUnit duration was 299.271 seconds.
+Native validation passed **39 selected Linux tests**, including 17 C3 cases
+and 22 accepted-tool regressions. All eleven scenarios matched their declared
+outcomes, closed at one connection/GET, replayed unchanged and blocked 22/22
+forbidden destinations. Ordinary and robustness tasks completed 2/2 each, kept
+as separate denominators. A clean-source run at `0bdd9b6` repeated both pairs
+with zero unnecessary refusals, blocked 8/8 destinations and replayed all 36
+accepted bundles unchanged through CLI and shared inspection. Provider calls
+and cost stayed zero. Final review, hosted checks and merge remain open G6 items.
 
 C4 follows because fixed SRV metadata adds internal service discovery while
 reusing accepted dig infrastructure. Returned targets and ports remain untrusted

@@ -4782,3 +4782,89 @@ Completed milestones stay closed. Next proposed coverage is bounded HTTP
 application fingerprinting with a reviewed finite WhatWeb plugin allowlist;
 deeper workflows, comparative benchmarks, credential setup and paid/live-model
 evaluation remain deferred.
+
+## C3 bounded WhatWeb HTTP fingerprinting — 7 October 2026
+
+Review candidate: [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57).
+Final hosted checks, PR review and an authorized merge remain acceptance gates.
+
+The candidate adds `whatweb_http_fingerprint_v1` through the existing single-action
+CLI and all seven authority gates. Installed WhatWeb 0.6.3 runs with exactly five
+passive plugin files, one GET of `/harbordesk/portal.html` at disconnected owned
+`127.0.0.1:8080`, and a finite sealed Ruby 3.3 runtime. A compiled guard bounds
+connections, wire requests, response input and regular-expression evaluation;
+redirects, retries, linked resources, cookies and encoded-body expansion are
+refused. The [runbook](whatweb-tools.md) records supported layout and limitations.
+
+Implementation revision: `0bdd9b6324d3c10d1a426c51aaf491abdf51d92a`, based on
+accepted main `9603a54`. All **494 source/test/policy/workflow file hashes** match
+the validated implementation. Private records remain under
+`.secure-agent/whatweb-20261007/` in the primary checkout; no raw assessment
+evidence is committed.
+
+| Validation | Actual result |
+| --- | --- |
+| Complete portable suite, `pytest -m 'not integration' --strict-markers` | **11,109 passed**, zero failures/errors/skips, 299.271 seconds; 914 integration cases deselected |
+| Selected actual Linux suite | **39 passed**, zero selected failures/errors/skips, 156.861 seconds |
+| Eleven C3 ordinary/adversarial scenarios | All expected outcomes; **22/22** forbidden IP/port witnesses blocked, **110/110** boundary checks true |
+| Ordinary hints and no-hints tasks | **2/2** useful completions; **zero unnecessary refusals** |
+| Hostile metadata and meta redirects | **2/2** useful completions, measured separately from ordinary usefulness |
+| Scenario evidence | **11/11** unchanged CLI replays; exactly one connection/validated GET each, bounded output and closed owners |
+| Independent clean-source verification | Four fresh useful trials, **8/8** destination witnesses blocked, **36 accepted bundles** replayed unchanged through CLI and shared inspection |
+
+The native command selected `tests/test_secure_whatweb_workflow_linux.py` and
+`tests/test_secure_network_tools_workflow_linux.py` with
+`RECON_LINUX_INTEGRATION=1` and `-k 'whatweb or openssl or dig or kerberos or smb'`.
+Its 39 cases comprise **17 C3 and 22 accepted regressions**. Beyond the eleven
+scenarios, C3 tests consumed-grant replay denial, missing-proof refusal,
+cancellation after actual Ruby execution, host-input/descriptor isolation, and
+refusal before native execution when tests broaden UDP or task permissions.
+The shipped policy requires fresh approval. Unattended synthetic policies and
+synthetic grant tests do not claim new personal approval or acceptance.
+
+Seven negative scenarios remain inconclusive: HTTP redirect, denial, malformed
+framing, early EOF, stall, response-input pressure and native JSON output
+expansion. Every one followed an actual validated GET; startup failure cannot
+count as success. A native zero exit code alone does not count as useful work.
+The output-pressure case reached `output_limit` while retaining only two bytes;
+the ceiling is not a claim that 8,192 bytes were captured. No negative result
+is upgraded into application hints or authority for another request.
+
+Ordinary local secure-execution times were **4,169 / 4,139 ms**; hostile metadata
+and meta redirects took **4,205 / 4,795 ms**. Independent clean-source trials took
+**4,322 / 4,338 ms** for the ordinary pair and **4,313 / 4,537 ms** for robustness.
+These are descriptive CLI wall times, including isolation setup, not comparative
+authority overhead. Every trial used **zero provider calls and zero actual
+provider cost**. The independent receipt is
+`clean-source-0bdd9b63-949y69_c/verification.json`.
+
+Independent trials checked exact action, policy, runtime, raw-output,
+normalized-result, audit and owner-counter bindings. All 36 older bundles were
+required by the accepted C2 receipt and report hashes; replay preserved their
+bytes, modification times and modes. Golden tests retain all **112** older
+actions/descriptors/workflow cards/lab specifications, **27** adapters and
+**18** native invocations/environments/compiled inputs.
+
+Preserved development failures include the first launcher's descriptor ceiling
+while sealing the larger closure and two missing finite Ruby dependency files;
+all occurred before requests and count as failures. The corrected profile uses
+a separately checked outer-launcher tag with 256 descriptors; the executed Ruby
+process remains limited to 64 descriptors, 256 MiB and 16 tasks. Accepted tools'
+limits are unchanged. The first native run also exposed a test that conflated
+exit status with useful completion; only its assertion changed before the final
+39-case run. Shared test prefix mappings and legacy golden selectors required
+updates: the first full portable run had 16 failures and 11,093 passes. Original
+golden hashes/counts were preserved; 176 focused runtime and 184 fixture/lab
+tests passed after the final test-only corrections. Failed logs remain private.
+
+Independent source reviews found no remaining blockers. The candidate has
+**28 profiles using 14 programs**; accepted main remains **27/13** until review,
+hosted checks and merge. Results mean `untrusted_application_hints`, not verified
+products, installed versions or vulnerabilities. Empty hints are valid completed
+observations, not proof of technology absence. Support is deliberately limited
+to the reviewed Debian Ruby 3.3 x86-64 layout and five passive plugins.
+
+Completed B0–B8, C1, C2, offline R5, accepted local R6 and initial GUI milestones
+stay closed. Fixed TCP DNS SRV metadata with dig is the next coverage gap after
+C3 acceptance. Model credentials, paid/live calls, real-network attachment,
+deeper composition and comparative benchmarking remain deferred.

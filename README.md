@@ -57,8 +57,10 @@ database login, SQL query, readiness or product-identity claim.
 The current [WhatWeb candidate](docs/whatweb-tools.md) adds one fixed HTTP GET
 with five passive plugins, bringing this branch to 28 profiles using 14 programs.
 Its structured hints are untrusted metadata; even an empty hint list can be useful
-completion. Actual owned execution, evidence validation, review and merge remain
-acceptance gates; catalog presence is not verified coverage.
+completion. Local validation passed 11,109 portable and 39 selected native tests,
+including both ordinary tasks and both hostile/meta-redirect trials. Independent verification replayed 36
+accepted bundles unchanged. Final PR review, hosted checks and merge remain
+acceptance gates; the candidate is not yet accepted main coverage.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

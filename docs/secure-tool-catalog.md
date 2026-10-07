@@ -32,9 +32,11 @@ The current C3 [WhatWeb candidate](whatweb-tools.md) adds one passive HTTP
 fingerprint profile, bringing this branch to **28 profiles using 14 programs**.
 Its recipe permits one fixed GET with five exact plugins and no redirects,
 credentials or follow-up. Ruby supports the WhatWeb runtime and is not separately
-counted as an assessment program. Actual owned execution, structured evidence,
-enforcement and final review remain acceptance gates. Catalog presence alone is
-not verification.
+counted as an assessment program. All 11,109 portable and 39 selected native tests
+passed. Independent trials completed 2/2 ordinary and 2/2 robustness tasks with zero unnecessary
+refusals, blocked 8/8 forbidden destinations and replayed 36 accepted bundles
+unchanged. Final review, hosted checks and merge remain acceptance gates; this
+candidate is not yet counted as accepted main coverage.
 
 From the repository root, with the project installed:
 
