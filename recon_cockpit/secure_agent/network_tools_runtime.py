@@ -37,6 +37,8 @@ NMAP_SERVICE = "nmap_service_identify_v1"
 KERBRUTE = "kerbrute_userenum_v1"
 REDIS = "redis_server_info_v1"
 SNMP = "snmp_system_get_v1"
+POSTGRESQL_TLS = "postgresql_tls_handshake_v1"
+MYSQL_TLS = "mysql_tls_handshake_v1"
 KERBRUTE_PRINCIPALS = b"fixture-a\nfixture-b\n"
 # A distribution may put a wrapper at /usr/bin/nmap. Only these two ELF
 # locations are eligible, and only this new profile resolves the alternative.
@@ -108,7 +110,8 @@ EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
                FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl",
                DOCKER_PING: "/usr/bin/curl", DOCKER_VERSION: "/usr/bin/curl", WINRM: "/usr/bin/curl",
                NMAP_SERVICE: "/usr/bin/nmap", KERBRUTE: "/usr/local/bin/kerbrute",
-               REDIS: "/usr/bin/redis-cli", SNMP: "/usr/bin/snmpget"}
+               REDIS: "/usr/bin/redis-cli", SNMP: "/usr/bin/snmpget",
+               POSTGRESQL_TLS: "/usr/bin/openssl", MYSQL_TLS: "/usr/bin/openssl"}
 FIXED_ARGV = {
     REDIS: ("/tool/redis-cli", "-2", "-e", "--raw", "-h", "127.0.0.1", "-p", "8080", "INFO", "server"),
     SNMP: ("/tool/snmpget", "-v", "2c", "-c", "recon-fixture-public", "-r", "0", "-t", "2",
@@ -129,6 +132,16 @@ FIXED_ARGV = {
           "-servername", "harbordesk.test", "-verify_hostname", "harbordesk.test",
           "-verify_return_error", "-CAfile", "/tool/data/fixture-ca.pem", "-no-CApath", "-no-CAstore",
           "-tls1_3", "-ciphersuites", "TLS_AES_256_GCM_SHA384", "-brief", "-no_ign_eof"),
+    # Only a fixed protocol preface precedes the existing verified handshake.
+    # The worker supplies EOF, so no login, SQL or TLS application payload is sent.
+    POSTGRESQL_TLS: ("/tool/openssl", "s_client", "-4", "-connect", "127.0.0.1:8080",
+          "-servername", "harbordesk.test", "-verify_hostname", "harbordesk.test",
+          "-verify_return_error", "-CAfile", "/tool/data/fixture-ca.pem", "-no-CApath", "-no-CAstore",
+          "-tls1_3", "-ciphersuites", "TLS_AES_256_GCM_SHA384", "-brief", "-no_ign_eof", "-starttls", "postgres"),
+    MYSQL_TLS: ("/tool/openssl", "s_client", "-4", "-connect", "127.0.0.1:8080",
+          "-servername", "harbordesk.test", "-verify_hostname", "harbordesk.test",
+          "-verify_return_error", "-CAfile", "/tool/data/fixture-ca.pem", "-no-CApath", "-no-CAstore",
+          "-tls1_3", "-ciphersuites", "TLS_AES_256_GCM_SHA384", "-brief", "-no_ign_eof", "-starttls", "mysql"),
     SSH: ("/tool/ssh-keyscan", "-4", "-T", "2", "-p", "8080", "-t", "rsa", "127.0.0.1"),
     LDAP: ("/tool/ldapsearch", "-x", "-LLL", "-P", "3", "-H", "ldap://127.0.0.1:8080",
            "-s", "base", "-b", "", "-a", "never", "-l", "2", "-z", "1",
@@ -202,7 +215,7 @@ def _compiled(tool_id):
         return "compiled:kerbrute-principals", "/tool/data/principals.txt", KERBRUTE_PRINCIPALS
     if tool_id == NMAP_SERVICE:
         return "compiled:nmap-service-services", "/tool/data/nmap-services", NMAP_SERVICE_SERVICES
-    if tool_id == OPENSSL:
+    if tool_id in (OPENSSL, POSTGRESQL_TLS, MYSQL_TLS):
         from .network_tools_fixture import CA_PEM
         return "compiled:fixture-ca", "/tool/data/fixture-ca.pem", CA_PEM
     if tool_id == DIG:

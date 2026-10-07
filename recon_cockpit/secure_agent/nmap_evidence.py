@@ -238,6 +238,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_name_not_found": "name_not_found",
                "dns_no_answer_observed": "no_answer_observed",
                "tls_handshake_verified": "handshake_verified",
+               "database_tls_verified": "database_tls_verified",
                "ssh_host_key_observed": "host_key_observed",
                "ldap_rootdse_observed": "rootdse_observed",
                "ldap_empty_rootdse_observed": "empty_rootdse_observed",
@@ -371,6 +372,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
             ]
+        if manifest["fixture_case"].startswith(("postgresql-tls-", "mysql-tls-")):
+            report["limitations"] = [
+                "This single-action database TLS trial uses a disconnected synthetic owned fixture, not a real database engagement or live-model evaluation.",
+                "OpenSSL sends only the fixed PostgreSQL SSLRequest or MySQL SSLRequest after a public synthetic greeting, then negotiates one verified TLS 1.3 handshake and closes without database application data.",
+                "The selected wire profile and public fixture CA/hostname verification do not establish database product/version, readiness, authenticated access or a vulnerability.",
+                "No database username, password, startup/login message, SQL, authentication plugin or plaintext downgrade is permitted. Refused, untrusted, incomplete and malformed handshakes remain inconclusive.",
+                "The installed OpenSSL MySQL preface reader may reject fragmented greetings. Unsupported native diagnostic formats fail closed; this is not universal database compatibility or an exhaustive TLS assessment.",
+                "Counters record completed TLS plus clean closure without application data on at most one TCP connection. Bounded raw channels are independently replayed; inspection restores no approval or authority.",
+            ]
         if manifest["fixture_case"].startswith(("redis-", "snmp-")):
             report["limitations"] = [
                 "This single-action metadata trial uses a disconnected synthetic fixture, not a professional engagement or real-model evaluation.",
@@ -488,6 +498,12 @@ def _markdown(report):
                           "| Answer | TTL |", "| --- | --- |"])
             for row in details["answers"]:
                 lines.append("| `" + row["address"] + "` | " + str(row["ttl"]) + " |")
+        elif type(details) is dict and details.get("kind") == "database_tls_handshake":
+            lines.extend(["", "## Database TLS handshake", "",
+                "Verified TLS under the selected wire profile and public fixture CA; no database login, readiness or product identity is established.",
+                "", "| Check | Observation |", "| --- | --- |"])
+            for field in ("service", "protocol", "cipher", "verification", "peer_name", "authenticated_database_session"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
         elif type(details) is dict and details.get("kind") == "tls_handshake":
             lines.extend(["", "## TLS observation", "", "| Check | Observation |", "| --- | --- |"])
             for field in ("protocol", "cipher", "verification", "peer_name"):

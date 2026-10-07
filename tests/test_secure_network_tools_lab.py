@@ -38,6 +38,14 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     if case.startswith("dig-"):
         assert definition["response_sha256"] == hashlib.sha256(fixture.dns_response(case, fixture.dns_query())).hexdigest()
         assert definition["request_count_means"] == "validated_dns_questions"
+    elif case in fixture.DATABASE_TLS_CASES:
+        certificate = tls.UNTRUSTED_SERVER_CERT_PEM if case.endswith("-untrusted") else tls.SERVER_CERT_PEM
+        assert definition["certificate_sha256"] == hashlib.sha256(certificate).hexdigest()
+        assert definition["ca_sha256"] == hashlib.sha256(fixture.CA_PEM).hexdigest()
+        assert definition["request_count_means"] == "server_completed_tls_handshake_and_clean_close_notify"
+        assert definition["application_payloads"] == "none"
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert all(definition[key] is False for key in ("authentication", "credentials", "database_selection", "sql", "backend"))
     elif case.startswith("openssl-"):
         certificate = tls.UNTRUSTED_SERVER_CERT_PEM if case == "openssl-untrusted" else tls.SERVER_CERT_PEM
         assert definition["certificate_sha256"] == hashlib.sha256(certificate).hexdigest()

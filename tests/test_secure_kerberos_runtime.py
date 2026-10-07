@@ -18,7 +18,7 @@ from test_secure_network_tools_runtime import manifest
 def test_accepted_b1_through_b7_runtime_profiles_remain_exact():
     values = {tool: [exe, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
                     [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-              for tool, exe in runtime.EXECUTABLES.items() if tool not in (runtime.KERBRUTE, runtime.REDIS, runtime.SNMP)}
+              for tool, exe in runtime.EXECUTABLES.items() if tool not in (runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS)}
     values["old_nmap"] = nmap_runtime.FIXED_ARGV
     assert len(values) == 14
     assert hashlib.sha256(json.dumps(values, sort_keys=True, separators=(",", ":")).encode()).hexdigest() == (

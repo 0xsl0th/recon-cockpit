@@ -44,11 +44,17 @@ four-action disconnected HTTP/SSH fixtures and requires fresh approval for every
 action in the [isolated review window](docs/graphical-approvals.md). Dry runs execute
 no tools. Both modes replay saved evidence before displaying final usefulness.
 PR #53's reviewer correction and personal walkthrough are merged and accepted;
-the desktop Execute integration is accepted in PR #54. The current
-[review slice](docs/roadmap.md) adds [Redis and SNMP metadata](docs/redis-snmp-tools.md)
-through the secure CLI path: two bounded profiles with fixed owned fixtures.
-The candidate catalog has 25 profiles from 13 programs; accepted main has 23/11
-until that batch is reviewed and merged.
+the desktop Execute integration is accepted in PR #54.
+[Redis and SNMP metadata](docs/redis-snmp-tools.md) are accepted in
+[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55), bringing accepted main
+to 25 bounded profiles using 13 external programs. The current
+[review slice](docs/database-tls-tools.md) adds PostgreSQL and MySQL pre-authentication
+TLS handshakes through the existing OpenSSL integration and secure CLI path.
+This candidate has 27 profiles using the same 13 programs, pending review and
+merge. Local validation passed 10,776 portable and 28 native Linux tests; both
+ordinary database TLS tasks completed and all 24 forbidden-destination witnesses
+blocked. The result establishes a verified fixture TLS handshake; it makes no
+database login, SQL query, readiness or product-identity claim.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

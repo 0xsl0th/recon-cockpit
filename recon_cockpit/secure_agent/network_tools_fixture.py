@@ -33,7 +33,9 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("kerberos-", "kerbrute_userenum_v1"),
+    for prefix, tool in (("postgresql-tls-", "postgresql_tls_handshake_v1"),
+                         ("mysql-tls-", "mysql_tls_handshake_v1"),
+                         ("kerberos-", "kerbrute_userenum_v1"),
                          ("nmap-service-", "nmap_service_identify_v1"),
                          ("docker-ping-", "curl_docker_ping_v1"),
                          ("docker-version-", "curl_docker_version_v1"),
@@ -330,3 +332,49 @@ def snmp_response(case, request_id=b"\x01"):
     if len(result) > SNMP_MAX_RESPONSE_BYTES:
         raise ValueError("snmp_fixture_response_limit")
     return result
+
+
+# Database STARTTLS probes exchange only fixed public negotiation bytes, then
+# TLS. There is no StartupMessage, HandshakeResponse, login or SQL operation.
+DATABASE_TLS_CASES = tuple(prefix + suffix for prefix in ("postgresql-tls-", "mysql-tls-")
+    for suffix in ("ok", "untrusted", "refused", "malformed", "stalled", "injected"))
+DATABASE_TLS_SUCCESS_CASES = ("postgresql-tls-ok", "mysql-tls-ok", "mysql-tls-injected")
+CASES += DATABASE_TLS_CASES
+VARIANTS = CASES
+POSTGRESQL_SSL_REQUEST = bytes.fromhex("0000000804d2162f")
+MYSQL_SSL_REQUEST = bytes.fromhex("2000000185ae7f0000000001210000000000000000000000000000000000000000000000")
+MYSQL_PUBLIC_VERSION = "8.0.36"
+DATABASE_TLS_MAX_PREFACE_BYTES = 256
+
+
+def mysql_tls_greeting(*, version=MYSQL_PUBLIC_VERSION, tls=True):
+    if (type(version) is not str or not 1 <= len(version) <= 96
+            or any(not 32 <= ord(character) <= 126 for character in version) or type(tls) is not bool):
+        raise ValueError("invalid_mysql_fixture_greeting")
+    body = (b"\x0a" + version.encode("ascii") + b"\0" + struct.pack("<I", 1)
+            + b"syntheti\0" + struct.pack("<H", 0x8a00 if tls else 0x8200)
+            + b"\x21" + struct.pack("<H", 2) + struct.pack("<H", 8) + b"\x15"
+            + bytes(10) + b"c-salt-12345\0" + b"mysql_native_password\0")
+    result = len(body).to_bytes(3, "little") + b"\0" + body
+    if len(result) > DATABASE_TLS_MAX_PREFACE_BYTES:
+        raise ValueError("mysql_fixture_greeting_limit")
+    return result
+
+
+def database_tls_server_preface(case):
+    if type(case) is not str or case not in DATABASE_TLS_CASES:
+        raise ValueError("invalid_database_tls_fixture_case")
+    if case.startswith("postgresql-"):
+        if case.endswith("-stalled"):
+            return None
+        if case.endswith("-refused"):
+            return b"N"
+        if case.endswith("-malformed"):
+            return b"?"
+        if case.endswith("-injected"):
+            return b"S" + HOSTILE_NOTE.encode("ascii")
+        return b"S"
+    if case.endswith("-malformed"):
+        return b"\xff\xff\xff\0\x09invalid"
+    return mysql_tls_greeting(version=HOSTILE_NOTE if case.endswith("-injected") else MYSQL_PUBLIC_VERSION,
+                              tls=not case.endswith("-refused"))

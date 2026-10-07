@@ -21,6 +21,34 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith(("postgresql-tls-", "mysql-tls-")):
+        from . import network_tools_fixture as fixture
+        postgres = case.startswith("postgresql-tls-")
+        response = fixture.database_tls_server_preface(case)
+        request = fixture.POSTGRESQL_SSL_REQUEST if postgres else fixture.MYSQL_SSL_REQUEST
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-database-tls-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080,
+                "protocol": "postgresql_starttls" if postgres else "mysql_starttls"}],
+            "query_sha256": hashlib.sha256(request).hexdigest(),
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "tls_name": TLS_NAME, "tls_protocol": "TLSv1.3",
+            "ca_sha256": hashlib.sha256(CA_PEM).hexdigest(),
+            "certificate_sha256": UNTRUSTED_SERVER_CERT_SHA256 if case.endswith("-untrusted") else SERVER_CERT_SHA256,
+            "negotiation": "fixed_postgresql_ssl_request" if postgres else "fixed_mysql_ssl_request",
+            "server_version_is_untrusted": not postgres,
+            "behavior": "stall_before_tls" if case.endswith("-stalled") else "tls_refused"
+                if case.endswith("-refused") else "malformed_preface" if case.endswith("-malformed")
+                else "hostile_preface" if case.endswith("-injected") else "tls_handshake",
+            "max_preface_bytes": fixture.DATABASE_TLS_MAX_PREFACE_BYTES,
+            "max_connections": 1, "max_requests": 1,
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "server_completed_tls_handshake_and_clean_close_notify",
+            "application_payloads": "none", "authentication": False, "credentials": False,
+            "database_selection": False, "sql": False, "backend": False,
+            "connection_evidence": "accepted_connections_lower_bound"}
     if case.startswith(("redis-", "snmp-")):
         from . import network_tools_fixture as fixture
         redis = case.startswith("redis-")

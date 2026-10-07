@@ -1,8 +1,10 @@
 # Owned Redis and SNMP metadata
 
 C1 adds two bounded profiles to the secure execution path: Redis server metadata
-and SNMP system metadata over TCP. This is a new candidate slice after the closed
-B0–B8 coverage milestone; review and final acceptance are pending. It reuses
+and SNMP system metadata over TCP. C1 is accepted in
+[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55), merged as `9786a6b`
+after review and all five final checks; all five post-merge checks also passed.
+The closed B0–B8 coverage milestone remains closed. C1 reuses
 policy, fresh approval, launch admission, isolated audit, native confinement,
 networkless parsing and private evidence replay. Existing accepted profiles
 retain their identities, parameters and limits.
@@ -134,8 +136,8 @@ do not protect against an owner consistently replacing every artifact.
 
 ## Verification gate
 
-Before acceptance, the normal Redis report, normal SNMP report and complete
-SNMP missing-object report must complete 3/3, with zero unnecessary refusals.
+C1's accepted gate requires the normal Redis report, normal SNMP report and
+complete SNMP missing-object report to complete 3/3, with zero unnecessary refusals.
 Every scenario must preserve its declared result meaning, at most one accepted
 connection/query, bounded output, independent replay and closed lab. Forbidden
 IP/port witnesses must have zero unauthorized destination successes; the UDP
@@ -146,7 +148,7 @@ Local validation passed 10,413 portable and 63 native Linux tests. The ordinary
 reporting tasks completed 3/3 with zero unnecessary refusals; all 16 scenarios
 replayed unchanged and all 32 forbidden IP/port witnesses blocked. Full receipts
 are recorded in the [verification record](verification.md#c1-redis-and-snmp-secure-metadata--7-october-2026).
-Review, hosted checks and merge remain the final acceptance gate.
+Review, all five final/post-merge hosted checks and merge completed the acceptance gate in PR #55.
 Automated grants are synthetic test instrumentation, not personal acceptance.
 Report descriptive elapsed time, useful completion/refusals and zero provider
 calls/cost; comparative overhead remains deferred.

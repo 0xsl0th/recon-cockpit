@@ -122,24 +122,49 @@ Model credentials, paid calls and live evaluation remain much later.
 
 ## Successive product coverage batches
 
-Priority 3 follows the accepted initial GUI. Accepted main has **23 bounded profiles
-from 11 external programs** (the original 20 plus three configurable profiles).
-Installed binaries and interactive commands do not satisfy secure coverage.
+Priority 3 follows the accepted initial GUI. Accepted main has **25 bounded profiles
+from 13 external programs** after C1 in PR #55. Installed binaries and interactive
+commands do not satisfy secure coverage. The following rows distinguish existing
+integration from a candidate secure profile.
 
 | Order | Capability gap and present support | Completion criteria | Status |
 | --- | --- | --- | --- |
-| C1 | Redis server metadata; installed redis-cli, no interactive or secure integration at main baseline | One RESP2 INFO server, four selected typed metadata fields, no auth/key access/writes/cluster follow-up; useful native result, denied/empty/malformed/oversized/stalled/redirect cases, replay and all G1–G6 gates. | Implemented candidate; review/merge pending. |
-| C1 | SNMP system metadata; installed snmpget, no interactive or secure integration at main baseline | One v2c TCP GetRequest of three fixed system OIDs with public synthetic community; complete typed values/noSuchObject, no walks/writes/UDP/custom community; useful native result and error/hostile/bounded-output cases, replay and G1–G6. | Implemented candidate; review/merge pending. |
-| C2 — next | PostgreSQL/MySQL service readiness or handshake metadata; clients installed, no secure integration | Review minimal unauthenticated wire operation and runtime first; distinct readiness/error semantics, no SQL/login/secrets; then real owned fixture execution, structured results, evidence and G1–G6. | Planned; no execution capability claimed. |
-| Later | Broader Windows/AD, authenticated SSH/LDAP/SMB and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
+| C1 | Redis server metadata; redis-cli, no interactive menu integration | One RESP2 INFO server, four selected typed fields, no authentication/key access/writes/cluster follow-up; actual useful execution, error/hostile/bounded-output cases, replay and G1–G6. | [x] Accepted in PR #55. |
+| C1 | SNMP system metadata; snmpget, no interactive menu integration | One v2c TCP GetRequest of three fixed system OIDs with public synthetic community; complete typed values/noSuchObject, no walks/writes/UDP/custom community; actual useful execution, adversarial cases, replay and G1–G6. | [x] Accepted in PR #55. |
+| C2 — current | PostgreSQL pre-authentication TLS; existing secure OpenSSL runtime, no interactive database integration | One fixed SSLRequest followed by fixture-CA/name-verified TLS 1.3 and clean close without application data; structured handshake-only evidence, refusal/untrusted/malformed/stalled/injected cases, replay and G1–G6. No startup/login/SQL/readiness claim. | Actual owned execution and replay passed; review/merge pending. |
+| C2 — current | MySQL pre-authentication TLS; same existing OpenSSL runtime, no interactive database integration | Read one bounded initial greeting, send fixed SSLRequest, verify TLS 1.3 and close without application data; hostile greeting version remains inert, no account/auth-plugin/login/SQL operation; honest fragmented-greeting limitation, replay and G1–G6. | Actual owned execution and replay passed; review/merge pending. |
+| C3 — next | HTTP application fingerprinting; WhatWeb installed, no interactive or secure integration | Review a finite allowlisted plugin set, runtime dependencies and one-origin request bounds first; then actual useful owned execution, structured untrusted observations, hostile/redirect cases, evidence and G1–G6. Missing prerequisites or unbounded defaults must fail closed. | Planned; no execution capability claimed. |
+| Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 
-C1 is a small protocol-family batch; both binaries are already available, and it
-reuses the single-action authority, lab, parser and evidence infrastructure.
-SNMP over TCP intentionally matches the existing transport boundary; it does not
-claim the common UDP deployment mode. The candidate catalog grows to **25 profiles
-from 13 programs**, pending acceptance. Neither profile is a GUI workflow or
-permission for a real endpoint. Metadata is explicitly `untrusted_service_report`.
+C1 is closed: its Redis/SNMP metadata remains `untrusted_service_report`, and
+TCP SNMP does not establish UDP coverage. C2 reuses the existing single-action
+authority, OpenSSL runtime, strict TLS parser and evidence infrastructure. It adds
+two profiles, bringing the candidate to **27 profiles from the same 13 programs**,
+pending acceptance. The selected database wire protocol is a contract binding;
+`verified_tls_handshake_only` with `authenticated_database_session: false` does not
+establish database product identity, version, readiness or account access. No
+username, password, database startup/login, SQL, dynamic authentication plugin or
+plaintext downgrade is allowed. C2 adds no GUI workflow or real-network attachment.
+
+The [C2 runbook](database-tls-tools.md) defines 12 scenarios: six per profile.
+The ordinary PostgreSQL/MySQL handshakes must complete 2/2, and the hostile MySQL
+greeting must preserve successful TLS completion without acting on its text.
+All refused, untrusted, malformed, stalled and hostile PostgreSQL replies remain
+inconclusive. Record these utility and robustness outcomes separately; blocking
+everything cannot satisfy G2. MySQL greeting fragmentation can produce an
+inconclusive result with the pinned client's initial read; retain that limitation
+without adding retries, another client or broader wire authority.
+
+C2 local validation passed **10,776 portable and 28 native Linux tests** (24 C2,
+four accepted OpenSSL regressions), with no selected failures/errors/skips. The
+12 scenarios completed 2/2 ordinary tasks with zero unnecessary refusals and 1/1
+separate hostile-MySQL task, blocked 24/24 forbidden destinations, passed all
+120 native boundary fields and replayed unchanged. A separate clean-source run
+repeated those three useful trials, blocked 6/6 destinations and replayed all
+33 accepted bundles unchanged through CLI and shared inspection. Provider calls
+and cost stayed zero. Review, hosted checks and merge remain open G6 items; C2
+is not yet counted as accepted main coverage. See the [verification record](verification.md).
 
 Each batch records useful completion and unnecessary refusals as well as blocked
 unauthorized attempts, request counts, elapsed time and zero provider cost. A normal

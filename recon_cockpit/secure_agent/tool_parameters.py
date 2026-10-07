@@ -219,3 +219,13 @@ class RedisServerInfoParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class SNMPSystemGetParameters(TCPParameters):
     """Bounds for one fixed TCP system GET with a public synthetic community."""
+
+
+@dataclass(frozen=True, slots=True)
+class PostgreSQLTLSParameters(TCPParameters):
+    """Fixed PostgreSQL pre-auth TLS negotiation parameters."""
+
+
+@dataclass(frozen=True, slots=True)
+class MySQLTLSParameters(TCPParameters):
+    """Fixed MySQL pre-auth TLS negotiation parameters."""

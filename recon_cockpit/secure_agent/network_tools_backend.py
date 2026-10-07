@@ -19,7 +19,8 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
     supported_tools = ("dig_dns_query_v1", "openssl_tls_handshake_v1", "ssh_host_keys_v1", "ldap_rootdse_v1", "smb_share_list_v1",
                        "rpcinfo_dump_v1", "showmount_exports_v1", "curl_ftp_list_v1", "curl_smtp_capabilities_v1",
                        "curl_docker_ping_v1", "curl_docker_version_v1", "curl_winrm_metadata_v1", "nmap_service_identify_v1", "kerbrute_userenum_v1",
-                       "redis_server_info_v1", "snmp_system_get_v1")
+                       "redis_server_info_v1", "snmp_system_get_v1",
+                       "postgresql_tls_handshake_v1", "mysql_tls_handshake_v1")
     launch_mode = _envelope_mode = "owned_network_tools_lab"
     _executor_mode = "network_tools_owned"
     _closure = None
@@ -95,8 +96,12 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
             connections = minimum * (2 if self._lab_identity["scenario"].startswith(("ftp-", "nmap-service-")) else 1)
             counts = self.lab.snapshot(control, minimum_connections=connections, minimum_requests=minimum)
             context = validate_context({"identity": self._lab_identity, **counts}, self._lab_identity)
+            from .network_tools_fixture import DATABASE_TLS_CASES, DATABASE_TLS_SUCCESS_CASES
             if (context["request_count"] > expected
                     or (result["tool_observation"] is not None and context["request_count"] != expected)
+                    or (self._lab_identity["scenario"] in DATABASE_TLS_CASES
+                        and self._lab_identity["scenario"] not in DATABASE_TLS_SUCCESS_CASES
+                        and context["request_count"] != 0)
                     or (self._lab_identity["scenario"] in {"openssl-untrusted", "openssl-malformed", "openssl-stalled",
                                                           "ssh-malformed", "ssh-stalled", "ftp-denied",
                                                           "ftp-passive-ip", "ftp-passive-port"}

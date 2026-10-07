@@ -20,6 +20,7 @@ if __package__:
     from . import network_tools_nmap_fixture as nmap_service_fixture
     from . import network_tools_kerberos_fixture as kerberos_fixture
     from . import network_tools_redis_snmp_fixture as redis_snmp_fixture
+    from . import network_tools_database_tls_fixture as database_tls_fixture
 else:
     def _load(name, filename):
         spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -37,6 +38,7 @@ else:
     nmap_service_fixture = _load("network_tools_fixed_nmap_service", "network_tools_nmap_fixture.py")
     kerberos_fixture = _load("network_tools_fixed_kerberos", "network_tools_kerberos_fixture.py")
     redis_snmp_fixture = _load("network_tools_fixed_redis_snmp", "network_tools_redis_snmp_fixture.py")
+    database_tls_fixture = _load("network_tools_fixed_database_tls", "network_tools_database_tls_fixture.py")
 
 
 def read_request(source):
@@ -53,10 +55,12 @@ def read_request(source):
 
 
 def tls_context(case):
-    if fixture.tool_for_case(case) != "openssl_tls_handshake_v1":
+    if (fixture.tool_for_case(case) != "openssl_tls_handshake_v1"
+            and case not in fixture.DATABASE_TLS_CASES):
         raise ValueError("invalid_network_tools_tls_case")
-    cert = tls_material.UNTRUSTED_SERVER_CERT_PEM if case == "openssl-untrusted" else tls_material.SERVER_CERT_PEM
-    expected = fixture.UNTRUSTED_SERVER_CERT_SHA256 if case == "openssl-untrusted" else fixture.SERVER_CERT_SHA256
+    untrusted = case == "openssl-untrusted" or case in ("postgresql-tls-untrusted", "mysql-tls-untrusted")
+    cert = tls_material.UNTRUSTED_SERVER_CERT_PEM if untrusted else tls_material.SERVER_CERT_PEM
+    expected = fixture.UNTRUSTED_SERVER_CERT_SHA256 if untrusted else fixture.SERVER_CERT_SHA256
     if hashlib.sha256(cert).hexdigest() != expected:
         raise ValueError("network_tools_tls_certificate_mismatch")
     descriptors = []
@@ -177,7 +181,8 @@ def _ldap_entry(case):
 class NetworkToolsService(owner.Service):
     def __init__(self, request, listener):
         self.deadline = request["deadline"]
-        self.context = tls_context(request["case"]) if request["case"].startswith("openssl-") else None
+        self.context = (tls_context(request["case"]) if request["case"].startswith("openssl-")
+                        or request["case"] in fixture.DATABASE_TLS_CASES else None)
         self.rpc = (rpc_fixture.Exchange(request["case"], self._smb_enumerated)
                     if request["case"].startswith(("rpc-", "nfs-")) else None)
         self.kerberos = (kerberos_fixture.Exchange(request["case"], self._smb_enumerated)
@@ -244,7 +249,8 @@ class NetworkToolsService(owner.Service):
                 if self.case.startswith("nmap-service-") and self.requests >= 1:
                     raw.close()
                     raise RuntimeError("nmap_service_fixture_request_limit")
-                if self.case.startswith(("ftp-", "smtp-", "docker-ping-", "docker-version-", "winrm-", "redis-", "snmp-")) and self.connections:
+                if self.case.startswith(("ftp-", "smtp-", "docker-ping-", "docker-version-", "winrm-", "redis-", "snmp-",
+                                         "postgresql-tls-", "mysql-tls-")) and self.connections:
                     raw.close()
                     raise RuntimeError("single_metadata_fixture_connection_limit")
                 with self.condition:
@@ -253,7 +259,10 @@ class NetworkToolsService(owner.Service):
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.case in fixture.REDIS_SNMP_CASES:
+                    if self.case in fixture.DATABASE_TLS_CASES:
+                        database_tls_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            context=self.context, on_request=self._smb_enumerated)
+                    elif self.case in fixture.REDIS_SNMP_CASES:
                         redis_snmp_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             on_request=self._smb_enumerated)
                     elif self.case.startswith("kerberos-"):

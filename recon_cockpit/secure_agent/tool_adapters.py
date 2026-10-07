@@ -17,6 +17,7 @@ from .tool_parameters import (
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters,
+    PostgreSQLTLSParameters, MySQLTLSParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -66,6 +67,8 @@ NMAP_SERVICE_TOOL_ID = "nmap_service_identify_v1"
 KERBRUTE_TOOL_ID = "kerbrute_userenum_v1"
 REDIS_TOOL_ID = "redis_server_info_v1"
 SNMP_TOOL_ID = "snmp_system_get_v1"
+POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
+MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
 CONFIGURABLE_NMAP_TOOL_ID = "configurable_nmap_service_v1"
 CONFIGURABLE_HEADERS_TOOL_ID = "configurable_http_headers_v1"
 CONFIGURABLE_SSH_TOOL_ID = "configurable_ssh_host_keys_v1"
@@ -85,6 +88,8 @@ NMAP_SERVICE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, 
 KERBRUTE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 REDIS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SNMP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+POSTGRESQL_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+MYSQL_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
@@ -195,6 +200,24 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
          "fixed_tls_name", "no_application_request"),
+    ),
+    POSTGRESQL_TLS_TOOL_ID: ToolAdapter(
+        POSTGRESQL_TLS_TOOL_ID, PostgreSQLTLSParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_postgresql_tls_handshake", "owned-postgresql-tls-v1",
+        "bounded-postgresql-tls-result-v1", "postgresql-tls-brief-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
+         "fixed_tls_name", "fixed_database_tls_preface", "no_database_login",
+         "no_sql", "no_plaintext_downgrade", "no_application_request"),
+    ),
+    MYSQL_TLS_TOOL_ID: ToolAdapter(
+        MYSQL_TLS_TOOL_ID, MySQLTLSParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_mysql_tls_handshake", "owned-mysql-tls-v1",
+        "bounded-mysql-tls-result-v1", "mysql-tls-brief-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
+         "fixed_tls_name", "fixed_database_tls_preface", "no_database_login",
+         "no_sql", "no_plaintext_downgrade", "no_application_request"),
     ),
     SSH_TOOL_ID: ToolAdapter(
         SSH_TOOL_ID, SSHHostKeysParameters, ("port", "timeout_seconds", "max_output_bytes"),
