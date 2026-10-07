@@ -16,7 +16,8 @@ from .tool_parameters import (
     OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
-    KerbruteUserenumParameters, NmapTCPParameters, TCPParameters, _fields, _reject,
+    KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters,
+    NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
 
@@ -63,6 +64,8 @@ DOCKER_VERSION_TOOL_ID = "curl_docker_version_v1"
 WINRM_TOOL_ID = "curl_winrm_metadata_v1"
 NMAP_SERVICE_TOOL_ID = "nmap_service_identify_v1"
 KERBRUTE_TOOL_ID = "kerbrute_userenum_v1"
+REDIS_TOOL_ID = "redis_server_info_v1"
+SNMP_TOOL_ID = "snmp_system_get_v1"
 CONFIGURABLE_NMAP_TOOL_ID = "configurable_nmap_service_v1"
 CONFIGURABLE_HEADERS_TOOL_ID = "configurable_http_headers_v1"
 CONFIGURABLE_SSH_TOOL_ID = "configurable_ssh_host_keys_v1"
@@ -80,6 +83,8 @@ DOCKER_VERSION_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5
 WINRM_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NMAP_SERVICE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 KERBRUTE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+REDIS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+SNMP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
@@ -264,6 +269,24 @@ ADAPTERS = MappingProxyType({
          "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
          "fixed_metadata_get_only", "no_authentication", "no_redirect_following",
          "no_daemon_or_wsman_operations", "no_followup_to_metadata"),
+    ),
+    REDIS_TOOL_ID: ToolAdapter(
+        REDIS_TOOL_ID, RedisServerInfoParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_redis_server_metadata", "owned-redis-server-info-v1",
+        "bounded-redis-server-info-result-v1", "redis-info-server-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
+         "single_info_server", "no_authentication", "no_key_access",
+         "no_cluster_redirects", "no_followup_to_metadata"),
+    ),
+    SNMP_TOOL_ID: ToolAdapter(
+        SNMP_TOOL_ID, SNMPSystemGetParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_snmp_system_metadata", "owned-snmp-system-get-v1",
+        "bounded-snmp-system-get-result-v1", "snmp-system-text-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
+         "single_fixed_scalar_get", "public_synthetic_community", "no_walk_or_set",
+         "no_mib_or_host_config", "no_udp", "no_followup_to_metadata"),
     ),
     KERBRUTE_TOOL_ID: ToolAdapter(
         KERBRUTE_TOOL_ID, KerbruteUserenumParameters, ("port", "timeout_seconds", "max_output_bytes"),

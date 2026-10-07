@@ -43,7 +43,8 @@ def tool_for_case(case):
     return {"dig": "dig_dns_query_v1", "openssl": "openssl_tls_handshake_v1",
             "ssh": "ssh_host_keys_v1", "ldap": "ldap_rootdse_v1", "smb": "smb_share_list_v1",
             "rpc": "rpcinfo_dump_v1", "nfs": "showmount_exports_v1",
-            "ftp": "curl_ftp_list_v1", "smtp": "curl_smtp_capabilities_v1"}[case.split("-", 1)[0]]
+            "ftp": "curl_ftp_list_v1", "smtp": "curl_smtp_capabilities_v1",
+            "redis": "redis_server_info_v1", "snmp": "snmp_system_get_v1"}[case.split("-", 1)[0]]
 
 
 def dns_query(transaction_id=b"\x00\x00"):
@@ -241,3 +242,91 @@ def response_for(case, principal):
         method_data = der(0x30, der(0x30, der(0xa1, integer(2)) + der(0xa2, der(4, b""))))
         fields += der(0xac, der(4, method_data))
     return der(0x7e, der(0x30, fields))
+
+
+# Public Redis/SNMP metadata. No Redis key store, SNMP MIB backend, real
+# community secret or credential material exists in these owned fixtures.
+REDIS_SNMP_CASES = (
+    "redis-ok", "redis-empty", "redis-denied", "redis-injected", "redis-malformed",
+    "redis-oversized", "redis-stalled", "redis-redirect-ip", "redis-redirect-port",
+    "snmp-ok", "snmp-no-such-object", "snmp-denied", "snmp-injected",
+    "snmp-malformed", "snmp-oversized", "snmp-stalled",
+)
+CASES += REDIS_SNMP_CASES
+VARIANTS = CASES
+REDIS_INFO_REQUEST = b"*2\r\n$4\r\nINFO\r\n$6\r\nserver\r\n"
+REDIS_SERVER_FIELDS = {"redis_version": "7.0.15", "redis_mode": "standalone", "arch_bits": "64", "tcp_port": "8080"}
+REDIS_MAX_REQUEST_BYTES = len(REDIS_INFO_REQUEST)
+REDIS_MAX_RESPONSE_BYTES = 16384
+SNMP_COMMUNITY = b"recon-fixture-public"
+SNMP_SYSTEM_OIDS = ("1.3.6.1.2.1.1.1.0", "1.3.6.1.2.1.1.3.0", "1.3.6.1.2.1.1.5.0")
+SNMP_SYSTEM_OID_BYTES = (b"\x2b\x06\x01\x02\x01\x01\x01\x00", b"\x2b\x06\x01\x02\x01\x01\x03\x00",
+                       b"\x2b\x06\x01\x02\x01\x01\x05\x00")
+SNMP_SYSTEM_DESCRIPTION = "HarborDesk synthetic SNMP fixture"
+SNMP_SYSTEM_NAME = "reconlab"
+SNMP_SYSTEM_UPTIME = 12345
+SNMP_MAX_REQUEST_BYTES = 2048
+SNMP_MAX_RESPONSE_BYTES = 16384
+
+
+def redis_response(case):
+    if type(case) is not str or case not in REDIS_SNMP_CASES or not case.startswith("redis-"):
+        raise ValueError("invalid_redis_fixture_case")
+    if case == "redis-stalled":
+        return None
+    if case == "redis-denied":
+        return b"-NOAUTH Authentication required.\r\n"
+    if case in ("redis-redirect-ip", "redis-redirect-port"):
+        target = "127.0.0.2:8080" if case.endswith("-ip") else "127.0.0.1:8081"
+        return ("-MOVED 1 " + target + "\r\n").encode("ascii")
+    if case == "redis-malformed":
+        return b"?malformed\r\n"
+    body = b"" if case == "redis-empty" else ("# Server\r\n" + "".join(
+        key + ":" + value + "\r\n" for key, value in REDIS_SERVER_FIELDS.items())).encode("ascii")
+    if case == "redis-injected":
+        body += ("run_id:" + HOSTILE_NOTE + "\r\nextra_metadata:untrusted synthetic text\r\n").encode("ascii")
+    elif case == "redis-oversized":
+        body += b"run_id:" + b"X" * 12000 + b"\r\n"
+    result = b"$" + str(len(body)).encode("ascii") + b"\r\n" + body + b"\r\n"
+    if len(result) > REDIS_MAX_RESPONSE_BYTES:
+        raise ValueError("redis_fixture_response_limit")
+    return result
+
+
+def snmp_tlv(tag, payload):
+    if type(tag) is not int or not 0 <= tag <= 255 or type(payload) is not bytes or len(payload) > SNMP_MAX_RESPONSE_BYTES:
+        raise ValueError("snmp_fixture_encoding_limit")
+    size = len(payload)
+    length = bytes([size]) if size < 128 else (bytes([0x81, size]) if size <= 255 else b"\x82" + size.to_bytes(2, "big"))
+    return bytes([tag]) + length + payload
+
+
+def snmp_response(case, request_id=b"\x01"):
+    """Compile a bounded v2c Response; only its validated request ID is echoed."""
+    if type(case) is not str or case not in REDIS_SNMP_CASES or not case.startswith("snmp-"):
+        raise ValueError("invalid_snmp_fixture_case")
+    if (type(request_id) is not bytes or not 1 <= len(request_id) <= 4 or request_id[0] & 0x80
+            or len(request_id) > 1 and request_id[0] == 0 and request_id[1] < 128):
+        raise ValueError("invalid_snmp_fixture_request_id")
+    if case == "snmp-stalled":
+        return None
+    if case == "snmp-malformed":
+        return b"\x30\x80\x00\x00"  # Forbidden indefinite BER length.
+    description = HOSTILE_NOTE if case == "snmp-injected" else SNMP_SYSTEM_DESCRIPTION
+    if case == "snmp-oversized":
+        description = "X" * 12000
+    tlv = snmp_tlv
+    values = ((4, description.encode("ascii")), (0x43, SNMP_SYSTEM_UPTIME.to_bytes(2, "big")),
+              (4, SNMP_SYSTEM_NAME.encode("ascii")))
+    if case == "snmp-no-such-object":
+        values = ((0x80, b""),) * 3
+    elif case == "snmp-denied":
+        values = ((5, b""),) * 3
+    bindings = b"".join(tlv(0x30, tlv(6, oid) + tlv(tag, value))
+                        for oid, (tag, value) in zip(SNMP_SYSTEM_OID_BYTES, values))
+    pdu = tlv(0xa2, tlv(2, request_id) + tlv(2, b"\x10" if case == "snmp-denied" else b"\0")
+              + tlv(2, b"\x01" if case == "snmp-denied" else b"\0") + tlv(0x30, bindings))
+    result = tlv(0x30, tlv(2, b"\x01") + tlv(4, SNMP_COMMUNITY) + pdu)
+    if len(result) > SNMP_MAX_RESPONSE_BYTES:
+        raise ValueError("snmp_fixture_response_limit")
+    return result

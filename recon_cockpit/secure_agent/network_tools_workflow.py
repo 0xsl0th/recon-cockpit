@@ -11,10 +11,10 @@ from .http_headers_workflow import _uuid
 
 
 def card(case=None):
-    if case is not None and (type(case) is not str or case not in contract.B1_CASES + contract.B2_CASES + contract.B3_CASES + contract.B4_CASES + contract.B5_CASES + contract.B6_CASES + contract.B7_CASES + contract.B8_CASES):
+    if case is not None and (type(case) is not str or case not in contract.B1_CASES + contract.B2_CASES + contract.B3_CASES + contract.B4_CASES + contract.B5_CASES + contract.B6_CASES + contract.B7_CASES + contract.B8_CASES + contract.C1_CASES):
         raise ValueError("invalid_network_tools_case")
-    version = "8" if case in contract.B8_CASES else "7" if case in contract.B7_CASES else "6" if case in contract.B6_CASES else "5" if case in contract.B5_CASES else "4" if case in contract.B4_CASES else "3" if case in contract.B3_CASES else "2" if case in contract.B2_CASES else "1"
-    cases = contract.B8_CASES if version == "8" else contract.B7_CASES if version == "7" else contract.B6_CASES if version == "6" else contract.B5_CASES if version == "5" else contract.B4_CASES if version == "4" else contract.B3_CASES if version == "3" else contract.B2_CASES if version == "2" else contract.B1_CASES
+    version = "9" if case in contract.C1_CASES else "8" if case in contract.B8_CASES else "7" if case in contract.B7_CASES else "6" if case in contract.B6_CASES else "5" if case in contract.B5_CASES else "4" if case in contract.B4_CASES else "3" if case in contract.B3_CASES else "2" if case in contract.B2_CASES else "1"
+    cases = contract.C1_CASES if version == "9" else contract.B8_CASES if version == "8" else contract.B7_CASES if version == "7" else contract.B6_CASES if version == "6" else contract.B5_CASES if version == "5" else contract.B4_CASES if version == "4" else contract.B3_CASES if version == "3" else contract.B2_CASES if version == "2" else contract.B1_CASES
     return {
         "schema_version": "1", "workflow_id": contract.WORKFLOW, "workflow_version": version,
         "planning": "deterministic_offline_single_tool", "live_calls_enabled": False,

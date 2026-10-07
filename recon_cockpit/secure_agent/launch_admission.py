@@ -27,6 +27,11 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('redis-ok', 'redis-empty', 'redis-denied', 'redis-injected',
+                    'redis-malformed', 'redis-oversized', 'redis-stalled',
+                    'redis-redirect-ip', 'redis-redirect-port'), 'redis_server_info_v1'),
+    **dict.fromkeys(('snmp-ok', 'snmp-no-such-object', 'snmp-denied', 'snmp-injected',
+                    'snmp-malformed', 'snmp-oversized', 'snmp-stalled'), 'snmp_system_get_v1'),
     **dict.fromkeys(("kerberos-ok", "kerberos-empty", "kerberos-denied", "kerberos-injected",
                     "kerberos-spoof", "kerberos-malformed", "kerberos-stalled"), "kerbrute_userenum_v1"),
     **dict.fromkeys(('nmap-service-http', 'nmap-service-ssh', 'nmap-service-unknown',

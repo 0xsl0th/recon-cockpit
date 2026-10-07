@@ -4,8 +4,21 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: desktop Execute owned lab is implemented and locally validated;
-[PR #54](https://github.com/0xsl0th/recon-cockpit/pull/54) awaits review (priority 2c).**
+**Current work: priority 3 secure-tool coverage, C1 Redis/SNMP metadata.**
+The candidate is on `feature/redis-snmp-coverage`; review and merge remain pending.
+See the [successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
+and [C1 runbook](redis-snmp-tools.md). Private validation receipts are under
+`.secure-agent/redis-snmp-20261007/` in the primary checkout.
+
+**[PR #54](https://github.com/0xsl0th/recon-cockpit/pull/54) is merged and accepted.**
+Reviewed head `43321da97bb95e9950b21df1378b6e1113134518` merged as
+`7de63a4df066f5c31546e5e5307d36e621e4705d`; trees match
+`810434104c3d0405edbc7ac77dad6b809b5417cb`. Fresh review found no blockers;
+all five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37556480378)
+and [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37557111111)
+passed. The initial owned desktop milestone is closed. Preserve its 9,981 portable
+and 70 native Linux/Tk cases, private receipts and PR #53 personal acceptance;
+do not repeat the walkthrough or merge.
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -106,8 +119,8 @@ remain recorded separately. Receipts live in
 `.secure-agent/graphical-single-action-20261006/owner-controls-confirmation.json`.
 Automated tests do not substitute for this personal acceptance.
 
-The current branch is `feature/desktop-owned-execution` in
-`/tmp/recon-desktop-owned-execution`, based on `0539c15`. This slice adds a fixed
+The accepted desktop source was `feature/desktop-owned-execution` in
+`/tmp/recon-desktop-owned-execution`, based on `0539c15`. That slice added a fixed
 **Execute owned lab** controller operation and desktop control. It reuses the
 existing shared service with immutable scope, an approval-required policy,
 `graphical_v1` and the same disconnected HTTP/SSH fixtures and limits. The separate
@@ -132,20 +145,28 @@ desktop bundles replayed unchanged with closed fixtures/processes and zero provi
 calls/cost. Both themes passed at 1120×720. Independent source reviews found no
 remaining blockers. These are scripted tests, not new personal acceptance.
 
-**Current continuation:** review the separate implementation PR for
-`feature/desktop-owned-execution` and its latest hosted checks. Keep the GUI
-milestone pending that review; do not automatically merge subsequent work. Native
-bundles, screenshots and final JUnit receipts are private under
-`.secure-agent/gui-execution-20261007/`; `verification.json` records their hashes
-and source mapping. Preserve earlier failed
-native runs and interrupted portable runners separately; see the
-[verification record](verification.md#desktop-execute-owned-lab--7-october-2026).
+**Current continuation:** finish C1 validation and review its separate implementation
+PR. The candidate adds fixed unauthenticated Redis `INFO server` and SNMPv2c TCP
+GET of three system scalars, with a public synthetic fixture community, selected
+structured metadata and private replayable evidence. One connection/query per
+action; all seven gates, existing limits and fresh approval remain. C1 adds no
+GUI controls or real network routing. Normal metadata and explicit typed SNMP
+noSuchObject are useful results; Redis empty/error responses are inconclusive.
+Native execution, adversarial cases, enforcement and useful completion are tracked
+in the [verification record](verification.md), not inferred from descriptors or mocks.
 
-After this bounded GUI slice is accepted, return to priority 3 secure-tool coverage
-for internal networks with web services, selecting the next capability gap from
-the coverage inventory. Deeper composition, comparative benchmarking, credentials,
-paid calls and live-model evaluation stay deferred. Real network attachment needs
-separate authorization. Completed B0–B8, offline R5 and accepted local R6 remain closed.
+After C1 is accepted, the next priority is the SQL service metadata gap: bounded
+PostgreSQL/MySQL readiness or handshake profiles, beginning with protocol and
+installed-runtime review. Keep the batch small; no login, query, secret setup or
+real database access is implied. The candidate catalog has 25 profiles from 13
+programs; accepted main remains 23/11 until C1 review and merge. This is progress
+toward the 40+ tool product direction, not full professional pentest readiness.
+
+Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
+runs and interrupted portable runners. Deeper composition, comparative benchmarking,
+credentials, paid calls and live-model evaluation stay deferred. Real network
+attachment requires separate authorization. Completed B0–B8, offline R5 and
+accepted local R6 remain closed.
 
 Accepted validation receipts, screenshots and source hashes remain in
 `.secure-agent/graphical-approval-20261006/` in the primary checkout.

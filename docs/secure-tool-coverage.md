@@ -8,10 +8,10 @@ milestone; it does not certify general professional deployment. Completed offlin
 R5 and accepted local R6 also remain closed.
 
 The [read-only secure-tool catalog](secure-tool-catalog.md) is accepted in PR #46
-at `0d5cbdc`. The current follow-on is one separately versioned
-[Nmap service → ffuf → headers workflow](service-web-assessment.md), reusing three
-accepted capabilities in an owned lab. Optional tool expansion, broader workflow
-composition and comparative benchmarking remain later slices.
+at `0d5cbdc`. The later service/web workflow, configurable owned endpoints,
+shared service and initial owned GUI are accepted through PR #54. Current work
+returns to successive product-coverage batches below, without reopening B0–B8.
+Deeper workflow composition and comparative benchmarking remain deferred.
 
 [PR #38](https://github.com/0xsl0th/recon-cockpit/pull/38) accepted B1 DNS/TLS.
 [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39) merged as `79abaab` and
@@ -116,11 +116,35 @@ response-spoof scenario documents a vendor limitation: an unknown report is not
 proof that a principal is absent. It is neither verified negative discovery nor
 successful injection detection. No tool report expands execution authority.
 
-There is no hidden required B9 or automatic expansion to forty tools. The next
-slice makes these accepted profiles discoverable through the read-only catalog;
-it leaves authenticated tools, optional additions, deeper workflows and
-comparative benchmarks for separately reviewed work. Model credentials, paid
-calls and live evaluation remain much later.
+There is no hidden required B9 or automatic expansion to forty tools. The original
+milestone stays closed; separately scoped product batches use the same six gates.
+Model credentials, paid calls and live evaluation remain much later.
+
+## Successive product coverage batches
+
+Priority 3 follows the accepted initial GUI. Accepted main has **23 bounded profiles
+from 11 external programs** (the original 20 plus three configurable profiles).
+Installed binaries and interactive commands do not satisfy secure coverage.
+
+| Order | Capability gap and present support | Completion criteria | Status |
+| --- | --- | --- | --- |
+| C1 | Redis server metadata; installed redis-cli, no interactive or secure integration at main baseline | One RESP2 INFO server, four selected typed metadata fields, no auth/key access/writes/cluster follow-up; useful native result, denied/empty/malformed/oversized/stalled/redirect cases, replay and all G1–G6 gates. | Implemented candidate; review/merge pending. |
+| C1 | SNMP system metadata; installed snmpget, no interactive or secure integration at main baseline | One v2c TCP GetRequest of three fixed system OIDs with public synthetic community; complete typed values/noSuchObject, no walks/writes/UDP/custom community; useful native result and error/hostile/bounded-output cases, replay and G1–G6. | Implemented candidate; review/merge pending. |
+| C2 — next | PostgreSQL/MySQL service readiness or handshake metadata; clients installed, no secure integration | Review minimal unauthenticated wire operation and runtime first; distinct readiness/error semantics, no SQL/login/secrets; then real owned fixture execution, structured results, evidence and G1–G6. | Planned; no execution capability claimed. |
+| Later | Broader Windows/AD, authenticated SSH/LDAP/SMB and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
+| Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
+
+C1 is a small protocol-family batch; both binaries are already available, and it
+reuses the single-action authority, lab, parser and evidence infrastructure.
+SNMP over TCP intentionally matches the existing transport boundary; it does not
+claim the common UDP deployment mode. The candidate catalog grows to **25 profiles
+from 13 programs**, pending acceptance. Neither profile is a GUI workflow or
+permission for a real endpoint. Metadata is explicitly `untrusted_service_report`.
+
+Each batch records useful completion and unnecessary refusals as well as blocked
+unauthorized attempts, request counts, elapsed time and zero provider cost. A normal
+case blocked by confinement fails G2. Review the next remaining capability gap after
+each batch; do not grow dictionaries, workflows or benchmark scope to fill time.
 
 ## Completion gates for every required capability
 

@@ -47,6 +47,7 @@ NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_
     'network_tools_rpc_fixture', 'network_tools_ftp_smtp_fixture', 'network_tools_http_metadata_fixture',
     'network_tools_nmap_fixture', 'network_tools_nmap_parser',
     'network_tools_kerberos_fixture', 'network_tools_kerberos_parser',
+    'network_tools_redis_snmp_fixture', 'network_tools_redis_snmp_parser',
     'network_tools_lab_contract',
     'network_tools_contract', 'network_tools_runtime', 'network_tools_execution', 'network_tools_worker',
     'network_tools_parser', 'network_tools_parser_runtime', 'network_tools_parser_worker',

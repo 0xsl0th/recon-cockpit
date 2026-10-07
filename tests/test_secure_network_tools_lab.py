@@ -54,6 +54,17 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert definition["rpc"]["filesystem"] is False and definition["rpc"]["mount"] is False
         assert definition["topology"] == [{"target": "127.0.0.1", "port": 111, "protocol": "onc_rpc_tcp"}]
         assert definition["request_count_means"] == ("validated_portmapper_dumps" if case.startswith("rpc-") else "validated_mount_exports")
+    elif case in fixture.REDIS_SNMP_CASES:
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        if case.startswith("redis-"):
+            assert definition["redis"]["command"] == ["INFO", "server"]
+            assert all(definition["redis"][key] is False for key in ("keys", "authentication", "protocol_negotiation", "cluster_followup"))
+            assert definition["request_count_means"] == "validated_info_server_commands"
+        else:
+            assert definition["snmp"]["oids"] == list(fixture.SNMP_SYSTEM_OIDS)
+            assert definition["snmp"]["community_is_public_synthetic_data"] is True
+            assert all(definition["snmp"][key] is False for key in ("set", "getnext", "walk", "correction_requests", "retries", "udp"))
+            assert definition["request_count_means"] == "validated_fixed_system_get_requests"
     elif case.startswith("kerberos-"):
         assert definition["max_connections"] == definition["max_requests"] == 2
         assert definition["request_count_means"] == "validated_initial_as_req_messages"

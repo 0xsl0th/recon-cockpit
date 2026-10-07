@@ -23,12 +23,15 @@ DOCKER_VERSION_TOOL_ID = "curl_docker_version_v1"
 WINRM_TOOL_ID = "curl_winrm_metadata_v1"
 NMAP_SERVICE_TOOL_ID = "nmap_service_identify_v1"
 KERBRUTE_TOOL_ID = "kerbrute_userenum_v1"
+REDIS_TOOL_ID = "redis_server_info_v1"
+SNMP_TOOL_ID = "snmp_system_get_v1"
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
     FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1", DOCKER_PING_TOOL_ID: "curl-docker-ping-v1",
     DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1",
-    NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1"}
+    NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1",
+    REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -124,6 +127,8 @@ def validate_result(tool_id, value):
         return _nmap_service_parser().validate_result(value)
     if tool_id == KERBRUTE_TOOL_ID:
         return _kerberos_parser().validate_result(value)
+    if tool_id in (REDIS_TOOL_ID, SNMP_TOOL_ID):
+        return _redis_snmp_parser().validate_result(tool_id, value)
     if tool_id == DOCKER_PING_TOOL_ID:
         if (set(value) != {"parser_version", "kind", "status_code", "health"}
                 or value["kind"] != "docker_ping" or type(value["status_code"]) is not int
@@ -631,6 +636,22 @@ def _parse_kerbrute(output, stderr):
     return _kerberos_parser().parse_kerbrute_output(output)
 
 
+def _redis_snmp_parser():
+    if __package__:
+        from . import network_tools_redis_snmp_parser
+    else:
+        import network_tools_redis_snmp_parser
+    return network_tools_redis_snmp_parser
+
+
+def _parse_redis(output, stderr):
+    return _redis_snmp_parser().parse_redis_output(output, stderr)
+
+
+def _parse_snmp(output, stderr):
+    return _redis_snmp_parser().parse_snmp_output(output, stderr)
+
+
 def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=False):
     parser_version(tool_id)
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
@@ -641,4 +662,5 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             RPCINFO_TOOL_ID: _parse_rpcinfo, SHOWMOUNT_TOOL_ID: _parse_showmount,
             FTP_TOOL_ID: _parse_ftp, SMTP_TOOL_ID: _parse_smtp, DOCKER_PING_TOOL_ID: _parse_docker_ping,
             DOCKER_VERSION_TOOL_ID: _parse_docker_version, WINRM_TOOL_ID: _parse_winrm_metadata,
-            NMAP_SERVICE_TOOL_ID: _parse_nmap_service, KERBRUTE_TOOL_ID: _parse_kerbrute}[tool_id](output, stderr)
+            NMAP_SERVICE_TOOL_ID: _parse_nmap_service, KERBRUTE_TOOL_ID: _parse_kerbrute,
+            REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp}[tool_id](output, stderr)

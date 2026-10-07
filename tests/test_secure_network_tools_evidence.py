@@ -42,6 +42,11 @@ def manifest(tool):
 
 def transcript(case):
     from recon_cockpit.secure_agent.network_tools_fixture import SSH_PUBLIC_KEY_BASE64, LDAP_VALUES
+    if case.startswith(("redis-", "snmp-")):
+        from test_secure_redis_snmp_parser import redis_output, snmp_output
+        if case.startswith("redis-"):
+            return redis_output(), b""
+        return snmp_output(absent=(0, 1, 2) if case == "snmp-no-such-object" else ()), b""
     if case.startswith("kerberos-"):
         from test_secure_network_tools_b8_parser import transcript as kerberos_transcript
         return kerberos_transcript(empty=case != "kerberos-ok"), b""
@@ -94,7 +99,7 @@ def transcript(case):
 
 
 def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
-    policy_file = "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "redis-snmp" if case.startswith(("redis-", "snmp-")) else "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     action = parse_action(contract.action(case, 1))
     selected = manifest(action.tool_id)
@@ -237,7 +242,7 @@ def test_dry_run_without_runtime_commitment_still_finalizes_and_replays(tmp_path
     path = tmp_path / "evidence"
     session_id = str(uuid4())
     owned = identity(case, str(uuid4()))
-    policy_file = "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "redis-snmp" if case.startswith(("redis-", "snmp-")) else "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     with evidence.NmapEvidenceStore(path, session_id=session_id, policy=policy, case=case,
             owned_lab=owned, workflow_profile="network_tools", runtime_sha256=None) as store:
@@ -632,3 +637,43 @@ def test_kerberos_replay_rejects_changed_reports_and_protocol_counts(tmp_path, m
     complete(path, 'kerberos-ok')
     mutate_result(path, 1, mutation)
     assert evidence.inspect_evidence(path)['integrity_issues']
+
+
+@pytest.mark.parametrize('case,outcome', [('redis-ok', 'redis_server_info_observed'),
+    ('snmp-ok', 'snmp_system_metadata_observed'), ('snmp-no-such-object', 'snmp_system_metadata_observed')])
+def test_c1_normal_and_explicit_absence_replay_readonly(tmp_path, case, outcome):
+    path = tmp_path / 'evidence'
+    report = complete(path, case)
+    assert report['outcome'] == outcome and report['integrity_issues'] == []
+    observation = report['finding']['tool_observation']
+    assert observation['followup_path'] is None
+    assert observation['details']['semantics'] == 'untrusted_service_report'
+    before = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
+    assert evidence.inspect_evidence(path) == report
+    assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in path.iterdir()}
+
+
+@pytest.mark.parametrize('case', ['redis-ok', 'snmp-ok'])
+@pytest.mark.parametrize('mutation', [lambda r: r['tool_observation'].update(semantics='verified'),
+    lambda r: r['owned_lab'].update(request_count=0), lambda r: r['owned_lab'].update(connection_count=2),
+    lambda r: r['provenance'].update(exit_code=1),
+    lambda r: r['boundary_checks'].update(forbidden_port_blocked=False)])
+def test_c1_rehashed_metadata_cannot_change_semantics_completion_or_enforcement(tmp_path, case, mutation):
+    path = tmp_path / 'evidence'
+    complete(path, case)
+    mutate_result(path, 1, mutation)
+    assert evidence.inspect_evidence(path)['integrity_issues']
+
+
+def test_c1_hostile_string_remains_literal_in_human_report(tmp_path, monkeypatch):
+    from test_secure_redis_snmp_parser import snmp_output
+    hostile = '` | <script>alert(1)</script> & query 127.0.0.2:8080'
+    monkeypatch.setattr(__import__(__name__), 'transcript', lambda case: (snmp_output(description=hostile), b''))
+    path = tmp_path / 'evidence'
+    report = complete(path, 'snmp-injected')
+    assert report['outcome'] == 'snmp_system_metadata_observed'
+    markdown = (path / 'report.md').read_text()
+    assert '<script>' not in markdown and '` | <' not in markdown
+    assert r'\u0060' in markdown and r'\u007c' in markdown and r'\u003cscript\u003e' in markdown
+    assert 'untrusted' in markdown.lower()
+    assert evidence.inspect_evidence(path) == report

@@ -8,10 +8,18 @@ modes of each program or production engagement readiness.
 
 The configurable HTTP/SSH slice adds three separately versioned profiles of
 existing implementations: Nmap identification, HTTP headers and SSH host keys.
-The branch catalog therefore lists **23 profiles using the same 11 programs**.
+The accepted main catalog therefore lists **23 profiles using the same 11 programs**.
 Their recipes point to an explicit scope file and the
 [configurable owned-lab runbook](configurable-owned-lab.md); no existing recipe
 or accepted execution contract is broadened.
+
+The new C1 Redis/SNMP candidate adds two profiles and two executable families,
+so this branch lists **25 profiles using 13 programs**, pending review and
+acceptance. The [Redis/SNMP runbook](redis-snmp-tools.md) covers one fixed Redis
+`INFO server` and one SNMPv2c GET over TCP for three system scalars. Both use
+the owned `127.0.0.1:8080` fixture and require fresh approval. SNMP's community is
+public synthetic test data; no real credential setup, host configuration,
+MIBs, UDP, walks or writes are introduced.
 
 From the repository root, with the project installed:
 
@@ -19,6 +27,8 @@ From the repository root, with the project installed:
 python -m recon_cockpit.secure_agent --list-tools
 python -m recon_cockpit.secure_agent --describe-tool ssh_host_keys_v1
 python -m recon_cockpit.secure_agent --describe-tool kerbrute_userenum_v1
+python -m recon_cockpit.secure_agent --describe-tool redis_server_info_v1
+python -m recon_cockpit.secure_agent --describe-tool snmp_system_get_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -89,9 +99,18 @@ empty/denied/malformed replies remain inconclusive. Nmap's unidentified result
 means no match from the finite probes. Advertised ports, names, paths and schemes
 never authorize follow-up actions.
 
-The [coverage checklist](secure-tool-coverage.md) is closed under those accepted
-limits. This catalog was accepted in PR #46 at `0d5cbdc` and changes usability
-only. A separately versioned [Nmap service → ffuf → headers workflow](service-web-assessment.md)
-is the current follow-on; the catalog recipes retain their accepted behavior.
-Broader composition, comparative benchmarking and optional tools remain later work. Model
+Redis requires its complete selected server metadata; empty or denied replies
+remain inconclusive. SNMP requires all three ordered typed responses, including
+explicit `noSuchObject` where applicable. Those exception replies differ from
+missing output and can complete the query without verifying device identity or
+absence of a service. Hostile strings remain escaped, untrusted data. Neither
+profile permits metadata to choose another target or action.
+
+The B0–B8 [coverage checklist](secure-tool-coverage.md) is closed under those
+accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
+its recipes retain their accepted behavior. The separately versioned
+[Nmap service → ffuf → headers workflow](service-web-assessment.md) and
+[configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
+the current C1 candidate. Further composition and comparative benchmarking
+remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.
