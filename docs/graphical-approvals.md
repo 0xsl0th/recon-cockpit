@@ -3,8 +3,9 @@
 This slice implements a local graphical approval worker and connects it to the
 shared configurable owned-lab service. The main desktop still offers dry runs and
 saved evidence only. The implementation was accepted in
-[PR #52](https://github.com/0xsl0th/recon-cockpit/pull/52). Its Execute control remains
-absent pending a personal walkthrough; this does not complete the GUI milestone.
+[PR #52](https://github.com/0xsl0th/recon-cockpit/pull/52). The personal walkthrough is
+now accepted; PR #53 awaits final checks and merge. Desktop Execute integration
+remains the next slice, so the GUI milestone is not yet complete.
 
 `LinuxApprovalService(..., frontend="graphical_v1")` selects a fixed worker.
 The default remains `terminal`, with the existing terminal protocol unchanged.
@@ -139,14 +140,22 @@ The earlier AFK denial trial is not counted. The stricter one-step/60-second/8,1
 requests correctly leave the full assessment incomplete; they do not establish full
 four-action acceptance. See the [verification record](verification.md).
 
-**The remaining personal check is one full four-action approval session.** Read its
-fixed plan before typing `start`; only then does the original 60-second session
-begin. In each separate review, inspect the action, click **Copy phrase**, click the
-lower empty answer field, press **Ctrl+V**, and click **Approve once**. Repeat for
-all four actions. Do not repeat the confirmed denial/cancellation cases or reset or
-increase limits. Verify useful completion and evidence, then record the owner's
-observation. PR #53 remains draft and ordinary desktop execution stays disabled
-until this remaining check is accepted.
+**The full four-action personal walkthrough is now accepted.** At documentation
+head `5f15851`, the owner approved all four actions in a fresh session under the
+original four-step/60-second/26,624-byte limits. Four grants were consumed and four
+executions succeeded; the workflow stopped at `coordinator_done` after 45,642 ms.
+Fixtures closed, replay matched without changing evidence, and unnecessary
+refusals/provider calls/cost were zero. The owner confirmed, "ok this time it worked".
+The earlier full trials retain their incomplete outcomes: 3/4 actions before timeout
+with reported distraction, then 2/4 before timeout with a reported copying problem
+whose cause remains unproven. Keep these records and the one-action rehearsals
+distinct from the successful full run and scripted tests.
+
+PR #53 is ready for final checks and merge; it has not merged yet. Do not repeat
+the accepted personal checks. Ordinary desktop execution still uses `execute=False`;
+the next implementation adds an Execute control through the same shared service
+and isolated graphical reviewer for the existing disconnected owned fixtures only.
+No grants, sessions or deadlines are restored, and the existing limits stay fixed.
 
 ## Validation interpretation
 

@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — complete the four-action personal graphical walkthrough (7 October 2026).**
+**Current slice — finalize PR #53, then integrate desktop Execute (7 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -69,7 +69,7 @@ Priority **2c remains current**, with these explicit acceptance steps:
   owned workflow through all seven gates. Native scripted input verifies behavior;
   it does not establish personal approval. Existing terminal behavior remains the
   default. Runtime support is currently the documented local Linux/X11 layout.
-- **Personal walkthrough, then desktop execution — outstanding.** PR #53 fixes
+- **Personal walkthrough — accepted; PR #53 awaits final checks and merge.** PR #53 fixes
   phrase copying and preloads the fixed Tk focus/word helpers before filesystem
   sealing. Fresh review, 51 native and 112 focused portable tests, and all five
   hosted checks passed. Copy/paste remains separate from explicit approval, with
@@ -78,14 +78,19 @@ Priority **2c remains current**, with these explicit acceptance steps:
   denial and pending-review Ctrl+C using stricter one-step/60-second/8,192-byte
   requests. All three independently replay unchanged with closed fixtures and no
   provider calls/cost; denial and cancellation launched no tool. These controls
-  tests are complete, but their full-assessment outcomes remain incomplete.
-  Next show the four-action plan before starting one approvals-only session through
-  the existing entry point. Keep the original four-step/60-second/26,624-byte limits;
-  do not repeat the negative cases or reset/extend the deadline. Record 4/4 useful
-  actions, cleanup, unchanged replay and the owner's observation before personal
-  acceptance and a desktop Execute control through the same shared service.
+  tests are complete, and their smaller assessment outcomes remain incomplete.
+  The subsequent full personal run completed 4/4 useful actions in 45,642 ms with
+  four consumed grants and four successful executions, closed fixtures, unchanged
+  clean replay and zero unnecessary refusals/provider calls/cost. The owner said
+  "ok this time it worked". The original four-step/60-second/26,624-byte limits
+  remained fixed. Retain earlier incomplete trials; do not repeat accepted checks.
+- **Desktop execution — next, not implemented.** After PR #53's final checks and
+  merge, add an Execute control through the same shared service and isolated
+  graphical reviewer, restricted to the existing disconnected HTTP/SSH fixtures.
+  Ordinary desktop requests still use `execute=False` today. Validate the desktop
+  session lifecycle, cancellation, cleanup and evidence before completing priority 2.
   Real network attachment, restored grants and professional readiness remain out
-  of scope. PR #53 stays draft pending this remaining personal check.
+  of scope; existing limits and authority gates stay unchanged.
 
 This remains part of priority 2; dry-run controls do not complete the GUI milestone.
 Successive tool batches stay priority 3 and target remaining internal-network/web

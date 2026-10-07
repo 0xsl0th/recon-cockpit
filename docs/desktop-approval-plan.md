@@ -1,8 +1,9 @@
 # Desktop execution and exact-action approval plan
 
 This checklist guided the [graphical reviewer implementation](graphical-approvals.md).
-The worker and opt-in shared-service path were accepted in PR #52; the personal
-walkthrough and ordinary GUI Execute control remain outstanding.
+The worker and opt-in shared-service path were accepted in PR #52. The personal
+approval, denial, cancellation and four-action walkthrough are confirmed in PR #53,
+which awaits final checks and merge. The ordinary GUI Execute control is next.
 The desktop session slice runs the existing service with `execute=False` and
 `interactive_terminal=False`. Its generated policy still requires approval.
 Starting a preview, viewing a proposed action, cancelling, or inspecting saved

@@ -1,5 +1,39 @@
 # Verification record
 
+## Full personal graphical walkthrough accepted — 7 October 2026
+
+The owner completed the four-action walkthrough at PR #53 documentation head
+`5f15851decfdb10974e8c2b05528fa24d2d6227e`, with product code and tests unchanged
+from reviewed implementation `5970a108`. The successful session
+`graphical-owned-5nkgldx7` completed **4/4 useful actions**, consumed four grants,
+started four executions and recorded four successful finishes. It stopped at
+`coordinator_done` after **45,642 ms**, within the unchanged four-step/60-second/
+26,624-byte limits. Legitimate completion was true; unnecessary refusals, provider
+calls and actual cost were zero. Both owned fixtures closed.
+
+The owner confirmed, "ok this time it worked". Together with the separately
+confirmed approval, denial and pending-review cancellation interactions below,
+this completes the personal graphical walkthrough. No personal approval input was
+supplied by automation. These observed timings are not a comparative benchmark.
+
+Preserve the earlier full runs as incomplete: `graphical-owned-cqe6rd5t` completed
+3/4 actions before timeout at 60,041 ms, and the owner reported distraction;
+`graphical-owned-uepnf27q` completed 2/4 before timeout at 60,045 ms, and the owner
+reported a copying problem whose cause remains unproven. Neither trial recorded
+`approval_unavailable`. Fresh independent inspection of all three full trials
+matched their saved reports, found no integrity issues and left evidence unchanged.
+Each trial retained its own outcome and recorded closed fixtures with zero cost/calls.
+
+Private receipts are
+`.secure-agent/graphical-full-approval-20261007/full-trials-evidence-review.json`
+and `owner-confirmation-full.json`, alongside the original trial artifacts.
+The individual-controls and scripted native receipts remain separate. PR #53 is
+ready for final checks and merge, and has not merged. Ordinary desktop requests
+still use `execute=False`; the next slice integrates Execute through the same
+shared service and isolated graphical reviewer for disconnected owned fixtures.
+Completed B0–B8, offline R5 and accepted local R6 stay closed; credentials, paid
+calls, live-model evaluation and real network attachment remain deferred.
+
 ## Personal control confirmations — 7 October 2026
 
 The owner completed three separate one-action rehearsals against the owned,
@@ -29,12 +63,11 @@ and actual cost are zero. Private receipts are
 and `confirmed-controls-evidence-review.json`, alongside the separate owner feedback
 and retained session artifacts. No personal input was supplied by automation.
 
-**The three controls are confirmed; full four-action personal acceptance remains
-outstanding.** Each smaller request correctly reports an incomplete full assessment.
-Keep PR #53 draft and ordinary desktop execution disabled. The next personal check
-is one approvals-only run, with an untimed plan before owner start and the original
-four-step/60-second/26,624-byte limits. Do not repeat the confirmed negative controls
-or extend/reset deadlines. Existing automated full-workflow receipts remain distinct.
+The three controls were confirmed at this checkpoint while full four-action
+personal acceptance remained outstanding. Each smaller request correctly reports
+an incomplete full assessment. The subsequent full walkthrough is recorded above;
+it does not change these smaller requests' outcomes. Do not repeat the confirmed
+controls or extend/reset deadlines. Automated full-workflow receipts remain distinct.
 
 ## Corrected reviewer retry and simpler rehearsal — 6 October 2026
 
@@ -121,11 +154,11 @@ the original failing and corrected reproductions are retained there separately.
 All three failed owner bundles independently replay as incomplete without
 integrity issues, with unchanged file hashes. Replay requires the existing
 isolated parsers; the earlier sandbox-limited reconciliation result is retained
-separately. PR #53 remains a draft pending personal acceptance. Earlier native
+separately. PR #53 remained a draft pending personal acceptance at that checkpoint. Earlier native
 scripted-input and hosted portable checks passed, but did not cover these gestures.
 Preserve private logs, bundles, screenshot and `failure-summary.json` under
-`.secure-agent/graphical-owner-copy-20261006/`. The fix is ready for review before
-another personal retry. Ordinary desktop execution remains disabled.
+`.secure-agent/graphical-owner-copy-20261006/`. The fix was then ready for review
+before another personal retry. Ordinary desktop execution remains disabled.
 
 ## Graphical approval copy/paste correction — 6 October 2026
 
@@ -160,7 +193,7 @@ zero unnecessary refusals, zero provider calls/cost and unchanged independent
 evidence replay. Elapsed times were 8,373 ms and 8,840 ms respectively. These are
 descriptive runs with scripted test input; they are not a paired overhead benchmark
 or personal approval. No operator challenge is entered by automation on the real
-desktop. A fresh personal retry remains necessary before desktop execution controls.
+desktop. A fresh personal retry was still necessary at that checkpoint.
 
 The final source hashes, JUnit, owned evidence and two inspected screenshots at
 900×740 and 780×650 are private under `.secure-agent/graphical-copy-20261006/`.
@@ -257,7 +290,7 @@ blockers. Python 3.11 syntax, dependency consistency and local documentation-lin
 checks passed. The [runbook](graphical-approvals.md) documents the supported local
 Linux/X11 resource layout, trust limits and prepared personal walkthrough. Hosted
 CI is portable and cannot substitute for these native receipts. The owner's
-walkthrough and ordinary desktop execution controls remain outstanding.
+walkthrough and ordinary desktop execution controls were outstanding at that checkpoint.
 
 PR #51 itself merged with matching reviewed/merge trees and all five
 [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37418950338)

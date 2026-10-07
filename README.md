@@ -43,8 +43,10 @@ graphical session; dry runs require the supported Linux isolation environment.
 They execute no tools and do not establish useful completion. Tool execution and
 personal approval remain in the CLI for the ordinary desktop flow. A separate
 [isolated graphical reviewer](docs/graphical-approvals.md) and explicit owned-lab
-walkthrough entry point were accepted in PR #52; GUI execution awaits
-a personal walkthrough. Follow the [priority table](docs/roadmap.md).
+walkthrough entry point were accepted in PR #52. The personal approval, denial,
+cancellation and four-action walkthrough are now confirmed; PR #53 awaits final
+checks and merge. Desktop Execute integration is next. Follow the
+[priority table](docs/roadmap.md).
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

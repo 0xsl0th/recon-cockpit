@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: finish the four-action personal graphical walkthrough (priority 2c).**
+**Current authorized work: finalize PR #53, then add desktop Execute through the shared service (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -89,9 +89,9 @@ and outcome must reach isolated audit before any grant can be consumed.
 
 The ordinary desktop still uses `execute=False` with immutable scope, an
 approval-required policy and new private paths. Its dry runs cannot count as
-useful workflow completion. There is no desktop Execute control yet, no restored
-approval and no full four-action personal walkthrough receipt. The three individual
-controls are now confirmed. The prepared command is
+useful workflow completion. There is no desktop Execute control or restored
+approval. The three individual controls and full four-action personal walkthrough
+are now confirmed. The prepared command is
 plan-only by default; see the runbook for explicit owned-fixture execution.
 
 **Current continuation:** PR #53's implementation at `5970a108` passed fresh
@@ -111,22 +111,31 @@ Receipts are `.secure-agent/graphical-single-action-20261006/owner-controls-conf
 and `confirmed-controls-evidence-review.json`. The earlier AFK denial trial remains
 unconfirmed. Do not repeat these completed controls tests.
 
-These stricter one-step/60-second/8,192-byte rehearsals leave the full assessment
-incomplete. **Full four-action personal acceptance is still outstanding; PR #53
-remains draft.** The next private launcher is `/tmp/recon-graphical-full-approval.py`:
-show an untimed four-action plan, wait for the owner to type `start`, then run only
-the approvals case through the existing graphical demo. Retain the original four
-steps, 60-second session deadline and 26,624-byte limit. The owner supplies every
-approval; no automatic denial/cancellation stage follows. Verify 4/4 useful actions,
-closed fixtures and unchanged independent replay, then record the owner's observation.
-Scripted full-workflow validation remains separate. Do not reset or extend deadlines;
-if this attempt remains impractical, discuss that constraint before another retry.
+Those stricter one-step/60-second/8,192-byte rehearsals correctly leave their full
+assessments incomplete. The subsequent full session `graphical-owned-5nkgldx7`
+at documentation head `5f15851` completed **4/4 useful actions** with four consumed
+grants, four starts and four successful finishes in **45,642 ms**, stopping at
+`coordinator_done`. It retained four steps, 60 seconds and 26,624 output bytes.
+Fixtures closed, unnecessary refusals/provider calls/cost were zero, and fresh
+independent replay matched the report without changing evidence. The owner said
+"ok this time it worked". **The full personal walkthrough is accepted; PR #53 is
+ready for final checks and merge, but has not merged.** Do not repeat these checks.
+
+Preserve both earlier full trials: `graphical-owned-cqe6rd5t` timed out after
+3/4 actions in 60,041 ms when the owner reported distraction; `graphical-owned-uepnf27q`
+timed out after 2/4 in 60,045 ms, with a reported copying problem whose cause is
+unproven. All three full trials replay unchanged with no integrity issues.
+Their receipts are `.secure-agent/graphical-full-approval-20261007/full-trials-evidence-review.json`
+and `owner-confirmation-full.json`; retain each trial's original outcome.
+Scripted full-workflow validation remains distinct from this personal acceptance.
 
 Retain earlier failed trials in `.secure-agent/graphical-owner-copy-20261006/` and
 the helper-fix evidence in `.secure-agent/graphical-copy-20261006/`. Record the
-owner's observations separately from scripted test input. After full personal
-acceptance, add desktop execution controls through
-the same shared service and finish priority 2 acceptance. Subsequent secure-tool
+owner's observations separately from scripted test input. After PR #53's final
+checks and merge, add desktop execution controls through the same shared service
+with the isolated graphical reviewer, limited to the existing disconnected owned
+HTTP/SSH fixtures and unchanged limits. Validate session lifecycle, cancellation,
+cleanup and evidence before completing priority 2. Subsequent secure-tool
 batches remain priority 3; real network attachment needs separate authorization.
 
 Accepted validation receipts, screenshots and source hashes remain in
@@ -142,8 +151,8 @@ started sessions timed out with zero grants consumed and zero tool launches; the
 cancellation session did not start. These are unsuccessful trials, not approval,
 denial or cancellation acceptance. Retain their private evidence and feedback in
 `.secure-agent/graphical-owner-20261006/`. The screenshot and copy-fix validation
-belong in `.secure-agent/graphical-copy-20261006/`. Full four-action personal acceptance remains
-outstanding; the later individual controls are confirmed as described above. Keep local
+belong in `.secure-agent/graphical-copy-20261006/`. The later individual controls
+and full four-action personal walkthrough are accepted as described above. Keep local
 Linux/Tk evidence distinct from portable CI and retain earlier validation receipts.
 Private images stay outside Git. The proposal/PDF and separate PR #31 remain unchanged.
 
