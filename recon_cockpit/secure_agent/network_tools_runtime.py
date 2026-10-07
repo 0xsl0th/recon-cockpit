@@ -39,6 +39,7 @@ REDIS = "redis_server_info_v1"
 SNMP = "snmp_system_get_v1"
 POSTGRESQL_TLS = "postgresql_tls_handshake_v1"
 MYSQL_TLS = "mysql_tls_handshake_v1"
+WHATWEB = "whatweb_http_fingerprint_v1"
 KERBRUTE_PRINCIPALS = b"fixture-a\nfixture-b\n"
 # A distribution may put a wrapper at /usr/bin/nmap. Only these two ELF
 # locations are eligible, and only this new profile resolves the alternative.
@@ -111,7 +112,8 @@ EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
                DOCKER_PING: "/usr/bin/curl", DOCKER_VERSION: "/usr/bin/curl", WINRM: "/usr/bin/curl",
                NMAP_SERVICE: "/usr/bin/nmap", KERBRUTE: "/usr/local/bin/kerbrute",
                REDIS: "/usr/bin/redis-cli", SNMP: "/usr/bin/snmpget",
-               POSTGRESQL_TLS: "/usr/bin/openssl", MYSQL_TLS: "/usr/bin/openssl"}
+               POSTGRESQL_TLS: "/usr/bin/openssl", MYSQL_TLS: "/usr/bin/openssl",
+               WHATWEB: "/usr/bin/ruby3.3"}
 FIXED_ARGV = {
     REDIS: ("/tool/redis-cli", "-2", "-e", "--raw", "-h", "127.0.0.1", "-p", "8080", "INFO", "server"),
     SNMP: ("/tool/snmpget", "-v", "2c", "-c", "recon-fixture-public", "-r", "0", "-t", "2",
@@ -178,7 +180,11 @@ FIXED_ARGV = {
            "--max-redirs", "0", "--include", "--request", "GET", "--header", "Connection: close",
            "--user-agent", "recon-cockpit-b6/1", "http://127.0.0.1:8080/wsman"),
 }
-MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_worker", "network_tools_execution", "network_tools_contract",
+from . import network_tools_whatweb_runtime as whatweb_runtime
+
+FIXED_ARGV[WHATWEB] = whatweb_runtime.FIXED_ARGV
+
+MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
@@ -192,6 +198,8 @@ def encode(value):
 def execution_environment(tool_id):
     if type(tool_id) is not str or tool_id not in EXECUTABLES:
         raise ValueError("unsupported_network_tool")
+    if tool_id == WHATWEB:
+        return dict(whatweb_runtime.ENVIRONMENT)
     value = {"LC_ALL": "C", "OPENSSL_CONF": "/dev/null", "MALLOC_ARENA_MAX": "1"}
     if tool_id == DIG:
         value["UV_THREADPOOL_SIZE"] = "1"
@@ -211,6 +219,8 @@ def execution_environment(tool_id):
 
 
 def _compiled(tool_id):
+    if tool_id == WHATWEB:
+        return whatweb_runtime.COMPILED[0]
     if tool_id == KERBRUTE:
         return "compiled:kerbrute-principals", "/tool/data/principals.txt", KERBRUTE_PRINCIPALS
     if tool_id == NMAP_SERVICE:
@@ -232,6 +242,8 @@ def _compiled(tool_id):
 
 def compiled_files(tool_id):
     """Retain existing profiles' bytes and close new profiles over fixed data."""
+    if tool_id == WHATWEB:
+        return whatweb_runtime.COMPILED
     first = _compiled(tool_id)
     files = () if first is None else (first,)
     if tool_id in (RPCINFO, SHOWMOUNT):
@@ -257,6 +269,8 @@ def _compact_files(files):
 
 def compact_manifest(value):
     """Encode SMB's larger pinned closure without enlarging the JSON boundary."""
+    if value["tool_id"] == WHATWEB:
+        return whatweb_runtime.compact_manifest(value)
     if value["tool_id"] != SMB:
         return value
     roots, rows = _compact_files(value["files"])
@@ -264,6 +278,8 @@ def compact_manifest(value):
 
 
 def _expanded_files(value):
+    if value.get("tool_id") == WHATWEB:
+        return whatweb_runtime.expanded_files(value)
     if value.get("tool_id") != SMB:
         return value["files"]
     roots = value.get("roots")
@@ -305,6 +321,8 @@ def read_runtime_file(path, tool_id):
 
 
 def validate_manifest(value, *, tool_id=None):
+    if type(value) is dict and value.get("tool_id") == WHATWEB:
+        return whatweb_runtime.validate_manifest(value, tool_id=tool_id)
     smb = type(value) is dict and value.get("tool_id") == SMB
     if (type(value) is not dict or set(value) != {"version", "profile", "tool_id", "executable", "interpreter", "files"} | ({"roots"} if smb else set())
             or value["version"] != "1" or value["profile"] != (SMB_PROFILE if smb else PROFILE)
@@ -356,6 +374,8 @@ def inspect_tool_runtime(tool_id, control):
     if type(tool_id) is not str or tool_id not in EXECUTABLES:
         raise ValueError("unsupported_network_tool")
     control.check()
+    if tool_id == WHATWEB:
+        return whatweb_runtime.inspect_runtime(control)
     executable = EXECUTABLES[tool_id]
     if tool_id == NMAP_SERVICE:
         executable = None
@@ -402,6 +422,10 @@ def _snapshot(manifest, control):
     validate_manifest(manifest)
     data = _compiled(manifest["tool_id"])
     source, _, raw = data if data is not None else (None, None, None)
+    if manifest["tool_id"] == WHATWEB:
+        additional = tuple((source, raw) for source, _, raw in compiled_files(WHATWEB)[1:])
+        return sealed_snapshots({**manifest, "files": runtime_files(manifest)}, source, raw, control,
+                                additional_compiled=additional)
     if manifest["tool_id"] == SMB:
         return sealed_snapshots({**manifest, "files": runtime_files(manifest)}, source, raw, control,
                                 maximum_file_bytes=SMB_MAX_FILE_BYTES)

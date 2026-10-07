@@ -27,6 +27,9 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('whatweb-ok', 'whatweb-no-hints', 'whatweb-injected', 'whatweb-redirect',
+                    'whatweb-meta-redirect', 'whatweb-denied', 'whatweb-malformed', 'whatweb-eof',
+                    'whatweb-stalled', 'whatweb-oversized', 'whatweb-output-limit'), 'whatweb_http_fingerprint_v1'),
     "postgresql-tls-ok": "postgresql_tls_handshake_v1",
     "postgresql-tls-untrusted": "postgresql_tls_handshake_v1",
     "postgresql-tls-refused": "postgresql_tls_handshake_v1",

@@ -229,3 +229,8 @@ class PostgreSQLTLSParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class MySQLTLSParameters(TCPParameters):
     """Fixed MySQL pre-auth TLS negotiation parameters."""
+
+
+@dataclass(frozen=True, slots=True)
+class WhatWebParameters(TCPParameters):
+    """One fixed owned HTTP GET; callers cannot select plugins or a URL."""

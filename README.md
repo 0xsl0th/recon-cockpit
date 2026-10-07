@@ -46,15 +46,19 @@ no tools. Both modes replay saved evidence before displaying final usefulness.
 PR #53's reviewer correction and personal walkthrough are merged and accepted;
 the desktop Execute integration is accepted in PR #54.
 [Redis and SNMP metadata](docs/redis-snmp-tools.md) are accepted in
-[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55), bringing accepted main
-to 25 bounded profiles using 13 external programs. The current
-[review slice](docs/database-tls-tools.md) adds PostgreSQL and MySQL pre-authentication
-TLS handshakes through the existing OpenSSL integration and secure CLI path.
-This candidate has 27 profiles using the same 13 programs, pending review and
-merge. Local validation passed 10,776 portable and 28 native Linux tests; both
+[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55). The accepted
+[database TLS slice](docs/database-tls-tools.md), [PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56),
+brings main to 27 bounded profiles using 13 external programs. It adds PostgreSQL
+and MySQL pre-authentication TLS through existing OpenSSL and the secure CLI.
+Validation passed 10,776 portable and 28 native Linux tests; both
 ordinary database TLS tasks completed and all 24 forbidden-destination witnesses
 blocked. The result establishes a verified fixture TLS handshake; it makes no
 database login, SQL query, readiness or product-identity claim.
+The current [WhatWeb candidate](docs/whatweb-tools.md) adds one fixed HTTP GET
+with five passive plugins, bringing this branch to 28 profiles using 14 programs.
+Its structured hints are untrusted metadata; even an empty hint list can be useful
+completion. Actual owned execution, evidence validation, review and merge remain
+acceptance gates; catalog presence is not verified coverage.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

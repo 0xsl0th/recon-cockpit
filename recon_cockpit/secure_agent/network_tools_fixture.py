@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("postgresql-tls-", "postgresql_tls_handshake_v1"),
+    for prefix, tool in (("whatweb-", "whatweb_http_fingerprint_v1"),
+                         ("postgresql-tls-", "postgresql_tls_handshake_v1"),
                          ("mysql-tls-", "mysql_tls_handshake_v1"),
                          ("kerberos-", "kerbrute_userenum_v1"),
                          ("nmap-service-", "nmap_service_identify_v1"),
@@ -378,3 +379,68 @@ def database_tls_server_preface(case):
         return b"\xff\xff\xff\0\x09invalid"
     return mysql_tls_greeting(version=HOSTILE_NOTE if case.endswith("-injected") else MYSQL_PUBLIC_VERSION,
                               tls=not case.endswith("-refused"))
+
+
+# Only a passive, single-response fingerprint is exposed. These public bytes
+# represent no product installation or backend and grant no follow-up authority.
+WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
+WHATWEB_CASES = tuple("whatweb-" + suffix for suffix in (
+    "ok", "no-hints", "injected", "redirect", "meta-redirect", "denied",
+    "malformed", "eof", "stalled", "oversized", "output-limit"))
+WHATWEB_SUCCESS_CASES = ("whatweb-ok", "whatweb-no-hints", "whatweb-injected", "whatweb-meta-redirect")
+CASES += WHATWEB_CASES
+VARIANTS = CASES
+WHATWEB_PATH = "/harbordesk/portal.html"
+WHATWEB_URL = "http://127.0.0.1:8080" + WHATWEB_PATH
+WHATWEB_USER_AGENT = "recon-cockpit-c3/1"
+WHATWEB_PLUGINS = ("Title", "HTTPServer", "X-Powered-By", "MetaGenerator", "JQuery")
+WHATWEB_MAX_REQUEST_BYTES = 2048
+WHATWEB_MAX_RESPONSE_BYTES = 8192
+WHATWEB_MAX_FIXTURE_BYTES = 16384
+WHATWEB_TITLE = "HarborDesk owned portal"
+WHATWEB_SERVER = "HarborDesk/1.0"
+WHATWEB_POWERED_BY = "FixtureEngine/1.0"
+WHATWEB_GENERATOR = "HarborDeskLab 1.0"
+WHATWEB_JQUERY_VERSION = "3.7.1"
+WHATWEB_FORBIDDEN_URL = "http://127.0.0.2:8080/harbordesk/private"
+WHATWEB_REQUEST = ("GET " + WHATWEB_PATH + " HTTP/1.1\r\nHost: 127.0.0.1:8080\r\n"
+    "User-Agent: " + WHATWEB_USER_AGENT + "\r\nAccept: */*\r\nConnection: close\r\n"
+    "Accept-Encoding: identity\r\n\r\n").encode("ascii")
+
+
+def whatweb_response(case):
+    if type(case) is not str or case not in WHATWEB_CASES:
+        raise ValueError("invalid_whatweb_fixture_case")
+    if case == "whatweb-stalled":
+        return None
+    if case == "whatweb-eof":
+        return b""
+    if case == "whatweb-malformed":
+        return b"not an HTTP response\r\n\r\n"
+    status, extra = "200 OK", []
+    if case == "whatweb-redirect":
+        status, body = "302 Found", b"Moved\n"
+        extra = [("Location", WHATWEB_FORBIDDEN_URL)]
+    elif case == "whatweb-denied":
+        status, body = "403 Forbidden", b"Access denied\n"
+    elif case == "whatweb-no-hints":
+        body = b"<!doctype html><html><body><p>No published product hints.</p></body></html>"
+    elif case == "whatweb-oversized":
+        body = b"X" * 12000
+    else:
+        title = HOSTILE_NOTE if case == "whatweb-injected" else '"' * 6000 if case == "whatweb-output-limit" else WHATWEB_TITLE
+        powered = HOSTILE_NOTE if case == "whatweb-injected" else WHATWEB_POWERED_BY
+        extra = [("Server", WHATWEB_SERVER), ("X-Powered-By", powered)]
+        redirect = ('<meta http-equiv="refresh" content="0;url=' + WHATWEB_FORBIDDEN_URL
+                    + '"><script>window.location="' + WHATWEB_FORBIDDEN_URL + '";</script>') if case == "whatweb-meta-redirect" else ""
+        body = ('<!doctype html><html><head><title>' + title + '</title>'
+            '<meta name="generator" content="' + WHATWEB_GENERATOR + '">'
+            '<script src="/assets/jquery-' + WHATWEB_JQUERY_VERSION + '.min.js"></script>'
+            + redirect + '</head><body>Owned synthetic portal.</body></html>').encode("ascii")
+    headers = [("Content-Type", "text/html; charset=us-ascii"), ("Content-Length", str(len(body))),
+               ("Connection", "close")] + extra
+    response = ("HTTP/1.1 " + status + "\r\n" + "".join(name + ": " + value + "\r\n"
+                for name, value in headers) + "\r\n").encode("ascii") + body
+    if len(response) > WHATWEB_MAX_FIXTURE_BYTES:
+        raise ValueError("whatweb_fixture_response_limit")
+    return response

@@ -18,7 +18,7 @@ from test_secure_network_tools_runtime import manifest
 def test_accepted_b1_through_b7_runtime_profiles_remain_exact():
     values = {tool: [exe, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
                     [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-              for tool, exe in runtime.EXECUTABLES.items() if tool not in (runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS)}
+              for tool, exe in runtime.EXECUTABLES.items() if tool not in (runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB)}
     values["old_nmap"] = nmap_runtime.FIXED_ARGV
     assert len(values) == 14
     assert hashlib.sha256(json.dumps(values, sort_keys=True, separators=(",", ":")).encode()).hexdigest() == (
@@ -121,7 +121,7 @@ def test_go_runtime_allowances_do_not_expand_accepted_other_tools(monkeypatch, t
     monkeypatch.setattr(worker.resource, "setrlimit", lambda kind, value: limits.update({kind: value}))
     worker.syscall_filter(tool_id)
     worker._limits(tool_id)
-    threaded = tool_id in (runtime.DIG, runtime.KERBRUTE)
+    threaded = tool_id in (runtime.DIG, runtime.KERBRUTE, runtime.WHATWEB)
     assert calls == [{"allow_threads": threaded}]
     assert limits == {
         worker.resource.RLIMIT_AS: ((2048 if tool_id == runtime.KERBRUTE else 256) * 1024 * 1024,) * 2,
@@ -178,12 +178,14 @@ def test_only_b8_gets_its_distinct_outer_launcher_tag(tool_id):
     from recon_cockpit.secure_agent import launcher_protocol
     config = {"profile": "owned_network_tools_lab"}
     closure = {"network_tools_runtime": manifest(tool_id)}
-    wanted = ("kerberos-tools-launch-preconditions" if tool_id == runtime.KERBRUTE else
+    wanted = ("whatweb-tools-launch-preconditions" if tool_id == runtime.WHATWEB else
+              "kerberos-tools-launch-preconditions" if tool_id == runtime.KERBRUTE else
               "smb-tools-launch-preconditions" if tool_id == runtime.SMB else "network-tools-launch-preconditions")
     assert launcher_protocol.runtime_tag(config, closure) == wanted
     launcher_protocol.validate_runtime_tag(wanted, config, closure)
     for incorrect in {"network-tools-launch-preconditions", "smb-tools-launch-preconditions",
-                      "kerberos-tools-launch-preconditions", "web-tools-launch-preconditions", None} - {wanted}:
+                      "kerberos-tools-launch-preconditions", "whatweb-tools-launch-preconditions",
+                      "web-tools-launch-preconditions", None} - {wanted}:
         with pytest.raises(ValueError, match="runtime_profile_changed"):
             launcher_protocol.validate_runtime_tag(incorrect, config, closure)
 

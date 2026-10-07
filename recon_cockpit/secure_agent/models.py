@@ -20,7 +20,7 @@ from .tool_parameters import (
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters,
-    PostgreSQLTLSParameters, MySQLTLSParameters,
+    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters,
     NmapTCPParameters, TCPParameters, ValidationError,
     MAX_TIMEOUT_SECONDS, MAX_OUTPUT_BYTES, SUPPORTED_METHODS,
     _fields, _integer, _reject, _string,
@@ -116,7 +116,7 @@ class Action:
     action_id: str
     tool_id: str
     target: str
-    parameters: HTTPParameters | HTTPHeadersParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | SSHHostKeysParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlDockerVersionParameters | CurlWinRMMetadataParameters | NmapServiceParameters | KerbruteUserenumParameters | RedisServerInfoParameters | SNMPSystemGetParameters | PostgreSQLTLSParameters | MySQLTLSParameters
+    parameters: HTTPParameters | HTTPHeadersParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | SSHHostKeysParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlDockerVersionParameters | CurlWinRMMetadataParameters | NmapServiceParameters | KerbruteUserenumParameters | RedisServerInfoParameters | SNMPSystemGetParameters | PostgreSQLTLSParameters | MySQLTLSParameters | WhatWebParameters
     rationale: str
 
     def __post_init__(self) -> None:

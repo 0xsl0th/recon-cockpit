@@ -1,10 +1,14 @@
 # Owned PostgreSQL and MySQL TLS handshakes
 
-C2 adds two candidate secure profiles for the pre-authentication TLS portion of
+C2 adds two accepted secure profiles for the pre-authentication TLS portion of
 PostgreSQL and MySQL connections. Both reuse the existing OpenSSL integration,
 strict TLS parser and single-action authority/evidence path. Local validation
 passed 10,776 portable and 28 native Linux tests; independent source reviews found
-no blockers. Final PR review, hosted checks and merge remain acceptance gates.
+no blockers. [PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56) merged as
+`9603a54` after review and all five final hosted checks passed 10,776 tests each.
+All five post-merge jobs also passed.
+The macOS test-helper correction retained real TLS assertions and passed 224
+focused regressions without changing production or native-test code. C2 is closed.
 C1, B0–B8, offline R5, accepted local R6 and the
 initial GUI remain closed.
 
@@ -43,9 +47,8 @@ runtime remain in force. There is no host client configuration, database plugin
 loading, dynamic authentication mechanism or caller-selected CA. Missing or
 unsupported prerequisites fail closed without using a host runner.
 
-These profiles add two capabilities, not two executable families. The candidate
-catalog contains 27 profiles using the same 13 external programs; accepted main
-contains 25/13 after [PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55).
+These profiles add two capabilities, not two executable families. Accepted main
+contains 27 profiles using the same 13 external programs after PR #56.
 The installed PostgreSQL/MySQL clients are not used or counted as secure integrations.
 
 ## What the result establishes
@@ -158,14 +161,15 @@ private unattended synthetic policy; they do not claim personal approval. The
 shipped policy still requires it.
 
 See the [verification record](verification.md) for receipts and source bindings.
-Provider calls and actual provider cost remained zero. Review, hosted checks and
-merge remain pending. Mocks, dry runs, installed binaries or skipped native tests
+Provider calls and actual provider cost remained zero. Review and all five
+[final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37663523544)
+passed before merge. Mocks, dry runs, installed binaries or skipped native tests
 cannot complete these gates. Comparative overhead and deeper composition remain
 deferred, as do model credentials and paid/live-model evaluation.
 
-After acceptance, the next proposed coverage gap is bounded HTTP application
-fingerprinting with WhatWeb. Review a finite plugin allowlist, pinned runtime and
-one-origin request bounds before implementation; an unbounded default must fail
-closed. Broader SQL readiness and authenticated database operations require their
+C3 now implements [bounded HTTP application fingerprinting with WhatWeb](whatweb-tools.md).
+Its five reviewed passive plugins, pinned runtime and one-request bounds are a
+separate candidate; actual execution and evidence validation must pass before
+acceptance. Broader SQL readiness and authenticated database operations require their
 own later design and relevant authorization. Follow the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [checkpoint](continue-here.md) without reopening accepted milestones.

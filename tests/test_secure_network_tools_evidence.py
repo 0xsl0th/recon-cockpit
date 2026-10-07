@@ -27,6 +27,16 @@ def portable_parser_double(monkeypatch):
 
 def manifest(tool):
     interpreter = "/lib64/ld-linux-x86-64.so.2"
+    if tool == 'whatweb_http_fingerprint_v1':
+        from recon_cockpit.secure_agent import network_tools_whatweb_runtime as whatweb
+        compiled = {source: data for source, _, data in whatweb.COMPILED}
+        files = [{'source': source, 'destination': destination,
+            'size': len(compiled[source]) if source in compiled else 10,
+            'sha256': hashlib.sha256(compiled[source]).hexdigest() if source in compiled else 'a' * 64}
+            for source, destination in whatweb.fixed_entries()]
+        return runtime.validate_manifest(runtime.compact_manifest({'version': '1',
+            'profile': whatweb.PROFILE, 'tool_id': tool, 'executable': whatweb.DESTINATION,
+            'interpreter': interpreter, 'files': sorted(files, key=lambda row: row['destination'])}))
     files = [
         {"source": runtime.EXECUTABLES[tool], "destination": runtime.FIXED_ARGV[tool][0],
          "size": 10, "sha256": "a" * 64},
@@ -42,6 +52,9 @@ def manifest(tool):
 
 def transcript(case):
     from recon_cockpit.secure_agent.network_tools_fixture import SSH_PUBLIC_KEY_BASE64, LDAP_VALUES
+    if case.startswith('whatweb-'):
+        from test_secure_whatweb_parser import output
+        return output(empty=case == 'whatweb-no-hints', injected=case == 'whatweb-injected'), b''
     if case.startswith(("redis-", "snmp-")):
         from test_secure_redis_snmp_parser import redis_output, snmp_output
         if case.startswith("redis-"):
@@ -99,7 +112,7 @@ def transcript(case):
 
 
 def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
-    policy_file = "database-tls" if case.startswith(("postgresql-tls-", "mysql-tls-")) else "redis-snmp" if case.startswith(("redis-", "snmp-")) else "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "whatweb" if case.startswith('whatweb-') else "database-tls" if case.startswith(("postgresql-tls-", "mysql-tls-")) else "redis-snmp" if case.startswith(("redis-", "snmp-")) else "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     action = parse_action(contract.action(case, 1))
     selected = manifest(action.tool_id)
@@ -711,5 +724,60 @@ def test_rehashed_database_receipt_cannot_invent_login_or_hide_enforcement(tmp_p
 
 @pytest.mark.parametrize('case', ['postgresql-tls-ok', 'mysql-tls-ok'])
 def test_failed_database_tls_process_never_reports_useful_completion(tmp_path, case):
+    report = complete(tmp_path / 'evidence', case, status='failed')
+    assert report['outcome'] == 'inconclusive'
+
+
+@pytest.mark.parametrize('case', ['whatweb-ok', 'whatweb-no-hints', 'whatweb-injected', 'whatweb-meta-redirect'])
+def test_whatweb_replay_preserves_literal_hints_without_followup_authority(tmp_path, case):
+    path = tmp_path / 'evidence'
+    report = complete(path, case)
+    outcome = 'http_fingerprint_no_hints' if case == 'whatweb-no-hints' else 'http_fingerprint_observed'
+    assert report['outcome'] == outcome and report['integrity_issues'] == []
+    observation = report['finding']['tool_observation']
+    assert observation['followup_path'] is None
+    assert observation['details']['semantics'] == 'untrusted_application_hints'
+    assert observation['details']['status_code'] == 200
+    before = {p: (p.read_bytes(), p.stat().st_mtime_ns, p.stat().st_mode) for p in path.iterdir()}
+    assert evidence.inspect_evidence(path) == report
+    assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns, p.stat().st_mode) for p in path.iterdir()}
+    markdown = (path / 'report.md').read_text()
+    assert 'Untrusted response hints only' in markdown
+    if case == 'whatweb-no-hints':
+        assert observation['details']['hints'] == []
+        assert 'does not establish technology absence' in markdown
+    if case == 'whatweb-injected':
+        assert '127.0.0.2:8080' in markdown
+        assert r'\u0060' in markdown and r'\u007c' in markdown and r'\u003cscript\u003e' in markdown
+        assert '<script>' not in markdown
+
+
+@pytest.mark.parametrize('case', ['whatweb-ok', 'whatweb-no-hints'])
+@pytest.mark.parametrize('mutation', [
+    lambda r: r['tool_observation'].update(semantics='verified_software_inventory'),
+    lambda r: r['tool_observation'].update(identity_verified=True),
+    lambda r: r['tool_observation'].update(status_code=302),
+    lambda r: r['tool_observation']['hints'].append({'plugin': 'Exploit', 'strings': [], 'versions': []}),
+    lambda r: r['owned_lab'].update(request_count=0),
+    lambda r: r['owned_lab'].update(connection_count=2),
+    lambda r: r['provenance'].update(exit_code=1),
+    lambda r: r['boundary_checks'].update(forbidden_port_blocked=False),
+])
+def test_rehashed_whatweb_receipts_cannot_invent_proof_or_hide_enforcement(tmp_path, case, mutation):
+    path = tmp_path / 'evidence'
+    complete(path, case)
+    mutate_result(path, 1, mutation)
+    assert evidence.inspect_evidence(path)['integrity_issues']
+
+
+def test_rehashed_plausible_whatweb_hint_must_still_match_raw_bytes(tmp_path):
+    path = tmp_path / 'evidence'
+    complete(path, 'whatweb-ok')
+    mutate_result(path, 1, lambda r: r['tool_observation']['hints'][0].update(strings=['Changed title']))
+    assert evidence.inspect_evidence(path)['integrity_issues']
+
+
+@pytest.mark.parametrize('case', ['whatweb-ok', 'whatweb-no-hints'])
+def test_failed_whatweb_process_never_reports_useful_completion(tmp_path, case):
     report = complete(tmp_path / 'evidence', case, status='failed')
     assert report['outcome'] == 'inconclusive'

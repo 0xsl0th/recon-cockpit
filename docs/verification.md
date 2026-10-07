@@ -4748,10 +4748,7 @@ Golden regressions preserve 100 older actions, capability descriptors, workflow
 cards and lab specifications, all 25 old adapters, and all 16 older native
 invocations/environments/compiled inputs. Independent source reviews found no
 remaining blockers. The candidate has **27 profiles from the same 13 programs**;
-accepted main remains **25/13** until review, hosted checks and merge complete.
-[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56) contains this candidate.
-Hosted results must be checked against its latest head before a later authorized
-merge; the local counts above are not a claim that hosted CI passed.
+accepted main is **27/13** after the reviewed merge below.
 
 PR review exposed 15 macOS failures in hosted run `37662709531`: the new portable
 MemoryBIO tests called the Linux owner's `memfd_create` certificate loader.
@@ -4761,7 +4758,20 @@ All 224 focused fixture/lab tests passed after correction. Certificate rejection
 TLS 1.3, clean shutdown and application-data rejection remain real in-memory TLS
 checks on every runner; no tests are skipped. Production and native-test sources
 are unchanged, so the 28 native results remain applicable. The original failure
-log is retained privately; final hosted checks must pass before merge.
+log is retained privately. The corrected hosted checks passed before merge.
+
+[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56) is accepted and C2 is
+closed. Reviewed head `d072d04ad902cb3937548f6aa3a29ed680ccda59` merged as
+`9603a54a105bfde6d7f2712445762b1b20236bcf` on 7 October at 18:07:54 UTC.
+Both trees are `cbb982b4a07397c48d5c033dd8d49b5bda007e29`. Independent reviews
+found no blockers, with 1,158 authority/runtime and 763 parser/evidence focused
+tests passing; these overlapping sets are not an additional unique-test total.
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37663523544)
+passed 10,776 tests each, and all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37664455704)
+passed. No required-check rules were configured; all five portable jobs were
+used as the merge gate. The private receipt is `.secure-agent/pr56-merge-review.json`.
+Do not repeat the merge, broaden the accepted profiles or reopen completed milestones.
 
 Results establish only `verified_tls_handshake_only` with
 `authenticated_database_session: false`. The selected wire profile does not

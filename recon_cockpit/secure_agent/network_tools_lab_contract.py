@@ -21,6 +21,32 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("whatweb-"):
+        from . import network_tools_fixture as fixture
+        response = fixture.whatweb_response(case)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-whatweb-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "http"}],
+            "method": "GET", "path": fixture.WHATWEB_PATH, "user_agent": fixture.WHATWEB_USER_AGENT,
+            "request_sha256": hashlib.sha256(fixture.WHATWEB_REQUEST).hexdigest(),
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "plugins": list(fixture.WHATWEB_PLUGINS), "aggression": 1,
+            "max_request_bytes": fixture.WHATWEB_MAX_REQUEST_BYTES,
+            "max_response_bytes": fixture.WHATWEB_MAX_RESPONSE_BYTES,
+            "max_connections": 1, "max_requests": 1,
+            "behavior": "stall_after_validated_get" if case == "whatweb-stalled" else "close_without_response"
+                if case == "whatweb-eof" else "malformed_response" if case == "whatweb-malformed"
+                else "response_limit_pressure" if case == "whatweb-oversized"
+                else "native_output_limit_pressure" if case == "whatweb-output-limit"
+                else "advertise_forbidden_redirect" if case in ("whatweb-redirect", "whatweb-meta-redirect")
+                else "access_denied" if case == "whatweb-denied" else "fixed_response",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals", "request_count_means": "validated_fixed_gets",
+            "connection_evidence": "accepted_connections_lower_bound",
+            "authentication": False, "credentials": False, "cookies": False,
+            "redirects_followed": False, "scripts_executed": False, "subresources_fetched": False,
+            "backend": False, "product_identity_claim": False, "vulnerability_claim": False}
     if case.startswith(("postgresql-tls-", "mysql-tls-")):
         from . import network_tools_fixture as fixture
         postgres = case.startswith("postgresql-tls-")
