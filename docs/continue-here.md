@@ -5,7 +5,8 @@
 This development checkpoint never resumes an assessment or restores approvals.
 
 **Current work: priority 3 secure-tool coverage, C9 bounded FTP explicit TLS.**
-Work is on `feature/ftp-starttls-coverage` in `/tmp/recon-ftp-starttls-coverage`,
+Review [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63), on
+`feature/ftp-starttls-coverage` in `/tmp/recon-ftp-starttls-coverage`,
 based on accepted main `a582bd6c`. See the
 [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [C9 runbook](ftp-starttls-tools.md). One fixed 10-byte AUTH TLS command uses
