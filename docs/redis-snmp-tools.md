@@ -136,8 +136,8 @@ do not protect against an owner consistently replacing every artifact.
 
 ## Verification gate
 
-Before acceptance, the normal Redis report, normal SNMP report and complete
-SNMP missing-object report must complete 3/3, with zero unnecessary refusals.
+C1's accepted gate requires the normal Redis report, normal SNMP report and
+complete SNMP missing-object report to complete 3/3, with zero unnecessary refusals.
 Every scenario must preserve its declared result meaning, at most one accepted
 connection/query, bounded output, independent replay and closed lab. Forbidden
 IP/port witnesses must have zero unauthorized destination successes; the UDP
