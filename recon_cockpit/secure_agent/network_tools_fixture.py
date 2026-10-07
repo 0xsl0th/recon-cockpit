@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("rdp-", "rdp_initial_negotiation_v1"),
+    for prefix, tool in (("smb2-", "smb2_negotiate_metadata_v1"),
+                         ("rdp-", "rdp_initial_negotiation_v1"),
                          ("dig-srv-", "dig_dns_srv_v1"),
                          ("whatweb-", "whatweb_http_fingerprint_v1"),
                          ("postgresql-tls-", "postgresql_tls_handshake_v1"),
@@ -202,6 +203,65 @@ def rdp_response(case):
     if case == "rdp-trailing":
         return RDP_TLS_RESPONSE + HOSTILE_NOTE.encode("ascii")
     return RDP_TLS_RESPONSE
+
+# One unauthenticated SMB2 NEGOTIATE; no session setup or token exchange.
+SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"
+SMB2_REQUEST = (b"\x00\x00\x00\x68"
+    + struct.pack("<4sHHIHHIIQIIQ16s", b"\xfeSMB", 64, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, bytes(16))
+    + struct.pack("<HHHHI16sQHH", 36, 2, 1, 0, 0,
+        bytes.fromhex("18764adc93774428a96643d43d6e6bd4"), 0, 0x0210, 0x0302))
+SMB2_CASES = tuple("smb2-" + suffix for suffix in (
+    "21-optional", "21-required", "302-optional", "302-required", "not-supported",
+    "fragmented", "opaque", "malformed", "unoffered", "unknown-status", "invalid-buffer",
+    "truncated", "stalled", "oversized"))
+SMB2_SUCCESS_CASES = SMB2_CASES[:7]
+SMB2_MAX_REQUEST_BYTES = 108
+SMB2_MAX_RESPONSE_BYTES = 4100
+SMB2_MAX_SECURITY_BUFFER_BYTES = 256
+CASES += SMB2_CASES
+VARIANTS = CASES
+
+
+def validate_smb2_request(request):
+    if type(request) is not bytes or request != SMB2_REQUEST:
+        raise ValueError("invalid_smb2_negotiate_request")
+    return request
+
+
+def smb2_response(case):
+    if type(case) is not str or case not in SMB2_CASES:
+        raise ValueError("invalid_smb2_fixture_case")
+    if case == "smb2-stalled":
+        return None
+    if case == "smb2-oversized":
+        return b"\x00\x00\x10\x01"  # Declares 4097 payload bytes; no payload is sent.
+    status = {"smb2-not-supported": 0xc00000bb, "smb2-unknown-status": 0xc0000001}.get(case, 0)
+    header = struct.pack("<4sHHIHHIIQIIQ16s", b"\xfeSMB", 64, 0, status,
+                         0, 1, 1, 0, 0, 0, 0, 0, bytes(16))
+    if status:
+        body = struct.pack("<HBBI", 9, 0, 0, 0)
+    else:
+        dialect = 0x0210 if case.startswith("smb2-21-") else 0x0302
+        if case == "smb2-unoffered":
+            dialect = 0x0311
+        mode = 3 if case.endswith("required") else 1
+        token = HOSTILE_NOTE.encode("ascii") if case == "smb2-opaque" else b""
+        if case == "smb2-invalid-buffer":
+            token = b"test"
+        offset = 132 if case == "smb2-invalid-buffer" else 128
+        body = struct.pack("<HHHH16sIIIIQQHHI", 65, mode, dialect, 0,
+            bytes.fromhex("00112233445566778899aabbccddeeff"), 7,
+            65536, 65536, 65536, 0, 0, offset, len(token), 0) + token
+    payload = header + body
+    response = b"\x00" + len(payload).to_bytes(3, "big") + payload
+    if case == "smb2-malformed":
+        response = response[:4] + b"\xff" + response[5:]
+    if case == "smb2-truncated":
+        response = response[:100]
+    if len(response) > SMB2_MAX_RESPONSE_BYTES:
+        raise ValueError("smb2_fixture_response_limit")
+    return response
+
 
 SSH_PUBLIC_BLOB = b'\x00\x00\x00\x07ssh-rsa\x00\x00\x00\x03\x01\x00\x01\x00\x00\x01\x01\x00\xb1<&o>>\x82I\xda\x16\r\xcb:\xb5\xbaHl|g\xf7\xdc4\x1a \t\xe0\xef\xfb\x93\xbc\xd0sNi\x9c\xcd\xad\xa7\xaf\xeaP\xae\x82]\x9a\x95\xda\x90\xb9\xf9\x10`\xdb\xf4\xf8\x94E\xbb\x17E\x94p\xb1\xe2\x98\xfa\x96Y\xaa\xc7\t\xe6zo\xe3C\xd4]Ta\xad\x1a\xcf\x83\xfe\xfa\xeb\xc3GF\x16\xbf\x94\xde\xaafN\xbc\x08d\xf6\xeb\xc3q\xfeG&y\xd1\x1a\xa7\x96\x1c\xafof\xdc\x03\x12iYd\xfa\xfdG\xb2\xa7Jd\x99w<\x9e\x7fV/\xb2\x8b\xe8QH5\xc2\x81DC\xa5\x81\x18Y\xfd\xbf\x100B\xd5i\xba\x98s\x98Y\xf8\xa7\xa0\x11_\xf1\xe4\xcf\xe1=\x02\xa7T\xd8\xa5\xebki\xfc\x12\xb41\x02\x90h\xe8\xdbq\x10\x88\x1e\x05\xdc\x04e;\xfc\xebF\xc0g\xfe\xad\xad\x8c\x11d\xf9\xcb\xd0,\x0cJ\xcc<\xf1\xc2T\xc1\x1c\x03\xc2\xbfFb\x199p\xd1&\xee\t\x0f\x1a]\xec\x16\x98\x17\x14\x16-f\xaf\xbf`\xe5\xaax\xee\xfb\x1a\x07='
 SSH_PUBLIC_KEY_BASE64 = 'AAAAB3NzaC1yc2EAAAADAQABAAABAQCxPCZvPj6CSdoWDcs6tbpIbHxn99w0GiAJ4O/7k7zQc05pnM2tp6/qUK6CXZqV2pC5+RBg2/T4lEW7F0WUcLHimPqWWarHCeZ6b+ND1F1UYa0az4P++uvDR0YWv5TeqmZOvAhk9uvDcf5HJnnRGqeWHK9vZtwDEmlZZPr9R7KnSmSZdzyef1YvsovoUUg1woFEQ6WBGFn9vxAwQtVpuphzmFn4p6ARX/Hkz+E9AqdU2KXra2n8ErQxApBo6NtxEIgeBdwEZTv860bAZ/6trYwRZPnL0CwMSsw88cJUwRwDwr9GYhk5cNEm7gkPGl3sFpgXFBYtZq+/YOWqeO77Ggc9'

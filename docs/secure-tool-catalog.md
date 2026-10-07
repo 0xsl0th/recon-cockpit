@@ -42,7 +42,7 @@ C4 [DNS SRV metadata](dns-srv-tools.md) is accepted in
 [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), merged as `6080a5c`.
 It adds a separately versioned
 fixed service-location query using the same dig program and runtime closure.
-Accepted main contains **29 profiles using the same 14 programs**. The recipe binds
+That accepted slice brought the catalog to **29 profiles using the same 14 programs**. The recipe binds
 one nonrecursive TCP `_ldap._tcp.harbordesk.test. IN SRV` question and requires
 fresh approval; advertised targets and ports cannot select another operation.
 Four ordinary outcomes must complete usefully, including NODATA, NXDOMAIN and
@@ -55,8 +55,9 @@ inspectors. All 11,428 portable tests passed, with zero failures/errors/skips.
 Independent review and all five final hosted jobs passed; reviewed `65810b8` and
 the merge have identical trees.
 
-The current C5 [RDP initial-negotiation candidate](rdp-negotiation-tools.md)
-adds `rdp_initial_negotiation_v1`, bringing this branch to **30 profiles using the
+C5 [RDP initial negotiation](rdp-negotiation-tools.md) is accepted in
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59), merged as `846e459`.
+It adds `rdp_initial_negotiation_v1`, bringing accepted main to **30 profiles using the
 same 14 programs**. Its repository-owned Ruby adapter sends one fixed 19-byte TLS
 offer, closes the socket's write side and reads only the first 11- or 19-byte
 reply. Ruby remains supporting runtime, not a newly integrated third-party tool.
@@ -65,11 +66,25 @@ Its 13 owned scenarios passed validation: 5/5 ordinary and 2/2 separate robustne
 tasks completed, six negative outcomes remained inconclusive and 26/26
 unauthorized destinations were blocked. Local validation passed 11,898 portable
 and 36 native tests; clean-source replay preserved all 45 accepted bundles.
-[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) awaits final review,
-hosted checks and merge; catalog visibility does not establish acceptance.
+All five [final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37678942749)
+and the [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
+passed.
 The runtime is limited to the
 exact reviewed Linux Ruby 3.3 x86-64 files; early write-half-close can limit server
 compatibility. There is no new GUI workflow or real-network attachment.
+
+The current C6 [SMB2 negotiation candidate](smb2-negotiation-tools.md) adds
+`smb2_negotiate_metadata_v1`, bringing this branch to **31 profiles using the same
+14 programs**. The repository-owned Ruby adapter sends one fixed 108-byte request
+offering SMB 2.1 and 3.0.2 with client capabilities zero, closes its write side and
+reads one response frame of at most 4,100 bytes. Supported negotiation metadata
+permits an opaque security or error buffer of at most 256 bytes; bounded raw
+evidence can retain rejected frames with larger buffers. Peer bytes remain
+uninterpreted data. No SESSION_SETUP, authentication, NTLM challenge collection
+workflow, credentials, login, share access or follow-up is available. Local
+validation and source review passed; acceptance remains pending. Catalog visibility
+does not establish acceptance,
+arbitrary server compatibility, signing enforcement or service identity.
 
 From the repository root, with the project installed:
 
@@ -84,6 +99,7 @@ python -m recon_cockpit.secure_agent --describe-tool mysql_tls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool whatweb_http_fingerprint_v1
 python -m recon_cockpit.secure_agent --describe-tool dig_dns_srv_v1
 python -m recon_cockpit.secure_agent --describe-tool rdp_initial_negotiation_v1
+python -m recon_cockpit.secure_agent --describe-tool smb2_negotiate_metadata_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -149,8 +165,8 @@ an external target.
 
 Kerbrute's two principal statuses remain `tool_report_only`, with
 `authentication_verified: false`. A spoofed error string can look like an unknown
-principal, so these reports do not verify existence or absence. SMB's ambiguous
-empty/denied/malformed replies remain inconclusive. Nmap's unidentified result
+principal, so these reports do not verify existence or absence. The SMB share-list
+profile's ambiguous empty/denied/malformed replies remain inconclusive. Nmap's unidentified result
 means no match from the finite probes. Advertised ports, names, paths and schemes
 never authorize follow-up actions.
 
@@ -191,11 +207,21 @@ The trailing-data robustness case reads only the first frame; it does not claim
 to inspect or detect the trailing content. Returned fields cannot authorize
 another operation.
 
+SMB2 negotiation reports `untrusted_smb2_negotiation_metadata`: an offered dialect
+selection with signing/capability fields, or one of three known refusal statuses.
+Neither outcome verifies a security channel, identity or the cause of a refusal.
+Capability bits depend on the fixed zero-capability client offer, so missing bits
+do not establish missing server support. The parser releases only the length of
+a supported opaque security buffer; its contents stay in private raw evidence.
+Malformed, unsupported, unoffered, truncated, oversized and stalled responses
+remain inconclusive. The first-frame capture does not inspect trailing data or
+detect injection, and no returned field authorizes a second request.
+
 The B0–B8 [coverage checklist](secure-tool-coverage.md) is closed under those
 accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C5 candidate. Further composition and comparative benchmarking
+the current C6 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

@@ -24,6 +24,7 @@ if __package__:
     from . import network_tools_whatweb_fixture as whatweb_fixture
     from . import network_tools_dns_srv_fixture as dns_srv_fixture
     from . import network_tools_rdp_fixture as rdp_fixture
+    from . import network_tools_smb2_fixture as smb2_fixture
 else:
     def _load(name, filename):
         spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -45,6 +46,7 @@ else:
     whatweb_fixture = _load("network_tools_fixed_whatweb", "network_tools_whatweb_fixture.py")
     dns_srv_fixture = _load("network_tools_fixed_dns_srv", "network_tools_dns_srv_fixture.py")
     rdp_fixture = _load("network_tools_fixed_rdp", "network_tools_rdp_fixture.py")
+    smb2_fixture = _load("network_tools_fixed_smb2", "network_tools_smb2_fixture.py")
 
 
 def read_request(source):
@@ -256,7 +258,7 @@ class NetworkToolsService(owner.Service):
                     raw.close()
                     raise RuntimeError("nmap_service_fixture_request_limit")
                 if self.case.startswith(("ftp-", "smtp-", "docker-ping-", "docker-version-", "winrm-", "redis-", "snmp-",
-                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-srv-", "rdp-")) and self.connections:
+                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-srv-", "rdp-", "smb2-")) and self.connections:
                     raw.close()
                     raise RuntimeError("single_metadata_fixture_connection_limit")
                 with self.condition:
@@ -265,7 +267,10 @@ class NetworkToolsService(owner.Service):
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.case in fixture.RDP_CASES:
+                    if self.case in fixture.SMB2_CASES:
+                        smb2_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            on_request=self._smb_enumerated)
+                    elif self.case in fixture.RDP_CASES:
                         rdp_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.DNS_SRV_CASES:

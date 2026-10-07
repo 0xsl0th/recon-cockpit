@@ -35,7 +35,19 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     assert not first.started and first._supervisor is None
     definition = lab_contract.spec(case)
     assert definition["external_egress"] is False and definition["resume"] is False
-    if case in fixture.RDP_CASES:
+    if case in fixture.SMB2_CASES:
+        response = fixture.smb2_response(case)
+        assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
+        assert definition["request_sha256"] == hashlib.sha256(fixture.SMB2_REQUEST).hexdigest()
+        assert definition["request_count_means"] == "validated_fixed_negotiate_requests_followed_by_client_write_eof_before_response"
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["max_request_bytes"] == 108 and definition["max_response_bytes"] == 4100
+        assert definition["client_write_half_close_before_response"] is True
+        assert all(definition[key] is False for key in (
+            "udp", "followup", "session_setup", "ntlm_exchange", "credentials", "authentication",
+            "share_access", "token_interpretation", "service_identity_claim", "vulnerability_claim",
+            "signing_enforcement_verified"))
+    elif case in fixture.RDP_CASES:
         response = fixture.rdp_response(case)
         assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
         assert definition["request_sha256"] == hashlib.sha256(fixture.RDP_REQUEST).hexdigest()

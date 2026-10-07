@@ -21,6 +21,39 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("smb2-"):
+        from . import network_tools_fixture as fixture
+        response = fixture.smb2_response(case)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-smb2-negotiate-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "smb2_direct_tcp"}],
+            "request_sha256": hashlib.sha256(fixture.SMB2_REQUEST).hexdigest(),
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "offered_dialects": [0x0210, 0x0302], "client_capabilities": 0,
+            "max_request_bytes": fixture.SMB2_MAX_REQUEST_BYTES,
+            "max_response_bytes": fixture.SMB2_MAX_RESPONSE_BYTES,
+            "max_security_buffer_bytes": fixture.SMB2_MAX_SECURITY_BUFFER_BYTES,
+            "max_connections": 1, "max_requests": 1, "max_client_frames": 1,
+            "client_write_half_close_before_response": True,
+            "client_write_half_close_is_owned_profile_constraint": True,
+            "behavior": "stall_after_validated_request" if case == "smb2-stalled"
+                else "fragmented_response" if case == "smb2-fragmented"
+                else "hostile_opaque_security_buffer" if case == "smb2-opaque"
+                else "malformed_header" if case == "smb2-malformed"
+                else "unoffered_dialect" if case == "smb2-unoffered"
+                else "unknown_error_status" if case == "smb2-unknown-status"
+                else "invalid_security_buffer_offset" if case == "smb2-invalid-buffer"
+                else "truncated_response" if case == "smb2-truncated"
+                else "oversized_frame_header" if case == "smb2-oversized" else "fixed_response",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_fixed_negotiate_requests_followed_by_client_write_eof_before_response",
+            "connection_evidence": "accepted_connections_lower_bound",
+            "udp": False, "retries": False, "followup": False, "session_setup": False,
+            "authentication": False, "credentials": False, "ntlm_exchange": False,
+            "share_access": False, "token_interpretation": False, "service_identity_claim": False,
+            "vulnerability_claim": False, "signing_enforcement_verified": False}
     if case.startswith("rdp-"):
         from . import network_tools_fixture as fixture
         response = fixture.rdp_response(case)

@@ -42,6 +42,7 @@ POSTGRESQL_TLS = "postgresql_tls_handshake_v1"
 MYSQL_TLS = "mysql_tls_handshake_v1"
 WHATWEB = "whatweb_http_fingerprint_v1"
 RDP = "rdp_initial_negotiation_v1"
+SMB2 = "smb2_negotiate_metadata_v1"
 KERBRUTE_PRINCIPALS = b"fixture-a\nfixture-b\n"
 # A distribution may put a wrapper at /usr/bin/nmap. Only these two ELF
 # locations are eligible, and only this new profile resolves the alternative.
@@ -115,7 +116,7 @@ EXECUTABLES = {DIG: "/usr/bin/dig", DIG_SRV: "/usr/bin/dig", OPENSSL: "/usr/bin/
                NMAP_SERVICE: "/usr/bin/nmap", KERBRUTE: "/usr/local/bin/kerbrute",
                REDIS: "/usr/bin/redis-cli", SNMP: "/usr/bin/snmpget",
                POSTGRESQL_TLS: "/usr/bin/openssl", MYSQL_TLS: "/usr/bin/openssl",
-               WHATWEB: "/usr/bin/ruby3.3", RDP: "/usr/bin/ruby3.3"}
+               WHATWEB: "/usr/bin/ruby3.3", RDP: "/usr/bin/ruby3.3", SMB2: "/usr/bin/ruby3.3"}
 FIXED_ARGV = {
     REDIS: ("/tool/redis-cli", "-2", "-e", "--raw", "-h", "127.0.0.1", "-p", "8080", "INFO", "server"),
     SNMP: ("/tool/snmpget", "-v", "2c", "-c", "recon-fixture-public", "-r", "0", "-t", "2",
@@ -188,11 +189,13 @@ FIXED_ARGV = {
 }
 from . import network_tools_whatweb_runtime as whatweb_runtime
 from . import network_tools_rdp_runtime as rdp_runtime
+from . import network_tools_smb2_runtime as smb2_runtime
 
 FIXED_ARGV[WHATWEB] = whatweb_runtime.FIXED_ARGV
 FIXED_ARGV[RDP] = rdp_runtime.FIXED_ARGV
+FIXED_ARGV[SMB2] = smb2_runtime.FIXED_ARGV
 
-MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_dns_srv_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
+MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_dns_srv_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
@@ -210,6 +213,8 @@ def execution_environment(tool_id):
         return dict(whatweb_runtime.ENVIRONMENT)
     if tool_id == RDP:
         return dict(rdp_runtime.ENVIRONMENT)
+    if tool_id == SMB2:
+        return dict(smb2_runtime.ENVIRONMENT)
     value = {"LC_ALL": "C", "OPENSSL_CONF": "/dev/null", "MALLOC_ARENA_MAX": "1"}
     if tool_id in (DIG, DIG_SRV):
         value["UV_THREADPOOL_SIZE"] = "1"
@@ -229,6 +234,8 @@ def execution_environment(tool_id):
 
 
 def _compiled(tool_id):
+    if tool_id == SMB2:
+        return smb2_runtime.COMPILED[0]
     if tool_id == RDP:
         return rdp_runtime.COMPILED[0]
     if tool_id == WHATWEB:
@@ -333,6 +340,8 @@ def read_runtime_file(path, tool_id):
 
 
 def validate_manifest(value, *, tool_id=None):
+    if type(value) is dict and value.get("tool_id") == SMB2:
+        return smb2_runtime.validate_manifest(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") == RDP:
         return rdp_runtime.validate_manifest(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") == WHATWEB:
@@ -388,6 +397,8 @@ def inspect_tool_runtime(tool_id, control):
     if type(tool_id) is not str or tool_id not in EXECUTABLES:
         raise ValueError("unsupported_network_tool")
     control.check()
+    if tool_id == SMB2:
+        return smb2_runtime.inspect_runtime(control)
     if tool_id == RDP:
         return rdp_runtime.inspect_runtime(control)
     if tool_id == WHATWEB:

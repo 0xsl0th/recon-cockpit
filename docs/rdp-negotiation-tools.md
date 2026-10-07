@@ -1,11 +1,13 @@
 # Owned RDP initial negotiation
 
-[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) adds C5
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59), merged as `846e459`, accepted C5
 `rdp_initial_negotiation_v1`, a repository-owned Ruby socket adapter using
 the existing secure single-action CLI, sealed runtime and evidence path. It adds
 one capability to the accepted 29-profile inventory without adding a third-party
-RDP program. The candidate has 30 profiles using 14 external programs; review and
-merge remain separate gates. This operation is not yet exposed in the GUI.
+RDP program. Accepted main has 30 profiles using 14 external programs.
+This operation is not yet exposed in the GUI. The current separately versioned
+[C6 SMB2 negotiation candidate](smb2-negotiation-tools.md) brings its branch to
+31 profiles using the same 14 programs; C6 validation and acceptance remain pending.
 
 ## Fixed operation and meaning
 
@@ -116,5 +118,8 @@ policy requires it, and native gate tests exercise grant consumption and refusal
 
 All 514 tested source hashes matched the clean implementation. Private receipts,
 source bindings and limits are recorded in [verification.md](verification.md).
-Final PR review, hosted checks and authorized merge remain the acceptance gates;
-C5 does not reopen any accepted profile or authorize the next batch.
+PR #59 merged as `846e459` after all five
+[final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37678942749)
+passed. The [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
+also passed. C5 is closed within these limits; its acceptance does not broaden
+any existing profile or the separate C6 candidate.
