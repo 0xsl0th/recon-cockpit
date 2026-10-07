@@ -338,7 +338,7 @@ reviewed `65810b8` and merge `6080a5c` have identical trees. C4 is accepted at
 29 profiles using 14 programs. Descriptive latency and byte counts do not
 establish comparative overhead.
 
-**Current continuation: C5 fixed RDP initial negotiation.** The 19-byte request
+**Accepted C5: fixed RDP initial negotiation (PR #59).** The 19-byte request
 offers TLS only at the owned endpoint. The client closes its write side before
 reading a single 11- or 19-byte response, with a two-second absolute operation
 deadline. Raw bytes go to the independent parser; selected protocol, flags and
@@ -365,25 +365,27 @@ bytes, mtimes or modes. All **514 source hashes** matched. The receipt is
 (SHA-256 `94ee22d2ffe1f05acaffd2c9de4f02257349b75469ca1b5997db971799fc49d5`).
 Independent source review passed 1,395 tests; earlier focused runtime (979),
 fixture (483), parser/evidence (611) and core (971) runs overlap and are not an
-additional aggregate. Final review, final-head hosted checks and merge remain
-pending in [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59).
+additional aggregate. Final review and all five final/post-merge checks passed;
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) merged as `846e459`.
+C5 stays closed.
 
 Preserve every authority gate and the fresh-approval policy.
 No TLS/CredSSP/NTLM, authentication, session,
 verified identity or exhaustive protocol-support result is claimed. The exact
 reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
-adapter, not another third-party program. The candidate count is 30 profiles/14
+adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-After C5 closes, reassess one bounded SMB2 NEGOTIATE exchange for dialect,
-security-mode and capability metadata. The accepted B3 share-list profile already
-uses smbclient; the candidate gap is a separately constrained exchange before
-session setup. Select a pinned adapter or client and owned fixture only after
-reviewing incremental usefulness and the exact finite operation. No SESSION_SETUP,
-NTLM collection, login or share access is included, and no implementation is
-committed. Broader SQL readiness, authenticated operations and real network
-attachment remain later boundary work. This is progress toward the 40+ tool
-direction, not professional pentest readiness.
+**Current continuation: C6 bounded SMB2 negotiation metadata.** See the current
+status at the top of this checkpoint and the [C6 runbook](smb2-negotiation-tools.md).
+The candidate has passed local validation and independent source review; it
+adds one negotiation-only profile for 31 profiles/14 programs on this branch.
+[PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60) remains open for review;
+require passing hosted checks on its latest revision before an authorized merge.
+After C6 review, reassess fixed SMTP STARTTLS with existing OpenSSL. Broader SQL
+readiness, authenticated operations and real network attachment remain later
+boundary work. This is progress toward the 40+ tool direction, not professional
+pentest readiness.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
