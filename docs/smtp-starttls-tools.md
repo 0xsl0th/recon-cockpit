@@ -97,6 +97,16 @@ shared inspection. Full portable tests and independent review are also required.
 Report descriptive elapsed time and zero provider calls/cost; no paired overhead
 or human approval latency is inferred from unattended tests.
 
+Local validation passed **13,175 portable** and **52 native tests**, with zero
+selected failures/errors/skips. Ordinary and robustness completion were **2/2**
+each, with zero unnecessary refusals; all eight negative cases remained
+inconclusive. All 24 destination checks and 120 boundary fields passed. Independent
+clean-source trials repeated four useful results and replayed all **59 accepted
+bundles** unchanged. All 532 source hashes match implementation `b4b1a9f1`;
+independent source review found no blockers. Provider calls and cost were zero.
+[PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61) awaits review, hosted
+checks and corresponding merge authorization.
+
 ## Run and inspect
 
 Use the existing Linux isolation prerequisites, installed OpenSSL and a private

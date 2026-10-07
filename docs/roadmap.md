@@ -226,14 +226,18 @@ The strict parser preserves native limitations: SMTP reply codes/advertisement
 are not verified, only the final EHLO line is retained, and fragmented readiness
 may fail. TLS success alone cannot promote an unsupported transcript.
 
-Validation requires 2/2 ordinary and 2/2 separate robustness completions, zero
-unnecessary refusals, eight inconclusive negative cases after actual command
-progress, 24/24 forbidden destinations and 120/120 boundary fields, 52 selected
-native tests, unchanged replay of 59 accepted bundles, full portable tests and
-independent source review. The shipped policy requires fresh approval. Automated
-validation is separate from personal acceptance. Private evidence is under
+Local validation passed **13,175 portable** and **52 native tests**, with zero
+failures/errors/skips. It completed **2/2 ordinary + 2/2 separate robustness**
+tasks with zero unnecessary refusals, retained eight inconclusive cases, blocked
+**24/24** destinations and passed **120/120** boundary fields. Independent
+clean-source verification at `b4b1a9f1` repeated four useful trials and replayed
+**59 accepted bundles** unchanged. All **532 tested source hashes** match;
+independent source review found no blockers. Provider calls and cost stayed zero.
+The shipped policy requires fresh approval. Automated validation is separate from
+personal acceptance. Private evidence is under
 `.secure-agent/smtp-starttls-20261007/`; see [verification.md](verification.md)
-for recorded results. The new C7 PR must remain unmerged pending review and
+for recorded results. [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61)
+remains unmerged pending review and
 corresponding authorization; the PR #60 merge does not authorize its merge.
 
 Next, reassess **LDAP STARTTLS before bind** as a coverage gap for internal

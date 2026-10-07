@@ -1,5 +1,73 @@
 # Verification record
 
+## C7 owned SMTP STARTTLS — 7 October 2026
+
+The [C7 runbook](smtp-starttls-tools.md) defines `smtp_starttls_handshake_v1`:
+one fixed EHLO/STARTTLS exchange, fixture-CA/name-verified TLS1.3 and clean close
+through the existing OpenSSL runtime and authority path. Clean implementation
+`b4b1a9f1a52902df9fca644ede5deba160efc8af` contains the tested production/test sources.
+Accepted main remains **31 profiles / 14 programs**; this review candidate has
+**32 / 14**, with no GUI or external-target expansion.
+
+| Validation | Result |
+| --- | --- |
+| Full portable suite | **13,175 passed**, zero failures/errors/skips; 987 integration cases excluded; JUnit 314.669 seconds. |
+| Actual Linux suite | **52 passed**: 18 C7, 24 database TLS, four direct TLS and six accepted SMTP; zero selected failures/errors/skips; JUnit 145.608 seconds. |
+| Ordinary usefulness | **2/2**, ordinary and multiline dialogue; **zero unnecessary refusals**. |
+| Separate robustness | **2/2**, fragmented greeting/EHLO and hostile earlier metadata; no model injection-detection claim. |
+| Negatives | **Eight inconclusive**, all after actual fixed EHLO/STARTTLS command progress. Missing advertisement and extra output completed native TLS/clean close before strict parser rejection. |
+| Enforcement/evidence | **12/12** scenario replays unchanged, **24/24** forbidden destinations blocked, **120/120** boundary fields; one connection per case, closed owners. |
+| Independent clean source | **2/2 ordinary + 2/2 robustness**, **8/8** destinations blocked; four new and **59 accepted bundles** replayed through CLI/shared inspection with bytes, mtimes and modes unchanged. |
+
+Counter semantics are case-specific and bound in the lab identity: six complete
+TLS cases count only after both fixed commands and clean close_notify; six other
+negatives count after the fixed commands and before failure/stall. A prelude-only
+counter cannot prove TLS completion. `DONE` is stdin EOF, not a peer close witness.
+The six extra native checks cover one-use grants/replay denial, missing approval
+proof, cancellation after actual OpenSSL execution, private-input isolation, UDP
+refusal and actual diagnostic output pressure. Synthetic unattended policies and
+scripted grant tests do not establish new personal acceptance.
+
+Native ordinary times were **2,870/2,704 ms**, robustness **2,988/2,662 ms**;
+all 12 scenarios ranged **2,250–6,705 ms**, median **2,683 ms**. Clean-source ordinary
+times were **2,920/2,884 ms**, robustness **3,203/3,271 ms**. Useful captures were
+314 bytes. These are local secure CLI durations under test load, not comparative
+authority overhead or human approval latency. Provider calls, paid calls and
+actual provider cost were **zero**, and no real credentials were read.
+
+The strict SMTP suffix wrapper leaves the accepted direct/database TLS parser
+unchanged. Native SMTP status/advertisement validation is incomplete, only the
+final EHLO line is retained, and fragmented readiness may fail. Neither TLS
+success nor the selected service label establishes SMTP identity, authentication,
+mail delivery or readiness. No AUTH/MAIL/RCPT, client credentials, TLS application
+requests, plaintext mail session, retry or response-directed follow-up is exposed.
+
+All **532 source hashes** match the clean implementation. The snapshot was taken
+after production/native tests were frozen, during native execution and before
+the full portable run; it is not described as a pre-native snapshot. Native
+production/test bytes remained unchanged; subsequent handoff changes are docs only.
+The accepted baseline retains **160 case contracts, 31 adapters and 22 runtimes**
+with digest `a4cae78a90dd7c2f3c2fc8a23963e797d9684359399f6e64821d28e4ade45029`.
+Independent runtime/fixture/core and parser/evidence reviews found no blockers.
+Focused sets passed 239 fixture/runtime, 31 prior-runtime, 120 independent
+parser/evidence and 1,975 core/shared tests; these overlap the full suite and
+are not additional full-suite totals.
+
+Private receipts remain under `.secure-agent/smtp-starttls-20261007/`:
+`portable.xml`, `native.xml`, `validated-source-files.json`, `native-summary.json`
+and `clean-source-b4b1a9f1-rem2ns2n/verification.json`. Clean-source receipt SHA256:
+`5ff9fcd796d47a3e11e0eccfb328a69975d296d08d28fc4247572289052c832c`. It pins C6's receipt and all 59 prior bundles plus their inherited
+receipt chain. The later native audit rebuilt all 12 reports using the pure
+parser, separately from actual isolated CLI replay, and has SHA256
+`bee071cb427e6b162c2c023961953d17c2c08a04bdcd6383e9ae3e608aa54fd1`.
+The early development smoke remains separate from final validation.
+
+[PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61) remains pending review,
+passing hosted checks and authorized merge.
+The next recommended reassessment is LDAP STARTTLS before bind, after inspecting
+the native fixed exchange. Credentials, paid/live-model calls, external
+engagements, deeper workflows and comparative benchmarking remain deferred.
+
 ## PR #60 review and merge — 7 October 2026
 
 **C6 is accepted in [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60).**
