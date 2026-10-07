@@ -27,6 +27,7 @@ REDIS_TOOL_ID = "redis_server_info_v1"
 SNMP_TOOL_ID = "snmp_system_get_v1"
 POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
 MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
+WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
 DATABASE_TLS_SERVICES = {POSTGRESQL_TLS_TOOL_ID: "postgresql", MYSQL_TLS_TOOL_ID: "mysql"}
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
@@ -35,7 +36,8 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1",
     NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1",
     REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1",
-    POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1"}
+    POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
+    WHATWEB_TOOL_ID: "whatweb-json-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -127,6 +129,8 @@ def validate_result(tool_id, value):
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id == WHATWEB_TOOL_ID:
+        return _whatweb_parser().validate_result(value)
     if tool_id == NMAP_SERVICE_TOOL_ID:
         return _nmap_service_parser().validate_result(value)
     if tool_id == KERBRUTE_TOOL_ID:
@@ -678,6 +682,18 @@ def _parse_snmp(output, stderr):
     return _redis_snmp_parser().parse_snmp_output(output, stderr)
 
 
+def _whatweb_parser():
+    if __package__:
+        from . import network_tools_whatweb_parser
+    else:
+        import network_tools_whatweb_parser
+    return network_tools_whatweb_parser
+
+
+def _parse_whatweb(output, stderr):
+    return _whatweb_parser().parse_output(output, stderr)
+
+
 def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=False):
     parser_version(tool_id)
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
@@ -691,4 +707,5 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             FTP_TOOL_ID: _parse_ftp, SMTP_TOOL_ID: _parse_smtp, DOCKER_PING_TOOL_ID: _parse_docker_ping,
             DOCKER_VERSION_TOOL_ID: _parse_docker_version, WINRM_TOOL_ID: _parse_winrm_metadata,
             NMAP_SERVICE_TOOL_ID: _parse_nmap_service, KERBRUTE_TOOL_ID: _parse_kerbrute,
-            REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp}[tool_id](output, stderr)
+            REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp,
+            WHATWEB_TOOL_ID: _parse_whatweb}[tool_id](output, stderr)

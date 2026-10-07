@@ -4,17 +4,36 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: [PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56), priority 3
-secure-tool coverage, C2 PostgreSQL/MySQL pre-authentication TLS.**
-Work is on `feature/database-tls-coverage` in `/tmp/recon-database-tls-coverage`,
-based on accepted main `9786a6b`. See the
+**Current work: [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57), priority 3
+secure-tool coverage, C3 bounded WhatWeb HTTP fingerprinting.**
+Work is on `feature/whatweb-coverage` in `/tmp/recon-whatweb-coverage`,
+based on accepted main `9603a54`. See the
 [successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C2 runbook](database-tls-tools.md). Local execution and evidence validation
-passed and independent source reviews found no blockers; final PR review, hosted
-checks and merge remain the acceptance gates.
-Candidate catalog entries do not count as accepted main coverage.
-Inspect checks on the PR's latest head before any later authorized merge; local
-validation does not substitute for the hosted matrix. The next proposed batch is C3.
+and [C3 runbook](whatweb-tools.md). Clean implementation
+`0bdd9b6324d3c10d1a426c51aaf491abdf51d92a` passed 11,109 portable and 39 selected native tests and
+independent useful-execution/evidence verification. Both ordinary and both
+robustness tasks completed, with zero unnecessary refusals. Earlier descriptor-ceiling startup failures
+remain private and separate from successful native trials; the scoped launcher
+correction did not increase native tool limits or change accepted profiles.
+Candidate catalog entries do not count as accepted main coverage. Leave a PR
+ready for review; its final hosted checks and a later
+authorized merge remain acceptance gates. The next planned batch is C4 DNS SRV.
+
+**[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56) is merged and C2 is closed.**
+Reviewed head `d072d04ad902cb3937548f6aa3a29ed680ccda59` merged as
+`9603a54a105bfde6d7f2712445762b1b20236bcf`; trees match
+`cbb982b4a07397c48d5c033dd8d49b5bda007e29`. Fresh independent authority/runtime
+and parser/evidence reviews found no blockers, with 1,158 and 763 focused tests
+passing respectively. All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37663523544)
+passed 10,776 tests each; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37664455704)
+also passed. The macOS correction replaced the portable test helper's Linux-only
+certificate loader with private temporary files, retained real TLS assertions,
+and passed 224 focused fixture/lab tests. Production and native tests were unchanged.
+Preserve the 28 native cases, 2/2 ordinary completions, zero unnecessary refusals,
+24/24 blocked destination witnesses and 33 unchanged accepted evidence replays.
+C2 brings accepted main to 27 profiles using 13 programs. Private receipts remain
+under `.secure-agent/database-tls-20261007/`; do not repeat the merge or broaden
+either accepted pre-authentication TLS profile.
 
 **[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55) is merged and C1 is closed.**
 Reviewed head `8786308d8569979229b6e0019cdcd04a0811e252` merged as
@@ -166,55 +185,69 @@ desktop bundles replayed unchanged with closed fixtures/processes and zero provi
 calls/cost. Both themes passed at 1120×720. Independent source reviews found no
 remaining blockers. These are scripted tests, not new personal acceptance.
 
-**Current continuation:** complete final PR review and hosted checks, and leave
-the C2 implementation PR ready for the operator's review. Do not automatically
-merge the new C2 PR. The candidate adds `postgresql_tls_handshake_v1` and
-`mysql_tls_handshake_v1` through the existing OpenSSL runtime: one fixed PostgreSQL
-SSLRequest or MySQL greeting/SSLRequest, followed by fixture-CA/name-verified TLS
-1.3 and a clean close without application data. It preserves all seven gates,
-fresh approval, one action/connection, five-second native and 60-second session
-limits, and an 8,192-byte output cap. The fixed owned endpoint remains
-`127.0.0.1:8080`; no GUI controls or attached database are added.
+**Current continuation:** review [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57)
+and check hosted results on its latest revision. Do not automatically merge
+the new C3 PR. Profile
+`whatweb_http_fingerprint_v1` uses the secure single-action CLI path for one
+GET of `/harbordesk/portal.html` at disconnected `127.0.0.1:8080`. The five
+passive plugins are Title, HTTPServer, X-Powered-By, MetaGenerator and JQuery.
+The finite WhatWeb/Ruby runtime and compiled guard bind the fixed request,
+response-input cap, no redirects or linked-resource fetches, no cookies,
+identity encoding and regular-expression deadlines. No arbitrary plugin,
+credential, attached network, GUI operation or model call is added.
 
-Structured results mean only `verified_tls_handshake_only`, with
-`authenticated_database_session: false`. No username/password, database startup,
-login, SQL, authentication-plugin loading, plaintext downgrade, readiness, version
-or verified database-product identity is included. Twelve scenarios cover two
-ordinary handshakes plus refused, untrusted, malformed, stalled and hostile peers.
-The hostile MySQL version string is ignored and must not prevent legitimate TLS
-completion; hostile PostgreSQL prefaces remain inconclusive. MySQL greeting
-fragmentation can fail closed with the current native client and is a disclosed
-limitation.
+Structured results are only `untrusted_application_hints`. A complete HTTP 200
+with no hints is useful completion, not technology absence. Strings and JQuery
+version matches do not verify product identity, installed versions or
+vulnerabilities. Literal hostile metadata cannot choose targets or follow-up work.
+The parser requires the exact request configuration and closed bounded schema;
+redirects, denied, malformed, incomplete and oversized results are inconclusive.
 
-**C2 validation passed at implementation `dca814133cafdd08d916d2e93c12f9e66b11474e`:**
-10,776 portable tests and 28 native Linux tests (24 C2 plus four accepted OpenSSL
-regressions), with zero selected failures/errors/skips. All 12 scenarios retained
-their declared outcomes, bounded output, closed owners and unchanged replay. Both
-ordinary TLS tasks completed with zero unnecessary refusals; the hostile MySQL
-trial also completed. All 24 forbidden-destination witnesses and all 120 native
-boundary fields passed. Dedicated native cases cover grant consumption/replay,
-missing-proof refusal, cancellation, private-input isolation, UDP denial and the
-output ceiling.
+The complete portable suite passed **11,109 tests**, with 914 integration cases
+deselected and zero failures/errors/skips. JUnit duration was **299.271 seconds**;
+the pytest terminal summary includes additional runner overhead at 299.54 seconds.
+The private receipt is `.secure-agent/whatweb-20261007/portable-final.xml`.
 
-A separate clean-source run completed the ordinary tasks 2/2, the hostile MySQL
-case 1/1, and blocked 6/6 forbidden destinations. All three new bundles and all
-33 previously accepted bundles replayed unchanged through CLI and shared-service
-inspection. These unattended trials used a private explicit synthetic policy;
-the shipped policy still requires personal approval. No human acceptance is
-claimed. Wall times were 2,830 ms (PostgreSQL), 2,828 ms (MySQL) and 2,723 ms
-(hostile MySQL); these are descriptive local timings, not comparative overhead.
-Provider calls/cost stayed zero. Preserve receipts under
-`.secure-agent/database-tls-20261007/`, including
-`clean-source-dca81413-6w256_ve/verification.json`; see the
-[verification record](verification.md) for scope and source details.
+The [C3 runbook](whatweb-tools.md) defines eleven scenarios. Final native
+validation passed **39 tests** in 156.861 seconds, with zero selected failures,
+errors or skips: 17 C3 cases plus 22 accepted-tool regressions. Ordinary
+`whatweb-ok` and `whatweb-no-hints` completed 2/2 with zero unnecessary refusals;
+injected metadata and meta redirects separately completed 2/2. All eleven
+scenario bundles replayed unchanged, closed at one connection/validated GET,
+and passed 22/22 forbidden-destination witnesses plus 110/110 boundary fields.
+Grant consumption/replay rejection, missing-proof denial, cancellation after
+actual execution, private-input isolation, UDP refusal and thread ceilings passed.
+The real JSON output-pressure case stopped at the cap with only two bytes
+retained; no useful observation was invented.
 
-The candidate catalog has 27 profiles using the same 13 programs; accepted main
-stays at 25/13 until review and merge. After C2, prioritize **C3 bounded HTTP
-application fingerprinting** using installed WhatWeb, subject to a finite plugin
-allowlist, pinned runtime and one-origin request bounds. Missing prerequisites or
-an unbounded default must fail closed. Broader SQL readiness and authenticated
-database work stay deferred. This is progress toward the 40+ tool product direction,
-not full professional pentest readiness.
+Independent verification at clean `0bdd9b6` repeated both ordinary and both
+robustness trials, with zero unnecessary refusals and 8/8 blocked destinations.
+All four new bundles and 36 accepted bundles replayed identically through both
+inspectors without changing bytes, modification times or modes. Ordinary wall
+times were 4,322/4,338 ms; robustness times were 4,313/4,537 ms. These are local
+descriptive measurements, not comparative overhead. Calls/cost stayed zero.
+Receipt: `.secure-agent/whatweb-20261007/clean-source-0bdd9b63-949y69_c/verification.json`.
+The unattended synthetic policy does not claim personal approval; the shipped
+policy still requires it. Keep earlier failed startup/native attempts and the
+initial portable failure separately; its 16 failures were stale test selectors
+and mappings, corrected without changing the validated production code.
+
+Accepted C2 evidence remains closed at 10,776 portable and 28 native cases,
+2/2 ordinary TLS tasks, 24/24 blocked destinations and 33 prior evidence bundles
+replayed unchanged. Preserve `.secure-agent/database-tls-20261007/`, including
+`clean-source-dca81413-6w256_ve/verification.json`; its descriptive wall times are
+not a comparative overhead benchmark. The shipped policies still require fresh
+personal approval; automated synthetic grants do not claim owner acceptance.
+
+Accepted main has 27 profiles using 13 programs; C3's candidate has 28/14.
+After C3 acceptance, prioritize **C4 fixed DNS SRV metadata with dig**: one
+synthetic TCP query, bounded priority/weight/port/target records, honest empty and
+NXDOMAIN observations, and no recursion or follow-up to advertised endpoints.
+It fills the inventory's additional-DNS-mode gap using accepted infrastructure.
+RDP initial protocol negotiation is a later candidate to reassess after C4,
+without credentials, NTLM collection or default NSE scripts. Broader SQL readiness,
+authenticated operations and real network attachment remain later boundary work.
+This is progress toward the 40+ tool direction, not professional pentest readiness.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,

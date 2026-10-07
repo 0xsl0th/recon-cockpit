@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — C2 PostgreSQL/MySQL pre-authentication TLS coverage (7 October 2026).**
+**Current slice — C3 bounded WhatWeb HTTP fingerprinting (7 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -104,31 +104,48 @@ The initial owned GUI milestone is closed. **C1 Redis/SNMP coverage is accepted 
 merged as `9786a6b` with an identical tree; all five final and post-merge checks
 passed. Its 10,413 portable and 63 native cases, 3/3 ordinary completions,
 32/32 blocked destination witnesses and unchanged evidence replay remain accepted.
-Main has 25 bounded profiles using 13 external programs.
+That slice brought main to 25 bounded profiles using 13 external programs.
 
-Priority 3 now proceeds with **C2 PostgreSQL/MySQL pre-authentication TLS handshakes**.
-The [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [runbook](database-tls-tools.md) define its pending completion gates. Two new
-CLI profiles reuse installed OpenSSL, so the candidate has 27 profiles using the
-same 13 programs. Each makes only its fixed database-protocol TLS request,
-verifies the public fixture CA/name and TLS 1.3, then closes without application
-data. Structured evidence explicitly means `verified_tls_handshake_only`, with
-`authenticated_database_session: false`. No database username, password, login,
-SQL, readiness, version or verified product-identity claim is included. Local
-validation passed 10,776 portable and 28 native Linux tests (24 C2 and four accepted
-OpenSSL regressions). Both ordinary tasks completed, the hostile MySQL greeting
-also completed, all 24 forbidden-destination witnesses blocked and all 12 scenario
-bundles replayed unchanged. A separate clean-source run repeated 2/2 ordinary and
-1/1 hostile completions, blocked 6/6 destinations and replayed 33 accepted bundles
-unchanged through both inspectors. Calls/cost stayed zero. Review, hosted checks
-and merge remain pending; the profiles do not extend the GUI's HTTP/SSH workflow.
+**C2 PostgreSQL/MySQL pre-authentication TLS is accepted in
+[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56).** Reviewed head `d072d04`
+merged as `9603a54` with an identical tree after independent reviews and all five
+final hosted jobs passed 10,776 tests each. All five post-merge jobs also passed.
+Its test-only macOS correction preserved real TLS assertions and passed 224
+focused fixture/lab cases; production and native tests stayed unchanged. Preserve
+28 native cases, 2/2 ordinary TLS completions, zero unnecessary refusals, 24/24
+blocked destinations and 33 unchanged accepted evidence replays. The
+[runbook](database-tls-tools.md) keeps both profiles at a verified fixture TLS
+handshake and clean close: no database login, SQL, readiness or product-identity
+claim. Accepted main now has **27 profiles using 13 programs**.
 
-After C2, prioritize **C3 bounded HTTP application fingerprinting** using installed
-WhatWeb, subject to review of an allowlisted plugin set, pinned runtime and one-origin
-request bounds. Missing binaries or an unbounded default must fail closed. An
-installed tool or menu suggestion does not establish secure support. Broader SQL
-readiness, authenticated database access and professional engagement lifecycle work
-remain deferred under priority 4.
+Priority 3 proceeds with **C3 bounded HTTP application fingerprinting**. The
+[coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
+and [WhatWeb runbook](whatweb-tools.md) define one fixed owned HTTP GET and five
+passive plugins: Title, HTTPServer, X-Powered-By, MetaGenerator and JQuery. Exact
+runtime files and a compiled guard bound requests, redirects, response input,
+plugins and execution. Structured output means only untrusted application hints;
+a complete no-hints response must count as useful completion, not technology
+absence. Ordinary usefulness must be 2/2 with zero unnecessary refusals, with
+separate hostile-metadata/meta-redirect trials and eleven total scenarios.
+The complete portable suite passed 11,109 tests with no failures/errors/skips
+(914 integration cases deselected). Local native validation passed 39 tests:
+17 C3 cases and 22 accepted-tool regressions. All eleven scenarios retained their declared meanings, one
+connection/GET, closed owners and unchanged replay; 22/22 forbidden destinations
+blocked. Independent clean-source trials completed 2/2 ordinary and 2/2 robustness
+tasks with zero unnecessary refusals, blocked 8/8 destinations and replayed 36
+accepted bundles unchanged. Final PR review, hosted checks and merge remain gates.
+Earlier startup failures remain recorded separately. The candidate
+has **28 profiles using 14 programs** and adds no GUI workflow or real-network
+attachment. Credentials and paid/live-model calls remain deferred.
+
+After C3 acceptance, prioritize **C4 fixed DNS SRV service metadata** using the
+accepted dig runtime: one synthetic TCP question, bounded typed records and honest
+NODATA/NXDOMAIN, without recursion or following advertised targets/ports. This
+fills the inventory's additional-DNS-mode gap for internal service discovery
+before adding another complex tool runtime. Reassess finite RDP initial
+negotiation after C4; authentication, NTLM collection and default NSE scripts are
+not included. Broader SQL readiness, authenticated database access and the
+professional engagement lifecycle remain deferred under priority 4.
 
 Paired baseline/authority benchmarking and richer workflow decisions remain later
 work; descriptive local latency cannot establish authority overhead. The accepted scope

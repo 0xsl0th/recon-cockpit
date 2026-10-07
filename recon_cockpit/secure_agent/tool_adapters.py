@@ -17,7 +17,7 @@ from .tool_parameters import (
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters,
-    PostgreSQLTLSParameters, MySQLTLSParameters,
+    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -69,6 +69,7 @@ REDIS_TOOL_ID = "redis_server_info_v1"
 SNMP_TOOL_ID = "snmp_system_get_v1"
 POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
 MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
+WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
 CONFIGURABLE_NMAP_TOOL_ID = "configurable_nmap_service_v1"
 CONFIGURABLE_HEADERS_TOOL_ID = "configurable_http_headers_v1"
 CONFIGURABLE_SSH_TOOL_ID = "configurable_ssh_host_keys_v1"
@@ -90,6 +91,7 @@ REDIS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_ou
 SNMP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 POSTGRESQL_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 MYSQL_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+WHATWEB_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
 
@@ -218,6 +220,16 @@ ADAPTERS = MappingProxyType({
          "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
          "fixed_tls_name", "fixed_database_tls_preface", "no_database_login",
          "no_sql", "no_plaintext_downgrade", "no_application_request"),
+    ),
+    WHATWEB_TOOL_ID: ToolAdapter(
+        WHATWEB_TOOL_ID, WhatWebParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_http_application_hints", "owned-whatweb-http-v1",
+        "bounded-whatweb-http-result-v1", "whatweb-json-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "bounded_threads", "no_child_processes",
+         "fixed_http_get", "finite_passive_plugins", "single_connection_and_request",
+         "bounded_response_input", "no_redirects", "no_retries", "no_authentication",
+         "untrusted_application_hints_only"),
     ),
     SSH_TOOL_ID: ToolAdapter(
         SSH_TOOL_ID, SSHHostKeysParameters, ("port", "timeout_seconds", "max_output_bytes"),

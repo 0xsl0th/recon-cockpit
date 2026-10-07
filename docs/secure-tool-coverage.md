@@ -122,8 +122,8 @@ Model credentials, paid calls and live evaluation remain much later.
 
 ## Successive product coverage batches
 
-Priority 3 follows the accepted initial GUI. Accepted main has **25 bounded profiles
-from 13 external programs** after C1 in PR #55. Installed binaries and interactive
+Priority 3 follows the accepted initial GUI. Accepted main has **27 bounded profiles
+from 13 external programs** after C2 in PR #56. Installed binaries and interactive
 commands do not satisfy secure coverage. The following rows distinguish existing
 integration from a candidate secure profile.
 
@@ -131,17 +131,18 @@ integration from a candidate secure profile.
 | --- | --- | --- | --- |
 | C1 | Redis server metadata; redis-cli, no interactive menu integration | One RESP2 INFO server, four selected typed fields, no authentication/key access/writes/cluster follow-up; actual useful execution, error/hostile/bounded-output cases, replay and G1–G6. | [x] Accepted in PR #55. |
 | C1 | SNMP system metadata; snmpget, no interactive menu integration | One v2c TCP GetRequest of three fixed system OIDs with public synthetic community; complete typed values/noSuchObject, no walks/writes/UDP/custom community; actual useful execution, adversarial cases, replay and G1–G6. | [x] Accepted in PR #55. |
-| C2 — current | PostgreSQL pre-authentication TLS; existing secure OpenSSL runtime, no interactive database integration | One fixed SSLRequest followed by fixture-CA/name-verified TLS 1.3 and clean close without application data; structured handshake-only evidence, refusal/untrusted/malformed/stalled/injected cases, replay and G1–G6. No startup/login/SQL/readiness claim. | Actual owned execution and replay passed; review/merge pending. |
-| C2 — current | MySQL pre-authentication TLS; same existing OpenSSL runtime, no interactive database integration | Read one bounded initial greeting, send fixed SSLRequest, verify TLS 1.3 and close without application data; hostile greeting version remains inert, no account/auth-plugin/login/SQL operation; honest fragmented-greeting limitation, replay and G1–G6. | Actual owned execution and replay passed; review/merge pending. |
-| C3 — next | HTTP application fingerprinting; WhatWeb installed, no interactive or secure integration | Review a finite allowlisted plugin set, runtime dependencies and one-origin request bounds first; then actual useful owned execution, structured untrusted observations, hostile/redirect cases, evidence and G1–G6. Missing prerequisites or unbounded defaults must fail closed. | Planned; no execution capability claimed. |
+| C2 | PostgreSQL pre-authentication TLS; existing secure OpenSSL runtime, no interactive database integration | One fixed SSLRequest followed by fixture-CA/name-verified TLS 1.3 and clean close without application data; structured handshake-only evidence, refusal/untrusted/malformed/stalled/injected cases, replay and G1–G6. No startup/login/SQL/readiness claim. | [x] Accepted in PR #56. |
+| C2 | MySQL pre-authentication TLS; same existing OpenSSL runtime, no interactive database integration | Read one bounded initial greeting, send fixed SSLRequest, verify TLS 1.3 and close without application data; hostile greeting version remains inert, no account/auth-plugin/login/SQL operation; honest fragmented-greeting limitation, replay and G1–G6. | [x] Accepted in PR #56. |
+| C3 — current | HTTP application fingerprinting; WhatWeb candidate, no interactive integration | One fixed GET with five passive plugins and a finite sealed Ruby/WhatWeb runtime; ordinary hints and no-hints tasks both complete, hostile/meta redirects stay inert, all eleven scenarios retain scope/bounds/closure, structured untrusted evidence and G1–G6. | Actual owned execution and replay passed; final review, hosted checks and merge pending. |
+| C4 — next | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed synthetic SRV question over TCP; bounded typed priority/weight/port/target rows, honest NODATA/NXDOMAIN, no recursion or follow-up to advertised endpoints; actual useful owned execution, hostile/malformed/bounds cases, evidence and G1–G6. | Planned; no additional execution capability claimed. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 
-C1 is closed: its Redis/SNMP metadata remains `untrusted_service_report`, and
+C1 and C2 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
 TCP SNMP does not establish UDP coverage. C2 reuses the existing single-action
-authority, OpenSSL runtime, strict TLS parser and evidence infrastructure. It adds
-two profiles, bringing the candidate to **27 profiles from the same 13 programs**,
-pending acceptance. The selected database wire protocol is a contract binding;
+authority, OpenSSL runtime, strict TLS parser and evidence infrastructure. Its two
+profiles bring accepted main to **27 profiles from the same 13 programs**.
+The selected database wire protocol is a contract binding;
 `verified_tls_handshake_only` with `authenticated_database_session: false` does not
 establish database product identity, version, readiness or account access. No
 username, password, database startup/login, SQL, dynamic authentication plugin or
@@ -163,8 +164,38 @@ separate hostile-MySQL task, blocked 24/24 forbidden destinations, passed all
 120 native boundary fields and replayed unchanged. A separate clean-source run
 repeated those three useful trials, blocked 6/6 destinations and replayed all
 33 accepted bundles unchanged through CLI and shared inspection. Provider calls
-and cost stayed zero. Review, hosted checks and merge remain open G6 items; C2
-is not yet counted as accepted main coverage. See the [verification record](verification.md).
+and cost stayed zero. PR #56 passed review and all five final hosted jobs before
+merge `9603a54`; all five post-merge jobs also passed. The portable macOS helper
+correction retained real TLS tests, passed 224 focused cases and changed no
+production/native source. See the [verification record](verification.md).
+
+The current [C3 runbook](whatweb-tools.md) fixes Title, HTTPServer, X-Powered-By,
+MetaGenerator and JQuery at aggression 1, one request and no follow-up. Both
+ordinary tasks, including a complete response without hints, must finish 2/2 with
+zero unnecessary refusals. Injection and meta-redirect utility are separate
+robustness trials. HTTP redirects, denials, malformed/early EOF/stalled replies
+and input/output pressure remain inconclusive. All eleven cases need actual native
+execution, one connection/request, enforced bounds, closed owners and unchanged
+replay; startup failures cannot satisfy a negative case. C3's candidate contains
+**28 profiles from 14 programs**, with no broader GUI or network attachment claim.
+
+C3's complete portable suite passed **11,109 tests**, with zero failures/errors/skips
+and 914 integration cases deselected. The JUnit duration was 299.271 seconds.
+Native validation passed **39 selected Linux tests**, including 17 C3 cases
+and 22 accepted-tool regressions. All eleven scenarios matched their declared
+outcomes, closed at one connection/GET, replayed unchanged and blocked 22/22
+forbidden destinations. Ordinary and robustness tasks completed 2/2 each, kept
+as separate denominators. A clean-source run at `0bdd9b6` repeated both pairs
+with zero unnecessary refusals, blocked 8/8 destinations and replayed all 36
+accepted bundles unchanged through CLI and shared inspection. Provider calls
+and cost stayed zero. Final review, hosted checks and merge remain open G6 items.
+
+C4 follows because fixed SRV metadata adds internal service discovery while
+reusing accepted dig infrastructure. Returned targets and ports remain untrusted
+evidence, never automatic scope. Reassess the next gap after that batch; finite
+RDP initial negotiation is a later candidate, with no authentication or NTLM
+collection implied. Do not add a required new B milestone or broaden existing
+accepted profiles to pursue an executable count.
 
 Each batch records useful completion and unnecessary refusals as well as blocked
 unauthorized attempts, request counts, elapsed time and zero provider cost. A normal

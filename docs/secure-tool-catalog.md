@@ -14,20 +14,29 @@ Their recipes point to an explicit scope file and the
 or accepted execution contract is broadened.
 
 C1 Redis/SNMP is accepted in [PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55),
-bringing accepted main to **25 profiles using 13 programs**. The [Redis/SNMP runbook](redis-snmp-tools.md) covers one fixed Redis
+bringing that accepted slice to **25 profiles using 13 programs**. The [Redis/SNMP runbook](redis-snmp-tools.md) covers one fixed Redis
 `INFO server` and one SNMPv2c GET over TCP for three system scalars. Both use
 the owned `127.0.0.1:8080` fixture and require fresh approval. SNMP's community is
 public synthetic test data; no real credential setup, host configuration,
 MIBs, UDP, walks or writes are introduced.
 
-The current C2 [PostgreSQL/MySQL pre-authentication TLS candidate](database-tls-tools.md)
-adds two profiles of the existing OpenSSL program. This branch lists **27 profiles
-using the same 13 programs**, pending review and acceptance. Local validation
+C2 [PostgreSQL/MySQL pre-authentication TLS](database-tls-tools.md) is accepted in
+[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56), bringing main to **27 profiles
+using the same 13 programs**. Local validation
 passed 10,776 portable and 28 native Linux tests; both ordinary TLS tasks completed
 with zero unnecessary refusals, and all 24 forbidden-destination witnesses blocked.
-The catalog describes candidate contracts as well as accepted ones; catalog
-presence alone is not verification. Each new recipe stops after a verified fixture TLS handshake
+Each database recipe stops after a verified fixture TLS handshake
 and clean close, without credentials, login or SQL.
+
+The current C3 [WhatWeb candidate](whatweb-tools.md) adds one passive HTTP
+fingerprint profile, bringing this branch to **28 profiles using 14 programs**.
+Its recipe permits one fixed GET with five exact plugins and no redirects,
+credentials or follow-up. Ruby supports the WhatWeb runtime and is not separately
+counted as an assessment program. All 11,109 portable and 39 selected native tests
+passed. Independent trials completed 2/2 ordinary and 2/2 robustness tasks with zero unnecessary
+refusals, blocked 8/8 forbidden destinations and replayed 36 accepted bundles
+unchanged. Final review, hosted checks and merge remain acceptance gates; this
+candidate is not yet counted as accepted main coverage.
 
 From the repository root, with the project installed:
 
@@ -39,6 +48,7 @@ python -m recon_cockpit.secure_agent --describe-tool redis_server_info_v1
 python -m recon_cockpit.secure_agent --describe-tool snmp_system_get_v1
 python -m recon_cockpit.secure_agent --describe-tool postgresql_tls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool mysql_tls_handshake_v1
+python -m recon_cockpit.secure_agent --describe-tool whatweb_http_fingerprint_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -124,11 +134,17 @@ untrusted, malformed and stalled handshakes stay inconclusive. MySQL greeting te
 is ignored as metadata, and a fragmented greeting can fail closed with this native
 client; neither behavior permits a plaintext fallback.
 
+WhatWeb reports `untrusted_application_hints` from Title, HTTPServer,
+X-Powered-By, MetaGenerator and JQuery. A completed HTTP 200 with no hints is
+useful completion, not technology absence. Hostile strings remain escaped literal
+metadata. Matches do not prove product identity, installed versions or vulnerabilities;
+redirects, denied, incomplete and unsupported responses stay inconclusive.
+
 The B0–B8 [coverage checklist](secure-tool-coverage.md) is closed under those
 accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C2 candidate. Further composition and comparative benchmarking
+the current C3 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

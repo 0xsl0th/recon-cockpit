@@ -38,6 +38,17 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     if case.startswith("dig-"):
         assert definition["response_sha256"] == hashlib.sha256(fixture.dns_response(case, fixture.dns_query())).hexdigest()
         assert definition["request_count_means"] == "validated_dns_questions"
+    elif case in fixture.WHATWEB_CASES:
+        response = fixture.whatweb_response(case)
+        assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
+        assert definition["request_sha256"] == hashlib.sha256(fixture.WHATWEB_REQUEST).hexdigest()
+        assert definition["method"] == "GET" and definition["path"] == fixture.WHATWEB_PATH
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["max_request_bytes"] == 2048 and definition["max_response_bytes"] == 8192
+        assert definition["request_count_means"] == "validated_fixed_gets"
+        assert all(definition[key] is False for key in (
+            "authentication", "credentials", "cookies", "redirects_followed", "scripts_executed",
+            "subresources_fetched", "backend", "product_identity_claim", "vulnerability_claim"))
     elif case in fixture.DATABASE_TLS_CASES:
         certificate = tls.UNTRUSTED_SERVER_CERT_PEM if case.endswith("-untrusted") else tls.SERVER_CERT_PEM
         assert definition["certificate_sha256"] == hashlib.sha256(certificate).hexdigest()

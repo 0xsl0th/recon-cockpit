@@ -239,6 +239,8 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_no_answer_observed": "no_answer_observed",
                "tls_handshake_verified": "handshake_verified",
                "database_tls_verified": "database_tls_verified",
+               "http_fingerprint_observed": "http_fingerprint_observed",
+               "http_fingerprint_no_hints": "http_fingerprint_no_hints",
                "ssh_host_key_observed": "host_key_observed",
                "ldap_rootdse_observed": "rootdse_observed",
                "ldap_empty_rootdse_observed": "empty_rootdse_observed",
@@ -372,6 +374,16 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
             ]
+        if manifest["fixture_case"].startswith("whatweb-"):
+            report["limitations"] = [
+                "This one-action passive fingerprint trial uses a disconnected synthetic owned HTTP fixture, not a professional engagement or live-model evaluation.",
+                "WhatWeb receives one fixed HTTP response with five reviewed passive plugins: Title, HTTPServer, X-Powered-By, MetaGenerator and JQuery. It does not fetch linked scripts, follow redirects or run aggressive plugins.",
+                "All strings, versions and plugin matches are untrusted application hints. They do not prove software identity/version, authentication, exploitability or a vulnerability; forged hints may match.",
+                "A complete HTTP 200 response with no reviewed hints is useful task completion, not proof that technologies are absent. Redirects, denied, incomplete, unsupported and oversized responses remain inconclusive.",
+                "The initial parser accepts bounded printable ASCII hints, discards bounded OS guesses and Title warnings, and fails closed on other plugin or diagnostic shapes. This is not an exhaustive fingerprint catalog or universal page compatibility.",
+                "Hostile metadata remains inert evidence; it cannot choose a target, URL or follow-up action. This deterministic trial does not measure real-model injection susceptibility or comparative overhead.",
+                "Owner counters record the validated fixed GET on at most one connection. Bounded raw output is reparsed independently; read-only inspection restores no approval, budget or authority.",
+            ]
         if manifest["fixture_case"].startswith(("postgresql-tls-", "mysql-tls-")):
             report["limitations"] = [
                 "This single-action database TLS trial uses a disconnected synthetic owned fixture, not a real database engagement or live-model evaluation.",
@@ -498,6 +510,15 @@ def _markdown(report):
                           "| Answer | TTL |", "| --- | --- |"])
             for row in details["answers"]:
                 lines.append("| `" + row["address"] + "` | " + str(row["ttl"]) + " |")
+        elif type(details) is dict and details.get("kind") == "http_fingerprint":
+            lines.extend(["", "## Passive HTTP application hints", "",
+                "Untrusted response hints only; software identity, version and vulnerabilities are not verified.",
+                "", "| Reviewed plugin | Untrusted strings | Untrusted version hints |", "| --- | --- | --- |"])
+            for row in details["hints"]:
+                lines.append("| " + row["plugin"] + " | " + _metadata_literal(row["strings"])
+                             + " | " + _metadata_literal(row["versions"]) + " |")
+            if not details["hints"]:
+                lines.extend(["", "The fixed request completed with no reviewed hints. This does not establish technology absence."])
         elif type(details) is dict and details.get("kind") == "database_tls_handshake":
             lines.extend(["", "## Database TLS handshake", "",
                 "Verified TLS under the selected wire profile and public fixture CA; no database login, readiness or product identity is established.",
