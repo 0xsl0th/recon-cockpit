@@ -77,7 +77,7 @@ def syscall_filter(tool_id):
     if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB,
                        runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP,
                        runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE,
-                       runtime.KERBRUTE):
+                       runtime.KERBRUTE, runtime.REDIS, runtime.SNMP):
         raise ValueError("unsupported_network_tool")
     common.syscall_filter(allow_threads=tool_id in (runtime.DIG, runtime.KERBRUTE))
 
@@ -113,6 +113,16 @@ def _kerberos_transport_witness():
     raise RuntimeError("kerbrute_udp_socket_allowed")
 
 
+def _metadata_transport_witness():
+    """C1 is TCP-only; a native client cannot silently fall back to UDP."""
+    try:
+        descriptor = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    except PermissionError:
+        return
+    descriptor.close()
+    raise RuntimeError("metadata_udp_socket_allowed")
+
+
 def main():
     try:
         if len(sys.argv) != 3 or not stat.S_ISFIFO(os.fstat(0).st_mode):
@@ -135,6 +145,8 @@ def main():
             _thread_bound_witness()
         if request["tool_id"] == runtime.KERBRUTE:
             _kerberos_transport_witness()
+        if request["tool_id"] in (runtime.REDIS, runtime.SNMP):
+            _metadata_transport_witness()
         # The authority stdin and any loader-retained descriptors are gone.
         sys.stdin.close()
         for name in os.listdir("/proc/self/fd"):

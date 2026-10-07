@@ -26,6 +26,7 @@ PROGRAMS = {
     "ldap_rootdse_v1": "ldapsearch", "smb_share_list_v1": "smbclient",
     "rpcinfo_dump_v1": "rpcinfo", "showmount_exports_v1": "showmount",
     "kerbrute_userenum_v1": "kerbrute",
+    "redis_server_info_v1": "redis-cli", "snmp_system_get_v1": "snmpget",
     "configurable_nmap_service_v1": "nmap", "configurable_http_headers_v1": None,
     "configurable_ssh_host_keys_v1": "ssh-keyscan",
 }
@@ -44,6 +45,8 @@ NORMAL_NETWORK_CASES = {
     "curl_winrm_metadata_v1": ("winrm-ok", "docker-winrm"),
     "nmap_service_identify_v1": ("nmap-service-http", "nmap-service"),
     "kerbrute_userenum_v1": ("kerberos-ok", "kerberos"),
+    "redis_server_info_v1": ("redis-ok", "redis-snmp"),
+    "snmp_system_get_v1": ("snmp-ok", "redis-snmp"),
 }
 GATES = {"--owned-lab", "--isolated-audit", "--isolated-approvals",
          "--isolated-launch-admission", "--isolated-launcher",
@@ -96,10 +99,10 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
     assert result["runtime_availability"] == "not_checked"
     ids = [row["tool_id"] for row in result["tools"]]
     assert ids == sorted(PROGRAMS) == sorted(ADAPTERS)
-    assert result["capability_count"] == len(ids) == 23
+    assert result["capability_count"] == len(ids) == 25
     families = {row["external_program"] for row in result["tools"] if row["external_program"] is not None}
     assert families == set(PROGRAMS.values()) - {None}
-    assert result["external_program_count"] == len(families) == 11
+    assert result["external_program_count"] == len(families) == 13
     for row in result["tools"]:
         tool = row["tool_id"]
         adapter = ADAPTERS[tool]

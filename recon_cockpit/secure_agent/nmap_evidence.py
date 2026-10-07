@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import copy
 import hashlib
+import json
 import os
 from pathlib import Path
 import re
@@ -250,6 +251,8 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "smtp_capabilities_observed": "smtp_capabilities_observed",
                "smtp_no_extensions_observed": "smtp_no_extensions_observed",
                "kerberos_principal_reports_observed": "kerberos_principal_reports_observed",
+               "redis_server_info_observed": "redis_server_info_observed",
+               "snmp_system_metadata_observed": "snmp_system_metadata_observed",
                "nmap_service_identified": "nmap_service_identified",
                "nmap_service_unidentified": "nmap_service_unidentified",
                "docker_ping_observed": "docker_ping_observed",
@@ -368,6 +371,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
             ]
+        if manifest["fixture_case"].startswith(("redis-", "snmp-")):
+            report["limitations"] = [
+                "This single-action metadata trial uses a disconnected synthetic fixture, not a professional engagement or real-model evaluation.",
+                "Redis sends one RESP2 INFO server command without authentication, key access, writes or cluster redirection. Only bounded version, mode, architecture and advertised port fields are retained.",
+                "SNMP sends one v2c GetRequest over TCP for three fixed system scalar OIDs using a public synthetic community. UDP, host MIB/config files, walks, writes, retries and corrective resubmission are excluded.",
+                "Values are untrusted service reports, not authenticated identity, vulnerability proof or authorization for a follow-up destination. Explicit typed noSuchObject replies differ from missing or malformed evidence.",
+                "Both bounded raw output channels are independently reparsed without network. Empty Redis metadata, rejected queries, partial output and unsupported native formats remain inconclusive.",
+                "Counters record one validated query on at most one accepted TCP connection. Hashes reconcile local evidence; inspection never restores authority. No model or comparative overhead claim is made.",
+            ]
         if manifest["fixture_case"].startswith("kerberos-"):
             report["limitations"] = [
                 "This fixed two-name Kerbrute trial uses a disconnected synthetic error-only KDC, not a real directory or professional engagement.",
@@ -418,6 +430,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
             "This evidence replay validates tool results and workflow eligibility, not model quality, cost or latency by itself.",
         ]
     return report
+
+
+def _metadata_literal(value):
+    # JSON quoting plus escaped Markdown/HTML delimiters keeps service strings
+    # inside one inert inline-code table cell, even for malicious output.
+    text = json.dumps(value, ensure_ascii=True)
+    for character in "`|<>&":
+        text = text.replace(character, "\\u" + format(ord(character), "04x"))
+    return "`" + text + "`"
 
 
 def _markdown(report):
@@ -490,6 +511,18 @@ def _markdown(report):
             lines.extend("| " + capability + " |" for capability in details["capabilities"])
             if not details["capabilities"]:
                 lines.extend(["", "The complete validated EHLO reply advertises no extensions."])
+        elif type(details) is dict and details.get("kind") == "redis_server_info":
+            lines.extend(["", "## Redis server metadata", "",
+                "Untrusted service reports; no authenticated identity or vulnerability is established.",
+                "", "| Field | Reported value |", "| --- | --- |"])
+            for field in ("version", "mode", "arch_bits", "tcp_port"):
+                lines.append("| " + field + " | " + _metadata_literal(details["metadata"][field]) + " |")
+        elif type(details) is dict and details.get("kind") == "snmp_system_metadata":
+            lines.extend(["", "## SNMP system metadata over TCP", "",
+                "Untrusted service reports from three fixed scalar OIDs; a missing object is an explicit response, not missing evidence.",
+                "", "| OID | Reported type | Reported value |", "| --- | --- | --- |"])
+            for row in details["variables"]:
+                lines.append("| " + row["oid"] + " | " + row["type"] + " | " + _metadata_literal(row["value"]) + " |")
         elif type(details) is dict and details.get("kind") == "kerberos_principal_reports":
             lines.extend(["", "## Kerberos tool reports", "",
                 "Tool reports only; principal existence, absence and authentication are not verified.",

@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — desktop Execute owned lab integration (7 October 2026).**
+**Current slice — C1 Redis/SNMP secure coverage (7 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -28,8 +28,8 @@ claim that today's bounded fixtures support professional engagements.
 | Priority | Implementation | Completion and boundary |
 | --- | --- | --- |
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
-| 2 — current | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
-| 3 — successive batches | Extend secure tool coverage toward the intended product | Prioritize remaining engagement capabilities, not executable count; each tool needs actual owned-lab execution, structured results, evidence and enforcement. Keep interactive support distinct from secure support. |
+| 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
+| 3 — current, successive batches | Extend secure tool coverage toward the intended product | Prioritize remaining engagement capabilities, not executable count; each tool needs actual owned-lab execution, structured results, evidence and enforcement. Keep interactive support distinct from secure support. |
 | 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
@@ -52,7 +52,7 @@ strict scope import/validation/private export, read-only saved-evidence replay,
 distinct draft/recorded scope, bounded literal observations and tested close
 behavior. Its accepted local evidence covers 9,823 portable and six actual Tk cases.
 
-Priority **2c remains current**, with these explicit acceptance steps:
+Priority **2c is accepted**, with these completed steps:
 
 - **Session lifecycle — accepted in [PR #51](https://github.com/0xsl0th/recon-cockpit/pull/51).**
   Merge `972afac` matches the reviewed tree; all five final and post-merge checks
@@ -84,7 +84,7 @@ Priority **2c remains current**, with these explicit acceptance steps:
   clean replay and zero unnecessary refusals/provider calls/cost. The owner said
   "ok this time it worked". The original four-step/60-second/26,624-byte limits
   remained fixed. Retain earlier incomplete trials; do not repeat accepted checks.
-- **Desktop execution — [PR #54](https://github.com/0xsl0th/recon-cockpit/pull/54) awaits review, not accepted yet.** An explicit
+- **Desktop execution — accepted in [PR #54](https://github.com/0xsl0th/recon-cockpit/pull/54).** An explicit
   **Execute owned lab** control uses the same shared service and isolated graphical
   reviewer for the existing disconnected HTTP/SSH fixtures. Dry run remains a
   separate operation. Requests freeze scope and require fresh per-action approval;
@@ -93,15 +93,21 @@ Priority **2c remains current**, with these explicit acceptance steps:
   clipboard sessions each completed 4/4 useful actions and blocked 12/12 forbidden
   destinations. Denial without launch, pending cancellation/close, partial-work
   cancellation, closed processes and unchanged replay passed. Both themes passed
-  at 1120×720. The separate implementation PR and its required checks still need
-  review before acceptance; see the [verification record](verification.md#desktop-execute-owned-lab--7-october-2026).
+  at 1120×720. Reviewed head `43321da` merged as `7de63a4` with an identical
+  tree; all five final and post-merge jobs passed. See the [verification record](verification.md#desktop-execute-owned-lab--7-october-2026).
   The original four-step/60-second/26,624-byte limits and all authority gates remain.
   Preserve PR #53 personal acceptance; automated desktop input is separate evidence.
   Real network attachment, restored grants and professional readiness stay out of scope.
 
-This remains part of priority 2; dry-run controls do not complete the GUI milestone.
-Successive tool batches stay priority 3 and target remaining internal-network/web
-capabilities. The professional engagement lifecycle remains priority 4.
+The initial owned GUI milestone is closed. Priority 3 now starts **C1 Redis server
+metadata and SNMP system metadata**, with the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
+and [runbook](redis-snmp-tools.md) defining completion. The candidate adds two CLI
+profiles using two installed programs through existing gates; it does not extend
+the GUI's HTTP/SSH workflow. C1 remains pending review and merge. Next, prioritize
+unauthenticated SQL service readiness/handshake metadata (PostgreSQL and MySQL),
+subject to a bounded protocol/runtime review. No credentials or SQL operations
+are authorized by this planning row. The professional engagement lifecycle remains
+priority 4.
 
 Paired baseline/authority benchmarking and richer workflow decisions remain later
 work; descriptive local latency cannot establish authority overhead. The accepted scope
@@ -149,8 +155,8 @@ deferred until much later; do not ask for a key during tool development. Complet
 offline R5 and the accepted local R6 candidate remain closed. Broader authenticated,
 intrusive and external-target product capabilities retain separate authorization.
 
-Through October, validate configurable scope and then the shared application
-services/initial GUI in bounded reviewable slices. Refresh the proposal
+With configurable scope and the initial GUI accepted, use the remaining October
+work for bounded secure-tool batches and owned-lab validation. Refresh the proposal
 with verified results in early November, targeting submission around 9 November
 after operator review. Proposal PR #31 remains separate and unmerged; its local PDF is unchanged.
 Publication and competition submission remain separate later decisions.

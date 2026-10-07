@@ -44,7 +44,11 @@ four-action disconnected HTTP/SSH fixtures and requires fresh approval for every
 action in the [isolated review window](docs/graphical-approvals.md). Dry runs execute
 no tools. Both modes replay saved evidence before displaying final usefulness.
 PR #53's reviewer correction and personal walkthrough are merged and accepted;
-the desktop Execute integration is the current [review slice](docs/roadmap.md).
+the desktop Execute integration is accepted in PR #54. The current
+[review slice](docs/roadmap.md) adds [Redis and SNMP metadata](docs/redis-snmp-tools.md)
+through the secure CLI path: two bounded profiles with fixed owned fixtures.
+The candidate catalog has 25 profiles from 13 programs; accepted main has 23/11
+until that batch is reviewed and merged.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

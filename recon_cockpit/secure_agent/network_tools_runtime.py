@@ -35,6 +35,8 @@ DOCKER_VERSION = "curl_docker_version_v1"
 WINRM = "curl_winrm_metadata_v1"
 NMAP_SERVICE = "nmap_service_identify_v1"
 KERBRUTE = "kerbrute_userenum_v1"
+REDIS = "redis_server_info_v1"
+SNMP = "snmp_system_get_v1"
 KERBRUTE_PRINCIPALS = b"fixture-a\nfixture-b\n"
 # A distribution may put a wrapper at /usr/bin/nmap. Only these two ELF
 # locations are eligible, and only this new profile resolves the alternative.
@@ -105,8 +107,14 @@ EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
                RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount",
                FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl",
                DOCKER_PING: "/usr/bin/curl", DOCKER_VERSION: "/usr/bin/curl", WINRM: "/usr/bin/curl",
-               NMAP_SERVICE: "/usr/bin/nmap", KERBRUTE: "/usr/local/bin/kerbrute"}
+               NMAP_SERVICE: "/usr/bin/nmap", KERBRUTE: "/usr/local/bin/kerbrute",
+               REDIS: "/usr/bin/redis-cli", SNMP: "/usr/bin/snmpget"}
 FIXED_ARGV = {
+    REDIS: ("/tool/redis-cli", "-2", "-e", "--raw", "-h", "127.0.0.1", "-p", "8080", "INFO", "server"),
+    SNMP: ("/tool/snmpget", "-v", "2c", "-c", "recon-fixture-public", "-r", "0", "-t", "2",
+           "-Cf", "-On", "-Ot", "-Ox", "-m", "", "-M", "", "--dontLoadHostConfig=true",
+           "--noPersistentLoad=true", "--noPersistentSave=true", "tcp:127.0.0.1:8080",
+           ".1.3.6.1.2.1.1.1.0", ".1.3.6.1.2.1.1.3.0", ".1.3.6.1.2.1.1.5.0"),
     KERBRUTE: ("/tool/kerbrute", "userenum", "--dc", "127.0.0.1:8080", "--domain", "harbordesk.test",
           "--threads", "1", "--safe", "--verbose", "/tool/data/principals.txt"),
     NMAP_SERVICE: ("/tool/nmap", "--unprivileged", "-sT", "-sV", "--version-intensity", "0",
@@ -181,6 +189,11 @@ def execution_environment(tool_id):
         # Go reserves virtual address space independently of its live heap.
         # The worker also enforces the reviewed task and address-space caps.
         value.update(GOMAXPROCS="1", GOMEMLIMIT="64MiB")
+    if tool_id == SNMP:
+        # No host MIBs, per-host configuration, persistent engine state or
+        # environment-supplied community can enter the numeric v2c GET.
+        value.update(MIBS="", MIBDIRS="", MIBFILES="", SNMPCONFPATH="/tool/no-snmp-config",
+                     SNMP_PERSISTENT_DIR="/tool/no-snmp-state")
     return value
 
 
@@ -195,7 +208,7 @@ def _compiled(tool_id):
     if tool_id == DIG:
         # No host resolver, search list, or user configuration enters the tool.
         return "compiled:resolver", "/etc/resolv.conf", b"# fixed TCP nameserver supplied by reviewed argv\n"
-    if tool_id in (SSH, LDAP, FTP, SMTP, DOCKER_PING, DOCKER_VERSION, WINRM):
+    if tool_id in (SSH, LDAP, FTP, SMTP, DOCKER_PING, DOCKER_VERSION, WINRM, REDIS, SNMP):
         return None  # These profiles need no configuration, credentials, or trust file.
     if tool_id == SMB:
         return "compiled:smb-config", "/tool/data/smb.conf", SMB_CONFIG

@@ -17,10 +17,12 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             FTP_TOOL_ID, SMTP_TOOL_ID, FTP_PARAMETERS, SMTP_PARAMETERS,
                             DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID,
                             DOCKER_PING_PARAMETERS, DOCKER_VERSION_PARAMETERS, WINRM_PARAMETERS,
-                            NMAP_SERVICE_TOOL_ID, NMAP_SERVICE_PARAMETERS, KERBRUTE_TOOL_ID, KERBRUTE_PARAMETERS, NETWORK_TOOLS_LIMITS, get_adapter)
+                            NMAP_SERVICE_TOOL_ID, NMAP_SERVICE_PARAMETERS, KERBRUTE_TOOL_ID, KERBRUTE_PARAMETERS,
+                            REDIS_TOOL_ID, REDIS_PARAMETERS, SNMP_TOOL_ID, SNMP_PARAMETERS,
+                            NETWORK_TOOLS_LIMITS, get_adapter)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
                                      validate_identity)
-from .network_tools_fixture import QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case
+from .network_tools_fixture import QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case, REDIS_SNMP_CASES
 
 
 TOOL_ID = DIG_TOOL_ID
@@ -36,11 +38,13 @@ PARAMETERS.update({DOCKER_PING_TOOL_ID: dict(DOCKER_PING_PARAMETERS),
                    DOCKER_VERSION_TOOL_ID: dict(DOCKER_VERSION_PARAMETERS), WINRM_TOOL_ID: dict(WINRM_PARAMETERS)})
 PARAMETERS[NMAP_SERVICE_TOOL_ID] = dict(NMAP_SERVICE_PARAMETERS)
 PARAMETERS[KERBRUTE_TOOL_ID] = dict(KERBRUTE_PARAMETERS)
+PARAMETERS.update({REDIS_TOOL_ID: dict(REDIS_PARAMETERS), SNMP_TOOL_ID: dict(SNMP_PARAMETERS)})
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
     FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1", DOCKER_PING_TOOL_ID: "curl-docker-ping-v1",
-    DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1", NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1"}
+    DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1", NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1",
+    REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1"}
 B1_CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
             "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled")
 B2_CASES = ("ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
@@ -56,6 +60,7 @@ B6_CASES = tuple("docker-ping-" + suffix for suffix in ("ok", "unavailable", "in
     "winrm-" + suffix for suffix in ("ok", "no-auth", "injected", "malformed", "stalled", "redirect-ip", "redirect-port"))
 B7_CASES = tuple("nmap-service-" + suffix for suffix in ("http", "ssh", "unknown", "injected", "malformed", "stalled"))
 B8_CASES = tuple("kerberos-" + suffix for suffix in ("ok", "empty", "denied", "injected", "spoof", "malformed", "stalled"))
+C1_CASES = REDIS_SNMP_CASES
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -87,8 +92,23 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in C1_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(tool).to_dict() for tool in (REDIS_TOOL_ID, SNMP_TOOL_ID)],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "redis": {"protocol": "RESP2", "command": ["INFO", "server"],
+                "authentication": False, "key_access": False, "writes": False,
+                "cluster_redirects": False, "metadata_followup": False},
+            "snmp": {"version": "2c", "transport": "tcp", "operation": "GetRequest",
+                "oids": [".1.3.6.1.2.1.1.1.0", ".1.3.6.1.2.1.1.3.0", ".1.3.6.1.2.1.1.5.0"],
+                "community": "public_synthetic_fixture_only", "max_requests": 1,
+                "retries": 0, "correction_resubmission": False, "walk": False, "set": False,
+                "host_config_or_mibs": False, "udp": False, "metadata_followup": False},
+            "result_semantics": "untrusted_service_report",
+            "parser_versions": {tool: PARSER_VERSIONS[tool] for tool in (REDIS_TOOL_ID, SNMP_TOOL_ID)}}
     if case in B8_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(KERBRUTE_TOOL_ID).to_dict()],
@@ -190,6 +210,7 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
                                          "ftp-passive-ip", "ftp-passive-port"} and requests != 0)
             or (expected["scenario"].startswith("ftp-") and result.get("tool_observation") is not None
                 and connections != 2)
+            or (expected["scenario"] in C1_CASES and result.get("tool_observation") is not None and connections != 1)
             or (expected["scenario"] in B7_CASES and result.get("tool_observation") is not None and connections < 2)
             or (execution_status == "succeeded" and result.get("tool_observation") is not None and requests != request_limit)):
         raise ValueError("network_tools_request_continuity_mismatch")
@@ -264,6 +285,10 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == REDIS_TOOL_ID:
+        return _observation(tool_id, "redis_server_info_observed", "redis_server_info_observed", normalized)
+    if tool_id == SNMP_TOOL_ID:
+        return _observation(tool_id, "snmp_system_metadata_observed", "snmp_system_metadata_observed", normalized)
     if tool_id == KERBRUTE_TOOL_ID:
         return _observation(tool_id, "kerberos_principal_reports_observed", "kerberos_principal_reports_observed", normalized)
     if tool_id == NMAP_SERVICE_TOOL_ID:

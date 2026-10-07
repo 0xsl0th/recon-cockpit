@@ -209,3 +209,13 @@ class NmapServiceParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class KerbruteUserenumParameters(TCPParameters):
     """Bounds for two compiled synthetic names; no caller realm, list or secrets."""
+
+
+@dataclass(frozen=True, slots=True)
+class RedisServerInfoParameters(TCPParameters):
+    """Bounds for one fixed INFO server, without authentication or key access."""
+
+
+@dataclass(frozen=True, slots=True)
+class SNMPSystemGetParameters(TCPParameters):
+    """Bounds for one fixed TCP system GET with a public synthetic community."""
