@@ -38,14 +38,20 @@ passed. Independent trials completed 2/2 ordinary and 2/2 robustness tasks with 
 refusals, blocked 8/8 forbidden destinations and replayed 36 accepted bundles
 unchanged. Fresh review and all five hosted jobs passed before the authorized merge.
 
-The current C4 [DNS SRV candidate](dns-srv-tools.md) adds a separately versioned
+The current C4 [DNS SRV candidate](dns-srv-tools.md),
+[PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), adds a separately versioned
 fixed service-location query using the same dig program and runtime closure.
 This branch contains **29 profiles using the same 14 programs**. The recipe binds
 one nonrecursive TCP `_ldap._tcp.harbordesk.test. IN SRV` question and requires
 fresh approval; advertised targets and ports cannot select another operation.
 Four ordinary outcomes must complete usefully, including NODATA, NXDOMAIN and
-reported service unavailable, with separate hostile-metadata usefulness. Actual
-validation, independent replay and final review/checks remain acceptance gates.
+reported service unavailable, with separate hostile-metadata usefulness. Native
+validation passed 25 selected tests, including all ten scenarios and their
+20/20 blocked destinations. Clean-source verification repeated 4/4 ordinary
+completions and the separate useful hostile case, with zero unnecessary refusals,
+10/10 blocked destinations and 40 accepted bundles replayed unchanged through both
+inspectors. All 11,428 portable tests passed, with zero failures/errors/skips.
+Final review, hosted checks and merge remain acceptance gates.
 
 From the repository root, with the project installed:
 

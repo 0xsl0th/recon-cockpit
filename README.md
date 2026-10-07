@@ -62,13 +62,17 @@ completion. Local validation passed 11,109 portable and 39 selected native tests
 including both ordinary tasks and both hostile/meta-redirect trials. Independent verification replayed 36
 accepted bundles unchanged. Independent review and all five hosted checks passed
 before the authorized merge.
-The current [DNS SRV candidate](docs/dns-srv-tools.md) reuses dig for one fixed
+The current [DNS SRV candidate](docs/dns-srv-tools.md) in
+[PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) reuses dig for one fixed
 nonrecursive TCP question. It distinguishes bounded service advertisements,
 NODATA, NXDOMAIN and a reported unavailable service; advertised targets and ports
 remain untrusted evidence without follow-up authority. This branch has 29 bounded
-profiles using the same 14 programs. Actual native validation, independent replay
-and final review/checks remain acceptance gates. Ordinary usefulness must complete
-4/4 with zero unnecessary refusals, separately from hostile-output robustness.
+profiles using the same 14 programs. Native validation passed 25 selected tests:
+16 C4 and nine accepted regressions. All four ordinary tasks and the separate
+hostile-metadata task completed, with zero unnecessary refusals and 20/20 blocked
+destinations across ten scenarios. Independent clean-source verification repeated
+those useful results and replayed 40 accepted bundles unchanged. All 11,428
+portable tests passed. Final PR review, hosted checks and merge remain acceptance gates.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

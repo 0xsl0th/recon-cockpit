@@ -10,9 +10,11 @@ Reviewed head `cf69f4e` merged as `fdfe6e8` on 7 October 2026 at 18:53:30 UTC,
 with identical tree `1ff0ce8b92cbd785e26cb2cd859311ee76ba6eba`. Independent review
 found no blockers; 1,261 and 1,103 focused tests passed and all 494 validated
 source hashes matched. All five [final hosted jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37668578334)
-passed 11,109 portable tests each. Post-merge checks are tracked in the
-[checkpoint](continue-here.md). Preserve this accepted contract while C4 adds
-[fixed DNS SRV metadata](dns-srv-tools.md) separately.
+passed 11,109 portable tests each. All five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37670291745)
+also passed. Preserve this accepted contract while C4 adds
+[fixed DNS SRV metadata](dns-srv-tools.md) separately in
+[PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58).
 
 The profile permits one GET of `/harbordesk/portal.html` at the disconnected owned
 fixture `127.0.0.1:8080`. The five passive plugins are Title, HTTPServer,

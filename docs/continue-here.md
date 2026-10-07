@@ -4,15 +4,19 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: priority 3 secure-tool coverage, C4 bounded DNS SRV metadata.**
+**Current work: [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), priority 3
+secure-tool coverage, C4 bounded DNS SRV metadata.**
 Work is on `feature/dns-srv-coverage` in `/tmp/recon-dns-srv-coverage`,
 based on accepted main `fdfe6e833799cdb15877c1314069af492d3d07d3`. See the
 [successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [C4 runbook](dns-srv-tools.md). The candidate adds `dig_dns_srv_v1` using the
 accepted dig runtime for one fixed nonrecursive TCP question. Ten scenarios cover
 four ordinary useful outcomes, one separate hostile-metadata robustness trial
-and five negative/bounds cases. Actual validation and final review/checks are
-pending. Accepted main has 28 profiles using 14 programs; the C4 candidate has
+and five negative/bounds cases. Native validation passed 25 selected tests;
+independent clean-source trials completed all useful tasks and replayed 40
+accepted bundles unchanged. All 11,428 portable tests passed. Review the PR's
+latest revision and hosted checks; final review/checks and merge remain pending.
+Accepted main has 28 profiles using 14 programs; the C4 candidate has
 29 using the same 14. Leave the new PR ready for review; this continuation does
 not automatically merge it. Finite RDP initial negotiation is the next gap to
 reassess after C4 closes, not an automatically committed expansion.
@@ -26,7 +30,7 @@ with 1,261 and 1,103 focused tests passing. All five
 [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37668578334)
 passed 11,109 tests each. The
 [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37670291745)
-is still running; its result is not yet claimed. Preserve the 39 native tests,
+also passed all five jobs. Preserve the 39 native tests,
 2/2 ordinary completions, separate 2/2 robustness completions, zero unnecessary
 refusals, 22/22 blocked destination witnesses and 36 unchanged accepted replays.
 Private receipts remain under `.secure-agent/whatweb-20261007/` and
@@ -267,10 +271,28 @@ evidence, block forbidden destination witnesses and replay unchanged. The five
 negative cases are malformed response, excess records, refusal, stall and actual
 output pressure. Startup failure or blocking every request cannot satisfy this
 batch. Six additional native tests cover grant replay, missing proof, cancellation,
-private inputs, UDP and task limits. Full portable/native validation and separate
-clean-source useful execution/replay remain pending; private receipts belong in
-`.secure-agent/dns-srv-20261007/`. Record descriptive latency/bytes and zero calls/cost
-without claiming a comparative benchmark.
+private inputs, UDP and task limits. Native validation passed **25 tests** in
+79.168 seconds with 75 deselected and zero selected failures/errors/skips: 16 C4
+and nine accepted dig/OpenSSL regressions. All ten scenarios matched their
+outcomes, acknowledged one question/connection, blocked 20/20 forbidden
+destinations, passed 100/100 boundary fields and replayed unchanged.
+
+Clean-source verification at `0c6dcf573b9792966deee492f667803e5dfaf960` completed
+4/4 ordinary outcomes and the separate hostile-metadata task, with zero
+unnecessary refusals/provider calls/cost. It blocked 10/10 destinations and
+replayed all five new plus 40 accepted bundles through both inspectors without
+changing bytes, modification times or modes. Private receipt:
+`.secure-agent/dns-srv-20261007/clean-source-0c6dcf57-5of2_1wq/verification.json`.
+The final full portable suite passed **11,428 tests**, with 930 integration cases
+deselected and zero failures/errors/skips. JUnit time was 298.681 seconds;
+the terminal summary includes runner overhead at 299.02 seconds. Retain the
+first full run's 11,427 passes and one stale pre-C3 fixture-snapshot selector
+failure separately. The selector correction passed 86 focused tests and changed
+only that older portable test. Production/native source remains the clean-source
+`0c6dcf5` implementation; of the 502 files in the validation source index, only
+that test differs in the final index. Preserve both indexes and private receipts.
+Final PR review, hosted checks and merge remain pending. Descriptive latency and
+byte counts do not establish comparative overhead.
 
 Accepted main has 28 profiles using 14 programs; C4's candidate has 29/14. Reassess
 RDP initial negotiation after C4 closes, without credentials, NTLM collection or
@@ -1473,11 +1495,13 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Complete C4 validation and leave its separate PR ready for review, following
-   the current status at the top of this checkpoint and
+1. Review [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) on its latest
+   revision and check its hosted results, following the current status at the top
+   of this checkpoint and
    [DNS SRV runbook](dns-srv-tools.md). Use `.secure-agent/dns-srv-20261007/` for
    private receipts. The new implementation stays unmerged pending review and
-   a corresponding merge instruction; PR #57 and C3 stay closed.
+   a corresponding merge instruction. Do not automatically merge the new C4 PR;
+   PR #57 and C3 stay closed.
 2. Require 4/4 useful ordinary DNS outcomes, zero unnecessary refusals and a
    separate useful hostile-metadata outcome, plus actual negative/bounds cases,
    approval/isolation/cleanup checks and unchanged independent evidence replay.

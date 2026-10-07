@@ -134,7 +134,7 @@ integration from a candidate secure profile.
 | C2 | PostgreSQL pre-authentication TLS; existing secure OpenSSL runtime, no interactive database integration | One fixed SSLRequest followed by fixture-CA/name-verified TLS 1.3 and clean close without application data; structured handshake-only evidence, refusal/untrusted/malformed/stalled/injected cases, replay and G1–G6. No startup/login/SQL/readiness claim. | [x] Accepted in PR #56. |
 | C2 | MySQL pre-authentication TLS; same existing OpenSSL runtime, no interactive database integration | Read one bounded initial greeting, send fixed SSLRequest, verify TLS 1.3 and close without application data; hostile greeting version remains inert, no account/auth-plugin/login/SQL operation; honest fragmented-greeting limitation, replay and G1–G6. | [x] Accepted in PR #56. |
 | C3 | HTTP application fingerprinting; WhatWeb has no interactive integration | One fixed GET with five passive plugins and a finite sealed Ruby/WhatWeb runtime; ordinary hints and no-hints tasks both complete, hostile/meta redirects stay inert, all eleven scenarios retain scope/bounds/closure, structured untrusted evidence and G1–G6. | [x] Accepted in PR #57. |
-| C4 — current | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed `_ldap._tcp.harbordesk.test. IN SRV` question over TCP; at most four typed priority/weight/port/target/TTL rows; 4/4 ordinary record/NODATA/NXDOMAIN/unavailable completions with zero unnecessary refusals, separate injected-metadata usefulness, all ten scenarios with actual queries, enforced bounds, evidence and G1–G6. No recursion or advertised endpoint follow-up. | Implemented candidate; actual validation and final review/checks pending. |
+| C4 — current | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed `_ldap._tcp.harbordesk.test. IN SRV` question over TCP; at most four typed priority/weight/port/target/TTL rows; 4/4 ordinary record/NODATA/NXDOMAIN/unavailable completions with zero unnecessary refusals, separate injected-metadata usefulness, all ten scenarios with actual queries, enforced bounds, evidence and G1–G6. No recursion or advertised endpoint follow-up. | Portable/native validation and independent replay passed; [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) final review/checks and merge pending. |
 | Next gap to reassess after C4 | RDP initial protocol negotiation; no existing interactive or secure profile | Select one bounded client operation and owned fixture before implementation; typed selected-protocol/failure metadata, actual useful execution, evidence and G1–G6. No authentication, NTLM collection or remote session. | Reassessment candidate; no execution capability or committed batch claimed. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -190,7 +190,8 @@ as separate denominators. A clean-source run at `0bdd9b6` repeated both pairs
 with zero unnecessary refusals, blocked 8/8 destinations and replayed all 36
 accepted bundles unchanged through CLI and shared inspection. Provider calls
 and cost stayed zero. PR #57 passed fresh independent review and all five final
-hosted jobs before the authorized `fdfe6e8` merge. The reviewed `cf69f4e` and merge
+hosted jobs before the authorized `fdfe6e8` merge; all five post-merge jobs also
+passed. The reviewed `cf69f4e` and merge
 trees match; all 494 validated source hashes matched. C3's G6 is closed.
 
 C4 now adds fixed SRV metadata while reusing accepted dig infrastructure. The
@@ -203,8 +204,21 @@ missing-proof denial, cancellation, private-input isolation, UDP denial and the
 task ceiling. All seven authority gates remain required; the shipped policy
 requires fresh personal approval.
 
-C4's candidate contains **29 profiles from the same 14 programs**. Actual
-execution, independent replay, final review/checks and merge remain open gates;
+C4 native validation passed **25 selected tests** (16 C4 and nine accepted
+regressions) with zero selected failures/errors/skips. The ten scenarios retained
+one validated query/connection, closed owners, blocked 20/20 destinations, passed
+100/100 boundary fields and replayed unchanged. A clean-source run at `0c6dcf5`
+completed 4/4 ordinary tasks and one separate hostile-metadata task with zero
+unnecessary refusals, blocked 10/10 destinations and replayed all five new and
+40 accepted bundles unchanged through CLI and shared inspection. Calls/cost stayed
+zero. Native JUnit time was 79.168 seconds; it is not comparative overhead.
+The full portable suite passed **11,428 tests**, with 930 integration cases
+deselected and zero failures/errors/skips, in 298.681 seconds. The first run's
+one failure was a stale older-fixture snapshot selector; its test-only correction
+passed 86 focused tests and left production/native source unchanged.
+
+C4's candidate contains **29 profiles from the same 14 programs**. Final PR
+review, hosted checks and merge remain open gates;
 the profile's presence in the catalog does not establish completion. Returned
 targets and ports remain untrusted evidence, never automatic scope. Reassess
 finite RDP initial negotiation after C4 closes, with no authentication or NTLM

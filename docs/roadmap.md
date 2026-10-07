@@ -137,13 +137,14 @@ tasks with zero unnecessary refusals, blocked 8/8 destinations and replayed 36
 accepted bundles unchanged. Reviewed head `cf69f4e` merged as `fdfe6e8` with an
 identical tree after independent reviews and all five final hosted jobs passed
 11,109 tests each. Fresh focused review sets passed 1,261 and 1,103 tests;
-all 494 validated source hashes matched. Post-merge checks are tracked in the
-[checkpoint](continue-here.md). Earlier startup failures remain recorded separately.
+all 494 validated source hashes matched. All five post-merge jobs also passed.
+Earlier startup failures remain recorded separately.
 Accepted main has **28 profiles using 14 programs** and adds no GUI workflow or real-network
 attachment. Credentials and paid/live-model calls remain deferred.
 
 Priority 3 now proceeds with **C4 fixed DNS SRV service metadata** in
-`feature/dns-srv-coverage`, based on accepted main `fdfe6e8`. The
+`feature/dns-srv-coverage`, [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58),
+based on accepted main `fdfe6e8`. The
 [runbook](dns-srv-tools.md) binds `dig_dns_srv_v1` to one nonrecursive TCP question,
 `_ldap._tcp.harbordesk.test. IN SRV`, at the disconnected owned endpoint.
 At most four typed priority/weight/port/target/TTL rows remain untrusted metadata;
@@ -158,9 +159,18 @@ All ten scenarios need one connection/question, enforced bounds, closed owners,
 blocked forbidden destinations and unchanged evidence replay. The planned native
 set adds six approval/isolation/cleanup cases to those ten scenarios. Record local
 latency, bytes and zero provider calls/cost without claiming comparative overhead.
-Actual validation and final review/checks are pending; the candidate catalog has
-**29 profiles using the same 14 programs**. Descriptors or blocking every task
-cannot satisfy useful completion.
+Native validation passed **25 tests**: 16 C4 and nine accepted regressions, with
+zero selected failures/errors/skips. All ten scenarios completed their real fixed
+query, blocked 20/20 forbidden destinations, passed 100 boundary fields and
+replayed unchanged. A clean-source run at `0c6dcf5` completed 4/4 ordinary tasks
+and the separate hostile-metadata task with zero unnecessary refusals, blocked
+10/10 destinations and replayed all 40 accepted bundles through both inspectors
+without changes. The full portable suite passed **11,428 tests**, with 930
+integration cases deselected and zero failures/errors/skips. One earlier failure
+was a stale accepted-fixture snapshot selector; its test-only correction passed
+86 focused tests and changed no production/native source. Final review, hosted
+checks and merge remain gates. The candidate catalog has **29 profiles using
+the same 14 programs**. Descriptors or blocking every task cannot satisfy useful completion.
 
 After C4 closes, reassess finite RDP initial negotiation as the next coverage gap;
 it has no existing interactive or secure profile. This is a candidate decision,

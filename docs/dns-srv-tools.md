@@ -1,6 +1,7 @@
 # Owned DNS SRV service metadata
 
-C4 adds candidate profile `dig_dns_srv_v1` through the existing single-action
+C4 in [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) adds candidate
+profile `dig_dns_srv_v1` through the existing single-action
 secure CLI. It reuses the accepted dig executable and its exact runtime files.
 Accepted main has 28 profiles using 14 programs; this candidate has 29 profiles
 using the same 14 programs. Actual validation and review are recorded in
@@ -68,3 +69,13 @@ Record useful completion, unnecessary refusals, blocked destinations, descriptiv
 latency, zero provider cost and evidence integrity. Deeper workflows, comparative
 benchmarking, credentials and paid/live-model calls remain deferred. Closed
 B0–B8, C1–C3, offline R5, accepted local R6 and initial GUI milestones stay closed.
+
+Local validation passed **11,428 portable tests** and **25 native tests**:
+16 C4 and nine accepted DNS/TLS
+regressions. All four ordinary tasks and the separate hostile-metadata task
+completed, all 20 forbidden-destination witnesses blocked, and all ten scenario
+bundles replayed unchanged. Five additional clean-source trials blocked 10/10
+destinations and replayed all 40 accepted bundles unchanged through both
+inspectors. Provider calls and cost remained zero. These automated checks do
+not claim new personal acceptance. PR review, final hosted checks and merge remain
+acceptance gates. Details are recorded in [verification.md](verification.md).
