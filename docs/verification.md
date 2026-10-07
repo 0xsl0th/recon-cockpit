@@ -4753,6 +4753,16 @@ accepted main remains **25/13** until review, hosted checks and merge complete.
 Hosted results must be checked against its latest head before a later authorized
 merge; the local counts above are not a claim that hosted CI passed.
 
+PR review exposed 15 macOS failures in hosted run `37662709531`: the new portable
+MemoryBIO tests called the Linux owner's `memfd_create` certificate loader.
+The correction loads the same public synthetic certificates through private
+temporary files in the test helper, as the existing portable TLS tests do.
+All 224 focused fixture/lab tests passed after correction. Certificate rejection,
+TLS 1.3, clean shutdown and application-data rejection remain real in-memory TLS
+checks on every runner; no tests are skipped. Production and native-test sources
+are unchanged, so the 28 native results remain applicable. The original failure
+log is retained privately; final hosted checks must pass before merge.
+
 Results establish only `verified_tls_handshake_only` with
 `authenticated_database_session: false`. The selected wire profile does not
 prove database product/version, readiness, account access or a vulnerability.

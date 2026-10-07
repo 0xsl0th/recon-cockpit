@@ -39,8 +39,18 @@ def connection_for(case, suffix=b''):
 
 class MemoryTLS:
     """Socket-free SSLContext wrapper that retains actual TLS verification."""
-    def __init__(self, case, *, application=b'', ragged=False):
-        self.server_context = owner.tls_context(case)
+    def __init__(self, case, tmp_path, *, application=b'', ragged=False):
+        # Exercise real TLS on every portable runner without the Linux owner's
+        # memfd/procfs setup. Native tests separately cover that production path.
+        cert, key = tmp_path / 'public-test-cert.pem', tmp_path / 'public-test-key.pem'
+        untrusted = case in ('postgresql-tls-untrusted', 'mysql-tls-untrusted')
+        cert.write_bytes(owner.tls_material.UNTRUSTED_SERVER_CERT_PEM if untrusted
+                         else owner.tls_material.SERVER_CERT_PEM)
+        key.write_bytes(owner.tls_material.SERVER_KEY_PEM)
+        self.server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        self.server_context.minimum_version = ssl.TLSVersion.TLSv1_3
+        self.server_context.maximum_version = ssl.TLSVersion.TLSv1_3
+        self.server_context.load_cert_chain(cert, key)
         self.client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         self.client_context.load_verify_locations(cadata=public.CA_PEM.decode('ascii'))
         self.application, self.ragged, self.wraps, self.closed = application, ragged, 0, False
@@ -117,9 +127,9 @@ def test_specs_pin_fixed_protocol_trust_and_zero_application_capabilities(case):
 
 
 @pytest.mark.parametrize('case', public.DATABASE_TLS_SUCCESS_CASES)
-def test_verified_tls_and_clean_close_count_once_without_application_bytes(case):
+def test_verified_tls_and_clean_close_count_once_without_application_bytes(tmp_path, case):
     connection, counted = connection_for(case), []
-    context = MemoryTLS(case)
+    context = MemoryTLS(case, tmp_path)
     fixture.serve(connection, case=case, deadline=time.monotonic() + 5, context=context,
                   on_request=lambda: counted.append(1))
     assert counted == [1] and connection.closed and context.closed
@@ -129,8 +139,8 @@ def test_verified_tls_and_clean_close_count_once_without_application_bytes(case)
 
 
 @pytest.mark.parametrize('case', ['postgresql-tls-untrusted', 'mysql-tls-untrusted'])
-def test_untrusted_certificate_never_counts_completed_tls(case):
-    context = MemoryTLS(case)
+def test_untrusted_certificate_never_counts_completed_tls(tmp_path, case):
+    context = MemoryTLS(case, tmp_path)
     with pytest.raises(ssl.SSLCertVerificationError):
         fixture.serve(connection_for(case), case=case, deadline=time.monotonic() + 5,
                       context=context, on_request=lambda: pytest.fail('untrusted handshake counted'))
@@ -138,8 +148,8 @@ def test_untrusted_certificate_never_counts_completed_tls(case):
 
 @pytest.mark.parametrize('case', ['postgresql-tls-ok', 'mysql-tls-ok'])
 @pytest.mark.parametrize('application', [b'SELECT 1;', b'user\0password\0', b'\0', b'A' * 4096])
-def test_application_bytes_after_tls_never_count_success(case, application):
-    context = MemoryTLS(case, application=application)
+def test_application_bytes_after_tls_never_count_success(tmp_path, case, application):
+    context = MemoryTLS(case, tmp_path, application=application)
     with pytest.raises(ssl.SSLError):
         fixture.serve(connection_for(case), case=case, deadline=time.monotonic() + 5,
                       context=context, on_request=lambda: pytest.fail('application data counted as TLS-only'))
@@ -147,8 +157,8 @@ def test_application_bytes_after_tls_never_count_success(case, application):
 
 
 @pytest.mark.parametrize('case', ['postgresql-tls-ok', 'mysql-tls-ok'])
-def test_tcp_eof_without_tls_close_notify_never_counts_success(case):
-    context = MemoryTLS(case, ragged=True)
+def test_tcp_eof_without_tls_close_notify_never_counts_success(tmp_path, case):
+    context = MemoryTLS(case, tmp_path, ragged=True)
     with pytest.raises(ssl.SSLError):
         fixture.serve(connection_for(case), case=case, deadline=time.monotonic() + 5,
                       context=context, on_request=lambda: pytest.fail('ragged EOF counted'))
