@@ -241,6 +241,9 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_srv_no_data": "dns_srv_no_data",
                "dns_srv_name_not_found": "dns_srv_name_not_found",
                "dns_srv_service_unavailable": "dns_srv_service_unavailable",
+               "rdp_protocol_selected": "rdp_protocol_selected",
+               "rdp_legacy_confirmation": "rdp_legacy_confirmation",
+               "rdp_negotiation_failure": "rdp_negotiation_failure",
                "tls_handshake_verified": "handshake_verified",
                "database_tls_verified": "database_tls_verified",
                "http_fingerprint_observed": "http_fingerprint_observed",
@@ -377,6 +380,17 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Both bounded raw channels are independently reparsed without network. Complete native success framing is required; process exit alone does not establish useful or empty results.",
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
+            ]
+        if manifest["fixture_case"].startswith("rdp-"):
+            report["limitations"] = [
+                "This one-action RDP negotiation trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
+                "One fixed X.224 connection request offers TLS on one TCP connection. Only its first bounded connection-confirm frame is collected, then the client closes without a security handshake or session setup.",
+                "Selected protocols, flags and failure codes are untrusted peer reports. They do not verify TLS support, security policy, authentication requirements, service identity or vulnerability.",
+                "An explicit standard-RDP or TLS selection, a legacy confirmation and known negotiation failures are completed metadata observations. Malformed, incomplete, oversized or unsupported frames remain inconclusive.",
+                "No TLS, CredSSP, Entra authentication, credentials, MCS exchange, desktop session, retry or follow-up is authorized. Reported failures do not authorize another attempt or different security protocol.",
+                "Only the first 11- or 19-byte frame is retained. Any trailing peer bytes are outside this capture; their absence from evidence is not injection detection or proof that no trailing data was sent.",
+                "Counters record the exact fixed request and a client write-half-close witnessed before the fixture response. This owned-profile constraint prevents further client bytes; compatibility with arbitrary real RDP servers is not established.",
+                "Retained bytes are independently reparsed without network; read-only inspection restores no approval or authority. No real-model or comparative overhead claim is made.",
             ]
         if manifest["fixture_case"].startswith("dig-srv-"):
             report["limitations"] = [
@@ -524,6 +538,19 @@ def _markdown(report):
                           "| Answer | TTL |", "| --- | --- |"])
             for row in details["answers"]:
                 lines.append("| `" + row["address"] + "` | " + str(row["ttl"]) + " |")
+        elif type(details) is dict and details.get("kind") == "rdp_initial_negotiation":
+            lines.extend(["", "## Initial RDP negotiation", "",
+                "Untrusted peer report only. No security handshake or authenticated session was performed; service identity is not verified.",
+                "", "| Field | Reported metadata |", "| --- | --- |"])
+            for field in ("response_type", "selected_protocol", "response_flags", "failure_code", "failure_name"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            if details["response_type"] == "legacy":
+                lines.extend(["", "The confirmation omits negotiation data and therefore implies a standard-RDP selection only."])
+            elif details["response_type"] == "failure":
+                lines.extend(["", "The peer reports a negotiation failure. This does not verify its authentication or security requirements."])
+            else:
+                lines.extend(["", "The reported protocol selection does not establish a working or verified security channel."])
+            lines.extend(["", "Capture ends at the first complete confirmation frame; trailing peer data is not retained."])
         elif type(details) is dict and details.get("kind") == "dns_service_metadata":
             lines.extend(["", "## DNS service advertisements", "",
                 "Untrusted DNS metadata only; advertised endpoints are not verified or authorized for follow-up.",

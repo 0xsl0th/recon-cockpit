@@ -1,10 +1,10 @@
 # Owned DNS SRV service metadata
 
-C4 in [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) adds candidate
-profile `dig_dns_srv_v1` through the existing single-action
+C4 is accepted in [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), merged
+as `6080a5c` on 7 October 2026 at 19:36:01 UTC. Its
+profile `dig_dns_srv_v1` uses the existing single-action
 secure CLI. It reuses the accepted dig executable and its exact runtime files.
-Accepted main has 28 profiles using 14 programs; this candidate has 29 profiles
-using the same 14 programs. Actual validation and review are recorded in
+Accepted main has 29 profiles using the same 14 programs. Actual validation and review are recorded in
 [verification.md](verification.md).
 
 ## Fixed operation and meaning
@@ -77,5 +77,14 @@ completed, all 20 forbidden-destination witnesses blocked, and all ten scenario
 bundles replayed unchanged. Five additional clean-source trials blocked 10/10
 destinations and replayed all 40 accepted bundles unchanged through both
 inspectors. Provider calls and cost remained zero. These automated checks do
-not claim new personal acceptance. PR review, final hosted checks and merge remain
-acceptance gates. Details are recorded in [verification.md](verification.md).
+not claim new personal acceptance. Independent authority/runtime, parser/evidence
+and regression reviews passed 1,328, 821 and 422 focused tests respectively;
+all 502 validated source hashes matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37673798024)
+passed 11,428 tests each. Reviewed `65810b8` and merge `6080a5c` share tree
+`fbb7092085e169f499d364355bf11c75c4ca2fcb`. The
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37675710586)
+also passed all five jobs. C4 is closed. The separately validated
+[C5 RDP candidate](rdp-negotiation-tools.md) awaits final review, hosted checks and
+merge in [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) and does not
+broaden this DNS profile. Details are recorded in [verification.md](verification.md).

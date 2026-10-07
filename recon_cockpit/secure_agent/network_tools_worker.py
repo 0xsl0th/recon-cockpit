@@ -84,9 +84,9 @@ def syscall_filter(tool_id):
                        runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP,
                        runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE,
                        runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
-                       runtime.WHATWEB):
+                       runtime.WHATWEB, runtime.RDP):
         raise ValueError("unsupported_network_tool")
-    common.syscall_filter(allow_threads=tool_id in (runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB))
+    common.syscall_filter(allow_threads=tool_id in (runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP))
 
 
 def _limits(tool_id):
@@ -97,6 +97,8 @@ def _limits(tool_id):
     if tool_id == runtime.KERBRUTE:
         threads = 16
     if tool_id == runtime.WHATWEB:
+        threads = 16
+    if tool_id == runtime.RDP:
         threads = 16
     for kind, maximum in ((resource.RLIMIT_AS, address_space), (resource.RLIMIT_CPU, 5),
                            (resource.RLIMIT_NOFILE, 64), (resource.RLIMIT_NPROC, threads),
@@ -152,12 +154,12 @@ def main():
             _witnesses(port=111)
         else:
             _witnesses()
-        if request["tool_id"] in (runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB):
+        if request["tool_id"] in (runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP):
             _thread_bound_witness()
         if request["tool_id"] == runtime.KERBRUTE:
             _kerberos_transport_witness()
         if request["tool_id"] in (runtime.DIG_SRV, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
-                                  runtime.WHATWEB):
+                                  runtime.WHATWEB, runtime.RDP):
             _metadata_transport_witness()
         # The authority stdin and any loader-retained descriptors are gone.
         sys.stdin.close()

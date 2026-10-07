@@ -29,7 +29,7 @@ Each database recipe stops after a verified fixture TLS handshake
 and clean close, without credentials, login or SQL.
 
 C3 [WhatWeb fingerprinting](whatweb-tools.md) is accepted in
-[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57), bringing main to
+[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57), bringing that slice to
 **28 profiles using 14 programs**.
 Its recipe permits one fixed GET with five exact plugins and no redirects,
 credentials or follow-up. Ruby supports the WhatWeb runtime and is not separately
@@ -38,10 +38,11 @@ passed. Independent trials completed 2/2 ordinary and 2/2 robustness tasks with 
 refusals, blocked 8/8 forbidden destinations and replayed 36 accepted bundles
 unchanged. Fresh review and all five hosted jobs passed before the authorized merge.
 
-The current C4 [DNS SRV candidate](dns-srv-tools.md),
-[PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), adds a separately versioned
+C4 [DNS SRV metadata](dns-srv-tools.md) is accepted in
+[PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), merged as `6080a5c`.
+It adds a separately versioned
 fixed service-location query using the same dig program and runtime closure.
-This branch contains **29 profiles using the same 14 programs**. The recipe binds
+Accepted main contains **29 profiles using the same 14 programs**. The recipe binds
 one nonrecursive TCP `_ldap._tcp.harbordesk.test. IN SRV` question and requires
 fresh approval; advertised targets and ports cannot select another operation.
 Four ordinary outcomes must complete usefully, including NODATA, NXDOMAIN and
@@ -51,7 +52,24 @@ validation passed 25 selected tests, including all ten scenarios and their
 completions and the separate useful hostile case, with zero unnecessary refusals,
 10/10 blocked destinations and 40 accepted bundles replayed unchanged through both
 inspectors. All 11,428 portable tests passed, with zero failures/errors/skips.
-Final review, hosted checks and merge remain acceptance gates.
+Independent review and all five final hosted jobs passed; reviewed `65810b8` and
+the merge have identical trees.
+
+The current C5 [RDP initial-negotiation candidate](rdp-negotiation-tools.md)
+adds `rdp_initial_negotiation_v1`, bringing this branch to **30 profiles using the
+same 14 programs**. Its repository-owned Ruby adapter sends one fixed 19-byte TLS
+offer, closes the socket's write side and reads only the first 11- or 19-byte
+reply. Ruby remains supporting runtime, not a newly integrated third-party tool.
+The profile has no security handshake, authentication, NTLM collection or session.
+Its 13 owned scenarios passed validation: 5/5 ordinary and 2/2 separate robustness
+tasks completed, six negative outcomes remained inconclusive and 26/26
+unauthorized destinations were blocked. Local validation passed 11,898 portable
+and 36 native tests; clean-source replay preserved all 45 accepted bundles.
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) awaits final review,
+hosted checks and merge; catalog visibility does not establish acceptance.
+The runtime is limited to the
+exact reviewed Linux Ruby 3.3 x86-64 files; early write-half-close can limit server
+compatibility. There is no new GUI workflow or real-network attachment.
 
 From the repository root, with the project installed:
 
@@ -65,6 +83,7 @@ python -m recon_cockpit.secure_agent --describe-tool postgresql_tls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool mysql_tls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool whatweb_http_fingerprint_v1
 python -m recon_cockpit.secure_agent --describe-tool dig_dns_srv_v1
+python -m recon_cockpit.secure_agent --describe-tool rdp_initial_negotiation_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -163,11 +182,20 @@ identity, availability or independently verified absence. One bounded additional
 TXT record may be counted and discarded; its text stays in raw evidence. No
 recursion, target resolution, endpoint follow-up or transfer is authorized.
 
+RDP reports `untrusted_rdp_negotiation_metadata`: a protocol selected in response
+to the fixed offer, a distinct legacy confirmation, or a known negotiation failure.
+All three can complete a metadata task. No TLS handshake, authentication, service
+identity or exhaustive protocol-support claim follows. Malformed, unoffered,
+unknown-failure, truncated, oversized and stalled replies remain inconclusive.
+The trailing-data robustness case reads only the first frame; it does not claim
+to inspect or detect the trailing content. Returned fields cannot authorize
+another operation.
+
 The B0–B8 [coverage checklist](secure-tool-coverage.md) is closed under those
 accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C4 candidate. Further composition and comparative benchmarking
+the current C5 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

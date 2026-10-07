@@ -62,17 +62,32 @@ completion. Local validation passed 11,109 portable and 39 selected native tests
 including both ordinary tasks and both hostile/meta-redirect trials. Independent verification replayed 36
 accepted bundles unchanged. Independent review and all five hosted checks passed
 before the authorized merge.
-The current [DNS SRV candidate](docs/dns-srv-tools.md) in
+The accepted [DNS SRV profile](docs/dns-srv-tools.md) in
 [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) reuses dig for one fixed
 nonrecursive TCP question. It distinguishes bounded service advertisements,
 NODATA, NXDOMAIN and a reported unavailable service; advertised targets and ports
-remain untrusted evidence without follow-up authority. This branch has 29 bounded
+remain untrusted evidence without follow-up authority. Accepted main has 29 bounded
 profiles using the same 14 programs. Native validation passed 25 selected tests:
 16 C4 and nine accepted regressions. All four ordinary tasks and the separate
 hostile-metadata task completed, with zero unnecessary refusals and 20/20 blocked
 destinations across ten scenarios. Independent clean-source verification repeated
 those useful results and replayed 40 accepted bundles unchanged. All 11,428
-portable tests passed. Final PR review, hosted checks and merge remain acceptance gates.
+portable tests passed. Independent review and all five final hosted jobs passed;
+reviewed head `65810b8` merged as `6080a5c` with an identical tree.
+The current [RDP initial-negotiation candidate](docs/rdp-negotiation-tools.md)
+adds `rdp_initial_negotiation_v1`, a repository-owned Ruby socket adapter.
+It sends one fixed TLS offer, closes its write side and reads one bounded reply
+frame, without TLS, CredSSP, NTLM, authentication or a remote session. A selection,
+legacy confirmation or known failure is untrusted metadata, not verified service
+identity or a list of every supported protocol. This candidate has 30 profiles
+using the same 14 external programs; Ruby is supporting runtime, not another
+third-party assessment tool. All 13 owned cases passed validation: 5/5 ordinary
+and 2/2 separate robustness tasks completed, six negative cases stayed inconclusive,
+and 26/26 unauthorized destinations were blocked. Local validation passed 11,898
+portable and 36 native tests; clean-source replay preserved all 45 accepted bundles.
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) awaits final review,
+hosted checks and merge. The exact reviewed Linux Ruby 3.3 x86-64 runtime and
+write-half-close limit compatibility; no GUI workflow is added.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

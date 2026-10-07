@@ -1,5 +1,112 @@
 # Verification record
 
+## C5 owned RDP initial negotiation — 7 October 2026
+
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) implements one repository-owned
+Ruby socket adapter through the existing single-action authority, runtime and
+evidence path. Accepted main `6080a5c` contains 29 profiles using 14 external
+programs; C5 adds one native capability, for 30/14. This is an owned-lab candidate,
+not professional deployment acceptance or a GUI feature.
+
+The [runbook](rdp-negotiation-tools.md) binds one 19-byte TLS negotiation offer,
+write-half-close before response, and one 11- or 19-byte response frame. Results
+are untrusted selected-protocol, legacy-confirmation or known-failure metadata.
+No TLS handshake, CredSSP/NTLM, authentication or remote session occurs. Early
+write-half-close and the reviewed Debian Ruby 3.3 x86-64 closure constrain real
+server compatibility; only owned fixtures were verified. Trailing peer data is
+not inspected or captured, so the robustness result is not injection detection.
+
+| Validation | Result |
+| --- | --- |
+| Complete portable suite | **11,898 passed**, 949 integration cases deselected; zero selected failures/errors/skips; JUnit 270.690 seconds. |
+| Actual Linux suite | **36 passed**: 19 C5 and 17 accepted WhatWeb regressions; zero selected failures/errors/skips; JUnit 109.828 seconds. |
+| C5 ordinary tasks | **5/5**: TLS selection, explicit standard RDP, legacy confirmation, NLA-required and Entra-required failures; zero unnecessary refusals. |
+| Separate robustness | **2/2**: fragmented frame and valid frame followed by hostile trailing data; no further client bytes. |
+| Negative/bounds | Six inconclusive cases after actual fixed request execution: malformed, unoffered protocol, unknown failure, truncated EOF, stall and oversized declaration. |
+| Enforcement/evidence | All 13 scenarios acknowledged one connection/request and write EOF, closed owners, passed **26/26** forbidden-destination and **130/130** boundary checks, and replayed unchanged. |
+| Independent clean source | Seven useful trials repeated, **14/14** destinations blocked, all seven new and **45 accepted bundles** replayed identically through CLI and shared inspection without changing bytes, mtimes or modes. |
+
+The native suite separately verifies grant consumption and replay denial, missing
+proof refusal before launch, cancellation after actual Ruby execution, private-input
+isolation, UDP refusal and task-ceiling enforcement. No mock, skipped test or startup
+failure satisfies an actual-execution gate. Valid peer failures count as useful
+metadata; blocking every request would fail the batch.
+
+Native ordinary wall times were 2,688/2,644/2,612/2,615/2,645 ms; robustness was
+2,674/2,642 ms. Independent clean-source ordinary times were
+2,832/2,821/2,878/2,832/2,888 ms and robustness 2,934/2,823 ms. They describe local
+secure CLI wall time, not human review latency or comparative overhead. Provider
+calls, paid calls and actual provider cost were zero; no real credentials were read.
+Automated synthetic policy/grant tests do not claim new personal acceptance.
+
+Malformed, unoffered and unknown-failure frames may have native exit zero while
+remaining inconclusive. Truncated, stalled and oversized cases exit as failed with
+constant diagnostics. Oversized framing retains only the four-byte header; truncated
+input retains ten bytes. The 8,192-byte capture reservation does not imply those bytes
+were consumed, and no artificial output-pressure success is claimed for a 19-byte
+client. Successful normalized fields never imply a verified security channel.
+
+Clean implementation `f24a2528e53befa672b36fb7de8538a4595a7a38` contains the tested
+production and test sources. All **514 source hashes** match the final local suites.
+Subsequent handoff edits are documentation only. The independent baseline verifies
+all 133 accepted case contracts, 29 adapters and 20 native runtime contracts
+unchanged, with golden digest
+`638cf0ca6e33716fe098583f27361923eba24c11bfcc81961b5305fe4752b38f`.
+Independent source review found no remaining blockers; focused runtime, fixture,
+parser/evidence and authority/catalog sets passed, including 1,395 review cases
+(overlapping sets, not additional full-suite totals).
+
+Private receipts remain under `.secure-agent/rdp-negotiation-20261007/`:
+`portable-final.xml`, `native-final.xml`, `validated-source-files.json`, and
+`clean-source-f24a2528-002u84al/verification.json`. The clean-source receipt digest is
+`94ee22d2ffe1f05acaffd2c9de4f02257349b75469ca1b5997db971799fc49d5`.
+The verifier pins C4's receipt and retains all 45 inherited bundles and prior
+receipt links. A separate read-only audit reconciled all 13 native captures,
+action/policy/runtime bindings, counters and rebuilt reports without changing
+evidence; `native-summary.json` has digest
+`ddf7ea630a08831b8202618cb048ae8c1c7ff7cf5a87b3dd8f8ced6f3f99579b`.
+Immediate isolated CLI replay is established by the native tests; this later audit
+did not claim fresh isolated executions. The initial successful startup smoke is
+separate from final evidence.
+
+Development review corrected the fixture's advertised offer from standard RDP plus
+TLS to the actual TLS-only request. It also preserved the exact accepted WhatWeb
+resource-limit branch when adding RDP, keeping both native task-limit witnesses
+intact. An early shared runtime test ran before adapter registration and failed
+closed on an unsupported policy tool; the assembled full suites above passed.
+No production safety boundary was relaxed to satisfy a test.
+
+Final hosted checks, PR review and authorized merge remain acceptance gates.
+After C5 acceptance, reassess bounded SMB2 negotiation metadata before selecting a
+client and fixture. Authentication, credential setup, paid/live-model calls, external
+engagements, deeper workflows and comparative benchmarks remain deferred. Closed
+B0–B8, C1–C4, offline R5, accepted local R6 and the initial GUI stay closed.
+
+## PR #58 review and merge — 7 October 2026
+
+C4 DNS SRV metadata is closed. Reviewed head `65810b8e9f447cf63ef1bed88b0a7987ad35fe7b`
+merged as `6080a5c5e4d2f5cde00415299c259f212813d40b` at 19:36:01 UTC.
+Reviewed and merged trees match `fbb7092085e169f499d364355bf11c75c4ca2fcb`.
+Independent authority/runtime review passed 1,328 focused portable tests;
+parser/evidence review passed 821 focused and 422 regression tests. No blockers
+were found. All 502 recorded source hashes and native/clean-source receipt hashes
+matched. The ten saved native C4 artifacts independently reparsed with matching
+raw captures, runtime bindings, counters and outcomes.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37673798024)
+passed 11,428 tests each, and all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37675710586)
+passed. No branch check rules or unresolved inline review comments were present;
+all five matrix jobs and independent source review were the merge gate. No GitHub
+formal approval is claimed. The private merge receipt is
+`.secure-agent/pr58-merge-review.json`.
+
+Preserve C4's 25 native tests, 4/4 ordinary completions, separate 1/1 robustness
+completion, zero unnecessary refusals, 20/20 blocked destinations and 40 unchanged
+accepted-bundle replays. The evidence remains under
+`.secure-agent/dns-srv-20261007/`. Do not repeat the merge or reopen C4.
+
+
 ## Desktop Execute owned lab — 7 October 2026
 
 The `feature/desktop-owned-execution` slice starts the existing four-action owned

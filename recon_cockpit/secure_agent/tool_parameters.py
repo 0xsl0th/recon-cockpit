@@ -239,3 +239,8 @@ class MySQLTLSParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class WhatWebParameters(TCPParameters):
     """One fixed owned HTTP GET; callers cannot select plugins or a URL."""
+
+
+@dataclass(frozen=True, slots=True)
+class RDPInitialParameters(TCPParameters):
+    """One fixed RDP negotiation offer; no authentication or remote session."""

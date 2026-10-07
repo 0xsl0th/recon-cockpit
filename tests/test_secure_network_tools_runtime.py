@@ -22,6 +22,9 @@ from recon_cockpit.secure_agent.network_tools_worker import _landlock_permission
 
 
 def manifest(tool_id=runtime.DIG):
+    if tool_id == runtime.RDP:
+        from test_secure_rdp_runtime import manifest as rdp_manifest
+        return rdp_manifest()
     if tool_id == runtime.WHATWEB:
         from test_secure_whatweb_runtime import manifest as whatweb_manifest
         return whatweb_manifest()
@@ -36,7 +39,7 @@ def manifest(tool_id=runtime.DIG):
 
 def policy():
     return parse_policy({"schema_version": "1", "policy_version": "test-network-tool-v1",
-        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.DIG_SRV, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE, runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB],
+        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.DIG_SRV, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE, runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB, runtime.RDP],
         "allowed_ports": [8080, 111], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
         "max_output_bytes": 8192, "max_targets": 1, "require_approval": True, "approval_ttl_seconds": 60})
 

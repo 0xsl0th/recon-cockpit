@@ -16,6 +16,7 @@ from recon_cockpit.secure_agent.tool_adapters import ADAPTERS
 # Capability names and program families are the accepted coverage inventory,
 # independently of how the catalog happens to assemble its rows.
 PROGRAMS = {
+    "rdp_initial_negotiation_v1": None,
     "tcp_connect": None, "http_probe": None, "http_headers_v1": None,
     "nmap_tcp_connect_v1": "nmap", "nmap_service_identify_v1": "nmap",
     "curl_https_get_v1": "curl", "curl_ftp_list_v1": "curl",
@@ -32,6 +33,7 @@ PROGRAMS = {
     "configurable_ssh_host_keys_v1": "ssh-keyscan",
 }
 NORMAL_NETWORK_CASES = {
+    "rdp_initial_negotiation_v1": ("rdp-tls", "rdp-negotiation"),
     "postgresql_tls_handshake_v1": ("postgresql-tls-ok", "database-tls"),
     "mysql_tls_handshake_v1": ("mysql-tls-ok", "database-tls"),
     "whatweb_http_fingerprint_v1": ("whatweb-ok", "whatweb"),
@@ -104,7 +106,7 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
     assert result["runtime_availability"] == "not_checked"
     ids = [row["tool_id"] for row in result["tools"]]
     assert ids == sorted(PROGRAMS) == sorted(ADAPTERS)
-    assert result["capability_count"] == len(ids) == 29
+    assert result["capability_count"] == len(ids) == 30
     families = {row["external_program"] for row in result["tools"] if row["external_program"] is not None}
     assert families == set(PROGRAMS.values()) - {None}
     assert result["external_program_count"] == len(families) == 14

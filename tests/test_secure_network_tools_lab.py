@@ -35,7 +35,18 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     assert not first.started and first._supervisor is None
     definition = lab_contract.spec(case)
     assert definition["external_egress"] is False and definition["resume"] is False
-    if case in fixture.DNS_SRV_CASES:
+    if case in fixture.RDP_CASES:
+        response = fixture.rdp_response(case)
+        assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
+        assert definition["request_sha256"] == hashlib.sha256(fixture.RDP_REQUEST).hexdigest()
+        assert definition["request_count_means"] == "validated_fixed_initial_requests_followed_by_client_write_eof_before_response"
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["max_request_bytes"] == definition["max_frame_bytes"] == 19
+        assert definition["client_write_half_close_before_response"] is True
+        assert all(definition[key] is False for key in (
+            "udp", "followup", "tls_handshake", "credssp", "credentials", "authentication",
+            "mcs", "remote_session", "clipboard", "channels", "service_identity_claim", "vulnerability_claim"))
+    elif case in fixture.DNS_SRV_CASES:
         response = fixture.dns_srv_response(case, fixture.dns_srv_query())
         assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
         assert definition["query_sha256"] == hashlib.sha256(fixture.dns_srv_query()).hexdigest()

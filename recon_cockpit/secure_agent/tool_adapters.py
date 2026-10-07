@@ -17,7 +17,7 @@ from .tool_parameters import (
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters,
-    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters,
+    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, RDPInitialParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -53,6 +53,7 @@ FFUF_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 10, "max_ou
 WEB_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 DIG_TOOL_ID = "dig_dns_query_v1"
 DIG_SRV_TOOL_ID = "dig_dns_srv_v1"
+RDP_TOOL_ID = "rdp_initial_negotiation_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
@@ -76,6 +77,7 @@ CONFIGURABLE_HEADERS_TOOL_ID = "configurable_http_headers_v1"
 CONFIGURABLE_SSH_TOOL_ID = "configurable_ssh_host_keys_v1"
 DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 DIG_SRV_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+RDP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 LDAP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -206,6 +208,16 @@ ADAPTERS = MappingProxyType({
          "fixed_dns_srv_question", "tcp_only", "no_recursive_resolution",
          "single_connection_and_question", "no_advertised_endpoint_followup",
          "untrusted_dns_service_metadata_only"),
+    ),
+    RDP_TOOL_ID: ToolAdapter(
+        RDP_TOOL_ID, RDPInitialParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_rdp_initial_negotiation", "owned-rdp-initial-negotiation-v1",
+        "bounded-rdp-initial-result-v1", "rdp-initial-negotiation-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "bounded_threads", "no_child_processes",
+         "fixed_initial_protocol_offer", "single_connection_and_request", "tcp_only",
+         "write_half_close_before_response", "no_authentication_or_security_handshake",
+         "untrusted_negotiation_metadata_only"),
     ),
     OPENSSL_TOOL_ID: ToolAdapter(
         OPENSSL_TOOL_ID, OpenSSLTLSParameters, ("port", "timeout_seconds", "max_output_bytes"),
