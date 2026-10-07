@@ -137,7 +137,7 @@ integration from a candidate secure profile.
 | C3 | HTTP application fingerprinting; WhatWeb has no interactive integration | One fixed GET with five passive plugins and a finite sealed Ruby/WhatWeb runtime; ordinary hints and no-hints tasks both complete, hostile/meta redirects stay inert, all eleven scenarios retain scope/bounds/closure, structured untrusted evidence and G1–G6. | [x] Accepted in PR #57. |
 | C4 | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed `_ldap._tcp.harbordesk.test. IN SRV` question over TCP; at most four typed priority/weight/port/target/TTL rows; 4/4 ordinary record/NODATA/NXDOMAIN/unavailable completions with zero unnecessary refusals, separate injected-metadata usefulness, all ten scenarios with actual queries, enforced bounds, evidence and G1–G6. No recursion or advertised endpoint follow-up. | [x] Accepted in [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), merge `6080a5c`; all five final and post-merge jobs passed. |
 | C5 | RDP initial protocol negotiation; repository-owned Ruby socket adapter, no interactive profile | One fixed 19-byte TLS offer, write-half-close and first bounded reply only; 5/5 ordinary and 2/2 separate robustness completions, six inconclusive cases, 26/26 blocked destinations and 130/130 boundary fields with actual requests, typed metadata, enforced bounds, evidence and G1–G6. No TLS/CredSSP/NTLM, authentication or remote session. | [x] Accepted in [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59), merge `846e459` from reviewed `5a5f9b4`; all five final and post-merge jobs passed. |
-| C6 — current | SMB2 negotiation metadata; separate repository-owned Ruby adapter alongside accepted B3 smbclient share listing | One fixed 108-byte offer of SMB 2.1/3.0.2, write-half-close and one response bounded to 4,100 bytes; require 5/5 ordinary and 2/2 robustness completions, seven inconclusive cases after actual requests, structured untrusted metadata, enforcement, replay and G1–G6. No SESSION_SETUP, NTLM exchange, login or share access. | Implemented candidate based on `846e459`; validation, review and acceptance pending. See the [C6 runbook](smb2-negotiation-tools.md). |
+| C6 — current | SMB2 negotiation metadata; separate repository-owned Ruby adapter alongside accepted B3 smbclient share listing | One fixed 108-byte offer of SMB 2.1/3.0.2, write-half-close and one response bounded to 4,100 bytes; require 5/5 ordinary and 2/2 robustness completions, seven inconclusive cases after actual requests, structured untrusted metadata, enforcement, replay and G1–G6. No SESSION_SETUP, NTLM exchange, login or share access. | Implemented candidate based on `846e459`; local validation and independent source review passed; ready for PR review; authorized merge requires passing checks on the latest revision. See the [C6 runbook](smb2-negotiation-tools.md). |
 | Next gap to reassess after C6 review | SMTP STARTTLS before authentication; reuse existing OpenSSL runtime and accepted SMTP/TLS precedents | Inspect installed client wire behavior and finite dependencies first; assess fixed EHLO/STARTTLS, fixture-CA/name-verified TLS and clean close. No AUTH, MAIL, RCPT or client credential; require an owned fixture and G1–G6. | Reassessment candidate only; no committed or required C7 batch. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -292,14 +292,22 @@ write EOF, retain bounded capture, close its owner, block both forbidden
 destinations and replay unchanged. The four complete malformed or unsupported
 frames must be captured successfully before parser rejection; truncated, stalled
 and oversized replies must remain inconclusive after their actual request.
-The planned native suite has **56 tests**: 20 C6 including six authority/boundary
+The native validation suite contains **56 tests**: 20 C6 including six authority/boundary
 checks, 19 accepted RDP and 17 WhatWeb. Separate clean-source verification must
 complete the seven useful trials and replay **52 accepted bundles** unchanged
 through both inspectors, with zero provider calls and cost.
 
-C6_VALIDATION_PENDING: Full portable/native results, clean-source receipts,
-source hashes, independent review, hosted checks and acceptance are pending.
-The scenario and suite counts above are requirements, not completed results.
+Local validation passed **12,654 portable tests** and **56 native tests**
+(20 C6, 19 accepted RDP and 17 WhatWeb), with no selected failures/errors/skips.
+All 14 scenarios executed one exact request with write EOF, closed their owners,
+passed **28/28 blocked-destination witnesses** and **140/140 boundary fields**, and
+replayed unchanged. Ordinary completion was **5/5**, robustness **2/2** separately,
+with zero unnecessary refusals; all seven invalid/incomplete responses stayed
+inconclusive. Clean-source verification repeated seven useful trials, blocked
+14/14 destinations and replayed **52 accepted bundles** unchanged. Provider calls
+and cost stayed zero. All 524 tested source hashes match clean implementation
+`c345857`. Independent source review found no blockers. Final hosted checks and
+an authorized merge remain acceptance gates; see [verification.md](verification.md).
 
 After C6 review, reassess a fixed SMTP STARTTLS handshake through the existing
 OpenSSL runtime. Inspect the installed client's exact EHLO/STARTTLS behavior

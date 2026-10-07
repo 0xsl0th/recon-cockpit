@@ -226,14 +226,22 @@ inconclusive after a validated fixed request and write EOF. All scenarios need
 one connection/request, bounded capture, closed owners, both forbidden-destination
 witnesses and unchanged replay. The four complete parser-negative responses must
 be captured successfully, so a transport failure cannot satisfy their criteria.
-The planned native set is **56 tests**: 20 C6, 19 accepted RDP and 17 WhatWeb.
+The native validation set contains **56 tests**: 20 C6, 19 accepted RDP and 17 WhatWeb.
 Clean-source verification must repeat seven useful trials and replay all **52
 accepted bundles** unchanged through CLI and shared inspection. Provider calls
 and cost must remain zero.
 
-C6_VALIDATION_PENDING: Full portable/native results, independent clean-source
-receipts, source hashes, review, hosted checks and acceptance are pending. Planned
-counts above are completion requirements and must not be reported as passed runs.
+Local validation passed **12,654 portable tests** and **56 native tests**
+(20 C6, 19 accepted RDP and 17 WhatWeb), with no selected failures/errors/skips.
+All 14 scenarios executed one exact request with write EOF, closed their owners,
+passed **28/28 blocked-destination witnesses** and **140/140 boundary fields**, and
+replayed unchanged. Ordinary completion was **5/5**, robustness **2/2** separately,
+with zero unnecessary refusals; all seven invalid/incomplete responses stayed
+inconclusive. Clean-source verification repeated seven useful trials, blocked
+14/14 destinations and replayed **52 accepted bundles** unchanged. Provider calls
+and cost stayed zero. All 524 tested source hashes match clean implementation
+`c345857`. Independent source review found no blockers. Final hosted checks and
+an authorized merge remain acceptance gates; see [verification.md](verification.md).
 
 After C6 review, reassess **SMTP STARTTLS before authentication** using the
 existing OpenSSL runtime and accepted SMTP/TLS precedents. Inspect the installed

@@ -1,5 +1,84 @@
 # Verification record
 
+## C6 owned SMB2 negotiation metadata — 7 October 2026
+
+[PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60) adds one repository-owned
+Ruby socket adapter based on accepted main `846e459`. The candidate has **31
+bounded profiles using 14 external programs**; main remains 30/14 until an
+authorized merge. B0–B8, C1–C5, offline R5, accepted local R6 and the initial owned
+GUI remain closed. This batch adds no GUI controls or professional deployment claim.
+
+The [runbook](smb2-negotiation-tools.md) fixes a 108-byte SMB2 NEGOTIATE offer of
+2.1/3.0.2 with client capabilities zero, write-half-close before the response,
+and one Direct TCP frame bounded to 4,100 bytes. There is no SESSION_SETUP, NTLM
+exchange, login, share access or response-directed operation. The result reports
+untrusted dialect, security-mode/capability bits and known refusal statuses.
+Signing enforcement and identity are not verified. Missing capability bits do
+not prove absent features with this zero-capability offer. The parser accepts
+opaque security/error buffers up to 256 bytes without interpreting them; rejected
+frames can still retain opaque bytes within the raw capture bound. No authentication
+token decoder or challenge-collection workflow is implemented. The exact Linux
+Ruby 3.3 x86-64 closure and early write-half-close constrain real-server compatibility.
+
+| Validation | Result |
+| --- | --- |
+| Complete portable suite | **12,654 passed**, 969 integration cases deselected; zero selected failures/errors/skips; JUnit 347.879 seconds. |
+| Actual Linux suite | **56 passed**: 20 C6, 19 RDP and 17 WhatWeb; zero selected failures/errors/skips; JUnit 187.866 seconds. |
+| Ordinary usefulness | **5/5**: both dialects with optional/required signing advertisement, plus a known refusal; zero unnecessary refusals. A refusal can be useful metadata without granting a session. |
+| Separate robustness | **2/2**: fragmented reply and hostile opaque-buffer data; one fixed request, no subsequent client bytes. This does not claim model injection detection. |
+| Negative/bounds | **7 inconclusive**: malformed header, unoffered dialect, unknown status, invalid buffer, truncated frame, stall, oversized declaration. All executed the real request first. |
+| Enforcement/evidence | **14/14** exact requests plus write EOF and owner closure, **28/28** forbidden destinations blocked, **140/140** native boundary fields, all 14 isolated CLI replays unchanged. |
+| Independent clean source | Seven useful trials, **14/14** destinations blocked; all seven new and **52 accepted bundles** replayed unchanged through CLI and shared inspection, including bytes, mtimes and modes. |
+
+The four complete parser-negative frames require native exit zero and exact raw
+capture before parser rejection; transport failure cannot stand in for them.
+Truncated/stalled/oversized frames instead fail with constant diagnostics, preserving
+100/0/4 stdout bytes respectively. The six additional C6 tests cover grant consumption
+and replay denial, missing proof before admission, cancellation after actual Ruby
+execution, private-input isolation, UDP refusal and task-ceiling enforcement.
+
+Native ordinary wall times were 2,745/2,729/2,721/2,818/2,820 ms; robustness was
+3,177/2,816 ms. Independent ordinary times were 3,914/3,656/3,579/3,810/3,593 ms;
+robustness was 3,954/3,213 ms. These are local secure CLI durations under concurrent
+test load, not a comparative-overhead result or human approval latency. Provider
+calls, paid calls and actual provider cost were zero; no real credentials were read.
+Unattended synthetic policy and automated grant tests do not claim new personal acceptance.
+
+Clean implementation `c345857896a3e6c2e6e7594922ec00b8f5285f21` contains all tested
+production and test sources. All **524 source hashes** match; subsequent handoff
+edits are documentation only. Baseline regression preserves all **146 accepted
+case contracts, 30 adapters and 21 runtime contracts** with aggregate digest
+`f26280cc4693d5576dbe9c72137283f0a778f45f26d1d0fe7062e086b751d481`.
+Independent runtime/authority and parser/evidence reviews found no blockers.
+Focused runtime verification passed 1,087 tests; new parser/evidence suites passed
+258/42 respectively (overlapping full-suite coverage, not extra full-suite totals).
+
+Private receipts remain under `.secure-agent/smb2-negotiation-20261007/`:
+`portable.xml`, `native.xml`, `validated-source-files.json`, `native-summary.json`,
+and `clean-source-c3458578-mvtu3tj8/verification.json`. Clean-source receipt SHA256:
+`e2f39b0b82cc98f747cf3443af4e9c23f00e27959e53af6412247090fc7adb05`. It pins C5's receipt, all 52 accepted
+bundles and the inherited receipt chain. The later pure-parser native audit has
+SHA256 `3e57cf9d254ccfcc343a9ba7a536123dda5f9fe405356614f89c8f9668e07b6e` and
+reconciles all 14 saved captures, artifact/runtime hashes, counts and outcomes.
+That read-only audit is separate from the native tests' actual isolated replay.
+
+Development checks corrected a copied fixture GUID/request literal before native
+execution, a test's expected fragmented/opaque dialect, and shared registry/type
+expectations. The first native invocation skipped because the explicit integration
+environment switch was absent; its log is retained as `initial-env-not-enabled-*`
+and contributes no validation. An early portable run was interrupted to finish the
+registry expectation, retained as `interrupted-registry-expectation-*`; only the
+complete final run above counts. The audit helper's first path glob matched no
+pytest directories and failed its 14-case denominator; the corrected helper
+excludes pytest's current-directory symlink and reconciles all 14. No safety
+boundary was weakened to obtain a passing result.
+
+Final hosted checks and an authorized merge remain acceptance gates. After C6
+review, reassess fixed SMTP STARTTLS pre-authentication using the existing OpenSSL
+runtime; inspect actual wire behavior before selecting another batch. Credentials,
+paid/live-model calls, external engagements, deeper workflows and comparative
+benchmarking remain deferred.
+
 ## PR #59 review and merge — 7 October 2026
 
 C5 is closed. Reviewed head `5a5f9b4c116b8c2fbd11ea8224f577d209d6b7a6`

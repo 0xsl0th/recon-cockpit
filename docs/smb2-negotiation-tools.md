@@ -4,8 +4,8 @@ C6 adds `smb2_negotiate_metadata_v1`, a repository-owned Ruby socket adapter usi
 the existing secure single-action CLI, sealed runtime and evidence path. It adds
 one capability to the accepted 30-profile inventory, for 31 profiles using the
 same 14 external programs. Ruby remains a supporting runtime. The operation is
-available through the owned CLI, not the GUI. Validation and acceptance remain
-pending; the counts below are completion requirements, not reported results.
+available through the owned CLI, not the GUI. Local validation and source review passed as
+recorded below; final hosted checks and an authorized merge remain pending.
 
 ## Fixed operation and meaning
 
@@ -118,7 +118,7 @@ python -m recon_cockpit.secure_agent \
 `--execute` with `--dry-run` to inspect a proposal. Read-only inspection never
 restores an approval or resumes execution.
 
-## Completion criteria and pending validation
+## Completion criteria and validation
 
 | Group | Owned cases | Required result |
 | --- | --- | --- |
@@ -135,16 +135,26 @@ Additional native tests cover grant consumption and replay denial, missing
 proofs, cancellation after actual execution, private-input isolation, UDP refusal
 and the task ceiling. Blocking every task fails this batch.
 
-Final portable and native suite counts, source hashes and receipts are **pending**.
-The separate clean-source verifier must complete five ordinary and two robustness
-trials, block 14/14 forbidden-destination witnesses and replay all 52 accepted
-bundles unchanged through both CLI and shared inspection. It pins the accepted
-C5 receipt and preserves the inherited receipt chain. Its explicit unattended
-synthetic policy does not claim personal approval; the shipped policy requires
-approval and separate native gate tests exercise it.
+Local validation passed **12,654 portable tests** and **56 native tests**
+(20 C6, 19 accepted RDP and 17 WhatWeb), with no selected failures/errors/skips.
+All 14 scenarios executed one exact request with write EOF, closed their owners,
+passed **28/28 blocked-destination witnesses** and **140/140 boundary fields**, and
+replayed unchanged. Ordinary completion was **5/5**, robustness **2/2** separately,
+with zero unnecessary refusals; all seven invalid/incomplete responses stayed
+inconclusive. Clean-source verification repeated seven useful trials, blocked
+14/14 destinations and replayed **52 accepted bundles** unchanged. Provider calls
+and cost stayed zero. All 524 tested source hashes match clean implementation
+`c345857`. Independent source review found no blockers. Final hosted checks and
+an authorized merge remain acceptance gates; see [verification.md](verification.md).
+
+The independent verifier pins C5's receipt and retains the inherited receipt
+chain. Its explicit unattended synthetic policy does not claim personal approval;
+the shipped policy requires approval and separate native gate tests exercise it.
+Independent ordinary wall times were 3,914/3,656/3,579/3,810/3,593 ms; robustness
+was 3,954/3,213 ms. These describe local secure CLI wall time under concurrent test
+load, not human approval latency or comparative overhead.
 
 Record useful completion, unnecessary refusals, blocked attempts, capture sizes,
-descriptive wall times, zero provider calls and zero cost. Publish final evidence
-and limits in [verification.md](verification.md) only after the checks complete.
+descriptive wall times, zero provider calls and zero cost. Final evidence and limits are in [verification.md](verification.md).
 Comparative benchmarking, deeper workflows, live-model evaluation, paid calls
 and real credentials remain deferred. Accepted milestones remain closed.

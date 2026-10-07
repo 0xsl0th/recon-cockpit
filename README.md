@@ -100,7 +100,7 @@ Supported opaque buffers are limited to 256 bytes by the parser. Raw peer bytes
 remain private evidence and are never decoded as authentication tokens; rejected
 frames can remain within the larger raw capture bound. There is no SESSION_SETUP,
 NTLM challenge collection workflow, credential use, login, share access or
-follow-up. C6 validation and acceptance remain pending; its catalog entry does
+follow-up. C6 local validation and source review passed; acceptance remains pending; its catalog entry does
 not broaden the accepted profiles or enable real-network or GUI execution.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

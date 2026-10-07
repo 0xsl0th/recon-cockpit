@@ -81,8 +81,9 @@ reads one response frame of at most 4,100 bytes. Supported negotiation metadata
 permits an opaque security or error buffer of at most 256 bytes; bounded raw
 evidence can retain rejected frames with larger buffers. Peer bytes remain
 uninterpreted data. No SESSION_SETUP, authentication, NTLM challenge collection
-workflow, credentials, login, share access or follow-up is available. Validation
-and acceptance remain pending. Catalog visibility does not establish acceptance,
+workflow, credentials, login, share access or follow-up is available. Local
+validation and source review passed; acceptance remains pending. Catalog visibility
+does not establish acceptance,
 arbitrary server compatibility, signing enforcement or service identity.
 
 From the repository root, with the project installed:

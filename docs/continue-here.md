@@ -15,7 +15,13 @@ runtime and all authority gates. No SESSION_SETUP, NTLM exchange, authentication
 or share access occurs. Signing and capability fields remain untrusted peer claims;
 opaque peer bytes can remain in bounded private raw evidence but are not interpreted.
 Fourteen cases separate five ordinary useful tasks, two useful robustness trials
-and seven inconclusive outcomes. C6_VALIDATION_PENDING
+and seven inconclusive outcomes. Local validation passed 12,654 portable and 56 native tests, all 14 new
+scenario replays and all 52 accepted-bundle replays. Ordinary/robustness completion
+was 5/5 and 2/2, with zero unnecessary refusals, 28/28 blocked destinations,
+140/140 native boundary fields and zero provider cost. Independent review found
+no blockers. See [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60);
+review and authorized merge remain outstanding. Require passing hosted checks
+on the latest revision before merging.
 Accepted main has 30 profiles using 14 external programs; this candidate has 31
 using the same 14. Ruby is supporting runtime, not another assessment program.
 The exact reviewed Linux Ruby 3.3 x86-64 layout and early write-half-close limit
