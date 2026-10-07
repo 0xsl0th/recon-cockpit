@@ -1,5 +1,41 @@
 # Verification record
 
+## Personal control confirmations — 7 October 2026
+
+The owner completed three separate one-action rehearsals against the owned,
+disconnected fixtures at PR #53 documentation head `db9ba1a`; product code and
+tests are unchanged from reviewed implementation `5970a108`. All five
+[checks on the documentation revision](https://github.com/0xsl0th/recon-cockpit/actions/runs/37431954622)
+passed. The request stayed at one step, 60 seconds and 8,192 output bytes.
+
+| Owner-confirmed control | Successful actions | Stop reason | Session elapsed |
+| --- | ---: | --- | ---: |
+| Approve | 1 | `step_limit` | 23,238 ms |
+| Deny | 0 | `action_blocked` | 15,093 ms |
+| Leave unanswered, then Ctrl+C | 0 | `session_cancelled` | 6,177 ms |
+
+The owner described the approval steps as clear, confirmed completion of the fresh
+denial test, and explicitly reported leaving the cancellation review unanswered
+before pressing Ctrl+C. The earlier denial trial during which the owner was AFK
+remains unconfirmed and is excluded. Denial and cancellation each consumed zero
+grants and recorded zero tool starts or finishes; approval consumed one grant and
+completed one execution. All fixtures closed. These are observed session timings,
+not a comparative overhead measurement.
+
+Fresh independent inspection of all three sessions matched the saved reports,
+found no integrity issues and left every evidence file unchanged. Provider calls
+and actual cost are zero. Private receipts are
+`.secure-agent/graphical-single-action-20261006/owner-controls-confirmation.json`
+and `confirmed-controls-evidence-review.json`, alongside the separate owner feedback
+and retained session artifacts. No personal input was supplied by automation.
+
+**The three controls are confirmed; full four-action personal acceptance remains
+outstanding.** Each smaller request correctly reports an incomplete full assessment.
+Keep PR #53 draft and ordinary desktop execution disabled. The next personal check
+is one approvals-only run, with an untimed plan before owner start and the original
+four-step/60-second/26,624-byte limits. Do not repeat the confirmed negative controls
+or extend/reset deadlines. Existing automated full-workflow receipts remain distinct.
+
 ## Corrected reviewer retry and simpler rehearsal — 6 October 2026
 
 Fresh review of `5970a1086cbc4978c7eeb3a71d740dcf5ca221df` found no blockers;
@@ -21,9 +57,10 @@ which user interactions occurred.
 
 The owner confirmed that the copy/paste or three-session instructions were
 confusing. Preserve those observations and unsuccessful results in
-`.secure-agent/graphical-owner-helpers-20261006/`. Personal acceptance remains
-outstanding; PR #53 stays draft. The next rehearsal selects one case per launch,
-starts with one approval and pauses for owner feedback before denial or cancellation.
+`.secure-agent/graphical-owner-helpers-20261006/`. Personal acceptance was
+outstanding at that checkpoint; PR #53 stayed draft. The planned rehearsal selected
+one case per launch, starting with one approval and pausing for owner feedback
+before denial or cancellation.
 It reuses the existing service with one step, 60 seconds and 8,192 bytes; a successful
 first action ends at `step_limit` and does not complete the four-action assessment.
 Keep controls-rehearsal evidence distinct from full-workflow completion and

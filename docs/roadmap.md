@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — graphical approval usability and personal walkthrough (6 October 2026).**
+**Current slice — complete the four-action personal graphical walkthrough (7 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -70,22 +70,22 @@ Priority **2c remains current**, with these explicit acceptance steps:
   it does not establish personal approval. Existing terminal behavior remains the
   default. Runtime support is currently the documented local Linux/X11 layout.
 - **Personal walkthrough, then desktop execution — outstanding.** PR #53 fixes
-  phrase selection/copying, but its personal retry exposed `approval_unavailable`
-  on the real desktop despite passing scripted tests. Private real-input tests
-  reproduced deferred focus/word helpers loading after filesystem sealing; the
-  correction preloads only those helpers. All 51 native and 112 focused portable
-  checks pass. Review the correction and hosted checks before another owner retry.
-  Copy/paste must remain separate
-  from explicit approval, with unchanged bindings and limits. Initial timeouts
-  and the subsequent failed retry do not establish acceptance. Exercise approval, denial and pending
-  cancellation using the prepared entry point. Record the observed results before
-  adding a desktop Execute control through the same shared service. Do not attach
-  to a real network, restore grants or claim professional readiness in this step.
-  The corrected retry reached the 60-second limit without the earlier reviewer
-  error, and the owner reported confusing copy/paste or three-session instructions.
-  First rehearse one control interaction at a time using the existing stricter
-  one-step/60-second/8,192-byte request, pausing for feedback between cases.
-  This is a usability rehearsal, not full four-action personal acceptance.
+  phrase copying and preloads the fixed Tk focus/word helpers before filesystem
+  sealing. Fresh review, 51 native and 112 focused portable tests, and all five
+  hosted checks passed. Copy/paste remains separate from explicit approval, with
+  unchanged bindings and limits. Earlier unsuccessful trials remain recorded.
+  After confusing multi-case instructions, the owner separately confirmed approval,
+  denial and pending-review Ctrl+C using stricter one-step/60-second/8,192-byte
+  requests. All three independently replay unchanged with closed fixtures and no
+  provider calls/cost; denial and cancellation launched no tool. These controls
+  tests are complete, but their full-assessment outcomes remain incomplete.
+  Next show the four-action plan before starting one approvals-only session through
+  the existing entry point. Keep the original four-step/60-second/26,624-byte limits;
+  do not repeat the negative cases or reset/extend the deadline. Record 4/4 useful
+  actions, cleanup, unchanged replay and the owner's observation before personal
+  acceptance and a desktop Execute control through the same shared service.
+  Real network attachment, restored grants and professional readiness remain out
+  of scope. PR #53 stays draft pending this remaining personal check.
 
 This remains part of priority 2; dry-run controls do not complete the GUI milestone.
 Successive tool batches stay priority 3 and target remaining internal-network/web

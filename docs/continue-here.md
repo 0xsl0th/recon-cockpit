@@ -1,10 +1,10 @@
-# Continue here — 6 October 2026
+# Continue here — 7 October 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: simplify the personal graphical rehearsal to one case at a time (priority 2c).**
+**Current authorized work: finish the four-action personal graphical walkthrough (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -90,28 +90,37 @@ and outcome must reach isolated audit before any grant can be consumed.
 The ordinary desktop still uses `execute=False` with immutable scope, an
 approval-required policy and new private paths. Its dry runs cannot count as
 useful workflow completion. There is no desktop Execute control yet, no restored
-approval and no personal graphical walkthrough receipt. The prepared command is
+approval and no full four-action personal walkthrough receipt. The three individual
+controls are now confirmed. The prepared command is
 plan-only by default; see the runbook for explicit owned-fixture execution.
 
 **Current continuation:** PR #53's implementation at `5970a108` passed fresh
 review, 51 native and 112 focused portable tests, and all five hosted checks.
-GitHub rejected formal self-approval because the active account owns the PR.
-The corrected personal retry did not repeat `approval_unavailable`, but both
-started sessions timed out: two actions completed in the approval-labeled stage
-and one in the denial-labeled stage; cancellation never started. The owner
-confirmed that the copy/paste or three-session instructions were confusing.
-Preserve `.secure-agent/graphical-owner-helpers-20261006/`; this is not acceptance.
+All five checks also passed on documentation revision `db9ba1a`. GitHub rejected
+formal self-approval because the active account owns the PR. The corrected
+multi-case personal retry timed out without repeating `approval_unavailable`;
+the owner found its instructions confusing. Preserve those unsuccessful trials
+in `.secure-agent/graphical-owner-helpers-20261006/`.
 
-Replace automatic progression through three cases with one explicitly selected
-case per private rehearsal. Start with one Nmap approval, then pause for feedback
-before a separate denial or cancellation case. The existing service accepts the
-stricter limits of one step, 60 seconds and 8,192 output bytes, with every authority
-gate unchanged. A successful single action ends at `step_limit`; the four-action
-assessment remains incomplete. This diagnoses personal use of the controls and
-must not substitute for full four-action personal acceptance. The full workflow's
-existing automated evidence remains separate. Do not increase or reset deadlines.
-Current private launcher: `/tmp/recon-graphical-single-action.py`; start only a
-reviewed, validated revision and let the owner enter all approval input.
+The subsequent one-case-at-a-time rehearsal confirmed all three individual controls:
+one approved Nmap action (`step_limit`), denial with no execution (`action_blocked`),
+and unanswered-review Ctrl+C with no execution (`session_cancelled`). The owner
+confirmed each interaction. All three fresh independent replays match saved reports,
+leave evidence unchanged and record closed fixtures with zero provider calls/cost.
+Receipts are `.secure-agent/graphical-single-action-20261006/owner-controls-confirmation.json`
+and `confirmed-controls-evidence-review.json`. The earlier AFK denial trial remains
+unconfirmed. Do not repeat these completed controls tests.
+
+These stricter one-step/60-second/8,192-byte rehearsals leave the full assessment
+incomplete. **Full four-action personal acceptance is still outstanding; PR #53
+remains draft.** The next private launcher is `/tmp/recon-graphical-full-approval.py`:
+show an untimed four-action plan, wait for the owner to type `start`, then run only
+the approvals case through the existing graphical demo. Retain the original four
+steps, 60-second session deadline and 26,624-byte limit. The owner supplies every
+approval; no automatic denial/cancellation stage follows. Verify 4/4 useful actions,
+closed fixtures and unchanged independent replay, then record the owner's observation.
+Scripted full-workflow validation remains separate. Do not reset or extend deadlines;
+if this attempt remains impractical, discuss that constraint before another retry.
 
 Retain earlier failed trials in `.secure-agent/graphical-owner-copy-20261006/` and
 the helper-fix evidence in `.secure-agent/graphical-copy-20261006/`. Record the
@@ -133,8 +142,8 @@ started sessions timed out with zero grants consumed and zero tool launches; the
 cancellation session did not start. These are unsuccessful trials, not approval,
 denial or cancellation acceptance. Retain their private evidence and feedback in
 `.secure-agent/graphical-owner-20261006/`. The screenshot and copy-fix validation
-belong in `.secure-agent/graphical-copy-20261006/`. Personal acceptance remains
-outstanding; the subsequent retry failed as described above. Keep local
+belong in `.secure-agent/graphical-copy-20261006/`. Full four-action personal acceptance remains
+outstanding; the later individual controls are confirmed as described above. Keep local
 Linux/Tk evidence distinct from portable CI and retain earlier validation receipts.
 Private images stay outside Git. The proposal/PDF and separate PR #31 remain unchanged.
 

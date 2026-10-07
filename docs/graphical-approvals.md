@@ -116,28 +116,37 @@ HTTP GET, Nmap SSH identification and public SSH host-key retrieval, all inside
 the disconnected owned endpoints. There is no real target attachment or paid
 provider. SIGINT/SIGTERM request cancellation and retain the original deadline.
 
-For personal usability acceptance, the owner should first review and approve the
-four exact actions, then use a fresh session to deny an action and another to
-cancel while a prompt is pending. Record what was displayed and whether the
-prompts, destinations and cleanup were clear. Do not reuse automated test input
-or label it personal acceptance. The prepared entry point does not itself record
-that this walkthrough has happened. No personal usability acceptance is claimed here.
+Personal usability acceptance requires the owner's actual approval, denial and
+pending-review cancellation interactions, plus successful completion of the four
+exact actions in one session. Record what was displayed and whether prompts,
+destinations and cleanup were clear. Automated test input cannot establish personal
+acceptance, and the prepared entry point does not itself record owner feedback.
 
 The first personal attempt exposed the nonselectable label and ended without any
 approved tool execution. The copy/paste correction worked in a subsequent personal
 retry, but the reviewer returned `approval_unavailable`; another session timed out.
 PR #53 preloads the required fixed helpers and passes the native real-input
-regressions; it remains a draft pending personal acceptance. Review the correction
-and hosted checks before retrying. Neither set of unsuccessful trials
-establishes usability acceptance; preserve them separately from automated evidence.
+regressions. The next corrected retry hit the original session deadline, and the
+owner found the copy/paste or three-session instructions confusing. Preserve these
+unsuccessful trials separately from automated evidence.
 
-The next corrected retry hit the original session deadline, and the owner found
-the copy/paste or three-session instructions confusing. Use one explicit rehearsal
-case at a time, with feedback before the next case. The private rehearsal uses the
-same service and graphical frontend with stricter one-step/60-second/8,192-byte
-limits. Its first-action approval stops at `step_limit`; evidence correctly marks
-the full assessment incomplete. Denial and cancellation use separate fresh cases.
-Do not call this full four-action personal acceptance or reset/increase deadlines.
+On 7 October, all three individual controls are owner-confirmed using separate
+one-case rehearsals. Approval completed one Nmap action and stopped at `step_limit`;
+denial and unanswered-review Ctrl+C launched no tool and stopped at `action_blocked`
+and `session_cancelled`, respectively. Independent replay matches saved reports,
+leaves evidence unchanged and confirms closed fixtures with zero provider calls/cost.
+The earlier AFK denial trial is not counted. The stricter one-step/60-second/8,192-byte
+requests correctly leave the full assessment incomplete; they do not establish full
+four-action acceptance. See the [verification record](verification.md).
+
+**The remaining personal check is one full four-action approval session.** Read its
+fixed plan before typing `start`; only then does the original 60-second session
+begin. In each separate review, inspect the action, click **Copy phrase**, click the
+lower empty answer field, press **Ctrl+V**, and click **Approve once**. Repeat for
+all four actions. Do not repeat the confirmed denial/cancellation cases or reset or
+increase limits. Verify useful completion and evidence, then record the owner's
+observation. PR #53 remains draft and ordinary desktop execution stays disabled
+until this remaining check is accepted.
 
 ## Validation interpretation
 
