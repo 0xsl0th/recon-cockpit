@@ -249,6 +249,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "tls_handshake_verified": "handshake_verified",
                "database_tls_verified": "database_tls_verified",
                "smtp_tls_verified": "smtp_tls_verified",
+               "ldap_tls_verified": "ldap_tls_verified",
                "http_fingerprint_observed": "http_fingerprint_observed",
                "http_fingerprint_no_hints": "http_fingerprint_no_hints",
                "ssh_host_key_observed": "host_key_observed",
@@ -383,6 +384,17 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Both bounded raw channels are independently reparsed without network. Complete native success framing is required; process exit alone does not establish useful or empty results.",
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
+            ]
+        if manifest["fixture_case"].startswith("ldap-tls-"):
+            report["limitations"] = [
+                "This single executable trial uses a disconnected synthetic fixture; it is not professional engagement or real-model validation.",
+                "LDAP STARTTLS sends one fixed extended request, then verifies TLS with the public fixture CA and hostname. No bind, search, referral follow-up, client credential or TLS application request is authorized.",
+                "The native client checks a subset of ASN.1 tags and a success result code but does not match the LDAP response message ID or validate all remaining LDAP fields. A mismatched response ID can still produce the same TLS-only result; LDAP readiness, authentication and service identity are not established.",
+                "The raw LDAP response, including diagnostic text and response OID, is not retained in the brief capture. Hostile diagnostic text is not detected or preserved; its absence is not proof that no hostile text was sent or that a model resisted it.",
+                "The native client reads the LDAP response once. Fragmented responses can fail and remain inconclusive; this profile does not claim general LDAP framing support.",
+                "Both output channels are bounded and the retained TLS diagnostics are independently parsed without network on capture and replay. Hashes reconcile local evidence, not external authenticity. Normalized observations cannot select a new target or tool.",
+                "Useful completion requires one fixture-witnessed TLS 1.3 handshake and clean close_notify without application data. DONE means stdin EOF and is not clean-close proof. Negative-case counters instead record the fixed LDAP StartTLS request before the negative response, failure or stall, as pinned by each case's lab specification; they cannot establish useful TLS completion.",
+                "Counters are last acknowledged totals and connections are lower bounds. Inspection never resumes execution or restores authority.",
             ]
         if manifest["fixture_case"].startswith("smtp-tls-"):
             report["limitations"] = [
@@ -618,6 +630,13 @@ def _markdown(report):
                              + " | " + _metadata_literal(row["versions"]) + " |")
             if not details["hints"]:
                 lines.extend(["", "The fixed request completed with no reviewed hints. This does not establish technology absence."])
+        elif type(details) is dict and details.get("kind") == "ldap_starttls_handshake":
+            lines.extend(["", "## LDAP STARTTLS handshake", "",
+                "Verified TLS using the public fixture CA and hostname. No authenticated LDAP session, bind or search was performed; LDAP response identity, readiness and service identity are not verified.",
+                "", "| Check | Observation |", "| --- | --- |"])
+            for field in ("service", "protocol", "cipher", "verification", "peer_name", "authenticated_ldap_session"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            lines.extend(["", "Useful completion also requires the fixture's clean close_notify witness. The native DONE diagnostic alone is not proof of clean TLS closure."])
         elif type(details) is dict and details.get("kind") == "smtp_starttls_handshake":
             lines.extend(["", "## SMTP STARTTLS handshake", "",
                 "Verified TLS using the public fixture CA and hostname. No authenticated SMTP session or mail operation was performed; SMTP advertisement, reply status and product identity are not verified.",

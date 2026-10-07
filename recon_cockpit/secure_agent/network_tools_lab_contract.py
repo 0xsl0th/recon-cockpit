@@ -21,6 +21,38 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("ldap-tls-"):
+        from . import network_tools_fixture as fixture
+        response = fixture.ldap_tls_response(case)
+        complete = case in fixture.LDAP_TLS_COMPLETE_CASES
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-ldap-starttls-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "ldap_starttls"}],
+            "request_sha256": hashlib.sha256(fixture.LDAP_TLS_REQUEST).hexdigest(),
+            "request_bytes": len(fixture.LDAP_TLS_REQUEST),
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "malformed_tls_sha256": hashlib.sha256(TLS_MALFORMED_BYTES).hexdigest()
+                if case == "ldap-tls-bad-tls" else None,
+            "request_message_id": 1, "request_oid": "1.3.6.1.4.1.1466.20037",
+            "tls_name": TLS_NAME, "tls_protocol": "TLSv1.3",
+            "ca_sha256": hashlib.sha256(CA_PEM).hexdigest(),
+            "certificate_sha256": UNTRUSTED_SERVER_CERT_SHA256 if case == "ldap-tls-untrusted" else SERVER_CERT_SHA256,
+            "max_fixture_response_bytes": fixture.LDAP_TLS_MAX_RESPONSE_BYTES,
+            "native_response_read_max_bytes": 16384,
+            "max_connections": 1, "max_requests": 1,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_starttls_request_then_tls13_and_clean_close_notify" if complete
+                else "validated_starttls_request_before_negative_response",
+            "counter_includes_clean_tls_close": complete,
+            "connection_evidence": "accepted_connections_lower_bound",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "bind": False, "search": False, "authentication": False, "credentials": False,
+            "referral_following": False, "tls_application_requests": False, "plaintext_session": False,
+            "client_matches_response_message_id": False, "client_validates_complete_ldap_response": False,
+            "complete_ldap_response_retained": False, "fragmented_response_may_fail": True,
+            "service_identity_claim": False, "vulnerability_claim": False,
+            "behavior": case.removeprefix("ldap-tls-")}
     if case.startswith("smtp-tls-"):
         from . import network_tools_fixture as fixture
         dialogue = fixture.smtp_tls_dialogue(case)

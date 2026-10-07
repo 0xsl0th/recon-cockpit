@@ -17,7 +17,7 @@ from .tool_parameters import (
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters,
-    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters,
+    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -73,6 +73,7 @@ SNMP_TOOL_ID = "snmp_system_get_v1"
 POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
 MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
 SMTP_TLS_TOOL_ID = "smtp_starttls_handshake_v1"
+LDAP_TLS_TOOL_ID = "ldap_starttls_handshake_v1"
 WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
 CONFIGURABLE_NMAP_TOOL_ID = "configurable_nmap_service_v1"
 CONFIGURABLE_HEADERS_TOOL_ID = "configurable_http_headers_v1"
@@ -99,6 +100,7 @@ SNMP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_out
 POSTGRESQL_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 MYSQL_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SMTP_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+LDAP_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 WHATWEB_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NETWORK_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 
@@ -267,6 +269,16 @@ ADAPTERS = MappingProxyType({
          "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
          "fixed_tls_name", "fixed_ehlo_and_starttls", "single_connection",
          "no_authentication_or_mail", "no_client_credentials", "no_plaintext_session",
+         "no_tls_application_request", "owner_witnessed_clean_tls_close"),
+    ),
+    LDAP_TLS_TOOL_ID: ToolAdapter(
+        LDAP_TLS_TOOL_ID, LDAPStartTLSParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_ldap_starttls_handshake", "owned-ldap-starttls-v1",
+        "bounded-ldap-starttls-result-v1", "ldap-starttls-brief-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
+         "fixed_tls_name", "fixed_ldap_starttls_request", "single_connection",
+         "no_bind_or_search", "no_client_credentials", "no_referral_following",
          "no_tls_application_request", "owner_witnessed_clean_tls_close"),
     ),
     WHATWEB_TOOL_ID: ToolAdapter(

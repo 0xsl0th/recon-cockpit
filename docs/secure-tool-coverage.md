@@ -122,8 +122,8 @@ Model credentials, paid calls and live evaluation remain much later.
 
 ## Successive product coverage batches
 
-Priority 3 follows the accepted initial GUI. Accepted main has **31 bounded profiles
-from 14 external programs** after C6 in PR #60; the C7 candidate has 32 profiles
+Priority 3 follows the accepted initial GUI. Accepted main has **32 bounded profiles
+from 14 external programs** after C7 in PR #61; the C8 candidate has 33 profiles
 using the same 14 programs. Installed binaries and interactive
 commands do not satisfy secure coverage. The following rows distinguish existing
 integration from a candidate secure profile.
@@ -138,12 +138,13 @@ integration from a candidate secure profile.
 | C4 | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed `_ldap._tcp.harbordesk.test. IN SRV` question over TCP; at most four typed priority/weight/port/target/TTL rows; 4/4 ordinary record/NODATA/NXDOMAIN/unavailable completions with zero unnecessary refusals, separate injected-metadata usefulness, all ten scenarios with actual queries, enforced bounds, evidence and G1–G6. No recursion or advertised endpoint follow-up. | [x] Accepted in [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), merge `6080a5c`; all five final and post-merge jobs passed. |
 | C5 | RDP initial protocol negotiation; repository-owned Ruby socket adapter, no interactive profile | One fixed 19-byte TLS offer, write-half-close and first bounded reply only; 5/5 ordinary and 2/2 separate robustness completions, six inconclusive cases, 26/26 blocked destinations and 130/130 boundary fields with actual requests, typed metadata, enforced bounds, evidence and G1–G6. No TLS/CredSSP/NTLM, authentication or remote session. | [x] Accepted in [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59), merge `846e459` from reviewed `5a5f9b4`; all five final and post-merge jobs passed. |
 | C6 | SMB2 negotiation metadata; separate repository-owned Ruby adapter alongside accepted B3 smbclient share listing | One fixed 108-byte offer of SMB 2.1/3.0.2, write-half-close and one response bounded to 4,100 bytes; require 5/5 ordinary and 2/2 robustness completions, seven inconclusive cases after actual requests, structured untrusted metadata, enforcement, replay and G1–G6. No SESSION_SETUP, NTLM exchange, login or share access. | [x] Accepted in [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60), merge `aa65bff7`; all five final and post-merge jobs passed. See the [C6 runbook](smb2-negotiation-tools.md). |
-| C7 — current | SMTP STARTTLS before authentication; existing secure OpenSSL runtime, separate from accepted curl EHLO capability query | Fixed EHLO/STARTTLS and fixture-CA/name-verified TLS1.3 with owner clean-close witness; 2/2 ordinary, 2/2 separate robustness, eight inconclusive outcomes, 24/24 blocked destinations, 120/120 boundary fields, actual execution/replay and G1–G6. No auth/mail/credentials/application requests; disclose incomplete SMTP transcript/status validation. | Implemented candidate based on `aa65bff7`, pending review/acceptance. See the [C7 runbook](smtp-starttls-tools.md). |
-| Next gap to reassess after C7 review | LDAP STARTTLS before bind; accepted anonymous RootDSE and existing OpenSSL precedents | Confirm finite client behavior first; proposed one fixed extended request, fixture-verified TLS/clean close, no bind/search/credentials/referrals/post-TLS data, with owned useful/negative cases and G1–G6. | Recommendation only, not a committed or required C8 batch. |
+| C7 | SMTP STARTTLS before authentication; existing secure OpenSSL runtime, separate from accepted curl EHLO capability query | Fixed EHLO/STARTTLS and fixture-CA/name-verified TLS1.3 with owner clean-close witness; 2/2 ordinary, 2/2 separate robustness, eight inconclusive outcomes, 24/24 blocked destinations, 120/120 boundary fields, actual execution/replay and G1–G6. No auth/mail/credentials/application requests; disclose incomplete SMTP transcript/status validation. | [x] Accepted in [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61), merge `7c5e88ad`; all five final and post-merge jobs passed. See the [C7 runbook](smtp-starttls-tools.md). |
+| C8 — current | LDAP STARTTLS before bind; existing OpenSSL runtime, separate from accepted anonymous RootDSE | One fixed extended request, fixture-verified TLS/clean close, 2/2 ordinary and 2/2 separate robustness completions, eight inconclusive cases after actual request progress, 24/24 blocked destinations, 120/120 boundary fields, evidence and G1–G6. No bind/search/credentials/referral follow-up; disclose unchecked response ID/fields and discarded LDAP reply. | Implemented at `afe4fe82`; 13,683 portable/70 native tests and 63 accepted-bundle replays passed. Pending PR review/merge. See the [C8 runbook](ldap-starttls-tools.md). |
+| Next gap to reassess after C8 review | FTP explicit TLS before login; existing OpenSSL and accepted anonymous FTP precedents | Inspect fixed AUTH TLS and native reply handling first; proposed verified TLS/clean close with no USER/PASS, listing, transfer, credential or data connection; useful/negative owned cases and G1–G6. | Recommendation only, not a committed or required C9 batch. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 
-C1–C6 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
+C1–C7 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
 TCP SNMP does not establish UDP coverage. C2 reuses the existing single-action
 authority, OpenSSL runtime, strict TLS parser and evidence infrastructure. Its two
 profiles brought accepted main to **27 profiles from the same 13 programs**.
@@ -277,41 +278,59 @@ robustness completions, zero unnecessary refusals, 28/28 blocked destinations,
 **31 profiles using 14 programs**. C6 stays closed; private review receipt:
 `.secure-agent/pr60-merge-review.json`.
 
-**Current work: priority 3 secure-tool coverage, C7 bounded SMTP STARTTLS.**
-Work is on `feature/smtp-starttls-coverage` in `/tmp/recon-smtp-starttls-coverage`,
-based on accepted main `aa65bff7`. See the
+**C7 is accepted in [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61).**
+Reviewed head `4239834d` merged as `7c5e88ad` on 7 October at 22:32:58 UTC;
+reviewed and merged trees match `e07e810f7995f5f17aca942ccb4ebeede2152e0e`.
+Fresh authority/runtime and parser/evidence reviews found no blockers, with
+432 and 399 focused tests passing. All 532 tested source hashes, 75 reports,
+90 referenced artifacts and six inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37694217980)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37696888315)
+passed. Preserve 13,175 portable and 52 native tests, 2/2 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
+120/120 boundary fields and 59 accepted-bundle replays. Accepted main now has
+**32 profiles using 14 programs**. C7 stays closed; private review receipt:
+`.secure-agent/pr61-merge-review.json`.
+
+**Current work: priority 3 secure-tool coverage, C8 bounded LDAP STARTTLS.**
+Work is on `feature/ldap-starttls-coverage` in `/tmp/recon-ldap-starttls-coverage`,
+based on accepted main `7c5e88ad`. See the
 [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C7 runbook](smtp-starttls-tools.md). One fixed EHLO/STARTTLS exchange uses
-the existing OpenSSL runtime, fixture-CA/name-verified TLS1.3 and an independent
-clean-close witness. No AUTH, MAIL, RCPT, credential, client certificate, TLS
-application request, plaintext mail session or follow-up is available. The
-candidate has **32 profiles using the same 14 programs**; it adds no GUI workflow.
-The strict parser preserves native limitations: SMTP reply codes/advertisement
-are not verified, only the final EHLO line is retained, and fragmented readiness
-may fail. TLS success alone cannot promote an unsupported transcript.
+and [C8 runbook](ldap-starttls-tools.md). One fixed 31-byte StartTLS extended
+request uses the existing OpenSSL runtime, fixture-CA/name-verified TLS1.3 and
+an independent clean-close witness. No bind, search, credential, client
+certificate, referral follow-up, TLS application request or plaintext directory
+session is exposed. The candidate has **33 profiles using the same 14 programs**.
+It adds no GUI workflow and preserves the accepted anonymous RootDSE profile.
 
-Local validation passed **13,175 portable** and **52 native tests**, with zero
-failures/errors/skips. It completed **2/2 ordinary + 2/2 separate robustness**
-tasks with zero unnecessary refusals, retained eight inconclusive cases, blocked
-**24/24** destinations and passed **120/120** boundary fields. Independent
-clean-source verification at `b4b1a9f1` repeated four useful trials and replayed
-**59 accepted bundles** unchanged. All **532 tested source hashes** match;
-independent source review found no blockers. Provider calls and cost stayed zero.
-The shipped policy requires fresh approval. Automated validation is separate from
-personal acceptance. Private evidence is under
-`.secure-agent/smtp-starttls-20261007/`; see [verification.md](verification.md)
-for recorded results. [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61)
-remains unmerged pending review and
-corresponding authorization; the PR #60 merge does not authorize its merge.
+The result is TLS-only: OpenSSL does not match the response message ID or validate
+all remaining LDAP fields, and discards the raw LDAP response. A mismatched-ID
+robustness trial must not become a verified LDAP correlation or identity claim.
+Fragmented responses may fail. Useful completion also requires the fixture's
+clean close_notify witness; `DONE` and native exit success alone are insufficient.
 
-Next, reassess **LDAP STARTTLS before bind** as a coverage gap for internal
-networks, reusing OpenSSL only after confirming its exact finite native prelude.
-A candidate would allow one fixed StartTLS extended request, fixture-verified TLS
-and clean close, with no bind/search, credential, referral or post-TLS application
-bytes. This is a recommendation, not an implemented or committed C8 milestone.
-Deeper composition, benchmarking, credentials, paid calls, live-model evaluation
-and external engagements remain deferred. B0–B8, C1–C6, offline R5, accepted
-local R6 and the initial GUI/personal walkthrough stay closed.
+Local validation passed **13,683 portable** and **70 native tests**, with zero
+failures/errors/skips. C8 completed **2/2 ordinary + 2/2 separate robustness**
+tasks with zero unnecessary refusals, retained eight inconclusive outcomes after
+real request progress, blocked **24/24** destinations and passed **120/120**
+boundary fields. Independent clean-source verification at `afe4fe82` repeated
+four useful trials and replayed **63 accepted bundles** unchanged. All **540
+tested source hashes** match; independent source/evidence reviews found no blockers.
+Provider calls and cost stayed zero. Private evidence is under
+`.secure-agent/ldap-starttls-20261007/`; see [verification.md](verification.md).
+The shipped policy requires fresh approval; automated validation does not reopen
+personal acceptance. Leave the C8 PR unmerged pending latest-revision review,
+hosted checks and corresponding merge authorization. Its branch is
+`feature/ldap-starttls-coverage`; the PR #61 merge does not authorize another merge.
+
+After C8 review, reassess **FTP explicit TLS before login** as the next bounded
+coverage gap alongside accepted anonymous FTP listing. Inspect the fixed native
+AUTH TLS exchange and reply handling before selecting a profile; proposed scope
+is fixture-verified TLS and clean close, with no USER/PASS, listing, file transfer,
+client credentials, PBSZ/PROT or active/passive data connection. This is a recommendation, not an
+implemented or committed C9 milestone. Deeper workflows, benchmarking, credentials,
+paid calls, live-model evaluation and external engagements remain deferred.
+B0–B8, C1–C7, offline R5, accepted local R6 and the initial GUI stay closed.
 
 Each batch records useful completion and unnecessary refusals as well as blocked
 unauthorized attempts, request counts, elapsed time and zero provider cost. A normal

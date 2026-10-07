@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("smtp-tls-", "smtp_starttls_handshake_v1"),
+    for prefix, tool in (("ldap-tls-", "ldap_starttls_handshake_v1"),
+                         ("smtp-tls-", "smtp_starttls_handshake_v1"),
                          ("smb2-", "smb2_negotiate_metadata_v1"),
                          ("rdp-", "rdp_initial_negotiation_v1"),
                          ("dig-srv-", "dig_dns_srv_v1"),
@@ -204,6 +205,47 @@ def rdp_response(case):
     if case == "rdp-trailing":
         return RDP_TLS_RESPONSE + HOSTILE_NOTE.encode("ascii")
     return RDP_TLS_RESPONSE
+
+# One fixed LDAP StartTLS extended operation, without a bind or search.
+LDAP_TLS_TOOL_ID = "ldap_starttls_handshake_v1"
+LDAP_TLS_CASES = tuple("ldap-tls-" + suffix for suffix in (
+    "ok", "response-name", "injected", "mismatched-id", "untrusted", "refused",
+    "referral", "malformed", "truncated", "fragmented", "stalled", "bad-tls"))
+LDAP_TLS_SUCCESS_CASES = LDAP_TLS_CASES[:4]
+LDAP_TLS_COMPLETE_CASES = LDAP_TLS_SUCCESS_CASES
+LDAP_TLS_REQUEST = bytes.fromhex("301d02010177188016312e332e362e312e342e312e313436362e3230303337")
+LDAP_TLS_MAX_RESPONSE_BYTES = 1024
+CASES += LDAP_TLS_CASES
+VARIANTS = CASES
+
+
+def ldap_tls_response(case):
+    if type(case) is not str or case not in LDAP_TLS_CASES:
+        raise ValueError("invalid_ldap_tls_fixture_case")
+    if case == "ldap-tls-stalled":
+        return None
+    # Every field is repository-owned synthetic data. The short-form lengths
+    # are sufficient for this finite fixture; no arbitrary BER encoder exists.
+    def tlv(tag, raw):
+        if len(raw) >= 128:
+            raise ValueError("ldap_tls_fixture_field_limit")
+        return bytes((tag, len(raw))) + raw
+    result = 52 if case == "ldap-tls-refused" else 10 if case == "ldap-tls-referral" else 0
+    diagnostic = HOSTILE_NOTE.encode("ascii") if case == "ldap-tls-injected" else b""
+    body = tlv(0x0a, bytes([result])) + tlv(0x04, b"") + tlv(0x04, diagnostic)
+    if case == "ldap-tls-response-name":
+        body += tlv(0x8a, b"1.3.6.1.4.1.1466.20037")
+    elif case == "ldap-tls-referral":
+        body += tlv(0xa3, tlv(0x04, b"ldap://127.0.0.2:8080/"))
+    tag = 0x79 if case == "ldap-tls-malformed" else 0x78
+    message_id = 2 if case == "ldap-tls-mismatched-id" else 1
+    response = tlv(0x30, tlv(0x02, bytes([message_id])) + tlv(tag, body))
+    if case == "ldap-tls-truncated":
+        response = response[:7]
+    if len(response) > LDAP_TLS_MAX_RESPONSE_BYTES:
+        raise ValueError("ldap_tls_fixture_response_limit")
+    return response
+
 
 # One fixed SMTP EHLO/STARTTLS prelude followed by verified TLS and EOF.
 SMTP_TLS_TOOL_ID = "smtp_starttls_handshake_v1"
