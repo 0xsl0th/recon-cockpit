@@ -140,7 +140,7 @@ integration from a candidate secure profile.
 | C6 | SMB2 negotiation metadata; separate repository-owned Ruby adapter alongside accepted B3 smbclient share listing | One fixed 108-byte offer of SMB 2.1/3.0.2, write-half-close and one response bounded to 4,100 bytes; require 5/5 ordinary and 2/2 robustness completions, seven inconclusive cases after actual requests, structured untrusted metadata, enforcement, replay and G1–G6. No SESSION_SETUP, NTLM exchange, login or share access. | [x] Accepted in [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60), merge `aa65bff7`; all five final and post-merge jobs passed. See the [C6 runbook](smb2-negotiation-tools.md). |
 | C7 | SMTP STARTTLS before authentication; existing secure OpenSSL runtime, separate from accepted curl EHLO capability query | Fixed EHLO/STARTTLS and fixture-CA/name-verified TLS1.3 with owner clean-close witness; 2/2 ordinary, 2/2 separate robustness, eight inconclusive outcomes, 24/24 blocked destinations, 120/120 boundary fields, actual execution/replay and G1–G6. No auth/mail/credentials/application requests; disclose incomplete SMTP transcript/status validation. | [x] Accepted in [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61), merge `7c5e88ad`; all five final and post-merge jobs passed. See the [C7 runbook](smtp-starttls-tools.md). |
 | C8 | LDAP STARTTLS before bind; existing OpenSSL runtime, separate from accepted anonymous RootDSE | One fixed extended request, fixture-verified TLS/clean close, 2/2 ordinary and 2/2 separate robustness completions, eight inconclusive cases after actual request progress, 24/24 blocked destinations, 120/120 boundary fields, evidence and G1–G6. No bind/search/credentials/referral follow-up; disclose unchecked response ID/fields and discarded LDAP reply. | [x] Accepted in [PR #62](https://github.com/0xsl0th/recon-cockpit/pull/62), merge `a582bd6c`; all five final and post-merge jobs passed. See the [C8 runbook](ldap-starttls-tools.md). |
-| C9 — current | FTP explicit TLS before login; secure OpenSSL, separate from accepted anonymous FTP listing | Fixed AUTH TLS, verified fixture TLS/clean close, 2/2 ordinary and 3/3 robustness completions, six inconclusive cases, 22/22 blocked destinations, 110/110 boundary fields, actual execution/replay and G1–G6. No login/credentials/listing/transfer/data connections; disclose unchecked/discarded replies and strict retained-greeting support. | Implemented candidate based on `a582bd6c`, pending validation/review. See the [C9 runbook](ftp-starttls-tools.md). |
+| C9 — current | FTP explicit TLS before login; secure OpenSSL, separate from accepted anonymous FTP listing | Fixed AUTH TLS, verified fixture TLS/clean close, 2/2 ordinary and 3/3 robustness completions, six inconclusive cases, 22/22 blocked destinations, 110/110 boundary fields, actual execution/replay and G1–G6. No login/credentials/listing/transfer/data connections; disclose unchecked/discarded replies and strict retained-greeting support. | Implemented at `30eccfb5`; 14,231 portable/65 native confirmation tests and 67 accepted-bundle replays passed. Initial legacy stall failure retained; pending PR review/merge. See the [C9 runbook](ftp-starttls-tools.md). |
 | Next gap to reassess after C9 review | DNS server-reported NSID; interactive Nmap suggestion exists, secure dig currently A/SRV only | Inspect one fixed nonrecursive TCP query with EDNS NSID, capped opaque metadata and absent/refused outcomes; actual useful/negative execution, replay and G1–G6. No UDP, recursion, zone transfer, verified identity or follow-up. | Recommendation only, not a committed or required C10 batch. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -324,14 +324,20 @@ readiness or accepted AUTH evidence. A strict fixed greeting wrapper preserves
 unsupported/hostile final text as inconclusive. Useful completion also requires
 the fixture's clean close_notify witness; native DONE alone is insufficient.
 
-Validation requires 2/2 ordinary and 3/3 separate robustness completions, zero
-unnecessary refusals, six inconclusive cases after actual AUTH TLS progress,
-22/22 blocked destinations, 110/110 boundary fields, 65 selected native tests,
-full portable tests and unchanged independent replay of 67 accepted bundles.
-Private evidence is under `.secure-agent/ftp-starttls-20261007/`; see
-[verification.md](verification.md). The shipped policy requires fresh approval;
-automated validation does not establish new personal acceptance. Leave the C9 PR
-unmerged pending latest-revision review/checks and corresponding merge authorization.
+Validation passed **14,231 portable tests** and a **65-test native confirmation**.
+C9 completed **2/2 ordinary + 3/3 separate robustness** tasks with zero unnecessary
+refusals, six inconclusive outcomes, **22/22** blocked destinations and **110/110**
+boundary fields. Clean-source verification at `30eccfb5` repeated five useful
+trials and replayed **67 accepted bundles** unchanged; all **548 source hashes**
+match. Independent source/evidence reviews found no blockers. Provider calls and
+cost stayed zero. The initial native run had one legacy direct-TLS stall failure;
+it passed unchanged in isolated reproduction and full confirmation. Its cause
+remains undetermined, and both attempts are retained as a reliability caveat.
+See [verification.md](verification.md) and private
+`.secure-agent/ftp-starttls-20261007/`. The shipped policy requires fresh approval;
+automated validation does not establish personal acceptance. Leave C9 on
+`feature/ftp-starttls-coverage` unmerged pending latest-revision PR review,
+hosted checks and corresponding merge authorization.
 
 After C9 review, reassess **bounded DNS server-reported metadata via EDNS NSID**.
 The interactive DNS suggestions include `dns-nsid`, while secure dig currently

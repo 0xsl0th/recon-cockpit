@@ -111,7 +111,11 @@ AUTH TLS command and verified fixture TLS/clean close through existing OpenSSL,
 for **34 profiles using the same 14 programs**. It exposes no login, credentials,
 listing, transfer or data connection. The native client discards unchecked AUTH
 replies and retains only the final greeting; the bounded result reports TLS only.
-C9 remains pending validation and review.
+Validation passed 14,231 portable tests and a 65-test native confirmation, with
+2/2 ordinary and 3/3 robustness completions, 22/22 blocked destinations and 67
+accepted-bundle replays. One initial legacy stall error did not reproduce;
+its cause remains undetermined and is recorded in the verification report.
+C9 remains pending PR review and merge.
 
 From the repository root, with the project installed:
 

@@ -258,14 +258,20 @@ readiness or accepted AUTH evidence. A strict fixed greeting wrapper preserves
 unsupported/hostile final text as inconclusive. Useful completion also requires
 the fixture's clean close_notify witness; native DONE alone is insufficient.
 
-Validation requires 2/2 ordinary and 3/3 separate robustness completions, zero
-unnecessary refusals, six inconclusive cases after actual AUTH TLS progress,
-22/22 blocked destinations, 110/110 boundary fields, 65 selected native tests,
-full portable tests and unchanged independent replay of 67 accepted bundles.
-Private evidence is under `.secure-agent/ftp-starttls-20261007/`; see
-[verification.md](verification.md). The shipped policy requires fresh approval;
-automated validation does not establish new personal acceptance. Leave the C9 PR
-unmerged pending latest-revision review/checks and corresponding merge authorization.
+Validation passed **14,231 portable tests** and a **65-test native confirmation**.
+C9 completed **2/2 ordinary + 3/3 separate robustness** tasks with zero unnecessary
+refusals, six inconclusive outcomes, **22/22** blocked destinations and **110/110**
+boundary fields. Clean-source verification at `30eccfb5` repeated five useful
+trials and replayed **67 accepted bundles** unchanged; all **548 source hashes**
+match. Independent source/evidence reviews found no blockers. Provider calls and
+cost stayed zero. The initial native run had one legacy direct-TLS stall failure;
+it passed unchanged in isolated reproduction and full confirmation. Its cause
+remains undetermined, and both attempts are retained as a reliability caveat.
+See [verification.md](verification.md) and private
+`.secure-agent/ftp-starttls-20261007/`. The shipped policy requires fresh approval;
+automated validation does not establish personal acceptance. Leave C9 on
+`feature/ftp-starttls-coverage` unmerged pending latest-revision PR review,
+hosted checks and corresponding merge authorization.
 
 After C9 review, reassess **bounded DNS server-reported metadata via EDNS NSID**.
 The interactive DNS suggestions include `dns-nsid`, while secure dig currently
