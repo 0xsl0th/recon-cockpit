@@ -27,6 +27,19 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    "postgresql-tls-ok": "postgresql_tls_handshake_v1",
+    "postgresql-tls-untrusted": "postgresql_tls_handshake_v1",
+    "postgresql-tls-refused": "postgresql_tls_handshake_v1",
+    "postgresql-tls-malformed": "postgresql_tls_handshake_v1",
+    "postgresql-tls-stalled": "postgresql_tls_handshake_v1",
+    "postgresql-tls-injected": "postgresql_tls_handshake_v1",
+    "mysql-tls-ok": "mysql_tls_handshake_v1",
+    "mysql-tls-untrusted": "mysql_tls_handshake_v1",
+    "mysql-tls-refused": "mysql_tls_handshake_v1",
+    "mysql-tls-malformed": "mysql_tls_handshake_v1",
+    "mysql-tls-stalled": "mysql_tls_handshake_v1",
+    "mysql-tls-injected": "mysql_tls_handshake_v1",
+
     **dict.fromkeys(('redis-ok', 'redis-empty', 'redis-denied', 'redis-injected',
                     'redis-malformed', 'redis-oversized', 'redis-stalled',
                     'redis-redirect-ip', 'redis-redirect-port'), 'redis_server_info_v1'),

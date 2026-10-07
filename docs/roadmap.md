@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — C1 Redis/SNMP secure coverage (7 October 2026).**
+**Current slice — C2 PostgreSQL/MySQL pre-authentication TLS coverage (7 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -35,7 +35,7 @@ claim that today's bounded fixtures support professional engagements.
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
 after review and all five final portable jobs passed. Its two varied manifests
 completed 8/8 legitimate actions and blocked 24/24 listening forbidden destinations.
-The catalog now has 23 accepted profiles using the same 11 external programs.
+That slice brought the catalog to 23 accepted profiles using the same 11 external programs.
 Keep this scope closed and preserve its existing contracts.
 
 Priority **2a is accepted** in [PR #49](https://github.com/0xsl0th/recon-cockpit/pull/49),
@@ -99,15 +99,31 @@ Priority **2c is accepted**, with these completed steps:
   Preserve PR #53 personal acceptance; automated desktop input is separate evidence.
   Real network attachment, restored grants and professional readiness stay out of scope.
 
-The initial owned GUI milestone is closed. Priority 3 now starts **C1 Redis server
-metadata and SNMP system metadata**, with the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [runbook](redis-snmp-tools.md) defining completion. The candidate adds two CLI
-profiles using two installed programs through existing gates; it does not extend
-the GUI's HTTP/SSH workflow. C1 remains pending review and merge. Next, prioritize
-unauthenticated SQL service readiness/handshake metadata (PostgreSQL and MySQL),
-subject to a bounded protocol/runtime review. No credentials or SQL operations
-are authorized by this planning row. The professional engagement lifecycle remains
-priority 4.
+The initial owned GUI milestone is closed. **C1 Redis/SNMP coverage is accepted in
+[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55)**: reviewed head `8786308`
+merged as `9786a6b` with an identical tree; all five final and post-merge checks
+passed. Its 10,413 portable and 63 native cases, 3/3 ordinary completions,
+32/32 blocked destination witnesses and unchanged evidence replay remain accepted.
+Main has 25 bounded profiles using 13 external programs.
+
+Priority 3 now proceeds with **C2 PostgreSQL/MySQL pre-authentication TLS handshakes**.
+The [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
+and [runbook](database-tls-tools.md) define its pending completion gates. Two new
+CLI profiles reuse installed OpenSSL, so the candidate has 27 profiles using the
+same 13 programs. Each makes only its fixed database-protocol TLS request,
+verifies the public fixture CA/name and TLS 1.3, then closes without application
+data. Structured evidence explicitly means `verified_tls_handshake_only`, with
+`authenticated_database_session: false`. No database username, password, login,
+SQL, readiness, version or verified product-identity claim is included. Actual
+owned execution, replay and enforcement must pass before acceptance; these profiles
+do not extend the GUI's HTTP/SSH workflow.
+
+After C2, prioritize **C3 bounded HTTP application fingerprinting** using installed
+WhatWeb, subject to review of an allowlisted plugin set, pinned runtime and one-origin
+request bounds. Missing binaries or an unbounded default must fail closed. An
+installed tool or menu suggestion does not establish secure support. Broader SQL
+readiness, authenticated database access and professional engagement lifecycle work
+remain deferred under priority 4.
 
 Paired baseline/authority benchmarking and richer workflow decisions remain later
 work; descriptive local latency cannot establish authority overhead. The accepted scope

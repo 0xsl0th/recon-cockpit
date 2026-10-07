@@ -4,12 +4,28 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: priority 3 secure-tool coverage, C1 Redis/SNMP metadata.**
-The candidate is [PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55) on
-`feature/redis-snmp-coverage`; review and merge remain pending.
-See the [successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C1 runbook](redis-snmp-tools.md). Private validation receipts are under
-`.secure-agent/redis-snmp-20261007/` in the primary checkout.
+**Current work: priority 3 secure-tool coverage, C2 PostgreSQL/MySQL pre-authentication TLS.**
+Work is on `feature/database-tls-coverage` in `/tmp/recon-database-tls-coverage`,
+based on accepted main `9786a6b`. See the
+[successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
+and [C2 runbook](database-tls-tools.md). Actual execution, independent review and
+final acceptance remain pending; candidate code or catalog entries alone do not
+complete the batch.
+
+**[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55) is merged and C1 is closed.**
+Reviewed head `8786308d8569979229b6e0019cdcd04a0811e252` merged as
+`9786a6b4539ae2c1df9e63bff25f9ac0271ef759`; trees match
+`a60ae6208e00ec7e875382ee62ac1346896d8d5b`. Independent authority/runtime and
+parser/evidence reviews found no blockers. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37657264278)
+and [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37658499228)
+passed. No required-check rules were configured; all five portable matrix jobs
+were used as the merge gate. Preserve 10,413 portable and 63 native cases,
+3/3 ordinary completions, zero unnecessary refusals, 32/32 blocked destination
+witnesses and 30 unchanged accepted evidence replays. C1 brings accepted main to
+25 profiles using 13 programs. Private receipts remain at
+`.secure-agent/pr55-merge-review.json` and `.secure-agent/redis-snmp-20261007/`.
+Do not repeat the merge or broaden either accepted Redis/SNMP profile.
 
 **[PR #54](https://github.com/0xsl0th/recon-cockpit/pull/54) is merged and accepted.**
 Reviewed head `43321da97bb95e9950b21df1378b6e1113134518` merged as
@@ -39,7 +55,7 @@ PR #48 implements exact configurable HTTP/SSH scope through all seven gates in
 two disconnected endpoint owners. Local validation passed 117 Linux cases,
 8/8 useful actions over two manifests, 24/24 forbidden-destination witnesses,
 approval blocking, cancellation cleanup and 27 unchanged accepted evidence replays.
-The catalog has 23 accepted profiles using 11 external programs. These are
+That slice brought the catalog to 23 accepted profiles using 11 external programs. These are
 isolated fixture addresses, not permission to attach to an internal network.
 Preserve private receipts at `.secure-agent/configurable-owned-20261006/`, including
 the retained initial development/macOS test failures. Do not repeat the merge.
@@ -146,24 +162,35 @@ desktop bundles replayed unchanged with closed fixtures/processes and zero provi
 calls/cost. Both themes passed at 1120×720. Independent source reviews found no
 remaining blockers. These are scripted tests, not new personal acceptance.
 
-**Current continuation:** review the C1 implementation PR and its latest hosted
-checks before merging. Local validation passed 10,413 portable and 63 native
-cases, including 3/3 ordinary completions, 32/32 blocked destination witnesses
-and unchanged replay for all 16 scenarios. Do not automatically merge this new PR. The candidate adds fixed unauthenticated Redis `INFO server` and SNMPv2c TCP
-GET of three system scalars, with a public synthetic fixture community, selected
-structured metadata and private replayable evidence. One connection/query per
-action; all seven gates, existing limits and fresh approval remain. C1 adds no
-GUI controls or real network routing. Normal metadata and explicit typed SNMP
-noSuchObject are useful results; Redis empty/error responses are inconclusive.
-Native execution, adversarial cases, enforcement and useful completion are tracked
-in the [verification record](verification.md), not inferred from descriptors or mocks.
+**Current continuation:** finish C2 validation and leave its implementation PR
+ready for review. The candidate adds `postgresql_tls_handshake_v1` and
+`mysql_tls_handshake_v1` through the existing OpenSSL runtime: one fixed PostgreSQL
+SSLRequest or MySQL greeting/SSLRequest, followed by fixture-CA/name-verified TLS
+1.3 and a clean close without application data. It preserves all seven gates,
+fresh approval, one action/connection, five-second native and 60-second session
+limits, and an 8,192-byte output cap. The fixed owned endpoint remains
+`127.0.0.1:8080`; no GUI controls or attached database are added.
 
-After C1 is accepted, the next priority is the SQL service metadata gap: bounded
-PostgreSQL/MySQL readiness or handshake profiles, beginning with protocol and
-installed-runtime review. Keep the batch small; no login, query, secret setup or
-real database access is implied. The candidate catalog has 25 profiles from 13
-programs; accepted main remains 23/11 until C1 review and merge. This is progress
-toward the 40+ tool product direction, not full professional pentest readiness.
+Structured results mean only `verified_tls_handshake_only`, with
+`authenticated_database_session: false`. No username/password, database startup,
+login, SQL, authentication-plugin loading, plaintext downgrade, readiness, version
+or verified database-product identity is included. Twelve scenarios cover two
+ordinary handshakes plus refused, untrusted, malformed, stalled and hostile peers.
+The hostile MySQL version string is ignored and must not prevent legitimate TLS
+completion; hostile PostgreSQL prefaces remain inconclusive. MySQL greeting
+fragmentation can fail closed with the current native client and is a disclosed
+limitation. Record actual useful completion, unnecessary refusals, blocked
+unauthorized destinations, bounds, cleanup and unchanged evidence replay in the
+[verification record](verification.md) before acceptance. Paid/provider calls and
+cost must remain zero; elapsed time is descriptive, not a comparative benchmark.
+
+The candidate catalog has 27 profiles using the same 13 programs; accepted main
+stays at 25/13 until review and merge. After C2, prioritize **C3 bounded HTTP
+application fingerprinting** using installed WhatWeb, subject to a finite plugin
+allowlist, pinned runtime and one-origin request bounds. Missing prerequisites or
+an unbounded default must fail closed. Broader SQL readiness and authenticated
+database work stay deferred. This is progress toward the 40+ tool product direction,
+not full professional pentest readiness.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,

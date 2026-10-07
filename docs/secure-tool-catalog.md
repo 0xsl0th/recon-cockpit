@@ -8,18 +8,24 @@ modes of each program or production engagement readiness.
 
 The configurable HTTP/SSH slice adds three separately versioned profiles of
 existing implementations: Nmap identification, HTTP headers and SSH host keys.
-The accepted main catalog therefore lists **23 profiles using the same 11 programs**.
+That accepted slice brought the catalog to **23 profiles using the same 11 programs**.
 Their recipes point to an explicit scope file and the
 [configurable owned-lab runbook](configurable-owned-lab.md); no existing recipe
 or accepted execution contract is broadened.
 
-The new C1 Redis/SNMP candidate adds two profiles and two executable families,
-so this branch lists **25 profiles using 13 programs**, pending review and
-acceptance. The [Redis/SNMP runbook](redis-snmp-tools.md) covers one fixed Redis
+C1 Redis/SNMP is accepted in [PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55),
+bringing accepted main to **25 profiles using 13 programs**. The [Redis/SNMP runbook](redis-snmp-tools.md) covers one fixed Redis
 `INFO server` and one SNMPv2c GET over TCP for three system scalars. Both use
 the owned `127.0.0.1:8080` fixture and require fresh approval. SNMP's community is
 public synthetic test data; no real credential setup, host configuration,
 MIBs, UDP, walks or writes are introduced.
+
+The current C2 [PostgreSQL/MySQL pre-authentication TLS candidate](database-tls-tools.md)
+adds two profiles of the existing OpenSSL program. This branch lists **27 profiles
+using the same 13 programs**, pending actual owned execution, review and acceptance.
+The catalog describes candidate contracts as well as accepted ones; their presence
+is not verification. Each new recipe stops after a verified fixture TLS handshake
+and clean close, without credentials, login or SQL.
 
 From the repository root, with the project installed:
 
@@ -29,6 +35,8 @@ python -m recon_cockpit.secure_agent --describe-tool ssh_host_keys_v1
 python -m recon_cockpit.secure_agent --describe-tool kerbrute_userenum_v1
 python -m recon_cockpit.secure_agent --describe-tool redis_server_info_v1
 python -m recon_cockpit.secure_agent --describe-tool snmp_system_get_v1
+python -m recon_cockpit.secure_agent --describe-tool postgresql_tls_handshake_v1
+python -m recon_cockpit.secure_agent --describe-tool mysql_tls_handshake_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -106,11 +114,19 @@ missing output and can complete the query without verifying device identity or
 absence of a service. Hostile strings remain escaped, untrusted data. Neither
 profile permits metadata to choose another target or action.
 
+The database TLS profiles report `verified_tls_handshake_only` and
+`authenticated_database_session: false`. The `service` field binds the selected
+pre-authentication protocol; it does not identify an authenticated database product.
+No readiness, server version, account access or SQL result is claimed. Refused,
+untrusted, malformed and stalled handshakes stay inconclusive. MySQL greeting text
+is ignored as metadata, and a fragmented greeting can fail closed with this native
+client; neither behavior permits a plaintext fallback.
+
 The B0–B8 [coverage checklist](secure-tool-coverage.md) is closed under those
 accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C1 candidate. Further composition and comparative benchmarking
+the current C2 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

@@ -19,10 +19,11 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             DOCKER_PING_PARAMETERS, DOCKER_VERSION_PARAMETERS, WINRM_PARAMETERS,
                             NMAP_SERVICE_TOOL_ID, NMAP_SERVICE_PARAMETERS, KERBRUTE_TOOL_ID, KERBRUTE_PARAMETERS,
                             REDIS_TOOL_ID, REDIS_PARAMETERS, SNMP_TOOL_ID, SNMP_PARAMETERS,
+                            POSTGRESQL_TLS_TOOL_ID, POSTGRESQL_TLS_PARAMETERS, MYSQL_TLS_TOOL_ID, MYSQL_TLS_PARAMETERS,
                             NETWORK_TOOLS_LIMITS, get_adapter)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
                                      validate_identity)
-from .network_tools_fixture import QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case, REDIS_SNMP_CASES
+from .network_tools_fixture import QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case, REDIS_SNMP_CASES, DATABASE_TLS_CASES, DATABASE_TLS_SUCCESS_CASES
 
 
 TOOL_ID = DIG_TOOL_ID
@@ -39,12 +40,14 @@ PARAMETERS.update({DOCKER_PING_TOOL_ID: dict(DOCKER_PING_PARAMETERS),
 PARAMETERS[NMAP_SERVICE_TOOL_ID] = dict(NMAP_SERVICE_PARAMETERS)
 PARAMETERS[KERBRUTE_TOOL_ID] = dict(KERBRUTE_PARAMETERS)
 PARAMETERS.update({REDIS_TOOL_ID: dict(REDIS_PARAMETERS), SNMP_TOOL_ID: dict(SNMP_PARAMETERS)})
+PARAMETERS.update({POSTGRESQL_TLS_TOOL_ID: dict(POSTGRESQL_TLS_PARAMETERS), MYSQL_TLS_TOOL_ID: dict(MYSQL_TLS_PARAMETERS)})
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
     FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1", DOCKER_PING_TOOL_ID: "curl-docker-ping-v1",
     DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1", NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1",
-    REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1"}
+    REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1",
+    POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1"}
 B1_CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
             "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled")
 B2_CASES = ("ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
@@ -61,6 +64,7 @@ B6_CASES = tuple("docker-ping-" + suffix for suffix in ("ok", "unavailable", "in
 B7_CASES = tuple("nmap-service-" + suffix for suffix in ("http", "ssh", "unknown", "injected", "malformed", "stalled"))
 B8_CASES = tuple("kerberos-" + suffix for suffix in ("ok", "empty", "denied", "injected", "spoof", "malformed", "stalled"))
 C1_CASES = REDIS_SNMP_CASES
+C2_CASES = DATABASE_TLS_CASES
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -92,8 +96,20 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in C2_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(tool).to_dict() for tool in (POSTGRESQL_TLS_TOOL_ID, MYSQL_TLS_TOOL_ID)],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "database_tls": {"profiles": ["postgresql", "mysql"], "pre_authentication": True,
+                "name": TLS_NAME, "protocol": "TLSv1.3", "cipher": "TLS_AES_256_GCM_SHA384",
+                "ca_sha256": hashlib.sha256(CA_PEM).hexdigest(), "max_connections": 1,
+                "database_login": False, "sql": False, "application_requests": False,
+                "plaintext_downgrade": False, "version_or_readiness_claim": False,
+                "mysql_fragmented_greeting_may_be_inconclusive": True},
+            "parser_versions": {tool: PARSER_VERSIONS[tool] for tool in (POSTGRESQL_TLS_TOOL_ID, MYSQL_TLS_TOOL_ID)}}
     if case in C1_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(tool).to_dict() for tool in (REDIS_TOOL_ID, SNMP_TOOL_ID)],
@@ -210,6 +226,8 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
                                          "ftp-passive-ip", "ftp-passive-port"} and requests != 0)
             or (expected["scenario"].startswith("ftp-") and result.get("tool_observation") is not None
                 and connections != 2)
+            or (expected["scenario"] in C2_CASES and expected["scenario"] not in DATABASE_TLS_SUCCESS_CASES and requests != 0)
+            or (expected["scenario"] in C2_CASES and result.get("tool_observation") is not None and connections != 1)
             or (expected["scenario"] in C1_CASES and result.get("tool_observation") is not None and connections != 1)
             or (expected["scenario"] in B7_CASES and result.get("tool_observation") is not None and connections < 2)
             or (execution_status == "succeeded" and result.get("tool_observation") is not None and requests != request_limit)):
@@ -285,6 +303,8 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id in (POSTGRESQL_TLS_TOOL_ID, MYSQL_TLS_TOOL_ID):
+        return _observation(tool_id, "database_tls_verified", "database_tls_verified", normalized)
     if tool_id == REDIS_TOOL_ID:
         return _observation(tool_id, "redis_server_info_observed", "redis_server_info_observed", normalized)
     if tool_id == SNMP_TOOL_ID:

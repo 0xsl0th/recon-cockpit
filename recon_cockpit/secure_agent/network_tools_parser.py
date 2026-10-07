@@ -25,13 +25,17 @@ NMAP_SERVICE_TOOL_ID = "nmap_service_identify_v1"
 KERBRUTE_TOOL_ID = "kerbrute_userenum_v1"
 REDIS_TOOL_ID = "redis_server_info_v1"
 SNMP_TOOL_ID = "snmp_system_get_v1"
+POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
+MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
+DATABASE_TLS_SERVICES = {POSTGRESQL_TLS_TOOL_ID: "postgresql", MYSQL_TLS_TOOL_ID: "mysql"}
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
     FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1", DOCKER_PING_TOOL_ID: "curl-docker-ping-v1",
     DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1",
     NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1",
-    REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1"}
+    REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1",
+    POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -129,6 +133,21 @@ def validate_result(tool_id, value):
         return _kerberos_parser().validate_result(value)
     if tool_id in (REDIS_TOOL_ID, SNMP_TOOL_ID):
         return _redis_snmp_parser().validate_result(tool_id, value)
+    if tool_id in DATABASE_TLS_SERVICES:
+        if (set(value) != {"parser_version", "kind", "service", "semantics", "authenticated_database_session",
+                "protocol", "cipher", "verification", "peer_name"}
+                or value["kind"] != "database_tls_handshake"
+                or value["service"] != DATABASE_TLS_SERVICES[tool_id]
+                or value["semantics"] != "verified_tls_handshake_only"
+                or value["authenticated_database_session"] is not False):
+            raise ValueError("invalid_database_tls_observation")
+        # Reuse the accepted TLS validation without changing its public schema.
+        # The service identifies the selected pre-auth protocol, not a verified
+        # database product, available account, or completed database login.
+        validate_result(OPENSSL_TOOL_ID, {"parser_version": parser_version(OPENSSL_TOOL_ID),
+            "kind": "tls_handshake", **{key: value[key]
+                for key in ("protocol", "cipher", "verification", "peer_name")}})
+        return dict(value)
     if tool_id == DOCKER_PING_TOOL_ID:
         if (set(value) != {"parser_version", "kind", "status_code", "health"}
                 or value["kind"] != "docker_ping" or type(value["status_code"]) is not int
@@ -359,6 +378,13 @@ def _parse_tls(output, stderr):
     return validate_result(OPENSSL_TOOL_ID, {"parser_version": parser_version(OPENSSL_TOOL_ID), "kind": "tls_handshake",
         "protocol": fields["Protocol version"], "cipher": cipher,
         "verification": "verified", "peer_name": TLS_NAME})
+
+
+def _parse_database_tls(tool_id, output, stderr):
+    tls = _parse_tls(output, stderr)
+    return validate_result(tool_id, {**tls, "parser_version": parser_version(tool_id),
+        "kind": "database_tls_handshake", "service": DATABASE_TLS_SERVICES[tool_id],
+        "semantics": "verified_tls_handshake_only", "authenticated_database_session": False})
 
 
 def _parse_ssh(output, stderr):
@@ -657,6 +683,8 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
             or len(output) + len(stderr) > MAX_OUTPUT_BYTES or type(truncated) is not bool or truncated):
         raise ValueError("invalid_network_tool_output_size")
+    if tool_id in DATABASE_TLS_SERVICES:
+        return _parse_database_tls(tool_id, output, stderr)
     return {DIG_TOOL_ID: _parse_dns, OPENSSL_TOOL_ID: _parse_tls,
             SSH_TOOL_ID: _parse_ssh, LDAP_TOOL_ID: _parse_ldap, SMB_TOOL_ID: _parse_smb,
             RPCINFO_TOOL_ID: _parse_rpcinfo, SHOWMOUNT_TOOL_ID: _parse_showmount,

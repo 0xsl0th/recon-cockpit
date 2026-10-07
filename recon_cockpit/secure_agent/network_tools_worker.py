@@ -64,7 +64,7 @@ def _landlock_permissions(manifest):
     permissions[manifest["interpreter"]] |= 1
     permissions.update({"/dev/null": 6, "/dev/urandom": 4, "/dev/random": 4,
                         "/proc/self/status": 4})
-    if manifest["tool_id"] in (runtime.OPENSSL, runtime.NMAP_SERVICE):
+    if manifest["tool_id"] in (runtime.OPENSSL, runtime.NMAP_SERVICE, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS):
         permissions["/tool/data"] = 8
     return permissions
 
@@ -77,7 +77,7 @@ def syscall_filter(tool_id):
     if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB,
                        runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP,
                        runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE,
-                       runtime.KERBRUTE, runtime.REDIS, runtime.SNMP):
+                       runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS):
         raise ValueError("unsupported_network_tool")
     common.syscall_filter(allow_threads=tool_id in (runtime.DIG, runtime.KERBRUTE))
 
@@ -114,7 +114,7 @@ def _kerberos_transport_witness():
 
 
 def _metadata_transport_witness():
-    """C1 is TCP-only; a native client cannot silently fall back to UDP."""
+    """Fixed metadata profiles are TCP-only; clients cannot fall back to UDP."""
     try:
         descriptor = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     except PermissionError:
@@ -145,7 +145,7 @@ def main():
             _thread_bound_witness()
         if request["tool_id"] == runtime.KERBRUTE:
             _kerberos_transport_witness()
-        if request["tool_id"] in (runtime.REDIS, runtime.SNMP):
+        if request["tool_id"] in (runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS):
             _metadata_transport_witness()
         # The authority stdin and any loader-retained descriptors are gone.
         sys.stdin.close()
