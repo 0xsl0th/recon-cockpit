@@ -1,14 +1,19 @@
 # Desktop execution and exact-action approval plan
 
 This checklist guided the [graphical reviewer implementation](graphical-approvals.md).
-The worker and opt-in shared-service path were accepted in PR #52. The personal
-approval, denial, cancellation and four-action walkthrough are confirmed in PR #53,
-which awaits final checks and merge. The ordinary GUI Execute control is next.
-The desktop session slice runs the existing service with `execute=False` and
-`interactive_terminal=False`. Its generated policy still requires approval.
-Starting a preview, viewing a proposed action, cancelling, or inspecting saved
-evidence supplies no approval and cannot start a tool. Credentials, paid calls,
-external targets and authenticated or intrusive actions remain deferred.
+The worker and opt-in shared-service path were accepted in PR #52. PR #53 merged
+as `0539c15`, accepting the corrected input controls and personal approval, denial,
+cancellation and four-action walkthrough. Preserve those receipts.
+
+The current integration exposes two fixed desktop operations: a dry run with
+`execute=False`, and **Execute owned lab** with `execute=True` and
+`approval_frontend="graphical_v1"`. Both freeze the current validated scope, retain
+`interactive_terminal=False`, require approval by policy and use one worker for
+run, cleanup and independent replay. The execution control approves nothing;
+only the separate reviewer receives affirmative input. Its implementation PR and
+native desktop evidence must be reviewed before this slice is accepted.
+Credentials, paid calls, external targets and authenticated or intrusive actions
+remain deferred.
 
 ## Accepted terminal baseline
 

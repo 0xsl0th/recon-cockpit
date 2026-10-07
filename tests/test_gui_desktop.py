@@ -214,6 +214,8 @@ def test_native_saved_evidence_replays_without_execution_and_survives_theme_chan
     window.show_page("overview")
     root.update()
     assert_visible_inside(root, [window.buttons["theme"], window.buttons["load_evidence"],
+                                 window.buttons["start_dry_run"], window.buttons["start_owned_execution"],
+                                 window.buttons["cancel_session"],
                                  *window.metrics_labels])
     assert len(window.timeline.get_children()) == 4
     capture_if_requested(root, "overview-dark.png")
@@ -232,6 +234,8 @@ def test_native_saved_evidence_replays_without_execution_and_survives_theme_chan
     root.update()
     assert root.winfo_width() == 1280 and root.winfo_height() == 800
     assert_visible_inside(root, [window.buttons["theme"], window.buttons["load_evidence"],
+                                 window.buttons["start_dry_run"], window.buttons["start_owned_execution"],
+                                 window.buttons["cancel_session"],
                                  *window.metrics_labels])
     capture_if_requested(root, "overview-light-1280x800.png")
     window.toggle_theme()
@@ -242,6 +246,21 @@ def test_native_saved_evidence_replays_without_execution_and_survives_theme_chan
     assert_visible_inside(root, [window.buttons[name] for name in
                                  ("theme", "load_evidence", "validate_scope", "import_scope", "export_scope")])
     capture_if_requested(root, "scope-dark-1280x800.png")
+    root.geometry("1120x720")
+    window.show_page("overview")
+    for theme in ("dark", "light"):
+        if window.theme != theme:
+            window.toggle_theme()
+        root.update()
+        assert root.winfo_width() == 1120 and root.winfo_height() == 720
+        assert_visible_inside(root, [window.buttons[name] for name in
+                                     ("theme", "load_evidence", "start_dry_run", "start_owned_execution",
+                                      "cancel_session")])
+        for detail in window.metrics_details:
+            assert_visible_inside(detail.master, [detail])
+            assert detail.winfo_reqwidth() <= detail.winfo_width()
+            assert detail.winfo_reqheight() <= detail.winfo_height()
+        capture_if_requested(root, "overview-" + theme + "-1120x720.png")
     assert controller.snapshot() == saved
 
 

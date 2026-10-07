@@ -107,13 +107,17 @@ def scope_fields(scope):
         "ssh_target": value["ssh"]["target"], "ssh_port": str(value["ssh"]["port"])}
 
 
-def present_session(snapshot, *, phase, cancel_requested, directory):
+def present_session(snapshot, *, phase, cancel_requested, directory, mode="dry_run"):
     """Observed lifecycle only; no evidence grade or completed-work inference.
 
     Match observed action digests to the frozen scope instead of guessing from
     row order. A policy's approval requirement is never a live approval prompt.
     """
+    if type(mode) is not str or mode not in {"dry_run", "owned_execution"}:
+        raise ValueError("invalid_desktop_session_mode")
     scope = _validated_scope(snapshot["scope"])
+    notice = ("Observed execution progress; completion is unverified until evidence replay.\n"
+              if mode == "owned_execution" else "Observed dry-run decision; no tool executed.\n")
     actions = {parse_action(contract.action(scope, index)).digest: contract.action(scope, index)
                for index in range(1, 5)}
     rows = []
@@ -123,11 +127,10 @@ def present_session(snapshot, *, phase, cancel_requested, directory):
         rows.append({"id": f"session-{index}", "step": safe_text(step.get("step")),
             "tool": _TOOL_LABELS.get(action["tool_id"], "Unknown action") if action else "Unknown action",
             "target": safe_text(endpoint), "status": safe_text(step.get("execution_status")),
-            "detail": "Observed dry-run decision; no tool executed.\n"
-                "Approval requirements describe policy, not a pending human prompt.\n\n"
+            "detail": notice + "Approval requirements describe policy, not a pending human prompt.\n\n"
                 + _bounded_json({"action": action, "decision": step.get("decision"),
                     "execution_status": step.get("execution_status"), "reasons": step.get("reasons")})})
-    return {"mode": "dry_run", "phase": phase, "state": safe_text(snapshot["state"]),
+    return {"mode": mode, "phase": phase, "state": safe_text(snapshot["state"]),
         "session_id": safe_text(snapshot["session_id"]), "scope": scope,
         "scope_sha256": scope_digest(scope), "steps": rows,
         "stop_reason": snapshot.get("stop_reason"), "cancel_requested": bool(cancel_requested),

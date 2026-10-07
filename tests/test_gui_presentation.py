@@ -8,11 +8,12 @@ import unicodedata
 import pytest
 
 from recon_cockpit.gui.presentation import (
-    FIELD_NAMES, MAX_DETAIL, MAX_ITEMS, MAX_ROWS, MAX_TEXT, present_report,
+    FIELD_NAMES, MAX_DETAIL, MAX_ITEMS, MAX_ROWS, MAX_TEXT, present_report, present_session,
     safe_text, scope_fields, scope_from_fields, scope_preview,
 )
 from recon_cockpit.secure_agent import configurable_contract as contract
 from recon_cockpit.secure_agent.configurable_scope import load_scope, scope_digest
+from recon_cockpit.secure_agent.models import parse_action
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -43,6 +44,46 @@ def report_for(scope):
 
 def metrics(view):
     return {metric['label']: metric['value'] for metric in view['metrics']}
+
+
+def test_execution_session_is_provisional_and_matches_observed_action_digest(scope):
+    action = contract.action(scope, 4)
+    snapshot = {'scope': scope, 'session_id': 'live-session', 'state': 'completed',
+                'mode': 'dry_run', 'metrics': {'legitimate_task_completed': True},
+                'steps': [{'step': 4, 'action_digest': parse_action(action).digest,
+                           'execution_status': 'succeeded', 'decision': 'approval_required',
+                           'reasons': ['untrusted\n\u202e<approval>']}]}
+    before = deepcopy(snapshot)
+    view = present_session(snapshot, phase='replaying', cancel_requested=True,
+                           directory=Path('/private/session'), mode='owned_execution')
+    assert snapshot == before
+    assert view['mode'] == 'owned_execution' and 'metrics' not in view
+    assert view['scope_sha256'] == scope_digest(scope)
+    assert view['cancel_requested'] and view['phase'] == 'replaying'
+    row = view['steps'][0]
+    assert row['tool'] == 'SSH public key'
+    assert row['target'] == scope['ssh']['target'] + ':' + str(scope['ssh']['port'])
+    assert row['status'] == 'succeeded'
+    assert 'completion is unverified until evidence replay' in row['detail']
+    assert 'not a pending human prompt' in row['detail']
+    assert 'no tool executed' not in row['detail']
+    assert '<approval>' in row['detail'] and '\u202e' not in row['detail']
+
+
+def test_session_mode_comes_from_trusted_caller_and_defaults_to_dry_run(scope):
+    snapshot = {'scope': scope, 'session_id': 'dry-session', 'state': 'prepared',
+                'mode': 'owned_execution', 'steps': [{'step': 1, 'action_digest': 'unknown'}]}
+    view = present_session(snapshot, phase='running', cancel_requested=False, directory=Path('/private'))
+    assert view['mode'] == 'dry_run'
+    assert view['steps'][0]['tool'] == 'Unknown action'
+    assert view['steps'][0]['target'] == 'Unavailable'
+    assert 'no tool executed' in view['steps'][0]['detail']
+
+
+@pytest.mark.parametrize('mode', [None, True, 1, [], {}, 'execute', 'owned_execution ', 'live'])
+def test_session_rejects_unknown_modes_before_projecting_snapshot(mode):
+    with pytest.raises(ValueError, match='invalid_desktop_session_mode'):
+        present_session({}, phase='running', cancel_requested=False, directory=Path('/private'), mode=mode)
 
 
 @pytest.mark.parametrize('name', ['secure-agent-configurable-scope.json', 'secure-agent-configurable-scope-alternate.json'])

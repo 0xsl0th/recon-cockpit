@@ -132,7 +132,7 @@ def instrument(tmp_path, monkeypatch, *, answer='approve', extra=''):
             os._exit(79)
         window._root.report_callback_exception = _test_callback_error
         def _test_input():
-            if not window._active:
+            if not window._active or window._decision is not None:
                 window._root.after(10, _test_input)
                 return
             if TEST_ANSWER == 'approve':
@@ -187,6 +187,34 @@ def instrument(tmp_path, monkeypatch, *, answer='approve', extra=''):
         argv[index - 1] = str(mounted)
         return argv
     monkeypatch.setattr(graphical_runtime, 'command', command)
+
+
+def test_scripted_clipboard_input_waits_after_decision_until_next_review(tmp_path, monkeypatch):
+    # A timer may become due while the real Tk event pump is still draining the
+    # event that decided a review. Fixture input must not answer that review twice.
+    instrument(tmp_path, monkeypatch, answer='clipboard', extra='''
+        def _test_delayed_pump():
+            delayed = False
+            for _ in range(256):
+                if not window._root.tk.dooneevent(window._events):
+                    break
+                if window._active and window._decision is not None and not delayed:
+                    time.sleep(.03)
+                    delayed = True
+        window._pump = _test_delayed_pump
+''')
+    policy, proposed = demo_policy(approval=True), action()
+    control = ExecutionControl(time.monotonic() + 15)
+    with LinuxApprovalService(policy, str(uuid4()), frontend='graphical_v1') as service:
+        first = service.review(proposed, policy, control=control)
+        assert first and service.consume(first, proposed, policy) is None
+        second = service.review(proposed, policy, control=control)
+        assert second and second != first
+        assert service.consume(second, proposed, policy) is None
+        assert service.consume(first, proposed, policy) == 'approval_unknown_or_replayed'
+        assert not service._supervisor.buffers['worker_err']
+        process = service._process
+    assert process.poll() is not None
 
 
 @pytest.mark.parametrize('input_mode', ['approve', 'clipboard'])
