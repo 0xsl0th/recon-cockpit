@@ -122,8 +122,9 @@ Model credentials, paid calls and live evaluation remain much later.
 
 ## Successive product coverage batches
 
-Priority 3 follows the accepted initial GUI. Accepted main has **29 bounded profiles
-from 14 external programs** after C4 in PR #58. Installed binaries and interactive
+Priority 3 follows the accepted initial GUI. Accepted main has **30 bounded profiles
+from 14 external programs** after C5 in PR #59; the C6 candidate has 31 profiles
+using the same 14 programs. Installed binaries and interactive
 commands do not satisfy secure coverage. The following rows distinguish existing
 integration from a candidate secure profile.
 
@@ -135,12 +136,13 @@ integration from a candidate secure profile.
 | C2 | MySQL pre-authentication TLS; same existing OpenSSL runtime, no interactive database integration | Read one bounded initial greeting, send fixed SSLRequest, verify TLS 1.3 and close without application data; hostile greeting version remains inert, no account/auth-plugin/login/SQL operation; honest fragmented-greeting limitation, replay and G1–G6. | [x] Accepted in PR #56. |
 | C3 | HTTP application fingerprinting; WhatWeb has no interactive integration | One fixed GET with five passive plugins and a finite sealed Ruby/WhatWeb runtime; ordinary hints and no-hints tasks both complete, hostile/meta redirects stay inert, all eleven scenarios retain scope/bounds/closure, structured untrusted evidence and G1–G6. | [x] Accepted in PR #57. |
 | C4 | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed `_ldap._tcp.harbordesk.test. IN SRV` question over TCP; at most four typed priority/weight/port/target/TTL rows; 4/4 ordinary record/NODATA/NXDOMAIN/unavailable completions with zero unnecessary refusals, separate injected-metadata usefulness, all ten scenarios with actual queries, enforced bounds, evidence and G1–G6. No recursion or advertised endpoint follow-up. | [x] Accepted in [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), merge `6080a5c`; all five final and post-merge jobs passed. |
-| C5 — current | RDP initial protocol negotiation; repository-owned Ruby socket adapter, no interactive profile | One fixed 19-byte TLS offer, write-half-close and first bounded reply only; 5/5 ordinary and 2/2 separate robustness completions, six inconclusive cases, 26/26 blocked destinations and 130/130 boundary fields with actual requests, typed metadata, enforced bounds, evidence and G1–G6. No TLS/CredSSP/NTLM, authentication or remote session. | Local portable, native and clean-source validation passed; [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) awaits final review, hosted checks and merge. |
-| Next gap to reassess after C5 | SMB2 negotiation metadata; accepted B3 smbclient profile lists anonymous shares but does not expose a separate negotiation-only contract | Assess one finite NEGOTIATE exchange for dialect/security-mode/capability metadata with a pinned adapter or existing client and an owned fixture. No SESSION_SETUP, NTLM collection, login or share access; require actual usefulness, evidence and G1–G6 before claiming coverage. | Reassessment candidate; no implementation or committed batch claimed. |
+| C5 | RDP initial protocol negotiation; repository-owned Ruby socket adapter, no interactive profile | One fixed 19-byte TLS offer, write-half-close and first bounded reply only; 5/5 ordinary and 2/2 separate robustness completions, six inconclusive cases, 26/26 blocked destinations and 130/130 boundary fields with actual requests, typed metadata, enforced bounds, evidence and G1–G6. No TLS/CredSSP/NTLM, authentication or remote session. | [x] Accepted in [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59), merge `846e459` from reviewed `5a5f9b4`; all five final and post-merge jobs passed. |
+| C6 — current | SMB2 negotiation metadata; separate repository-owned Ruby adapter alongside accepted B3 smbclient share listing | One fixed 108-byte offer of SMB 2.1/3.0.2, write-half-close and one response bounded to 4,100 bytes; require 5/5 ordinary and 2/2 robustness completions, seven inconclusive cases after actual requests, structured untrusted metadata, enforcement, replay and G1–G6. No SESSION_SETUP, NTLM exchange, login or share access. | Implemented candidate based on `846e459`; validation, review and acceptance pending. See the [C6 runbook](smb2-negotiation-tools.md). |
+| Next gap to reassess after C6 review | SMTP STARTTLS before authentication; reuse existing OpenSSL runtime and accepted SMTP/TLS precedents | Inspect installed client wire behavior and finite dependencies first; assess fixed EHLO/STARTTLS, fixture-CA/name-verified TLS and clean close. No AUTH, MAIL, RCPT or client credential; require an owned fixture and G1–G6. | Reassessment candidate only; no committed or required C7 batch. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 
-C1–C4 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
+C1–C5 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
 TCP SNMP does not establish UDP coverage. C2 reuses the existing single-action
 authority, OpenSSL runtime, strict TLS parser and evidence infrastructure. Its two
 profiles brought accepted main to **27 profiles from the same 13 programs**.
@@ -255,22 +257,57 @@ passed. Clean-source verification at `f24a2528` repeated seven useful trials wit
 CLI and shared inspection without changing bytes, mtimes or modes. All **514
 source hashes** matched. Independent source review passed 1,395 tests; focused
 runs overlap, so their totals are not added. The receipt and detailed counts are
-recorded in the [C5 runbook](rdp-negotiation-tools.md). Final review, final-head
-hosted checks and merge remain pending in
-[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59); C5 is not yet accepted.
+recorded in the [C5 runbook](rdp-negotiation-tools.md). Reviewed head `5a5f9b4`
+merged as `846e459` in [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59).
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37678942749)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
+passed. C5's G6 is closed; accepted main contains **30 profiles using the same
+14 external programs**.
 
-The candidate contains **30 profiles using the same 14 external programs**. Ruby
-is supporting runtime for a repository adapter, not a new third-party assessment
-tool. Exact reviewed Linux Ruby 3.3 x86-64 files and early write-half-close limit
+C6 now adds `smb2_negotiate_metadata_v1` on base `846e459`, bringing the candidate
+to **31 profiles using the same 14 programs**. Its
+[runbook](smb2-negotiation-tools.md) fixes one 108-byte Direct TCP SMB2 NEGOTIATE
+request, offering only SMB 2.1 and 3.0.2 with client capabilities zero. A separate
+repository-owned Ruby socket adapter reuses the reviewed 13-file closure, closes
+its write side before reading and captures only the first frame, up to 4,100
+bytes. The two-second operation deadline remains inside the five-second execution
+limit and existing 8,192-byte output reservation. The accepted B3 smbclient share
+listing and all earlier runtime contracts remain unchanged.
+
+Selected dialect, security mode, signing-required indication, capabilities and
+opaque security-buffer length are peer-reported metadata. Known refusal statuses
+are useful observations without proving their cause. Opaque bytes stay in private
+raw evidence; no token is decoded or used for a new action. There is no
+SESSION_SETUP, NTLM exchange, login or share access, and no claim to verify
+service identity or signing enforcement. Missing capability bits are not evidence
+of absent features because several server bits depend on client bits fixed to
+zero. Exact reviewed Linux Ruby 3.3 x86-64 files and early write-half-close limit
 compatibility; there is no new GUI workflow or real-network attachment.
 
-Reassess bounded SMB2 negotiation only after C5 closes. It is a distinct candidate
-from accepted B3 share listing: the proposed metadata belongs to the initial
-[SMB2 NEGOTIATE response](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/63abf97c-0d09-47e2-88d6-6bfa552949a5).
-Select the exact finite request, client and fixture before implementation, with
-no session setup, NTLM collection, login or share access. Do not add a required
-new B milestone, automatically commit this next batch or broaden accepted profiles
-to pursue an executable count.
+C6's G1–G6 criteria cover **14 scenarios**: five ordinary dialect/signing/refusal
+tasks, two separate fragmented/opaque robustness tasks and seven negative cases.
+Required usefulness is **5/5 ordinary** and **2/2 robustness**, with zero
+unnecessary refusals. Every case must execute one exact request with witnessed
+write EOF, retain bounded capture, close its owner, block both forbidden
+destinations and replay unchanged. The four complete malformed or unsupported
+frames must be captured successfully before parser rejection; truncated, stalled
+and oversized replies must remain inconclusive after their actual request.
+The planned native suite has **56 tests**: 20 C6 including six authority/boundary
+checks, 19 accepted RDP and 17 WhatWeb. Separate clean-source verification must
+complete the seven useful trials and replay **52 accepted bundles** unchanged
+through both inspectors, with zero provider calls and cost.
+
+C6_VALIDATION_PENDING: Full portable/native results, clean-source receipts,
+source hashes, independent review, hosted checks and acceptance are pending.
+The scenario and suite counts above are requirements, not completed results.
+
+After C6 review, reassess a fixed SMTP STARTTLS handshake through the existing
+OpenSSL runtime. Inspect the installed client's exact EHLO/STARTTLS behavior
+and dependency closure before selecting a profile or owned fixture. The candidate
+would verify fixture CA/name and TLS before clean close, with no AUTH, MAIL,
+RCPT or client credential. It is not a committed or required C7 batch. B0–B8,
+accepted C1–C5, offline R5 and accepted local R6 stay closed; additional work must
+not broaden old contracts or pursue an executable count.
 
 Each batch records useful completion and unnecessary refusals as well as blocked
 unauthorized attempts, request counts, elapsed time and zero provider cost. A normal

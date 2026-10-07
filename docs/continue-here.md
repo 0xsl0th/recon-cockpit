@@ -4,26 +4,43 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: priority 3 secure-tool coverage, C5 bounded RDP initial negotiation.**
-Work is on `feature/rdp-negotiation-coverage` in `/tmp/recon-rdp-negotiation-coverage`,
-based on accepted main `6080a5c`. See the
+**Current work: priority 3 secure-tool coverage, C6 bounded SMB2 negotiation metadata.**
+Work is on `feature/smb2-negotiation-coverage` in `/tmp/recon-smb2-negotiation-coverage`,
+based on accepted main `846e459`. See the
 [successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C5 runbook](rdp-negotiation-tools.md). The candidate adds
-`rdp_initial_negotiation_v1`: one fixed 19-byte TLS offer, a write-half-close and
-only the first bounded reply frame. The repository-owned Ruby adapter uses the
-existing sealed runtime and authority path, with no TLS handshake, CredSSP, NTLM,
-authentication or remote session. Its 13 cases separate five ordinary useful
-outcomes, two useful robustness trials and six inconclusive outcomes.
-C5 local validation passed 11,898 portable and 36 native tests, with all 13 cases
-replayed and all 45 accepted bundles unchanged during clean-source replay.
-[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) awaits final review,
-hosted checks and merge. Accepted main has 29 profiles using
-14 programs; the C5 candidate has 30 using the same 14. Ruby is supporting runtime,
-not an additional third-party assessment program. The exact reviewed Linux
-Ruby 3.3 x86-64 layout and early write-half-close limit compatibility. Leave the
-candidate ready for review; this continuation does not automatically merge it.
-After C5 closes, reassess bounded SMB2 negotiation metadata as a candidate;
-no next-batch implementation is implied.
+and [C6 runbook](smb2-negotiation-tools.md). The candidate adds
+`smb2_negotiate_metadata_v1`: one fixed 108-byte NEGOTIATE offering SMB 2.1/3.0.2,
+write-half-close, and the first bounded response. It reuses the sealed Ruby socket
+runtime and all authority gates. No SESSION_SETUP, NTLM exchange, authentication
+or share access occurs. Signing and capability fields remain untrusted peer claims;
+opaque peer bytes can remain in bounded private raw evidence but are not interpreted.
+Fourteen cases separate five ordinary useful tasks, two useful robustness trials
+and seven inconclusive outcomes. C6_VALIDATION_PENDING
+Accepted main has 30 profiles using 14 external programs; this candidate has 31
+using the same 14. Ruby is supporting runtime, not another assessment program.
+The exact reviewed Linux Ruby 3.3 x86-64 layout and early write-half-close limit
+compatibility. Leave this batch ready for review; do not merge without authorization.
+After C6 closes, reassess fixed SMTP STARTTLS pre-authentication with existing
+OpenSSL. Check its actual finite wire behavior before selecting a further batch:
+no AUTH, MAIL, RCPT, client credentials or plaintext fallback. This is a proposed
+coverage gap, not an added required milestone or implementation already underway.
+
+**[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) is merged and C5 is closed.**
+Reviewed head `5a5f9b4` merged as `846e459` on 7 October at 20:45:26 UTC.
+Trees match `0aacfa7665a04eee8912e771147f5125d11c1acc`; all 514 validated source
+hashes matched. Independent authority/runtime and parser/evidence reviews found
+no blockers, with 1,277 and 877 focused tests passing respectively. The latter
+rebuilt 13 native, seven clean-source and 45 accepted reports unchanged.
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37678942749)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
+passed. Preserve 11,898 portable and 36 native tests, 5/5 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 26/26 blocked destinations and
+45 unchanged accepted-bundle replays. Private receipts remain under
+`.secure-agent/rdp-negotiation-20261007/` and `.secure-agent/pr59-merge-review.json`.
+Do not repeat the merge or reopen C5. B0–B8, C1–C5, offline R5, accepted local R6
+and the initial owned GUI/personal walkthrough remain closed. Credentials,
+paid calls, live-model evaluation, external engagements, deeper workflows and
+comparative benchmarking remain deferred.
 
 **[PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) is merged and C4 is closed.**
 Reviewed head `65810b8` merged as `6080a5c` on 7 October at 19:36:01 UTC.

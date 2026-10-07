@@ -81,8 +81,8 @@ def test_refused_or_incomplete_fixture_cannot_claim_complete_protocol(case):
 
 
 def test_all_accepted_contracts_are_unchanged_from_pr55():
-    old_cases = [case for case in contract.CASES if case not in contract.C2_CASES + contract.C3_CASES + contract.C4_CASES + contract.C5_CASES]
-    new_tools = {contract.POSTGRESQL_TLS_TOOL_ID, contract.MYSQL_TLS_TOOL_ID, contract.WHATWEB_TOOL_ID, contract.DIG_SRV_TOOL_ID, contract.RDP_TOOL_ID}
+    old_cases = [case for case in contract.CASES if case not in contract.C2_CASES + contract.C3_CASES + contract.C4_CASES + contract.C5_CASES + contract.C6_CASES]
+    new_tools = {contract.POSTGRESQL_TLS_TOOL_ID, contract.MYSQL_TLS_TOOL_ID, contract.WHATWEB_TOOL_ID, contract.DIG_SRV_TOOL_ID, contract.RDP_TOOL_ID, contract.SMB2_TOOL_ID}
     old_tools = set(tool_adapters.ADAPTERS) - new_tools
     old_runtime = set(runtime.EXECUTABLES) - new_tools
     value = {'cases': {case: {'action': contract.action(case), 'descriptor': contract.capability_descriptor(case),

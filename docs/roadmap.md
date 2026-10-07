@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — C5 bounded RDP initial negotiation (7 October 2026).**
+**Current slice — C6 bounded SMB2 negotiation metadata (7 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -177,8 +177,8 @@ with tree `fbb7092085e169f499d364355bf11c75c4ca2fcb` unchanged. The
 [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37675710586)
 also passed all five jobs. Accepted main has **29 profiles using the same 14 programs**.
 
-Priority 3 now proceeds with **C5 fixed RDP initial negotiation** in
-`feature/rdp-negotiation-coverage`, based on `6080a5c`. The
+**C5 fixed RDP initial negotiation is accepted** in
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59), merged as `846e459`. The
 [runbook](rdp-negotiation-tools.md) defines `rdp_initial_negotiation_v1`: one fixed
 19-byte TLS offer, an immediate write-half-close and one bounded reply frame.
 A repository-owned Ruby socket adapter reuses the accepted confinement and
@@ -194,22 +194,54 @@ zero unnecessary refusals, six negative outcomes remained inconclusive,
 passed. Fragmentation completed; hostile trailing data stayed unread and could
 not elicit another request. Clean-source verification at `f24a2528` repeated the
 seven useful trials and replayed all **45 accepted bundles** with bytes, mtimes
-and modes unchanged; all **514 source hashes** matched. Final review, final-head
-hosted checks and merge remain pending in
-[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59).
+and modes unchanged; all **514 source hashes** matched. Reviewed head `5a5f9b4`
+merged as `846e459` after all five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37678942749)
+passed. All five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
+also passed. C5 is closed; accepted main has **30 profiles using the same 14 programs**.
 
-This candidate has **30 profiles using the same 14 programs**; Ruby supports
-the repository adapter and is not a new third-party assessment tool. The exact
-reviewed Linux Ruby 3.3 x86-64 layout and early write-half-close constrain
-compatibility. No new GUI workflow or real-network attachment is added.
+Priority 3 now proceeds with **C6 bounded SMB2 negotiation metadata**, based on
+`846e459`. The [runbook](smb2-negotiation-tools.md) defines
+`smb2_negotiate_metadata_v1`: one fixed 108-byte Direct TCP NEGOTIATE request
+offering SMB 2.1 and 3.0.2, an immediate write-half-close and one response of at
+most 4,100 bytes. The repository-owned Ruby socket adapter reuses C5's reviewed
+13-file runtime and existing authority path. The candidate contains **31 profiles
+using the same 14 programs**; Ruby remains supporting runtime, not an additional
+third-party assessment tool. The accepted B3 share-listing contract stays separate.
 
-After C5 closes, reassess bounded SMB2 negotiation metadata. Existing B3 smbclient
-coverage lists anonymous shares; the candidate would separately observe dialect,
-security mode and capabilities before session setup. Review a pinned adapter or
-existing client's ability to stop after one finite NEGOTIATE exchange and select
-an owned fixture before committing implementation. No SESSION_SETUP, NTLM
-collection, login or share access is included. Broader SQL readiness,
-authenticated database access and the professional engagement lifecycle remain
+Selected dialect, security mode, capability bits, opaque security-buffer length
+and known refusal statuses are untrusted metadata. Opaque peer bytes remain in
+private raw evidence without token interpretation. The client cannot send a
+SESSION_SETUP, NTLM exchange, login or share operation after its write-half-close.
+No service identity, enforced signing or exhaustive capability enumeration is
+claimed; several response capabilities depend on client bits fixed to zero.
+The reviewed Linux Ruby 3.3 x86-64 layout and early write-half-close constrain
+compatibility. C6 adds no GUI workflow or real-network attachment.
+
+All six coverage gates G1–G6 remain required. The 14 scenarios must complete
+**5/5 ordinary** and **2/2 separate robustness** tasks with zero unnecessary
+refusals, while seven malformed, unsupported or incomplete cases remain
+inconclusive after a validated fixed request and write EOF. All scenarios need
+one connection/request, bounded capture, closed owners, both forbidden-destination
+witnesses and unchanged replay. The four complete parser-negative responses must
+be captured successfully, so a transport failure cannot satisfy their criteria.
+The planned native set is **56 tests**: 20 C6, 19 accepted RDP and 17 WhatWeb.
+Clean-source verification must repeat seven useful trials and replay all **52
+accepted bundles** unchanged through CLI and shared inspection. Provider calls
+and cost must remain zero.
+
+C6_VALIDATION_PENDING: Full portable/native results, independent clean-source
+receipts, source hashes, review, hosted checks and acceptance are pending. Planned
+counts above are completion requirements and must not be reported as passed runs.
+
+After C6 review, reassess **SMTP STARTTLS before authentication** using the
+existing OpenSSL runtime and accepted SMTP/TLS precedents. Inspect the installed
+client's exact wire exchange and finite dependencies before selecting a profile.
+The candidate would permit a fixed EHLO/STARTTLS exchange, fixture-CA/name-verified
+TLS and clean close, with no AUTH, MAIL, RCPT or client credential. This is a
+reassessment candidate, not a committed or required C7 batch. Broader SQL
+readiness, authenticated access and the professional engagement lifecycle remain
 deferred under priority 4.
 
 Paired baseline/authority benchmarking and richer workflow decisions remain later

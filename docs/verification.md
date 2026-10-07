@@ -1,12 +1,29 @@
 # Verification record
 
+## PR #59 review and merge — 7 October 2026
+
+C5 is closed. Reviewed head `5a5f9b4c116b8c2fbd11ea8224f577d209d6b7a6`
+merged as `846e4590aedda66057b581467e9fffcb00ff6f76` at 20:45:26 UTC. Reviewed
+and merged trees match `0aacfa7665a04eee8912e771147f5125d11c1acc`. All 514
+validated source hashes matched. Independent authority/runtime review passed
+1,277 focused tests; parser/evidence review passed 877 and rebuilt all 13 native,
+seven clean-source and 45 accepted reports unchanged, with no blockers.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37678942749)
+and [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
+passed. No required branch checks or inline review comments were configured; all
+five portable matrix jobs plus independent source review were the merge gate.
+No formal GitHub approval is claimed. Private receipt:
+`.secure-agent/pr59-merge-review.json`. The C5 verification below remains the
+accepted evidence; do not repeat the merge or reopen the milestone.
+
 ## C5 owned RDP initial negotiation — 7 October 2026
 
 [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) implements one repository-owned
 Ruby socket adapter through the existing single-action authority, runtime and
 evidence path. Accepted main `6080a5c` contains 29 profiles using 14 external
-programs; C5 adds one native capability, for 30/14. This is an owned-lab candidate,
-not professional deployment acceptance or a GUI feature.
+programs; C5 added one native capability, for 30/14. It is accepted owned-lab
+coverage, not professional deployment acceptance or a GUI feature.
 
 The [runbook](rdp-negotiation-tools.md) binds one 19-byte TLS negotiation offer,
 write-half-close before response, and one 11- or 19-byte response frame. Results
@@ -76,11 +93,11 @@ intact. An early shared runtime test ran before adapter registration and failed
 closed on an unsupported policy tool; the assembled full suites above passed.
 No production safety boundary was relaxed to satisfy a test.
 
-Final hosted checks, PR review and authorized merge remain acceptance gates.
-After C5 acceptance, reassess bounded SMB2 negotiation metadata before selecting a
-client and fixture. Authentication, credential setup, paid/live-model calls, external
-engagements, deeper workflows and comparative benchmarks remain deferred. Closed
-B0–B8, C1–C4, offline R5, accepted local R6 and the initial GUI stay closed.
+C5 is accepted and closed after the reviewed PR #59 merge recorded above.
+C6 is the separately authorized SMB2 negotiation batch. Authentication, credential
+setup, paid/live-model calls, external engagements, deeper workflows and comparative
+benchmarks remain deferred. Closed B0–B8, C1–C5, offline R5, accepted local R6 and
+the initial GUI stay closed.
 
 ## PR #58 review and merge — 7 October 2026
 

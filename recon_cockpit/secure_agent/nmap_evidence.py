@@ -244,6 +244,8 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "rdp_protocol_selected": "rdp_protocol_selected",
                "rdp_legacy_confirmation": "rdp_legacy_confirmation",
                "rdp_negotiation_failure": "rdp_negotiation_failure",
+               "smb2_dialect_selected": "smb2_dialect_selected",
+               "smb2_negotiation_refused": "smb2_negotiation_refused",
                "tls_handshake_verified": "handshake_verified",
                "database_tls_verified": "database_tls_verified",
                "http_fingerprint_observed": "http_fingerprint_observed",
@@ -380,6 +382,19 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Both bounded raw channels are independently reparsed without network. Complete native success framing is required; process exit alone does not establish useful or empty results.",
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
+            ]
+        if manifest["fixture_case"].startswith("smb2-"):
+            report["limitations"] = [
+                "This one-action SMB2 negotiation trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
+                "One fixed SMB2 NEGOTIATE request offers SMB 2.1 and 3.0.2 with client capabilities zero. Only the first bounded Direct TCP frame is collected before closing the connection.",
+                "Dialect, signing mode, capability bits and refusal status are untrusted peer reports. Signing, encryption, authentication policy, service identity and vulnerabilities are not verified.",
+                "Capability bits depend on the fixed client offer; absent bits do not establish that the server lacks a capability. This trial does not offer SMB 3.1.1 or negotiate contexts.",
+                "Selected offered dialects and three known refusal statuses are completed metadata observations. Malformed, incomplete, oversized, unsupported or unoffered responses remain inconclusive.",
+                "No SESSION_SETUP, credentials, login, NTLM challenge collection, share access, SMB1 fallback, retry or follow-up is authorized. The opaque peer security buffer is never decoded or used for authentication.",
+                "Raw negotiation bytes include opaque peer security or error data. Supported metadata allows at most 256 bytes of opaque data; only its length is released for successful negotiation. The total first-frame capture is at most 4100 bytes, so rejected frames can retain larger opaque data within that raw bound; arbitrary server compatibility is not established.",
+                "Trailing peer data is not retained. Its absence from evidence is not injection detection or proof that no trailing data was sent. The 256-byte opaque-buffer limit intentionally excludes larger responses.",
+                "Counters record the exact fixed request and a client write-half-close witnessed before the fixture response. This owned-profile constraint prevents further client bytes; compatibility with arbitrary real SMB servers is not established.",
+                "Retained bytes are independently reparsed without network; read-only inspection restores no approval or authority. No real-model or comparative overhead claim is made.",
             ]
         if manifest["fixture_case"].startswith("rdp-"):
             report["limitations"] = [
@@ -538,6 +553,19 @@ def _markdown(report):
                           "| Answer | TTL |", "| --- | --- |"])
             for row in details["answers"]:
                 lines.append("| `" + row["address"] + "` | " + str(row["ttl"]) + " |")
+        elif type(details) is dict and details.get("kind") == "smb2_negotiate_metadata":
+            lines.extend(["", "## SMB2 negotiation metadata", "",
+                "Untrusted peer report only. No SESSION_SETUP or authenticated session was performed; signing and service identity are not verified.",
+                "", "| Field | Reported metadata |", "| --- | --- |"])
+            for field in ("response_type", "status_code", "status_name", "dialect_revision", "security_mode",
+                    "signing_required", "capabilities", "security_buffer_length"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            if details["response_type"] == "failure":
+                lines.extend(["", "The peer reports negotiation refusal. The status does not verify the cause or its authentication requirements."])
+            else:
+                lines.extend(["", "The selected dialect and signing mode are claims from this response, not a verified security channel.",
+                    "Capability bits depend on the zero-capability client offer; absent bits do not establish lack of server support."])
+            lines.extend(["", "Capture ends at the first complete frame; trailing peer data is not retained. Opaque security bytes remain only in raw evidence and are never decoded."])
         elif type(details) is dict and details.get("kind") == "rdp_initial_negotiation":
             lines.extend(["", "## Initial RDP negotiation", "",
                 "Untrusted peer report only. No security handshake or authenticated session was performed; service identity is not verified.",

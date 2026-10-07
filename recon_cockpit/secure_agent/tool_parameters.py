@@ -244,3 +244,8 @@ class WhatWebParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class RDPInitialParameters(TCPParameters):
     """One fixed RDP negotiation offer; no authentication or remote session."""
+
+
+@dataclass(frozen=True, slots=True)
+class SMB2NegotiateParameters(TCPParameters):
+    """One fixed SMB2 negotiation offer; no authentication or share access."""

@@ -66,28 +66,42 @@ The accepted [DNS SRV profile](docs/dns-srv-tools.md) in
 [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) reuses dig for one fixed
 nonrecursive TCP question. It distinguishes bounded service advertisements,
 NODATA, NXDOMAIN and a reported unavailable service; advertised targets and ports
-remain untrusted evidence without follow-up authority. Accepted main has 29 bounded
-profiles using the same 14 programs. Native validation passed 25 selected tests:
+remain untrusted evidence without follow-up authority. That slice brought main to
+29 bounded profiles using the same 14 programs. Native validation passed 25 selected tests:
 16 C4 and nine accepted regressions. All four ordinary tasks and the separate
 hostile-metadata task completed, with zero unnecessary refusals and 20/20 blocked
 destinations across ten scenarios. Independent clean-source verification repeated
 those useful results and replayed 40 accepted bundles unchanged. All 11,428
 portable tests passed. Independent review and all five final hosted jobs passed;
 reviewed head `65810b8` merged as `6080a5c` with an identical tree.
-The current [RDP initial-negotiation candidate](docs/rdp-negotiation-tools.md)
+The accepted [RDP initial-negotiation profile](docs/rdp-negotiation-tools.md)
 adds `rdp_initial_negotiation_v1`, a repository-owned Ruby socket adapter.
 It sends one fixed TLS offer, closes its write side and reads one bounded reply
 frame, without TLS, CredSSP, NTLM, authentication or a remote session. A selection,
 legacy confirmation or known failure is untrusted metadata, not verified service
-identity or a list of every supported protocol. This candidate has 30 profiles
+identity or a list of every supported protocol. Accepted main has 30 profiles
 using the same 14 external programs; Ruby is supporting runtime, not another
 third-party assessment tool. All 13 owned cases passed validation: 5/5 ordinary
 and 2/2 separate robustness tasks completed, six negative cases stayed inconclusive,
 and 26/26 unauthorized destinations were blocked. Local validation passed 11,898
 portable and 36 native tests; clean-source replay preserved all 45 accepted bundles.
-[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) awaits final review,
-hosted checks and merge. The exact reviewed Linux Ruby 3.3 x86-64 runtime and
-write-half-close limit compatibility; no GUI workflow is added.
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) merged as `846e459`.
+All five [final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37678942749)
+and the [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
+passed. The exact reviewed Linux Ruby 3.3 x86-64 runtime and write-half-close
+limit compatibility; no GUI workflow is added.
+The current C6 [SMB2 negotiation candidate](docs/smb2-negotiation-tools.md) adds
+`smb2_negotiate_metadata_v1`, bringing the branch to 31 profiles using the same
+14 programs. Its fixed 108-byte request offers SMB 2.1 and 3.0.2 with client
+capabilities zero, closes the write side and captures only one response frame,
+at most 4,100 bytes. Dialect, signing and capability fields are untrusted peer
+reports; they do not verify signing enforcement, authentication or identity.
+Supported opaque buffers are limited to 256 bytes by the parser. Raw peer bytes
+remain private evidence and are never decoded as authentication tokens; rejected
+frames can remain within the larger raw capture bound. There is no SESSION_SETUP,
+NTLM challenge collection workflow, credential use, login, share access or
+follow-up. C6 validation and acceptance remain pending; its catalog entry does
+not broaden the accepted profiles or enable real-network or GUI execution.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.
