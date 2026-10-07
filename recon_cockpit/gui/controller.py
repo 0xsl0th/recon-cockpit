@@ -1,7 +1,7 @@
-"""One desktop operation: saved replay or a shared-authority dry-run session.
+"""One desktop operation: saved replay or a shared-authority owned-lab session.
 
 The UI owns this controller on its main thread. One non-daemon worker owns the
-whole run/cleanup/replay lifetime. No execution or approval input is exposed.
+whole run/cleanup/replay lifetime. Approval input stays in the isolated reviewer.
 """
 
 from copy import deepcopy
@@ -59,6 +59,7 @@ class DesktopController:
         self._service = None
         self._session = None
         self._session_dir = None
+        self._session_mode = None
         self._cancel_requested = False
 
     def snapshot(self):
@@ -119,6 +120,7 @@ class DesktopController:
         self._status = "Replaying saved evidence…"
         self._operation = "inspection"
         self._service = self._session = self._session_dir = None
+        self._session_mode = None
 
         def inspect():
             try:
@@ -142,7 +144,15 @@ class DesktopController:
             raise
 
     def start_dry_run(self, parent):
-        """Start fresh authority with execution disabled; never resume a bundle.
+        """Start fresh authority with execution disabled; never resume a bundle."""
+        self._start_session(parent, mode="dry_run")
+
+    def start_owned_execution(self, parent):
+        """Execute the owned fixture plan with separate exact-action review."""
+        self._start_session(parent, mode="owned_execution")
+
+    def _start_session(self, parent, *, mode):
+        """Own one fixed session mode through authority cleanup and final replay.
 
         The selected parent must be an existing operator-owned directory without
         group/other write access. A new private random child holds audit/evidence.
@@ -150,8 +160,10 @@ class DesktopController:
         accepted from widgets. The immutable request freezes the current draft.
         """
         self._idle()
+        if mode not in {"dry_run", "owned_execution"}:
+            raise ValueError("invalid_desktop_session_mode")
         if sys.platform != "linux":
-            raise ValueError("dry_run_requires_supported_linux")
+            raise ValueError(f"{mode}_requires_supported_linux")
         parent = Path(parent).absolute()
         info = parent.lstat()
         if (not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid()
@@ -159,11 +171,16 @@ class DesktopController:
             raise ValueError("select_owned_nonwritable_session_parent")
         scope = encode(self._scope)
         policy = encode_contract(policy_for_scope(self._scope, require_approval=True).to_dict())
-        directory = Path(tempfile.mkdtemp(prefix="recon-dry-run-", dir=parent))
+        execute = mode == "owned_execution"
+        label = "Owned-lab session" if execute else "Dry run"
+        directory = Path(tempfile.mkdtemp(
+            prefix="recon-owned-execution-" if execute else "recon-dry-run-", dir=parent))
         request = ConfigurableAssessmentRequest(scope_json=scope, policy_json=policy,
-            assessment_dir=directory / "evidence", audit_path=directory / "audit.jsonl", execute=False)
+            assessment_dir=directory / "evidence", audit_path=directory / "audit.jsonl",
+            execute=execute, approval_frontend="graphical_v1" if execute else "terminal")
         service = ConfigurableAssessmentService(request)
         self._service, self._session_dir = service, directory
+        self._session_mode = mode
         self._cancel_requested = False
         self._generation += 1
         generation = self._generation
@@ -171,7 +188,8 @@ class DesktopController:
         self._report = self._error = None
         self._path = str(request.assessment_dir)
         self._session = self._session_view("running")
-        self._status = "Starting dry run. No tools or model calls will execute."
+        self._status = ("Starting owned-lab execution. Review requested actions in the separate approval window."
+                        if execute else "Starting dry run. No tools or model calls will execute.")
 
         def run():
             error, phase = None, "finished"
@@ -181,7 +199,7 @@ class DesktopController:
                 phase = "stopped"
             except BaseException:
                 phase = "failed"
-                error = ("Dry run failed. Check the supported Linux isolation requirements. "
+                error = (f"{label} failed. Check the supported Linux isolation requirements. "
                          "Any partial evidence remains in the new session folder.")
             # The service has closed its authority before replay begins. Never
             # promote its returned summary directly to verified GUI metrics.
@@ -192,7 +210,7 @@ class DesktopController:
                 report = None
                 if phase == "finished":
                     phase = "replay_failed"
-                    error = "Dry run ended, but its evidence could not be replayed. No outcome is verified."
+                    error = f"{label} ended, but its evidence could not be replayed. No outcome is verified."
             self._results.put((generation, report, error, phase))
 
         self._thread = Thread(target=run, name="recon-desktop-session", daemon=False)
@@ -203,12 +221,13 @@ class DesktopController:
             self._cancel_requested = True
             self._busy, self._operation, self._thread = False, None, None
             self._session = self._session_view("failed")
-            self._error = self._status = "Dry run worker could not start. The new private folder was retained."
+            self._error = self._status = f"{label} worker could not start. The new private folder was retained."
             raise
 
     def _session_view(self, phase):
         return present_session(self._service.snapshot(), phase=phase,
-            cancel_requested=self._cancel_requested, directory=self._session_dir)
+            cancel_requested=self._cancel_requested, directory=self._session_dir,
+            mode=self._session_mode)
 
     def cancel_session(self):
         """Request sticky cooperative cancellation; keep cleanup/replay owned."""
@@ -230,9 +249,11 @@ class DesktopController:
             changed = current != self._session
             self._session = current
             if current["phase"] == "replaying":
-                self._status = "Authority closed. Replaying dry-run evidence…"
+                self._status = ("Authority closed. Replaying owned-lab evidence…" if
+                    self._session_mode == "owned_execution" else "Authority closed. Replaying dry-run evidence…")
             elif not self._cancel_requested:
-                self._status = "Dry run in progress. No tools or model calls execute."
+                self._status = ("Owned-lab session in progress. Review requested actions in the separate approval window."
+                    if self._session_mode == "owned_execution" else "Dry run in progress. No tools or model calls execute.")
         # Queue publication can precede the thread's final return. Do not enable
         # another operation or report cleanup complete while that worker lives.
         if self._thread is not None and self._thread.is_alive():
@@ -248,9 +269,17 @@ class DesktopController:
         self._report, self._error = report, error
         if phase is not None:
             self._session = self._session_view(phase)
-            self._status = error or ("Dry run cancelled. No tools executed." if
-                self._session["stop_reason"] == "session_cancelled" else
-                "Dry run ended. No tools executed; useful completion is not established.")
+            if self._session_mode == "owned_execution":
+                ended = ("Owned-lab session cancelled." if self._session["stop_reason"] == "session_cancelled"
+                         else "Owned-lab session ended.")
+                verified = (" Final results are shown from replayed evidence." if
+                    report is not None and not report.get("integrity_issues") else
+                    " No final outcome is verified; the saved evidence needs review.")
+                self._status = error or ended + verified
+            else:
+                self._status = error or ("Dry run cancelled. No tools executed." if
+                    self._session["stop_reason"] == "session_cancelled" else
+                    "Dry run ended. No tools executed; useful completion is not established.")
         else:
             self._status = error or "Saved evidence replay finished. Read-only inspection; no assessment is running."
         return True

@@ -1,11 +1,12 @@
 # Isolated graphical exact-action review
 
-This slice implements a local graphical approval worker and connects it to the
-shared configurable owned-lab service. The main desktop still offers dry runs and
-saved evidence only. The implementation was accepted in
-[PR #52](https://github.com/0xsl0th/recon-cockpit/pull/52). The personal walkthrough is
-now accepted; PR #53 awaits final checks and merge. Desktop Execute integration
-remains the next slice, so the GUI milestone is not yet complete.
+The local graphical approval worker connects to the shared configurable owned-lab
+service. Its implementation was accepted in [PR #52](https://github.com/0xsl0th/recon-cockpit/pull/52),
+and the input correction and personal walkthrough were accepted in
+[PR #53](https://github.com/0xsl0th/recon-cockpit/pull/53), merged as `0539c15`.
+The current [desktop integration](desktop-gui.md) adds **Execute owned lab** through
+that same service. It starts an assessment but cannot answer this review window;
+its separate implementation PR remains subject to review.
 
 `LinuxApprovalService(..., frontend="graphical_v1")` selects a fixed worker.
 The default remains `terminal`, with the existing terminal protocol unchanged.
@@ -91,9 +92,10 @@ or launch. Existing consumption, admission and execution records remain required
 
 Cancellation while awaiting input closes/reaps the reviewer and prevents launch.
 Denied or unavailable review cannot become unattended permission. Final evidence
-keeps the existing independently replayable schema and metrics. The standard GUI
-request remains `execute=False`; neither saved evidence nor scope import selects
-the new frontend.
+keeps the existing independently replayable schema and metrics. The desktop's
+explicit **Execute owned lab** operation selects `execute=True` and `graphical_v1`;
+**Start dry run** keeps `execute=False`. Neither saved evidence nor scope import
+starts execution or selects an approval frontend.
 
 ## Prepared personal walkthrough
 
@@ -151,10 +153,10 @@ with reported distraction, then 2/4 before timeout with a reported copying probl
 whose cause remains unproven. Keep these records and the one-action rehearsals
 distinct from the successful full run and scripted tests.
 
-PR #53 is ready for final checks and merge; it has not merged yet. Do not repeat
-the accepted personal checks. Ordinary desktop execution still uses `execute=False`;
-the next implementation adds an Execute control through the same shared service
-and isolated graphical reviewer for the existing disconnected owned fixtures only.
+PR #53 merged with matching reviewed/merge trees and all five final checks passed.
+Do not repeat the accepted personal checks. The current desktop Execute integration
+uses the same shared service and isolated graphical reviewer for the existing
+disconnected owned fixtures only; dry run remains a separate operation.
 No grants, sessions or deadlines are restored, and the existing limits stay fixed.
 
 ## Validation interpretation

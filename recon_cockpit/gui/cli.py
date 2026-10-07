@@ -6,7 +6,7 @@ import sys
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Local offline scope and saved-evidence desktop.")
+    parser = argparse.ArgumentParser(description="Local offline desktop for owned-lab sessions and saved evidence.")
     parser.add_argument("--assessment", type=Path, help="Inspect an existing private assessment directory.")
     parser.add_argument("--theme", choices=("light", "dark"), default="dark")
     args = parser.parse_args(argv)

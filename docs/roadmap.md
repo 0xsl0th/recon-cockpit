@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — finalize PR #53, then integrate desktop Execute (7 October 2026).**
+**Current slice — desktop Execute owned lab integration (7 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -57,8 +57,8 @@ Priority **2c remains current**, with these explicit acceptance steps:
 - **Session lifecycle — accepted in [PR #51](https://github.com/0xsl0th/recon-cockpit/pull/51).**
   Merge `972afac` matches the reviewed tree; all five final and post-merge checks
   passed. Fresh dry-run start, observed decisions, cancellation, cleanup and
-  independent replay passed 9,837 portable and 11 actual Tk cases. Every desktop
-  request still uses `execute=False`; dry runs cannot count as useful completion.
+  independent replay passed 9,837 portable and 11 actual Tk cases. That slice used `execute=False`;
+  dry runs cannot count as useful completion.
 - **Isolated graphical reviewer — accepted in [PR #52](https://github.com/0xsl0th/recon-cockpit/pull/52).**
   Merge `21054db` matches the reviewed tree; fresh reviews and all five final/post-merge
   checks passed. Accepted evidence covers 9,949 portable and 125 native cases,
@@ -69,10 +69,10 @@ Priority **2c remains current**, with these explicit acceptance steps:
   owned workflow through all seven gates. Native scripted input verifies behavior;
   it does not establish personal approval. Existing terminal behavior remains the
   default. Runtime support is currently the documented local Linux/X11 layout.
-- **Personal walkthrough — accepted; PR #53 awaits final checks and merge.** PR #53 fixes
+- **Personal walkthrough — accepted in PR #53, merged as `0539c15`.** PR #53 fixes
   phrase copying and preloads the fixed Tk focus/word helpers before filesystem
   sealing. Fresh review, 51 native and 112 focused portable tests, and all five
-  hosted checks passed. Copy/paste remains separate from explicit approval, with
+  final and post-merge hosted checks passed. Copy/paste remains separate from explicit approval, with
   unchanged bindings and limits. Earlier unsuccessful trials remain recorded.
   After confusing multi-case instructions, the owner separately confirmed approval,
   denial and pending-review Ctrl+C using stricter one-step/60-second/8,192-byte
@@ -84,13 +84,20 @@ Priority **2c remains current**, with these explicit acceptance steps:
   clean replay and zero unnecessary refusals/provider calls/cost. The owner said
   "ok this time it worked". The original four-step/60-second/26,624-byte limits
   remained fixed. Retain earlier incomplete trials; do not repeat accepted checks.
-- **Desktop execution — next, not implemented.** After PR #53's final checks and
-  merge, add an Execute control through the same shared service and isolated
-  graphical reviewer, restricted to the existing disconnected HTTP/SSH fixtures.
-  Ordinary desktop requests still use `execute=False` today. Validate the desktop
-  session lifecycle, cancellation, cleanup and evidence before completing priority 2.
-  Real network attachment, restored grants and professional readiness remain out
-  of scope; existing limits and authority gates stay unchanged.
+- **Desktop execution — implemented for review, not accepted yet.** An explicit
+  **Execute owned lab** control uses the same shared service and isolated graphical
+  reviewer for the existing disconnected HTTP/SSH fixtures. Dry run remains a
+  separate operation. Requests freeze scope and require fresh per-action approval;
+  both start controls and inspection remain unavailable during run/cleanup/replay.
+  Local validation passed 9,981 portable and 70 native Linux/Tk cases. Typed and
+  clipboard sessions each completed 4/4 useful actions and blocked 12/12 forbidden
+  destinations. Denial without launch, pending cancellation/close, partial-work
+  cancellation, closed processes and unchanged replay passed. Both themes passed
+  at 1120×720. The separate implementation PR and its required checks still need
+  review before acceptance; see the [verification record](verification.md#desktop-execute-owned-lab--7-october-2026).
+  The original four-step/60-second/26,624-byte limits and all authority gates remain.
+  Preserve PR #53 personal acceptance; automated desktop input is separate evidence.
+  Real network attachment, restored grants and professional readiness stay out of scope.
 
 This remains part of priority 2; dry-run controls do not complete the GUI milestone.
 Successive tool batches stay priority 3 and target remaining internal-network/web

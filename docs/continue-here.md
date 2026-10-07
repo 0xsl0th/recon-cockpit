@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: finalize PR #53, then add desktop Execute through the shared service (priority 2c).**
+**Current work: desktop Execute owned lab is implemented and locally validated; its separate PR awaits review (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -78,65 +78,73 @@ service/protocol tests (overlapping sets). All five
 and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37423742151)
 passed. Preserve `.secure-agent/pr52-merge-review.json`; do not repeat the merge.
 
-The current branch is `feature/desktop-execution-walkthrough` in
-`/tmp/recon-desktop-execution-walkthrough`, based on `21054db`. The accepted
-[graphical reviewer](graphical-approvals.md) and opt-in shared-service path keep
-their existing scope. The worker owns its local window, fresh challenge,
-one-use grants and existing direct launcher witness. Only the reviewer receives
-one explicitly scoped local X11 socket/cookie capability; the host and desktop
-remain trusted. No main-window affirmative-answer operation exists. Review intent
-and outcome must reach isolated audit before any grant can be consumed.
+**[PR #53](https://github.com/0xsl0th/recon-cockpit/pull/53) is merged and the personal walkthrough is accepted.**
+Reviewed head `b708442cfc38d3958513e7ce483c79074e05fd22` merged as
+`0539c154e734a1fd63a528c21bc072c1a9c71ded` on 7 October at 00:39:51 UTC.
+Reviewed and merged trees match (`9fd439de76623bf7274ade655a6f12b13a43f094`).
+Fresh source/documentation review found no blockers. The implementation and test
+hashes matched 51 native Linux/Tk and 112 focused portable cases. All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37552645134)
+passed. The [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37553147019)
+also passed all five jobs. Private merge receipt: `.secure-agent/pr53-merge-review.json`.
+GitHub rejected formal self-approval because the active account owns the PR; no
+GitHub approval is claimed. Do not repeat the merge or accepted personal checks.
 
-The ordinary desktop still uses `execute=False` with immutable scope, an
-approval-required policy and new private paths. Its dry runs cannot count as
-useful workflow completion. There is no desktop Execute control or restored
-approval. The three individual controls and full four-action personal walkthrough
-are now confirmed. The prepared command is
-plan-only by default; see the runbook for explicit owned-fixture execution.
+The owner separately confirmed approval, denial and unanswered-review Ctrl+C,
+then completed all four actions in `graphical-owned-5nkgldx7` and said
+"ok this time it worked". The full session used four grants and four successful
+executions in 45,642 ms, with `coordinator_done`, closed fixtures and zero
+unnecessary refusals/provider calls/cost. Limits stayed at four steps, 60 seconds
+and 26,624 bytes. Fresh independent replay of that session and its two preceding
+incomplete full trials matched reports without changing evidence. Preserve the
+3/4 distraction timeout and 2/4 reported-copy-problem timeout as incomplete; the
+copying problem's cause remains unproven. Earlier unsuccessful personal trials
+remain recorded separately. Receipts live in
+`.secure-agent/graphical-full-approval-20261007/owner-confirmation-full.json`,
+`full-trials-evidence-review.json`, and
+`.secure-agent/graphical-single-action-20261006/owner-controls-confirmation.json`.
+Automated tests do not substitute for this personal acceptance.
 
-**Current continuation:** PR #53's implementation at `5970a108` passed fresh
-review, 51 native and 112 focused portable tests, and all five hosted checks.
-All five checks also passed on documentation revision `db9ba1a`. GitHub rejected
-formal self-approval because the active account owns the PR. The corrected
-multi-case personal retry timed out without repeating `approval_unavailable`;
-the owner found its instructions confusing. Preserve those unsuccessful trials
-in `.secure-agent/graphical-owner-helpers-20261006/`.
+The current branch is `feature/desktop-owned-execution` in
+`/tmp/recon-desktop-owned-execution`, based on `0539c15`. This slice adds a fixed
+**Execute owned lab** controller operation and desktop control. It reuses the
+existing shared service with immutable scope, an approval-required policy,
+`graphical_v1` and the same disconnected HTTP/SSH fixtures and limits. The separate
+reviewer owns all affirmative input, fresh challenges, grants and direct launcher
+witnesses. The ordinary desktop receives display data only. No secure-agent
+contract, desktop transport permission or accepted tool profile changes.
 
-The subsequent one-case-at-a-time rehearsal confirmed all three individual controls:
-one approved Nmap action (`step_limit`), denial with no execution (`action_blocked`),
-and unanswered-review Ctrl+C with no execution (`session_cancelled`). The owner
-confirmed each interaction. All three fresh independent replays match saved reports,
-leave evidence unchanged and record closed fixtures with zero provider calls/cost.
-Receipts are `.secure-agent/graphical-single-action-20261006/owner-controls-confirmation.json`
-and `confirmed-controls-evidence-review.json`. The earlier AFK denial trial remains
-unconfirmed. Do not repeat these completed controls tests.
+Dry run stays separate. Both start controls and saved inspection remain disabled
+until the single worker finishes authority cleanup and independent evidence replay.
+Draft edits cannot affect an active request. Progress is provisional; cancellation
+may leave useful partial work, and only replayed evidence supplies final metrics.
+The main window cannot approve, restore grants, resume sessions or attach a real
+network. Preserve the supported local Linux/X11 requirements and trusted-host/
+desktop limitation.
 
-Those stricter one-step/60-second/8,192-byte rehearsals correctly leave their full
-assessments incomplete. The subsequent full session `graphical-owned-5nkgldx7`
-at documentation head `5f15851` completed **4/4 useful actions** with four consumed
-grants, four starts and four successful finishes in **45,642 ms**, stopping at
-`coordinator_done`. It retained four steps, 60 seconds and 26,624 output bytes.
-Fixtures closed, unnecessary refusals/provider calls/cost were zero, and fresh
-independent replay matched the report without changing evidence. The owner said
-"ok this time it worked". **The full personal walkthrough is accepted; PR #53 is
-ready for final checks and merge, but has not merged.** Do not repeat these checks.
+**Validation complete:** 9,981 portable tests passed (849 integration cases
+deselected), plus 70 actual Linux/Tk cases, with no selected failures/errors/skips.
+Typed and clipboard desktop sessions each completed 4/4 useful actions and blocked
+12/12 listening forbidden destinations. Denial and pending cancellation/close
+launched nothing; cancellation after a successful action retained 1/4. All six
+desktop bundles replayed unchanged with closed fixtures/processes and zero provider
+calls/cost. Both themes passed at 1120×720. Independent source reviews found no
+remaining blockers. These are scripted tests, not new personal acceptance.
 
-Preserve both earlier full trials: `graphical-owned-cqe6rd5t` timed out after
-3/4 actions in 60,041 ms when the owner reported distraction; `graphical-owned-uepnf27q`
-timed out after 2/4 in 60,045 ms, with a reported copying problem whose cause is
-unproven. All three full trials replay unchanged with no integrity issues.
-Their receipts are `.secure-agent/graphical-full-approval-20261007/full-trials-evidence-review.json`
-and `owner-confirmation-full.json`; retain each trial's original outcome.
-Scripted full-workflow validation remains distinct from this personal acceptance.
+**Current continuation:** review the separate implementation PR for
+`feature/desktop-owned-execution` and its latest hosted checks. Keep the GUI
+milestone pending that review; do not automatically merge subsequent work. Native
+bundles, screenshots and final JUnit receipts are private under
+`.secure-agent/gui-execution-20261007/`; `verification.json` records their hashes
+and source mapping. Preserve earlier failed
+native runs and interrupted portable runners separately; see the
+[verification record](verification.md#desktop-execute-owned-lab--7-october-2026).
 
-Retain earlier failed trials in `.secure-agent/graphical-owner-copy-20261006/` and
-the helper-fix evidence in `.secure-agent/graphical-copy-20261006/`. Record the
-owner's observations separately from scripted test input. After PR #53's final
-checks and merge, add desktop execution controls through the same shared service
-with the isolated graphical reviewer, limited to the existing disconnected owned
-HTTP/SSH fixtures and unchanged limits. Validate session lifecycle, cancellation,
-cleanup and evidence before completing priority 2. Subsequent secure-tool
-batches remain priority 3; real network attachment needs separate authorization.
+After this bounded GUI slice is accepted, return to priority 3 secure-tool coverage
+for internal networks with web services, selecting the next capability gap from
+the coverage inventory. Deeper composition, comparative benchmarking, credentials,
+paid calls and live-model evaluation stay deferred. Real network attachment needs
+separate authorization. Completed B0–B8, offline R5 and accepted local R6 remain closed.
 
 Accepted validation receipts, screenshots and source hashes remain in
 `.secure-agent/graphical-approval-20261006/` in the primary checkout.
@@ -1320,25 +1328,27 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #50 merge is complete. PRs #6–#30 and #32–#50
+- The operator-authorized PR #53 merge is complete. PRs #6–#30 and #32–#53
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Review the latest desktop dry-run lifecycle PR and checks using
-   `.secure-agent/gui-session-20261006/`. PR #50 and earlier accepted milestones
-   stay closed; PR #31 remains separate. Do not merge the new PR without the
-   corresponding merge instruction.
-2. Review Start dry run, observed progress, captured scope, cancellation and close
-   in [the runbook](desktop-gui.md). Keep `execute=False`, approval-required policy,
-   fresh private paths, fixed limits and independent final evidence replay. A
-   dry run is not a useful completed workflow or a personal approval walkthrough.
-3. Next implement the remaining priority 2c [approval boundary](desktop-approval-plan.md)
-   in a separate reviewable slice before enabling graphical execution. Preserve
-   worker input/grant/witness custody, exact-action freshness, audit/admission and
-   complete cleanup. No PTY answer forwarding, arbitrary callback, saved grant,
-   policy weakening or alternate execution path.
+1. Review the separate desktop Execute owned lab PR and its latest checks, using
+   `.secure-agent/gui-execution-20261007/` and the current status at the top of this
+   checkpoint. Keep PR #53 and all earlier accepted milestones closed; PR #31
+   remains separate. The new implementation stays unmerged pending review and
+   the corresponding merge instruction.
+2. Review Execute owned lab, separate dry-run behavior, captured scope, cancellation
+   and close in [the runbook](desktop-gui.md). Execution uses an approval-required
+   policy and `graphical_v1`; dry runs keep `execute=False`. Both retain fresh
+   private paths, fixed limits and independent final evidence replay. Provisional
+   progress is not verified completion.
+3. Preserve the accepted [approval boundary](desktop-approval-plan.md), personal
+   walkthrough, worker input/grant/witness custody, exact-action freshness,
+   audit/admission and complete cleanup. No PTY answer forwarding, arbitrary
+   callback, saved grant, policy weakening or alternate execution path. Scripted
+   desktop validation does not replace or reopen personal acceptance.
 4. Then extend secure coverage toward the internal-network/web product scope.
    Each new capability needs actual owned-lab execution, structured results,
    evidence and enforcement. The eventual 40+ program ambition does not reopen

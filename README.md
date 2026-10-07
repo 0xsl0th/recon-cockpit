@@ -37,16 +37,14 @@ The [shared application service](docs/shared-assessment-service.md) now supplies
 validated requests, detached progress/session views, cancellation and read-only
 evidence inspection to both interfaces. The [offline desktop](docs/desktop-gui.md)
 uses the saved [Swiss Industrial references](docs/gui-design-references.md) for
-light/dark scope preparation, saved evidence and fresh dry-run sessions with
-observed progress and cancellation. Launch `python -m recon_cockpit.gui` from a
-graphical session; dry runs require the supported Linux isolation environment.
-They execute no tools and do not establish useful completion. Tool execution and
-personal approval remain in the CLI for the ordinary desktop flow. A separate
-[isolated graphical reviewer](docs/graphical-approvals.md) and explicit owned-lab
-walkthrough entry point were accepted in PR #52. The personal approval, denial,
-cancellation and four-action walkthrough are now confirmed; PR #53 awaits final
-checks and merge. Desktop Execute integration is next. Follow the
-[priority table](docs/roadmap.md).
+light/dark scope preparation, saved evidence, fresh dry runs and **Execute owned lab**
+sessions with progress and cancellation. Launch `python -m recon_cockpit.gui` from
+an appropriate local graphical session. Execution is restricted to the existing
+four-action disconnected HTTP/SSH fixtures and requires fresh approval for every
+action in the [isolated review window](docs/graphical-approvals.md). Dry runs execute
+no tools. Both modes replay saved evidence before displaying final usefulness.
+PR #53's reviewer correction and personal walkthrough are merged and accepted;
+the desktop Execute integration is the current [review slice](docs/roadmap.md).
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

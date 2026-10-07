@@ -1,5 +1,75 @@
 # Verification record
 
+## Desktop Execute owned lab — 7 October 2026
+
+The `feature/desktop-owned-execution` slice starts the existing four-action owned
+HTTP/SSH assessment from the desktop through the shared service. It freezes scope,
+requires the isolated graphical reviewer for each action and retains the original
+four-step/60-second/26,624-byte limits. No secure-agent production code or authority
+contract changed. This implementation remains subject to its separate PR review;
+PR #53's accepted personal walkthrough is closed.
+
+The final complete portable suite passed **9,981 tests**, with 849 integration
+cases deselected, in 294.54 seconds. No selected tests failed, errored or skipped.
+Its receipt is `portable-pty-results.xml`; hosted matrix checks remain a separate
+PR requirement. Python 3.11 syntax, local documentation targets and
+`git diff --check` also passed. Independent controller, GUI and native-fixture
+reviews found no remaining blockers.
+
+**70 native Linux/Tk tests passed in 102.02 seconds**, with no selected failures,
+errors or skips. The private Xvfb suite covered the desktop execution, dry-run and
+saved-evidence views, reviewer input controls and approval isolation. Unraisable
+exception warnings were treated as errors. The six new desktop cases used the
+real shared service, grants, launcher witnesses, tools, parsers and evidence;
+only reviewer input and observation latches were test fixtures.
+
+| Desktop case | Useful actions | Stop reason | Recorded elapsed |
+| --- | ---: | --- | ---: |
+| Scripted typed approval | 4/4 | `coordinator_done` | 9,775 ms |
+| Scripted clipboard approval | 4/4 | `coordinator_done` | 9,334 ms |
+| Deny first action | 0/4 | `action_blocked` | 1,421 ms |
+| Cancel with review pending | 0/4 | `session_cancelled` | 1,232 ms |
+| Close with review pending | 0/4 | `session_cancelled` | 1,213 ms |
+| Cancel after one successful action | 1/4 | `session_cancelled` | 3,962 ms |
+
+Each full session blocked **12/12 listening forbidden destinations**, completed
+all four legitimate actions and recorded zero unnecessary refusals. All executed
+artifacts passed 11/11 boundary checks. Denial and pending cancellation/close
+consumed no grant and launched no tool. Every case closed its fixture owners and
+authority processes and independently replayed without changing evidence. Provider
+calls and actual cost were zero. Incomplete cases retain ungraded refusals.
+These scripted timings include test observation and screenshot work; they are
+neither human-review latency nor a comparative overhead benchmark.
+
+Both themes passed at 1120×720, including disabled starts during execution/replay,
+provisional metrics, truthful partial results and wrapped metric descriptions.
+Private screenshots were inspected. The ordinary desktop has no approval-answer
+entry point and never starts host tools directly. Automated input used only a
+private display and is distinct from accepted owner input.
+
+Two earlier broad development runs failed and remain preserved. Tests initially
+missed a fast denial's live process and latched a blocked action as if it were
+successful. Repeated Tk fixtures also finalized retired variables on a worker
+thread; opt-in collection now occurs on the main thread after prior fixture
+release. A separate deterministic diagnostic proved that the scripted input
+timer could answer twice while one event pump drained. Its pending-decision guard
+and two-review regression affect test code only. These findings do not establish
+the cause of every earlier `approval_unavailable` or isolation failure. No failed
+outcome was promoted to success, and no production restriction was relaxed.
+
+Two full portable-suite attempts terminated before producing JUnit receipts.
+The first exited with SIGTERM, cause unproven. The second exited with SIGHUP at
+the existing scripted terminal fixture's teardown: a runner without a controlling
+terminal can acquire its temporary slave. A dedicated automated PTY avoids that
+acquisition; all 13 terminal cases passed there, without changing test assertions
+or using the owner's terminal. Incomplete attempts remain separate from final runs.
+
+Private receipts, original failed runs, diagnostic proof, source hashes, native
+bundles and screenshots live under `.secure-agent/gui-execution-20261007/`.
+The final native receipt is `native-accepted-results.xml`; the earlier clean
+69-case run predates the added fixture regression and remains separate.
+Credentials, paid calls, live-model evaluation and external targets stay deferred.
+
 ## Full personal graphical walkthrough accepted — 7 October 2026
 
 The owner completed the four-action walkthrough at PR #53 documentation head
@@ -27,10 +97,11 @@ Each trial retained its own outcome and recorded closed fixtures with zero cost/
 Private receipts are
 `.secure-agent/graphical-full-approval-20261007/full-trials-evidence-review.json`
 and `owner-confirmation-full.json`, alongside the original trial artifacts.
-The individual-controls and scripted native receipts remain separate. PR #53 is
-ready for final checks and merge, and has not merged. Ordinary desktop requests
-still use `execute=False`; the next slice integrates Execute through the same
-shared service and isolated graphical reviewer for disconnected owned fixtures.
+The individual-controls and scripted native receipts remain separate. PR #53
+subsequently merged as `0539c15` after final review and all five checks; its five
+post-merge checks also passed. The desktop Execute integration is the separate
+slice recorded above, reusing the shared service and isolated graphical reviewer
+for disconnected owned fixtures.
 Completed B0–B8, offline R5 and accepted local R6 stay closed; credentials, paid
 calls, live-model evaluation and real network attachment remain deferred.
 
