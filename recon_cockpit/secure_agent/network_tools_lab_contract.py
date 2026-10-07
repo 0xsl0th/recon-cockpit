@@ -21,6 +21,34 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("dig-srv-"):
+        from . import network_tools_fixture as fixture
+        response = fixture.dns_srv_response(case, fixture.dns_srv_query())
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-dns-srv-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "dns_tcp"}],
+            "query": {"name": fixture.DNS_SRV_QUERY_NAME, "type": "SRV", "class": "IN", "recursion": False},
+            "query_sha256": hashlib.sha256(fixture.dns_srv_query()).hexdigest(),
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "dns_transaction_id": "copied_from_validated_question",
+            "max_query_bytes": fixture.DNS_SRV_MAX_QUERY_BYTES,
+            "max_response_bytes": fixture.DNS_SRV_MAX_RESPONSE_BYTES,
+            "max_records": fixture.DNS_SRV_MAX_RECORDS,
+            "max_connections": 1, "max_requests": 1,
+            "behavior": "stall_after_validated_query" if case == "dig-srv-stalled"
+                else "malformed_response" if case == "dig-srv-malformed"
+                else "record_limit_pressure" if case == "dig-srv-record-limit"
+                else "native_output_limit_pressure" if case == "dig-srv-output-limit"
+                else "access_refused" if case == "dig-srv-refused"
+                else "advertise_foreign_target_and_hostile_txt" if case == "dig-srv-injected" else "fixed_response",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_fixed_srv_questions",
+            "connection_evidence": "accepted_connections_lower_bound",
+            "udp": False, "recursion": False, "retries": False, "search_suffixes": False,
+            "target_resolution": False, "target_connections": False, "credentials": False,
+            "service_identity_claim": False, "vulnerability_claim": False}
     if case.startswith("whatweb-"):
         from . import network_tools_fixture as fixture
         response = fixture.whatweb_response(case)

@@ -237,6 +237,10 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_answer_observed": "answer_observed",
                "dns_name_not_found": "name_not_found",
                "dns_no_answer_observed": "no_answer_observed",
+               "dns_srv_observed": "dns_srv_observed",
+               "dns_srv_no_data": "dns_srv_no_data",
+               "dns_srv_name_not_found": "dns_srv_name_not_found",
+               "dns_srv_service_unavailable": "dns_srv_service_unavailable",
                "tls_handshake_verified": "handshake_verified",
                "database_tls_verified": "database_tls_verified",
                "http_fingerprint_observed": "http_fingerprint_observed",
@@ -374,6 +378,16 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
             ]
+        if manifest["fixture_case"].startswith("dig-srv-"):
+            report["limitations"] = [
+                "This one-action DNS SRV trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
+                "One fixed nonrecursive SRV question is sent over TCP. No UDP, search domains, retries, recursion, zone transfers or additional questions are authorized.",
+                "Priority, weight, port, target and TTL are untrusted DNS advertisements, not verified service identity, reachability, availability or authorization to resolve or connect to an advertised endpoint.",
+                "NOERROR with no SRV records is a completed no-data observation; NXDOMAIN is a reported name-not-found response; a sole zero-valued root target reports service unavailability. These statements describe only this response, not independently verified absence or availability.",
+                "Only four unique bounded records with lowercase absolute ASCII hostname targets are supported. Other records, referrals, malformed/partial transcripts, refused replies and output pressure remain inconclusive.",
+                "One bounded additional TXT record may be counted and discarded from normalized metadata. Its hostile text stays in raw evidence and cannot select another query, tool or destination.",
+                "Counters record one validated question on one connection. Bounded native bytes are independently reparsed without network; read-only inspection restores no approval or authority. No real-model or comparative overhead claim is made.",
+            ]
         if manifest["fixture_case"].startswith("whatweb-"):
             report["limitations"] = [
                 "This one-action passive fingerprint trial uses a disconnected synthetic owned HTTP fixture, not a professional engagement or live-model evaluation.",
@@ -510,6 +524,22 @@ def _markdown(report):
                           "| Answer | TTL |", "| --- | --- |"])
             for row in details["answers"]:
                 lines.append("| `" + row["address"] + "` | " + str(row["ttl"]) + " |")
+        elif type(details) is dict and details.get("kind") == "dns_service_metadata":
+            lines.extend(["", "## DNS service advertisements", "",
+                "Untrusted DNS metadata only; advertised endpoints are not verified or authorized for follow-up.",
+                "", "Query: `" + details["query_name"] + "` / `SRV` over TCP.",
+                "", "Reported status: `" + details["status"] + "`.", "",
+                "| Priority | Weight | Port | Untrusted target | TTL |", "| --- | --- | --- | --- | --- |"])
+            for row in details["records"]:
+                lines.append("| " + str(row["priority"]) + " | " + str(row["weight"]) + " | "
+                    + str(row["port"]) + " | " + _metadata_literal(row["target"]) + " | " + str(row["ttl"]) + " |")
+            if details["status"] == "NXDOMAIN":
+                lines.extend(["", "The response reports name not found; absence is not independently verified."])
+            elif not details["records"]:
+                lines.extend(["", "The query completed with no SRV data; this does not prove service absence."])
+            elif details["records"][0]["target"] == ".":
+                lines.extend(["", "The root target reports service unavailable; availability is not independently verified."])
+            lines.extend(["", "Additional TXT records ignored: " + str(details["additional_txt_count"]) + "."])
         elif type(details) is dict and details.get("kind") == "http_fingerprint":
             lines.extend(["", "## Passive HTTP application hints", "",
                 "Untrusted response hints only; software identity, version and vulnerabilities are not verified.",

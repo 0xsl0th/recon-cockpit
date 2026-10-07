@@ -21,22 +21,31 @@ public synthetic test data; no real credential setup, host configuration,
 MIBs, UDP, walks or writes are introduced.
 
 C2 [PostgreSQL/MySQL pre-authentication TLS](database-tls-tools.md) is accepted in
-[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56), bringing main to **27 profiles
+[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56), bringing that slice to **27 profiles
 using the same 13 programs**. Local validation
 passed 10,776 portable and 28 native Linux tests; both ordinary TLS tasks completed
 with zero unnecessary refusals, and all 24 forbidden-destination witnesses blocked.
 Each database recipe stops after a verified fixture TLS handshake
 and clean close, without credentials, login or SQL.
 
-The current C3 [WhatWeb candidate](whatweb-tools.md) adds one passive HTTP
-fingerprint profile, bringing this branch to **28 profiles using 14 programs**.
+C3 [WhatWeb fingerprinting](whatweb-tools.md) is accepted in
+[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57), bringing main to
+**28 profiles using 14 programs**.
 Its recipe permits one fixed GET with five exact plugins and no redirects,
 credentials or follow-up. Ruby supports the WhatWeb runtime and is not separately
 counted as an assessment program. All 11,109 portable and 39 selected native tests
 passed. Independent trials completed 2/2 ordinary and 2/2 robustness tasks with zero unnecessary
 refusals, blocked 8/8 forbidden destinations and replayed 36 accepted bundles
-unchanged. Final review, hosted checks and merge remain acceptance gates; this
-candidate is not yet counted as accepted main coverage.
+unchanged. Fresh review and all five hosted jobs passed before the authorized merge.
+
+The current C4 [DNS SRV candidate](dns-srv-tools.md) adds a separately versioned
+fixed service-location query using the same dig program and runtime closure.
+This branch contains **29 profiles using the same 14 programs**. The recipe binds
+one nonrecursive TCP `_ldap._tcp.harbordesk.test. IN SRV` question and requires
+fresh approval; advertised targets and ports cannot select another operation.
+Four ordinary outcomes must complete usefully, including NODATA, NXDOMAIN and
+reported service unavailable, with separate hostile-metadata usefulness. Actual
+validation, independent replay and final review/checks remain acceptance gates.
 
 From the repository root, with the project installed:
 
@@ -49,6 +58,7 @@ python -m recon_cockpit.secure_agent --describe-tool snmp_system_get_v1
 python -m recon_cockpit.secure_agent --describe-tool postgresql_tls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool mysql_tls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool whatweb_http_fingerprint_v1
+python -m recon_cockpit.secure_agent --describe-tool dig_dns_srv_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -140,11 +150,18 @@ useful completion, not technology absence. Hostile strings remain escaped litera
 metadata. Matches do not prove product identity, installed versions or vulnerabilities;
 redirects, denied, incomplete and unsupported responses stay inconclusive.
 
+DNS SRV returns at most four `untrusted_dns_service_metadata` rows with priority,
+weight, port, target and TTL. A complete no-data reply, NXDOMAIN and a sole
+zero-valued root target have separate response meanings; none establishes service
+identity, availability or independently verified absence. One bounded additional
+TXT record may be counted and discarded; its text stays in raw evidence. No
+recursion, target resolution, endpoint follow-up or transfer is authorized.
+
 The B0–B8 [coverage checklist](secure-tool-coverage.md) is closed under those
 accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C3 candidate. Further composition and comparative benchmarking
+the current C4 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

@@ -52,6 +52,13 @@ def manifest(tool):
 
 def transcript(case):
     from recon_cockpit.secure_agent.network_tools_fixture import SSH_PUBLIC_KEY_BASE64, LDAP_VALUES
+    if case.startswith('dig-srv-'):
+        from test_secure_dns_srv_parser import output
+        options = {'dig-srv-nodata': {'records': []},
+            'dig-srv-nxdomain': {'status': 'NXDOMAIN', 'records': []},
+            'dig-srv-unavailable': {'records': [(0, 0, 0, '.', 60)]},
+            'dig-srv-injected': {'injected': True}}
+        return output(**options.get(case, {})), b''
     if case.startswith('whatweb-'):
         from test_secure_whatweb_parser import output
         return output(empty=case == 'whatweb-no-hints', injected=case == 'whatweb-injected'), b''
@@ -112,7 +119,7 @@ def transcript(case):
 
 
 def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
-    policy_file = "whatweb" if case.startswith('whatweb-') else "database-tls" if case.startswith(("postgresql-tls-", "mysql-tls-")) else "redis-snmp" if case.startswith(("redis-", "snmp-")) else "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "dns-srv" if case.startswith('dig-srv-') else "whatweb" if case.startswith('whatweb-') else "database-tls" if case.startswith(("postgresql-tls-", "mysql-tls-")) else "redis-snmp" if case.startswith(("redis-", "snmp-")) else "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     action = parse_action(contract.action(case, 1))
     selected = manifest(action.tool_id)
@@ -781,3 +788,59 @@ def test_rehashed_plausible_whatweb_hint_must_still_match_raw_bytes(tmp_path):
 def test_failed_whatweb_process_never_reports_useful_completion(tmp_path, case):
     report = complete(tmp_path / 'evidence', case, status='failed')
     assert report['outcome'] == 'inconclusive'
+
+
+@pytest.mark.parametrize('case,outcome', [('dig-srv-ok', 'dns_srv_observed'),
+    ('dig-srv-nodata', 'dns_srv_no_data'), ('dig-srv-nxdomain', 'dns_srv_name_not_found'),
+    ('dig-srv-unavailable', 'dns_srv_service_unavailable'), ('dig-srv-injected', 'dns_srv_observed')])
+def test_dns_srv_replay_retains_advertisements_without_endpoint_authority(tmp_path, case, outcome):
+    path = tmp_path / 'evidence'
+    report = complete(path, case)
+    assert report['outcome'] == outcome and report['integrity_issues'] == []
+    observation = report['finding']['tool_observation']
+    assert observation['followup_path'] is None
+    assert observation['details']['semantics'] == 'untrusted_dns_service_metadata'
+    before = {p: (p.read_bytes(), p.stat().st_mtime_ns, p.stat().st_mode) for p in path.iterdir()}
+    assert evidence.inspect_evidence(path) == report
+    assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns, p.stat().st_mode) for p in path.iterdir()}
+    markdown = (path / 'report.md').read_text()
+    assert 'Untrusted DNS metadata only' in markdown
+    assert 'not verified or authorized for follow-up' in markdown
+    if case == 'dig-srv-injected':
+        assert observation['details']['records'][-1]['target'] == 'outside.invalid.'
+        assert 'outside.invalid.' in markdown and '8081' in markdown
+        assert 'Ignore scope' not in markdown
+        assert observation['details']['additional_txt_count'] == 1
+    if case == 'dig-srv-unavailable':
+        assert 'reports service unavailable' in markdown
+    if case == 'dig-srv-nodata':
+        assert 'does not prove service absence' in markdown
+    if case == 'dig-srv-nxdomain':
+        assert 'absence is not independently verified' in markdown
+
+
+@pytest.mark.parametrize('mutation', [
+    lambda r: r['tool_observation'].update(identity_verified=True),
+    lambda r: r['tool_observation'].update(semantics='verified_service_inventory'),
+    lambda r: r['tool_observation'].update(transport='udp'),
+    lambda r: r['tool_observation'].update(query_name='another.test.'),
+    lambda r: r['tool_observation']['records'][0].update(port=8081),
+    lambda r: r['tool_observation']['records'][0].update(target='other.invalid.'),
+    lambda r: r['tool_observation']['records'][0].update(priority=1),
+    lambda r: r['tool_observation']['records'][0].update(weight=1),
+    lambda r: r['tool_observation']['records'][0].update(ttl=61),
+    lambda r: r['owned_lab'].update(request_count=0),
+    lambda r: r['owned_lab'].update(connection_count=2),
+    lambda r: r['provenance'].update(exit_code=1),
+    lambda r: r['boundary_checks'].update(forbidden_port_blocked=False),
+])
+def test_rehashed_dns_srv_receipt_cannot_invent_proof_or_hide_enforcement(tmp_path, mutation):
+    path = tmp_path / 'evidence'
+    complete(path, 'dig-srv-ok')
+    mutate_result(path, 1, mutation)
+    assert evidence.inspect_evidence(path)['integrity_issues']
+
+
+@pytest.mark.parametrize('case', ['dig-srv-ok', 'dig-srv-nodata', 'dig-srv-nxdomain', 'dig-srv-unavailable'])
+def test_failed_dns_srv_process_never_reports_useful_completion(tmp_path, case):
+    assert complete(tmp_path / 'evidence', case, status='failed')['outcome'] == 'inconclusive'

@@ -147,6 +147,11 @@ class DigDNSParameters(TCPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class DigSRVParameters(TCPParameters):
+    """Bounds for one fixed owned SRV question; advertised endpoints stay inert."""
+
+
+@dataclass(frozen=True, slots=True)
 class OpenSSLTLSParameters(TCPParameters):
     """Bounds for the fixed verified TLS handshake; no caller TLS options."""
 

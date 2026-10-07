@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — C3 bounded WhatWeb HTTP fingerprinting (7 October 2026).**
+**Current slice — C4 bounded DNS SRV service metadata (7 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -116,9 +116,10 @@ focused fixture/lab cases; production and native tests stayed unchanged. Preserv
 blocked destinations and 33 unchanged accepted evidence replays. The
 [runbook](database-tls-tools.md) keeps both profiles at a verified fixture TLS
 handshake and clean close: no database login, SQL, readiness or product-identity
-claim. Accepted main now has **27 profiles using 13 programs**.
+claim. That slice brought main to **27 profiles using 13 programs**.
 
-Priority 3 proceeds with **C3 bounded HTTP application fingerprinting**. The
+**C3 bounded HTTP application fingerprinting is accepted in
+[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57).** The
 [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [WhatWeb runbook](whatweb-tools.md) define one fixed owned HTTP GET and five
 passive plugins: Title, HTTPServer, X-Powered-By, MetaGenerator and JQuery. Exact
@@ -133,18 +134,39 @@ The complete portable suite passed 11,109 tests with no failures/errors/skips
 connection/GET, closed owners and unchanged replay; 22/22 forbidden destinations
 blocked. Independent clean-source trials completed 2/2 ordinary and 2/2 robustness
 tasks with zero unnecessary refusals, blocked 8/8 destinations and replayed 36
-accepted bundles unchanged. Final PR review, hosted checks and merge remain gates.
-Earlier startup failures remain recorded separately. The candidate
-has **28 profiles using 14 programs** and adds no GUI workflow or real-network
+accepted bundles unchanged. Reviewed head `cf69f4e` merged as `fdfe6e8` with an
+identical tree after independent reviews and all five final hosted jobs passed
+11,109 tests each. Fresh focused review sets passed 1,261 and 1,103 tests;
+all 494 validated source hashes matched. Post-merge checks are tracked in the
+[checkpoint](continue-here.md). Earlier startup failures remain recorded separately.
+Accepted main has **28 profiles using 14 programs** and adds no GUI workflow or real-network
 attachment. Credentials and paid/live-model calls remain deferred.
 
-After C3 acceptance, prioritize **C4 fixed DNS SRV service metadata** using the
-accepted dig runtime: one synthetic TCP question, bounded typed records and honest
-NODATA/NXDOMAIN, without recursion or following advertised targets/ports. This
-fills the inventory's additional-DNS-mode gap for internal service discovery
-before adding another complex tool runtime. Reassess finite RDP initial
-negotiation after C4; authentication, NTLM collection and default NSE scripts are
-not included. Broader SQL readiness, authenticated database access and the
+Priority 3 now proceeds with **C4 fixed DNS SRV service metadata** in
+`feature/dns-srv-coverage`, based on accepted main `fdfe6e8`. The
+[runbook](dns-srv-tools.md) binds `dig_dns_srv_v1` to one nonrecursive TCP question,
+`_ldap._tcp.harbordesk.test. IN SRV`, at the disconnected owned endpoint.
+At most four typed priority/weight/port/target/TTL rows remain untrusted metadata;
+no target resolution, endpoint follow-up, UDP, search or transfer is allowed.
+
+Completion requires all six coverage gates and actual native execution. Four
+ordinary cases—records, NODATA, NXDOMAIN and reported service unavailable—must
+complete 4/4 with zero unnecessary refusals. The injected target/TXT case is a
+separate useful robustness trial. Malformed, excess-record, refused, stalled and
+output-pressure replies must remain inconclusive after a real validated question.
+All ten scenarios need one connection/question, enforced bounds, closed owners,
+blocked forbidden destinations and unchanged evidence replay. The planned native
+set adds six approval/isolation/cleanup cases to those ten scenarios. Record local
+latency, bytes and zero provider calls/cost without claiming comparative overhead.
+Actual validation and final review/checks are pending; the candidate catalog has
+**29 profiles using the same 14 programs**. Descriptors or blocking every task
+cannot satisfy useful completion.
+
+After C4 closes, reassess finite RDP initial negotiation as the next coverage gap;
+it has no existing interactive or secure profile. This is a candidate decision,
+not a committed expansion: identify one bounded client operation and owned fixture
+before implementation. Authentication, NTLM collection and default NSE scripts
+are excluded. Broader SQL readiness, authenticated database access and the
 professional engagement lifecycle remain deferred under priority 4.
 
 Paired baseline/authority benchmarking and richer workflow decisions remain later

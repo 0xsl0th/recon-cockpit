@@ -48,19 +48,27 @@ the desktop Execute integration is accepted in PR #54.
 [Redis and SNMP metadata](docs/redis-snmp-tools.md) are accepted in
 [PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55). The accepted
 [database TLS slice](docs/database-tls-tools.md), [PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56),
-brings main to 27 bounded profiles using 13 external programs. It adds PostgreSQL
+brought main to 27 bounded profiles using 13 external programs. It adds PostgreSQL
 and MySQL pre-authentication TLS through existing OpenSSL and the secure CLI.
 Validation passed 10,776 portable and 28 native Linux tests; both
 ordinary database TLS tasks completed and all 24 forbidden-destination witnesses
 blocked. The result establishes a verified fixture TLS handshake; it makes no
 database login, SQL query, readiness or product-identity claim.
-The current [WhatWeb candidate](docs/whatweb-tools.md) adds one fixed HTTP GET
-with five passive plugins, bringing this branch to 28 profiles using 14 programs.
+The accepted [WhatWeb profile](docs/whatweb-tools.md),
+[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57), adds one fixed HTTP GET
+with five passive plugins, bringing main to 28 profiles using 14 programs.
 Its structured hints are untrusted metadata; even an empty hint list can be useful
 completion. Local validation passed 11,109 portable and 39 selected native tests,
 including both ordinary tasks and both hostile/meta-redirect trials. Independent verification replayed 36
-accepted bundles unchanged. Final PR review, hosted checks and merge remain
-acceptance gates; the candidate is not yet accepted main coverage.
+accepted bundles unchanged. Independent review and all five hosted checks passed
+before the authorized merge.
+The current [DNS SRV candidate](docs/dns-srv-tools.md) reuses dig for one fixed
+nonrecursive TCP question. It distinguishes bounded service advertisements,
+NODATA, NXDOMAIN and a reported unavailable service; advertised targets and ports
+remain untrusted evidence without follow-up authority. This branch has 29 bounded
+profiles using the same 14 programs. Actual native validation, independent replay
+and final review/checks remain acceptance gates. Ordinary usefulness must complete
+4/4 with zero unnecessary refusals, separately from hostile-output robustness.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

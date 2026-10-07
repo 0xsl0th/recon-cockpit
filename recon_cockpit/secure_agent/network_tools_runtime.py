@@ -22,6 +22,7 @@ from .isolation import IsolationUnavailable, _capture_bounded, _runtime_probe, _
 
 PROFILE = "network-tools-runtime-v1"
 DIG = "dig_dns_query_v1"
+DIG_SRV = "dig_dns_srv_v1"
 OPENSSL = "openssl_tls_handshake_v1"
 SSH = "ssh_host_keys_v1"
 LDAP = "ldap_rootdse_v1"
@@ -105,7 +106,7 @@ MAX_FILE_BYTES = 16 * 1024 * 1024
 MAX_MANIFEST_BYTES = 12288
 READY_PREFIX = b"RECON_NETWORK_TOOL_READY_V1 "
 LIBRARY = re.compile(r"/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*\.?\Z")
-EXECUTABLES = {DIG: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
+EXECUTABLES = {DIG: "/usr/bin/dig", DIG_SRV: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
                SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch", SMB: "/usr/bin/smbclient",
                RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount",
                FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl",
@@ -127,6 +128,10 @@ FIXED_ARGV = {
           "--host-timeout", "3s", "--datadir", "/tool/data", "--no-stylesheet",
           "-oX", "-", "127.0.0.1"),
     DIG: ("/tool/dig", "-r", "-4", "@127.0.0.1", "-p", "8080", "harbordesk.test.", "A",
+          "+tcp", "+norecurse", "+tries=1", "+time=2", "+nosearch", "+noedns",
+          "+nobadcookie", "+noadflag", "+nocdflag", "+noall", "+comments", "+question",
+          "+answer", "+additional", "+nocmd"),
+    DIG_SRV: ("/tool/dig", "-r", "-4", "@127.0.0.1", "-p", "8080", "_ldap._tcp.harbordesk.test.", "SRV",
           "+tcp", "+norecurse", "+tries=1", "+time=2", "+nosearch", "+noedns",
           "+nobadcookie", "+noadflag", "+nocdflag", "+noall", "+comments", "+question",
           "+answer", "+additional", "+nocmd"),
@@ -184,7 +189,7 @@ from . import network_tools_whatweb_runtime as whatweb_runtime
 
 FIXED_ARGV[WHATWEB] = whatweb_runtime.FIXED_ARGV
 
-MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_worker", "network_tools_execution", "network_tools_contract",
+MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_dns_srv_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
@@ -201,7 +206,7 @@ def execution_environment(tool_id):
     if tool_id == WHATWEB:
         return dict(whatweb_runtime.ENVIRONMENT)
     value = {"LC_ALL": "C", "OPENSSL_CONF": "/dev/null", "MALLOC_ARENA_MAX": "1"}
-    if tool_id == DIG:
+    if tool_id in (DIG, DIG_SRV):
         value["UV_THREADPOOL_SIZE"] = "1"
     if tool_id == LDAP:
         # Disable every system/user LDAP default before libldap initializes.
@@ -228,7 +233,7 @@ def _compiled(tool_id):
     if tool_id in (OPENSSL, POSTGRESQL_TLS, MYSQL_TLS):
         from .network_tools_fixture import CA_PEM
         return "compiled:fixture-ca", "/tool/data/fixture-ca.pem", CA_PEM
-    if tool_id == DIG:
+    if tool_id in (DIG, DIG_SRV):
         # No host resolver, search list, or user configuration enters the tool.
         return "compiled:resolver", "/etc/resolv.conf", b"# fixed TCP nameserver supplied by reviewed argv\n"
     if tool_id in (SSH, LDAP, FTP, SMTP, DOCKER_PING, DOCKER_VERSION, WINRM, REDIS, SNMP):

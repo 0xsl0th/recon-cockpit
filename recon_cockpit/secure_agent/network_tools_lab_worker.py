@@ -22,6 +22,7 @@ if __package__:
     from . import network_tools_redis_snmp_fixture as redis_snmp_fixture
     from . import network_tools_database_tls_fixture as database_tls_fixture
     from . import network_tools_whatweb_fixture as whatweb_fixture
+    from . import network_tools_dns_srv_fixture as dns_srv_fixture
 else:
     def _load(name, filename):
         spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -41,6 +42,7 @@ else:
     redis_snmp_fixture = _load("network_tools_fixed_redis_snmp", "network_tools_redis_snmp_fixture.py")
     database_tls_fixture = _load("network_tools_fixed_database_tls", "network_tools_database_tls_fixture.py")
     whatweb_fixture = _load("network_tools_fixed_whatweb", "network_tools_whatweb_fixture.py")
+    dns_srv_fixture = _load("network_tools_fixed_dns_srv", "network_tools_dns_srv_fixture.py")
 
 
 def read_request(source):
@@ -252,7 +254,7 @@ class NetworkToolsService(owner.Service):
                     raw.close()
                     raise RuntimeError("nmap_service_fixture_request_limit")
                 if self.case.startswith(("ftp-", "smtp-", "docker-ping-", "docker-version-", "winrm-", "redis-", "snmp-",
-                                         "postgresql-tls-", "mysql-tls-", "whatweb-")) and self.connections:
+                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-srv-")) and self.connections:
                     raw.close()
                     raise RuntimeError("single_metadata_fixture_connection_limit")
                 with self.condition:
@@ -261,7 +263,10 @@ class NetworkToolsService(owner.Service):
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.case in fixture.WHATWEB_CASES:
+                    if self.case in fixture.DNS_SRV_CASES:
+                        dns_srv_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            on_request=self._smb_enumerated)
+                    elif self.case in fixture.WHATWEB_CASES:
                         whatweb_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.DATABASE_TLS_CASES:
