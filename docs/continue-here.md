@@ -5,7 +5,8 @@
 This development checkpoint never resumes an assessment or restores approvals.
 
 **Current work: priority 3 secure-tool coverage, C1 Redis/SNMP metadata.**
-The candidate is on `feature/redis-snmp-coverage`; review and merge remain pending.
+The candidate is [PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55) on
+`feature/redis-snmp-coverage`; review and merge remain pending.
 See the [successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [C1 runbook](redis-snmp-tools.md). Private validation receipts are under
 `.secure-agent/redis-snmp-20261007/` in the primary checkout.

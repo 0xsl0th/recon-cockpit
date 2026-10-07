@@ -4671,3 +4671,13 @@ now use hex rendering and bounded printable decoding, so embedded newlines canno
 forge OID rows. Report rendering escapes service-supplied Markdown/HTML delimiters
 and uses stable field ordering. Metadata and noSuchObject values remain explicit
 untrusted service reports, not authenticated identity or vulnerability proof.
+
+Three additional independent trials at clean revision `d914deb` completed 3/3
+ordinary reports with zero unnecessary refusals, provider calls or cost, six of
+six forbidden destination witnesses blocked and unchanged replay. Both CLI and
+shared-service inspectors also replayed **30 previously accepted bundles unchanged**,
+including accepted configurable/shared-service and personal graphical evidence.
+Private receipt: `clean-source-d914deb4-s5dg5ugb/verification.json` under the C1
+validation directory. Subsequent changes are documentation only.
+[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55) awaits review, hosted checks
+and an authorized merge; the candidate is not yet accepted on main.
