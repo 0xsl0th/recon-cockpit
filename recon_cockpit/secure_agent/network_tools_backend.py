@@ -20,7 +20,7 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
                        "rpcinfo_dump_v1", "showmount_exports_v1", "curl_ftp_list_v1", "curl_smtp_capabilities_v1",
                        "curl_docker_ping_v1", "curl_docker_version_v1", "curl_winrm_metadata_v1", "nmap_service_identify_v1", "kerbrute_userenum_v1",
                        "redis_server_info_v1", "snmp_system_get_v1",
-                       "postgresql_tls_handshake_v1", "mysql_tls_handshake_v1", "smtp_starttls_handshake_v1", "ldap_starttls_handshake_v1", "whatweb_http_fingerprint_v1", "dig_dns_srv_v1", "rdp_initial_negotiation_v1", "smb2_negotiate_metadata_v1")
+                       "postgresql_tls_handshake_v1", "mysql_tls_handshake_v1", "smtp_starttls_handshake_v1", "ldap_starttls_handshake_v1", "ftp_starttls_handshake_v1", "whatweb_http_fingerprint_v1", "dig_dns_srv_v1", "rdp_initial_negotiation_v1", "smb2_negotiate_metadata_v1")
     launch_mode = _envelope_mode = "owned_network_tools_lab"
     _executor_mode = "network_tools_owned"
     _closure = None
@@ -93,7 +93,7 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
                     result["tool_observation"] = None
             expected = 2 if self._lab_identity["scenario"].startswith("kerberos-") else 1
             minimum = expected if result["tool_observation"] is not None else 0
-            connections = minimum * (2 if self._lab_identity["scenario"].startswith(("ftp-", "nmap-service-")) else 1)
+            connections = minimum * (2 if action.tool_id in ("curl_ftp_list_v1", "nmap_service_identify_v1") else 1)
             counts = self.lab.snapshot(control, minimum_connections=connections, minimum_requests=minimum)
             context = validate_context({"identity": self._lab_identity, **counts}, self._lab_identity)
             from .network_tools_fixture import DATABASE_TLS_CASES, DATABASE_TLS_SUCCESS_CASES

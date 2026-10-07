@@ -95,7 +95,7 @@ are not verified. Full portable, native/usefulness, enforcement and evidence
 checks passed. C7 is accepted in PR #61 at `7c5e88ad`; all five final and
 post-merge jobs passed.
 
-The C8 [LDAP STARTTLS candidate](ldap-starttls-tools.md) adds one fixed
+The accepted C8 [LDAP STARTTLS profile](ldap-starttls-tools.md) adds one fixed
 extended request and verified fixture TLS/clean close through existing OpenSSL,
 for **33 profiles using the same 14 programs**. It permits no bind, search,
 credentials, referral follow-up or application request. The native client leaves
@@ -103,7 +103,15 @@ response IDs/remaining LDAP fields unchecked and discards the raw LDAP reply;
 only TLS facts are reported. Validation passed **13,683 portable** and **70 native
 tests**, including 2/2 ordinary and 2/2 separate robustness completions, eight
 inconclusive cases and 24/24 blocked destinations. Four clean-source trials and
-63 accepted evidence replays also passed. C8 remains pending PR review and merge.
+63 accepted evidence replays also passed. C8 is accepted in PR #62 at `a582bd6c`;
+all five final and post-merge jobs passed.
+
+The C9 [FTP explicit TLS candidate](ftp-starttls-tools.md) adds one fixed
+AUTH TLS command and verified fixture TLS/clean close through existing OpenSSL,
+for **34 profiles using the same 14 programs**. It exposes no login, credentials,
+listing, transfer or data connection. The native client discards unchecked AUTH
+replies and retains only the final greeting; the bounded result reports TLS only.
+C9 remains pending validation and review.
 
 From the repository root, with the project installed:
 
@@ -121,6 +129,7 @@ python -m recon_cockpit.secure_agent --describe-tool rdp_initial_negotiation_v1
 python -m recon_cockpit.secure_agent --describe-tool smb2_negotiate_metadata_v1
 python -m recon_cockpit.secure_agent --describe-tool smtp_starttls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool ldap_starttls_handshake_v1
+python -m recon_cockpit.secure_agent --describe-tool ftp_starttls_handshake_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -243,6 +252,6 @@ accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C8 candidate. Further composition and comparative benchmarking
+the current C9 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

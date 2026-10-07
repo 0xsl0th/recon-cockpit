@@ -55,7 +55,7 @@ def test_registry_is_explicit_immutable_and_returns_detached_metadata():
     assert tuple(ADAPTERS) == ("http_probe", "tcp_connect", NMAP_TOOL_ID, "http_headers_v1",
                               "curl_https_get_v1", "ffuf_content_discovery_v1",
                                "dig_dns_query_v1", "dig_dns_srv_v1", "rdp_initial_negotiation_v1", "smb2_negotiate_metadata_v1", "openssl_tls_handshake_v1",
-                               "postgresql_tls_handshake_v1", "mysql_tls_handshake_v1", "smtp_starttls_handshake_v1", "ldap_starttls_handshake_v1", "whatweb_http_fingerprint_v1",
+                               "postgresql_tls_handshake_v1", "mysql_tls_handshake_v1", "smtp_starttls_handshake_v1", "ldap_starttls_handshake_v1", "ftp_starttls_handshake_v1", "whatweb_http_fingerprint_v1",
                                "ssh_host_keys_v1", "ldap_rootdse_v1", "smb_share_list_v1",
                                "rpcinfo_dump_v1", "showmount_exports_v1",
                                "curl_ftp_list_v1", "curl_smtp_capabilities_v1",

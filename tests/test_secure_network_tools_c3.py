@@ -78,9 +78,9 @@ def test_failed_peer_scenario_cannot_be_upgraded_to_useful_hints(case):
 
 
 def test_all_accepted_contracts_remain_unchanged_from_pr56():
-    old_cases = [case for case in contract.CASES if case not in contract.C3_CASES + contract.C4_CASES + contract.C5_CASES + contract.C6_CASES + contract.C7_CASES + contract.C8_CASES]
-    old_tools = set(tool_adapters.ADAPTERS) - {contract.WHATWEB_TOOL_ID, contract.DIG_SRV_TOOL_ID, contract.RDP_TOOL_ID, contract.SMB2_TOOL_ID, contract.SMTP_TLS_TOOL_ID, contract.LDAP_TLS_TOOL_ID}
-    old_runtime = set(runtime.EXECUTABLES) - {contract.WHATWEB_TOOL_ID, contract.DIG_SRV_TOOL_ID, contract.RDP_TOOL_ID, contract.SMB2_TOOL_ID, contract.SMTP_TLS_TOOL_ID, contract.LDAP_TLS_TOOL_ID}
+    old_cases = [case for case in contract.CASES if case not in contract.C3_CASES + contract.C4_CASES + contract.C5_CASES + contract.C6_CASES + contract.C7_CASES + contract.C8_CASES + contract.C9_CASES]
+    old_tools = set(tool_adapters.ADAPTERS) - {contract.WHATWEB_TOOL_ID, contract.DIG_SRV_TOOL_ID, contract.RDP_TOOL_ID, contract.SMB2_TOOL_ID, contract.SMTP_TLS_TOOL_ID, contract.LDAP_TLS_TOOL_ID, contract.FTP_TLS_TOOL_ID}
+    old_runtime = set(runtime.EXECUTABLES) - {contract.WHATWEB_TOOL_ID, contract.DIG_SRV_TOOL_ID, contract.RDP_TOOL_ID, contract.SMB2_TOOL_ID, contract.SMTP_TLS_TOOL_ID, contract.LDAP_TLS_TOOL_ID, contract.FTP_TLS_TOOL_ID}
     value = {'cases': {case: {'action': contract.action(case), 'descriptor': contract.capability_descriptor(case),
         'card': workflow.card(case), 'spec': lab.spec(case)} for case in old_cases},
         'adapters': {tool: tool_adapters.ADAPTERS[tool].to_dict() for tool in old_tools},

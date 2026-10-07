@@ -250,6 +250,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "database_tls_verified": "database_tls_verified",
                "smtp_tls_verified": "smtp_tls_verified",
                "ldap_tls_verified": "ldap_tls_verified",
+               "ftp_tls_verified": "ftp_tls_verified",
                "http_fingerprint_observed": "http_fingerprint_observed",
                "http_fingerprint_no_hints": "http_fingerprint_no_hints",
                "ssh_host_key_observed": "host_key_observed",
@@ -384,6 +385,17 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Both bounded raw channels are independently reparsed without network. Complete native success framing is required; process exit alone does not establish useful or empty results.",
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
+            ]
+        if manifest["fixture_case"].startswith("ftp-tls-"):
+            report["limitations"] = [
+                "This single executable trial uses a disconnected synthetic fixture; it is not professional engagement or real-model validation.",
+                "FTP explicit TLS sends one fixed AUTH TLS command and verifies TLS with the public fixture CA and hostname. No USER/PASS, login, PBSZ/PROT, listing, transfer, active/passive data connection or client credential is authorized.",
+                "The native client accepts a final greeting beginning with any three digits and a space, and does not validate the AUTH TLS reply status before TLS. A wrong AUTH status can still yield the same TLS-only result; FTP readiness, authenticated access and product identity are not established.",
+                "Only the final greeting line is retained after the TLS summary. Earlier greeting lines and the AUTH reply are discarded, so hostile text there is not detected or preserved. Its absence is not injection-detection or model-resistance evidence.",
+                "The parser requires one exact final 220 harbordesk.test ready line in its expected position. Other retained banners, warnings, unexpected stdout and incomplete or unverified TLS remain inconclusive, even if the native process or TLS succeeds.",
+                "The native AUTH reply reader performs one read; fragmented AUTH replies may fail. Fragmented greeting success does not establish AUTH-reply fragmentation compatibility or universal FTP support.",
+                "Useful completion requires one fixture-witnessed TLS 1.3 handshake and clean close_notify without application data. DONE means stdin EOF and is not clean-close proof. Negative-case counters may instead record only the exact AUTH TLS command before the negative response, failure or stall; each case's lab specification pins its meaning.",
+                "Both bounded raw channels are independently parsed without network. Hashes reconcile local evidence, not external authenticity. Normalized findings cannot select a new target or tool; inspection restores no approval or execution authority.",
             ]
         if manifest["fixture_case"].startswith("ldap-tls-"):
             report["limitations"] = [
@@ -630,6 +642,13 @@ def _markdown(report):
                              + " | " + _metadata_literal(row["versions"]) + " |")
             if not details["hints"]:
                 lines.extend(["", "The fixed request completed with no reviewed hints. This does not establish technology absence."])
+        elif type(details) is dict and details.get("kind") == "ftp_starttls_handshake":
+            lines.extend(["", "## FTP explicit TLS handshake", "",
+                "Verified TLS using the public fixture CA and hostname. No authenticated FTP session, listing or transfer was performed; FTP status, readiness and product identity are not verified.",
+                "", "| Check | Observation |", "| --- | --- |"])
+            for field in ("service", "protocol", "cipher", "verification", "peer_name", "authenticated_ftp_session"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            lines.extend(["", "Useful completion also requires the fixture's clean close_notify witness. The native DONE diagnostic alone is not proof of clean TLS closure."])
         elif type(details) is dict and details.get("kind") == "ldap_starttls_handshake":
             lines.extend(["", "## LDAP STARTTLS handshake", "",
                 "Verified TLS using the public fixture CA and hostname. No authenticated LDAP session, bind or search was performed; LDAP response identity, readiness and service identity are not verified.",

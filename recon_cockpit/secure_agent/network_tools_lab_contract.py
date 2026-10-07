@@ -21,6 +21,39 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("ftp-tls-"):
+        from . import network_tools_fixture as fixture
+        dialogue = fixture.ftp_tls_dialogue(case)
+        complete = case in fixture.FTP_TLS_COMPLETE_CASES
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-ftp-starttls-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "ftp_starttls"}],
+            "request_sha256": hashlib.sha256(fixture.FTP_TLS_AUTH).hexdigest(),
+            "request_bytes": len(fixture.FTP_TLS_AUTH),
+            "response_sha256": {name: None if value is None else hashlib.sha256(value).hexdigest()
+                for name, value in dialogue.items()},
+            "malformed_tls_sha256": hashlib.sha256(TLS_MALFORMED_BYTES).hexdigest()
+                if case == "ftp-tls-malformed" else None,
+            "tls_name": TLS_NAME, "tls_protocol": "TLSv1.3",
+            "ca_sha256": hashlib.sha256(CA_PEM).hexdigest(),
+            "certificate_sha256": UNTRUSTED_SERVER_CERT_SHA256 if case == "ftp-tls-untrusted" else SERVER_CERT_SHA256,
+            "max_fixture_response_bytes": fixture.FTP_TLS_MAX_RESPONSE_BYTES,
+            "native_response_read_max_bytes": 16384,
+            "max_commands": 1, "max_connections": 1, "max_requests": 1,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_auth_tls_then_tls13_and_clean_close_notify" if complete
+                else "validated_auth_tls_before_negative_response",
+            "counter_includes_clean_tls_close": complete,
+            "connection_evidence": "accepted_connections_lower_bound",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "authentication": False, "credentials": False, "login": False, "listing": False,
+            "data_connection": False, "file_transfer": False, "pbsz_prot": False,
+            "tls_application_requests": False, "plaintext_session": False,
+            "client_validates_ftp_reply_codes": False, "auth_reply_retained": False,
+            "full_ftp_dialogue_retained": False, "fragmented_ready_reply_may_fail": True,
+            "service_identity_claim": False, "vulnerability_claim": False,
+            "behavior": case.removeprefix("ftp-tls-")}
     if case.startswith("ldap-tls-"):
         from . import network_tools_fixture as fixture
         response = fixture.ldap_tls_response(case)
@@ -463,7 +496,7 @@ def validate_context(value, expected):
     request_limit = 2 if expected["scenario"].startswith("kerberos-") else 1
     connection_limit = (2 if expected["scenario"].startswith("kerberos-") else 3 if expected["scenario"].startswith("nmap-service-")
                         else 4 if expected["scenario"].startswith(("rpc-", "nfs-"))
-                        else 2 if expected["scenario"].startswith("ftp-") else 1)
+                        else 2 if (expected["scenario"].startswith("ftp-") and not expected["scenario"].startswith("ftp-tls-")) else 1)
     if (type(value) is not dict or set(value) != {"identity", "connection_count", "request_count"}
             or validate_identity(value["identity"]) != expected
             or type(value["connection_count"]) is not int or not 0 <= value["connection_count"] <= connection_limit

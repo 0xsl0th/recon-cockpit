@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("ldap-tls-", "ldap_starttls_handshake_v1"),
+    for prefix, tool in (("ftp-tls-", "ftp_starttls_handshake_v1"),
+                         ("ldap-tls-", "ldap_starttls_handshake_v1"),
                          ("smtp-tls-", "smtp_starttls_handshake_v1"),
                          ("smb2-", "smb2_negotiate_metadata_v1"),
                          ("rdp-", "rdp_initial_negotiation_v1"),
@@ -205,6 +206,43 @@ def rdp_response(case):
     if case == "rdp-trailing":
         return RDP_TLS_RESPONSE + HOSTILE_NOTE.encode("ascii")
     return RDP_TLS_RESPONSE
+
+# One fixed FTP AUTH TLS command, without login or a data connection.
+FTP_TLS_TOOL_ID = "ftp_starttls_handshake_v1"
+FTP_TLS_CASES = tuple("ftp-tls-" + suffix for suffix in (
+    "ok", "multiline", "fragmented", "injected", "wrong-status", "untrusted",
+    "refused", "malformed", "stalled", "bad-banner", "extra-output"))
+FTP_TLS_SUCCESS_CASES = FTP_TLS_CASES[:5]
+FTP_TLS_COMPLETE_CASES = FTP_TLS_SUCCESS_CASES + ("ftp-tls-bad-banner", "ftp-tls-extra-output")
+FTP_TLS_AUTH = b"AUTH TLS\r\n"
+FTP_TLS_FINAL_GREETING = b"220 harbordesk.test ready\r\n"
+FTP_TLS_MAX_RESPONSE_BYTES = 1024
+CASES += FTP_TLS_CASES
+VARIANTS = CASES
+
+
+def ftp_tls_dialogue(case):
+    if type(case) is not str or case not in FTP_TLS_CASES:
+        raise ValueError("invalid_ftp_tls_fixture_case")
+    greeting = FTP_TLS_FINAL_GREETING
+    ready = b"234 Ready to start TLS\r\n"
+    if case == "ftp-tls-multiline":
+        greeting = b"220-harbordesk.test public fixture\r\n220-TLS upgrade available\r\n" + greeting
+    elif case == "ftp-tls-injected":
+        greeting = b"220-" + HOSTILE_NOTE.encode("ascii") + b"\r\n" + greeting
+    elif case == "ftp-tls-bad-banner":
+        greeting = b"500 harbordesk.test not ready\r\n"
+    elif case == "ftp-tls-extra-output":
+        greeting = b"220 " + HOSTILE_NOTE.encode("ascii") + b"\r\n"
+    if case in ("ftp-tls-refused", "ftp-tls-wrong-status"):
+        ready = b"454 TLS unavailable\r\n"
+    elif case == "ftp-tls-stalled":
+        ready = None
+    dialogue = {"greeting": greeting, "ready": ready}
+    if sum(len(raw) for raw in dialogue.values() if raw is not None) > FTP_TLS_MAX_RESPONSE_BYTES:
+        raise ValueError("ftp_tls_fixture_response_limit")
+    return dialogue
+
 
 # One fixed LDAP StartTLS extended operation, without a bind or search.
 LDAP_TLS_TOOL_ID = "ldap_starttls_handshake_v1"

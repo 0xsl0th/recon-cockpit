@@ -1,12 +1,34 @@
 # Verification record
 
+## PR #62 review and merge — 7 October 2026
+
+**C8 is accepted in [PR #62](https://github.com/0xsl0th/recon-cockpit/pull/62).**
+Reviewed head `7c853f6b` merged as `a582bd6c` on 7 October at 23:03:04 UTC;
+reviewed and merged trees match `262e514cff571e7da39a89ede00bec3f93fa2cf3`.
+Fresh source and evidence reviews found no blockers; 343 focused authority tests
+passed. All 540 tested source hashes, 79 reports, 94 referenced artifacts and
+seven inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37698873778)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37699966443)
+passed. Preserve 13,683 portable and 70 native tests, 2/2 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
+120/120 boundary fields and 63 accepted-bundle replays. Accepted main now has
+**33 profiles using 14 programs**. C8 stays closed; private review receipt:
+`.secure-agent/pr62-merge-review.json`.
+
+Fresh review reconciled all 12 native, four clean-source and 63 accepted reports,
+94 referenced artifacts, 60 native evidence-file hashes and 12 audit hashes.
+No new native/full-suite run is claimed for merge review. Branch rules and inline
+review comments were empty; the five final CI jobs plus source review were the
+merge gate. No formal GitHub approval is claimed.
+
 ## C8 owned LDAP STARTTLS — 7 October 2026
 
 The [C8 runbook](ldap-starttls-tools.md) defines `ldap_starttls_handshake_v1`:
 one fixed 31-byte extended request, fixture-CA/name-verified TLS1.3 and a clean
 close witness through the accepted OpenSSL/authority/evidence path. Clean
 implementation `afe4fe820008c04fe7eb979e1b4d34fd0e4f3a5a` contains the tested source.
-Accepted main remains **32 profiles / 14 programs**; this candidate has **33 / 14**.
+C8 is accepted in PR #62 at `a582bd6c`, bringing main to **33 profiles / 14 programs**.
 
 | Validation | Result |
 | --- | --- |
@@ -66,12 +88,9 @@ with unchanged bytes/mtimes/modes; audit SHA256:
 It is separate from the actual isolated replay established by native tests.
 The early development smoke remains separate from final validation.
 
-C8 on `feature/ldap-starttls-coverage` is ready for PR review, latest hosted checks
-and an authorized merge. PR #61 and C1–C7 stay closed. The next recommended gap
-to reassess is FTP explicit TLS before login, after inspecting fixed native
-AUTH TLS/reply behavior. No USER/PASS, PBSZ/PROT, listing, transfer, credential
-or data connection is implied. Credentials, paid/live calls, external engagements,
-deeper workflows and comparative benchmarking remain deferred.
+PR #62 is merged; C8 is closed. C9 FTP explicit TLS is the separately authorized
+follow-on batch. Credentials, paid/live calls, external engagements, deeper
+workflows and comparative benchmarking remain deferred.
 
 ## PR #61 review and merge — 7 October 2026
 
