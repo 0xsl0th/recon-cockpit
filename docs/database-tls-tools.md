@@ -2,10 +2,11 @@
 
 C2 adds two candidate secure profiles for the pre-authentication TLS portion of
 PostgreSQL and MySQL connections. Both reuse the existing OpenSSL integration,
-strict TLS parser and single-action authority/evidence path. Actual owned-lab
-validation, independent review and merge are acceptance gates; this document does
-not claim them passed. C1, B0–B8, offline R5, accepted local R6 and the initial GUI
-remain closed.
+strict TLS parser and single-action authority/evidence path. Local validation
+passed 10,776 portable and 28 native Linux tests; independent source reviews found
+no blockers. Final PR review, hosted checks and merge remain acceptance gates.
+C1, B0–B8, offline R5, accepted local R6 and the
+initial GUI remain closed.
 
 | Capability | Fixed protocol operation | Result boundary |
 | --- | --- | --- |
@@ -138,10 +139,27 @@ be blocked; no rejected peer may cause an unauthorized destination or applicatio
 request. Fresh-approval consumption, replay rejection, missing-proof denial,
 cancellation cleanup and regression of accepted profiles remain required.
 
-Record actual execution, structured evidence, usefulness/refusals, request counts,
-blocked unauthorized attempts and descriptive elapsed time in the
-[verification record](verification.md). Provider calls and actual provider cost
-must remain zero. Mocks, dry runs, installed binaries or skipped native tests
+Local validation passed **10,776 portable and 28 native Linux tests**, with no
+selected failures/errors/skips. The native set contains 24 C2 cases and four
+accepted OpenSSL regressions. All 12 fixture scenarios replayed unchanged with
+closed owners; ordinary tasks completed 2/2 with zero unnecessary refusals, and
+the hostile MySQL greeting completed 1/1. All 24 forbidden-destination witnesses
+and all 120 native boundary fields passed. Dedicated native cases also verify
+one-use grants, missing-proof refusal, cancellation, private-input isolation,
+UDP denial and output bounds.
+
+An additional clean-source run at `dca814133cafdd08d916d2e93c12f9e66b11474e`
+repeated both ordinary tasks and the hostile MySQL case, blocked 6/6 forbidden
+destinations, and replayed all 33 previously accepted bundles unchanged through
+both CLI and shared inspection. PostgreSQL/MySQL ordinary wall times were
+2,830/2,828 ms; the hostile MySQL trial took 2,723 ms. These are descriptive local
+measurements, not comparative overhead. The clean-source trials use an explicit
+private unattended synthetic policy; they do not claim personal approval. The
+shipped policy still requires it.
+
+See the [verification record](verification.md) for receipts and source bindings.
+Provider calls and actual provider cost remained zero. Review, hosted checks and
+merge remain pending. Mocks, dry runs, installed binaries or skipped native tests
 cannot complete these gates. Comparative overhead and deeper composition remain
 deferred, as do model credentials and paid/live-model evaluation.
 

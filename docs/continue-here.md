@@ -4,13 +4,17 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: priority 3 secure-tool coverage, C2 PostgreSQL/MySQL pre-authentication TLS.**
+**Current work: [PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56), priority 3
+secure-tool coverage, C2 PostgreSQL/MySQL pre-authentication TLS.**
 Work is on `feature/database-tls-coverage` in `/tmp/recon-database-tls-coverage`,
 based on accepted main `9786a6b`. See the
 [successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C2 runbook](database-tls-tools.md). Actual execution, independent review and
-final acceptance remain pending; candidate code or catalog entries alone do not
-complete the batch.
+and [C2 runbook](database-tls-tools.md). Local execution and evidence validation
+passed and independent source reviews found no blockers; final PR review, hosted
+checks and merge remain the acceptance gates.
+Candidate catalog entries do not count as accepted main coverage.
+Inspect checks on the PR's latest head before any later authorized merge; local
+validation does not substitute for the hosted matrix. The next proposed batch is C3.
 
 **[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55) is merged and C1 is closed.**
 Reviewed head `8786308d8569979229b6e0019cdcd04a0811e252` merged as
@@ -162,8 +166,9 @@ desktop bundles replayed unchanged with closed fixtures/processes and zero provi
 calls/cost. Both themes passed at 1120×720. Independent source reviews found no
 remaining blockers. These are scripted tests, not new personal acceptance.
 
-**Current continuation:** finish C2 validation and leave its implementation PR
-ready for review. The candidate adds `postgresql_tls_handshake_v1` and
+**Current continuation:** complete final PR review and hosted checks, and leave
+the C2 implementation PR ready for the operator's review. Do not automatically
+merge the new C2 PR. The candidate adds `postgresql_tls_handshake_v1` and
 `mysql_tls_handshake_v1` through the existing OpenSSL runtime: one fixed PostgreSQL
 SSLRequest or MySQL greeting/SSLRequest, followed by fixture-CA/name-verified TLS
 1.3 and a clean close without application data. It preserves all seven gates,
@@ -179,10 +184,29 @@ ordinary handshakes plus refused, untrusted, malformed, stalled and hostile peer
 The hostile MySQL version string is ignored and must not prevent legitimate TLS
 completion; hostile PostgreSQL prefaces remain inconclusive. MySQL greeting
 fragmentation can fail closed with the current native client and is a disclosed
-limitation. Record actual useful completion, unnecessary refusals, blocked
-unauthorized destinations, bounds, cleanup and unchanged evidence replay in the
-[verification record](verification.md) before acceptance. Paid/provider calls and
-cost must remain zero; elapsed time is descriptive, not a comparative benchmark.
+limitation.
+
+**C2 validation passed at implementation `dca814133cafdd08d916d2e93c12f9e66b11474e`:**
+10,776 portable tests and 28 native Linux tests (24 C2 plus four accepted OpenSSL
+regressions), with zero selected failures/errors/skips. All 12 scenarios retained
+their declared outcomes, bounded output, closed owners and unchanged replay. Both
+ordinary TLS tasks completed with zero unnecessary refusals; the hostile MySQL
+trial also completed. All 24 forbidden-destination witnesses and all 120 native
+boundary fields passed. Dedicated native cases cover grant consumption/replay,
+missing-proof refusal, cancellation, private-input isolation, UDP denial and the
+output ceiling.
+
+A separate clean-source run completed the ordinary tasks 2/2, the hostile MySQL
+case 1/1, and blocked 6/6 forbidden destinations. All three new bundles and all
+33 previously accepted bundles replayed unchanged through CLI and shared-service
+inspection. These unattended trials used a private explicit synthetic policy;
+the shipped policy still requires personal approval. No human acceptance is
+claimed. Wall times were 2,830 ms (PostgreSQL), 2,828 ms (MySQL) and 2,723 ms
+(hostile MySQL); these are descriptive local timings, not comparative overhead.
+Provider calls/cost stayed zero. Preserve receipts under
+`.secure-agent/database-tls-20261007/`, including
+`clean-source-dca81413-6w256_ve/verification.json`; see the
+[verification record](verification.md) for scope and source details.
 
 The candidate catalog has 27 profiles using the same 13 programs; accepted main
 stays at 25/13 until review and merge. After C2, prioritize **C3 bounded HTTP

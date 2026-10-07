@@ -50,9 +50,11 @@ the desktop Execute integration is accepted in PR #54.
 to 25 bounded profiles using 13 external programs. The current
 [review slice](docs/database-tls-tools.md) adds PostgreSQL and MySQL pre-authentication
 TLS handshakes through the existing OpenSSL integration and secure CLI path.
-This candidate has 27 profiles using the same 13 programs, pending native
-validation, review and merge. It establishes a verified fixture TLS handshake;
-it makes no database login, SQL query, readiness or product-identity claim.
+This candidate has 27 profiles using the same 13 programs, pending review and
+merge. Local validation passed 10,776 portable and 28 native Linux tests; both
+ordinary database TLS tasks completed and all 24 forbidden-destination witnesses
+blocked. The result establishes a verified fixture TLS handshake; it makes no
+database login, SQL query, readiness or product-identity claim.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

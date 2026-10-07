@@ -4658,8 +4658,8 @@ local descriptive timings, not a comparative overhead measurement.
 Golden regressions retain the accepted bytes for 84 older actions, capability
 descriptors, workflow cards and lab specifications, 23 adapter descriptors, and
 old invocations/environments/compiled inputs. The registry/catalog adds two
-profiles from two programs: **25 candidate profiles / 13 external programs**;
-main remains **23 / 11** pending review and merge. Completed B0–B8, offline R5,
+profiles from two programs: **25 accepted profiles / 13 external programs**
+after PR #55. Completed B0–B8, offline R5,
 accepted local R6 and the owner GUI walkthrough remain closed.
 
 Development failures remain disclosed in the private `development-notes.json`:
@@ -4679,5 +4679,86 @@ shared-service inspectors also replayed **30 previously accepted bundles unchang
 including accepted configurable/shared-service and personal graphical evidence.
 Private receipt: `clean-source-d914deb4-s5dg5ugb/verification.json` under the C1
 validation directory. Subsequent changes are documentation only.
-[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55) awaits review, hosted checks
-and an authorized merge; the candidate is not yet accepted on main.
+[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55) was reviewed and merged
+on 7 October. Reviewed head `8786308d8569979229b6e0019cdcd04a0811e252`
+and merge `9786a6b4539ae2c1df9e63bff25f9ac0271ef759` have identical trees
+(`a60ae6208e00ec7e875382ee62ac1346896d8d5b`). Independent authority/runtime
+and parser/evidence reviews found no blockers. Fresh focused review sets passed
+543, 540 and 597 cases respectively; these sets overlap and are not an additional
+unique-test total. All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37657264278)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37658499228)
+passed. No required-check rules were configured; the five portable matrix jobs
+were used as the merge gate. Private merge receipt:
+`.secure-agent/pr55-merge-review.json`. C1 is closed; do not repeat the merge.
+
+## C2 PostgreSQL/MySQL pre-authentication TLS — 7 October 2026
+
+This candidate extends the existing OpenSSL runtime with two fixed protocol
+profiles. Each sends only the PostgreSQL SSLRequest or MySQL greeting/SSLRequest
+preface, negotiates fixture-CA/name-verified TLS 1.3, and closes without application
+data. It uses the accepted seven-gate authority path and one disconnected owned
+endpoint, `127.0.0.1:8080`. No database credentials, login, SQL, real network,
+plaintext downgrade, model provider or new GUI operation is added. The
+[runbook](database-tls-tools.md) gives exact invocations and limitations.
+
+Implementation revision: `dca814133cafdd08d916d2e93c12f9e66b11474e`, based on
+accepted main `9786a6b`. Private records live under
+`.secure-agent/database-tls-20261007/` in the primary checkout. All **476 tested
+source/test/policy/workflow file hashes** matched the clean implementation after
+validation; later documentation edits do not change those tested files.
+
+| Validation | Actual result |
+| --- | --- |
+| Complete portable suite, `pytest -m 'not integration' --strict-markers` | **10,776 passed**, zero failures/errors/skips, 300.456 seconds |
+| Selected actual Linux suite, `RECON_LINUX_INTEGRATION=1 pytest tests/test_secure_database_tls_workflow_linux.py tests/test_secure_network_tools_workflow_linux.py -k 'database_tls or openssl'` | **28 passed**, zero selected failures/errors/skips, 72.065 seconds |
+| Twelve C2 ordinary/adversarial scenarios | All expected outcomes; **24/24** forbidden IP/port witnesses blocked, **120/120** boundary checks true |
+| Ordinary PostgreSQL/MySQL TLS tasks | **2/2** useful completions; **zero unnecessary refusals** |
+| Hostile MySQL greeting | **1/1** useful completion, kept separate from ordinary usefulness |
+| Scenario evidence | **12/12** unchanged networkless CLI replays; one connection each, bounded output and closed owners |
+| Independent clean-source verification | Three fresh trials; **6/6** destination witnesses blocked; **33 accepted bundles** replayed unchanged by both CLI and shared inspector |
+
+The 28 actual Linux cases comprise **24 C2 cases and four accepted OpenSSL
+regressions**. Beyond the twelve scenarios, C2 exercises grant consumption and
+replay rejection, missing-proof blocking, cancellation after actual OpenSSL
+execution, host-canary/descriptor isolation, refusal before execution when a
+test broadens UDP socket permission, and real oversized-certificate diagnostics
+hitting the output ceiling with unchanged evidence replay. The UDP negative
+test sends no datagrams. Ordinary execution uses an explicitly unattended
+synthetic policy; dedicated grant tests use synthetic approval inputs. Neither
+claims new personal acceptance. The shipped policy still requires approval.
+
+Only the two ordinary handshakes and hostile MySQL greeting record one completed
+handshake. The other nine scenarios record zero, remain inconclusive and do not
+fall back to plaintext or login. All twelve accept at most one TCP connection
+and capture at most 8,192 bytes. Ordinary local secure-execution elapsed times
+were **2,637 / 2,586 ms**; the hostile MySQL trial took **2,601 ms**. The two
+stalled cases took 6,608 / 6,617 ms including setup, with the five-second native
+deadline enforced. These are descriptive timings, not comparative overhead.
+
+Independent trials at clean `dca81413` took **2,830 / 2,828 ms** for ordinary
+PostgreSQL/MySQL, and **2,723 ms** for hostile MySQL. They checked exact action,
+policy, runtime, raw-output, normalized-result, audit and owner-counter bindings.
+The 33 accepted bundles were required by their previous receipt and report
+hashes; none were omitted. Replay preserved bytes, modification times and modes.
+Receipt: `clean-source-dca81413-6w256_ve/verification.json`. JUnit, source hashes,
+scenario report hashes and the combined `verification.json` remain private.
+Every trial used **zero provider calls and zero actual provider cost**.
+
+Golden regressions preserve 100 older actions, capability descriptors, workflow
+cards and lab specifications, all 25 old adapters, and all 16 older native
+invocations/environments/compiled inputs. Independent source reviews found no
+remaining blockers. The candidate has **27 profiles from the same 13 programs**;
+accepted main remains **25/13** until review, hosted checks and merge complete.
+[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56) contains this candidate.
+Hosted results must be checked against its latest head before a later authorized
+merge; the local counts above are not a claim that hosted CI passed.
+
+Results establish only `verified_tls_handshake_only` with
+`authenticated_database_session: false`. The selected wire profile does not
+prove database product/version, readiness, account access or a vulnerability.
+OpenSSL may reject fragmented MySQL greetings; unsupported diagnostics remain
+inconclusive. These synthetic fixtures contain no database engine or accounts.
+Completed milestones stay closed. Next proposed coverage is bounded HTTP
+application fingerprinting with a reviewed finite WhatWeb plugin allowlist;
+deeper workflows, comparative benchmarks, credential setup and paid/live-model
+evaluation remain deferred.

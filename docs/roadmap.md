@@ -114,9 +114,14 @@ same 13 programs. Each makes only its fixed database-protocol TLS request,
 verifies the public fixture CA/name and TLS 1.3, then closes without application
 data. Structured evidence explicitly means `verified_tls_handshake_only`, with
 `authenticated_database_session: false`. No database username, password, login,
-SQL, readiness, version or verified product-identity claim is included. Actual
-owned execution, replay and enforcement must pass before acceptance; these profiles
-do not extend the GUI's HTTP/SSH workflow.
+SQL, readiness, version or verified product-identity claim is included. Local
+validation passed 10,776 portable and 28 native Linux tests (24 C2 and four accepted
+OpenSSL regressions). Both ordinary tasks completed, the hostile MySQL greeting
+also completed, all 24 forbidden-destination witnesses blocked and all 12 scenario
+bundles replayed unchanged. A separate clean-source run repeated 2/2 ordinary and
+1/1 hostile completions, blocked 6/6 destinations and replayed 33 accepted bundles
+unchanged through both inspectors. Calls/cost stayed zero. Review, hosted checks
+and merge remain pending; the profiles do not extend the GUI's HTTP/SSH workflow.
 
 After C2, prioritize **C3 bounded HTTP application fingerprinting** using installed
 WhatWeb, subject to review of an allowlisted plugin set, pinned runtime and one-origin

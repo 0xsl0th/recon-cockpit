@@ -22,9 +22,11 @@ MIBs, UDP, walks or writes are introduced.
 
 The current C2 [PostgreSQL/MySQL pre-authentication TLS candidate](database-tls-tools.md)
 adds two profiles of the existing OpenSSL program. This branch lists **27 profiles
-using the same 13 programs**, pending actual owned execution, review and acceptance.
-The catalog describes candidate contracts as well as accepted ones; their presence
-is not verification. Each new recipe stops after a verified fixture TLS handshake
+using the same 13 programs**, pending review and acceptance. Local validation
+passed 10,776 portable and 28 native Linux tests; both ordinary TLS tasks completed
+with zero unnecessary refusals, and all 24 forbidden-destination witnesses blocked.
+The catalog describes candidate contracts as well as accepted ones; catalog
+presence alone is not verification. Each new recipe stops after a verified fixture TLS handshake
 and clean close, without credentials, login or SQL.
 
 From the repository root, with the project installed:
