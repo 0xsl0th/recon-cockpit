@@ -84,7 +84,7 @@ Priority **2c remains current**, with these explicit acceptance steps:
   clean replay and zero unnecessary refusals/provider calls/cost. The owner said
   "ok this time it worked". The original four-step/60-second/26,624-byte limits
   remained fixed. Retain earlier incomplete trials; do not repeat accepted checks.
-- **Desktop execution — implemented for review, not accepted yet.** An explicit
+- **Desktop execution — [PR #54](https://github.com/0xsl0th/recon-cockpit/pull/54) awaits review, not accepted yet.** An explicit
   **Execute owned lab** control uses the same shared service and isolated graphical
   reviewer for the existing disconnected HTTP/SSH fixtures. Dry run remains a
   separate operation. Requests freeze scope and require fresh per-action approval;

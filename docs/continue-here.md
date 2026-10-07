@@ -4,7 +4,8 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: desktop Execute owned lab is implemented and locally validated; its separate PR awaits review (priority 2c).**
+**Current work: desktop Execute owned lab is implemented and locally validated;
+[PR #54](https://github.com/0xsl0th/recon-cockpit/pull/54) awaits review (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
