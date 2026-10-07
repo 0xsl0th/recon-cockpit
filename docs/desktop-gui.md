@@ -81,10 +81,11 @@ action. It does not display mock online agents, signing claims, vulnerabilities
 inferred from product versions, or invented cost. Known recorded zero is distinct
 from an unavailable metric.
 
-The separate [exact-action reviewer](graphical-approvals.md) is implemented for
-review, with an opt-in owned-fixture walkthrough entry point. Its implementation
-review and personal approval/denial/cancellation walkthrough precede a desktop
-Execute control. Keep the [shared service](shared-assessment-service.md) and
+The separate [exact-action reviewer](graphical-approvals.md) was accepted in
+PR #52, with an opt-in owned-fixture walkthrough entry point. The owner has now
+confirmed approval, denial, pending-review cancellation and a complete four-action
+walkthrough. PR #53 awaits final checks and merge; the next slice adds a desktop
+Execute control for the same disconnected fixtures. Keep the [shared service](shared-assessment-service.md) and
 isolated authority as the execution path; no widget command or tool output becomes
 an execution request. New secure-tool batches follow the GUI milestone.
 

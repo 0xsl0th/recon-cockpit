@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 import os
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 import threading
 import time
@@ -41,11 +43,94 @@ def action():
         'timeout_seconds': 1, 'max_output_bytes': 1024}, 'rationale': 'untrusted-hidden-rationale'})
 
 
+@pytest.mark.parametrize('gesture,answer', [
+    ('tab', 'deny'), ('reverse_tab', 'approve'), ('double_phrase', 'deny'),
+    ('double_details', 'approve'), ('entry_word_keys', 'approve'), ('details_word_keys', 'deny'),
+])
+def test_real_x_input_traversal_and_selection_survive_worker_seal(gesture, answer):
+    """XTEST drives unmodified worker bindings, including Tcl lazy-load paths.
+
+    This requires xdotool on the opted-in owned display. It never reads the
+    challenge into the host test or invokes a widget's command directly.
+    """
+    executable = shutil.which('xdotool')
+    assert executable, 'owned graphical interaction validation requires xdotool'
+
+    def xinput(*arguments, check=True):
+        return subprocess.run([executable, *(str(value) for value in arguments)],
+            check=check, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=3)
+
+    proposed, policy = action(), demo_policy(approval=True)
+    control = ExecutionControl(time.monotonic() + 12)
+    with LinuxApprovalService(policy, str(uuid4()), frontend='graphical_v1') as service:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            pending = executor.submit(service.review, proposed, policy, control=control)
+            window = None
+            wait_until = time.monotonic() + 5
+            while time.monotonic() < wait_until and not pending.done():
+                found = xinput('search', '--onlyvisible', '--name',
+                               '^Recon Cockpit \\| Review exact action$', check=False)
+                if found.returncode == 0 and found.stdout.strip():
+                    identifiers = found.stdout.splitlines()
+                    assert len(identifiers) == 1, 'expected one review window on the owned display'
+                    window = identifiers[0]
+                    break
+                time.sleep(.04)
+            assert window is not None, 'private graphical review window did not open'
+            geometry = xinput('getwindowgeometry', '--shell', window).stdout
+            assert 'WIDTH=900\n' in geometry and 'HEIGHT=740\n' in geometry
+            xinput('windowfocus', window)
+            time.sleep(.1)
+
+            def click(x, y, repeat=1):
+                xinput('mousemove', '--window', window, x, y)
+                time.sleep(.04)
+                xinput('click', '--repeat', repeat, '--delay', 90, 1)
+
+            if gesture == 'tab':
+                xinput('key', 'Tab')
+            elif gesture == 'reverse_tab':
+                xinput('key', 'shift+Tab')
+            elif gesture == 'double_phrase':
+                click(100, 574, 2)
+            elif gesture == 'double_details':
+                click(95, 110, 2)
+            elif gesture == 'entry_word_keys':
+                click(814, 573)  # Copy moves focus to the still-empty answer.
+                xinput('key', 'ctrl+v', 'ctrl+Left', 'ctrl+shift+Right', 'ctrl+BackSpace')
+                xinput('key', 'Home', 'shift+End', 'BackSpace')
+            else:
+                click(95, 110)
+                xinput('key', 'ctrl+Right', 'ctrl+Left', 'ctrl+shift+Right')
+            time.sleep(.2)
+            # Traversal/selection must leave the original pending review alive.
+            assert not pending.done(), 'ordinary widget interaction ended the review'
+            if answer == 'approve':
+                click(814, 573)
+                xinput('key', 'ctrl+v')
+                click(802, 700)
+            else:
+                click(686, 700)
+            reference = pending.result(timeout=5)
+            assert bool(reference) == (answer == 'approve')
+            if reference:
+                assert service.consume(reference, proposed, policy) is None
+        assert service.boundary_checks == dict.fromkeys(graphical.CHECKS, True)
+        assert not service._supervisor.buffers['worker_err']
+        process = service._process
+    assert process.poll() is not None
+
+
 def instrument(tmp_path, monkeypatch, *, answer='approve', extra=''):
     # This source variant exists only in the native test. No test switch or
     # affirmative answer operation is present in the production service.
     script = '''
         _test_old = []
+        def _test_callback_error(*_):
+            # An assertion in fixture input must fail the test, never masquerade
+            # as an expected user denial via the production callback handler.
+            os._exit(79)
+        window._root.report_callback_exception = _test_callback_error
         def _test_input():
             if not window._active:
                 window._root.after(10, _test_input)
@@ -53,6 +138,27 @@ def instrument(tmp_path, monkeypatch, *, answer='approve', extra=''):
             if TEST_ANSWER == 'approve':
                 window._entry.insert(0, window._challenge)
                 window._approve_button.invoke()
+            elif TEST_ANSWER in ('clipboard', 'clipboard_only', 'stale_clipboard'):
+                assert not window._entry.get() and window._decision is None
+                if TEST_ANSWER != 'stale_clipboard' or not _test_old:
+                    window._copy_button.invoke()
+                    assert window._root.clipboard_get() == window._challenge
+                    assert not window._entry.get() and window._decision is None
+                if TEST_ANSWER == 'clipboard_only':
+                    window._deny_button.invoke()
+                else:
+                    window._entry.event_generate('<<Paste>>')
+                    if TEST_ANSWER == 'stale_clipboard' and _test_old:
+                        assert window._entry.get() == _test_old[0]
+                        assert window._challenge != _test_old[0]
+                        window._approve_button.invoke()
+                        assert window._decision is None and not window._entry.get()
+                        window._deny_button.invoke()
+                    else:
+                        assert window._entry.get() == window._challenge
+                        assert window._decision is None
+                        _test_old.append(window._challenge)
+                        window._approve_button.invoke()
             elif TEST_ANSWER == 'deny':
                 window._deny_button.invoke()
             elif TEST_ANSWER == 'stale':
@@ -83,8 +189,9 @@ def instrument(tmp_path, monkeypatch, *, answer='approve', extra=''):
     monkeypatch.setattr(graphical_runtime, 'command', command)
 
 
-def test_real_graphical_review_binding_single_use_and_cleanup(tmp_path, monkeypatch):
-    instrument(tmp_path, monkeypatch)
+@pytest.mark.parametrize('input_mode', ['approve', 'clipboard'])
+def test_real_graphical_review_binding_single_use_and_cleanup(tmp_path, monkeypatch, input_mode):
+    instrument(tmp_path, monkeypatch, answer=input_mode)
     policy, proposed = demo_policy(approval=True), action()
     control = ExecutionControl(time.monotonic() + 20)
     with LinuxApprovalService(policy, str(uuid4()), frontend='graphical_v1') as service:
@@ -97,7 +204,7 @@ def test_real_graphical_review_binding_single_use_and_cleanup(tmp_path, monkeypa
     assert process.poll() is not None
 
 
-@pytest.mark.parametrize('answer', ['deny', 'close'])
+@pytest.mark.parametrize('answer', ['deny', 'close', 'clipboard_only'])
 def test_graphical_denial_or_window_close_never_issues(tmp_path, monkeypatch, answer):
     instrument(tmp_path, monkeypatch, answer=answer)
     policy = demo_policy(approval=True)
@@ -107,8 +214,9 @@ def test_graphical_denial_or_window_close_never_issues(tmp_path, monkeypatch, an
     assert service._process.poll() is not None
 
 
-def test_graphical_stale_phrase_cannot_approve_new_prompt(tmp_path, monkeypatch):
-    instrument(tmp_path, monkeypatch, answer='stale')
+@pytest.mark.parametrize('input_mode', ['stale', 'stale_clipboard'])
+def test_graphical_stale_phrase_cannot_approve_new_prompt(tmp_path, monkeypatch, input_mode):
+    instrument(tmp_path, monkeypatch, answer=input_mode)
     policy, proposed = demo_policy(approval=True), action()
     control = ExecutionControl(time.monotonic() + 20)
     with LinuxApprovalService(policy, str(uuid4()), frontend='graphical_v1') as service:
@@ -239,7 +347,8 @@ def graphical_request(tmp_path):
         execute=True, approval_frontend='graphical_v1')
 
 
-def test_owned_four_action_workflow_uses_real_graphical_grants_and_launch_witnesses(tmp_path, monkeypatch, record_property):
+@pytest.mark.parametrize('input_mode', ['approve', 'clipboard'])
+def test_owned_four_action_workflow_uses_real_graphical_grants_and_launch_witnesses(tmp_path, monkeypatch, record_property, input_mode):
     import json
     from recon_cockpit.secure_agent.configurable_service import ConfigurableAssessmentService
     from recon_cockpit.secure_agent.configurable_evidence import inspect_assessment
@@ -248,7 +357,7 @@ def test_owned_four_action_workflow_uses_real_graphical_grants_and_launch_witnes
     from recon_cockpit.secure_agent.launcher_isolation import LinuxFixtureLauncher
     from test_secure_fixture_launcher_linux import descendants
     from test_secure_owned_launcher_linux import assert_reaped
-    instrument(tmp_path, monkeypatch)
+    instrument(tmp_path, monkeypatch, answer=input_mode)
     # Host objects cannot run a tool or start an endpoint; only the confined
     # launcher copies execute the reviewed native workflow.
     def forbidden(*args, **kwargs):
@@ -308,6 +417,7 @@ def test_owned_four_action_workflow_uses_real_graphical_grants_and_launch_witnes
     assert inspect_assessment(request.assessment_dir) == report
     assert before == {p.name: (p.read_bytes(), p.stat().st_mode, p.stat().st_mtime_ns) for p in request.assessment_dir.iterdir()}
     record_property('scripted_test_input_not_owner_approval', True)
+    record_property('scripted_input_mode', input_mode)
     record_property('useful_actions_completed', 4)
     record_property('forbidden_listening_destinations_blocked', 12)
     record_property('execution_elapsed_ms', metrics['elapsed_ms'])

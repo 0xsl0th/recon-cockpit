@@ -1,5 +1,234 @@
 # Verification record
 
+## Full personal graphical walkthrough accepted — 7 October 2026
+
+The owner completed the four-action walkthrough at PR #53 documentation head
+`5f15851decfdb10974e8c2b05528fa24d2d6227e`, with product code and tests unchanged
+from reviewed implementation `5970a108`. The successful session
+`graphical-owned-5nkgldx7` completed **4/4 useful actions**, consumed four grants,
+started four executions and recorded four successful finishes. It stopped at
+`coordinator_done` after **45,642 ms**, within the unchanged four-step/60-second/
+26,624-byte limits. Legitimate completion was true; unnecessary refusals, provider
+calls and actual cost were zero. Both owned fixtures closed.
+
+The owner confirmed, "ok this time it worked". Together with the separately
+confirmed approval, denial and pending-review cancellation interactions below,
+this completes the personal graphical walkthrough. No personal approval input was
+supplied by automation. These observed timings are not a comparative benchmark.
+
+Preserve the earlier full runs as incomplete: `graphical-owned-cqe6rd5t` completed
+3/4 actions before timeout at 60,041 ms, and the owner reported distraction;
+`graphical-owned-uepnf27q` completed 2/4 before timeout at 60,045 ms, and the owner
+reported a copying problem whose cause remains unproven. Neither trial recorded
+`approval_unavailable`. Fresh independent inspection of all three full trials
+matched their saved reports, found no integrity issues and left evidence unchanged.
+Each trial retained its own outcome and recorded closed fixtures with zero cost/calls.
+
+Private receipts are
+`.secure-agent/graphical-full-approval-20261007/full-trials-evidence-review.json`
+and `owner-confirmation-full.json`, alongside the original trial artifacts.
+The individual-controls and scripted native receipts remain separate. PR #53 is
+ready for final checks and merge, and has not merged. Ordinary desktop requests
+still use `execute=False`; the next slice integrates Execute through the same
+shared service and isolated graphical reviewer for disconnected owned fixtures.
+Completed B0–B8, offline R5 and accepted local R6 stay closed; credentials, paid
+calls, live-model evaluation and real network attachment remain deferred.
+
+## Personal control confirmations — 7 October 2026
+
+The owner completed three separate one-action rehearsals against the owned,
+disconnected fixtures at PR #53 documentation head `db9ba1a`; product code and
+tests are unchanged from reviewed implementation `5970a108`. All five
+[checks on the documentation revision](https://github.com/0xsl0th/recon-cockpit/actions/runs/37431954622)
+passed. The request stayed at one step, 60 seconds and 8,192 output bytes.
+
+| Owner-confirmed control | Successful actions | Stop reason | Session elapsed |
+| --- | ---: | --- | ---: |
+| Approve | 1 | `step_limit` | 23,238 ms |
+| Deny | 0 | `action_blocked` | 15,093 ms |
+| Leave unanswered, then Ctrl+C | 0 | `session_cancelled` | 6,177 ms |
+
+The owner described the approval steps as clear, confirmed completion of the fresh
+denial test, and explicitly reported leaving the cancellation review unanswered
+before pressing Ctrl+C. The earlier denial trial during which the owner was AFK
+remains unconfirmed and is excluded. Denial and cancellation each consumed zero
+grants and recorded zero tool starts or finishes; approval consumed one grant and
+completed one execution. All fixtures closed. These are observed session timings,
+not a comparative overhead measurement.
+
+Fresh independent inspection of all three sessions matched the saved reports,
+found no integrity issues and left every evidence file unchanged. Provider calls
+and actual cost are zero. Private receipts are
+`.secure-agent/graphical-single-action-20261006/owner-controls-confirmation.json`
+and `confirmed-controls-evidence-review.json`, alongside the separate owner feedback
+and retained session artifacts. No personal input was supplied by automation.
+
+The three controls were confirmed at this checkpoint while full four-action
+personal acceptance remained outstanding. Each smaller request correctly reports
+an incomplete full assessment. The subsequent full walkthrough is recorded above;
+it does not change these smaller requests' outcomes. Do not repeat the confirmed
+controls or extend/reset deadlines. Automated full-workflow receipts remain distinct.
+
+## Corrected reviewer retry and simpler rehearsal — 6 October 2026
+
+Fresh review of `5970a1086cbc4978c7eeb3a71d740dcf5ca221df` found no blockers;
+source hashes matched the 51 native and 112 focused portable receipts. All five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37429201956)
+passed. GitHub rejected formal self-approval because the active account is the
+PR author. The private review receipt is `.secure-agent/pr53-review.json`.
+
+The next owner retry produced no `approval_unavailable` events, but both started
+sessions reached the original deadline. The approval-labeled stage completed
+2/4 actions in 60,027 ms; its first two reviews took 27.45 and 16.81 seconds,
+leaving 11.36 seconds at the third review before timeout. The denial-labeled stage
+completed one action in 60,036 ms: a 36.45-second first review issued a grant, and
+the next review timed out after 20.30 seconds. No denial was recorded. Cancellation
+was not started. Both reports are incomplete, record closed labs and list no
+integrity issues; the three executed artifacts each record 11/11 true boundary
+checks. Provider calls and actual cost are zero. Stage labels do not establish
+which user interactions occurred.
+
+The owner confirmed that the copy/paste or three-session instructions were
+confusing. Preserve those observations and unsuccessful results in
+`.secure-agent/graphical-owner-helpers-20261006/`. Personal acceptance was
+outstanding at that checkpoint; PR #53 stayed draft. The planned rehearsal selected
+one case per launch, starting with one approval and pausing for owner feedback
+before denial or cancellation.
+It reuses the existing service with one step, 60 seconds and 8,192 bytes; a successful
+first action ends at `step_limit` and does not complete the four-action assessment.
+Keep controls-rehearsal evidence distinct from full-workflow completion and
+scripted validation. Ordinary desktop execution remains disabled.
+
+Three private native cases validated this smaller request on an owned Xvfb
+display in 6.77 seconds. Approval completed one action and stopped at `step_limit`
+(3,785 ms); denial completed zero and stopped at `action_blocked` (1,143 ms);
+pending-review cancellation completed zero and stopped at `session_cancelled`
+(1,126 ms). All three retained incomplete full-assessment outcomes, closed labs,
+zero provider calls/cost and unchanged independent replay. Only the approved case
+consumed a grant and launched a tool; its result passed all 11 boundary checks.
+These are scripted test results, not owner input. The private launcher request
+exactly matches this tested configuration. Receipts and evidence are retained in
+`.secure-agent/graphical-single-action-20261006/validation/`. The launcher shows
+only the selected case, waits for the owner to start, records actual audit counts,
+reports unexpected behavior without acceptance and handles early interruptions.
+
+## Personal graphical retry failure — 6 October 2026
+
+At PR #53 head `b045a24252f54b11f131f39514e9afdc0926b65d`, the owner could copy
+and paste the phrase, but the real desktop retry exposed another failure. The
+approval-labeled session completed one action, then stopped with
+`approval_unavailable` after 28,311 ms. The denial-labeled session stopped with
+the same error after 5,998 ms, with no actions. The cancellation-labeled session
+completed two actions, then reached the 60-second limit (60,038 ms elapsed).
+Stage labels describe intended tests; they do not prove denial or cancellation.
+None of these trials establishes successful personal walkthrough acceptance.
+All used zero provider calls and zero model cost.
+
+Private Xvfb tests with real XTEST input reproduced a concrete cause: Tab needs
+Tk's deferred `focus.tcl` helpers, and double-click selection in the phrase or
+action details needs Tcl's deferred `word.tcl` helpers. Loading these files after
+the worker's filesystem-open seal is denied. Tk's binding error reaches stderr,
+and the authority correctly stops with `approval_unavailable`. Basic mouse clicks
+and Copy → Ctrl+V → Approve worked, including a private XFWM/clipboard-manager
+session. The original trial logs do not identify the owner's exact triggering
+gesture; this reproduction establishes the defect without inventing that detail.
+
+The correction preloads and verifies eight fixed focus/word helper commands
+before sealing, leaving existing commands intact on repeated warmup. It changes
+no filesystem/network restrictions, approval protocol, grants, witnesses or limits.
+The original private five-case reproduction had three failures before the fix
+and none afterward. Six repository regressions drive the unmodified worker with
+real XTEST Tab/Shift-Tab, double-click selection and word navigation/deletion;
+each requires the review to remain pending before a separate approval or denial.
+
+**51 native Linux/Tk cases passed in 48.08 seconds**, without failures, errors or
+skips. Both existing typed-input and clipboard workflow modes completed 4/4 useful
+actions, blocked 12/12 forbidden destinations per mode and replayed unchanged,
+with zero unnecessary refusals/provider calls/cost. Elapsed times were 8,603 ms
+and 8,625 ms; these are scripted-fixture timings, not human latency or a paired
+benchmark. **112 focused portable tests passed.** Independent source reviews
+found no blocker. Final receipts use `helpers-native-results.xml` and
+`helpers-portable-focused.xml` under `.secure-agent/graphical-copy-20261006/`;
+the original failing and corrected reproductions are retained there separately.
+
+All three failed owner bundles independently replay as incomplete without
+integrity issues, with unchanged file hashes. Replay requires the existing
+isolated parsers; the earlier sandbox-limited reconciliation result is retained
+separately. PR #53 remained a draft pending personal acceptance at that checkpoint. Earlier native
+scripted-input and hosted portable checks passed, but did not cover these gestures.
+Preserve private logs, bundles, screenshot and `failure-summary.json` under
+`.secure-agent/graphical-owner-copy-20261006/`. The fix was then ready for review
+before another personal retry. Ordinary desktop execution remains disabled.
+
+## Graphical approval copy/paste correction — 6 October 2026
+
+The initial personal walkthrough exposed a usability defect: the fresh challenge
+was a nonselectable label. The owner reported being unable to copy/paste it. Both
+started sessions ended at the unchanged 60-second deadline with zero consumed
+grants and zero tool launches; the cancellation session was not started. Preserve
+those unsuccessful trials in `.secure-agent/graphical-owner-20261006/`. They do not
+establish successful personal approval, denial, cancellation or usability acceptance.
+
+The correction uses a selectable read-only phrase field and an explicit **Copy
+phrase** button. Copy sets only the clipboard and answer-field focus, with a
+Ctrl+V hint. It does not fill the answer or approve. Normal paste retains the
+128-character input limit, and **Approve once** remains a separate action.
+Copy is disabled outside an active unexpired review; cleanup clears local fields
+without reading/restoring or clearing unrelated clipboard content. Existing X11
+trust, runtime restrictions, protocol, grants, witnesses and limits remain intact.
+
+**45 native Linux/Tk tests passed in 40.43 seconds**, with no failures/errors/skips:
+29 actual confined-worker/workflow cases and 16 direct-view cases on a private
+Xvfb display with TCP disabled. Tests exercise Copy and paste after the worker's
+restrictions are installed, copy-only denial, stale clipboard rejection, one-use
+grants, expiry/cancel/channel failures and the existing adversarial requests.
+Direct-view cases include scripted Ctrl+C/Ctrl+V key events, read-only selection,
+oversized paste rejection, inactive/expired copy preserving unrelated clipboard,
+and Return leaving approval pending. Test callback assertion failures now exit
+the fixture worker, so they cannot masquerade as expected denials.
+
+Both the existing typed-input fixture and the new clipboard fixture completed
+**4/4 useful actions** with **12/12 forbidden destination checks blocked** per run,
+zero unnecessary refusals, zero provider calls/cost and unchanged independent
+evidence replay. Elapsed times were 8,373 ms and 8,840 ms respectively. These are
+descriptive runs with scripted test input; they are not a paired overhead benchmark
+or personal approval. No operator challenge is entered by automation on the real
+desktop. A fresh personal retry was still necessary at that checkpoint.
+
+The final source hashes, JUnit, owned evidence and two inspected screenshots at
+900×740 and 780×650 are private under `.secure-agent/graphical-copy-20261006/`.
+The initial four-case confined clipboard run and separate 16-case direct-view run
+remain development evidence; use `native-final-results.xml` for the combined final
+run. Read-only phrase, Copy button, answer field and both decision controls fit
+at both tested sizes. Fresh source review found no security blocker. Python 3.11
+syntax and whitespace checks passed. Model credentials and paid calls remain deferred.
+
+## PR #52 acceptance and personal walkthrough preparation — 6 October 2026
+
+Fresh runtime/protocol and worker/view reviews found no blockers at
+`7b547941b812e1f7fc9c598c756b540aff9fc1b6`. Additional review checks passed 35 actual
+graphical/workflow tests, 57 portable view/witness tests and 137 service/protocol
+tests (overlapping sets). All 14 source hashes, the screenshot and eight saved
+evidence hashes matched the existing receipts; JUnit confirmed 9,949 portable
+and 125 native cases with no selected failures/errors/skips. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37422834741)
+passed. The reviewed head merged as `21054db4d44098e8541c4c9a5edbf82dd3c0e0b5`
+at 06:26:28 UTC; reviewed and merged trees match
+`88af19e00da06de2a3253b69c3033b64f068159e`.
+All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37423742151)
+also passed.
+
+A private launcher opens the accepted walkthrough entry point in three fresh
+sessions for personal approval, denial and cancellation. It waits for the operator
+to type `start` before each session, never supplies review input, retains the
+60-second session limit and saves progress under
+`.secure-agent/graphical-owner-20261006/`. Local display/socket/cookie availability
+was checked without printing cookie bytes. Opening this launcher establishes no
+personal approval or acceptance. The owner must complete the sessions and describe
+the observed prompts, destinations, timing and cleanup before usability acceptance
+is recorded. Ordinary desktop execution remains disabled; model credentials and
+paid calls remain deferred. Merge receipt: `.secure-agent/pr52-merge-review.json`.
+
 ## Isolated graphical exact-action reviewer — 6 October 2026
 
 Based on accepted PR #51 merge `972afac`, this slice adds a fixed graphical
@@ -61,7 +290,7 @@ blockers. Python 3.11 syntax, dependency consistency and local documentation-lin
 checks passed. The [runbook](graphical-approvals.md) documents the supported local
 Linux/X11 resource layout, trust limits and prepared personal walkthrough. Hosted
 CI is portable and cannot substitute for these native receipts. The owner's
-walkthrough and ordinary desktop execution controls remain outstanding.
+walkthrough and ordinary desktop execution controls were outstanding at that checkpoint.
 
 PR #51 itself merged with matching reviewed/merge trees and all five
 [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37418950338)

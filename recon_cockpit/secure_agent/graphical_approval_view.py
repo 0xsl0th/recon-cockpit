@@ -108,12 +108,22 @@ class ReviewWindow:
         self._time_label = tk.Label(frame, text="Review deadline", font=self._fonts[0], anchor="w",
             foreground="#FFC27D", background="#0D1721")
         self._time_label.grid(row=3, column=0, sticky="ew", pady=(12, 6))
-        tk.Label(frame, text="Type the fresh phrase below, then choose Approve once:",
+        tk.Label(frame, text="Copy and paste, or type the fresh phrase. Then choose Approve once:",
             font=self._fonts[0], anchor="w", foreground="#F0F4F8", background="#0D1721").grid(
                 row=4, column=0, sticky="ew")
-        self._challenge_label = tk.Label(frame, text="", font=self._fonts[2], anchor="w",
-            foreground="#FF7B2C", background="#0D1721", pady=8)
-        self._challenge_label.grid(row=5, column=0, sticky="ew")
+        phrase_row = tk.Frame(frame, background="#0D1721")
+        phrase_row.grid(row=5, column=0, sticky="ew", pady=8)
+        phrase_row.grid_columnconfigure(0, weight=1)
+        self._challenge_text = tk.StringVar(master=self._root, value="")
+        self._challenge_field = tk.Entry(phrase_row, textvariable=self._challenge_text,
+            font=self._fonts[2], foreground="#FF7B2C", readonlybackground="#14212D",
+            state="readonly", exportselection=False, relief="flat", width=1)
+        self._challenge_field.grid(row=0, column=0, sticky="ew", ipady=8)
+        self._challenge_field.bind("<<Copy>>", self._copy_phrase)
+        self._copy_button = tk.Button(phrase_row, text="Copy phrase", command=self._copy_phrase,
+            font=self._fonts[0], background="#1A2B39", foreground="#F0F4F8", padx=12, pady=8,
+            relief="flat", state="disabled")
+        self._copy_button.grid(row=0, column=1, padx=(10, 0))
         self._entry = tk.Entry(frame, font=self._fonts[2], background="#101C26", foreground="#F0F4F8",
             insertbackground="#F0F4F8", exportselection=False, relief="solid", borderwidth=1,
             validate="key", validatecommand=(self._root.register(lambda value: len(value) <= 128), "%P"))
@@ -141,6 +151,17 @@ class ReviewWindow:
         """Load fonts/widget paths while the worker still permits setup access."""
         if self._closed:
             raise ValueError("graphical_review_closed")
+        # Tk leaves keyboard traversal and word-selection helpers lazy. Real
+        # Tab/double-click/Ctrl-arrow bindings otherwise try to read focus.tcl or
+        # word.tcl after the worker has sealed filesystem opens. Load only these
+        # fixed helpers, and skip existing commands so repeated warmup is inert.
+        for name in ("tk_focusNext", "tk_focusPrev", "tk::FocusOK",
+                     "tcl_wordBreakAfter", "tcl_wordBreakBefore", "tcl_endOfWord",
+                     "tcl_startOfNextWord", "tcl_startOfPreviousWord"):
+            if not self._root.tk.call("info", "commands", name):
+                self._root.tk.call("auto_load", name)
+            if not self._root.tk.call("info", "commands", name):
+                raise ValueError("graphical_interaction_helpers_missing")
         self._root.update_idletasks()
         self._pump()
 
@@ -153,6 +174,17 @@ class ReviewWindow:
     def _deny(self):
         if self._active:
             self._decision = False
+
+    def _copy_phrase(self, _event=None):
+        # Clipboard access belongs to the already trusted desktop. Copy is a
+        # separate operator gesture; it never fills the answer or approves.
+        if (self._active and self._decision is None and self._challenge is not None
+                and time.monotonic() < self._deadline):
+            self._root.clipboard_clear()
+            self._root.clipboard_append(self._challenge)
+            self._entry.focus_set()
+            self._feedback.configure(text="Copied. Paste with Ctrl+V, then choose Approve once.")
+        return "break"
 
     def _approve(self):
         if not self._active or self._decision is not None:
@@ -182,6 +214,8 @@ class ReviewWindow:
         self._deadline = deadline
         # Disable acceptance while draining input from the previous transaction.
         self._approve_button.configure(state="disabled")
+        self._copy_button.configure(state="disabled")
+        self._challenge_text.set("")
         self._entry.delete(0, "end")
         self._challenge = None
         self._decision = None
@@ -195,10 +229,11 @@ class ReviewWindow:
         self._details.insert("1.0", review_text(action, policy, session_id))
         self._details.configure(state="disabled")
         self._details.yview_moveto(0)
-        self._challenge_label.configure(text=self._challenge)
+        self._challenge_text.set(self._challenge)
         self._feedback.configure(text="Enter does not approve. The phrase is valid only for this review.")
         self._active = True
         self._approve_button.configure(state="normal")
+        self._copy_button.configure(state="normal")
         try:
             self._root.deiconify()
             self._root.lift()
@@ -219,7 +254,8 @@ class ReviewWindow:
             self._decision = None
             try:
                 self._entry.delete(0, "end")
-                self._challenge_label.configure(text="")
+                self._challenge_text.set("")
+                self._copy_button.configure(state="disabled")
                 self._approve_button.configure(state="disabled")
                 self._root.withdraw()
             except self._tk.TclError:

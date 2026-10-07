@@ -1,10 +1,10 @@
-# Continue here — 6 October 2026
+# Continue here — 7 October 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current authorized work: isolated graphical exact-action review (priority 2c).**
+**Current authorized work: finalize PR #53, then add desktop Execute through the shared service (priority 2c).**
 The finite [B0–B8 coverage milestone](secure-tool-coverage.md), offline R5 and the
 accepted local R6 stay closed. Enrique selected **internal networks with web
 services** and authorized continuing the [roadmap priority table](roadmap.md).
@@ -67,10 +67,21 @@ passed. Its 9,837 portable and 11 actual Tk cases remain accepted, with zero too
 execution or provider calls. Preserve `.secure-agent/pr51-merge-review.json` and
 `.secure-agent/gui-session-20261006/`; do not repeat the merge.
 
-The current branch is `feature/graphical-approval-reviewer` in
-`/tmp/recon-graphical-approval-reviewer`, based on `972afac`. The separate
-[graphical reviewer](graphical-approvals.md) and opt-in shared-service path are
-implemented for review. The worker owns its local window, fresh challenge,
+**[PR #52](https://github.com/0xsl0th/recon-cockpit/pull/52) is merged and accepted.**
+Reviewed head `7b547941b812e1f7fc9c598c756b540aff9fc1b6` merged as
+`21054db4d44098e8541c4c9a5edbf82dd3c0e0b5` on 6 October at 06:26:28 UTC.
+Trees match (`88af19e00da06de2a3253b69c3033b64f068159e`). Fresh runtime/protocol
+and worker/view reviews found no blockers. Additional review validation passed
+35 actual graphical/workflow tests, 57 portable view/witness tests and 137
+service/protocol tests (overlapping sets). All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37422834741)
+and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37423742151)
+passed. Preserve `.secure-agent/pr52-merge-review.json`; do not repeat the merge.
+
+The current branch is `feature/desktop-execution-walkthrough` in
+`/tmp/recon-desktop-execution-walkthrough`, based on `21054db`. The accepted
+[graphical reviewer](graphical-approvals.md) and opt-in shared-service path keep
+their existing scope. The worker owns its local window, fresh challenge,
 one-use grants and existing direct launcher witness. Only the reviewer receives
 one explicitly scoped local X11 socket/cookie capability; the host and desktop
 remain trusted. No main-window affirmative-answer operation exists. Review intent
@@ -78,26 +89,72 @@ and outcome must reach isolated audit before any grant can be consumed.
 
 The ordinary desktop still uses `execute=False` with immutable scope, an
 approval-required policy and new private paths. Its dry runs cannot count as
-useful workflow completion. There is no desktop Execute control yet, no restored
-approval and no personal graphical walkthrough receipt. The prepared command is
+useful workflow completion. There is no desktop Execute control or restored
+approval. The three individual controls and full four-action personal walkthrough
+are now confirmed. The prepared command is
 plan-only by default; see the runbook for explicit owned-fixture execution.
 
-**Next after implementation review:** personally exercise four approvals, a fresh
-denial session and a fresh cancellation session. Record the owner's observations
-separately from scripted test input. Then add the desktop execution controls through
-the same shared service and finish priority 2 acceptance. Subsequent secure-tool
+**Current continuation:** PR #53's implementation at `5970a108` passed fresh
+review, 51 native and 112 focused portable tests, and all five hosted checks.
+All five checks also passed on documentation revision `db9ba1a`. GitHub rejected
+formal self-approval because the active account owns the PR. The corrected
+multi-case personal retry timed out without repeating `approval_unavailable`;
+the owner found its instructions confusing. Preserve those unsuccessful trials
+in `.secure-agent/graphical-owner-helpers-20261006/`.
+
+The subsequent one-case-at-a-time rehearsal confirmed all three individual controls:
+one approved Nmap action (`step_limit`), denial with no execution (`action_blocked`),
+and unanswered-review Ctrl+C with no execution (`session_cancelled`). The owner
+confirmed each interaction. All three fresh independent replays match saved reports,
+leave evidence unchanged and record closed fixtures with zero provider calls/cost.
+Receipts are `.secure-agent/graphical-single-action-20261006/owner-controls-confirmation.json`
+and `confirmed-controls-evidence-review.json`. The earlier AFK denial trial remains
+unconfirmed. Do not repeat these completed controls tests.
+
+Those stricter one-step/60-second/8,192-byte rehearsals correctly leave their full
+assessments incomplete. The subsequent full session `graphical-owned-5nkgldx7`
+at documentation head `5f15851` completed **4/4 useful actions** with four consumed
+grants, four starts and four successful finishes in **45,642 ms**, stopping at
+`coordinator_done`. It retained four steps, 60 seconds and 26,624 output bytes.
+Fixtures closed, unnecessary refusals/provider calls/cost were zero, and fresh
+independent replay matched the report without changing evidence. The owner said
+"ok this time it worked". **The full personal walkthrough is accepted; PR #53 is
+ready for final checks and merge, but has not merged.** Do not repeat these checks.
+
+Preserve both earlier full trials: `graphical-owned-cqe6rd5t` timed out after
+3/4 actions in 60,041 ms when the owner reported distraction; `graphical-owned-uepnf27q`
+timed out after 2/4 in 60,045 ms, with a reported copying problem whose cause is
+unproven. All three full trials replay unchanged with no integrity issues.
+Their receipts are `.secure-agent/graphical-full-approval-20261007/full-trials-evidence-review.json`
+and `owner-confirmation-full.json`; retain each trial's original outcome.
+Scripted full-workflow validation remains distinct from this personal acceptance.
+
+Retain earlier failed trials in `.secure-agent/graphical-owner-copy-20261006/` and
+the helper-fix evidence in `.secure-agent/graphical-copy-20261006/`. Record the
+owner's observations separately from scripted test input. After PR #53's final
+checks and merge, add desktop execution controls through the same shared service
+with the isolated graphical reviewer, limited to the existing disconnected owned
+HTTP/SSH fixtures and unchanged limits. Validate session lifecycle, cancellation,
+cleanup and evidence before completing priority 2. Subsequent secure-tool
 batches remain priority 3; real network attachment needs separate authorization.
 
-Validation receipts, screenshots, source hashes, exact head and the new PR link
-belong in `.secure-agent/graphical-approval-20261006/` in the primary checkout.
+Accepted validation receipts, screenshots and source hashes remain in
+`.secure-agent/graphical-approval-20261006/` in the primary checkout.
 Final local validation passed **9,949 portable and 125 native Linux/Tk cases**,
 with no selected failures/errors/skips. Scripted graphical review completed
 **4/4 useful actions**, blocked **12/12 listening forbidden destinations**,
 recorded zero unnecessary refusals/provider calls/cost and replayed unchanged.
 Native elapsed time was 8,569 ms; it is not personal-review latency or a benchmark.
-The new PR stays unmerged for review. Keep local Linux/Tk evidence distinct from
-portable CI and retain earlier validation receipts. Private images stay outside
-Git. The proposal/PDF and separate PR #31 remain unchanged.
+The initial personal walkthrough exposed a usability defect: the phrase was a
+nonselectable label, and the owner reported being unable to copy/paste it. Both
+started sessions timed out with zero grants consumed and zero tool launches; the
+cancellation session did not start. These are unsuccessful trials, not approval,
+denial or cancellation acceptance. Retain their private evidence and feedback in
+`.secure-agent/graphical-owner-20261006/`. The screenshot and copy-fix validation
+belong in `.secure-agent/graphical-copy-20261006/`. The later individual controls
+and full four-action personal walkthrough are accepted as described above. Keep local
+Linux/Tk evidence distinct from portable CI and retain earlier validation receipts.
+Private images stay outside Git. The proposal/PDF and separate PR #31 remain unchanged.
 
 Both user-created Swiss Industrial PNGs were inspected and privately preserved.
 [GUI design notes](gui-design-references.md) record the original Downloads paths,
