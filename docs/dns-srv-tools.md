@@ -84,5 +84,7 @@ all 502 validated source hashes matched. All five
 passed 11,428 tests each. Reviewed `65810b8` and merge `6080a5c` share tree
 `fbb7092085e169f499d364355bf11c75c4ca2fcb`. The
 [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37675710586)
-also passed all five jobs. C4 is closed; the separately scoped C5 RDP candidate does
-not broaden this DNS profile. Details are recorded in [verification.md](verification.md).
+also passed all five jobs. C4 is closed. The separately validated
+[C5 RDP candidate](rdp-negotiation-tools.md) awaits final review, hosted checks and
+merge in [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) and does not
+broaden this DNS profile. Details are recorded in [verification.md](verification.md).

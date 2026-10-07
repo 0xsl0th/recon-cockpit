@@ -186,12 +186,19 @@ authority path. It performs no TLS handshake, CredSSP, NTLM, authentication or
 remote session. Selected protocol, flags, legacy confirmation and known failures
 are untrusted metadata; they do not establish identity or every supported protocol.
 
-C5 validation and review remain pending. Its 13 owned cases require five ordinary
-useful completions, two separate robustness completions and six inconclusive
-outcomes, all with actual requests, enforced bounds, closed owners and unchanged
-evidence replay. Fragmentation must complete; hostile trailing data must remain
-unread and unable to elicit another request. Startup failures cannot pass negative
-cases. This candidate has **30 profiles using the same 14 programs**; Ruby supports
+C5 local validation passed **11,898 portable** and **36 native tests** (19 C5,
+17 WhatWeb), with zero failures, errors or skips. All 13 cases executed and
+replayed: **5/5 ordinary** and **2/2 separate robustness** tasks completed with
+zero unnecessary refusals, six negative outcomes remained inconclusive,
+**26/26 unauthorized destinations** were blocked and **130/130 boundary fields**
+passed. Fragmentation completed; hostile trailing data stayed unread and could
+not elicit another request. Clean-source verification at `f24a2528` repeated the
+seven useful trials and replayed all **45 accepted bundles** with bytes, mtimes
+and modes unchanged; all **514 source hashes** matched. Final review, final-head
+hosted checks and merge remain pending in
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59).
+
+This candidate has **30 profiles using the same 14 programs**; Ruby supports
 the repository adapter and is not a new third-party assessment tool. The exact
 reviewed Linux Ruby 3.3 x86-64 layout and early write-half-close constrain
 compatibility. No new GUI workflow or real-network attachment is added.

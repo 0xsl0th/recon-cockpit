@@ -81,10 +81,13 @@ frame, without TLS, CredSSP, NTLM, authentication or a remote session. A selecti
 legacy confirmation or known failure is untrusted metadata, not verified service
 identity or a list of every supported protocol. This candidate has 30 profiles
 using the same 14 external programs; Ruby is supporting runtime, not another
-third-party assessment tool. Its 13 owned cases require five ordinary completions,
-two separate robustness completions and six inconclusive outcomes.
-C5 validation and review remain pending. The exact reviewed Linux Ruby 3.3 x86-64
-runtime and write-half-close limit compatibility; no GUI workflow is added.
+third-party assessment tool. All 13 owned cases passed validation: 5/5 ordinary
+and 2/2 separate robustness tasks completed, six negative cases stayed inconclusive,
+and 26/26 unauthorized destinations were blocked. Local validation passed 11,898
+portable and 36 native tests; clean-source replay preserved all 45 accepted bundles.
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) awaits final review,
+hosted checks and merge. The exact reviewed Linux Ruby 3.3 x86-64 runtime and
+write-half-close limit compatibility; no GUI workflow is added.
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

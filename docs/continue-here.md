@@ -14,7 +14,10 @@ only the first bounded reply frame. The repository-owned Ruby adapter uses the
 existing sealed runtime and authority path, with no TLS handshake, CredSSP, NTLM,
 authentication or remote session. Its 13 cases separate five ordinary useful
 outcomes, two useful robustness trials and six inconclusive outcomes.
-C5 validation and review remain pending. Accepted main has 29 profiles using
+C5 local validation passed 11,898 portable and 36 native tests, with all 13 cases
+replayed and all 45 accepted bundles unchanged during clean-source replay.
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) awaits final review,
+hosted checks and merge. Accepted main has 29 profiles using
 14 programs; the C5 candidate has 30 using the same 14. Ruby is supporting runtime,
 not an additional third-party assessment program. The exact reviewed Linux
 Ruby 3.3 x86-64 layout and early write-half-close limit compatibility. Leave the
@@ -323,10 +326,27 @@ by hostile trailing data form two separate robustness tasks. Malformed, unoffere
 unknown-failure, truncated, oversized and stalled responses remain inconclusive.
 The trailing-data trial proves no follow-up; the client does not inspect its tail.
 
-C5 validation and review remain pending. All 13 scenarios need actual execution,
-one validated request/connection, witnessed write-half-close, enforced bounds,
-closed owners, blocked destinations and unchanged replay. Preserve every authority
-gate and the fresh-approval policy. No TLS/CredSSP/NTLM, authentication, session,
+C5 local validation passed **11,898 portable tests** (949 deselected;
+270.690 JUnit seconds) and **36 native tests** (19 C5 and 17 WhatWeb;
+109.828 seconds), with zero failures, errors or skips. All 13 scenarios executed
+and replayed with one validated request/connection, witnessed write-half-close,
+enforced bounds and closed owners: **5/5 ordinary** and **2/2 robustness** tasks
+completed with zero unnecessary refusals, **26/26 unauthorized destinations**
+were blocked and **130/130 boundary fields** passed.
+
+Clean-source verification at `f24a2528e53befa672b36fb7de8538a4595a7a38`
+repeated the seven useful trials with **14/14 blocked destinations** and replayed
+all **45 accepted bundles** through CLI and shared inspection without changing
+bytes, mtimes or modes. All **514 source hashes** matched. The receipt is
+`.secure-agent/rdp-negotiation-20261007/clean-source-f24a2528-002u84al/verification.json`
+(SHA-256 `94ee22d2ffe1f05acaffd2c9de4f02257349b75469ca1b5997db971799fc49d5`).
+Independent source review passed 1,395 tests; earlier focused runtime (979),
+fixture (483), parser/evidence (611) and core (971) runs overlap and are not an
+additional aggregate. Final review, final-head hosted checks and merge remain
+pending in [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59).
+
+Preserve every authority gate and the fresh-approval policy.
+No TLS/CredSSP/NTLM, authentication, session,
 verified identity or exhaustive protocol-support result is claimed. The exact
 reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The candidate count is 30 profiles/14

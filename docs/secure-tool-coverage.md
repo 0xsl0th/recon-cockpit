@@ -135,7 +135,7 @@ integration from a candidate secure profile.
 | C2 | MySQL pre-authentication TLS; same existing OpenSSL runtime, no interactive database integration | Read one bounded initial greeting, send fixed SSLRequest, verify TLS 1.3 and close without application data; hostile greeting version remains inert, no account/auth-plugin/login/SQL operation; honest fragmented-greeting limitation, replay and G1–G6. | [x] Accepted in PR #56. |
 | C3 | HTTP application fingerprinting; WhatWeb has no interactive integration | One fixed GET with five passive plugins and a finite sealed Ruby/WhatWeb runtime; ordinary hints and no-hints tasks both complete, hostile/meta redirects stay inert, all eleven scenarios retain scope/bounds/closure, structured untrusted evidence and G1–G6. | [x] Accepted in PR #57. |
 | C4 | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed `_ldap._tcp.harbordesk.test. IN SRV` question over TCP; at most four typed priority/weight/port/target/TTL rows; 4/4 ordinary record/NODATA/NXDOMAIN/unavailable completions with zero unnecessary refusals, separate injected-metadata usefulness, all ten scenarios with actual queries, enforced bounds, evidence and G1–G6. No recursion or advertised endpoint follow-up. | [x] Accepted in [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), merge `6080a5c`; all five final and post-merge jobs passed. |
-| C5 — current | RDP initial protocol negotiation; repository-owned Ruby socket adapter, no interactive profile | One fixed 19-byte TLS offer, write-half-close and first bounded reply only; five ordinary useful outcomes, two separate robustness completions and six inconclusive cases with actual requests, typed metadata, enforced bounds, evidence and G1–G6. No TLS/CredSSP/NTLM, authentication or remote session. | Implementation candidate; validation and review pending. |
+| C5 — current | RDP initial protocol negotiation; repository-owned Ruby socket adapter, no interactive profile | One fixed 19-byte TLS offer, write-half-close and first bounded reply only; 5/5 ordinary and 2/2 separate robustness completions, six inconclusive cases, 26/26 blocked destinations and 130/130 boundary fields with actual requests, typed metadata, enforced bounds, evidence and G1–G6. No TLS/CredSSP/NTLM, authentication or remote session. | Local portable, native and clean-source validation passed; [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) awaits final review, hosted checks and merge. |
 | Next gap to reassess after C5 | SMB2 negotiation metadata; accepted B3 smbclient profile lists anonymous shares but does not expose a separate negotiation-only contract | Assess one finite NEGOTIATE exchange for dialect/security-mode/capability metadata with a pinned adapter or existing client and an owned fixture. No SESSION_SETUP, NTLM collection, login or share access; require actual usefulness, evidence and G1–G6 before claiming coverage. | Reassessment candidate; no implementation or committed batch claimed. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -236,14 +236,28 @@ within the existing five-second tool limit. The owned fixture must witness one
 exact request and write-half-close. No TLS handshake, CredSSP, NTLM, authentication
 or session can follow; metadata does not prove identity or all supported protocols.
 
-C5 validation and review remain pending. Five ordinary cases cover TLS selection,
+Five ordinary cases cover TLS selection,
 explicit standard RDP, legacy confirmation, NLA-required failure and Entra-required
 failure. Fragmented replies and valid first frames followed by hostile trailing
 data form two separate robustness completions. Six negative cases cover malformed,
-unoffered, unknown-failure, truncated, oversized and stalled replies. Every case
-needs actual execution, enforced bounds, closed ownership and unchanged replay;
+unoffered, unknown-failure, truncated, oversized and stalled replies. All 13 cases
+executed and replayed with enforced bounds and closed ownership;
 no startup failure counts as a negative success. Trailing data is not inspected,
 so that trial makes no injection-detection claim.
+
+C5 local validation passed **11,898 portable tests** (949 deselected;
+270.690 JUnit seconds) and **36 native tests** (19 C5 and 17 WhatWeb;
+109.828 seconds), with zero failures, errors or skips. **5/5 ordinary** and
+**2/2 robustness** tasks completed with zero unnecessary refusals;
+**26/26 unauthorized destinations** were blocked and **130/130 boundary fields**
+passed. Clean-source verification at `f24a2528` repeated seven useful trials with
+**14/14 blocked destinations** and replayed all **45 accepted bundles** through
+CLI and shared inspection without changing bytes, mtimes or modes. All **514
+source hashes** matched. Independent source review passed 1,395 tests; focused
+runs overlap, so their totals are not added. The receipt and detailed counts are
+recorded in the [C5 runbook](rdp-negotiation-tools.md). Final review, final-head
+hosted checks and merge remain pending in
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59); C5 is not yet accepted.
 
 The candidate contains **30 profiles using the same 14 external programs**. Ruby
 is supporting runtime for a repository adapter, not a new third-party assessment

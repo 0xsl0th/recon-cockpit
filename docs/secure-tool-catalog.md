@@ -61,9 +61,13 @@ same 14 programs**. Its repository-owned Ruby adapter sends one fixed 19-byte TL
 offer, closes the socket's write side and reads only the first 11- or 19-byte
 reply. Ruby remains supporting runtime, not a newly integrated third-party tool.
 The profile has no security handshake, authentication, NTLM collection or session.
-Its 13 owned scenarios require five ordinary completions, two separate robustness
-completions and six inconclusive outcomes. C5 validation and review remain pending;
-catalog visibility does not establish acceptance. The runtime is limited to the
+Its 13 owned scenarios passed validation: 5/5 ordinary and 2/2 separate robustness
+tasks completed, six negative outcomes remained inconclusive and 26/26
+unauthorized destinations were blocked. Local validation passed 11,898 portable
+and 36 native tests; clean-source replay preserved all 45 accepted bundles.
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) awaits final review,
+hosted checks and merge; catalog visibility does not establish acceptance.
+The runtime is limited to the
 exact reviewed Linux Ruby 3.3 x86-64 files; early write-half-close can limit server
 compatibility. There is no new GUI workflow or real-network attachment.
 

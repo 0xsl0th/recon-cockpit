@@ -1,6 +1,7 @@
 # Owned RDP initial negotiation
 
-C5 adds `rdp_initial_negotiation_v1`, a repository-owned Ruby socket adapter using
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) adds C5
+`rdp_initial_negotiation_v1`, a repository-owned Ruby socket adapter using
 the existing secure single-action CLI, sealed runtime and evidence path. It adds
 one capability to the accepted 29-profile inventory without adding a third-party
 RDP program. The candidate has 30 profiles using 14 external programs; review and
@@ -98,5 +99,22 @@ latency and zero provider cost. Blocking every request fails this batch. Compara
 benchmarking, deeper workflows, credentials, paid calls and live-model evaluation
 remain deferred; closed milestones remain closed.
 
-Validation is in progress; final results and exact source bindings will be recorded
-in [verification.md](verification.md) before the review handoff.
+Local validation passed **11,898 portable tests** and **36 native Linux tests**
+(19 C5 and 17 accepted WhatWeb regressions), with no selected failures/errors/skips.
+All 13 scenarios acknowledged one exact request and write EOF, closed their owners,
+passed 26/26 forbidden-destination witnesses and 130/130 boundary fields, and
+replayed unchanged. Ordinary completion was 5/5 and robustness 2/2 separately,
+with zero unnecessary refusals.
+
+Independent trials at clean `f24a252` repeated all seven useful cases, blocked
+14/14 forbidden destinations and replayed all 45 accepted bundles unchanged
+through CLI and shared inspection. The five ordinary wall times were
+2,832/2,821/2,878/2,832/2,888 ms; robustness was 2,934/2,823 ms. These are local
+descriptive measurements, not comparative overhead. Calls and cost stayed zero.
+The synthetic unattended policy does not claim personal approval; the shipped
+policy requires it, and native gate tests exercise grant consumption and refusal.
+
+All 514 tested source hashes matched the clean implementation. Private receipts,
+source bindings and limits are recorded in [verification.md](verification.md).
+Final PR review, hosted checks and authorized merge remain the acceptance gates;
+C5 does not reopen any accepted profile or authorize the next batch.
