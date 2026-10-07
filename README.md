@@ -90,8 +90,8 @@ All five [final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/
 and the [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
 passed. The exact reviewed Linux Ruby 3.3 x86-64 runtime and write-half-close
 limit compatibility; no GUI workflow is added.
-The current C6 [SMB2 negotiation candidate](docs/smb2-negotiation-tools.md) adds
-`smb2_negotiate_metadata_v1`, bringing the branch to 31 profiles using the same
+The accepted C6 [SMB2 negotiation profile](docs/smb2-negotiation-tools.md) adds
+`smb2_negotiate_metadata_v1`, bringing that accepted slice to 31 profiles using the same
 14 programs. Its fixed 108-byte request offers SMB 2.1 and 3.0.2 with client
 capabilities zero, closes the write side and captures only one response frame,
 at most 4,100 bytes. Dialect, signing and capability fields are untrusted peer
@@ -100,8 +100,16 @@ Supported opaque buffers are limited to 256 bytes by the parser. Raw peer bytes
 remain private evidence and are never decoded as authentication tokens; rejected
 frames can remain within the larger raw capture bound. There is no SESSION_SETUP,
 NTLM challenge collection workflow, credential use, login, share access or
-follow-up. C6 local validation and source review passed; acceptance remains pending; its catalog entry does
-not broaden the accepted profiles or enable real-network or GUI execution.
+follow-up. C6 is accepted in PR #60, merged as `aa65bff7` after review and passing checks.
+Its catalog entry enables no real-network or GUI execution.
+The C7 [SMTP STARTTLS candidate](docs/smtp-starttls-tools.md) adds one bounded
+profile through existing OpenSSL, for **32 profiles using the same 14 programs**.
+It sends fixed EHLO/STARTTLS, verifies the fixture CA/name and records clean TLS
+closure without authentication, mail or application requests. Structured output
+means verified TLS only; SMTP reply codes, advertisement and product identity
+are not verified. Full portable, native/usefulness, enforcement and evidence
+checks are required before acceptance. C7 remains pending review and merge.
+
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
 evaluation remain deferred until much later.

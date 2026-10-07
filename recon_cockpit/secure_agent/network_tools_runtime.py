@@ -43,6 +43,7 @@ MYSQL_TLS = "mysql_tls_handshake_v1"
 WHATWEB = "whatweb_http_fingerprint_v1"
 RDP = "rdp_initial_negotiation_v1"
 SMB2 = "smb2_negotiate_metadata_v1"
+SMTP_TLS = "smtp_starttls_handshake_v1"
 KERBRUTE_PRINCIPALS = b"fixture-a\nfixture-b\n"
 # A distribution may put a wrapper at /usr/bin/nmap. Only these two ELF
 # locations are eligible, and only this new profile resolves the alternative.
@@ -116,7 +117,8 @@ EXECUTABLES = {DIG: "/usr/bin/dig", DIG_SRV: "/usr/bin/dig", OPENSSL: "/usr/bin/
                NMAP_SERVICE: "/usr/bin/nmap", KERBRUTE: "/usr/local/bin/kerbrute",
                REDIS: "/usr/bin/redis-cli", SNMP: "/usr/bin/snmpget",
                POSTGRESQL_TLS: "/usr/bin/openssl", MYSQL_TLS: "/usr/bin/openssl",
-               WHATWEB: "/usr/bin/ruby3.3", RDP: "/usr/bin/ruby3.3", SMB2: "/usr/bin/ruby3.3"}
+               WHATWEB: "/usr/bin/ruby3.3", RDP: "/usr/bin/ruby3.3", SMB2: "/usr/bin/ruby3.3",
+               SMTP_TLS: "/usr/bin/openssl"}
 FIXED_ARGV = {
     REDIS: ("/tool/redis-cli", "-2", "-e", "--raw", "-h", "127.0.0.1", "-p", "8080", "INFO", "server"),
     SNMP: ("/tool/snmpget", "-v", "2c", "-c", "recon-fixture-public", "-r", "0", "-t", "2",
@@ -194,6 +196,7 @@ from . import network_tools_smb2_runtime as smb2_runtime
 FIXED_ARGV[WHATWEB] = whatweb_runtime.FIXED_ARGV
 FIXED_ARGV[RDP] = rdp_runtime.FIXED_ARGV
 FIXED_ARGV[SMB2] = smb2_runtime.FIXED_ARGV
+FIXED_ARGV[SMTP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "smtp", "-name", "harbordesk.test")
 
 MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_dns_srv_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
@@ -244,7 +247,7 @@ def _compiled(tool_id):
         return "compiled:kerbrute-principals", "/tool/data/principals.txt", KERBRUTE_PRINCIPALS
     if tool_id == NMAP_SERVICE:
         return "compiled:nmap-service-services", "/tool/data/nmap-services", NMAP_SERVICE_SERVICES
-    if tool_id in (OPENSSL, POSTGRESQL_TLS, MYSQL_TLS):
+    if tool_id in (OPENSSL, POSTGRESQL_TLS, MYSQL_TLS, SMTP_TLS):
         from .network_tools_fixture import CA_PEM
         return "compiled:fixture-ca", "/tool/data/fixture-ca.pem", CA_PEM
     if tool_id in (DIG, DIG_SRV):

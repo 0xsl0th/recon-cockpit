@@ -30,7 +30,7 @@ def manifest():
 def test_all_twenty_one_accepted_runtime_contracts_remain_byte_identical():
     values = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool != runtime.SMB2}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.SMB2, runtime.SMTP_TLS)}
     assert len(values) == 21
     # Captured from accepted main 846e459 before any C6 runtime edits.
     assert hashlib.sha256(runtime.encode(values)).hexdigest() == (

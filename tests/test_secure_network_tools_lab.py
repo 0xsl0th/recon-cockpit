@@ -35,7 +35,27 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     assert not first.started and first._supervisor is None
     definition = lab_contract.spec(case)
     assert definition["external_egress"] is False and definition["resume"] is False
-    if case in fixture.SMB2_CASES:
+    if case in fixture.SMTP_TLS_CASES:
+        dialogue = fixture.smtp_tls_dialogue(case)
+        assert definition["response_sha256"] == {name: None if raw is None else hashlib.sha256(raw).hexdigest()
+            for name, raw in dialogue.items()}
+        assert definition["command_sha256"] == [hashlib.sha256(raw).hexdigest()
+            for raw in (fixture.SMTP_TLS_EHLO, fixture.SMTP_TLS_STARTTLS)]
+        assert definition["ca_sha256"] == hashlib.sha256(fixture.CA_PEM).hexdigest()
+        assert definition["certificate_sha256"] == (fixture.UNTRUSTED_SERVER_CERT_SHA256
+            if case == "smtp-tls-untrusted" else fixture.SERVER_CERT_SHA256)
+        complete = case in fixture.SMTP_TLS_COMPLETE_CASES
+        assert definition["counter_includes_clean_tls_close"] is complete
+        assert definition["request_count_means"] == ("validated_ehlo_starttls_then_tls13_and_clean_close_notify"
+            if complete else "validated_ehlo_and_starttls_before_negative_response")
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["max_commands"] == 2 and definition["max_fixture_plaintext_bytes"] == 1024
+        assert definition["tls_protocol"] == "TLSv1.3"
+        assert all(definition[key] is False for key in (
+            "authentication", "credentials", "mail", "recipient_probing", "tls_application_requests",
+            "plaintext_session", "client_validates_smtp_reply_codes", "client_requires_starttls_advertisement",
+            "full_smtp_dialogue_retained", "service_identity_claim", "vulnerability_claim"))
+    elif case in fixture.SMB2_CASES:
         response = fixture.smb2_response(case)
         assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
         assert definition["request_sha256"] == hashlib.sha256(fixture.SMB2_REQUEST).hexdigest()

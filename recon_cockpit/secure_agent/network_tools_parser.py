@@ -31,6 +31,7 @@ WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
 DNS_SRV_TOOL_ID = "dig_dns_srv_v1"
 RDP_TOOL_ID = "rdp_initial_negotiation_v1"
 SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"
+SMTP_TLS_TOOL_ID = "smtp_starttls_handshake_v1"
 DATABASE_TLS_SERVICES = {POSTGRESQL_TLS_TOOL_ID: "postgresql", MYSQL_TLS_TOOL_ID: "mysql"}
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
@@ -41,7 +42,8 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1",
     POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
     WHATWEB_TOOL_ID: "whatweb-json-v1", DNS_SRV_TOOL_ID: "dig-dns-srv-text-v1",
-    RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1"}
+    RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1",
+    SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -147,6 +149,17 @@ def validate_result(tool_id, value):
         return _kerberos_parser().validate_result(value)
     if tool_id in (REDIS_TOOL_ID, SNMP_TOOL_ID):
         return _redis_snmp_parser().validate_result(tool_id, value)
+    if tool_id == SMTP_TLS_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "service", "semantics", "authenticated_smtp_session",
+                "protocol", "cipher", "verification", "peer_name"}
+                or value["kind"] != "smtp_starttls_handshake" or value["service"] != "smtp"
+                or value["semantics"] != "verified_tls_handshake_only"
+                or value["authenticated_smtp_session"] is not False):
+            raise ValueError("invalid_smtp_tls_observation")
+        validate_result(OPENSSL_TOOL_ID, {"parser_version": parser_version(OPENSSL_TOOL_ID),
+            "kind": "tls_handshake", **{key: value[key]
+                for key in ("protocol", "cipher", "verification", "peer_name")}})
+        return dict(value)
     if tool_id in DATABASE_TLS_SERVICES:
         if (set(value) != {"parser_version", "kind", "service", "semantics", "authenticated_database_session",
                 "protocol", "cipher", "verification", "peer_name"}
@@ -399,6 +412,27 @@ def _parse_database_tls(tool_id, output, stderr):
     return validate_result(tool_id, {**tls, "parser_version": parser_version(tool_id),
         "kind": "database_tls_handshake", "service": DATABASE_TLS_SERVICES[tool_id],
         "semantics": "verified_tls_handshake_only", "authenticated_database_session": False})
+
+
+def _parse_smtp_tls(output, stderr):
+    # OpenSSL prints the final EHLO line after its TLS summary. Only this
+    # exact owned-fixture suffix is supported; no arbitrary SMTP text is
+    # stripped, and the accepted direct/database TLS grammars stay unchanged.
+    done = b"DONE\n" if stderr.endswith(b"DONE\n") else b""
+    summary = stderr[:-len(done)] if done else stderr
+    suffix = b"250 STARTTLS\r\n"
+    if not summary.endswith(b"\n" + suffix):
+        raise ValueError("invalid_smtp_tls_transcript")
+    summary = summary[:-len(suffix)]
+    if b"\nDONE\n" in summary:
+        raise ValueError("invalid_smtp_tls_transcript")
+    tls = _parse_tls(output, summary + done)
+    # The diagnostic does not attest the SMTP greeting, complete EHLO reply
+    # or readiness status. DONE means stdin EOF, not peer close_notify;
+    # useful owned completion also requires the fixture's TLS-close witness.
+    return validate_result(SMTP_TLS_TOOL_ID, {**tls, "parser_version": parser_version(SMTP_TLS_TOOL_ID),
+        "kind": "smtp_starttls_handshake", "service": "smtp",
+        "semantics": "verified_tls_handshake_only", "authenticated_smtp_session": False})
 
 
 def _parse_ssh(output, stderr):
@@ -755,4 +789,5 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             NMAP_SERVICE_TOOL_ID: _parse_nmap_service, KERBRUTE_TOOL_ID: _parse_kerbrute,
             REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp,
             WHATWEB_TOOL_ID: _parse_whatweb, DNS_SRV_TOOL_ID: _parse_dns_srv,
-            RDP_TOOL_ID: _parse_rdp, SMB2_TOOL_ID: _parse_smb2}[tool_id](output, stderr)
+            RDP_TOOL_ID: _parse_rdp, SMB2_TOOL_ID: _parse_smb2,
+            SMTP_TLS_TOOL_ID: _parse_smtp_tls}[tool_id](output, stderr)

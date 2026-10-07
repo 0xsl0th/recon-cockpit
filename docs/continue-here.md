@@ -4,32 +4,53 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: priority 3 secure-tool coverage, C6 bounded SMB2 negotiation metadata.**
-Work is on `feature/smb2-negotiation-coverage` in `/tmp/recon-smb2-negotiation-coverage`,
-based on accepted main `846e459`. See the
-[successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C6 runbook](smb2-negotiation-tools.md). The candidate adds
-`smb2_negotiate_metadata_v1`: one fixed 108-byte NEGOTIATE offering SMB 2.1/3.0.2,
-write-half-close, and the first bounded response. It reuses the sealed Ruby socket
-runtime and all authority gates. No SESSION_SETUP, NTLM exchange, authentication
-or share access occurs. Signing and capability fields remain untrusted peer claims;
-opaque peer bytes can remain in bounded private raw evidence but are not interpreted.
-Fourteen cases separate five ordinary useful tasks, two useful robustness trials
-and seven inconclusive outcomes. Local validation passed 12,654 portable and 56 native tests, all 14 new
-scenario replays and all 52 accepted-bundle replays. Ordinary/robustness completion
-was 5/5 and 2/2, with zero unnecessary refusals, 28/28 blocked destinations,
-140/140 native boundary fields and zero provider cost. Independent review found
-no blockers. See [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60);
-review and authorized merge remain outstanding. Require passing hosted checks
-on the latest revision before merging.
-Accepted main has 30 profiles using 14 external programs; this candidate has 31
-using the same 14. Ruby is supporting runtime, not another assessment program.
-The exact reviewed Linux Ruby 3.3 x86-64 layout and early write-half-close limit
-compatibility. Leave this batch ready for review; do not merge without authorization.
-After C6 closes, reassess fixed SMTP STARTTLS pre-authentication with existing
-OpenSSL. Check its actual finite wire behavior before selecting a further batch:
-no AUTH, MAIL, RCPT, client credentials or plaintext fallback. This is a proposed
-coverage gap, not an added required milestone or implementation already underway.
+**Current work: priority 3 secure-tool coverage, C7 bounded SMTP STARTTLS.**
+Work is on `feature/smtp-starttls-coverage` in `/tmp/recon-smtp-starttls-coverage`,
+based on accepted main `aa65bff7`. See the
+[coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
+and [C7 runbook](smtp-starttls-tools.md). One fixed EHLO/STARTTLS exchange uses
+the existing OpenSSL runtime, fixture-CA/name-verified TLS1.3 and an independent
+clean-close witness. No AUTH, MAIL, RCPT, credential, client certificate, TLS
+application request, plaintext mail session or follow-up is available. The
+candidate has **32 profiles using the same 14 programs**; it adds no GUI workflow.
+The strict parser preserves native limitations: SMTP reply codes/advertisement
+are not verified, only the final EHLO line is retained, and fragmented readiness
+may fail. TLS success alone cannot promote an unsupported transcript.
+
+Local validation passed **13,175 portable** and **52 native tests**, with zero
+failures/errors/skips. It completed **2/2 ordinary + 2/2 separate robustness**
+tasks with zero unnecessary refusals, retained eight inconclusive cases, blocked
+**24/24** destinations and passed **120/120** boundary fields. Independent
+clean-source verification at `b4b1a9f1` repeated four useful trials and replayed
+**59 accepted bundles** unchanged. All **532 tested source hashes** match;
+independent source review found no blockers. Provider calls and cost stayed zero.
+The shipped policy requires fresh approval. Automated validation is separate from
+personal acceptance. Private evidence is under
+`.secure-agent/smtp-starttls-20261007/`; see [verification.md](verification.md)
+for recorded results. [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61)
+remains unmerged pending review and
+corresponding authorization; the PR #60 merge does not authorize its merge.
+
+Next, reassess **LDAP STARTTLS before bind** as a coverage gap for internal
+networks, reusing OpenSSL only after confirming its exact finite native prelude.
+A candidate would allow one fixed StartTLS extended request, fixture-verified TLS
+and clean close, with no bind/search, credential, referral or post-TLS application
+bytes. This is a recommendation, not an implemented or committed C8 milestone.
+Deeper composition, benchmarking, credentials, paid calls, live-model evaluation
+and external engagements remain deferred. B0–B8, C1–C6, offline R5, accepted
+local R6 and the initial GUI/personal walkthrough stay closed.
+
+**C6 is accepted in [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60).**
+Reviewed head `b2d5fce0` merged as `aa65bff7` on 7 October at 21:46:24 UTC;
+reviewed and merged trees match `bbccb66ce76107cf2febb4f4c66b6964a5634a25`.
+Independent authority/runtime and evidence reviews found no blockers. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37688048570)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37691744431)
+passed. Preserve 12,654 portable and 56 native tests, 5/5 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations,
+140/140 boundary fields and 52 accepted-bundle replays. Accepted main now has
+**31 profiles using 14 programs**. C6 stays closed; private review receipt:
+`.secure-agent/pr60-merge-review.json`.
 
 **[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) is merged and C5 is closed.**
 Reviewed head `5a5f9b4` merged as `846e459` on 7 October at 20:45:26 UTC.
@@ -376,16 +397,11 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: C6 bounded SMB2 negotiation metadata.** See the current
-status at the top of this checkpoint and the [C6 runbook](smb2-negotiation-tools.md).
-The candidate has passed local validation and independent source review; it
-adds one negotiation-only profile for 31 profiles/14 programs on this branch.
-[PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60) remains open for review;
-require passing hosted checks on its latest revision before an authorized merge.
-After C6 review, reassess fixed SMTP STARTTLS with existing OpenSSL. Broader SQL
-readiness, authenticated operations and real network attachment remain later
-boundary work. This is progress toward the 40+ tool direction, not professional
-pentest readiness.
+**Current continuation: C7 bounded SMTP STARTTLS.** Follow the current status
+at the top of this checkpoint and the [C7 runbook](smtp-starttls-tools.md).
+PR #60 is merged as `aa65bff7`; C6 stays closed. Leave the C7 implementation
+ready for review. The next gap to reassess is LDAP STARTTLS before bind;
+credentials, paid calls, workflows and comparative benchmarking remain deferred.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1575,38 +1591,28 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #57 merge is complete. PRs #6–#30 and #32–#57
+- The operator-authorized PR #60 merge is complete. PRs #6–#30 and #32–#60
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Review [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) on its latest
-   revision and check its hosted results, following the current status at the top
-   of this checkpoint and
-   [DNS SRV runbook](dns-srv-tools.md). Use `.secure-agent/dns-srv-20261007/` for
-   private receipts. The new implementation stays unmerged pending review and
-   a corresponding merge instruction. Do not automatically merge the new C4 PR;
-   PR #57 and C3 stay closed.
-2. Require 4/4 useful ordinary DNS outcomes, zero unnecessary refusals and a
-   separate useful hostile-metadata outcome, plus actual negative/bounds cases,
-   approval/isolation/cleanup checks and unchanged independent evidence replay.
-   Report wall time, bytes, blocked destinations and zero provider calls/cost;
-   do not equate descriptor coverage or blocking everything with completion.
-3. Preserve all accepted runtime/profile contracts and the desktop's separate
-   approval boundary, personal walkthrough, worker input/grant/witness custody,
-   exact-action freshness, audit/admission and complete cleanup. C4 uses the
-   existing secure CLI and adds no GUI execution or network attachment.
-4. After C4 closes, reassess finite RDP initial negotiation as the next coverage
-   gap. Select a bounded operation and owned fixture before committing a batch;
-   no authentication, NTLM collection or remote session is implied. The 40+
-   program ambition does not reopen B0–B8, C1–C3, offline R5, accepted local R6
-   or the initial GUI milestone. Deeper composition/benchmarking remain later work.
-5. Model credentials, paid calls and live evaluation stay deferred until much later.
-   External targets, real service credentials, intrusive activity, publication and
-   competition submission require their corresponding authorization.
-6. Preserve the proposal/PDF until the planned early-November update. Keep private
-   mockups/screenshots out of Git and local GUI/kernel evidence distinct from CI.
+1. Review [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61) on its latest
+   revision and hosted checks using
+   the current checkpoint and [runbook](smtp-starttls-tools.md). Its merge needs
+   corresponding authorization. PR #60 and all earlier accepted milestones stay closed.
+2. Require the recorded useful/negative outcomes, exact case-specific counter
+   witnesses, scope/approval/isolation/cleanup checks and unchanged replay. Review
+   native SMTP limitations; process success or `DONE` alone cannot count as completion.
+3. Preserve the existing desktop approval boundary and personal acceptance. C7
+   adds no GUI execution, external scope or credentials. Raw evidence stays private.
+4. After C7 review, reassess LDAP STARTTLS before bind. Confirm the native fixed
+   request and dependency closure before selecting a batch or fixture; no bind,
+   search, credentials, referrals or post-TLS application data is implied.
+5. Keep deeper workflows, comparative benchmarking, credential setup, paid calls
+   and live-model evaluation deferred. External engagements, intrusive operations,
+   release publication and competition submission need corresponding authorization.
+6. Preserve the proposal/PDF and recorded GUI mocks; this slice changes neither.
 
 ## Recovery and verification
 

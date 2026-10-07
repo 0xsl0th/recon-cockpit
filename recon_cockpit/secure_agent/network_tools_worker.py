@@ -64,7 +64,7 @@ def _landlock_permissions(manifest):
     permissions[manifest["interpreter"]] |= 1
     permissions.update({"/dev/null": 6, "/dev/urandom": 4, "/dev/random": 4,
                         "/proc/self/status": 4})
-    if manifest["tool_id"] in (runtime.OPENSSL, runtime.NMAP_SERVICE, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS):
+    if manifest["tool_id"] in (runtime.OPENSSL, runtime.NMAP_SERVICE, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.SMTP_TLS):
         permissions["/tool/data"] = 8
     if manifest["tool_id"] == runtime.WHATWEB:
         # RubyGems and WhatWeb enumerate only directories containing the
@@ -84,7 +84,7 @@ def syscall_filter(tool_id):
                        runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP,
                        runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE,
                        runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
-                       runtime.WHATWEB, runtime.RDP, runtime.SMB2):
+                       runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS):
         raise ValueError("unsupported_network_tool")
     common.syscall_filter(allow_threads=tool_id in (runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP, runtime.SMB2))
 
@@ -161,7 +161,7 @@ def main():
         if request["tool_id"] == runtime.KERBRUTE:
             _kerberos_transport_witness()
         if request["tool_id"] in (runtime.DIG_SRV, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
-                                  runtime.WHATWEB, runtime.RDP, runtime.SMB2):
+                                  runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS):
             _metadata_transport_witness()
         # The authority stdin and any loader-retained descriptors are gone.
         sys.stdin.close()

@@ -248,6 +248,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "smb2_negotiation_refused": "smb2_negotiation_refused",
                "tls_handshake_verified": "handshake_verified",
                "database_tls_verified": "database_tls_verified",
+               "smtp_tls_verified": "smtp_tls_verified",
                "http_fingerprint_observed": "http_fingerprint_observed",
                "http_fingerprint_no_hints": "http_fingerprint_no_hints",
                "ssh_host_key_observed": "host_key_observed",
@@ -382,6 +383,19 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Both bounded raw channels are independently reparsed without network. Complete native success framing is required; process exit alone does not establish useful or empty results.",
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
+            ]
+        if manifest["fixture_case"].startswith("smtp-tls-"):
+            report["limitations"] = [
+                "This single-action SMTP STARTTLS trial uses a disconnected synthetic owned fixture, not a real mail engagement or live-model evaluation.",
+                "OpenSSL sends the fixed EHLO harbordesk.test and STARTTLS commands and attempts one TLS 1.3 handshake using the public fixture CA and hostname. Stdin supplies EOF; no SMTP application data is authorized.",
+                "Verified TLS under the selected wire profile does not establish SMTP product identity, readiness, authenticated mail access, available accounts, delivery capability or a vulnerability.",
+                "No AUTH, MAIL, RCPT, message content, client certificate, credential, plaintext mail session, retry or response-directed follow-up is authorized.",
+                "The installed OpenSSL attempts STARTTLS even without an advertisement and does not validate the greeting, EHLO status or STARTTLS readiness status. Neither a successful handshake nor the fixed final EHLO line verifies those SMTP facts.",
+                "Only the final EHLO line is retained after the TLS summary. Earlier greeting/EHLO lines and the readiness reply are not retained; hostile text there is not detected or preserved by this capture. Its absence is not proof that no hostile text was sent.",
+                "The parser requires the exact final 250 STARTTLS line in its expected position and rejects missing-advertisement warnings, other retained SMTP text, unexpected stdout, untrusted TLS and malformed or incomplete diagnostics. Unsupported transcripts remain inconclusive even when TLS or the native process succeeds.",
+                "The native readiness reader performs one read and can reject fragmented readiness replies. Fragmented greeting/EHLO success does not establish readiness-fragment compatibility or universal SMTP compatibility.",
+                "Useful completion requires one fixture-witnessed TLS 1.3 handshake and clean close_notify without application data. DONE means stdin EOF and is not clean-close proof. Negative-case counters may instead record the fixed EHLO and STARTTLS commands, as pinned by each case's lab specification; they cannot establish useful TLS completion.",
+                "Bounded raw channels are independently reparsed without network; inspection restores no approval or authority. No real-model susceptibility or comparative overhead claim is made.",
             ]
         if manifest["fixture_case"].startswith("smb2-"):
             report["limitations"] = [
@@ -604,6 +618,13 @@ def _markdown(report):
                              + " | " + _metadata_literal(row["versions"]) + " |")
             if not details["hints"]:
                 lines.extend(["", "The fixed request completed with no reviewed hints. This does not establish technology absence."])
+        elif type(details) is dict and details.get("kind") == "smtp_starttls_handshake":
+            lines.extend(["", "## SMTP STARTTLS handshake", "",
+                "Verified TLS using the public fixture CA and hostname. No authenticated SMTP session or mail operation was performed; SMTP advertisement, reply status and product identity are not verified.",
+                "", "| Check | Observation |", "| --- | --- |"])
+            for field in ("service", "protocol", "cipher", "verification", "peer_name", "authenticated_smtp_session"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            lines.extend(["", "Useful completion also requires the fixture's clean close_notify witness. The native DONE diagnostic alone is not proof of clean TLS closure."])
         elif type(details) is dict and details.get("kind") == "database_tls_handshake":
             lines.extend(["", "## Database TLS handshake", "",
                 "Verified TLS under the selected wire profile and public fixture CA; no database login, readiness or product identity is established.",
