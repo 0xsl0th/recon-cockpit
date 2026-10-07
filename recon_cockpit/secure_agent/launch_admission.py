@@ -27,6 +27,9 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('dig-srv-ok', 'dig-srv-nodata', 'dig-srv-nxdomain', 'dig-srv-unavailable',
+                    'dig-srv-injected', 'dig-srv-malformed', 'dig-srv-record-limit', 'dig-srv-refused',
+                    'dig-srv-stalled', 'dig-srv-output-limit'), 'dig_dns_srv_v1'),
     **dict.fromkeys(('whatweb-ok', 'whatweb-no-hints', 'whatweb-injected', 'whatweb-redirect',
                     'whatweb-meta-redirect', 'whatweb-denied', 'whatweb-malformed', 'whatweb-eof',
                     'whatweb-stalled', 'whatweb-oversized', 'whatweb-output-limit'), 'whatweb_http_fingerprint_v1'),

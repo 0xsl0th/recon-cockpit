@@ -36,7 +36,7 @@ def manifest(tool_id=runtime.DIG):
 
 def policy():
     return parse_policy({"schema_version": "1", "policy_version": "test-network-tool-v1",
-        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE, runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB],
+        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.DIG, runtime.DIG_SRV, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE, runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB],
         "allowed_ports": [8080, 111], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
         "max_output_bytes": 8192, "max_targets": 1, "require_approval": True, "approval_ttl_seconds": 60})
 
@@ -124,7 +124,7 @@ def test_case_binding_and_single_reservation_are_independently_checked():
         with pytest.raises(ValueError): admission.configuration(changed)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.RPCINFO, runtime.SHOWMOUNT])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.DIG_SRV, runtime.OPENSSL, runtime.RPCINFO, runtime.SHOWMOUNT])
 def test_manifest_pins_compiled_data_and_rejects_unreviewed_paths(tool_id):
     original = manifest(tool_id)
     assert runtime.validate_manifest(original, tool_id=tool_id) == original
@@ -215,14 +215,14 @@ def test_manifest_size_ceiling_keeps_maximum_capture_receipt_bounded():
     with pytest.raises(ValueError): runtime.validate_manifest(value)
 
 
-@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE, runtime.KERBRUTE])
+@pytest.mark.parametrize("tool_id", [runtime.DIG, runtime.DIG_SRV, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE, runtime.KERBRUTE])
 def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
     selected = manifest(tool_id)
     environment = runtime.execution_environment(tool_id)
     permissions = _landlock_permissions(selected)
     assert not {"HOME", "http_proxy", "https_proxy", "LOCALDOMAIN", "RES_OPTIONS", "LD_PRELOAD", "OPENSSL_MODULES"} & set(environment)
     assert environment["OPENSSL_CONF"] == "/dev/null"
-    if tool_id == runtime.DIG:
+    if tool_id in (runtime.DIG, runtime.DIG_SRV):
         assert runtime._compiled(tool_id) == ("compiled:resolver", "/etc/resolv.conf",
             b"# fixed TCP nameserver supplied by reviewed argv\n")
         assert permissions["/etc/resolv.conf"] == 4
@@ -256,7 +256,7 @@ def test_tools_get_only_fixed_data_and_no_host_configuration(tool_id):
     assert not any("_fixture" in path or ".digrc" in path or "ssl/certs" in path for path in permissions)
 
 
-@pytest.mark.parametrize("tool_id,threads", [(runtime.DIG, True), (runtime.OPENSSL, False),
+@pytest.mark.parametrize("tool_id,threads", [(runtime.DIG, True), (runtime.DIG_SRV, True), (runtime.OPENSSL, False),
                                             (runtime.SSH, False), (runtime.LDAP, False), (runtime.SMB, False),
                                             (runtime.RPCINFO, False), (runtime.SHOWMOUNT, False),
                                             (runtime.FTP, False), (runtime.SMTP, False),

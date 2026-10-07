@@ -10,13 +10,13 @@ GATES = ['--owned-lab','--isolated-audit','--isolated-approvals','--isolated-lau
 
 
 def arguments(tmp_path, case="dig-ok"):
-    policy = "whatweb" if case.startswith("whatweb-") else "database-tls" if case.startswith(("postgresql-tls-", "mysql-tls-")) else "redis-snmp" if case.startswith(("redis-", "snmp-")) else "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy = "dns-srv" if case.startswith("dig-srv-") else "whatweb" if case.startswith("whatweb-") else "database-tls" if case.startswith(("postgresql-tls-", "mysql-tls-")) else "redis-snmp" if case.startswith(("redis-", "snmp-")) else "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     return ['--network-tool-assessment',case,'--assessment-dir',str(tmp_path/'evidence'),
             '--audit',str(tmp_path/'audit.jsonl'),'--policy','examples/secure-agent-' + policy + '-policy.json']
 
 
 @pytest.mark.parametrize('case', ['dig-ok', 'ssh-ok', 'ldap-ok', 'smb-ok', 'rpc-ok', 'nfs-ok', 'ftp-ok', 'smtp-ok',
-    'docker-ping-ok', 'docker-version-ok', 'winrm-ok', 'nmap-service-http', 'kerberos-ok', 'redis-ok', 'snmp-ok', 'postgresql-tls-ok', 'mysql-tls-ok', 'whatweb-ok'])
+    'docker-ping-ok', 'docker-version-ok', 'winrm-ok', 'nmap-service-http', 'kerberos-ok', 'redis-ok', 'snmp-ok', 'postgresql-tls-ok', 'mysql-tls-ok', 'whatweb-ok', 'dig-srv-ok'])
 @pytest.mark.parametrize('missing',GATES)
 def test_each_launch_gate_required_before_side_effects(tmp_path,missing,case):
     with pytest.raises(SystemExit) as error:

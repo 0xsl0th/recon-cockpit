@@ -1,12 +1,20 @@
 # Owned HTTP application fingerprinting with WhatWeb
 
-C3 in [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57) adds candidate
-profile `whatweb_http_fingerprint_v1` through the existing
+C3 is accepted in [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57). Its
+profile `whatweb_http_fingerprint_v1` uses the existing
 single-action secure CLI path. It uses installed WhatWeb 0.6.3 and Ruby 3.3.8
-with a finite pinned file closure. Actual Linux validation and independent source
-review passed; PR review, hosted checks and merge remain acceptance gates.
-Accepted main has 27 profiles using
-13 external programs; this candidate has 28 profiles using 14 programs.
+with a finite pinned file closure. Actual Linux validation, independent source
+review, hosted checks and the authorized merge passed.
+Accepted main has 28 profiles using 14 external programs after this slice.
+Reviewed head `cf69f4e` merged as `fdfe6e8` on 7 October 2026 at 18:53:30 UTC,
+with identical tree `1ff0ce8b92cbd785e26cb2cd859311ee76ba6eba`. Independent review
+found no blockers; 1,261 and 1,103 focused tests passed and all 494 validated
+source hashes matched. All five [final hosted jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37668578334)
+passed 11,109 portable tests each. All five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37670291745)
+also passed. Preserve this accepted contract while C4 adds
+[fixed DNS SRV metadata](dns-srv-tools.md) separately in
+[PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58).
 
 The profile permits one GET of `/harbordesk/portal.html` at the disconnected owned
 fixture `127.0.0.1:8080`. The five passive plugins are Title, HTTPServer,
@@ -101,5 +109,5 @@ trials repeated useful completion and blocked 8/8 destinations; all 36 accepted
 bundles replayed unchanged through both inspectors. All provider calls and cost
 were zero. These automated trials do not claim new personal acceptance.
 Comparative overhead, deeper workflows, model credentials and paid/live-model
-evaluation remain deferred. Completed B0–B8, C1, C2, offline R5, accepted local R6
+evaluation remain deferred. Completed B0–B8, C1–C3, offline R5, accepted local R6
 and the initial GUI milestones stay closed.

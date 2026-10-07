@@ -122,8 +122,8 @@ Model credentials, paid calls and live evaluation remain much later.
 
 ## Successive product coverage batches
 
-Priority 3 follows the accepted initial GUI. Accepted main has **27 bounded profiles
-from 13 external programs** after C2 in PR #56. Installed binaries and interactive
+Priority 3 follows the accepted initial GUI. Accepted main has **28 bounded profiles
+from 14 external programs** after C3 in PR #57. Installed binaries and interactive
 commands do not satisfy secure coverage. The following rows distinguish existing
 integration from a candidate secure profile.
 
@@ -133,15 +133,16 @@ integration from a candidate secure profile.
 | C1 | SNMP system metadata; snmpget, no interactive menu integration | One v2c TCP GetRequest of three fixed system OIDs with public synthetic community; complete typed values/noSuchObject, no walks/writes/UDP/custom community; actual useful execution, adversarial cases, replay and G1–G6. | [x] Accepted in PR #55. |
 | C2 | PostgreSQL pre-authentication TLS; existing secure OpenSSL runtime, no interactive database integration | One fixed SSLRequest followed by fixture-CA/name-verified TLS 1.3 and clean close without application data; structured handshake-only evidence, refusal/untrusted/malformed/stalled/injected cases, replay and G1–G6. No startup/login/SQL/readiness claim. | [x] Accepted in PR #56. |
 | C2 | MySQL pre-authentication TLS; same existing OpenSSL runtime, no interactive database integration | Read one bounded initial greeting, send fixed SSLRequest, verify TLS 1.3 and close without application data; hostile greeting version remains inert, no account/auth-plugin/login/SQL operation; honest fragmented-greeting limitation, replay and G1–G6. | [x] Accepted in PR #56. |
-| C3 — current | HTTP application fingerprinting; WhatWeb candidate, no interactive integration | One fixed GET with five passive plugins and a finite sealed Ruby/WhatWeb runtime; ordinary hints and no-hints tasks both complete, hostile/meta redirects stay inert, all eleven scenarios retain scope/bounds/closure, structured untrusted evidence and G1–G6. | Actual owned execution and replay passed; final review, hosted checks and merge pending. |
-| C4 — next | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed synthetic SRV question over TCP; bounded typed priority/weight/port/target rows, honest NODATA/NXDOMAIN, no recursion or follow-up to advertised endpoints; actual useful owned execution, hostile/malformed/bounds cases, evidence and G1–G6. | Planned; no additional execution capability claimed. |
+| C3 | HTTP application fingerprinting; WhatWeb has no interactive integration | One fixed GET with five passive plugins and a finite sealed Ruby/WhatWeb runtime; ordinary hints and no-hints tasks both complete, hostile/meta redirects stay inert, all eleven scenarios retain scope/bounds/closure, structured untrusted evidence and G1–G6. | [x] Accepted in PR #57. |
+| C4 — current | DNS service metadata; dig has accepted fixed A-query support, no interactive menu integration | One fixed `_ldap._tcp.harbordesk.test. IN SRV` question over TCP; at most four typed priority/weight/port/target/TTL rows; 4/4 ordinary record/NODATA/NXDOMAIN/unavailable completions with zero unnecessary refusals, separate injected-metadata usefulness, all ten scenarios with actual queries, enforced bounds, evidence and G1–G6. No recursion or advertised endpoint follow-up. | Portable/native validation and independent replay passed; [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) final review/checks and merge pending. |
+| Next gap to reassess after C4 | RDP initial protocol negotiation; no existing interactive or secure profile | Select one bounded client operation and owned fixture before implementation; typed selected-protocol/failure metadata, actual useful execution, evidence and G1–G6. No authentication, NTLM collection or remote session. | Reassessment candidate; no execution capability or committed batch claimed. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 
-C1 and C2 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
+C1–C3 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
 TCP SNMP does not establish UDP coverage. C2 reuses the existing single-action
 authority, OpenSSL runtime, strict TLS parser and evidence infrastructure. Its two
-profiles bring accepted main to **27 profiles from the same 13 programs**.
+profiles brought accepted main to **27 profiles from the same 13 programs**.
 The selected database wire protocol is a contract binding;
 `verified_tls_handshake_only` with `authenticated_database_session: false` does not
 establish database product identity, version, readiness or account access. No
@@ -169,14 +170,14 @@ merge `9603a54`; all five post-merge jobs also passed. The portable macOS helper
 correction retained real TLS tests, passed 224 focused cases and changed no
 production/native source. See the [verification record](verification.md).
 
-The current [C3 runbook](whatweb-tools.md) fixes Title, HTTPServer, X-Powered-By,
+The accepted [C3 runbook](whatweb-tools.md) fixes Title, HTTPServer, X-Powered-By,
 MetaGenerator and JQuery at aggression 1, one request and no follow-up. Both
 ordinary tasks, including a complete response without hints, must finish 2/2 with
 zero unnecessary refusals. Injection and meta-redirect utility are separate
 robustness trials. HTTP redirects, denials, malformed/early EOF/stalled replies
 and input/output pressure remain inconclusive. All eleven cases need actual native
 execution, one connection/request, enforced bounds, closed owners and unchanged
-replay; startup failures cannot satisfy a negative case. C3's candidate contains
+replay; startup failures cannot satisfy a negative case. C3 brought accepted main to
 **28 profiles from 14 programs**, with no broader GUI or network attachment claim.
 
 C3's complete portable suite passed **11,109 tests**, with zero failures/errors/skips
@@ -188,14 +189,41 @@ forbidden destinations. Ordinary and robustness tasks completed 2/2 each, kept
 as separate denominators. A clean-source run at `0bdd9b6` repeated both pairs
 with zero unnecessary refusals, blocked 8/8 destinations and replayed all 36
 accepted bundles unchanged through CLI and shared inspection. Provider calls
-and cost stayed zero. Final review, hosted checks and merge remain open G6 items.
+and cost stayed zero. PR #57 passed fresh independent review and all five final
+hosted jobs before the authorized `fdfe6e8` merge; all five post-merge jobs also
+passed. The reviewed `cf69f4e` and merge
+trees match; all 494 validated source hashes matched. C3's G6 is closed.
 
-C4 follows because fixed SRV metadata adds internal service discovery while
-reusing accepted dig infrastructure. Returned targets and ports remain untrusted
-evidence, never automatic scope. Reassess the next gap after that batch; finite
-RDP initial negotiation is a later candidate, with no authentication or NTLM
-collection implied. Do not add a required new B milestone or broaden existing
-accepted profiles to pursue an executable count.
+C4 now adds fixed SRV metadata while reusing accepted dig infrastructure. The
+[C4 runbook](dns-srv-tools.md) defines ten cases and separate usefulness criteria:
+four ordinary completions and one injected-metadata robustness completion.
+Malformed, excess-record, refused, stalled and output-pressure cases stay
+inconclusive; every negative still needs actual native execution and one validated
+question. The six additional native checks cover grant consumption/replay,
+missing-proof denial, cancellation, private-input isolation, UDP denial and the
+task ceiling. All seven authority gates remain required; the shipped policy
+requires fresh personal approval.
+
+C4 native validation passed **25 selected tests** (16 C4 and nine accepted
+regressions) with zero selected failures/errors/skips. The ten scenarios retained
+one validated query/connection, closed owners, blocked 20/20 destinations, passed
+100/100 boundary fields and replayed unchanged. A clean-source run at `0c6dcf5`
+completed 4/4 ordinary tasks and one separate hostile-metadata task with zero
+unnecessary refusals, blocked 10/10 destinations and replayed all five new and
+40 accepted bundles unchanged through CLI and shared inspection. Calls/cost stayed
+zero. Native JUnit time was 79.168 seconds; it is not comparative overhead.
+The full portable suite passed **11,428 tests**, with 930 integration cases
+deselected and zero failures/errors/skips, in 298.681 seconds. The first run's
+one failure was a stale older-fixture snapshot selector; its test-only correction
+passed 86 focused tests and left production/native source unchanged.
+
+C4's candidate contains **29 profiles from the same 14 programs**. Final PR
+review, hosted checks and merge remain open gates;
+the profile's presence in the catalog does not establish completion. Returned
+targets and ports remain untrusted evidence, never automatic scope. Reassess
+finite RDP initial negotiation after C4 closes, with no authentication or NTLM
+collection implied. Do not add a required new B milestone, automatically commit
+the next batch or broaden accepted profiles to pursue an executable count.
 
 Each batch records useful completion and unnecessary refusals as well as blocked
 unauthorized attempts, request counts, elapsed time and zero provider cost. A normal

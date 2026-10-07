@@ -4785,8 +4785,18 @@ evaluation remain deferred.
 
 ## C3 bounded WhatWeb HTTP fingerprinting — 7 October 2026
 
-Review candidate: [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57).
-Final hosted checks, PR review and an authorized merge remain acceptance gates.
+[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57) is accepted and C3 is closed.
+Reviewed head `cf69f4ea1a9c26ec38811607d58ee021e79fd62f` merged as
+`fdfe6e833799cdb15877c1314069af492d3d07d3` on 7 October at 18:53:30 UTC.
+Reviewed and merged trees match `1ff0ce8b92cbd785e26cb2cd859311ee76ba6eba`.
+Fresh independent authority/runtime and parser/evidence reviews found no blockers;
+1,261 and 1,103 focused tests passed respectively, and all 494 validated source
+hashes and receipt hashes matched. All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37668578334)
+passed 11,109 tests each; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37670291745)
+passed. No branch check rules were configured; all five jobs were the merge gate.
+The private merge receipt is `.secure-agent/pr57-merge-review.json`.
+Accepted main now has 28 profiles using 14 programs. Preserve the validation below;
+do not repeat this merge or reopen completed milestones.
 
 The candidate adds `whatweb_http_fingerprint_v1` through the existing single-action
 CLI and all seven authority gates. Installed WhatWeb 0.6.3 runs with exactly five
@@ -4857,9 +4867,9 @@ updates: the first full portable run had 16 failures and 11,093 passes. Original
 golden hashes/counts were preserved; 176 focused runtime and 184 fixture/lab
 tests passed after the final test-only corrections. Failed logs remain private.
 
-Independent source reviews found no remaining blockers. The candidate has
-**28 profiles using 14 programs**; accepted main remains **27/13** until review,
-hosted checks and merge. Results mean `untrusted_application_hints`, not verified
+Independent source reviews found no remaining blockers. C3 brought accepted main
+to **28 profiles using 14 programs** after the reviewed merge above.
+Results mean `untrusted_application_hints`, not verified
 products, installed versions or vulnerabilities. Empty hints are valid completed
 observations, not proof of technology absence. Support is deliberately limited
 to the reviewed Debian Ruby 3.3 x86-64 layout and five passive plugins.
@@ -4868,3 +4878,93 @@ Completed B0–B8, C1, C2, offline R5, accepted local R6 and initial GUI milesto
 stay closed. Fixed TCP DNS SRV metadata with dig is the next coverage gap after
 C3 acceptance. Model credentials, paid/live calls, real-network attachment,
 deeper composition and comparative benchmarking remain deferred.
+
+## C4 fixed DNS SRV service metadata — 7 October 2026
+
+Review candidate: [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58).
+Final hosted checks, PR review and an authorized merge remain acceptance gates.
+
+This candidate adds `dig_dns_srv_v1` through the existing secure single-action
+CLI and all seven authority gates. It reuses dig's exact 36-file runtime closure
+and resolver/environment restrictions. One nonrecursive TCP question asks
+`_ldap._tcp.harbordesk.test. IN SRV` at disconnected owned `127.0.0.1:8080`.
+No returned target is resolved or contacted. The [runbook](dns-srv-tools.md)
+defines the closed schema, fixed operation and limitations.
+
+Implementation revision: `0c6dcf573b9792966deee492f667803e5dfaf960`, based on
+accepted main `fdfe6e8`. All **502 source/test/policy/workflow files** are hashed;
+the final portable correction changes only the older fixture test's snapshot
+selector. Production and native-test hashes remain unchanged from the clean
+implementation and its independent trials. Private records remain under
+`.secure-agent/dns-srv-20261007/`; raw assessment evidence stays out of Git.
+
+| Validation | Actual result |
+| --- | --- |
+| Complete portable suite, `pytest -m 'not integration' --strict-markers` | **11,428 passed**, zero failures/errors/skips, 298.681 seconds; 930 integration cases deselected |
+| Selected actual Linux suite | **25 passed**, zero selected failures/errors/skips, 79.168 seconds |
+| Ten C4 scenarios | Expected outcomes; **20/20** forbidden IP/port witnesses blocked and **100/100** boundary checks true |
+| Ordinary records, NODATA, NXDOMAIN and reported unavailability | **4/4** useful completions; **zero unnecessary refusals** |
+| Hostile TXT and advertised endpoint | **1/1** useful completion, measured separately from ordinary usefulness |
+| Scenario evidence | **10/10** unchanged CLI replays; exactly one connection/validated question each, bounded output and closed owners |
+| Independent clean-source verification | Five fresh useful trials, **10/10** destination witnesses blocked; all **40 accepted bundles** replayed unchanged through both inspectors |
+
+The native command selected `tests/test_secure_dns_srv_workflow_linux.py` and
+`tests/test_secure_network_tools_workflow_linux.py` with
+`RECON_LINUX_INTEGRATION=1` and `-k 'dns_srv or dig or openssl'`. The 25 cases
+comprise **16 C4 and nine accepted DNS/TLS regressions**. Six separate controls
+exercise consumed-grant replay rejection, missing-proof refusal, cancellation
+after actual dig execution, private-input/descriptor isolation and refusal
+before execution when tests broaden UDP or task permission. The shipped policy
+requires fresh approval. Unattended synthetic policies and synthetic grant tests
+do not claim new personal acceptance.
+
+The five negative scenarios cover malformed SRV RDATA, more than four records,
+REFUSED, a stall and actual native output expansion. Each follows a validated
+question and remains inconclusive, with no normalized observation. The output
+test sends a bounded DNS TXT record whose binary strings expand beyond the
+8,192-byte capture ceiling when dig prints them; it reached `output_limit` while
+retaining 61 bytes, rather than merely rejecting a synthetic parser input.
+Startup failures cannot count as
+successful negative tests. No result enables retries or endpoint follow-up.
+
+Ordinary local wall times were **2,965 / 3,074 / 2,963 / 2,987 ms** and hostile
+metadata took **2,775 ms**. Independent clean-source trials took
+**3,674 / 3,989 / 3,615 / 3,435 ms** for ordinary results and **3,461 ms** for
+hostile metadata. These are descriptive CLI times including isolation setup,
+not comparative authority overhead. Every trial used **zero provider calls and
+zero actual provider cost**. The independent receipt is
+`clean-source-0c6dcf57-5of2_1wq/verification.json`.
+
+Independent verification binds exact actions, policy, runtime, raw output,
+normalized records, audits and owner counters. The 40 accepted bundles are
+required by the pinned C3 receipt and report hashes; replay preserves bytes,
+modification times and modes. Golden tests retain all **123** previous actions,
+descriptors, workflow cards and lab specifications, all **28** adapters, and
+all **19** previous native invocations/environments/compiled inputs.
+
+Development checks found stale shared-test selectors/order while adding the
+profile, and a new TXT parser test exposed an overly permissive decimal escape.
+The first full portable run passed 11,427 tests and failed one historical fixture
+snapshot selector that included C4 cases. Its correction excludes those new cases,
+preserves the original 112-case hash and passed all 86 focused WhatWeb fixture
+tests. The parser now permits only native byte escapes 000–255. The first native test
+incorrectly required empty stderr after a successful question; its assertion
+now permits only empty output or the exact already-supported denied socket-probe
+diagnostic. Production did not change for that correction. Failed receipts remain
+private and separate from passing validation. Focused sets passed 890 runtime,
+272 fixture/lab and 640 parser/evidence tests; these overlap the full suite.
+Independent source reviews found no remaining blockers.
+
+Accepted main remains **28 profiles using 14 programs**; the C4 candidate is
+**29/14**, pending PR review, hosted checks and an authorized merge. Results mean
+`untrusted_dns_service_metadata`: advertised names, ports and priorities do not
+prove service identity, reachability, directory access or vulnerabilities. NODATA,
+NXDOMAIN and a root-target unavailable record describe the observed response;
+they do not establish real-world absence. Only the bounded lowercase ASCII target
+format and finite record/TXT schema are supported.
+
+After C4 acceptance, reassess finite RDP initial negotiation as the next coverage
+gap, with no authentication, NTLM collection or remote session. Completed B0–B8,
+C1–C3, offline R5, accepted local R6 and initial GUI milestones stay closed.
+Credentials, paid/live-model calls, real-network attachment, deeper composition
+and comparative benchmarking remain deferred.

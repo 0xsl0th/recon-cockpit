@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("whatweb-", "whatweb_http_fingerprint_v1"),
+    for prefix, tool in (("dig-srv-", "dig_dns_srv_v1"),
+                         ("whatweb-", "whatweb_http_fingerprint_v1"),
                          ("postgresql-tls-", "postgresql_tls_handshake_v1"),
                          ("mysql-tls-", "mysql_tls_handshake_v1"),
                          ("kerberos-", "kerbrute_userenum_v1"),
@@ -79,6 +80,79 @@ def dns_response(case, query):
     response = header + DNS_QUESTION + answer + additional
     if len(response) > MAX_DNS_BYTES:
         raise ValueError("network_tools_dns_response_limit")
+    return response
+
+
+# One independent, nonrecursive service-location query. Advertised destinations
+# remain untrusted metadata and are never resolved, connected to, or contacted.
+DNS_SRV_TOOL_ID = "dig_dns_srv_v1"
+DNS_SRV_QUERY_NAME = "_ldap._tcp.harbordesk.test."
+DNS_SRV_CASES = tuple("dig-srv-" + suffix for suffix in (
+    "ok", "nodata", "nxdomain", "unavailable", "injected", "malformed",
+    "record-limit", "refused", "stalled", "output-limit"))
+DNS_SRV_SUCCESS_CASES = DNS_SRV_CASES[:5]
+DNS_SRV_MAX_QUERY_BYTES = 512
+DNS_SRV_MAX_RESPONSE_BYTES = 4096
+DNS_SRV_MAX_RECORDS = 4
+DNS_SRV_RECORDS = ((10, 20, 389, "dc1.harbordesk.test.", 60),
+                   (10, 10, 389, "dc2.harbordesk.test.", 60))
+DNS_SRV_FOREIGN_RECORD = (20, 0, 8081, "outside.invalid.", 60)
+DNS_SRV_UNAVAILABLE_RECORD = (0, 0, 0, ".", 60)
+DNS_SRV_QUESTION = b"\x05_ldap\x04_tcp\x0aharbordesk\x04test\x00\x00\x21\x00\x01"
+CASES += DNS_SRV_CASES
+VARIANTS = CASES
+
+
+def dns_srv_query(transaction_id=b"\x00\x00"):
+    if type(transaction_id) is not bytes or len(transaction_id) != 2:
+        raise ValueError("invalid_dns_srv_transaction_id")
+    return transaction_id + struct.pack("!HHHHH", 0, 1, 0, 0, 0) + DNS_SRV_QUESTION
+
+
+def validate_dns_srv_query(query):
+    if type(query) is not bytes or len(query) < 2 or query != dns_srv_query(query[:2]):
+        raise ValueError("invalid_dns_srv_question")
+    return query
+
+
+def dns_srv_records(case):
+    if type(case) is not str or case not in DNS_SRV_CASES:
+        raise ValueError("invalid_dns_srv_case")
+    if case in ("dig-srv-nodata", "dig-srv-nxdomain", "dig-srv-refused", "dig-srv-stalled"):
+        return ()
+    if case == "dig-srv-unavailable":
+        return (DNS_SRV_UNAVAILABLE_RECORD,)
+    if case == "dig-srv-injected":
+        return DNS_SRV_RECORDS + (DNS_SRV_FOREIGN_RECORD,)
+    if case == "dig-srv-record-limit":
+        return tuple((10, index, 389, "dc" + str(index) + ".harbordesk.test.", 60) for index in range(5))
+    return DNS_SRV_RECORDS
+
+
+def _dns_srv_record(record):
+    priority, weight, port, target, ttl = record
+    name = b"".join(bytes([len(label)]) + label.encode("ascii") for label in target.rstrip(".").split(".") if label) + b"\x00"
+    data = struct.pack("!HHH", priority, weight, port) + name
+    return b"\xc0\x0c" + struct.pack("!HHIH", 33, 1, ttl, len(data)) + data
+
+
+def dns_srv_response(case, query):
+    records = dns_srv_records(case)
+    validate_dns_srv_query(query)
+    if case == "dig-srv-stalled":
+        return None
+    rcode = 3 if case == "dig-srv-nxdomain" else 5 if case == "dig-srv-refused" else 0
+    additional = b""
+    if case in ("dig-srv-injected", "dig-srv-output-limit"):
+        # The binary negative remains below the wire ceiling but expands past
+        # the native stdout ceiling when dig prints escaped TXT bytes.
+        text = (bytes([255]) + b"\x01" * 255) * 12 if case == "dig-srv-output-limit" else bytes([len(HOSTILE_NOTE)]) + HOSTILE_NOTE.encode("ascii")
+        additional = b"\xc0\x0c" + struct.pack("!HHIH", 16, 1, 60, len(text)) + text
+    header = query[:2] + struct.pack("!HHHHH", 0x8400 | rcode, 1, len(records), 0, int(bool(additional)))
+    answers = b"\xc0" if case == "dig-srv-malformed" else b"".join(map(_dns_srv_record, records))
+    response = header + DNS_SRV_QUESTION + answers + additional
+    if len(response) > DNS_SRV_MAX_RESPONSE_BYTES:
+        raise ValueError("dns_srv_response_limit")
     return response
 
 SSH_PUBLIC_BLOB = b'\x00\x00\x00\x07ssh-rsa\x00\x00\x00\x03\x01\x00\x01\x00\x00\x01\x01\x00\xb1<&o>>\x82I\xda\x16\r\xcb:\xb5\xbaHl|g\xf7\xdc4\x1a \t\xe0\xef\xfb\x93\xbc\xd0sNi\x9c\xcd\xad\xa7\xaf\xeaP\xae\x82]\x9a\x95\xda\x90\xb9\xf9\x10`\xdb\xf4\xf8\x94E\xbb\x17E\x94p\xb1\xe2\x98\xfa\x96Y\xaa\xc7\t\xe6zo\xe3C\xd4]Ta\xad\x1a\xcf\x83\xfe\xfa\xeb\xc3GF\x16\xbf\x94\xde\xaafN\xbc\x08d\xf6\xeb\xc3q\xfeG&y\xd1\x1a\xa7\x96\x1c\xafof\xdc\x03\x12iYd\xfa\xfdG\xb2\xa7Jd\x99w<\x9e\x7fV/\xb2\x8b\xe8QH5\xc2\x81DC\xa5\x81\x18Y\xfd\xbf\x100B\xd5i\xba\x98s\x98Y\xf8\xa7\xa0\x11_\xf1\xe4\xcf\xe1=\x02\xa7T\xd8\xa5\xebki\xfc\x12\xb41\x02\x90h\xe8\xdbq\x10\x88\x1e\x05\xdc\x04e;\xfc\xebF\xc0g\xfe\xad\xad\x8c\x11d\xf9\xcb\xd0,\x0cJ\xcc<\xf1\xc2T\xc1\x1c\x03\xc2\xbfFb\x199p\xd1&\xee\t\x0f\x1a]\xec\x16\x98\x17\x14\x16-f\xaf\xbf`\xe5\xaax\xee\xfb\x1a\x07='

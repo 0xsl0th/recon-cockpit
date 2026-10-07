@@ -35,7 +35,18 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     assert not first.started and first._supervisor is None
     definition = lab_contract.spec(case)
     assert definition["external_egress"] is False and definition["resume"] is False
-    if case.startswith("dig-"):
+    if case in fixture.DNS_SRV_CASES:
+        response = fixture.dns_srv_response(case, fixture.dns_srv_query())
+        assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
+        assert definition["query_sha256"] == hashlib.sha256(fixture.dns_srv_query()).hexdigest()
+        assert definition["request_count_means"] == "validated_fixed_srv_questions"
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["max_query_bytes"] == 512 and definition["max_response_bytes"] == 4096
+        assert definition["query"] == {"name": fixture.DNS_SRV_QUERY_NAME, "type": "SRV", "class": "IN", "recursion": False}
+        assert all(definition[key] is False for key in (
+            "udp", "recursion", "retries", "search_suffixes", "target_resolution", "target_connections",
+            "credentials", "service_identity_claim", "vulnerability_claim"))
+    elif case.startswith("dig-"):
         assert definition["response_sha256"] == hashlib.sha256(fixture.dns_response(case, fixture.dns_query())).hexdigest()
         assert definition["request_count_means"] == "validated_dns_questions"
     elif case in fixture.WHATWEB_CASES:
@@ -138,7 +149,7 @@ def test_counter_closure_uses_last_acknowledged_sample_and_rejects_changed_ident
         with pytest.raises(ValueError): lab_contract.validate_context({**context, **changed}, expected)
 
 
-@pytest.mark.parametrize("case", [c for c in fixture.CASES if c.startswith("dig-")])
+@pytest.mark.parametrize("case", [c for c in fixture.CASES if fixture.tool_for_case(c) == "dig_dns_query_v1"])
 def test_dns_is_fixed_and_preserves_only_validated_transaction_id(case):
     query = fixture.dns_query(b"\x12\x34")
     response = fixture.dns_response(case, query)

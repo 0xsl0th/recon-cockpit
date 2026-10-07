@@ -17,7 +17,7 @@ from .tool_parameters import (
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters,
-    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters,
+    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -52,6 +52,7 @@ CURL_PARAMETERS = MappingProxyType({
 FFUF_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 10, "max_output_bytes": 8192})
 WEB_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 DIG_TOOL_ID = "dig_dns_query_v1"
+DIG_SRV_TOOL_ID = "dig_dns_srv_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
@@ -74,6 +75,7 @@ CONFIGURABLE_NMAP_TOOL_ID = "configurable_nmap_service_v1"
 CONFIGURABLE_HEADERS_TOOL_ID = "configurable_http_headers_v1"
 CONFIGURABLE_SSH_TOOL_ID = "configurable_ssh_host_keys_v1"
 DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+DIG_SRV_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 LDAP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -194,6 +196,16 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "bounded_threads", "no_child_processes",
          "fixed_dns_question", "tcp_only", "no_recursive_resolution"),
+    ),
+    DIG_SRV_TOOL_ID: ToolAdapter(
+        DIG_SRV_TOOL_ID, DigSRVParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_dns_service_metadata", "owned-dig-dns-srv-v1",
+        "bounded-dig-dns-srv-result-v1", "dig-dns-srv-text-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "bounded_threads", "no_child_processes",
+         "fixed_dns_srv_question", "tcp_only", "no_recursive_resolution",
+         "single_connection_and_question", "no_advertised_endpoint_followup",
+         "untrusted_dns_service_metadata_only"),
     ),
     OPENSSL_TOOL_ID: ToolAdapter(
         OPENSSL_TOOL_ID, OpenSSLTLSParameters, ("port", "timeout_seconds", "max_output_bytes"),

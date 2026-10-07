@@ -4,20 +4,37 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57), priority 3
-secure-tool coverage, C3 bounded WhatWeb HTTP fingerprinting.**
-Work is on `feature/whatweb-coverage` in `/tmp/recon-whatweb-coverage`,
-based on accepted main `9603a54`. See the
+**Current work: [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), priority 3
+secure-tool coverage, C4 bounded DNS SRV metadata.**
+Work is on `feature/dns-srv-coverage` in `/tmp/recon-dns-srv-coverage`,
+based on accepted main `fdfe6e833799cdb15877c1314069af492d3d07d3`. See the
 [successive coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C3 runbook](whatweb-tools.md). Clean implementation
-`0bdd9b6324d3c10d1a426c51aaf491abdf51d92a` passed 11,109 portable and 39 selected native tests and
-independent useful-execution/evidence verification. Both ordinary and both
-robustness tasks completed, with zero unnecessary refusals. Earlier descriptor-ceiling startup failures
-remain private and separate from successful native trials; the scoped launcher
-correction did not increase native tool limits or change accepted profiles.
-Candidate catalog entries do not count as accepted main coverage. Leave a PR
-ready for review; its final hosted checks and a later
-authorized merge remain acceptance gates. The next planned batch is C4 DNS SRV.
+and [C4 runbook](dns-srv-tools.md). The candidate adds `dig_dns_srv_v1` using the
+accepted dig runtime for one fixed nonrecursive TCP question. Ten scenarios cover
+four ordinary useful outcomes, one separate hostile-metadata robustness trial
+and five negative/bounds cases. Native validation passed 25 selected tests;
+independent clean-source trials completed all useful tasks and replayed 40
+accepted bundles unchanged. All 11,428 portable tests passed. Review the PR's
+latest revision and hosted checks; final review/checks and merge remain pending.
+Accepted main has 28 profiles using 14 programs; the C4 candidate has
+29 using the same 14. Leave the new PR ready for review; this continuation does
+not automatically merge it. Finite RDP initial negotiation is the next gap to
+reassess after C4 closes, not an automatically committed expansion.
+
+**[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57) is merged and C3 is closed.**
+Reviewed head `cf69f4e` merged as `fdfe6e833799cdb15877c1314069af492d3d07d3`
+on 7 October at 18:53:30 UTC. Trees match
+`1ff0ce8b92cbd785e26cb2cd859311ee76ba6eba`; all 494 validated source hashes matched.
+Independent authority/runtime and parser/evidence reviews found no blockers,
+with 1,261 and 1,103 focused tests passing. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37668578334)
+passed 11,109 tests each. The
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37670291745)
+also passed all five jobs. Preserve the 39 native tests,
+2/2 ordinary completions, separate 2/2 robustness completions, zero unnecessary
+refusals, 22/22 blocked destination witnesses and 36 unchanged accepted replays.
+Private receipts remain under `.secure-agent/whatweb-20261007/` and
+`.secure-agent/pr57-merge-review.json`. Do not repeat this merge or reopen C3.
 
 **[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56) is merged and C2 is closed.**
 Reviewed head `d072d04ad902cb3937548f6aa3a29ed680ccda59` merged as
@@ -31,7 +48,7 @@ certificate loader with private temporary files, retained real TLS assertions,
 and passed 224 focused fixture/lab tests. Production and native tests were unchanged.
 Preserve the 28 native cases, 2/2 ordinary completions, zero unnecessary refusals,
 24/24 blocked destination witnesses and 33 unchanged accepted evidence replays.
-C2 brings accepted main to 27 profiles using 13 programs. Private receipts remain
+C2 brought that accepted slice to 27 profiles using 13 programs. Private receipts remain
 under `.secure-agent/database-tls-20261007/`; do not repeat the merge or broaden
 either accepted pre-authentication TLS profile.
 
@@ -185,9 +202,8 @@ desktop bundles replayed unchanged with closed fixtures/processes and zero provi
 calls/cost. Both themes passed at 1120×720. Independent source reviews found no
 remaining blockers. These are scripted tests, not new personal acceptance.
 
-**Current continuation:** review [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57)
-and check hosted results on its latest revision. Do not automatically merge
-the new C3 PR. Profile
+**Accepted C3 evidence:** [PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57)
+has passed review/checks and merged. Preserve profile
 `whatweb_http_fingerprint_v1` uses the secure single-action CLI path for one
 GET of `/harbordesk/portal.html` at disconnected `127.0.0.1:8080`. The five
 passive plugins are Title, HTTPServer, X-Powered-By, MetaGenerator and JQuery.
@@ -239,15 +255,51 @@ replayed unchanged. Preserve `.secure-agent/database-tls-20261007/`, including
 not a comparative overhead benchmark. The shipped policies still require fresh
 personal approval; automated synthetic grants do not claim owner acceptance.
 
-Accepted main has 27 profiles using 13 programs; C3's candidate has 28/14.
-After C3 acceptance, prioritize **C4 fixed DNS SRV metadata with dig**: one
-synthetic TCP query, bounded priority/weight/port/target records, honest empty and
-NXDOMAIN observations, and no recursion or follow-up to advertised endpoints.
-It fills the inventory's additional-DNS-mode gap using accepted infrastructure.
-RDP initial protocol negotiation is a later candidate to reassess after C4,
-without credentials, NTLM collection or default NSE scripts. Broader SQL readiness,
-authenticated operations and real network attachment remain later boundary work.
-This is progress toward the 40+ tool direction, not professional pentest readiness.
+**Current continuation: C4 fixed DNS SRV metadata with dig.** One synthetic TCP
+question, `_ldap._tcp.harbordesk.test. IN SRV`, returns at most four typed
+priority/weight/port/target/TTL rows. Results mean only untrusted DNS service
+advertisements. NODATA, NXDOMAIN and a sole zero-valued root target are distinct
+completed responses; they do not establish actual absence or availability. No
+recursion, target resolution, endpoint follow-up, UDP, search, transfer or new
+credential handling is allowed. The shipped one-tool policy requires approval.
+
+Completion requires G1–G6, all seven authority gates, 4/4 ordinary completions with
+zero unnecessary refusals and a separately measured useful injected-metadata
+trial. Each of ten scenarios must execute the actual native client, acknowledge
+one fixed question/connection, close owners, preserve bounded raw and structured
+evidence, block forbidden destination witnesses and replay unchanged. The five
+negative cases are malformed response, excess records, refusal, stall and actual
+output pressure. Startup failure or blocking every request cannot satisfy this
+batch. Six additional native tests cover grant replay, missing proof, cancellation,
+private inputs, UDP and task limits. Native validation passed **25 tests** in
+79.168 seconds with 75 deselected and zero selected failures/errors/skips: 16 C4
+and nine accepted dig/OpenSSL regressions. All ten scenarios matched their
+outcomes, acknowledged one question/connection, blocked 20/20 forbidden
+destinations, passed 100/100 boundary fields and replayed unchanged.
+
+Clean-source verification at `0c6dcf573b9792966deee492f667803e5dfaf960` completed
+4/4 ordinary outcomes and the separate hostile-metadata task, with zero
+unnecessary refusals/provider calls/cost. It blocked 10/10 destinations and
+replayed all five new plus 40 accepted bundles through both inspectors without
+changing bytes, modification times or modes. Private receipt:
+`.secure-agent/dns-srv-20261007/clean-source-0c6dcf57-5of2_1wq/verification.json`.
+The final full portable suite passed **11,428 tests**, with 930 integration cases
+deselected and zero failures/errors/skips. JUnit time was 298.681 seconds;
+the terminal summary includes runner overhead at 299.02 seconds. Retain the
+first full run's 11,427 passes and one stale pre-C3 fixture-snapshot selector
+failure separately. The selector correction passed 86 focused tests and changed
+only that older portable test. Production/native source remains the clean-source
+`0c6dcf5` implementation; of the 502 files in the validation source index, only
+that test differs in the final index. Preserve both indexes and private receipts.
+Final PR review, hosted checks and merge remain pending. Descriptive latency and
+byte counts do not establish comparative overhead.
+
+Accepted main has 28 profiles using 14 programs; C4's candidate has 29/14. Reassess
+RDP initial negotiation after C4 closes, without credentials, NTLM collection or
+default NSE scripts. No RDP runtime or committed batch is claimed. Broader SQL
+readiness, authenticated operations and real network attachment remain later
+boundary work. This is progress toward the 40+ tool direction, not professional
+pentest readiness.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1437,31 +1489,33 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #53 merge is complete. PRs #6–#30 and #32–#53
+- The operator-authorized PR #57 merge is complete. PRs #6–#30 and #32–#57
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Review the separate desktop Execute owned lab PR and its latest checks, using
-   `.secure-agent/gui-execution-20261007/` and the current status at the top of this
-   checkpoint. Keep PR #53 and all earlier accepted milestones closed; PR #31
-   remains separate. The new implementation stays unmerged pending review and
-   the corresponding merge instruction.
-2. Review Execute owned lab, separate dry-run behavior, captured scope, cancellation
-   and close in [the runbook](desktop-gui.md). Execution uses an approval-required
-   policy and `graphical_v1`; dry runs keep `execute=False`. Both retain fresh
-   private paths, fixed limits and independent final evidence replay. Provisional
-   progress is not verified completion.
-3. Preserve the accepted [approval boundary](desktop-approval-plan.md), personal
-   walkthrough, worker input/grant/witness custody, exact-action freshness,
-   audit/admission and complete cleanup. No PTY answer forwarding, arbitrary
-   callback, saved grant, policy weakening or alternate execution path. Scripted
-   desktop validation does not replace or reopen personal acceptance.
-4. Then extend secure coverage toward the internal-network/web product scope.
-   Each new capability needs actual owned-lab execution, structured results,
-   evidence and enforcement. The eventual 40+ program ambition does not reopen
-   B0–B8 or create a B9 quota. Deeper composition/benchmarking remain later work.
+1. Review [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) on its latest
+   revision and check its hosted results, following the current status at the top
+   of this checkpoint and
+   [DNS SRV runbook](dns-srv-tools.md). Use `.secure-agent/dns-srv-20261007/` for
+   private receipts. The new implementation stays unmerged pending review and
+   a corresponding merge instruction. Do not automatically merge the new C4 PR;
+   PR #57 and C3 stay closed.
+2. Require 4/4 useful ordinary DNS outcomes, zero unnecessary refusals and a
+   separate useful hostile-metadata outcome, plus actual negative/bounds cases,
+   approval/isolation/cleanup checks and unchanged independent evidence replay.
+   Report wall time, bytes, blocked destinations and zero provider calls/cost;
+   do not equate descriptor coverage or blocking everything with completion.
+3. Preserve all accepted runtime/profile contracts and the desktop's separate
+   approval boundary, personal walkthrough, worker input/grant/witness custody,
+   exact-action freshness, audit/admission and complete cleanup. C4 uses the
+   existing secure CLI and adds no GUI execution or network attachment.
+4. After C4 closes, reassess finite RDP initial negotiation as the next coverage
+   gap. Select a bounded operation and owned fixture before committing a batch;
+   no authentication, NTLM collection or remote session is implied. The 40+
+   program ambition does not reopen B0–B8, C1–C3, offline R5, accepted local R6
+   or the initial GUI milestone. Deeper composition/benchmarking remain later work.
 5. Model credentials, paid calls and live evaluation stay deferred until much later.
    External targets, real service credentials, intrusive activity, publication and
    competition submission require their corresponding authorization.

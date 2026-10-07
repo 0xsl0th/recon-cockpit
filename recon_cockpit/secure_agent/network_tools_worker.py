@@ -80,18 +80,20 @@ def landlock(manifest):
 
 
 def syscall_filter(tool_id):
-    if tool_id not in (runtime.DIG, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB,
+    if tool_id not in (runtime.DIG, runtime.DIG_SRV, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB,
                        runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP,
                        runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE,
                        runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
                        runtime.WHATWEB):
         raise ValueError("unsupported_network_tool")
-    common.syscall_filter(allow_threads=tool_id in (runtime.DIG, runtime.KERBRUTE, runtime.WHATWEB))
+    common.syscall_filter(allow_threads=tool_id in (runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB))
 
 
 def _limits(tool_id):
     address_space = (2048 if tool_id == runtime.KERBRUTE else 256) * 1024 * 1024
     threads = 16 if tool_id == runtime.DIG else 1
+    if tool_id == runtime.DIG_SRV:
+        threads = 16
     if tool_id == runtime.KERBRUTE:
         threads = 16
     if tool_id == runtime.WHATWEB:
@@ -150,11 +152,11 @@ def main():
             _witnesses(port=111)
         else:
             _witnesses()
-        if request["tool_id"] in (runtime.DIG, runtime.KERBRUTE, runtime.WHATWEB):
+        if request["tool_id"] in (runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB):
             _thread_bound_witness()
         if request["tool_id"] == runtime.KERBRUTE:
             _kerberos_transport_witness()
-        if request["tool_id"] in (runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
+        if request["tool_id"] in (runtime.DIG_SRV, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
                                   runtime.WHATWEB):
             _metadata_transport_witness()
         # The authority stdin and any loader-retained descriptors are gone.
