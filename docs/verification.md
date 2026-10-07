@@ -1,5 +1,78 @@
 # Verification record
 
+## C8 owned LDAP STARTTLS — 7 October 2026
+
+The [C8 runbook](ldap-starttls-tools.md) defines `ldap_starttls_handshake_v1`:
+one fixed 31-byte extended request, fixture-CA/name-verified TLS1.3 and a clean
+close witness through the accepted OpenSSL/authority/evidence path. Clean
+implementation `afe4fe820008c04fe7eb979e1b4d34fd0e4f3a5a` contains the tested source.
+Accepted main remains **32 profiles / 14 programs**; this candidate has **33 / 14**.
+
+| Validation | Result |
+| --- | --- |
+| Full portable suite | **13,683 passed**, zero failures/errors/skips; 1,005 integration cases excluded; JUnit 327.368 seconds. |
+| Actual Linux suite | **70 passed**: 18 C8, 18 SMTP TLS, 24 database TLS, four direct TLS and six accepted RootDSE; zero selected failures/errors/skips; JUnit 202.616 seconds. |
+| Ordinary usefulness | **2/2**, minimal reply and optional response name; **zero unnecessary refusals**. Only TLS is verified. |
+| Separate robustness | **2/2**, hostile diagnostic and mismatched response message ID; neither response validation nor injection detection is claimed. |
+| Negatives | **Eight inconclusive**, all after the actual fixed StartTLS request: bad CA, refusal, referral, malformed/truncated/fragmented reply, stall and bad TLS. |
+| Enforcement/evidence | **12/12** isolated CLI replays unchanged, **24/24** forbidden destinations blocked, **120/120** boundary fields; one connection per case and closed owners. |
+| Independent clean source | **2/2 ordinary + 2/2 robustness**, **8/8** destinations blocked; four new and **63 accepted bundles** replayed through CLI/shared inspection with bytes, mtimes and modes unchanged. |
+
+Four successful cases count only after the exact request, TLS1.3 and clean
+close_notify with no application data. Eight negative cases count after the
+exact request before failure/refusal/stall, and cannot attest TLS completion.
+These meanings are pinned in the lab specifications/identities. Native `DONE`
+means stdin EOF, not verified clean closure. Six additional C8 native tests cover
+one-use grants/replay denial, missing approval proof, cancellation after actual
+execution, private-input isolation, UDP refusal and diagnostic output pressure.
+Synthetic unattended policies and scripted grant tests do not establish personal
+acceptance; the shipped policy still requires fresh approval.
+
+Native ordinary durations were **2881/2854 ms**, separate robustness
+**2852/2847 ms**; all 12 ranged **2,237–6,813 ms**, median **2,513.5 ms**.
+Clean-source ordinary durations were **2976/2921 ms**, separate robustness
+**2956/3046 ms**. Useful captures were **300 bytes**, and all scenario captures
+ranged **24–300 bytes**. These are local secure CLI wall times under test load,
+not comparative overhead or personal approval latency. Provider calls, paid calls
+and actual provider cost were **zero**; no real credentials were read.
+
+OpenSSL performs one bounded plaintext read, skips response message-ID comparison,
+checks selected ASN.1/result fields and discards the raw LDAP reply. The strict,
+unchanged TLS parser cannot establish LDAP reply correlation, status, response
+OID, directory readiness, identity or authentication. Hostile diagnostics are
+absent from capture because OpenSSL discards them; this is not detection evidence.
+Fragmentation can fail. No bind/search, credential, client certificate, referral
+follow-up, TLS application data, retry or plaintext directory session is exposed.
+
+All **540 source hashes** match the clean implementation. The frozen snapshot
+preceded both native and full portable execution; subsequent handoff edits are
+documentation only. Independent comparison preserves **172 accepted case
+contracts, 32 adapters and 23 runtimes/environments**, canonical digest
+`bdbcf4dc6cf188030977483a616d622fe041d68c166ec8015464786674957400`.
+Independent runtime/fixture/core and parser/evidence reviews found no blockers.
+Focused sets passed 239 new fixture/runtime, 33 inherited runtime and 2,054
+parser/evidence/shared tests; these overlap the full suite and are not extra
+full-suite totals.
+
+Private evidence remains under `.secure-agent/ldap-starttls-20261007/`:
+`portable.xml`, `native.xml`, `validated-source-files.json`,
+`native-evidence-audit.json`, `compatibility-review.json` and
+`clean-source-afe4fe82-8qrl_gan/verification.json`. Clean-source receipt SHA256:
+`73feeb5fb0c533409306d7fdd48669b7db04a0faf375bc9fb859cb308f9cb818`. It pins the C7 receipt and all 63 prior bundles plus seven inherited
+receipt files. The read-only native audit independently checked all 12 captures,
+artifact/action/policy/runtime/audit bindings and pure-parser report rebuilds,
+with unchanged bytes/mtimes/modes; audit SHA256:
+`cd1dbd005d918a9857fbd242cbfd88d69b702b6ad4f282078f5e9899ea952605`.
+It is separate from the actual isolated replay established by native tests.
+The early development smoke remains separate from final validation.
+
+C8 on `feature/ldap-starttls-coverage` is ready for PR review, latest hosted checks
+and an authorized merge. PR #61 and C1–C7 stay closed. The next recommended gap
+to reassess is FTP explicit TLS before login, after inspecting fixed native
+AUTH TLS/reply behavior. No USER/PASS, PBSZ/PROT, listing, transfer, credential
+or data connection is implied. Credentials, paid/live calls, external engagements,
+deeper workflows and comparative benchmarking remain deferred.
+
 ## PR #61 review and merge — 7 October 2026
 
 **C7 is accepted in [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61).**

@@ -244,21 +244,25 @@ robustness trial must not become a verified LDAP correlation or identity claim.
 Fragmented responses may fail. Useful completion also requires the fixture's
 clean close_notify witness; `DONE` and native exit success alone are insufficient.
 
-Validation requires 2/2 ordinary and 2/2 separate robustness completions, zero
-unnecessary refusals, eight inconclusive outcomes after real request progress,
-24/24 blocked destinations, 120/120 boundary fields, 70 selected native tests,
-full portable tests and unchanged independent replay of 63 accepted bundles.
-Private evidence is under `.secure-agent/ldap-starttls-20261007/`; see
-[verification.md](verification.md) for recorded results. The shipped policy
-requires fresh approval. Automated validation does not reopen personal acceptance.
-Leave the new C8 PR unmerged pending latest-revision review/checks and corresponding
-merge authorization; the PR #61 merge does not authorize another merge.
+Local validation passed **13,683 portable** and **70 native tests**, with zero
+failures/errors/skips. C8 completed **2/2 ordinary + 2/2 separate robustness**
+tasks with zero unnecessary refusals, retained eight inconclusive outcomes after
+real request progress, blocked **24/24** destinations and passed **120/120**
+boundary fields. Independent clean-source verification at `afe4fe82` repeated
+four useful trials and replayed **63 accepted bundles** unchanged. All **540
+tested source hashes** match; independent source/evidence reviews found no blockers.
+Provider calls and cost stayed zero. Private evidence is under
+`.secure-agent/ldap-starttls-20261007/`; see [verification.md](verification.md).
+The shipped policy requires fresh approval; automated validation does not reopen
+personal acceptance. Leave the C8 PR unmerged pending latest-revision review,
+hosted checks and corresponding merge authorization. Its branch is
+`feature/ldap-starttls-coverage`; the PR #61 merge does not authorize another merge.
 
 After C8 review, reassess **FTP explicit TLS before login** as the next bounded
 coverage gap alongside accepted anonymous FTP listing. Inspect the fixed native
 AUTH TLS exchange and reply handling before selecting a profile; proposed scope
 is fixture-verified TLS and clean close, with no USER/PASS, listing, file transfer,
-client credentials or passive data connection. This is a recommendation, not an
+client credentials, PBSZ/PROT or active/passive data connection. This is a recommendation, not an
 implemented or committed C9 milestone. Deeper workflows, benchmarking, credentials,
 paid calls, live-model evaluation and external engagements remain deferred.
 B0–B8, C1–C7, offline R5, accepted local R6 and the initial GUI stay closed.

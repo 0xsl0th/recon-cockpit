@@ -100,7 +100,10 @@ extended request and verified fixture TLS/clean close through existing OpenSSL,
 for **33 profiles using the same 14 programs**. It permits no bind, search,
 credentials, referral follow-up or application request. The native client leaves
 response IDs/remaining LDAP fields unchecked and discards the raw LDAP reply;
-only TLS facts are reported. C8 remains pending validation and review.
+only TLS facts are reported. Validation passed **13,683 portable** and **70 native
+tests**, including 2/2 ordinary and 2/2 separate robustness completions, eight
+inconclusive cases and 24/24 blocked destinations. Four clean-source trials and
+63 accepted evidence replays also passed. C8 remains pending PR review and merge.
 
 From the repository root, with the project installed:
 
