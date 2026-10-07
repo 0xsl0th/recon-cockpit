@@ -259,3 +259,8 @@ class SMTPStartTLSParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class LDAPStartTLSParameters(TCPParameters):
     """One fixed LDAP StartTLS operation; no bind, search or client credentials."""
+
+
+@dataclass(frozen=True, slots=True)
+class FTPStartTLSParameters(TCPParameters):
+    """One fixed FTP AUTH TLS operation; no login or data connection."""

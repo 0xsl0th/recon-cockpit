@@ -4,45 +4,62 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: priority 3 secure-tool coverage, C8 bounded LDAP STARTTLS.**
-Work is on `feature/ldap-starttls-coverage` in `/tmp/recon-ldap-starttls-coverage`,
-based on accepted main `7c5e88ad`. See the
+**Current work: priority 3 secure-tool coverage, C9 bounded FTP explicit TLS.**
+Review [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63), on
+`feature/ftp-starttls-coverage` in `/tmp/recon-ftp-starttls-coverage`,
+based on accepted main `a582bd6c`. See the
 [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C8 runbook](ldap-starttls-tools.md). One fixed 31-byte StartTLS extended
-request uses the existing OpenSSL runtime, fixture-CA/name-verified TLS1.3 and
-an independent clean-close witness. No bind, search, credential, client
-certificate, referral follow-up, TLS application request or plaintext directory
-session is exposed. The candidate has **33 profiles using the same 14 programs**.
-It adds no GUI workflow and preserves the accepted anonymous RootDSE profile.
+and [C9 runbook](ftp-starttls-tools.md). One fixed 10-byte AUTH TLS command uses
+existing OpenSSL, fixture-CA/name-verified TLS1.3 and an independent clean-close
+witness. No login, USER/PASS, PBSZ/PROT, listing, transfer, credential, data
+connection or post-TLS application operation is exposed. The candidate has
+**34 profiles using the same 14 programs** and adds no GUI workflow.
 
-The result is TLS-only: OpenSSL does not match the response message ID or validate
-all remaining LDAP fields, and discards the raw LDAP response. A mismatched-ID
-robustness trial must not become a verified LDAP correlation or identity claim.
-Fragmented responses may fail. Useful completion also requires the fixture's
-clean close_notify witness; `DONE` and native exit success alone are insufficient.
+Results are TLS-only: the native client does not validate FTP reply codes,
+discards the AUTH reply and earlier greeting lines, and retains only the final
+greeting. Wrong-status-plus-TLS is a separate robustness observation, not FTP
+readiness or accepted AUTH evidence. A strict fixed greeting wrapper preserves
+unsupported/hostile final text as inconclusive. Useful completion also requires
+the fixture's clean close_notify witness; native DONE alone is insufficient.
 
-Local validation passed **13,683 portable** and **70 native tests**, with zero
-failures/errors/skips. C8 completed **2/2 ordinary + 2/2 separate robustness**
-tasks with zero unnecessary refusals, retained eight inconclusive outcomes after
-real request progress, blocked **24/24** destinations and passed **120/120**
-boundary fields. Independent clean-source verification at `afe4fe82` repeated
-four useful trials and replayed **63 accepted bundles** unchanged. All **540
-tested source hashes** match; independent source/evidence reviews found no blockers.
-Provider calls and cost stayed zero. Private evidence is under
-`.secure-agent/ldap-starttls-20261007/`; see [verification.md](verification.md).
-The shipped policy requires fresh approval; automated validation does not reopen
-personal acceptance. Leave the C8 PR unmerged pending latest-revision review,
-hosted checks and corresponding merge authorization. Its branch is
-`feature/ldap-starttls-coverage`; the PR #61 merge does not authorize another merge.
+Validation passed **14,231 portable tests** and a **65-test native confirmation**.
+C9 completed **2/2 ordinary + 3/3 separate robustness** tasks with zero unnecessary
+refusals, six inconclusive outcomes, **22/22** blocked destinations and **110/110**
+boundary fields. Clean-source verification at `30eccfb5` repeated five useful
+trials and replayed **67 accepted bundles** unchanged; all **548 source hashes**
+match. Independent source/evidence reviews found no blockers. Provider calls and
+cost stayed zero. The initial native run had one legacy direct-TLS stall failure;
+it passed unchanged in isolated reproduction and full confirmation. Its cause
+remains undetermined, and both attempts are retained as a reliability caveat.
+See [verification.md](verification.md) and private
+`.secure-agent/ftp-starttls-20261007/`. The shipped policy requires fresh approval;
+automated validation does not establish personal acceptance. Leave C9 on
+`feature/ftp-starttls-coverage` unmerged pending latest-revision PR review,
+hosted checks and corresponding merge authorization.
 
-After C8 review, reassess **FTP explicit TLS before login** as the next bounded
-coverage gap alongside accepted anonymous FTP listing. Inspect the fixed native
-AUTH TLS exchange and reply handling before selecting a profile; proposed scope
-is fixture-verified TLS and clean close, with no USER/PASS, listing, file transfer,
-client credentials, PBSZ/PROT or active/passive data connection. This is a recommendation, not an
-implemented or committed C9 milestone. Deeper workflows, benchmarking, credentials,
-paid calls, live-model evaluation and external engagements remain deferred.
-B0–B8, C1–C7, offline R5, accepted local R6 and the initial GUI stay closed.
+After C9 review, reassess **bounded DNS server-reported metadata via EDNS NSID**.
+The interactive DNS suggestions include `dns-nsid`, while secure dig currently
+covers A/SRV queries. Inspect the native fixed query first; proposed scope is
+one nonrecursive TCP query with capped opaque metadata, honest absent/refused
+outcomes, and no recursion, UDP, zone transfer or response-directed follow-up.
+Server-reported identifiers are untrusted, not verified identity. This is a
+recommendation, not an implemented or committed C10 milestone. Deeper workflows,
+benchmarking, credentials, paid/live calls and external engagements remain deferred.
+B0–B8, C1–C8, offline R5, accepted local R6 and the initial GUI stay closed.
+
+**C8 is accepted in [PR #62](https://github.com/0xsl0th/recon-cockpit/pull/62).**
+Reviewed head `7c853f6b` merged as `a582bd6c` on 7 October at 23:03:04 UTC;
+reviewed and merged trees match `262e514cff571e7da39a89ede00bec3f93fa2cf3`.
+Fresh source and evidence reviews found no blockers; 343 focused authority tests
+passed. All 540 tested source hashes, 79 reports, 94 referenced artifacts and
+seven inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37698873778)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37699966443)
+passed. Preserve 13,683 portable and 70 native tests, 2/2 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
+120/120 boundary fields and 63 accepted-bundle replays. Accepted main now has
+**33 profiles using 14 programs**. C8 stays closed; private review receipt:
+`.secure-agent/pr62-merge-review.json`.
 
 **C7 is accepted in [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61).**
 Reviewed head `4239834d` merged as `7c5e88ad` on 7 October at 22:32:58 UTC;
@@ -415,11 +432,11 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: C8 bounded LDAP STARTTLS.** Follow the current status
-at the top of this checkpoint and the [C8 runbook](ldap-starttls-tools.md).
-PR #61 is merged as `7c5e88ad`; C7 stays closed. Leave C8 ready for review.
-The next proposed gap is FTP explicit TLS before login; inspect native behavior
-before selecting a further batch. No credential/workflow expansion is implied.
+**Current continuation: C9 bounded FTP explicit TLS.** Follow the current status
+at the top of this checkpoint and the [C9 runbook](ftp-starttls-tools.md).
+PR #62 is merged as `a582bd6c`; C8 stays closed. Leave C9 ready for review.
+The next proposed gap is bounded DNS server-reported NSID metadata; inspect
+native behavior before selecting another batch. No credential/workflow expansion.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1609,23 +1626,23 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #61 merge is complete. PRs #6–#30 and #32–#61
+- The operator-authorized PR #62 merge is complete. PRs #6–#30 and #32–#62
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Review the C8 LDAP STARTTLS PR on its latest revision and hosted checks using
-   this checkpoint and the [runbook](ldap-starttls-tools.md). Its merge needs
-   corresponding authorization. PR #61 and accepted milestones stay closed.
-2. Require recorded useful/negative outcomes, case-specific request/clean-close
-   witnesses, authority/isolation/cleanup checks and unchanged replay. A TLS-only
-   result cannot become a verified LDAP response or authenticated-session claim.
-3. Preserve the desktop approval boundary and personal acceptance. C8 adds no GUI,
-   external scope or credentials; private evidence remains outside Git.
-4. After C8 review, reassess FTP explicit TLS before login using existing OpenSSL.
-   Confirm fixed AUTH TLS/reply behavior and closure before selecting a profile;
-   no USER/PASS, listing, file transfer or data connection is implied.
+1. Review the C9 FTP TLS PR on its latest revision and hosted checks using this
+   checkpoint and the [runbook](ftp-starttls-tools.md). Its merge needs corresponding
+   authorization. PR #62 and all accepted milestones stay closed.
+2. Require useful/negative outcomes, actual AUTH TLS progress, case-specific
+   clean-close witnesses, authority/isolation/cleanup checks and unchanged replay.
+   TLS-only results do not establish FTP readiness, reply validity or login access.
+3. Preserve the desktop approval boundary and personal acceptance. C9 adds no GUI,
+   external scope or credentials. Raw evidence remains outside Git.
+4. After C9 review, reassess one fixed nonrecursive TCP dig query with EDNS NSID.
+   Validate native wire/output behavior and bounded opaque metadata first. No
+   recursion, UDP, zone transfer, verified identity or follow-up is implied.
 5. Deeper workflows, comparative benchmarking, credential setup, paid calls and
    live-model evaluation remain deferred. External engagements, intrusive activity,
    release publication and competition submission need corresponding authorization.

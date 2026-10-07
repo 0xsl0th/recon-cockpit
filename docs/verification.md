@@ -1,12 +1,124 @@
 # Verification record
 
+## C9 owned FTP explicit TLS — 7 October 2026
+
+The [C9 runbook](ftp-starttls-tools.md) defines `ftp_starttls_handshake_v1`:
+one fixed 10-byte AUTH TLS command, fixture-verified TLS1.3 and clean close through
+existing OpenSSL and the secure authority/evidence path. Clean implementation
+`30eccfb5ef0a92a44f72dfd35303b3b87f38dfe0` contains the tested source. Accepted
+main remains **33 profiles / 14 programs**; this candidate has **34 / 14**.
+
+| Validation | Result |
+| --- | --- |
+| Full portable suite | **14,231 passed**, zero failures/errors/skips; 1,022 integration tests excluded; JUnit 403.519 seconds. |
+| Final native confirmation | **65 passed**: 17 C9, 18 LDAP TLS, 18 SMTP TLS, four direct TLS and eight original FTP; zero confirmation failures/errors/skips; JUnit 197.126 seconds. |
+| Ordinary usefulness | **2/2**, ordinary and multiline greetings; **zero unnecessary refusals**. |
+| Separate robustness | **3/3**, fragmented greeting, hostile earlier text and wrong AUTH status followed by TLS. Only TLS is verified. |
+| Negatives | **Six inconclusive**, all after actual AUTH TLS progress: untrusted CA, refusal, malformed TLS, stall and two unsupported retained greetings. |
+| Enforcement/evidence | **11/11** isolated replays unchanged, **22/22** forbidden destinations blocked, **110/110** boundary fields; one connection per case and closed owners. |
+| Independent clean source | Five useful trials, **10/10** destinations blocked; all five new and **67 accepted bundles** replayed through CLI/shared inspection with unchanged bytes/mtimes/modes. |
+
+The **initial** native run was **64 passed / 1 failed**, with no errors/skips.
+The existing `openssl-stalled` regression returned `evidence_unavailable` after
+63.592 seconds, leaving an incomplete journal with an execution-start record and
+no result artifact. The unchanged isolated reproduction passed, followed by the
+separate full confirmation above. Its root cause remains undetermined; successful
+confirmation does not reclassify the failed run or establish the absence of an
+intermittent reliability issue. Preserve `native.xml`, `native.log`, `native-tmp/`,
+`stalled-reproduction.xml` and its log/evidence. Every C9 test passed in both full
+native runs. No source change or relaxed assertion was used for this retry.
+
+A separate early FTP smoke exposed an inherited prefix-based wait for two FTP
+connections. C9 permits one. The backend now keys that wait to the exact legacy
+FTP-listing/Nmap tool IDs, with an eight-case regression preserving both behaviors.
+The failed smoke is retained as incomplete development evidence; the succeeding
+smoke confirmed the exact retained greeting. Neither smoke is final acceptance.
+
+Seven case counters require the exact AUTH command, TLS1.3 and clean close_notify
+without application data: five useful trials plus two parser-negative greetings.
+Four other negatives count only the command before failure/refusal/stall. Counter
+meanings are pinned per lab identity; native DONE is stdin EOF, not a clean-close
+witness. Six additional C9 native checks cover one-use grants, missing approval
+proof, cancellation, private inputs, UDP refusal and actual output pressure.
+Synthetic policies/scripted grants do not establish personal acceptance.
+
+Final native ordinary durations were **3215/2861 ms**, robustness
+**2886/2807/2885 ms**; the 11 scenarios ranged **2344–6752 ms**,
+median **2885 ms**. Clean-source ordinary durations were
+**3162/3044 ms**, robustness **3151/3043/3507 ms**. Useful captures were
+**327 bytes**; all scenario captures ranged **24–364 bytes**.
+These are descriptive secure CLI wall times, not comparative authority overhead
+or personal approval latency. Provider calls, paid calls and actual provider
+cost were **zero**; no real credentials were read.
+
+The strict wrapper accepts only the compiled final 220 greeting around the
+unchanged TLS grammar. OpenSSL does not validate FTP reply codes, discards the
+AUTH response and earlier greeting lines, and may fail on fragmented readiness.
+A wrong status followed by verified TLS remains TLS-only robustness evidence;
+readiness, valid AUTH acceptance, identity and authentication are not established.
+Hostile earlier text is discarded, not detected; hostile final text is retained
+but not normalized as useful. No USER/PASS, PBSZ/PROT, listing, transfer, data
+connection, credential, retry or TLS application operation is exposed.
+
+All **548 frozen source hashes** match the implementation; the snapshot preceded
+portable/native execution and stayed unchanged for confirmation and clean trials.
+Later handoff edits are documentation only. The **184 accepted case contracts,
+33 adapters and 24 runtimes/environments** retain canonical digest
+`299312bd5f5e1a83536d56d9a8a42b481910e99888ac165b506019cea64c7629`.
+Independent runtime/fixture/core and parser/evidence reviews found no blockers.
+Focused checks passed 235 new fixture/runtime, 35 inherited runtime and 2,226
+parser/evidence/shared cases, followed by 41 evidence, four historical fixtures
+and eight backend regression checks. These overlap the full suite.
+
+Private evidence lives under `.secure-agent/ftp-starttls-20261007/`, including
+`portable.xml`, `native-confirmation.xml`, `validated-source-files.json`,
+`native-evidence-audit.json` and `clean-source-30eccfb5-xct2anrw/verification.json`.
+Clean-source receipt SHA256:
+`e37e3819fe908acffd30d3c803452d49b6cf27808f90aa4a6bcad4aca16145be`.
+It pins the C8 receipt, all 67 accepted bundles and eight inherited receipt files.
+The independent native audit checked all 11 confirmation captures, raw parsing,
+artifact/action/policy/runtime/owner/audit bindings and pure-parser report rebuilds,
+with unchanged bytes/mtimes/modes; SHA256:
+`363dac7de10bae5805f4d18931da95c60e3f0950161341934ed5eb8b86a3752b`.
+It separately preserves the original failed suite and isolated reproduction.
+Actual isolated replay was established by the native tests and clean verifier.
+
+C9 on `feature/ftp-starttls-coverage` is ready for PR review, latest hosted checks
+and an authorized merge. C8 and earlier milestones stay closed. Next, reassess
+one bounded nonrecursive TCP dig query with EDNS NSID for untrusted server metadata;
+no UDP, recursion, zone transfer, verified identity or follow-up is implied.
+Credentials, paid/live calls, external engagements, deeper workflows and
+comparative benchmarking remain deferred.
+
+## PR #62 review and merge — 7 October 2026
+
+**C8 is accepted in [PR #62](https://github.com/0xsl0th/recon-cockpit/pull/62).**
+Reviewed head `7c853f6b` merged as `a582bd6c` on 7 October at 23:03:04 UTC;
+reviewed and merged trees match `262e514cff571e7da39a89ede00bec3f93fa2cf3`.
+Fresh source and evidence reviews found no blockers; 343 focused authority tests
+passed. All 540 tested source hashes, 79 reports, 94 referenced artifacts and
+seven inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37698873778)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37699966443)
+passed. Preserve 13,683 portable and 70 native tests, 2/2 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
+120/120 boundary fields and 63 accepted-bundle replays. Accepted main now has
+**33 profiles using 14 programs**. C8 stays closed; private review receipt:
+`.secure-agent/pr62-merge-review.json`.
+
+Fresh review reconciled all 12 native, four clean-source and 63 accepted reports,
+94 referenced artifacts, 60 native evidence-file hashes and 12 audit hashes.
+No new native/full-suite run is claimed for merge review. Branch rules and inline
+review comments were empty; the five final CI jobs plus source review were the
+merge gate. No formal GitHub approval is claimed.
+
 ## C8 owned LDAP STARTTLS — 7 October 2026
 
 The [C8 runbook](ldap-starttls-tools.md) defines `ldap_starttls_handshake_v1`:
 one fixed 31-byte extended request, fixture-CA/name-verified TLS1.3 and a clean
 close witness through the accepted OpenSSL/authority/evidence path. Clean
 implementation `afe4fe820008c04fe7eb979e1b4d34fd0e4f3a5a` contains the tested source.
-Accepted main remains **32 profiles / 14 programs**; this candidate has **33 / 14**.
+C8 is accepted in PR #62 at `a582bd6c`, bringing main to **33 profiles / 14 programs**.
 
 | Validation | Result |
 | --- | --- |
@@ -66,12 +178,9 @@ with unchanged bytes/mtimes/modes; audit SHA256:
 It is separate from the actual isolated replay established by native tests.
 The early development smoke remains separate from final validation.
 
-C8 on `feature/ldap-starttls-coverage` is ready for PR review, latest hosted checks
-and an authorized merge. PR #61 and C1–C7 stay closed. The next recommended gap
-to reassess is FTP explicit TLS before login, after inspecting fixed native
-AUTH TLS/reply behavior. No USER/PASS, PBSZ/PROT, listing, transfer, credential
-or data connection is implied. Credentials, paid/live calls, external engagements,
-deeper workflows and comparative benchmarking remain deferred.
+PR #62 is merged; C8 is closed. C9 FTP explicit TLS is the separately authorized
+follow-on batch. Credentials, paid/live calls, external engagements, deeper
+workflows and comparative benchmarking remain deferred.
 
 ## PR #61 review and merge — 7 October 2026
 

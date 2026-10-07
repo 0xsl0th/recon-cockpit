@@ -33,6 +33,8 @@ RDP_TOOL_ID = "rdp_initial_negotiation_v1"
 SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"
 SMTP_TLS_TOOL_ID = "smtp_starttls_handshake_v1"
 LDAP_TLS_TOOL_ID = "ldap_starttls_handshake_v1"
+FTP_TLS_TOOL_ID = "ftp_starttls_handshake_v1"
+FTP_TLS_FINAL_GREETING = b"220 harbordesk.test ready\r\n"
 DATABASE_TLS_SERVICES = {POSTGRESQL_TLS_TOOL_ID: "postgresql", MYSQL_TLS_TOOL_ID: "mysql"}
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
@@ -44,7 +46,8 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
     WHATWEB_TOOL_ID: "whatweb-json-v1", DNS_SRV_TOOL_ID: "dig-dns-srv-text-v1",
     RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1",
-    SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1", LDAP_TLS_TOOL_ID: "ldap-starttls-brief-v1"}
+    SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1", LDAP_TLS_TOOL_ID: "ldap-starttls-brief-v1",
+    FTP_TLS_TOOL_ID: "ftp-starttls-brief-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -150,6 +153,17 @@ def validate_result(tool_id, value):
         return _kerberos_parser().validate_result(value)
     if tool_id in (REDIS_TOOL_ID, SNMP_TOOL_ID):
         return _redis_snmp_parser().validate_result(tool_id, value)
+    if tool_id == FTP_TLS_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "service", "semantics", "authenticated_ftp_session",
+                "protocol", "cipher", "verification", "peer_name"}
+                or value["kind"] != "ftp_starttls_handshake" or value["service"] != "ftp"
+                or value["semantics"] != "verified_tls_handshake_only"
+                or value["authenticated_ftp_session"] is not False):
+            raise ValueError("invalid_ftp_tls_observation")
+        validate_result(OPENSSL_TOOL_ID, {"parser_version": parser_version(OPENSSL_TOOL_ID),
+            "kind": "tls_handshake", **{key: value[key]
+                for key in ("protocol", "cipher", "verification", "peer_name")}})
+        return dict(value)
     if tool_id == LDAP_TLS_TOOL_ID:
         if (set(value) != {"parser_version", "kind", "service", "semantics", "authenticated_ldap_session",
                 "protocol", "cipher", "verification", "peer_name"}
@@ -424,6 +438,25 @@ def _parse_database_tls(tool_id, output, stderr):
     return validate_result(tool_id, {**tls, "parser_version": parser_version(tool_id),
         "kind": "database_tls_handshake", "service": DATABASE_TLS_SERVICES[tool_id],
         "semantics": "verified_tls_handshake_only", "authenticated_database_session": False})
+
+
+def _parse_ftp_tls(output, stderr):
+    # OpenSSL retains only the final greeting line after its TLS summary.
+    # Accept this exact fixture line in that position; no other FTP text is
+    # removed and the accepted direct/database/LDAP TLS grammar is unchanged.
+    done = b"DONE\n" if stderr.endswith(b"DONE\n") else b""
+    summary = stderr[:-len(done)] if done else stderr
+    if not summary.endswith(b"\n" + FTP_TLS_FINAL_GREETING):
+        raise ValueError("invalid_ftp_tls_transcript")
+    summary = summary[:-len(FTP_TLS_FINAL_GREETING)]
+    if b"\nDONE\n" in summary:
+        raise ValueError("invalid_ftp_tls_transcript")
+    tls = _parse_tls(output, summary + done)
+    # The discarded AUTH reply cannot prove FTP readiness or status. DONE is
+    # stdin EOF; useful completion separately needs the owner's clean close.
+    return validate_result(FTP_TLS_TOOL_ID, {**tls, "parser_version": parser_version(FTP_TLS_TOOL_ID),
+        "kind": "ftp_starttls_handshake", "service": "ftp",
+        "semantics": "verified_tls_handshake_only", "authenticated_ftp_session": False})
 
 
 def _parse_ldap_tls(output, stderr):
@@ -813,4 +846,5 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp,
             WHATWEB_TOOL_ID: _parse_whatweb, DNS_SRV_TOOL_ID: _parse_dns_srv,
             RDP_TOOL_ID: _parse_rdp, SMB2_TOOL_ID: _parse_smb2,
-            SMTP_TLS_TOOL_ID: _parse_smtp_tls, LDAP_TLS_TOOL_ID: _parse_ldap_tls}[tool_id](output, stderr)
+            SMTP_TLS_TOOL_ID: _parse_smtp_tls, LDAP_TLS_TOOL_ID: _parse_ldap_tls,
+            FTP_TLS_TOOL_ID: _parse_ftp_tls}[tool_id](output, stderr)

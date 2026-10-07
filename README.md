@@ -111,7 +111,7 @@ are not verified. Full portable, native/usefulness, enforcement and evidence
 checks passed. C7 is accepted in PR #61 at `7c5e88ad`; all five final and
 post-merge jobs passed.
 
-The C8 [LDAP STARTTLS candidate](docs/ldap-starttls-tools.md) adds one fixed
+The accepted C8 [LDAP STARTTLS profile](docs/ldap-starttls-tools.md) adds one fixed
 extended request and verified fixture TLS/clean close through existing OpenSSL,
 for **33 profiles using the same 14 programs**. It permits no bind, search,
 credentials, referral follow-up or application request. The native client leaves
@@ -119,7 +119,19 @@ response IDs/remaining LDAP fields unchecked and discards the raw LDAP reply;
 only TLS facts are reported. Validation passed **13,683 portable** and **70 native
 tests**, including 2/2 ordinary and 2/2 separate robustness completions, eight
 inconclusive cases and 24/24 blocked destinations. Four clean-source trials and
-63 accepted evidence replays also passed. C8 remains pending PR review and merge.
+63 accepted evidence replays also passed. C8 is accepted in PR #62 at `a582bd6c`;
+all five final and post-merge jobs passed.
+
+The C9 [FTP explicit TLS candidate](docs/ftp-starttls-tools.md) adds one fixed
+AUTH TLS command and verified fixture TLS/clean close through existing OpenSSL,
+for **34 profiles using the same 14 programs**. It exposes no login, credentials,
+listing, transfer or data connection. The native client discards unchecked AUTH
+replies and retains only the final greeting; the bounded result reports TLS only.
+Validation passed 14,231 portable tests and a 65-test native confirmation, with
+2/2 ordinary and 3/3 robustness completions, 22/22 blocked destinations and 67
+accepted-bundle replays. One initial legacy stall error did not reproduce;
+its cause remains undetermined and is recorded in the verification report.
+C9 remains pending PR review and merge.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

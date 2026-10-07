@@ -1,12 +1,10 @@
 # Owned LDAP STARTTLS handshake
 
-C8 adds `ldap_starttls_handshake_v1` through the existing OpenSSL runtime and
-single-action authority/evidence path. The candidate has **33 bounded profiles
-using the same 14 external programs**; accepted main has 32 after
-[PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61), merged as `7c5e88ad`.
-C8 remains a separate review candidate. It adds no GUI or real-network attachment.
-Accepted B0–B8, C1–C7, offline R5, local R6 and the initial GUI/personal walkthrough
-stay closed.
+C8's `ldap_starttls_handshake_v1` is accepted in
+[PR #62](https://github.com/0xsl0th/recon-cockpit/pull/62), merge `a582bd6c`.
+It brought accepted main to **33 bounded profiles using 14 external programs**.
+All five final and post-merge checks passed. It adds no GUI or real-network
+attachment. B0–B8, C1–C8, offline R5, local R6 and personal acceptance stay closed.
 
 ## Fixed operation and limits
 

@@ -35,7 +35,28 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     assert not first.started and first._supervisor is None
     definition = lab_contract.spec(case)
     assert definition["external_egress"] is False and definition["resume"] is False
-    if case in fixture.LDAP_TLS_CASES:
+    if case in fixture.FTP_TLS_CASES:
+        dialogue = fixture.ftp_tls_dialogue(case)
+        assert definition["response_sha256"] == {name: None if raw is None else hashlib.sha256(raw).hexdigest()
+            for name, raw in dialogue.items()}
+        assert definition["request_sha256"] == hashlib.sha256(fixture.FTP_TLS_AUTH).hexdigest()
+        assert definition["request_bytes"] == 10 and definition["max_commands"] == 1
+        assert definition["ca_sha256"] == hashlib.sha256(fixture.CA_PEM).hexdigest()
+        assert definition["certificate_sha256"] == (fixture.UNTRUSTED_SERVER_CERT_SHA256
+            if case == "ftp-tls-untrusted" else fixture.SERVER_CERT_SHA256)
+        complete = case in fixture.FTP_TLS_COMPLETE_CASES
+        assert definition["counter_includes_clean_tls_close"] is complete
+        assert definition["request_count_means"] == ("validated_auth_tls_then_tls13_and_clean_close_notify"
+            if complete else "validated_auth_tls_before_negative_response")
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["max_fixture_response_bytes"] == 1024
+        assert definition["native_response_read_max_bytes"] == 16384
+        assert definition["tls_protocol"] == "TLSv1.3"
+        assert all(definition[key] is False for key in (
+            "authentication", "credentials", "login", "listing", "data_connection", "file_transfer",
+            "pbsz_prot", "tls_application_requests", "plaintext_session", "client_validates_ftp_reply_codes",
+            "auth_reply_retained", "full_ftp_dialogue_retained", "service_identity_claim", "vulnerability_claim"))
+    elif case in fixture.LDAP_TLS_CASES:
         response = fixture.ldap_tls_response(case)
         assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
         assert definition["request_sha256"] == hashlib.sha256(fixture.LDAP_TLS_REQUEST).hexdigest()
@@ -291,7 +312,7 @@ def test_public_fixture_certificates_verify_trust_and_hostname_without_network(t
         with pytest.raises(ssl.SSLCertVerificationError): _handshake(client, server, hostname)
 
 
-def _backend(monkeypatch, case, *, requests=None, status="succeeded", parsed=True):
+def _backend(monkeypatch, case, *, requests=None, connections=None, status="succeeded", parsed=True):
     policy = parse_policy({"schema_version": "1", "policy_version": "network-tools-test",
         "allowed_targets": ["127.0.0.1/32"], "allowed_tools": list(contract.PARAMETERS),
         "allowed_ports": [8080], "allowed_methods": ["GET"], "max_timeout_seconds": 5,
@@ -313,7 +334,7 @@ def _backend(monkeypatch, case, *, requests=None, status="succeeded", parsed=Tru
     def snapshot(control, **bounds):
         calls.append(("snapshot", bounds))
         number = 1 if requests is None else requests
-        return {"connection_count": max(1, number), "request_count": number}
+        return {"connection_count": max(1, number) if connections is None else connections, "request_count": number}
     monkeypatch.setattr(lab, "snapshot", snapshot)
     def runtime(**kwargs):
         calls.append(("runtime", kwargs))
@@ -326,6 +347,17 @@ def _backend(monkeypatch, case, *, requests=None, status="succeeded", parsed=Tru
         return {"parsed": True}
     monkeypatch.setattr(network_tools_parser_runtime, "parse_isolated_tool_output", parser)
     return backend, action, policy, ExecutionControl(time.monotonic() + 30), calls
+
+
+@pytest.mark.parametrize("case,connections", [(case, 1) for case in fixture.FTP_TLS_SUCCESS_CASES]
+    + [(case, 2) for case in ("ftp-ok", "ftp-empty", "ftp-injected")])
+def test_backend_waits_for_one_ftp_tls_connection_and_two_legacy_listing_connections(monkeypatch, case, connections):
+    backend, action, policy, control, calls = _backend(monkeypatch, case, connections=connections)
+    result = backend.run(action, policy, control=control)
+    assert result["owned_lab"]["connection_count"] == connections
+    assert result["owned_lab"]["request_count"] == 1
+    assert next(value for kind, value in calls if kind == "snapshot") == {
+        "minimum_connections": connections, "minimum_requests": 1}
 
 
 @pytest.mark.parametrize("case,minimum", [("openssl-ok", 1), ("dig-ok", 1), ("dig-nxdomain", 1)])
