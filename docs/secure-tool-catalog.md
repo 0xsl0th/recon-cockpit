@@ -86,13 +86,21 @@ validation, source review and all five final/post-merge jobs passed; C6 is
 accepted in PR #60 at `aa65bff7`. Catalog visibility does not establish
 arbitrary server compatibility, signing enforcement or service identity.
 
-The C7 [SMTP STARTTLS candidate](smtp-starttls-tools.md) adds one bounded
+The accepted C7 [SMTP STARTTLS profile](smtp-starttls-tools.md) adds one bounded
 profile through existing OpenSSL, for **32 profiles using the same 14 programs**.
 It sends fixed EHLO/STARTTLS, verifies the fixture CA/name and records clean TLS
 closure without authentication, mail or application requests. Structured output
 means verified TLS only; SMTP reply codes, advertisement and product identity
 are not verified. Full portable, native/usefulness, enforcement and evidence
-checks are required before acceptance. C7 remains pending review and merge.
+checks passed. C7 is accepted in PR #61 at `7c5e88ad`; all five final and
+post-merge jobs passed.
+
+The C8 [LDAP STARTTLS candidate](ldap-starttls-tools.md) adds one fixed
+extended request and verified fixture TLS/clean close through existing OpenSSL,
+for **33 profiles using the same 14 programs**. It permits no bind, search,
+credentials, referral follow-up or application request. The native client leaves
+response IDs/remaining LDAP fields unchecked and discards the raw LDAP reply;
+only TLS facts are reported. C8 remains pending validation and review.
 
 From the repository root, with the project installed:
 
@@ -109,6 +117,7 @@ python -m recon_cockpit.secure_agent --describe-tool dig_dns_srv_v1
 python -m recon_cockpit.secure_agent --describe-tool rdp_initial_negotiation_v1
 python -m recon_cockpit.secure_agent --describe-tool smb2_negotiate_metadata_v1
 python -m recon_cockpit.secure_agent --describe-tool smtp_starttls_handshake_v1
+python -m recon_cockpit.secure_agent --describe-tool ldap_starttls_handshake_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -231,6 +240,6 @@ accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C7 candidate. Further composition and comparative benchmarking
+the current C8 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

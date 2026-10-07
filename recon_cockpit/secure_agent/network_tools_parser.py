@@ -32,6 +32,7 @@ DNS_SRV_TOOL_ID = "dig_dns_srv_v1"
 RDP_TOOL_ID = "rdp_initial_negotiation_v1"
 SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"
 SMTP_TLS_TOOL_ID = "smtp_starttls_handshake_v1"
+LDAP_TLS_TOOL_ID = "ldap_starttls_handshake_v1"
 DATABASE_TLS_SERVICES = {POSTGRESQL_TLS_TOOL_ID: "postgresql", MYSQL_TLS_TOOL_ID: "mysql"}
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
@@ -43,7 +44,7 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
     WHATWEB_TOOL_ID: "whatweb-json-v1", DNS_SRV_TOOL_ID: "dig-dns-srv-text-v1",
     RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1",
-    SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1"}
+    SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1", LDAP_TLS_TOOL_ID: "ldap-starttls-brief-v1"}
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -149,6 +150,17 @@ def validate_result(tool_id, value):
         return _kerberos_parser().validate_result(value)
     if tool_id in (REDIS_TOOL_ID, SNMP_TOOL_ID):
         return _redis_snmp_parser().validate_result(tool_id, value)
+    if tool_id == LDAP_TLS_TOOL_ID:
+        if (set(value) != {"parser_version", "kind", "service", "semantics", "authenticated_ldap_session",
+                "protocol", "cipher", "verification", "peer_name"}
+                or value["kind"] != "ldap_starttls_handshake" or value["service"] != "ldap"
+                or value["semantics"] != "verified_tls_handshake_only"
+                or value["authenticated_ldap_session"] is not False):
+            raise ValueError("invalid_ldap_tls_observation")
+        validate_result(OPENSSL_TOOL_ID, {"parser_version": parser_version(OPENSSL_TOOL_ID),
+            "kind": "tls_handshake", **{key: value[key]
+                for key in ("protocol", "cipher", "verification", "peer_name")}})
+        return dict(value)
     if tool_id == SMTP_TLS_TOOL_ID:
         if (set(value) != {"parser_version", "kind", "service", "semantics", "authenticated_smtp_session",
                 "protocol", "cipher", "verification", "peer_name"}
@@ -412,6 +424,17 @@ def _parse_database_tls(tool_id, output, stderr):
     return validate_result(tool_id, {**tls, "parser_version": parser_version(tool_id),
         "kind": "database_tls_handshake", "service": DATABASE_TLS_SERVICES[tool_id],
         "semantics": "verified_tls_handshake_only", "authenticated_database_session": False})
+
+
+def _parse_ldap_tls(output, stderr):
+    # OpenSSL does not retain the LDAP response in its brief diagnostic. This
+    # unchanged TLS grammar cannot attest LDAP status, response message ID,
+    # response OID or diagnostic text. DONE means stdin EOF, not clean TLS
+    # closure; useful owned completion also needs the fixture-close witness.
+    tls = _parse_tls(output, stderr)
+    return validate_result(LDAP_TLS_TOOL_ID, {**tls, "parser_version": parser_version(LDAP_TLS_TOOL_ID),
+        "kind": "ldap_starttls_handshake", "service": "ldap",
+        "semantics": "verified_tls_handshake_only", "authenticated_ldap_session": False})
 
 
 def _parse_smtp_tls(output, stderr):
@@ -790,4 +813,4 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp,
             WHATWEB_TOOL_ID: _parse_whatweb, DNS_SRV_TOOL_ID: _parse_dns_srv,
             RDP_TOOL_ID: _parse_rdp, SMB2_TOOL_ID: _parse_smb2,
-            SMTP_TLS_TOOL_ID: _parse_smtp_tls}[tool_id](output, stderr)
+            SMTP_TLS_TOOL_ID: _parse_smtp_tls, LDAP_TLS_TOOL_ID: _parse_ldap_tls}[tool_id](output, stderr)

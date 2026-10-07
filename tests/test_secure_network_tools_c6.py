@@ -79,9 +79,9 @@ def test_failed_peer_scenario_cannot_be_upgraded_to_useful_metadata(case):
 
 
 def test_all_accepted_contracts_remain_unchanged_from_pr59():
-    old_cases = [case for case in contract.CASES if case not in contract.C6_CASES + contract.C7_CASES]
-    old_tools = set(tool_adapters.ADAPTERS) - {contract.SMB2_TOOL_ID, contract.SMTP_TLS_TOOL_ID}
-    old_runtime = set(runtime.EXECUTABLES) - {contract.SMB2_TOOL_ID, contract.SMTP_TLS_TOOL_ID}
+    old_cases = [case for case in contract.CASES if case not in contract.C6_CASES + contract.C7_CASES + contract.C8_CASES]
+    old_tools = set(tool_adapters.ADAPTERS) - {contract.SMB2_TOOL_ID, contract.SMTP_TLS_TOOL_ID, contract.LDAP_TLS_TOOL_ID}
+    old_runtime = set(runtime.EXECUTABLES) - {contract.SMB2_TOOL_ID, contract.SMTP_TLS_TOOL_ID, contract.LDAP_TLS_TOOL_ID}
     value = {'cases': {case: {'action': contract.action(case), 'descriptor': contract.capability_descriptor(case),
         'card': workflow.card(case), 'spec': lab.spec(case)} for case in old_cases},
         'adapters': {tool: tool_adapters.ADAPTERS[tool].to_dict() for tool in old_tools},

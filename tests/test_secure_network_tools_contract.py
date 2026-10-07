@@ -10,7 +10,7 @@ import pytest
 from recon_cockpit.secure_agent import network_tools_contract as contract
 from recon_cockpit.secure_agent import network_tools_parser as parser
 from recon_cockpit.secure_agent import network_tools_runtime as runtime
-from recon_cockpit.secure_agent.models import (SMTPStartTLSParameters, SMB2NegotiateParameters, DigDNSParameters, OpenSSLTLSParameters,
+from recon_cockpit.secure_agent.models import (LDAPStartTLSParameters, SMTPStartTLSParameters, SMB2NegotiateParameters, DigDNSParameters, OpenSSLTLSParameters,
     SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters, RPCInfoDumpParameters, ShowmountExportsParameters,
     CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters, KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, RDPInitialParameters, ValidationError, parse_action, parse_policy)
@@ -61,14 +61,14 @@ def policy(**changes):
 @pytest.mark.parametrize("case", contract.CASES)
 def test_case_selects_exact_typed_single_action_and_existing_policy_gates(case):
     action = parse_action(contract.action(case))
-    expected = contract.SMTP_TLS_TOOL_ID if case in contract.C7_CASES else contract.SMB2_TOOL_ID if case in contract.C6_CASES else contract.RDP_TOOL_ID if case in contract.C5_CASES else contract.DIG_SRV_TOOL_ID if case in contract.C4_CASES else {"whatweb": contract.WHATWEB_TOOL_ID, "postgresql": contract.POSTGRESQL_TLS_TOOL_ID, "mysql": contract.MYSQL_TLS_TOOL_ID, "redis": contract.REDIS_TOOL_ID, "snmp": contract.SNMP_TOOL_ID, "dig": contract.DIG_TOOL_ID, "openssl": contract.OPENSSL_TOOL_ID,
+    expected = contract.LDAP_TLS_TOOL_ID if case in contract.C8_CASES else contract.SMTP_TLS_TOOL_ID if case in contract.C7_CASES else contract.SMB2_TOOL_ID if case in contract.C6_CASES else contract.RDP_TOOL_ID if case in contract.C5_CASES else contract.DIG_SRV_TOOL_ID if case in contract.C4_CASES else {"whatweb": contract.WHATWEB_TOOL_ID, "postgresql": contract.POSTGRESQL_TLS_TOOL_ID, "mysql": contract.MYSQL_TLS_TOOL_ID, "redis": contract.REDIS_TOOL_ID, "snmp": contract.SNMP_TOOL_ID, "dig": contract.DIG_TOOL_ID, "openssl": contract.OPENSSL_TOOL_ID,
                 "ssh": contract.SSH_TOOL_ID, "ldap": contract.LDAP_TOOL_ID,
                 "smb": contract.SMB_TOOL_ID, "rpc": contract.RPCINFO_TOOL_ID,
                 "nfs": contract.SHOWMOUNT_TOOL_ID, "ftp": contract.FTP_TOOL_ID,
                 "smtp": contract.SMTP_TOOL_ID, "winrm": contract.WINRM_TOOL_ID, "nmap": contract.NMAP_SERVICE_TOOL_ID, "kerberos": contract.KERBRUTE_TOOL_ID,
                 "docker": contract.DOCKER_PING_TOOL_ID if case.startswith("docker-ping-") else contract.DOCKER_VERSION_TOOL_ID}[case.split("-")[0]]
     assert action.tool_id == expected and action.target == "127.0.0.1"
-    assert type(action.parameters) is {contract.SMTP_TLS_TOOL_ID: SMTPStartTLSParameters, contract.SMB2_TOOL_ID: SMB2NegotiateParameters, contract.RDP_TOOL_ID: RDPInitialParameters, contract.DIG_SRV_TOOL_ID: DigSRVParameters, contract.WHATWEB_TOOL_ID: WhatWebParameters, contract.POSTGRESQL_TLS_TOOL_ID: PostgreSQLTLSParameters, contract.MYSQL_TLS_TOOL_ID: MySQLTLSParameters, contract.REDIS_TOOL_ID: RedisServerInfoParameters, contract.SNMP_TOOL_ID: SNMPSystemGetParameters, contract.DIG_TOOL_ID: DigDNSParameters,
+    assert type(action.parameters) is {contract.LDAP_TLS_TOOL_ID: LDAPStartTLSParameters, contract.SMTP_TLS_TOOL_ID: SMTPStartTLSParameters, contract.SMB2_TOOL_ID: SMB2NegotiateParameters, contract.RDP_TOOL_ID: RDPInitialParameters, contract.DIG_SRV_TOOL_ID: DigSRVParameters, contract.WHATWEB_TOOL_ID: WhatWebParameters, contract.POSTGRESQL_TLS_TOOL_ID: PostgreSQLTLSParameters, contract.MYSQL_TLS_TOOL_ID: MySQLTLSParameters, contract.REDIS_TOOL_ID: RedisServerInfoParameters, contract.SNMP_TOOL_ID: SNMPSystemGetParameters, contract.DIG_TOOL_ID: DigDNSParameters,
         contract.OPENSSL_TOOL_ID: OpenSSLTLSParameters, contract.SSH_TOOL_ID: SSHHostKeysParameters,
         contract.LDAP_TOOL_ID: LDAPRootDSEParameters, contract.SMB_TOOL_ID: SMBShareListParameters,
         contract.RPCINFO_TOOL_ID: RPCInfoDumpParameters, contract.SHOWMOUNT_TOOL_ID: ShowmountExportsParameters,

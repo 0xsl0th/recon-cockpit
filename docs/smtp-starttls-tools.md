@@ -1,10 +1,10 @@
 # Owned SMTP STARTTLS handshake
 
 C7 adds `smtp_starttls_handshake_v1` using the existing OpenSSL runtime and
-single-action authority/evidence path. The candidate has **32 bounded profiles
+single-action authority/evidence path. The accepted slice has **32 bounded profiles
 using the same 14 external programs**. C6 is accepted in
 [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60), merged as `aa65bff7`.
-C7 remains a separate review candidate. It adds no GUI operation or real-network
+C7 is accepted in PR #61, merged as `7c5e88ad` after review and passing checks. It adds no GUI operation or real-network
 attachment and does not reopen accepted B0–B8, C1–C6, offline R5, local R6 or the
 initial GUI/personal walkthrough.
 
@@ -104,8 +104,8 @@ inconclusive. All 24 destination checks and 120 boundary fields passed. Independ
 clean-source trials repeated four useful results and replayed all **59 accepted
 bundles** unchanged. All 532 source hashes match implementation `b4b1a9f1`;
 independent source review found no blockers. Provider calls and cost were zero.
-[PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61) awaits review, hosted
-checks and corresponding merge authorization.
+[PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61) is merged as `7c5e88ad`.
+All five final and post-merge checks passed; C7 stays closed.
 
 ## Run and inspect
 

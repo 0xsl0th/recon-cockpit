@@ -21,12 +21,13 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             REDIS_TOOL_ID, REDIS_PARAMETERS, SNMP_TOOL_ID, SNMP_PARAMETERS,
                             POSTGRESQL_TLS_TOOL_ID, POSTGRESQL_TLS_PARAMETERS, MYSQL_TLS_TOOL_ID, MYSQL_TLS_PARAMETERS,
                             WHATWEB_TOOL_ID, WHATWEB_PARAMETERS, DIG_SRV_TOOL_ID, DIG_SRV_PARAMETERS, RDP_TOOL_ID, RDP_PARAMETERS, SMB2_TOOL_ID, SMB2_PARAMETERS,
-                            SMTP_TLS_TOOL_ID, SMTP_TLS_PARAMETERS, NETWORK_TOOLS_LIMITS, get_adapter)
+                            SMTP_TLS_TOOL_ID, SMTP_TLS_PARAMETERS, LDAP_TLS_TOOL_ID, LDAP_TLS_PARAMETERS, NETWORK_TOOLS_LIMITS, get_adapter)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
                                      validate_identity)
 from .network_tools_fixture import (QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case, REDIS_SNMP_CASES,
     DATABASE_TLS_CASES, DATABASE_TLS_SUCCESS_CASES, WHATWEB_CASES, WHATWEB_SUCCESS_CASES,
-    WHATWEB_PATH, WHATWEB_PLUGINS, DNS_SRV_CASES, DNS_SRV_SUCCESS_CASES, DNS_SRV_QUERY_NAME, RDP_CASES, RDP_SUCCESS_CASES, SMB2_CASES, SMB2_SUCCESS_CASES, SMTP_TLS_CASES, SMTP_TLS_SUCCESS_CASES, SMTP_TLS_COMPLETE_CASES)
+    WHATWEB_PATH, WHATWEB_PLUGINS, DNS_SRV_CASES, DNS_SRV_SUCCESS_CASES, DNS_SRV_QUERY_NAME, RDP_CASES, RDP_SUCCESS_CASES, SMB2_CASES, SMB2_SUCCESS_CASES, SMTP_TLS_CASES, SMTP_TLS_SUCCESS_CASES, SMTP_TLS_COMPLETE_CASES,
+    LDAP_TLS_CASES, LDAP_TLS_SUCCESS_CASES, LDAP_TLS_COMPLETE_CASES, LDAP_TLS_REQUEST)
 
 
 TOOL_ID = DIG_TOOL_ID
@@ -49,6 +50,7 @@ PARAMETERS[DIG_SRV_TOOL_ID] = dict(DIG_SRV_PARAMETERS)
 PARAMETERS[RDP_TOOL_ID] = dict(RDP_PARAMETERS)
 PARAMETERS[SMB2_TOOL_ID] = dict(SMB2_PARAMETERS)
 PARAMETERS[SMTP_TLS_TOOL_ID] = dict(SMTP_TLS_PARAMETERS)
+PARAMETERS[LDAP_TLS_TOOL_ID] = dict(LDAP_TLS_PARAMETERS)
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
@@ -56,7 +58,7 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1", NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1",
     REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1",
     POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
-    WHATWEB_TOOL_ID: "whatweb-json-v1", DIG_SRV_TOOL_ID: "dig-dns-srv-text-v1", RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1", SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1"}
+    WHATWEB_TOOL_ID: "whatweb-json-v1", DIG_SRV_TOOL_ID: "dig-dns-srv-text-v1", RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1", SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1", LDAP_TLS_TOOL_ID: "ldap-starttls-brief-v1"}
 B1_CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
             "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled")
 B2_CASES = ("ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
@@ -79,6 +81,7 @@ C4_CASES = DNS_SRV_CASES
 C5_CASES = RDP_CASES
 C6_CASES = SMB2_CASES
 C7_CASES = SMTP_TLS_CASES
+C8_CASES = LDAP_TLS_CASES
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -110,8 +113,26 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in C8_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(LDAP_TLS_TOOL_ID).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "ldap_starttls": {"request_sha256": hashlib.sha256(LDAP_TLS_REQUEST).hexdigest(),
+                "request_bytes": len(LDAP_TLS_REQUEST), "message_id": 1, "request_oid": "1.3.6.1.4.1.1466.20037",
+                "max_connections": 1, "max_requests": 1, "tls_name": TLS_NAME,
+                "tls_protocol": "TLSv1.3", "tls_cipher": "TLS_AES_256_GCM_SHA384",
+                "ca_sha256": hashlib.sha256(CA_PEM).hexdigest(),
+                "bind": False, "search": False, "authentication": False,
+                "client_credentials": False, "referral_following": False,
+                "tls_application_requests": False, "plaintext_session": False, "retries": False,
+                "ldap_response_validation_claim": False, "service_identity_claim": False,
+                "client_matches_response_message_id": False, "complete_ldap_response_retained": False,
+                "fragmented_response_may_fail": True, "useful_result_requires_owner_clean_close": True},
+            "result_semantics": "verified_tls_handshake_only",
+            "parser_versions": {LDAP_TLS_TOOL_ID: PARSER_VERSIONS[LDAP_TLS_TOOL_ID]}}
     if case in C7_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(SMTP_TLS_TOOL_ID).to_dict()],
@@ -321,6 +342,8 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
                 and (connections != 1 or expected["scenario"] not in DNS_SRV_SUCCESS_CASES))
             or (expected["scenario"] in C5_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in RDP_SUCCESS_CASES))
+            or (expected["scenario"] in C8_CASES and result.get("tool_observation") is not None
+                and (connections != 1 or expected["scenario"] not in LDAP_TLS_SUCCESS_CASES))
             or (expected["scenario"] in C7_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in SMTP_TLS_SUCCESS_CASES))
             or (expected["scenario"] in C6_CASES and result.get("tool_observation") is not None
@@ -399,6 +422,8 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == LDAP_TLS_TOOL_ID:
+        return _observation(tool_id, "ldap_tls_verified", "ldap_tls_verified", normalized)
     if tool_id == SMTP_TLS_TOOL_ID:
         return _observation(tool_id, "smtp_tls_verified", "smtp_tls_verified", normalized)
     if tool_id == SMB2_TOOL_ID:

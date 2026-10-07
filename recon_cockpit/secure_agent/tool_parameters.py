@@ -254,3 +254,8 @@ class SMB2NegotiateParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class SMTPStartTLSParameters(TCPParameters):
     """Fixed SMTP STARTTLS handshake; no authentication or mail commands."""
+
+
+@dataclass(frozen=True, slots=True)
+class LDAPStartTLSParameters(TCPParameters):
+    """One fixed LDAP StartTLS operation; no bind, search or client credentials."""

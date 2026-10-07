@@ -180,7 +180,7 @@ def test_owner_rejects_second_connection_without_reading_or_counting(case):
 
 
 def test_all_133_accepted_fixture_specs_remain_byte_identical():
-    definitions = {case: contract.spec(case) for case in contract.CASES if case not in fixture.RDP_CASES + fixture.SMB2_CASES + fixture.SMTP_TLS_CASES}
+    definitions = {case: contract.spec(case) for case in contract.CASES if case not in fixture.RDP_CASES + fixture.SMB2_CASES + fixture.SMTP_TLS_CASES + fixture.LDAP_TLS_CASES}
     assert len(definitions) == 133
     raw = json.dumps(definitions, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()
     assert hashlib.sha256(raw).hexdigest() == "704cd750a3d1c3ed73a5839f5ff20fabe0cd88009bb5a49381564a2ecfbe6f07"

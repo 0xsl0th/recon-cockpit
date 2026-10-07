@@ -1,13 +1,35 @@
 # Verification record
 
+## PR #61 review and merge — 7 October 2026
+
+**C7 is accepted in [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61).**
+Reviewed head `4239834d` merged as `7c5e88ad` on 7 October at 22:32:58 UTC;
+reviewed and merged trees match `e07e810f7995f5f17aca942ccb4ebeede2152e0e`.
+Fresh authority/runtime and parser/evidence reviews found no blockers, with
+432 and 399 focused tests passing. All 532 tested source hashes, 75 reports,
+90 referenced artifacts and six inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37694217980)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37696888315)
+passed. Preserve 13,175 portable and 52 native tests, 2/2 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
+120/120 boundary fields and 59 accepted-bundle replays. Accepted main now has
+**32 profiles using 14 programs**. C7 stays closed; private review receipt:
+`.secure-agent/pr61-merge-review.json`.
+
+Fresh review independently reconciled 12 native, four clean-source and 59
+accepted reports, 90 artifacts, 60 native evidence-file hashes and 12 audit hashes.
+No new native/full-suite run is claimed for merge review. No required branch rules
+or inline review comments were configured; all five portable jobs and source
+review were the merge gate. No formal GitHub approval is claimed.
+
 ## C7 owned SMTP STARTTLS — 7 October 2026
 
 The [C7 runbook](smtp-starttls-tools.md) defines `smtp_starttls_handshake_v1`:
 one fixed EHLO/STARTTLS exchange, fixture-CA/name-verified TLS1.3 and clean close
 through the existing OpenSSL runtime and authority path. Clean implementation
 `b4b1a9f1a52902df9fca644ede5deba160efc8af` contains the tested production/test sources.
-Accepted main remains **31 profiles / 14 programs**; this review candidate has
-**32 / 14**, with no GUI or external-target expansion.
+C7 is accepted at `7c5e88ad`, bringing main to **32 profiles / 14 programs**,
+with no GUI or external-target expansion.
 
 | Validation | Result |
 | --- | --- |
@@ -62,10 +84,8 @@ parser, separately from actual isolated CLI replay, and has SHA256
 `bee071cb427e6b162c2c023961953d17c2c08a04bdcd6383e9ae3e608aa54fd1`.
 The early development smoke remains separate from final validation.
 
-[PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61) remains pending review,
-passing hosted checks and authorized merge.
-The next recommended reassessment is LDAP STARTTLS before bind, after inspecting
-the native fixed exchange. Credentials, paid/live-model calls, external
+PR #61 is merged; C7 is closed. C8 LDAP STARTTLS is the separately authorized
+follow-on batch. Credentials, paid/live-model calls, external
 engagements, deeper workflows and comparative benchmarking remain deferred.
 
 ## PR #60 review and merge — 7 October 2026

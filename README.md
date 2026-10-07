@@ -102,13 +102,21 @@ frames can remain within the larger raw capture bound. There is no SESSION_SETUP
 NTLM challenge collection workflow, credential use, login, share access or
 follow-up. C6 is accepted in PR #60, merged as `aa65bff7` after review and passing checks.
 Its catalog entry enables no real-network or GUI execution.
-The C7 [SMTP STARTTLS candidate](docs/smtp-starttls-tools.md) adds one bounded
+The accepted C7 [SMTP STARTTLS profile](docs/smtp-starttls-tools.md) adds one bounded
 profile through existing OpenSSL, for **32 profiles using the same 14 programs**.
 It sends fixed EHLO/STARTTLS, verifies the fixture CA/name and records clean TLS
 closure without authentication, mail or application requests. Structured output
 means verified TLS only; SMTP reply codes, advertisement and product identity
 are not verified. Full portable, native/usefulness, enforcement and evidence
-checks are required before acceptance. C7 remains pending review and merge.
+checks passed. C7 is accepted in PR #61 at `7c5e88ad`; all five final and
+post-merge jobs passed.
+
+The C8 [LDAP STARTTLS candidate](docs/ldap-starttls-tools.md) adds one fixed
+extended request and verified fixture TLS/clean close through existing OpenSSL,
+for **33 profiles using the same 14 programs**. It permits no bind, search,
+credentials, referral follow-up or application request. The native client leaves
+response IDs/remaining LDAP fields unchecked and discards the raw LDAP reply;
+only TLS facts are reported. C8 remains pending validation and review.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

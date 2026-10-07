@@ -35,7 +35,28 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     assert not first.started and first._supervisor is None
     definition = lab_contract.spec(case)
     assert definition["external_egress"] is False and definition["resume"] is False
-    if case in fixture.SMTP_TLS_CASES:
+    if case in fixture.LDAP_TLS_CASES:
+        response = fixture.ldap_tls_response(case)
+        assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
+        assert definition["request_sha256"] == hashlib.sha256(fixture.LDAP_TLS_REQUEST).hexdigest()
+        assert definition["request_bytes"] == 31 and definition["request_message_id"] == 1
+        assert definition["request_oid"] == "1.3.6.1.4.1.1466.20037"
+        assert definition["ca_sha256"] == hashlib.sha256(fixture.CA_PEM).hexdigest()
+        assert definition["certificate_sha256"] == (fixture.UNTRUSTED_SERVER_CERT_SHA256
+            if case == "ldap-tls-untrusted" else fixture.SERVER_CERT_SHA256)
+        complete = case in fixture.LDAP_TLS_COMPLETE_CASES
+        assert definition["counter_includes_clean_tls_close"] is complete
+        assert definition["request_count_means"] == ("validated_starttls_request_then_tls13_and_clean_close_notify"
+            if complete else "validated_starttls_request_before_negative_response")
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["max_fixture_response_bytes"] == 1024
+        assert definition["native_response_read_max_bytes"] == 16384
+        assert definition["tls_protocol"] == "TLSv1.3"
+        assert all(definition[key] is False for key in (
+            "bind", "search", "authentication", "credentials", "referral_following", "tls_application_requests",
+            "plaintext_session", "client_matches_response_message_id", "client_validates_complete_ldap_response",
+            "complete_ldap_response_retained", "service_identity_claim", "vulnerability_claim"))
+    elif case in fixture.SMTP_TLS_CASES:
         dialogue = fixture.smtp_tls_dialogue(case)
         assert definition["response_sha256"] == {name: None if raw is None else hashlib.sha256(raw).hexdigest()
             for name, raw in dialogue.items()}
