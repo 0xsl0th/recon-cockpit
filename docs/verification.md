@@ -4615,3 +4615,59 @@ After all integration cases pass, exercise the human approval CLI in a real
 terminal and retain private JSONL evidence of one approved execution. A test
 calling the controller's internal approval store proves grant mechanics but is
 not a human approval demonstration.
+
+## C1 Redis and SNMP secure metadata — 7 October 2026
+
+C1 extends coverage after the accepted initial owned GUI in PR #54. It adds
+`redis_server_info_v1` and `snmp_system_get_v1` through the existing seven-gate
+CLI path, without changing older profiles or GUI workflows. The fixed Redis
+RESP2 command is `INFO server`; SNMP performs one v2c TCP GET of three numeric
+system OIDs with a public synthetic fixture community. No credential setup,
+paid calls, external targets, UDP, writes, walks or deeper composition are added.
+
+The implementation revision is `eb6775d`; final documentation records validation
+separately. Private receipts are under `.secure-agent/redis-snmp-20261007/` in the
+primary checkout. Raw transcripts, JUnit files and runtime hashes stay private.
+The [runbook](redis-snmp-tools.md) describes invocation and limitations.
+
+The complete portable suite passed **10,413 tests** in 312.118 seconds, with zero
+failures, errors or skips (873 integration cases deselected). Hosted matrix checks
+remain a separate PR gate. `validated-source-files.json` binds the tested source;
+subsequent edits only document validation.
+
+Actual Linux validation passed **63 tests** with zero selected failures, errors
+or skips: **24 C1 cases** and **39 shared robustness regressions**. The C1 set
+covers all 16 scenarios, real approval consumption and replay rejection,
+missing-proof blocking, cancellation after the actual client starts, process
+cleanup, and refusal before execution when a test broadens UDP socket creation.
+The UDP negative test has an execution sentinel and sends no datagram traffic.
+
+The 16 ordinary/adversarial scenario runs each used one accepted TCP connection
+and one validated query, stayed within 8,192 output bytes and closed their lab.
+All **32/32 forbidden IP/port witnesses** blocked, with zero unauthorized
+successful destinations. All **16/16 evidence bundles replayed unchanged**.
+The three ordinary reporting tasks (Redis metadata, SNMP metadata and explicit
+SNMP noSuchObject) completed **3/3**, with **zero unnecessary refusals** and
+elapsed times of **2,701 / 2,583 / 2,565 ms**, respectively. The two hostile
+metadata cases also retained useful bounded results without follow-up authority;
+they are separate from the ordinary usefulness denominator. Empty Redis output,
+denial, malformed/oversized/stalled replies and Redis redirects stayed inconclusive.
+Every trial used zero provider calls and zero actual provider cost. These are
+local descriptive timings, not a comparative overhead measurement.
+
+Golden regressions retain the accepted bytes for 84 older actions, capability
+descriptors, workflow cards and lab specifications, 23 adapter descriptors, and
+old invocations/environments/compiled inputs. The registry/catalog adds two
+profiles from two programs: **25 candidate profiles / 13 external programs**;
+main remains **23 / 11** pending review and merge. Completed B0–B8, offline R5,
+accepted local R6 and the owner GUI walkthrough remain closed.
+
+Development failures remain disclosed in the private `development-notes.json`:
+initial mocks differed from native Redis newline/SNMP output framing; the first
+report tests exposed a missing import and Redis field-order replay mismatch;
+the first full portable run found four stale registry/subset expectations.
+Those failures were corrected, not counted as successful evidence. SNMP strings
+now use hex rendering and bounded printable decoding, so embedded newlines cannot
+forge OID rows. Report rendering escapes service-supplied Markdown/HTML delimiters
+and uses stable field ordering. Metadata and noSuchObject values remain explicit
+untrusted service reports, not authenticated identity or vulnerability proof.

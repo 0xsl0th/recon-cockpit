@@ -145,8 +145,10 @@ desktop bundles replayed unchanged with closed fixtures/processes and zero provi
 calls/cost. Both themes passed at 1120×720. Independent source reviews found no
 remaining blockers. These are scripted tests, not new personal acceptance.
 
-**Current continuation:** finish C1 validation and review its separate implementation
-PR. The candidate adds fixed unauthenticated Redis `INFO server` and SNMPv2c TCP
+**Current continuation:** review the C1 implementation PR and its latest hosted
+checks before merging. Local validation passed 10,413 portable and 63 native
+cases, including 3/3 ordinary completions, 32/32 blocked destination witnesses
+and unchanged replay for all 16 scenarios. Do not automatically merge this new PR. The candidate adds fixed unauthenticated Redis `INFO server` and SNMPv2c TCP
 GET of three system scalars, with a public synthetic fixture community, selected
 structured metadata and private replayable evidence. One connection/query per
 action; all seven gates, existing limits and fresh approval remain. C1 adds no

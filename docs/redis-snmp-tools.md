@@ -70,7 +70,10 @@ neither authenticated server identity nor a vulnerability or authorization for
 follow-up. The networkless parser requires the complete reviewed output shape
 and independently checks every retained value. Successful process exit is
 insufficient. Raw bytes remain in bounded evidence; extra Redis INFO fields
-are validated for framing and discarded from the structured result.
+are validated for framing and discarded from the structured result. Redis accepts
+at most 64 fields, with values bounded to 512 printable ASCII characters. SNMP
+retains nonempty printable ASCII strings of at most 256 bytes and uint32 ticks;
+binary, non-ASCII, control-bearing or unsupported output stays inconclusive.
 
 | Scenario | Required interpretation |
 | --- | --- |
@@ -139,10 +142,11 @@ IP/port witnesses must have zero unauthorized destination successes; the UDP
 witness must pass without enabling datagram transport. Fresh-approval consumption,
 replay rejection, missing-proof denial and cleanup remain required.
 
-Initial native smoke executed both clients successfully with one connection,
-one validated request and all ten existing boundary witnesses per run. Full
-scenario, replay and enforcement receipts are recorded in
-[verification.md](verification.md); smoke alone is not final acceptance.
+Local validation passed 10,413 portable and 63 native Linux tests. The ordinary
+reporting tasks completed 3/3 with zero unnecessary refusals; all 16 scenarios
+replayed unchanged and all 32 forbidden IP/port witnesses blocked. Full receipts
+are recorded in the [verification record](verification.md#c1-redis-and-snmp-secure-metadata--7-october-2026).
+Review, hosted checks and merge remain the final acceptance gate.
 Automated grants are synthetic test instrumentation, not personal acceptance.
 Report descriptive elapsed time, useful completion/refusals and zero provider
 calls/cost; comparative overhead remains deferred.
