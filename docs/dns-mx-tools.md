@@ -1,7 +1,8 @@
 # Owned DNS MX metadata
 
 C18 adds `dig_dns_mx_v1`, a fixed mail-routing metadata query through the existing
-secure CLI. It reuses the installed `dig` executable, isolated authority services
+secure CLI in [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74),
+which remains unmerged. It reuses the installed `dig` executable, isolated authority services
 and disconnected owned DNS fixture. This is a candidate: main accepts 42 profiles
 across 16 external programs; C18 makes 43 profiles with the same 16 programs.
 G1–G5 passed locally; G6 final review, checks and merge remain open.

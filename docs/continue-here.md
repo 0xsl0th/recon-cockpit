@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: PR #73 is merged; C18 DNS MX and the finite coverage contract are the active slice.**
+**Current status: PR #73 is merged; [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74) contains the locally validated C18 candidate and finite coverage contract. It remains unmerged.**
 [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72) merged as
 `e00482409362f1f9380bc225063b84762446dee9` after fresh authority/runtime and
 parser/evidence reviews found no blockers and all five final PR checks passed. All five
@@ -1844,7 +1844,9 @@ Planning uses synthetic responses.
    source pin; only documentation and the terminal-test O_NOCTTY correction may
    differ from native-tested `89d4465`; production bytes remain identical.
    Accepted coverage remains 42 profiles/16 programs; the candidate is 43/16.
-3. Review the latest C18 PR and required checks before any later authorized merge.
+3. Review the latest [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74)
+   revision and required checks before any later authorized merge. Its branch is
+   `feature/dns-mx-coverage`; consult the PR for latest-head CI status.
    Use the [finite coverage contract](professional-v1-coverage.md) to retain all six
    outcomes. Next is T02 bounded TLS version-posture feasibility with sslscan as a
    candidate, not an already selected secure engine; no T02 installation is done.
