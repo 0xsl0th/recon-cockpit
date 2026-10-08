@@ -16,9 +16,10 @@ also passed. Reviewed and merged trees match
 `.secure-agent/pr75-merge-review.json`; the earlier source-feasibility handoff
 remains unchanged historical evidence.
 
-The new [native diagnostic](tls-posture-native.md), branch
-`feature/tls-posture-native-feasibility` in `/tmp/recon-tls-posture-native`, remains
-unmerged and needs review and its final checks. It is outside the secure catalog.
+[PR #76](https://github.com/0xsl0th/recon-cockpit/pull/76) contains the new
+[native diagnostic](tls-posture-native.md), branch
+`feature/tls-posture-native-feasibility` in `/tmp/recon-tls-posture-native`. It
+remains unmerged and needs review and its final checks. It is outside the secure catalog.
 Frozen execution source: `958b5d6`. Private corpus, verification and handoff:
 `.secure-agent/tls-posture-native-20261008/`. Development failures are retained.
 No assessment, approval or permit is restored by these files.
