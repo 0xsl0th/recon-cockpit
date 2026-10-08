@@ -33,7 +33,7 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("tls-cert-", "openssl_peer_certificate_v1"),
+    for prefix, tool in (("nuclei-", "nuclei_directory_listing_v1"), ("tls-cert-", "openssl_peer_certificate_v1"),
                          ("ssh-algos-", "ssh_transport_algorithms_v1"),
                          ("ftp-tls-", "ftp_starttls_handshake_v1"),
                          ("ldap-tls-", "ldap_starttls_handshake_v1"),
@@ -1228,3 +1228,10 @@ TLS_CERTIFICATE_DER_SHA256 = {
     'tls-cert-stalled': 'd3ea29eb6704f8a80cbba41bf548c8c3fd82c429668016601eda019d2dd44e02',
 }
 CASES += TLS_CERTIFICATE_CASES
+
+
+NUCLEI_TOOL_ID = "nuclei_directory_listing_v1"
+NUCLEI_CASES = ('nuclei-index', 'nuclei-index-variant', 'nuclei-no-index', 'nuclei-not-found', 'nuclei-injected', 'nuclei-redirect-ip', 'nuclei-redirect-port', 'nuclei-incomplete', 'nuclei-conflicting-length', 'nuclei-oversized', 'nuclei-chunked', 'nuclei-encoded', 'nuclei-stalled')
+NUCLEI_SUCCESS_CASES = NUCLEI_CASES[:5]
+CASES += NUCLEI_CASES
+VARIANTS = CASES

@@ -121,7 +121,11 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
         if status == "succeeded":
             from .network_tools_parser_runtime import parse_isolated_tool
             try:
-                parsed = parse_isolated_tool(tool_id, stdout, stderr, deadline=deadline)
+                extra = {}
+                if tool_id == "nuclei_directory_listing_v1":
+                    from .network_tools_lab_contract import decode_owner_response
+                    extra["owner_response"] = decode_owner_response(context["owner_response"], require_complete=True)
+                parsed = parse_isolated_tool(tool_id, stdout, stderr, deadline=deadline, **extra)
             except ValueError:
                 parsed = None
             if contract.encode(parsed) != contract.encode(result["tool_observation"]):
@@ -244,6 +248,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_nsid_observed": "dns_nsid_observed",
                "dns_nsid_empty": "dns_nsid_empty",
                "dns_nsid_absent": "dns_nsid_absent",
+               "signature_present": "signature_present", "signature_absent": "signature_absent",
                "tls_peer_certificate_observed": "tls_peer_certificate_observed",
                "ssh_algorithm_advertisements_observed": "ssh_algorithm_advertisements_observed",
                "snmp_interface_next_observed": "snmp_interface_next_observed",
@@ -394,6 +399,16 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Both bounded raw channels are independently reparsed without network. Complete native success framing is required; process exit alone does not establish useful or empty results.",
                 "The service has no filesystem or mail backend. Unsupported names, extensions or diagnostic formats remain inconclusive; normalized observations cannot select follow-up work.",
                 "Counters record validated NLST or EHLO queries. Accepted connections are acknowledged lower bounds; read-only inspection never restores authority.",
+            ]
+        if manifest["fixture_case"].startswith("nuclei-"):
+            report["limitations"] = [
+                "One fixed directory-listing signature check uses pinned Nuclei and a disconnected owned HTTP fixture; this is not a generic vulnerability scan or professional engagement validation.",
+                "signature_present means the reviewed title, heading and parent link occurred in a complete HTTP 200 response. It does not verify exploitability, a CVE or exposure of sensitive files. signature_absent means only that the exact predicate was false in a completed response.",
+                "The owner independently retains the response bytes acknowledged by send and whether transmission and connection close completed. This is local fixture evidence, not proof of external server authenticity or client reception.",
+                "Nuclei normalizes its HTTP dump. Original framing and the retained dump are both parsed without network and must agree on status and body; chunked, encoded, ambiguous, partial and oversized responses remain inconclusive.",
+                "Hostile content stays private raw evidence and cannot choose scope, template, argv, approval or follow-up. No model is involved, and no model injection-resistance claim follows.",
+                "Private scratch is disposable and capped at 8 MiB, 128 inodes and 64 KiB per file, with noexec/nodev/nosuid and Landlock. Existing tool profiles retain their limits; no host writes, credentials, updates or template downloads are authorized.",
+                "Counters attest one validated fixed GET. Replay checks local evidence consistency, leaves files unchanged and restores no grants or execution authority.",
             ]
         if manifest["fixture_case"].startswith("ftp-tls-"):
             report["limitations"] = [

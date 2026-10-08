@@ -22,7 +22,8 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             POSTGRESQL_TLS_TOOL_ID, POSTGRESQL_TLS_PARAMETERS, MYSQL_TLS_TOOL_ID, MYSQL_TLS_PARAMETERS,
                             WHATWEB_TOOL_ID, WHATWEB_PARAMETERS, DIG_SRV_TOOL_ID, DIG_SRV_PARAMETERS, DIG_NSID_TOOL_ID, DIG_NSID_PARAMETERS, DIG_AXFR_TOOL_ID, DIG_AXFR_PARAMETERS, RDP_TOOL_ID, RDP_PARAMETERS, SMB2_TOOL_ID, SMB2_PARAMETERS,
                             SMTP_TLS_TOOL_ID, SMTP_TLS_PARAMETERS, LDAP_TLS_TOOL_ID, LDAP_TLS_PARAMETERS, FTP_TLS_TOOL_ID, FTP_TLS_PARAMETERS, NETWORK_TOOLS_LIMITS, get_adapter)
-from .tool_adapters import TLS_CERTIFICATE_TOOL_ID, TLS_CERTIFICATE_PARAMETERS
+from .tool_adapters import NUCLEI_TOOL_ID, NUCLEI_PARAMETERS, TLS_CERTIFICATE_TOOL_ID, TLS_CERTIFICATE_PARAMETERS
+from .network_tools_fixture import NUCLEI_CASES, NUCLEI_SUCCESS_CASES
 from .network_tools_fixture import (TLS_CERTIFICATE_CASES, TLS_CERTIFICATE_SUCCESS_CASES,
     TLS_CERTIFICATE_COMPLETE_CASES, TLS_CERTIFICATE_CA_PEM)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
@@ -97,6 +98,9 @@ C9_CASES = FTP_TLS_CASES
 C10_CASES = DNS_NSID_CASES
 C11_CASES = DNS_AXFR_CASES
 C12_CASES = HTTP_OPTIONS_CASES
+C16_CASES = NUCLEI_CASES
+PARAMETERS[NUCLEI_TOOL_ID] = dict(NUCLEI_PARAMETERS)
+PARSER_VERSIONS[NUCLEI_TOOL_ID] = "nuclei-directory-listing-v1"
 C15_CASES = TLS_CERTIFICATE_CASES
 PARAMETERS[TLS_CERTIFICATE_TOOL_ID] = dict(TLS_CERTIFICATE_PARAMETERS)
 PARSER_VERSIONS[TLS_CERTIFICATE_TOOL_ID] = "openssl-peer-certificate-v1"
@@ -139,8 +143,20 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES + C15_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES + C15_CASES + C16_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in C16_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(NUCLEI_TOOL_ID).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "http_check": {"method": "GET", "path": "/public/",
+                "template_id": "recon-owned-directory-listing-v1", "max_connections": 1, "max_requests": 1,
+                "scratch_bytes": 8388608, "scratch_inodes": 128, "scratch_file_bytes": 65536,
+                "host_writes": False, "credentials": False, "updates": False,
+                "redirects": False, "retries": False, "response_directed_followup": False},
+            "result_semantics": "signature_from_bounded_owned_http_response",
+            "parser_versions": {NUCLEI_TOOL_ID: PARSER_VERSIONS[NUCLEI_TOOL_ID]}}
     if case in C15_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(TLS_CERTIFICATE_TOOL_ID).to_dict()],
@@ -475,6 +491,7 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
                 and (connections != 1 or expected["scenario"] not in DNS_SRV_SUCCESS_CASES))
             or (expected["scenario"] in C5_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in RDP_SUCCESS_CASES))
+            or (expected["scenario"] in C16_CASES and result.get("tool_observation") is not None and connections != 1)
             or (expected["scenario"] in C15_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in TLS_CERTIFICATE_SUCCESS_CASES))
             or (expected["scenario"] in C14_CASES and result.get("tool_observation") is not None
@@ -498,6 +515,11 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
             or (expected["scenario"] in B7_CASES and result.get("tool_observation") is not None and connections < 2)
             or (execution_status == "succeeded" and result.get("tool_observation") is not None and requests != request_limit)):
         raise ValueError("network_tools_request_continuity_mismatch")
+    if tool_id == NUCLEI_TOOL_ID and result.get("tool_observation") is not None:
+        from .network_tools_lab_contract import decode_owner_response
+        wire = decode_owner_response(context["owner_response"], require_complete=True)
+        if result["tool_observation"].get("owner_response_sha256") != hashlib.sha256(wire).hexdigest():
+            raise ValueError("nuclei_owner_response_commitment_mismatch")
     return context
 
 
@@ -518,7 +540,7 @@ def validate_tool_result(result, *, tool_id, execution_status, runtime_sha256=No
             or type(core["truncated"]) is not bool or core["truncated"] != (execution_status == "output_limit")):
         raise ValueError("invalid_network_tool_result")
     checks = core["boundary_checks"]
-    if type(checks) is not dict or set(checks) != BOUNDARY_FIELDS or any(v is not True for v in checks.values()):
+    if type(checks) is not dict or set(checks) != (BOUNDARY_FIELDS | frozenset({"scratch_mount_bounded", "scratch_writes_confined", "scratch_noexec", "scratch_file_limit", "static_runtime_verified"}) if tool_id == NUCLEI_TOOL_ID else BOUNDARY_FIELDS) or any(v is not True for v in checks.values()):
         raise ValueError("invalid_network_tool_boundary_checks")
     decoded = []
     try:
@@ -569,6 +591,8 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == NUCLEI_TOOL_ID:
+        return _observation(tool_id, normalized["outcome"], normalized["outcome"], normalized)
     if tool_id == TLS_CERTIFICATE_TOOL_ID:
         return _observation(tool_id, "tls_peer_certificate_observed", "tls_peer_certificate_observed", normalized)
     if tool_id == SSH_ALGORITHMS_TOOL_ID:

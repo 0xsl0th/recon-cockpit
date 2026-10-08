@@ -27,6 +27,7 @@ DIG_NSID = "dig_dns_nsid_v1"
 DIG_AXFR = "dig_dns_axfr_v1"
 OPENSSL = "openssl_tls_handshake_v1"
 TLS_CERTIFICATE = "openssl_peer_certificate_v1"
+NUCLEI = "nuclei_directory_listing_v1"
 SSH = "ssh_host_keys_v1"
 LDAP = "ldap_rootdse_v1"
 SMB = "smb_share_list_v1"
@@ -210,7 +211,10 @@ from . import network_tools_whatweb_runtime as whatweb_runtime
 from . import network_tools_rdp_runtime as rdp_runtime
 from . import network_tools_smb2_runtime as smb2_runtime
 from . import network_tools_ssh_algorithms_runtime as ssh_algorithms_runtime
+from . import network_tools_nuclei_runtime as nuclei_runtime
 
+EXECUTABLES[NUCLEI] = nuclei_runtime.EXECUTABLE
+FIXED_ARGV[NUCLEI] = nuclei_runtime.FIXED_ARGV
 FIXED_ARGV[WHATWEB] = whatweb_runtime.FIXED_ARGV
 FIXED_ARGV[RDP] = rdp_runtime.FIXED_ARGV
 FIXED_ARGV[SMB2] = smb2_runtime.FIXED_ARGV
@@ -230,6 +234,7 @@ MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
+MODULES += ("network_tools_nuclei_runtime", "network_tools_nuclei_fixture")
 
 
 def encode(value):
@@ -238,6 +243,8 @@ def encode(value):
 
 
 def execution_environment(tool_id):
+    if tool_id == NUCLEI:
+        return dict(nuclei_runtime.ENVIRONMENT)
     if tool_id == SSH_ALGORITHMS:
         return dict(ssh_algorithms_runtime.ENVIRONMENT)
     if type(tool_id) is not str or tool_id not in EXECUTABLES:
@@ -267,6 +274,8 @@ def execution_environment(tool_id):
 
 
 def _compiled(tool_id):
+    if tool_id == NUCLEI:
+        return nuclei_runtime.COMPILED[0]
     if tool_id == SSH_ALGORITHMS:
         return ssh_algorithms_runtime.COMPILED[0]
     if tool_id == SMB2:
@@ -299,6 +308,8 @@ def _compiled(tool_id):
 
 def compiled_files(tool_id):
     """Retain existing profiles' bytes and close new profiles over fixed data."""
+    if tool_id == NUCLEI:
+        return nuclei_runtime.COMPILED
     if tool_id == WHATWEB:
         return whatweb_runtime.COMPILED
     first = _compiled(tool_id)
@@ -378,6 +389,8 @@ def read_runtime_file(path, tool_id):
 
 
 def validate_manifest(value, *, tool_id=None):
+    if type(value) is dict and value.get("tool_id") == NUCLEI:
+        return nuclei_runtime.validate_manifest(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") == SSH_ALGORITHMS:
         return ssh_algorithms_runtime.validate_manifest(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") == SMB2:
@@ -437,6 +450,8 @@ def inspect_tool_runtime(tool_id, control):
     if type(tool_id) is not str or tool_id not in EXECUTABLES:
         raise ValueError("unsupported_network_tool")
     control.check()
+    if tool_id == NUCLEI:
+        return nuclei_runtime.inspect_runtime(control)
     if tool_id == SSH_ALGORITHMS:
         return ssh_algorithms_runtime.inspect_runtime(control)
     if tool_id == SMB2:
@@ -489,6 +504,8 @@ def runtime_source_mounts(manifest):
 
 def _snapshot(manifest, control):
     validate_manifest(manifest)
+    if manifest["tool_id"] == NUCLEI:
+        return nuclei_runtime.snapshot(manifest, control)
     data = _compiled(manifest["tool_id"])
     source, _, raw = data if data is not None else (None, None, None)
     if manifest["tool_id"] == WHATWEB:
@@ -505,6 +522,10 @@ def _snapshot(manifest, control):
 
 
 def _command(lab, bootstrap, manifest, descriptors, nonce, commitment, *, service_web=False):
+    if manifest["tool_id"] == NUCLEI:
+        if service_web:
+            raise ValueError("nuclei_service_web_profile_forbidden")
+        return nuclei_runtime.command(lab, bootstrap, manifest, descriptors, nonce, commitment)
     stdlib, files = bootstrap
     tool_files = runtime_files(manifest)
     tool_paths = {item["destination"] for item in tool_files}
@@ -584,7 +605,8 @@ def run_network_tool_owned(*, lab, launch, control, closure=None, manifest=None)
         "bytes_received": len(stdout) + len(stderr), "truncated": reason == "output_limit",
         "boundary_checks": dict.fromkeys(("forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
             "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
-            "raw_sockets_blocked", "landlock_applied", "python_unreadable"), True),
+            "raw_sockets_blocked", "landlock_applied", "python_unreadable")
+            + (tuple(sorted(nuclei_runtime.BOUNDARY_FIELDS)) if selected == NUCLEI else ()), True),
         "raw_output_base64": base64.b64encode(stdout).decode("ascii"),
         "raw_stderr_base64": base64.b64encode(stderr).decode("ascii"),
         "provenance": {"runtime_sha256": manifest_digest(manifest), "runtime_manifest": manifest,

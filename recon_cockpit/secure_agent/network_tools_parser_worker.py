@@ -19,15 +19,28 @@ def main():
         checks = planner_worker._bootstrap(host)
         for kind, value in ((resource.RLIMIT_AS, 128 * 1024 * 1024), (resource.RLIMIT_CPU, 2)):
             resource.setrlimit(kind, (value, value))
-        payload = sys.stdin.buffer.read(network_tools_parser.MAX_OUTPUT_BYTES + 5)
-        if len(payload) < 4 or len(payload) > network_tools_parser.MAX_OUTPUT_BYTES + 4:
-            raise ValueError("invalid_parser_payload")
-        output_size = int.from_bytes(payload[:4], "big")
-        if output_size > len(payload) - 4:
-            raise ValueError("invalid_parser_payload")
-        raw, stderr = payload[4:4 + output_size], payload[4 + output_size:]
+        if tool_id == "nuclei_directory_listing_v1":
+            maximum = network_tools_parser.MAX_OUTPUT_BYTES + 4096 + 8
+            payload = sys.stdin.buffer.read(maximum + 1)
+            if not 8 < len(payload) <= maximum:
+                raise ValueError("invalid_nuclei_parser_payload")
+            output_size, error_size = int.from_bytes(payload[:4], "big"), int.from_bytes(payload[4:8], "big")
+            owner_start = 8 + output_size + error_size
+            if output_size + error_size > network_tools_parser.MAX_OUTPUT_BYTES or not 0 < len(payload) - owner_start <= 4096:
+                raise ValueError("invalid_nuclei_parser_payload")
+            raw, stderr = payload[8:8 + output_size], payload[8 + output_size:owner_start]
+            extra = {"owner_response": payload[owner_start:]}
+        else:
+            payload = sys.stdin.buffer.read(network_tools_parser.MAX_OUTPUT_BYTES + 5)
+            if len(payload) < 4 or len(payload) > network_tools_parser.MAX_OUTPUT_BYTES + 4:
+                raise ValueError("invalid_parser_payload")
+            output_size = int.from_bytes(payload[:4], "big")
+            if output_size > len(payload) - 4:
+                raise ValueError("invalid_parser_payload")
+            raw, stderr = payload[4:4 + output_size], payload[4 + output_size:]
+            extra = {}
         try:
-            result = network_tools_parser.parse_tool_output(tool_id, raw, stderr)
+            result = network_tools_parser.parse_tool_output(tool_id, raw, stderr, **extra)
             status = "parsed"
         except ValueError:
             result, status = None, "invalid"

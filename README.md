@@ -187,11 +187,15 @@ OpenSSL handshake yields bounded DER fingerprint, validity and DNS/IP SAN metada
 **18,396 portable/39 native tests and 103 accepted-bundle replays passed.**
 Finite compatibility, CN fallback and trust/revocation limits remain documented.
 
-The [next-step assessment](docs/nuclei-feasibility.md) evaluates one pinned harmless Nuclei HTTP
-check. Static inspection found that its large static binary and mandatory startup
-writes cannot use the existing runtime unchanged. A separate bounded runtime needs
-review and authorization before implementation. No Nuclei integration, installation
-or execution is claimed; accepted capability counts remain unchanged.
+The [C16 Nuclei candidate](docs/nuclei-tools.md) adds one pinned directory-listing
+signature check through a separate static runtime with bounded private scratch.
+The feasibility assessment was accepted in [PR #70](https://github.com/0xsl0th/recon-cockpit/pull/70)
+at `2f7fb5a`; the operator then authorized implementation and owned execution.
+Accepted main remains **40 profiles/15 programs**; the candidate registry has
+**41/16**, pending final validation, independent review, required checks and merge.
+Useful matched and unmatched results require complete independent owner bytes,
+a supported native dump and recomputed signature agreement. This is no generic
+vulnerability scan or CVE claim; credential/model/paid work remains deferred.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

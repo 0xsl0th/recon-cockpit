@@ -1,5 +1,15 @@
 # Nuclei: bounded owned HTTP check feasibility
 
+> **Historical assessment; superseded for implementation status on 8 October 2026.**
+> PR #70 accepted this feasibility document at `2f7fb5a` (reviewed head `c45708e`),
+> after all five final and post-merge CI jobs passed. The operator subsequently
+> authorized the separate runtime prototype, private artifact provisioning and
+> owned execution. The [C16 runbook](nuclei-tools.md) now describes that candidate
+> and its actual limits/evidence design; final validation and PR acceptance remain
+> pending. The findings and authorization prerequisites below record the earlier
+> data-only assessment, not the current implementation status. Accepted coverage
+> remains 40 profiles/15 programs until the 41/16 candidate is reviewed and merged.
+
 ## Decision and current scope
 
 The feasibility assessment is complete. Stock Nuclei cannot use the current

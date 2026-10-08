@@ -27,6 +27,7 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('nuclei-index', 'nuclei-index-variant', 'nuclei-no-index', 'nuclei-not-found', 'nuclei-injected', 'nuclei-redirect-ip', 'nuclei-redirect-port', 'nuclei-incomplete', 'nuclei-conflicting-length', 'nuclei-oversized', 'nuclei-chunked', 'nuclei-encoded', 'nuclei-stalled'), "nuclei_directory_listing_v1"),
     **dict.fromkeys(('tls-cert-ok', 'tls-cert-multi-san', 'tls-cert-no-san', 'tls-cert-injected',
                     'tls-cert-wrong-name', 'tls-cert-expired', 'tls-cert-untrusted', 'tls-cert-unsupported-san',
                     'tls-cert-too-many-san', 'tls-cert-oversized', 'tls-cert-malformed', 'tls-cert-stalled'),

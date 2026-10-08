@@ -219,7 +219,7 @@ def test_owner_closes_second_connection_before_reading_or_counting_it(case):
 
 def test_all_112_accepted_fixture_specs_remain_byte_identical():
     definitions = {case: contract.spec(case) for case in contract.CASES
-                   if case not in fixture.WHATWEB_CASES + fixture.DNS_SRV_CASES + fixture.RDP_CASES + fixture.SMB2_CASES + fixture.SMTP_TLS_CASES + fixture.LDAP_TLS_CASES + fixture.FTP_TLS_CASES + fixture.DNS_NSID_CASES + fixture.DNS_AXFR_CASES + fixture.HTTP_OPTIONS_CASES + fixture.SNMP_NEXT_CASES + fixture.SSH_ALGORITHMS_CASES + fixture.TLS_CERTIFICATE_CASES}
+                   if case not in fixture.WHATWEB_CASES + fixture.DNS_SRV_CASES + fixture.RDP_CASES + fixture.SMB2_CASES + fixture.SMTP_TLS_CASES + fixture.LDAP_TLS_CASES + fixture.FTP_TLS_CASES + fixture.DNS_NSID_CASES + fixture.DNS_AXFR_CASES + fixture.HTTP_OPTIONS_CASES + fixture.SNMP_NEXT_CASES + fixture.SSH_ALGORITHMS_CASES + fixture.TLS_CERTIFICATE_CASES + fixture.NUCLEI_CASES}
     assert len(definitions) == 112
     raw = json.dumps(definitions, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()
     assert hashlib.sha256(raw).hexdigest() == "fde5f39ad56dbec5db32b2748fa51444ca1feb8840dcb31190bdbe41c55f3237"

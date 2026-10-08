@@ -1,6 +1,7 @@
 """Fixed DNS/TLS owner; no upstream queries, credentials or application sessions."""
 
 import hashlib
+import base64
 import importlib.util
 import json
 import math
@@ -24,6 +25,7 @@ if __package__:
     from . import network_tools_whatweb_fixture as whatweb_fixture
     from . import network_tools_dns_srv_fixture as dns_srv_fixture
     from . import network_tools_dns_nsid_fixture as dns_nsid_fixture
+    from . import network_tools_nuclei_fixture as nuclei_fixture
     from . import network_tools_tls_certificate_fixture as tls_certificate_fixture
     from . import network_tools_ssh_algorithms_fixture as ssh_algorithms_fixture
     from . import network_tools_snmp_next_fixture as snmp_next_fixture
@@ -55,6 +57,7 @@ else:
     whatweb_fixture = _load("network_tools_fixed_whatweb", "network_tools_whatweb_fixture.py")
     dns_srv_fixture = _load("network_tools_fixed_dns_srv", "network_tools_dns_srv_fixture.py")
     dns_nsid_fixture = _load("network_tools_fixed_dns_nsid", "network_tools_dns_nsid_fixture.py")
+    nuclei_fixture = _load("network_tools_fixed_nuclei", "network_tools_nuclei_fixture.py")
     tls_certificate_fixture = _load("network_tools_fixed_tls_certificate", "network_tools_tls_certificate_fixture.py")
     ssh_algorithms_fixture = _load("network_tools_fixed_ssh_algorithms", "network_tools_ssh_algorithms_fixture.py")
     snmp_next_fixture = _load("network_tools_fixed_snmp_next", "network_tools_snmp_next_fixture.py")
@@ -278,7 +281,7 @@ class NetworkToolsService(owner.Service):
                     raw.close()
                     raise RuntimeError("nmap_service_fixture_request_limit")
                 if self.case.startswith(("ftp-", "smtp-", "docker-ping-", "docker-version-", "winrm-", "redis-", "snmp-",
-                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-srv-", "dig-nsid-", "dig-axfr-", "http-options-", "ssh-algos-", "tls-cert-", "rdp-", "smb2-", "ldap-tls-")) and self.connections:
+                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-srv-", "dig-nsid-", "dig-axfr-", "http-options-", "ssh-algos-", "tls-cert-", "nuclei-", "rdp-", "smb2-", "ldap-tls-")) and self.connections:
                     raw.close()
                     raise RuntimeError("single_metadata_fixture_connection_limit")
                 with self.condition:
@@ -287,7 +290,10 @@ class NetworkToolsService(owner.Service):
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.case in fixture.TLS_CERTIFICATE_CASES:
+                    if self.case in fixture.NUCLEI_CASES:
+                        nuclei_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            on_request=self._smb_enumerated)
+                    elif self.case in fixture.TLS_CERTIFICATE_CASES:
                         tls_certificate_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             context=self.context, on_request=self._smb_enumerated)
                     elif self.case in fixture.FTP_TLS_CASES:
@@ -400,6 +406,93 @@ class NetworkToolsService(owner.Service):
                 self.condition.notify_all()
 
 
+class NucleiService(owner.Service):
+    """One HTTP send transcript, independent of expected fixture outcomes."""
+
+    def __init__(self, request, listener):
+        self.deadline = request["deadline"]
+        self._response_bytes = bytearray()
+        self._response_complete = False
+        self._response_closed = False
+        self._response_settled = False
+        super().__init__(request["case"], listener)
+
+    def _requested(self):
+        with self.condition:
+            if self.requests != 0 or self.connections != 1:
+                raise ValueError("nuclei_owner_request_limit")
+            self.requests = 1
+            self.condition.notify_all()
+
+    def _sent(self, raw):
+        with self.condition:
+            if (type(raw) is not bytes or not raw or self.requests != 1 or self._response_settled
+                    or len(self._response_bytes) + len(raw) > nuclei_fixture.NUCLEI_MAX_RESPONSE_BYTES):
+                raise ValueError("nuclei_owner_response_limit")
+            self._response_bytes.extend(raw)
+            self.condition.notify_all()
+
+    def _serve(self):
+        try:
+            while True:
+                connection, _ = self.listener.accept()
+                with self.condition:
+                    if self.connections:
+                        connection.close()
+                        raise RuntimeError("nuclei_owner_connection_limit")
+                    self.connections = 1
+                    self.condition.notify_all()
+                completed, closed = False, False
+                try:
+                    result = nuclei_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                        on_request=self._requested, on_response=self._sent)
+                    if (type(result) is not dict or set(result) != {"response_bytes_sent", "response_send_complete"}
+                            or type(result["response_bytes_sent"]) is not int
+                            or result["response_bytes_sent"] != len(self._response_bytes)
+                            or type(result["response_send_complete"]) is not bool):
+                        raise ValueError("nuclei_owner_send_receipt")
+                    completed = result["response_send_complete"] and bool(self._response_bytes)
+                except (OSError, ValueError, UnicodeError):
+                    pass
+                finally:
+                    try:
+                        connection.close()
+                        closed = True
+                    finally:
+                        with self.condition:
+                            self._response_closed = closed
+                            self._response_complete = completed and closed
+                            self._response_settled = True
+                            self.condition.notify_all()
+        except BaseException:
+            with self.condition:
+                self.failed = True
+                self.condition.notify_all()
+
+    def snapshot(self, minimum_connections, minimum_requests, deadline):
+        with self.condition:
+            while self.connections < minimum_connections or self.requests < minimum_requests:
+                if self.failed:
+                    raise RuntimeError("nuclei_owner_service_failed")
+                self.condition.wait(timeout=owner.worker._remaining(deadline, 0.05))
+            # Final send and close normally settle before client exit. Bound this
+            # extra barrier so a deliberately stalled fixture remains incomplete.
+            settle_until = min(deadline, time.monotonic() + 0.25)
+            while self.connections and not self._response_settled and not self.failed:
+                remaining = settle_until - time.monotonic()
+                if remaining <= 0:
+                    break
+                self.condition.wait(timeout=remaining)
+            if self.failed or not 0 <= self.requests <= self.connections <= 1:
+                raise RuntimeError("nuclei_owner_service_failed")
+            raw = bytes(self._response_bytes)
+            return {"connection_count": self.connections, "request_count": self.requests,
+                "owner_response": {"version": "1", "bytes_sent": len(raw),
+                    "response_base64": base64.b64encode(raw).decode("ascii"),
+                    "response_sha256": hashlib.sha256(raw).hexdigest(),
+                    "send_complete": self._response_complete, "connection_closed": self._response_closed}}
+
+
 class NetworkToolsOwner(owner.Owner):
     def read_request(self, source):
         return read_request(source)
@@ -411,7 +504,8 @@ class NetworkToolsOwner(owner.Owner):
         return rpc_fixture.firewall_rules() if request["case"].startswith(("rpc-", "nfs-")) else super().firewall_rules(request)
 
     def create_service(self, request, listener):
-        return NetworkToolsService(request, listener)
+        return (NucleiService(request, listener) if request["case"] in fixture.NUCLEI_CASES
+                else NetworkToolsService(request, listener))
 
 
 def main():

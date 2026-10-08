@@ -13,6 +13,7 @@ DIG_TOOL_ID = "dig_dns_query_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 SSH_ALGORITHMS_TOOL_ID = "ssh_transport_algorithms_v1"
+NUCLEI_TOOL_ID = "nuclei_directory_listing_v1"
 TLS_CERTIFICATE_TOOL_ID = "openssl_peer_certificate_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
 SMB_TOOL_ID = "smb_share_list_v1"
@@ -44,6 +45,7 @@ FTP_TLS_FINAL_GREETING = b"220 harbordesk.test ready\r\n"
 DATABASE_TLS_SERVICES = {POSTGRESQL_TLS_TOOL_ID: "postgresql", MYSQL_TLS_TOOL_ID: "mysql"}
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_ALGORITHMS_TOOL_ID: "ssh-kexinit-wire-v1",
+    NUCLEI_TOOL_ID: "nuclei-directory-listing-v1",
     TLS_CERTIFICATE_TOOL_ID: "openssl-peer-certificate-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
@@ -151,6 +153,8 @@ def validate_result(tool_id, value):
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id == NUCLEI_TOOL_ID:
+        return _nuclei_parser().validate_result(value)
     if tool_id == RDP_TOOL_ID:
         return _rdp_parser().validate_result(value)
     if tool_id == SMB2_TOOL_ID:
@@ -830,6 +834,14 @@ def _parse_ssh_algorithms(output, stderr):
     return _ssh_algorithms_parser().parse_output(output, stderr)
 
 
+def _nuclei_parser():
+    if __package__:
+        from . import network_tools_nuclei_parser
+    else:
+        import network_tools_nuclei_parser
+    return network_tools_nuclei_parser
+
+
 def _tls_certificate_parser():
     if __package__:
         from . import network_tools_tls_certificate_parser
@@ -926,11 +938,15 @@ def _parse_whatweb(output, stderr):
     return _whatweb_parser().parse_output(output, stderr)
 
 
-def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=False):
+def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=False, owner_response=None):
     parser_version(tool_id)
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
             or len(output) + len(stderr) > MAX_OUTPUT_BYTES or type(truncated) is not bool or truncated):
         raise ValueError("invalid_network_tool_output_size")
+    if tool_id == NUCLEI_TOOL_ID:
+        return _nuclei_parser().parse_output(output, stderr, owner_response=owner_response)
+    if owner_response is not None:
+        raise ValueError("unexpected_network_tool_owner_response")
     if tool_id in DATABASE_TLS_SERVICES:
         return _parse_database_tls(tool_id, output, stderr)
     return {DIG_TOOL_ID: _parse_dns, OPENSSL_TOOL_ID: _parse_tls,

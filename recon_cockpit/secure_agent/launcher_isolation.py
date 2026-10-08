@@ -53,6 +53,7 @@ NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_
     'network_tools_whatweb_runtime',
     'network_tools_whatweb_parser',
     'network_tools_dns_srv_fixture', 'network_tools_dns_srv_parser', 'network_tools_dns_nsid_parser', 'network_tools_dns_nsid_fixture',
+    'network_tools_nuclei_runtime', 'network_tools_nuclei_worker', 'network_tools_nuclei_fixture', 'network_tools_nuclei_parser',
     'network_tools_tls_certificate_fixture', 'network_tools_tls_certificate_material', 'network_tools_tls_certificate_parser',
     'network_tools_ssh_algorithms_fixture', 'network_tools_ssh_algorithms_parser', 'network_tools_ssh_algorithms_runtime',
     'network_tools_snmp_next_fixture', 'network_tools_snmp_next_parser',
@@ -419,6 +420,10 @@ class LinuxFixtureLauncher:
                         from .web_tools_lab_contract import validate_closure as closure_validator
                     elif self._config['profile'] == 'owned_network_tools_lab':
                         from .network_tools_lab_contract import validate_closure as closure_validator
+                        if self.identity['scenario'].startswith('nuclei-'):
+                            # Cleanup repeats the last acknowledged counters;
+                            # the send transcript stays in the prior result.
+                            context = {key: item for key, item in context.items() if key != 'owner_response'}
                     elif self._config['profile'] == 'owned_service_web_lab':
                         from .service_web_lab_contract import validate_closure as closure_validator
                     self._lab_receipt = closure_validator({**context, 'status': 'closed'}, self.identity, previous=self._lab_context)

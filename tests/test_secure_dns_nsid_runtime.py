@@ -20,7 +20,7 @@ from test_secure_network_tools_runtime import envelope, manifest, recommit, veri
 def test_all_25_accepted_native_invocations_remain_byte_identical():
     selected = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI)}
     assert len(selected) == 25
     # Captured from accepted PR63 main before C10 edits.
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == (

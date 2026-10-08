@@ -29,6 +29,11 @@ RUNTIME_TAGS = {'owned_nmap_lab': 'nmap-launch-preconditions', 'owned_web_lab': 
 
 def runtime_tag(config, closure):
     if (config['profile'] == 'owned_network_tools_lab'
+            and closure.get('network_tools_runtime', {}).get('tool_id') == 'nuclei_directory_listing_v1'):
+        from .network_tools_nuclei_runtime import validate_manifest
+        validate_manifest(closure['network_tools_runtime'])
+        return 'nuclei-tools-launch-preconditions'
+    if (config['profile'] == 'owned_network_tools_lab'
             and closure.get('network_tools_runtime', {}).get('tool_id') == 'whatweb_http_fingerprint_v1'):
         return 'whatweb-tools-launch-preconditions'
     if (config['profile'] == 'owned_network_tools_lab'
@@ -42,7 +47,7 @@ def runtime_tag(config, closure):
 
 def validate_runtime_tag(tag, config, closure):
     expected = runtime_tag(config, closure)
-    special = tag in {*RUNTIME_TAGS.values(), 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'whatweb-tools-launch-preconditions'}
+    special = tag in {*RUNTIME_TAGS.values(), 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions'}
     if (expected is not None) != special or (expected is not None and tag != expected):
         raise ValueError('launcher_runtime_profile_changed')
 
