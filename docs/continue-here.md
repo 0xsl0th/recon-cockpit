@@ -5,7 +5,7 @@
 This development checkpoint never resumes an assessment or restores approvals.
 
 **Current work: priority 3 secure-tool coverage, C11 bounded DNS AXFR behavior.**
-Review the C11 candidate on `feature/dns-axfr-coverage` in `/tmp/recon-dns-axfr-coverage`,
+Review [PR #65](https://github.com/0xsl0th/recon-cockpit/pull/65), on `feature/dns-axfr-coverage` in `/tmp/recon-dns-axfr-coverage`,
 based on accepted main `dea8c7a`. See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [C11 runbook](dns-axfr-tools.md). One fixed `harbordesk.test. IN AXFR` request
 over TCP reuses the existing dig, authority, independent parser and evidence path.
