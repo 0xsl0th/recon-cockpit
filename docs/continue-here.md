@@ -4,21 +4,36 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: PR #73 is merged; [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74) contains the locally validated C18 candidate and finite coverage contract. It remains unmerged.**
+**Current status: [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74) is
+merged; C18/T01 is accepted and the finite coverage contract remains active.
+T02 source feasibility is complete; the next step is bounded OpenSSL native
+feasibility.**
+
+[PR #75](https://github.com/0xsl0th/recon-cockpit/pull/75), branch
+`docs/tls-posture-feasibility` in `/tmp/recon-tls-posture-feasibility`, contains
+this documentation-only decision and checkpoint update. It remains unmerged;
+review its latest revision and checks before a later authorized merge. Private
+handoff: `.secure-agent/tls-posture-feasibility-20261008/handoff.json`.
+
+The owner chose to wait with the competition proposal until **November 2026**.
+Keep PR #31, its proposal/PDF and email draft unchanged this turn. Refresh them
+with verified progress in November, before the **15 November 2026** deadline;
+submission requires a separate owner decision. Nothing has been submitted here.
+
 [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72) merged as
 `e00482409362f1f9380bc225063b84762446dee9` after fresh authority/runtime and
 parser/evidence reviews found no blockers and all five final PR checks passed. All five
 [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37816689999)
 also passed. Reviewed head `407f48f` and the merge have the same tree
-`5bfb8d52f06d486a513ffc429d0418cb7f94b764`. Accepted coverage is now **42 bounded
-secure profiles backed by 16 external programs**. C17's G1–G6 are closed.
+`5bfb8d52f06d486a513ffc429d0418cb7f94b764`. That merge brought accepted coverage
+to **42 bounded secure profiles backed by 16 external programs**. C17's G1–G6 remain closed.
 
 The [consolidated product roadmap](product-roadmap.md) separates today's verified
 capabilities from the professional-v1 release and the longer-term 40+ program
 product. Its planning estimates are **40–60 further PRs for an operator-assisted
 professional v1**, and **80–130 total further PRs for the broader product**.
 These are scoped engineering forecasts, not completion percentages, approval of
-deferred work or a claim that all 42 profiles are available through the GUI.
+deferred work or a claim that every catalog profile is available through the GUI.
 [PR #73](https://github.com/0xsl0th/recon-cockpit/pull/73) accepted the forecast at
 `993c83d` from reviewed head `44b479b` after review and all five final CI jobs
 passed. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37818772689)
@@ -26,7 +41,8 @@ also passed; reviewed and merged trees match. Private merge receipt:
 `.secure-agent/pr73-merge-review.json`.
 The owner agreed the plan and authorized continued coverage work. The new
 [finite task checklist](professional-v1-coverage.md) maps accepted exact profiles
-and fixes six remaining operator outcomes; candidate engines are not accepted
+and fixes six required operator outcomes; T01 is accepted and T02–T06 remain
+open. Candidate engines are not accepted
 integrations or a program-count quota.
 
 C17's [runbook](nuclei-git-tools.md) records one fixed GET of `/.git/HEAD` and two
@@ -52,11 +68,11 @@ SHA-256 `6721ac99867de7e57d6cc06035e65e923c690831087098015650d2b0df1868c6`.
 Merge review: `.secure-agent/pr72-merge-review.json`. The original C17 handoff is
 historical and remains unchanged; the merge receipt supersedes its open-PR status.
 
-**Current implementation: C18/T01 DNS MX**, using the existing dig runtime,
+**C18/T01 DNS MX is accepted**, using the existing dig runtime,
 one fixed nonrecursive TCP question and at most four typed rows. Null-MX, NODATA
 and NXDOMAIN have useful distinct meanings; no returned-host follow-up or mail
-operation is allowed. The candidate has **43 profiles/16 programs**; accepted
-main remains **42/16**. See the [C18 runbook](dns-mx-tools.md).
+operation is allowed. Accepted main now has **43 profiles/16 programs**.
+See the [C18 runbook](dns-mx-tools.md).
 
 **Local validation passed at `89d4465`: 19,888 portable and 37 native tests**,
 with zero skips, failures or errors. C18 achieved 5/5 ordinary plus 1/1 robustness
@@ -67,8 +83,12 @@ regression bundles also replayed unchanged. All 717 source hashes, seventeen
 inherited receipt links and the 303-case/42-adapter/33-runtime baseline matched.
 Scenario wall time was 2931–5089 ms, median 3550 ms;
 actual provider calls and cost were zero. This is descriptive timing, not
-comparative overhead. G1–G5 passed locally; G6 remains open pending final PR
-review, required checks and an authorized merge. Accepted main remains 42/16.
+comparative overhead. **G1–G6 are closed:** [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74)
+merged reviewed `043aa5437c09d522cbcd98dbd0b13b030f53ca89` as
+`b1afbbab8438fc55d3e509d51e00c1a9caddf2e1` after fresh review, 407 focused
+tests and all five final CI jobs passed. Reviewed and merged trees are identical.
+All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37834481139)
+also passed; merge receipt: `.secure-agent/pr74-merge-review.json`.
 Final follow-up changes documentation and the terminal-test fixture only;
 native-validated production bytes remain identical. The fixture correction uses
 `O_NOCTTY` after an isolated child reproduced the interrupted first portable run;
@@ -78,9 +98,15 @@ Private verification: `.secure-agent/dns-mx-20261008/verification.json`, SHA-256
 `59e3e89ced9a0887095bb62fe238a2c34fa45e4f724a2fefe2cf7b4c73505093`. Development test corrections and the exploratory smoke run are
 retained in the private development review; no historical hash was regenerated.
 
-**Next after C18: T02 bounded TLS version-posture feasibility**, initially
-assessing sslscan against a finite owned request/runtime contract. No T02 engine
-has been installed or implemented. Continue through required T03–T06 using the
+**T02 source feasibility is complete;
+[T02 itself remains open](tls-posture-feasibility.md).**
+Stock sslscan loses the received rejection evidence needed for the task. The next
+minimal native-feasibility slice will assess separately versioned OpenSSL
+per-version profiles through the existing secure infrastructure, retaining all
+four required versions. No tool installation or scan occurred in this slice;
+the already-installed sslscan has no secure integration. No T02 G1–G6 gate is
+closed, and accepted coverage remains 43 profiles/16 programs.
+Continue through required T03–T06 using the
 [finite checklist](professional-v1-coverage.md); do not remove difficult outcomes
 or substitute program counts for useful coverage. Existing closed milestones stay
 closed. Deeper workflows, comparative benchmarks, real credentials, attached or
@@ -634,10 +660,11 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: validate C18 and prepare its reviewable handoff.**
+**Current continuation: prove the bounded OpenSSL alternative for T02.**
 Follow the [finite task checklist](professional-v1-coverage.md), the
 [consolidated plan](product-roadmap.md) and current status at the top.
-C17 and earlier completed milestones stay closed. C18 is the active candidate;
+C18 and earlier completed milestones stay closed. T02 source feasibility is
+complete, but its OpenSSL alternative still needs native feasibility and G1–G6;
 no deeper workflow, credential or live-model work starts here.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
@@ -945,9 +972,10 @@ secure support, accepted B0–B8 scope and later professional-use gaps. Roughly
 40 tools remains a long-term target; executable counts do not replace protocol
 coverage or verification. The accepted catalog and current workflow preserve these boundaries.
 
-Refresh the proposal with verified progress in early November and target submission
-around 9 November after operator review. Documentation PR #31 on
-`docs/proposal-author-voice` remains separate and unmerged; the polished PDF stays
+The owner reaffirmed on 8 October that proposal work waits until November 2026.
+Refresh it with verified progress in early November and target submission around
+9 November after operator review, ahead of the 15 November deadline. Documentation
+PR #31 on `docs/proposal-author-voice` remains separate and unmerged; the polished PDF stays
 local, ignored and unchanged. No competition submission or release is authorized.
 
 **Current milestone: R5 offline scope complete; R6 local offline candidate accepted.** The
@@ -1828,30 +1856,36 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #73 merge is complete. PRs #6–#30 and #32–#73
-  stay closed; proposal PR #31 remains separate. Current authorization covers
-  the finite coverage continuation, beginning with C18. Later merges, submission,
-  messages, paid calls and external targets retain their corresponding gates.
+- The operator-authorized PR #74 merge is complete. PRs #6–#30 and #32–#74
+  stay closed; proposal PR #31 remains separate until its November refresh. Current
+  authorization covers the finite coverage continuation, now T02 feasibility.
+  Later merges, submission, messages, paid calls and external targets retain
+  their corresponding gates.
 
 ## Next continuation
 
-1. PR #73 is accepted on main `993c83d` from reviewed `44b479b`; review and all
-   five final CI jobs passed. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37818772689)
-   also passed; reviewed and merged trees match. Preserve accepted C17 and
-   predecessor validation rather than reopening those scopes.
-2. C18 in `/tmp/recon-dns-mx` has passed frozen-source portable/native validation,
-   enforcement and unchanged evidence replay. Preserve its private receipt and
-   source pin; only documentation and the terminal-test O_NOCTTY correction may
-   differ from native-tested `89d4465`; production bytes remain identical.
-   Accepted coverage remains 42 profiles/16 programs; the candidate is 43/16.
-3. Review the latest [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74)
-   revision and required checks before any later authorized merge. Its branch is
-   `feature/dns-mx-coverage`; consult the PR for latest-head CI status.
-   Use the [finite coverage contract](professional-v1-coverage.md) to retain all six
-   outcomes. Next is T02 bounded TLS version-posture feasibility with sslscan as a
-   candidate, not an already selected secure engine; no T02 installation is done.
-4. Keep offline R5, accepted local R6, B0–B8, C1–C17 and the initial GUI closed.
-   Preserve the private proposal/PDF, GUI mocks, native receipts and failure history.
+1. PR #74 is accepted on main `b1afbbab8438fc55d3e509d51e00c1a9caddf2e1`
+   from reviewed `043aa5437c09d522cbcd98dbd0b13b030f53ca89`; fresh review,
+   407 focused tests and all five final CI jobs passed. Reviewed and merged trees
+   match. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37834481139)
+   passed; retain `.secure-agent/pr74-merge-review.json`. C18/T01 and its G1–G6
+   are closed; do not repeat its merge.
+2. Preserve C18's immutable `.secure-agent/dns-mx-20261008/verification.json`,
+   native source pin `89d4465`, historical receipts and failure history. Only
+   documentation and the terminal-test `O_NOCTTY` correction differ from the
+   native-tested revision; accepted production bytes remain identical.
+   Accepted coverage is **43 profiles/16 programs**.
+3. Review the completed [T02 source feasibility](tls-posture-feasibility.md)
+   in `/tmp/recon-tls-posture-feasibility`, branch `docs/tls-posture-feasibility`.
+   Stock sslscan is unsuitable because it loses received rejection evidence.
+   Next, prove separately versioned OpenSSL per-version profiles through the
+   existing secure path, retaining TLS 1.0/1.1/1.2/1.3 and client-side evidence.
+   No T02 execution, installation or acceptance has occurred; keep the full
+   [six-task contract](professional-v1-coverage.md) and all G1–G6 gates.
+4. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
+   Preserve the private proposal/PDF, email draft, GUI mocks and native receipts.
+   Refresh PR #31 in November 2026 before the 15 November deadline; submission
+   remains separately authorized.
 5. Deeper workflows/benchmarks, real credentials, attached or external networks,
    intrusive activity and paid/live models retain their separate later gates.
 

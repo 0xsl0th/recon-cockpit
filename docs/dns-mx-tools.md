@@ -1,15 +1,16 @@
 # Owned DNS MX metadata
 
 C18 adds `dig_dns_mx_v1`, a fixed mail-routing metadata query through the existing
-secure CLI in [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74),
-which remains unmerged. It reuses the installed `dig` executable, isolated authority services
-and disconnected owned DNS fixture. This is a candidate: main accepts 42 profiles
-across 16 external programs; C18 makes 43 profiles with the same 16 programs.
-G1–G5 passed locally; G6 final review, checks and merge remain open.
+secure CLI, accepted in [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74).
+It reuses the installed `dig` executable, isolated authority services and
+disconnected owned DNS fixture. Main now accepts **43 profiles across 16 external
+programs**. C18 G1–G6 are closed after fresh review and all five final CI jobs passed.
 
 The [professional-v1 coverage contract](professional-v1-coverage.md) names this
-T01 and makes T02 bounded TLS-version posture feasibility the next gap. Completed
-R5 offline, local R6, B0–B8, C1–C17 and the initial GUI stay closed. No credentials,
+accepted T01. [T02 source feasibility](tls-posture-feasibility.md) is complete,
+with separately versioned OpenSSL native feasibility next; T02 remains open.
+Completed R5 offline, local R6, B0–B8, C1–C18 and the initial GUI stay closed.
+No credentials,
 external targets, new downloads, paid calls, live models or deeper workflows are
 part of C18.
 
@@ -133,8 +134,8 @@ cancellation after actual dig execution, exclusion of private inputs, UDP denial
 and the task ceiling. Record wall-clock latency and zero actual model cost;
 latency is descriptive, not a baseline-overhead or comparative benchmark claim.
 
-The accepted baseline has **303 cases, 42 adapters and 33 native profiles**, with
-canonical SHA-256
+The pre-C18 accepted baseline has **303 cases, 42 adapters and 33 native
+profiles**, with canonical SHA-256
 `8f5c641c947914f1195b65b9e96491dc1b3cc91cf2ff3cd79f4257d4029c2048`.
 All accepted actions, descriptors, cards, specs, adapter data, argv, environment,
 compiled files and Nuclei manifests must remain identical. Exclude only additive
@@ -149,8 +150,13 @@ regression bundles also replayed unchanged. All 717 source hashes, seventeen
 inherited receipt links and the 303-case/42-adapter/33-runtime baseline matched.
 Scenario wall time was 2931–5089 ms, median 3550 ms;
 actual provider calls and cost were zero. This is descriptive timing, not
-comparative overhead. G1–G5 passed locally; G6 remains open pending final PR
-review, required checks and an authorized merge. Accepted main remains 42/16.
+comparative overhead. G1–G6 are closed: reviewed head
+`043aa5437c09d522cbcd98dbd0b13b030f53ca89` merged as
+`b1afbbab8438fc55d3e509d51e00c1a9caddf2e1` after fresh review, 407 focused tests
+and all five final CI jobs passed. Reviewed and merged trees are identical.
+All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37834481139)
+also passed; merge review: `.secure-agent/pr74-merge-review.json`.
+Accepted main has 43 profiles using the same 16 programs.
 Final follow-up changes documentation and the terminal-test fixture only;
 native-validated production bytes remain identical. The fixture correction uses
 `O_NOCTTY` after an isolated child reproduced the interrupted first portable run;

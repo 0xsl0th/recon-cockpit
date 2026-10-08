@@ -885,11 +885,15 @@ check through the existing Nuclei runtime; no repository download, credentials
 or live-model work is included. The [product roadmap](docs/product-roadmap.md)
 separates current capabilities from future professional-use work and PR estimates.
 
-The next active candidate is [C18 DNS MX metadata](docs/dns-mx-tools.md), reusing
-dig for one fixed nonrecursive TCP question with no returned-host follow-up.
-Its development catalog has **43 profiles/16 programs**; accepted main remains
-**42/16** while acceptance review/merge remain pending; local G1–G5 validation passed. The
+[C18 DNS MX metadata](docs/dns-mx-tools.md) is accepted in
+[PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74), bringing accepted
+coverage to **43 profiles/16 programs**. It reuses dig for one fixed nonrecursive
+TCP question with no returned-host follow-up; G1–G6 are closed. The
 [finite professional-v1 coverage checklist](docs/professional-v1-coverage.md)
-records six required operator outcomes and their acceptance gates. After C18,
-the next gap is bounded TLS version-posture feasibility. Credentials, paid calls,
-live models and deeper workflow work remain deferred.
+records six required operator outcomes: T01 is accepted and T02–T06 remain open.
+[T02 source feasibility](docs/tls-posture-feasibility.md) rejected stock sslscan
+because it loses received rejection evidence. Next is a minimal OpenSSL
+per-version native-feasibility slice through the existing secure path; all four
+versions remain required. No T02 profile or additional program is accepted.
+Credentials, paid calls, live models and deeper workflow work remain deferred. The owner has deferred the proposal
+refresh until November 2026; its separate submission decision remains pending.

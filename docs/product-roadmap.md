@@ -1,6 +1,7 @@
 # Product roadmap and remaining PR estimate
 
-Planning snapshot: **8 October 2026, after PR #73**, accepted main `993c83d`.
+Status snapshot: **8 October 2026, after PR #74**, accepted main `b1afbbab`.
+The PR-count forecasts retain their explicitly dated PR #72 baseline below.
 This is the consolidated product plan. The [implementation roadmap](roadmap.md)
 retains milestone history; the [checkpoint](continue-here.md) records the next
 authorized work. Estimates below describe future work, not accepted capability
@@ -12,10 +13,15 @@ The owner agreed this plan and authorized continued coverage development.
 [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37818772689)
 also passed; reviewed and merged trees match. The private receipt is
 `.secure-agent/pr73-merge-review.json`. The new
-[finite coverage contract](professional-v1-coverage.md) maps the 42 accepted
-profiles and names six required remaining operator outcomes. C18 DNS MX is the
-active candidate: **43 profiles/16 programs on the development branch**, with
-G1–G5 passed locally and G6 pending final review/checks/merge. Accepted main remains **42/16**.
+[finite coverage contract](professional-v1-coverage.md) maps **43 accepted
+profiles across 16 programs** and fixes six required operator outcomes.
+[PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74) accepted C18/T01 DNS MX
+after fresh review, 407 focused tests and all five final CI jobs passed. Reviewed
+`043aa543` and merge `b1afbbab` have identical trees; G1–G6 are closed.
+All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37834481139)
+also passed; receipt: `.secure-agent/pr74-merge-review.json`.
+**T02–T06 remain open.** [T02 source feasibility](tls-posture-feasibility.md)
+rejects stock sslscan; a separately versioned OpenSSL alternative needs native proof.
 
 ## Product destination
 
@@ -49,7 +55,7 @@ release criteria still need their later concrete contracts before completion.
 | Area | Implemented and accepted | Remaining product gap |
 | --- | --- | --- |
 | Execution authority | Typed actions, policy/scope checks, isolated approval/audit/admission services, consumed grants, confined launch, bounds and cleanup. | Revalidate these guarantees for broader target configurations, credentials, sessions and intrusive effects. Local consistency hashes do not establish protection from a malicious host owner. |
-| Secure tools | **42 bounded profiles backed by 16 external programs**, plus repository-native capabilities represented in that profile count. Actual owned-lab execution and structured evidence exist for accepted operations. | Most profiles have fixed targets/requests and finite response grammars. They do not expose each program's full feature set or establish general real-server compatibility. |
+| Secure tools | **43 bounded profiles backed by 16 external programs**, plus repository-native capabilities represented in that profile count. Actual owned-lab execution and structured evidence exist for accepted operations. | Most profiles have fixed targets/requests and finite response grammars. They do not expose each program's full feature set or establish general real-server compatibility. |
 | GUI | Accepted local Tk desktop, light/dark Swiss Industrial themes, scope import/export, separate dry run and owned execution, isolated exact-action review, cancellation and evidence inspection. | Execution currently exposes one four-action disconnected HTTP/SSH workflow. Broader tool selection, engagement/assets/findings/report views and operational usability are future work. Extend this GUI; its initial milestone is already closed. |
 | Workflows | Accepted bounded discovery/HTTP/SSH and service/web workflows, with predecessor evidence, stops and saved decisions. | General multi-asset planning, durable engagement coordination and wider evidence-driven composition remain deferred. |
 | Evidence and reporting | Private bounded raw artifacts, structured observations, action/policy/runtime bindings, reports and read-only replay. | Engagement-wide asset/finding models, deduplication, reviewed severity, remediation, client deliverables and retest history. |
@@ -65,9 +71,12 @@ suggestions, supporting interpreters and installed binaries are not additional
 accepted secure integrations.
 
 The **offline R5**, **accepted local R6**, **B0–B8 core coverage**, **initial GUI**
-and **C1–C17 accepted batches** stay closed. Deferred live-model criteria and
+and **C1–C18 accepted batches** stay closed. Deferred live-model criteria and
 publication do not reopen their accepted local scopes. Proposal PR #31, the
-private PDFs and GUI mock PNGs remain separate and unchanged.
+private PDFs, email draft and GUI mock PNGs remain separate and unchanged.
+The owner chose to wait with the proposal until **November 2026**; refresh it with
+verified progress before the **15 November 2026** deadline. Submission remains a
+separate owner decision.
 
 PR #72 accepted C17's fixed Git HEAD marker check after fresh independent reviews
 and five passing PR checks; all five
@@ -88,7 +97,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | C18 DNS MX is in progress, followed by T02 TLS-posture feasibility and the remaining T03–T06 outcomes. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. About 4–6 additional programs remains a planning assumption, not a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | C18/T01 DNS MX is accepted; T02 source feasibility is complete and its OpenSSL alternative needs native proof, with T03–T06 still required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Three additional programs are now plausible; the historical 4–6 assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
@@ -99,13 +108,14 @@ describe deliverables; they do not lift the current offline-only restrictions.
 ### Finite coverage gate before deeper workflows
 
 The [finite checklist](professional-v1-coverage.md#six-required-tasks-in-priority-order)
-now fixes six remaining operator outcomes: **T01 MX, T02 TLS version posture,
+fixes six required operator outcomes: **T01 MX, T02 TLS version posture,
 T03 SSH policy assessment, T04 controlled web hierarchy discovery, T05 one SNMP
-interface-description page and T06 AAAA/PTR metadata**. It maps all 42 accepted
-profiles separately and records supported limits, meaningful positive/absent and
+interface-description page and T06 AAAA/PTR metadata**. T01 is accepted in
+PR #74; T02–T06 remain open. It maps all 43 accepted profiles separately and
+records supported limits, meaningful positive/absent and
 negative cases, evidence and G1–G6 for each new task. Candidate engines remain
 subject to short feasibility reviews; engine selection cannot silently remove or
-weaken the required outcome. B0–B8 and C1–C17 remain closed.
+weaken the required outcome. B0–B8 and C1–C18 remain closed.
 
 Close Stage 2 only when all six tasks are accepted, no row is blocked or
 review-pending, normal tasks complete without unnecessary refusals, unauthorized
@@ -118,7 +128,7 @@ gate into deeper composition or comparative benchmarking remains a later decisio
 ## Broader product: 40–70 PRs beyond professional v1
 
 These are additional to the 40–60 above, giving **80–130 total further PRs from
-the current accepted baseline**. They are not another 80–130 on top of v1.
+the PR #72 accepted baseline**. They are not another 80–130 on top of v1.
 
 | Expansion | Deliverable and boundary | Additional PRs |
 | --- | --- | ---: |
@@ -129,9 +139,12 @@ the current accepted baseline**. They are not another 80–130 on top of v1.
 | **Additional expansion** | **Broader professional lifecycle and evaluated model assistance, subject to its separate approvals.** | **40–70** |
 | **Total from PR #72** | **Professional v1 plus broader expansion.** | **80–130** |
 
-Today the literal 40-program target leaves **24 programs**. If Stage 2 adds 4–6,
-18–20 would remain for the expansion row; its 24–40 PR allowance covers that
-remaining gap rather than charging for all 24 twice. This assumes many additions
+Today the literal 40-program target leaves **24 programs**. If the OpenSSL
+substitution succeeds and the three remaining new-program candidates are accepted,
+Stage 2 adds three and **21 programs** remain for expansion. The historical
+4–6-program assumption was not a quota. The expansion's 24–40-PR allowance covers
+the remaining gap rather than charging for all 24 twice; retain the Stage 2
+8–12-PR estimate subject to native feasibility findings. This assumes many additions
 can reuse a reviewed runtime and be delivered in one or two cohesive PRs. A new
 runtime, difficult protocol, credential/session model or additional supported
 platform can require more. Program selection is not yet a reviewed 40-name list.
@@ -180,13 +193,14 @@ needed later are:
   success thresholds and hard spending ceiling before any paid call.
 - Separate release/publication and competition-submission decisions.
 
-**Current implementation: C18/T01**, one fixed nonrecursive TCP DNS MX question,
-at most four typed preference/exchange rows, with useful null-MX/NODATA/NXDOMAIN
+**Accepted C18/T01** adds one fixed nonrecursive TCP DNS MX question and at
+most four typed preference/exchange rows, with useful null-MX/NODATA/NXDOMAIN
 results and no returned-host follow-up. It reuses `dig`; see the
-[C18 runbook](dns-mx-tools.md). Local validation passed; acceptance review/merge remain pending, so it does not
-increase accepted coverage yet.
+[C18 runbook](dns-mx-tools.md). Its merge adds one accepted profile and no program.
 
-**Next after C18: T02 bounded TLS version-posture feasibility**, beginning with
-sslscan as a candidate and an exact request/runtime contract. No new engine is
-implemented or installed by this plan. Keep later tool choices tied to the six
-required outcomes; deeper workflows, credentials and paid/live models stay deferred.
+**T02 source feasibility is complete; [native feasibility remains next](tls-posture-feasibility.md).**
+Stock sslscan loses received rejection evidence. Assess separately versioned
+OpenSSL per-version profiles through the existing secure path, retaining
+TLS 1.0/1.1/1.2/1.3 and client-received evidence. No T02 integration, installation
+or scan occurred; no profile or program count increases. T02 still needs all
+G1–G6 gates. Deeper workflows, credentials and paid/live models stay deferred.

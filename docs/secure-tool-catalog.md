@@ -368,14 +368,18 @@ check through the existing Nuclei runtime; no repository download, credentials
 or live-model work is included. The [product roadmap](product-roadmap.md)
 separates current capabilities from future professional-use work and PR estimates.
 
-The active C18 [DNS MX candidate](dns-mx-tools.md) adds `dig_dns_mx_v1` using
-the same dig program. This development catalog therefore contains **43 profiles
-using 16 programs**, while accepted main remains **42/16**. G1–G5 passed locally;
-G6 final review/CI/merge remains pending; catalog visibility is not acceptance.
+The C18 [DNS MX profile](dns-mx-tools.md) is accepted in
+[PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74), adding `dig_dns_mx_v1`
+through the same dig program. The accepted catalog now contains **43 profiles
+using 16 programs**, with C18 G1–G6 closed after fresh review and passing final CI.
 The fixed TCP query retains at most four preference/exchange rows, distinguishes
 null-MX/NODATA/NXDOMAIN, and authorizes no name resolution or mail-server follow-up.
 
 The [finite coverage contract](professional-v1-coverage.md) maps all accepted
-profiles to operator tasks and fixes six remaining outcomes. After C18, assess
-T02 bounded TLS version posture with sslscan as a candidate; no new engine has
-been implemented or installed. Preserve the existing recipes and authority gates.
+profiles to six required operator outcomes: T01 is accepted; T02–T06 remain open.
+[T02 source feasibility](tls-posture-feasibility.md) is complete: stock sslscan
+cannot preserve the received rejection evidence required by this task. Next is a
+minimal native-feasibility slice using separately versioned OpenSSL per-version
+profiles. All four versions and G1–G6 remain required. No T02 integration,
+installation or scan occurred; no program-count increment is claimed. Preserve
+the existing recipes and authority gates.
