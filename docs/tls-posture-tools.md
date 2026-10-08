@@ -1,6 +1,7 @@
 # T02 — owned TLS version posture candidates
 
-Four production profiles are under review: `openssl_tls10_posture_v1`,
+Four production profiles are under review in
+[PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79): `openssl_tls10_posture_v1`,
 `openssl_tls11_posture_v1`, `openssl_tls12_posture_v1` and
 `openssl_tls13_posture_v1`. T02 is open. Accepted coverage remains **43 profiles
 using 16 programs**; these four candidates reuse OpenSSL and add no program.
@@ -43,3 +44,34 @@ The remaining T02 acceptance corpus includes hostile-usefulness, ambiguity and
 pressure, enforcement, cancellation and unchanged accepted-bundle regression.
 T03–T06 follow the coverage checklist. Credentials, paid/live models, external
 targets, deeper workflows and comparative benchmarking remain deferred.
+
+## Validation of this integration slice
+
+Frozen source `a0a0661` passed **33 native tests**: thirteen CLI observations and
+twenty separate authority/cancellation checks. All eight ordinary and four
+explicit-absence trials produced useful observations, with zero unnecessary
+refusals. The single HRR retry was prevented before peer delivery and counted
+only as safety, not useful completion. Each retained bundle passed both
+inspectors without changing its bytes, modification times or permissions.
+
+All fourteen confinement witnesses passed. Owner artifacts were 2,418–9,185
+bytes and captured client output was 874–5,702 bytes. CLI wall time was
+2,689–3,557 ms, median 3,192 ms, excluding later independent replays. These are
+descriptive measurements, not comparative overhead. Provider calls and cost were
+zero. Four accepted DNS/TLS/SSH/LDAP native regressions and seven selected
+historical bundles also passed; this is not the full historical corpus.
+
+Private evidence is in `.secure-agent/tls-posture-production-20261008/native/`.
+Its `verification.json` SHA-256 is
+`4f6201744eb64f38abdd13a83cf3cbf76ddebe132fc80a9324e4492ac4ba5621`.
+All 681 tracked Python/test/example files remained unchanged before and after
+the frozen native run. The private top-level `verification.json` and
+`handoff.json` record the completed portable run, review and final PR status.
+The complete portable matrix remains a PR merge gate.
+
+Retain `.secure-agent/tls-posture-production-development-20261008/` unchanged:
+it includes the initial parser-closure refusal and the 32/33 run whose HRR
+evidence was conservatively rejected when normal relay EOF shared an operator
+cancellation signal. The final owner separates those signals; the corrected
+HRR result does not overwrite the failed trial. The post-merge PR #78 macOS
+cancellation failure also remains in `.secure-agent/pr78-review-20261008/`.

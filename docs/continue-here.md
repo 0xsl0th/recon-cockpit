@@ -6,7 +6,8 @@ This development checkpoint never resumes an assessment or restores approvals.
 
 **Current status: [PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78)
 is merged at `efdb133`. C18/T01 stays accepted. Four T02 production TLS posture
-profiles are now candidates on `feature/tls-posture-production`, worktree
+profiles are candidates in [PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79),
+branch `feature/tls-posture-production`, worktree
 `/tmp/recon-tls-posture-production`; see the [runbook](tls-posture-tools.md).
 They connect actual owned execution to policy, fresh per-action approval,
 consumed permits, independent owner evidence and both assessment inspectors.
@@ -76,6 +77,19 @@ Explicit rejection retains failed execution/exit 1 and can be a useful report
 observation; retry blocking is safety evidence and does not count as useful work.
 Owner bytes are preserved separately, with exact case/version/counter/hash
 binding and full authority-result reconstruction during read-only replay.
+
+Frozen production source `a0a0661` passed **33/33 native tests**: 8/8 ordinary
+plus 4/4 explicit-absence useful observations, one tested HRR retry prevented
+without counting it as useful, and twenty authority/cancellation checks. All
+fourteen confinement witnesses passed; thirteen bundles replayed unchanged
+through both inspectors. Four accepted native regressions and seven selected
+historical bundles also passed. Private native receipt:
+`.secure-agent/tls-posture-production-20261008/native/verification.json`, SHA-256
+`4f6201744eb64f38abdd13a83cf3cbf76ddebe132fc80a9324e4492ac4ba5621`.
+The top-level private verification/handoff records portable validation, final
+review and PR status. The [runbook](tls-posture-tools.md) retains the measurements
+and development failures; do not overwrite their evidence or claim full-corpus
+acceptance from selected regressions.
 
 Next finish T02's hostile-usefulness, ambiguity/pressure and full accepted-bundle
 regression corpus, then review G1–G6. Do not close T02 from this integration slice
