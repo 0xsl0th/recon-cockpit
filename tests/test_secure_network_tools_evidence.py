@@ -58,6 +58,9 @@ def manifest(tool):
 
 def transcript(case):
     from recon_cockpit.secure_agent.network_tools_fixture import SSH_PUBLIC_KEY_BASE64, LDAP_VALUES
+    if case.startswith('snmp-next-'):
+        from test_secure_snmp_next_parser import output
+        return output(case), b''
     if case.startswith('http-options-'):
         from recon_cockpit.secure_agent.network_tools_fixture import http_options_response
         return http_options_response(case) or b'', b''
@@ -173,7 +176,7 @@ def transcript(case):
 
 
 def complete(path, case="dig-ok", status="succeeded", *, runtime_sha256=...):
-    policy_file = "http-options" if case.startswith("http-options-") else "dns-axfr" if case.startswith("dig-axfr-") else "dns-nsid" if case.startswith("dig-nsid-") else "ftp-starttls" if case.startswith('ftp-tls-') else "ldap-starttls" if case.startswith('ldap-tls-') else "smtp-starttls" if case.startswith('smtp-tls-') else "smb2-negotiation" if case.startswith('smb2-') else "rdp-negotiation" if case.startswith('rdp-') else "dns-srv" if case.startswith('dig-srv-') else "whatweb" if case.startswith('whatweb-') else "database-tls" if case.startswith(("postgresql-tls-", "mysql-tls-")) else "redis-snmp" if case.startswith(("redis-", "snmp-")) else "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
+    policy_file = "snmp-next" if case.startswith("snmp-next-") else "http-options" if case.startswith("http-options-") else "dns-axfr" if case.startswith("dig-axfr-") else "dns-nsid" if case.startswith("dig-nsid-") else "ftp-starttls" if case.startswith('ftp-tls-') else "ldap-starttls" if case.startswith('ldap-tls-') else "smtp-starttls" if case.startswith('smtp-tls-') else "smb2-negotiation" if case.startswith('smb2-') else "rdp-negotiation" if case.startswith('rdp-') else "dns-srv" if case.startswith('dig-srv-') else "whatweb" if case.startswith('whatweb-') else "database-tls" if case.startswith(("postgresql-tls-", "mysql-tls-")) else "redis-snmp" if case.startswith(("redis-", "snmp-")) else "kerberos" if case.startswith("kerberos-") else "nmap-service" if case.startswith("nmap-service-") else "docker-winrm" if case.startswith(("docker-", "winrm-")) else "ftp-smtp" if case.startswith(("ftp-", "smtp-")) else "rpc-nfs" if case.startswith(("rpc-", "nfs-")) else "smb" if case.startswith("smb-") else "ssh-ldap" if case.startswith(("ssh-", "ldap-")) else "network-tools"
     policy = parse_policy(json.loads(Path("examples/secure-agent-" + policy_file + "-policy.json").read_text()))
     action = parse_action(contract.action(case, 1))
     selected = manifest(action.tool_id)

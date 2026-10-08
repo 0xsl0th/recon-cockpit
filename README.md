@@ -150,15 +150,25 @@ native tests**, 3/3 ordinary and 2/2 robustness trials, five clean-commit trials
 78 unchanged accepted-bundle replays. PR #65 merged at `82dd85a`; all five final
 and post-merge jobs passed. Returned data cannot select follow-up.
 
-The C12 [HTTP OPTIONS candidate](docs/http-options-tools.md) adds one fixed
-resource-specific request through existing curl, for **37 profiles using the same
-14 programs**. Typed status, distinct absent/empty Allow and authentication-scheme
-names remain untrusted advertisements. No advertised method, redirect or login is
-executed. Validation passed **16,138 portable and 40 native tests**, with 6/6 ordinary
-and 2/2 robustness completions, six inconclusive negative cases, 28/28 blocked
-destinations, zero unnecessary refusals and 83 unchanged accepted-bundle replays.
-[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) awaits latest-revision
-review and hosted checks and remains unmerged. Credentials and paid calls stay deferred.
+The accepted C12 [HTTP OPTIONS profile](docs/http-options-tools.md) adds one fixed
+resource-specific request through existing curl, for **37 profiles using 14 programs**.
+Typed status, distinct absent/empty Allow and authentication-scheme names remain
+untrusted advertisements; no advertised method, redirect or login is executed.
+Validation passed **16,138 portable and 40 native tests**, with 6/6 ordinary and
+2/2 robustness completions, six inconclusive negatives, 28/28 blocked destinations,
+zero unnecessary refusals and 83 unchanged accepted-bundle replays.
+[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) merged at `7faf974` after
+all five final CI jobs passed; its [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37713341040)
+also passed. C12 remains closed.
+
+The C13 [SNMP successor candidate](docs/snmp-next-tools.md) adds one fixed TCP GETNEXT
+for the ifDescr column through snmpgetnext, for **38 profiles using 15 programs**.
+It distinguishes a reported description, an empty description, endOfMibView and a
+supported outside-subtree successor. Returned metadata cannot select follow-up;
+there is no walk, UDP, real community or credential handling. Four ordinary tasks,
+two robustness tasks and eight negative cases require actual owned execution,
+independent replay and enforced boundaries. Final C13 validation remains pending;
+credentials and paid calls remain deferred.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

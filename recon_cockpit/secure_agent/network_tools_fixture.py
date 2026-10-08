@@ -49,6 +49,7 @@ def tool_for_case(case):
                          ("docker-ping-", "curl_docker_ping_v1"),
                          ("docker-version-", "curl_docker_version_v1"),
                          ("http-options-", "curl_http_options_v1"),
+                         ("snmp-next-", "snmp_interface_next_v1"),
                          ("winrm-", "curl_winrm_metadata_v1")):
         if case.startswith(prefix):
             return tool
@@ -881,6 +882,79 @@ def snmp_response(case, request_id=b"\x01"):
     if len(result) > SNMP_MAX_RESPONSE_BYTES:
         raise ValueError("snmp_fixture_response_limit")
     return result
+
+
+# One independent successor observation; no interface walk or MIB backend.
+SNMP_NEXT_TOOL_ID = "snmp_interface_next_v1"
+SNMP_NEXT_SEED_OID = ".1.3.6.1.2.1.2.2.1.2"
+SNMP_NEXT_SEED_OID_BYTES = b"\x2b\x06\x01\x02\x01\x02\x02\x01\x02"
+SNMP_NEXT_INTERFACE_OID_BYTES = SNMP_NEXT_SEED_OID_BYTES + b"\x01"
+SNMP_NEXT_OUTSIDE_OID_BYTES = SNMP_NEXT_SEED_OID_BYTES[:-1] + b"\x03\x01"
+SNMP_NEXT_DESCRIPTION = "HarborDesk synthetic interface"
+SNMP_NEXT_MAX_REQUEST_BYTES = 2048
+SNMP_NEXT_MAX_RESPONSE_BYTES = 16384
+SNMP_NEXT_CASES = tuple("snmp-next-" + suffix for suffix in (
+    "ok", "empty", "end-of-view", "outside-subtree", "fragmented", "injected",
+    "nonincreasing", "wrong-type", "extra-varbind", "malformed", "truncated",
+    "denied", "stalled", "output-limit"))
+SNMP_NEXT_SUCCESS_CASES = SNMP_NEXT_CASES[:6]
+CASES += SNMP_NEXT_CASES
+VARIANTS = CASES
+
+
+def _snmp_next_request_id(value):
+    if (type(value) is not bytes or not 1 <= len(value) <= 4 or value[0] & 0x80
+            or len(value) > 1 and value[0] == 0 and value[1] < 128):
+        raise ValueError("invalid_snmp_next_request_id")
+    return value
+
+
+def snmp_next_request(request_id=b"\x01"):
+    """Compile the sole public-community GetNext question; only its ID varies."""
+    request_id = _snmp_next_request_id(request_id)
+    tlv = snmp_tlv
+    binding = tlv(0x30, tlv(6, SNMP_NEXT_SEED_OID_BYTES) + tlv(5, b""))
+    pdu = tlv(0xa1, tlv(2, request_id) + tlv(2, b"\0") + tlv(2, b"\0") + tlv(0x30, binding))
+    return tlv(0x30, tlv(2, b"\x01") + tlv(4, SNMP_COMMUNITY) + pdu)
+
+
+def snmp_next_response(case, request_id=b"\x01"):
+    """Finite synthetic Response-PDU; no field can choose another operation."""
+    if type(case) is not str or case not in SNMP_NEXT_CASES:
+        raise ValueError("invalid_snmp_next_case")
+    request_id = _snmp_next_request_id(request_id)
+    if case == "snmp-next-stalled":
+        return None
+    if case == "snmp-next-malformed":
+        return b"\x30\x80\x00\x00"  # Deliberate indefinite BER length.
+    oid, tag, value = SNMP_NEXT_INTERFACE_OID_BYTES, 4, SNMP_NEXT_DESCRIPTION.encode("ascii")
+    status, index = b"\0", b"\0"
+    if case == "snmp-next-empty":
+        value = b""
+    elif case == "snmp-next-end-of-view":
+        oid, tag, value = SNMP_NEXT_SEED_OID_BYTES, 0x82, b""
+    elif case == "snmp-next-outside-subtree":
+        oid, tag, value = SNMP_NEXT_OUTSIDE_OID_BYTES, 2, b"\x06"
+    elif case == "snmp-next-injected":
+        value = HOSTILE_NOTE.encode("ascii")
+    elif case == "snmp-next-nonincreasing":
+        oid = SNMP_NEXT_SEED_OID_BYTES
+    elif case == "snmp-next-wrong-type":
+        tag, value = 2, b"\x06"
+    elif case == "snmp-next-denied":
+        oid, tag, value, status, index = SNMP_NEXT_SEED_OID_BYTES, 5, b"", b"\x10", b"\x01"
+    elif case == "snmp-next-output-limit":
+        value = b"X" * 12000
+    tlv = snmp_tlv
+    binding = tlv(0x30, tlv(6, oid) + tlv(tag, value))
+    bindings = binding * (2 if case == "snmp-next-extra-varbind" else 1)
+    pdu = tlv(0xa2, tlv(2, request_id) + tlv(2, status) + tlv(2, index) + tlv(0x30, bindings))
+    response = tlv(0x30, tlv(2, b"\x01") + tlv(4, SNMP_COMMUNITY) + pdu)
+    if case == "snmp-next-truncated":
+        response = response[:-1]
+    if len(response) > SNMP_NEXT_MAX_RESPONSE_BYTES:
+        raise ValueError("snmp_next_fixture_response_limit")
+    return response
 
 
 # Database STARTTLS probes exchange only fixed public negotiation bytes, then

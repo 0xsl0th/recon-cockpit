@@ -25,6 +25,7 @@ NMAP_SERVICE_TOOL_ID = "nmap_service_identify_v1"
 KERBRUTE_TOOL_ID = "kerbrute_userenum_v1"
 REDIS_TOOL_ID = "redis_server_info_v1"
 SNMP_TOOL_ID = "snmp_system_get_v1"
+SNMP_NEXT_TOOL_ID = "snmp_interface_next_v1"
 POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
 MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
 WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
@@ -46,6 +47,7 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1",
     NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1",
     REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1",
+    SNMP_NEXT_TOOL_ID: "snmp-interface-next-text-v1",
     POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
     WHATWEB_TOOL_ID: "whatweb-json-v1", DNS_SRV_TOOL_ID: "dig-dns-srv-text-v1",
     DNS_NSID_TOOL_ID: "dig-dns-nsid-text-v1",
@@ -157,6 +159,8 @@ def validate_result(tool_id, value):
         return _dns_axfr_parser().validate_result(value)
     if tool_id == HTTP_OPTIONS_TOOL_ID:
         return _http_options_parser().validate_result(value)
+    if tool_id == SNMP_NEXT_TOOL_ID:
+        return _snmp_next_parser().validate_result(value)
     if tool_id == WHATWEB_TOOL_ID:
         return _whatweb_parser().validate_result(value)
     if tool_id == NMAP_SERVICE_TOOL_ID:
@@ -794,6 +798,18 @@ def _parse_snmp(output, stderr):
     return _redis_snmp_parser().parse_snmp_output(output, stderr)
 
 
+def _snmp_next_parser():
+    if __package__:
+        from . import network_tools_snmp_next_parser
+    else:
+        import network_tools_snmp_next_parser
+    return network_tools_snmp_next_parser
+
+
+def _parse_snmp_next(output, stderr):
+    return _snmp_next_parser().parse_output(output, stderr)
+
+
 def _rdp_parser():
     if __package__:
         from . import network_tools_rdp_parser
@@ -892,6 +908,7 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             DOCKER_VERSION_TOOL_ID: _parse_docker_version, WINRM_TOOL_ID: _parse_winrm_metadata,
             NMAP_SERVICE_TOOL_ID: _parse_nmap_service, KERBRUTE_TOOL_ID: _parse_kerbrute,
             REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp,
+            SNMP_NEXT_TOOL_ID: _parse_snmp_next,
             WHATWEB_TOOL_ID: _parse_whatweb, DNS_SRV_TOOL_ID: _parse_dns_srv,
             DNS_NSID_TOOL_ID: _parse_dns_nsid,
             DNS_AXFR_TOOL_ID: _parse_dns_axfr,

@@ -53,6 +53,7 @@ NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_
     'network_tools_whatweb_runtime',
     'network_tools_whatweb_parser',
     'network_tools_dns_srv_fixture', 'network_tools_dns_srv_parser', 'network_tools_dns_nsid_parser', 'network_tools_dns_nsid_fixture',
+    'network_tools_snmp_next_fixture', 'network_tools_snmp_next_parser',
     'network_tools_http_options_fixture', 'network_tools_http_options_parser',
     'network_tools_dns_axfr_fixture', 'network_tools_dns_axfr_parser',
     'network_tools_rdp_fixture', 'network_tools_rdp_parser', 'network_tools_rdp_runtime',

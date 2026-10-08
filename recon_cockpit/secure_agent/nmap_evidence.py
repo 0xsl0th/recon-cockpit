@@ -244,6 +244,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_nsid_observed": "dns_nsid_observed",
                "dns_nsid_empty": "dns_nsid_empty",
                "dns_nsid_absent": "dns_nsid_absent",
+               "snmp_interface_next_observed": "snmp_interface_next_observed",
                "http_options_observed": "http_options_observed",
                "dns_axfr_completed": "dns_axfr_completed",
                "dns_axfr_refused": "dns_axfr_refused",
@@ -472,6 +473,17 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Hostile NSID bytes remain inert untrusted metadata and raw evidence; this deterministic trial does not demonstrate model injection resistance or measure real-model susceptibility.",
                 "Owner counters record the validated fixed question before the fixture response, including negative cases. One request does not itself establish useful NSID metadata. Bounded raw channels are independently reparsed without network; inspection restores no approval, budget or execution authority.",
             ]
+        if manifest["fixture_case"].startswith("snmp-next-"):
+            report["limitations"] = [
+                "This one-action SNMP GETNEXT trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
+                "One fixed ifDescr column seed is sent in one SNMPv2c GetNextRequest over TCP with a public synthetic community. No walk, GETBULK, SET, UDP, retries, correction request, host MIB/configuration or real credential is authorized.",
+                "The returned OID, interface index and description are untrusted server reports. A successor does not verify identity, interface presence, inventory completeness, authenticated access or a vulnerability. Returned OIDs never authorize another request.",
+                "An empty ifDescr is a useful empty description, distinct from endOfMibView and a successor outside the requested column. These boundaries report this one reply and do not establish verified absence or a complete interface inventory.",
+                "Only one canonical numeric OID and the documented Net-SNMP text forms are accepted. ifDescr requires a single positive int32 index and zero to 255 printable ASCII bytes. Outside-column values currently support only a bounded INTEGER that is checked and discarded. Unsupported types or text stay inconclusive.",
+                "The native client handles SNMP request/response matching. Retained text omits message IDs, communities and BER framing, and later wire bytes the client does not emit cannot be inspected independently. No full wire-stream validation or SNMP authenticity is claimed.",
+                "Hostile printable description text remains inert quoted metadata and private raw evidence. This deterministic trial does not establish real-model injection resistance. Five-second execution and 8192-byte combined capture ceilings remain enforced.",
+                "Owner counters record one validated fixed GETNEXT request before response or stall. Progress or process exit alone does not prove useful metadata. Read-only replay restores no approval or authority; hashes establish local consistency rather than external authenticity.",
+            ]
         if manifest["fixture_case"].startswith("http-options-"):
             report["limitations"] = [
                 "This one-action HTTP OPTIONS trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
@@ -514,7 +526,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The installed OpenSSL MySQL preface reader may reject fragmented greetings. Unsupported native diagnostic formats fail closed; this is not universal database compatibility or an exhaustive TLS assessment.",
                 "Counters record completed TLS plus clean closure without application data on at most one TCP connection. Bounded raw channels are independently replayed; inspection restores no approval or authority.",
             ]
-        if manifest["fixture_case"].startswith(("redis-", "snmp-")):
+        if manifest["fixture_case"].startswith(("redis-", "snmp-")) and not manifest["fixture_case"].startswith("snmp-next-"):
             report["limitations"] = [
                 "This single-action metadata trial uses a disconnected synthetic fixture, not a professional engagement or real-model evaluation.",
                 "Redis sends one RESP2 INFO server command without authentication, key access, writes or cluster redirection. Only bounded version, mode, architecture and advertised port fields are retained.",
@@ -657,6 +669,18 @@ def _markdown(report):
             else:
                 lines.extend(["", "The reported protocol selection does not establish a working or verified security channel."])
             lines.extend(["", "Capture ends at the first complete confirmation frame; trailing peer data is not retained."])
+        elif type(details) is dict and details.get("kind") == "snmp_interface_next_metadata":
+            lines.extend(["", "## SNMP interface successor metadata", "",
+                "Untrusted single-successor report only. No returned OID was followed; interface inventory completeness and service identity are not verified.",
+                "", "| Field | Observation |", "| --- | --- |"])
+            for field in ("query_oid", "returned_oid", "outcome", "interface_index", "description", "service_identity_verified"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            if details["outcome"] == "end_of_mib_view":
+                lines.extend(["", "The peer explicitly reports endOfMibView for this seed; this is not verified absence of interfaces."])
+            elif details["outcome"] == "outside_ifdescr_subtree":
+                lines.extend(["", "The peer returned a greater OID outside the ifDescr column. Its checked INTEGER value was discarded and no follow-up was authorized."])
+            elif details["description"] == "":
+                lines.extend(["", "The interface description is explicitly empty, not missing evidence."])
         elif type(details) is dict and details.get("kind") == "http_options_metadata":
             lines.extend(["", "## HTTP OPTIONS metadata", "",
                 "Untrusted resource-specific advertisements only. Advertised methods were not executed; service identity and actual method support are not verified.",

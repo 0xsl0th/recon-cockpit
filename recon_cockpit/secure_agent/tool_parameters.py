@@ -242,6 +242,11 @@ class SNMPSystemGetParameters(TCPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class SNMPInterfaceNextParameters(TCPParameters):
+    """Bounds for one fixed interface GETNEXT; no caller OID or community."""
+
+
+@dataclass(frozen=True, slots=True)
 class PostgreSQLTLSParameters(TCPParameters):
     """Fixed PostgreSQL pre-auth TLS negotiation parameters."""
 

@@ -1,8 +1,9 @@
 # Owned HTTP OPTIONS metadata
 
-C12 adds `curl_http_options_v1` through the existing secure CLI and pinned curl
-runtime. Accepted main has 36 profiles using 14 programs after C11/PR #65; this
-candidate has **37 profiles using the same 14 programs**. Existing interactive curl
+C12 is accepted in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66),
+merged as `7faf974` after all five final CI jobs passed. Its `curl_http_options_v1`
+profile uses the existing secure CLI and pinned curl runtime. This accepted slice
+has **37 profiles using 14 programs**. Existing interactive curl
 suggestions do not provide this secure OPTIONS profile. No GUI workflow is added.
 
 ## Exact operation and authority
@@ -146,12 +147,13 @@ or a separate clean-source native-execution claim. All **83 accepted bundles**
 replayed unchanged through shared inspection and isolated CLI, with eleven inherited
 receipt links. Details are in [verification.md](verification.md).
 
-[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) is ready for latest-revision
-review and hosted checks and remains unmerged. Passing synthetic approval tests
-does not claim personal acceptance. Review, required checks and a merge instruction
-remain separate acceptance gates.
+[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) is merged as
+`7faf974f5e0bbc917ef5d8b6ee70164478524ef4`; all five final CI jobs passed, as did
+the [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37713341040).
+This C12 scope remains closed. Passing synthetic approval tests does not claim
+personal acceptance or expand the shipped operation's authority.
 
-B0–B8, C1–C11, offline R5, accepted local R6 and the initial GUI remain closed.
+B0–B8, C1–C12, offline R5, accepted local R6 and the initial GUI remain closed.
 The earlier C9 stall cause remains unresolved. Credentials, paid/live evaluation,
 external engagements, deeper workflows and comparative benchmarking remain
 deferred. The next coverage recommendation is recorded in the

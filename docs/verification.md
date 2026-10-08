@@ -1,13 +1,34 @@
 # Verification record
 
+## PR #66 review and merge — 8 October 2026
+
+**C12 is accepted and closed in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66).**
+Reviewed head `4adbf415049edbc1f05bd3f5c6b16a23580998b5` merged as
+`7faf974f5e0bbc917ef5d8b6ee70164478524ef4` at 01:31:18 UTC. The reviewed
+and merged trees match `ad73ca6bc12821a146abb83de095ed2c7bbd3b7d`.
+Fresh independent authority/runtime and parser/evidence reviews found no blockers.
+All 574 frozen source hashes, 97 reports, 112 declared artifacts, 83 inherited
+replays and eleven receipt links reconciled. The tested source remained unchanged;
+no duplicate native execution was necessary for the merge review.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37712733064)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37713341040)
+passed. Preserve 16,138 portable and 40 native tests, 6/6 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations and
+140/140 boundary fields. A pre-existing final blank line in the native test file
+was a nonblocking whitespace observation; the reviewed behavior was not changed.
+No formal GitHub approval is claimed. Private merge receipt:
+`.secure-agent/pr66-merge-review.json`. C12 stays closed with 37 profiles using
+14 external programs.
+
 ## C12 bounded HTTP OPTIONS metadata — 8 October 2026
 
 The [C12 runbook](http-options-tools.md) defines `curl_http_options_v1`: one
 fixed 146-byte OPTIONS request to `/harbordesk/portal.html` on the disconnected
 owned endpoint, using the accepted curl isolation path. It adds resource-specific
 status, method advertisements and authentication-scheme names; no advertised
-method is invoked. Accepted C11 remains closed. C12 is a separate review candidate
-with **37 profiles using 14 external programs**.
+method is invoked. C11 and C12 are accepted and closed. The C12 revision has
+**37 profiles using 14 external programs**.
 
 Implementation `c875820f6344e1c95b1f420467c11f4379d0b1c2` passed **16,138 portable
 tests** with 1081 integration tests deselected, no failures/errors/skips
@@ -75,10 +96,10 @@ new native tool executions. The receipt is
 The final source-manifest SHA256 is
 `1ae913a95710e139b7015eccf6c899dc747bc6ca97aae84a320b9d084af9a2ae`.
 
-Local validation is complete in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66).
-Subsequent commits record documentation and PR status only. Leave the candidate
-unmerged pending latest-revision review, hosted checks and a merge instruction.
-B0–B8, C1–C11, offline R5, accepted local R6 and the initial GUI stay closed.
+Local validation completed in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66),
+now accepted and merged as recorded above. Later C12 commits changed documentation
+and PR status only. B0–B8, C1–C12, offline R5, accepted local R6 and the initial GUI
+stay closed.
 
 ## PR #65 review and merge — 8 October 2026
 

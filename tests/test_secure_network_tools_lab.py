@@ -172,6 +172,14 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert definition["ca_sha256"] == hashlib.sha256(fixture.CA_PEM).hexdigest()
         assert definition["request_count_means"] == "server_completed_tls_handshakes"
         assert definition["application_payloads"] == "none"
+    elif case.startswith("snmp-next-"):
+        assert definition['snmp']['operation'] == 'GetNextRequest'
+        assert definition['snmp']['seed_oid'] == fixture.SNMP_NEXT_SEED_OID
+        assert definition['max_connections'] == definition['max_requests'] == 1
+        assert definition['request_count_means'] == 'validated_fixed_snmp_getnext_requests'
+        assert definition['canonical_request_sha256'] == hashlib.sha256(fixture.snmp_next_request()).hexdigest()
+        for field in ('walk', 'getbulk', 'set', 'udp', 'retries', 'correction_resubmission', 'real_credentials', 'mib_imports', 'followup'):
+            assert definition['snmp'][field] is False
     elif case.startswith("http-options-"):
         assert definition["method"] == "OPTIONS" and definition["path"] == fixture.HTTP_OPTIONS_PATH
         assert definition["max_connections"] == definition["max_requests"] == 1

@@ -24,6 +24,7 @@ if __package__:
     from . import network_tools_whatweb_fixture as whatweb_fixture
     from . import network_tools_dns_srv_fixture as dns_srv_fixture
     from . import network_tools_dns_nsid_fixture as dns_nsid_fixture
+    from . import network_tools_snmp_next_fixture as snmp_next_fixture
     from . import network_tools_http_options_fixture as http_options_fixture
     from . import network_tools_dns_axfr_fixture as dns_axfr_fixture
     from . import network_tools_rdp_fixture as rdp_fixture
@@ -52,6 +53,7 @@ else:
     whatweb_fixture = _load("network_tools_fixed_whatweb", "network_tools_whatweb_fixture.py")
     dns_srv_fixture = _load("network_tools_fixed_dns_srv", "network_tools_dns_srv_fixture.py")
     dns_nsid_fixture = _load("network_tools_fixed_dns_nsid", "network_tools_dns_nsid_fixture.py")
+    snmp_next_fixture = _load("network_tools_fixed_snmp_next", "network_tools_snmp_next_fixture.py")
     http_options_fixture = _load("network_tools_fixed_http_options", "network_tools_http_options_fixture.py")
     dns_axfr_fixture = _load("network_tools_fixed_dns_axfr", "network_tools_dns_axfr_fixture.py")
     rdp_fixture = _load("network_tools_fixed_rdp", "network_tools_rdp_fixture.py")
@@ -293,6 +295,9 @@ class NetworkToolsService(owner.Service):
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.RDP_CASES:
                         rdp_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            on_request=self._smb_enumerated)
+                    elif self.case in fixture.SNMP_NEXT_CASES:
+                        snmp_next_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.HTTP_OPTIONS_CASES:
                         http_options_fixture.serve(connection, case=self.case, deadline=self.deadline,

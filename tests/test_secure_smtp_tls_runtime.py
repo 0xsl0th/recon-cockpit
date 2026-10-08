@@ -17,7 +17,7 @@ def test_all_22_accepted_runtime_profiles_remain_byte_identical():
     # Independently captured from merged PR60 aa65bff before C7 runtime edits.
     selected = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT)}
     assert len(selected) == 22
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == 'd8628a0f2e5d7fc962f7d8c5a93968180e2b908979d0c8a567455f15e29c6ee2'
 

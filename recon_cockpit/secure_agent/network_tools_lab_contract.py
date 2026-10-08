@@ -21,6 +21,32 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("snmp-next-"):
+        from . import network_tools_fixture as fixture
+        request = fixture.snmp_next_request()
+        response = fixture.snmp_next_response(case)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-snmp-next-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "snmp_tcp"}],
+            "snmp": {"version": "2c", "operation": "GetNextRequest", "seed_oid": fixture.SNMP_NEXT_SEED_OID,
+                "community_sha256": hashlib.sha256(fixture.SNMP_COMMUNITY).hexdigest(),
+                "community_is_public_synthetic_data": True, "max_bindings": 1,
+                "walk": False, "getbulk": False, "set": False, "udp": False,
+                "retries": False, "correction_resubmission": False, "mib_imports": False,
+                "real_credentials": False, "followup": False},
+            "canonical_request_sha256": hashlib.sha256(request).hexdigest(),
+            "canonical_request_bytes": len(request), "request_id": "copied_from_validated_request",
+            "canonical_response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "max_request_bytes": fixture.SNMP_NEXT_MAX_REQUEST_BYTES,
+            "max_fixture_response_bytes": fixture.SNMP_NEXT_MAX_RESPONSE_BYTES,
+            "max_connections": 1, "max_requests": 1,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_fixed_snmp_getnext_requests",
+            "connection_evidence": "accepted_connections_lower_bound",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "service_identity_claim": False, "vulnerability_claim": False,
+            "interface_inventory_complete": False, "behavior": case.removeprefix("snmp-next-")}
     if case.startswith("http-options-"):
         from . import network_tools_fixture as fixture
         response = fixture.http_options_response(case)

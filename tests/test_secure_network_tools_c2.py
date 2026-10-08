@@ -81,8 +81,8 @@ def test_refused_or_incomplete_fixture_cannot_claim_complete_protocol(case):
 
 
 def test_all_accepted_contracts_are_unchanged_from_pr55():
-    old_cases = [case for case in contract.CASES if case not in contract.C2_CASES + contract.C3_CASES + contract.C4_CASES + contract.C5_CASES + contract.C6_CASES + contract.C7_CASES + contract.C8_CASES + contract.C9_CASES + contract.C10_CASES + contract.C11_CASES + contract.C12_CASES]
-    new_tools = {contract.POSTGRESQL_TLS_TOOL_ID, contract.MYSQL_TLS_TOOL_ID, contract.WHATWEB_TOOL_ID, contract.DIG_SRV_TOOL_ID, contract.RDP_TOOL_ID, contract.SMB2_TOOL_ID, contract.SMTP_TLS_TOOL_ID, contract.LDAP_TLS_TOOL_ID, contract.FTP_TLS_TOOL_ID, contract.DIG_NSID_TOOL_ID, contract.DIG_AXFR_TOOL_ID, contract.HTTP_OPTIONS_TOOL_ID}
+    old_cases = [case for case in contract.CASES if case not in contract.C2_CASES + contract.C3_CASES + contract.C4_CASES + contract.C5_CASES + contract.C6_CASES + contract.C7_CASES + contract.C8_CASES + contract.C9_CASES + contract.C10_CASES + contract.C11_CASES + contract.C12_CASES + contract.C13_CASES]
+    new_tools = {contract.POSTGRESQL_TLS_TOOL_ID, contract.MYSQL_TLS_TOOL_ID, contract.WHATWEB_TOOL_ID, contract.DIG_SRV_TOOL_ID, contract.RDP_TOOL_ID, contract.SMB2_TOOL_ID, contract.SMTP_TLS_TOOL_ID, contract.LDAP_TLS_TOOL_ID, contract.FTP_TLS_TOOL_ID, contract.DIG_NSID_TOOL_ID, contract.DIG_AXFR_TOOL_ID, contract.HTTP_OPTIONS_TOOL_ID, contract.SNMP_NEXT_TOOL_ID}
     old_tools = set(tool_adapters.ADAPTERS) - new_tools
     old_runtime = set(runtime.EXECUTABLES) - new_tools
     value = {'cases': {case: {'action': contract.action(case), 'descriptor': contract.capability_descriptor(case),
