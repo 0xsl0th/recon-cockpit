@@ -1,4 +1,4 @@
-"""C10 adds one fixed DNS NSID query without broadening old profiles."""
+"""C11 adds one fixed DNS AXFR query without broadening old profiles."""
 import hashlib
 import json
 from pathlib import Path
@@ -16,21 +16,21 @@ from recon_cockpit.secure_agent.models import ValidationError, parse_action, par
 
 
 def policy(**overrides):
-    value = json.loads(Path('examples/secure-agent-dns-nsid-policy.json').read_text())
+    value = json.loads(Path('examples/secure-agent-dns-axfr-policy.json').read_text())
     return parse_policy({**value, **overrides})
 
 
-@pytest.mark.parametrize('case', contract.C10_CASES)
-def test_fixed_dns_nsid_action_requires_personal_approval_and_one_step(case):
+@pytest.mark.parametrize('case', contract.C11_CASES)
+def test_fixed_dns_axfr_action_requires_personal_approval_and_one_step(case):
     action = parse_action(contract.action(case))
-    assert action.tool_id == contract.DIG_NSID_TOOL_ID
+    assert action.tool_id == contract.DIG_AXFR_TOOL_ID
     assert action.tool_id in AuthorizedNetworkToolsBackend.supported_tools
     assert action.parameters.to_dict() == {'port': 8080, 'timeout_seconds': 5, 'max_output_bytes': 8192}
     assert contract.profile_allows(action, case)
     assert policy().evaluate(action).decision == 'approval_required'
     assert policy(allowed_ports=[]).evaluate(action).reasons == ('port_not_allowed',)
-    assert workflow.card_identity(case)['version'] == '18'
-    assert set(workflow.card(case)['action_digests']) == set(contract.C10_CASES)
+    assert workflow.card_identity(case)['version'] == '19'
+    assert set(workflow.card(case)['action_digests']) == set(contract.C11_CASES)
     with pytest.raises(ValueError):
         contract.action(case, 2)
 
@@ -38,10 +38,10 @@ def test_fixed_dns_nsid_action_requires_personal_approval_and_one_step(case):
 @pytest.mark.parametrize('field', ['argv', 'executable', 'command', 'query', 'query_name',
     'query_type', 'resolver', 'transport', 'recursion', 'search', 'zone_transfer', 'retries',
     'target_hostname', 'followup', 'username', 'password', 'environment',
-    'edns', 'edns_options', 'nsid', 'cookie', 'bufsize', 'tcp_keepalive', 'ecs', 'dnssec'])
+    'edns', 'edns_options', 'axfr', 'cookie', 'bufsize', 'tcp_keepalive', 'ecs', 'dnssec'])
 
 def test_untrusted_proposal_cannot_select_code_destination_or_authentication(field):
-    proposal = contract.action('dig-nsid-ok')
+    proposal = contract.action('dig-axfr-ok')
     proposal['parameters'][field] = 'untrusted'
     with pytest.raises(ValidationError):
         parse_action(proposal)
@@ -50,59 +50,60 @@ def test_untrusted_proposal_cannot_select_code_destination_or_authentication(fie
 @pytest.mark.parametrize('change', [{'target': '127.0.0.2'}, {'port': 8081},
     {'timeout_seconds': 10}, {'max_output_bytes': 16384}])
 def test_valid_syntax_cannot_change_fixed_execution_scope(change):
-    proposal = contract.action('dig-nsid-ok')
+    proposal = contract.action('dig-axfr-ok')
     if 'target' in change:
         proposal.update(change)
     else:
         proposal['parameters'].update(change)
-    assert not contract.profile_allows(parse_action(proposal), 'dig-nsid-ok')
+    assert not contract.profile_allows(parse_action(proposal), 'dig-axfr-ok')
 
 
 @pytest.mark.parametrize('connections,requests', [(0, 0), (1, 0), (0, 1), (2, 1),
     (1, 2), (True, 1), (1, True)])
 def test_useful_metadata_require_exactly_one_connection_and_validated_request(connections, requests):
-    identity = lab.identity('dig-nsid-ok', str(uuid4()))
+    identity = lab.identity('dig-axfr-ok', str(uuid4()))
     result = {'backend': contract.BACKEND, 'owned_lab': {'identity': identity,
         'connection_count': connections, 'request_count': requests}, 'tool_observation': {}}
     with pytest.raises(ValueError):
-        contract.validate_result_context(result, identity, tool_id=contract.DIG_NSID_TOOL_ID,
+        contract.validate_result_context(result, identity, tool_id=contract.DIG_AXFR_TOOL_ID,
                                         execution_status='succeeded')
 
 
-@pytest.mark.parametrize('case', [c for c in contract.C10_CASES if c not in contract.DNS_NSID_SUCCESS_CASES])
+@pytest.mark.parametrize('case', [c for c in contract.C11_CASES if c not in contract.DNS_AXFR_SUCCESS_CASES])
 def test_failed_peer_scenario_cannot_be_upgraded_to_useful_metadata(case):
     identity = lab.identity(case, str(uuid4()))
     result = {'backend': contract.BACKEND, 'owned_lab': {'identity': identity,
         'connection_count': 1, 'request_count': 1}, 'tool_observation': {}}
     with pytest.raises(ValueError):
-        contract.validate_result_context(result, identity, tool_id=contract.DIG_NSID_TOOL_ID,
+        contract.validate_result_context(result, identity, tool_id=contract.DIG_AXFR_TOOL_ID,
                                         execution_status='succeeded')
 
 
-def test_all_accepted_contracts_remain_unchanged_from_pr63():
-    old_cases = [case for case in contract.CASES if case not in contract.C10_CASES + contract.C11_CASES]
-    old_tools = set(tool_adapters.ADAPTERS) - {contract.DIG_NSID_TOOL_ID, contract.DIG_AXFR_TOOL_ID}
-    old_runtime = set(runtime.EXECUTABLES) - {contract.DIG_NSID_TOOL_ID, contract.DIG_AXFR_TOOL_ID}
+def test_all_accepted_contracts_remain_unchanged_from_pr64():
+    old_cases = [case for case in contract.CASES if case not in contract.C11_CASES]
+    old_tools = set(tool_adapters.ADAPTERS) - {contract.DIG_AXFR_TOOL_ID}
+    old_runtime = set(runtime.EXECUTABLES) - {contract.DIG_AXFR_TOOL_ID}
     value = {'cases': {case: {'action': contract.action(case), 'descriptor': contract.capability_descriptor(case),
         'card': workflow.card(case), 'spec': lab.spec(case)} for case in old_cases},
         'adapters': {tool: tool_adapters.ADAPTERS[tool].to_dict() for tool in old_tools},
         'argv': {tool: runtime.FIXED_ARGV[tool] for tool in old_runtime},
         'environment': {tool: runtime.execution_environment(tool) for tool in old_runtime}}
-    assert len(old_cases) == 195 and len(old_tools) == 34 and len(old_runtime) == 25
+    assert len(old_cases) == 209 and len(old_tools) == 35 and len(old_runtime) == 26
     encoded = json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode()
-    assert hashlib.sha256(encoded).hexdigest() == '8082e146fa6e5df645bb964706b6d1c861704c54d0c9b789e8980ee3e127ff63'
+    assert hashlib.sha256(encoded).hexdigest() == '81bf19b18b156d8e4bca0f92c8946bf9a73b673503ab01d7d0d5b24971bca7c4'
 
 
-def test_descriptor_keeps_opaque_metadata_from_becoming_authority():
-    descriptor = contract.capability_descriptor('dig-nsid-ok')
-    assert descriptor['result_semantics'] == 'untrusted_dns_server_metadata'
+def test_descriptor_keeps_transfer_counts_and_returned_names_from_becoming_authority():
+    descriptor = contract.capability_descriptor('dig-axfr-ok')
+    assert descriptor['result_semantics'] == 'untrusted_dns_zone_transfer_metadata'
     question = descriptor['dns_question']
-    assert question['name'] == 'harbordesk.test.' and question['type'] == 'A'
-    assert question['options'] == [{'code': 3, 'bytes': 0}]
-    assert question['edns_version'] == 0 and question['advertised_udp_size'] == 1232
-    assert question['max_nsid_bytes'] == 64
+    assert question['name'] == 'harbordesk.test.' and question['type'] == 'AXFR'
+    assert question['max_accepted_messages'] == 4 and question['max_accepted_answer_records'] == 16
+    assert question['record_types'] == ['SOA', 'NS', 'A', 'TXT']
+    assert question['matching_soa_boundaries_required'] is True
+    assert question['count_limits_enforced_by'] == 'fixture_and_independent_parser'
     assert question['max_connections'] == question['max_requests'] == 1
-    for field in ('recursion', 'udp', 'cookies', 'edns_negotiation', 'malformed_recovery',
-            'retries', 'search', 'zone_transfer', 'response_directed_followup', 'service_identity_verified'):
+    for field in ('recursion', 'udp', 'cookies', 'edns', 'edns_negotiation', 'malformed_recovery',
+            'retries', 'search', 'preliminary_soa_query', 'response_directed_followup',
+            'service_identity_verified', 'native_frame_record_limit'):
         assert question[field] is False
-    assert question['nsid_encoding'] == 'opaque_lowercase_hex'

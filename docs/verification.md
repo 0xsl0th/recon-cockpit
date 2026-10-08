@@ -1,5 +1,105 @@
 # Verification record
 
+## C11 bounded DNS AXFR behavior — 8 October 2026
+
+The [C11 runbook](dns-axfr-tools.md) defines one fixed `harbordesk.test. IN AXFR`
+request over TCP through accepted dig confinement. Main C10 is accepted in PR #64
+below; this candidate has **36 profiles using the same 14 programs**. Complete
+transfers and explicit server refusals are useful observations, while partial or
+unsupported responses remain inconclusive. No returned DNS record grants authority.
+
+| Verification | Result |
+| --- | --- |
+| Full portable suite, strict markers, integration excluded | **15,464 passed**, zero failures/errors/skips; 349.483 seconds (JUnit). |
+| Selected owned native suite | **61 passed**, zero failures/errors/skips, 79 deselected; 198.793 seconds (JUnit). |
+| Native selection | 20 C11 (14 scenarios + six authority gates), 20 accepted NSID, 16 accepted SRV and five original A-query regressions. |
+| Ordinary utility | **3/3**: one-message transfer, three-message transfer and explicit REFUSED; zero unnecessary refusals. |
+| Separate robustness utility | **2/2**: fragmented TCP and inert hostile TXT. |
+| Negative outcomes | Nine inconclusive, all after one actual validated question. |
+| Enforced scope and closure | **28/28** forbidden destinations, **140/140** boundary fields; one connection/request and closed owner in every scenario. |
+| Evidence audit | 14 bounded raw reparses and report rebuilds match unchanged bytes/mtimes/modes. |
+| Frozen source | **566 files**, unchanged throughout both suites and native audit. |
+| Calls/cost | Zero actual provider calls and USD0; no model credentials configured. |
+
+The six C11 authority cases exercise consumed grants, absent consumed proof,
+cancellation after actual exec, private credential/bootstrap/descriptor protection,
+broadened UDP rejection and broadened task-ceiling rejection. Fresh approval remains
+required by the shipped policy. Unattended synthetic tests do not claim personal
+acceptance. Two development smoke trials independently established native REFUSED
+(exit0) and three-message completion before the frozen validation runs.
+
+All scenarios witnessed a complete **33-byte DNS question**, plus TCP length framing.
+Request counters establish progress, not transfer completeness. Useful results are
+four completed transfers and one explicit refusal. Native exit0 by itself cannot
+establish success: mismatched SOAs, wrong questions, midstream errors and count-limit
+violations returned zero but stayed inconclusive after independent parsing.
+
+| AXFR scenario | Elapsed ms | Captured bytes | Native status | Assessment outcome |
+| --- | ---: | ---: | --- | --- |
+| dig-axfr-ok | 3211 | 614 | succeeded | dns_axfr_completed |
+| dig-axfr-multiframe | 3223 | 934 | succeeded | dns_axfr_completed |
+| dig-axfr-refused | 3213 | 269 | succeeded | dns_axfr_refused |
+| dig-axfr-fragmented | 3246 | 613 | succeeded | dns_axfr_completed |
+| dig-axfr-injected | 3162 | 652 | succeeded | dns_axfr_completed |
+| dig-axfr-missing-soa | 2775 | 595 | failed | inconclusive |
+| dig-axfr-mismatched-soa | 3286 | 614 | succeeded | inconclusive |
+| dig-axfr-truncated | 2689 | 490 | failed | inconclusive |
+| dig-axfr-wrong-question | 3138 | 119 | succeeded | inconclusive |
+| dig-axfr-midstream-error | 3100 | 581 | succeeded | inconclusive |
+| dig-axfr-record-limit | 3108 | 1051 | succeeded | inconclusive |
+| dig-axfr-frame-limit | 3218 | 1254 | succeeded | inconclusive |
+| dig-axfr-stalled | 4768 | 488 | failed | inconclusive |
+| dig-axfr-output-limit | 2800 | 61 | output_limit | inconclusive |
+
+These are end-to-end scenario measurements, not comparative overhead. Minimum/median/
+maximum were **2689/3186.5/4768 ms**. Combined capture ranged 61–1254 bytes; useful
+cases retained 269–934 bytes. Every scenario retained the permitted 61-byte denied
+startup socket probe on stderr. Output pressure retained zero stdout plus that probe;
+its verified output-limit/truncation status does not mean 8192 bytes were retained.
+
+The parser accepts at most four printed messages and 16 answer records, with exactly
+two equal apex SOAs including TTL and all RDATA. This is an acceptance bound, not a
+stock-dig ingress limit; the five-second tool and 8192-byte capture ceilings remain
+native execution bounds. Dig stops at a second SOA, so later uncaptured wire data
+is not inspected. No entire-stream exhaustion, real-zone completeness, authenticated
+DNS identity, public exposure or vulnerability is claimed. TXT/names/addresses never
+enter normalized summaries or authorize follow-up. Only this synthetic grammar and
+pinned runtime are verified; model injection resistance remains untested.
+
+Private `.secure-agent/dns-axfr-20261008/` retains `portable.xml/log`, `native.xml/log`,
+`native-collection.log`, `native-tmp/`, the frozen source manifest and read-only audit.
+The source manifest SHA256 is `ceda115ac9ce1efcc5ebde6071048addc47f8b042c66725a38d9329f4158446c`.
+Native XML SHA256: `e8c4a89a47371828bce90451a260a56f69be3890594d02ce7031b55b39cbd5d2`.
+Native audit SHA256: `b7bae4d39742659443826791cee485e81147b71bda075ba1e3b7dd0dc2008685`.
+The accepted baseline freezes 209 earlier case contracts, 35 adapters and 26 runtimes;
+all old expected hashes remain unchanged. Historical selector tests exclude only the
+new profile; accepted runtime and lab contracts are not rebaselined.
+
+Clean implementation execution and 78 accepted-bundle replays remain pending before
+PR handoff. Credentials, paid/live evaluation, external engagements, deeper workflows
+and benchmarking stay deferred. C9's earlier legacy stall remains unexplained; these
+DNS passes do not establish its cause or resolution. Completed B0–B8, C1–C10, offline
+R5, accepted local R6 and initial GUI/personal acceptance stay closed.
+
+## PR #64 review and merge — 8 October 2026
+
+**C10 is accepted in [PR #64](https://github.com/0xsl0th/recon-cockpit/pull/64).**
+Reviewed head `964d600` merged as `dea8c7a` on 8 October at 00:25:00 UTC;
+reviewed and merged trees match `5ba1c32671aa72821f0ef97983ec36618f0b13b2`.
+Fresh authority/runtime and parser/evidence reviews found no blockers; 362 focused
+tests passed. All 557 source hashes, 92 reports, 107 artifacts and ten receipt-chain
+levels including the C10 receipt reconciled (nine inherited links).
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37706257697)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37707653540)
+passed. Preserve 14,814 portable and 62 native tests, 5/5 ordinary and 1/1 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations,
+140/140 boundary fields and 72 unchanged accepted replays. The initial historical
+snapshot-test selection failure and correction remain recorded; no production or
+selected native-test file changed. C9's earlier stall cause remains unresolved.
+C10 stays closed with **35 profiles using 14 programs**. Private merge receipt:
+`.secure-agent/pr64-merge-review.json`.
+
+
 ## C10 owned DNS NSID metadata — 7–8 October 2026
 
 The [C10 runbook](dns-nsid-tools.md) defines `dig_dns_nsid_v1`: one fixed

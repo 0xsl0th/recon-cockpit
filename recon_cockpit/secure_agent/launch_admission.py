@@ -27,6 +27,11 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('dig-axfr-ok', 'dig-axfr-multiframe', 'dig-axfr-refused',
+                    'dig-axfr-fragmented', 'dig-axfr-injected', 'dig-axfr-missing-soa',
+                    'dig-axfr-mismatched-soa', 'dig-axfr-truncated', 'dig-axfr-wrong-question',
+                    'dig-axfr-midstream-error', 'dig-axfr-record-limit', 'dig-axfr-frame-limit',
+                    'dig-axfr-stalled', 'dig-axfr-output-limit'), 'dig_dns_axfr_v1'),
     **dict.fromkeys(('dig-nsid-ok', 'dig-nsid-binary', 'dig-nsid-empty', 'dig-nsid-absent',
                     'dig-nsid-noedns', 'dig-nsid-injected', 'dig-nsid-refused', 'dig-nsid-malformed',
                     'dig-nsid-duplicate', 'dig-nsid-oversize', 'dig-nsid-stalled', 'dig-nsid-output-limit',

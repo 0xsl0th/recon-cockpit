@@ -38,6 +38,7 @@ def tool_for_case(case):
                          ("smtp-tls-", "smtp_starttls_handshake_v1"),
                          ("smb2-", "smb2_negotiate_metadata_v1"),
                          ("rdp-", "rdp_initial_negotiation_v1"),
+                         ("dig-axfr-", "dig_dns_axfr_v1"),
                          ("dig-nsid-", "dig_dns_nsid_v1"),
                          ("dig-srv-", "dig_dns_srv_v1"),
                          ("whatweb-", "whatweb_http_fingerprint_v1"),
@@ -89,8 +90,118 @@ def dns_response(case, query):
     return response
 
 
-# One independent, nonrecursive service-location query. Advertised destinations
-# remain untrusted metadata and are never resolved, connected to, or contacted.
+# One fixed synthetic zone transfer. Names and TXT bytes stay inert metadata.
+DNS_AXFR_TOOL_ID = "dig_dns_axfr_v1"
+DNS_AXFR_QUERY_NAME = "harbordesk.test."
+DNS_AXFR_QUERY_TYPE = "AXFR"
+DNS_AXFR_MAX_QUERY_BYTES = 512
+DNS_AXFR_MAX_RESPONSE_BYTES = 4096
+DNS_AXFR_MAX_WIRE_BYTES = 16384
+DNS_AXFR_MAX_MESSAGES = 4
+DNS_AXFR_MAX_RECORDS = 16
+DNS_AXFR_MAX_FIXTURE_MESSAGES = 5  # Includes the deliberate acceptance-limit negative.
+DNS_AXFR_CASES = tuple("dig-axfr-" + suffix for suffix in (
+    "ok", "multiframe", "refused", "fragmented", "injected", "missing-soa",
+    "mismatched-soa", "truncated", "wrong-question", "midstream-error",
+    "record-limit", "frame-limit", "stalled", "output-limit"))
+DNS_AXFR_SUCCESS_CASES = DNS_AXFR_CASES[:5]
+DNS_AXFR_QUESTION = b"\x0aharbordesk\x04test\x00\x00\xfc\x00\x01"
+DNS_AXFR_TTL = 60
+DNS_AXFR_SOA = ("ns.harbordesk.test.", "hostmaster.harbordesk.test.",
+                2026100801, 3600, 600, 86400, 300)
+DNS_AXFR_SERIAL = DNS_AXFR_SOA[2]
+DNS_AXFR_NS = "ns.harbordesk.test."
+DNS_AXFR_ADDRESS = "127.0.0.1"
+DNS_AXFR_TXT = b"owned synthetic zone"
+CASES += DNS_AXFR_CASES
+VARIANTS = CASES
+
+
+def dns_axfr_query(txid=b"\x00\x00"):
+    if type(txid) is not bytes or len(txid) != 2:
+        raise ValueError("invalid_dns_axfr_transaction_id")
+    return txid + struct.pack("!HHHHH", 0, 1, 0, 0, 0) + DNS_AXFR_QUESTION
+
+
+def validate_dns_axfr_query(query):
+    if type(query) is not bytes or len(query) < 2 or query != dns_axfr_query(query[:2]):
+        raise ValueError("invalid_dns_axfr_question")
+    return query
+
+
+def _dns_axfr_name(name):
+    return b"".join(bytes([len(label)]) + label.encode("ascii")
+                    for label in name.rstrip(".").split(".")) + b"\x00"
+
+
+def _dns_axfr_rr(name, record_type, data):
+    return _dns_axfr_name(name) + struct.pack("!HHIH", record_type, 1, DNS_AXFR_TTL, len(data)) + data
+
+
+def _dns_axfr_soa(serial=DNS_AXFR_SERIAL):
+    primary, mailbox, _, refresh, retry, expire, minimum = DNS_AXFR_SOA
+    data = (_dns_axfr_name(primary) + _dns_axfr_name(mailbox)
+            + struct.pack("!IIIII", serial, refresh, retry, expire, minimum))
+    return _dns_axfr_rr(DNS_AXFR_QUERY_NAME, 6, data)
+
+
+def dns_axfr_responses(case, query):
+    """Finite DNS message bodies; accepted limits are not stock dig ingress caps."""
+    if type(case) is not str or case not in DNS_AXFR_CASES:
+        raise ValueError("invalid_dns_axfr_case")
+    validate_dns_axfr_query(query)
+    if case == "dig-axfr-stalled":
+        return None
+    soa = _dns_axfr_soa()
+    ns = _dns_axfr_rr(DNS_AXFR_QUERY_NAME, 2, _dns_axfr_name(DNS_AXFR_NS))
+    address = _dns_axfr_rr(DNS_AXFR_NS, 1, b"\x7f\x00\x00\x01")
+    note = HOSTILE_NOTE.encode("ascii") if case == "dig-axfr-injected" else DNS_AXFR_TXT
+    text = (bytes([255]) + b"\x01" * 255) * 12 if case == "dig-axfr-output-limit" else bytes([len(note)]) + note
+    txt = _dns_axfr_rr(DNS_AXFR_QUERY_NAME, 16, text)
+    groups = [(soa, ns, address, txt, soa)]
+    rcodes = [0]
+    if case == "dig-axfr-refused":
+        groups, rcodes = [()], [5]
+    elif case == "dig-axfr-multiframe":
+        groups, rcodes = [(soa, ns), (address, txt), (soa,)], [0, 0, 0]
+    elif case == "dig-axfr-missing-soa":
+        groups = [(soa, ns, address, txt)]
+    elif case == "dig-axfr-mismatched-soa":
+        groups = [(soa, ns, address, txt, _dns_axfr_soa(DNS_AXFR_SERIAL + 1))]
+    elif case == "dig-axfr-midstream-error":
+        groups, rcodes = [(soa, ns), ()], [0, 2]
+    elif case == "dig-axfr-record-limit":
+        groups = [(soa,) + (address,) * 15 + (soa,)]
+    elif case == "dig-axfr-frame-limit":
+        groups, rcodes = [(soa,), (ns,), (address,), (txt,), (soa,)], [0] * 5
+    elif case == "dig-axfr-output-limit":
+        groups = [(soa, txt, soa)]
+    messages = []
+    for index, (records, rcode) in enumerate(zip(groups, rcodes)):
+        question = (DNS_QUESTION if case == "dig-axfr-wrong-question" else DNS_AXFR_QUESTION) if index == 0 else b""
+        header = query[:2] + struct.pack("!HHHHH", 0x8400 | rcode, int(bool(question)), len(records), 0, 0)
+        message = header + question + b"".join(records)
+        if len(message) > DNS_AXFR_MAX_RESPONSE_BYTES:
+            raise ValueError("dns_axfr_response_limit")
+        messages.append(message)
+    if len(messages) > DNS_AXFR_MAX_FIXTURE_MESSAGES:
+        raise ValueError("dns_axfr_fixture_message_limit")
+    return tuple(messages)
+
+
+def dns_axfr_wire(case, query):
+    messages = dns_axfr_responses(case, query)
+    if messages is None:
+        return None
+    wire = b"".join(struct.pack("!H", len(message)) + message for message in messages)
+    if case == "dig-axfr-truncated":
+        wire = wire[:-1]  # Announced TCP length deliberately exceeds sent bytes.
+    if len(wire) > DNS_AXFR_MAX_WIRE_BYTES:
+        raise ValueError("dns_axfr_wire_limit")
+    return wire
+
+
+# One independent, nonrecursive metadata query. Returned bytes never confer authority.
 DNS_NSID_TOOL_ID = "dig_dns_nsid_v1"
 DNS_NSID_QUERY_NAME = "harbordesk.test."
 DNS_NSID_QUERY_TYPE = "A"

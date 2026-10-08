@@ -24,6 +24,7 @@ if __package__:
     from . import network_tools_whatweb_fixture as whatweb_fixture
     from . import network_tools_dns_srv_fixture as dns_srv_fixture
     from . import network_tools_dns_nsid_fixture as dns_nsid_fixture
+    from . import network_tools_dns_axfr_fixture as dns_axfr_fixture
     from . import network_tools_rdp_fixture as rdp_fixture
     from . import network_tools_smb2_fixture as smb2_fixture
     from . import network_tools_smtp_tls_fixture as smtp_tls_fixture
@@ -50,6 +51,7 @@ else:
     whatweb_fixture = _load("network_tools_fixed_whatweb", "network_tools_whatweb_fixture.py")
     dns_srv_fixture = _load("network_tools_fixed_dns_srv", "network_tools_dns_srv_fixture.py")
     dns_nsid_fixture = _load("network_tools_fixed_dns_nsid", "network_tools_dns_nsid_fixture.py")
+    dns_axfr_fixture = _load("network_tools_fixed_dns_axfr", "network_tools_dns_axfr_fixture.py")
     rdp_fixture = _load("network_tools_fixed_rdp", "network_tools_rdp_fixture.py")
     smb2_fixture = _load("network_tools_fixed_smb2", "network_tools_smb2_fixture.py")
     smtp_tls_fixture = _load("network_tools_fixed_smtp_tls", "network_tools_smtp_tls_fixture.py")
@@ -266,7 +268,7 @@ class NetworkToolsService(owner.Service):
                     raw.close()
                     raise RuntimeError("nmap_service_fixture_request_limit")
                 if self.case.startswith(("ftp-", "smtp-", "docker-ping-", "docker-version-", "winrm-", "redis-", "snmp-",
-                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-srv-", "dig-nsid-", "rdp-", "smb2-", "ldap-tls-")) and self.connections:
+                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-srv-", "dig-nsid-", "dig-axfr-", "rdp-", "smb2-", "ldap-tls-")) and self.connections:
                     raw.close()
                     raise RuntimeError("single_metadata_fixture_connection_limit")
                 with self.condition:
@@ -289,6 +291,9 @@ class NetworkToolsService(owner.Service):
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.RDP_CASES:
                         rdp_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            on_request=self._smb_enumerated)
+                    elif self.case in fixture.DNS_AXFR_CASES:
+                        dns_axfr_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.DNS_NSID_CASES:
                         dns_nsid_fixture.serve(connection, case=self.case, deadline=self.deadline,

@@ -19,7 +19,7 @@ from test_secure_network_tools_runtime import envelope, manifest, recommit, veri
 def test_all_nineteen_accepted_native_invocations_remain_byte_identical():
     selected = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.DIG_SRV, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.DIG_SRV, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR)}
     assert len(selected) == 19
     # Independently captured from accepted main fdfe6e8 before C4 edits.
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == (

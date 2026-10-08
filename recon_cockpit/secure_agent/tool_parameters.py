@@ -152,6 +152,11 @@ class DigSRVParameters(TCPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class DigAXFRParameters(TCPParameters):
+    """Bounds for one fixed owned AXFR request; transferred records confer no authority."""
+
+
+@dataclass(frozen=True, slots=True)
 class DigNSIDParameters(TCPParameters):
     """Bounds for one fixed owned NSID question; returned bytes confer no authority."""
 
