@@ -7,7 +7,7 @@ and independent peer records proving those bytes were not forwarded.
 import hashlib
 
 from . import tls_posture_diagnostic_trace as trace
-from . import tls_posture_diagnostic_fixture as fixture
+from .tls_posture_hello import validate_client_hello
 from .tls_posture_mediator import ClientGate, MediatorViolation
 
 
@@ -136,7 +136,7 @@ def analyze_trial(trial):
         received = _raw_rows(peer.get("received_records"), peer.get("received_bytes"))
         if forwarded != received or mediation.get("client_transmitted_bytes") != sum(map(len, forwarded)):
             raise ValueError("mediator_peer_client_mismatch")
-        gate = ClientGate(trial["version"], fixture.validate_client_hello)
+        gate = ClientGate(trial["version"], validate_client_hello)
         for raw in forwarded:
             gate.check(raw)
             gate.forwarded(raw)
@@ -197,7 +197,7 @@ def analyze_trial(trial):
         if (len(sent) != 1 or sent[0][5:] != server[0]["data"]
                 or [m["data"] for m in messages if m["kind"] == "RecordHeader" and m["direction"] == "read"] != [sent[0][:5]]):
             raise ValueError("retry_peer_response_mismatch")
-        fixture.validate_client_hello(ingress[-1], "tls1_3", retry=True)
+        validate_client_hello(ingress[-1], "tls1_3", retry=True)
         if forwarded != [ingress[0], b"\x14\x03\x03\x00\x01\x01"]:
             raise ValueError("unexpected_retry_forward_sequence")
         expected = [("write", "ClientHello"), ("read", "ServerHello"), ("write", "ClientHello")]

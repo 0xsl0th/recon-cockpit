@@ -1,5 +1,6 @@
 """Portable relay tests use unnamed socketpairs, never a network target."""
 
+import errno
 import hashlib
 import io
 import json
@@ -176,7 +177,13 @@ def test_invalid_or_partial_ingress_never_creates_peer_request(build_service, ra
     service, listener = build_service("reject")
     with listener.connect() as client:
         client.sendall(raw)
-        client.shutdown(socket.SHUT_WR)
+        try:
+            client.shutdown(socket.SHUT_WR)
+        except OSError as error:
+            # A complete invalid record may already have closed the peer.
+            # Darwin reports ENOTCONN when this races our half-close.
+            if error.errno != errno.ENOTCONN:
+                raise
         try:
             assert client.recv(1) == b""
         except ConnectionResetError:
