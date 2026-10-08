@@ -378,8 +378,17 @@ null-MX/NODATA/NXDOMAIN, and authorizes no name resolution or mail-server follow
 The [finite coverage contract](professional-v1-coverage.md) maps all accepted
 profiles to six required operator outcomes: T01 is accepted; T02–T06 remain open.
 [T02 source feasibility](tls-posture-feasibility.md) is complete: stock sslscan
-cannot preserve the received rejection evidence required by this task. Next is a
-minimal native-feasibility slice using separately versioned OpenSSL per-version
-profiles. All four versions and G1–G6 remain required. No T02 integration,
-installation or scan occurred; no program-count increment is claimed. Preserve
-the existing recipes and authority gates.
+cannot preserve the received rejection evidence required by this task. The
+unmerged [OpenSSL native diagnostic](tls-posture-native.md), frozen execution
+source `958b5d6`, produced 8/8 ordinary observations and 4/4 explicit received
+rejections across TLS 1.0/1.1/1.2/1.3. The HRR challenge elicited a second
+ClientHello: **observed, not prevented (0/1 prevention)**. A finite transport
+mediator must block that message before forwarding it to the owned peer, while
+preserving ordinary completion and the existing limits. There is no implicit
+retry allowance.
+
+This development diagnostic does not exercise production approval, permits,
+admission or the two evidence inspectors. All four versions and G1–G6 remain
+required before T02 acceptance. No T02 secure profile, installation or
+program-count increment is claimed. Preserve the existing recipes and authority
+gates; accepted coverage remains **43 profiles / 16 programs**.

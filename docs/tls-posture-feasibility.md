@@ -3,7 +3,15 @@
 Assessment date: **8 October 2026**, accepted main `b1afbba` (PR #74).
 T01/C18 is closed. Accepted coverage remains **43 exact secure profiles across
 16 external programs**. This slice contains documentation and read-only
-inspection; no T02 tool execution, installation or adapter acceptance occurred.
+inspection; no T02 tool execution, installation or adapter acceptance occurred
+in that source-review slice. It was accepted in PR #75 at `cb17f0cb`.
+
+**Later native finding:** the [owned development diagnostic](tls-posture-native.md)
+completes ordinary handshakes and received rejections within existing client caps,
+but a valid HelloRetryRequest causes a second ClientHello. The proposed boundary
+is not enforced. T02 remains open; finite transport mediation is the next gate.
+The source assessment below is preserved as the pre-execution decision, not a
+claim that native work is still pending or that product integration is accepted.
 
 ## Decision and next implementation gate
 

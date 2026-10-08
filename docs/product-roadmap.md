@@ -1,6 +1,6 @@
 # Product roadmap and remaining PR estimate
 
-Status snapshot: **8 October 2026, after PR #74**, accepted main `b1afbbab`.
+Status snapshot: **8 October 2026, after PR #75**, accepted main `cb17f0cb`.
 The PR-count forecasts retain their explicitly dated PR #72 baseline below.
 This is the consolidated product plan. The [implementation roadmap](roadmap.md)
 retains milestone history; the [checkpoint](continue-here.md) records the next
@@ -20,8 +20,11 @@ after fresh review, 407 focused tests and all five final CI jobs passed. Reviewe
 `043aa543` and merge `b1afbbab` have identical trees; G1–G6 are closed.
 All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37834481139)
 also passed; receipt: `.secure-agent/pr74-merge-review.json`.
-**T02–T06 remain open.** [T02 source feasibility](tls-posture-feasibility.md)
-rejects stock sslscan; a separately versioned OpenSSL alternative needs native proof.
+**T02–T06 remain open.** [PR #75](https://github.com/0xsl0th/recon-cockpit/pull/75)
+accepted source feasibility after review and all five final/post-merge jobs passed.
+The new [native diagnostic](tls-posture-native.md) proves useful OpenSSL version
+observations, but observes an unprevented second ClientHello. Its unmerged
+feasibility code adds no accepted profile; finite transport enforcement is next.
 
 ## Product destination
 
@@ -97,7 +100,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | C18/T01 DNS MX is accepted; T02 source feasibility is complete and its OpenSSL alternative needs native proof, with T03–T06 still required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Three additional programs are now plausible; the historical 4–6 assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | C18/T01 DNS MX is accepted; T02 native feasibility proves useful observations but needs retry enforcement, with T03–T06 still required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Three additional programs are now plausible; the historical 4–6 assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
@@ -198,9 +201,19 @@ most four typed preference/exchange rows, with useful null-MX/NODATA/NXDOMAIN
 results and no returned-host follow-up. It reuses `dig`; see the
 [C18 runbook](dns-mx-tools.md). Its merge adds one accepted profile and no program.
 
-**T02 source feasibility is complete; [native feasibility remains next](tls-posture-feasibility.md).**
-Stock sslscan loses received rejection evidence. Assess separately versioned
-OpenSSL per-version profiles through the existing secure path, retaining
-TLS 1.0/1.1/1.2/1.3 and client-received evidence. No T02 integration, installation
-or scan occurred; no profile or program count increases. T02 still needs all
-G1–G6 gates. Deeper workflows, credentials and paid/live models stay deferred.
+**T02 remains open: the [native diagnostic](tls-posture-native.md) confirms
+useful version observations and a request-boundary failure.**
+On frozen execution source `958b5d6`, the disconnected fixtures produced 8/8
+ordinary observations across TLS 1.0/1.1/1.2/1.3 and 4/4 explicit received
+rejections. Six actual handshakes completed with certificate/name verification.
+The thirteenth trial elicited a second ClientHello after HelloRetryRequest:
+**observed, not prevented (0/1 prevention)**. Keep this failed gate visible.
+The development diagnostic reuses confinement mechanics but does not exercise
+production approvals, permits, admission or the two evidence inspectors. No T02
+secure profile or G1–G6 acceptance follows; coverage remains 43 profiles/16 programs.
+Next review and implement a finite transport mediator that prevents a second
+ClientHello before forwarding it, preserving the four-version task and existing
+caps. Prove both ordinary completion and retry blocking before product integration;
+if mediation cannot fit those bounds, review a concrete contract alternative
+without silently permitting retries. Existing TLS profiles stay unchanged.
+Deeper workflows, credentials and paid/live models stay deferred.

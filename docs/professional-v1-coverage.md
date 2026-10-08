@@ -1,11 +1,12 @@
 # Professional-v1 coverage contract
 
-Status: **8 October 2026, PR #74 accepted at `b1afbbab`**. The owner agreed
+Status: **8 October 2026, PR #75 accepted at `cb17f0cb`**. The owner agreed
 the [product roadmap](product-roadmap.md) accepted in PR #73 and authorized
 continued coverage work. This document fixes six required operator tasks.
-**T01/C18 is accepted; T02–T06 remain open.** T02 source feasibility is complete:
-stock sslscan is unsuitable, and a separately versioned OpenSSL alternative needs
-native feasibility. No new secure capability is established.
+**T01/C18 is accepted; T02–T06 remain open.** T02 source feasibility rejects
+stock sslscan. Its new [OpenSSL native diagnostic](tls-posture-native.md) confirms
+ordinary version observations but fails retry prevention. No new secure capability
+is established; the diagnostic is separate from production authority and evidence.
 
 This is the finite **Stage 2 tool-coverage gate**, not a declaration that the
 professional product or its final release contract is complete. Existing exact
@@ -70,7 +71,7 @@ report alone cannot complete any row.
 | ID / priority | Required operator outcome and present gap | Candidate implementation and bounded task | Required useful cases and honest negative results | Status |
 | --- | --- | --- | --- | --- |
 | **T01 / C18 — accepted** | Observe a domain's advertised mail routing; C18 closes the former fixed-MX gap. | Reuse `dig`; one fixed nonrecursive TCP MX question, at most four typed preference/exchange rows. No mail delivery, additional name resolution or returned-server connection. | Ordinary MX records, null-MX, NODATA and NXDOMAIN all complete. Distinguish explicit no-mail advertisement from missing data. Reject malformed/null-MX mixtures and incomplete or excess-record responses; hostile names remain data. | **G1–G6 closed in [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74).** |
-| **T02 — source feasibility complete; native proof next** | Determine acceptance/rejection of TLS 1.0, 1.1, 1.2 and 1.3; the accepted TLS profile proves only its selected handshake. | Stock **sslscan** rejected because it discards received rejection evidence. Next assess separately versioned **OpenSSL** per-version profiles using the accepted runtime: one numeric owned endpoint, exact version per action, independent grants and bounded connection ledger. Preserve the initial at-most-eight-connection whole-task target, with exact tighter caps proved before implementation. No client credential, application request, retry escalation or peer-directed fetch; accepted OpenSSL profiles stay unchanged. | A modern-only fixture and a deliberately legacy-enabled fixture produce correct observations for all four versions. Explicit protocol rejection is useful only with retained client-received evidence, independently corroborated by owner records. Reset, timeout or unsupported-client behavior is inconclusive. Unknown or incomplete results cannot be reported as disabled versions. | **Required and open; [source feasibility](tls-posture-feasibility.md) complete. No T02 execution, secure profile or G1–G6 acceptance.** |
+| **T02 — native usefulness proved; retry boundary open** | Determine acceptance/rejection of TLS 1.0, 1.1, 1.2 and 1.3; the accepted TLS profile proves only its selected handshake. | Stock **sslscan** rejected because it discards received rejection evidence. Native diagnostic supports separate **OpenSSL** per-version probes; a finite transport mediator must prevent a second ClientHello before product integration: one numeric owned endpoint, exact version per action, independent grants and bounded connection ledger. Preserve the initial at-most-eight-connection whole-task target, with exact tighter caps proved before implementation. No client credential, application request, retry escalation or peer-directed fetch; accepted OpenSSL profiles stay unchanged. | A modern-only fixture and a deliberately legacy-enabled fixture produce correct observations for all four versions. Explicit protocol rejection is useful only with retained client-received evidence, independently corroborated by owner records. Reset, timeout or unsupported-client behavior is inconclusive. Unknown or incomplete results cannot be reported as disabled versions. | **Required and open. [Native diagnostic](tls-posture-native.md): 8/8 ordinary observations, 4/4 explicit rejections; HRR prevention 0/1. No secure profile or G1–G6 acceptance.** |
 | **T03** | Assess SSH transport advertisements against an explicit pinned hardening policy; accepted collection alone supplies no policy assessment. | Assess **ssh-audit** first, with an immutable local policy/data snapshot and strictly bounded pre-authentication behavior. No rate test, stress test, client-listener mode, authentication or session. Pin the complete connection/request ceiling before implementation; preserve C14. | A conforming and a deliberately nonconforming synthetic peer both complete with correct observed algorithm lists and rule outcomes. Unknown algorithms and incomplete handshakes stay unknown/inconclusive. Report a policy deviation, not verified exploitability or host identity. | **Required; no secure profile yet.** |
 | **T04** | Discover a controlled one-level web directory hierarchy; accepted ffuf covers only its flat eight-path corpus. | Assess **feroxbuster**, reusing its interactive precedent but creating a separate secure profile. Use compiled words, predeclared same-origin prefixes and a finite path universe, depth at most one below the starting path, one active request and an initial total target of at most 24 GETs including calibration. No arbitrary link extraction, off-origin redirects, credentials, uploads or unbounded recursion. | Known nested resources and an empty hierarchy both complete; every planned path/request is accounted for. Wildcard responses must not invent resources. Redirects, path traversal, hostile links, unexpected paths and partial scans cannot expand scope or claim complete discovery. | **Required; no secure profile yet.** |
 | **T05** | Obtain one bounded page of SNMP interface descriptions; C13 returns a single successor, not a page. | Assess **snmpbulkget**, reusing the Net-SNMP runtime/fixture patterns. One TCP GETBULK, one fixed ifDescr seed, non-repeaters zero and maximum repetitions four; public synthetic community only. No paging continuation, walks, SET, UDP or real credentials. | A populated page, empty descriptions, endOfMibView and a supported outside-column boundary all have explicit results. Require ordered typed OIDs and a complete response; excess, malformed or partial rows stay inconclusive. A full page means capped observation, not a complete interface inventory. | **Required; no secure profile yet.** |
@@ -79,9 +80,10 @@ report alone cannot complete any row.
 T02 remains the next gap because version posture adds a distinct outcome beyond
 one certificate or handshake. [Source feasibility](tls-posture-feasibility.md)
 found that stock sslscan cannot distinguish received rejection from other failed
-probes. Owner-sent bytes cannot replace missing client evidence. Reuse OpenSSL
-for the next minimal per-version native-feasibility slice, retaining all four
-versions and the full required task. No tool was installed or scanned here; the
+probes. Owner-sent bytes cannot replace missing client evidence. The OpenSSL
+diagnostic retains client-received evidence for all four versions, but HRR elicits
+a second ClientHello. Next enforce the message boundary with a finite transport
+mediator and recheck ordinary completion before product integration. The
 already-installed sslscan remains outside the secure catalog. Do not substitute
 another HTTP signature solely because its existing adapter is convenient.
 
