@@ -57,7 +57,10 @@ def scripted_terminal(monkeypatch, interactive):
             assert path == "/dev/tty"
             # Use actual device opens, preserving the nonseekable stream that
             # made text mode r+ fail; StringIO would hide that regression.
-            return builtins.open(slave_name, mode, **kwargs)
+            # A session-leading test runner must not acquire this controlling
+            # terminal and receive SIGHUP when the fixture closes its master.
+            return builtins.open(slave_name, mode,
+                opener=lambda name, flags: os.open(name, flags | os.O_NOCTTY), **kwargs)
 
         monkeypatch.setattr(cli, "open", open_terminal, raising=False)
         yield master

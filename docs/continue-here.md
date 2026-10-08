@@ -4,7 +4,7 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: C17 is accepted; product-roadmap planning is the current task.**
+**Current status: PR #73 is merged; [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74) contains the locally validated C18 candidate and finite coverage contract. It remains unmerged.**
 [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72) merged as
 `e00482409362f1f9380bc225063b84762446dee9` after fresh authority/runtime and
 parser/evidence reviews found no blockers and all five final PR checks passed. All five
@@ -19,8 +19,15 @@ product. Its planning estimates are **40–60 further PRs for an operator-assist
 professional v1**, and **80–130 total further PRs for the broader product**.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that all 42 profiles are available through the GUI.
-The forecast is a documentation-only follow-up on `docs/product-roadmap-forecast`
-in `/tmp/recon-product-roadmap`; implementation remains unchanged.
+[PR #73](https://github.com/0xsl0th/recon-cockpit/pull/73) accepted the forecast at
+`993c83d` from reviewed head `44b479b` after review and all five final CI jobs
+passed. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37818772689)
+also passed; reviewed and merged trees match. Private merge receipt:
+`.secure-agent/pr73-merge-review.json`.
+The owner agreed the plan and authorized continued coverage work. The new
+[finite task checklist](professional-v1-coverage.md) maps accepted exact profiles
+and fixes six remaining operator outcomes; candidate engines are not accepted
+integrations or a program-count quota.
 
 C17's [runbook](nuclei-git-tools.md) records one fixed GET of `/.git/HEAD` and two
 finite synthetic markers. No returned-ref follow-up, repository/source/object
@@ -45,14 +52,39 @@ SHA-256 `6721ac99867de7e57d6cc06035e65e923c690831087098015650d2b0df1868c6`.
 Merge review: `.secure-agent/pr72-merge-review.json`. The original C17 handoff is
 historical and remains unchanged; the merge receipt supersedes its open-PR status.
 
-**Next implementation recommendation:** C18 fixed nonrecursive TCP DNS MX
-metadata using the existing dig runtime, with at most four typed rows and useful
-null-MX/NODATA/NXDOMAIN outcomes, and no returned-host follow-up. C18 has not
-started. Agree a finite professional-v1 coverage checklist before treating the
-rolling coverage programme as complete; do not silently replace the 40+ program
-ambition or move required work to optional status. Existing closed milestones
-remain closed. Deeper workflows, comparative benchmarks, real credentials,
-external targets and paid/live models remain deferred under their existing gates.
+**Current implementation: C18/T01 DNS MX**, using the existing dig runtime,
+one fixed nonrecursive TCP question and at most four typed rows. Null-MX, NODATA
+and NXDOMAIN have useful distinct meanings; no returned-host follow-up or mail
+operation is allowed. The candidate has **43 profiles/16 programs**; accepted
+main remains **42/16**. See the [C18 runbook](dns-mx-tools.md).
+
+**Local validation passed at `89d4465`: 19,888 portable and 37 native tests**,
+with zero skips, failures or errors. C18 achieved 5/5 ordinary plus 1/1 robustness
+completions, seven inconclusive negatives, zero unnecessary refusals, 26/26
+blocked destinations and 130/130 boundary fields. Thirteen new and 133 accepted
+bundles replayed unchanged through both inspectors; twelve additional fresh DNS
+regression bundles also replayed unchanged. All 717 source hashes, seventeen
+inherited receipt links and the 303-case/42-adapter/33-runtime baseline matched.
+Scenario wall time was 2931–5089 ms, median 3550 ms;
+actual provider calls and cost were zero. This is descriptive timing, not
+comparative overhead. G1–G5 passed locally; G6 remains open pending final PR
+review, required checks and an authorized merge. Accepted main remains 42/16.
+Final follow-up changes documentation and the terminal-test fixture only;
+native-validated production bytes remain identical. The fixture correction uses
+`O_NOCTTY` after an isolated child reproduced the interrupted first portable run;
+all thirteen corrected terminal tests passed in that same session setting.
+
+Private verification: `.secure-agent/dns-mx-20261008/verification.json`, SHA-256
+`59e3e89ced9a0887095bb62fe238a2c34fa45e4f724a2fefe2cf7b4c73505093`. Development test corrections and the exploratory smoke run are
+retained in the private development review; no historical hash was regenerated.
+
+**Next after C18: T02 bounded TLS version-posture feasibility**, initially
+assessing sslscan against a finite owned request/runtime contract. No T02 engine
+has been installed or implemented. Continue through required T03–T06 using the
+[finite checklist](professional-v1-coverage.md); do not remove difficult outcomes
+or substitute program counts for useful coverage. Existing closed milestones stay
+closed. Deeper workflows, comparative benchmarks, real credentials, attached or
+external networks and paid/live models remain deferred under their existing gates.
 
 **C16 accepted in [PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71).**
 The separate pinned Nuclei runtime and owned directory-listing check bring accepted
@@ -602,10 +634,11 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: product roadmap and PR forecast after the C17 merge.**
-Follow the [consolidated plan](product-roadmap.md) and current status at the top.
-C17 and earlier completed milestones stay closed. C18 is the next proposed
-implementation; no deeper workflow, credential or live-model work starts here.
+**Current continuation: validate C18 and prepare its reviewable handoff.**
+Follow the [finite task checklist](professional-v1-coverage.md), the
+[consolidated plan](product-roadmap.md) and current status at the top.
+C17 and earlier completed milestones stay closed. C18 is the active candidate;
+no deeper workflow, credential or live-model work starts here.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1795,21 +1828,28 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #72 merge is complete. PRs #6–#30 and #32–#72
-  stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
-  messages, paid calls and external targets need their corresponding instruction.
+- The operator-authorized PR #73 merge is complete. PRs #6–#30 and #32–#73
+  stay closed; proposal PR #31 remains separate. Current authorization covers
+  the finite coverage continuation, beginning with C18. Later merges, submission,
+  messages, paid calls and external targets retain their corresponding gates.
 
 ## Next continuation
 
-1. C17 is accepted on main `e004824` via PR #72. Preserve its review and validation;
-   no rerun or reopening is needed merely to discuss product planning.
-2. Review the documentation-only `docs/product-roadmap-forecast` branch in
-   `/tmp/recon-product-roadmap`. The [full product plan](product-roadmap.md)
-   distinguishes 40–60 further PRs for the declared professional-v1 subset from
-   80–130 total for the broader product. These ranges do not authorize execution.
-3. The next proposed implementation is C18 fixed DNS MX metadata. It is not
-   started. Agree the finite required task/coverage matrix and keep choosing
-   subsequent batches by the largest missing engagement capability.
+1. PR #73 is accepted on main `993c83d` from reviewed `44b479b`; review and all
+   five final CI jobs passed. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37818772689)
+   also passed; reviewed and merged trees match. Preserve accepted C17 and
+   predecessor validation rather than reopening those scopes.
+2. C18 in `/tmp/recon-dns-mx` has passed frozen-source portable/native validation,
+   enforcement and unchanged evidence replay. Preserve its private receipt and
+   source pin; only documentation and the terminal-test O_NOCTTY correction may
+   differ from native-tested `89d4465`; production bytes remain identical.
+   Accepted coverage remains 42 profiles/16 programs; the candidate is 43/16.
+3. Review the latest [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74)
+   revision and required checks before any later authorized merge. Its branch is
+   `feature/dns-mx-coverage`; consult the PR for latest-head CI status.
+   Use the [finite coverage contract](professional-v1-coverage.md) to retain all six
+   outcomes. Next is T02 bounded TLS version-posture feasibility with sslscan as a
+   candidate, not an already selected secure engine; no T02 installation is done.
 4. Keep offline R5, accepted local R6, B0–B8, C1–C17 and the initial GUI closed.
    Preserve the private proposal/PDF, GUI mocks, native receipts and failure history.
 5. Deeper workflows/benchmarks, real credentials, attached or external networks,

@@ -149,6 +149,17 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert definition['max_nsid_bytes'] == 64
         assert definition['request_count_means'] == 'validated_fixed_nsid_questions'
         assert definition['service_identity_verified'] is False
+    elif case in fixture.DNS_MX_CASES:
+        response = fixture.dns_mx_response(case, fixture.dns_mx_query())
+        assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
+        assert definition["query_sha256"] == hashlib.sha256(fixture.dns_mx_query()).hexdigest()
+        assert definition["request_count_means"] == "validated_fixed_mx_questions"
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["max_query_bytes"] == 512 and definition["max_response_bytes"] == 4096
+        assert definition["query"] == {"name": fixture.DNS_MX_QUERY_NAME, "type": "MX", "class": "IN", "recursion": False}
+        assert all(definition[key] is False for key in (
+            "udp", "recursion", "retries", "search_suffixes", "target_resolution", "target_connections",
+            "credentials", "service_identity_claim", "vulnerability_claim"))
     elif case in fixture.DNS_SRV_CASES:
         response = fixture.dns_srv_response(case, fixture.dns_srv_query())
         assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())

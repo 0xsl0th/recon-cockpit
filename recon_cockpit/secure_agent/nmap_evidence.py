@@ -241,6 +241,10 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_answer_observed": "answer_observed",
                "dns_name_not_found": "name_not_found",
                "dns_no_answer_observed": "no_answer_observed",
+               "dns_mx_observed": "dns_mx_observed",
+               "dns_mx_no_data": "dns_mx_no_data",
+               "dns_mx_name_not_found": "dns_mx_name_not_found",
+               "dns_mx_mail_unavailable": "dns_mx_mail_unavailable",
                "dns_srv_observed": "dns_srv_observed",
                "dns_srv_no_data": "dns_srv_no_data",
                "dns_srv_name_not_found": "dns_srv_name_not_found",
@@ -477,6 +481,17 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Only the first 11- or 19-byte frame is retained. Any trailing peer bytes are outside this capture; their absence from evidence is not injection detection or proof that no trailing data was sent.",
                 "Counters record the exact fixed request and a client write-half-close witnessed before the fixture response. This owned-profile constraint prevents further client bytes; compatibility with arbitrary real RDP servers is not established.",
                 "Retained bytes are independently reparsed without network; read-only inspection restores no approval or authority. No real-model or comparative overhead claim is made.",
+            ]
+        if manifest["fixture_case"].startswith("dig-mx-"):
+            report["limitations"] = [
+                "This one-action DNS MX trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
+                "One fixed nonrecursive MX question is sent over TCP. No UDP, search, retries, recursion, zone transfer, credentials or additional questions are authorized.",
+                "Preference, exchange and TTL are untrusted DNS advertisements, not verified server identity or mail availability. Returned names cannot authorize resolution, SMTP or other follow-up.",
+                "NOERROR without MX records is a completed no-data observation, not a null MX or proof that mail is unavailable. NXDOMAIN is a reported name-not-found response. A sole zero-preference root exchange reports null MX; mixed or nonzero-preference root records are inconclusive.",
+                "Only four unique bounded MX records with lowercase absolute ASCII exchanges are supported. Referrals, CNAME, address glue, unknown flags, malformed or partial native transcripts, refused replies and output pressure remain inconclusive. No A/AAAA fallback is performed.",
+                "One bounded additional TXT record may be counted; its content remains only in private raw evidence and cannot select a query, tool or destination.",
+                "The native dig transcript is not a full retained DNS wire capture. Transaction IDs and metadata describe the supported client rendering, not independently authenticated DNS or unseen wire bytes. No DNSSEC claim is made.",
+                "Counters record one validated question on one connection. Bounded native bytes are independently reparsed without network; read-only inspection restores no approval or authority. No model performance or comparative-overhead claim is made.",
             ]
         if manifest["fixture_case"].startswith("dig-srv-"):
             report["limitations"] = [

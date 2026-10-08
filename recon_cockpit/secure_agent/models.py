@@ -20,7 +20,7 @@ from .tool_parameters import (
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters,
-    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, DigNSIDParameters, DigAXFRParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters, FTPStartTLSParameters,
+    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigMXParameters, DigSRVParameters, DigNSIDParameters, DigAXFRParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters, FTPStartTLSParameters,
     NmapTCPParameters, TCPParameters, ValidationError,
     MAX_TIMEOUT_SECONDS, MAX_OUTPUT_BYTES, SUPPORTED_METHODS,
     _fields, _integer, _reject, _string,
@@ -118,7 +118,7 @@ class Action:
     action_id: str
     tool_id: str
     target: str
-    parameters: HTTPParameters | HTTPHeadersParameters | HTTPOptionsParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | TLSCertificateParameters | SSHHostKeysParameters | SSHAlgorithmsParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlWinRMMetadataParameters | NmapServiceParameters | KerbruteUserenumParameters | RedisServerInfoParameters | SNMPSystemGetParameters | SNMPInterfaceNextParameters | PostgreSQLTLSParameters | MySQLTLSParameters | WhatWebParameters | DigSRVParameters | DigNSIDParameters | DigAXFRParameters
+    parameters: HTTPParameters | HTTPHeadersParameters | HTTPOptionsParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | TLSCertificateParameters | SSHHostKeysParameters | SSHAlgorithmsParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlWinRMMetadataParameters | NmapServiceParameters | KerbruteUserenumParameters | RedisServerInfoParameters | SNMPSystemGetParameters | SNMPInterfaceNextParameters | PostgreSQLTLSParameters | MySQLTLSParameters | WhatWebParameters | DigMXParameters | DigSRVParameters | DigNSIDParameters | DigAXFRParameters
     rationale: str
 
     def __post_init__(self) -> None:

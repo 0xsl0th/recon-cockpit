@@ -17,7 +17,7 @@ def test_all_24_accepted_runtime_profiles_remain_byte_identical():
     # Independently captured from merged PR62 a582bd6 before C9 runtime edits.
     selected = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
     assert len(selected) == 24
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == 'c4cd10da4a4d06c4979adc7059e74bc488aeedaf42f033c7b196715258ff3d46'
 

@@ -33,6 +33,7 @@ SNMP_NEXT_TOOL_ID = "snmp_interface_next_v1"
 POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
 MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
 WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
+DNS_MX_TOOL_ID = "dig_dns_mx_v1"
 DNS_SRV_TOOL_ID = "dig_dns_srv_v1"
 DNS_NSID_TOOL_ID = "dig_dns_nsid_v1"
 DNS_AXFR_TOOL_ID = "dig_dns_axfr_v1"
@@ -57,7 +58,7 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1",
     SNMP_NEXT_TOOL_ID: "snmp-interface-next-text-v1",
     POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
-    WHATWEB_TOOL_ID: "whatweb-json-v1", DNS_SRV_TOOL_ID: "dig-dns-srv-text-v1",
+    WHATWEB_TOOL_ID: "whatweb-json-v1", DNS_MX_TOOL_ID: "dig-dns-mx-text-v1", DNS_SRV_TOOL_ID: "dig-dns-srv-text-v1",
     DNS_NSID_TOOL_ID: "dig-dns-nsid-text-v1",
     DNS_AXFR_TOOL_ID: "dig-dns-axfr-text-v1",
     HTTP_OPTIONS_TOOL_ID: "curl-http-options-v1",
@@ -163,6 +164,8 @@ def validate_result(tool_id, value):
         return _rdp_parser().validate_result(value)
     if tool_id == SMB2_TOOL_ID:
         return _smb2_parser().validate_result(value)
+    if tool_id == DNS_MX_TOOL_ID:
+        return _dns_mx_parser().validate_result(value)
     if tool_id == DNS_SRV_TOOL_ID:
         return _dns_srv_parser().validate_result(value)
     if tool_id == DNS_NSID_TOOL_ID:
@@ -882,6 +885,18 @@ def _parse_smb2(output, stderr):
     return _smb2_parser().parse_output(output, stderr)
 
 
+def _dns_mx_parser():
+    if __package__:
+        from . import network_tools_dns_mx_parser
+    else:
+        import network_tools_dns_mx_parser
+    return network_tools_dns_mx_parser
+
+
+def _parse_dns_mx(output, stderr):
+    return _dns_mx_parser().parse_output(output, stderr)
+
+
 def _dns_srv_parser():
     if __package__:
         from . import network_tools_dns_srv_parser
@@ -965,7 +980,7 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             SNMP_NEXT_TOOL_ID: _parse_snmp_next,
             SSH_ALGORITHMS_TOOL_ID: _parse_ssh_algorithms,
             TLS_CERTIFICATE_TOOL_ID: _parse_tls_certificate,
-            WHATWEB_TOOL_ID: _parse_whatweb, DNS_SRV_TOOL_ID: _parse_dns_srv,
+            WHATWEB_TOOL_ID: _parse_whatweb, DNS_MX_TOOL_ID: _parse_dns_mx, DNS_SRV_TOOL_ID: _parse_dns_srv,
             DNS_NSID_TOOL_ID: _parse_dns_nsid,
             DNS_AXFR_TOOL_ID: _parse_dns_axfr,
             HTTP_OPTIONS_TOOL_ID: _parse_http_options,

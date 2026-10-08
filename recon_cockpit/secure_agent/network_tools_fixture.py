@@ -42,6 +42,7 @@ def tool_for_case(case):
                          ("rdp-", "rdp_initial_negotiation_v1"),
                          ("dig-axfr-", "dig_dns_axfr_v1"),
                          ("dig-nsid-", "dig_dns_nsid_v1"),
+                         ("dig-mx-", "dig_dns_mx_v1"),
                          ("dig-srv-", "dig_dns_srv_v1"),
                          ("whatweb-", "whatweb_http_fingerprint_v1"),
                          ("postgresql-tls-", "postgresql_tls_handshake_v1"),
@@ -1241,4 +1242,34 @@ NUCLEI_GIT_TOOL_ID = "nuclei_git_head_v1"
 NUCLEI_GIT_CASES = ('nuclei-git-main', 'nuclei-git-release', 'nuclei-git-no-marker', 'nuclei-git-not-found', 'nuclei-git-injected', 'nuclei-git-redirect-ip', 'nuclei-git-redirect-port', 'nuclei-git-incomplete', 'nuclei-git-conflicting-length', 'nuclei-git-oversized', 'nuclei-git-chunked', 'nuclei-git-encoded', 'nuclei-git-stalled')
 NUCLEI_GIT_SUCCESS_CASES = NUCLEI_GIT_CASES[:5]
 CASES += NUCLEI_GIT_CASES
+VARIANTS = CASES
+
+
+# C18's public MX wire contract is shared with its owner, without a file backend.
+if __package__:
+    from . import network_tools_dns_mx_fixture as _mx_fixture
+else:
+    import importlib.util as _mx_importlib
+    from pathlib import Path as _MXPath
+    _mx_spec = _mx_importlib.spec_from_file_location("fixed_dns_mx_fixture",
+        _MXPath(__file__).with_name("network_tools_dns_mx_fixture.py"))
+    _mx_fixture = _mx_importlib.module_from_spec(_mx_spec)
+    _mx_spec.loader.exec_module(_mx_fixture)
+DNS_MX_TOOL_ID = _mx_fixture.DNS_MX_TOOL_ID
+DNS_MX_QUERY_NAME = _mx_fixture.DNS_MX_QUERY_NAME
+DNS_MX_CASES = _mx_fixture.DNS_MX_CASES
+DNS_MX_SUCCESS_CASES = _mx_fixture.DNS_MX_SUCCESS_CASES
+DNS_MX_ORDINARY_CASES = _mx_fixture.DNS_MX_ORDINARY_CASES
+DNS_MX_MAX_QUERY_BYTES = _mx_fixture.DNS_MX_MAX_QUERY_BYTES
+DNS_MX_MAX_RESPONSE_BYTES = _mx_fixture.DNS_MX_MAX_RESPONSE_BYTES
+DNS_MX_MAX_RECORDS = _mx_fixture.DNS_MX_MAX_RECORDS
+DNS_MX_RECORDS = _mx_fixture.DNS_MX_RECORDS
+DNS_MX_FOREIGN_RECORD = _mx_fixture.DNS_MX_FOREIGN_RECORD
+DNS_MX_NULL_RECORD = _mx_fixture.DNS_MX_NULL_RECORD
+DNS_MX_QUESTION = _mx_fixture.DNS_MX_QUESTION
+dns_mx_query = _mx_fixture.dns_mx_query
+validate_dns_mx_query = _mx_fixture.validate_dns_mx_query
+dns_mx_records = _mx_fixture.dns_mx_records
+dns_mx_response = _mx_fixture.dns_mx_response
+CASES += DNS_MX_CASES
 VARIANTS = CASES

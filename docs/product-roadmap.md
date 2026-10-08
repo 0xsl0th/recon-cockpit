@@ -1,10 +1,21 @@
 # Product roadmap and remaining PR estimate
 
-Planning snapshot: **8 October 2026, after PR #72**, accepted main `e004824`.
+Planning snapshot: **8 October 2026, after PR #73**, accepted main `993c83d`.
 This is the consolidated product plan. The [implementation roadmap](roadmap.md)
 retains milestone history; the [checkpoint](continue-here.md) records the next
 authorized work. Estimates below describe future work, not accepted capability
 or permission to start a deferred operation.
+
+The owner agreed this plan and authorized continued coverage development.
+[PR #73](https://github.com/0xsl0th/recon-cockpit/pull/73) merged reviewed head
+`44b479b` after review and all five final CI jobs passed. All five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37818772689)
+also passed; reviewed and merged trees match. The private receipt is
+`.secure-agent/pr73-merge-review.json`. The new
+[finite coverage contract](professional-v1-coverage.md) maps the 42 accepted
+profiles and names six required remaining operator outcomes. C18 DNS MX is the
+active candidate: **43 profiles/16 programs on the development branch**, with
+G1–G5 passed locally and G6 pending final review/checks/merge. Accepted main remains **42/16**.
 
 ## Product destination
 
@@ -28,9 +39,10 @@ Two useful release targets keep the work measurable:
   mature workflows and later evaluated model assistance. A count alone cannot
   establish complete coverage or professional readiness.
 
-The first target is a proposed intermediate release, not a replacement for the
-owner's longer-term 40+ tool ambition. The targets and finite required task list
-must be agreed before implementation is declared complete.
+The first target is the agreed intermediate release direction, not a replacement
+for the owner's longer-term 40+ tool ambition. The finite coverage contract makes
+the current tranche reviewable; compatibility, authenticated-operation and final
+release criteria still need their later concrete contracts before completion.
 
 ## Verified position today
 
@@ -69,14 +81,14 @@ vulnerability-detection claim. See the [C17 runbook](nuclei-git-tools.md).
 
 ## Proposed professional-v1 sequence: 40–60 further PRs
 
-These ranges are additive. They are estimates from the accepted PR #72 baseline,
-excluding this documentation-only forecast and already completed work. Stages
+These ranges are additive. They remain estimates from the accepted PR #72 baseline,
+excluding the documentation-only PR #73 forecast and already completed work. Stages
 describe deliverables; they do not lift the current offline-only restrictions.
 
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
-| 1. Freeze the release contract | Agree the supported operator tasks and finite required coverage matrix; record tool/runtime/lab compatibility gaps and exclusions. Every required task has a named result, lab case and acceptance gate. | 2 |
-| 2. Complete a practical coverage tranche | Start with C18 DNS MX, then select the largest missing tasks from that matrix. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Planning assumption: about 4–6 additional programs alongside improvements to existing ones. | 8–12 |
+| 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
+| 2. Complete a practical coverage tranche | C18 DNS MX is in progress, followed by T02 TLS-posture feasibility and the remaining T03–T06 outcomes. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. About 4–6 additional programs remains a planning assumption, not a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
@@ -86,29 +98,22 @@ describe deliverables; they do not lift the current offline-only restrictions.
 
 ### Finite coverage gate before deeper workflows
 
-The rolling C-series currently lacks a fixed professional-v1 end point. Stage 1
-proposes a new checklist; it must not relabel unfinished required work as optional
-or reopen B0–B8. The proposed task families are:
+The [finite checklist](professional-v1-coverage.md#six-required-tasks-in-priority-order)
+now fixes six remaining operator outcomes: **T01 MX, T02 TLS version posture,
+T03 SSH policy assessment, T04 controlled web hierarchy discovery, T05 one SNMP
+interface-description page and T06 AAAA/PTR metadata**. It maps all 42 accepted
+profiles separately and records supported limits, meaningful positive/absent and
+negative cases, evidence and G1–G6 for each new task. Candidate engines remain
+subject to short feasibility reviews; engine selection cannot silently remove or
+weaken the required outcome. B0–B8 and C1–C17 remain closed.
 
-- Small internal host/port/service inventories with explicit scan bounds.
-- DNS metadata needed by the engagement, including the proposed fixed MX query.
-- HTTP path, technology and hardening observations plus selected non-destructive
-  exposure checks; broader web/API testing needs its own selected operations.
-- TLS and anonymous/read-only SSH, LDAP, SMB, RPC/NFS, mail, database/SNMP and
-  management-endpoint observations appropriate to the agreed engagement subset.
-
-For each required row, record the operator task, exact secure profile, meaningful
-positive and negative lab cases, supported response limits, evidence and
-[G1–G6](secure-tool-coverage.md#completion-gates-for-every-required-capability).
-Existing profiles satisfy only their accepted exact scope. More realistic target
-routing is a separate Stage 3 gate, not implied by passing disconnected fixtures.
-
-Close the tranche only when every required row is accepted, no row is blocked or
-review-pending, required normal tasks complete without unnecessary refusals,
-unauthorized test actions do not execute, and evidence replay/cleanup pass.
-Preserve optional/substitutable tools in a separate list. The operator must agree
-the new finite scope before it can justify moving from coverage into deeper
-composition. Comparative benchmarks remain deferred during the coverage tranche.
+Close Stage 2 only when all six tasks are accepted, no row is blocked or
+review-pending, normal tasks complete without unnecessary refusals, unauthorized
+test actions do not execute, and evidence replay/cleanup pass. More realistic
+target routing and service compatibility stay in Stage 3; the checklist is not
+professional release acceptance. Record any required scope change for the owner
+instead of moving a difficult row to optional work. Moving beyond this coverage
+gate into deeper composition or comparative benchmarking remains a later decision.
 
 ## Broader product: 40–70 PRs beyond professional v1
 
@@ -164,8 +169,9 @@ injection resistance from the present deterministic hostile-output fixtures.
 Planning these stages authorizes no new target, credential or spend. Decisions
 needed later are:
 
-- Agreement on the professional-v1 task matrix and on moving past its coverage
-  gate into deeper composition or comparative benchmarking.
+- Review of any changes to the finite task matrix, concrete later release and
+  authenticated-operation contracts, and moving past the coverage gate into deeper
+  composition or comparative benchmarking.
 - Explicit lab/engagement target ownership, scope, effects and routing permission
   before any external or attached-network execution.
 - Credential/session-custody review and authorization before real credential use;
@@ -174,9 +180,13 @@ needed later are:
   success thresholds and hard spending ceiling before any paid call.
 - Separate release/publication and competition-submission decisions.
 
-The next recommended implementation remains **C18: one fixed nonrecursive TCP
-DNS MX question**, at most four typed preference/exchange rows, with useful
-null-MX/NODATA/NXDOMAIN results and no returned-host follow-up. It reuses `dig` and
-does not increase the program count. Alongside that next reviewable batch, agree
-the finite coverage checklist so subsequent selections close product gaps.
-This roadmap update starts neither C18 nor any deferred implementation.
+**Current implementation: C18/T01**, one fixed nonrecursive TCP DNS MX question,
+at most four typed preference/exchange rows, with useful null-MX/NODATA/NXDOMAIN
+results and no returned-host follow-up. It reuses `dig`; see the
+[C18 runbook](dns-mx-tools.md). Local validation passed; acceptance review/merge remain pending, so it does not
+increase accepted coverage yet.
+
+**Next after C18: T02 bounded TLS version-posture feasibility**, beginning with
+sslscan as a candidate and an exact request/runtime contract. No new engine is
+implemented or installed by this plan. Keep later tool choices tied to the six
+required outcomes; deeper workflows, credentials and paid/live models stay deferred.

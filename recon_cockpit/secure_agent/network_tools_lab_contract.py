@@ -409,6 +409,37 @@ def spec(case):
             "target_resolution": False, "target_connections": False, "credentials": False,
             "zone_transfer": False, "service_identity_claim": False,
             "service_identity_verified": False, "vulnerability_claim": False}
+    if case.startswith("dig-mx-"):
+        from . import network_tools_fixture as fixture
+        response = fixture.dns_mx_response(case, fixture.dns_mx_query())
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-dns-mx-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "dns_tcp"}],
+            "query": {"name": fixture.DNS_MX_QUERY_NAME, "type": "MX", "class": "IN", "recursion": False},
+            "query_sha256": hashlib.sha256(fixture.dns_mx_query()).hexdigest(),
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "dns_transaction_id": "copied_from_validated_question",
+            "max_query_bytes": fixture.DNS_MX_MAX_QUERY_BYTES,
+            "max_response_bytes": fixture.DNS_MX_MAX_RESPONSE_BYTES,
+            "max_records": fixture.DNS_MX_MAX_RECORDS,
+            "max_connections": 1, "max_requests": 1,
+            "behavior": "stall_after_validated_query" if case == "dig-mx-stalled"
+                else "malformed_response" if case == "dig-mx-malformed"
+                else "invalid_null_mx" if case in ("dig-mx-null-mixed", "dig-mx-null-preference")
+                else "record_limit_pressure" if case == "dig-mx-record-limit"
+                else "native_output_limit_pressure" if case == "dig-mx-output-limit"
+                else "access_refused" if case == "dig-mx-refused"
+                else "advertise_foreign_target_and_hostile_txt" if case == "dig-mx-injected" else "fixed_response",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_fixed_mx_questions",
+            "connection_evidence": "accepted_connections_lower_bound",
+            "udp": False, "recursion": False, "retries": False, "search_suffixes": False,
+            "target_resolution": False, "target_connections": False,
+            "exchange_resolution": False, "exchange_connections": False, "address_fallback": False,
+            "smtp": False, "mail_availability_verified": False, "credentials": False,
+            "service_identity_claim": False, "vulnerability_claim": False}
     if case.startswith("dig-srv-"):
         from . import network_tools_fixture as fixture
         response = fixture.dns_srv_response(case, fixture.dns_srv_query())
