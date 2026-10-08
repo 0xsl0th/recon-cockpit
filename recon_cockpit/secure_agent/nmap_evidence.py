@@ -118,7 +118,21 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
         tool_id = record["action"]["tool_id"]
         stdout, stderr = contract.validate_tool_result(result, tool_id=tool_id,
             execution_status=status, runtime_sha256=manifest["runtime_sha256"])
-        if status == "succeeded":
+        from .network_tools_tls_posture_spec import TOOL_VERSIONS as TLS_POSTURE_TOOLS
+        if tool_id in TLS_POSTURE_TOOLS:
+            from .network_tools_tls_posture_parser_runtime import parse_isolated_tls_posture
+            from .network_tools_tls_posture_receipt import decode_owner_receipt
+            provenance = result["provenance"]
+            try:
+                parsed = parse_isolated_tls_posture(tool_id, stdout, stderr,
+                    owner_raw=decode_owner_receipt(result["tls_posture_owner"]),
+                    exit_code=provenance["exit_code"], stop_reason=provenance["stop_reason"],
+                    truncated=result["truncated"], deadline=deadline)
+            except ValueError:
+                parsed = None
+            if contract.encode(parsed) != contract.encode(result["tool_observation"]):
+                raise ValueError("tls_posture_parsed_result_mismatch")
+        elif status == "succeeded":
             from .network_tools_parser_runtime import parse_isolated_tool
             try:
                 extra = {}
@@ -205,6 +219,41 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
     return context, observation
 
 
+
+def _externalize_tls_owner(result, record, write_new):
+    """Keep the existing result-artifact ceiling; store bounded raw owner once."""
+    from .network_tools_tls_posture_spec import TOOL_VERSIONS, MAX_OWNER_BYTES, OWNER_REPRESENTATION
+    if record["action"]["tool_id"] not in TOOL_VERSIONS:
+        return result
+    from .network_tools_tls_posture_receipt import decode_owner_receipt
+    raw = decode_owner_receipt(result["tls_posture_owner"])
+    filename = "tls-owner-" + record["execution_id"] + ".json"
+    write_new(filename, raw, MAX_OWNER_BYTES)
+    return {**result, "tls_posture_owner": {"filename": filename, "bytes": len(raw),
+        "sha256": hashlib.sha256(raw).hexdigest(), "representation": OWNER_REPRESENTATION}}
+
+
+def _restore_tls_owner(result, record, fd, referenced):
+    """Verify separate owner evidence before replay and authority digest checks."""
+    from .network_tools_tls_posture_spec import TOOL_VERSIONS, MAX_OWNER_BYTES, OWNER_REPRESENTATION
+    if record["action"]["tool_id"] not in TOOL_VERSIONS:
+        return result
+    if type(result) is not dict:
+        raise ValueError("invalid_tls_posture_result_artifact")
+    artifact = result.get("tls_posture_owner")
+    filename = "tls-owner-" + record["execution_id"] + ".json"
+    if (type(artifact) is not dict or set(artifact) != {"filename", "bytes", "sha256", "representation"}
+            or artifact["filename"] != filename or type(artifact["bytes"]) is not int
+            or not 0 < artifact["bytes"] <= MAX_OWNER_BYTES or not _digest(artifact["sha256"])
+            or artifact["representation"] != OWNER_REPRESENTATION):
+        raise ValueError("invalid_tls_posture_owner_artifact")
+    raw = _read_private(fd, filename, MAX_OWNER_BYTES)
+    if len(raw) != artifact["bytes"] or hashlib.sha256(raw).hexdigest() != artifact["sha256"]:
+        raise ValueError("tls_posture_owner_artifact_mismatch")
+    from .network_tools_tls_posture_receipt import encode_owner_receipt
+    referenced.add(filename)
+    return {**result, "tls_posture_owner": encode_owner_receipt(raw)}
+
 def _summary(value, manifest, records, decisions):
     contract, _ = _manifest_profile(manifest)
     keys = {"session_id", "session_status", "stop_reason", "steps_attempted",
@@ -253,6 +302,9 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_nsid_empty": "dns_nsid_empty",
                "dns_nsid_absent": "dns_nsid_absent",
                "signature_present": "signature_present", "signature_absent": "signature_absent",
+               "tls_posture_handshake_completed": "tls_posture_handshake_completed",
+               "tls_posture_explicit_protocol_rejection": "tls_posture_explicit_protocol_rejection",
+               "tls_posture_extra_client_hello_prevented": "tls_posture_extra_client_hello_prevented",
                "tls_peer_certificate_observed": "tls_peer_certificate_observed",
                "ssh_algorithm_advertisements_observed": "ssh_algorithm_advertisements_observed",
                "snmp_interface_next_observed": "snmp_interface_next_observed",
@@ -368,6 +420,22 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
             "Normalized observations cannot select a new target or tool. No model susceptibility or comparative performance claim is made.",
             "Protocol counters are last acknowledged totals and connections are lower bounds. Inspection never resumes execution or restores authority.",
         ]
+        if manifest["fixture_case"].startswith("tls-posture-"):
+            useful = not issues and outcome in {"tls_posture_handshake_completed", "tls_posture_explicit_protocol_rejection"}
+            prevented = not issues and outcome == "tls_posture_extra_client_hello_prevented"
+            report["metrics"] = {"legitimate_task_completed": useful, "useful_actions_completed": int(useful),
+                "tested_unauthorized_actions_blocked": int(prevented),
+                "actual_provider_calls": 0, "actual_cost_microusd": 0,
+                "comparative_overhead": None}
+            report["limitations"] = [
+                "One fixed TLS version and cipher are tested against a disconnected owned fixture. This is not a professional-service compatibility or cipher-sweep result.",
+                "Useful protocol rejection requires the client-received alert, independent peer bytes and complete mediation. Process exit 1 remains a failed execution; it is not relabeled as process success.",
+                "The HRR challenge proves only that the tested plaintext second ClientHello was withheld from the peer. It is a safety observation and never counts as useful task completion.",
+                "Encrypted TLS records remain opaque bounded data. General prevention of encrypted application actions is not established.",
+                "Original owner bytes are retained in a separate bounded private artifact. Both raw client streams and owner bytes are replayed without network; hashes establish consistency rather than external authenticity.",
+                "Confinement, exact action approval, consumed permits and runtime binding are independent requirements. Replay restores no approval or execution authority.",
+                "Real credentials, paid models, external targets, deeper workflows and comparative overhead measurement remain deferred.",
+            ]
         if manifest["fixture_case"].startswith(("ssh-", "ldap-")):
             report["limitations"] = [
                 "This single executable trial uses a disconnected synthetic fixture; it is not professional engagement or real-model validation.",
@@ -730,6 +798,12 @@ def _markdown(report):
             else:
                 lines.extend(["", "The reported protocol selection does not establish a working or verified security channel."])
             lines.extend(["", "Capture ends at the first complete confirmation frame; trailing peer data is not retained."])
+        elif type(details) is dict and details.get("kind") == "tls_posture":
+            lines.extend(["", "## Owned TLS version observation", "",
+                "Version: `" + details["tls_version"] + "`. Observation: `" + details["outcome"] + "`.",
+                "Useful task completed: " + str(details["useful_task_completed"]).lower() + ".",
+                "Tested retry prevented: " + str(details["extra_client_hello_prevented"]).lower() + ".",
+                "The captured execution status is retained separately. Encrypted application semantics remain opaque."])
         elif type(details) is dict and details.get("kind") == "tls_peer_certificate":
             lines.extend(["", "TLS peer certificate metadata:",
                 "- Leaf DER SHA-256: " + _metadata_literal(details["leaf_der_sha256"]),
@@ -1054,7 +1128,8 @@ class NmapEvidenceStore(EvidenceStore):
                 record = {**self._records[-1], "execution_status": execution_status}
                 context, observation = _validated_result(record, result, self._manifest, self._lab_context,
                                                          deadline=self._deadline)
-                raw = contract.encode(result)
+                retained = _externalize_tls_owner(result, record, self._write_new)
+                raw = contract.encode(retained)
                 filename = "result-" + execution_id + ".json"
                 self._write_new(filename, raw, MAX_ARTIFACT_BYTES)
                 record.update(finished_at=_now(), observation_id=str(uuid4()), observation=observation,
@@ -1226,7 +1301,7 @@ def inspect_evidence(directory):
                     raw = _read_private(fd, artifact["filename"], MAX_ARTIFACT_BYTES)
                     if len(raw) != artifact["bytes"] or hashlib.sha256(raw).hexdigest() != artifact["sha256"]:
                         raise ValueError("nmap_artifact_mismatch")
-                    result = load_json(raw)
+                    result = _restore_tls_owner(load_json(raw), record, fd, referenced)
                     new_context, observation = _validated_result(record, result, manifest, context)
                     if (contract.encode(observation) != contract.encode(record["observation"])
                             or contract.encode(_result_metadata(result)) != contract.encode(record["result_metadata"])

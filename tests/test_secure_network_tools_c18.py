@@ -81,8 +81,8 @@ def test_failed_peer_scenario_cannot_be_upgraded_to_useful_metadata(case):
 
 def test_all_accepted_case_adapter_and_runtime_bytes_remain_identical():
     # Captured from accepted main 993c83d before C18 changes; never regenerate.
-    old_cases = [case for case in contract.CASES if case not in contract.C18_CASES]
-    old_tools = set(tool_adapters.ADAPTERS) - {contract.DIG_MX_TOOL_ID}
+    old_cases = [case for case in contract.CASES if case not in contract.C18_CASES + contract.T02_CASES]
+    old_tools = set(tool_adapters.ADAPTERS) - set(contract.tls_posture.TOOL_VERSIONS) - {contract.DIG_MX_TOOL_ID}
     old_runtime = set(runtime.EXECUTABLES) - {contract.DIG_MX_TOOL_ID}
     assert (len(old_cases), len(old_tools), len(old_runtime)) == (303, 42, 33)
     value = {

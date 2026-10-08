@@ -103,16 +103,28 @@ def new_ledger(case, version):
 
 class RecordIO:
     """Read exact records and account every byte before parsing/forwarding it."""
-    def __init__(self, connection, deadline, ledger):
+    def __init__(self, connection, deadline, ledger, *, cancel_event=None):
         self.connection, self.deadline, self.ledger = connection, deadline, ledger
+        self.cancel_event = cancel_event
+
+    def _check_cancelled(self):
+        if self.cancel_event is not None and self.cancel_event.is_set():
+            raise ValueError("tls_posture_owner_cancelled")
 
     def _read(self, size):
         if self.ledger["received_bytes"] + size > MAX_DIRECTION_BYTES:
             raise ValueError("tls_posture_owner_byte_cap")
         raw = bytearray()
         while len(raw) < size:
-            self.connection.settimeout(min(1, remaining(self.deadline)))
-            chunk = self.connection.recv(size - len(raw))
+            self._check_cancelled()
+            self.connection.settimeout(min(0.05 if self.cancel_event is not None else 1,
+                                           remaining(self.deadline)))
+            try:
+                chunk = self.connection.recv(size - len(raw))
+            except socket.timeout:
+                if self.cancel_event is None:
+                    raise
+                continue
             if not chunk:
                 raise ValueError("tls_posture_owner_eof")
             self.ledger["received_bytes"] += len(chunk)
@@ -147,6 +159,7 @@ class RecordIO:
     def send(self, raw):
         offset = 0
         while offset < len(raw):
+            self._check_cancelled()
             if len(raw) - offset < 5:
                 raise ValueError("tls_posture_owner_record")
             size = int.from_bytes(raw[offset + 3:offset + 5], "big") + 5
@@ -154,8 +167,21 @@ class RecordIO:
             if self.ledger["sent_bytes"] + len(record) > MAX_DIRECTION_BYTES:
                 raise ValueError("tls_posture_owner_byte_cap")
             self._record("sent", record)
-            self.connection.settimeout(min(1, remaining(self.deadline)))
-            self.connection.sendall(record)
+            if self.cancel_event is None:
+                self.connection.settimeout(min(1, remaining(self.deadline)))
+                self.connection.sendall(record)
+            else:
+                sent = 0
+                while sent < len(record):
+                    self._check_cancelled()
+                    self.connection.settimeout(min(0.05, remaining(self.deadline)))
+                    try:
+                        size_sent = self.connection.send(record[sent:])
+                    except socket.timeout:
+                        continue
+                    if size_sent <= 0:
+                        raise ValueError("tls_posture_owner_eof")
+                    sent += size_sent
             self.ledger["sent_bytes"] += len(record)
             offset += size
 
@@ -205,11 +231,11 @@ def tls_context(case, ledger):
     return context
 
 
-def serve(connection, *, case, version, deadline, context, ledger, on_request):
+def serve(connection, *, case, version, deadline, context, ledger, on_request, cancel_event=None):
     if case not in CASES or version not in VERSIONS or (case == "hrr" and version != "tls1_3"):
         raise ValueError("tls_posture_owner_case")
     remaining(deadline)
-    records = RecordIO(connection, deadline, ledger)
+    records = RecordIO(connection, deadline, ledger, cancel_event=cancel_event)
     initial = records.receive()
     hello = validate_client_hello(initial, version)
     ledger["client_hellos"] = 1

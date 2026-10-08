@@ -65,6 +65,9 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1",
     SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1", LDAP_TLS_TOOL_ID: "ldap-starttls-brief-v1",
     FTP_TLS_TOOL_ID: "ftp-starttls-brief-v1"}
+TLS_POSTURE_TOOLS = {"openssl_tls10_posture_v1", "openssl_tls11_posture_v1",
+                     "openssl_tls12_posture_v1", "openssl_tls13_posture_v1"}
+PARSER_VERSIONS.update({tool: "openssl-tls-posture-wire-v1" for tool in TLS_POSTURE_TOOLS})
 MAX_OUTPUT_BYTES = 8192
 QUERY_NAME = "harbordesk.test."
 TLS_NAME = "harbordesk.test"
@@ -156,6 +159,9 @@ def validate_result(tool_id, value):
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id in TLS_POSTURE_TOOLS:
+        from .network_tools_tls_posture_parser import validate_result as validate_tls_posture
+        return validate_tls_posture(tool_id, value)
     if tool_id == NUCLEI_GIT_TOOL_ID:
         return _nuclei_git_parser().validate_result(value)
     if tool_id == NUCLEI_TOOL_ID:

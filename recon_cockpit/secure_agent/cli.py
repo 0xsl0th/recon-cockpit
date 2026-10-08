@@ -386,6 +386,9 @@ def main(argv: list[str] | None = None) -> int:
             from .service_web_contract import LIMITS
         elif args.network_tool_assessment:
             from .network_tools_contract import LIMITS
+            from .network_tools_tls_posture_spec import CASES as TLS_POSTURE_CASES
+            if args.network_tool_assessment in TLS_POSTURE_CASES:
+                from .network_tools_tls_posture_spec import LIMITS
         elif args.web_tool_assessment:
             from .web_tools_contract import LIMITS
         else:

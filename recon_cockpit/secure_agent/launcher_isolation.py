@@ -43,6 +43,7 @@ WEB_TOOLS_MODULES = ('web_tools_backend', 'web_tools_lab', 'web_tools_lab_worker
     'web_tools_execution', 'web_tools_worker', 'web_tools_parser', 'web_tools_parser_runtime',
     'web_tools_parser_worker', 'http_headers_parser', 'tool_runtime_common', 'tool_worker_common')
 NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_tools_lab_worker',
+    'network_tools_tls_posture_spec',
     'network_tools_fixture', 'web_tools_tls_fixture', 'network_tools_ssh_fixture', 'network_tools_smb_fixture',
     'network_tools_rpc_fixture', 'network_tools_ftp_smtp_fixture', 'network_tools_http_metadata_fixture',
     'network_tools_nmap_fixture', 'network_tools_nmap_parser',
@@ -66,6 +67,15 @@ NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_
     'network_tools_contract', 'network_tools_runtime', 'network_tools_execution', 'network_tools_worker',
     'network_tools_parser', 'network_tools_parser_runtime', 'network_tools_parser_worker',
     'tool_runtime_common', 'tool_worker_common')
+TLS_POSTURE_MODULES = (
+    'network_tools_tls_posture_identity', 'network_tools_tls_posture_receipt',
+    'network_tools_tls_posture_lab', 'network_tools_tls_posture_owner',
+    'network_tools_tls_posture_runtime', 'network_tools_tls_posture_worker',
+    'network_tools_tls_posture_parser', 'network_tools_tls_posture_parser_runtime',
+    'network_tools_tls_posture_parser_worker', 'tls_posture_observation_contract',
+    'tls_posture_diagnostic_worker', 'tls_posture_diagnostic_trace', 'tls_posture_mediated_trace',
+    'tls_posture_mediated_owner', 'tls_posture_diagnostic_fixture',
+    'tls_posture_mediator', 'tls_posture_hello')
 SERVICE_WEB_MODULES = tuple(dict.fromkeys((*NETWORK_TOOLS_MODULES, *WEB_TOOLS_MODULES, *HTTP_HEADERS_MODULES, *NMAP_MODULES,
     'service_web_backend', 'service_web_contract', 'service_web_runtime', 'service_web_execution',
     'service_web_lab', 'service_web_lab_worker', 'service_web_lab_contract', 'service_web_fixture')))
@@ -216,6 +226,8 @@ class LinuxFixtureLauncher:
                      *(HTTP_HEADERS_MODULES if self._config['profile'] == 'owned_http_headers_lab' else ()),
                      *(WEB_TOOLS_MODULES if self._config['profile'] == 'owned_web_tools_lab' else ()),
                      *(NETWORK_TOOLS_MODULES if self._config['profile'] == 'owned_network_tools_lab' else ()),
+                     *(TLS_POSTURE_MODULES if self._config['profile'] == 'owned_network_tools_lab'
+                       and self._config['case'].startswith('tls-posture-') else ()),
                      *(SERVICE_WEB_MODULES if self._config['profile'] == 'owned_service_web_lab' else ()),
                      *(CONFIGURABLE_MODULES if self._config['profile'] == 'configurable_owned_lab' else ()),
                      *(NMAP_MODULES if self._config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'} else ()), *(OWNED_MODULES if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'} else ()),
@@ -425,6 +437,9 @@ class LinuxFixtureLauncher:
                             # Cleanup repeats the last acknowledged counters;
                             # the send transcript stays in the prior result.
                             context = {key: item for key, item in context.items() if key != 'owner_response'}
+                        elif self.identity['scenario'].startswith('tls-posture-'):
+                            context = {key: item for key, item in context.items()
+                                       if key != 'tls_posture_owner_sha256'}
                     elif self._config['profile'] == 'owned_service_web_lab':
                         from .service_web_lab_contract import validate_closure as closure_validator
                     self._lab_receipt = closure_validator({**context, 'status': 'closed'}, self.identity, previous=self._lab_context)

@@ -4,6 +4,7 @@ import base64
 from dataclasses import asdict
 import secrets
 import time
+import re
 
 from .execution import ExecutionControl
 from .isolation import IsolationUnavailable, LinuxFixtureBackend, _namespaces, _trusted_program
@@ -12,6 +13,26 @@ from .owned_lab import AuthorizedOwnedLabBackend
 from .session_limits import SessionLimits
 from .network_tools_lab import NetworkToolsLab
 from .network_tools_lab_contract import BACKEND, validate_context, validate_identity
+from .network_tools_tls_posture_spec import TOOL_VERSIONS as TLS_POSTURE_TOOLS
+
+
+def _tls_parser_closure(closure):
+    """Project the validated launcher runtime to a networkless Python parser."""
+    if closure is None:
+        return None
+    if (type(closure) is not dict or type(closure.get("stdlib")) is not str
+            or type(closure.get("files")) is not list):
+        raise IsolationUnavailable("TLS posture parser closure is invalid")
+    libraries = re.compile(r"/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*\.?\Z")
+    files = []
+    for path in closure["files"]:
+        if type(path) is not str:
+            raise IsolationUnavailable("TLS posture parser closure is invalid")
+        if path == "/usr/bin/python3" or libraries.fullmatch(path):
+            files.append(path)
+        elif path not in {"/usr/bin/bwrap", "/usr/bin/nsenter", "/usr/sbin/nft"}:
+            raise IsolationUnavailable("TLS posture parser closure contains an unreviewed program")
+    return {"stdlib": closure["stdlib"], "files": files}
 
 
 class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
@@ -22,6 +43,7 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
                        "redis_server_info_v1", "snmp_system_get_v1",
                        "postgresql_tls_handshake_v1", "mysql_tls_handshake_v1", "smtp_starttls_handshake_v1", "ldap_starttls_handshake_v1", "ftp_starttls_handshake_v1", "whatweb_http_fingerprint_v1", "dig_dns_mx_v1", "dig_dns_srv_v1", "dig_dns_nsid_v1", "dig_dns_axfr_v1", "curl_http_options_v1", "snmp_interface_next_v1", "ssh_transport_algorithms_v1", "openssl_peer_certificate_v1", "nuclei_directory_listing_v1", "nuclei_git_head_v1", "rdp_initial_negotiation_v1", "smb2_negotiate_metadata_v1")
     launch_mode = _envelope_mode = "owned_network_tools_lab"
+    supported_tools += tuple(TLS_POSTURE_TOOLS)
     _executor_mode = "network_tools_owned"
     _closure = None
     _network_tools_manifest = None
@@ -81,6 +103,8 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
                 manifest=manifest)
             result["backend"] = self.name
             result["tool_observation"] = None
+            if action.tool_id in TLS_POSTURE_TOOLS:
+                return self._finish_tls_posture(result, action, control, runtime_closure)
             nuclei_counts = (self.lab.snapshot(control) if action.tool_id in ("nuclei_directory_listing_v1", "nuclei_git_head_v1") else None)
             if result["status"] == "succeeded" and result["truncated"] is False:
                 from .network_tools_parser_runtime import parse_isolated_tool_output
@@ -124,6 +148,41 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
             raise
         finally:
             self._lock.release()
+
+    def _finish_tls_posture(self, result, action, control, runtime_closure):
+        """Keep process status separate from corroborated protocol observations."""
+        from .network_tools_tls_posture_receipt import decode_owner_receipt, receipt_counter_context, validate_owner_selection
+        from .network_tools_tls_posture_parser_runtime import parse_isolated_tls_posture
+        from .network_tools_contract import validate_result_context
+
+        counts = self.lab.snapshot(control)
+        if type(counts) is not dict or set(counts) != {"connection_count", "request_count", "tls_posture_owner"}:
+            raise IsolationUnavailable("TLS posture owner receipt is missing")
+        receipt = counts["tls_posture_owner"]
+        raw = decode_owner_receipt(receipt)
+        validate_owner_selection(raw, self._lab_identity["scenario"])
+        counters = receipt_counter_context(raw)
+        if any(type(counts[key]) is not int or counts[key] != counters[key] for key in counters):
+            raise IsolationUnavailable("TLS posture owner counters changed")
+        context = validate_context({"identity": self._lab_identity, **counters,
+            "tls_posture_owner_sha256": receipt["sha256"]}, self._lab_identity)
+        result["tls_posture_owner"] = receipt
+        result["owned_lab"] = context
+        if (result["status"] in {"succeeded", "failed"} and result["truncated"] is False
+                and result["provenance"]["stop_reason"] is None):
+            try:
+                result["tool_observation"] = parse_isolated_tls_posture(action.tool_id,
+                    base64.b64decode(result["raw_output_base64"], validate=True),
+                    base64.b64decode(result["raw_stderr_base64"], validate=True),
+                    owner_raw=raw, exit_code=result["provenance"]["exit_code"],
+                    stop_reason=result["provenance"]["stop_reason"], truncated=result["truncated"],
+                    control=control, closure=_tls_parser_closure(runtime_closure))
+            except ValueError:
+                result["tool_observation"] = None
+        self._previous_context = validate_result_context(result, self._lab_identity,
+            previous=self._previous_context, tool_id=action.tool_id, execution_status=result["status"])
+        control.check()
+        return result
 
 
 class ConfinedNetworkToolsLab(NetworkToolsLab):

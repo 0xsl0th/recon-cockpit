@@ -24,6 +24,18 @@ def consume_launch(raw, nonce, context_digest, *, now=None):
             or not hmac.compare_digest(hashlib.sha256(raw).hexdigest(), context_digest)):
         raise ValueError("network_tool_launch_commitment_mismatch")
     value = load_json(raw)
+    # T02 verifies its complete launch without importing any fixture or owner
+    # into the dedicated client. Keep the same checks for callers of this API.
+    candidate_launch = value.get("launch")
+    candidate_action = candidate_launch.get("action") if type(candidate_launch) is dict else None
+    selected = candidate_action.get("tool_id") if type(candidate_action) is dict else None
+    if selected in ("openssl_tls10_posture_v1", "openssl_tls11_posture_v1",
+                    "openssl_tls12_posture_v1", "openssl_tls13_posture_v1"):
+        from .network_tools_tls_posture_runtime import consume_launch as consume_tls_posture
+        request = consume_tls_posture(raw, nonce, context_digest, now=now)
+        return {"target": "127.0.0.1", "parameters": value["launch"]["action"]["parameters"],
+                "tool_id": request["tool_id"], "host_namespaces": request["host_namespaces"],
+                "verify_boundary": True}, request["deadline"], request["lab_namespaces"], manifest_digest(request["manifest"])
     if type(value) is dict and value.get("mode") == "owned_service_web_lab":
         from .service_web_execution import consume_launch as consume_service_web
         return consume_service_web(raw, nonce, context_digest, now=now, expected_tool="nmap_service_identify_v1")

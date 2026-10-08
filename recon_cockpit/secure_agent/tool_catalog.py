@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass
 from types import MappingProxyType
 
 from . import tool_adapters as adapters
+from . import network_tools_tls_posture_spec as tls_posture
 
 
 CATALOG_ID = "bundled-secure-tools-v1"
@@ -35,6 +36,13 @@ def _network(program, case, policy, runbook, *limitations):
 
 
 _ENTRIES = MappingProxyType({
+    **{tool: _network("openssl", f"tls-posture-{version}-modern", "tls-posture", "tls-posture-tools",
+        "T02 candidate: production integration is available for review; product acceptance remains pending.",
+        "One separately authorized fixed-version probe through an owned complete-record mediator; independent peer receipt is required.",
+        "Explicit protocol rejection is useful evidence, not process success. Retry blocking alone is not useful completion.",
+        "Encrypted record contents remain opaque; this is not a general encrypted application-data prevention claim.",
+        "No arbitrary endpoint, cipher sweep, credentials, paid calls or real-server compatibility claim.")
+       for tool, version in tls_posture.TOOL_VERSIONS.items()},
     **{tool: _Entry(program, "--configurable-assessment", "examples/secure-agent-configurable-scope.json",
         "examples/secure-agent-configurable-policy.json", "docs/configurable-owned-lab.md",
         ("Two disconnected owned endpoint fixtures; declared addresses never attach to real internal networks.",
@@ -195,13 +203,17 @@ def _summary(tool_id, entry):
     return {"tool_id": tool_id, "effect": adapter.effect,
             "implementation": "native" if entry.program is None else "external_program",
             "external_program": entry.program, "execution_profile": adapter.execution_profile,
-            "parser_version": adapter.parser_version}
+            "parser_version": adapter.parser_version,
+            **({"acceptance_status": "candidate_pending_T02"}
+               if tool_id in tls_posture.TOOL_VERSIONS else {})}
 
 
 def list_tools():
     """List reviewed capabilities, without claiming their prerequisites exist."""
     tools = [_summary(tool_id, _entry(tool_id)) for tool_id in sorted(adapters.ADAPTERS)]
     return {**_common(), "capability_count": len(tools),
+            "accepted_capability_count": len(tools) - len(tls_posture.TOOL_VERSIONS),
+            "candidate_capability_count": len(tls_posture.TOOL_VERSIONS),
             "external_program_count": len({row["external_program"] for row in tools
                                            if row["external_program"] is not None}),
             "tools": tools}
@@ -237,7 +249,8 @@ def _recipe_actions(entry):
         steps = (1,)
     else:
         raise ValueError("invalid_catalog_recipe")
-    return contract.WORKFLOW, dict(contract.LIMITS), [contract.action(entry.case, step) for step in steps]
+    limits = tls_posture.LIMITS if entry.case in tls_posture.CASES else contract.LIMITS
+    return contract.WORKFLOW, dict(limits), [contract.action(entry.case, step) for step in steps]
 
 
 def describe_tool(tool_id: str):

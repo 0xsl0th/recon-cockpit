@@ -28,14 +28,22 @@ from recon_cockpit.secure_agent.network_tools_lab import NetworkToolsLab
 
 @pytest.mark.parametrize("case", fixture.CASES)
 def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
-    first = NetworkToolsLab(case, str(uuid4()), SessionLimits(**contract.LIMITS))
-    second = NetworkToolsLab(case, str(uuid4()), SessionLimits(**contract.LIMITS))
+    limits = contract.LIMITS
+    if case in fixture.TLS_POSTURE_CASES:
+        from recon_cockpit.secure_agent.network_tools_tls_posture_spec import LIMITS as limits
+    first = NetworkToolsLab(case, str(uuid4()), SessionLimits(**limits))
+    second = NetworkToolsLab(case, str(uuid4()), SessionLimits(**limits))
     assert first.identity != second.identity
     assert first.identity["spec_sha256"] == second.identity["spec_sha256"]
     assert not first.started and first._supervisor is None
     definition = lab_contract.spec(case)
     assert definition["external_egress"] is False and definition["resume"] is False
-    if case in fixture.NUCLEI_CASES + fixture.NUCLEI_GIT_CASES:
+    if case in fixture.TLS_POSTURE_CASES:
+        assert definition["max_session_seconds"] == 30
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["owner_private_peer"] == "unnamed_socketpair"
+        assert definition["encrypted_record_semantics_enforced"] is False
+    elif case in fixture.NUCLEI_CASES + fixture.NUCLEI_GIT_CASES:
         if case in fixture.NUCLEI_GIT_CASES:
             from recon_cockpit.secure_agent import network_tools_nuclei_git_fixture as nuclei
             path, maximum = nuclei.NUCLEI_GIT_PATH, nuclei.NUCLEI_GIT_MAX_RESPONSE_BYTES

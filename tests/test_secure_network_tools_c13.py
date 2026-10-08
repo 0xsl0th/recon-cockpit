@@ -79,8 +79,8 @@ def test_failed_peer_scenario_cannot_be_upgraded_to_useful_metadata(case):
 
 
 def test_all_accepted_contracts_remain_unchanged_from_pr66():
-    old_cases = [case for case in contract.CASES if case not in contract.C13_CASES + contract.C14_CASES + contract.C15_CASES + contract.C16_CASES + contract.C17_CASES + contract.C18_CASES]
-    old_tools = set(tool_adapters.ADAPTERS) - {contract.SNMP_NEXT_TOOL_ID, contract.SSH_ALGORITHMS_TOOL_ID, contract.TLS_CERTIFICATE_TOOL_ID, contract.NUCLEI_TOOL_ID, contract.NUCLEI_GIT_TOOL_ID, contract.DIG_MX_TOOL_ID}
+    old_cases = [case for case in contract.CASES if case not in contract.C13_CASES + contract.C14_CASES + contract.C15_CASES + contract.C16_CASES + contract.C17_CASES + contract.C18_CASES + contract.T02_CASES]
+    old_tools = set(tool_adapters.ADAPTERS) - set(contract.tls_posture.TOOL_VERSIONS) - {contract.SNMP_NEXT_TOOL_ID, contract.SSH_ALGORITHMS_TOOL_ID, contract.TLS_CERTIFICATE_TOOL_ID, contract.NUCLEI_TOOL_ID, contract.NUCLEI_GIT_TOOL_ID, contract.DIG_MX_TOOL_ID}
     old_runtime = set(runtime.EXECUTABLES) - {contract.SNMP_NEXT_TOOL_ID, contract.SSH_ALGORITHMS_TOOL_ID, contract.TLS_CERTIFICATE_TOOL_ID, contract.NUCLEI_TOOL_ID, contract.NUCLEI_GIT_TOOL_ID, contract.DIG_MX_TOOL_ID}
     value = {'cases': {case: {'action': contract.action(case), 'descriptor': contract.capability_descriptor(case),
         'card': workflow.card(case), 'spec': lab.spec(case)} for case in old_cases},

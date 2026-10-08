@@ -21,6 +21,8 @@ from .isolation import IsolationUnavailable, _capture_bounded, _runtime_probe, _
 
 
 PROFILE = "network-tools-runtime-v1"
+TLS_POSTURE_TOOLS = ("openssl_tls10_posture_v1", "openssl_tls11_posture_v1",
+                     "openssl_tls12_posture_v1", "openssl_tls13_posture_v1")
 DIG = "dig_dns_query_v1"
 DIG_MX = "dig_dns_mx_v1"
 DIG_SRV = "dig_dns_srv_v1"
@@ -243,7 +245,7 @@ MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
 MODULES += ("network_tools_nuclei_runtime", "network_tools_nuclei_git_runtime", "network_tools_nuclei_fixture",
-            "network_tools_nuclei_git_fixture")
+            "network_tools_nuclei_git_fixture", "network_tools_tls_posture_spec")
 
 
 def encode(value):
@@ -252,6 +254,9 @@ def encode(value):
 
 
 def execution_environment(tool_id):
+    if tool_id in TLS_POSTURE_TOOLS:
+        from .network_tools_tls_posture_runtime import ENVIRONMENT
+        return dict(ENVIRONMENT)
     if tool_id in (NUCLEI, NUCLEI_GIT):
         return dict(nuclei_runtime.for_tool(tool_id).ENVIRONMENT)
     if tool_id == SSH_ALGORITHMS:
@@ -283,6 +288,9 @@ def execution_environment(tool_id):
 
 
 def _compiled(tool_id):
+    if tool_id in TLS_POSTURE_TOOLS:
+        from .network_tools_fixture import TLS_CERTIFICATE_CA_PEM
+        return "compiled:fixture-ca", "/tool/data/fixture-ca.pem", TLS_CERTIFICATE_CA_PEM
     if tool_id in (NUCLEI, NUCLEI_GIT):
         return nuclei_runtime.for_tool(tool_id).COMPILED[0]
     if tool_id == SSH_ALGORITHMS:
@@ -398,6 +406,9 @@ def read_runtime_file(path, tool_id):
 
 
 def validate_manifest(value, *, tool_id=None):
+    if type(value) is dict and value.get("tool_id") in TLS_POSTURE_TOOLS:
+        from .network_tools_tls_posture_runtime import validate_manifest as validate_tls_posture
+        return validate_tls_posture(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") in (NUCLEI, NUCLEI_GIT):
         return nuclei_runtime.for_tool(value["tool_id"]).validate_manifest(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") == SSH_ALGORITHMS:
@@ -456,6 +467,10 @@ def manifest_digest(value):
 
 def inspect_tool_runtime(tool_id, control):
     """Inspect the selected distribution ELF; never execute a tool on the host."""
+    if type(tool_id) is str and tool_id in TLS_POSTURE_TOOLS:
+        from .network_tools_tls_posture_runtime import PROFILE as tls_profile
+        existing = inspect_tool_runtime(TLS_CERTIFICATE, control)
+        return validate_manifest({**existing, "profile": tls_profile, "tool_id": tool_id})
     if type(tool_id) is not str or tool_id not in EXECUTABLES:
         raise ValueError("unsupported_network_tool")
     control.check()
@@ -531,6 +546,11 @@ def _snapshot(manifest, control):
 
 
 def _command(lab, bootstrap, manifest, descriptors, nonce, commitment, *, service_web=False):
+    if manifest["tool_id"] in TLS_POSTURE_TOOLS:
+        if service_web:
+            raise ValueError("tls_posture_service_web_profile_forbidden")
+        from .network_tools_tls_posture_runtime import command
+        return command(lab, bootstrap, manifest, descriptors, nonce, commitment)
     if manifest["tool_id"] in (NUCLEI, NUCLEI_GIT):
         if service_web:
             raise ValueError("nuclei_service_web_profile_forbidden")
@@ -587,7 +607,12 @@ def run_network_tool_owned(*, lab, launch, control, closure=None, manifest=None)
     if len(raw) > 32768:
         raise IsolationUnavailable("Network tool launch envelope exceeds its bound")
     commitment = hashlib.sha256(raw).hexdigest()
-    prefix = READY_PREFIX + commitment.encode("ascii") + b"\n"
+    selected_prefix = READY_PREFIX
+    extra_checks = ()
+    if selected in TLS_POSTURE_TOOLS:
+        from .network_tools_tls_posture_runtime import READY_PREFIX as tls_prefix, BOUNDARY_FIELDS
+        selected_prefix, extra_checks = tls_prefix, tuple(sorted(BOUNDARY_FIELDS))
+    prefix = selected_prefix + commitment.encode("ascii") + b"\n"
     descriptors = _snapshot(manifest, control)
     try:
         code, stdout, stderr, reason = _capture_bounded(
@@ -615,7 +640,8 @@ def run_network_tool_owned(*, lab, launch, control, closure=None, manifest=None)
         "boundary_checks": dict.fromkeys(("forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
             "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
             "raw_sockets_blocked", "landlock_applied", "python_unreadable")
-            + (tuple(sorted(nuclei_runtime.BOUNDARY_FIELDS)) if selected in (NUCLEI, NUCLEI_GIT) else ()), True),
+            + (tuple(sorted(nuclei_runtime.BOUNDARY_FIELDS)) if selected in (NUCLEI, NUCLEI_GIT) else ())
+            + extra_checks, True),
         "raw_output_base64": base64.b64encode(stdout).decode("ascii"),
         "raw_stderr_base64": base64.b64encode(stderr).decode("ascii"),
         "provenance": {"runtime_sha256": manifest_digest(manifest), "runtime_manifest": manifest,

@@ -1,6 +1,6 @@
 # Product roadmap and remaining PR estimate
 
-Status snapshot: **8 October 2026, after PR #77**, accepted main `942c815`.
+Status snapshot: **8 October 2026, after PR #78**, accepted main `efdb133`.
 The PR-count forecasts retain their explicitly dated PR #72 baseline below.
 This is the consolidated product plan. The [implementation roadmap](roadmap.md)
 retains milestone history; the [checkpoint](continue-here.md) records the next
@@ -29,11 +29,13 @@ finding and passing all five final and post-merge jobs.
 [mediated diagnostic](tls-posture-mediation.md) after independent review and all
 five final/post-merge checks. It retains 8/8 ordinary and 4/4 explicit-absence
 observations while preventing the tested retry before peer delivery, 1/1.
-The current [closed observation/replay slice](tls-posture-observations.md)
-keeps received rejection useful without relabelling process exit 1 as success;
-26/26 isolated replays and 18/18 safe negative cases passed. Final PR checks,
-product authority/evidence integration and its remaining corpus follow; no T02
-profile or additional program is accepted.
+[PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78) accepted closed
+diagnostic observations after review and five passing PR checks. A later macOS
+cancellation failure is retained in the checkpoint and corrected in the current
+[production candidate slice](tls-posture-tools.md). Four fixed-version profiles
+now enter the secure authority/evidence path for review; accepted coverage stays
+43 profiles / 16 programs. T02 acceptance still requires the remaining corpus.
+T03–T06 and the dated PR-count forecast below remain unchanged.
 
 ## Product destination
 
@@ -109,7 +111,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | C18/T01 DNS MX is accepted; T02 mediation proves useful observations and tested retry prevention, with product authority/evidence integration still open and T03–T06 still required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Three additional programs are now plausible; the historical 4–6 assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | C18/T01 DNS MX is accepted; T02 mediation proves useful observations and tested retry prevention, with four production candidates under review, remaining T02 acceptance tests and T03–T06 still required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Three additional programs are now plausible; the historical 4–6 assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
@@ -224,13 +226,12 @@ failure** remains unchanged historical evidence; the new trial does not relabel 
 
 The gate validates plaintext framing and bounds encrypted record shapes; it does
 not decrypt traffic or prove general encrypted application-data prevention.
-PR #77 accepted this diagnostic boundary. The current
-[closed observation/replay slice](tls-posture-observations.md) validates retained
-captures without loading owner/key modules or creating execution authority.
-After its review, integrate four separately versioned profiles through policy,
-fresh per-action approval, consumed permits, admission and both production evidence
-inspectors. Complete the full hostile-usefulness, ambiguity/pressure,
-enforcement, cancellation and regression corpus before G1–G6 acceptance.
+PR #77 accepted this diagnostic boundary and PR #78 accepted
+[closed diagnostic observation/replay](tls-posture-observations.md). The current
+[production integration](tls-posture-tools.md) connects four candidate profiles
+to policy, per-action approval, consumed permits and both evidence inspectors.
+Finish the remaining hostile-usefulness, ambiguity/pressure and full accepted-bundle
+regression corpus before G1–G6 acceptance.
 Diagnostic receipts do not close those product gates. Accepted coverage remains
 **43 profiles / 16 programs**; existing TLS profiles and limits stay unchanged.
 Deeper workflows, credentials and paid/live models stay deferred.

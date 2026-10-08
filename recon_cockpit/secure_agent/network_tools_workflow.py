@@ -11,15 +11,15 @@ from .http_headers_workflow import _uuid
 
 
 def card(case=None):
-    if case is not None and (type(case) is not str or case not in contract.B1_CASES + contract.B2_CASES + contract.B3_CASES + contract.B4_CASES + contract.B5_CASES + contract.B6_CASES + contract.B7_CASES + contract.B8_CASES + contract.C1_CASES + contract.C2_CASES + contract.C3_CASES + contract.C4_CASES + contract.C5_CASES + contract.C6_CASES + contract.C7_CASES + contract.C8_CASES + contract.C9_CASES + contract.C10_CASES + contract.C11_CASES + contract.C12_CASES + contract.C13_CASES + contract.C14_CASES + contract.C15_CASES + contract.C16_CASES + contract.C17_CASES + contract.C18_CASES):
+    if case is not None and (type(case) is not str or case not in contract.B1_CASES + contract.B2_CASES + contract.B3_CASES + contract.B4_CASES + contract.B5_CASES + contract.B6_CASES + contract.B7_CASES + contract.B8_CASES + contract.C1_CASES + contract.C2_CASES + contract.C3_CASES + contract.C4_CASES + contract.C5_CASES + contract.C6_CASES + contract.C7_CASES + contract.C8_CASES + contract.C9_CASES + contract.C10_CASES + contract.C11_CASES + contract.C12_CASES + contract.C13_CASES + contract.C14_CASES + contract.C15_CASES + contract.C16_CASES + contract.C17_CASES + contract.C18_CASES + contract.T02_CASES):
         raise ValueError("invalid_network_tools_case")
-    version = "26" if case in contract.C18_CASES else "25" if case in contract.C17_CASES else "24" if case in contract.C16_CASES else "23" if case in contract.C15_CASES else "22" if case in contract.C14_CASES else "21" if case in contract.C13_CASES else "20" if case in contract.C12_CASES else "19" if case in contract.C11_CASES else "18" if case in contract.C10_CASES else "17" if case in contract.C9_CASES else "16" if case in contract.C8_CASES else "15" if case in contract.C7_CASES else "14" if case in contract.C6_CASES else "13" if case in contract.C5_CASES else "12" if case in contract.C4_CASES else "11" if case in contract.C3_CASES else "10" if case in contract.C2_CASES else "9" if case in contract.C1_CASES else "8" if case in contract.B8_CASES else "7" if case in contract.B7_CASES else "6" if case in contract.B6_CASES else "5" if case in contract.B5_CASES else "4" if case in contract.B4_CASES else "3" if case in contract.B3_CASES else "2" if case in contract.B2_CASES else "1"
-    cases = contract.C18_CASES if version == "26" else contract.C17_CASES if version == "25" else contract.C16_CASES if version == "24" else contract.C15_CASES if version == "23" else contract.C14_CASES if version == "22" else contract.C13_CASES if version == "21" else contract.C12_CASES if version == "20" else contract.C11_CASES if version == "19" else contract.C10_CASES if version == "18" else contract.C9_CASES if version == "17" else contract.C8_CASES if version == "16" else contract.C7_CASES if version == "15" else contract.C6_CASES if version == "14" else contract.C5_CASES if version == "13" else contract.C4_CASES if version == "12" else contract.C3_CASES if version == "11" else contract.C2_CASES if version == "10" else contract.C1_CASES if version == "9" else contract.B8_CASES if version == "8" else contract.B7_CASES if version == "7" else contract.B6_CASES if version == "6" else contract.B5_CASES if version == "5" else contract.B4_CASES if version == "4" else contract.B3_CASES if version == "3" else contract.B2_CASES if version == "2" else contract.B1_CASES
+    version = "27" if case in contract.T02_CASES else "26" if case in contract.C18_CASES else "25" if case in contract.C17_CASES else "24" if case in contract.C16_CASES else "23" if case in contract.C15_CASES else "22" if case in contract.C14_CASES else "21" if case in contract.C13_CASES else "20" if case in contract.C12_CASES else "19" if case in contract.C11_CASES else "18" if case in contract.C10_CASES else "17" if case in contract.C9_CASES else "16" if case in contract.C8_CASES else "15" if case in contract.C7_CASES else "14" if case in contract.C6_CASES else "13" if case in contract.C5_CASES else "12" if case in contract.C4_CASES else "11" if case in contract.C3_CASES else "10" if case in contract.C2_CASES else "9" if case in contract.C1_CASES else "8" if case in contract.B8_CASES else "7" if case in contract.B7_CASES else "6" if case in contract.B6_CASES else "5" if case in contract.B5_CASES else "4" if case in contract.B4_CASES else "3" if case in contract.B3_CASES else "2" if case in contract.B2_CASES else "1"
+    cases = contract.T02_CASES if version == "27" else contract.C18_CASES if version == "26" else contract.C17_CASES if version == "25" else contract.C16_CASES if version == "24" else contract.C15_CASES if version == "23" else contract.C14_CASES if version == "22" else contract.C13_CASES if version == "21" else contract.C12_CASES if version == "20" else contract.C11_CASES if version == "19" else contract.C10_CASES if version == "18" else contract.C9_CASES if version == "17" else contract.C8_CASES if version == "16" else contract.C7_CASES if version == "15" else contract.C6_CASES if version == "14" else contract.C5_CASES if version == "13" else contract.C4_CASES if version == "12" else contract.C3_CASES if version == "11" else contract.C2_CASES if version == "10" else contract.C1_CASES if version == "9" else contract.B8_CASES if version == "8" else contract.B7_CASES if version == "7" else contract.B6_CASES if version == "6" else contract.B5_CASES if version == "5" else contract.B4_CASES if version == "4" else contract.B3_CASES if version == "3" else contract.B2_CASES if version == "2" else contract.B1_CASES
     return {
         "schema_version": "1", "workflow_id": contract.WORKFLOW, "workflow_version": version,
         "planning": "deterministic_offline_single_tool", "live_calls_enabled": False,
         "scope": {"target": "127.0.0.1", "port": 111 if version == "4" else 8080, "owned_lab_only": True},
-        "limits": dict(contract.LIMITS),
+        "limits": dict(contract.tls_posture.LIMITS if version == "27" else contract.LIMITS),
         "action_digests": {case: [parse_action(contract.action(case, 1)).digest]
                            for case in cases},
     }
@@ -73,7 +73,9 @@ def terminal_decision(case, records, summary):
     step = summary["steps_attempted"] + 1
     if summary["mode"] == "dry_run":
         return ToolDecision(step, "stop", "dry_run_has_no_execution_evidence", _case=case)
-    if summary["session_status"] != "completed":
+    failed_tls_session = (expected.tool_id in contract.tls_posture.TOOL_VERSIONS
+        and summary["session_status"] == "stopped" and summary.get("stop_reason") == "action_failed")
+    if summary["session_status"] != "completed" and not failed_tls_session:
         return ToolDecision(step, "stop", "session_stopped", _case=case)
     if type(records) not in (list, tuple) or len(records) != 1:
         return ToolDecision(step, "stop", "tool_evidence_missing", _case=case)
@@ -82,14 +84,19 @@ def terminal_decision(case, records, summary):
             or not _uuid(row.get("execution_id")) or not _uuid(row.get("observation_id"))
             or row.get("action_digest") != expected.digest
             or row.get("action") != {k: v for k, v in expected.to_dict().items() if k != "rationale"}
-            or row.get("execution_status") != "succeeded"):
+            or (row.get("execution_status") != "succeeded" and not (
+                expected.tool_id in contract.tls_posture.TOOL_VERSIONS and row.get("execution_status") == "failed"
+                and type(row.get("observation")) is dict
+                and row["observation"].get("reason") in {"tls_posture_explicit_protocol_rejection", "tls_posture_extra_client_hello_prevented"}))):
         return ToolDecision(step, "stop", "tool_execution_not_succeeded", _case=case)
     reason = "tool_evidence_inconclusive"
     observation = row.get("observation")
     try:
         if (type(observation) is dict and observation == contract.classify_tool(
                 expected.tool_id, observation.get("details"))):
-            reason = observation["reason"]
+            if not failed_tls_session or (row["execution_status"] == "failed" and observation["reason"] in {
+                    "tls_posture_explicit_protocol_rejection", "tls_posture_extra_client_hello_prevented"}):
+                reason = observation["reason"]
     except (ValueError, TypeError, KeyError):
         pass
     return ToolDecision(step, "stop", reason,

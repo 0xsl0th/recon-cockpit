@@ -215,31 +215,41 @@ def _known_text(line, rejection=False, version=None):
 
 
 def analyze_trial(trial):
-    """Return a non-authoritative finding while preserving the process verdict."""
-    finding = {"diagnostic_only": True, "outcome": "inconclusive", "issues": [], "evidence": {}}
-    issues, evidence = finding["issues"], finding["evidence"]
+    """Preserve diagnostic-only lifecycle requirements around wire analysis."""
     if type(trial) is not dict or trial.get("diagnostic_only") is not True:
-        issues.append("not_a_diagnostic_trial")
-        return finding
-    execution = trial.get("execution", {})
+        return {"diagnostic_only": True, "outcome": "inconclusive",
+                "issues": ["not_a_diagnostic_trial"], "evidence": {}}
+    finding = analyze_wire(trial.get("version"), trial.get("case"),
+                           trial.get("execution", {}), trial.get("owner", {}))
+    finding = {"diagnostic_only": True, **finding}
+    confinement = trial.get("confinement")
+    if (type(confinement) is not dict
+            or any(confinement.get(name) is not True for name in CONFINEMENT_WITNESSES)):
+        finding["issues"].insert(0, "confinement_not_confirmed")
+    if (type(trial.get("cleanup")) is not dict or trial["cleanup"].get("closed") is not True):
+        finding["issues"].append("cleanup_not_confirmed")
+    if finding["issues"] and finding["outcome"] != "boundary_failure":
+        finding["outcome"] = "inconclusive"
+    return finding
+
+
+def analyze_wire(version_id, case, execution, owner):
+    """Corroborate wire data without making confinement or lifecycle claims."""
+    finding = {"outcome": "inconclusive", "issues": [], "evidence": {}}
+    issues, evidence = finding["issues"], finding["evidence"]
     if type(execution) is not dict:
         issues.append("invalid_execution")
         return finding
     finding["execution"] = {key: execution.get(key) for key in ("exit_code", "stop_reason", "elapsed_ms", "truncated")}
-    confinement = trial.get("confinement")
-    if (type(confinement) is not dict
-            or any(confinement.get(name) is not True for name in CONFINEMENT_WITNESSES)):
-        issues.append("confinement_not_confirmed")
-    version = VERSIONS.get(trial.get("version")) if type(trial.get("version")) is str else None
+    version = VERSIONS.get(version_id) if type(version_id) is str else None
     if version is None:
         issues.append("unsupported_declared_version")
         return finding
-    owner = trial.get("owner", {})
     diagnostic = owner.get("diagnostic", {}) if type(owner) is dict else {}
     if type(diagnostic) is not dict:
         diagnostic = {}
-    if (type(trial.get("case")) is not str or trial.get("case") not in {"modern", "legacy", "reject", "hrr"}
-            or diagnostic.get("case") != trial.get("case")):
+    if (type(case) is not str or case not in {"modern", "legacy", "reject", "hrr"}
+            or diagnostic.get("case") != case):
         issues.append("mismatched_owner_case")
     boundary = []
     if type(owner) is dict and type(owner.get("connection_count")) is int and owner["connection_count"] > 1:
@@ -272,7 +282,7 @@ def analyze_trial(trial):
         evidence["received_protocol_version_alert"] = received_rejection
         evidence["server_close_notify_observed_by_client"] = any(m["direction"] == "read" and m["data"] == b"\x01\x00" for m in alerts)
         rejection = received_rejection and not servers and len(hellos) == 1
-        if any(not _known_text(line, rejection, trial["version"]) for line in text):
+        if any(not _known_text(line, rejection, version_id) for line in text):
             issues.append("unknown_cli_output")
         if any(m["kind"] == "Handshake" and m["name"] in {"NewSessionTicket", "CertificateRequest", "KeyUpdate"} for m in messages):
             issues.append("unexpected_handshake_message")
@@ -282,12 +292,10 @@ def analyze_trial(trial):
             issues.append("hello_retry_request_outside_contract")
         if execution.get("truncated") is not False or execution.get("stop_reason") is not None or type(execution.get("exit_code")) is not int:
             issues.append("incomplete_execution")
-        if trial.get("cleanup", {}).get("closed") is not True:
-            issues.append("cleanup_not_confirmed")
         if (owner.get("connection_count") != 1 or owner.get("request_count") != 1
                 or diagnostic.get("client_hellos") != 1 or diagnostic.get("application_bytes") != 0
                 or diagnostic.get("completed") is not True or diagnostic.get("error") is not None
-                or diagnostic.get("expected_version") != trial["version"]):
+                or diagnostic.get("expected_version") != version_id):
             issues.append("incomplete_or_mismatched_owner")
         received_records = _owner_records(diagnostic, "received_records")
         sent_records = _owner_records(diagnostic, "sent_records")
@@ -297,7 +305,7 @@ def analyze_trial(trial):
             headers = [m["data"] for m in messages if m["kind"] == "RecordHeader" and m["direction"] == direction]
             if headers != [raw[:5] for raw in rows]:
                 if (direction == "read" and not evidence["server_close_notify_observed_by_client"]
-                        and _unread_server_close(diagnostic, trial["version"], rows, headers)):
+                        and _unread_server_close(diagnostic, version_id, rows, headers)):
                     evidence["owner_final_close_notify_unread"] = True
                 else:
                     issues.append("client_owner_record_headers_mismatch")
@@ -334,7 +342,7 @@ def analyze_trial(trial):
         else:
             sequence = [(m["direction"], m["name"]) for m in messages if m["kind"] == "Handshake"]
             expected_sequence = [("write", "ClientHello"), ("read", "ServerHello")]
-            if trial["version"] == "tls1_3":
+            if version_id == "tls1_3":
                 expected_sequence += [("read", name) for name in ("EncryptedExtensions", "Certificate", "CertificateVerify", "Finished")]
                 expected_sequence += [("write", "Finished")]
             else:
@@ -343,9 +351,9 @@ def analyze_trial(trial):
             if sequence != expected_sequence:
                 issues.append("unexpected_handshake_sequence")
             finished = [m for m in messages if m["kind"] == "Handshake" and m["name"] == "Finished"]
-            expected_size = 48 if trial["version"] == "tls1_3" else 12
+            expected_size = 48 if version_id == "tls1_3" else 12
             finish_directions = [m["direction"] for m in finished]
-            expected_directions = ["read", "write"] if trial["version"] == "tls1_3" else ["write", "read"]
+            expected_directions = ["read", "write"] if version_id == "tls1_3" else ["write", "read"]
             if (selected != [(version[2], version[3], False)] or finish_directions != expected_directions
                     or any(len(m["data"]) != expected_size + 4 for m in finished)):
                 issues.append("incomplete_or_mismatched_handshake")

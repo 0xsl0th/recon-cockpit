@@ -7,12 +7,14 @@ from .owned_lab import OwnedLab, encode
 from .isolation import IsolationUnavailable
 from .session_limits import SessionLimits
 from .network_tools_lab_contract import identity, validate_context, decode_owner_response
+from .network_tools_tls_posture_spec import CASES as TLS_POSTURE_CASES
 
 
 class NetworkToolsLab(OwnedLab):
     def __init__(self, case, session_id, limits, *, execute=True):
         if (type(limits) is not SessionLimits or limits.max_steps > 1
-                or limits.max_runtime_seconds > 60 or limits.max_output_bytes > 8192):
+                or limits.max_runtime_seconds > (30 if case in TLS_POSTURE_CASES else 60)
+                or limits.max_output_bytes > 8192):
             raise ValueError("invalid_network_tools_lab_limits")
         super().__init__(case, session_id, limits, execute=execute)
 
@@ -23,6 +25,9 @@ class NetworkToolsLab(OwnedLab):
         return validate_context(value, expected)
 
     def _read_message(self):
+        if self._identity["scenario"] in TLS_POSTURE_CASES:
+            from .network_tools_tls_posture_lab import read_message
+            return read_message(self)
         if not self._identity["scenario"].startswith("nuclei-"):
             return super()._read_message()
         supervisor = self._supervisor
@@ -40,7 +45,17 @@ class NetworkToolsLab(OwnedLab):
         except (ValueError, UnicodeError, RecursionError) as exc:
             raise IsolationUnavailable("Nuclei owner returned invalid management evidence") from exc
 
+    def start(self, control):
+        if self._identity["scenario"] in TLS_POSTURE_CASES:
+            from .network_tools_tls_posture_lab import start
+            return start(self, control)
+        return super().start(control)
+
     def snapshot(self, control, *, minimum_connections=None, minimum_requests=None):
+        if self._identity["scenario"] in TLS_POSTURE_CASES:
+            from .network_tools_tls_posture_lab import snapshot
+            return snapshot(self, control, minimum_connections=minimum_connections,
+                            minimum_requests=minimum_requests)
         if not self._identity["scenario"].startswith("nuclei-"):
             return super().snapshot(control, minimum_connections=minimum_connections, minimum_requests=minimum_requests)
         with self._lock:
@@ -100,4 +115,13 @@ class NetworkToolsLab(OwnedLab):
             mounts += ["--ro-bind", str(directory / name), "/app/" + name]
         argv[argv.index("--remount-ro"):argv.index("--remount-ro")] = mounts
         argv[-1] = "/app/network_tools_lab_worker.py"
+        if self._identity["scenario"] in TLS_POSTURE_CASES:
+            additional = []
+            for name in ("network_tools_tls_posture_owner.py", "network_tools_tls_posture_spec.py",
+                         "network_tools_tls_posture_receipt.py", "tls_posture_mediated_owner.py",
+                         "tls_posture_diagnostic_fixture.py", "tls_posture_mediator.py", "tls_posture_hello.py"):
+                additional += ["--ro-bind", str(directory / name), "/app/" + name]
+            index = argv.index("--remount-ro")
+            argv[index:index] = additional
+            argv[-1] = "/app/network_tools_tls_posture_owner.py"
         return argv

@@ -55,6 +55,9 @@ def run_assessment(args, policy, audit):
         from .network_tools_workflow import NetworkToolsProvider
         from .network_tools_contract import capability_descriptor as capability, LIMITS as limits_profile
         case = args.network_tool_assessment
+        from .network_tools_tls_posture_spec import CASES as TLS_POSTURE_CASES
+        if case in TLS_POSTURE_CASES:
+            from .network_tools_tls_posture_spec import LIMITS as limits_profile
         lab_type, backend_type, provider_type = NetworkToolsLab, AuthorizedNetworkToolsBackend, NetworkToolsProvider
         workflow_profile = 'network_tools'
 

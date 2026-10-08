@@ -5,10 +5,11 @@ The historical planning baseline below began on 15 September 2026. This is a dev
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — PR #77 merged; T02 diagnostic observations and networkless
-replay passed fresh native validation (8 October 2026). Useful rejection retains
-actual exit 1; final PR checks remain required. Product authority/evidence
-integration is next; T02 remains open.**
+**Current slice — PR #78 merged; four T02 production TLS posture candidates
+connect to the secure authority and evidence path. Their remaining acceptance
+corpus and review are still required. T02 stays open; accepted coverage remains
+43 profiles / 16 programs. See the [runbook](tls-posture-tools.md) and checkpoint
+for the retained post-merge macOS cancellation failure and its correction.**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -33,7 +34,7 @@ claim that today's bounded fixtures support professional engagements.
 | --- | --- | --- |
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
-| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX is accepted. [T02 mediation](tls-posture-mediation.md) preserves 8/8 ordinary and 4/4 absence observations while blocking the tested second ClientHello before peer delivery, 1/1. Closed diagnostic observations passed 26/26 isolated replays and 18/18 safe negative cases; final PR checks, production authority/evidence integration and the remaining corpus follow. T02 stays open with no accepted profile. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
+| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX is accepted. [T02 mediation](tls-posture-mediation.md) preserves 8/8 ordinary and 4/4 absence observations while blocking the tested second ClientHello before peer delivery, 1/1. Closed diagnostic observations passed 26/26 isolated replays and 18/18 safe negative cases; PR #78 is merged; four production candidates are now under review and the remaining acceptance corpus follows. T02 stays open with no accepted profile. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
 | 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
@@ -245,10 +246,9 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current status: PR #77 is merged; C18/T01 stays accepted. T02 now adds
-[closed diagnostic observations and networkless replay](tls-posture-observations.md).
-Fresh native execution and replay passed; final PR checks remain required.
-Production authority/evidence integration remains next and T02 stays open.**
+**Current status: PR #78 is merged; C18/T01 stays accepted. Four T02
+[production candidates](tls-posture-tools.md) are under review. Finish their
+remaining acceptance corpus before G1–G6; T02–T06 stay open.**
 [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72) merged as
 `e00482409362f1f9380bc225063b84762446dee9` after fresh authority/runtime and
 parser/evidence reviews found no blockers and all five final PR checks passed. All five
@@ -341,13 +341,12 @@ failure** remains unchanged historical evidence; the new trial does not relabel 
 
 The gate validates plaintext framing and bounds encrypted record shapes; it does
 not decrypt traffic or prove general encrypted application-data prevention.
-PR #77 accepted this diagnostic boundary. The current
-[closed observation/replay slice](tls-posture-observations.md) validates retained
-captures without loading owner/key modules or creating execution authority.
-After its review, integrate four separately versioned profiles through policy,
-fresh per-action approval, consumed permits, admission and both production evidence
-inspectors. Complete the full hostile-usefulness, ambiguity/pressure,
-enforcement, cancellation and regression corpus before G1–G6 acceptance.
+PR #77 accepted this diagnostic boundary and PR #78 accepted
+[closed diagnostic observation/replay](tls-posture-observations.md). The current
+[production integration](tls-posture-tools.md) connects four candidate profiles
+to policy, per-action approval, consumed permits and both evidence inspectors.
+Finish the remaining hostile-usefulness, ambiguity/pressure and full accepted-bundle
+regression corpus before G1–G6 acceptance.
 Diagnostic receipts do not close those product gates. Accepted coverage remains
 **43 profiles / 16 programs**; existing TLS profiles and limits stay unchanged.
 Continue through required T03–T06 using the

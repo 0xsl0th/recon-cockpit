@@ -184,7 +184,7 @@ def test_raw_failure_receipts_keep_process_status_and_always_close_lab(monkeypat
 
 def test_instrument_is_not_registered_as_an_accepted_tool():
     from recon_cockpit.secure_agent import tool_adapters, network_tools_runtime
-    assert not any("posture" in tool for tool in tool_adapters.ADAPTERS)
+    assert not any(tool.startswith("tls_posture_") for tool in tool_adapters.ADAPTERS)
     assert not any("posture" in tool for tool in network_tools_runtime.EXECUTABLES)
 
 

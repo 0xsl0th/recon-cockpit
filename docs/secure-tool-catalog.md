@@ -389,14 +389,28 @@ emitted two ClientHellos; the independent peer received one. This validates the
 tested plaintext request boundary and finite encrypted record shapes; it does
 not decrypt traffic or prove general encrypted application-data prevention.
 
-The current [closed observation/replay slice](tls-posture-observations.md)
-adds a networkless parser and read-only diagnostic CLI: 26/26 replays and 18/18
-safe negative cases passed; final PR checks remain required. Its four version
-identifiers are deliberately absent from this catalog.
-It cannot issue approval, consume a production permit, authorize admission or
-produce an accepted assessment. Next add four separately versioned profiles
-through those production gates and both evidence inspectors, completing the full
-negative, enforcement and regression corpus. All four versions and G1–G6 remain required
-before T02 acceptance. No T02 secure profile, installation or
-program-count increment is claimed. Preserve the existing recipes and authority
-gates; accepted coverage remains **43 profiles / 16 programs**.
+[PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78) accepted the
+[closed diagnostic observation/replay slice](tls-posture-observations.md).
+Its diagnostic identifiers remain unregistered and cannot substitute for product
+authorization. Four separate [production candidates](tls-posture-tools.md) are
+now listed with `acceptance_status: candidate_pending_T02`:
+
+| Profile | Fixed version | Acceptance |
+| --- | --- | --- |
+| `openssl_tls10_posture_v1` | TLS 1.0 | Pending T02 |
+| `openssl_tls11_posture_v1` | TLS 1.1 | Pending T02 |
+| `openssl_tls12_posture_v1` | TLS 1.2 | Pending T02 |
+| `openssl_tls13_posture_v1` | TLS 1.3 | Pending T02 |
+
+The catalog distinguishes 47 registered profiles from **43 accepted + 4 candidate**
+profiles, using 16 programs. Each candidate needs its own exact approval and
+consumed permit, within one 30-second owned session. Explicit protocol rejection
+can be useful evidence while retaining failed execution/exit 1; retry blocking
+alone does not count as task completion. Both inspectors verify separate bounded
+owner artifacts and restore the full committed authority result before replay.
+
+T02 remains open until its remaining hostile-usefulness, ambiguity/pressure and
+accepted-bundle regression corpus and G1–G6 pass. Existing accepted recipes,
+limits and frozen contract hashes remain unchanged. No new program or general
+real-server support is claimed. Credentials, paid/live models and attached
+networks remain deferred.
