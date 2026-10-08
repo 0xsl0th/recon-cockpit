@@ -2,8 +2,9 @@
 
 C14 adds `ssh_transport_algorithms_v1` to the existing secure CLI, authority and
 evidence path. Accepted C13/PR #67 has **38 profiles using 15 external programs**;
-this candidate has **39 profiles using the same 15 programs**. Implementation is
-in progress, with full portable/native validation and review still pending.
+this candidate has **39 profiles using the same 15 programs**. Implementation
+`80b2ffe` passed local validation and is awaiting review in
+[PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68); C14 is not yet accepted.
 No GUI workflow or real-network attachment is added.
 
 The interactive cockpit already suggests Nmap `ssh2-enum-algos`. That integration
@@ -145,19 +146,23 @@ Inspect saved evidence without restoring approval or execution authority:
 
 ## Completion and validation
 
-Require **4/4 ordinary and 2/2 separate robustness completions**, zero unnecessary
-refusals and eight inconclusive negatives after actual validated request progress.
-All **28 forbidden-destination witnesses and 140 boundary fields** must pass,
-with complete bounded evidence, closed owners and unchanged independent replay.
-The planned 20-case native set covers fourteen scenarios and six gates: one-use
+Validation passed **17,728 portable tests and 44 native tests**, including twenty
+new-profile tests and 24 accepted SMB2/SSH regressions. All **4/4 ordinary and 2/2
+separate robustness tasks completed**, with zero unnecessary refusals and eight
+inconclusive negatives after validated request progress. All **28 forbidden-destination
+witnesses and 140 boundary fields passed**, with bounded evidence and closed owners.
+The twenty new native tests cover fourteen scenarios and six gates: one-use
 approval, missing-proof rejection, cancellation, private-input exclusion, UDP
-confinement and the task ceiling. Record descriptive latency and zero provider
-calls/cost; comparative overhead remains deferred.
+confinement and the task ceiling.
 
-**C14 validation is pending.** Focused checks do not substitute for the complete
-portable suite, actual native execution, independent evidence/source audit,
-accepted-bundle replay and latest-revision review/checks. See
-[verification.md](verification.md) for the current retained results.
+Independent audit rebuilt all fourteen reports and matched 593 frozen source files;
+**97 accepted bundles replayed unchanged**, with thirteen inherited receipt links.
+Six useful receipt rows reuse their original native evidence. Scenario wall time
+was 2588–4739 ms (median 3159.5 ms); this is descriptive, not comparative overhead.
+Provider calls and cost were zero. Synthetic unattended trials do not claim personal
+acceptance; the shipped policy still requires fresh approval. C14 remains open for
+latest-revision review/checks and merge. See [verification.md](verification.md) for
+the retained validation and limits.
 
 B0–B8, C1–C13, offline R5, accepted local R6 and the initial GUI remain closed.
 Preserve the earlier unexplained C9 stall. Credentials, paid/live evaluation,

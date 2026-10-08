@@ -168,7 +168,7 @@ endOfMibView and a supported outside-subtree successor without walks, UDP,
 credentials or returned-OID follow-up. **16,687 portable/43 native tests and
 91 accepted-bundle replays passed**. [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67)
 merged at `7cc6645` after independent review and all five final CI jobs passed.
-C13 remains closed; post-merge checks are pending separately.
+C13 remains closed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715717067) also passed.
 
 The current C14 [SSH algorithm candidate](docs/ssh-algorithms-tools.md) adds one
 bounded identification/KEXINIT exchange through the accepted Ruby-runtime pattern,
@@ -176,9 +176,11 @@ for **39 profiles using the same 15 programs**. Its 184-byte template has one fr
 16-byte cookie; a write-half-close prevents another client request. Typed
 directional algorithm advertisements remain unverified data, with no completed
 key exchange, login or session. The client captures at most 4355 bytes and leaves
-later packets unread. Full portable/native validation, evidence replay and review
-are pending; the target is four ordinary and two robustness completions plus
-eight inconclusive negatives. No GUI or general NSE execution is added.
+later packets unread. **17,728 portable/44 native tests and 97 accepted-bundle
+replays passed**, with four ordinary and two robustness completions, zero
+unnecessary refusals and eight inconclusive negatives. [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68)
+is awaiting review and merge; C14 is not yet accepted. No GUI or general NSE
+execution is added.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

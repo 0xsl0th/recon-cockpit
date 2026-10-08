@@ -5,7 +5,7 @@
 This development checkpoint never resumes an assessment or restores approvals.
 
 **Current work: priority 3 secure-tool coverage, C14 bounded SSH algorithm advertisements.**
-The authorized candidate is on `feature/ssh-algorithms-coverage` in
+The review candidate is on `feature/ssh-algorithms-coverage` in
 `/tmp/recon-ssh-algorithms-coverage`, based on accepted main `7cc6645`.
 See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [C14 runbook](ssh-algorithms-tools.md). One fixed identification/KEXINIT template
@@ -27,15 +27,19 @@ Names retain case/preference order and have finite 32-name/1024-byte list and
 comments remain raw evidence only. No full key exchange, credentials, login,
 session, general NSE loading or second client request is allowed.
 
-**C14 validation is pending.** Require 4/4 ordinary and 2/2 separate robustness
-completions with zero unnecessary refusals; eight negative cases must remain
-inconclusive after actual request progress. The planned 20 native tests include
-fourteen cases and six approval/isolation/cleanup gates. All 28 destination
-witnesses and 140 boundary fields must pass, along with closed owners, independent
-source/evidence audit and unchanged accepted-bundle replay. Record descriptive
-latency and zero provider calls/cost without claiming comparative overhead.
-Full portable/native results, replay and latest-revision review/checks remain
-required before acceptance. See [verification.md](verification.md).
+**C14 is implemented and awaiting review in [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68).**
+Implementation `80b2ffe` passed **17,728 portable and 44 native tests**: twenty
+new-profile tests and 24 accepted SMB2/SSH regressions. All 4/4 ordinary and 2/2
+separate robustness tasks completed with zero unnecessary refusals; eight negative
+cases remained inconclusive after validated request progress. All 28 destination
+witnesses and 140 boundary fields passed, with closed owners. Independent audit
+reconciled all fourteen reports and 593 frozen source files; **97 accepted bundles**
+replayed unchanged with thirteen inherited receipt links. Six useful receipt rows
+reuse original native evidence without another tool execution. Native scenario
+wall time was 2588–4739 ms, median 3159.5 ms; these are descriptive measurements,
+not comparative overhead. Provider calls and cost were zero. Latest-revision
+review/checks and an authorized merge remain required before closing C14. See
+[verification.md](verification.md) and `.secure-agent/ssh-algorithms-20261008/verification.json`.
 
 The owned half-close and finite grammar restrict compatibility: preliminary
 server lines, SSH-1.99, nonempty language lists and larger valid advertisements
@@ -516,8 +520,8 @@ programs; it adds no GUI workflow or real-network attachment.
 
 **Current continuation: C14 bounded SSH algorithm advertisements.** Follow the current
 status at the top of this checkpoint and the [C14 runbook](ssh-algorithms-tools.md).
-PR #67 is merged as `7cc6645`; C13 stays closed. Complete C14 validation and leave
-the candidate ready for review. The next proposed gap is bounded TLS peer-certificate
+PR #67 is merged as `7cc6645`; C13 stays closed. Review the latest PR #68 revision
+and checks, preserving completed local validation. The next proposed gap is bounded TLS peer-certificate
 metadata; reassess its finite runtime and usefulness before selecting another batch.
 No credential/workflow expansion.
 
@@ -1715,13 +1719,13 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Complete C14 SSH algorithm validation and prepare its PR on the latest revision,
-   using this checkpoint and the [runbook](ssh-algorithms-tools.md). PR #67 and accepted
+1. Review the latest C14 [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68)
+   revision and checks, using this checkpoint and the [runbook](ssh-algorithms-tools.md). PR #67 and accepted
    milestones remain closed. Do not merge the candidate without review, required
    hosted checks and the corresponding instruction.
-2. Require four useful ordinary outcomes, two useful robustness outcomes, eight
+2. Preserve the four useful ordinary outcomes, two useful robustness outcomes, eight
    inconclusive negatives, actual request/write-EOF progress, all authority and cleanup checks,
-   and unchanged replay. Count unnecessary refusals, descriptive latency and zero
+   and unchanged replay. Retain unnecessary refusals, descriptive latency and zero
    provider cost as well as blocked actions.
 3. Preserve the desktop approval boundary and personal acceptance. C14 adds no GUI,
    credentials, external target, completed key exchange, authentication or session.

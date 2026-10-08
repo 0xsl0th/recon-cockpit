@@ -1,5 +1,78 @@
 # Verification record
 
+## C14 bounded SSH transport algorithm advertisements — 8 October 2026
+
+The [C14 runbook](ssh-algorithms-tools.md) defines `ssh_transport_algorithms_v1`:
+one fixed identification/KEXINIT template with a fresh opaque cookie, followed by
+write-half-close and one bounded response. Implementation
+`80b2ffe83bcfb011bde703120d942da552871a46` contains **39 secure profiles using the
+same 15 external programs**. It reuses the sealed Ruby runtime. C13 is accepted
+and closed; [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68) leaves C14
+open for latest-revision review/checks and an authorized merge.
+
+| Verification | Result |
+| --- | --- |
+| Full portable suite, integration excluded | **17,728 passed**, 1,120 deselected; zero failures/errors/skips; 356.616 JUnit seconds. |
+| Actual owned native execution | **44 passed**: twenty C14 tests in 62.545 seconds and 24 accepted SMB2/SSH regressions in 81.635 seconds; no failures/errors/skips. |
+| Ordinary usefulness | **4/4**: baseline, directional differences, legacy names and guessed-packet flag; zero unnecessary refusals. |
+| Separate robustness usefulness | **2/2**: fragmented response and inert hostile identification comment. |
+| Negative outcomes | **Eight inconclusive**, each after one validated template and client write EOF: malformed banner, wrong message, malformed list, bad padding, nonzero reserved field, truncation, stall and oversized packet declaration. |
+| Enforcement and closure | **28/28** forbidden-destination witnesses and **140/140** boundary fields; one connection/request and closed owner for every scenario. |
+| Evidence | Fourteen native reports independently rebuilt unchanged; **97 accepted bundles** replayed unchanged through shared inspection and isolated CLI, with thirteen inherited receipt links. |
+| Frozen source | **593 files**, unchanged from before native/full portable validation through audit and replay. |
+| Calls/cost | Zero actual provider calls and USD0; credentials and live calls remain disabled. |
+
+The six new native authority gates cover one-use grants, missing consumed proof,
+cancellation after actual Ruby execution, private-input/descriptor exclusion and
+rejection of broadened UDP permission and task ceilings. Native trials use
+synthetic unattended policies or test approval transports, not personal acceptance.
+The shipped policy requires exact-action approval. All six useful receipt rows
+reuse their original native evidence; no second tool execution or fresh
+clean-source native run is claimed.
+
+Descriptive secure CLI wall times across fourteen scenarios were **2588–4739 ms**,
+median **3159.5 ms**, including setup and reporting. They are not comparative
+overhead. The two-second inner deadline, five-second native tool limit and
+60-second session limit remain distinct from these measurements. The independent
+audit bound raw channels, parser results, artifacts, action/policy/runtime hashes,
+owner progress/closure, audit decisions and JUnit identities. Five complete native
+captures returned exit0 but failed parsing; three bounded native failures retained
+constant stderr. All eight stayed inconclusive and no artifact was marked truncated.
+
+Two independent implementation reviews found no blockers. Snapshot tests preserve
+all **251 accepted case contracts, 38 adapters and 29 runtime definitions**; all
+46 existing nondispatch parser function ASTs remain unchanged. Focused development
+checks caught Markdown field-order drift after sorted-JSON persistence; sorting
+only algorithm field names fixed replay while preserving each preference list's
+order. Test expectation/selection corrections preceded the frozen source and full
+validation; no native failure required a retry. The earlier C9 stall remains
+unexplained.
+
+The nine-field summary is untrusted advertisement metadata, not proof of
+implemented algorithms, negotiated compatibility, cryptographic strength, verified
+identity or a vulnerability. Completed key exchange, authenticated session and
+verified service identity remain false. Evidence hashes the 184-byte zero-cookie
+template, not the actual fresh-cookie request; that cookie is not retained. Fixed
+padding is disclosed as a departure from SSH's randomized-padding recommendation.
+The finite grammar, early half-close and 4355-byte first-response cap restrict
+compatibility; only the owned fixture is demonstrated. Comments, server cookie and
+padding stay raw only. Later packets are unread even with the guessed-packet flag;
+retained evidence does not prove their absence. No general NSE loading, login,
+credentials, session or response-directed follow-up is added.
+
+Private evidence remains under `.secure-agent/ssh-algorithms-20261008/`, outside Git.
+Source-manifest SHA256:
+`e93ee07e962acb822dc9e41ab74c7f79d5ac21f7597e0f8163166d2666fe81ab`;
+`native-evidence-audit.json`:
+`79abc6cda009ef9eafdc580c5a0974fe868e049bce07f7fa75fc1797705c6027`;
+`verification.json`:
+`d8ca6ba0efafffa42fee1eaeefe32f735eaf5ac8aecfd127508f42b7af827ada`.
+
+After C14 review, the next recommendation is bounded TLS peer-certificate metadata,
+keeping fixture CA/name verification, finite offline parsing and no OCSP/AIA
+fetches. No new batch is selected here. Credentials, paid/live evaluation, external
+engagements, deeper workflows and comparative benchmarking remain deferred.
+
 ## PR #67 review and merge — 8 October 2026
 
 **C13 is accepted and closed in [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67).**

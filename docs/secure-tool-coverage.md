@@ -145,7 +145,7 @@ integration from a candidate secure profile.
 | C11 | DNS zone-transfer behavior; existing secure dig runtime, no interactive AXFR profile | One fixed synthetic TCP AXFR; accept four messages/16 records with matching SOAs; 3/3 ordinary complete/multiframe/refused tasks, 2/2 robustness, nine inconclusive cases, actual query progress, 28 destination/140 boundary checks, replay and G1–G6. Five-second/8192-byte native limits; no credentials, recursion or returned-host follow-up. | Implemented at `25b9395c`; 15,464 portable/61 native tests, five clean-commit trials and 78 accepted-bundle replays passed; [x] accepted in PR #65 at `82dd85a`; all five final and post-merge jobs passed. See [C11 runbook](dns-axfr-tools.md). |
 | C12 | HTTP OPTIONS metadata; existing secure curl runtime, no interactive OPTIONS profile | One fixed resource, complete bounded HTTP/1.1 status/Allow/auth-scheme metadata; require 6/6 ordinary and 2/2 robustness tasks, six inconclusive negative cases, 28 destination/140 boundary checks, five authority gates, unchanged evidence replay and G1–G6. No advertised-method execution, redirects, credentials or GUI work. | Implemented at `c875820`; 16,138 portable/40 native tests and 83 accepted-bundle replays passed. [x] Accepted in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) at `7faf974`; all five final CI jobs passed. See [C12 runbook](http-options-tools.md). |
 | C13 | SNMP interface successor metadata; accepted GET covers three system scalars, no interactive GETNEXT integration | One fixed ifDescr column seed through snmpgetnext; 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, authority/cleanup gates, unchanged replay and G1–G6. No walk, GETBULK, SET, UDP, real community or returned-OID follow-up. | [x] Accepted in [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) at `7cc6645`; 16,687 portable/43 native tests, 91 accepted replays and all five final CI jobs passed. See [C13 runbook](snmp-next-tools.md). |
-| C14 — current | SSH transport algorithm advertisements; interactive Nmap `ssh2-enum-algos` suggestion exists, secure host-key collection remains separate | One 184-byte request template with a fresh 16-byte cookie, write EOF and one bounded identification/KEXINIT reply; require 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, six authority/cleanup gates, replay and G1–G6. Finite ordered directional lists; no completed key exchange, login, session or general NSE. | [ ] Implementing with the accepted sealed Ruby-runtime pattern; full portable/native validation and review pending. See [C14 runbook](ssh-algorithms-tools.md). |
+| C14 — current | SSH transport algorithm advertisements; interactive Nmap `ssh2-enum-algos` suggestion exists, secure host-key collection remains separate | One 184-byte request template with a fresh 16-byte cookie, write EOF and one bounded identification/KEXINIT reply; require 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, six authority/cleanup gates, replay and G1–G6. Finite ordered directional lists; no completed key exchange, login, session or general NSE. | [ ] Implemented at `80b2ffe`; 17,728 portable/44 native tests and 97 accepted-bundle replays passed. [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68) awaits review and merge. See [C14 runbook](ssh-algorithms-tools.md). |
 | Next gap to reassess | TLS peer-certificate metadata; accepted OpenSSL profiles verify fixed fixture handshakes but do not expose a bounded leaf-certificate inventory | One fixed CA/name-verified handshake plus finite offline parsing of fingerprint, validity and SAN metadata; ordinary/adversarial owned execution, strict certificate/list/output limits, independent evidence and G1–G6. No cipher sweep, trust bypass, credential, OCSP/AIA fetch or application request. | Recommendation only; select exact capture/parser/runtime and scenarios before implementing. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -327,7 +327,7 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 `.secure-agent/pr62-merge-review.json`.
 
 **Current work: priority 3 secure-tool coverage, C14 bounded SSH algorithm advertisements.**
-The authorized candidate is on `feature/ssh-algorithms-coverage` in
+The review candidate is on `feature/ssh-algorithms-coverage` in
 `/tmp/recon-ssh-algorithms-coverage`, based on accepted main `7cc6645`.
 See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [C14 runbook](ssh-algorithms-tools.md). One fixed identification/KEXINIT template
@@ -349,15 +349,19 @@ Names retain case/preference order and have finite 32-name/1024-byte list and
 comments remain raw evidence only. No full key exchange, credentials, login,
 session, general NSE loading or second client request is allowed.
 
-**C14 validation is pending.** Require 4/4 ordinary and 2/2 separate robustness
-completions with zero unnecessary refusals; eight negative cases must remain
-inconclusive after actual request progress. The planned 20 native tests include
-fourteen cases and six approval/isolation/cleanup gates. All 28 destination
-witnesses and 140 boundary fields must pass, along with closed owners, independent
-source/evidence audit and unchanged accepted-bundle replay. Record descriptive
-latency and zero provider calls/cost without claiming comparative overhead.
-Full portable/native results, replay and latest-revision review/checks remain
-required before acceptance. See [verification.md](verification.md).
+**C14 is implemented and awaiting review in [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68).**
+Implementation `80b2ffe` passed **17,728 portable and 44 native tests**: twenty
+new-profile tests and 24 accepted SMB2/SSH regressions. All 4/4 ordinary and 2/2
+separate robustness tasks completed with zero unnecessary refusals; eight negative
+cases remained inconclusive after validated request progress. All 28 destination
+witnesses and 140 boundary fields passed, with closed owners. Independent audit
+reconciled all fourteen reports and 593 frozen source files; **97 accepted bundles**
+replayed unchanged with thirteen inherited receipt links. Six useful receipt rows
+reuse original native evidence without another tool execution. Native scenario
+wall time was 2588–4739 ms, median 3159.5 ms; these are descriptive measurements,
+not comparative overhead. Provider calls and cost were zero. Latest-revision
+review/checks and an authorized merge remain required before closing C14. See
+[verification.md](verification.md) and `.secure-agent/ssh-algorithms-20261008/verification.json`.
 
 The owned half-close and finite grammar restrict compatibility: preliminary
 server lines, SSH-1.99, nonempty language lists and larger valid advertisements
