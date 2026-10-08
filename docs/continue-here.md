@@ -4,9 +4,10 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: [PR #75](https://github.com/0xsl0th/recon-cockpit/pull/75) is
-merged; C18/T01 stays accepted. T02 native feasibility produced useful results
-but failed the one-ClientHello boundary. T02–T06 remain open.**
+**Current status: [PR #76](https://github.com/0xsl0th/recon-cockpit/pull/76) is
+merged; C18/T01 stays accepted. The new T02 mediator preserves useful version
+observations and blocks the tested retry before it reaches the peer. Product
+authority/evidence integration is next; T02–T06 remain open.**
 
 PR #75 merged reviewed `ef412f79` as `cb17f0cb` after fresh independent review
 found no blockers and all five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37836316541)
@@ -16,13 +17,26 @@ also passed. Reviewed and merged trees match
 `.secure-agent/pr75-merge-review.json`; the earlier source-feasibility handoff
 remains unchanged historical evidence.
 
-[PR #76](https://github.com/0xsl0th/recon-cockpit/pull/76) contains the new
-[native diagnostic](tls-posture-native.md), branch
-`feature/tls-posture-native-feasibility` in `/tmp/recon-tls-posture-native`. It
-remains unmerged and needs review and its final checks. It is outside the secure catalog.
-Frozen execution source: `958b5d6`. Private corpus, verification and handoff:
-`.secure-agent/tls-posture-native-20261008/`. Development failures are retained.
-No assessment, approval or permit is restored by these files.
+[PR #76](https://github.com/0xsl0th/recon-cockpit/pull/76) merged reviewed
+`274acec` as `ca793cd` on 8 October at 20:55:41 UTC. Review found and fixed one
+contradictory protocol/cipher-summary acceptance issue before merge; 16 mutation
+cases bring the focused review set to 284 passes. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37842215337)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37843082947)
+passed. Reviewed and merged trees match
+`667e6de628baf6263120ead1f6feaa35bcb9cb4a`; retain
+`.secure-agent/pr76-merge-review.json`. Its [native diagnostic](tls-posture-native.md)
+and `.secure-agent/tls-posture-native-20261008/` retain the original **0/1 retry
+prevention failure** unchanged; acceptance of that diagnostic did not close T02.
+
+The new [mediated diagnostic](tls-posture-mediation.md) is on
+`feature/tls-posture-mediator` in `/tmp/recon-tls-posture-mediator`, outside the
+secure catalog and awaiting review. Frozen execution source `4d92d1d` produced
+8/8 ordinary observations, 4/4 explicit received rejections and **1/1 HRR retry
+prevented before peer delivery**. All thirteen owners/clients closed and the new
+Unix-socket boundary witnesses passed. Private captures are under
+`.secure-agent/tls-posture-mediator-20261008/`. These files restore no assessment,
+approval or permit. Accepted coverage remains **43 profiles / 16 programs**.
 
 The owner chose to wait with the competition proposal until **November 2026**.
 Keep PR #31, its proposal/PDF and email draft unchanged this turn. Refresh them
@@ -107,21 +121,26 @@ Private verification: `.secure-agent/dns-mx-20261008/verification.json`, SHA-256
 `59e3e89ced9a0887095bb62fe238a2c34fa45e4f724a2fefe2cf7b4c73505093`. Development test corrections and the exploratory smoke run are
 retained in the private development review; no historical hash was regenerated.
 
-**T02 remains open: the [native diagnostic](tls-posture-native.md) confirms
-useful version observations and a request-boundary failure.**
-On frozen execution source `958b5d6`, the disconnected fixtures produced 8/8
-ordinary observations across TLS 1.0/1.1/1.2/1.3 and 4/4 explicit received
-rejections. Six actual handshakes completed with certificate/name verification.
-The thirteenth trial elicited a second ClientHello after HelloRetryRequest:
-**observed, not prevented (0/1 prevention)**. Keep this failed gate visible.
-The development diagnostic reuses confinement mechanics but does not exercise
-production approvals, permits, admission or the two evidence inspectors. No T02
-secure profile or G1–G6 acceptance follows; coverage remains 43 profiles/16 programs.
-Next review and implement a finite transport mediator that blocks a second
-ClientHello before forwarding it to the owned peer, preserving the four-version task and existing
-caps. Prove both ordinary completion and retry blocking before product integration;
-if mediation cannot fit those bounds, review a concrete contract alternative
-without silently permitting retries. Existing TLS profiles stay unchanged.
+**T02 remains open: the [mediated diagnostic](tls-posture-mediation.md) now
+preserves usefulness and blocks the tested plaintext retry before peer delivery.**
+Frozen source `4d92d1d` produced 8/8 ordinary observations across TLS
+1.0/1.1/1.2/1.3 and 4/4 explicit received rejections, with zero unnecessary
+refusals in that finite corpus. The HRR case achieved **1/1 prevention**: the
+client emitted two ClientHellos and 552 bytes; the mediator forwarded only 270
+bytes (the first ClientHello and compatibility CCS), withholding the complete
+282-byte second record. The independent peer observed one ClientHello.
+All thirteen trials closed, passed the new Unix-socket boundary witnesses, and
+made zero provider calls with zero cost. The prior PR #76 **0/1 prevention
+failure** remains unchanged historical evidence; the new trial does not relabel it.
+
+The gate validates plaintext framing and bounds encrypted record shapes; it does
+not decrypt traffic or prove general encrypted application-data prevention.
+Next review the mediator and integrate four separately versioned profiles through
+policy, fresh per-action approval, consumed permits, admission and both evidence
+inspectors. Complete the full hostile-usefulness, ambiguity/pressure,
+enforcement, cancellation and regression corpus before G1–G6 acceptance.
+Diagnostic receipts do not close those product gates. Accepted coverage remains
+**43 profiles / 16 programs**; existing TLS profiles and limits stay unchanged.
 Continue through required T03–T06 using the
 [finite checklist](professional-v1-coverage.md); do not remove difficult outcomes
 or substitute program counts for useful coverage. Existing closed milestones stay
@@ -676,15 +695,17 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: enforce the bounded OpenSSL request contract for T02.**
+**Current continuation: integrate the bounded T02 probes into product authority and evidence.**
 Follow the [finite task checklist](professional-v1-coverage.md), the
 [consolidated plan](product-roadmap.md) and current status at the top.
-C18 and earlier completed milestones stay closed. The unmerged
-[native diagnostic](tls-posture-native.md) produced 8/8 ordinary observations and
-4/4 explicit received rejections, but HRR prevention failed, 0/1. Review that
-finding, then implement a finite transport mediator and recheck usefulness and
-blocking before G1–G6 product integration. Diagnostic JSON is not production
-assessment evidence; no deeper workflow, credential or live-model work starts here.
+C18 and earlier completed milestones stay closed. The new
+[mediated diagnostic](tls-posture-mediation.md) retains 8/8 ordinary observations
+and 4/4 explicit received rejections while preventing the tested HRR retry, 1/1.
+Review this boundary, then add four separately versioned profiles with fresh
+per-action approval, consumed permits, admission and both evidence inspectors.
+Complete the full negative/enforcement/regression corpus before G1–G6 acceptance.
+Diagnostic JSON is not product assessment evidence; no deeper workflow,
+credential or live-model work starts here.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1875,18 +1896,19 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #75 merge is complete. PRs #6–#30 and #32–#75
+- The operator-authorized PR #76 merge is complete. PRs #6–#30 and #32–#76
   stay closed; proposal PR #31 remains separate until its November refresh. Current
-  authorization covers the finite coverage continuation, now T02 native
-  feasibility and its documented enforcement gap.
+  authorization covers the finite coverage continuation, now review of T02
+  mediation and its remaining product authority/evidence integration.
   Later merges, submission, messages, paid calls and external targets retain
   their corresponding gates.
 
 ## Next continuation
 
-1. PR #75 is accepted on main `cb17f0cb` from reviewed `ef412f79`; fresh
+1. PR #76 is accepted on main `ca793cd` from reviewed `274acec`; fresh
    independent review and all five final and post-merge jobs passed as recorded
-   above. Retain `.secure-agent/pr75-merge-review.json`. PR #74's C18/T01 G1–G6
+   above. Retain `.secure-agent/pr76-merge-review.json` and prior merge receipts.
+   PR #74's C18/T01 G1–G6
    stay closed; retain `.secure-agent/pr74-merge-review.json` and do not repeat
    either merge.
 2. Preserve C18's immutable `.secure-agent/dns-mx-20261008/verification.json`,
@@ -1894,17 +1916,18 @@ Planning uses synthetic responses.
    documentation and the terminal-test `O_NOCTTY` correction differ from the
    native-tested revision; accepted production bytes remain identical.
    Accepted coverage is **43 profiles/16 programs**.
-3. Review the unmerged [T02 native diagnostic](tls-posture-native.md) in
-   `/tmp/recon-tls-posture-native`, branch `feature/tls-posture-native-feasibility`.
-   Frozen execution source `958b5d6` produced 8/8 ordinary and 4/4 absence
-   observations across TLS 1.0/1.1/1.2/1.3. The HRR trial observed a second
-   ClientHello, **0/1 prevention**. Preserve its failed gate and private corpus in
-   `.secure-agent/tls-posture-native-20261008/`; diagnostic JSON does not exercise
-   production approvals, permits, admission or the two evidence inspectors.
-   Next review and implement a finite transport mediator that blocks the extra
-   message before forwarding it to the owned peer, and recheck useful completion
-   under the same limits. No implicit retry allowance or T02 acceptance follows;
-   keep the full [six-task contract](professional-v1-coverage.md) and G1–G6 gates.
+3. Review the new [T02 mediated diagnostic](tls-posture-mediation.md) in
+   `/tmp/recon-tls-posture-mediator`, branch `feature/tls-posture-mediator`.
+   Frozen source `4d92d1d` produced 8/8 ordinary and 4/4 absence observations
+   across TLS 1.0/1.1/1.2/1.3, plus **1/1 HRR retry blocked before peer delivery**.
+   Preserve its private corpus in `.secure-agent/tls-posture-mediator-20261008/`
+   and the separate original failure in `.secure-agent/tls-posture-native-20261008/`.
+   Then implement four separately versioned profiles through policy, fresh
+   per-action approval, consumed permits, admission and both evidence inspectors;
+   complete hostile-usefulness, ambiguity/pressure, enforcement, cancellation
+   and regression cases. Diagnostic receipts close none of those product gates.
+   Keep the [six-task contract](professional-v1-coverage.md), all four versions
+   and existing limits; T02 stays open until its full G1–G6 review and merge.
 4. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
    Preserve the private proposal/PDF, email draft, GUI mocks and native receipts.
    Refresh PR #31 in November 2026 before the 15 November deadline; submission

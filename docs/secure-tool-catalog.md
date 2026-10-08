@@ -379,16 +379,19 @@ The [finite coverage contract](professional-v1-coverage.md) maps all accepted
 profiles to six required operator outcomes: T01 is accepted; T02–T06 remain open.
 [T02 source feasibility](tls-posture-feasibility.md) is complete: stock sslscan
 cannot preserve the received rejection evidence required by this task. The
-unmerged [OpenSSL native diagnostic](tls-posture-native.md), frozen execution
-source `958b5d6`, produced 8/8 ordinary observations and 4/4 explicit received
-rejections across TLS 1.0/1.1/1.2/1.3. The HRR challenge elicited a second
-ClientHello: **observed, not prevented (0/1 prevention)**. A finite transport
-mediator must block that message before forwarding it to the owned peer, while
-preserving ordinary completion and the existing limits. There is no implicit
-retry allowance.
+[OpenSSL native diagnostic](tls-posture-native.md), accepted in PR #76,
+preserves its original **0/1 retry-prevention failure**. The new
+[mediated diagnostic](tls-posture-mediation.md), frozen source `4d92d1d`, produced
+8/8 ordinary observations and 4/4 explicit received rejections across TLS
+1.0/1.1/1.2/1.3, and **1/1 HRR retry prevented before peer delivery**. The client
+emitted two ClientHellos; the independent peer received one. This validates the
+tested plaintext request boundary and finite encrypted record shapes; it does
+not decrypt traffic or prove general encrypted application-data prevention.
 
 This development diagnostic does not exercise production approval, permits,
-admission or the two evidence inspectors. All four versions and G1–G6 remain
-required before T02 acceptance. No T02 secure profile, installation or
+admission or the two evidence inspectors. Next review the mediator and add four
+separately versioned profiles through those gates, completing the full negative,
+enforcement and regression corpus. All four versions and G1–G6 remain required
+before T02 acceptance. No T02 secure profile, installation or
 program-count increment is claimed. Preserve the existing recipes and authority
 gates; accepted coverage remains **43 profiles / 16 programs**.

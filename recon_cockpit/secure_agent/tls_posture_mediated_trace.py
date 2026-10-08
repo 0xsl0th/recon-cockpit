@@ -16,7 +16,9 @@ def _raw_rows(rows, total, *, maximum=8192, records=8):
         raise ValueError("invalid_mediator_records")
     result = []
     for row in rows:
-        if type(row) is not dict or type(row.get("raw_hex")) is not str or len(row["raw_hex"]) > maximum * 2:
+        if (type(row) is not dict or type(row.get("type")) is not int
+                or type(row.get("payload_length")) is not int
+                or type(row.get("raw_hex")) is not str or len(row["raw_hex"]) > maximum * 2):
             raise ValueError("invalid_mediator_record")
         raw = bytes.fromhex(row["raw_hex"])
         if (len(raw) < 6 or len(raw) - 5 != int.from_bytes(raw[3:5], "big")
@@ -34,8 +36,29 @@ def _description(raw):
             "raw_sha256": hashlib.sha256(raw).hexdigest()}
 
 
+def _hashed_rows(rows):
+    if type(rows) is not list or len(rows) > 32:
+        raise ValueError("invalid_mediator_server_records")
+    total = 0
+    for row in rows:
+        if (type(row) is not dict or set(row) != {"type", "version", "payload_length", "raw_sha256"}
+                or type(row["type"]) is not int or row["type"] not in {20, 21, 22, 23}
+                or type(row["version"]) is not str or row["version"] not in {"0301", "0302", "0303"}
+                or type(row["payload_length"]) is not int or not 1 <= row["payload_length"] <= 18432
+                or type(row["raw_sha256"]) is not str or len(row["raw_sha256"]) != 64
+                or any(c not in "0123456789abcdef" for c in row["raw_sha256"])):
+            raise ValueError("invalid_mediator_server_record")
+        total += row["payload_length"] + 5
+    if total > 32768:
+        raise ValueError("mediator_server_byte_limit")
+
+
 def _check_server(mediation, peer, ordinary):
-    rows = trace._owner_records(peer, "sent_records")
+    _hashed_rows(mediation.get("server_ingress_records"))
+    _hashed_rows(mediation.get("server_forwarded_records"))
+    if mediation.get("server_pending_record") is not None:
+        _hashed_rows([mediation["server_pending_record"]])
+    rows = _raw_rows(peer.get("sent_records"), peer.get("sent_bytes"), maximum=32768, records=32)
     expected = [_description(raw) for raw in rows]
     if (mediation.get("server_ingress_records") != expected
             or mediation.get("server_ingress_record_count") != len(rows)
@@ -86,6 +109,17 @@ def analyze_trial(trial):
                 or trial.get("version") not in trace.VERSIONS
                 or peer.get("expected_version") != trial["version"] or peer.get("case") != trial.get("case")):
             raise ValueError("invalid_mediated_owner")
+        for values, fields in (
+                (owner, ("connection_count", "request_count")),
+                (peer, ("client_hellos", "application_bytes", "received_bytes", "sent_bytes")),
+                (mediation, ("client_ingress_bytes", "client_forwarded_bytes", "client_transmitted_bytes",
+                    "server_ingress_bytes", "server_ingress_record_count", "server_forwarded_bytes",
+                    "server_transmitted_bytes", "frontend_connections_admitted", "peer_streams_admitted",
+                    "extra_frontend_connections_refused", "forwarded_client_hellos"))):
+            if any(type(values.get(name)) is not int or values[name] < 0 for name in fields):
+                raise ValueError("invalid_mediated_counter")
+        if mediation.get("blocked_record_index") is not None and type(mediation["blocked_record_index"]) is not int:
+            raise ValueError("invalid_blocked_record_index")
         if (trial["confinement"].get("unix_socket_and_socketpair_denied") is not True
                 or any(trial["confinement"].get(name) is not True for name in trace.CONFINEMENT_WITNESSES)
                 or trial.get("cleanup", {}).get("closed") is not True
@@ -99,7 +133,7 @@ def analyze_trial(trial):
             raise ValueError("unexpected_mediated_connection_progress")
         ingress = _raw_rows(mediation.get("client_ingress_records"), mediation.get("client_ingress_bytes"))
         forwarded = _raw_rows(mediation.get("client_forwarded_records"), mediation.get("client_forwarded_bytes"))
-        received = trace._owner_records(peer, "received_records")
+        received = _raw_rows(peer.get("received_records"), peer.get("received_bytes"))
         if forwarded != received or mediation.get("client_transmitted_bytes") != sum(map(len, forwarded)):
             raise ValueError("mediator_peer_client_mismatch")
         gate = ClientGate(trial["version"], fixture.validate_client_hello)
@@ -173,8 +207,19 @@ def analyze_trial(trial):
         alerts = [m for m in messages if m["kind"] == "Alert"]
         tail = [b"\x15\x03\x03\x00\x02"] if alerts else []
         if (headers != [r[:5] for r in ingress] + tail
-                or len(alerts) > 1 or any(m["direction"] != "write" or m["data"] != b"\x02\x32" for m in alerts)):
+                or len(alerts) > 1 or any(m["direction"] != "write" or m["data"] != b"\x02\x32"
+                                        or m["name"] != "fatal decode_error" for m in alerts)):
             raise ValueError("unexpected_retry_trace_tail")
+        expected_messages = [
+            ("write", "RecordHeader", None), ("write", "Handshake", "ClientHello"),
+            ("read", "RecordHeader", None), ("read", "Handshake", "ServerHello"),
+            ("write", "RecordHeader", None), ("write", "ChangeCipherSpec", None),
+            ("write", "RecordHeader", None), ("write", "Handshake", "ClientHello"),
+        ]
+        if alerts:
+            expected_messages += [("write", "RecordHeader", None), ("write", "Alert", "fatal decode_error")]
+        if [(m["direction"], m["kind"], m["name"]) for m in messages] != expected_messages:
+            raise ValueError("unexpected_retry_trace_sequence")
         result["outcome"] = "extra_client_hello_prevented"
         result["extra_client_hello_prevented"] = True
         result["tls_observation"] = "interrupted_by_mediator"
