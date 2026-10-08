@@ -241,6 +241,9 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_srv_no_data": "dns_srv_no_data",
                "dns_srv_name_not_found": "dns_srv_name_not_found",
                "dns_srv_service_unavailable": "dns_srv_service_unavailable",
+               "dns_nsid_observed": "dns_nsid_observed",
+               "dns_nsid_empty": "dns_nsid_empty",
+               "dns_nsid_absent": "dns_nsid_absent",
                "rdp_protocol_selected": "rdp_protocol_selected",
                "rdp_legacy_confirmation": "rdp_legacy_confirmation",
                "rdp_negotiation_failure": "rdp_negotiation_failure",
@@ -455,6 +458,17 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "One bounded additional TXT record may be counted and discarded from normalized metadata. Its hostile text stays in raw evidence and cannot select another query, tool or destination.",
                 "Counters record one validated question on one connection. Bounded native bytes are independently reparsed without network; read-only inspection restores no approval or authority. No real-model or comparative overhead claim is made.",
             ]
+        if manifest["fixture_case"].startswith("dig-nsid-"):
+            report["limitations"] = [
+                "This one-action DNS NSID trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
+                "One fixed nonrecursive IN A question requests an empty NSID option in EDNS version 0 over TCP. No UDP, recursion, retries, search domains, zone transfer, additional question or follow-up is authorized.",
+                "NSID is an opaque untrusted server report, not verified service identity, authenticated metadata, a unique identifier, a product/version fingerprint or a vulnerability finding. Its bytes never select scope, a destination or a tool.",
+                "A nonempty NSID, an explicitly empty NSID option, and an absent NSID option are distinct completed observations. A reply with no EDNS is recorded separately from EDNS without NSID; neither proves lack of server support or independently verified absence.",
+                "Only complete NOERROR replies with no answer or authority records and at most one EDNS NSID option of zero to 64 bytes are supported. Refusal, BADVERS, duplicate or unexpected options, malformed output, truncation and output pressure remain inconclusive.",
+                "The native client renders spaced hexadecimal bytes and a lossy printable annotation. The parser verifies that annotation against the hexadecimal bytes but releases only canonical literal hex, never decoded text or instructions. The text capture is not a raw DNS packet or external-authenticity proof.",
+                "Hostile NSID bytes remain inert untrusted metadata and raw evidence; this deterministic trial does not demonstrate model injection resistance or measure real-model susceptibility.",
+                "Owner counters record the validated fixed question before the fixture response, including negative cases. One request does not itself establish useful NSID metadata. Bounded raw channels are independently reparsed without network; inspection restores no approval, budget or execution authority.",
+            ]
         if manifest["fixture_case"].startswith("whatweb-"):
             report["limitations"] = [
                 "This one-action passive fingerprint trial uses a disconnected synthetic owned HTTP fixture, not a professional engagement or live-model evaluation.",
@@ -617,6 +631,19 @@ def _markdown(report):
             else:
                 lines.extend(["", "The reported protocol selection does not establish a working or verified security channel."])
             lines.extend(["", "Capture ends at the first complete confirmation frame; trailing peer data is not retained."])
+        elif type(details) is dict and details.get("kind") == "dns_nsid_metadata":
+            lines.extend(["", "## DNS NSID metadata", "",
+                "Untrusted opaque server metadata only. Service identity is not verified and these bytes authorize no follow-up.",
+                "", "| Field | Reported metadata |", "| --- | --- |"])
+            for field in ("query_name", "query_type", "transport", "status", "edns_present", "nsid_present",
+                          "nsid_bytes", "nsid_hex", "service_identity_verified"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            if not details["nsid_present"]:
+                lines.extend(["", "This response contains no NSID option. It does not establish lack of NSID support."])
+            elif details["nsid_bytes"] == 0:
+                lines.extend(["", "The NSID option is explicitly present with zero bytes."])
+            else:
+                lines.extend(["", "NSID bytes are shown only as literal hexadecimal; no decoded identity or instruction is released."])
         elif type(details) is dict and details.get("kind") == "dns_service_metadata":
             lines.extend(["", "## DNS service advertisements", "",
                 "Untrusted DNS metadata only; advertised endpoints are not verified or authorized for follow-up.",

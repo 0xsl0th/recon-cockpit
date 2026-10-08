@@ -183,6 +183,34 @@ def spec(case):
             "mcs": False, "remote_session": False, "clipboard": False, "channels": False,
             "service_identity_claim": False, "vulnerability_claim": False,
             "trailing_bytes_inspected": False}
+    if case.startswith("dig-nsid-"):
+        from . import network_tools_fixture as fixture
+        query = fixture.dns_nsid_query()
+        response = fixture.dns_nsid_response(case, query)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-dns-nsid-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "dns_tcp"}],
+            "query": {"name": fixture.DNS_NSID_QUERY_NAME, "type": fixture.DNS_NSID_QUERY_TYPE,
+                "class": "IN", "recursion": False, "ad": False, "cd": False,
+                "edns_version": 0, "udp_payload_size": 1232, "options": [{"code": 3, "bytes": 0}]},
+            "query_sha256": hashlib.sha256(query).hexdigest(), "query_bytes": len(query),
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "dns_transaction_id": "copied_from_validated_question",
+            "max_query_bytes": fixture.DNS_NSID_MAX_QUERY_BYTES,
+            "max_response_bytes": fixture.DNS_NSID_MAX_RESPONSE_BYTES,
+            "max_nsid_bytes": fixture.DNS_NSID_MAX_NSID_BYTES,
+            "max_connections": 1, "max_requests": 1,
+            "behavior": case.removeprefix("dig-nsid-"),
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_fixed_nsid_questions",
+            "connection_evidence": "accepted_connections_lower_bound",
+            "udp": False, "recursion": False, "retries": False, "search_suffixes": False,
+            "edns_negotiation": False, "cookies": False, "best_effort": False,
+            "target_resolution": False, "target_connections": False, "credentials": False,
+            "zone_transfer": False, "service_identity_claim": False,
+            "service_identity_verified": False, "vulnerability_claim": False}
     if case.startswith("dig-srv-"):
         from . import network_tools_fixture as fixture
         response = fixture.dns_srv_response(case, fixture.dns_srv_query())

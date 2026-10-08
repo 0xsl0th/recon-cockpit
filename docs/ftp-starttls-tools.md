@@ -1,11 +1,10 @@
 # Owned FTP explicit TLS handshake
 
-C9 adds `ftp_starttls_handshake_v1` through the existing OpenSSL runtime and
-single-action authority/evidence path. The candidate has **34 bounded profiles
-using the same 14 external programs**; accepted main has 33 after
-[PR #62](https://github.com/0xsl0th/recon-cockpit/pull/62), merge `a582bd6c`.
-C9 remains a separate review candidate. It adds no GUI or real-network attachment.
-Accepted B0–B8, C1–C8, offline R5, local R6 and personal acceptance stay closed.
+C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63), merged
+as `e06e1a4`. Its `ftp_starttls_handshake_v1` profile uses the existing OpenSSL
+runtime and single-action authority/evidence path. Accepted main has **34 bounded
+profiles using 14 external programs**. C9 adds no GUI or real-network attachment.
+B0–B8, C1–C9, offline R5, local R6 and personal acceptance stay closed.
 
 ## Fixed operation and limits
 
@@ -118,3 +117,22 @@ For authorized owned execution, use fresh paths and replace `--dry-run` with
 grant tests do not establish new personal acceptance. Credentials, paid/live calls,
 external engagements, deeper workflows and comparative benchmarking remain
 deferred. Raw evidence stays outside Git.
+
+## Acceptance
+
+**C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63).**
+Reviewed head `f91d9d3` merged as `e06e1a4` on 7 October at 23:42:45 UTC;
+reviewed and merged trees match `d909db662eee3c31945550994ee3d7819af11cf4`.
+Fresh authority/runtime and parser/evidence reviews found no blockers; 351 focused
+tests passed. All 548 validated source hashes, 83 reports, 98 referenced artifacts
+and eight inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37702693909)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37703801916)
+passed. Preserve 14,231 portable and 65 native confirmation tests, 2/2 ordinary
+and 3/3 separate robustness completions, zero unnecessary refusals, 22/22 blocked
+destinations, 110/110 boundary fields and 67 accepted-bundle replays.
+The initial legacy OpenSSL stall failure remains unexplained; successful unchanged
+reproduction and confirmation do not establish resolution. C9 stays closed with
+**34 profiles using 14 programs**. Private receipt: `.secure-agent/pr63-merge-review.json`.
+
+C10 DNS NSID is the separately authorized next batch and does not broaden this FTP profile.

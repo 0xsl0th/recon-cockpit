@@ -38,6 +38,7 @@ def tool_for_case(case):
                          ("smtp-tls-", "smtp_starttls_handshake_v1"),
                          ("smb2-", "smb2_negotiate_metadata_v1"),
                          ("rdp-", "rdp_initial_negotiation_v1"),
+                         ("dig-nsid-", "dig_dns_nsid_v1"),
                          ("dig-srv-", "dig_dns_srv_v1"),
                          ("whatweb-", "whatweb_http_fingerprint_v1"),
                          ("postgresql-tls-", "postgresql_tls_handshake_v1"),
@@ -90,6 +91,72 @@ def dns_response(case, query):
 
 # One independent, nonrecursive service-location query. Advertised destinations
 # remain untrusted metadata and are never resolved, connected to, or contacted.
+DNS_NSID_TOOL_ID = "dig_dns_nsid_v1"
+DNS_NSID_QUERY_NAME = "harbordesk.test."
+DNS_NSID_QUERY_TYPE = "A"
+DNS_NSID_MAX_QUERY_BYTES = 512
+DNS_NSID_MAX_RESPONSE_BYTES = 4096
+DNS_NSID_MAX_NSID_BYTES = 64
+DNS_NSID_CASES = tuple("dig-nsid-" + suffix for suffix in (
+    "ok", "binary", "empty", "absent", "noedns", "injected", "refused",
+    "malformed", "duplicate", "oversize", "stalled", "output-limit", "unexpected-option", "badvers"))
+DNS_NSID_SUCCESS_CASES = DNS_NSID_CASES[:6]
+DNS_NSID_VALUE = b"ns1-harbordesk"
+DNS_NSID_BINARY_VALUE = bytes.fromhex("00ff01227f")
+DNS_NSID_BINARY = DNS_NSID_BINARY_VALUE
+DNS_NSID_QUESTION = b"\x0aharbordesk\x04test\x00\x00\x01\x00\x01"
+CASES += DNS_NSID_CASES
+VARIANTS = CASES
+
+
+def _dns_nsid_opt(options, *, extended_rcode=0):
+    return b"\x00" + struct.pack("!HHIH", 41, 1232, extended_rcode << 24, len(options)) + options
+
+
+def dns_nsid_query(txid=b"\x00\x00"):
+    if type(txid) is not bytes or len(txid) != 2:
+        raise ValueError("invalid_dns_nsid_transaction_id")
+    return (txid + struct.pack("!HHHHH", 0, 1, 0, 0, 1) + DNS_NSID_QUESTION
+            + _dns_nsid_opt(struct.pack("!HH", 3, 0)))
+
+
+def validate_dns_nsid_query(query):
+    if type(query) is not bytes or len(query) < 2 or query != dns_nsid_query(query[:2]):
+        raise ValueError("invalid_dns_nsid_question")
+    return query
+
+
+def dns_nsid_response(case, query):
+    if type(case) is not str or case not in DNS_NSID_CASES:
+        raise ValueError("invalid_dns_nsid_case")
+    validate_dns_nsid_query(query)
+    if case == "dig-nsid-stalled":
+        return None
+    value = (DNS_NSID_BINARY_VALUE if case == "dig-nsid-binary"
+             else b"" if case == "dig-nsid-empty"
+             else HOSTILE_NOTE.encode("ascii") if case == "dig-nsid-injected"
+             else b"X" * 65 if case == "dig-nsid-oversize"
+             else b"\x01" * 3000 if case == "dig-nsid-output-limit"
+             else DNS_NSID_VALUE)
+    option = struct.pack("!HH", 3, len(value)) + value
+    if case in ("dig-nsid-absent", "dig-nsid-refused", "dig-nsid-badvers"):
+        option = b""
+    elif case == "dig-nsid-duplicate":
+        option += option
+    elif case == "dig-nsid-malformed":
+        option = struct.pack("!HH", 3, 5) + b"X"
+    elif case == "dig-nsid-unexpected-option":
+        option += struct.pack("!HH", 65001, 4) + b"nope"
+    additional = b"" if case == "dig-nsid-noedns" else _dns_nsid_opt(
+        option, extended_rcode=int(case == "dig-nsid-badvers"))
+    header = query[:2] + struct.pack("!HHHHH", 0x8400 | (5 if case == "dig-nsid-refused" else 0),
+        1, 0, 0, int(bool(additional)))
+    response = header + DNS_NSID_QUESTION + additional
+    if len(response) > DNS_NSID_MAX_RESPONSE_BYTES:
+        raise ValueError("dns_nsid_response_limit")
+    return response
+
+
 DNS_SRV_TOOL_ID = "dig_dns_srv_v1"
 DNS_SRV_QUERY_NAME = "_ldap._tcp.harbordesk.test."
 DNS_SRV_CASES = tuple("dig-srv-" + suffix for suffix in (

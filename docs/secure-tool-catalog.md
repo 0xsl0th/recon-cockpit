@@ -106,7 +106,7 @@ inconclusive cases and 24/24 blocked destinations. Four clean-source trials and
 63 accepted evidence replays also passed. C8 is accepted in PR #62 at `a582bd6c`;
 all five final and post-merge jobs passed.
 
-The C9 [FTP explicit TLS candidate](ftp-starttls-tools.md) adds one fixed
+The accepted C9 [FTP explicit TLS profile](ftp-starttls-tools.md) adds one fixed
 AUTH TLS command and verified fixture TLS/clean close through existing OpenSSL,
 for **34 profiles using the same 14 programs**. It exposes no login, credentials,
 listing, transfer or data connection. The native client discards unchecked AUTH
@@ -115,7 +115,13 @@ Validation passed 14,231 portable tests and a 65-test native confirmation, with
 2/2 ordinary and 3/3 robustness completions, 22/22 blocked destinations and 67
 accepted-bundle replays. One initial legacy stall error did not reproduce;
 its cause remains undetermined and is recorded in the verification report.
-C9 remains pending PR review and merge.
+C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63) at `e06e1a4`; all five final and post-merge jobs passed.
+
+The C10 [DNS NSID candidate](dns-nsid-tools.md) adds one fixed nonrecursive TCP query
+requesting opaque server metadata through existing dig. Empty and absent replies
+are distinct; identifiers remain unverified, and no returned text selects follow-up.
+The candidate has **35 secure profiles using 14 programs**. Full validation and
+PR review are pending; credentials and paid calls remain deferred.
 
 From the repository root, with the project installed:
 
@@ -256,6 +262,6 @@ accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C9 candidate. Further composition and comparative benchmarking
+the current C10 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

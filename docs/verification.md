@@ -1,5 +1,115 @@
 # Verification record
 
+## C10 owned DNS NSID metadata — 7 October 2026
+
+The [C10 runbook](dns-nsid-tools.md) defines `dig_dns_nsid_v1`: one fixed
+nonrecursive TCP question with an empty EDNS NSID option through existing dig.
+NSID remains at most 64 opaque bytes rendered as hex, with no verified identity
+or response-directed authority. Empty, absent and no-EDNS responses are distinct.
+The candidate has **35 profiles using 14 programs**; C9 is accepted below.
+
+| Check | Result |
+| --- | --- |
+| Portable validation | Confirmation running after one test-only correction; initial run: 14,813 passed / one historical snapshot-selection failure. 1,042 integration tests are separately collected and excluded. |
+| Actual Linux suite | **62 passed**: 20 C10, 16 accepted SRV, 17 FTP TLS, five original DNS and four direct TLS; zero failures/errors/skips; JUnit 193.604 seconds. |
+| Useful NSID tasks | **5/5 ordinary**: printable, binary, present empty, absent option and no EDNS. **1/1 separate robustness**: hostile NSID retained as opaque hex. Zero unnecessary refusals. |
+| Negative progress | **Eight inconclusive**: refusal, malformed option, duplicate NSID, 65-byte NSID, stall, output pressure, unexpected option and BADVERS. Every case witnessed one actual fixed query and closed ownership. |
+| Enforcement | **28/28** forbidden-destination witnesses and **140/140** boundary fields. Six additional native tests covered one-use grant, missing consumed proof, cancellation after actual exec, private inputs, UDP refusal and thread-ceiling refusal. |
+| Local replay | All 14 native scenario bundles independently reparsed and replayed unchanged. Clean-source compatibility verification follows before final PR handoff. |
+| Provider calls/cost | **0 / $0**; no model credentials or real service credentials. Synthetic unattended policies are explicit; shipped policy still requires fresh approval. |
+
+The exact request has a 48-byte DNS body plus two-byte TCP framing. Only transaction
+ID varies; request flags, question, EDNS0, advertised size1232 and empty option3
+are fixed and owner-validated. All 14 cases had one connection and one validated
+request. No UDP, cookie, negotiation retry, recursion, search, transfer or follow-up
+was authorized. Native success alone is insufficient: unsupported responses may
+exit zero while the independent parser reports inconclusive. Eight inconclusive
+cases include the stalled query and output-limit termination.
+
+| Case | Execution ms | Combined captured bytes |
+| --- | ---: | ---: |
+| ok | 3150 | 376 |
+| binary | 3106 | 340 |
+| empty | 3160 | 314 |
+| absent | 3104 | 307 |
+| noedns | 3197 | 247 |
+| injected | 3126 | 552 |
+| refused | 3129 | 307 |
+| malformed | 3110 | 394 |
+| duplicate | 3187 | 445 |
+| oversize | 3128 | 580 |
+| stalled | 4692 | 478 |
+| output-limit | 2657 | 61 |
+| unexpected-option | 3127 | 410 |
+| badvers | 3161 | 306 |
+
+Native scenario latency ranged **2657–4692 ms**, median **3128.5 ms**. Useful
+captures were **247–552 bytes**. These are descriptive local measurements, not
+paired baseline/authority overhead. The output-limit case exceeded the capture
+allowance but retained only 61 bytes of permitted startup stderr and zero stdout;
+`output_limit`, truncation and the stop reason were verified. It did not retain an
+8192-byte transcript. Unsupported full output and arbitrary diagnostics never
+become useful evidence. NSID text is not interpreted as instructions or identity.
+
+The first development smoke stopped with incomplete evidence because the new
+isolated parser module was not mounted. The missing mount was fixed and a portable
+custody regression was added; the next actual smoke completed. Both attempts remain
+private and separate from the complete 62-test validation run. The accepted C9
+legacy `openssl-stalled` failure remains unexplained. That case passed in this
+run, which does not establish the cause or resolution of its earlier failure.
+
+Before native and portable validation, all **557 source/test/policy hashes** were
+frozen in `.secure-agent/dns-nsid-20261007/validated-source-files.json`, SHA256:
+`1815eae907f47d6cdee0467e8858183e2ad2867e1217b9c39c1f1dfe7c0612c1`.
+The initial portable run passed 14,813 tests and failed the old FTP runtime
+snapshot test: its historical 24-profile selection accidentally included the new
+NSID profile. Only that test's exclusion was corrected; the expected count and
+hash were preserved. Its 146 focused tests then passed. No production file or
+selected native-test file changed, so the completed native run remains applicable.
+The initial XML/log and `source-snapshot-transition.json` retain this correction.
+The final 557-file snapshot is `final-source-files.json`, SHA256
+`5b48169e0e3956c533804a7ce238208d56f1f3a1ba6462f407979327edbfc2df`;
+it differs from the original audited snapshot only in
+`tests/test_secure_ftp_tls_runtime.py`. Full portable confirmation is running.
+
+The accepted 195 case contracts, 34 adapters and 25 runtime argv/environment
+profiles retain canonical SHA256
+`8082e146fa6e5df645bb964706b6d1c861704c54d0c9b789e8980ee3e127ff63`.
+Runtime-only executable/argv/environment/compiled-file metadata for all 25
+accepted profiles retains SHA256
+`7b4bf693be91150c8c7e832608e5cdfcdae00544eed87df9090da1ea164cd726`.
+
+Private `native-evidence-audit.json` verifies all 557 hashes before/after,
+14 raw reparses, exact result/action/policy/runtime/owner/audit bindings and
+pure-parser report rebuilds with unchanged bytes, mtimes and modes; SHA256:
+`08088742739cdb464a95e07aa267e273452fd4738d4c1537ba6259a6ff49b8ec`.
+It did not rerun native execution or isolated replay; the native tests establish
+that replay. Independent runtime/fixture and parser/evidence cross-reviews found
+no blockers. Clean-source verification and final hosted checks remain pending.
+C10 stays unmerged until its own latest-revision review and merge instruction.
+
+The next recommendation is separate fixed-zone synthetic AXFR behavior with
+bounded frames/records, matched SOA boundaries, explicit refusal and no returned-host
+follow-up. No existing interactive AXFR integration is claimed. It is not an
+implemented C11 milestone. All closed milestones remain closed; credentials,
+paid/live evaluation, deeper workflows and benchmarking stay deferred.
+
+
+**C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63).**
+Reviewed head `f91d9d3` merged as `e06e1a4` on 7 October at 23:42:45 UTC;
+reviewed and merged trees match `d909db662eee3c31945550994ee3d7819af11cf4`.
+Fresh authority/runtime and parser/evidence reviews found no blockers; 351 focused
+tests passed. All 548 validated source hashes, 83 reports, 98 referenced artifacts
+and eight inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37702693909)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37703801916)
+passed. Preserve 14,231 portable and 65 native confirmation tests, 2/2 ordinary
+and 3/3 separate robustness completions, zero unnecessary refusals, 22/22 blocked
+destinations, 110/110 boundary fields and 67 accepted-bundle replays.
+The initial legacy OpenSSL stall failure remains unexplained; successful unchanged
+reproduction and confirmation do not establish resolution. C9 stays closed with
+**34 profiles using 14 programs**. Private receipt: `.secure-agent/pr63-merge-review.json`.
+
 ## C9 owned FTP explicit TLS — 7 October 2026
 
 The [C9 runbook](ftp-starttls-tools.md) defines `ftp_starttls_handshake_v1`:
@@ -83,9 +193,9 @@ with unchanged bytes/mtimes/modes; SHA256:
 It separately preserves the original failed suite and isolated reproduction.
 Actual isolated replay was established by the native tests and clean verifier.
 
-C9 on `feature/ftp-starttls-coverage` is ready for PR review, latest hosted checks
-and an authorized merge. C8 and earlier milestones stay closed. Next, reassess
-one bounded nonrecursive TCP dig query with EDNS NSID for untrusted server metadata;
+C9 is merged in PR #63; its acceptance record is above. C9 and earlier milestones
+stay closed. C10 is the separately authorized bounded nonrecursive TCP dig query
+with EDNS NSID for untrusted server metadata;
 no UDP, recursion, zone transfer, verified identity or follow-up is implied.
 Credentials, paid/live calls, external engagements, deeper workflows and
 comparative benchmarking remain deferred.

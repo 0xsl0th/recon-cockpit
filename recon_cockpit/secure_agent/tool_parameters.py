@@ -152,6 +152,11 @@ class DigSRVParameters(TCPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class DigNSIDParameters(TCPParameters):
+    """Bounds for one fixed owned NSID question; returned bytes confer no authority."""
+
+
+@dataclass(frozen=True, slots=True)
 class OpenSSLTLSParameters(TCPParameters):
     """Bounds for the fixed verified TLS handshake; no caller TLS options."""
 

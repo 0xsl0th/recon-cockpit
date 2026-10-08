@@ -23,6 +23,7 @@ from .isolation import IsolationUnavailable, _capture_bounded, _runtime_probe, _
 PROFILE = "network-tools-runtime-v1"
 DIG = "dig_dns_query_v1"
 DIG_SRV = "dig_dns_srv_v1"
+DIG_NSID = "dig_dns_nsid_v1"
 OPENSSL = "openssl_tls_handshake_v1"
 SSH = "ssh_host_keys_v1"
 LDAP = "ldap_rootdse_v1"
@@ -111,7 +112,7 @@ MAX_FILE_BYTES = 16 * 1024 * 1024
 MAX_MANIFEST_BYTES = 12288
 READY_PREFIX = b"RECON_NETWORK_TOOL_READY_V1 "
 LIBRARY = re.compile(r"/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*\.?\Z")
-EXECUTABLES = {DIG: "/usr/bin/dig", DIG_SRV: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
+EXECUTABLES = {DIG: "/usr/bin/dig", DIG_SRV: "/usr/bin/dig", DIG_NSID: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
                SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch", SMB: "/usr/bin/smbclient",
                RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount",
                FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl",
@@ -201,8 +202,11 @@ FIXED_ARGV[SMB2] = smb2_runtime.FIXED_ARGV
 FIXED_ARGV[SMTP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "smtp", "-name", "harbordesk.test")
 FIXED_ARGV[LDAP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "ldap")
 FIXED_ARGV[FTP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "ftp")
+FIXED_ARGV[DIG_NSID] = tuple(arg for item in FIXED_ARGV[DIG] for arg in (
+    ("+edns=0", "+bufsize=1232", "+nsid", "+nocookie", "+noednsnegotiation", "+nobesteffort")
+    if item == "+noedns" else (item, "+authority") if item == "+answer" else (item,)))
 
-MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_dns_srv_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
+MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
@@ -223,7 +227,7 @@ def execution_environment(tool_id):
     if tool_id == SMB2:
         return dict(smb2_runtime.ENVIRONMENT)
     value = {"LC_ALL": "C", "OPENSSL_CONF": "/dev/null", "MALLOC_ARENA_MAX": "1"}
-    if tool_id in (DIG, DIG_SRV):
+    if tool_id in (DIG, DIG_SRV, DIG_NSID):
         value["UV_THREADPOOL_SIZE"] = "1"
     if tool_id == LDAP:
         # Disable every system/user LDAP default before libldap initializes.
@@ -254,7 +258,7 @@ def _compiled(tool_id):
     if tool_id in (OPENSSL, POSTGRESQL_TLS, MYSQL_TLS, SMTP_TLS, LDAP_TLS, FTP_TLS):
         from .network_tools_fixture import CA_PEM
         return "compiled:fixture-ca", "/tool/data/fixture-ca.pem", CA_PEM
-    if tool_id in (DIG, DIG_SRV):
+    if tool_id in (DIG, DIG_SRV, DIG_NSID):
         # No host resolver, search list, or user configuration enters the tool.
         return "compiled:resolver", "/etc/resolv.conf", b"# fixed TCP nameserver supplied by reviewed argv\n"
     if tool_id in (SSH, LDAP, FTP, SMTP, DOCKER_PING, DOCKER_VERSION, WINRM, REDIS, SNMP):

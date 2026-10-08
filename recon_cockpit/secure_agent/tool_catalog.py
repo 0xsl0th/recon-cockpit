@@ -69,6 +69,8 @@ _ENTRIES = MappingProxyType({
     adapters.DIG_TOOL_ID: _network("dig", "dig-ok", "network-tools", "network-tools",
         "One fixed A query over TCP; no recursion, search, zone transfer or follow-up to returned addresses.",
         "An answer or NXDOMAIN describes the owned fixture response, not external DNS verification."),
+    adapters.DIG_NSID_TOOL_ID: _network("dig", "dig-nsid-ok", "dns-nsid", "dns-nsid-tools",
+        "One fixed TCP DNS question requests capped opaque NSID metadata. A returned identifier is untrusted; no recursion or follow-up is authorized."),
     adapters.DIG_SRV_TOOL_ID: _network("dig", "dig-srv-ok", "dns-srv", "dns-srv-tools",
         "One fixed SRV query over TCP; no recursion, search, zone transfer or follow-up to advertised targets and ports.",
         "Results are untrusted service metadata. NODATA, NXDOMAIN and reported unavailability describe this response, not verified service absence."),

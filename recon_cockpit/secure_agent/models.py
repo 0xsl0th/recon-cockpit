@@ -20,7 +20,7 @@ from .tool_parameters import (
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters,
-    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters, FTPStartTLSParameters,
+    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, DigNSIDParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters, FTPStartTLSParameters,
     NmapTCPParameters, TCPParameters, ValidationError,
     MAX_TIMEOUT_SECONDS, MAX_OUTPUT_BYTES, SUPPORTED_METHODS,
     _fields, _integer, _reject, _string,
@@ -116,7 +116,7 @@ class Action:
     action_id: str
     tool_id: str
     target: str
-    parameters: HTTPParameters | HTTPHeadersParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | SSHHostKeysParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlDockerVersionParameters | CurlWinRMMetadataParameters | NmapServiceParameters | KerbruteUserenumParameters | RedisServerInfoParameters | SNMPSystemGetParameters | PostgreSQLTLSParameters | MySQLTLSParameters | WhatWebParameters | DigSRVParameters
+    parameters: HTTPParameters | HTTPHeadersParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | SSHHostKeysParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlDockerVersionParameters | CurlWinRMMetadataParameters | NmapServiceParameters | KerbruteUserenumParameters | RedisServerInfoParameters | SNMPSystemGetParameters | PostgreSQLTLSParameters | MySQLTLSParameters | WhatWebParameters | DigSRVParameters | DigNSIDParameters
     rationale: str
 
     def __post_init__(self) -> None:

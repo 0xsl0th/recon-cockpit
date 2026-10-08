@@ -29,6 +29,7 @@ POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
 MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
 WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
 DNS_SRV_TOOL_ID = "dig_dns_srv_v1"
+DNS_NSID_TOOL_ID = "dig_dns_nsid_v1"
 RDP_TOOL_ID = "rdp_initial_negotiation_v1"
 SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"
 SMTP_TLS_TOOL_ID = "smtp_starttls_handshake_v1"
@@ -45,6 +46,7 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1",
     POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
     WHATWEB_TOOL_ID: "whatweb-json-v1", DNS_SRV_TOOL_ID: "dig-dns-srv-text-v1",
+    DNS_NSID_TOOL_ID: "dig-dns-nsid-text-v1",
     RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1",
     SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1", LDAP_TLS_TOOL_ID: "ldap-starttls-brief-v1",
     FTP_TLS_TOOL_ID: "ftp-starttls-brief-v1"}
@@ -145,6 +147,8 @@ def validate_result(tool_id, value):
         return _smb2_parser().validate_result(value)
     if tool_id == DNS_SRV_TOOL_ID:
         return _dns_srv_parser().validate_result(value)
+    if tool_id == DNS_NSID_TOOL_ID:
+        return _dns_nsid_parser().validate_result(value)
     if tool_id == WHATWEB_TOOL_ID:
         return _whatweb_parser().validate_result(value)
     if tool_id == NMAP_SERVICE_TOOL_ID:
@@ -818,6 +822,18 @@ def _parse_dns_srv(output, stderr):
     return _dns_srv_parser().parse_output(output, stderr)
 
 
+def _dns_nsid_parser():
+    if __package__:
+        from . import network_tools_dns_nsid_parser
+    else:
+        import network_tools_dns_nsid_parser
+    return network_tools_dns_nsid_parser
+
+
+def _parse_dns_nsid(output, stderr):
+    return _dns_nsid_parser().parse_output(output, stderr)
+
+
 def _whatweb_parser():
     if __package__:
         from . import network_tools_whatweb_parser
@@ -845,6 +861,7 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             NMAP_SERVICE_TOOL_ID: _parse_nmap_service, KERBRUTE_TOOL_ID: _parse_kerbrute,
             REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp,
             WHATWEB_TOOL_ID: _parse_whatweb, DNS_SRV_TOOL_ID: _parse_dns_srv,
+            DNS_NSID_TOOL_ID: _parse_dns_nsid,
             RDP_TOOL_ID: _parse_rdp, SMB2_TOOL_ID: _parse_smb2,
             SMTP_TLS_TOOL_ID: _parse_smtp_tls, LDAP_TLS_TOOL_ID: _parse_ldap_tls,
             FTP_TLS_TOOL_ID: _parse_ftp_tls}[tool_id](output, stderr)

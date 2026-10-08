@@ -120,6 +120,13 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert all(definition[key] is False for key in (
             "udp", "followup", "tls_handshake", "credssp", "credentials", "authentication",
             "mcs", "remote_session", "clipboard", "channels", "service_identity_claim", "vulnerability_claim"))
+    elif case in fixture.DNS_NSID_CASES:
+        assert definition['max_connections'] == definition['max_requests'] == 1
+        assert definition['query']['name'] == fixture.DNS_NSID_QUERY_NAME
+        assert definition['query']['type'] == 'A' and definition['query']['recursion'] is False
+        assert definition['max_nsid_bytes'] == 64
+        assert definition['request_count_means'] == 'validated_fixed_nsid_questions'
+        assert definition['service_identity_verified'] is False
     elif case in fixture.DNS_SRV_CASES:
         response = fixture.dns_srv_response(case, fixture.dns_srv_query())
         assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
