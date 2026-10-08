@@ -1,12 +1,12 @@
 # Owned Nuclei directory-listing signature check
 
-C16 is an **implementation candidate, locally validated, pending review in
-[PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71)**.
-It adds `nuclei_directory_listing_v1` through a separate pinned Nuclei runtime,
-the secure CLI and existing authority/evidence services. Accepted main remains
-**40 profiles using 15 external programs**; the candidate registry has **41/16**.
-An installed binary or passing mock test does not close G1–G6. No GUI workflow or
-external-target support is added.
+C16 is accepted through [PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71),
+adding `nuclei_directory_listing_v1` through a separate pinned Nuclei runtime,
+the secure CLI and existing authority/evidence services. Accepted coverage is
+**41 profiles using 16 external programs**. Fresh runtime/authority and
+parser/evidence reviews found no blockers; all five CI jobs gate the final merge.
+The review reconciled 694 source hashes, 120 reports, 135 artifacts and fifteen
+inherited receipts. No GUI workflow or external-target support is added.
 
 The [feasibility assessment](nuclei-feasibility.md) was accepted in
 [PR #70](https://github.com/0xsl0th/recon-cockpit/pull/70), reviewed at `c45708e`
@@ -67,7 +67,7 @@ recipe or an automatic download/update mechanism.
 Stock startup requires temporary writes, so this versioned profile has private
 scratch. Existing profiles retain their accepted runtime bytes and limits.
 
-| Boundary | Candidate limit |
+| Boundary | Accepted limit |
 | --- | --- |
 | Pinned read-only files | 160 MiB per file; 192 MiB total runtime closure. |
 | Trusted outer staging | Separate 160 MiB file-size ceiling only while preparing the sealed Nuclei image. |
@@ -218,11 +218,10 @@ Use `--inspect-assessment .secure-agent/nuclei-review/evidence` for read-only re
 inspection restores neither approvals nor execution authority. Raw artifacts and
 the downloaded executable remain private, outside Git.
 
-Next complete independent review and required checks for this candidate. After
-acceptance, select the smallest remaining HTTP security-validation gap from the
-[coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches),
-with another explicitly bounded harmless check and useful negative evidence.
-No additional template or deeper workflow is selected by this runbook. B0–B8,
-C1–C15, offline R5, accepted local R6 and the initial GUI remain closed. Preserve
-prior failure history, including the unexplained C9 stall. Model credentials,
-paid/live evaluation, external work and comparative benchmarking remain deferred.
+The next recommendation is C17's one fixed synthetic Git HEAD marker check,
+using a new finite response contract and the same runtime limits. See the
+[coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches).
+It is not implemented or authorized by this runbook. B0–B8, C1–C16, offline R5,
+accepted local R6 and the initial GUI remain closed. Preserve prior failure
+history, including the unexplained C9 stall. Model credentials, paid/live
+evaluation, external work, deeper workflows and benchmarking remain deferred.

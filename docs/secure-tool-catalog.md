@@ -165,19 +165,20 @@ also passed. C14 remains closed with its documented half-close/capture limits.
 
 [C15 TLS certificate coverage](tls-certificate-tools.md) is accepted in
 [PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69), merged as `e4c9d64`
-after independent review and all five final jobs passed. Coverage is now
+after independent review and all five final jobs passed. That slice reached
 **40 secure profiles using 15 external programs**. Its fixed fixture-verified
 OpenSSL handshake yields bounded DER fingerprint, validity and DNS/IP SAN metadata.
 **18,396 portable/39 native tests and 103 accepted-bundle replays passed.**
 Finite compatibility, CN fallback and trust/revocation limits remain documented.
 
-The [C16 Nuclei candidate](nuclei-tools.md) adds one pinned directory-listing
+The accepted [C16 Nuclei check](nuclei-tools.md) adds one pinned directory-listing
 signature check through a separate static runtime with bounded private scratch.
 The feasibility assessment was accepted in [PR #70](https://github.com/0xsl0th/recon-cockpit/pull/70)
 at `2f7fb5a`; the operator then authorized implementation and owned execution.
-Accepted main remains **40 profiles/15 programs**; the candidate registry has
-**41/16**, with 18,958 portable and 23 Linux checks passed plus 107 unchanged
-accepted-bundle replays. PR review and required checks remain the merge gate.
+[PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71) brings accepted coverage
+to **41 profiles using 16 programs**, with 18,958 portable and 23 Linux checks
+passed plus 107 unchanged accepted-bundle replays. Fresh independent reviews
+found no blockers; all five final CI jobs gate the merge.
 Useful matched and unmatched results require complete independent owner bytes,
 a supported native dump and recomputed signature agreement. This is no generic
 vulnerability scan or CVE claim; credential/model/paid work remains deferred.
