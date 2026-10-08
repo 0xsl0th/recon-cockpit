@@ -1,6 +1,6 @@
 # Product roadmap and remaining PR estimate
 
-Status snapshot: **8 October 2026, after PR #76**, accepted main `ca793cd`.
+Status snapshot: **8 October 2026, after PR #77**, accepted main `942c815`.
 The PR-count forecasts retain their explicitly dated PR #72 baseline below.
 This is the consolidated product plan. The [implementation roadmap](roadmap.md)
 retains milestone history; the [checkpoint](continue-here.md) records the next
@@ -24,11 +24,16 @@ also passed; receipt: `.secure-agent/pr74-merge-review.json`.
 accepted source feasibility after review and all five final/post-merge jobs passed.
 [PR #76](https://github.com/0xsl0th/recon-cockpit/pull/76) accepted the native
 diagnostic and its preserved retry-boundary failure after fixing a review
-finding and passing all five final and post-merge jobs. The new
-[mediated diagnostic](tls-posture-mediation.md), awaiting review, preserves 8/8
-ordinary and 4/4 explicit-absence observations while preventing the tested retry
-before peer delivery, 1/1. Product authority/evidence integration and its remaining
-corpus are next; no T02 profile or additional program is accepted.
+finding and passing all five final and post-merge jobs.
+[PR #77](https://github.com/0xsl0th/recon-cockpit/pull/77) accepted the
+[mediated diagnostic](tls-posture-mediation.md) after independent review and all
+five final/post-merge checks. It retains 8/8 ordinary and 4/4 explicit-absence
+observations while preventing the tested retry before peer delivery, 1/1.
+The current [closed observation/replay slice](tls-posture-observations.md)
+keeps received rejection useful without relabelling process exit 1 as success;
+26/26 isolated replays and 18/18 safe negative cases passed. Final PR checks,
+product authority/evidence integration and its remaining corpus follow; no T02
+profile or additional program is accepted.
 
 ## Product destination
 
@@ -219,8 +224,11 @@ failure** remains unchanged historical evidence; the new trial does not relabel 
 
 The gate validates plaintext framing and bounds encrypted record shapes; it does
 not decrypt traffic or prove general encrypted application-data prevention.
-Next review the mediator and integrate four separately versioned profiles through
-policy, fresh per-action approval, consumed permits, admission and both evidence
+PR #77 accepted this diagnostic boundary. The current
+[closed observation/replay slice](tls-posture-observations.md) validates retained
+captures without loading owner/key modules or creating execution authority.
+After its review, integrate four separately versioned profiles through policy,
+fresh per-action approval, consumed permits, admission and both production evidence
 inspectors. Complete the full hostile-usefulness, ambiguity/pressure,
 enforcement, cancellation and regression corpus before G1–G6 acceptance.
 Diagnostic receipts do not close those product gates. Accepted coverage remains

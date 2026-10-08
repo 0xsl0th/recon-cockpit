@@ -893,11 +893,15 @@ TCP question with no returned-host follow-up; G1–G6 are closed. The
 records six required operator outcomes: T01 is accepted and T02–T06 remain open.
 [T02 source feasibility](docs/tls-posture-feasibility.md) rejected stock sslscan
 because it loses received rejection evidence. [PR #76](https://github.com/0xsl0th/recon-cockpit/pull/76)
-accepted the native diagnostic and its retained retry-boundary failure. The new
-[mediated diagnostic](docs/tls-posture-mediation.md) preserves 8/8 ordinary
-observations and 4/4 explicit rejections across all four versions, and blocks the
-tested second ClientHello before peer delivery, 1/1. Product policy, per-action
-approval, permits, admission, both evidence inspectors and the remaining G1–G6
-corpus are next. No T02 profile or additional program is accepted.
+accepted the native diagnostic and its retained retry-boundary failure.
+[PR #77](https://github.com/0xsl0th/recon-cockpit/pull/77) accepted the
+[mediated diagnostic](docs/tls-posture-mediation.md): 8/8 ordinary observations,
+4/4 explicit rejections and the tested retry blocked before peer delivery, 1/1.
+The current [diagnostic observation/replay slice](docs/tls-posture-observations.md)
+passed 26/26 isolated replays and 18/18 safe negative cases; final PR checks
+remain required. It preserves useful rejection with actual process exit 1 and
+grants no execution authority. Product policy, per-action approval, permits,
+admission, both evidence inspectors and the remaining G1–G6 corpus follow.
+No T02 profile or additional program is accepted.
 Credentials, paid calls, live models and deeper workflow work remain deferred. The owner has deferred the proposal
 refresh until November 2026; its separate submission decision remains pending.

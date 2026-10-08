@@ -4,10 +4,12 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: [PR #76](https://github.com/0xsl0th/recon-cockpit/pull/76) is
-merged; C18/T01 stays accepted. The new T02 mediator preserves useful version
-observations and blocks the tested retry before it reaches the peer. Product
-authority/evidence integration is next; T02–T06 remain open.**
+**Current status: [PR #77](https://github.com/0xsl0th/recon-cockpit/pull/77) is
+merged at `942c815`; C18/T01 stays accepted. The current T02 slice adds closed
+diagnostic observations and networkless replay, preserving useful rejection
+without changing exit 1 into success. Fresh native execution and 26 isolated
+replays passed; final PR checks remain required. Product authority/evidence
+integration remains next; T02–T06 remain open.**
 
 PR #75 merged reviewed `ef412f79` as `cb17f0cb` after fresh independent review
 found no blockers and all five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37836316541)
@@ -29,15 +31,40 @@ passed. Reviewed and merged trees match
 and `.secure-agent/tls-posture-native-20261008/` retain the original **0/1 retry
 prevention failure** unchanged; acceptance of that diagnostic did not close T02.
 
-[PR #77](https://github.com/0xsl0th/recon-cockpit/pull/77) contains the new
-[mediated diagnostic](tls-posture-mediation.md), branch
-`feature/tls-posture-mediator` in `/tmp/recon-tls-posture-mediator`, outside the
-secure catalog and awaiting review. Frozen execution source `4d92d1d` produced
-8/8 ordinary observations, 4/4 explicit received rejections and **1/1 HRR retry
-prevented before peer delivery**. All thirteen owners/clients closed and the new
-Unix-socket boundary witnesses passed. Private captures are under
-`.secure-agent/tls-posture-mediator-20261008/`. These files restore no assessment,
-approval or permit. Accepted coverage remains **43 profiles / 16 programs**.
+[PR #77](https://github.com/0xsl0th/recon-cockpit/pull/77) merged reviewed
+`90c7e79` as `942c815` on 8 October at 21:37:56 UTC. Fresh guard/owner/worker and
+parser/evidence reviews found no blockers; 394 focused tests passed. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37845417511)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37848142766)
+passed. Reviewed and merged trees match
+`f880d5df12953f68f65e6af22777867b5d1915c8`. Preserve
+`.secure-agent/pr77-merge-review.json`, SHA-256
+`ba66839fbcc7bbaf9acb03fec98f554321990fc6b18d4903a5f9f66078149988`.
+Its [mediated diagnostic](tls-posture-mediation.md) on frozen execution source
+`4d92d1d` retains 8/8 ordinary observations, 4/4 received rejections and **1/1 HRR
+retry prevented before peer delivery**, with cleanup and Unix-socket witnesses.
+Keep `.secure-agent/tls-posture-mediator-20261008/` unchanged. Accepting this
+development boundary added no secure profile and did not close T02.
+
+The current [diagnostic observation/replay slice](tls-posture-observations.md)
+is open in [PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78), branch
+`feature/tls-posture-observations` in `/tmp/recon-tls-posture-observations`.
+It adds a closed input
+and result contract, exact input digest, a networkless parser and read-only CLI.
+Four version identifiers remain unregistered. A received rejection keeps actual
+exit 1 and a failed process outcome while separately reporting useful completion.
+The owner and analyzer now share a pure ClientHello grammar, so all thirteen
+native trials were rerun at execution freeze `1874c33`: 8/8 ordinary and 4/4
+absence observations, zero unnecessary refusals and 1/1 retry blocked. At parser
+source `a6a4739`, 26/26 fresh/prior captures replayed identically and 18/18
+negative/cancellation/deadline cases had the expected safe outcomes. Prior
+capture bytes, modification times and modes stayed unchanged. The initial closed
+parser failure is retained; the correction closes bootstrap-created libffi
+file descriptors before importing or reading untrusted parser input. All 294
+focused checks pass. Complete portable validation and final PR checks remain
+merge gates; see the runbook and PR for those results and the private corpus.
+No production authority or assessment inspector changed; accepted coverage stays
+**43 profiles / 16 programs**.
 
 The owner chose to wait with the competition proposal until **November 2026**.
 Keep PR #31, its proposal/PDF and email draft unchanged this turn. Refresh them
@@ -136,8 +163,11 @@ failure** remains unchanged historical evidence; the new trial does not relabel 
 
 The gate validates plaintext framing and bounds encrypted record shapes; it does
 not decrypt traffic or prove general encrypted application-data prevention.
-Next review the mediator and integrate four separately versioned profiles through
-policy, fresh per-action approval, consumed permits, admission and both evidence
+PR #77 accepted this diagnostic boundary. The current
+[closed observation/replay slice](tls-posture-observations.md) validates retained
+captures without loading owner/key modules or creating execution authority.
+After its review, integrate four separately versioned profiles through policy,
+fresh per-action approval, consumed permits, admission and both production evidence
 inspectors. Complete the full hostile-usefulness, ambiguity/pressure,
 enforcement, cancellation and regression corpus before G1–G6 acceptance.
 Diagnostic receipts do not close those product gates. Accepted coverage remains
@@ -696,17 +726,17 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: integrate the bounded T02 probes into product authority and evidence.**
+**Current continuation: finish reviewable T02 diagnostic observations and networkless replay.**
 Follow the [finite task checklist](professional-v1-coverage.md), the
 [consolidated plan](product-roadmap.md) and current status at the top.
-C18 and earlier completed milestones stay closed. The new
-[mediated diagnostic](tls-posture-mediation.md) retains 8/8 ordinary observations
-and 4/4 explicit received rejections while preventing the tested HRR retry, 1/1.
-Review this boundary, then add four separately versioned profiles with fresh
-per-action approval, consumed permits, admission and both evidence inspectors.
-Complete the full negative/enforcement/regression corpus before G1–G6 acceptance.
-Diagnostic JSON is not product assessment evidence; no deeper workflow,
-credential or live-model work starts here.
+PR #77 accepted the mediator; C18 and earlier completed milestones stay closed.
+The [observation runbook](tls-posture-observations.md) separates useful TLS
+observations from process success and records the validation still required.
+Then add four separately versioned production profiles with fresh per-action
+approval, consumed permits, admission and both evidence inspectors. Complete the
+full negative/enforcement/regression corpus before G1–G6 acceptance. Diagnostic
+JSON is not product assessment evidence; no deeper workflow, credential or
+live-model work starts here.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1897,18 +1927,18 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #76 merge is complete. PRs #6–#30 and #32–#76
+- The operator-authorized PR #77 merge is complete. PRs #6–#30 and #32–#77
   stay closed; proposal PR #31 remains separate until its November refresh. Current
-  authorization covers the finite coverage continuation, now review of T02
-  mediation and its remaining product authority/evidence integration.
+  authorization covers the finite coverage continuation, now T02 diagnostic
+  observation/replay and its remaining product authority/evidence integration.
   Later merges, submission, messages, paid calls and external targets retain
   their corresponding gates.
 
 ## Next continuation
 
-1. PR #76 is accepted on main `ca793cd` from reviewed `274acec`; fresh
+1. PR #77 is accepted on main `942c815` from reviewed `90c7e79`; fresh
    independent review and all five final and post-merge jobs passed as recorded
-   above. Retain `.secure-agent/pr76-merge-review.json` and prior merge receipts.
+   above. Retain `.secure-agent/pr77-merge-review.json` and prior merge receipts.
    PR #74's C18/T01 G1–G6
    stay closed; retain `.secure-agent/pr74-merge-review.json` and do not repeat
    either merge.
@@ -1917,18 +1947,20 @@ Planning uses synthetic responses.
    documentation and the terminal-test `O_NOCTTY` correction differ from the
    native-tested revision; accepted production bytes remain identical.
    Accepted coverage is **43 profiles/16 programs**.
-3. Review the new [T02 mediated diagnostic](tls-posture-mediation.md) in
-   `/tmp/recon-tls-posture-mediator`, branch `feature/tls-posture-mediator`.
-   Frozen source `4d92d1d` produced 8/8 ordinary and 4/4 absence observations
-   across TLS 1.0/1.1/1.2/1.3, plus **1/1 HRR retry blocked before peer delivery**.
-   Preserve its private corpus in `.secure-agent/tls-posture-mediator-20261008/`
-   and the separate original failure in `.secure-agent/tls-posture-native-20261008/`.
+3. Finish validation and review of [T02 diagnostic observations](tls-posture-observations.md)
+   in `/tmp/recon-tls-posture-observations`, branch `feature/tls-posture-observations`.
+   The thirteen fresh executions use grammar/owner freeze `1874c33`; 26/26
+   fresh/prior captures replay identically at parser source `a6a4739`, with 18/18
+   safe negative/cancellation/deadline outcomes. Final PR checks remain merge
+   gates. Retain the initial closed parser failure, all earlier captures and
+   original PR #76 prevention failure.
+   No version identifier is registered and no product assessment is authorized.
    Then implement four separately versioned profiles through policy, fresh
-   per-action approval, consumed permits, admission and both evidence inspectors;
-   complete hostile-usefulness, ambiguity/pressure, enforcement, cancellation
-   and regression cases. Diagnostic receipts close none of those product gates.
-   Keep the [six-task contract](professional-v1-coverage.md), all four versions
-   and existing limits; T02 stays open until its full G1–G6 review and merge.
+   per-action approval, consumed permits, admission and both production evidence
+   inspectors; complete hostile-usefulness, ambiguity/pressure, enforcement,
+   cancellation and regression cases. Keep the [six-task contract](professional-v1-coverage.md),
+   all four versions and existing limits; T02 stays open until its full G1–G6
+   review and merge.
 4. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
    Preserve the private proposal/PDF, email draft, GUI mocks and native receipts.
    Refresh PR #31 in November 2026 before the 15 November deadline; submission

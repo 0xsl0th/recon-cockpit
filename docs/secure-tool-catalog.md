@@ -381,17 +381,22 @@ profiles to six required operator outcomes: T01 is accepted; T02–T06 remain op
 cannot preserve the received rejection evidence required by this task. The
 [OpenSSL native diagnostic](tls-posture-native.md), accepted in PR #76,
 preserves its original **0/1 retry-prevention failure**. The new
-[mediated diagnostic](tls-posture-mediation.md), frozen source `4d92d1d`, produced
+[mediated diagnostic](tls-posture-mediation.md), accepted in PR #77 from frozen
+source `4d92d1d`, produced
 8/8 ordinary observations and 4/4 explicit received rejections across TLS
 1.0/1.1/1.2/1.3, and **1/1 HRR retry prevented before peer delivery**. The client
 emitted two ClientHellos; the independent peer received one. This validates the
 tested plaintext request boundary and finite encrypted record shapes; it does
 not decrypt traffic or prove general encrypted application-data prevention.
 
-This development diagnostic does not exercise production approval, permits,
-admission or the two evidence inspectors. Next review the mediator and add four
-separately versioned profiles through those gates, completing the full negative,
-enforcement and regression corpus. All four versions and G1–G6 remain required
+The current [closed observation/replay slice](tls-posture-observations.md)
+adds a networkless parser and read-only diagnostic CLI: 26/26 replays and 18/18
+safe negative cases passed; final PR checks remain required. Its four version
+identifiers are deliberately absent from this catalog.
+It cannot issue approval, consume a production permit, authorize admission or
+produce an accepted assessment. Next add four separately versioned profiles
+through those production gates and both evidence inspectors, completing the full
+negative, enforcement and regression corpus. All four versions and G1–G6 remain required
 before T02 acceptance. No T02 secure profile, installation or
 program-count increment is claimed. Preserve the existing recipes and authority
 gates; accepted coverage remains **43 profiles / 16 programs**.
