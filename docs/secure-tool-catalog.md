@@ -362,7 +362,7 @@ remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.
 
 C17 [Git HEAD marker coverage](nuclei-git-tools.md) is an authorized implementation
-candidate with validation pending. It adds one finite synthetic check through
+candidate with local validation complete and PR review/merge pending. It adds one finite synthetic check through
 the same Nuclei runtime: accepted coverage remains 41 profiles/16 programs;
 the candidate has 42/16. No repository download, credentials or live-model work
 is included.

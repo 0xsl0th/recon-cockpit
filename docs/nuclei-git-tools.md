@@ -1,7 +1,7 @@
 # Owned Git HEAD marker check
 
-C17 is in development on `feature/nuclei-git-head-coverage`. **Native validation
-and acceptance are pending.** It adds `nuclei_git_head_v1` to the secure CLI using
+C17 is a validated candidate in [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72)
+on `feature/nuclei-git-head-coverage`. **PR review and merge remain pending.** It adds `nuclei_git_head_v1` to the secure CLI using
 the existing pinned Nuclei executable and authority services. The working catalog
 contains 42 profiles using 16 external programs; acceptance remains at C16's
 41 profiles until the C17 gates are complete.
@@ -191,7 +191,7 @@ Use `--dry-run` in place of `--execute` to inspect the plan. After an actual run
 replay and restores no execution authority. Keep raw evidence, private receipts
 and the existing executable outside Git.
 
-## Evaluation plan and pending acceptance
+## Evaluation results and pending acceptance
 
 | Group | Cases | Required result |
 | --- | --- | --- |
@@ -218,19 +218,47 @@ executable/argv/environment and compiled-byte subsets against that baseline;
 exclude only the additive C17 entries. Preserve C16's compiled bytes and every
 older snapshot hash and subset count.
 
-Provider/model calls and monetary cost are required to remain zero. Planned
-measurements are the secure CLI scenario wall-time range and median, including
-authority and evidence capture. No measured latency or comparative-overhead
-claim is recorded yet. Final portable/native counts, reconciled evidence paths,
-source hashes, usefulness and boundary totals, replay results and G1–G6 status
-remain pending.
+Local results at native source `901faab`:
 
-Development history: the first native trial failed closed before tool readiness
-because the outer launcher mounts omitted the new C17 modules. The reviewed
-closure was extended with the three required modules; the failed native smoke
-and diagnostic evidence are preserved. One normal positive smoke retry then
-completed; the full native matrix and portable acceptance remain pending. The
-failed attempt is not counted as useful completion or native acceptance.
+- **19,437 portable tests passed**, zero skips/failures/errors, at `bbb34bc`.
+  Production bytes are identical; only the two corrected integration test files
+  differ. Hosted CI checks the final PR revision separately.
+- **44 native Linux tests passed**: 21 C17, 21 unchanged-profile C16 regressions
+  and two sealed-image checks. All thirteen C17 cases have actual owner requests,
+  one connection, closed lab and independently replayable retained evidence.
+- **4/4 ordinary and 1/1 robustness completions**, zero unnecessary refusals,
+  eight inconclusive negative cases; **26/26 blocked destination witnesses** and
+  **195/195 boundary fields**. False matchers alone did not establish completion.
+- **120 accepted bundles and all thirteen C17 bundles replayed identically** via
+  the read-only service and CLI, with bytes, mtimes and modes unchanged. All
+  16 inherited receipt links and the accepted baseline above remain unchanged.
+- Secure CLI scenario wall time **4528–6393 ms**, median **4561 ms**,
+  including authority and evidence capture. This is descriptive timing; no paired
+  baseline or comparative-overhead conclusion is claimed.
+- **Zero provider calls and zero provider cost**; no real credentials read, no
+  live integration enabled, and no personal operator acceptance claimed.
+
+All 705 tracked source hashes matched the native source pin during independent
+audit. G1–G5 have local evidence; G6 remains open until the final PR is reviewed,
+its checks pass and the operator-authorized merge occurs. Private immutable
+receipt: `.secure-agent/nuclei-git-20261008/verification.json`, SHA-256
+`6721ac99867de7e57d6cc06035e65e923c690831087098015650d2b0df1868c6`. Native evidence is under `native-confirmed/`; source pins, JUnit
+reports and the separate final-head handoff are retained alongside it.
+
+Development history is preserved separately. The first native smoke refused
+missing C17 modules in the outer launcher before readiness; the explicit closure
+was corrected and a normal positive retry passed. The first full native matrix
+then had one failure: a reused private-input test opened C17's lab but submitted
+C16's action. Its four relaxed-boundary negatives also passed for that earlier
+policy refusal, so those passes were vacuous and are not acceptance evidence.
+Both helpers now use one explicit case for the action and lab. Assertions require
+the intended tool, an allowed policy decision, execution start and the expected
+finish reason; the private-input test must actually succeed, and the four relaxed
+boundaries must be refused for isolation failure. Final confirmation passed all
+44 checks. No production limit or authority control was weakened to pass tests. An initial
+read-only audit inside the coding sandbox could not complete confined parsing;
+its log is retained. The authorized replay outside that outer sandbox completed
+with the application's confined parsers intact and all evidence unchanged.
 
 Credentials, paid/live models, external-target work, deeper workflows,
 comparative benchmarking and GUI changes remain deferred. Preserve accepted
