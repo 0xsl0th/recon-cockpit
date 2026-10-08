@@ -20,15 +20,26 @@ challenge, body or unknown-header text. It verifies neither service identity nor
 actual method support; no advertised method is executed. Retained framing is checked,
 but extra wire bytes that curl does not emit cannot be inspected.
 
-C12 requires **6/6 ordinary and 2/2 separate robustness completions**, six
-inconclusive negative cases, zero unnecessary refusals, all 28 forbidden-destination
-and 140 boundary-field checks, actual request progress, closed owners and unchanged
-independent replay. Five native authority gates cover one-use approval, missing
-consumed proof, cancellation, private inputs and broadened UDP. **C12 validation is
-in progress; final portable/native totals and evidence receipts are pending.**
-The shipped policy requires fresh approval. Synthetic test grants do not establish
-personal acceptance, and raw evidence stays outside Git. Leave the new PR unmerged
-until latest-revision review, hosted checks and an instruction to merge.
+Local validation passed **16,138 portable tests** (1,081 integration tests
+deselected; 320.65 log seconds) and **40 native tests**: 19 C12 scenarios/gates
+and 21 accepted B6 regressions. C12 completed **6/6 ordinary and 2/2 separate
+robustness tasks** with zero unnecessary refusals; six negative cases remained
+inconclusive after actual request progress. All **28/28** forbidden-destination
+and **140/140** boundary-field checks passed. Five authority gates cover one-use
+approval, missing consumed proof, cancellation, private inputs and broadened UDP.
+The independent audit rebuilt all 14 native reports unchanged. CLI-case wall latency
+was 2745–5746 ms (median 3194 ms), with zero provider calls and cost; these are
+descriptive measurements, not comparative overhead.
+
+All **574 frozen source bindings** reconciled, with two AST-identical comment
+corrections recorded. Implementation `c875820` retains the tested behavior. The
+eight useful C12 reports reuse actual native evidence; no fresh native repetitions
+or separate clean-source native execution are claimed. All **83 accepted bundles**
+replayed unchanged through shared inspection and isolated CLI, with eleven inherited
+receipt links. [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) is ready for
+latest-revision review and hosted checks; it remains unmerged. The shipped policy
+requires fresh approval. Synthetic test grants do not establish personal acceptance,
+and raw evidence stays outside Git. Merge requires the corresponding instruction.
 
 After C12 review, reassess **one bounded SNMP GETNEXT for interface metadata**:
 one fixed ifDescr column seed, one successor or explicit end-of-view/out-of-subtree
@@ -1669,8 +1680,9 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Complete C12 HTTP OPTIONS validation and prepare the PR on its latest revision,
-   using this checkpoint and the [runbook](http-options-tools.md). PR #65 and all
+1. Review [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) on its latest
+   revision and hosted checks, using this checkpoint and the
+   [runbook](http-options-tools.md). Local validation is complete; PR #65 and all
    accepted milestones remain closed. Do not merge the candidate without review,
    required hosted checks and the corresponding instruction.
 2. Require useful 200/204/401/405 observations, distinct absent/empty Allow, six

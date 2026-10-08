@@ -130,11 +130,26 @@ authority gates cover one-use approval, missing consumed proof, cancellation,
 private-input exclusion and broadened UDP. Keep descriptive execution latency and
 zero provider calls/cost visible; comparative overhead remains deferred.
 
-**C12 validation is in progress.** Final portable/native totals, clean-source
-execution and inherited replay receipts are pending. Record actual results in
-[verification.md](verification.md) before marking this candidate ready for review.
-Passing synthetic approval tests does not claim personal acceptance. Review,
-hosted checks and a merge instruction remain separate acceptance gates.
+Local validation passed **16,138 portable tests** (1,081 integration tests
+deselected; 320.65 log seconds) and **40 native tests**: 19 C12 tests in 62.079
+JUnit seconds and 21 accepted B6 regressions in 81.035 JUnit seconds. C12 achieved
+**6/6 ordinary and 2/2 separate robustness completions**, six inconclusive negatives,
+zero unnecessary refusals, all **28/28** blocked destinations and **140/140** boundary
+fields. All fourteen native reports rebuilt unchanged. CLI-case wall latency was
+2745–5746 ms (median 3194 ms), with zero provider calls and cost. These are descriptive
+measurements, not comparative overhead.
+
+All **574 frozen source bindings** reconciled; two AST-identical comment corrections
+are recorded. Implementation `c875820` preserves the tested behavior. The eight
+useful C12 reports reuse actual native evidence, without fresh native repetitions
+or a separate clean-source native-execution claim. All **83 accepted bundles**
+replayed unchanged through shared inspection and isolated CLI, with eleven inherited
+receipt links. Details are in [verification.md](verification.md).
+
+[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) is ready for latest-revision
+review and hosted checks and remains unmerged. Passing synthetic approval tests
+does not claim personal acceptance. Review, required checks and a merge instruction
+remain separate acceptance gates.
 
 B0–B8, C1–C11, offline R5, accepted local R6 and the initial GUI remain closed.
 The earlier C9 stall cause remains unresolved. Credentials, paid/live evaluation,

@@ -138,9 +138,11 @@ The C12 [HTTP OPTIONS candidate](http-options-tools.md) adds one fixed
 resource-specific request through existing curl, for **37 profiles using the same
 14 programs**. Typed status, distinct absent/empty Allow and authentication-scheme
 names remain untrusted advertisements. No advertised method, redirect or login is
-executed. Six ordinary tasks, two robustness tasks and six negative cases must pass
-actual owned-lab execution, evidence replay and enforcement checks. Final C12
-validation totals remain pending; credentials and paid calls remain deferred.
+executed. Validation passed **16,138 portable and 40 native tests**, with 6/6 ordinary
+and 2/2 robustness completions, six inconclusive negative cases, 28/28 blocked
+destinations, zero unnecessary refusals and 83 unchanged accepted-bundle replays.
+[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) awaits latest-revision
+review and hosted checks and remains unmerged. Credentials and paid calls stay deferred.
 
 From the repository root, with the project installed:
 

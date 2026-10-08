@@ -1,5 +1,85 @@
 # Verification record
 
+## C12 bounded HTTP OPTIONS metadata — 8 October 2026
+
+The [C12 runbook](http-options-tools.md) defines `curl_http_options_v1`: one
+fixed 146-byte OPTIONS request to `/harbordesk/portal.html` on the disconnected
+owned endpoint, using the accepted curl isolation path. It adds resource-specific
+status, method advertisements and authentication-scheme names; no advertised
+method is invoked. Accepted C11 remains closed. C12 is a separate review candidate
+with **37 profiles using 14 external programs**.
+
+Implementation `c875820f6344e1c95b1f420467c11f4379d0b1c2` passed **16,138 portable
+tests** with 1081 integration tests deselected, no failures/errors/skips
+(320.296 JUnit seconds; 320.65 seconds in the pytest log). **40 native tests** passed:
+19 C12 cases/gates in 62.079 JUnit seconds and 21 accepted Docker/WinRM curl
+regressions in 81.035 seconds. Each suite used its own retained private directory.
+No repeated native run was required after success.
+
+All **6/6 ordinary tasks** completed: status 200, bodyless 204, absent Allow,
+explicitly empty Allow, 401 with scheme hints and 405 with method advertisements.
+Both separate robustness tasks completed: fragmented delivery and a hostile
+unknown header. Six negative cases remained inconclusive after actual validated
+request progress: malformed Allow, truncated body, stall, output pressure and two
+redirects. A 401/405 is useful server metadata, not an unnecessary authority refusal.
+There were **zero unnecessary refusals**, zero provider calls and zero provider cost.
+
+All **28/28 forbidden-destination witnesses and 140/140 boundary fields** passed
+across fourteen cases. All owners closed with one counted connection and one
+validated fixed request. Five native authority tests preserved one-use approval,
+missing-proof rejection, cancellation cleanup, private-input exclusion and
+rejection of broadened UDP permission. Native tests exercised synthetic unattended
+policies or test approval transports; they do not claim personal acceptance.
+The shipped policy still requires fresh approval and explicit OPTIONS permission.
+
+Secure CLI wall time across all fourteen scenarios was **2745–5746 ms**, median
+**3194 ms**; useful captures were 73–220 bytes. The output-pressure case retained
+8192 bytes and stayed inconclusive. These wall times include setup/reporting and
+are descriptive measurements, not comparative overhead. The five-second native
+execution deadline and 60-second session limit remain separate bounds.
+
+An independent read-only audit rebuilt all fourteen reports unchanged and checked
+artifact hashes, both raw channels, action/policy/runtime binding, owner counters,
+audit order and JUnit properties. All **574 source hashes** match. The original
+pre-test manifest is retained; two later comment-only corrections have identical
+executable ASTs, with both versions and hashes preserved. Accepted snapshots keep
+all **223 earlier case contracts, 36 adapters and 27 runtimes** unchanged.
+
+The bounded parser verifies retained HTTP/1.1 framing; curl may discard later wire
+bytes that therefore cannot be inspected. Only the documented ASCII/header/body
+subset is accepted. Valid but unsupported authentication syntax stays inconclusive.
+Allow tokens are advertisements, not verified support; scheme names do not verify
+an authentication mechanism. No verified identity, vulnerability, full wire-stream
+validation or real-model injection-resistance claim is made.
+
+Development records retain four corrected new evidence-test assertions, an initial
+catalog check before its runbook existed, and the outer-sandbox native startup
+failure. That sandbox attempt failed all 19 cases at audit startup, before any tool
+execution artifact; the authorized run passed. These startup failures are excluded
+from useful-execution timings. An independent read-only replay startup also required
+namespace permission. No production workaround or fallback weakened isolation.
+
+Private records remain under `.secure-agent/http-options-20261008/`: the separate
+portable/native logs and XML, original/final source manifests, comment-equivalence
+record, native audit and inherited replay receipt. Raw evidence is excluded from Git.
+Credentials, paid/live-model calls, external engagements, deeper workflows and
+comparative benchmarking remain deferred. The earlier C9 stall cause remains
+undetermined; these passes do not establish its resolution.
+
+All **83 accepted bundles** replayed unchanged through shared inspection and the
+isolated CLI, with eleven inherited receipt files pinned. The eight useful C12
+receipt rows reuse the native test evidence; this read-only pass performed zero
+new native tool executions. The receipt is
+`.secure-agent/http-options-20261008/verification.json`, SHA256
+`4ff9bd4bb807d543f0b0e491b65882b33a64f5266b7c7b80c9f979f0a3fa2775`.
+The final source-manifest SHA256 is
+`1ae913a95710e139b7015eccf6c899dc747bc6ca97aae84a320b9d084af9a2ae`.
+
+Local validation is complete in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66).
+Subsequent commits record documentation and PR status only. Leave the candidate
+unmerged pending latest-revision review, hosted checks and a merge instruction.
+B0–B8, C1–C11, offline R5, accepted local R6 and the initial GUI stay closed.
+
 ## PR #65 review and merge — 8 October 2026
 
 **C11 is accepted and closed in [PR #65](https://github.com/0xsl0th/recon-cockpit/pull/65).**

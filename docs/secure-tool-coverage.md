@@ -143,7 +143,7 @@ integration from a candidate secure profile.
 | C9 | FTP explicit TLS before login; secure OpenSSL, separate from accepted anonymous FTP listing | Fixed AUTH TLS, verified fixture TLS/clean close, 2/2 ordinary and 3/3 robustness completions, six inconclusive cases, 22/22 blocked destinations, 110/110 boundary fields, actual execution/replay and G1–G6. No login/credentials/listing/transfer/data connections; disclose unchecked/discarded replies and strict retained-greeting support. | [x] Accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63), merge `e06e1a4`; all five final and post-merge jobs passed. Initial legacy stall failure remains unexplained. See the [C9 runbook](ftp-starttls-tools.md). |
 | C10 | DNS server-reported NSID; interactive Nmap suggestion exists, new secure dig profile reuses the accepted runtime | One fixed nonrecursive TCP question with empty EDNS NSID; at most 64 opaque bytes; 5/5 ordinary and 1/1 hostile-metadata completions, eight inconclusive cases after actual query progress, 28/28 blocked destinations, 140/140 boundary fields, replay and G1–G6. No UDP, cookies, recursion, negotiation retries, zone transfer, verified identity or follow-up. | Implemented at `4e6d20e7`; 14,814 portable/62 native tests and 72 accepted-bundle replays passed. Initial historical test-selection failure and correction retained; [x] accepted in PR #64 at `dea8c7a`; all final and post-merge jobs passed. See the [C10 runbook](dns-nsid-tools.md). |
 | C11 | DNS zone-transfer behavior; existing secure dig runtime, no interactive AXFR profile | One fixed synthetic TCP AXFR; accept four messages/16 records with matching SOAs; 3/3 ordinary complete/multiframe/refused tasks, 2/2 robustness, nine inconclusive cases, actual query progress, 28 destination/140 boundary checks, replay and G1–G6. Five-second/8192-byte native limits; no credentials, recursion or returned-host follow-up. | Implemented at `25b9395c`; 15,464 portable/61 native tests, five clean-commit trials and 78 accepted-bundle replays passed; [x] accepted in PR #65 at `82dd85a`; all five final and post-merge jobs passed. See [C11 runbook](dns-axfr-tools.md). |
-| C12 — current | HTTP OPTIONS metadata; existing secure curl runtime, no interactive OPTIONS profile | One fixed resource, complete bounded HTTP/1.1 status/Allow/auth-scheme metadata; require 6/6 ordinary and 2/2 robustness tasks, six inconclusive negative cases, 28 destination/140 boundary checks, five authority gates, unchanged evidence replay and G1–G6. No advertised-method execution, redirects, credentials or GUI work. | Authorized candidate; final portable/native validation totals pending. See [C12 runbook](http-options-tools.md). |
+| C12 — current | HTTP OPTIONS metadata; existing secure curl runtime, no interactive OPTIONS profile | One fixed resource, complete bounded HTTP/1.1 status/Allow/auth-scheme metadata; require 6/6 ordinary and 2/2 robustness tasks, six inconclusive negative cases, 28 destination/140 boundary checks, five authority gates, unchanged evidence replay and G1–G6. No advertised-method execution, redirects, credentials or GUI work. | Implemented at `c875820`; 16,138 portable/40 native tests and 83 accepted-bundle replays passed. [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) awaits latest-revision review and hosted checks; unmerged. See [C12 runbook](http-options-tools.md). |
 | Next gap to reassess | SNMP interface metadata; accepted SNMP GET covers only three system scalars, no interactive GETNEXT integration | One fixed ifDescr column seed through snmpgetnext, one validated successor or explicit end-of-view/out-of-subtree result; no walk, GETBULK, SET, UDP, real community or returned-OID follow-up; actual execution, bounded typed evidence, adversarial cases and G1–G6. | Recommendation only; validate the new executable closure and incremental usefulness before selecting a batch. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -334,15 +334,26 @@ challenge, body or unknown-header text. It verifies neither service identity nor
 actual method support; no advertised method is executed. Retained framing is checked,
 but extra wire bytes that curl does not emit cannot be inspected.
 
-C12 requires **6/6 ordinary and 2/2 separate robustness completions**, six
-inconclusive negative cases, zero unnecessary refusals, all 28 forbidden-destination
-and 140 boundary-field checks, actual request progress, closed owners and unchanged
-independent replay. Five native authority gates cover one-use approval, missing
-consumed proof, cancellation, private inputs and broadened UDP. **C12 validation is
-in progress; final portable/native totals and evidence receipts are pending.**
-The shipped policy requires fresh approval. Synthetic test grants do not establish
-personal acceptance, and raw evidence stays outside Git. Leave the new PR unmerged
-until latest-revision review, hosted checks and an instruction to merge.
+Local validation passed **16,138 portable tests** (1,081 integration tests
+deselected; 320.65 log seconds) and **40 native tests**: 19 C12 scenarios/gates
+and 21 accepted B6 regressions. C12 completed **6/6 ordinary and 2/2 separate
+robustness tasks** with zero unnecessary refusals; six negative cases remained
+inconclusive after actual request progress. All **28/28** forbidden-destination
+and **140/140** boundary-field checks passed. Five authority gates cover one-use
+approval, missing consumed proof, cancellation, private inputs and broadened UDP.
+The independent audit rebuilt all 14 native reports unchanged. CLI-case wall latency
+was 2745–5746 ms (median 3194 ms), with zero provider calls and cost; these are
+descriptive measurements, not comparative overhead.
+
+All **574 frozen source bindings** reconciled, with two AST-identical comment
+corrections recorded. Implementation `c875820` retains the tested behavior. The
+eight useful C12 reports reuse actual native evidence; no fresh native repetitions
+or separate clean-source native execution are claimed. All **83 accepted bundles**
+replayed unchanged through shared inspection and isolated CLI, with eleven inherited
+receipt links. [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) is ready for
+latest-revision review and hosted checks; it remains unmerged. The shipped policy
+requires fresh approval. Synthetic test grants do not establish personal acceptance,
+and raw evidence stays outside Git. Merge requires the corresponding instruction.
 
 After C12 review, reassess **one bounded SNMP GETNEXT for interface metadata**:
 one fixed ifDescr column seed, one successor or explicit end-of-view/out-of-subtree
