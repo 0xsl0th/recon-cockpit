@@ -1,6 +1,6 @@
 # Verification record
 
-## C10 owned DNS NSID metadata — 7 October 2026
+## C10 owned DNS NSID metadata — 7–8 October 2026
 
 The [C10 runbook](dns-nsid-tools.md) defines `dig_dns_nsid_v1`: one fixed
 nonrecursive TCP question with an empty EDNS NSID option through existing dig.
@@ -10,12 +10,12 @@ The candidate has **35 profiles using 14 programs**; C9 is accepted below.
 
 | Check | Result |
 | --- | --- |
-| Portable validation | Confirmation running after one test-only correction; initial run: 14,813 passed / one historical snapshot-selection failure. 1,042 integration tests are separately collected and excluded. |
+| Portable validation | **14,814 passed**, zero failures/errors/skips; JUnit 326.949 seconds. Initial run retained: 14,813 passed / one historical snapshot-selection failure, 326.622 seconds. 1,042 integration tests separately collected and excluded. |
 | Actual Linux suite | **62 passed**: 20 C10, 16 accepted SRV, 17 FTP TLS, five original DNS and four direct TLS; zero failures/errors/skips; JUnit 193.604 seconds. |
 | Useful NSID tasks | **5/5 ordinary**: printable, binary, present empty, absent option and no EDNS. **1/1 separate robustness**: hostile NSID retained as opaque hex. Zero unnecessary refusals. |
 | Negative progress | **Eight inconclusive**: refusal, malformed option, duplicate NSID, 65-byte NSID, stall, output pressure, unexpected option and BADVERS. Every case witnessed one actual fixed query and closed ownership. |
 | Enforcement | **28/28** forbidden-destination witnesses and **140/140** boundary fields. Six additional native tests covered one-use grant, missing consumed proof, cancellation after actual exec, private inputs, UDP refusal and thread-ceiling refusal. |
-| Local replay | All 14 native scenario bundles independently reparsed and replayed unchanged. Clean-source compatibility verification follows before final PR handoff. |
+| Local replay | All 14 native scenario bundles independently reparsed and replayed unchanged. Six clean-source trials passed; all **72 accepted bundles** replayed unchanged through both inspectors. |
 | Provider calls/cost | **0 / $0**; no model credentials or real service credentials. Synthetic unattended policies are explicit; shipped policy still requires fresh approval. |
 
 The exact request has a 48-byte DNS body plus two-byte TCP framing. Only transaction
@@ -70,7 +70,7 @@ The initial XML/log and `source-snapshot-transition.json` retain this correction
 The final 557-file snapshot is `final-source-files.json`, SHA256
 `5b48169e0e3956c533804a7ce238208d56f1f3a1ba6462f407979327edbfc2df`;
 it differs from the original audited snapshot only in
-`tests/test_secure_ftp_tls_runtime.py`. Full portable confirmation is running.
+`tests/test_secure_ftp_tls_runtime.py`. Full portable confirmation passed all 14,814 tests.
 
 The accepted 195 case contracts, 34 adapters and 25 runtime argv/environment
 profiles retain canonical SHA256
@@ -85,8 +85,23 @@ pure-parser report rebuilds with unchanged bytes, mtimes and modes; SHA256:
 `08088742739cdb464a95e07aa267e273452fd4738d4c1537ba6259a6ff49b8ec`.
 It did not rerun native execution or isolated replay; the native tests establish
 that replay. Independent runtime/fixture and parser/evidence cross-reviews found
-no blockers. Clean-source verification and final hosted checks remain pending.
+no blockers. Clean-source verification passed; final hosted checks remain pending.
 C10 stays unmerged until its own latest-revision review and merge instruction.
+
+Clean-source verification used implementation `4e6d20e79b96aa5c792643fcfe46b384abd7c451`.
+The six actual trials completed 5/5 ordinary and 1/1 separate robustness tasks
+with zero unnecessary refusals and **12/12** blocked destination witnesses.
+Ordinary wall times were **3238, 3232, 3229, 3270 and 3287 ms**; the hostile-NSID
+trial took **3286 ms**. The verifier checked every raw NSID value, exact observation,
+authority/runtime/owner binding, closed fixture and independent parsing. It replayed
+all 72 accepted bundles through CLI and shared inspection with unchanged bytes,
+mtimes and modes, and verified nine inherited receipt files. No credentials,
+provider calls or paid calls were used, and no personal acceptance is claimed.
+Private `clean-source-4e6d20e7-6dtw0zx_/verification.json` SHA256:
+`0815f9324eaca5e2f480736b4f1028e38019b86aa5b975c460192b61d8259808`.
+Its immutable C9 receipt remains
+`e37e3819fe908acffd30d3c803452d49b6cf27808f90aa4a6bcad4aca16145be`.
+The final documentation changes do not alter the 557 tested source files.
 
 The next recommendation is separate fixed-zone synthetic AXFR behavior with
 bounded frames/records, matched SOA boundaries, explicit refusal and no returned-host

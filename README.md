@@ -136,8 +136,11 @@ C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63) at 
 The C10 [DNS NSID candidate](docs/dns-nsid-tools.md) adds one fixed nonrecursive TCP query
 requesting opaque server metadata through existing dig. Empty and absent replies
 are distinct; identifiers remain unverified, and no returned text selects follow-up.
-The candidate has **35 secure profiles using 14 programs**. Full validation and
-PR review are pending; credentials and paid calls remain deferred.
+The candidate has **35 secure profiles using 14 programs**. Validation passed
+**14,814 portable / 62 native tests**, six useful clean-source trials and 72
+unchanged accepted-bundle replays. PR review/merge remain pending; credentials
+and paid calls stay deferred. The initial historical snapshot-test failure was
+corrected without changing production code and remains recorded.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

@@ -19,15 +19,24 @@ NSID, malformed replies and bounds failures remain inconclusive. No response
 confers identity, scope or follow-up authority. UDP, cookies, recursion, retry,
 EDNS version negotiation, search, zone transfer and external attachment remain disabled.
 
-Implementation and the first real owned-lab query are complete; full validation
-is pending. Completion requires 5/5 ordinary tasks and the separate hostile-NSID
-trial, zero unnecessary refusals, eight negative outcomes after actual query
-progress, 28/28 blocked destinations, 140/140 boundary fields, unchanged evidence
-replay and six native authority gates. Record descriptive latency and zero provider
-cost; these are not comparative overhead measurements. The shipped policy requires
-fresh approval; synthetic unattended tests do not claim personal acceptance.
-Private evidence belongs under `.secure-agent/dns-nsid-20261007/` and stays out of Git.
-Leave the new PR unmerged pending latest-revision review, hosted checks and its merge instruction.
+Validation passed **14,814 portable tests** and **62 native tests**, including
+20 C10 scenarios/gates and 42 accepted regressions. C10 completed **5/5 ordinary
+and 1/1 separate robustness** tasks, with zero unnecessary refusals, eight
+inconclusive outcomes, **28/28** blocked destinations and **140/140** boundary
+fields. Six useful trials from clean implementation `4e6d20e7` passed; all
+**72 accepted bundles** replayed unchanged, with nine inherited receipts.
+All **557 final source hashes** match. The initial portable run had one historical
+snapshot-test selection error; its corrected exclusion preserves the old hash,
+and full confirmation passed. No production or selected native-test file changed.
+C9's earlier unexplained legacy stall remains recorded separately.
+
+Independent source/evidence reviews found no blockers. Native scenario latency
+was 2657–4692 ms (median 3128.5 ms); provider calls/cost stayed zero. These are
+descriptive measurements, not comparative overhead. See [verification.md](verification.md)
+and private `.secure-agent/dns-nsid-20261007/`. The shipped policy requires fresh
+approval; synthetic unattended tests do not claim personal acceptance. Raw evidence
+stays out of Git. Leave the new PR unmerged pending latest-revision review,
+hosted checks and its merge instruction.
 
 After C10 review, reassess **bounded DNS zone-transfer behavior** through existing
 dig and a fixed synthetic zone. This separate proposed profile needs finite TCP
