@@ -9,6 +9,12 @@ merged; C18/T01 is accepted and the finite coverage contract remains active.
 T02 source feasibility is complete; the next step is bounded OpenSSL native
 feasibility.**
 
+[PR #75](https://github.com/0xsl0th/recon-cockpit/pull/75), branch
+`docs/tls-posture-feasibility` in `/tmp/recon-tls-posture-feasibility`, contains
+this documentation-only decision and checkpoint update. It remains unmerged;
+review its latest revision and checks before a later authorized merge. Private
+handoff: `.secure-agent/tls-posture-feasibility-20261008/handoff.json`.
+
 The owner chose to wait with the competition proposal until **November 2026**.
 Keep PR #31, its proposal/PDF and email draft unchanged this turn. Refresh them
 with verified progress in November, before the **15 November 2026** deadline;
