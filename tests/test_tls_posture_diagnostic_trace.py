@@ -380,3 +380,46 @@ def test_observed_legacy_signature_text_cannot_claim_a_modern_handshake(version,
     stderr = base64.b64decode(value["execution"]["raw_stderr_base64"])
     value["execution"]["raw_stderr_base64"] = b64(stderr + b"Hash used: SHA1\nSignature type: ecdsa_sha1\nSupported Elliptic Curve Point Formats: uncompressed\n")
     assert trace.analyze_trial(value)["outcome"] == expected
+
+
+@pytest.mark.parametrize("exit_code", [-9, -15, 0, 2, 127])
+def test_received_alert_does_not_turn_abnormal_process_termination_into_complete_rejection(exit_code):
+    value = trial(rejection=True)
+    value["execution"]["exit_code"] = exit_code
+    result = trace.analyze_trial(value)
+    assert result["outcome"] == "inconclusive"
+    assert result["execution"]["exit_code"] == exit_code
+    assert "rejection_execution_not_complete" in result["issues"]
+
+
+def test_unexpected_peer_handshake_before_alert_is_not_supported_rejection():
+    value = trial(rejection=True)
+    certificate = handshake(11, b"unexpected_certificate")
+    wire = record(certificate)
+    old = message("read", "RecordHeader", bytes.fromhex(record(b"\2\x46", 21)["raw_hex"])[:5])
+    extra = message("read", "RecordHeader", bytes.fromhex(wire["raw_hex"])[:5]) + message("read", "Handshake", certificate, "Certificate")
+    replace_stdout(value, old, extra + old)
+    diagnostic = value["owner"]["diagnostic"]
+    diagnostic["sent_records"].insert(0, wire)
+    diagnostic["sent_bytes"] += len(bytes.fromhex(wire["raw_hex"]))
+    result = trace.analyze_trial(value)
+    assert result["outcome"] == "inconclusive"
+    assert "unexpected_rejection_sequence" in result["issues"]
+
+
+@pytest.mark.parametrize("rejection", [False, True])
+def test_owner_case_must_match_this_trial(rejection):
+    value = trial(rejection=rejection)
+    value["owner"]["diagnostic"]["case"] = "modern"
+    result = trace.analyze_trial(value)
+    assert result["outcome"] == "inconclusive"
+    assert "mismatched_owner_case" in result["issues"]
+
+
+def test_conflicting_success_summary_cannot_coexist_with_rejection():
+    value = trial(rejection=True)
+    stderr = base64.b64decode(value["execution"]["raw_stderr_base64"])
+    value["execution"]["raw_stderr_base64"] = b64(stderr + b"Verification: OK\n")
+    result = trace.analyze_trial(value)
+    assert result["outcome"] == "inconclusive"
+    assert "conflicting_rejection_summary" in result["issues"]

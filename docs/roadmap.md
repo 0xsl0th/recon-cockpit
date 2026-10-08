@@ -5,8 +5,8 @@ The historical planning baseline below began on 15 September 2026. This is a dev
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — PR #74 accepted; T02 source feasibility complete, OpenSSL
-native feasibility next (8 October 2026).**
+**Current slice — PR #75 merged; T02 native diagnostic confirms useful
+observations but fails retry prevention (8 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -31,7 +31,7 @@ claim that today's bounded fixtures support professional engagements.
 | --- | --- | --- |
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
-| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX is accepted. [T02 source feasibility](tls-posture-feasibility.md) rejects stock sslscan; separately versioned OpenSSL per-version native feasibility is next. T02 remains open with no implemented profile. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
+| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX is accepted. [T02 native feasibility](tls-posture-native.md) proves the ordinary version observations but exposes an unprevented second ClientHello. A finite transport mediator is next; T02 remains open with no accepted profile. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
 | 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
@@ -243,8 +243,8 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current status: PR #74 is merged; C18/T01 is accepted. T02 source feasibility
-is complete; OpenSSL native feasibility is next.**
+**Current status: PR #75 is merged; C18/T01 stays accepted. T02 native
+observations are useful, but its request boundary still needs enforcement.**
 [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72) merged as
 `e00482409362f1f9380bc225063b84762446dee9` after fresh authority/runtime and
 parser/evidence reviews found no blockers and all five final PR checks passed. All five
@@ -323,14 +323,21 @@ Private verification: `.secure-agent/dns-mx-20261008/verification.json`, SHA-256
 `59e3e89ced9a0887095bb62fe238a2c34fa45e4f724a2fefe2cf7b4c73505093`. Development test corrections and the exploratory smoke run are
 retained in the private development review; no historical hash was regenerated.
 
-**T02 source feasibility is complete;
-[T02 itself remains open](tls-posture-feasibility.md).**
-Stock sslscan loses the received rejection evidence needed for the task. The next
-minimal native-feasibility slice will assess separately versioned OpenSSL
-per-version profiles through the existing secure infrastructure, retaining all
-four required versions. No tool installation or scan occurred in this slice;
-the already-installed sslscan has no secure integration. No T02 G1–G6 gate is
-closed, and accepted coverage remains 43 profiles/16 programs.
+**T02 remains open: the [native diagnostic](tls-posture-native.md) confirms
+useful version observations and a request-boundary failure.**
+On frozen execution source `958b5d6`, the disconnected fixtures produced 8/8
+ordinary observations across TLS 1.0/1.1/1.2/1.3 and 4/4 explicit received
+rejections. Six actual handshakes completed with certificate/name verification.
+The thirteenth trial elicited a second ClientHello after HelloRetryRequest:
+**observed, not prevented (0/1 prevention)**. Keep this failed gate visible.
+The development diagnostic reuses confinement mechanics but does not exercise
+production approvals, permits, admission or the two evidence inspectors. No T02
+secure profile or G1–G6 acceptance follows; coverage remains 43 profiles/16 programs.
+Next review and implement a finite transport mediator that prevents a second
+ClientHello before forwarding it, preserving the four-version task and existing
+caps. Prove both ordinary completion and retry blocking before product integration;
+if mediation cannot fit those bounds, review a concrete contract alternative
+without silently permitting retries. Existing TLS profiles stay unchanged.
 Continue through required T03–T06 using the
 [finite checklist](professional-v1-coverage.md); do not remove difficult outcomes
 or substitute program counts for useful coverage. Existing closed milestones stay

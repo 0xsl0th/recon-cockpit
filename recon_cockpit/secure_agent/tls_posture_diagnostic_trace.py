@@ -238,6 +238,9 @@ def analyze_trial(trial):
     diagnostic = owner.get("diagnostic", {}) if type(owner) is dict else {}
     if type(diagnostic) is not dict:
         diagnostic = {}
+    if (type(trial.get("case")) is not str or trial.get("case") not in {"modern", "legacy", "reject", "hrr"}
+            or diagnostic.get("case") != trial.get("case")):
+        issues.append("mismatched_owner_case")
     boundary = []
     if type(owner) is dict and type(owner.get("connection_count")) is int and owner["connection_count"] > 1:
         boundary.append("extra_connection_observed_not_prevented")
@@ -311,8 +314,19 @@ def analyze_trial(trial):
                 if sum(type(row) is dict and all(row.get(key) == value for key, value in required.items()) for row in owner_messages) != 1:
                     issues.append("client_owner_handshake_mismatch")
         if rejection:
+            if ([(m["direction"], m["name"]) for m in messages if m["kind"] == "Handshake"] != [("write", "ClientHello")]
+                    or len(received_records) != 1 or len(sent_records) != 1
+                    or any(m["kind"] not in {"RecordHeader", "Handshake", "Alert"} for m in messages)):
+                issues.append("unexpected_rejection_sequence")
+            if execution.get("exit_code") != 1:
+                issues.append("rejection_execution_not_complete")
+            if any(line in {"CONNECTION ESTABLISHED", "Verification: OK", "Verified peername: harbordesk.test"}
+                   or line.startswith(("Protocol version:", "Ciphersuite:")) for line in text):
+                issues.append("conflicting_rejection_summary")
             if len(alerts) != 1 or not any(raw[0] == 21 and raw[5:] == b"\x02\x46" for raw in sent_records):
                 issues.append("rejection_not_corroborated")
+            if diagnostic.get("alerts") != [{"direction": "write", "type": 2, "description": 70}]:
+                issues.append("owner_rejection_alert_mismatch")
             if diagnostic.get("handshake_completed") is not False:
                 issues.append("conflicting_owner_handshake")
             if not issues:

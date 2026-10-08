@@ -3,6 +3,7 @@
 import hashlib
 import io
 import json
+import os
 import ssl
 import subprocess
 import sys
@@ -12,6 +13,38 @@ import warnings
 import pytest
 
 from recon_cockpit.secure_agent import tls_posture_diagnostic_fixture as fixture
+
+
+@pytest.fixture
+def portable_owner_material(tmp_path, monkeypatch):
+    """Replace only Linux certificate-file plumbing, preserving real TLS.
+
+    Native owners load the public synthetic material from memfd via /proc.
+    Portable tests use private temporary files for those same bytes. Applying
+    the seam on every OS ensures Linux CI exercises the macOS-compatible path.
+    Production code and its Linux-only execution contract remain unchanged.
+    """
+    paths = {}
+    created = []
+    original_load = ssl.SSLContext.load_cert_chain
+
+    def temporary_memfd(name, flags):
+        path = tmp_path / (str(len(created)) + "-" + name)
+        descriptor = os.open(path, os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC, 0o600)
+        paths[str(descriptor)] = str(path)
+        created.append(path)
+        return descriptor
+
+    def load_public_chain(context, certfile, keyfile=None, password=None):
+        def resolve(path):
+            prefix = "/proc/self/fd/"
+            return paths[path[len(prefix):]] if isinstance(path, str) and path.startswith(prefix) else path
+        return original_load(context, resolve(certfile), resolve(keyfile), password)
+
+    monkeypatch.setattr(fixture.os, "MFD_CLOEXEC", 0, raising=False)
+    monkeypatch.setattr(fixture.os, "memfd_create", temporary_memfd, raising=False)
+    monkeypatch.setattr(ssl.SSLContext, "load_cert_chain", load_public_chain)
+    return paths
 
 
 def vector(raw, width=2):
@@ -217,7 +250,7 @@ class MemoryClient(Wire):
 
 
 @pytest.mark.parametrize("version", ["tls1", "tls1_1", "tls1_2"])
-def test_actual_legacy_and_modern_memory_tls_handshakes_and_clean_close(version):
+def test_actual_legacy_and_modern_memory_tls_handshakes_and_clean_close(version, portable_owner_material):
     # Python SSLContext lacks a public TLS 1.3 ciphersuite setter; the native
     # fixed-argv corpus must prove its exact TLS 1.3 ClientHello separately.
     ledger, progress = fixture.new_ledger("legacy", version), []
@@ -238,7 +271,7 @@ def test_actual_legacy_and_modern_memory_tls_handshakes_and_clean_close(version)
 
 
 @pytest.mark.parametrize("application,ragged", [(b"GET / HTTP/1.0\r\n\r\n", False), (b"", True)])
-def test_application_or_ragged_eof_cannot_claim_clean_completion(application, ragged):
+def test_application_or_ragged_eof_cannot_claim_clean_completion(application, ragged, portable_owner_material):
     ledger = fixture.new_ledger("legacy", "tls1_2")
     context, wire = fixture.tls_context("legacy", ledger), MemoryClient("tls1_2", application=application, ragged=ragged)
     with pytest.raises(ValueError, match="application_data|eof"):
@@ -249,7 +282,7 @@ def test_application_or_ragged_eof_cannot_claim_clean_completion(application, ra
     assert ledger["server_close_notify_record"] is None
 
 
-def test_owner_context_policies_remain_consistent_across_requested_versions():
+def test_owner_context_policies_remain_consistent_across_requested_versions(portable_owner_material):
     for case in ("modern", "legacy"):
         context = fixture.tls_context(case, fixture.new_ledger(case, "tls1_2"))
         assert context.minimum_version == (ssl.TLSVersion.TLSv1 if case == "legacy" else ssl.TLSVersion.TLSv1_2)

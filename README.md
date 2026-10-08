@@ -892,8 +892,9 @@ TCP question with no returned-host follow-up; G1–G6 are closed. The
 [finite professional-v1 coverage checklist](docs/professional-v1-coverage.md)
 records six required operator outcomes: T01 is accepted and T02–T06 remain open.
 [T02 source feasibility](docs/tls-posture-feasibility.md) rejected stock sslscan
-because it loses received rejection evidence. Next is a minimal OpenSSL
-per-version native-feasibility slice through the existing secure path; all four
-versions remain required. No T02 profile or additional program is accepted.
+because it loses received rejection evidence. The new [OpenSSL native diagnostic](docs/tls-posture-native.md)
+produces the required ordinary observations for all four versions, but exposes
+an unprevented second ClientHello after a retry request. Finite transport
+enforcement is next. No T02 profile or additional program is accepted.
 Credentials, paid calls, live models and deeper workflow work remain deferred. The owner has deferred the proposal
 refresh until November 2026; its separate submission decision remains pending.

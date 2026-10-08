@@ -69,17 +69,85 @@ challenge, not an ordinary usefulness success. Record byte sizes, connection and
 ClientHello counts, elapsed time, exit/stop reason and cleanup for every trial.
 Provider calls and cost remain zero; latency is descriptive, not a benchmark.
 
-## Validation and next decision
+## Native findings — 8 October 2026
 
-Native results and source pins will be recorded here after execution. Do not
-infer a passed gate from the expected outcomes above. Portable parser/fixture and
-confinement-construction checks accompany this slice; accepted executable paths,
-profiles and evidence semantics remain unchanged.
+Execution source was frozen at `958b5d6`. Thirteen fresh invocations used the
+installed, sealed OpenSSL closure; no installation was needed. All thirteen
+confirmed the confinement witnesses and closed the diagnostic owner/client.
 
-If complete ordinary traces exceed 8192 bytes, legacy handshakes fail, or the
-client sends a second ClientHello, preserve those failures and keep T02 open.
-Review a concrete evidence/transport contract change before product integration.
-Do not hide a process failure, count a late inconclusive label as prevention, or
-silently weaken the four-version task. Proposal work waits until November;
-credentials, paid/live models, deeper workflows and comparative benchmarking
-remain deferred.
+| Corpus | Actual result | Completion / boundary |
+| --- | --- | --- |
+| Modern-only, four versions | Two received rejections and two completed verified handshakes. | 4/4 observations; one connection/ClientHello each. |
+| Legacy-enabled, four versions | Four actual completed verified handshakes. | 4/4 observations; one connection/ClientHello each. |
+| Explicit rejection, four versions | Four complete received fatal `protocol_version` alerts, independently corroborated. | 4/4 observations; actual OpenSSL exit **1**, never relabelled process success. |
+| TLS 1.3 cookie HelloRetryRequest | The real client sent a second ClientHello. | **Boundary failure: 0/1 prevented.** The extra request was observed by the owner, not blocked before transmission. |
+
+This is **2/2 ordinary four-version diagnostic tasks (8/8 observations)** plus
+**1/1 explicit-absence task (4/4 observations)**. There were zero unnecessary
+refusals among those twelve trials; this is diagnostic usefulness, not production
+authority acceptance. Six handshakes completed and six received rejections were
+useful. The thirteenth trial is an unresolved enforcement failure and cannot
+count as successful blocking. No broader unauthorized-action denominator is
+claimed by this diagnostic.
+
+Client execution/capture latency was **447–520 ms, median 471 ms**, excluding
+owner startup and teardown. Combined client output was **874–5702 bytes**,
+without truncation or deadlines. Owner ledgers contained at most **552 received /
+892 sent bytes** and **5 received / 7 sent records** per trial. All thirteen used
+one connection; the HRR trial alone sent two ClientHellos. Actual provider calls
+and cost were zero. These are descriptive measurements, not comparative overhead.
+
+All six handshakes verified the fixture CA/name and exchanged Finished messages.
+The client sent close_notify; the owner received it and completed its own shutdown.
+OpenSSL with closed stdin exited before reading the owner's final close_notify.
+The parser allows only that single, explicitly associated final shutdown record
+to be unread, checking its exact index/hash, fixed-cipher length and owner alert
+callbacks. It reports `server_close_notify_observed_by_client=false`; it never
+claims that the client received the server shutdown. Missing handshake records
+or additional unread records remain inconclusive.
+
+The 268 focused portable checks pass. They cover finite trace/owner grammar,
+rejection ambiguity, missing/mutated shutdown evidence, bounds, confinement
+construction and real socket-free MemoryBIO handshakes. The portable certificate
+loader is test-only and exercised on every OS; native Linux execution bytes are
+unchanged. A complete portable suite and final PR checks remain merge gates,
+with their results retained in the private verification and PR record.
+
+The private corpus is `.secure-agent/tls-posture-native-20261008/native-*.json`.
+The verification receipt pins each capture, execution source, final analysis,
+runtime files and portable result. Only parser/tests and documentation changed
+after execution freeze; accepted production source is unchanged. Diagnostic
+receipts do not replay through the product's evidence inspectors and cannot
+restore approval, permits or execution authority.
+
+### Retained development findings
+
+Five earlier `development-*.json` captures remain unchanged. The first failed
+because the owner did not recognize the normal TLS 1.3 PSK-mode advertisement;
+the correction permits exactly `0101`, without PSK material or early data.
+Earlier successful handshakes lacked an explicit association for the final owner
+shutdown record and remain inconclusive under the final parser. Exact observed
+CLI grammar and the owner association were added before the frozen corpus.
+The initial received-rejection and HRR-failure captures are also retained.
+Parser review subsequently tightened the rejection sequence, owner-case binding
+and required process exit without changing any native execution source.
+
+## Next required slice
+
+**T02 stays open.** The native corpus resolves basic legacy-handshake, trace-size
+and received-rejection feasibility; it fails the proposed one-ClientHello gate.
+Next implement a finite transport mediator that validates client TLS framing and
+prevents a second ClientHello **before forwarding it to the peer**. Preserve the
+fixed endpoint, all four version observations, existing caps and ordinary useful
+completion. Count peer-observed excess bytes, not merely a later parser refusal.
+Review that concrete boundary and its negative/lifecycle tests before connecting
+new profiles to production policy, approval, consumed permits, admission and both
+evidence inspectors. If this cannot fit the bounds, review a concrete alternative
+contract; do not silently allow retries or drop a required version.
+
+The hostile-usefulness, reset/timeout/partial-record, pressure, permit, cancellation,
+escape and regression corpus in the [source plan](tls-posture-feasibility.md#required-corpus-and-measurements)
+remains required for product G1–G6 acceptance. Those gates are not closed by these
+thirteen trials or portable tests. Complete T02 before selecting T03 from the
+unchanged coverage checklist. Proposal work waits until November; credentials,
+paid/live models, deeper workflows and comparative benchmarking remain deferred.

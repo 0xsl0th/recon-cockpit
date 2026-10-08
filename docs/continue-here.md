@@ -4,16 +4,24 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74) is
-merged; C18/T01 is accepted and the finite coverage contract remains active.
-T02 source feasibility is complete; the next step is bounded OpenSSL native
-feasibility.**
+**Current status: [PR #75](https://github.com/0xsl0th/recon-cockpit/pull/75) is
+merged; C18/T01 stays accepted. T02 native feasibility produced useful results
+but failed the one-ClientHello boundary. T02–T06 remain open.**
 
-[PR #75](https://github.com/0xsl0th/recon-cockpit/pull/75), branch
-`docs/tls-posture-feasibility` in `/tmp/recon-tls-posture-feasibility`, contains
-this documentation-only decision and checkpoint update. It remains unmerged;
-review its latest revision and checks before a later authorized merge. Private
-handoff: `.secure-agent/tls-posture-feasibility-20261008/handoff.json`.
+PR #75 merged reviewed `ef412f79` as `cb17f0cb` after fresh independent review
+found no blockers and all five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37836316541)
+passed. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37837701888)
+also passed. Reviewed and merged trees match
+`3bfdf57ec17be4cb123af73544309b05e4ef26b5`. Private merge receipt:
+`.secure-agent/pr75-merge-review.json`; the earlier source-feasibility handoff
+remains unchanged historical evidence.
+
+The new [native diagnostic](tls-posture-native.md), branch
+`feature/tls-posture-native-feasibility` in `/tmp/recon-tls-posture-native`, remains
+unmerged and needs review and its final checks. It is outside the secure catalog.
+Frozen execution source: `958b5d6`. Private corpus, verification and handoff:
+`.secure-agent/tls-posture-native-20261008/`. Development failures are retained.
+No assessment, approval or permit is restored by these files.
 
 The owner chose to wait with the competition proposal until **November 2026**.
 Keep PR #31, its proposal/PDF and email draft unchanged this turn. Refresh them
@@ -98,14 +106,21 @@ Private verification: `.secure-agent/dns-mx-20261008/verification.json`, SHA-256
 `59e3e89ced9a0887095bb62fe238a2c34fa45e4f724a2fefe2cf7b4c73505093`. Development test corrections and the exploratory smoke run are
 retained in the private development review; no historical hash was regenerated.
 
-**T02 source feasibility is complete;
-[T02 itself remains open](tls-posture-feasibility.md).**
-Stock sslscan loses the received rejection evidence needed for the task. The next
-minimal native-feasibility slice will assess separately versioned OpenSSL
-per-version profiles through the existing secure infrastructure, retaining all
-four required versions. No tool installation or scan occurred in this slice;
-the already-installed sslscan has no secure integration. No T02 G1–G6 gate is
-closed, and accepted coverage remains 43 profiles/16 programs.
+**T02 remains open: the [native diagnostic](tls-posture-native.md) confirms
+useful version observations and a request-boundary failure.**
+On frozen execution source `958b5d6`, the disconnected fixtures produced 8/8
+ordinary observations across TLS 1.0/1.1/1.2/1.3 and 4/4 explicit received
+rejections. Six actual handshakes completed with certificate/name verification.
+The thirteenth trial elicited a second ClientHello after HelloRetryRequest:
+**observed, not prevented (0/1 prevention)**. Keep this failed gate visible.
+The development diagnostic reuses confinement mechanics but does not exercise
+production approvals, permits, admission or the two evidence inspectors. No T02
+secure profile or G1–G6 acceptance follows; coverage remains 43 profiles/16 programs.
+Next review and implement a finite transport mediator that blocks a second
+ClientHello before forwarding it to the owned peer, preserving the four-version task and existing
+caps. Prove both ordinary completion and retry blocking before product integration;
+if mediation cannot fit those bounds, review a concrete contract alternative
+without silently permitting retries. Existing TLS profiles stay unchanged.
 Continue through required T03–T06 using the
 [finite checklist](professional-v1-coverage.md); do not remove difficult outcomes
 or substitute program counts for useful coverage. Existing closed milestones stay
@@ -660,12 +675,15 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: prove the bounded OpenSSL alternative for T02.**
+**Current continuation: enforce the bounded OpenSSL request contract for T02.**
 Follow the [finite task checklist](professional-v1-coverage.md), the
 [consolidated plan](product-roadmap.md) and current status at the top.
-C18 and earlier completed milestones stay closed. T02 source feasibility is
-complete, but its OpenSSL alternative still needs native feasibility and G1–G6;
-no deeper workflow, credential or live-model work starts here.
+C18 and earlier completed milestones stay closed. The unmerged
+[native diagnostic](tls-posture-native.md) produced 8/8 ordinary observations and
+4/4 explicit received rejections, but HRR prevention failed, 0/1. Review that
+finding, then implement a finite transport mediator and recheck usefulness and
+blocking before G1–G6 product integration. Diagnostic JSON is not production
+assessment evidence; no deeper workflow, credential or live-model work starts here.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1856,32 +1874,36 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #74 merge is complete. PRs #6–#30 and #32–#74
+- The operator-authorized PR #75 merge is complete. PRs #6–#30 and #32–#75
   stay closed; proposal PR #31 remains separate until its November refresh. Current
-  authorization covers the finite coverage continuation, now T02 feasibility.
+  authorization covers the finite coverage continuation, now T02 native
+  feasibility and its documented enforcement gap.
   Later merges, submission, messages, paid calls and external targets retain
   their corresponding gates.
 
 ## Next continuation
 
-1. PR #74 is accepted on main `b1afbbab8438fc55d3e509d51e00c1a9caddf2e1`
-   from reviewed `043aa5437c09d522cbcd98dbd0b13b030f53ca89`; fresh review,
-   407 focused tests and all five final CI jobs passed. Reviewed and merged trees
-   match. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37834481139)
-   passed; retain `.secure-agent/pr74-merge-review.json`. C18/T01 and its G1–G6
-   are closed; do not repeat its merge.
+1. PR #75 is accepted on main `cb17f0cb` from reviewed `ef412f79`; fresh
+   independent review and all five final and post-merge jobs passed as recorded
+   above. Retain `.secure-agent/pr75-merge-review.json`. PR #74's C18/T01 G1–G6
+   stay closed; retain `.secure-agent/pr74-merge-review.json` and do not repeat
+   either merge.
 2. Preserve C18's immutable `.secure-agent/dns-mx-20261008/verification.json`,
    native source pin `89d4465`, historical receipts and failure history. Only
    documentation and the terminal-test `O_NOCTTY` correction differ from the
    native-tested revision; accepted production bytes remain identical.
    Accepted coverage is **43 profiles/16 programs**.
-3. Review the completed [T02 source feasibility](tls-posture-feasibility.md)
-   in `/tmp/recon-tls-posture-feasibility`, branch `docs/tls-posture-feasibility`.
-   Stock sslscan is unsuitable because it loses received rejection evidence.
-   Next, prove separately versioned OpenSSL per-version profiles through the
-   existing secure path, retaining TLS 1.0/1.1/1.2/1.3 and client-side evidence.
-   No T02 execution, installation or acceptance has occurred; keep the full
-   [six-task contract](professional-v1-coverage.md) and all G1–G6 gates.
+3. Review the unmerged [T02 native diagnostic](tls-posture-native.md) in
+   `/tmp/recon-tls-posture-native`, branch `feature/tls-posture-native-feasibility`.
+   Frozen execution source `958b5d6` produced 8/8 ordinary and 4/4 absence
+   observations across TLS 1.0/1.1/1.2/1.3. The HRR trial observed a second
+   ClientHello, **0/1 prevention**. Preserve its failed gate and private corpus in
+   `.secure-agent/tls-posture-native-20261008/`; diagnostic JSON does not exercise
+   production approvals, permits, admission or the two evidence inspectors.
+   Next review and implement a finite transport mediator that blocks the extra
+   message before forwarding it to the owned peer, and recheck useful completion
+   under the same limits. No implicit retry allowance or T02 acceptance follows;
+   keep the full [six-task contract](professional-v1-coverage.md) and G1–G6 gates.
 4. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
    Preserve the private proposal/PDF, email draft, GUI mocks and native receipts.
    Refresh PR #31 in November 2026 before the 15 November deadline; submission
