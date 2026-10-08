@@ -64,7 +64,7 @@ class DiagnosticLab(OwnedLab):
         argv = super()._owner_command(stdlib, files, info_fd)
         directory = Path(__file__).parent
         mounts = []
-        for name in ("tls_posture_diagnostic_fixture.py", "network_tools_tls_certificate_material.py",
+        for name in ("tls_posture_diagnostic_fixture.py", "tls_posture_hello.py", "network_tools_tls_certificate_material.py",
                      "network_tools_fixture.py", "network_tools_dns_mx_fixture.py"):
             mounts += ["--ro-bind", str(directory / name), "/app/" + name]
         # OPENSSL_CONF is process-local for the synthetic legacy owner only.
