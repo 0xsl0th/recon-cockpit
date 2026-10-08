@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — C11 bounded DNS AXFR behavior (8 October 2026).**
+**Current slice — C12 bounded HTTP OPTIONS metadata (8 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -241,44 +241,65 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current work: priority 3 secure-tool coverage, C11 bounded DNS AXFR behavior.**
-Review [PR #65](https://github.com/0xsl0th/recon-cockpit/pull/65), on `feature/dns-axfr-coverage` in `/tmp/recon-dns-axfr-coverage`,
-based on accepted main `dea8c7a`. See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C11 runbook](dns-axfr-tools.md). One fixed `harbordesk.test. IN AXFR` request
-over TCP reuses the existing dig, authority, independent parser and evidence path.
-The candidate has **36 profiles using the same 14 programs**. No GUI workflow is added.
+**Current work: priority 3 secure-tool coverage, C12 bounded HTTP OPTIONS metadata.**
+The authorized candidate is on `feature/http-options-coverage` in
+`/tmp/recon-http-options-coverage`, based on accepted main `82dd85a`.
+See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
+and [C12 runbook](http-options-tools.md). One fixed
+`OPTIONS /harbordesk/portal.html HTTP/1.1` request to the owned endpoint reuses
+curl, authority, independent parsing and private evidence. The candidate has
+**37 profiles using the same 14 programs**; accepted main has 36. No GUI work is added.
 
-Completed transfers and explicit server refusals are useful observations; incomplete
-or malformed transfers remain inconclusive. The closed summary exposes message/record
-counts and SOA serial, with untrusted metadata and no verified identity. Returned
-names, addresses and TXT text authorize no follow-up. Independent parsing accepts
-at most four messages and 16 records with matching opening/closing SOAs. Those are
-acceptance bounds, not stock-dig ingress limits: five-second runtime and 8192-byte
-capture ceilings remain enforced. Later wire data dig never captures is not checked.
+Complete 200/204 responses, distinct absent/empty Allow observations, and valid
+401/405 responses can complete this metadata task. The eight-field closed summary
+contains bounded method advertisements and authentication-scheme names, not realm,
+challenge, body or unknown-header text. It verifies neither service identity nor
+actual method support; no advertised method is executed. Retained framing is checked,
+but extra wire bytes that curl does not emit cannot be inspected.
 
-Validation passed **15,464 portable tests** and **61 native tests**, including
-20 C11 scenarios/gates and 41 accepted DNS regressions. AXFR completed **3/3 ordinary
-and 2/2 separate robustness** tasks with zero unnecessary refusals; nine negative
-cases remained inconclusive after actual query progress. All **28/28** blocked
-destinations and **140/140** boundary fields passed. The independent audit rebuilt
-all 14 native reports unchanged and checked all **566 frozen source hashes**.
-Native scenario latency was 2689–4768 ms (median 3186.5 ms), with zero provider calls
-and cost. These are descriptive measurements, not comparative overhead.
-Five useful trials from clean implementation `25b9395c` passed, and all **78 accepted
-bundles** replayed unchanged through both inspection paths with ten inherited receipts.
-Local validation is complete; the new PR awaits review and hosted checks.
-The shipped policy requires fresh approval; synthetic unattended tests do not claim
-personal acceptance. Raw evidence stays outside Git. Leave the new PR unmerged
-pending its latest-revision review, hosted checks and merge instruction.
+Local validation passed **16,138 portable tests** (1,081 integration tests
+deselected; 320.65 log seconds) and **40 native tests**: 19 C12 scenarios/gates
+and 21 accepted B6 regressions. C12 completed **6/6 ordinary and 2/2 separate
+robustness tasks** with zero unnecessary refusals; six negative cases remained
+inconclusive after actual request progress. All **28/28** forbidden-destination
+and **140/140** boundary-field checks passed. Five authority gates cover one-use
+approval, missing consumed proof, cancellation, private inputs and broadened UDP.
+The independent audit rebuilt all 14 native reports unchanged. CLI-case wall latency
+was 2745–5746 ms (median 3194 ms), with zero provider calls and cost; these are
+descriptive measurements, not comparative overhead.
 
-After C11 review, reassess **bounded HTTP OPTIONS metadata** through the existing
-curl runtime: one fixed resource, status and bounded Allow/authentication-scheme
-metadata, useful absent/empty/refused observations, and no execution of advertised
-methods. This is a recommendation only, not an implemented or required C12 batch.
-Credentials,
+All **574 frozen source bindings** reconciled, with two AST-identical comment
+corrections recorded. Implementation `c875820` retains the tested behavior. The
+eight useful C12 reports reuse actual native evidence; no fresh native repetitions
+or separate clean-source native execution are claimed. All **83 accepted bundles**
+replayed unchanged through shared inspection and isolated CLI, with eleven inherited
+receipt links. [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) is ready for
+latest-revision review and hosted checks; it remains unmerged. The shipped policy
+requires fresh approval. Synthetic test grants do not establish personal acceptance,
+and raw evidence stays outside Git. Merge requires the corresponding instruction.
+
+After C12 review, reassess **one bounded SNMP GETNEXT for interface metadata**:
+one fixed ifDescr column seed, one successor or explicit end-of-view/out-of-subtree
+observation, using the existing Net-SNMP confinement and fixture infrastructure.
+There is no walk, UDP, SET, real community or returned-OID follow-up. This is a
+recommendation only, not an implemented or required C13 batch. Credentials,
 paid/live evaluation, external engagements, deeper workflows and comparative
-benchmarking remain deferred. B0–B8, C1–C10, offline R5, accepted local R6 and the
+benchmarking remain deferred. B0–B8, C1–C11, offline R5, accepted local R6 and the
 initial GUI remain closed. Preserve the proposal/PDF and recorded GUI mocks.
+
+**C11 is accepted in [PR #65](https://github.com/0xsl0th/recon-cockpit/pull/65).**
+Reviewed head `40197b6` merged as `82dd85a` on 8 October at 01:03:14 UTC;
+reviewed and merged trees match `840c25b76d25469556320bb7b16000a5f5e33099`.
+Fresh authority/runtime and parser/evidence reviews found no blockers; all 566
+validated source hashes, 97 reports, 112 artifacts and ten inherited receipts
+reconciled. All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37709477319)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37710962147)
+passed. Preserve **15,464 portable and 61 native tests**, **3/3 ordinary and 2/2
+robustness completions**, zero unnecessary refusals, nine inconclusive cases,
+28/28 blocked destinations, 140/140 boundary fields and 78 unchanged accepted-bundle
+replays. C11 remains closed with **36 profiles using 14 programs**. Dig's native
+capture limitations and the unexplained earlier C9 stall remain recorded.
+Private merge receipt: `.secure-agent/pr65-merge-review.json`.
 
 **C10 is accepted in [PR #64](https://github.com/0xsl0th/recon-cockpit/pull/64).**
 Reviewed head `964d600` merged as `dea8c7a` on 8 October at 00:25:00 UTC;

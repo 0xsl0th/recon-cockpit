@@ -125,6 +125,11 @@ class TCPParameters:
 
 
 @dataclass(frozen=True, slots=True)
+class HTTPOptionsParameters(TCPParameters):
+    """Bounds for one fixed OPTIONS request; no caller method, path or headers."""
+
+
+@dataclass(frozen=True, slots=True)
 class NmapTCPParameters:
     """Typed scan bounds; the selected runtime enforces its fixed owned profile."""
 

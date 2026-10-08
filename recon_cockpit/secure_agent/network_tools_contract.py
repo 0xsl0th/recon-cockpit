@@ -15,7 +15,7 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             SMB_TOOL_ID, SMB_PARAMETERS, RPCINFO_TOOL_ID, SHOWMOUNT_TOOL_ID,
                             RPCINFO_PARAMETERS, SHOWMOUNT_PARAMETERS,
                             FTP_TOOL_ID, SMTP_TOOL_ID, FTP_PARAMETERS, SMTP_PARAMETERS,
-                            DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID,
+                            HTTP_OPTIONS_TOOL_ID, HTTP_OPTIONS_PARAMETERS, DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID,
                             DOCKER_PING_PARAMETERS, DOCKER_VERSION_PARAMETERS, WINRM_PARAMETERS,
                             NMAP_SERVICE_TOOL_ID, NMAP_SERVICE_PARAMETERS, KERBRUTE_TOOL_ID, KERBRUTE_PARAMETERS,
                             REDIS_TOOL_ID, REDIS_PARAMETERS, SNMP_TOOL_ID, SNMP_PARAMETERS,
@@ -29,6 +29,7 @@ from .network_tools_fixture import (QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case,
     WHATWEB_PATH, WHATWEB_PLUGINS, DNS_SRV_CASES, DNS_SRV_SUCCESS_CASES, DNS_SRV_QUERY_NAME, RDP_CASES, RDP_SUCCESS_CASES, SMB2_CASES, SMB2_SUCCESS_CASES, SMTP_TLS_CASES, SMTP_TLS_SUCCESS_CASES, SMTP_TLS_COMPLETE_CASES,
     LDAP_TLS_CASES, LDAP_TLS_SUCCESS_CASES, LDAP_TLS_COMPLETE_CASES, LDAP_TLS_REQUEST,
     FTP_TLS_CASES, FTP_TLS_SUCCESS_CASES, FTP_TLS_COMPLETE_CASES, FTP_TLS_AUTH,
+    HTTP_OPTIONS_CASES, HTTP_OPTIONS_SUCCESS_CASES, HTTP_OPTIONS_PATH, HTTP_OPTIONS_USER_AGENT,
     DNS_NSID_CASES, DNS_NSID_SUCCESS_CASES, DNS_NSID_QUERY_NAME, DNS_NSID_MAX_NSID_BYTES, DNS_AXFR_CASES, DNS_AXFR_SUCCESS_CASES)
 
 
@@ -90,6 +91,9 @@ C8_CASES = LDAP_TLS_CASES
 C9_CASES = FTP_TLS_CASES
 C10_CASES = DNS_NSID_CASES
 C11_CASES = DNS_AXFR_CASES
+C12_CASES = HTTP_OPTIONS_CASES
+PARAMETERS[HTTP_OPTIONS_TOOL_ID] = dict(HTTP_OPTIONS_PARAMETERS)
+PARSER_VERSIONS[HTTP_OPTIONS_TOOL_ID] = "curl-http-options-v1"
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -121,8 +125,22 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in C12_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(HTTP_OPTIONS_TOOL_ID).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "http_request": {"method": "OPTIONS", "path": HTTP_OPTIONS_PATH,
+                "version": "HTTP/1.1", "user_agent": HTTP_OPTIONS_USER_AGENT,
+                "max_connections": 1, "max_requests": 1, "redirects": False,
+                "retries": False, "authentication": False, "credentials": False,
+                "cookies": False, "proxy": False, "request_body": False,
+                "advertised_method_execution": False, "response_directed_followup": False,
+                "service_identity_verified": False},
+            "result_semantics": "untrusted_http_options_metadata",
+            "parser_versions": {HTTP_OPTIONS_TOOL_ID: PARSER_VERSIONS[HTTP_OPTIONS_TOOL_ID]}}
     if case in C11_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(DIG_AXFR_TOOL_ID).to_dict()],
@@ -399,6 +417,8 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
                 and (connections != 1 or expected["scenario"] not in DNS_SRV_SUCCESS_CASES))
             or (expected["scenario"] in C5_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in RDP_SUCCESS_CASES))
+            or (expected["scenario"] in C12_CASES and result.get("tool_observation") is not None
+                and (connections != 1 or expected["scenario"] not in HTTP_OPTIONS_SUCCESS_CASES))
             or (expected["scenario"] in C11_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in DNS_AXFR_SUCCESS_CASES))
             or (expected["scenario"] in C10_CASES and result.get("tool_observation") is not None
@@ -485,6 +505,8 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == HTTP_OPTIONS_TOOL_ID:
+        return _observation(tool_id, "http_options_observed", "http_options_observed", normalized)
     if tool_id == DIG_AXFR_TOOL_ID:
         reason = "dns_axfr_completed" if normalized["transfer_complete"] else "dns_axfr_refused"
         return _observation(tool_id, reason, reason, normalized)

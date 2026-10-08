@@ -1,0 +1,21 @@
+{
+  "schema_version": "1",
+  "policy_version": "owned-http-options-v1",
+  "allowed_targets": [
+    "127.0.0.1/32"
+  ],
+  "allowed_tools": [
+    "curl_http_options_v1"
+  ],
+  "allowed_ports": [
+    8080
+  ],
+  "allowed_methods": [
+    "OPTIONS"
+  ],
+  "max_timeout_seconds": 5,
+  "max_output_bytes": 8192,
+  "max_targets": 1,
+  "require_approval": true,
+  "approval_ttl_seconds": 60
+}

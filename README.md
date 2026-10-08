@@ -142,12 +142,23 @@ unchanged accepted-bundle replays. PR #64 is merged at `dea8c7a`; all final and 
 and paid calls stay deferred. The initial historical snapshot-test failure was
 corrected without changing production code and remains recorded.
 
-The C11 [DNS AXFR candidate](docs/dns-axfr-tools.md) observes one fixed synthetic zone transfer
-through the existing dig runtime. Completed transfer and explicit refusal are useful
-outcomes; partial/malformed transfers remain inconclusive. The candidate has **36
-profiles using the same 14 programs**. Returned data is untrusted and cannot select
-follow-up. Validation passed **15,464 portable and 61 native tests**, five clean-commit
-trials and 78 unchanged accepted-bundle replays. PR review/merge remain pending. Credentials and paid calls remain deferred.
+The accepted C11 [DNS AXFR profile](docs/dns-axfr-tools.md) observes one fixed
+synthetic zone transfer through existing dig. Completed transfer and explicit refusal
+are useful outcomes; partial/malformed transfers remain inconclusive. Accepted main
+has **36 profiles using 14 programs**. Validation passed **15,464 portable and 61
+native tests**, 3/3 ordinary and 2/2 robustness trials, five clean-commit trials and
+78 unchanged accepted-bundle replays. PR #65 merged at `82dd85a`; all five final
+and post-merge jobs passed. Returned data cannot select follow-up.
+
+The C12 [HTTP OPTIONS candidate](docs/http-options-tools.md) adds one fixed
+resource-specific request through existing curl, for **37 profiles using the same
+14 programs**. Typed status, distinct absent/empty Allow and authentication-scheme
+names remain untrusted advertisements. No advertised method, redirect or login is
+executed. Validation passed **16,138 portable and 40 native tests**, with 6/6 ordinary
+and 2/2 robustness completions, six inconclusive negative cases, 28/28 blocked
+destinations, zero unnecessary refusals and 83 unchanged accepted-bundle replays.
+[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) awaits latest-revision
+review and hosted checks and remains unmerged. Credentials and paid calls stay deferred.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

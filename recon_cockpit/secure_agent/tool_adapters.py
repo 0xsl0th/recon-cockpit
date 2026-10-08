@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 from .tool_parameters import (
-    CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
+    CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters, HTTPOptionsParameters,
     OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
@@ -44,6 +44,8 @@ HTTP_HEADERS_PARAMETERS = MappingProxyType({
     "timeout_seconds": 1, "max_output_bytes": 2048,
 })
 CURL_TOOL_ID = "curl_https_get_v1"
+HTTP_OPTIONS_TOOL_ID = "curl_http_options_v1"
+HTTP_OPTIONS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 FFUF_TOOL_ID = "ffuf_content_discovery_v1"
 CURL_PARAMETERS = MappingProxyType({
     "port": 8080, "method": "GET", "path": "/harbordesk/portal.html",
@@ -194,6 +196,16 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
          "no_redirect_following", "bounded_raw_response"),
+    ),
+    HTTP_OPTIONS_TOOL_ID: ToolAdapter(
+        HTTP_OPTIONS_TOOL_ID, HTTPOptionsParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_http_options", "owned-curl-http-options-v1",
+        "bounded-curl-http-options-result-v1", "curl-http-options-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_options_request",
+         "single_connection_and_request", "no_redirect_following", "no_authentication",
+         "no_response_directed_followup", "bounded_raw_response",
+         "untrusted_http_capability_metadata_only"),
     ),
     FFUF_TOOL_ID: ToolAdapter(
         FFUF_TOOL_ID, FFufParameters, ("port", "timeout_seconds", "max_output_bytes"),

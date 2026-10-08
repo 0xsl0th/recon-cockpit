@@ -21,6 +21,29 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("http-options-"):
+        from . import network_tools_fixture as fixture
+        response = fixture.http_options_response(case)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-http-options-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "http"}],
+            "method": "OPTIONS", "path": fixture.HTTP_OPTIONS_PATH, "http_version": "HTTP/1.1",
+            "user_agent": fixture.HTTP_OPTIONS_USER_AGENT,
+            "request_sha256": hashlib.sha256(fixture.HTTP_OPTIONS_REQUEST).hexdigest(),
+            "request_bytes": len(fixture.HTTP_OPTIONS_REQUEST),
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "max_request_bytes": fixture.HTTP_OPTIONS_MAX_REQUEST_BYTES,
+            "max_fixture_response_bytes": fixture.HTTP_OPTIONS_MAX_RESPONSE_BYTES,
+            "max_connections": 1, "max_requests": 1,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_fixed_http_options_request",
+            "connection_evidence": "accepted_connections_lower_bound",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "authentication": False, "credentials": False, "cookies": False, "proxy": False,
+            "request_body": False, "redirects": False, "retries": False, "followup": False,
+            "advertised_method_execution": False, "service_identity_claim": False,
+            "vulnerability_claim": False, "behavior": case.removeprefix("http-options-")}
     if case.startswith("ftp-tls-"):
         from . import network_tools_fixture as fixture
         dialogue = fixture.ftp_tls_dialogue(case)
