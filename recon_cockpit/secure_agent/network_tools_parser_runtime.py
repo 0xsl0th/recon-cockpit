@@ -31,20 +31,23 @@ def _command(tool_id, bootstrap):
             "--die-with-parent", "--new-session", "--clearenv", "--setenv", "LC_ALL", "C",
             "--chdir", "/", "--proc", "/proc", "--dev", "/dev", "--ro-bind", stdlib, stdlib]
     for source, destination in files:
-        if Path(destination).name not in {"nft", "bwrap", "nsenter", "curl", "ffuf", "dig", "openssl", "ssh-keyscan", "ldapsearch", "smbclient", "rpcinfo", "showmount", "nmap", "kerbrute", "redis-cli", "snmpget", "snmpgetnext", "ruby3.3", "ruby", "whatweb"}:
+        if source != "/home/sloth/Code/recon-cockpit/.secure-agent/tools/nuclei-3.11.1" and Path(destination).name not in {"nft", "bwrap", "nsenter", "curl", "ffuf", "dig", "openssl", "ssh-keyscan", "ldapsearch", "smbclient", "rpcinfo", "showmount", "nmap", "kerbrute", "redis-cli", "snmpget", "snmpgetnext", "ruby3.3", "ruby", "whatweb"}:
             argv += ["--ro-bind", source, destination]
-    for name in ("network_tools_parser", "network_tools_nmap_parser", "network_tools_kerberos_parser", "network_tools_redis_snmp_parser", "network_tools_whatweb_parser", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_snmp_next_parser", "network_tools_tls_certificate_parser", "network_tools_ssh_algorithms_parser", "network_tools_rdp_parser", "network_tools_smb2_parser", "network_tools_parser_worker", "planner_worker"):
+    for name in ("network_tools_parser", "network_tools_nuclei_parser", "network_tools_nmap_parser", "network_tools_kerberos_parser", "network_tools_redis_snmp_parser", "network_tools_whatweb_parser", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_snmp_next_parser", "network_tools_tls_certificate_parser", "network_tools_ssh_algorithms_parser", "network_tools_rdp_parser", "network_tools_smb2_parser", "network_tools_parser_worker", "planner_worker"):
         argv += ["--ro-bind", str(Path(__file__).with_name(name + ".py")), "/app/" + name + ".py"]
     argv += ["--remount-ro", "/proc", "--remount-ro", "/dev", "--remount-ro", "/",
              "/usr/bin/python3", "-I", "-S", "/app/network_tools_parser_worker.py", tool_id, *_namespaces().values()]
     return argv
 
 
-def _parse_isolated(tool_id, raw, stderr, control, bootstrap):
+def _parse_isolated(tool_id, raw, stderr, control, bootstrap, owner_response=None):
     version = parser_version(tool_id)
     control.check()
+    payload = len(raw).to_bytes(4, "big") + raw + stderr
+    if tool_id == "nuclei_directory_listing_v1":
+        payload = len(raw).to_bytes(4, "big") + len(stderr).to_bytes(4, "big") + raw + stderr + owner_response
     code, stdout, _, reason = _capture_bounded(
-        _command(tool_id, bootstrap), len(raw).to_bytes(4, "big") + raw + stderr, min(2, control.remaining()), 4096, control=control)
+        _command(tool_id, bootstrap), payload, min(2, control.remaining()), 4096, control=control)
     if code != 0 or reason is not None:
         raise IsolationUnavailable("Network tool parser isolation unavailable")
     try:
@@ -64,12 +67,17 @@ def _parse_isolated(tool_id, raw, stderr, control, bootstrap):
     raise ValueError("invalid_network_tool_output")
 
 
-def parse_isolated_tool_output(tool_id, raw: bytes, stderr: bytes = b"", *, truncated=False, deadline=None, control=None, closure=None):
+def parse_isolated_tool_output(tool_id, raw: bytes, stderr: bytes = b"", *, truncated=False, deadline=None, control=None, closure=None, owner_response=None):
     parser_version(tool_id)
     if (type(raw) is not bytes or type(stderr) is not bytes or not (raw or stderr)
             or len(raw) + len(stderr) > MAX_OUTPUT_BYTES
             or type(truncated) is not bool or truncated):
         raise ValueError("invalid_network_tool_output_size")
+    if tool_id == "nuclei_directory_listing_v1":
+        if type(owner_response) is not bytes or not 0 < len(owner_response) <= 4096:
+            raise ValueError("nuclei_owner_response_required")
+    elif owner_response is not None:
+        raise ValueError("unexpected_network_tool_owner_response")
     if sys.platform != "linux" or (closure is None and os.geteuid() == 0):
         raise IsolationUnavailable("Network tool parsing requires unprivileged Linux isolation")
     if control is not None and type(control) is not ExecutionControl:
@@ -93,7 +101,8 @@ def parse_isolated_tool_output(tool_id, raw: bytes, stderr: bytes = b"", *, trun
                                                for path in closure["files"])):
             raise IsolationUnavailable("Network tool parser runtime closure invalid")
         bootstrap = closure["stdlib"], [(path, path) for path in closure["files"]]
-    return _parse_isolated(tool_id, raw, stderr, bounded, bootstrap)
+    return (_parse_isolated(tool_id, raw, stderr, bounded, bootstrap, owner_response)
+            if tool_id == "nuclei_directory_listing_v1" else _parse_isolated(tool_id, raw, stderr, bounded, bootstrap))
 
 
 parse_isolated_tool = parse_isolated_tool_output

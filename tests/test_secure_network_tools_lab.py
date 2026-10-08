@@ -35,7 +35,18 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     assert not first.started and first._supervisor is None
     definition = lab_contract.spec(case)
     assert definition["external_egress"] is False and definition["resume"] is False
-    if case in fixture.FTP_TLS_CASES:
+    if case in fixture.NUCLEI_CASES:
+        from recon_cockpit.secure_agent import network_tools_nuclei_fixture as nuclei
+        response = nuclei.response(case)
+        assert definition["method"] == "GET" and definition["path"] == nuclei.NUCLEI_PATH
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
+        assert definition["max_fixture_response_bytes"] == nuclei.NUCLEI_MAX_RESPONSE_BYTES
+        assert definition["request_count_means"] == "validated_fixed_http_get_before_response"
+        assert definition["owner_response_evidence"] == "actual_send_acknowledged_bytes_and_connection_close"
+        assert definition["owner_response_does_not_prove"] == "valid_http_framing_or_client_reception"
+        assert all(definition[key] is False for key in ("credentials", "followup", "vulnerability_claim"))
+    elif case in fixture.FTP_TLS_CASES:
         dialogue = fixture.ftp_tls_dialogue(case)
         assert definition["response_sha256"] == {name: None if raw is None else hashlib.sha256(raw).hexdigest()
             for name, raw in dialogue.items()}

@@ -18,7 +18,7 @@ from test_secure_network_tools_runtime import manifest
 def test_accepted_b1_through_b7_runtime_profiles_remain_exact():
     values = {tool: [exe, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
                     [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-              for tool, exe in runtime.EXECUTABLES.items() if tool not in (runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB, runtime.DIG_SRV, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_AXFR, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE)}
+              for tool, exe in runtime.EXECUTABLES.items() if tool not in (runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB, runtime.DIG_SRV, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_AXFR, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI)}
     values["old_nmap"] = nmap_runtime.FIXED_ARGV
     assert len(values) == 14
     assert hashlib.sha256(json.dumps(values, sort_keys=True, separators=(",", ":")).encode()).hexdigest() == (
@@ -113,7 +113,8 @@ def test_b8_snapshots_only_the_two_compiled_synthetic_principals(monkeypatch):
                    for source, _ in runtime.runtime_source_mounts(value))
 
 
-@pytest.mark.parametrize("tool_id", tuple(runtime.EXECUTABLES))
+# Nuclei uses its separately constrained static worker, not this accepted worker.
+@pytest.mark.parametrize("tool_id", tuple(tool for tool in runtime.EXECUTABLES if tool != runtime.NUCLEI))
 def test_go_runtime_allowances_do_not_expand_accepted_other_tools(monkeypatch, tool_id):
     calls, limits = [], {}
     monkeypatch.setattr(worker.common, "syscall_filter", lambda **kwargs: calls.append(kwargs))
@@ -178,14 +179,15 @@ def test_only_b8_gets_its_distinct_outer_launcher_tag(tool_id):
     from recon_cockpit.secure_agent import launcher_protocol
     config = {"profile": "owned_network_tools_lab"}
     closure = {"network_tools_runtime": manifest(tool_id)}
-    wanted = ("whatweb-tools-launch-preconditions" if tool_id == runtime.WHATWEB else
+    wanted = ("nuclei-tools-launch-preconditions" if tool_id == runtime.NUCLEI else
+              "whatweb-tools-launch-preconditions" if tool_id == runtime.WHATWEB else
               "kerberos-tools-launch-preconditions" if tool_id == runtime.KERBRUTE else
               "smb-tools-launch-preconditions" if tool_id == runtime.SMB else "network-tools-launch-preconditions")
     assert launcher_protocol.runtime_tag(config, closure) == wanted
     launcher_protocol.validate_runtime_tag(wanted, config, closure)
     for incorrect in {"network-tools-launch-preconditions", "smb-tools-launch-preconditions",
                       "kerberos-tools-launch-preconditions", "whatweb-tools-launch-preconditions",
-                      "web-tools-launch-preconditions", None} - {wanted}:
+                      "web-tools-launch-preconditions", "nuclei-tools-launch-preconditions", None} - {wanted}:
         with pytest.raises(ValueError, match="runtime_profile_changed"):
             launcher_protocol.validate_runtime_tag(incorrect, config, closure)
 

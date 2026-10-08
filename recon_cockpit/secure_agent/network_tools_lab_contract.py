@@ -1,6 +1,8 @@
 """Identity and continuity for the fixed disconnected DNS/TLS fixtures."""
 
 import copy
+import base64
+import binascii
 import hashlib
 import json
 from uuid import UUID
@@ -12,6 +14,33 @@ from .network_tools_fixture import (CASES, CA_PEM, FIXTURE_MARKER, QUERY_NAME, T
 LAB_ID = "harbordesk-owned-network-tools-lab"
 LAB_VERSION = "1"
 BACKEND = "linux-authorized-owned-network-tools-executor-v1"
+NUCLEI_MAX_OWNER_RESPONSE_BYTES = 4096
+
+
+def decode_owner_response(value, *, require_complete=False):
+    """Decode actual owner send progress; this does not grade HTTP or a case."""
+    if (type(require_complete) is not bool or type(value) is not dict
+            or set(value) != {"version", "bytes_sent", "response_base64", "response_sha256",
+                              "send_complete", "connection_closed"}
+            or value["version"] != "1" or type(value["version"]) is not str
+            or type(value["bytes_sent"]) is not int
+            or not 0 <= value["bytes_sent"] <= NUCLEI_MAX_OWNER_RESPONSE_BYTES
+            or type(value["response_base64"]) is not str
+            or len(value["response_base64"]) > 4 * ((NUCLEI_MAX_OWNER_RESPONSE_BYTES + 2) // 3)
+            or type(value["response_sha256"]) is not str
+            or type(value["send_complete"]) is not bool or type(value["connection_closed"]) is not bool
+            or (value["send_complete"] and (not value["connection_closed"] or not value["bytes_sent"]))
+            or (require_complete and not (value["send_complete"] and value["connection_closed"]))):
+        raise ValueError("invalid_nuclei_owner_response")
+    try:
+        raw = base64.b64decode(value["response_base64"], validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise ValueError("invalid_nuclei_owner_response") from exc
+    if (len(raw) != value["bytes_sent"] or len(raw) > NUCLEI_MAX_OWNER_RESPONSE_BYTES
+            or base64.b64encode(raw).decode("ascii") != value["response_base64"]
+            or hashlib.sha256(raw).hexdigest() != value["response_sha256"]):
+        raise ValueError("invalid_nuclei_owner_response")
+    return raw
 
 
 def _encode(value):
@@ -21,6 +50,23 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("nuclei-"):
+        from . import network_tools_nuclei_fixture as fixture
+        response = fixture.response(case)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-nuclei-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "http"}],
+            "method": "GET", "path": "/public/", "max_connections": 1, "max_requests": 1,
+            "request_count_means": "validated_fixed_http_get_before_response",
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "max_fixture_response_bytes": NUCLEI_MAX_OWNER_RESPONSE_BYTES,
+            "owner_response_evidence": "actual_send_acknowledged_bytes_and_connection_close",
+            "owner_response_does_not_prove": "valid_http_framing_or_client_reception",
+            "counter_semantics": "last_acknowledged_service_totals",
+            "connection_evidence": "accepted_connections_lower_bound", "data": "public_synthetic_fixture_only",
+            "lifetime": "authority_session", "reset": "destroy_and_create_new_instance",
+            "external_egress": False, "resume": False, "credentials": False,
+            "followup": False, "vulnerability_claim": False, "behavior": case.removeprefix("nuclei-")}
     if case.startswith("tls-cert-"):
         from . import network_tools_fixture as fixture
         complete = case in fixture.TLS_CERTIFICATE_COMPLETE_CASES
@@ -654,7 +700,7 @@ def validate_identity(value, *, case=None):
     return copy.deepcopy(expected)
 
 
-def validate_context(value, expected):
+def _validate_counter_context(value, expected):
     expected = validate_identity(expected)
     request_limit = 2 if expected["scenario"].startswith("kerberos-") else 1
     connection_limit = (2 if expected["scenario"].startswith("kerberos-") else 3 if expected["scenario"].startswith("nmap-service-")
@@ -669,12 +715,30 @@ def validate_context(value, expected):
     return copy.deepcopy(value)
 
 
+def validate_context(value, expected):
+    expected = validate_identity(expected)
+    if not expected["scenario"].startswith("nuclei-"):
+        return _validate_counter_context(value, expected)
+    if type(value) is not dict or set(value) != {"identity", "connection_count", "request_count", "owner_response"}:
+        raise ValueError("invalid_network_tools_lab_context")
+    context = _validate_counter_context({key: item for key, item in value.items() if key != "owner_response"}, expected)
+    raw = decode_owner_response(value["owner_response"])
+    receipt = value["owner_response"]
+    if ((context["request_count"] == 0 and (raw or receipt["send_complete"]))
+            or (context["connection_count"] == 0 and receipt["connection_closed"])):
+        raise ValueError("invalid_nuclei_owner_progress")
+    return copy.deepcopy(value)
+
+
 def validate_closure(value, expected, *, previous=None):
     if (type(value) is not dict or set(value) != {"identity", "status", "connection_count", "request_count"}
             or value["status"] != "closed"):
         raise ValueError("invalid_network_tools_lab_closure")
-    context = validate_context({k: v for k, v in value.items() if k != "status"}, expected)
+    context = _validate_counter_context({k: v for k, v in value.items() if k != "status"}, expected)
     before = {"identity": expected, "connection_count": 0, "request_count": 0} if previous is None else previous
-    if context != validate_context(before, expected):
+    if previous is not None:
+        before = validate_context(before, expected)
+        before = {key: item for key, item in before.items() if key != "owner_response"}
+    if context != _validate_counter_context(before, expected):
         raise ValueError("network_tools_lab_closure_mismatch")
     return copy.deepcopy(value)

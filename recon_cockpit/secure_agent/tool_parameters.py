@@ -294,3 +294,8 @@ class LDAPStartTLSParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class FTPStartTLSParameters(TCPParameters):
     """One fixed FTP AUTH TLS operation; no login or data connection."""
+
+
+@dataclass(frozen=True, slots=True)
+class NucleiParameters(TCPParameters):
+    """One compiled owned HTTP check; no caller-selected template or runtime."""

@@ -20,7 +20,7 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
                        "rpcinfo_dump_v1", "showmount_exports_v1", "curl_ftp_list_v1", "curl_smtp_capabilities_v1",
                        "curl_docker_ping_v1", "curl_docker_version_v1", "curl_winrm_metadata_v1", "nmap_service_identify_v1", "kerbrute_userenum_v1",
                        "redis_server_info_v1", "snmp_system_get_v1",
-                       "postgresql_tls_handshake_v1", "mysql_tls_handshake_v1", "smtp_starttls_handshake_v1", "ldap_starttls_handshake_v1", "ftp_starttls_handshake_v1", "whatweb_http_fingerprint_v1", "dig_dns_srv_v1", "dig_dns_nsid_v1", "dig_dns_axfr_v1", "curl_http_options_v1", "snmp_interface_next_v1", "ssh_transport_algorithms_v1", "openssl_peer_certificate_v1", "rdp_initial_negotiation_v1", "smb2_negotiate_metadata_v1")
+                       "postgresql_tls_handshake_v1", "mysql_tls_handshake_v1", "smtp_starttls_handshake_v1", "ldap_starttls_handshake_v1", "ftp_starttls_handshake_v1", "whatweb_http_fingerprint_v1", "dig_dns_srv_v1", "dig_dns_nsid_v1", "dig_dns_axfr_v1", "curl_http_options_v1", "snmp_interface_next_v1", "ssh_transport_algorithms_v1", "openssl_peer_certificate_v1", "nuclei_directory_listing_v1", "rdp_initial_negotiation_v1", "smb2_negotiate_metadata_v1")
     launch_mode = _envelope_mode = "owned_network_tools_lab"
     _executor_mode = "network_tools_owned"
     _closure = None
@@ -81,20 +81,26 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
                 manifest=manifest)
             result["backend"] = self.name
             result["tool_observation"] = None
+            nuclei_counts = (self.lab.snapshot(control) if action.tool_id == "nuclei_directory_listing_v1" else None)
             if result["status"] == "succeeded" and result["truncated"] is False:
                 from .network_tools_parser_runtime import parse_isolated_tool_output
                 try:
+                    extra = {}
+                    if nuclei_counts is not None:
+                        from .network_tools_lab_contract import decode_owner_response
+                        extra["owner_response"] = decode_owner_response(nuclei_counts["owner_response"], require_complete=True)
                     result["tool_observation"] = parse_isolated_tool_output(action.tool_id,
                         base64.b64decode(result["raw_output_base64"], validate=True),
                         base64.b64decode(result["raw_stderr_base64"], validate=True),
-                        control=control, closure=runtime_closure)
+                        control=control, closure=runtime_closure, **extra)
                 except ValueError:
                     # Successful process exit alone cannot establish useful work.
                     result["tool_observation"] = None
             expected = 2 if self._lab_identity["scenario"].startswith("kerberos-") else 1
             minimum = expected if result["tool_observation"] is not None else 0
             connections = minimum * (2 if action.tool_id in ("curl_ftp_list_v1", "nmap_service_identify_v1") else 1)
-            counts = self.lab.snapshot(control, minimum_connections=connections, minimum_requests=minimum)
+            counts = (nuclei_counts if nuclei_counts is not None else
+                      self.lab.snapshot(control, minimum_connections=connections, minimum_requests=minimum))
             context = validate_context({"identity": self._lab_identity, **counts}, self._lab_identity)
             from .network_tools_fixture import DATABASE_TLS_CASES, DATABASE_TLS_SUCCESS_CASES
             if (context["request_count"] > expected

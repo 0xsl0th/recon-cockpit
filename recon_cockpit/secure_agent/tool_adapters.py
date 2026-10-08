@@ -13,7 +13,7 @@ from types import MappingProxyType
 
 from .tool_parameters import (
     CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters, HTTPOptionsParameters,
-    OpenSSLTLSParameters, TLSCertificateParameters, SSHHostKeysParameters, SSHAlgorithmsParameters, LDAPRootDSEParameters, SMBShareListParameters,
+    NucleiParameters, OpenSSLTLSParameters, TLSCertificateParameters, SSHHostKeysParameters, SSHAlgorithmsParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters,
@@ -60,6 +60,7 @@ DIG_AXFR_TOOL_ID = "dig_dns_axfr_v1"
 RDP_TOOL_ID = "rdp_initial_negotiation_v1"
 SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
+NUCLEI_TOOL_ID = "nuclei_directory_listing_v1"
 TLS_CERTIFICATE_TOOL_ID = "openssl_peer_certificate_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 SSH_ALGORITHMS_TOOL_ID = "ssh_transport_algorithms_v1"
@@ -93,6 +94,7 @@ DIG_NSID_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max
 RDP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SMB2_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+NUCLEI_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 TLS_CERTIFICATE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_ALGORITHMS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -286,6 +288,14 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
          "fixed_tls_name", "no_application_request"),
+    ),
+    NUCLEI_TOOL_ID: ToolAdapter(
+        NUCLEI_TOOL_ID, NucleiParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "inspect_owned_directory_listing_signature", "owned-nuclei-directory-listing-v1",
+        "bounded-nuclei-directory-listing-result-v1", "nuclei-directory-listing-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_static_runtime",
+         "exact_compiled_template", "bounded_private_scratch", "no_child_processes",
+         "no_credentials", "no_updates", "no_response_directed_followup"),
     ),
     TLS_CERTIFICATE_TOOL_ID: ToolAdapter(
         TLS_CERTIFICATE_TOOL_ID, TLSCertificateParameters, ("port", "timeout_seconds", "max_output_bytes"),

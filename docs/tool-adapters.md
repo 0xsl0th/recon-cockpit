@@ -12,6 +12,13 @@ The separate [HTTP response-header assessment](http-headers-assessment.md) adds
 `http_headers_v1` with fixed wire capture and networkless parsing. It preserves
 the existing `http_probe` contract and exposes no new provider schema.
 
+The accepted [C16 Nuclei check](nuclei-tools.md) uses this same strict adapter
+contract and exact-action authority with a separately versioned static runtime and
+bounded private scratch. It exposes one compiled owned HTTP signature check,
+not arbitrary Nuclei templates. PR #71 brings accepted coverage to 41 profiles
+using 16 programs after its review/check gates. Older Nmap,
+TCP and HTTP adapter contracts described here remain unchanged.
+
 ## Contract and authority
 
 The static adapter registry describes strict parameters, effects, resource and
