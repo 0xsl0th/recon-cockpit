@@ -122,7 +122,7 @@ inconclusive cases and 24/24 blocked destinations. Four clean-source trials and
 63 accepted evidence replays also passed. C8 is accepted in PR #62 at `a582bd6c`;
 all five final and post-merge jobs passed.
 
-The C9 [FTP explicit TLS candidate](docs/ftp-starttls-tools.md) adds one fixed
+The accepted C9 [FTP explicit TLS profile](docs/ftp-starttls-tools.md) adds one fixed
 AUTH TLS command and verified fixture TLS/clean close through existing OpenSSL,
 for **34 profiles using the same 14 programs**. It exposes no login, credentials,
 listing, transfer or data connection. The native client discards unchecked AUTH
@@ -131,7 +131,16 @@ Validation passed 14,231 portable tests and a 65-test native confirmation, with
 2/2 ordinary and 3/3 robustness completions, 22/22 blocked destinations and 67
 accepted-bundle replays. One initial legacy stall error did not reproduce;
 its cause remains undetermined and is recorded in the verification report.
-C9 remains pending PR review and merge.
+C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63) at `e06e1a4`; all five final and post-merge jobs passed.
+
+The C10 [DNS NSID candidate](docs/dns-nsid-tools.md) adds one fixed nonrecursive TCP query
+requesting opaque server metadata through existing dig. Empty and absent replies
+are distinct; identifiers remain unverified, and no returned text selects follow-up.
+The candidate has **35 secure profiles using 14 programs**. Validation passed
+**14,814 portable / 62 native tests**, six useful clean-source trials and 72
+unchanged accepted-bundle replays. PR review/merge remain pending; credentials
+and paid calls stay deferred. The initial historical snapshot-test failure was
+corrected without changing production code and remains recorded.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

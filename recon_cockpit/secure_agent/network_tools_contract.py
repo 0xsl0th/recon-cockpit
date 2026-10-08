@@ -20,7 +20,7 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             NMAP_SERVICE_TOOL_ID, NMAP_SERVICE_PARAMETERS, KERBRUTE_TOOL_ID, KERBRUTE_PARAMETERS,
                             REDIS_TOOL_ID, REDIS_PARAMETERS, SNMP_TOOL_ID, SNMP_PARAMETERS,
                             POSTGRESQL_TLS_TOOL_ID, POSTGRESQL_TLS_PARAMETERS, MYSQL_TLS_TOOL_ID, MYSQL_TLS_PARAMETERS,
-                            WHATWEB_TOOL_ID, WHATWEB_PARAMETERS, DIG_SRV_TOOL_ID, DIG_SRV_PARAMETERS, RDP_TOOL_ID, RDP_PARAMETERS, SMB2_TOOL_ID, SMB2_PARAMETERS,
+                            WHATWEB_TOOL_ID, WHATWEB_PARAMETERS, DIG_SRV_TOOL_ID, DIG_SRV_PARAMETERS, DIG_NSID_TOOL_ID, DIG_NSID_PARAMETERS, RDP_TOOL_ID, RDP_PARAMETERS, SMB2_TOOL_ID, SMB2_PARAMETERS,
                             SMTP_TLS_TOOL_ID, SMTP_TLS_PARAMETERS, LDAP_TLS_TOOL_ID, LDAP_TLS_PARAMETERS, FTP_TLS_TOOL_ID, FTP_TLS_PARAMETERS, NETWORK_TOOLS_LIMITS, get_adapter)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
                                      validate_identity)
@@ -28,7 +28,8 @@ from .network_tools_fixture import (QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case,
     DATABASE_TLS_CASES, DATABASE_TLS_SUCCESS_CASES, WHATWEB_CASES, WHATWEB_SUCCESS_CASES,
     WHATWEB_PATH, WHATWEB_PLUGINS, DNS_SRV_CASES, DNS_SRV_SUCCESS_CASES, DNS_SRV_QUERY_NAME, RDP_CASES, RDP_SUCCESS_CASES, SMB2_CASES, SMB2_SUCCESS_CASES, SMTP_TLS_CASES, SMTP_TLS_SUCCESS_CASES, SMTP_TLS_COMPLETE_CASES,
     LDAP_TLS_CASES, LDAP_TLS_SUCCESS_CASES, LDAP_TLS_COMPLETE_CASES, LDAP_TLS_REQUEST,
-    FTP_TLS_CASES, FTP_TLS_SUCCESS_CASES, FTP_TLS_COMPLETE_CASES, FTP_TLS_AUTH)
+    FTP_TLS_CASES, FTP_TLS_SUCCESS_CASES, FTP_TLS_COMPLETE_CASES, FTP_TLS_AUTH,
+    DNS_NSID_CASES, DNS_NSID_SUCCESS_CASES, DNS_NSID_QUERY_NAME, DNS_NSID_MAX_NSID_BYTES)
 
 
 TOOL_ID = DIG_TOOL_ID
@@ -48,6 +49,7 @@ PARAMETERS.update({REDIS_TOOL_ID: dict(REDIS_PARAMETERS), SNMP_TOOL_ID: dict(SNM
 PARAMETERS.update({POSTGRESQL_TLS_TOOL_ID: dict(POSTGRESQL_TLS_PARAMETERS), MYSQL_TLS_TOOL_ID: dict(MYSQL_TLS_PARAMETERS)})
 PARAMETERS[WHATWEB_TOOL_ID] = dict(WHATWEB_PARAMETERS)
 PARAMETERS[DIG_SRV_TOOL_ID] = dict(DIG_SRV_PARAMETERS)
+PARAMETERS[DIG_NSID_TOOL_ID] = dict(DIG_NSID_PARAMETERS)
 PARAMETERS[RDP_TOOL_ID] = dict(RDP_PARAMETERS)
 PARAMETERS[SMB2_TOOL_ID] = dict(SMB2_PARAMETERS)
 PARAMETERS[SMTP_TLS_TOOL_ID] = dict(SMTP_TLS_PARAMETERS)
@@ -60,7 +62,7 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     DOCKER_VERSION_TOOL_ID: "curl-docker-version-v1", WINRM_TOOL_ID: "curl-winrm-metadata-v1", NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1",
     REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1",
     POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
-    WHATWEB_TOOL_ID: "whatweb-json-v1", DIG_SRV_TOOL_ID: "dig-dns-srv-text-v1", RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1", SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1", LDAP_TLS_TOOL_ID: "ldap-starttls-brief-v1", FTP_TLS_TOOL_ID: "ftp-starttls-brief-v1"}
+    WHATWEB_TOOL_ID: "whatweb-json-v1", DIG_SRV_TOOL_ID: "dig-dns-srv-text-v1", DIG_NSID_TOOL_ID: "dig-dns-nsid-text-v1", RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1", SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1", LDAP_TLS_TOOL_ID: "ldap-starttls-brief-v1", FTP_TLS_TOOL_ID: "ftp-starttls-brief-v1"}
 B1_CASES = ("dig-ok", "dig-nxdomain", "dig-injected", "dig-malformed", "dig-stalled",
             "openssl-ok", "openssl-untrusted", "openssl-malformed", "openssl-stalled")
 B2_CASES = ("ssh-ok", "ssh-malformed", "ssh-stalled", "ssh-injected",
@@ -85,6 +87,7 @@ C6_CASES = SMB2_CASES
 C7_CASES = SMTP_TLS_CASES
 C8_CASES = LDAP_TLS_CASES
 C9_CASES = FTP_TLS_CASES
+C10_CASES = DNS_NSID_CASES
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -116,8 +119,22 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in C10_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(DIG_NSID_TOOL_ID).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "dns_question": {"name": DNS_NSID_QUERY_NAME, "type": "A", "class": "IN", "transport": "tcp",
+                "recursion": False, "edns_version": 0, "advertised_udp_size": 1232,
+                "options": [{"code": 3, "bytes": 0}], "max_nsid_bytes": DNS_NSID_MAX_NSID_BYTES,
+                "max_connections": 1, "max_requests": 1, "udp": False, "cookies": False,
+                "edns_negotiation": False, "malformed_recovery": False, "retries": False,
+                "search": False, "zone_transfer": False, "response_directed_followup": False,
+                "service_identity_verified": False, "nsid_encoding": "opaque_lowercase_hex"},
+            "result_semantics": "untrusted_dns_server_metadata",
+            "parser_versions": {DIG_NSID_TOOL_ID: PARSER_VERSIONS[DIG_NSID_TOOL_ID]}}
     if case in C9_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(FTP_TLS_TOOL_ID).to_dict()],
@@ -363,6 +380,8 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
                 and (connections != 1 or expected["scenario"] not in DNS_SRV_SUCCESS_CASES))
             or (expected["scenario"] in C5_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in RDP_SUCCESS_CASES))
+            or (expected["scenario"] in C10_CASES and result.get("tool_observation") is not None
+                and (connections != 1 or expected["scenario"] not in DNS_NSID_SUCCESS_CASES))
             or (expected["scenario"] in C9_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in FTP_TLS_SUCCESS_CASES))
             or (expected["scenario"] in C8_CASES and result.get("tool_observation") is not None
@@ -445,6 +464,10 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == DIG_NSID_TOOL_ID:
+        reason = ("dns_nsid_absent" if not normalized["nsid_present"]
+            else "dns_nsid_empty" if normalized["nsid_bytes"] == 0 else "dns_nsid_observed")
+        return _observation(tool_id, reason, reason, normalized)
     if tool_id == FTP_TLS_TOOL_ID:
         return _observation(tool_id, "ftp_tls_verified", "ftp_tls_verified", normalized)
     if tool_id == LDAP_TLS_TOOL_ID:

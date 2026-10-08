@@ -122,8 +122,8 @@ Model credentials, paid calls and live evaluation remain much later.
 
 ## Successive product coverage batches
 
-Priority 3 follows the accepted initial GUI. Accepted main has **33 bounded profiles
-from 14 external programs** after C8 in PR #62; the C9 candidate has 34 profiles
+Priority 3 follows the accepted initial GUI. Accepted main has **34 bounded profiles
+from 14 external programs** after C9 in PR #63; the C10 candidate has 35 profiles
 using the same 14 programs. Installed binaries and interactive
 commands do not satisfy secure coverage. The following rows distinguish existing
 integration from a candidate secure profile.
@@ -140,12 +140,13 @@ integration from a candidate secure profile.
 | C6 | SMB2 negotiation metadata; separate repository-owned Ruby adapter alongside accepted B3 smbclient share listing | One fixed 108-byte offer of SMB 2.1/3.0.2, write-half-close and one response bounded to 4,100 bytes; require 5/5 ordinary and 2/2 robustness completions, seven inconclusive cases after actual requests, structured untrusted metadata, enforcement, replay and G1–G6. No SESSION_SETUP, NTLM exchange, login or share access. | [x] Accepted in [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60), merge `aa65bff7`; all five final and post-merge jobs passed. See the [C6 runbook](smb2-negotiation-tools.md). |
 | C7 | SMTP STARTTLS before authentication; existing secure OpenSSL runtime, separate from accepted curl EHLO capability query | Fixed EHLO/STARTTLS and fixture-CA/name-verified TLS1.3 with owner clean-close witness; 2/2 ordinary, 2/2 separate robustness, eight inconclusive outcomes, 24/24 blocked destinations, 120/120 boundary fields, actual execution/replay and G1–G6. No auth/mail/credentials/application requests; disclose incomplete SMTP transcript/status validation. | [x] Accepted in [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61), merge `7c5e88ad`; all five final and post-merge jobs passed. See the [C7 runbook](smtp-starttls-tools.md). |
 | C8 | LDAP STARTTLS before bind; existing OpenSSL runtime, separate from accepted anonymous RootDSE | One fixed extended request, fixture-verified TLS/clean close, 2/2 ordinary and 2/2 separate robustness completions, eight inconclusive cases after actual request progress, 24/24 blocked destinations, 120/120 boundary fields, evidence and G1–G6. No bind/search/credentials/referral follow-up; disclose unchecked response ID/fields and discarded LDAP reply. | [x] Accepted in [PR #62](https://github.com/0xsl0th/recon-cockpit/pull/62), merge `a582bd6c`; all five final and post-merge jobs passed. See the [C8 runbook](ldap-starttls-tools.md). |
-| C9 — current | FTP explicit TLS before login; secure OpenSSL, separate from accepted anonymous FTP listing | Fixed AUTH TLS, verified fixture TLS/clean close, 2/2 ordinary and 3/3 robustness completions, six inconclusive cases, 22/22 blocked destinations, 110/110 boundary fields, actual execution/replay and G1–G6. No login/credentials/listing/transfer/data connections; disclose unchecked/discarded replies and strict retained-greeting support. | Implemented at `30eccfb5`; 14,231 portable/65 native confirmation tests and 67 accepted-bundle replays passed. Initial legacy stall failure retained; pending PR review/merge. See the [C9 runbook](ftp-starttls-tools.md). |
-| Next gap to reassess after C9 review | DNS server-reported NSID; interactive Nmap suggestion exists, secure dig currently A/SRV only | Inspect one fixed nonrecursive TCP query with EDNS NSID, capped opaque metadata and absent/refused outcomes; actual useful/negative execution, replay and G1–G6. No UDP, recursion, zone transfer, verified identity or follow-up. | Recommendation only, not a committed or required C10 batch. |
+| C9 | FTP explicit TLS before login; secure OpenSSL, separate from accepted anonymous FTP listing | Fixed AUTH TLS, verified fixture TLS/clean close, 2/2 ordinary and 3/3 robustness completions, six inconclusive cases, 22/22 blocked destinations, 110/110 boundary fields, actual execution/replay and G1–G6. No login/credentials/listing/transfer/data connections; disclose unchecked/discarded replies and strict retained-greeting support. | [x] Accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63), merge `e06e1a4`; all five final and post-merge jobs passed. Initial legacy stall failure remains unexplained. See the [C9 runbook](ftp-starttls-tools.md). |
+| C10 — current | DNS server-reported NSID; interactive Nmap suggestion exists, new secure dig profile reuses the accepted runtime | One fixed nonrecursive TCP question with empty EDNS NSID; at most 64 opaque bytes; 5/5 ordinary and 1/1 hostile-metadata completions, eight inconclusive cases after actual query progress, 28/28 blocked destinations, 140/140 boundary fields, replay and G1–G6. No UDP, cookies, recursion, negotiation retries, zone transfer, verified identity or follow-up. | Implemented at `4e6d20e7`; 14,814 portable/62 native tests and 72 accepted-bundle replays passed. Initial historical test-selection failure and correction retained; pending PR review/merge. See the [C10 runbook](dns-nsid-tools.md). |
+| Next gap to reassess after C10 review | DNS zone-transfer behavior; new DNS capability reusing accepted dig; no existing interactive or secure transfer profile | Inspect a fixed synthetic AXFR over one TCP connection with finite frames/records and SOA boundaries; useful complete-transfer and explicit-refusal evidence, no recursive resolution or returned-host follow-up. | Recommendation only, not a committed C11 batch. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 
-C1–C8 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
+C1–C9 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
 TCP SNMP does not establish UDP coverage. C2 reuses the existing single-action
 authority, OpenSSL runtime, strict TLS parser and evidence infrastructure. Its two
 profiles brought accepted main to **27 profiles from the same 13 programs**.
@@ -307,47 +308,63 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current work: priority 3 secure-tool coverage, C9 bounded FTP explicit TLS.**
-Work is on `feature/ftp-starttls-coverage` in `/tmp/recon-ftp-starttls-coverage`,
-based on accepted main `a582bd6c`. See the
-[coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C9 runbook](ftp-starttls-tools.md). One fixed 10-byte AUTH TLS command uses
-existing OpenSSL, fixture-CA/name-verified TLS1.3 and an independent clean-close
-witness. No login, USER/PASS, PBSZ/PROT, listing, transfer, credential, data
-connection or post-TLS application operation is exposed. The candidate has
-**34 profiles using the same 14 programs** and adds no GUI workflow.
+**Current work: priority 3 secure-tool coverage, C10 bounded DNS NSID metadata.**
+Work is on `feature/dns-nsid-coverage` in `/tmp/recon-dns-nsid-coverage`, based on
+accepted main `e06e1a4`. See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
+and [C10 runbook](dns-nsid-tools.md). One fixed nonrecursive TCP question asks
+`harbordesk.test. IN A` with one empty EDNS NSID option. The existing dig runtime,
+authority, independent parser and evidence path are reused; the candidate has
+**35 profiles using the same 14 programs**. No GUI workflow is added.
 
-Results are TLS-only: the native client does not validate FTP reply codes,
-discards the AUTH reply and earlier greeting lines, and retains only the final
-greeting. Wrong-status-plus-TLS is a separate robustness observation, not FTP
-readiness or accepted AUTH evidence. A strict fixed greeting wrapper preserves
-unsupported/hostile final text as inconclusive. Useful completion also requires
-the fixture's clean close_notify witness; native DONE alone is insufficient.
+NSID is opaque untrusted server metadata. The result preserves at most 64 bytes
+as lowercase hex, distinguishes a present empty value from absence in this one
+reply, and records whether EDNS was present. Refusal, unsupported options, duplicate
+NSID, malformed replies and bounds failures remain inconclusive. No response
+confers identity, scope or follow-up authority. UDP, cookies, recursion, retry,
+EDNS version negotiation, search, zone transfer and external attachment remain disabled.
 
-Validation passed **14,231 portable tests** and a **65-test native confirmation**.
-C9 completed **2/2 ordinary + 3/3 separate robustness** tasks with zero unnecessary
-refusals, six inconclusive outcomes, **22/22** blocked destinations and **110/110**
-boundary fields. Clean-source verification at `30eccfb5` repeated five useful
-trials and replayed **67 accepted bundles** unchanged; all **548 source hashes**
-match. Independent source/evidence reviews found no blockers. Provider calls and
-cost stayed zero. The initial native run had one legacy direct-TLS stall failure;
-it passed unchanged in isolated reproduction and full confirmation. Its cause
-remains undetermined, and both attempts are retained as a reliability caveat.
-See [verification.md](verification.md) and private
-`.secure-agent/ftp-starttls-20261007/`. The shipped policy requires fresh approval;
-automated validation does not establish personal acceptance. Leave C9 on
-`feature/ftp-starttls-coverage` unmerged pending latest-revision PR review,
-hosted checks and corresponding merge authorization.
+Validation passed **14,814 portable tests** and **62 native tests**, including
+20 C10 scenarios/gates and 42 accepted regressions. C10 completed **5/5 ordinary
+and 1/1 separate robustness** tasks, with zero unnecessary refusals, eight
+inconclusive outcomes, **28/28** blocked destinations and **140/140** boundary
+fields. Six useful trials from clean implementation `4e6d20e7` passed; all
+**72 accepted bundles** replayed unchanged, with nine inherited receipts.
+All **557 final source hashes** match. The initial portable run had one historical
+snapshot-test selection error; its corrected exclusion preserves the old hash,
+and full confirmation passed. No production or selected native-test file changed.
+C9's earlier unexplained legacy stall remains recorded separately.
 
-After C9 review, reassess **bounded DNS server-reported metadata via EDNS NSID**.
-The interactive DNS suggestions include `dns-nsid`, while secure dig currently
-covers A/SRV queries. Inspect the native fixed query first; proposed scope is
-one nonrecursive TCP query with capped opaque metadata, honest absent/refused
-outcomes, and no recursion, UDP, zone transfer or response-directed follow-up.
-Server-reported identifiers are untrusted, not verified identity. This is a
-recommendation, not an implemented or committed C10 milestone. Deeper workflows,
-benchmarking, credentials, paid/live calls and external engagements remain deferred.
-B0–B8, C1–C8, offline R5, accepted local R6 and the initial GUI stay closed.
+Independent source/evidence reviews found no blockers. Native scenario latency
+was 2657–4692 ms (median 3128.5 ms); provider calls/cost stayed zero. These are
+descriptive measurements, not comparative overhead. See [verification.md](verification.md)
+and private `.secure-agent/dns-nsid-20261007/`. The shipped policy requires fresh
+approval; synthetic unattended tests do not claim personal acceptance. Raw evidence
+stays out of Git. Leave the new PR unmerged pending latest-revision review,
+hosted checks and its merge instruction.
+
+After C10 review, reassess **bounded DNS zone-transfer behavior** through existing
+dig and a fixed synthetic zone. This separate proposed profile needs finite TCP
+frames/records, useful complete-transfer and explicit-refusal outcomes, strict
+SOA boundary checks and no recursion, returned-host lookup or follow-up. It would
+not broaden the accepted A/SRV/NSID profiles. This is a recommendation, not an
+implemented or committed C11 milestone. Deeper workflows, comparative benchmarking,
+credentials, paid/live evaluation and external engagements remain deferred.
+B0–B8, C1–C9, offline R5, accepted local R6 and the initial GUI stay closed.
+
+**C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63).**
+Reviewed head `f91d9d3` merged as `e06e1a4` on 7 October at 23:42:45 UTC;
+reviewed and merged trees match `d909db662eee3c31945550994ee3d7819af11cf4`.
+Fresh authority/runtime and parser/evidence reviews found no blockers; 351 focused
+tests passed. All 548 validated source hashes, 83 reports, 98 referenced artifacts
+and eight inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37702693909)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37703801916)
+passed. Preserve 14,231 portable and 65 native confirmation tests, 2/2 ordinary
+and 3/3 separate robustness completions, zero unnecessary refusals, 22/22 blocked
+destinations, 110/110 boundary fields and 67 accepted-bundle replays.
+The initial legacy OpenSSL stall failure remains unexplained; successful unchanged
+reproduction and confirmation do not establish resolution. C9 stays closed with
+**34 profiles using 14 programs**. Private receipt: `.secure-agent/pr63-merge-review.json`.
 
 Each batch records useful completion and unnecessary refusals as well as blocked
 unauthorized attempts, request counts, elapsed time and zero provider cost. A normal

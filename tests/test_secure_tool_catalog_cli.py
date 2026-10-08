@@ -41,7 +41,7 @@ def test_list_tools_emits_the_catalog_without_execution(inert_cli, capsys):
     result = json.loads(captured.out)
     assert result == list_tools()
     assert result["read_only"] is True and result["live_calls_enabled"] is False
-    assert result["capability_count"] == 34 and result["external_program_count"] == 14
+    assert result["capability_count"] == 35 and result["external_program_count"] == 14
     assert {row["tool_id"] for row in result["tools"]} == set(ADAPTERS)
     assert captured.err == ""
 
