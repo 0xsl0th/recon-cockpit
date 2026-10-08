@@ -127,11 +127,13 @@ to **42 bounded profiles from 16 external programs**. Installed binaries and
 interactive commands do not satisfy secure coverage. The following rows
 distinguish accepted operations from candidates. C18/T01 is now closed in
 [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74), bringing accepted main
-to **43 profiles/16 programs**. PR #75 accepted T02 source feasibility. Its new
-[owned native diagnostic](tls-posture-native.md) produced 8/8 ordinary and 4/4
-absence observations, but the HRR challenge elicited a second ClientHello:
-**0/1 prevention**. T02 remains open and adds no accepted profile. Next is a
-finite transport mediator; every new operation must satisfy G1–G6 independently. The
+to **43 profiles/16 programs**. PR #75 accepted T02 source feasibility and
+PR #76 accepted the [native diagnostic](tls-posture-native.md) with its retained
+**0/1 retry-prevention failure**. The new [mediated diagnostic](tls-posture-mediation.md)
+preserves 8/8 ordinary and 4/4 absence observations while blocking the tested
+second ClientHello before peer delivery, **1/1**. T02 remains open and adds no
+accepted profile. Next is product authority/evidence integration and the remaining
+corpus; every new operation must satisfy G1–G6 independently. The
 [finite professional-v1 contract](professional-v1-coverage.md) now fixes six
 required task outcomes under the accepted [product roadmap](product-roadmap.md),
 without changing the scope or closure of the accepted core milestone.
@@ -158,7 +160,7 @@ without changing the scope or closure of the accepted core milestone.
 | C16 — accepted | One harmless HTTP directory-listing signature using pinned Nuclei v3.11.1; no existing interactive Nuclei integration | One fixed GET and compiled matcher; 4/4 ordinary matched/unmatched completions, 1/1 separate hostile-body robustness task, eight inconclusive negatives, complete original owner and normalized native response reconciliation, scratch/enforcement witnesses, replay and G1–G6. No general templates, credentials, redirects or follow-up. | [x] Accepted in PR #71; 23 Linux tests, 4/4 ordinary + 1/1 robustness, eight inconclusive negatives, 107 unchanged accepted replays. 18,958 portable passes; fresh independent reviews and all five checks gate the merge. Separate static runtime/private scratch authorized after PR #70 feasibility acceptance at `2f7fb5a`. Accepted 41 profiles/16 programs. See [C16 runbook](nuclei-tools.md). |
 | C17 — accepted | One fixed synthetic Git HEAD marker using the accepted Nuclei runtime | One GET; four ordinary completions, one hostile-HTML nonmatch, eight inconclusive cases, independent owner/native reconciliation, replay and G1–G6. New versioned response contract; preserve C16. No repository download or returned-ref follow-up. | [x] G1–G6 closed by PR #72 at `e004824` after fresh review and five passing final checks. 19,437 portable and 44 native checks, 4/4 ordinary + 1/1 robustness, eight inconclusive cases, 26/26 destination and 195/195 boundary fields, 120 unchanged accepted replays. Development refusals and test-routing correction retained. See [C17 runbook](nuclei-git-tools.md). |
 | C18 / T01 — accepted | DNS MX metadata; separately versioned `dig_dns_mx_v1` reuses the accepted dig runtime | One fixed nonrecursive TCP question, at most four typed preference/exchange rows; ordinary records, null-MX, NODATA and NXDOMAIN must complete with zero unnecessary refusals. Actual bounded query/closure, malformed/hostile cases, enforcement, unchanged replay and G1–G6. No advertised-server follow-up, credentials or mail delivery. | [x] G1–G6 closed in [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74) at `b1afbbab`: 19,888 portable/37 native, 5/5 ordinary + 1/1 robustness, seven inconclusive, 26/26 destination and 130/130 boundary checks, 133 unchanged accepted replays. Fresh review, 407 focused tests and all five final CI jobs passed. Accepted 43 profiles/16 programs. See [C18 runbook](dns-mx-tools.md). |
-| T02 — native usefulness observed; retry enforcement open | Finite TLS protocol-version posture; accepted OpenSSL proves its selected handshake only | Stock sslscan rejected because it loses received rejection evidence. Fixed OpenSSL trials cover TLS 1.0/1.1/1.2/1.3, but a finite transport mediator must block a second ClientHello before forwarding it to the owned peer. Preserve existing limits, useful modern/legacy/rejection cases and all G1–G6 gates. No implicit retry allowance, unrestricted cipher sweep, vulnerability tests or credentials. | Required gap remains open. The [native diagnostic](tls-posture-native.md) on `958b5d6` produced 8/8 ordinary observations and 4/4 explicit received rejections; HRR prevention failed, 0/1. This development harness exercises no production approval, permit, admission or evidence-inspector gate and creates no secure profile or program-count increment. See [six-task contract](professional-v1-coverage.md#six-required-tasks-in-priority-order). |
+| T02 — mediation proved; product authority/evidence gates open | Finite TLS protocol-version posture; accepted OpenSSL proves its selected handshake only | Stock sslscan rejected because it loses received rejection evidence. Four separately versioned OpenSSL profiles must retain useful TLS 1.0/1.1/1.2/1.3 observations, finite mediation, independent approvals and existing limits. Complete production policy, consumed permits, admission, both inspectors and full negative/enforcement/regression cases. No implicit retry allowance, unrestricted cipher sweep, vulnerability tests or credentials. | Required gap remains open. The [mediated diagnostic](tls-posture-mediation.md) on `4d92d1d` produced 8/8 ordinary observations, 4/4 explicit received rejections and 1/1 HRR retry prevented before peer delivery. The earlier 0/1 diagnostic failure remains historical evidence. No product authority/evidence gate or G1–G6 acceptance follows from the diagnostic; it adds no accepted profile/program. See [six-task contract](professional-v1-coverage.md#six-required-tasks-in-priority-order). |
 | T03–T06 — remaining finite tranche | SSH policy assessment, controlled web hierarchy discovery, one SNMP interface page and fixed AAAA/PTR metadata | Exact useful/absent/negative corpus, bounded authority, actual execution, structured evidence, enforcement and G1–G6 for each task. Candidate engines are not accepted secure support or a program-count quota. | Required and unstarted; retain all rows from the [finite checklist](professional-v1-coverage.md). Deeper workflows and comparative benchmarks remain deferred. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -348,9 +350,9 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current status: PR #75 is merged; C18/T01 stays accepted. The unmerged T02
-native diagnostic establishes useful observations and a failed retry boundary;
-T02 remains open.**
+**Current status: PR #76 is merged; C18/T01 stays accepted. The new T02
+mediator preserves useful observations and blocks the tested plaintext retry;
+product authority/evidence integration is next and T02 remains open.**
 [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72) merged as
 `e00482409362f1f9380bc225063b84762446dee9` after fresh authority/runtime and
 parser/evidence reviews found no blockers and all five final PR checks passed. All five
@@ -418,20 +420,25 @@ tests and all five final CI jobs passed. All five
 also passed; preserve `.secure-agent/pr74-merge-review.json`. Accepted main has
 43 profiles/16 programs.
 
-**T02 source feasibility is accepted in PR #75;
-[T02 itself remains open](tls-posture-native.md).**
-Stock sslscan loses the received rejection evidence needed for the task. The
-OpenSSL development diagnostic on frozen execution source `958b5d6` produced
-8/8 ordinary observations across all four versions and 4/4 separate explicit
-received rejections. Its thirteenth trial observed a second ClientHello after
-HRR; prevention failed, **0/1**. The diagnostic does not exercise production
-approvals, permits, admission or the two evidence inspectors. No T02 G1–G6 gate
-is closed, and accepted coverage remains 43 profiles/16 programs. Nothing was
-installed; the already-installed sslscan still has no secure integration.
-Next review and implement a finite transport mediator that blocks a second
-ClientHello before forwarding it to the owned peer. Recheck ordinary completion
-and actual prevention under the existing limits before product integration;
-do not silently permit retries or substitute a late failure label for blocking.
+**T02 source feasibility and the initial diagnostic are accepted in PRs #75/#76;
+[T02 itself remains open](tls-posture-mediation.md).**
+Stock sslscan loses the received rejection evidence needed for the task. Preserve
+the initial OpenSSL diagnostic's **0/1 retry-prevention failure** unchanged.
+The new mediated diagnostic on frozen source `4d92d1d` produced **8/8 ordinary
+observations, 4/4 explicit received rejections and 1/1 HRR retry prevented before
+peer delivery**. The independent peer observed one ClientHello; the complete
+282-byte second record was withheld. All thirteen trials closed and passed the
+new Unix-socket boundary witnesses, with zero provider calls/cost.
+The mediator validates plaintext framing and encrypted record shapes, without
+decrypting or claiming general encrypted application-data prevention.
+
+Next review the mediator and integrate four separately versioned profiles through
+policy, fresh per-action approval, consumed permits, admission and both evidence
+inspectors. Complete the full hostile-usefulness, ambiguity/pressure,
+enforcement, cancellation and regression corpus. These diagnostic receipts
+exercise no product authority/evidence gate and close no T02 G1–G6 gate.
+Accepted coverage remains **43 profiles / 16 programs**. Nothing was installed;
+the already-installed sslscan still has no secure integration.
 Continue through required T03–T06 using the
 [finite checklist](professional-v1-coverage.md); do not remove difficult outcomes
 or substitute program counts for useful coverage. Existing closed milestones stay

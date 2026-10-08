@@ -6,6 +6,14 @@ so the unresolved OpenSSL behavior can be measured before introducing a product
 profile. Accepted coverage remains **43 profiles / 16 programs**, and T02 remains
 open. Completed milestones and accepted TLS profiles are unchanged.
 
+**Historical diagnostic accepted in PR #76 at `ca793cd`.** The results below,
+including **0/1 HRR retry prevention**, remain unchanged. The subsequent
+[mediated diagnostic](tls-posture-mediation.md) preserves 8/8 ordinary and 4/4
+absence observations while preventing its tested retry before peer delivery,
+1/1. Its next gate is product authority/evidence integration; T02 remains open.
+The original next-slice section below records the decision made from this failed
+trial, not work still pending after the later mediation result.
+
 ## What the diagnostic establishes
 
 Each invocation creates a new disconnected owner namespace and a separately

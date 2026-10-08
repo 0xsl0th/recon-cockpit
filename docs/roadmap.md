@@ -5,8 +5,9 @@ The historical planning baseline below began on 15 September 2026. This is a dev
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — PR #75 merged; T02 native diagnostic confirms useful
-observations but fails retry prevention (8 October 2026).**
+**Current slice — PR #76 merged; T02 mediation preserves useful observations
+and blocks the tested retry before peer delivery (8 October 2026). Product
+authority/evidence integration is next; T02 remains open.**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -31,7 +32,7 @@ claim that today's bounded fixtures support professional engagements.
 | --- | --- | --- |
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
-| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX is accepted. [T02 native feasibility](tls-posture-native.md) proves the ordinary version observations but exposes an unprevented second ClientHello. A finite transport mediator is next; T02 remains open with no accepted profile. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
+| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX is accepted. [T02 mediation](tls-posture-mediation.md) preserves 8/8 ordinary and 4/4 absence observations while blocking the tested second ClientHello before peer delivery, 1/1. Product authority/evidence integration and the remaining corpus are next; T02 remains open with no accepted profile. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
 | 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
@@ -243,8 +244,9 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current status: PR #75 is merged; C18/T01 stays accepted. T02 native
-observations are useful, but its request boundary still needs enforcement.**
+**Current status: PR #76 is merged; C18/T01 stays accepted. The new T02
+mediator blocks the tested plaintext retry while preserving useful observations;
+product authority/evidence integration remains open.**
 [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72) merged as
 `e00482409362f1f9380bc225063b84762446dee9` after fresh authority/runtime and
 parser/evidence reviews found no blockers and all five final PR checks passed. All five
@@ -323,21 +325,26 @@ Private verification: `.secure-agent/dns-mx-20261008/verification.json`, SHA-256
 `59e3e89ced9a0887095bb62fe238a2c34fa45e4f724a2fefe2cf7b4c73505093`. Development test corrections and the exploratory smoke run are
 retained in the private development review; no historical hash was regenerated.
 
-**T02 remains open: the [native diagnostic](tls-posture-native.md) confirms
-useful version observations and a request-boundary failure.**
-On frozen execution source `958b5d6`, the disconnected fixtures produced 8/8
-ordinary observations across TLS 1.0/1.1/1.2/1.3 and 4/4 explicit received
-rejections. Six actual handshakes completed with certificate/name verification.
-The thirteenth trial elicited a second ClientHello after HelloRetryRequest:
-**observed, not prevented (0/1 prevention)**. Keep this failed gate visible.
-The development diagnostic reuses confinement mechanics but does not exercise
-production approvals, permits, admission or the two evidence inspectors. No T02
-secure profile or G1–G6 acceptance follows; coverage remains 43 profiles/16 programs.
-Next review and implement a finite transport mediator that prevents a second
-ClientHello before forwarding it, preserving the four-version task and existing
-caps. Prove both ordinary completion and retry blocking before product integration;
-if mediation cannot fit those bounds, review a concrete contract alternative
-without silently permitting retries. Existing TLS profiles stay unchanged.
+**T02 remains open: the [mediated diagnostic](tls-posture-mediation.md) now
+preserves usefulness and blocks the tested plaintext retry before peer delivery.**
+Frozen source `4d92d1d` produced 8/8 ordinary observations across TLS
+1.0/1.1/1.2/1.3 and 4/4 explicit received rejections, with zero unnecessary
+refusals in that finite corpus. The HRR case achieved **1/1 prevention**: the
+client emitted two ClientHellos and 552 bytes; the mediator forwarded only 270
+bytes (the first ClientHello and compatibility CCS), withholding the complete
+282-byte second record. The independent peer observed one ClientHello.
+All thirteen trials closed, passed the new Unix-socket boundary witnesses, and
+made zero provider calls with zero cost. The prior PR #76 **0/1 prevention
+failure** remains unchanged historical evidence; the new trial does not relabel it.
+
+The gate validates plaintext framing and bounds encrypted record shapes; it does
+not decrypt traffic or prove general encrypted application-data prevention.
+Next review the mediator and integrate four separately versioned profiles through
+policy, fresh per-action approval, consumed permits, admission and both evidence
+inspectors. Complete the full hostile-usefulness, ambiguity/pressure,
+enforcement, cancellation and regression corpus before G1–G6 acceptance.
+Diagnostic receipts do not close those product gates. Accepted coverage remains
+**43 profiles / 16 programs**; existing TLS profiles and limits stay unchanged.
 Continue through required T03–T06 using the
 [finite checklist](professional-v1-coverage.md); do not remove difficult outcomes
 or substitute program counts for useful coverage. Existing closed milestones stay

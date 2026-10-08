@@ -9,7 +9,10 @@ in that source-review slice. It was accepted in PR #75 at `cb17f0cb`.
 **Later native finding:** the [owned development diagnostic](tls-posture-native.md)
 completes ordinary handshakes and received rejections within existing client caps,
 but a valid HelloRetryRequest causes a second ClientHello. The proposed boundary
-is not enforced. T02 remains open; finite transport mediation is the next gate.
+was not enforced in that historical diagnostic. The later
+[mediated diagnostic](tls-posture-mediation.md) now demonstrates pre-forwarding
+retry prevention and preserves the twelve useful observations. T02 remains open;
+production profile integration and its full acceptance corpus are next.
 The source assessment below is preserved as the pre-execution decision, not a
 claim that native work is still pending or that product integration is accepted.
 
