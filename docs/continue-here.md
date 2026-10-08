@@ -29,7 +29,8 @@ passed. Reviewed and merged trees match
 and `.secure-agent/tls-posture-native-20261008/` retain the original **0/1 retry
 prevention failure** unchanged; acceptance of that diagnostic did not close T02.
 
-The new [mediated diagnostic](tls-posture-mediation.md) is on
+[PR #77](https://github.com/0xsl0th/recon-cockpit/pull/77) contains the new
+[mediated diagnostic](tls-posture-mediation.md), branch
 `feature/tls-posture-mediator` in `/tmp/recon-tls-posture-mediator`, outside the
 secure catalog and awaiting review. Frozen execution source `4d92d1d` produced
 8/8 ordinary observations, 4/4 explicit received rejections and **1/1 HRR retry
