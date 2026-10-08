@@ -67,7 +67,7 @@ def test_all_pre_certificate_runtime_bytes_remain_unchanged():
     # Independent digest recorded at merged PR68, also retained by the C15 tests.
     selected = {tool: [executable, shared.FIXED_ARGV[tool], shared.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in shared.compiled_files(tool)]]
-        for tool, executable in shared.EXECUTABLES.items() if tool not in (shared.NUCLEI, shared.NUCLEI_GIT, shared.TLS_CERTIFICATE)}
+        for tool, executable in shared.EXECUTABLES.items() if tool not in (shared.NUCLEI, shared.NUCLEI_GIT, shared.DIG_MX, shared.TLS_CERTIFICATE)}
     assert len(selected) == 30
     assert hashlib.sha256(shared.encode(selected)).hexdigest() == (
         "e95562a6d07d64a67e31a2fc621da7101e3132343012c850d5c1ae474d6dc655")

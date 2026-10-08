@@ -52,7 +52,7 @@ NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_
     'network_tools_whatweb_fixture',
     'network_tools_whatweb_runtime',
     'network_tools_whatweb_parser',
-    'network_tools_dns_srv_fixture', 'network_tools_dns_srv_parser', 'network_tools_dns_nsid_parser', 'network_tools_dns_nsid_fixture',
+    'network_tools_dns_mx_fixture', 'network_tools_dns_mx_parser', 'network_tools_dns_srv_fixture', 'network_tools_dns_srv_parser', 'network_tools_dns_nsid_parser', 'network_tools_dns_nsid_fixture',
     'network_tools_nuclei_runtime', 'network_tools_nuclei_worker', 'network_tools_nuclei_fixture', 'network_tools_nuclei_parser',
     'network_tools_nuclei_git_runtime', 'network_tools_nuclei_git_fixture', 'network_tools_nuclei_git_parser',
     'network_tools_tls_certificate_fixture', 'network_tools_tls_certificate_material', 'network_tools_tls_certificate_parser',

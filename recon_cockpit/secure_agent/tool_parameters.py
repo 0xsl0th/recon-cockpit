@@ -152,6 +152,11 @@ class DigDNSParameters(TCPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class DigMXParameters(TCPParameters):
+    """Bounds for one fixed owned MX question; exchange names remain inert."""
+
+
+@dataclass(frozen=True, slots=True)
 class DigSRVParameters(TCPParameters):
     """Bounds for one fixed owned SRV question; advertised endpoints stay inert."""
 

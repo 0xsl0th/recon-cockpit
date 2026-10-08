@@ -16,6 +16,7 @@ from recon_cockpit.secure_agent.tool_adapters import ADAPTERS
 # Capability names and program families are the accepted coverage inventory,
 # independently of how the catalog happens to assemble its rows.
 PROGRAMS = {
+    "dig_dns_mx_v1": "dig",
     "dig_dns_nsid_v1": "dig",
     "dig_dns_axfr_v1": "dig",
     "curl_http_options_v1": "curl",
@@ -45,6 +46,7 @@ PROGRAMS = {
     "configurable_ssh_host_keys_v1": "ssh-keyscan",
 }
 NORMAL_NETWORK_CASES = {
+    "dig_dns_mx_v1": ("dig-mx-ok", "dns-mx"),
     "dig_dns_nsid_v1": ("dig-nsid-ok", "dns-nsid"),
     "dig_dns_axfr_v1": ("dig-axfr-ok", "dns-axfr"),
     "curl_http_options_v1": ("http-options-ok", "http-options"),
@@ -130,7 +132,7 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
     assert result["runtime_availability"] == "not_checked"
     ids = [row["tool_id"] for row in result["tools"]]
     assert ids == sorted(PROGRAMS) == sorted(ADAPTERS)
-    assert result["capability_count"] == len(ids) == 42
+    assert result["capability_count"] == len(ids) == 43
     families = {row["external_program"] for row in result["tools"] if row["external_program"] is not None}
     assert families == set(PROGRAMS.values()) - {None}
     assert result["external_program_count"] == len(families) == 16

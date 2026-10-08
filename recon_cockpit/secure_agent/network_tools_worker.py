@@ -80,18 +80,20 @@ def landlock(manifest):
 
 
 def syscall_filter(tool_id):
-    if tool_id not in (runtime.DIG, runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.OPENSSL, runtime.TLS_CERTIFICATE, runtime.SSH, runtime.LDAP, runtime.SMB,
+    if tool_id not in (runtime.DIG, runtime.DIG_MX, runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.OPENSSL, runtime.TLS_CERTIFICATE, runtime.SSH, runtime.LDAP, runtime.SMB,
                        runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP,
                        runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.HTTP_OPTIONS, runtime.NMAP_SERVICE,
                        runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.SNMP_NEXT, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
                        runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SSH_ALGORITHMS, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS):
         raise ValueError("unsupported_network_tool")
-    common.syscall_filter(allow_threads=tool_id in (runtime.DIG, runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SSH_ALGORITHMS))
+    common.syscall_filter(allow_threads=tool_id in (runtime.DIG, runtime.DIG_MX, runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SSH_ALGORITHMS))
 
 
 def _limits(tool_id):
     address_space = (2048 if tool_id == runtime.KERBRUTE else 256) * 1024 * 1024
     threads = 16 if tool_id == runtime.DIG else 1
+    if tool_id == runtime.DIG_MX:
+        threads = 16
     if tool_id == runtime.DIG_SRV:
         threads = 16
     if tool_id == runtime.DIG_NSID:
@@ -162,11 +164,11 @@ def main():
             _witnesses(port=111)
         else:
             _witnesses()
-        if request["tool_id"] in (runtime.DIG, runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SSH_ALGORITHMS):
+        if request["tool_id"] in (runtime.DIG, runtime.DIG_MX, runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SSH_ALGORITHMS):
             _thread_bound_witness()
         if request["tool_id"] == runtime.KERBRUTE:
             _kerberos_transport_witness()
-        if request["tool_id"] in (runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.REDIS, runtime.SNMP, runtime.SNMP_NEXT, runtime.TLS_CERTIFICATE, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
+        if request["tool_id"] in (runtime.DIG_MX, runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.REDIS, runtime.SNMP, runtime.SNMP_NEXT, runtime.TLS_CERTIFICATE, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
                                   runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SSH_ALGORITHMS, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS):
             _metadata_transport_witness()
         # The authority stdin and any loader-retained descriptors are gone.

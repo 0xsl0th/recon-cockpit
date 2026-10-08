@@ -23,6 +23,7 @@ if __package__:
     from . import network_tools_redis_snmp_fixture as redis_snmp_fixture
     from . import network_tools_database_tls_fixture as database_tls_fixture
     from . import network_tools_whatweb_fixture as whatweb_fixture
+    from . import network_tools_dns_mx_fixture as dns_mx_fixture
     from . import network_tools_dns_srv_fixture as dns_srv_fixture
     from . import network_tools_dns_nsid_fixture as dns_nsid_fixture
     from . import network_tools_nuclei_fixture as nuclei_fixture
@@ -56,6 +57,7 @@ else:
     redis_snmp_fixture = _load("network_tools_fixed_redis_snmp", "network_tools_redis_snmp_fixture.py")
     database_tls_fixture = _load("network_tools_fixed_database_tls", "network_tools_database_tls_fixture.py")
     whatweb_fixture = _load("network_tools_fixed_whatweb", "network_tools_whatweb_fixture.py")
+    dns_mx_fixture = _load("network_tools_fixed_dns_mx", "network_tools_dns_mx_fixture.py")
     dns_srv_fixture = _load("network_tools_fixed_dns_srv", "network_tools_dns_srv_fixture.py")
     dns_nsid_fixture = _load("network_tools_fixed_dns_nsid", "network_tools_dns_nsid_fixture.py")
     nuclei_fixture = _load("network_tools_fixed_nuclei", "network_tools_nuclei_fixture.py")
@@ -283,7 +285,7 @@ class NetworkToolsService(owner.Service):
                     raw.close()
                     raise RuntimeError("nmap_service_fixture_request_limit")
                 if self.case.startswith(("ftp-", "smtp-", "docker-ping-", "docker-version-", "winrm-", "redis-", "snmp-",
-                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-srv-", "dig-nsid-", "dig-axfr-", "http-options-", "ssh-algos-", "tls-cert-", "nuclei-", "rdp-", "smb2-", "ldap-tls-")) and self.connections:
+                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-mx-", "dig-srv-", "dig-nsid-", "dig-axfr-", "http-options-", "ssh-algos-", "tls-cert-", "nuclei-", "rdp-", "smb2-", "ldap-tls-")) and self.connections:
                     raw.close()
                     raise RuntimeError("single_metadata_fixture_connection_limit")
                 with self.condition:
@@ -327,6 +329,9 @@ class NetworkToolsService(owner.Service):
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.DNS_NSID_CASES:
                         dns_nsid_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            on_request=self._smb_enumerated)
+                    elif self.case in fixture.DNS_MX_CASES:
+                        dns_mx_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.DNS_SRV_CASES:
                         dns_srv_fixture.serve(connection, case=self.case, deadline=self.deadline,

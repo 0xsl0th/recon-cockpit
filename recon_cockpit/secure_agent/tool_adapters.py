@@ -17,7 +17,7 @@ from .tool_parameters import (
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters,
-    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, DigNSIDParameters, DigAXFRParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters, FTPStartTLSParameters,
+    PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigMXParameters, DigSRVParameters, DigNSIDParameters, DigAXFRParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters, FTPStartTLSParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
 
@@ -54,6 +54,7 @@ CURL_PARAMETERS = MappingProxyType({
 FFUF_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 10, "max_output_bytes": 8192})
 WEB_TOOLS_LIMITS = MappingProxyType({"max_steps": 1, "max_runtime_seconds": 60, "max_output_bytes": 8192})
 DIG_TOOL_ID = "dig_dns_query_v1"
+DIG_MX_TOOL_ID = "dig_dns_mx_v1"
 DIG_SRV_TOOL_ID = "dig_dns_srv_v1"
 DIG_NSID_TOOL_ID = "dig_dns_nsid_v1"
 DIG_AXFR_TOOL_ID = "dig_dns_axfr_v1"
@@ -89,6 +90,7 @@ CONFIGURABLE_NMAP_TOOL_ID = "configurable_nmap_service_v1"
 CONFIGURABLE_HEADERS_TOOL_ID = "configurable_http_headers_v1"
 CONFIGURABLE_SSH_TOOL_ID = "configurable_ssh_host_keys_v1"
 DIG_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+DIG_MX_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 DIG_SRV_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 DIG_AXFR_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 DIG_NSID_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -252,6 +254,16 @@ ADAPTERS = MappingProxyType({
          "fixed_dns_nsid_question", "tcp_only", "no_recursive_resolution",
          "single_connection_and_question", "no_response_directed_followup",
          "untrusted_dns_server_metadata_only"),
+    ),
+    DIG_MX_TOOL_ID: ToolAdapter(
+        DIG_MX_TOOL_ID, DigMXParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_dns_mail_metadata", "owned-dig-dns-mx-v1",
+        "bounded-dig-dns-mx-result-v1", "dig-dns-mx-text-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "bounded_threads", "no_child_processes",
+         "fixed_dns_mx_question", "tcp_only", "no_recursive_resolution",
+         "single_connection_and_question", "no_exchange_resolution_or_followup",
+         "untrusted_dns_mail_metadata_only"),
     ),
     DIG_SRV_TOOL_ID: ToolAdapter(
         DIG_SRV_TOOL_ID, DigSRVParameters, ("port", "timeout_seconds", "max_output_bytes"),

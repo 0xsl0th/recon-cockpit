@@ -25,14 +25,14 @@ def test_all_30_accepted_runtime_profiles_remain_byte_identical():
     # Independently captured from merged PR68 a6f11b7 before C15 runtime edits.
     selected = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
     assert len(selected) == 30
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == 'e95562a6d07d64a67e31a2fc621da7101e3132343012c850d5c1ae474d6dc655'
 
 
 def test_all_39_accepted_adapters_remain_byte_identical():
     selected = {tool: adapter.to_dict() for tool, adapter in adapters.ADAPTERS.items()
-                if tool not in (runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT)}
+                if tool not in (runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
     assert len(selected) == 39
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == (
         '97301638f860f2d81fe9f01c69ed8a45bacf4a9010bb2f325161a86fa66975b5')
