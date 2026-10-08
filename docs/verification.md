@@ -1,13 +1,102 @@
 # Verification record
 
+## C13 bounded SNMP interface successor — 8 October 2026
+
+The [C13 runbook](snmp-next-tools.md) defines `snmp_interface_next_v1`: one fixed
+SNMPv2c GETNEXT seed for ifDescr over TCP in the disconnected owned lab. This adds
+one bounded interface-description observation to the accepted system-scalar GET
+coverage. Implementation `331ae0653e05ad1aef298c681ffb7c6d8adba2f8` contains
+**38 secure profiles using 15 external programs**. C12 remains accepted and closed.
+
+| Verification | Result |
+| --- | --- |
+| Full portable suite, integration excluded | **16,687 passed**, 1,100 deselected; zero failures/errors/skips; 342.093 JUnit seconds. |
+| Actual owned native execution | **43 passed**: 19 C13 tests in 56.203 seconds and 24 accepted Redis/SNMP regressions in 71.910 seconds; no failures/errors/skips. |
+| Ordinary usefulness | **4/4**: nonempty description, empty description, endOfMibView and outside-column successor; zero unnecessary refusals. |
+| Separate robustness usefulness | **2/2**: fragmented response and inert hostile description. |
+| Negative outcomes | **8 inconclusive**, each after one validated request: nonincrease, wrong type, extra variable, malformed BER, truncation, denial, stall and output pressure. |
+| Enforcement and closure | **28/28** forbidden-destination witnesses and **140/140** boundary fields; one connection/request and closed owner for every C13 scenario. |
+| Evidence | All 14 native reports independently rebuilt unchanged; **91 accepted bundles** replayed unchanged through shared inspection and the isolated CLI, with twelve inherited receipt links. |
+| Frozen source | **583 files**, unchanged from before native/full portable validation through audit and replay. |
+| Calls/cost | Zero actual provider calls and USD0; credentials and live calls remain disabled. |
+
+The five new native authority gates cover one-use grants, absent consumed proof,
+cancellation after actual exec, private input/descriptor exclusion and rejection of
+broadened UDP permission. The shipped policy still requires fresh approval. Native
+fixtures use synthetic unattended policies or test approval transports, not personal
+acceptance. No repeat native execution was needed after the successful suites; the
+six useful receipt rows reuse their original native evidence.
+
+Descriptive secure CLI wall times across the fourteen scenarios were **2554–4558 ms**,
+median **2996.5 ms**, including setup and reporting. Useful captures were 28–215 bytes;
+output pressure retained 8192 bytes and remained inconclusive. These measurements
+are not comparative overhead. The five-second tool execution limit and 60-second
+session limit are distinct from descriptive latency.
+
+The independent audit reconciled native text with finite fixture facts, raw channel
+hashes, normalized data, action/policy/runtime binding, owner counters and closure,
+evidence journal, audit decisions and JUnit metrics. Three semantic negatives
+returned native exit0 but stayed inconclusive, so process success is not mistaken
+for completed work. Two independent code reviews found no blockers. Snapshot tests
+preserve all **237 accepted case contracts, 37 adapters and 28 runtime definitions**;
+all 44 existing nondispatch parser function ASTs remain unchanged.
+
+Results are untrusted metadata, not proof of interface presence, inventory
+completeness, verified absence, identity, authorization or vulnerability. Returned
+OIDs cannot initiate another request. Only the documented printable ASCII and
+outside-column INTEGER subset is supported. The native client handles BER and
+request association; its retained text omits request IDs, communities and wire bytes
+it discards. Neither complete wire validation nor real-model injection resistance
+is claimed. No walk, GETBULK, SET, UDP, retry, correction resubmission, host MIBs or
+real credentials are enabled. Earlier C9 stall causation remains unresolved.
+
+Private evidence stays under `.secure-agent/snmp-next-20261008/` and out of Git.
+The source-manifest SHA256 is
+`8b9cd98258b29a3c0ac1674f38ff915849ee3cd482cf1c8c993b1ddb469280d2`;
+`native-evidence-audit.json` is
+`13bba9407200bbaa226a5d5e070fdc9fe5216fede1613b957d2fae167b6ddba0`;
+`verification.json` is `1c5cd269c4cf354f442b3e2c580b2ec499f1bcb37bdd2a64072600e58b3ca6a4`.
+Development checks caught an evidence limitation-section prefix collision with
+legacy SNMP; the final source explicitly separates GETNEXT and all accepted C1
+regressions pass. An early test collection ran before its helper file was saved;
+the final full suite includes that helper. Neither issue required relaxed enforcement.
+
+[PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for latest-revision
+review and hosted checks; leave it unmerged pending the corresponding instruction.
+Subsequent checkpoint commits change documentation only. The next recommended
+coverage gap is a bounded SSH transport algorithm advertisement profile. Credentials,
+paid/live evaluation, external engagements, deeper workflows and comparative
+benchmarking remain deferred; completed milestones remain closed.
+
+## PR #66 review and merge — 8 October 2026
+
+**C12 is accepted and closed in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66).**
+Reviewed head `4adbf415049edbc1f05bd3f5c6b16a23580998b5` merged as
+`7faf974f5e0bbc917ef5d8b6ee70164478524ef4` at 01:31:18 UTC. The reviewed
+and merged trees match `ad73ca6bc12821a146abb83de095ed2c7bbd3b7d`.
+Fresh independent authority/runtime and parser/evidence reviews found no blockers.
+All 574 frozen source hashes, 97 reports, 112 declared artifacts, 83 inherited
+replays and eleven receipt links reconciled. The tested source remained unchanged;
+no duplicate native execution was necessary for the merge review.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37712733064)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37713341040)
+passed. Preserve 16,138 portable and 40 native tests, 6/6 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations and
+140/140 boundary fields. A pre-existing final blank line in the native test file
+was a nonblocking whitespace observation; the reviewed behavior was not changed.
+No formal GitHub approval is claimed. Private merge receipt:
+`.secure-agent/pr66-merge-review.json`. C12 stays closed with 37 profiles using
+14 external programs.
+
 ## C12 bounded HTTP OPTIONS metadata — 8 October 2026
 
 The [C12 runbook](http-options-tools.md) defines `curl_http_options_v1`: one
 fixed 146-byte OPTIONS request to `/harbordesk/portal.html` on the disconnected
 owned endpoint, using the accepted curl isolation path. It adds resource-specific
 status, method advertisements and authentication-scheme names; no advertised
-method is invoked. Accepted C11 remains closed. C12 is a separate review candidate
-with **37 profiles using 14 external programs**.
+method is invoked. C11 and C12 are accepted and closed. The C12 revision has
+**37 profiles using 14 external programs**.
 
 Implementation `c875820f6344e1c95b1f420467c11f4379d0b1c2` passed **16,138 portable
 tests** with 1081 integration tests deselected, no failures/errors/skips
@@ -75,10 +164,10 @@ new native tool executions. The receipt is
 The final source-manifest SHA256 is
 `1ae913a95710e139b7015eccf6c899dc747bc6ca97aae84a320b9d084af9a2ae`.
 
-Local validation is complete in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66).
-Subsequent commits record documentation and PR status only. Leave the candidate
-unmerged pending latest-revision review, hosted checks and a merge instruction.
-B0–B8, C1–C11, offline R5, accepted local R6 and the initial GUI stay closed.
+Local validation completed in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66),
+now accepted and merged as recorded above. Later C12 commits changed documentation
+and PR status only. B0–B8, C1–C12, offline R5, accepted local R6 and the initial GUI
+stay closed.
 
 ## PR #65 review and merge — 8 October 2026
 

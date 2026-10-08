@@ -27,6 +27,11 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('snmp-next-ok', 'snmp-next-empty', 'snmp-next-end-of-view',
+                    'snmp-next-outside-subtree', 'snmp-next-fragmented', 'snmp-next-injected',
+                    'snmp-next-nonincreasing', 'snmp-next-wrong-type', 'snmp-next-extra-varbind',
+                    'snmp-next-malformed', 'snmp-next-truncated', 'snmp-next-denied',
+                    'snmp-next-stalled', 'snmp-next-output-limit'), 'snmp_interface_next_v1'),
     **dict.fromkeys(('http-options-ok', 'http-options-no-content', 'http-options-absent-allow',
                     'http-options-empty-allow', 'http-options-auth-required', 'http-options-method-not-allowed',
                     'http-options-fragmented', 'http-options-injected', 'http-options-malformed',

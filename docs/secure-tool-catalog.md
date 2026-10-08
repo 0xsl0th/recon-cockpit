@@ -134,15 +134,26 @@ native tests**, 3/3 ordinary and 2/2 robustness trials, five clean-commit trials
 78 unchanged accepted-bundle replays. PR #65 merged at `82dd85a`; all five final
 and post-merge jobs passed. Returned data cannot select follow-up.
 
-The C12 [HTTP OPTIONS candidate](http-options-tools.md) adds one fixed
-resource-specific request through existing curl, for **37 profiles using the same
-14 programs**. Typed status, distinct absent/empty Allow and authentication-scheme
-names remain untrusted advertisements. No advertised method, redirect or login is
-executed. Validation passed **16,138 portable and 40 native tests**, with 6/6 ordinary
-and 2/2 robustness completions, six inconclusive negative cases, 28/28 blocked
-destinations, zero unnecessary refusals and 83 unchanged accepted-bundle replays.
-[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) awaits latest-revision
-review and hosted checks and remains unmerged. Credentials and paid calls stay deferred.
+The accepted C12 [HTTP OPTIONS profile](http-options-tools.md) adds one fixed
+resource-specific request through existing curl, for **37 profiles using 14 programs**.
+Typed status, distinct absent/empty Allow and authentication-scheme names remain
+untrusted advertisements; no advertised method, redirect or login is executed.
+Validation passed **16,138 portable and 40 native tests**, with 6/6 ordinary and
+2/2 robustness completions, six inconclusive negatives, 28/28 blocked destinations,
+zero unnecessary refusals and 83 unchanged accepted-bundle replays.
+[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) merged at `7faf974` after
+all five final CI jobs passed; its [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37713341040)
+also passed. C12 remains closed.
+
+The C13 [SNMP successor candidate](snmp-next-tools.md) adds one fixed TCP GETNEXT
+for the ifDescr column through snmpgetnext, for **38 profiles using 15 programs**.
+It distinguishes a reported description, an empty description, endOfMibView and a
+supported outside-subtree successor. Returned metadata cannot select follow-up;
+there is no walk, UDP, real community or credential handling. Four ordinary tasks,
+two robustness tasks and eight negative cases require actual owned execution,
+independent replay and enforced boundaries. **16,687 portable/43 native tests and 91 accepted-bundle replays passed**;
+[PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for review and unmerged;
+credentials and paid calls remain deferred.
 
 From the repository root, with the project installed:
 
@@ -162,6 +173,7 @@ python -m recon_cockpit.secure_agent --describe-tool smtp_starttls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool ldap_starttls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool ftp_starttls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool curl_http_options_v1
+python -m recon_cockpit.secure_agent --describe-tool snmp_interface_next_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -287,11 +299,18 @@ of the closed summary. Only supported complete retained HTTP/1.1 framing is
 accepted; unseen trailing wire bytes cannot be checked. Advertisements establish
 neither method execution nor a vulnerability and authorize no further request.
 
+SNMP GETNEXT reports `untrusted_snmp_successor_metadata` for one fixed ifDescr
+seed. A description may be empty; endOfMibView is bound to that seed, and the
+supported outside-subtree result retains only its numeric OID. Descriptions and
+indexes remain server reports, not verified interface identity, inventory or
+absence. A successor must increase numerically; its OID never selects another
+request. Only the documented finite client rendering and typed values are accepted.
+
 The B0–B8 [coverage checklist](secure-tool-coverage.md) is closed under those
 accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C12 candidate. Further composition and comparative benchmarking
+the current C13 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

@@ -31,9 +31,9 @@ def _command(tool_id, bootstrap):
             "--die-with-parent", "--new-session", "--clearenv", "--setenv", "LC_ALL", "C",
             "--chdir", "/", "--proc", "/proc", "--dev", "/dev", "--ro-bind", stdlib, stdlib]
     for source, destination in files:
-        if Path(destination).name not in {"nft", "bwrap", "nsenter", "curl", "ffuf", "dig", "openssl", "ssh-keyscan", "ldapsearch", "smbclient", "rpcinfo", "showmount", "nmap", "kerbrute", "redis-cli", "snmpget", "ruby3.3", "ruby", "whatweb"}:
+        if Path(destination).name not in {"nft", "bwrap", "nsenter", "curl", "ffuf", "dig", "openssl", "ssh-keyscan", "ldapsearch", "smbclient", "rpcinfo", "showmount", "nmap", "kerbrute", "redis-cli", "snmpget", "snmpgetnext", "ruby3.3", "ruby", "whatweb"}:
             argv += ["--ro-bind", source, destination]
-    for name in ("network_tools_parser", "network_tools_nmap_parser", "network_tools_kerberos_parser", "network_tools_redis_snmp_parser", "network_tools_whatweb_parser", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_rdp_parser", "network_tools_smb2_parser", "network_tools_parser_worker", "planner_worker"):
+    for name in ("network_tools_parser", "network_tools_nmap_parser", "network_tools_kerberos_parser", "network_tools_redis_snmp_parser", "network_tools_whatweb_parser", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_snmp_next_parser", "network_tools_rdp_parser", "network_tools_smb2_parser", "network_tools_parser_worker", "planner_worker"):
         argv += ["--ro-bind", str(Path(__file__).with_name(name + ".py")), "/app/" + name + ".py"]
     argv += ["--remount-ro", "/proc", "--remount-ro", "/dev", "--remount-ro", "/",
              "/usr/bin/python3", "-I", "-S", "/app/network_tools_parser_worker.py", tool_id, *_namespaces().values()]

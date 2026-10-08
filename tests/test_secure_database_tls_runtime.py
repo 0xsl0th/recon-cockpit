@@ -21,7 +21,7 @@ def test_all_accepted_runtime_contracts_are_unchanged():
     # Captured from accepted main 9786a6b, including C1's two profiles.
     selected = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in (*TOOLS, runtime.WHATWEB, runtime.DIG_SRV, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (*TOOLS, runtime.WHATWEB, runtime.DIG_SRV, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT)}
     assert len(selected) == 16
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == 'a3a3f7747ace8e12b6c9a3691fb1ab3749174b8c5326acff23fd2dec7b31201a'
 

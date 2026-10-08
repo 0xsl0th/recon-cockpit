@@ -4,51 +4,65 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: priority 3 secure-tool coverage, C12 bounded HTTP OPTIONS metadata.**
-The authorized candidate is on `feature/http-options-coverage` in
-`/tmp/recon-http-options-coverage`, based on accepted main `82dd85a`.
+**Current work: priority 3 secure-tool coverage, C13 bounded SNMP successor metadata.**
+The authorized candidate is on `feature/snmp-next-coverage` in
+`/tmp/recon-snmp-next-coverage`, based on accepted main `7faf974`.
 See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C12 runbook](http-options-tools.md). One fixed
-`OPTIONS /harbordesk/portal.html HTTP/1.1` request to the owned endpoint reuses
-curl, authority, independent parsing and private evidence. The candidate has
-**37 profiles using the same 14 programs**; accepted main has 36. No GUI work is added.
+and [C13 runbook](snmp-next-tools.md). One fixed SNMPv2c TCP GETNEXT for the ifDescr
+column seed `.1.3.6.1.2.1.2.2.1.2` uses snmpgetnext through the existing authority,
+confinement, independent parser and evidence path. The candidate has **38 profiles
+using 15 external programs**; accepted main has 37 profiles using 14. No GUI work is added.
 
-Complete 200/204 responses, distinct absent/empty Allow observations, and valid
-401/405 responses can complete this metadata task. The eight-field closed summary
-contains bounded method advertisements and authentication-scheme names, not realm,
-challenge, body or unknown-header text. It verifies neither service identity nor
-actual method support; no advertised method is executed. Retained framing is checked,
-but extra wire bytes that curl does not emit cannot be inspected.
+A reported interface description, including an empty string, an explicit endOfMibView
+or a supported successor outside ifDescr can complete the metadata task. The closed
+nine-field summary distinguishes these outcomes and reports no verified identity.
+No returned OID or description selects another request. There is no walk, GETBULK,
+SET, UDP, real community or credential handling. The single text observation cannot
+establish inventory completeness or independently verify omitted SNMP wire fields.
 
-Local validation passed **16,138 portable tests** (1,081 integration tests
-deselected; 320.65 log seconds) and **40 native tests**: 19 C12 scenarios/gates
-and 21 accepted B6 regressions. C12 completed **6/6 ordinary and 2/2 separate
-robustness tasks** with zero unnecessary refusals; six negative cases remained
-inconclusive after actual request progress. All **28/28** forbidden-destination
-and **140/140** boundary-field checks passed. Five authority gates cover one-use
-approval, missing consumed proof, cancellation, private inputs and broadened UDP.
-The independent audit rebuilt all 14 native reports unchanged. CLI-case wall latency
-was 2745–5746 ms (median 3194 ms), with zero provider calls and cost; these are
-descriptive measurements, not comparative overhead.
+Local validation passed **16,687 portable tests** (1,100 integration tests
+excluded) and **43 native tests**: 19 C13 cases/gates plus 24 accepted Redis/SNMP
+regressions. C13 completed **4/4 ordinary and 2/2 robustness tasks**, with zero
+unnecessary refusals; eight negative cases stayed inconclusive after actual request
+progress. All **28/28 destination and 140/140 boundary checks** passed. The five
+authority gates preserve one-use approval, missing-proof rejection, cancellation,
+private-input exclusion and UDP confinement. All fourteen owners closed and their
+reports rebuilt unchanged. Scenario wall time was 2554–4558 ms, median 2996.5 ms;
+these descriptive times are not comparative overhead. Provider calls and cost were zero.
 
-All **574 frozen source bindings** reconciled, with two AST-identical comment
-corrections recorded. Implementation `c875820` retains the tested behavior. The
-eight useful C12 reports reuse actual native evidence; no fresh native repetitions
-or separate clean-source native execution are claimed. All **83 accepted bundles**
-replayed unchanged through shared inspection and isolated CLI, with eleven inherited
-receipt links. [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) is ready for
-latest-revision review and hosted checks; it remains unmerged. The shipped policy
-requires fresh approval. Synthetic test grants do not establish personal acceptance,
-and raw evidence stays outside Git. Merge requires the corresponding instruction.
+All **583 frozen source files** match implementation `331ae06`; 237 accepted cases,
+37 adapters and 28 runtimes retain their contracts. **91 accepted bundles** replayed
+unchanged through shared inspection and isolated CLI, with twelve receipt links.
+Six useful C13 receipt rows reuse the original native evidence, with no repeat tool
+execution. [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for review
+and remains unmerged. All five implementation CI jobs passed in
+[run 37714433576](https://github.com/0xsl0th/recon-cockpit/actions/runs/37714433576).
+Later checkpoint edits are documentation only; consult the PR for latest-head checks.
+Synthetic grants do not establish personal acceptance. The shipped policy requires
+fresh approval, and raw evidence stays outside Git. Latest-revision review, hosted
+checks and the corresponding merge instruction remain required.
 
-After C12 review, reassess **one bounded SNMP GETNEXT for interface metadata**:
-one fixed ifDescr column seed, one successor or explicit end-of-view/out-of-subtree
-observation, using the existing Net-SNMP confinement and fixture infrastructure.
-There is no walk, UDP, SET, real community or returned-OID follow-up. This is a
-recommendation only, not an implemented or required C13 batch. Credentials,
+After C13 review, reassess **bounded SSH transport algorithm advertisements**,
+starting from the existing interactive `ssh2-enum-algos` precedent. Accepted SSH
+host-key collection does not report the server's KEX, cipher and MAC lists. Select
+only a finite identification/KEXINIT exchange and a separately reviewed sealed
+runtime; do not enable general NSE execution or complete a login/session. This is
+a recommendation only, not an implemented or required C14 batch. Credentials,
 paid/live evaluation, external engagements, deeper workflows and comparative
-benchmarking remain deferred. B0–B8, C1–C11, offline R5, accepted local R6 and the
+benchmarking remain deferred. B0–B8, C1–C12, offline R5, accepted local R6 and the
 initial GUI remain closed. Preserve the proposal/PDF and recorded GUI mocks.
+
+**C12 is accepted in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66).**
+The reviewed candidate merged as `7faf974f5e0bbc917ef5d8b6ee70164478524ef4` after
+all five final CI jobs passed; the [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37713341040)
+also passed. Preserve **16,138 portable and 40 native tests**,
+6/6 ordinary and 2/2 robustness completions, six inconclusive negative cases,
+zero unnecessary refusals, 28/28 blocked destinations, 140/140 boundary fields and
+83 unchanged accepted-bundle replays with eleven inherited receipt links. The 574
+source bindings reconciled with two AST-identical comment corrections recorded.
+C12 remains closed with **37 profiles using 14 programs**. Its finite authentication
+grammar and curl capture limitations remain documented in the
+[C12 runbook](http-options-tools.md); the earlier C9 stall remains unexplained.
 
 **C11 is accepted in [PR #65](https://github.com/0xsl0th/recon-cockpit/pull/65).**
 Reviewed head `40197b6` merged as `82dd85a` on 8 October at 01:03:14 UTC;
@@ -480,11 +494,11 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: C12 bounded HTTP OPTIONS metadata.** Follow the current
-status at the top of this checkpoint and the [C12 runbook](http-options-tools.md).
-PR #65 is merged as `82dd85a`; C11 stays closed. Leave C12 ready for review.
-The next proposed gap is one bounded SNMP GETNEXT for interface metadata; reassess
-its usefulness before selecting another batch. No credential/workflow expansion.
+**Current continuation: C13 bounded SNMP successor metadata.** Follow the current
+status at the top of this checkpoint and the [C13 runbook](snmp-next-tools.md).
+PR #66 is merged as `7faf974`; C12 stays closed. Leave C13 ready for review.
+The next proposed gap is bounded SSH algorithm advertisements; reassess its finite
+runtime and usefulness before selecting another batch. No credential/workflow expansion.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1674,28 +1688,27 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #65 merge is complete. PRs #6–#30 and #32–#65
+- The operator-authorized PR #66 merge is complete. PRs #6–#30 and #32–#66
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Review [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) on its latest
-   revision and hosted checks, using this checkpoint and the
-   [runbook](http-options-tools.md). Local validation is complete; PR #65 and all
-   accepted milestones remain closed. Do not merge the candidate without review,
-   required hosted checks and the corresponding instruction.
-2. Require useful 200/204/401/405 observations, distinct absent/empty Allow, six
-   inconclusive negative outcomes, actual request progress, all authority and
-   cleanup checks, and unchanged independent replay. Count unnecessary refusals,
-   descriptive latency and zero-provider cost as well as blocked actions.
-3. Preserve the desktop approval boundary and personal acceptance. C12 adds no GUI,
-   external scope or credentials. Method advertisements are not executed and do
-   not verify support or a vulnerability. Curl's uncaptured trailing wire bytes
-   cannot be inspected. Raw evidence remains outside Git.
-4. After C12 review, compare the prospective bounded SNMP GETNEXT row with remaining
-   coverage gaps. It is a recommendation, not an authorized implementation or
-   expansion of C1. Preserve C9's unexplained stall history.
+1. Complete C13 SNMP successor validation and prepare its PR on the latest revision,
+   using this checkpoint and the [runbook](snmp-next-tools.md). PR #66 and accepted
+   milestones remain closed. Do not merge the candidate without review, required
+   hosted checks and the corresponding instruction.
+2. Require four useful ordinary outcomes, two useful robustness outcomes, eight
+   inconclusive negatives, actual query progress, all authority and cleanup checks,
+   and unchanged replay. Count unnecessary refusals, descriptive latency and zero
+   provider cost as well as blocked actions.
+3. Preserve the desktop approval boundary and personal acceptance. C13 adds no GUI,
+   real community, credentials, external target or walk. Returned OIDs and descriptions
+   remain inert. The rendered client output does not independently prove all wire
+   fields, inventory completeness or device identity. Raw evidence stays outside Git.
+4. After C13 review, compare the prospective bounded SSH algorithm-advertisement
+   row with remaining gaps. It is a recommendation, not an implemented C14 batch;
+   it must not enable general NSE execution. Preserve C9's unexplained stall history.
 5. Deeper workflows, comparative benchmarking, credential setup, paid calls and
    live-model evaluation remain deferred. External engagements, intrusive activity,
    release publication and competition submission need corresponding authorization.

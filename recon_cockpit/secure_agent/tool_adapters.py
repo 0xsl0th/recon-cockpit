@@ -16,7 +16,7 @@ from .tool_parameters import (
     OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
-    KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters,
+    KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters,
     PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, DigNSIDParameters, DigAXFRParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters, FTPStartTLSParameters,
     NmapTCPParameters, TCPParameters, _fields, _reject,
 )
@@ -74,6 +74,7 @@ NMAP_SERVICE_TOOL_ID = "nmap_service_identify_v1"
 KERBRUTE_TOOL_ID = "kerbrute_userenum_v1"
 REDIS_TOOL_ID = "redis_server_info_v1"
 SNMP_TOOL_ID = "snmp_system_get_v1"
+SNMP_NEXT_TOOL_ID = "snmp_interface_next_v1"
 POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
 MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
 SMTP_TLS_TOOL_ID = "smtp_starttls_handshake_v1"
@@ -104,6 +105,7 @@ NMAP_SERVICE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, 
 KERBRUTE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 REDIS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SNMP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+SNMP_NEXT_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 POSTGRESQL_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 MYSQL_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SMTP_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -430,6 +432,16 @@ ADAPTERS = MappingProxyType({
          "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
          "single_fixed_scalar_get", "public_synthetic_community", "no_walk_or_set",
          "no_mib_or_host_config", "no_udp", "no_followup_to_metadata"),
+    ),
+    SNMP_NEXT_TOOL_ID: ToolAdapter(
+        SNMP_NEXT_TOOL_ID, SNMPInterfaceNextParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_snmp_interface_successor", "owned-snmp-interface-next-v1",
+        "bounded-snmp-interface-next-result-v1", "snmp-interface-next-text-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
+         "single_fixed_seed_getnext", "public_synthetic_community", "no_walk_or_set",
+         "no_retries_or_oid_correction", "no_mib_or_host_config", "no_udp",
+         "no_followup_to_returned_oid", "untrusted_interface_metadata_only"),
     ),
     KERBRUTE_TOOL_ID: ToolAdapter(
         KERBRUTE_TOOL_ID, KerbruteUserenumParameters, ("port", "timeout_seconds", "max_output_bytes"),

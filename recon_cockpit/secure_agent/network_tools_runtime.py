@@ -41,6 +41,7 @@ NMAP_SERVICE = "nmap_service_identify_v1"
 KERBRUTE = "kerbrute_userenum_v1"
 REDIS = "redis_server_info_v1"
 SNMP = "snmp_system_get_v1"
+SNMP_NEXT = "snmp_interface_next_v1"
 POSTGRESQL_TLS = "postgresql_tls_handshake_v1"
 MYSQL_TLS = "mysql_tls_handshake_v1"
 WHATWEB = "whatweb_http_fingerprint_v1"
@@ -120,7 +121,7 @@ EXECUTABLES = {DIG: "/usr/bin/dig", DIG_SRV: "/usr/bin/dig", DIG_NSID: "/usr/bin
                FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl",
                DOCKER_PING: "/usr/bin/curl", DOCKER_VERSION: "/usr/bin/curl", WINRM: "/usr/bin/curl", HTTP_OPTIONS: "/usr/bin/curl",
                NMAP_SERVICE: "/usr/bin/nmap", KERBRUTE: "/usr/local/bin/kerbrute",
-               REDIS: "/usr/bin/redis-cli", SNMP: "/usr/bin/snmpget",
+               REDIS: "/usr/bin/redis-cli", SNMP: "/usr/bin/snmpget", SNMP_NEXT: "/usr/bin/snmpgetnext",
                POSTGRESQL_TLS: "/usr/bin/openssl", MYSQL_TLS: "/usr/bin/openssl",
                WHATWEB: "/usr/bin/ruby3.3", RDP: "/usr/bin/ruby3.3", SMB2: "/usr/bin/ruby3.3",
                SMTP_TLS: "/usr/bin/openssl", LDAP_TLS: "/usr/bin/openssl", FTP_TLS: "/usr/bin/openssl"}
@@ -130,6 +131,10 @@ FIXED_ARGV = {
            "-Cf", "-On", "-Ot", "-Ox", "-m", "", "-M", "", "--dontLoadHostConfig=true",
            "--noPersistentLoad=true", "--noPersistentSave=true", "tcp:127.0.0.1:8080",
            ".1.3.6.1.2.1.1.1.0", ".1.3.6.1.2.1.1.3.0", ".1.3.6.1.2.1.1.5.0"),
+    SNMP_NEXT: ("/tool/snmpgetnext", "-v", "2c", "-c", "recon-fixture-public", "-r", "0", "-t", "2",
+           "-Cf", "-On", "-Ot", "-Ox", "-m", "", "-M", "", "--dontLoadHostConfig=true",
+           "--noPersistentLoad=true", "--noPersistentSave=true", "tcp:127.0.0.1:8080",
+           ".1.3.6.1.2.1.2.2.1.2"),
     KERBRUTE: ("/tool/kerbrute", "userenum", "--dc", "127.0.0.1:8080", "--domain", "harbordesk.test",
           "--threads", "1", "--safe", "--verbose", "/tool/data/principals.txt"),
     NMAP_SERVICE: ("/tool/nmap", "--unprivileged", "-sT", "-sV", "--version-intensity", "0",
@@ -215,7 +220,7 @@ FIXED_ARGV[DIG_NSID] = tuple(arg for item in FIXED_ARGV[DIG] for arg in (
 FIXED_ARGV[DIG_AXFR] = tuple("AXFR" if item == "A" else item for item in FIXED_ARGV[DIG]) + (
     "+noednsnegotiation", "+nobesteffort", "+authority", "+noonesoa", "+nomultiline", "+norrcomments")
 
-MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
+MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_snmp_next_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
@@ -245,9 +250,9 @@ def execution_environment(tool_id):
         # Go reserves virtual address space independently of its live heap.
         # The worker also enforces the reviewed task and address-space caps.
         value.update(GOMAXPROCS="1", GOMEMLIMIT="64MiB")
-    if tool_id == SNMP:
+    if tool_id in (SNMP, SNMP_NEXT):
         # No host MIBs, per-host configuration, persistent engine state or
-        # environment-supplied community can enter the numeric v2c GET.
+        # environment-supplied community can enter the numeric v2c request.
         value.update(MIBS="", MIBDIRS="", MIBFILES="", SNMPCONFPATH="/tool/no-snmp-config",
                      SNMP_PERSISTENT_DIR="/tool/no-snmp-state")
     return value
@@ -270,7 +275,7 @@ def _compiled(tool_id):
     if tool_id in (DIG, DIG_SRV, DIG_NSID, DIG_AXFR):
         # No host resolver, search list, or user configuration enters the tool.
         return "compiled:resolver", "/etc/resolv.conf", b"# fixed TCP nameserver supplied by reviewed argv\n"
-    if tool_id in (SSH, LDAP, FTP, SMTP, DOCKER_PING, DOCKER_VERSION, WINRM, HTTP_OPTIONS, REDIS, SNMP):
+    if tool_id in (SSH, LDAP, FTP, SMTP, DOCKER_PING, DOCKER_VERSION, WINRM, HTTP_OPTIONS, REDIS, SNMP, SNMP_NEXT):
         return None  # These profiles need no configuration, credentials, or trust file.
     if tool_id == SMB:
         return "compiled:smb-config", "/tool/data/smb.conf", SMB_CONFIG
