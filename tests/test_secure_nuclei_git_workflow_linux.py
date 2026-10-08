@@ -24,11 +24,6 @@ def git_profile(monkeypatch):
         NUCLEI_ORDINARY_CASES=fixture.NUCLEI_GIT_ORDINARY_CASES,
         NUCLEI_MATCHED_CASES=fixture.NUCLEI_GIT_MATCHED_CASES))
     baseline.linux_only.__wrapped__(monkeypatch)
-    boundary = baseline.gates.boundary
-    def selected_boundary(*args, case, **kwargs):
-        return boundary(*args, case={'nuclei-index': 'nuclei-git-main',
-            'nuclei-stalled': 'nuclei-git-stalled'}.get(case, case), **kwargs)
-    monkeypatch.setattr(baseline.gates, 'boundary', selected_boundary)
 
 
 @pytest.mark.parametrize('case', fixture.NUCLEI_GIT_CASES)
@@ -59,9 +54,11 @@ def test_cancel_after_native_exec_reaps_entire_tree_and_scratch(tmp_path):
 
 
 def test_private_inputs_descriptors_and_host_writes_are_excluded(tmp_path, monkeypatch):
-    baseline.test_private_inputs_descriptors_and_host_writes_are_excluded(tmp_path, monkeypatch)
+    baseline.test_private_inputs_descriptors_and_host_writes_are_excluded(
+        tmp_path, monkeypatch, case='nuclei-git-main')
 
 
 @pytest.mark.parametrize('fault', ['noexec', 'byte_limit', 'inode_limit', 'task_limit'])
 def test_relaxed_scratch_or_task_boundary_is_refused_before_exec(tmp_path, monkeypatch, fault):
-    baseline.test_relaxed_scratch_or_task_boundary_is_refused_before_exec(tmp_path, monkeypatch, fault)
+    baseline.test_relaxed_scratch_or_task_boundary_is_refused_before_exec(
+        tmp_path, monkeypatch, fault, case='nuclei-git-main')
