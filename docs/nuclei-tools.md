@@ -1,6 +1,7 @@
 # Owned Nuclei directory-listing signature check
 
-C16 is an **implementation candidate, locally validated, pending PR review**.
+C16 is an **implementation candidate, locally validated, pending review in
+[PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71)**.
 It adds `nuclei_directory_listing_v1` through a separate pinned Nuclei runtime,
 the secure CLI and existing authority/evidence services. Accepted main remains
 **40 profiles using 15 external programs**; the candidate registry has **41/16**.

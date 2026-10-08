@@ -10,6 +10,7 @@ The [runtime feasibility assessment](nuclei-feasibility.md) is accepted in
 merged as `2f7fb5a` after all five final and post-merge jobs passed. The operator
 subsequently authorized the separate runtime prototype and owned check. Work is
 on `feature/nuclei-runtime-prototype` in `/tmp/recon-nuclei-runtime`.
+[PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71) is open for review; it is not merged.
 Accepted main remains **40 secure profiles using 15 external programs**; the C16
 candidate registry has **41 profiles using 16 programs**. Local validation and
 independent code reviews passed; PR review, required checks and merge remain the
