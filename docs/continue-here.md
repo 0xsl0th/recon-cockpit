@@ -4,49 +4,55 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72), C17 Git HEAD marker candidate.**
-Implementation is on `feature/nuclei-git-head-coverage` in
-`/tmp/recon-nuclei-git-head`. Accepted main remains **41 profiles using 16 programs**;
-the validated candidate has **42/16**. G1–G5 are demonstrated locally; G6 remains
-open until independent PR review, applicable checks and an operator-authorized merge.
+**Current status: C17 is accepted; product-roadmap planning is the current task.**
+[PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72) merged as
+`e00482409362f1f9380bc225063b84762446dee9` after fresh authority/runtime and
+parser/evidence reviews found no blockers and all five final PR checks passed. All five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37816689999)
+also passed. Reviewed head `407f48f` and the merge have the same tree
+`5bfb8d52f06d486a513ffc429d0418cb7f94b764`. Accepted coverage is now **42 bounded
+secure profiles backed by 16 external programs**. C17's G1–G6 are closed.
 
-The [C17 runbook](nuclei-git-tools.md) defines one fixed GET of `/.git/HEAD` in the
-disconnected owned fixture. Its exact finite predicate recognizes two complete
-synthetic symbolic refs; it does not fetch refs, objects, configuration, source or
-credentials. Owner bytes and native response status/content type/body must agree.
-Existing C16 compiled bytes, snapshots, authority controls and limits are preserved.
+The [consolidated product roadmap](product-roadmap.md) separates today's verified
+capabilities from the professional-v1 release and the longer-term 40+ program
+product. Its planning estimates are **40–60 further PRs for an operator-assisted
+professional v1**, and **80–130 total further PRs for the broader product**.
+These are scoped engineering forecasts, not completion percentages, approval of
+deferred work or a claim that all 42 profiles are available through the GUI.
+The forecast is a documentation-only follow-up on `docs/product-roadmap-forecast`
+in `/tmp/recon-product-roadmap`; implementation remains unchanged.
 
-**Validation:** all **19,437 portable tests** passed with no skips, failures or
-errors at `bbb34bc`. Final native confirmation at `901faab` passed **44 Linux tests**
-(21 C17, 21 C16 and two sealing checks). Only two integration test files changed
-between those revisions; production code is identical. C17 achieved **4/4 ordinary
-and 1/1 separate robustness completions**, eight inconclusive negatives, zero
-unnecessary refusals, **26/26 blocked destination witnesses** and **195/195 boundary
-fields**. All thirteen new and **120 accepted evidence bundles** replayed identically
-without changing bytes, mtimes or modes. The 290-case/41-adapter/32-runtime baseline
-and all 16 inherited receipt links remain unchanged.
+C17's [runbook](nuclei-git-tools.md) records one fixed GET of `/.git/HEAD` and two
+finite synthetic markers. No returned-ref follow-up, repository/source/object
+download or credential retrieval occurs; useful observations do not verify
+vulnerability or repository exposure.
+Preserve **19,437 portable and 44 native passes**, 4/4 ordinary and 1/1 robustness
+completions, eight inconclusive negatives, zero unnecessary refusals, 26/26 blocked
+destinations, 195/195 boundary fields and **133 unchanged bundle replays**
+(13 new and 120 previously accepted). Sixteen inherited receipts and the frozen
+290-case/41-adapter/32-runtime predecessor baseline remain unchanged.
 
-Scenario wall time was **4528–6393 ms**, median **4561 ms**,
-including authority/evidence capture; this is descriptive timing, not comparative
-overhead. Provider calls and cost were zero. All 705 source hashes matched the native
-pin during the audit at `901faab`; the subsequent handoff changes documentation only. Private receipt: `.secure-agent/nuclei-git-20261008/verification.json`, SHA-256
-`6721ac99867de7e57d6cc06035e65e923c690831087098015650d2b0df1868c6`. The follow-up handoff records the final PR head and CI separately.
+All 705 source hashes matched native revision `901faab`; only six documentation
+files changed before final reviewed `407f48f`. Fresh review passed 1,466
+runtime/authority tests and 318 parser/evidence tests; these focused sets overlap
+prior validation and are not an additional aggregate. Scenario wall time was
+4528–6393 ms, median 4561 ms, with zero provider calls/cost. This is descriptive
+timing, not comparative overhead. The missing-module refusal, first failed native
+matrix and corrected nonvacuous isolation tests remain recorded separately.
 
-Preserve development failures: the first smoke refused missing outer-launcher
-modules, corrected before a useful retry. The first full native run then exposed a
-test-routing mismatch: its private-input helper submitted C16 inside a C17 lab,
-and four boundary negatives passed for that wrong policy denial. The corrected
-helpers select one explicit case for both action and lab, and assert the intended
-allow/start/finish audit sequence; the final 44-test confirmation passed. The
-first failed run and vacuous negatives do not count as acceptance evidence.
+Private immutable verification: `.secure-agent/nuclei-git-20261008/verification.json`,
+SHA-256 `6721ac99867de7e57d6cc06035e65e923c690831087098015650d2b0df1868c6`.
+Merge review: `.secure-agent/pr72-merge-review.json`. The original C17 handoff is
+historical and remains unchanged; the merge receipt supersedes its open-PR status.
 
-**Current handoff:** leave the C17 PR unmerged for review. A later merge requires
-the operator's instruction and passing latest-revision review/checks. After that,
-the recommended next coverage gap is **C18: fixed nonrecursive TCP DNS MX
-metadata**, using the accepted dig runtime, at most four typed preference/exchange
-rows and explicit null-MX/NODATA/NXDOMAIN results. Returned exchange names must not
-be followed. C18 is proposed, not implemented. Credentials, paid/live models,
-external targets, deeper workflows and comparative benchmarking remain deferred.
+**Next implementation recommendation:** C18 fixed nonrecursive TCP DNS MX
+metadata using the existing dig runtime, with at most four typed rows and useful
+null-MX/NODATA/NXDOMAIN outcomes, and no returned-host follow-up. C18 has not
+started. Agree a finite professional-v1 coverage checklist before treating the
+rolling coverage programme as complete; do not silently replace the 40+ program
+ambition or move required work to optional status. Existing closed milestones
+remain closed. Deeper workflows, comparative benchmarks, real credentials,
+external targets and paid/live models remain deferred under their existing gates.
 
 **C16 accepted in [PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71).**
 The separate pinned Nuclei runtime and owned directory-listing check bring accepted
@@ -101,7 +107,7 @@ test-setup failures from an absent `os.listxattr`; the portable mock now support
 that absence, with production bytes unchanged. No limit was raised beyond the
 approved Nuclei-specific design, and no failed probe counts as useful work.
 
-C17 was subsequently authorized and is the validated candidate above. C16 and
+C17 was subsequently authorized and is now accepted as recorded above. C16 and
 earlier completed milestones remain closed; its fixed template, original owner
 response evidence and runtime limits remain regression anchors. Preserve the
 proposal/PDF, GUI mocks and earlier unexplained C9 stall and failure history.
@@ -596,10 +602,10 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: leave validated C17 unmerged for PR review.** The
-operator authorized the Git HEAD marker batch; follow the current status at the
-top and [C17 runbook](nuclei-git-tools.md). C16 and earlier completed milestones
-stay closed. No deeper workflow, credential or live-model work is included.
+**Current continuation: product roadmap and PR forecast after the C17 merge.**
+Follow the [consolidated plan](product-roadmap.md) and current status at the top.
+C17 and earlier completed milestones stay closed. C18 is the next proposed
+implementation; no deeper workflow, credential or live-model work starts here.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1789,25 +1795,25 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #71 merge is complete. PRs #6–#30 and #32–#71
+- The operator-authorized PR #72 merge is complete. PRs #6–#30 and #32–#72
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. C17 is locally validated on `feature/nuclei-git-head-coverage` in
-   `/tmp/recon-nuclei-git-head`; preserve accepted main `1cfbf8b` and C16.
-2. Leave its PR unmerged for review. Verify its latest revision and CI before a
-   later operator-authorized merge; G6 remains open until that merge.
-3. Preserve the 19,437 portable and 44 native passes, 133 unchanged evidence
-   replays, source bindings and failed-development history under
-   `.secure-agent/nuclei-git-20261008/`. A documentation update does not require
-   repeating native execution or restoring old approvals.
-4. After C17 acceptance, the recommended next gap is C18 fixed DNS MX metadata.
-   Its proposed limits and G1–G6 criteria are in the coverage checklist; it has
-   not started. Keep completed C1–C16 and R5/R6/GUI milestones closed.
-5. Credentials, paid/live models, external targets, deeper workflows and
-   comparative benchmarks remain deferred; preserve proposal/PDF and GUI mocks.
+1. C17 is accepted on main `e004824` via PR #72. Preserve its review and validation;
+   no rerun or reopening is needed merely to discuss product planning.
+2. Review the documentation-only `docs/product-roadmap-forecast` branch in
+   `/tmp/recon-product-roadmap`. The [full product plan](product-roadmap.md)
+   distinguishes 40–60 further PRs for the declared professional-v1 subset from
+   80–130 total for the broader product. These ranges do not authorize execution.
+3. The next proposed implementation is C18 fixed DNS MX metadata. It is not
+   started. Agree the finite required task/coverage matrix and keep choosing
+   subsequent batches by the largest missing engagement capability.
+4. Keep offline R5, accepted local R6, B0–B8, C1–C17 and the initial GUI closed.
+   Preserve the private proposal/PDF, GUI mocks, native receipts and failure history.
+5. Deeper workflows/benchmarks, real credentials, attached or external networks,
+   intrusive activity and paid/live models retain their separate later gates.
 
 ## Recovery and verification
 

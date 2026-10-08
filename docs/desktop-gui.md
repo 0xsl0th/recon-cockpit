@@ -101,8 +101,9 @@ personal walkthrough in [PR #53](https://github.com/0xsl0th/recon-cockpit/pull/5
 merged as `0539c15`. Preserve those personal approval, denial, cancellation and
 four-action receipts. This desktop integration reuses the same
 [shared service](shared-assessment-service.md), authority gates and local desktop
-trust assumption; it adds no new transport permission. The implementation still
-requires its own PR review before acceptance of the GUI milestone.
+trust assumption; it adds no new transport permission. Desktop execution was accepted in [PR #54](https://github.com/0xsl0th/recon-cockpit/pull/54);
+the initial owned GUI milestone is closed. Broader GUI operations are future
+work in the [product roadmap](product-roadmap.md).
 
 Model credentials, paid calls and live-model evaluation remain deferred until much
 later. Accepted B0–B8, configurable scope and offline R5/local R6 stay closed.

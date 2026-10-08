@@ -1,10 +1,12 @@
 # Owned Git HEAD marker check
 
-C17 is a validated candidate in [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72)
-on `feature/nuclei-git-head-coverage`. **PR review and merge remain pending.** It adds `nuclei_git_head_v1` to the secure CLI using
-the existing pinned Nuclei executable and authority services. The working catalog
-contains 42 profiles using 16 external programs; acceptance remains at C16's
-41 profiles until the C17 gates are complete.
+C17 is accepted in [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72), merged
+as `e004824` after fresh independent review and all five final PR checks passed.
+All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37816689999)
+also passed.
+It adds `nuclei_git_head_v1` to the secure CLI using
+the existing pinned Nuclei executable and authority services. The accepted catalog
+contains 42 profiles using 16 external programs; C17's G1–G6 are closed.
 
 C16 is accepted through [PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71)
 on main `1cfbf8b`; all five post-merge checks now pass. Its
@@ -191,7 +193,7 @@ Use `--dry-run` in place of `--execute` to inspect the plan. After an actual run
 replay and restores no execution authority. Keep raw evidence, private receipts
 and the existing executable outside Git.
 
-## Evaluation results and pending acceptance
+## Accepted evaluation results
 
 | Group | Cases | Required result |
 | --- | --- | --- |
@@ -239,8 +241,8 @@ Local results at native source `901faab`:
   live integration enabled, and no personal operator acceptance claimed.
 
 All 705 tracked source hashes matched the native source pin during independent
-audit. G1–G5 have local evidence; G6 remains open until the final PR is reviewed,
-its checks pass and the operator-authorized merge occurs. Private immutable
+audit. G1–G5 have local evidence; G6 closed with fresh independent reviews,
+passing final-revision checks and the operator-authorized PR #72 merge. Private immutable
 receipt: `.secure-agent/nuclei-git-20261008/verification.json`, SHA-256
 `6721ac99867de7e57d6cc06035e65e923c690831087098015650d2b0df1868c6`. Native evidence is under `native-confirmed/`; source pins, JUnit
 reports and the separate final-head handoff are retained alongside it.
