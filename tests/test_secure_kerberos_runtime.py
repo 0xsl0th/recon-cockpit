@@ -18,7 +18,7 @@ from test_secure_network_tools_runtime import manifest
 def test_accepted_b1_through_b7_runtime_profiles_remain_exact():
     values = {tool: [exe, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
                     [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-              for tool, exe in runtime.EXECUTABLES.items() if tool not in (runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB, runtime.DIG_SRV, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_AXFR, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT)}
+              for tool, exe in runtime.EXECUTABLES.items() if tool not in (runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB, runtime.DIG_SRV, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_AXFR, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS)}
     values["old_nmap"] = nmap_runtime.FIXED_ARGV
     assert len(values) == 14
     assert hashlib.sha256(json.dumps(values, sort_keys=True, separators=(",", ":")).encode()).hexdigest() == (
@@ -121,7 +121,7 @@ def test_go_runtime_allowances_do_not_expand_accepted_other_tools(monkeypatch, t
     monkeypatch.setattr(worker.resource, "setrlimit", lambda kind, value: limits.update({kind: value}))
     worker.syscall_filter(tool_id)
     worker._limits(tool_id)
-    threaded = tool_id in (runtime.DIG_AXFR, runtime.DIG_NSID, runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP, runtime.SMB2)
+    threaded = tool_id in (runtime.DIG_AXFR, runtime.DIG_NSID, runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SSH_ALGORITHMS)
     assert calls == [{"allow_threads": threaded}]
     assert limits == {
         worker.resource.RLIMIT_AS: ((2048 if tool_id == runtime.KERBRUTE else 256) * 1024 * 1024,) * 2,

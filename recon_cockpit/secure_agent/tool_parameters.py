@@ -177,6 +177,11 @@ class SSHHostKeysParameters(TCPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class SSHAlgorithmsParameters(TCPParameters):
+    """One fixed SSH identification/KEXINIT; no completed exchange or authentication."""
+
+
+@dataclass(frozen=True, slots=True)
 class LDAPRootDSEParameters(TCPParameters):
     """Bounds for one fixed anonymous RootDSE query, without follow-up searches."""
 

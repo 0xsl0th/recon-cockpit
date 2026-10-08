@@ -21,6 +21,33 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("ssh-algos-"):
+        from . import network_tools_fixture as fixture
+        response = fixture.ssh_algorithms_response(case)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-ssh-algorithms-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "ssh_tcp"}],
+            "request_template_sha256": hashlib.sha256(fixture.SSH_ALGORITHMS_REQUEST).hexdigest(),
+            "request_bytes": len(fixture.SSH_ALGORITHMS_REQUEST),
+            "request_random_cookie": {"offset": fixture.SSH_ALGORITHMS_COOKIE_OFFSET, "bytes": 16,
+                "retained": False, "template_cookie_is_zero": True},
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "max_request_bytes": fixture.SSH_ALGORITHMS_MAX_REQUEST_BYTES,
+            "max_identification_bytes": fixture.SSH_ALGORITHMS_MAX_BANNER_BYTES,
+            "max_packet_length": fixture.SSH_ALGORITHMS_MAX_PACKET_LENGTH,
+            "max_capture_bytes": fixture.SSH_ALGORITHMS_MAX_CAPTURE_BYTES,
+            "max_fixture_response_bytes": fixture.SSH_ALGORITHMS_MAX_RESPONSE_BYTES,
+            "max_connections": 1, "max_requests": 1,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_fixed_ssh_kexinit_template_and_client_write_eof_before_response",
+            "connection_evidence": "accepted_connections_lower_bound",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "key_exchange_completed": False, "authentication": False, "session": False,
+            "credentials": False, "known_hosts": False, "nse": False, "udp": False,
+            "retries": False, "followup": False, "service_identity_claim": False,
+            "vulnerability_claim": False, "algorithm_security_verified": False,
+            "behavior": case.removeprefix("ssh-algos-")}
     if case.startswith("snmp-next-"):
         from . import network_tools_fixture as fixture
         request = fixture.snmp_next_request()

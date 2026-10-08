@@ -145,15 +145,24 @@ zero unnecessary refusals and 83 unchanged accepted-bundle replays.
 all five final CI jobs passed; its [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37713341040)
 also passed. C12 remains closed.
 
-The C13 [SNMP successor candidate](snmp-next-tools.md) adds one fixed TCP GETNEXT
-for the ifDescr column through snmpgetnext, for **38 profiles using 15 programs**.
-It distinguishes a reported description, an empty description, endOfMibView and a
-supported outside-subtree successor. Returned metadata cannot select follow-up;
-there is no walk, UDP, real community or credential handling. Four ordinary tasks,
-two robustness tasks and eight negative cases require actual owned execution,
-independent replay and enforced boundaries. **16,687 portable/43 native tests and 91 accepted-bundle replays passed**;
-[PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for review and unmerged;
-credentials and paid calls remain deferred.
+The accepted C13 [SNMP successor profile](snmp-next-tools.md) adds one fixed
+TCP GETNEXT for the ifDescr column through snmpgetnext, for **38 profiles using
+15 programs**. It distinguishes a reported description, empty description,
+endOfMibView and a supported outside-subtree successor without walks, UDP,
+credentials or returned-OID follow-up. **16,687 portable/43 native tests and
+91 accepted-bundle replays passed**. [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67)
+merged at `7cc6645` after independent review and all five final CI jobs passed.
+C13 remains closed; post-merge checks are pending separately.
+
+The current C14 [SSH algorithm candidate](ssh-algorithms-tools.md) adds one
+bounded identification/KEXINIT exchange through the accepted Ruby-runtime pattern,
+for **39 profiles using the same 15 programs**. Its 184-byte template has one fresh
+16-byte cookie; a write-half-close prevents another client request. Typed
+directional algorithm advertisements remain unverified data, with no completed
+key exchange, login or session. The client captures at most 4355 bytes and leaves
+later packets unread. Full portable/native validation, evidence replay and review
+are pending; the target is four ordinary and two robustness completions plus
+eight inconclusive negatives. No GUI or general NSE execution is added.
 
 From the repository root, with the project installed:
 
@@ -174,6 +183,7 @@ python -m recon_cockpit.secure_agent --describe-tool ldap_starttls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool ftp_starttls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool curl_http_options_v1
 python -m recon_cockpit.secure_agent --describe-tool snmp_interface_next_v1
+python -m recon_cockpit.secure_agent --describe-tool ssh_transport_algorithms_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -306,11 +316,19 @@ indexes remain server reports, not verified interface identity, inventory or
 absence. A successor must increase numerically; its OID never selects another
 request. Only the documented finite client rendering and typed values are accepted.
 
+SSH algorithm metadata retains the first identification/KEXINIT advertisement
+only. Eight typed lists preserve direction, case and preference order; optional
+banner comments stay raw evidence. The compact summary is capped at 3072 bytes,
+with at most 32 names/1024 bytes per list and 64 bytes per name. The three fields
+for key-exchange completion, authenticated session and verified identity remain
+false. Unknown names and guessed-packet flags cannot authorize further work.
+The owner hashes the request template; the actual random cookie is not retained.
+
 The B0–B8 [coverage checklist](secure-tool-coverage.md) is closed under those
 accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C13 candidate. Further composition and comparative benchmarking
+the current C14 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

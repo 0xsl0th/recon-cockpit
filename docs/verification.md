@@ -1,5 +1,26 @@
 # Verification record
 
+## PR #67 review and merge — 8 October 2026
+
+**C13 is accepted and closed in [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67).**
+Reviewed head `ae346722f3be7a4d972d303f0068fcb185a33754` merged as
+`7cc66451295d1e5013fff31e753d01a79ccaf53c` at 02:00:21 UTC. Reviewed and
+merged trees match `65e493facdfa4685df3d8b2b2c86dbb534020040`.
+Two fresh independent reviews found no blockers. All 583 frozen source hashes,
+105 reports, 120 declared artifacts, 91 inherited bundles and twelve inherited receipt
+links reconciled.
+The final seven changed files after implementation were documentation only.
+No duplicate native run or full-suite repetition was needed for this merge review.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715182741)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715717067)
+passed. Preserve 16,687 portable and 43 native tests, 4/4 ordinary and 2/2 robustness
+completions, zero unnecessary refusals, 28/28 destination witnesses and 140/140
+boundary fields. All 251 accepted case contracts, 38 adapters and 29 runtimes now
+form the next batch's regression baseline. No formal GitHub approval is claimed.
+Private merge receipt: `.secure-agent/pr67-merge-review.json`. C13 stays closed
+with 38 secure profiles using 15 external programs.
+
 ## C13 bounded SNMP interface successor — 8 October 2026
 
 The [C13 runbook](snmp-next-tools.md) defines `snmp_interface_next_v1`: one fixed
@@ -61,9 +82,8 @@ legacy SNMP; the final source explicitly separates GETNEXT and all accepted C1
 regressions pass. An early test collection ran before its helper file was saved;
 the final full suite includes that helper. Neither issue required relaxed enforcement.
 
-[PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for latest-revision
-review and hosted checks; leave it unmerged pending the corresponding instruction.
-Subsequent checkpoint commits change documentation only. The next recommended
+[PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is accepted and merged as
+recorded above. Its checkpoint commit changed documentation only. The next recommended
 coverage gap is a bounded SSH transport algorithm advertisement profile. Credentials,
 paid/live evaluation, external engagements, deeper workflows and comparative
 benchmarking remain deferred; completed milestones remain closed.

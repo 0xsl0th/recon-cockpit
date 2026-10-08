@@ -4,53 +4,73 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current work: priority 3 secure-tool coverage, C13 bounded SNMP successor metadata.**
-The authorized candidate is on `feature/snmp-next-coverage` in
-`/tmp/recon-snmp-next-coverage`, based on accepted main `7faf974`.
+**Current work: priority 3 secure-tool coverage, C14 bounded SSH algorithm advertisements.**
+The authorized candidate is on `feature/ssh-algorithms-coverage` in
+`/tmp/recon-ssh-algorithms-coverage`, based on accepted main `7cc6645`.
 See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C13 runbook](snmp-next-tools.md). One fixed SNMPv2c TCP GETNEXT for the ifDescr
-column seed `.1.3.6.1.2.1.2.2.1.2` uses snmpgetnext through the existing authority,
-confinement, independent parser and evidence path. The candidate has **38 profiles
-using 15 external programs**; accepted main has 37 profiles using 14. No GUI work is added.
+and [C14 runbook](ssh-algorithms-tools.md). One fixed identification/KEXINIT template
+uses the accepted sealed Ruby-runtime pattern, followed by a write-half-close and
+one bounded response. The candidate has **39 profiles using 15 external programs**;
+accepted main has 38 profiles using the same 15. Ruby is supporting runtime, not a
+new third-party assessment tool. No GUI workflow is added.
 
-A reported interface description, including an empty string, an explicit endOfMibView
-or a supported successor outside ifDescr can complete the metadata task. The closed
-nine-field summary distinguishes these outcomes and reports no verified identity.
-No returned OID or description selects another request. There is no walk, GETBULK,
-SET, UDP, real community or credential handling. The single text observation cannot
-establish inventory completeness or independently verify omitted SNMP wire fields.
+The 184-byte request template has one fresh 16-byte random cookie at offset 30;
+all other bytes, including padding, are fixed. The owner validates the template
+and actual write EOF before counting progress. Evidence hashes the zero-cookie
+template, not the actual native request: its random cookie is not retained.
+The client captures one SSH-2.0 CRLF identification (255-byte cap) and the first
+packet (4096-byte packet_length cap), at most 4355 bytes. The closed nine-field
+summary preserves eight directional algorithm lists and a guessed-packet flag,
+with key-exchange completion, authenticated session and verified identity all false.
+Names retain case/preference order and have finite 32-name/1024-byte list and
+64-byte name limits; compact summary JSON is at most 3072 bytes. Optional banner
+comments remain raw evidence only. No full key exchange, credentials, login,
+session, general NSE loading or second client request is allowed.
 
-Local validation passed **16,687 portable tests** (1,100 integration tests
-excluded) and **43 native tests**: 19 C13 cases/gates plus 24 accepted Redis/SNMP
-regressions. C13 completed **4/4 ordinary and 2/2 robustness tasks**, with zero
-unnecessary refusals; eight negative cases stayed inconclusive after actual request
-progress. All **28/28 destination and 140/140 boundary checks** passed. The five
-authority gates preserve one-use approval, missing-proof rejection, cancellation,
-private-input exclusion and UDP confinement. All fourteen owners closed and their
-reports rebuilt unchanged. Scenario wall time was 2554–4558 ms, median 2996.5 ms;
-these descriptive times are not comparative overhead. Provider calls and cost were zero.
+**C14 validation is pending.** Require 4/4 ordinary and 2/2 separate robustness
+completions with zero unnecessary refusals; eight negative cases must remain
+inconclusive after actual request progress. The planned 20 native tests include
+fourteen cases and six approval/isolation/cleanup gates. All 28 destination
+witnesses and 140 boundary fields must pass, along with closed owners, independent
+source/evidence audit and unchanged accepted-bundle replay. Record descriptive
+latency and zero provider calls/cost without claiming comparative overhead.
+Full portable/native results, replay and latest-revision review/checks remain
+required before acceptance. See [verification.md](verification.md).
 
-All **583 frozen source files** match implementation `331ae06`; 237 accepted cases,
-37 adapters and 28 runtimes retain their contracts. **91 accepted bundles** replayed
-unchanged through shared inspection and isolated CLI, with twelve receipt links.
-Six useful C13 receipt rows reuse the original native evidence, with no repeat tool
-execution. [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for review
-and remains unmerged. All five implementation CI jobs passed in
-[run 37714433576](https://github.com/0xsl0th/recon-cockpit/actions/runs/37714433576).
-Later checkpoint edits are documentation only; consult the PR for latest-head checks.
-Synthetic grants do not establish personal acceptance. The shipped policy requires
-fresh approval, and raw evidence stays outside Git. Latest-revision review, hosted
-checks and the corresponding merge instruction remain required.
+The owned half-close and finite grammar restrict compatibility: preliminary
+server lines, SSH-1.99, nonempty language lists and larger valid advertisements
+remain unsupported. The native client leaves trailing packets unread, including
+a guessed method packet; retained evidence cannot validate those bytes or prove
+algorithm implementation. The existing interactive Nmap suggestion is preserved;
+its scan connection, NSE closure and unbounded packet reader are outside this
+profile. Preserve accepted Nmap's deny-all NSE shim.
 
-After C13 review, reassess **bounded SSH transport algorithm advertisements**,
-starting from the existing interactive `ssh2-enum-algos` precedent. Accepted SSH
-host-key collection does not report the server's KEX, cipher and MAC lists. Select
-only a finite identification/KEXINIT exchange and a separately reviewed sealed
-runtime; do not enable general NSE execution or complete a login/session. This is
-a recommendation only, not an implemented or required C14 batch. Credentials,
-paid/live evaluation, external engagements, deeper workflows and comparative
-benchmarking remain deferred. B0–B8, C1–C12, offline R5, accepted local R6 and the
-initial GUI remain closed. Preserve the proposal/PDF and recorded GUI mocks.
+After C14 review, reassess **bounded TLS peer-certificate metadata**, the smallest
+remaining gap in the existing broader-TLS inventory row. Reuse a fixed OpenSSL
+fixture-CA/name-verified handshake and a separately reviewed finite offline
+certificate parser for fingerprint, validity and a bounded SAN subset. Keep
+certificate contents distinct from trust/hostname verification, with no cipher
+sweep, trust bypass, client credential, OCSP/AIA fetch or application request.
+This is a recommendation only; its exact runtime, schema and native evidence
+must be designed before another batch is selected. Credentials, paid/live
+evaluation, external engagements, deeper workflows and comparative benchmarking
+remain deferred. B0–B8, C1–C13, offline R5, accepted local R6 and the initial GUI
+remain closed. Preserve the proposal/PDF and recorded GUI mocks.
+
+**C13 is accepted in [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67).**
+Reviewed head `ae34672` merged as `7cc66451295d1e5013fff31e753d01a79ccaf53c`
+on 8 October at 02:00:21 UTC after independent reviews and all five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715182741)
+passed. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715717067) also passed. Preserve **16,687 portable
+and 43 native tests**, 4/4 ordinary and 2/2 robustness completions, eight
+inconclusive negatives, zero unnecessary refusals, 28/28 destination and 140/140
+boundary checks, and 91 unchanged accepted-bundle replays with twelve inherited
+receipt links. All 583 frozen source files matched implementation `331ae06`.
+Native scenario wall time was 2554–4558 ms, median 2996.5 ms, with zero provider
+calls/cost. Six useful receipt rows reused original native evidence without
+another tool execution. C13 stays closed at **38 profiles using 15 programs**;
+its native text-capture and finite successor limitations remain in the
+[C13 runbook](snmp-next-tools.md). Synthetic grants do not claim personal acceptance.
 
 **C12 is accepted in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66).**
 The reviewed candidate merged as `7faf974f5e0bbc917ef5d8b6ee70164478524ef4` after
@@ -494,11 +514,12 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: C13 bounded SNMP successor metadata.** Follow the current
-status at the top of this checkpoint and the [C13 runbook](snmp-next-tools.md).
-PR #66 is merged as `7faf974`; C12 stays closed. Leave C13 ready for review.
-The next proposed gap is bounded SSH algorithm advertisements; reassess its finite
-runtime and usefulness before selecting another batch. No credential/workflow expansion.
+**Current continuation: C14 bounded SSH algorithm advertisements.** Follow the current
+status at the top of this checkpoint and the [C14 runbook](ssh-algorithms-tools.md).
+PR #67 is merged as `7cc6645`; C13 stays closed. Complete C14 validation and leave
+the candidate ready for review. The next proposed gap is bounded TLS peer-certificate
+metadata; reassess its finite runtime and usefulness before selecting another batch.
+No credential/workflow expansion.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1688,27 +1709,28 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #66 merge is complete. PRs #6–#30 and #32–#66
+- The operator-authorized PR #67 merge is complete. PRs #6–#30 and #32–#67
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Complete C13 SNMP successor validation and prepare its PR on the latest revision,
-   using this checkpoint and the [runbook](snmp-next-tools.md). PR #66 and accepted
+1. Complete C14 SSH algorithm validation and prepare its PR on the latest revision,
+   using this checkpoint and the [runbook](ssh-algorithms-tools.md). PR #67 and accepted
    milestones remain closed. Do not merge the candidate without review, required
    hosted checks and the corresponding instruction.
 2. Require four useful ordinary outcomes, two useful robustness outcomes, eight
-   inconclusive negatives, actual query progress, all authority and cleanup checks,
+   inconclusive negatives, actual request/write-EOF progress, all authority and cleanup checks,
    and unchanged replay. Count unnecessary refusals, descriptive latency and zero
    provider cost as well as blocked actions.
-3. Preserve the desktop approval boundary and personal acceptance. C13 adds no GUI,
-   real community, credentials, external target or walk. Returned OIDs and descriptions
-   remain inert. The rendered client output does not independently prove all wire
-   fields, inventory completeness or device identity. Raw evidence stays outside Git.
-4. After C13 review, compare the prospective bounded SSH algorithm-advertisement
-   row with remaining gaps. It is a recommendation, not an implemented C14 batch;
-   it must not enable general NSE execution. Preserve C9's unexplained stall history.
+3. Preserve the desktop approval boundary and personal acceptance. C14 adds no GUI,
+   credentials, external target, completed key exchange, authentication or session.
+   Names/comments remain inert; later server packets remain unread. The retained
+   request hash binds the template, not its unretained random cookie. Raw evidence
+   stays outside Git, and advertisements do not verify algorithm security or identity.
+4. After C14 review, compare bounded TLS peer-certificate metadata with remaining
+   gaps. It is a recommendation, not an implemented next batch. Preserve trust/name
+   verification and avoid network fetches. Retain C9's unexplained stall history.
 5. Deeper workflows, comparative benchmarking, credential setup, paid calls and
    live-model evaluation remain deferred. External engagements, intrusive activity,
    release publication and competition submission need corresponding authorization.

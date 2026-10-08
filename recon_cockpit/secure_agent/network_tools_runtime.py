@@ -47,6 +47,7 @@ MYSQL_TLS = "mysql_tls_handshake_v1"
 WHATWEB = "whatweb_http_fingerprint_v1"
 RDP = "rdp_initial_negotiation_v1"
 SMB2 = "smb2_negotiate_metadata_v1"
+SSH_ALGORITHMS = "ssh_transport_algorithms_v1"
 SMTP_TLS = "smtp_starttls_handshake_v1"
 LDAP_TLS = "ldap_starttls_handshake_v1"
 FTP_TLS = "ftp_starttls_handshake_v1"
@@ -123,7 +124,7 @@ EXECUTABLES = {DIG: "/usr/bin/dig", DIG_SRV: "/usr/bin/dig", DIG_NSID: "/usr/bin
                NMAP_SERVICE: "/usr/bin/nmap", KERBRUTE: "/usr/local/bin/kerbrute",
                REDIS: "/usr/bin/redis-cli", SNMP: "/usr/bin/snmpget", SNMP_NEXT: "/usr/bin/snmpgetnext",
                POSTGRESQL_TLS: "/usr/bin/openssl", MYSQL_TLS: "/usr/bin/openssl",
-               WHATWEB: "/usr/bin/ruby3.3", RDP: "/usr/bin/ruby3.3", SMB2: "/usr/bin/ruby3.3",
+               WHATWEB: "/usr/bin/ruby3.3", RDP: "/usr/bin/ruby3.3", SMB2: "/usr/bin/ruby3.3", SSH_ALGORITHMS: "/usr/bin/ruby3.3",
                SMTP_TLS: "/usr/bin/openssl", LDAP_TLS: "/usr/bin/openssl", FTP_TLS: "/usr/bin/openssl"}
 FIXED_ARGV = {
     REDIS: ("/tool/redis-cli", "-2", "-e", "--raw", "-h", "127.0.0.1", "-p", "8080", "INFO", "server"),
@@ -207,10 +208,12 @@ FIXED_ARGV = {
 from . import network_tools_whatweb_runtime as whatweb_runtime
 from . import network_tools_rdp_runtime as rdp_runtime
 from . import network_tools_smb2_runtime as smb2_runtime
+from . import network_tools_ssh_algorithms_runtime as ssh_algorithms_runtime
 
 FIXED_ARGV[WHATWEB] = whatweb_runtime.FIXED_ARGV
 FIXED_ARGV[RDP] = rdp_runtime.FIXED_ARGV
 FIXED_ARGV[SMB2] = smb2_runtime.FIXED_ARGV
+FIXED_ARGV[SSH_ALGORITHMS] = ssh_algorithms_runtime.FIXED_ARGV
 FIXED_ARGV[SMTP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "smtp", "-name", "harbordesk.test")
 FIXED_ARGV[LDAP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "ldap")
 FIXED_ARGV[FTP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "ftp")
@@ -220,7 +223,7 @@ FIXED_ARGV[DIG_NSID] = tuple(arg for item in FIXED_ARGV[DIG] for arg in (
 FIXED_ARGV[DIG_AXFR] = tuple("AXFR" if item == "A" else item for item in FIXED_ARGV[DIG]) + (
     "+noednsnegotiation", "+nobesteffort", "+authority", "+noonesoa", "+nomultiline", "+norrcomments")
 
-MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_snmp_next_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
+MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_ssh_algorithms_runtime", "network_tools_ssh_algorithms_parser", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_snmp_next_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
@@ -232,6 +235,8 @@ def encode(value):
 
 
 def execution_environment(tool_id):
+    if tool_id == SSH_ALGORITHMS:
+        return dict(ssh_algorithms_runtime.ENVIRONMENT)
     if type(tool_id) is not str or tool_id not in EXECUTABLES:
         raise ValueError("unsupported_network_tool")
     if tool_id == WHATWEB:
@@ -259,6 +264,8 @@ def execution_environment(tool_id):
 
 
 def _compiled(tool_id):
+    if tool_id == SSH_ALGORITHMS:
+        return ssh_algorithms_runtime.COMPILED[0]
     if tool_id == SMB2:
         return smb2_runtime.COMPILED[0]
     if tool_id == RDP:
@@ -365,6 +372,8 @@ def read_runtime_file(path, tool_id):
 
 
 def validate_manifest(value, *, tool_id=None):
+    if type(value) is dict and value.get("tool_id") == SSH_ALGORITHMS:
+        return ssh_algorithms_runtime.validate_manifest(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") == SMB2:
         return smb2_runtime.validate_manifest(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") == RDP:
@@ -422,6 +431,8 @@ def inspect_tool_runtime(tool_id, control):
     if type(tool_id) is not str or tool_id not in EXECUTABLES:
         raise ValueError("unsupported_network_tool")
     control.check()
+    if tool_id == SSH_ALGORITHMS:
+        return ssh_algorithms_runtime.inspect_runtime(control)
     if tool_id == SMB2:
         return smb2_runtime.inspect_runtime(control)
     if tool_id == RDP:

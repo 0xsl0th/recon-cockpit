@@ -2,9 +2,9 @@
 
 C13 adds `snmp_interface_next_v1` through the existing secure CLI, authority and
 evidence path. It pins the separate snmpgetnext executable while reusing the
-accepted Net-SNMP confinement and finite BER fixture infrastructure. Accepted main
-has 37 profiles using 14 external programs after C12/PR #66; this candidate has
-**38 profiles using 15 programs**. There is no interactive GETNEXT integration or
+accepted Net-SNMP confinement and finite BER fixture infrastructure. C13 is
+accepted in [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67), merged as
+`7cc6645`, and brought accepted main to **38 profiles using 15 programs**. There is no interactive GETNEXT integration or
 new GUI workflow. Accepted C1 GET behavior remains unchanged.
 
 ## Exact operation and authority
@@ -140,17 +140,18 @@ unchanged; 91 accepted bundles replayed through shared inspection and isolated C
 with twelve inherited receipts pinned. All 583 source hashes match implementation
 `331ae06`. Secure scenario wall times were 2554–4558 ms, median 2996.5 ms, with zero
 provider calls/cost. See [verification.md](verification.md) for retained proof and
-limitations. [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for
-review and remains unmerged. All five implementation CI jobs passed; later checkpoint
-commits change documentation only, and the PR carries the latest hosted status.
-Synthetic grants do not claim personal acceptance. Latest-revision review, hosted
-checks and the corresponding merge instruction remain required.
+limitations. Reviewed head `ae34672` merged as
+`7cc66451295d1e5013fff31e753d01a79ccaf53c` on 8 October at 02:00:21 UTC after
+independent reviews and all five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715182741)
+passed. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715717067) also passed. C13 remains accepted and closed;
+synthetic grants do not claim personal acceptance, and each new assessment still
+requires fresh approval.
 
-B0–B8, C1–C12, offline R5, accepted local R6 and the initial GUI remain closed.
+B0–B8, C1–C13, offline R5, accepted local R6 and the initial GUI remain closed.
 The earlier C9 stall remains unexplained. Credentials, paid/live evaluation,
 external engagements, deeper workflows and comparative benchmarking remain
-deferred. The prospective next SSH coverage gap is described in the
-[checklist](secure-tool-coverage.md#successive-product-coverage-batches).
+deferred. Current C14 [SSH algorithm coverage](ssh-algorithms-tools.md) is a
+separate candidate; its validation does not reopen this accepted GETNEXT slice.
 
 ## Protocol and client references
 
