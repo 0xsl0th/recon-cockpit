@@ -172,6 +172,15 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert definition["ca_sha256"] == hashlib.sha256(fixture.CA_PEM).hexdigest()
         assert definition["request_count_means"] == "server_completed_tls_handshakes"
         assert definition["application_payloads"] == "none"
+    elif case.startswith("ssh-algos-"):
+        assert definition['request_template_sha256'] == hashlib.sha256(fixture.SSH_ALGORITHMS_REQUEST).hexdigest()
+        assert definition['request_random_cookie'] == {'offset': fixture.SSH_ALGORITHMS_COOKIE_OFFSET,
+            'bytes': 16, 'retained': False, 'template_cookie_is_zero': True}
+        assert definition['max_connections'] == definition['max_requests'] == 1
+        assert definition['request_count_means'] == 'validated_fixed_ssh_kexinit_template_and_client_write_eof_before_response'
+        for field in ('key_exchange_completed', 'authentication', 'session', 'credentials',
+                'known_hosts', 'nse', 'udp', 'retries', 'followup', 'service_identity_claim', 'algorithm_security_verified'):
+            assert definition[field] is False
     elif case.startswith("snmp-next-"):
         assert definition['snmp']['operation'] == 'GetNextRequest'
         assert definition['snmp']['seed_oid'] == fixture.SNMP_NEXT_SEED_OID

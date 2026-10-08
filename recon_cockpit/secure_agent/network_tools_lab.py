@@ -35,7 +35,7 @@ class NetworkToolsLab(OwnedLab):
                      "network_tools_ftp_smtp_fixture.py", "network_tools_http_metadata_fixture.py",
                      "network_tools_nmap_fixture.py", "network_tools_kerberos_fixture.py",
                      "network_tools_redis_snmp_fixture.py", "network_tools_database_tls_fixture.py",
-                     "network_tools_whatweb_fixture.py", "network_tools_dns_srv_fixture.py", "network_tools_dns_nsid_fixture.py", "network_tools_dns_axfr_fixture.py", "network_tools_http_options_fixture.py", "network_tools_snmp_next_fixture.py", "network_tools_rdp_fixture.py", "network_tools_smb2_fixture.py", "network_tools_smtp_tls_fixture.py", "network_tools_ldap_tls_fixture.py", "network_tools_ftp_tls_fixture.py"):
+                     "network_tools_whatweb_fixture.py", "network_tools_dns_srv_fixture.py", "network_tools_dns_nsid_fixture.py", "network_tools_dns_axfr_fixture.py", "network_tools_http_options_fixture.py", "network_tools_snmp_next_fixture.py", "network_tools_ssh_algorithms_fixture.py", "network_tools_rdp_fixture.py", "network_tools_smb2_fixture.py", "network_tools_smtp_tls_fixture.py", "network_tools_ldap_tls_fixture.py", "network_tools_ftp_tls_fixture.py"):
             mounts += ["--ro-bind", str(directory / name), "/app/" + name]
         argv[argv.index("--remount-ro"):argv.index("--remount-ro")] = mounts
         argv[-1] = "/app/network_tools_lab_worker.py"

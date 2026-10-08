@@ -28,7 +28,7 @@ def manifest():
 def test_all_twenty_accepted_runtime_contracts_remain_byte_identical():
     values = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS)}
     assert len(values) == 20
     # Captured from accepted main 6080a5c before any C5 runtime edits.
     assert hashlib.sha256(runtime.encode(values)).hexdigest() == (

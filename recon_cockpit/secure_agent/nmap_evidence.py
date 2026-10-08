@@ -244,6 +244,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_nsid_observed": "dns_nsid_observed",
                "dns_nsid_empty": "dns_nsid_empty",
                "dns_nsid_absent": "dns_nsid_absent",
+               "ssh_algorithm_advertisements_observed": "ssh_algorithm_advertisements_observed",
                "snmp_interface_next_observed": "snmp_interface_next_observed",
                "http_options_observed": "http_options_observed",
                "dns_axfr_completed": "dns_axfr_completed",
@@ -473,6 +474,17 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Hostile NSID bytes remain inert untrusted metadata and raw evidence; this deterministic trial does not demonstrate model injection resistance or measure real-model susceptibility.",
                 "Owner counters record the validated fixed question before the fixture response, including negative cases. One request does not itself establish useful NSID metadata. Bounded raw channels are independently reparsed without network; inspection restores no approval, budget or execution authority.",
             ]
+        if manifest["fixture_case"].startswith("ssh-algos-"):
+            report["limitations"] = [
+                "This one-action SSH advertisement trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
+                "A repository-owned Ruby adapter sends one fixed SSH-2.0 identification and KEXINIT template with a fresh 16-byte random cookie, then half-closes its write side before reading. The owner validates the complete template and write EOF before counting progress.",
+                "Only the direct server identification and first bounded KEXINIT packet are captured. Preliminary banner lines, SSH-1.99, nonempty language lists, oversized or unsupported packets remain inconclusive; the write-half-close may cause other servers to close early.",
+                "Algorithm names preserve peer-reported preference order, case and direction. They do not establish negotiated or usable algorithms, compatibility, cryptographic security, host-key possession, service identity, authentication or a vulnerability. No key exchange is completed.",
+                "Eight algorithm lists accept at most 32 unique printable ASCII names of 1 to 64 bytes and 1024 bytes per list, within a 4096-byte packet and a 3072-byte normalized-summary ceiling. The first identification is at most 255 bytes, and total native capture is at most 4355 bytes within the 8192-byte combined output budget.",
+                "Server comments, cookies and padding remain private raw evidence. A guessed second packet or any trailing wire data is not read; absence from retained evidence is not proof that no later bytes were sent. The fresh client cookie is not retained; the request hash pins a zero-cookie template only.",
+                "Hostile comments remain inert raw data and are omitted from normalized identification. This deterministic trial does not establish real-model injection resistance. No credentials, known-host files, general NSE loading, retries, UDP, authentication, session or response-directed follow-up is authorized.",
+                "All completed work requires independent parsing plus one validated request and closed owner. Five-second tool and 60-second session limits remain enforced. Read-only replay restores no approval or authority; local hashes establish consistency, not external authenticity. No comparative overhead claim is made.",
+            ]
         if manifest["fixture_case"].startswith("snmp-next-"):
             report["limitations"] = [
                 "This one-action SNMP GETNEXT trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
@@ -669,6 +681,16 @@ def _markdown(report):
             else:
                 lines.extend(["", "The reported protocol selection does not establish a working or verified security channel."])
             lines.extend(["", "Capture ends at the first complete confirmation frame; trailing peer data is not retained."])
+        elif type(details) is dict and details.get("kind") == "ssh_algorithm_metadata":
+            lines.extend(["", "## SSH transport algorithm advertisements", "",
+                "Untrusted peer advertisements only. No algorithm was negotiated, no key exchange completed and no authenticated session opened.",
+                "", "| Field | Reported metadata |", "| --- | --- |"])
+            for field in ("server_identification", "first_kex_packet_follows", "key_exchange_completed", "authenticated_session", "service_identity_verified"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            for field in sorted(details["algorithms"]):
+                lines.append("| " + field + " | " + _metadata_literal(details["algorithms"][field]) + " |")
+            lines.extend(["", "Lists preserve the reported preference order and direction; no security or compatibility judgment follows.",
+                "Capture ends after the first KEXINIT packet. Comments, cookies and padding stay raw; later guessed packets are not read and no follow-up is authorized."])
         elif type(details) is dict and details.get("kind") == "snmp_interface_next_metadata":
             lines.extend(["", "## SNMP interface successor metadata", "",
                 "Untrusted single-successor report only. No returned OID was followed; interface inventory completeness and service identity are not verified.",

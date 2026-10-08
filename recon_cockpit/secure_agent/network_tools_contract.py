@@ -18,7 +18,7 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             HTTP_OPTIONS_TOOL_ID, HTTP_OPTIONS_PARAMETERS, DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID,
                             DOCKER_PING_PARAMETERS, DOCKER_VERSION_PARAMETERS, WINRM_PARAMETERS,
                             NMAP_SERVICE_TOOL_ID, NMAP_SERVICE_PARAMETERS, KERBRUTE_TOOL_ID, KERBRUTE_PARAMETERS,
-                            SNMP_NEXT_TOOL_ID, SNMP_NEXT_PARAMETERS, REDIS_TOOL_ID, REDIS_PARAMETERS, SNMP_TOOL_ID, SNMP_PARAMETERS,
+                            SSH_ALGORITHMS_TOOL_ID, SSH_ALGORITHMS_PARAMETERS, SNMP_NEXT_TOOL_ID, SNMP_NEXT_PARAMETERS, REDIS_TOOL_ID, REDIS_PARAMETERS, SNMP_TOOL_ID, SNMP_PARAMETERS,
                             POSTGRESQL_TLS_TOOL_ID, POSTGRESQL_TLS_PARAMETERS, MYSQL_TLS_TOOL_ID, MYSQL_TLS_PARAMETERS,
                             WHATWEB_TOOL_ID, WHATWEB_PARAMETERS, DIG_SRV_TOOL_ID, DIG_SRV_PARAMETERS, DIG_NSID_TOOL_ID, DIG_NSID_PARAMETERS, DIG_AXFR_TOOL_ID, DIG_AXFR_PARAMETERS, RDP_TOOL_ID, RDP_PARAMETERS, SMB2_TOOL_ID, SMB2_PARAMETERS,
                             SMTP_TLS_TOOL_ID, SMTP_TLS_PARAMETERS, LDAP_TLS_TOOL_ID, LDAP_TLS_PARAMETERS, FTP_TLS_TOOL_ID, FTP_TLS_PARAMETERS, NETWORK_TOOLS_LIMITS, get_adapter)
@@ -29,6 +29,7 @@ from .network_tools_fixture import (QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case,
     WHATWEB_PATH, WHATWEB_PLUGINS, DNS_SRV_CASES, DNS_SRV_SUCCESS_CASES, DNS_SRV_QUERY_NAME, RDP_CASES, RDP_SUCCESS_CASES, SMB2_CASES, SMB2_SUCCESS_CASES, SMTP_TLS_CASES, SMTP_TLS_SUCCESS_CASES, SMTP_TLS_COMPLETE_CASES,
     LDAP_TLS_CASES, LDAP_TLS_SUCCESS_CASES, LDAP_TLS_COMPLETE_CASES, LDAP_TLS_REQUEST,
     FTP_TLS_CASES, FTP_TLS_SUCCESS_CASES, FTP_TLS_COMPLETE_CASES, FTP_TLS_AUTH,
+    SSH_ALGORITHMS_CASES, SSH_ALGORITHMS_SUCCESS_CASES,
     SNMP_NEXT_CASES, SNMP_NEXT_SUCCESS_CASES, SNMP_NEXT_SEED_OID,
     HTTP_OPTIONS_CASES, HTTP_OPTIONS_SUCCESS_CASES, HTTP_OPTIONS_PATH, HTTP_OPTIONS_USER_AGENT,
     DNS_NSID_CASES, DNS_NSID_SUCCESS_CASES, DNS_NSID_QUERY_NAME, DNS_NSID_MAX_NSID_BYTES, DNS_AXFR_CASES, DNS_AXFR_SUCCESS_CASES)
@@ -93,6 +94,9 @@ C9_CASES = FTP_TLS_CASES
 C10_CASES = DNS_NSID_CASES
 C11_CASES = DNS_AXFR_CASES
 C12_CASES = HTTP_OPTIONS_CASES
+C14_CASES = SSH_ALGORITHMS_CASES
+PARAMETERS[SSH_ALGORITHMS_TOOL_ID] = dict(SSH_ALGORITHMS_PARAMETERS)
+PARSER_VERSIONS[SSH_ALGORITHMS_TOOL_ID] = "ssh-kexinit-wire-v1"
 C13_CASES = SNMP_NEXT_CASES
 PARAMETERS[SNMP_NEXT_TOOL_ID] = dict(SNMP_NEXT_PARAMETERS)
 PARSER_VERSIONS[SNMP_NEXT_TOOL_ID] = "snmp-interface-next-text-v1"
@@ -129,8 +133,22 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in C14_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(SSH_ALGORITHMS_TOOL_ID).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "ssh_algorithms": {"protocol": "2.0", "operation": "identification_and_kexinit_advertisements",
+                "max_connections": 1, "max_requests": 1, "random_cookie_bytes": 16,
+                "client_write_half_close_before_response": True, "max_identification_bytes": 255,
+                "max_packet_length": 4096, "max_capture_bytes": 4355,
+                "key_exchange_completion": False, "authentication": False, "session": False,
+                "credentials": False, "known_hosts": False, "nse": False, "udp": False,
+                "retries": False, "response_directed_followup": False, "service_identity_verified": False},
+            "result_semantics": "untrusted_ssh_algorithm_advertisements",
+            "parser_versions": {SSH_ALGORITHMS_TOOL_ID: PARSER_VERSIONS[SSH_ALGORITHMS_TOOL_ID]}}
     if case in C13_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(SNMP_NEXT_TOOL_ID).to_dict()],
@@ -435,6 +453,8 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
                 and (connections != 1 or expected["scenario"] not in DNS_SRV_SUCCESS_CASES))
             or (expected["scenario"] in C5_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in RDP_SUCCESS_CASES))
+            or (expected["scenario"] in C14_CASES and result.get("tool_observation") is not None
+                and (connections != 1 or expected["scenario"] not in SSH_ALGORITHMS_SUCCESS_CASES))
             or (expected["scenario"] in C13_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in SNMP_NEXT_SUCCESS_CASES))
             or (expected["scenario"] in C12_CASES and result.get("tool_observation") is not None
@@ -525,6 +545,8 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == SSH_ALGORITHMS_TOOL_ID:
+        return _observation(tool_id, "ssh_algorithm_advertisements_observed", "ssh_algorithm_advertisements_observed", normalized)
     if tool_id == SNMP_NEXT_TOOL_ID:
         return _observation(tool_id, "snmp_interface_next_observed", "snmp_interface_next_observed", normalized)
     if tool_id == HTTP_OPTIONS_TOOL_ID:

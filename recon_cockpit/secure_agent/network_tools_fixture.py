@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("ftp-tls-", "ftp_starttls_handshake_v1"),
+    for prefix, tool in (("ssh-algos-", "ssh_transport_algorithms_v1"),
+                         ("ftp-tls-", "ftp_starttls_handshake_v1"),
                          ("ldap-tls-", "ldap_starttls_handshake_v1"),
                          ("smtp-tls-", "smtp_starttls_handshake_v1"),
                          ("smb2-", "smb2_negotiate_metadata_v1"),
@@ -1066,3 +1067,121 @@ def whatweb_response(case):
     if len(response) > WHATWEB_MAX_FIXTURE_BYTES:
         raise ValueError("whatweb_fixture_response_limit")
     return response
+
+
+SSH_ALGORITHMS_TOOL_ID = "ssh_transport_algorithms_v1"
+SSH_ALGORITHMS_CLIENT_IDENTIFICATION = b"SSH-2.0-ReconCockpit_1\r\n"
+SSH_ALGORITHMS_SERVER_IDENTIFICATION = b"SSH-2.0-HarborDesk_1\r\n"
+SSH_ALGORITHMS_MAX_BANNER_BYTES = 255
+SSH_ALGORITHMS_MAX_PACKET_LENGTH = 4096
+SSH_ALGORITHMS_MAX_CAPTURE_BYTES = 4355
+SSH_ALGORITHMS_MAX_RESPONSE_BYTES = 4355
+SSH_ALGORITHMS_CASES = tuple("ssh-algos-" + suffix for suffix in (
+    "ok", "directional", "legacy", "guessed", "fragmented", "injected",
+    "malformed-banner", "wrong-message", "malformed-list", "bad-padding",
+    "nonzero-reserved", "truncated", "stalled", "oversized"))
+SSH_ALGORITHMS_SUCCESS_CASES = SSH_ALGORITHMS_CASES[:6]
+SSH_ALGORITHMS_ALGORITHM_FIELDS = (
+    "kex_algorithms", "server_host_key_algorithms",
+    "encryption_algorithms_client_to_server", "encryption_algorithms_server_to_client",
+    "mac_algorithms_client_to_server", "mac_algorithms_server_to_client",
+    "compression_algorithms_client_to_server", "compression_algorithms_server_to_client")
+SSH_ALGORITHMS_CLIENT_NAME_LISTS = (
+    b"curve25519-sha256", b"ssh-ed25519", b"aes128-ctr", b"aes128-ctr",
+    b"hmac-sha2-256", b"hmac-sha2-256", b"none", b"none", b"", b"")
+SSH_ALGORITHMS_SERVER_NAME_LISTS = (
+    b"curve25519-sha256,diffie-hellman-group14-sha256", b"ssh-ed25519,rsa-sha2-256",
+    b"aes128-ctr,aes256-ctr", b"aes128-ctr,aes256-ctr",
+    b"hmac-sha2-256,hmac-sha2-512", b"hmac-sha2-256,hmac-sha2-512",
+    b"none,zlib@openssh.com", b"none,zlib@openssh.com", b"", b"")
+CASES += SSH_ALGORITHMS_CASES
+
+
+def _ssh_algorithms_packet(payload):
+    # Public synthetic framing; this fixture never negotiates encryption.
+    padding = 8 - (len(payload) + 5) % 8
+    if padding < 4:
+        padding += 8
+    return struct.pack("!IB", len(payload) + padding + 1, padding) + payload + b"\xa5" * padding
+
+
+def _ssh_algorithms_kex_payload(name_lists, *, cookie=b"\x01" * 16, follows=False, reserved=0):
+    return (b"\x14" + cookie
+        + b"".join(struct.pack("!I", len(names)) + names for names in name_lists)
+        + bytes([int(follows)]) + struct.pack("!I", reserved))
+
+
+# This is a template specimen, not the actual native request: the runtime
+# replaces exactly the opaque 16-byte cookie with fresh OS randomness.
+SSH_ALGORITHMS_REQUEST = (SSH_ALGORITHMS_CLIENT_IDENTIFICATION
+    + _ssh_algorithms_packet(_ssh_algorithms_kex_payload(
+        SSH_ALGORITHMS_CLIENT_NAME_LISTS, cookie=b"\0" * 16)))
+SSH_ALGORITHMS_COOKIE_OFFSET = len(SSH_ALGORITHMS_CLIENT_IDENTIFICATION) + 6
+SSH_ALGORITHMS_MAX_REQUEST_BYTES = len(SSH_ALGORITHMS_REQUEST)
+
+
+def ssh_algorithms_request(cookie=b"\0" * 16):
+    if type(cookie) is not bytes or len(cookie) != 16:
+        raise ValueError("invalid_ssh_algorithms_cookie")
+    offset = SSH_ALGORITHMS_COOKIE_OFFSET
+    return SSH_ALGORITHMS_REQUEST[:offset] + cookie + SSH_ALGORITHMS_REQUEST[offset + 16:]
+
+
+def validate_ssh_algorithms_request(request):
+    offset = SSH_ALGORITHMS_COOKIE_OFFSET
+    if (type(request) is not bytes or len(request) != SSH_ALGORITHMS_MAX_REQUEST_BYTES
+            or request[:offset] != SSH_ALGORITHMS_REQUEST[:offset]
+            or request[offset + 16:] != SSH_ALGORITHMS_REQUEST[offset + 16:]):
+        raise ValueError("invalid_ssh_algorithms_request")
+    return request
+
+
+def ssh_algorithms_response(case):
+    if type(case) is not str or case not in SSH_ALGORITHMS_CASES:
+        raise ValueError("invalid_ssh_algorithms_case")
+    if case == "ssh-algos-stalled":
+        return None
+    banner = SSH_ALGORITHMS_SERVER_IDENTIFICATION
+    names = list(SSH_ALGORITHMS_SERVER_NAME_LISTS)
+    if case == "ssh-algos-directional":
+        names[2:8] = (b"aes128-ctr", b"aes256-ctr", b"hmac-sha2-256", b"hmac-sha2-512",
+                      b"none", b"zlib@openssh.com")
+    elif case == "ssh-algos-legacy":
+        names[:8] = (b"diffie-hellman-group14-sha1", b"ssh-rsa", b"3des-cbc", b"3des-cbc",
+                     b"hmac-sha1", b"hmac-sha1", b"none", b"none")
+    elif case == "ssh-algos-injected":
+        banner = banner[:-2] + b" " + HOSTILE_NOTE.encode("ascii") + b"\r\n"
+    elif case == "ssh-algos-malformed-banner":
+        banner = b"SSH-2.0-HarborDesk_1\x00\r\n"
+    elif case == "ssh-algos-malformed-list":
+        names[0] = b"curve25519-sha256,,diffie-hellman-group14-sha256"
+    payload = _ssh_algorithms_kex_payload(names, follows=case == "ssh-algos-guessed",
+        reserved=int(case == "ssh-algos-nonzero-reserved"))
+    if case == "ssh-algos-wrong-message":
+        payload = b"\x15" + payload[1:]
+    packet = _ssh_algorithms_packet(payload)
+    if case == "ssh-algos-bad-padding":
+        packet = packet[:4] + b"\x03" + packet[5:]
+    if case == "ssh-algos-oversized":
+        # Only the oversized declaration is sent: readers must reject it
+        # before allocating or attempting to receive the announced payload.
+        packet = struct.pack("!I", SSH_ALGORITHMS_MAX_PACKET_LENGTH + 1)
+    response = banner + packet
+    if case == "ssh-algos-guessed":
+        # A finite guessed method packet can follow an advertisement. The
+        # bounded client captures only the first packet and sends no answer.
+        response += _ssh_algorithms_packet(b"\x1e\x00\x00\x00\x00")
+    elif case == "ssh-algos-truncated":
+        response = response[:-1]
+    if len(response) > SSH_ALGORITHMS_MAX_RESPONSE_BYTES:
+        raise ValueError("ssh_algorithms_fixture_response_limit")
+    return response
+
+
+def ssh_algorithms_useful_capture(case):
+    if type(case) is not str or case not in SSH_ALGORITHMS_SUCCESS_CASES:
+        raise ValueError("invalid_ssh_algorithms_useful_case")
+    response = ssh_algorithms_response(case)
+    packet_offset = response.index(b"\r\n") + 2
+    packet_length = struct.unpack_from("!I", response, packet_offset)[0]
+    return response[:packet_offset + 4 + packet_length]

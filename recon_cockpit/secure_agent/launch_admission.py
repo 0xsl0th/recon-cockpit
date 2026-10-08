@@ -27,6 +27,11 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('ssh-algos-ok', 'ssh-algos-directional', 'ssh-algos-legacy',
+                    'ssh-algos-guessed', 'ssh-algos-fragmented', 'ssh-algos-injected',
+                    'ssh-algos-malformed-banner', 'ssh-algos-wrong-message', 'ssh-algos-malformed-list',
+                    'ssh-algos-bad-padding', 'ssh-algos-nonzero-reserved', 'ssh-algos-truncated',
+                    'ssh-algos-stalled', 'ssh-algos-oversized'), 'ssh_transport_algorithms_v1'),
     **dict.fromkeys(('snmp-next-ok', 'snmp-next-empty', 'snmp-next-end-of-view',
                     'snmp-next-outside-subtree', 'snmp-next-fragmented', 'snmp-next-injected',
                     'snmp-next-nonincreasing', 'snmp-next-wrong-type', 'snmp-next-extra-varbind',

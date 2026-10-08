@@ -13,7 +13,7 @@ from types import MappingProxyType
 
 from .tool_parameters import (
     CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters, HTTPOptionsParameters,
-    OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
+    OpenSSLTLSParameters, SSHHostKeysParameters, SSHAlgorithmsParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters,
@@ -61,6 +61,7 @@ RDP_TOOL_ID = "rdp_initial_negotiation_v1"
 SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
+SSH_ALGORITHMS_TOOL_ID = "ssh_transport_algorithms_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
 SMB_TOOL_ID = "smb_share_list_v1"
 RPCINFO_TOOL_ID = "rpcinfo_dump_v1"
@@ -92,6 +93,7 @@ RDP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_outp
 SMB2_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+SSH_ALGORITHMS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 LDAP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SMB_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 RPCINFO_PARAMETERS = MappingProxyType({"port": 111, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -348,6 +350,16 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "fixed_rsa_key_type",
          "no_authentication", "no_host_trust_claim"),
+    ),
+    SSH_ALGORITHMS_TOOL_ID: ToolAdapter(
+        SSH_ALGORITHMS_TOOL_ID, SSHAlgorithmsParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_ssh_transport_algorithms", "owned-ssh-transport-algorithms-v1",
+        "bounded-ssh-transport-algorithms-result-v1", "ssh-kexinit-wire-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "bounded_threads", "no_child_processes", "fixed_tcp_endpoint",
+         "single_fixed_identification_and_kexinit", "fresh_cookie_only", "write_shutdown_before_response",
+         "one_bounded_server_packet", "no_key_exchange_completion", "no_authentication",
+         "no_host_trust_claim", "no_response_directed_followup", "untrusted_algorithm_advertisements"),
     ),
     LDAP_TOOL_ID: ToolAdapter(
         LDAP_TOOL_ID, LDAPRootDSEParameters, ("port", "timeout_seconds", "max_output_bytes"),
