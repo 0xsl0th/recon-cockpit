@@ -183,6 +183,42 @@ def spec(case):
             "mcs": False, "remote_session": False, "clipboard": False, "channels": False,
             "service_identity_claim": False, "vulnerability_claim": False,
             "trailing_bytes_inspected": False}
+    if case.startswith("dig-axfr-"):
+        from . import network_tools_fixture as fixture
+        query = fixture.dns_axfr_query()
+        messages = fixture.dns_axfr_responses(case, query)
+        wire = fixture.dns_axfr_wire(case, query)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-dns-axfr-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "dns_tcp"}],
+            "query": {"name": fixture.DNS_AXFR_QUERY_NAME, "type": "AXFR", "class": "IN",
+                "recursion": False, "ad": False, "cd": False, "edns": False},
+            "query_sha256": hashlib.sha256(query).hexdigest(), "query_bytes": len(query),
+            "response_sha256": None if messages is None else [hashlib.sha256(message).hexdigest() for message in messages],
+            "response_wire_sha256": None if wire is None else hashlib.sha256(wire).hexdigest(),
+            "response_wire_bytes": 0 if wire is None else len(wire),
+            "dns_transaction_id": "copied_from_validated_question",
+            "max_query_bytes": fixture.DNS_AXFR_MAX_QUERY_BYTES,
+            "max_response_bytes": fixture.DNS_AXFR_MAX_RESPONSE_BYTES,
+            "max_fixture_wire_bytes": fixture.DNS_AXFR_MAX_WIRE_BYTES,
+            "max_fixture_messages": fixture.DNS_AXFR_MAX_FIXTURE_MESSAGES,
+            "max_messages": fixture.DNS_AXFR_MAX_MESSAGES, "max_records": fixture.DNS_AXFR_MAX_RECORDS,
+            "message_record_limits": "parser_and_fixture_acceptance_only",
+            "native_wire_ingress_cap": False,
+            "max_connections": 1, "max_requests": 1,
+            "behavior": case.removeprefix("dig-axfr-"),
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "validated_fixed_axfr_questions",
+            "connection_evidence": "accepted_connections_lower_bound",
+            "zone_transfer": "fixed_synthetic_axfr_only", "supported_records": ["SOA", "NS", "A", "TXT"],
+            "matching_soa_required": True, "txt_disposition": "validate_and_discard",
+            "udp": False, "recursion": False, "retries": False, "search_suffixes": False,
+            "edns": False, "edns_negotiation": False, "cookies": False, "best_effort": False,
+            "target_resolution": False, "target_connections": False, "credentials": False,
+            "ixfr": False, "notify": False, "update": False, "tsig": False,
+            "service_identity_verified": False, "vulnerability_claim": False}
     if case.startswith("dig-nsid-"):
         from . import network_tools_fixture as fixture
         query = fixture.dns_nsid_query()

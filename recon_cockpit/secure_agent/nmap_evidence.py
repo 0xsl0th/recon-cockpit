@@ -244,6 +244,8 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_nsid_observed": "dns_nsid_observed",
                "dns_nsid_empty": "dns_nsid_empty",
                "dns_nsid_absent": "dns_nsid_absent",
+               "dns_axfr_completed": "dns_axfr_completed",
+               "dns_axfr_refused": "dns_axfr_refused",
                "rdp_protocol_selected": "rdp_protocol_selected",
                "rdp_legacy_confirmation": "rdp_legacy_confirmation",
                "rdp_negotiation_failure": "rdp_negotiation_failure",
@@ -469,6 +471,18 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Hostile NSID bytes remain inert untrusted metadata and raw evidence; this deterministic trial does not demonstrate model injection resistance or measure real-model susceptibility.",
                 "Owner counters record the validated fixed question before the fixture response, including negative cases. One request does not itself establish useful NSID metadata. Bounded raw channels are independently reparsed without network; inspection restores no approval, budget or execution authority.",
             ]
+        if manifest["fixture_case"].startswith("dig-axfr-"):
+            report["limitations"] = [
+                "This one-action AXFR trial uses a disconnected synthetic owned zone, not a professional engagement, real deployment or live-model evaluation.",
+                "One fixed nonrecursive AXFR question uses one TCP connection. No UDP, EDNS, cookies, recursion, search domains, retries, credentials, returned-host lookup or follow-up is authorized.",
+                "Transfer completion describes the retained synthetic transcript only. It does not authenticate the DNS server or records, establish completeness of a real zone, prove a vulnerability, or authorize contact with a transferred name or address.",
+                "The parser requires consistent transaction IDs, exact question and section counts, and matching opening and closing SOA owner, TTL and full RDATA. Exactly two SOAs must bound at most four printed messages and sixteen answer records. These are parser acceptance limits, not native DNS ingress limits.",
+                "The native client stops at its second SOA without comparing the boundaries. The parser checks both retained SOAs and rejects retained records after closure, but later wire frames may never be captured. This is not stream-exhaustion or unseen-trailing-data detection evidence.",
+                "An explicit REFUSED response with the exact question and zero records is a completed refusal observation. A generic Transfer failed diagnostic alone, mixed status, missing or mismatched SOA, unsupported records, malformed or truncated output, and bounds failures remain inconclusive.",
+                "Only bounded canonical SOA, NS, IPv4 A and opaque TXT records are supported. Names, addresses and TXT content are excluded from the normalized summary; hostile TXT remains untrusted raw evidence. This deterministic trial does not establish model injection resistance.",
+                "Dig's AXFR network timeout may exceed its requested per-operation timeout; the unchanged outer five-second capture deadline and 8192-byte combined output cap remain enforced. Output pressure is inconclusive, regardless of native exit status.",
+                "Owner counters record the validated fixed AXFR question before response or stall. Query progress alone does not prove transfer completion. Read-only inspection independently parses bounded text and restores no approval, budget or execution authority; hashes establish local consistency, not external authenticity.",
+            ]
         if manifest["fixture_case"].startswith("whatweb-"):
             report["limitations"] = [
                 "This one-action passive fingerprint trial uses a disconnected synthetic owned HTTP fixture, not a professional engagement or live-model evaluation.",
@@ -631,6 +645,17 @@ def _markdown(report):
             else:
                 lines.extend(["", "The reported protocol selection does not establish a working or verified security channel."])
             lines.extend(["", "Capture ends at the first complete confirmation frame; trailing peer data is not retained."])
+        elif type(details) is dict and details.get("kind") == "dns_axfr_metadata":
+            lines.extend(["", "## DNS AXFR metadata", "",
+                "Untrusted synthetic transfer metadata only. Service identity and real-zone completeness are not verified; no transferred name, address or text authorizes follow-up.",
+                "", "| Field | Observation |", "| --- | --- |"])
+            for field in ("query_name", "query_type", "transport", "status", "transfer_complete",
+                          "message_count", "answer_record_count", "soa_serial", "service_identity_verified"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            if details["status"] == "REFUSED":
+                lines.extend(["", "The complete response explicitly refused this request. This is not an approval refusal or proof that other transfers are impossible."])
+            else:
+                lines.extend(["", "The retained transfer has matching opening and closing SOAs. Frames sent after the native client stopped are outside this capture."])
         elif type(details) is dict and details.get("kind") == "dns_nsid_metadata":
             lines.extend(["", "## DNS NSID metadata", "",
                 "Untrusted opaque server metadata only. Service identity is not verified and these bytes authorize no follow-up.",

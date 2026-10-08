@@ -1,8 +1,8 @@
 # Owned DNS NSID metadata
 
 C10 adds `dig_dns_nsid_v1` through the existing single-action secure CLI and dig
-runtime. It is a locally validated candidate pending PR review. Accepted main
-has 34 profiles after C9/PR #63; this candidate has **35 profiles using 14 programs**.
+runtime. It is accepted and closed in PR #64 (`dea8c7a`), bringing main to
+**35 profiles using 14 programs**.
 
 ## Fixed operation and meaning
 
@@ -99,7 +99,7 @@ The owner counts validated requests and acknowledged connections, not an externa
 packet capture or authenticated DNS identity. Dig text and local hashes do not
 establish external authenticity. Only this finite synthetic reply grammar is
 verified. Broader DNS support, real deployments, credentials, paid/live evaluation,
-deep workflows and benchmarking remain deferred. Accepted B0–B8, C1–C9, offline
+deep workflows and benchmarking remain deferred. Accepted B0–B8, C1–C10, offline
 R5, local R6 and the initial GUI remain closed. C9's unexplained legacy stall
 failure stays recorded separately; successful C10 runs would not establish its cause.
 
@@ -112,3 +112,6 @@ the old expected hash, and the complete confirmation passed. The initial failure
 is retained. See [verification.md](verification.md) for exact measurements,
 source snapshots, the native audit, clean-source receipt and limitations.
 Private artifacts under `.secure-agent/dns-nsid-20261007/` stay outside Git.
+
+PR #64 merged after fresh review and all five final checks; all five post-merge jobs passed.
+Continue with the separate [C11 AXFR candidate](dns-axfr-tools.md); preserve this profile.

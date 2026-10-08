@@ -120,6 +120,12 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert all(definition[key] is False for key in (
             "udp", "followup", "tls_handshake", "credssp", "credentials", "authentication",
             "mcs", "remote_session", "clipboard", "channels", "service_identity_claim", "vulnerability_claim"))
+    elif case in fixture.DNS_AXFR_CASES:
+        assert definition['query']['name'] == 'harbordesk.test.'
+        assert definition['query']['type'] == 'AXFR'
+        assert definition['tool_id'] == fixture.DNS_AXFR_TOOL_ID
+        assert definition['query_bytes'] == 33
+        assert definition['request_count_means'] == 'validated_fixed_axfr_questions'
     elif case in fixture.DNS_NSID_CASES:
         assert definition['max_connections'] == definition['max_requests'] == 1
         assert definition['query']['name'] == fixture.DNS_NSID_QUERY_NAME

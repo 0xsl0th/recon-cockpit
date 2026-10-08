@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — C10 bounded DNS NSID metadata (8 October 2026).**
+**Current slice — C11 bounded DNS AXFR behavior (8 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -241,48 +241,60 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current work: priority 3 secure-tool coverage, C10 bounded DNS NSID metadata.**
-Work is on `feature/dns-nsid-coverage` in `/tmp/recon-dns-nsid-coverage`, based on
-accepted main `e06e1a4`. See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C10 runbook](dns-nsid-tools.md). One fixed nonrecursive TCP question asks
-`harbordesk.test. IN A` with one empty EDNS NSID option. The existing dig runtime,
-authority, independent parser and evidence path are reused; the candidate has
-**35 profiles using the same 14 programs**. No GUI workflow is added.
+**Current work: priority 3 secure-tool coverage, C11 bounded DNS AXFR behavior.**
+Review [PR #65](https://github.com/0xsl0th/recon-cockpit/pull/65), on `feature/dns-axfr-coverage` in `/tmp/recon-dns-axfr-coverage`,
+based on accepted main `dea8c7a`. See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
+and [C11 runbook](dns-axfr-tools.md). One fixed `harbordesk.test. IN AXFR` request
+over TCP reuses the existing dig, authority, independent parser and evidence path.
+The candidate has **36 profiles using the same 14 programs**. No GUI workflow is added.
 
-NSID is opaque untrusted server metadata. The result preserves at most 64 bytes
-as lowercase hex, distinguishes a present empty value from absence in this one
-reply, and records whether EDNS was present. Refusal, unsupported options, duplicate
-NSID, malformed replies and bounds failures remain inconclusive. No response
-confers identity, scope or follow-up authority. UDP, cookies, recursion, retry,
-EDNS version negotiation, search, zone transfer and external attachment remain disabled.
+Completed transfers and explicit server refusals are useful observations; incomplete
+or malformed transfers remain inconclusive. The closed summary exposes message/record
+counts and SOA serial, with untrusted metadata and no verified identity. Returned
+names, addresses and TXT text authorize no follow-up. Independent parsing accepts
+at most four messages and 16 records with matching opening/closing SOAs. Those are
+acceptance bounds, not stock-dig ingress limits: five-second runtime and 8192-byte
+capture ceilings remain enforced. Later wire data dig never captures is not checked.
 
-Validation passed **14,814 portable tests** and **62 native tests**, including
-20 C10 scenarios/gates and 42 accepted regressions. C10 completed **5/5 ordinary
-and 1/1 separate robustness** tasks, with zero unnecessary refusals, eight
-inconclusive outcomes, **28/28** blocked destinations and **140/140** boundary
-fields. Six useful trials from clean implementation `4e6d20e7` passed; all
-**72 accepted bundles** replayed unchanged, with nine inherited receipts.
-All **557 final source hashes** match. The initial portable run had one historical
-snapshot-test selection error; its corrected exclusion preserves the old hash,
-and full confirmation passed. No production or selected native-test file changed.
-C9's earlier unexplained legacy stall remains recorded separately.
+Validation passed **15,464 portable tests** and **61 native tests**, including
+20 C11 scenarios/gates and 41 accepted DNS regressions. AXFR completed **3/3 ordinary
+and 2/2 separate robustness** tasks with zero unnecessary refusals; nine negative
+cases remained inconclusive after actual query progress. All **28/28** blocked
+destinations and **140/140** boundary fields passed. The independent audit rebuilt
+all 14 native reports unchanged and checked all **566 frozen source hashes**.
+Native scenario latency was 2689–4768 ms (median 3186.5 ms), with zero provider calls
+and cost. These are descriptive measurements, not comparative overhead.
+Five useful trials from clean implementation `25b9395c` passed, and all **78 accepted
+bundles** replayed unchanged through both inspection paths with ten inherited receipts.
+Local validation is complete; the new PR awaits review and hosted checks.
+The shipped policy requires fresh approval; synthetic unattended tests do not claim
+personal acceptance. Raw evidence stays outside Git. Leave the new PR unmerged
+pending its latest-revision review, hosted checks and merge instruction.
 
-Independent source/evidence reviews found no blockers. Native scenario latency
-was 2657–4692 ms (median 3128.5 ms); provider calls/cost stayed zero. These are
-descriptive measurements, not comparative overhead. See [verification.md](verification.md)
-and private `.secure-agent/dns-nsid-20261007/`. The shipped policy requires fresh
-approval; synthetic unattended tests do not claim personal acceptance. Raw evidence
-stays out of Git. Leave the new PR unmerged pending latest-revision review,
-hosted checks and its merge instruction.
+After C11 review, reassess **bounded HTTP OPTIONS metadata** through the existing
+curl runtime: one fixed resource, status and bounded Allow/authentication-scheme
+metadata, useful absent/empty/refused observations, and no execution of advertised
+methods. This is a recommendation only, not an implemented or required C12 batch.
+Credentials,
+paid/live evaluation, external engagements, deeper workflows and comparative
+benchmarking remain deferred. B0–B8, C1–C10, offline R5, accepted local R6 and the
+initial GUI remain closed. Preserve the proposal/PDF and recorded GUI mocks.
 
-After C10 review, reassess **bounded DNS zone-transfer behavior** through existing
-dig and a fixed synthetic zone. This separate proposed profile needs finite TCP
-frames/records, useful complete-transfer and explicit-refusal outcomes, strict
-SOA boundary checks and no recursion, returned-host lookup or follow-up. It would
-not broaden the accepted A/SRV/NSID profiles. This is a recommendation, not an
-implemented or committed C11 milestone. Deeper workflows, comparative benchmarking,
-credentials, paid/live evaluation and external engagements remain deferred.
-B0–B8, C1–C9, offline R5, accepted local R6 and the initial GUI stay closed.
+**C10 is accepted in [PR #64](https://github.com/0xsl0th/recon-cockpit/pull/64).**
+Reviewed head `964d600` merged as `dea8c7a` on 8 October at 00:25:00 UTC;
+reviewed and merged trees match `5ba1c32671aa72821f0ef97983ec36618f0b13b2`.
+Fresh authority/runtime and parser/evidence reviews found no blockers; 362 focused
+tests passed. All 557 source hashes, 92 reports, 107 artifacts and nine inherited receipt
+links reconciled.
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37706257697)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37707653540)
+passed. Preserve 14,814 portable and 62 native tests, 5/5 ordinary and 1/1 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations,
+140/140 boundary fields and 72 unchanged accepted replays. The initial historical
+snapshot-test selection failure and correction remain recorded; no production or
+selected native-test file changed. C9's earlier stall cause remains unresolved.
+C10 stays closed with **35 profiles using 14 programs**. Private merge receipt:
+`.secure-agent/pr64-merge-review.json`.
 
 **C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63).**
 Reviewed head `f91d9d3` merged as `e06e1a4` on 7 October at 23:42:45 UTC;

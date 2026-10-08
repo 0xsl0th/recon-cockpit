@@ -133,14 +133,21 @@ accepted-bundle replays. One initial legacy stall error did not reproduce;
 its cause remains undetermined and is recorded in the verification report.
 C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63) at `e06e1a4`; all five final and post-merge jobs passed.
 
-The C10 [DNS NSID candidate](docs/dns-nsid-tools.md) adds one fixed nonrecursive TCP query
+The accepted C10 [DNS NSID profile](docs/dns-nsid-tools.md) adds one fixed nonrecursive TCP query
 requesting opaque server metadata through existing dig. Empty and absent replies
 are distinct; identifiers remain unverified, and no returned text selects follow-up.
-The candidate has **35 secure profiles using 14 programs**. Validation passed
+C10 brings accepted main to **35 secure profiles using 14 programs**. Validation passed
 **14,814 portable / 62 native tests**, six useful clean-source trials and 72
-unchanged accepted-bundle replays. PR review/merge remain pending; credentials
+unchanged accepted-bundle replays. PR #64 is merged at `dea8c7a`; all final and post-merge checks passed. Credentials
 and paid calls stay deferred. The initial historical snapshot-test failure was
 corrected without changing production code and remains recorded.
+
+The C11 [DNS AXFR candidate](docs/dns-axfr-tools.md) observes one fixed synthetic zone transfer
+through the existing dig runtime. Completed transfer and explicit refusal are useful
+outcomes; partial/malformed transfers remain inconclusive. The candidate has **36
+profiles using the same 14 programs**. Returned data is untrusted and cannot select
+follow-up. Validation passed **15,464 portable and 61 native tests**, five clean-commit
+trials and 78 unchanged accepted-bundle replays. PR review/merge remain pending. Credentials and paid calls remain deferred.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
