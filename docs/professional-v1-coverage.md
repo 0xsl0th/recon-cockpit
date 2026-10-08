@@ -1,10 +1,11 @@
 # Professional-v1 coverage contract
 
-Planning baseline: **8 October 2026, PR #73 accepted at `993c83d`**. The owner
-agreed the [product roadmap](product-roadmap.md) and authorized the next coverage
-work. This document turns its open-ended coverage tranche into six required
-operator tasks. C18 has passed local implementation validation; none of the six is yet
-accepted on main.
+Status: **8 October 2026, PR #74 accepted at `b1afbbab`**. The owner agreed
+the [product roadmap](product-roadmap.md) accepted in PR #73 and authorized
+continued coverage work. This document fixes six required operator tasks.
+**T01/C18 is accepted; T02–T06 remain open.** T02 source feasibility is complete:
+stock sslscan is unsuitable, and a separately versioned OpenSSL alternative needs
+native feasibility. No new secure capability is established.
 
 This is the finite **Stage 2 tool-coverage gate**, not a declaration that the
 professional product or its final release contract is complete. Existing exact
@@ -20,18 +21,18 @@ intrusive effects, live models or paid calls.
 
 ## Accepted foundation: exact capabilities, not general engagement coverage
 
-These rows account for all **42 accepted profiles across 16 external programs**.
+These rows account for all **43 accepted profiles across 16 external programs**.
 The IDs are the exact entries in the [secure catalog](secure-tool-catalog.md) and
 [registry](../recon_cockpit/secure_agent/tool_adapters.py). Each row retains its
 accepted G1–G6 evidence and limitations; it does not need to be reopened to start
-the six new tasks. Its broader professional-use gap remains visible in the last
+the remaining tasks. Its broader professional-use gap remains visible in the last
 column.
 
 | Operator task | Accepted secure profiles | Verified scope and remaining professional-use gap |
 | --- | --- | --- |
 | A01. Observe reachability and service hints | `tcp_connect`, `nmap_tcp_connect_v1`, `nmap_service_identify_v1`, `configurable_nmap_service_v1` | Bounded TCP and finite HTTP/SSH service probes; configurable addresses still identify disconnected owned fixtures. Multi-host/port inventories, scan budgets and general service compatibility belong to Stage 3. |
 | A02. Retrieve web responses, inspect headers, discover paths and check selected exposure signatures | `http_probe`, `http_headers_v1`, `configurable_http_headers_v1`, `curl_https_get_v1`, `ffuf_content_discovery_v1`, `whatweb_http_fingerprint_v1`, `curl_http_options_v1`, `nuclei_directory_listing_v1`, `nuclei_git_head_v1` | Fixed responses, eight compiled discovery paths, five passive WhatWeb plugins and two finite Nuclei signatures. Header gaps and advertisements are observations; signatures do not prove exploitability. Controlled hierarchy discovery is T04; arbitrary URLs, web/API authentication, general crawling and vulnerability scanning are not accepted. |
-| A03. Collect selected DNS metadata | `dig_dns_query_v1`, `dig_dns_srv_v1`, `dig_dns_nsid_v1`, `dig_dns_axfr_v1` | Fixed nonrecursive TCP A/SRV/NSID/AXFR operations with finite responses. MX and address/reverse metadata are T01/T06. Returned names and addresses grant no follow-up authority; resolver selection and actual engagement naming need Stage 3. |
+| A03. Collect selected DNS metadata | `dig_dns_query_v1`, `dig_dns_srv_v1`, `dig_dns_nsid_v1`, `dig_dns_axfr_v1`, `dig_dns_mx_v1` | Fixed nonrecursive TCP A/SRV/NSID/AXFR/MX operations with finite responses. T01/C18 MX is accepted; address/reverse metadata remains T06. Returned names and addresses grant no follow-up authority; resolver selection and actual engagement naming need Stage 3. |
 | A04. Observe verified TLS and certificate metadata | `openssl_tls_handshake_v1`, `openssl_peer_certificate_v1`, `postgresql_tls_handshake_v1`, `mysql_tls_handshake_v1`, `smtp_starttls_handshake_v1`, `ldap_starttls_handshake_v1`, `ftp_starttls_handshake_v1` | Fixture CA/name verification and bounded handshake/certificate facts. These are not authenticated application sessions or full protocol/cipher assessments. T02 adds a finite version-posture task; real trust configuration and service compatibility stay in Stage 3. |
 | A05. Collect SSH host keys and transport advertisements | `ssh_host_keys_v1`, `configurable_ssh_host_keys_v1`, `ssh_transport_algorithms_v1` | One fixed host-key mode and bounded KEXINIT metadata; neither verifies host identity nor authenticates. T03 adds an explicit pinned policy assessment. General server compatibility remains open. |
 | A06. Read anonymous LDAP RootDSE | `ldap_rootdse_v1` | Fixed base query and attributes; no arbitrary search base, user/group enumeration, referrals or bind credentials. Real directory compatibility and selected authenticated queries need Stages 3/4. |
@@ -68,33 +69,36 @@ report alone cannot complete any row.
 
 | ID / priority | Required operator outcome and present gap | Candidate implementation and bounded task | Required useful cases and honest negative results | Status |
 | --- | --- | --- | --- | --- |
-| **T01 / C18 — now** | Observe a domain's advertised mail routing; accepted DNS profiles do not query MX. | Reuse `dig`; one fixed nonrecursive TCP MX question, at most four typed preference/exchange rows. No mail delivery, additional name resolution or returned-server connection. | Ordinary MX records, null-MX, NODATA and NXDOMAIN all complete. Distinguish explicit no-mail advertisement from missing data. Reject malformed/null-MX mixtures and incomplete or excess-record responses; hostile names remain data. | **G1–G5 passed locally; G6 final review/CI/merge open.** |
-| **T02 — next** | Determine acceptance/rejection of a declared finite set of TLS protocol versions; the accepted TLS profile proves only its selected handshake. | Assess **sslscan** first. Start with version posture rather than an unrestricted cipher or vulnerability scan: one numeric owned endpoint, explicit version set, bounded connection ledger, no client credential, application request, retry escalation or peer-directed fetch. A target of at most eight connections must be proved or revised explicitly during feasibility. Disable unrelated tests; preserve current OpenSSL profiles. | A modern-only fixture and a deliberately legacy-enabled fixture produce the correct per-version observations. Explicit protocol rejection is useful when supported by a complete witnessed response; reset, timeout or unsupported-client behavior is inconclusive. Unknown or incomplete results cannot be reported as disabled versions. | **Required; feasibility first after T01.** |
+| **T01 / C18 — accepted** | Observe a domain's advertised mail routing; C18 closes the former fixed-MX gap. | Reuse `dig`; one fixed nonrecursive TCP MX question, at most four typed preference/exchange rows. No mail delivery, additional name resolution or returned-server connection. | Ordinary MX records, null-MX, NODATA and NXDOMAIN all complete. Distinguish explicit no-mail advertisement from missing data. Reject malformed/null-MX mixtures and incomplete or excess-record responses; hostile names remain data. | **G1–G6 closed in [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74).** |
+| **T02 — source feasibility complete; native proof next** | Determine acceptance/rejection of TLS 1.0, 1.1, 1.2 and 1.3; the accepted TLS profile proves only its selected handshake. | Stock **sslscan** rejected because it discards received rejection evidence. Next assess separately versioned **OpenSSL** per-version profiles using the accepted runtime: one numeric owned endpoint, exact version per action, independent grants and bounded connection ledger. Preserve the initial at-most-eight-connection whole-task target, with exact tighter caps proved before implementation. No client credential, application request, retry escalation or peer-directed fetch; accepted OpenSSL profiles stay unchanged. | A modern-only fixture and a deliberately legacy-enabled fixture produce correct observations for all four versions. Explicit protocol rejection is useful only with retained client-received evidence, independently corroborated by owner records. Reset, timeout or unsupported-client behavior is inconclusive. Unknown or incomplete results cannot be reported as disabled versions. | **Required and open; [source feasibility](tls-posture-feasibility.md) complete. No T02 execution, secure profile or G1–G6 acceptance.** |
 | **T03** | Assess SSH transport advertisements against an explicit pinned hardening policy; accepted collection alone supplies no policy assessment. | Assess **ssh-audit** first, with an immutable local policy/data snapshot and strictly bounded pre-authentication behavior. No rate test, stress test, client-listener mode, authentication or session. Pin the complete connection/request ceiling before implementation; preserve C14. | A conforming and a deliberately nonconforming synthetic peer both complete with correct observed algorithm lists and rule outcomes. Unknown algorithms and incomplete handshakes stay unknown/inconclusive. Report a policy deviation, not verified exploitability or host identity. | **Required; no secure profile yet.** |
 | **T04** | Discover a controlled one-level web directory hierarchy; accepted ffuf covers only its flat eight-path corpus. | Assess **feroxbuster**, reusing its interactive precedent but creating a separate secure profile. Use compiled words, predeclared same-origin prefixes and a finite path universe, depth at most one below the starting path, one active request and an initial total target of at most 24 GETs including calibration. No arbitrary link extraction, off-origin redirects, credentials, uploads or unbounded recursion. | Known nested resources and an empty hierarchy both complete; every planned path/request is accounted for. Wildcard responses must not invent resources. Redirects, path traversal, hostile links, unexpected paths and partial scans cannot expand scope or claim complete discovery. | **Required; no secure profile yet.** |
 | **T05** | Obtain one bounded page of SNMP interface descriptions; C13 returns a single successor, not a page. | Assess **snmpbulkget**, reusing the Net-SNMP runtime/fixture patterns. One TCP GETBULK, one fixed ifDescr seed, non-repeaters zero and maximum repetitions four; public synthetic community only. No paging continuation, walks, SET, UDP or real credentials. | A populated page, empty descriptions, endOfMibView and a supported outside-column boundary all have explicit results. Require ordered typed OIDs and a complete response; excess, malformed or partial rows stay inconclusive. A full page means capped observation, not a complete interface inventory. | **Required; no secure profile yet.** |
 | **T06** | Observe selected IPv6-address and reverse-name metadata alongside accepted A records. | Reuse `dig` in separate fixed nonrecursive TCP AAAA and PTR profiles, one question and at most four typed answers per action. Returned IPv6 addresses are data, not IPv6 network authorization. No reverse-to-forward lookup, recursion, alias chasing or returned-host follow-up. | Positive records, NODATA and NXDOMAIN complete for both questions. Validate the exact question, record type, name and complete bounded response; malformed names, unsupported alias chains and excess/partial records remain inconclusive. | **Required; no secure profiles yet.** |
 
-T02 is the next gap after C18 because version posture adds a distinct assessment
-outcome beyond collecting one certificate or handshake. Its first PR should be a
-small feasibility/contract slice using primary tool sources and local read-only
-inspection; installation or execution must then follow the concrete reviewed
-runtime and owned-lab plan. Do not replace it with another tiny HTTP signature
-solely because the existing Nuclei adapter is convenient.
+T02 remains the next gap because version posture adds a distinct outcome beyond
+one certificate or handshake. [Source feasibility](tls-posture-feasibility.md)
+found that stock sslscan cannot distinguish received rejection from other failed
+probes. Owner-sent bytes cannot replace missing client evidence. Reuse OpenSSL
+for the next minimal per-version native-feasibility slice, retaining all four
+versions and the full required task. No tool was installed or scanned here; the
+already-installed sslscan remains outside the secure catalog. Do not substitute
+another HTTP signature solely because its existing adapter is convenient.
 
-Four additional programs are plausible if all four candidates are suitable. The
-roadmap's **4–6-program assumption is not a quota, gate or reason to add overlapping
-tools**. The six outcomes above are the fixed gate. Program count changes only
-after accepted actual secure execution; alternate modes of `dig` add profiles,
-not programs. Re-estimate the 8–12-PR coverage allowance after feasibility findings,
-without silently reducing the task list to fit the estimate.
+Three additional programs are plausible if the OpenSSL substitution and the
+remaining ssh-audit, feroxbuster and snmpbulkget candidates prove suitable. The
+historical **4–6-program assumption is not a quota, gate or reason to add
+overlapping tools**. The six outcomes are unchanged. Program count changes only
+after accepted actual secure execution; new modes of `dig` or `openssl` add
+profiles, not programs. Keep the 8–12-PR coverage allowance subject to native
+findings; re-estimate it without silently reducing the task list.
 
-Candidate suitability is unverified. Primary documentation establishes available
-features, not confinement or compatibility with this repository:
+OpenSSL native feasibility and the remaining candidate engines are unverified.
+Primary documentation establishes features, not confinement or compatibility:
 
-- [sslscan's upstream manual](https://raw.githubusercontent.com/rbsec/sslscan/master/sslscan.1)
-  documents version selection, XML output and options to disable cipher and other
-  tests. Defaults are not this proposed bounded profile.
+- The [pinned sslscan source review](tls-posture-feasibility.md#why-stock-sslscan-is-unsuitable)
+  explains why its version-check output is unsuitable despite supporting version
+  selection and XML. The proposed OpenSSL replacement has no native result yet.
 - [ssh-audit's upstream documentation](https://github.com/jtesta/ssh-audit)
   describes policy evaluation and `--skip-rate-test`; the ordinary audit's broader
   behavior must be inspected and constrained before use.
@@ -165,7 +169,9 @@ and general vulnerability-template sets are not hidden additions to these six
 tasks. They remain explicit later scope to prioritize under the wider product
 roadmap; no claim of full professional pentest coverage is made here.
 
-Offline R5, accepted local R6, B0–B8, C1–C17 and the initial GUI stay closed.
-Competition proposal documents, private PDFs and the saved GUI mocks remain
-separate. Model credentials, external target access, paid calls, publication and
+Offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI stay closed.
+Competition proposal documents, private PDFs, email draft and the saved GUI mocks
+remain separate and unchanged. The owner deferred the proposal refresh until
+November 2026, before the 15 November deadline; submission needs its separate
+decision. Model credentials, external target access, paid calls, publication and
 submission are not authorized by this coverage contract.
