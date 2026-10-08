@@ -36,6 +36,7 @@ SMTP = "curl_smtp_capabilities_v1"
 DOCKER_PING = "curl_docker_ping_v1"
 DOCKER_VERSION = "curl_docker_version_v1"
 WINRM = "curl_winrm_metadata_v1"
+HTTP_OPTIONS = "curl_http_options_v1"
 NMAP_SERVICE = "nmap_service_identify_v1"
 KERBRUTE = "kerbrute_userenum_v1"
 REDIS = "redis_server_info_v1"
@@ -117,7 +118,7 @@ EXECUTABLES = {DIG: "/usr/bin/dig", DIG_SRV: "/usr/bin/dig", DIG_NSID: "/usr/bin
                SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch", SMB: "/usr/bin/smbclient",
                RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount",
                FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl",
-               DOCKER_PING: "/usr/bin/curl", DOCKER_VERSION: "/usr/bin/curl", WINRM: "/usr/bin/curl",
+               DOCKER_PING: "/usr/bin/curl", DOCKER_VERSION: "/usr/bin/curl", WINRM: "/usr/bin/curl", HTTP_OPTIONS: "/usr/bin/curl",
                NMAP_SERVICE: "/usr/bin/nmap", KERBRUTE: "/usr/local/bin/kerbrute",
                REDIS: "/usr/bin/redis-cli", SNMP: "/usr/bin/snmpget",
                POSTGRESQL_TLS: "/usr/bin/openssl", MYSQL_TLS: "/usr/bin/openssl",
@@ -192,6 +193,11 @@ FIXED_ARGV = {
            "--connect-timeout", "1", "--max-time", "3", "--max-filesize", "8192", "--retry", "0",
            "--max-redirs", "0", "--include", "--request", "GET", "--header", "Connection: close",
            "--user-agent", "recon-cockpit-b6/1", "http://127.0.0.1:8080/wsman"),
+    HTTP_OPTIONS: ("/tool/curl", "--disable", "--silent", "--show-error", "--ipv4", "--globoff",
+           "--http1.1", "--proto", "=http", "--proto-redir", "=http", "--noproxy", "*", "--proxy", "",
+           "--connect-timeout", "1", "--max-time", "3", "--max-filesize", "8192", "--retry", "0",
+           "--max-redirs", "0", "--include", "--request", "OPTIONS", "--header", "Connection: close",
+           "--user-agent", "recon-cockpit-owned-http-options/1", "http://127.0.0.1:8080/harbordesk/portal.html"),
 }
 from . import network_tools_whatweb_runtime as whatweb_runtime
 from . import network_tools_rdp_runtime as rdp_runtime
@@ -209,7 +215,7 @@ FIXED_ARGV[DIG_NSID] = tuple(arg for item in FIXED_ARGV[DIG] for arg in (
 FIXED_ARGV[DIG_AXFR] = tuple("AXFR" if item == "A" else item for item in FIXED_ARGV[DIG]) + (
     "+noednsnegotiation", "+nobesteffort", "+authority", "+noonesoa", "+nomultiline", "+norrcomments")
 
-MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
+MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
@@ -264,7 +270,7 @@ def _compiled(tool_id):
     if tool_id in (DIG, DIG_SRV, DIG_NSID, DIG_AXFR):
         # No host resolver, search list, or user configuration enters the tool.
         return "compiled:resolver", "/etc/resolv.conf", b"# fixed TCP nameserver supplied by reviewed argv\n"
-    if tool_id in (SSH, LDAP, FTP, SMTP, DOCKER_PING, DOCKER_VERSION, WINRM, REDIS, SNMP):
+    if tool_id in (SSH, LDAP, FTP, SMTP, DOCKER_PING, DOCKER_VERSION, WINRM, HTTP_OPTIONS, REDIS, SNMP):
         return None  # These profiles need no configuration, credentials, or trust file.
     if tool_id == SMB:
         return "compiled:smb-config", "/tool/data/smb.conf", SMB_CONFIG

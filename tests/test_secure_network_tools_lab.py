@@ -172,6 +172,14 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert definition["ca_sha256"] == hashlib.sha256(fixture.CA_PEM).hexdigest()
         assert definition["request_count_means"] == "server_completed_tls_handshakes"
         assert definition["application_payloads"] == "none"
+    elif case.startswith("http-options-"):
+        assert definition["method"] == "OPTIONS" and definition["path"] == fixture.HTTP_OPTIONS_PATH
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["request_count_means"] == "validated_fixed_http_options_request"
+        assert definition["request_sha256"] == hashlib.sha256(fixture.HTTP_OPTIONS_REQUEST).hexdigest()
+        for field in ("credentials", "authentication", "cookies", "proxy", "request_body",
+                "redirects", "retries", "followup", "advertised_method_execution"):
+            assert definition[field] is False
     elif case.startswith("ssh-"):
         assert definition["ssh"]["public_key_sha256"] == hashlib.sha256(fixture.SSH_PUBLIC_BLOB).hexdigest()
         assert definition["request_count_means"] == "ssh_host_key_replies_sent"

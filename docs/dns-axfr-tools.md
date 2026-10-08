@@ -1,8 +1,9 @@
 # Owned DNS zone-transfer behavior
 
-C11 adds `dig_dns_axfr_v1` through the existing secure CLI and pinned dig runtime.
-Accepted main has 35 profiles using 14 programs after C10/PR #64; this candidate
-has **36 profiles using the same 14 programs**. No interactive AXFR integration,
+C11 is accepted in [PR #65](https://github.com/0xsl0th/recon-cockpit/pull/65),
+adding `dig_dns_axfr_v1` through the existing secure CLI and pinned dig runtime.
+Reviewed head `40197b6` merged as `82dd85a`; this accepted slice has
+**36 profiles using the same 14 programs**. No interactive AXFR integration,
 GUI workflow, credentials or external attachment is added.
 
 ## Exact operation and boundaries
@@ -100,9 +101,12 @@ Validation passed **15,464 portable and 61 native tests**, with 3/3 ordinary and
 all 28 destination/140 boundary checks. All 14 native reports rebuilt unchanged.
 Five useful trials from clean implementation `25b9395c` passed, and all 78 accepted
 bundles replayed unchanged through CLI and shared inspection with ten inherited receipts.
-No production source changed after validation. PR review/merge remain pending. Results are recorded in
+No production source changed after validation. Review and merge are complete;
+all five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37709477319)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37710962147)
+passed. Results are recorded in
 [verification.md](verification.md) and private `.secure-agent/dns-axfr-20261008/`.
-Completed B0–B8, C1–C10, offline R5, accepted local R6 and initial GUI remain closed.
+Completed B0–B8, C1–C11, offline R5, accepted local R6 and initial GUI remain closed.
 The earlier C9 stall cause remains unresolved. Deeper workflows, credentials,
 paid/live evaluation and external engagements remain deferred.
 

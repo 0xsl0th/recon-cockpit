@@ -31,6 +31,7 @@ WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
 DNS_SRV_TOOL_ID = "dig_dns_srv_v1"
 DNS_NSID_TOOL_ID = "dig_dns_nsid_v1"
 DNS_AXFR_TOOL_ID = "dig_dns_axfr_v1"
+HTTP_OPTIONS_TOOL_ID = "curl_http_options_v1"
 RDP_TOOL_ID = "rdp_initial_negotiation_v1"
 SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"
 SMTP_TLS_TOOL_ID = "smtp_starttls_handshake_v1"
@@ -49,6 +50,7 @@ PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls
     WHATWEB_TOOL_ID: "whatweb-json-v1", DNS_SRV_TOOL_ID: "dig-dns-srv-text-v1",
     DNS_NSID_TOOL_ID: "dig-dns-nsid-text-v1",
     DNS_AXFR_TOOL_ID: "dig-dns-axfr-text-v1",
+    HTTP_OPTIONS_TOOL_ID: "curl-http-options-v1",
     RDP_TOOL_ID: "rdp-initial-negotiation-v1", SMB2_TOOL_ID: "smb2-negotiate-metadata-v1",
     SMTP_TLS_TOOL_ID: "smtp-starttls-brief-v1", LDAP_TLS_TOOL_ID: "ldap-starttls-brief-v1",
     FTP_TLS_TOOL_ID: "ftp-starttls-brief-v1"}
@@ -153,6 +155,8 @@ def validate_result(tool_id, value):
         return _dns_nsid_parser().validate_result(value)
     if tool_id == DNS_AXFR_TOOL_ID:
         return _dns_axfr_parser().validate_result(value)
+    if tool_id == HTTP_OPTIONS_TOOL_ID:
+        return _http_options_parser().validate_result(value)
     if tool_id == WHATWEB_TOOL_ID:
         return _whatweb_parser().validate_result(value)
     if tool_id == NMAP_SERVICE_TOOL_ID:
@@ -850,6 +854,18 @@ def _parse_dns_axfr(output, stderr):
     return _dns_axfr_parser().parse_output(output, stderr)
 
 
+def _http_options_parser():
+    if __package__:
+        from . import network_tools_http_options_parser
+    else:
+        import network_tools_http_options_parser
+    return network_tools_http_options_parser
+
+
+def _parse_http_options(output, stderr):
+    return _http_options_parser().parse_output(output, stderr)
+
+
 def _whatweb_parser():
     if __package__:
         from . import network_tools_whatweb_parser
@@ -879,6 +895,7 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             WHATWEB_TOOL_ID: _parse_whatweb, DNS_SRV_TOOL_ID: _parse_dns_srv,
             DNS_NSID_TOOL_ID: _parse_dns_nsid,
             DNS_AXFR_TOOL_ID: _parse_dns_axfr,
+            HTTP_OPTIONS_TOOL_ID: _parse_http_options,
             RDP_TOOL_ID: _parse_rdp, SMB2_TOOL_ID: _parse_smb2,
             SMTP_TLS_TOOL_ID: _parse_smtp_tls, LDAP_TLS_TOOL_ID: _parse_ldap_tls,
             FTP_TLS_TOOL_ID: _parse_ftp_tls}[tool_id](output, stderr)

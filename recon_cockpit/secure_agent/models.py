@@ -15,7 +15,7 @@ from typing import Any
 from uuid import UUID
 
 from .tool_parameters import (
-    CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters,
+    CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters, HTTPOptionsParameters,
     OpenSSLTLSParameters, SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
@@ -26,11 +26,13 @@ from .tool_parameters import (
     _fields, _integer, _reject, _string,
 )
 from .tool_adapters import (CONFIGURABLE_NMAP_TOOL_ID, CONFIGURABLE_HEADERS_TOOL_ID,
-    CURL_TOOL_ID, FFUF_TOOL_ID, HTTP_HEADERS_TOOL_ID, NMAP_TOOL_ID,
+    CURL_TOOL_ID, FFUF_TOOL_ID, HTTP_HEADERS_TOOL_ID, HTTP_OPTIONS_TOOL_ID, NMAP_TOOL_ID,
     DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID, NMAP_SERVICE_TOOL_ID, SUPPORTED_TOOLS, get_adapter)
 
 MAX_JSON_BYTES = 32_768
 MAX_TARGETS = 16
+# OPTIONS is policy permission for its fixed adapter, not legacy HTTP syntax.
+SUPPORTED_POLICY_METHODS = (*SUPPORTED_METHODS, "OPTIONS")
 Network = ipaddress.IPv4Network | ipaddress.IPv6Network
 
 
@@ -116,7 +118,7 @@ class Action:
     action_id: str
     tool_id: str
     target: str
-    parameters: HTTPParameters | HTTPHeadersParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | SSHHostKeysParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlDockerVersionParameters | CurlWinRMMetadataParameters | NmapServiceParameters | KerbruteUserenumParameters | RedisServerInfoParameters | SNMPSystemGetParameters | PostgreSQLTLSParameters | MySQLTLSParameters | WhatWebParameters | DigSRVParameters | DigNSIDParameters | DigAXFRParameters
+    parameters: HTTPParameters | HTTPHeadersParameters | HTTPOptionsParameters | CurlHTTPSParameters | FFufParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | SSHHostKeysParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlWinRMMetadataParameters | NmapServiceParameters | KerbruteUserenumParameters | RedisServerInfoParameters | SNMPSystemGetParameters | PostgreSQLTLSParameters | MySQLTLSParameters | WhatWebParameters | DigSRVParameters | DigNSIDParameters | DigAXFRParameters
     rationale: str
 
     def __post_init__(self) -> None:
@@ -199,7 +201,7 @@ class Policy:
         for port in self.allowed_ports:
             _integer(port, "policy_port", 1, 65_535)
         for method in self.allowed_methods:
-            if type(method) is not str or method not in SUPPORTED_METHODS:
+            if type(method) is not str or method not in SUPPORTED_POLICY_METHODS:
                 _reject("unsupported_policy_method")
         for name in ("allowed_targets", "allowed_tools", "allowed_ports", "allowed_methods"):
             values = getattr(self, name)
@@ -242,6 +244,8 @@ class Policy:
         if action.tool_id in ("http_probe", HTTP_HEADERS_TOOL_ID, CURL_TOOL_ID, CONFIGURABLE_HEADERS_TOOL_ID) and action.parameters.method not in self.allowed_methods:
             reasons.append("method_not_allowed")
         if action.tool_id in (FFUF_TOOL_ID, DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID, NMAP_SERVICE_TOOL_ID, CONFIGURABLE_NMAP_TOOL_ID) and "GET" not in self.allowed_methods:
+            reasons.append("method_not_allowed")
+        if action.tool_id == HTTP_OPTIONS_TOOL_ID and "OPTIONS" not in self.allowed_methods:
             reasons.append("method_not_allowed")
         if action.parameters.timeout_seconds > self.max_timeout_seconds:
             reasons.append("timeout_exceeds_policy")

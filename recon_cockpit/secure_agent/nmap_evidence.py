@@ -244,6 +244,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_nsid_observed": "dns_nsid_observed",
                "dns_nsid_empty": "dns_nsid_empty",
                "dns_nsid_absent": "dns_nsid_absent",
+               "http_options_observed": "http_options_observed",
                "dns_axfr_completed": "dns_axfr_completed",
                "dns_axfr_refused": "dns_axfr_refused",
                "rdp_protocol_selected": "rdp_protocol_selected",
@@ -471,6 +472,17 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Hostile NSID bytes remain inert untrusted metadata and raw evidence; this deterministic trial does not demonstrate model injection resistance or measure real-model susceptibility.",
                 "Owner counters record the validated fixed question before the fixture response, including negative cases. One request does not itself establish useful NSID metadata. Bounded raw channels are independently reparsed without network; inspection restores no approval, budget or execution authority.",
             ]
+        if manifest["fixture_case"].startswith("http-options-"):
+            report["limitations"] = [
+                "This one-action HTTP OPTIONS trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
+                "One fixed resource receives one OPTIONS request. No credentials, request body, cookies, proxy, redirects, retries or response-directed follow-up is authorized.",
+                "Allow methods and authentication schemes are untrusted resource-specific advertisements, not verified support, identity, successful authentication or vulnerability evidence. Advertised methods are never executed.",
+                "Absent and explicitly empty Allow headers are distinct useful observations. A 401 or 405 response is useful server metadata, not an approval refusal; it does not prove other operations impossible.",
+                "Only bounded complete HTTP/1.1 responses with status 200, 204, 401 or 405 are supported. Non-204 responses require an exact Content-Length; transfer/content encoding, interim responses, folding and ambiguous framing remain inconclusive.",
+                "The independent parser verifies retained headers and body framing, not unseen trailing wire bytes discarded by curl. Authentication parameters, challenge payloads, body text and unknown headers stay out of the normalized summary.",
+                "Hostile fixture text remains private raw evidence. Deterministic inert handling does not establish real-model injection resistance. Five-second execution and 8192-byte combined capture ceilings remain enforced.",
+                "Owner counters record one validated fixed OPTIONS request on one connection; progress or exit status alone does not prove useful metadata. Read-only replay restores no approval or authority. Local hashes show consistency, not external authenticity.",
+            ]
         if manifest["fixture_case"].startswith("dig-axfr-"):
             report["limitations"] = [
                 "This one-action AXFR trial uses a disconnected synthetic owned zone, not a professional engagement, real deployment or live-model evaluation.",
@@ -645,6 +657,18 @@ def _markdown(report):
             else:
                 lines.extend(["", "The reported protocol selection does not establish a working or verified security channel."])
             lines.extend(["", "Capture ends at the first complete confirmation frame; trailing peer data is not retained."])
+        elif type(details) is dict and details.get("kind") == "http_options_metadata":
+            lines.extend(["", "## HTTP OPTIONS metadata", "",
+                "Untrusted resource-specific advertisements only. Advertised methods were not executed; service identity and actual method support are not verified.",
+                "", "| Field | Observation |", "| --- | --- |"])
+            for field in ("status_code", "allow_present", "allowed_methods", "auth_schemes", "service_identity_verified"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            if not details["allow_present"]:
+                lines.extend(["", "This response omits Allow; absence does not establish lack of method support."])
+            elif not details["allowed_methods"]:
+                lines.extend(["", "This response explicitly includes an empty Allow header."])
+            if details["status_code"] in (401, 405):
+                lines.extend(["", "The server restriction is useful metadata, not an approval refusal or a failed authentication attempt."])
         elif type(details) is dict and details.get("kind") == "dns_axfr_metadata":
             lines.extend(["", "## DNS AXFR metadata", "",
                 "Untrusted synthetic transfer metadata only. Service identity and real-zone completeness are not verified; no transferred name, address or text authorizes follow-up.",

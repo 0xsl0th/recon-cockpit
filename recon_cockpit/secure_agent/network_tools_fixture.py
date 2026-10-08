@@ -48,6 +48,7 @@ def tool_for_case(case):
                          ("nmap-service-", "nmap_service_identify_v1"),
                          ("docker-ping-", "curl_docker_ping_v1"),
                          ("docker-version-", "curl_docker_version_v1"),
+                         ("http-options-", "curl_http_options_v1"),
                          ("winrm-", "curl_winrm_metadata_v1")):
         if case.startswith(prefix):
             return tool
@@ -663,6 +664,68 @@ def http_metadata_response(case):
                ("Connection", "close"), *extra]
     return ("HTTP/1.1 " + status + "\r\n" + "".join(name + ": " + value + "\r\n"
             for name, value in headers) + "\r\n").encode("ascii") + body
+
+
+# One fixed resource-specific OPTIONS request. Advertised methods are inert
+# metadata; this fixture has no method dispatcher or application backend.
+HTTP_OPTIONS_TOOL_ID = "curl_http_options_v1"
+HTTP_OPTIONS_PATH = "/harbordesk/portal.html"
+HTTP_OPTIONS_USER_AGENT = "recon-cockpit-owned-http-options/1"
+HTTP_OPTIONS_MAX_REQUEST_BYTES = 2048
+HTTP_OPTIONS_MAX_RESPONSE_BYTES = 16384  # Includes deliberate output pressure.
+HTTP_OPTIONS_CASES = tuple("http-options-" + suffix for suffix in (
+    "ok", "no-content", "absent-allow", "empty-allow", "auth-required",
+    "method-not-allowed", "fragmented", "injected", "malformed", "truncated",
+    "stalled", "output-limit", "redirect-ip", "redirect-port"))
+HTTP_OPTIONS_SUCCESS_CASES = HTTP_OPTIONS_CASES[:8]
+HTTP_OPTIONS_REQUEST = ("OPTIONS " + HTTP_OPTIONS_PATH + " HTTP/1.1\r\n"
+    "Host: 127.0.0.1:8080\r\nUser-Agent: " + HTTP_OPTIONS_USER_AGENT
+    + "\r\nAccept: */*\r\nConnection: close\r\n\r\n").encode("ascii")
+CASES += HTTP_OPTIONS_CASES
+VARIANTS = CASES
+
+
+def http_options_response(case):
+    """Compile finite header/body bytes without reflecting any request input."""
+    if type(case) is not str or case not in HTTP_OPTIONS_CASES:
+        raise ValueError("invalid_http_options_case")
+    if case == "http-options-stalled":
+        return None
+    status, body = "200 OK", b"Owned OPTIONS metadata.\n"
+    extra = [("Allow", "GET, HEAD, OPTIONS")]
+    if case == "http-options-no-content":
+        status, body = "204 No Content", b""
+    elif case == "http-options-absent-allow":
+        extra = []
+    elif case == "http-options-empty-allow":
+        extra = [("Allow", "")]
+    elif case == "http-options-auth-required":
+        status = "401 Unauthorized"
+        extra += [("WWW-Authenticate", 'Basic realm="HarborDesk owned"'),
+                  ("WWW-Authenticate", 'Bearer realm="HarborDesk owned"')]
+    elif case == "http-options-method-not-allowed":
+        status = "405 Method Not Allowed"
+    elif case == "http-options-injected":
+        extra.append(("X-Owned-Note", HOSTILE_NOTE))
+    elif case == "http-options-malformed":
+        extra = [("Allow", "GET, BAD METHOD")]
+    elif case == "http-options-output-limit":
+        extra.append(("X-Owned-Padding", "x" * 9000))
+    elif case in ("http-options-redirect-ip", "http-options-redirect-port"):
+        target = "127.0.0.2:8080" if case.endswith("-ip") else "127.0.0.1:8081"
+        status, body = "302 Found", b""
+        extra = [("Location", "http://" + target + HTTP_OPTIONS_PATH)]
+    headers = [("Connection", "close"), *extra]
+    # A 204 response is delimited by its headers and must not carry a body or
+    # Content-Length. Other cases retain explicit, bounded body framing.
+    if case != "http-options-no-content":
+        length = len(body) + (1 if case == "http-options-truncated" else 0)
+        headers.insert(0, ("Content-Length", str(length)))
+    response = ("HTTP/1.1 " + status + "\r\n" + "".join(name + ": " + value + "\r\n"
+        for name, value in headers) + "\r\n").encode("ascii") + body
+    if len(response) > HTTP_OPTIONS_MAX_RESPONSE_BYTES:
+        raise ValueError("http_options_fixture_response_limit")
+    return response
 
 
 NMAP_SERVICE_CASES = ("nmap-service-http", "nmap-service-ssh", "nmap-service-unknown",

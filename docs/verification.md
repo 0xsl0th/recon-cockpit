@@ -1,5 +1,24 @@
 # Verification record
 
+## PR #65 review and merge — 8 October 2026
+
+**C11 is accepted and closed in [PR #65](https://github.com/0xsl0th/recon-cockpit/pull/65).**
+Reviewed head `40197b6475f7a4c6ef7dbd7fb1c8bd6ca545e70c` merged as
+`82dd85ad34a4325e8efb16e7f3845b5f94c7c5df` at 01:03:14 UTC. Reviewed and
+merged trees match `840c25b76d25469556320bb7b16000a5f5e33099`.
+Fresh independent authority/runtime and parser/evidence reviews found no blockers.
+All 566 frozen source hashes, 97 reports, 112 declared artifacts and ten inherited
+receipt links reconciled. The tested production revision was unchanged; no new
+native run or duplicate test suite was needed for that review.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37709477319)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37710962147)
+passed. Preserve 15,464 portable and 61 native tests, 3/3 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations,
+140/140 boundary fields and 78 unchanged accepted replays. No formal GitHub approval
+is claimed. Private merge receipt: `.secure-agent/pr65-merge-review.json`.
+C11 stays closed with 36 profiles using 14 external programs.
+
 ## C11 bounded DNS AXFR behavior — 8 October 2026
 
 The [C11 runbook](dns-axfr-tools.md) defines one fixed `harbordesk.test. IN AXFR`
@@ -86,8 +105,8 @@ SHA256 `a27fa217590d6d1ce3bb50c25872e0ba5177aebb1459adef7b84c21201f945c2`. It re
 SHA256 `0815f9324eaca5e2f480736b4f1028e38019b86aa5b975c460192b61d8259808`.
 Native evidence was independently reconciled; no native rerun was performed by the
 auditor. All 566 frozen sources still match; subsequent edits record documentation
-and PR status only. Local validation is complete; the new PR awaits latest-revision
-review and hosted checks. Credentials, paid/live evaluation, external engagements, deeper workflows
+and PR status only. C11 was subsequently reviewed and accepted in PR #65;
+its successful final and post-merge checks are recorded above. Credentials, paid/live evaluation, external engagements, deeper workflows
 and benchmarking stay deferred. C9's earlier legacy stall remains unexplained; these
 DNS passes do not establish its cause or resolution. Completed B0–B8, C1–C10, offline
 R5, accepted local R6 and initial GUI/personal acceptance stay closed.

@@ -126,12 +126,21 @@ unchanged accepted-bundle replays. PR #64 is merged at `dea8c7a`; all final and 
 and paid calls stay deferred. The initial historical snapshot-test failure was
 corrected without changing production code and remains recorded.
 
-The C11 [DNS AXFR candidate](dns-axfr-tools.md) observes one fixed synthetic zone transfer
-through the existing dig runtime. Completed transfer and explicit refusal are useful
-outcomes; partial/malformed transfers remain inconclusive. The candidate has **36
-profiles using the same 14 programs**. Returned data is untrusted and cannot select
-follow-up. Validation passed **15,464 portable and 61 native tests**, five clean-commit
-trials and 78 unchanged accepted-bundle replays. PR review/merge remain pending. Credentials and paid calls remain deferred.
+The accepted C11 [DNS AXFR profile](dns-axfr-tools.md) observes one fixed
+synthetic zone transfer through existing dig. Completed transfer and explicit refusal
+are useful outcomes; partial/malformed transfers remain inconclusive. Accepted main
+has **36 profiles using 14 programs**. Validation passed **15,464 portable and 61
+native tests**, 3/3 ordinary and 2/2 robustness trials, five clean-commit trials and
+78 unchanged accepted-bundle replays. PR #65 merged at `82dd85a`; all five final
+and post-merge jobs passed. Returned data cannot select follow-up.
+
+The C12 [HTTP OPTIONS candidate](http-options-tools.md) adds one fixed
+resource-specific request through existing curl, for **37 profiles using the same
+14 programs**. Typed status, distinct absent/empty Allow and authentication-scheme
+names remain untrusted advertisements. No advertised method, redirect or login is
+executed. Six ordinary tasks, two robustness tasks and six negative cases must pass
+actual owned-lab execution, evidence replay and enforcement checks. Final C12
+validation totals remain pending; credentials and paid calls remain deferred.
 
 From the repository root, with the project installed:
 
@@ -150,6 +159,7 @@ python -m recon_cockpit.secure_agent --describe-tool smb2_negotiate_metadata_v1
 python -m recon_cockpit.secure_agent --describe-tool smtp_starttls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool ldap_starttls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool ftp_starttls_handshake_v1
+python -m recon_cockpit.secure_agent --describe-tool curl_http_options_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -267,11 +277,19 @@ Malformed, unsupported, unoffered, truncated, oversized and stalled responses
 remain inconclusive. The first-frame capture does not inspect trailing data or
 detect injection, and no returned field authorizes a second request.
 
+HTTP OPTIONS reports `untrusted_http_options_metadata` with status, explicit
+Allow presence, at most 16 case-sensitive method tokens and eight authentication
+scheme names. A complete 401/405 can be useful metadata; it is not an unnecessary
+refusal or proof of authenticated access. Realm, challenge and body text stay out
+of the closed summary. Only supported complete retained HTTP/1.1 framing is
+accepted; unseen trailing wire bytes cannot be checked. Advertisements establish
+neither method execution nor a vulnerability and authorize no further request.
+
 The B0–B8 [coverage checklist](secure-tool-coverage.md) is closed under those
 accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C11 candidate. Further composition and comparative benchmarking
+the current C12 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

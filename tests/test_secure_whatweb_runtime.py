@@ -30,7 +30,7 @@ def manifest():
 def test_every_accepted_pre_c3_runtime_contract_remains_byte_identical():
     selected = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.WHATWEB, runtime.DIG_SRV, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.WHATWEB, runtime.DIG_SRV, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS)}
     assert len(selected) == 18
     # Independently captured from accepted main 9603a54 before C3 changes.
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == '0436d2a36d3c85ca6cc07c6bd1257aec78a41b7e2474d6db0d20103b291db94e'

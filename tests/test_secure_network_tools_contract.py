@@ -10,7 +10,7 @@ import pytest
 from recon_cockpit.secure_agent import network_tools_contract as contract
 from recon_cockpit.secure_agent import network_tools_parser as parser
 from recon_cockpit.secure_agent import network_tools_runtime as runtime
-from recon_cockpit.secure_agent.models import (FTPStartTLSParameters, LDAPStartTLSParameters, SMTPStartTLSParameters, SMB2NegotiateParameters, DigDNSParameters, OpenSSLTLSParameters,
+from recon_cockpit.secure_agent.models import (HTTPOptionsParameters, FTPStartTLSParameters, LDAPStartTLSParameters, SMTPStartTLSParameters, SMB2NegotiateParameters, DigDNSParameters, OpenSSLTLSParameters,
     SSHHostKeysParameters, LDAPRootDSEParameters, SMBShareListParameters, RPCInfoDumpParameters, ShowmountExportsParameters,
     CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters, KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigSRVParameters, DigNSIDParameters, DigAXFRParameters, RDPInitialParameters, ValidationError, parse_action, parse_policy)
@@ -53,7 +53,7 @@ def receipt(tool_id=contract.DIG_TOOL_ID, *, status="succeeded", raw=None, stder
 def policy(**changes):
     return parse_policy({"schema_version": "1", "policy_version": "web-tools-test-v1",
         "allowed_targets": ["127.0.0.1/32"], "allowed_tools": list(contract.PARAMETERS),
-        "allowed_ports": [8080, 111], "allowed_methods": ["GET"], "max_timeout_seconds": 10,
+        "allowed_ports": [8080, 111], "allowed_methods": ["GET", "OPTIONS"], "max_timeout_seconds": 10,
         "max_output_bytes": 8192, "max_targets": 1, "require_approval": True,
         "approval_ttl_seconds": 60, **changes})
 
@@ -61,14 +61,14 @@ def policy(**changes):
 @pytest.mark.parametrize("case", contract.CASES)
 def test_case_selects_exact_typed_single_action_and_existing_policy_gates(case):
     action = parse_action(contract.action(case))
-    expected = contract.DIG_AXFR_TOOL_ID if case in contract.C11_CASES else contract.DIG_NSID_TOOL_ID if case in contract.C10_CASES else contract.FTP_TLS_TOOL_ID if case in contract.C9_CASES else contract.LDAP_TLS_TOOL_ID if case in contract.C8_CASES else contract.SMTP_TLS_TOOL_ID if case in contract.C7_CASES else contract.SMB2_TOOL_ID if case in contract.C6_CASES else contract.RDP_TOOL_ID if case in contract.C5_CASES else contract.DIG_SRV_TOOL_ID if case in contract.C4_CASES else {"whatweb": contract.WHATWEB_TOOL_ID, "postgresql": contract.POSTGRESQL_TLS_TOOL_ID, "mysql": contract.MYSQL_TLS_TOOL_ID, "redis": contract.REDIS_TOOL_ID, "snmp": contract.SNMP_TOOL_ID, "dig": contract.DIG_TOOL_ID, "openssl": contract.OPENSSL_TOOL_ID,
+    expected = contract.HTTP_OPTIONS_TOOL_ID if case in contract.C12_CASES else contract.DIG_AXFR_TOOL_ID if case in contract.C11_CASES else contract.DIG_NSID_TOOL_ID if case in contract.C10_CASES else contract.FTP_TLS_TOOL_ID if case in contract.C9_CASES else contract.LDAP_TLS_TOOL_ID if case in contract.C8_CASES else contract.SMTP_TLS_TOOL_ID if case in contract.C7_CASES else contract.SMB2_TOOL_ID if case in contract.C6_CASES else contract.RDP_TOOL_ID if case in contract.C5_CASES else contract.DIG_SRV_TOOL_ID if case in contract.C4_CASES else {"whatweb": contract.WHATWEB_TOOL_ID, "postgresql": contract.POSTGRESQL_TLS_TOOL_ID, "mysql": contract.MYSQL_TLS_TOOL_ID, "redis": contract.REDIS_TOOL_ID, "snmp": contract.SNMP_TOOL_ID, "dig": contract.DIG_TOOL_ID, "openssl": contract.OPENSSL_TOOL_ID,
                 "ssh": contract.SSH_TOOL_ID, "ldap": contract.LDAP_TOOL_ID,
                 "smb": contract.SMB_TOOL_ID, "rpc": contract.RPCINFO_TOOL_ID,
                 "nfs": contract.SHOWMOUNT_TOOL_ID, "ftp": contract.FTP_TOOL_ID,
                 "smtp": contract.SMTP_TOOL_ID, "winrm": contract.WINRM_TOOL_ID, "nmap": contract.NMAP_SERVICE_TOOL_ID, "kerberos": contract.KERBRUTE_TOOL_ID,
                 "docker": contract.DOCKER_PING_TOOL_ID if case.startswith("docker-ping-") else contract.DOCKER_VERSION_TOOL_ID}[case.split("-")[0]]
     assert action.tool_id == expected and action.target == "127.0.0.1"
-    assert type(action.parameters) is {contract.DIG_AXFR_TOOL_ID: DigAXFRParameters, contract.DIG_NSID_TOOL_ID: DigNSIDParameters, contract.FTP_TLS_TOOL_ID: FTPStartTLSParameters, contract.LDAP_TLS_TOOL_ID: LDAPStartTLSParameters, contract.SMTP_TLS_TOOL_ID: SMTPStartTLSParameters, contract.SMB2_TOOL_ID: SMB2NegotiateParameters, contract.RDP_TOOL_ID: RDPInitialParameters, contract.DIG_SRV_TOOL_ID: DigSRVParameters, contract.WHATWEB_TOOL_ID: WhatWebParameters, contract.POSTGRESQL_TLS_TOOL_ID: PostgreSQLTLSParameters, contract.MYSQL_TLS_TOOL_ID: MySQLTLSParameters, contract.REDIS_TOOL_ID: RedisServerInfoParameters, contract.SNMP_TOOL_ID: SNMPSystemGetParameters, contract.DIG_TOOL_ID: DigDNSParameters,
+    assert type(action.parameters) is {contract.HTTP_OPTIONS_TOOL_ID: HTTPOptionsParameters, contract.DIG_AXFR_TOOL_ID: DigAXFRParameters, contract.DIG_NSID_TOOL_ID: DigNSIDParameters, contract.FTP_TLS_TOOL_ID: FTPStartTLSParameters, contract.LDAP_TLS_TOOL_ID: LDAPStartTLSParameters, contract.SMTP_TLS_TOOL_ID: SMTPStartTLSParameters, contract.SMB2_TOOL_ID: SMB2NegotiateParameters, contract.RDP_TOOL_ID: RDPInitialParameters, contract.DIG_SRV_TOOL_ID: DigSRVParameters, contract.WHATWEB_TOOL_ID: WhatWebParameters, contract.POSTGRESQL_TLS_TOOL_ID: PostgreSQLTLSParameters, contract.MYSQL_TLS_TOOL_ID: MySQLTLSParameters, contract.REDIS_TOOL_ID: RedisServerInfoParameters, contract.SNMP_TOOL_ID: SNMPSystemGetParameters, contract.DIG_TOOL_ID: DigDNSParameters,
         contract.OPENSSL_TOOL_ID: OpenSSLTLSParameters, contract.SSH_TOOL_ID: SSHHostKeysParameters,
         contract.LDAP_TOOL_ID: LDAPRootDSEParameters, contract.SMB_TOOL_ID: SMBShareListParameters,
         contract.RPCINFO_TOOL_ID: RPCInfoDumpParameters, contract.SHOWMOUNT_TOOL_ID: ShowmountExportsParameters,
@@ -77,7 +77,7 @@ def test_case_selects_exact_typed_single_action_and_existing_policy_gates(case):
         contract.WINRM_TOOL_ID: CurlWinRMMetadataParameters, contract.NMAP_SERVICE_TOOL_ID: NmapServiceParameters, contract.KERBRUTE_TOOL_ID: KerbruteUserenumParameters}[expected]
     assert contract.profile_allows(action, case)
     assert policy().evaluate(action).decision == "approval_required"
-    if case in contract.B6_CASES + contract.B7_CASES:
+    if case in contract.B6_CASES + contract.B7_CASES + contract.C12_CASES:
         assert policy(allowed_methods=[]).evaluate(action).reasons == ("method_not_allowed",)
     else:
         assert policy(allowed_methods=[]).evaluate(action).decision == "approval_required"

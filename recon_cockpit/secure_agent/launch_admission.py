@@ -27,6 +27,11 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('http-options-ok', 'http-options-no-content', 'http-options-absent-allow',
+                    'http-options-empty-allow', 'http-options-auth-required', 'http-options-method-not-allowed',
+                    'http-options-fragmented', 'http-options-injected', 'http-options-malformed',
+                    'http-options-truncated', 'http-options-stalled', 'http-options-output-limit',
+                    'http-options-redirect-ip', 'http-options-redirect-port'), 'curl_http_options_v1'),
     **dict.fromkeys(('dig-axfr-ok', 'dig-axfr-multiframe', 'dig-axfr-refused',
                     'dig-axfr-fragmented', 'dig-axfr-injected', 'dig-axfr-missing-soa',
                     'dig-axfr-mismatched-soa', 'dig-axfr-truncated', 'dig-axfr-wrong-question',
