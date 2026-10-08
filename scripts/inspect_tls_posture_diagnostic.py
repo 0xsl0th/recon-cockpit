@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from recon_cockpit.secure_agent.isolation import IsolationUnavailable
+from recon_cockpit.secure_agent.execution import ExecutionStopped
 from recon_cockpit.secure_agent.tls_posture_observation_contract import PROFILE_IDS
 from recon_cockpit.secure_agent.tls_posture_observation_inspection import inspect_saved_diagnostic
 
@@ -21,6 +22,10 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         observation = inspect_saved_diagnostic(args.capture, args.version)
+    except ExecutionStopped as stop:
+        print(json.dumps({"diagnostic_only": True, "execution_authority": False,
+                          "status": "stopped", "reason": stop.reason}, sort_keys=True))
+        return 2
     except (OSError, ValueError, IsolationUnavailable):
         print(json.dumps({"diagnostic_only": True, "execution_authority": False,
                           "status": "unavailable_or_invalid"}, sort_keys=True))

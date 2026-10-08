@@ -135,3 +135,16 @@ def test_cli_requires_explicit_version():
     with pytest.raises(SystemExit) as raised:
         _cli().main(["capture.json"])
     assert raised.value.code == 2
+
+
+@pytest.mark.parametrize("reason", ["session_timeout", "session_cancelled"])
+def test_cli_bounded_stop_returns_explicit_json(monkeypatch, capsys, reason):
+    cli = _cli()
+
+    def stop(*args):
+        raise ExecutionStopped(reason)
+
+    monkeypatch.setattr(cli, "inspect_saved_diagnostic", stop)
+    assert cli.main(["capture.json", "--version", "tls1_3"]) == 2
+    assert json.loads(capsys.readouterr().out) == {
+        "diagnostic_only": True, "execution_authority": False, "status": "stopped", "reason": reason}
