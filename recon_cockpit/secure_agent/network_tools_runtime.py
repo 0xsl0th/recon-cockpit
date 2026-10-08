@@ -26,6 +26,7 @@ DIG_SRV = "dig_dns_srv_v1"
 DIG_NSID = "dig_dns_nsid_v1"
 DIG_AXFR = "dig_dns_axfr_v1"
 OPENSSL = "openssl_tls_handshake_v1"
+TLS_CERTIFICATE = "openssl_peer_certificate_v1"
 SSH = "ssh_host_keys_v1"
 LDAP = "ldap_rootdse_v1"
 SMB = "smb_share_list_v1"
@@ -116,7 +117,7 @@ MAX_FILE_BYTES = 16 * 1024 * 1024
 MAX_MANIFEST_BYTES = 12288
 READY_PREFIX = b"RECON_NETWORK_TOOL_READY_V1 "
 LIBRARY = re.compile(r"/(?:usr/)?lib(?:64)?/[A-Za-z0-9_./+-]+\.so(?:\.[0-9]+)*\.?\Z")
-EXECUTABLES = {DIG: "/usr/bin/dig", DIG_SRV: "/usr/bin/dig", DIG_NSID: "/usr/bin/dig", DIG_AXFR: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl",
+EXECUTABLES = {DIG: "/usr/bin/dig", DIG_SRV: "/usr/bin/dig", DIG_NSID: "/usr/bin/dig", DIG_AXFR: "/usr/bin/dig", OPENSSL: "/usr/bin/openssl", TLS_CERTIFICATE: "/usr/bin/openssl",
                SSH: "/usr/bin/ssh-keyscan", LDAP: "/usr/bin/ldapsearch", SMB: "/usr/bin/smbclient",
                RPCINFO: "/usr/bin/rpcinfo", SHOWMOUNT: "/usr/sbin/showmount",
                FTP: "/usr/bin/curl", SMTP: "/usr/bin/curl",
@@ -214,6 +215,8 @@ FIXED_ARGV[WHATWEB] = whatweb_runtime.FIXED_ARGV
 FIXED_ARGV[RDP] = rdp_runtime.FIXED_ARGV
 FIXED_ARGV[SMB2] = smb2_runtime.FIXED_ARGV
 FIXED_ARGV[SSH_ALGORITHMS] = ssh_algorithms_runtime.FIXED_ARGV
+FIXED_ARGV[TLS_CERTIFICATE] = tuple(arg for arg in FIXED_ARGV[OPENSSL] if arg != "-brief") + (
+    "-showcerts", "-nameopt", "RFC2253", "-verify_quiet", "-no_ticket")
 FIXED_ARGV[SMTP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "smtp", "-name", "harbordesk.test")
 FIXED_ARGV[LDAP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "ldap")
 FIXED_ARGV[FTP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "ftp")
@@ -223,7 +226,7 @@ FIXED_ARGV[DIG_NSID] = tuple(arg for item in FIXED_ARGV[DIG] for arg in (
 FIXED_ARGV[DIG_AXFR] = tuple("AXFR" if item == "A" else item for item in FIXED_ARGV[DIG]) + (
     "+noednsnegotiation", "+nobesteffort", "+authority", "+noonesoa", "+nomultiline", "+norrcomments")
 
-MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_ssh_algorithms_runtime", "network_tools_ssh_algorithms_parser", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_snmp_next_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
+MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime", "network_tools_whatweb_runtime", "network_tools_rdp_runtime", "network_tools_smb2_runtime", "network_tools_ssh_algorithms_runtime", "network_tools_ssh_algorithms_parser", "network_tools_dns_srv_parser", "network_tools_dns_nsid_parser", "network_tools_dns_axfr_parser", "network_tools_http_options_parser", "network_tools_snmp_next_parser", "network_tools_tls_certificate_parser", "network_tools_worker", "network_tools_execution", "network_tools_contract",
            "network_tools_lab_contract", "network_tools_fixture", "models", "worker", "execution",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
@@ -276,6 +279,9 @@ def _compiled(tool_id):
         return "compiled:kerbrute-principals", "/tool/data/principals.txt", KERBRUTE_PRINCIPALS
     if tool_id == NMAP_SERVICE:
         return "compiled:nmap-service-services", "/tool/data/nmap-services", NMAP_SERVICE_SERVICES
+    if tool_id == TLS_CERTIFICATE:
+        from .network_tools_fixture import TLS_CERTIFICATE_CA_PEM
+        return "compiled:fixture-ca", "/tool/data/fixture-ca.pem", TLS_CERTIFICATE_CA_PEM
     if tool_id in (OPENSSL, POSTGRESQL_TLS, MYSQL_TLS, SMTP_TLS, LDAP_TLS, FTP_TLS):
         from .network_tools_fixture import CA_PEM
         return "compiled:fixture-ca", "/tool/data/fixture-ca.pem", CA_PEM

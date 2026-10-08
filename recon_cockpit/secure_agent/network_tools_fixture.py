@@ -33,7 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
-    for prefix, tool in (("ssh-algos-", "ssh_transport_algorithms_v1"),
+    for prefix, tool in (("tls-cert-", "openssl_peer_certificate_v1"),
+                         ("ssh-algos-", "ssh_transport_algorithms_v1"),
                          ("ftp-tls-", "ftp_starttls_handshake_v1"),
                          ("ldap-tls-", "ldap_starttls_handshake_v1"),
                          ("smtp-tls-", "smtp_starttls_handshake_v1"),
@@ -1185,3 +1186,45 @@ def ssh_algorithms_useful_capture(case):
     packet_offset = response.index(b"\r\n") + 2
     packet_length = struct.unpack_from("!I", response, packet_offset)[0]
     return response[:packet_offset + 4 + packet_length]
+
+
+# Dedicated public trust anchor and finite certificate-metadata cases.
+TLS_CERTIFICATE_TOOL_ID = "openssl_peer_certificate_v1"
+TLS_CERTIFICATE_CASES = ('tls-cert-ok', 'tls-cert-multi-san', 'tls-cert-no-san', 'tls-cert-injected', 'tls-cert-wrong-name', 'tls-cert-expired', 'tls-cert-untrusted', 'tls-cert-unsupported-san', 'tls-cert-too-many-san', 'tls-cert-oversized', 'tls-cert-malformed', 'tls-cert-stalled')
+TLS_CERTIFICATE_SUCCESS_CASES = TLS_CERTIFICATE_CASES[:4]
+TLS_CERTIFICATE_COMPLETE_CASES = TLS_CERTIFICATE_SUCCESS_CASES + TLS_CERTIFICATE_CASES[7:10]
+TLS_CERTIFICATE_CLIENT_HELLO_PREFIX_BYTES = 9
+TLS_CERTIFICATE_MAX_CLIENT_HELLO_BYTES = 4096
+TLS_CERTIFICATE_MAX_DER_BYTES = 4096
+TLS_CERTIFICATE_MAX_SAN_ENTRIES = 8
+TLS_CERTIFICATE_MAX_EXTENSIONS = 16
+TLS_CERTIFICATE_CA_PEM = b'-----BEGIN CERTIFICATE-----\nMIIBhzCCAS2gAwIBAgICBdwwCgYIKoZIzj0EAwIwKDEmMCQGA1UEAwwdSGFyYm9y\nRGVzayBDMTUgUFVCTElDIFRFU1QgQ0EwIBcNMjAwMTAxMDAwMDAwWhgPMjEwMDAx\nMDEwMDAwMDBaMCgxJjAkBgNVBAMMHUhhcmJvckRlc2sgQzE1IFBVQkxJQyBURVNU\nIENBMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEBZzLGe3T2potOms9jZkAAT55\nEKCLck/VWTmsOA0yrw67atfsytSRWdplKBuTRWOOFiH3ozlWzs2Sjh48l/6R0aNF\nMEMwEgYDVR0TAQH/BAgwBgEB/wIBADAOBgNVHQ8BAf8EBAMCAQYwHQYDVR0OBBYE\nFIqvx5ErphVLABvjldyrV6MDdfRqMAoGCCqGSM49BAMCA0gAMEUCIBGZ/46xmKpO\nw9A0tuFgHJRPa/3AbSzp9NXJVbBYI+v7AiEA8WfeNCdsufrroDCxK6UAh4yiwz9W\nsEsuQu6in6yDG8k=\n-----END CERTIFICATE-----\n'
+TLS_CERTIFICATE_CERT_SHA256 = {
+    'tls-cert-ok': '6f963e41d16227d73700ef3472b46c9362e1ce53129e88eec0840e4345fea586',
+    'tls-cert-multi-san': '75518de9f1138f177578bba0f0764fb99b22826fb1258bcf86bbe1e09c3d1978',
+    'tls-cert-no-san': '81bde51591a775109b0678ca181051d70aebb0aed10125156c65e93437ec9faf',
+    'tls-cert-injected': '290d4b41bec299e45034a7299418e6c5c712d46774fcf89951b20e435ad8ac57',
+    'tls-cert-wrong-name': '873b53fe0f081003369b5abcbf5fec108ab23c043745ea41fac37d3546de7c3a',
+    'tls-cert-expired': 'd07708fe32b32c4d968f67765a7866da12326dc82f9b380185bf88b1a03a480c',
+    'tls-cert-untrusted': '6ff5414feecdea6ce3f6058d63dd2bf673e2fb5f0bf9b4f850d582cfc1d0e606',
+    'tls-cert-unsupported-san': 'f0777045985885a3c6d4bed4fb526d5e16da5a140d1855bb888cee074c585095',
+    'tls-cert-too-many-san': 'e680ab19e44342060c429c193d258d5ab42d5ef2212002c2f16f854b51c95d52',
+    'tls-cert-oversized': '7d1765688886add984aaed7ddb099de6bc4163d3cdc8f324e4d10a0a4f2d5f32',
+    'tls-cert-malformed': '6f963e41d16227d73700ef3472b46c9362e1ce53129e88eec0840e4345fea586',
+    'tls-cert-stalled': '6f963e41d16227d73700ef3472b46c9362e1ce53129e88eec0840e4345fea586',
+}
+TLS_CERTIFICATE_DER_SHA256 = {
+    'tls-cert-ok': 'd3ea29eb6704f8a80cbba41bf548c8c3fd82c429668016601eda019d2dd44e02',
+    'tls-cert-multi-san': '271fb4298ef7a13b17f41ce24eb45b2c17c7da40f63e85e0f2ae4bb64eac04f8',
+    'tls-cert-no-san': 'f755c06e0c09f48b93f773475f2d527ba7d352729af24e9d72b1b6c8cda2a073',
+    'tls-cert-injected': 'e8075c3d77dcd016598c501c58658d24ac47af60e0806f99a6467141f3f337e2',
+    'tls-cert-wrong-name': 'd6735cd9e957a7a76fbc590e540e4e0cafb11a9269d7bc85ee4329b096076bdb',
+    'tls-cert-expired': 'dbb78c44a3978f27aa6bda9c60e0933cc122b5f4bb5bf702aabcf0f4aeb887fa',
+    'tls-cert-untrusted': '97249904f6e773dcebac3b7a4fdf881de1ff757b5f582eaa921653e35fc57fd0',
+    'tls-cert-unsupported-san': '1bf42d7b79ce43a880db10e955d659d83a94e93ddf26b16062728608df278a78',
+    'tls-cert-too-many-san': '00df650a171c4184d7597afe0f66fe1b373c1ab704bee9262ba5928e278e1a6b',
+    'tls-cert-oversized': 'c129854efbf19f3193392ef9fc177301ac2433dafeafc0d30d49a54d73b3ce53',
+    'tls-cert-malformed': 'd3ea29eb6704f8a80cbba41bf548c8c3fd82c429668016601eda019d2dd44e02',
+    'tls-cert-stalled': 'd3ea29eb6704f8a80cbba41bf548c8c3fd82c429668016601eda019d2dd44e02',
+}
+CASES += TLS_CERTIFICATE_CASES

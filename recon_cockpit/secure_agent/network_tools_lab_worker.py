@@ -24,6 +24,7 @@ if __package__:
     from . import network_tools_whatweb_fixture as whatweb_fixture
     from . import network_tools_dns_srv_fixture as dns_srv_fixture
     from . import network_tools_dns_nsid_fixture as dns_nsid_fixture
+    from . import network_tools_tls_certificate_fixture as tls_certificate_fixture
     from . import network_tools_ssh_algorithms_fixture as ssh_algorithms_fixture
     from . import network_tools_snmp_next_fixture as snmp_next_fixture
     from . import network_tools_http_options_fixture as http_options_fixture
@@ -54,6 +55,7 @@ else:
     whatweb_fixture = _load("network_tools_fixed_whatweb", "network_tools_whatweb_fixture.py")
     dns_srv_fixture = _load("network_tools_fixed_dns_srv", "network_tools_dns_srv_fixture.py")
     dns_nsid_fixture = _load("network_tools_fixed_dns_nsid", "network_tools_dns_nsid_fixture.py")
+    tls_certificate_fixture = _load("network_tools_fixed_tls_certificate", "network_tools_tls_certificate_fixture.py")
     ssh_algorithms_fixture = _load("network_tools_fixed_ssh_algorithms", "network_tools_ssh_algorithms_fixture.py")
     snmp_next_fixture = _load("network_tools_fixed_snmp_next", "network_tools_snmp_next_fixture.py")
     http_options_fixture = _load("network_tools_fixed_http_options", "network_tools_http_options_fixture.py")
@@ -79,6 +81,8 @@ def read_request(source):
 
 
 def tls_context(case):
+    if case in fixture.TLS_CERTIFICATE_CASES:
+        return tls_certificate_fixture.tls_context(case)
     if (fixture.tool_for_case(case) != "openssl_tls_handshake_v1"
             and case not in fixture.DATABASE_TLS_CASES + fixture.SMTP_TLS_CASES + fixture.LDAP_TLS_CASES + fixture.FTP_TLS_CASES):
         raise ValueError("invalid_network_tools_tls_case")
@@ -206,7 +210,7 @@ class NetworkToolsService(owner.Service):
     def __init__(self, request, listener):
         self.deadline = request["deadline"]
         self.context = (tls_context(request["case"]) if request["case"].startswith("openssl-")
-                        or request["case"] in fixture.DATABASE_TLS_CASES + fixture.SMTP_TLS_CASES + fixture.LDAP_TLS_CASES + fixture.FTP_TLS_CASES else None)
+                        or request["case"] in fixture.TLS_CERTIFICATE_CASES + fixture.DATABASE_TLS_CASES + fixture.SMTP_TLS_CASES + fixture.LDAP_TLS_CASES + fixture.FTP_TLS_CASES else None)
         self.rpc = (rpc_fixture.Exchange(request["case"], self._smb_enumerated)
                     if request["case"].startswith(("rpc-", "nfs-")) else None)
         self.kerberos = (kerberos_fixture.Exchange(request["case"], self._smb_enumerated)
@@ -274,7 +278,7 @@ class NetworkToolsService(owner.Service):
                     raw.close()
                     raise RuntimeError("nmap_service_fixture_request_limit")
                 if self.case.startswith(("ftp-", "smtp-", "docker-ping-", "docker-version-", "winrm-", "redis-", "snmp-",
-                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-srv-", "dig-nsid-", "dig-axfr-", "http-options-", "ssh-algos-", "rdp-", "smb2-", "ldap-tls-")) and self.connections:
+                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-srv-", "dig-nsid-", "dig-axfr-", "http-options-", "ssh-algos-", "tls-cert-", "rdp-", "smb2-", "ldap-tls-")) and self.connections:
                     raw.close()
                     raise RuntimeError("single_metadata_fixture_connection_limit")
                 with self.condition:
@@ -283,7 +287,10 @@ class NetworkToolsService(owner.Service):
                 connection = raw
                 try:
                     raw.settimeout(owner.worker._remaining(self.deadline, 2))
-                    if self.case in fixture.FTP_TLS_CASES:
+                    if self.case in fixture.TLS_CERTIFICATE_CASES:
+                        tls_certificate_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            context=self.context, on_request=self._smb_enumerated)
+                    elif self.case in fixture.FTP_TLS_CASES:
                         ftp_tls_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             context=self.context, on_request=self._smb_enumerated)
                     elif self.case in fixture.LDAP_TLS_CASES:

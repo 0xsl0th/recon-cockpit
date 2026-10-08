@@ -172,6 +172,11 @@ class OpenSSLTLSParameters(TCPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class TLSCertificateParameters(TCPParameters):
+    """Bounds for one owned TLS peer certificate observation; no caller trust inputs."""
+
+
+@dataclass(frozen=True, slots=True)
 class SSHHostKeysParameters(TCPParameters):
     """Bounds for one fixed RSA host-key observation, without authentication."""
 

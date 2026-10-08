@@ -34,7 +34,7 @@ def manifest():
 def test_all_twenty_nine_accepted_runtime_contracts_remain_byte_identical():
     values = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool != runtime.SSH_ALGORITHMS}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE)}
     assert len(values) == 29
     # Captured from accepted main 7cc6645 before any C14 runtime edits.
     assert hashlib.sha256(runtime.encode(values)).hexdigest() == (
@@ -50,7 +50,7 @@ def test_compiled_client_pins_the_public_negotiation_request():
 
 def test_all_38_accepted_adapters_remain_byte_identical():
     values = {tool: adapter.to_dict() for tool, adapter in adapters.ADAPTERS.items()
-              if tool != adapters.SSH_ALGORITHMS_TOOL_ID}
+              if tool not in (adapters.SSH_ALGORITHMS_TOOL_ID, adapters.TLS_CERTIFICATE_TOOL_ID)}
     assert len(values) == 38
     assert hashlib.sha256(runtime.encode(values)).hexdigest() == (
         "01fdd622d95c321c96dd941b6edc0f4e8086c8012453d12d03e1fbb03148e0dc")

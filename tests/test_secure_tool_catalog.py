@@ -19,6 +19,7 @@ PROGRAMS = {
     "dig_dns_nsid_v1": "dig",
     "dig_dns_axfr_v1": "dig",
     "curl_http_options_v1": "curl",
+    "openssl_peer_certificate_v1": "openssl",
     "ssh_transport_algorithms_v1": None,
     "snmp_interface_next_v1": "snmpgetnext",
     "ftp_starttls_handshake_v1": "openssl",
@@ -45,6 +46,7 @@ NORMAL_NETWORK_CASES = {
     "dig_dns_nsid_v1": ("dig-nsid-ok", "dns-nsid"),
     "dig_dns_axfr_v1": ("dig-axfr-ok", "dns-axfr"),
     "curl_http_options_v1": ("http-options-ok", "http-options"),
+    "openssl_peer_certificate_v1": ("tls-cert-ok", "tls-certificate"),
     "ssh_transport_algorithms_v1": ("ssh-algos-ok", "ssh-algorithms"),
     "snmp_interface_next_v1": ("snmp-next-ok", "snmp-next"),
     "ftp_starttls_handshake_v1": ("ftp-tls-ok", "ftp-starttls"),
@@ -124,7 +126,7 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
     assert result["runtime_availability"] == "not_checked"
     ids = [row["tool_id"] for row in result["tools"]]
     assert ids == sorted(PROGRAMS) == sorted(ADAPTERS)
-    assert result["capability_count"] == len(ids) == 39
+    assert result["capability_count"] == len(ids) == 40
     families = {row["external_program"] for row in result["tools"] if row["external_program"] is not None}
     assert families == set(PROGRAMS.values()) - {None}
     assert result["external_program_count"] == len(families) == 15

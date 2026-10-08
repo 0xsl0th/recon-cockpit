@@ -154,17 +154,27 @@ credentials or returned-OID follow-up. **16,687 portable/43 native tests and
 merged at `7cc6645` after independent review and all five final CI jobs passed.
 C13 remains closed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715717067) also passed.
 
-The current C14 [SSH algorithm candidate](ssh-algorithms-tools.md) adds one
-bounded identification/KEXINIT exchange through the accepted Ruby-runtime pattern,
-for **39 profiles using the same 15 programs**. Its 184-byte template has one fresh
-16-byte cookie; a write-half-close prevents another client request. Typed
-directional algorithm advertisements remain unverified data, with no completed
-key exchange, login or session. The client captures at most 4355 bytes and leaves
-later packets unread. **17,728 portable/44 native tests and 97 accepted-bundle
-replays passed**, with four ordinary and two robustness completions, zero
-unnecessary refusals and eight inconclusive negatives. [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68)
-is awaiting review and merge; C14 is not yet accepted. No GUI or general NSE
-execution is added.
+The accepted C14 [SSH algorithm profile](ssh-algorithms-tools.md) adds one
+bounded identification/KEXINIT exchange through the sealed Ruby runtime, for
+**39 profiles using 15 programs**. Its finite directional advertisements do not
+complete key exchange or authentication. **17,728 portable/44 native tests and
+97 accepted-bundle replays passed**. [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68)
+merged at `a6f11b7` after review and all five final CI jobs passed; all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37719116743)
+also passed. C14 remains closed with its documented half-close/capture limits.
+
+The current C15 [TLS certificate candidate](tls-certificate-tools.md) adds
+one fixed fixture-CA/name-verified OpenSSL handshake and finite offline leaf
+fingerprint, validity and DNS/IP SAN parsing, for **40 profiles using the same
+15 programs**. Raw subject text cannot grant scope; absent SAN is distinct from
+an empty extension, and unsupported/oversized certificates remain inconclusive.
+No credential, application request, cipher sweep, revocation/AIA fetch or returned
+name lookup is added. Three ordinary and one separate hostile-CN task completed
+with zero unnecessary refusals; eight negatives remained inconclusive.
+**18,396 portable/39 native tests and 103 accepted-bundle replays passed.**
+[PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69) awaits latest-revision
+review, hosted checks and merge; C15 is not yet accepted. No GUI workflow or
+external engagement is enabled.
 
 From the repository root, with the project installed:
 
@@ -186,6 +196,7 @@ python -m recon_cockpit.secure_agent --describe-tool ftp_starttls_handshake_v1
 python -m recon_cockpit.secure_agent --describe-tool curl_http_options_v1
 python -m recon_cockpit.secure_agent --describe-tool snmp_interface_next_v1
 python -m recon_cockpit.secure_agent --describe-tool ssh_transport_algorithms_v1
+python -m recon_cockpit.secure_agent --describe-tool openssl_peer_certificate_v1
 ```
 
 Both operations return deterministic JSON. They work without Linux isolation,
@@ -326,11 +337,19 @@ for key-exchange completion, authenticated session and verified identity remain
 false. Unknown names and guessed-packet flags cannot authorize further work.
 The owner hashes the request template; the actual random cookie is not retained.
 
+The C15 certificate recipe reports one bounded leaf fingerprint, validity range and
+DNS/IP SAN subset after native fixed-CA/name verification. Absent SAN is distinct
+from an empty extension; subject text and unknown extension values remain raw.
+The parser does not perform trust-path or revocation validation, and historical
+replay does not reclassify validity dates against today's clock. Unsupported
+certificate forms remain inconclusive. No certificate name grants scope or
+triggers resolution, AIA/OCSP fetching or an application request.
+
 The B0–B8 [coverage checklist](secure-tool-coverage.md) is closed under those
 accepted limits. The original catalog was accepted in PR #46 at `0d5cbdc`;
 its recipes retain their accepted behavior. The separately versioned
 [Nmap service → ffuf → headers workflow](service-web-assessment.md) and
 [configurable owned-lab slice](configurable-owned-lab.md) remain distinct from
-the current C14 candidate. Further composition and comparative benchmarking
+the current C15 candidate. Further composition and comparative benchmarking
 remain later work. Model
 credentials, paid calls and live-model evaluation stay deferred until much later.

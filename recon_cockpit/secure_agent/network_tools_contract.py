@@ -22,6 +22,9 @@ from .tool_adapters import (DIG_TOOL_ID, OPENSSL_TOOL_ID, DIG_PARAMETERS, OPENSS
                             POSTGRESQL_TLS_TOOL_ID, POSTGRESQL_TLS_PARAMETERS, MYSQL_TLS_TOOL_ID, MYSQL_TLS_PARAMETERS,
                             WHATWEB_TOOL_ID, WHATWEB_PARAMETERS, DIG_SRV_TOOL_ID, DIG_SRV_PARAMETERS, DIG_NSID_TOOL_ID, DIG_NSID_PARAMETERS, DIG_AXFR_TOOL_ID, DIG_AXFR_PARAMETERS, RDP_TOOL_ID, RDP_PARAMETERS, SMB2_TOOL_ID, SMB2_PARAMETERS,
                             SMTP_TLS_TOOL_ID, SMTP_TLS_PARAMETERS, LDAP_TLS_TOOL_ID, LDAP_TLS_PARAMETERS, FTP_TLS_TOOL_ID, FTP_TLS_PARAMETERS, NETWORK_TOOLS_LIMITS, get_adapter)
+from .tool_adapters import TLS_CERTIFICATE_TOOL_ID, TLS_CERTIFICATE_PARAMETERS
+from .network_tools_fixture import (TLS_CERTIFICATE_CASES, TLS_CERTIFICATE_SUCCESS_CASES,
+    TLS_CERTIFICATE_COMPLETE_CASES, TLS_CERTIFICATE_CA_PEM)
 from .network_tools_lab_contract import (BACKEND, CASES, validate_closure, validate_context,
                                      validate_identity)
 from .network_tools_fixture import (QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case, REDIS_SNMP_CASES,
@@ -94,6 +97,9 @@ C9_CASES = FTP_TLS_CASES
 C10_CASES = DNS_NSID_CASES
 C11_CASES = DNS_AXFR_CASES
 C12_CASES = HTTP_OPTIONS_CASES
+C15_CASES = TLS_CERTIFICATE_CASES
+PARAMETERS[TLS_CERTIFICATE_TOOL_ID] = dict(TLS_CERTIFICATE_PARAMETERS)
+PARSER_VERSIONS[TLS_CERTIFICATE_TOOL_ID] = "openssl-peer-certificate-v1"
 C14_CASES = SSH_ALGORITHMS_CASES
 PARAMETERS[SSH_ALGORITHMS_TOOL_ID] = dict(SSH_ALGORITHMS_PARAMETERS)
 PARSER_VERSIONS[SSH_ALGORITHMS_TOOL_ID] = "ssh-kexinit-wire-v1"
@@ -133,8 +139,24 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES + C15_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in C15_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(TLS_CERTIFICATE_TOOL_ID).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "tls_certificate": {"protocol": "TLSv1.3", "cipher": "TLS_AES_256_GCM_SHA384",
+                "server_name": TLS_NAME, "ca_sha256": hashlib.sha256(TLS_CERTIFICATE_CA_PEM).hexdigest(),
+                "max_connections": 1, "max_requests": 1, "max_leaf_der_bytes": 4096,
+                "max_extensions": 16, "max_subject_alt_names": 8, "max_summary_bytes": 3072,
+                "trust_and_hostname_verification": True, "owner_clean_tls_close_required": True,
+                "application_requests": False, "credentials": False, "client_certificate": False,
+                "authentication": False, "revocation_checked": False, "ocsp": False, "aia_fetch": False,
+                "dns_resolution": False, "cipher_sweep": False, "retries": False,
+                "session_resumption": False, "response_directed_followup": False},
+            "result_semantics": "certificate_metadata_from_fixture_verified_tls",
+            "parser_versions": {TLS_CERTIFICATE_TOOL_ID: PARSER_VERSIONS[TLS_CERTIFICATE_TOOL_ID]}}
     if case in C14_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(SSH_ALGORITHMS_TOOL_ID).to_dict()],
@@ -453,6 +475,8 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
                 and (connections != 1 or expected["scenario"] not in DNS_SRV_SUCCESS_CASES))
             or (expected["scenario"] in C5_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in RDP_SUCCESS_CASES))
+            or (expected["scenario"] in C15_CASES and result.get("tool_observation") is not None
+                and (connections != 1 or expected["scenario"] not in TLS_CERTIFICATE_SUCCESS_CASES))
             or (expected["scenario"] in C14_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in SSH_ALGORITHMS_SUCCESS_CASES))
             or (expected["scenario"] in C13_CASES and result.get("tool_observation") is not None
@@ -545,6 +569,8 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == TLS_CERTIFICATE_TOOL_ID:
+        return _observation(tool_id, "tls_peer_certificate_observed", "tls_peer_certificate_observed", normalized)
     if tool_id == SSH_ALGORITHMS_TOOL_ID:
         return _observation(tool_id, "ssh_algorithm_advertisements_observed", "ssh_algorithm_advertisements_observed", normalized)
     if tool_id == SNMP_NEXT_TOOL_ID:
