@@ -89,7 +89,7 @@ destination, command or request.
 | `snmp-next-malformed`, `snmp-next-truncated`, `snmp-next-denied` | Inconclusive BER, incomplete reply or protocol-denial observations; no correction/resubmission. |
 | `snmp-next-stalled`, `snmp-next-output-limit` | Inconclusive deadline/output pressure with enforced limits and owner cleanup. |
 
-All fourteen fixture responses are compiled finite data. There is no MIB backend,
+All fourteen scenarios use finite compiled responses or a bounded stall. There is no MIB backend,
 device configuration, real community store, network attachment or request loop.
 Only the validated request ID is echoed into response framing.
 
@@ -133,9 +133,16 @@ proof, cancellation, private-input exclusion and UDP confinement tests. Report
 descriptive execution latency and zero provider calls/cost; comparative overhead
 remains deferred.
 
-**C13 validation is in progress.** Final portable/native totals and independent
-evidence receipts remain pending. Record actual outcomes in
-[verification.md](verification.md) before marking this candidate ready for review.
+**C13 local validation is complete:** 16,687 portable tests and 43 native tests
+passed. All required ordinary/robustness completions and negative classifications
+above held, with zero unnecessary refusals. All fourteen native reports rebuilt
+unchanged; 91 accepted bundles replayed through shared inspection and isolated CLI,
+with twelve inherited receipts pinned. All 583 source hashes match implementation
+`331ae06`. Secure scenario wall times were 2554–4558 ms, median 2996.5 ms, with zero
+provider calls/cost. See [verification.md](verification.md) for retained proof and
+limitations. [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for
+review and remains unmerged. All five implementation CI jobs passed; later checkpoint
+commits change documentation only, and the PR carries the latest hosted status.
 Synthetic grants do not claim personal acceptance. Latest-revision review, hosted
 checks and the corresponding merge instruction remain required.
 

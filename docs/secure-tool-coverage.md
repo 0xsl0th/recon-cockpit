@@ -144,7 +144,7 @@ integration from a candidate secure profile.
 | C10 | DNS server-reported NSID; interactive Nmap suggestion exists, new secure dig profile reuses the accepted runtime | One fixed nonrecursive TCP question with empty EDNS NSID; at most 64 opaque bytes; 5/5 ordinary and 1/1 hostile-metadata completions, eight inconclusive cases after actual query progress, 28/28 blocked destinations, 140/140 boundary fields, replay and G1–G6. No UDP, cookies, recursion, negotiation retries, zone transfer, verified identity or follow-up. | Implemented at `4e6d20e7`; 14,814 portable/62 native tests and 72 accepted-bundle replays passed. Initial historical test-selection failure and correction retained; [x] accepted in PR #64 at `dea8c7a`; all final and post-merge jobs passed. See the [C10 runbook](dns-nsid-tools.md). |
 | C11 | DNS zone-transfer behavior; existing secure dig runtime, no interactive AXFR profile | One fixed synthetic TCP AXFR; accept four messages/16 records with matching SOAs; 3/3 ordinary complete/multiframe/refused tasks, 2/2 robustness, nine inconclusive cases, actual query progress, 28 destination/140 boundary checks, replay and G1–G6. Five-second/8192-byte native limits; no credentials, recursion or returned-host follow-up. | Implemented at `25b9395c`; 15,464 portable/61 native tests, five clean-commit trials and 78 accepted-bundle replays passed; [x] accepted in PR #65 at `82dd85a`; all five final and post-merge jobs passed. See [C11 runbook](dns-axfr-tools.md). |
 | C12 | HTTP OPTIONS metadata; existing secure curl runtime, no interactive OPTIONS profile | One fixed resource, complete bounded HTTP/1.1 status/Allow/auth-scheme metadata; require 6/6 ordinary and 2/2 robustness tasks, six inconclusive negative cases, 28 destination/140 boundary checks, five authority gates, unchanged evidence replay and G1–G6. No advertised-method execution, redirects, credentials or GUI work. | Implemented at `c875820`; 16,138 portable/40 native tests and 83 accepted-bundle replays passed. [x] Accepted in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) at `7faf974`; all five final CI jobs passed. See [C12 runbook](http-options-tools.md). |
-| C13 — current | SNMP interface successor metadata; accepted GET covers three system scalars, no interactive GETNEXT integration | One fixed ifDescr column seed through snmpgetnext; require 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, authority and cleanup gates, unchanged replay and G1–G6. No walk, GETBULK, SET, UDP, real community or returned-OID follow-up. | Authorized candidate; final portable/native validation totals pending. See [C13 runbook](snmp-next-tools.md). |
+| C13 — current | SNMP interface successor metadata; accepted GET covers three system scalars, no interactive GETNEXT integration | One fixed ifDescr column seed through snmpgetnext; require 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, authority and cleanup gates, unchanged replay and G1–G6. No walk, GETBULK, SET, UDP, real community or returned-OID follow-up. | Implemented at `331ae06`; 16,687 portable/43 native tests and 91 accepted-bundle replays passed. [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for review; unmerged. See [C13 runbook](snmp-next-tools.md). |
 | Next gap to reassess | SSH transport algorithm advertisements; interactive Nmap `ssh2-enum-algos` suggestion exists, accepted secure SSH covers host-key collection only | One bounded identification/KEXINIT exchange, finite typed KEX/host-key/cipher/MAC/compression lists, ordinary and adversarial owned execution, strict request/connection ceilings, independent evidence and G1–G6. No completed key exchange, login, session or arbitrary NSE/script execution. | Recommendation only; choose and pin the smallest reviewed runtime before selecting the batch. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -337,15 +337,27 @@ No returned OID or description selects another request. There is no walk, GETBUL
 SET, UDP, real community or credential handling. The single text observation cannot
 establish inventory completeness or independently verify omitted SNMP wire fields.
 
-C13 requires **4/4 ordinary and 2/2 separate robustness completions**, eight
-inconclusive negative cases after actual request progress, zero unnecessary refusals,
-all 28 forbidden-destination and 140 boundary-field checks, closed owners and unchanged
-independent evidence replay. Preserve one-use approval, missing-proof refusal,
-cancellation, private-input exclusion and UDP confinement. **C13 validation is in
-progress; final portable/native totals and evidence receipts remain pending.**
+Local validation passed **16,687 portable tests** (1,100 integration tests
+excluded) and **43 native tests**: 19 C13 cases/gates plus 24 accepted Redis/SNMP
+regressions. C13 completed **4/4 ordinary and 2/2 robustness tasks**, with zero
+unnecessary refusals; eight negative cases stayed inconclusive after actual request
+progress. All **28/28 destination and 140/140 boundary checks** passed. The five
+authority gates preserve one-use approval, missing-proof rejection, cancellation,
+private-input exclusion and UDP confinement. All fourteen owners closed and their
+reports rebuilt unchanged. Scenario wall time was 2554–4558 ms, median 2996.5 ms;
+these descriptive times are not comparative overhead. Provider calls and cost were zero.
+
+All **583 frozen source files** match implementation `331ae06`; 237 accepted cases,
+37 adapters and 28 runtimes retain their contracts. **91 accepted bundles** replayed
+unchanged through shared inspection and isolated CLI, with twelve receipt links.
+Six useful C13 receipt rows reuse the original native evidence, with no repeat tool
+execution. [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for review
+and remains unmerged. All five implementation CI jobs passed in
+[run 37714433576](https://github.com/0xsl0th/recon-cockpit/actions/runs/37714433576).
+Later checkpoint edits are documentation only; consult the PR for latest-head checks.
 Synthetic grants do not establish personal acceptance. The shipped policy requires
-fresh approval, and raw evidence stays outside Git. Leave the candidate ready for
-latest-revision review and hosted checks; merging requires the corresponding instruction.
+fresh approval, and raw evidence stays outside Git. Latest-revision review, hosted
+checks and the corresponding merge instruction remain required.
 
 After C13 review, reassess **bounded SSH transport algorithm advertisements**,
 starting from the existing interactive `ssh2-enum-algos` precedent. Accepted SSH

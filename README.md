@@ -167,7 +167,8 @@ It distinguishes a reported description, an empty description, endOfMibView and 
 supported outside-subtree successor. Returned metadata cannot select follow-up;
 there is no walk, UDP, real community or credential handling. Four ordinary tasks,
 two robustness tasks and eight negative cases require actual owned execution,
-independent replay and enforced boundaries. Final C13 validation remains pending;
+independent replay and enforced boundaries. **16,687 portable/43 native tests and 91 accepted-bundle replays passed**;
+[PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is ready for review and unmerged;
 credentials and paid calls remain deferred.
 
 Broader composition and comparative benchmarking remain later slices.
