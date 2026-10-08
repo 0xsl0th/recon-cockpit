@@ -98,7 +98,9 @@ visible; these are descriptive metrics, not comparative benchmarking.
 Validation passed **15,464 portable and 61 native tests**, with 3/3 ordinary and
 2/2 robustness completions, zero unnecessary refusals, nine inconclusive cases and
 all 28 destination/140 boundary checks. All 14 native reports rebuilt unchanged.
-Clean-commit execution and accepted-bundle replay remain pending. Results are recorded in
+Five useful trials from clean implementation `25b9395c` passed, and all 78 accepted
+bundles replayed unchanged through CLI and shared inspection with ten inherited receipts.
+No production source changed after validation. PR review/merge remain pending. Results are recorded in
 [verification.md](verification.md) and private `.secure-agent/dns-axfr-20261008/`.
 Completed B0–B8, C1–C10, offline R5, accepted local R6 and initial GUI remain closed.
 The earlier C9 stall cause remains unresolved. Deeper workflows, credentials,

@@ -242,7 +242,7 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 `.secure-agent/pr62-merge-review.json`.
 
 **Current work: priority 3 secure-tool coverage, C11 bounded DNS AXFR behavior.**
-Implementation is on `feature/dns-axfr-coverage` in `/tmp/recon-dns-axfr-coverage`,
+Review the C11 candidate on `feature/dns-axfr-coverage` in `/tmp/recon-dns-axfr-coverage`,
 based on accepted main `dea8c7a`. See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [C11 runbook](dns-axfr-tools.md). One fixed `harbordesk.test. IN AXFR` request
 over TCP reuses the existing dig, authority, independent parser and evidence path.
@@ -264,7 +264,9 @@ destinations and **140/140** boundary fields passed. The independent audit rebui
 all 14 native reports unchanged and checked all **566 frozen source hashes**.
 Native scenario latency was 2689–4768 ms (median 3186.5 ms), with zero provider calls
 and cost. These are descriptive measurements, not comparative overhead.
-Clean-commit execution and the 78 accepted-bundle replay are the remaining local checks.
+Five useful trials from clean implementation `25b9395c` passed, and all **78 accepted
+bundles** replayed unchanged through both inspection paths with ten inherited receipts.
+Local validation is complete; the new PR awaits review and hosted checks.
 The shipped policy requires fresh approval; synthetic unattended tests do not claim
 personal acceptance. Raw evidence stays outside Git. Leave the new PR unmerged
 pending its latest-revision review, hosted checks and merge instruction.
@@ -282,8 +284,8 @@ initial GUI remain closed. Preserve the proposal/PDF and recorded GUI mocks.
 Reviewed head `964d600` merged as `dea8c7a` on 8 October at 00:25:00 UTC;
 reviewed and merged trees match `5ba1c32671aa72821f0ef97983ec36618f0b13b2`.
 Fresh authority/runtime and parser/evidence reviews found no blockers; 362 focused
-tests passed. All 557 source hashes, 92 reports, 107 artifacts and ten receipt-chain
-levels including the C10 receipt reconciled (nine inherited links).
+tests passed. All 557 source hashes, 92 reports, 107 artifacts and nine inherited receipt
+links reconciled.
 All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37706257697)
 and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37707653540)
 passed. Preserve 14,814 portable and 62 native tests, 5/5 ordinary and 1/1 separate

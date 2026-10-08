@@ -75,8 +75,19 @@ The accepted baseline freezes 209 earlier case contracts, 35 adapters and 26 run
 all old expected hashes remain unchanged. Historical selector tests exclude only the
 new profile; accepted runtime and lab contracts are not rebaselined.
 
-Clean implementation execution and 78 accepted-bundle replays remain pending before
-PR handoff. Credentials, paid/live evaluation, external engagements, deeper workflows
+Clean implementation **`25b9395c17486c19f05631a5f930d9c52010fffe`** completed five useful trials:
+ordinary complete/multiframe/refused in **3352/3250/3428 ms**, and separate
+fragmented/hostile-TXT robustness in **3430/3407 ms**. All ten additional forbidden
+destinations were blocked, with zero unnecessary refusals/provider calls/cost.
+All **78 accepted bundles** replayed unchanged through both CLI and shared inspection,
+with ten inherited receipt files pinned. The clean receipt is
+`.secure-agent/dns-axfr-20261008/clean-source-25b9395c-2fnxdcw3/verification.json`,
+SHA256 `a27fa217590d6d1ce3bb50c25872e0ba5177aebb1459adef7b84c21201f945c2`. It retains the predecessor C10 receipt unchanged at
+SHA256 `0815f9324eaca5e2f480736b4f1028e38019b86aa5b975c460192b61d8259808`.
+Native evidence was independently reconciled; no native rerun was performed by the
+auditor. All 566 frozen sources still match; subsequent edits record documentation
+and PR status only. Local validation is complete; the new PR awaits latest-revision
+review and hosted checks. Credentials, paid/live evaluation, external engagements, deeper workflows
 and benchmarking stay deferred. C9's earlier legacy stall remains unexplained; these
 DNS passes do not establish its cause or resolution. Completed B0–B8, C1–C10, offline
 R5, accepted local R6 and initial GUI/personal acceptance stay closed.
@@ -87,8 +98,8 @@ R5, accepted local R6 and initial GUI/personal acceptance stay closed.
 Reviewed head `964d600` merged as `dea8c7a` on 8 October at 00:25:00 UTC;
 reviewed and merged trees match `5ba1c32671aa72821f0ef97983ec36618f0b13b2`.
 Fresh authority/runtime and parser/evidence reviews found no blockers; 362 focused
-tests passed. All 557 source hashes, 92 reports, 107 artifacts and ten receipt-chain
-levels including the C10 receipt reconciled (nine inherited links).
+tests passed. All 557 source hashes, 92 reports, 107 artifacts and nine inherited receipt
+links reconciled.
 All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37706257697)
 and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37707653540)
 passed. Preserve 14,814 portable and 62 native tests, 5/5 ordinary and 1/1 separate

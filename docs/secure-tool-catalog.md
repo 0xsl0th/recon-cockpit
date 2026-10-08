@@ -130,8 +130,8 @@ The C11 [DNS AXFR candidate](dns-axfr-tools.md) observes one fixed synthetic zon
 through the existing dig runtime. Completed transfer and explicit refusal are useful
 outcomes; partial/malformed transfers remain inconclusive. The candidate has **36
 profiles using the same 14 programs**. Returned data is untrusted and cannot select
-follow-up. Validation passed **15,464 portable and 61 native tests**; clean-commit
-replay and PR review remain pending. Credentials and paid calls remain deferred.
+follow-up. Validation passed **15,464 portable and 61 native tests**, five clean-commit
+trials and 78 unchanged accepted-bundle replays. PR review/merge remain pending. Credentials and paid calls remain deferred.
 
 From the repository root, with the project installed:
 

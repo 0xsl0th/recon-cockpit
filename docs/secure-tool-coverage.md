@@ -142,7 +142,7 @@ integration from a candidate secure profile.
 | C8 | LDAP STARTTLS before bind; existing OpenSSL runtime, separate from accepted anonymous RootDSE | One fixed extended request, fixture-verified TLS/clean close, 2/2 ordinary and 2/2 separate robustness completions, eight inconclusive cases after actual request progress, 24/24 blocked destinations, 120/120 boundary fields, evidence and G1–G6. No bind/search/credentials/referral follow-up; disclose unchecked response ID/fields and discarded LDAP reply. | [x] Accepted in [PR #62](https://github.com/0xsl0th/recon-cockpit/pull/62), merge `a582bd6c`; all five final and post-merge jobs passed. See the [C8 runbook](ldap-starttls-tools.md). |
 | C9 | FTP explicit TLS before login; secure OpenSSL, separate from accepted anonymous FTP listing | Fixed AUTH TLS, verified fixture TLS/clean close, 2/2 ordinary and 3/3 robustness completions, six inconclusive cases, 22/22 blocked destinations, 110/110 boundary fields, actual execution/replay and G1–G6. No login/credentials/listing/transfer/data connections; disclose unchecked/discarded replies and strict retained-greeting support. | [x] Accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63), merge `e06e1a4`; all five final and post-merge jobs passed. Initial legacy stall failure remains unexplained. See the [C9 runbook](ftp-starttls-tools.md). |
 | C10 | DNS server-reported NSID; interactive Nmap suggestion exists, new secure dig profile reuses the accepted runtime | One fixed nonrecursive TCP question with empty EDNS NSID; at most 64 opaque bytes; 5/5 ordinary and 1/1 hostile-metadata completions, eight inconclusive cases after actual query progress, 28/28 blocked destinations, 140/140 boundary fields, replay and G1–G6. No UDP, cookies, recursion, negotiation retries, zone transfer, verified identity or follow-up. | Implemented at `4e6d20e7`; 14,814 portable/62 native tests and 72 accepted-bundle replays passed. Initial historical test-selection failure and correction retained; [x] accepted in PR #64 at `dea8c7a`; all final and post-merge jobs passed. See the [C10 runbook](dns-nsid-tools.md). |
-| C11 — current | DNS zone-transfer behavior; existing secure dig runtime, no interactive AXFR profile | One fixed synthetic TCP AXFR; accept four messages/16 records with matching SOAs; 3/3 ordinary complete/multiframe/refused tasks, 2/2 robustness, nine inconclusive cases, actual query progress, 28 destination/140 boundary checks, replay and G1–G6. Five-second/8192-byte native limits; no credentials, recursion or returned-host follow-up. | Implemented; 15,464 portable/61 native tests passed; clean-commit replay and PR review pending. See [C11 runbook](dns-axfr-tools.md). |
+| C11 — current | DNS zone-transfer behavior; existing secure dig runtime, no interactive AXFR profile | One fixed synthetic TCP AXFR; accept four messages/16 records with matching SOAs; 3/3 ordinary complete/multiframe/refused tasks, 2/2 robustness, nine inconclusive cases, actual query progress, 28 destination/140 boundary checks, replay and G1–G6. Five-second/8192-byte native limits; no credentials, recursion or returned-host follow-up. | Implemented at `25b9395c`; 15,464 portable/61 native tests, five clean-commit trials and 78 accepted-bundle replays passed; pending PR review/merge. See [C11 runbook](dns-axfr-tools.md). |
 | Next gap to reassess | HTTP OPTIONS metadata; existing secure curl runtime, no interactive OPTIONS profile | One fixed OPTIONS resource, bounded status/Allow/auth-scheme hints, useful present/absent/empty/auth-required observations, no advertised-method execution, redirects or credentials. | Recommendation only; compare incremental usefulness before selecting the next batch. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -310,7 +310,7 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 `.secure-agent/pr62-merge-review.json`.
 
 **Current work: priority 3 secure-tool coverage, C11 bounded DNS AXFR behavior.**
-Implementation is on `feature/dns-axfr-coverage` in `/tmp/recon-dns-axfr-coverage`,
+Review the C11 candidate on `feature/dns-axfr-coverage` in `/tmp/recon-dns-axfr-coverage`,
 based on accepted main `dea8c7a`. See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [C11 runbook](dns-axfr-tools.md). One fixed `harbordesk.test. IN AXFR` request
 over TCP reuses the existing dig, authority, independent parser and evidence path.
@@ -332,7 +332,9 @@ destinations and **140/140** boundary fields passed. The independent audit rebui
 all 14 native reports unchanged and checked all **566 frozen source hashes**.
 Native scenario latency was 2689–4768 ms (median 3186.5 ms), with zero provider calls
 and cost. These are descriptive measurements, not comparative overhead.
-Clean-commit execution and the 78 accepted-bundle replay are the remaining local checks.
+Five useful trials from clean implementation `25b9395c` passed, and all **78 accepted
+bundles** replayed unchanged through both inspection paths with ten inherited receipts.
+Local validation is complete; the new PR awaits review and hosted checks.
 The shipped policy requires fresh approval; synthetic unattended tests do not claim
 personal acceptance. Raw evidence stays outside Git. Leave the new PR unmerged
 pending its latest-revision review, hosted checks and merge instruction.
@@ -350,8 +352,8 @@ initial GUI remain closed. Preserve the proposal/PDF and recorded GUI mocks.
 Reviewed head `964d600` merged as `dea8c7a` on 8 October at 00:25:00 UTC;
 reviewed and merged trees match `5ba1c32671aa72821f0ef97983ec36618f0b13b2`.
 Fresh authority/runtime and parser/evidence reviews found no blockers; 362 focused
-tests passed. All 557 source hashes, 92 reports, 107 artifacts and ten receipt-chain
-levels including the C10 receipt reconciled (nine inherited links).
+tests passed. All 557 source hashes, 92 reports, 107 artifacts and nine inherited receipt
+links reconciled.
 All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37706257697)
 and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37707653540)
 passed. Preserve 14,814 portable and 62 native tests, 5/5 ordinary and 1/1 separate
