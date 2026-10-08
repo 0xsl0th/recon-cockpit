@@ -192,7 +192,8 @@ signature check through a separate static runtime with bounded private scratch.
 The feasibility assessment was accepted in [PR #70](https://github.com/0xsl0th/recon-cockpit/pull/70)
 at `2f7fb5a`; the operator then authorized implementation and owned execution.
 Accepted main remains **40 profiles/15 programs**; the candidate registry has
-**41/16**, pending final validation, independent review, required checks and merge.
+**41/16**, with 18,958 portable and 23 Linux checks passed plus 107 unchanged
+accepted-bundle replays. PR review and required checks remain the merge gate.
 Useful matched and unmatched results require complete independent owner bytes,
 a supported native dump and recomputed signature agreement. This is no generic
 vulnerability scan or CVE claim; credential/model/paid work remains deferred.

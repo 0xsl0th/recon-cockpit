@@ -11,8 +11,9 @@ merged as `2f7fb5a` after all five final and post-merge jobs passed. The operato
 subsequently authorized the separate runtime prototype and owned check. Work is
 on `feature/nuclei-runtime-prototype` in `/tmp/recon-nuclei-runtime`.
 Accepted main remains **40 secure profiles using 15 external programs**; the C16
-candidate registry has **41 profiles using 16 programs**, pending validation,
-independent review, required checks and merge.
+candidate registry has **41 profiles using 16 programs**. Local validation and
+independent code reviews passed; PR review, required checks and merge remain the
+acceptance gate.
 
 The [C16 runbook](nuclei-tools.md) records one compiled directory-listing signature
 check: one GET to the disconnected owned `127.0.0.1:8080/public/` fixture, with no
@@ -28,14 +29,26 @@ checks both framing forms, reconciles status/body and recomputes the exact match
 A false matcher or successful exit alone is insufficient. Matched and unmatched
 results are signature observations, never verified vulnerabilities or site safety.
 
-**Validation pending:** final portable, native, regression, source-binding and
-independent replay results are not yet reconciled. The 21-test C16 native run is
-in progress. Targets are 4/4 ordinary completions, 1/1 separate robustness task,
-zero unnecessary refusals, eight inconclusive negatives, blocked unauthorized
-destinations and all existing/new boundaries. Record zero provider calls/cost and
-wall-time range/median; no comparative overhead is claimed. G6 remains open.
+**Local validation:** implementation `5fe5c34` passed 21 native workflow/authority
+checks; two additional Linux sealing checks also passed. The thirteen actual
+trials achieved 4/4 ordinary and 1/1 robustness completions, with eight inconclusive
+negatives, zero unnecessary refusals, 26/26 blocked destination witnesses and
+195/195 boundary fields. All 107 accepted bundles replayed identically without
+changing bytes, mtimes or modes. The 277-case/40-adapter/31-runtime baseline is
+unchanged. Trial wall time was 4477–6405 ms, median 4522 ms; provider calls/cost
+were zero. This is descriptive timing, not comparative overhead. All **18,958
+portable tests passed**, with zero skips, failures or errors. G1–G5 are locally
+validated; G6 remains open until PR review and required checks pass.
+Private receipt: `.secure-agent/nuclei-runtime-20261008/verification.json`.
 
-**Next action:** finish this candidate's evidence and review its latest PR revision
+Initial development probes exposed the inherited staging limit, a missing worker
+fixture module, two native default request headers and counter-only closure
+assembly. Each was corrected within the approved boundaries. The initial full
+portable run found two stale additive registry/tag expectations; these were
+corrected, and the complete rerun is retained. No limit was raised beyond the
+approved Nuclei-specific design, and no failed probe counts as useful work.
+
+**Next action:** review this candidate's latest PR revision
 and required checks. Only after acceptance, prioritize the next small HTTP
 security-validation gap with another bounded harmless check and positive/negative
 evidence; do not start another batch or deeper composition before that review.
@@ -534,12 +547,13 @@ reviewed Linux Ruby 3.3 x86-64 closure is a supporting runtime for a repository
 adapter, not another third-party program. The accepted count is 30 profiles/14
 programs; it adds no GUI workflow or real-network attachment.
 
-**Current continuation: Nuclei feasibility review.** PR #69 merged as `e4c9d64`;
-C15 and all earlier accepted milestones stay closed. Follow the current status at
-the top and the [feasibility assessment](nuclei-feasibility.md). Its stock CLI does
-not fit existing runtime rules. Review the separate static/scratch profile and
-obtain authorization before provisioning or a confined native probe. The archive
-was inspected only as data; no credential/workflow expansion is proposed.
+**Current continuation: C16 Nuclei implementation review.** PR #70 feasibility
+merged as `2f7fb5a`; the separate runtime and owned prototype were then authorized
+and implemented. Follow the current status at the top and the
+[C16 runbook](nuclei-tools.md). Native execution, usefulness, confinement and
+independent replay are verified locally; PR acceptance remains open. C15 and all
+earlier completed milestones stay closed. Credentials and workflow expansion
+remain deferred.
 
 Preserve `.secure-agent/gui-execution-20261007/`, including earlier failed native
 runs and interrupted portable runners. Deeper composition, comparative benchmarking,
@@ -1729,26 +1743,26 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #68 merge is complete. PRs #6–#30 and #32–#68
+- The operator-authorized PR #70 merge is complete. PRs #6–#30 and #32–#70
   stay closed; proposal PR #31 remains separate. Additional implementation, later merges, submission,
   messages, paid calls and external targets need their corresponding instruction.
 
 ## Next continuation
 
-1. Review the Nuclei feasibility PR and its latest checks. C15/PR #69 and earlier
-   milestones remain closed; preserve their evidence and documented limitations.
-2. Before implementation, review and authorize the proposed separate pinned static
-   runtime and bounded private scratch. No accepted profile limit may change.
-   Native compatibility is unverified; fail closed if startup/configuration,
-   resource or filesystem isolation cannot be proved.
-3. Use only the proposed fixed owned HTTP endpoint/template. Require both matched
-   and completed non-matched results, independently reconciled with retained
-   request/response evidence and owner counters. Empty output, a false matcher
-   flag or exit zero alone cannot establish useful completion.
-4. Require useful positive/negative completion, zero unnecessary refusals, all
-   boundary/cleanup gates, unchanged replay, zero paid/provider calls and measured
-   latency. The feasibility document defines the finite cases and go/no-go gates;
-   no Nuclei capability is yet implemented or accepted.
+1. Review the C16 Nuclei implementation PR at its latest head and required checks.
+   PR #70 feasibility is accepted at `2f7fb5a`; implementation and owned execution
+   were subsequently authorized. C15 and earlier completed milestones stay closed.
+2. Reconcile the private C16 verification receipt, 18,958 portable passes, 21 native
+   workflow/authority passes, two Linux sealing passes and 107 unchanged accepted
+   replays. Production source matches the clean native-tested `5fe5c34`; later
+   edits only record validation and classify Linux-specific tests correctly.
+3. After review and an authorized merge, mark C16 accepted at 41 profiles/16
+   programs and select the next small tool-coverage gap. Additional limited HTTP
+   security validation is the recommendation; define one harmless bounded
+   operation with useful matched/unmatched evidence before implementation.
+4. Preserve fixed target/template, separate scratch/runtime limits and original
+   owner-response evidence. This check does not establish a generic scanner,
+   external-server compatibility, exploitability or professional readiness.
 5. Keep credentials, paid/live models, external engagements, deeper workflows and
    comparative benchmarking deferred. Preserve the earlier C9 stall history,
    desktop approval boundary, proposal/PDF and recorded GUI mocks.

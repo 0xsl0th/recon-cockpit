@@ -1,6 +1,6 @@
 # Owned Nuclei directory-listing signature check
 
-C16 is an **implementation candidate, pending final validation and PR review**.
+C16 is an **implementation candidate, locally validated, pending PR review**.
 It adds `nuclei_directory_listing_v1` through a separate pinned Nuclei runtime,
 the secure CLI and existing authority/evidence services. Accepted main remains
 **40 profiles using 15 external programs**; the candidate registry has **41/16**.
@@ -152,10 +152,41 @@ approval, missing-proof refusal, cancellation, private-input exclusion and UDP
 confinement. Provider calls and cost must remain zero. Report scenario wall-time
 range and median descriptively; no comparative-overhead benchmark is claimed.
 
-**Validation pending:** the 21-test native C16 run is in progress. Final portable,
-accepted regression, source-binding, evidence audit/replay and hosted checks are
-not yet reconciled. No final counts, latency or G1–G6 completion are claimed here.
-The parent verification record will replace this placeholder with actual results.
+**Local results:** clean implementation `5fe5c3465bf2565e6dac509259874ee62809db45`
+passed all 21 native workflow/authority tests. Two Linux memfd/sealing tests also
+passed separately; these are integration tests so the portable macOS job does not
+substitute skips for evidence. The thirteen actual trials achieved 4/4 ordinary
+completions and 1/1 robustness completion, with zero unnecessary refusals. All
+eight negative cases remained inconclusive after one validated GET. All 26
+forbidden-destination witnesses and 195 boundary fields passed. Cancellation,
+private inputs, one-use grants, missing proof and weakened scratch/task boundaries
+were exercised. No paid/provider calls or real credentials were used.
+
+The independent audit reconciled both parser paths and every new artifact, then
+replayed 107 accepted bundles through service and CLI without changing their
+bytes, mtimes or modes. All 694 source-file hashes matched the clean implementation
+before and after this audit. Accepted case/action/descriptor/card/spec, adapter,
+argv and environment snapshots remain byte-identical for 277 cases, 40 adapters
+and 31 runtimes. Secure CLI trial wall time was **4477–6405 ms, median 4522 ms**,
+including authority and evidence capture; this is not an overhead comparison.
+All **18,958 portable tests passed**, with zero skips, failures or errors.
+G1–G5 are locally validated; G6 stays open until PR review and required checks pass.
+
+Private evidence is retained under `.secure-agent/nuclei-runtime-20261008/`:
+`native-confirmed/`, `native-confirmed.xml`, `native-sealing.xml`,
+`native-source-pin.json`, `accepted-baseline-comparison.json` and `verification.json`.
+The verification receipt SHA-256 is `a3dc80c9bafc9eb9a9081335dfb7703f2ac85f9349ffb71b2c4d109f632954fb`.
+No raw assessment, executable or private receipt is added to Git.
+
+Development history remains visible: the first staging attempt hit the legacy
+file-size cap before native execution; a missing confined fixture module was then
+added. The first actual request was rejected for previously unpinned Accept and
+Accept-Language headers, which were captured and pinned. The first integrated
+report exposed closure assembly including a response receipt in a counter-only
+closure; the Nuclei-specific assembly now retains the full previous context while
+persisting counters only. The initial full portable run found stale explicit
+registry/tag expectations, which were corrected. These unsuccessful attempts were
+not counted as useful completion, and the approved ceilings were not broadened.
 
 ## Review and inspect
 

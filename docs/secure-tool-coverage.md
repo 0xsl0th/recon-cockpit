@@ -147,7 +147,7 @@ integration from a candidate secure profile. C16 adds a candidate 41st profile a
 | C13 | SNMP interface successor metadata; accepted GET covers three system scalars, no interactive GETNEXT integration | One fixed ifDescr column seed through snmpgetnext; 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, authority/cleanup gates, unchanged replay and G1–G6. No walk, GETBULK, SET, UDP, real community or returned-OID follow-up. | [x] Accepted in [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) at `7cc6645`; 16,687 portable/43 native tests, 91 accepted replays and all five final CI jobs passed. See [C13 runbook](snmp-next-tools.md). |
 | C14 | SSH transport algorithm advertisements; interactive Nmap suggestion, secure host-key collection separate | One fixed KEXINIT template with random cookie, write EOF and one bounded reply; 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, replay and G1–G6. No completed key exchange, login or session. | [x] Accepted in [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68) at `a6f11b7`; 17,728 portable/44 native tests, 97 accepted replays and all final/post-merge CI jobs passed. See [C14 runbook](ssh-algorithms-tools.md). |
 | C15 — accepted | TLS peer-certificate metadata; existing OpenSSL runtime, no interactive certificate inventory | One fixed CA/name-verified TLS 1.3 exchange with clean close, finite leaf DER fingerprint/validity and DNS/IP SANs; require 3/3 ordinary and 1/1 separate robustness completions, eight inconclusive negatives, actual request/closure/boundary evidence, unchanged replay and G1–G6. No application data, credentials, revocation/AIA fetch or name follow-up. | [x] Accepted in [PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69) at `e4c9d64`: 18,396 portable/39 native passes, 3/3 ordinary + 1/1 robustness, eight inconclusive negatives, 24/24 destination and 120/120 boundary checks, 103 unchanged accepted replays; independent review and five final CI passes. G1–G6 complete. 40 profiles/15 programs. See [C15 runbook](tls-certificate-tools.md). |
-| C16 — current candidate | One harmless HTTP directory-listing signature using pinned Nuclei v3.11.1; no existing interactive Nuclei integration | One fixed GET and compiled matcher; 4/4 ordinary matched/unmatched completions, 1/1 separate hostile-body robustness task, eight inconclusive negatives, complete original owner and normalized native response reconciliation, scratch/enforcement witnesses, replay and G1–G6. No general templates, credentials, redirects or follow-up. | [ ] Implementation and owned validation in progress; final metrics, review and CI pending. Separate static runtime/private scratch authorized after PR #70 feasibility acceptance at `2f7fb5a`. Accepted 40/15; candidate 41/16. See [C16 runbook](nuclei-tools.md). |
+| C16 — current candidate | One harmless HTTP directory-listing signature using pinned Nuclei v3.11.1; no existing interactive Nuclei integration | One fixed GET and compiled matcher; 4/4 ordinary matched/unmatched completions, 1/1 separate hostile-body robustness task, eight inconclusive negatives, complete original owner and normalized native response reconciliation, scratch/enforcement witnesses, replay and G1–G6. No general templates, credentials, redirects or follow-up. | [ ] Native implementation validated; 23 Linux tests, 4/4 ordinary + 1/1 robustness, eight inconclusive negatives, 107 unchanged accepted replays. 18,958 portable passes; PR checks/review pending. Separate static runtime/private scratch authorized after PR #70 feasibility acceptance at `2f7fb5a`. Accepted 40/15; candidate 41/16. See [C16 runbook](nuclei-tools.md). |
 | Next gap — after C16 acceptance | Additional limited HTTP security validation within the internal-network/web-services scope | Select one independently useful harmless check with finite positive, negative and malformed cases; review exact effects and compatibility before implementation. | Recommendation only. Prioritize after this candidate passes review; no broader workflow, benchmark, credentials or live-model work. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -345,8 +345,9 @@ merged as `2f7fb5a` after all five final and post-merge jobs passed. The operato
 subsequently authorized the separate runtime prototype and owned check. Work is
 on `feature/nuclei-runtime-prototype` in `/tmp/recon-nuclei-runtime`.
 Accepted main remains **40 secure profiles using 15 external programs**; the C16
-candidate registry has **41 profiles using 16 programs**, pending validation,
-independent review, required checks and merge.
+candidate registry has **41 profiles using 16 programs**. Local validation and
+independent code reviews passed; PR review, required checks and merge remain the
+acceptance gate.
 
 The [C16 runbook](nuclei-tools.md) records one compiled directory-listing signature
 check: one GET to the disconnected owned `127.0.0.1:8080/public/` fixture, with no
@@ -362,14 +363,26 @@ checks both framing forms, reconciles status/body and recomputes the exact match
 A false matcher or successful exit alone is insufficient. Matched and unmatched
 results are signature observations, never verified vulnerabilities or site safety.
 
-**Validation pending:** final portable, native, regression, source-binding and
-independent replay results are not yet reconciled. The 21-test C16 native run is
-in progress. Targets are 4/4 ordinary completions, 1/1 separate robustness task,
-zero unnecessary refusals, eight inconclusive negatives, blocked unauthorized
-destinations and all existing/new boundaries. Record zero provider calls/cost and
-wall-time range/median; no comparative overhead is claimed. G6 remains open.
+**Local validation:** implementation `5fe5c34` passed 21 native workflow/authority
+checks; two additional Linux sealing checks also passed. The thirteen actual
+trials achieved 4/4 ordinary and 1/1 robustness completions, with eight inconclusive
+negatives, zero unnecessary refusals, 26/26 blocked destination witnesses and
+195/195 boundary fields. All 107 accepted bundles replayed identically without
+changing bytes, mtimes or modes. The 277-case/40-adapter/31-runtime baseline is
+unchanged. Trial wall time was 4477–6405 ms, median 4522 ms; provider calls/cost
+were zero. This is descriptive timing, not comparative overhead. All **18,958
+portable tests passed**, with zero skips, failures or errors. G1–G5 are locally
+validated; G6 remains open until PR review and required checks pass.
+Private receipt: `.secure-agent/nuclei-runtime-20261008/verification.json`.
 
-**Next action:** finish this candidate's evidence and review its latest PR revision
+Initial development probes exposed the inherited staging limit, a missing worker
+fixture module, two native default request headers and counter-only closure
+assembly. Each was corrected within the approved boundaries. The initial full
+portable run found two stale additive registry/tag expectations; these were
+corrected, and the complete rerun is retained. No limit was raised beyond the
+approved Nuclei-specific design, and no failed probe counts as useful work.
+
+**Next action:** review this candidate's latest PR revision
 and required checks. Only after acceptance, prioritize the next small HTTP
 security-validation gap with another bounded harmless check and positive/negative
 evidence; do not start another batch or deeper composition before that review.

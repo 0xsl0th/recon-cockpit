@@ -248,8 +248,9 @@ merged as `2f7fb5a` after all five final and post-merge jobs passed. The operato
 subsequently authorized the separate runtime prototype and owned check. Work is
 on `feature/nuclei-runtime-prototype` in `/tmp/recon-nuclei-runtime`.
 Accepted main remains **40 secure profiles using 15 external programs**; the C16
-candidate registry has **41 profiles using 16 programs**, pending validation,
-independent review, required checks and merge.
+candidate registry has **41 profiles using 16 programs**. Local validation and
+independent code reviews passed; PR review, required checks and merge remain the
+acceptance gate.
 
 The [C16 runbook](nuclei-tools.md) records one compiled directory-listing signature
 check: one GET to the disconnected owned `127.0.0.1:8080/public/` fixture, with no
@@ -265,14 +266,26 @@ checks both framing forms, reconciles status/body and recomputes the exact match
 A false matcher or successful exit alone is insufficient. Matched and unmatched
 results are signature observations, never verified vulnerabilities or site safety.
 
-**Validation pending:** final portable, native, regression, source-binding and
-independent replay results are not yet reconciled. The 21-test C16 native run is
-in progress. Targets are 4/4 ordinary completions, 1/1 separate robustness task,
-zero unnecessary refusals, eight inconclusive negatives, blocked unauthorized
-destinations and all existing/new boundaries. Record zero provider calls/cost and
-wall-time range/median; no comparative overhead is claimed. G6 remains open.
+**Local validation:** implementation `5fe5c34` passed 21 native workflow/authority
+checks; two additional Linux sealing checks also passed. The thirteen actual
+trials achieved 4/4 ordinary and 1/1 robustness completions, with eight inconclusive
+negatives, zero unnecessary refusals, 26/26 blocked destination witnesses and
+195/195 boundary fields. All 107 accepted bundles replayed identically without
+changing bytes, mtimes or modes. The 277-case/40-adapter/31-runtime baseline is
+unchanged. Trial wall time was 4477–6405 ms, median 4522 ms; provider calls/cost
+were zero. This is descriptive timing, not comparative overhead. All **18,958
+portable tests passed**, with zero skips, failures or errors. G1–G5 are locally
+validated; G6 remains open until PR review and required checks pass.
+Private receipt: `.secure-agent/nuclei-runtime-20261008/verification.json`.
 
-**Next action:** finish this candidate's evidence and review its latest PR revision
+Initial development probes exposed the inherited staging limit, a missing worker
+fixture module, two native default request headers and counter-only closure
+assembly. Each was corrected within the approved boundaries. The initial full
+portable run found two stale additive registry/tag expectations; these were
+corrected, and the complete rerun is retained. No limit was raised beyond the
+approved Nuclei-specific design, and no failed probe counts as useful work.
+
+**Next action:** review this candidate's latest PR revision
 and required checks. Only after acceptance, prioritize the next small HTTP
 security-validation gap with another bounded harmless check and positive/negative
 evidence; do not start another batch or deeper composition before that review.

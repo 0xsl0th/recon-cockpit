@@ -116,6 +116,7 @@ def test_static_elf_rejects_wrong_architecture_and_unbounded_headers(fault):
         nuclei.validate_elf(bytes(value))
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(not hasattr(os, "memfd_create") or not hasattr(fcntl, "F_GET_SEALS"),
                    reason="requires Linux memfd sealing")
 def test_streamed_snapshots_are_exact_sealed_and_do_not_call_native(tmp_path, monkeypatch):
@@ -143,6 +144,8 @@ def test_streamed_snapshots_are_exact_sealed_and_do_not_call_native(tmp_path, mo
 @pytest.mark.parametrize("fault", ["changed", "truncated", "symlink", "capability"])
 def test_streamed_runtime_refuses_unpinned_files(tmp_path, monkeypatch, fault):
     path, value = provision(tmp_path, monkeypatch)
+    # The descriptor xattr API is Linux-specific; portable tests model its result.
+    monkeypatch.setattr(nuclei.os, "listxattr", lambda _: [])
     if fault == "changed": path.write_bytes(b"X" + path.read_bytes()[1:])
     elif fault == "truncated": path.write_bytes(b"X")
     elif fault == "symlink":
@@ -154,6 +157,7 @@ def test_streamed_runtime_refuses_unpinned_files(tmp_path, monkeypatch, fault):
         nuclei.inspect_runtime(control())
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(not hasattr(os, "memfd_create") or not hasattr(fcntl, "F_GET_SEALS"),
                    reason="requires Linux memfd sealing")
 def test_streaming_deadline_interrupts_and_closes_all_snapshots(tmp_path, monkeypatch):
