@@ -80,9 +80,9 @@ def test_failed_peer_scenario_cannot_be_upgraded_to_useful_metadata(case):
 
 
 def test_all_accepted_contracts_remain_unchanged_from_pr63():
-    old_cases = [case for case in contract.CASES if case not in contract.C10_CASES + contract.C11_CASES + contract.C12_CASES + contract.C13_CASES + contract.C14_CASES + contract.C15_CASES + contract.C16_CASES]
-    old_tools = set(tool_adapters.ADAPTERS) - {contract.DIG_NSID_TOOL_ID, contract.DIG_AXFR_TOOL_ID, contract.HTTP_OPTIONS_TOOL_ID, contract.SNMP_NEXT_TOOL_ID, contract.SSH_ALGORITHMS_TOOL_ID, contract.TLS_CERTIFICATE_TOOL_ID, contract.NUCLEI_TOOL_ID}
-    old_runtime = set(runtime.EXECUTABLES) - {contract.DIG_NSID_TOOL_ID, contract.DIG_AXFR_TOOL_ID, contract.HTTP_OPTIONS_TOOL_ID, contract.SNMP_NEXT_TOOL_ID, contract.SSH_ALGORITHMS_TOOL_ID, contract.TLS_CERTIFICATE_TOOL_ID, contract.NUCLEI_TOOL_ID}
+    old_cases = [case for case in contract.CASES if case not in contract.C10_CASES + contract.C11_CASES + contract.C12_CASES + contract.C13_CASES + contract.C14_CASES + contract.C15_CASES + contract.C16_CASES + contract.C17_CASES]
+    old_tools = set(tool_adapters.ADAPTERS) - {contract.DIG_NSID_TOOL_ID, contract.DIG_AXFR_TOOL_ID, contract.HTTP_OPTIONS_TOOL_ID, contract.SNMP_NEXT_TOOL_ID, contract.SSH_ALGORITHMS_TOOL_ID, contract.TLS_CERTIFICATE_TOOL_ID, contract.NUCLEI_TOOL_ID, contract.NUCLEI_GIT_TOOL_ID}
+    old_runtime = set(runtime.EXECUTABLES) - {contract.DIG_NSID_TOOL_ID, contract.DIG_AXFR_TOOL_ID, contract.HTTP_OPTIONS_TOOL_ID, contract.SNMP_NEXT_TOOL_ID, contract.SSH_ALGORITHMS_TOOL_ID, contract.TLS_CERTIFICATE_TOOL_ID, contract.NUCLEI_TOOL_ID, contract.NUCLEI_GIT_TOOL_ID}
     value = {'cases': {case: {'action': contract.action(case), 'descriptor': contract.capability_descriptor(case),
         'card': workflow.card(case), 'spec': lab.spec(case)} for case in old_cases},
         'adapters': {tool: tool_adapters.ADAPTERS[tool].to_dict() for tool in old_tools},

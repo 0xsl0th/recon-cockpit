@@ -228,8 +228,9 @@ def main():
             raise ValueError("nuclei_requires_authority_pipe")
         raw = sys.stdin.buffer.read(32769)
         request, deadline, namespaces, digest = consume_launch(raw, sys.argv[1], sys.argv[2])
-        if request["tool_id"] != runtime.TOOL_ID:
-            raise ValueError("nuclei_worker_cross_profile")
+        # The authority-selected tool chooses one exact compiled closure before
+        # any scratch setup or readiness. Kernel helpers retain shared C16 caps.
+        runtime = shared_runtime.nuclei_runtime.for_tool(request["tool_id"])
         value = json.loads(raw)["runtime"]
         if shared_runtime.manifest_digest(value) != digest:
             raise ValueError("nuclei_runtime_commitment")

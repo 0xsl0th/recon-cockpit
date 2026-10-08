@@ -19,7 +19,7 @@ def main():
         checks = planner_worker._bootstrap(host)
         for kind, value in ((resource.RLIMIT_AS, 128 * 1024 * 1024), (resource.RLIMIT_CPU, 2)):
             resource.setrlimit(kind, (value, value))
-        if tool_id == "nuclei_directory_listing_v1":
+        if tool_id in ("nuclei_directory_listing_v1", "nuclei_git_head_v1"):
             maximum = network_tools_parser.MAX_OUTPUT_BYTES + 4096 + 8
             payload = sys.stdin.buffer.read(maximum + 1)
             if not 8 < len(payload) <= maximum:

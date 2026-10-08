@@ -35,13 +35,18 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     assert not first.started and first._supervisor is None
     definition = lab_contract.spec(case)
     assert definition["external_egress"] is False and definition["resume"] is False
-    if case in fixture.NUCLEI_CASES:
-        from recon_cockpit.secure_agent import network_tools_nuclei_fixture as nuclei
+    if case in fixture.NUCLEI_CASES + fixture.NUCLEI_GIT_CASES:
+        if case in fixture.NUCLEI_GIT_CASES:
+            from recon_cockpit.secure_agent import network_tools_nuclei_git_fixture as nuclei
+            path, maximum = nuclei.NUCLEI_GIT_PATH, nuclei.NUCLEI_GIT_MAX_RESPONSE_BYTES
+        else:
+            from recon_cockpit.secure_agent import network_tools_nuclei_fixture as nuclei
+            path, maximum = nuclei.NUCLEI_PATH, nuclei.NUCLEI_MAX_RESPONSE_BYTES
         response = nuclei.response(case)
-        assert definition["method"] == "GET" and definition["path"] == nuclei.NUCLEI_PATH
+        assert definition["method"] == "GET" and definition["path"] == path
         assert definition["max_connections"] == definition["max_requests"] == 1
         assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
-        assert definition["max_fixture_response_bytes"] == nuclei.NUCLEI_MAX_RESPONSE_BYTES
+        assert definition["max_fixture_response_bytes"] == maximum
         assert definition["request_count_means"] == "validated_fixed_http_get_before_response"
         assert definition["owner_response_evidence"] == "actual_send_acknowledged_bytes_and_connection_close"
         assert definition["owner_response_does_not_prove"] == "valid_http_framing_or_client_reception"
@@ -380,7 +385,11 @@ def _backend(monkeypatch, case, *, requests=None, connections=None, status="succ
     lab = NetworkToolsLab(case, session, SessionLimits(**contract.LIMITS))
     backend = AuthorizedNetworkToolsBackend(policy, session, lab.limits, lab, execute=True)
     action = parse_action(contract.action(case))
-    manifest = {"tool_id": action.tool_id}
+    if action.tool_id in (network_tools_runtime.NUCLEI, network_tools_runtime.NUCLEI_GIT):
+        from recon_cockpit.secure_agent.network_tools_nuclei_runtime import for_tool
+        manifest = for_tool(action.tool_id).manifest()
+    else:
+        manifest = {"tool_id": action.tool_id}
     backend._network_tools_manifest = manifest
     calls = []
     host_namespaces = {name: name + ":[100]" for name in ("user", "net", "mnt", "pid")}

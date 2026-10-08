@@ -22,9 +22,9 @@ from recon_cockpit.secure_agent.network_tools_worker import _landlock_permission
 
 
 def manifest(tool_id=runtime.DIG):
-    if tool_id == runtime.NUCLEI:
-        from recon_cockpit.secure_agent.network_tools_nuclei_runtime import manifest as nuclei_manifest
-        return nuclei_manifest()
+    if tool_id in (runtime.NUCLEI, runtime.NUCLEI_GIT):
+        from recon_cockpit.secure_agent.network_tools_nuclei_runtime import for_tool
+        return for_tool(tool_id).manifest()
     if tool_id == runtime.SSH_ALGORITHMS:
         from test_secure_ssh_algorithms_runtime import manifest as algorithms_manifest
         return algorithms_manifest()
@@ -48,7 +48,7 @@ def manifest(tool_id=runtime.DIG):
 
 def policy():
     return parse_policy({"schema_version": "1", "policy_version": "test-network-tool-v1",
-        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.NUCLEI, runtime.TLS_CERTIFICATE, runtime.SSH_ALGORITHMS, runtime.SNMP_NEXT, runtime.HTTP_OPTIONS, runtime.DIG, runtime.DIG_AXFR, runtime.DIG_NSID, runtime.DIG_SRV, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE, runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS],
+        "allowed_targets": ["127.0.0.1"], "allowed_tools": [runtime.NUCLEI_GIT, runtime.NUCLEI, runtime.TLS_CERTIFICATE, runtime.SSH_ALGORITHMS, runtime.SNMP_NEXT, runtime.HTTP_OPTIONS, runtime.DIG, runtime.DIG_AXFR, runtime.DIG_NSID, runtime.DIG_SRV, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB, runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP, runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.NMAP_SERVICE, runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS],
         "allowed_ports": [8080, 111], "allowed_methods": ["GET", "OPTIONS"], "max_timeout_seconds": 10,
         "max_output_bytes": 8192, "max_targets": 1, "require_approval": True, "approval_ttl_seconds": 60})
 

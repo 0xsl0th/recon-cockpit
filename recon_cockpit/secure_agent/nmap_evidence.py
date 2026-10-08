@@ -122,7 +122,7 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
             from .network_tools_parser_runtime import parse_isolated_tool
             try:
                 extra = {}
-                if tool_id == "nuclei_directory_listing_v1":
+                if tool_id in ("nuclei_directory_listing_v1", "nuclei_git_head_v1"):
                     from .network_tools_lab_contract import decode_owner_response
                     extra["owner_response"] = decode_owner_response(context["owner_response"], require_complete=True)
                 parsed = parse_isolated_tool(tool_id, stdout, stderr, deadline=deadline, **extra)
@@ -409,6 +409,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Hostile content stays private raw evidence and cannot choose scope, template, argv, approval or follow-up. No model is involved, and no model injection-resistance claim follows.",
                 "Private scratch is disposable and capped at 8 MiB, 128 inodes and 64 KiB per file, with noexec/nodev/nosuid and Landlock. Existing tool profiles retain their limits; no host writes, credentials, updates or template downloads are authorized.",
                 "Counters attest one validated fixed GET. Replay checks local evidence consistency, leaves files unchanged and restores no grants or execution authority.",
+            ]
+        if manifest["fixture_case"].startswith("nuclei-git-"):
+            report["limitations"] = [
+                "One fixed GET of /.git/HEAD uses pinned Nuclei in a disconnected owned fixture. Only two synthetic symbolic-reference markers are recognized; this is not general Git repository discovery or a professional engagement result.",
+                "signature_present requires HTTP 200, exact supported text/plain content type and one complete reviewed marker body. It does not verify an actual repository, source exposure, exploitability or a CVE. signature_absent means only that this finite predicate was false in a supported completed response.",
+                "Independent owner send bytes and the normalized native dump must agree on status, content type and body. Partial, conflicting, redirected, oversized, encoded or chunked responses remain inconclusive. Owner send acknowledgement is not proof of client reception or external server authenticity.",
+                "No refs, objects, configuration, source files or credentials are retrieved. Returned names and hostile content remain inert evidence and cannot authorize follow-up. No model is involved or evaluated.",
+                "The accepted Nuclei static runtime and scratch ceilings are unchanged. Counts attest one validated fixed GET; no host writes, arbitrary templates, updates, community downloads, credentials or paid calls are enabled.",
+                "Read-only replay checks local evidence consistency and restores neither approvals nor execution authority.",
             ]
         if manifest["fixture_case"].startswith("ftp-tls-"):
             report["limitations"] = [
