@@ -186,8 +186,11 @@ Accept-Language headers, which were captured and pinned. The first integrated
 report exposed closure assembly including a response receipt in a counter-only
 closure; the Nuclei-specific assembly now retains the full previous context while
 persisting counters only. The initial full portable run found stale explicit
-registry/tag expectations, which were corrected. These unsuccessful attempts were
-not counted as useful completion, and the approved ceilings were not broadened.
+registry/tag expectations, which were corrected. Hosted macOS CI then exposed four
+test-setup failures because its Python does not expose `os.listxattr`; the portable
+mock now installs that Linux-specific attribute even when absent. Production
+runtime and native validation bytes remain unchanged. These unsuccessful attempts
+were not counted as useful completion, and the approved ceilings were not broadened.
 
 ## Review and inspect
 

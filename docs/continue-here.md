@@ -46,7 +46,9 @@ Initial development probes exposed the inherited staging limit, a missing worker
 fixture module, two native default request headers and counter-only closure
 assembly. Each was corrected within the approved boundaries. The initial full
 portable run found two stale additive registry/tag expectations; these were
-corrected, and the complete rerun is retained. No limit was raised beyond the
+corrected, and the complete rerun is retained. Hosted macOS CI also found four
+test-setup failures from an absent `os.listxattr`; the portable mock now supports
+that absence, with production bytes unchanged. No limit was raised beyond the
 approved Nuclei-specific design, and no failed probe counts as useful work.
 
 **Next action:** review this candidate's latest PR revision

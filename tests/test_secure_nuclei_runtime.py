@@ -145,7 +145,7 @@ def test_streamed_snapshots_are_exact_sealed_and_do_not_call_native(tmp_path, mo
 def test_streamed_runtime_refuses_unpinned_files(tmp_path, monkeypatch, fault):
     path, value = provision(tmp_path, monkeypatch)
     # The descriptor xattr API is Linux-specific; portable tests model its result.
-    monkeypatch.setattr(nuclei.os, "listxattr", lambda _: [])
+    monkeypatch.setattr(nuclei.os, "listxattr", lambda _: [], raising=False)
     if fault == "changed": path.write_bytes(b"X" + path.read_bytes()[1:])
     elif fault == "truncated": path.write_bytes(b"X")
     elif fault == "symlink":
