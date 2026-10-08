@@ -4,7 +4,7 @@
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — C16 accepted; C17 recommended, not started (8 October 2026).**
+**Current slice — C17 Git HEAD marker validated candidate and PR review (8 October 2026).**
 The finite [coverage checklist](secure-tool-coverage.md) is closed: B0–B8 meet
 G1–G6, with 20 accepted secure capabilities backed by 11 external programs.
 [PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) also accepted the
@@ -241,21 +241,67 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current checkpoint: C16 accepted in [PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71).**
+**Current work: [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72), C17 Git HEAD marker candidate.**
+Implementation is on `feature/nuclei-git-head-coverage` in
+`/tmp/recon-nuclei-git-head`. Accepted main remains **41 profiles using 16 programs**;
+the validated candidate has **42/16**. G1–G5 are demonstrated locally; G6 remains
+open until independent PR review, applicable checks and an operator-authorized merge.
+
+The [C17 runbook](nuclei-git-tools.md) defines one fixed GET of `/.git/HEAD` in the
+disconnected owned fixture. Its exact finite predicate recognizes two complete
+synthetic symbolic refs; it does not fetch refs, objects, configuration, source or
+credentials. Owner bytes and native response status/content type/body must agree.
+Existing C16 compiled bytes, snapshots, authority controls and limits are preserved.
+
+**Validation:** all **19,437 portable tests** passed with no skips, failures or
+errors at `bbb34bc`. Final native confirmation at `901faab` passed **44 Linux tests**
+(21 C17, 21 C16 and two sealing checks). Only two integration test files changed
+between those revisions; production code is identical. C17 achieved **4/4 ordinary
+and 1/1 separate robustness completions**, eight inconclusive negatives, zero
+unnecessary refusals, **26/26 blocked destination witnesses** and **195/195 boundary
+fields**. All thirteen new and **120 accepted evidence bundles** replayed identically
+without changing bytes, mtimes or modes. The 290-case/41-adapter/32-runtime baseline
+and all 16 inherited receipt links remain unchanged.
+
+Scenario wall time was **4528–6393 ms**, median **4561 ms**,
+including authority/evidence capture; this is descriptive timing, not comparative
+overhead. Provider calls and cost were zero. All 705 source hashes matched the native
+pin during the audit at `901faab`; the subsequent handoff changes documentation only. Private receipt: `.secure-agent/nuclei-git-20261008/verification.json`, SHA-256
+`6721ac99867de7e57d6cc06035e65e923c690831087098015650d2b0df1868c6`. The follow-up handoff records the final PR head and CI separately.
+
+Preserve development failures: the first smoke refused missing outer-launcher
+modules, corrected before a useful retry. The first full native run then exposed a
+test-routing mismatch: its private-input helper submitted C16 inside a C17 lab,
+and four boundary negatives passed for that wrong policy denial. The corrected
+helpers select one explicit case for both action and lab, and assert the intended
+allow/start/finish audit sequence; the final 44-test confirmation passed. The
+first failed run and vacuous negatives do not count as acceptance evidence.
+
+**Current handoff:** leave the C17 PR unmerged for review. A later merge requires
+the operator's instruction and passing latest-revision review/checks. After that,
+the recommended next coverage gap is **C18: fixed nonrecursive TCP DNS MX
+metadata**, using the accepted dig runtime, at most four typed preference/exchange
+rows and explicit null-MX/NODATA/NXDOMAIN results. Returned exchange names must not
+be followed. C18 is proposed, not implemented. Credentials, paid/live models,
+external targets, deeper workflows and comparative benchmarking remain deferred.
+
+**C16 accepted in [PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71).**
 The separate pinned Nuclei runtime and owned directory-listing check bring accepted
 coverage to **41 secure profiles using 16 external programs**. These are bounded
 operations, not 41 independently integrated programs or professional deployment
 certification. The [feasibility assessment](nuclei-feasibility.md) remains accepted
 in PR #70 at `2f7fb5a`; this implementation followed the operator's authorization.
 
-Fresh runtime/authority and parser/evidence reviews found no blockers at
-`45035fa`. All five [CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37730865766)
-passed there. The final documentation-only acceptance update is also gated on all
-five checks before merge. Production bytes match native-tested `5fe5c34`.
-The review reconciled 694 source hashes, 120 reports, 135 artifacts and fifteen
-inherited receipt links; all thirteen current captures reparsed identically.
-The merge commit, reviewed tree and final checks are recorded privately in
-`.secure-agent/pr71-merge-review.json` when the merge completes.
+Reviewed production head `45035fa` received fresh runtime/authority and
+parser/evidence reviews with no blockers. Final head `853f5a1` merged as
+`1cfbf8bf79ca1825d9d7904fed6daad831f8abd9` on 8 October at 05:49:55 UTC after all
+five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37733763140)
+passed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37734361577)
+also passed. Reviewed and merged trees match `aef6d051c95e433cdf05c7c395420e511a8010cc`.
+Production bytes match native-tested `5fe5c34`. The review reconciled 694 source
+hashes, 120 reports, 135 artifacts and fifteen inherited receipt links; all
+thirteen current captures reparsed identically. Private merge receipt:
+`.secure-agent/pr71-merge-review.json`.
 
 The [C16 runbook](nuclei-tools.md) records one compiled directory-listing signature
 check: one GET to the disconnected owned `127.0.0.1:8080/public/` fixture, with no
@@ -279,8 +325,8 @@ negatives, zero unnecessary refusals, 26/26 blocked destination witnesses and
 changing bytes, mtimes or modes. The 277-case/40-adapter/31-runtime baseline is
 unchanged. Trial wall time was 4477–6405 ms, median 4522 ms; provider calls/cost
 were zero. This is descriptive timing, not comparative overhead. All **18,958
-portable tests passed**, with zero skips, failures or errors. G1–G6 close with the
-reviewed, checked PR #71 merge; C16 stays closed after that acceptance.
+portable tests passed**, with zero skips, failures or errors. G1–G6 are closed
+by the reviewed and checked PR #71 merge; C16 stays closed.
 Private receipt: `.secure-agent/nuclei-runtime-20261008/verification.json`.
 
 Initial development probes exposed the inherited staging limit, a missing worker
@@ -290,20 +336,10 @@ portable run found two stale additive registry/tag expectations; these were
 corrected, and the complete rerun is retained. No limit was raised beyond the
 approved Nuclei-specific design, and no failed probe counts as useful work.
 
-**Recommended next batch: C17, one fixed Git HEAD marker check.** Reuse the
-pinned Nuclei runtime for one GET to the disconnected owned `/.git/HEAD` fixture,
-with synthetic symbolic refs only. Require four ordinary matched/unmatched
-completions, one hostile-HTML nonmatch, eight inconclusive negative cases, original
-owner/native response agreement, replay and the existing authority/enforcement
-gates. Use a separately versioned response contract; preserve C16's bytes and
-limits. Report only a marker signature, never verified exploitability. Do not
-retrieve refs, objects, configuration or source, and do not follow response text.
-This is a recommendation awaiting the operator's next instruction; implementation
-has not started. No community templates, arbitrary scanner input, updates,
-Interactsh, credentials, paid/live models, external engagements, deeper workflows
-or comparative benchmarking are added. Preserve B0–B8, C1–C16, offline R5,
-accepted local R6, the initial GUI, proposal/PDF, GUI mocks and the earlier
-unexplained C9 stall and failure history.
+C17 was subsequently authorized and is the validated candidate above. C16 and
+earlier completed milestones remain closed; its fixed template, original owner
+response evidence and runtime limits remain regression anchors. Preserve the
+proposal/PDF, GUI mocks and earlier unexplained C9 stall and failure history.
 
 **C15 is accepted in [PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69).**
 Reviewed head `ca88e2f` merged as `e4c9d645ead8f02bbc0603f8731cef0e46ee3b86`

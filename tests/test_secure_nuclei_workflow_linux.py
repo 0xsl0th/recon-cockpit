@@ -106,11 +106,24 @@ def test_cancel_after_native_exec_reaps_entire_tree_and_scratch(tmp_path):
     cancel_actual(tmp_path, 'nuclei-stalled', b'/tool/nuclei')
 
 
-def test_private_inputs_descriptors_and_host_writes_are_excluded(tmp_path, monkeypatch):
+def _assert_execution_audit(tmp_path, tool_id, status, reason):
+    events = [json.loads(line) for line in (tmp_path / 'audit.jsonl').read_text().splitlines()]
+    assert [(event['event_type'], event['decision'], event['execution_status'], event['tool_id'])
+        for event in events] == [
+            ('policy_decision', 'allow', 'not_started', tool_id),
+            ('execution_started', 'allow', 'started', tool_id),
+            ('execution_finished', 'allow', status, tool_id)]
+    assert events[0]['reasons'] == ['policy_allows_action']
+    assert events[-1]['reasons'] == [reason]
+
+
+def test_private_inputs_descriptors_and_host_writes_are_excluded(tmp_path, monkeypatch, *, case='nuclei-index'):
     from test_secure_fixture_launcher_linux import instrument
     from recon_cockpit.secure_agent.controller import Controller
     from recon_cockpit.secure_agent.execution import ExecutionControl
     from recon_cockpit.secure_agent.network_tools_contract import action
+    selected = action(case)
+    assert selected['tool_id'] == TOOL
     canary = tmp_path / 'host-secret'
     canary.write_text('PRIVATE-NUCLEI-TEST-CANARY')
     monkeypatch.setenv('NUCLEI_TEST_HOST_CANARY', 'PRIVATE-NUCLEI-TEST-CANARY')
@@ -138,21 +151,28 @@ def test_private_inputs_descriptors_and_host_writes_are_excluded(tmp_path, monke
         return source.replace(original, checks)
     instrument(tmp_path, monkeypatch, transform, name='network_tools_nuclei_worker')
     control = ExecutionControl(time.monotonic() + 40)
-    with gates.boundary(tmp_path, control, case='nuclei-index', approval_required=False) as (audit, approvals, launcher, policy, session):
+    with gates.boundary(tmp_path, control, case=case, approval_required=False) as (audit, approvals, launcher, policy, session):
         result = Controller(policy, audit, launcher, approvals, session_id=session).submit(
-            action('nuclei-index'), execute=True, interactive=False, execution_control=control)
+            selected, execute=True, interactive=False, execution_control=control)
+        assert result['tool_id'] == selected['tool_id'] and result['decision'] == 'allow', result
         assert result['execution_status'] == 'succeeded', result
         assert result['untrusted_result']['tool_observation']['outcome'] == 'signature_present'
+        owner = result['untrusted_result']['owned_lab']
+        assert owner['identity']['scenario'] == case
+        assert owner['request_count'] == owner['connection_count'] == 1
         assert 'PRIVATE-NUCLEI-TEST-CANARY' not in json.dumps(result)
     assert canary.read_text() == 'PRIVATE-NUCLEI-TEST-CANARY'
+    _assert_execution_audit(tmp_path, selected['tool_id'], 'succeeded', 'policy_allows_action')
 
 
 @pytest.mark.parametrize('fault', ['noexec', 'byte_limit', 'inode_limit', 'task_limit'])
-def test_relaxed_scratch_or_task_boundary_is_refused_before_exec(tmp_path, monkeypatch, fault):
+def test_relaxed_scratch_or_task_boundary_is_refused_before_exec(tmp_path, monkeypatch, fault, *, case='nuclei-index'):
     from test_secure_fixture_launcher_linux import instrument
     from recon_cockpit.secure_agent.controller import Controller
     from recon_cockpit.secure_agent.execution import ExecutionControl
     from recon_cockpit.secure_agent.network_tools_contract import action
+    selected = action(case)
+    assert selected['tool_id'] == TOOL
     def transform(source):
         old, new = {
             'noexec': ('b"tmpfs", 2 | 4 | 8, options', 'b"tmpfs", 2 | 4, options'),
@@ -164,8 +184,11 @@ def test_relaxed_scratch_or_task_boundary_is_refused_before_exec(tmp_path, monke
         return source.replace(old, new)
     instrument(tmp_path, monkeypatch, transform, name='network_tools_nuclei_worker')
     control = ExecutionControl(time.monotonic() + 30)
-    with gates.boundary(tmp_path, control, case='nuclei-index', approval_required=False) as (audit, approvals, launcher, policy, session):
+    with gates.boundary(tmp_path, control, case=case, approval_required=False) as (audit, approvals, launcher, policy, session):
         result = Controller(policy, audit, launcher, approvals, session_id=session).submit(
-            action('nuclei-index'), execute=True, interactive=False, execution_control=control)
+            selected, execute=True, interactive=False, execution_control=control)
+        assert result['tool_id'] == selected['tool_id'] and result['decision'] == 'allow', result
         assert result['execution_status'] == 'blocked', result
+        assert result['reasons'] == ['isolation_unavailable'], result
         assert launcher.close()['request_count'] == 0
+    _assert_execution_audit(tmp_path, selected['tool_id'], 'blocked', 'isolation_unavailable')

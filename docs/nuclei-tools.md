@@ -218,10 +218,10 @@ Use `--inspect-assessment .secure-agent/nuclei-review/evidence` for read-only re
 inspection restores neither approvals nor execution authority. Raw artifacts and
 the downloaded executable remain private, outside Git.
 
-The next recommendation is C17's one fixed synthetic Git HEAD marker check,
-using a new finite response contract and the same runtime limits. See the
-[coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches).
-It is not implemented or authorized by this runbook. B0–B8, C1–C16, offline R5,
+The operator subsequently authorized C17's one fixed synthetic Git HEAD marker
+check using a new finite response contract and the same runtime limits. Its
+[separate runbook](nuclei-git-tools.md) records current implementation and validation;
+C16 remains unchanged. B0–B8, C1–C16, offline R5,
 accepted local R6 and the initial GUI remain closed. Preserve prior failure
 history, including the unexplained C9 stall. Model credentials, paid/live
 evaluation, external work, deeper workflows and benchmarking remain deferred.

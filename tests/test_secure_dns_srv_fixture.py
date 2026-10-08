@@ -204,7 +204,7 @@ def test_owner_closes_second_connection_without_reading_or_counting_it(case):
 
 
 def test_all_123_accepted_fixture_specs_are_unchanged():
-    definitions = {case: contract.spec(case) for case in contract.CASES if case not in fixture.DNS_SRV_CASES + fixture.RDP_CASES + fixture.SMB2_CASES + fixture.SMTP_TLS_CASES + fixture.LDAP_TLS_CASES + fixture.FTP_TLS_CASES + fixture.DNS_NSID_CASES + fixture.DNS_AXFR_CASES + fixture.HTTP_OPTIONS_CASES + fixture.SNMP_NEXT_CASES + fixture.SSH_ALGORITHMS_CASES + fixture.TLS_CERTIFICATE_CASES + fixture.NUCLEI_CASES}
+    definitions = {case: contract.spec(case) for case in contract.CASES if case not in fixture.DNS_SRV_CASES + fixture.RDP_CASES + fixture.SMB2_CASES + fixture.SMTP_TLS_CASES + fixture.LDAP_TLS_CASES + fixture.FTP_TLS_CASES + fixture.DNS_NSID_CASES + fixture.DNS_AXFR_CASES + fixture.HTTP_OPTIONS_CASES + fixture.SNMP_NEXT_CASES + fixture.SSH_ALGORITHMS_CASES + fixture.TLS_CERTIFICATE_CASES + fixture.NUCLEI_CASES + fixture.NUCLEI_GIT_CASES}
     assert len(definitions) == 123
     raw = json.dumps(definitions, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()
     assert hashlib.sha256(raw).hexdigest() == "e89590d7620e1856c5dd8bcb1c18d2f06266164e5a1401671668006ebcfdbdf3"

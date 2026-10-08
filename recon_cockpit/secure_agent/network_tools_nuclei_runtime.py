@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import stat
 import struct
+import sys
 
 from .isolation import IsolationUnavailable, _trusted_program
 from .tool_runtime_common import _CLOSE_EXCEPT
@@ -85,20 +86,37 @@ FIXED_ARGV = (DESTINATION, "-t", TEMPLATE_PATH, "-u", "http://127.0.0.1:8080/pub
     "-c", "1", "-pc", "1", "-prc", "1", "-tlc", "1", "-jsc", "1")
 
 
-def manifest():
-    files = [{"source": EXECUTABLE, "destination": DESTINATION,
-              "size": EXECUTABLE_SIZE, "sha256": EXECUTABLE_SHA256}]
+def for_tool(tool_id):
+    """Select one reviewed constant profile; never accept caller template data."""
+    if type(tool_id) is not str:
+        raise ValueError("unsupported_nuclei_profile")
+    if tool_id == TOOL_ID:
+        return sys.modules[__name__]
+    from . import network_tools_nuclei_git_runtime
+    if tool_id == network_tools_nuclei_git_runtime.TOOL_ID:
+        return network_tools_nuclei_git_runtime
+    raise ValueError("unsupported_nuclei_profile")
+
+
+def _manifest(selected):
+    profile = for_tool(selected)
+    files = [{"source": profile.EXECUTABLE, "destination": DESTINATION,
+              "size": profile.EXECUTABLE_SIZE, "sha256": profile.EXECUTABLE_SHA256}]
     files += [{"source": source, "destination": destination, "size": len(raw),
-               "sha256": hashlib.sha256(raw).hexdigest()} for source, destination, raw in COMPILED]
-    return {"version": "1", "profile": PROFILE, "tool_id": TOOL_ID, "executable": DESTINATION,
+               "sha256": hashlib.sha256(raw).hexdigest()} for source, destination, raw in profile.COMPILED]
+    return {"version": "1", "profile": profile.PROFILE, "tool_id": profile.TOOL_ID, "executable": DESTINATION,
             "files": sorted(files, key=lambda item: item["destination"])}
 
 
-def validate_manifest(value, *, tool_id=None):
+def manifest():
+    return _manifest(TOOL_ID)
+
+
+def _validate_manifest(value, selected, *, tool_id=None):
     from .network_tools_runtime import encode
-    expected = manifest()
+    expected = _manifest(selected)
     # Exact types prevent bool/int equivalence from weakening byte commitments.
-    if (type(value) is not dict or set(value) != set(expected) or tool_id not in (None, TOOL_ID)
+    if (type(value) is not dict or set(value) != set(expected) or tool_id not in (None, selected)
             or any(type(value[key]) is not str for key in ("version", "profile", "tool_id", "executable"))
             or type(value["files"]) is not list or len(value["files"]) != len(expected["files"])):
         raise ValueError("invalid_nuclei_static_manifest")
@@ -111,6 +129,10 @@ def validate_manifest(value, *, tool_id=None):
             or len(encode(value)) > MAX_MANIFEST_BYTES):
         raise ValueError("invalid_nuclei_static_closure")
     return value
+
+
+def validate_manifest(value, *, tool_id=None):
+    return _validate_manifest(value, TOOL_ID, tool_id=tool_id)
 
 
 def validate_elf(header):
@@ -164,18 +186,24 @@ def _stream_file(path, row, control, *, sink=None):
         os.close(descriptor)
 
 
-def inspect_runtime(control):
-    value = manifest()
-    if str(Path(EXECUTABLE).resolve(strict=True)) != EXECUTABLE:
+def _inspect_runtime(control, selected):
+    profile = for_tool(selected)
+    value = profile.manifest()
+    if str(Path(profile.EXECUTABLE).resolve(strict=True)) != profile.EXECUTABLE:
         raise IsolationUnavailable("Nuclei provision path must not contain symlinks")
     row = next(row for row in value["files"] if row["destination"] == DESTINATION)
-    _stream_file(EXECUTABLE, row, control)
-    return validate_manifest(value)
+    _stream_file(profile.EXECUTABLE, row, control)
+    return profile.validate_manifest(value)
 
 
-def snapshot(value, control):
-    validate_manifest(value)
-    compiled = {source: raw for source, _, raw in COMPILED}
+def inspect_runtime(control):
+    return _inspect_runtime(control, TOOL_ID)
+
+
+def _snapshot(value, control, selected):
+    profile = for_tool(selected)
+    profile.validate_manifest(value)
+    compiled = {source: raw for source, _, raw in profile.COMPILED}
     descriptors = []
     try:
         for row in value["files"]:
@@ -198,15 +226,24 @@ def snapshot(value, control):
         raise
 
 
-def verify_mounted(value, control):
-    validate_manifest(value)
+def snapshot(value, control):
+    return _snapshot(value, control, TOOL_ID)
+
+
+def _verify_mounted(value, control, selected):
+    for_tool(selected).validate_manifest(value)
     for row in value["files"]:
         _stream_file(row["destination"], row, control)
 
 
-def command(lab, bootstrap, value, descriptors, nonce, commitment):
+def verify_mounted(value, control):
+    return _verify_mounted(value, control, TOOL_ID)
+
+
+def _command(lab, bootstrap, value, descriptors, nonce, commitment, selected):
     from .network_tools_runtime import MODULES
-    validate_manifest(value)
+    profile = for_tool(selected)
+    profile.validate_manifest(value)
     if len(descriptors) != len(value["files"]):
         raise ValueError("nuclei_snapshot_descriptor_count")
     stdlib, files = bootstrap
@@ -217,7 +254,7 @@ def command(lab, bootstrap, value, descriptors, nonce, commitment):
         "--clearenv", "--setenv", "LC_ALL", "C", "--chdir", "/", "--proc", "/proc", "--dev", "/dev",
         "--dir", SCRATCH, "--ro-bind", stdlib, stdlib]
     for source, destination in files:
-        if source != EXECUTABLE and destination not in paths and Path(destination).name not in {"nft", "bwrap", "nsenter"}:
+        if source != profile.EXECUTABLE and destination not in paths and Path(destination).name not in {"nft", "bwrap", "nsenter"}:
             argv += ["--ro-bind", source, destination]
     directory = Path(__file__).parent
     for name in (*MODULES, "network_tools_nuclei_worker"):
@@ -233,3 +270,7 @@ def command(lab, bootstrap, value, descriptors, nonce, commitment):
     return [_trusted_program("nsenter"), f"--user=/proc/self/fd/{user_fd}", f"--net=/proc/self/fd/{net_fd}",
         "--preserve-credentials", "--", "/usr/bin/python3", "-I", "-S", "-c", _CLOSE_EXCEPT,
         ",".join(map(str, descriptors)), *argv]
+
+
+def command(lab, bootstrap, value, descriptors, nonce, commitment):
+    return _command(lab, bootstrap, value, descriptors, nonce, commitment, TOOL_ID)

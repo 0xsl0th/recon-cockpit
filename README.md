@@ -877,3 +877,9 @@ pytest
 The tests cover nmap XML parsing, NetExec extraction, Markdown preservation and
 deduplication, target validation, scan confirmations, service-gated Linux/Unix and
 Windows suggestions, and conservative host-posture inference.
+
+C17 [Git HEAD marker coverage](docs/nuclei-git-tools.md) is an authorized implementation
+candidate with local validation complete and PR review/merge pending. It adds one finite synthetic check through
+the same Nuclei runtime: accepted coverage remains 41 profiles/16 programs;
+the candidate has 42/16. No repository download, credentials or live-model work
+is included.

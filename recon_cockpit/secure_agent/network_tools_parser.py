@@ -14,6 +14,7 @@ OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 SSH_ALGORITHMS_TOOL_ID = "ssh_transport_algorithms_v1"
 NUCLEI_TOOL_ID = "nuclei_directory_listing_v1"
+NUCLEI_GIT_TOOL_ID = "nuclei_git_head_v1"
 TLS_CERTIFICATE_TOOL_ID = "openssl_peer_certificate_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
 SMB_TOOL_ID = "smb_share_list_v1"
@@ -46,6 +47,7 @@ DATABASE_TLS_SERVICES = {POSTGRESQL_TLS_TOOL_ID: "postgresql", MYSQL_TLS_TOOL_ID
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_ALGORITHMS_TOOL_ID: "ssh-kexinit-wire-v1",
     NUCLEI_TOOL_ID: "nuclei-directory-listing-v1",
+    NUCLEI_GIT_TOOL_ID: "nuclei-git-head-v1",
     TLS_CERTIFICATE_TOOL_ID: "openssl-peer-certificate-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
@@ -153,6 +155,8 @@ def validate_result(tool_id, value):
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id == NUCLEI_GIT_TOOL_ID:
+        return _nuclei_git_parser().validate_result(value)
     if tool_id == NUCLEI_TOOL_ID:
         return _nuclei_parser().validate_result(value)
     if tool_id == RDP_TOOL_ID:
@@ -943,6 +947,8 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
     if (type(output) is not bytes or type(stderr) is not bytes or not output + stderr
             or len(output) + len(stderr) > MAX_OUTPUT_BYTES or type(truncated) is not bool or truncated):
         raise ValueError("invalid_network_tool_output_size")
+    if tool_id == NUCLEI_GIT_TOOL_ID:
+        return _nuclei_git_parser().parse_output(output, stderr, owner_response=owner_response)
     if tool_id == NUCLEI_TOOL_ID:
         return _nuclei_parser().parse_output(output, stderr, owner_response=owner_response)
     if owner_response is not None:
@@ -966,3 +972,11 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             RDP_TOOL_ID: _parse_rdp, SMB2_TOOL_ID: _parse_smb2,
             SMTP_TLS_TOOL_ID: _parse_smtp_tls, LDAP_TLS_TOOL_ID: _parse_ldap_tls,
             FTP_TLS_TOOL_ID: _parse_ftp_tls}[tool_id](output, stderr)
+
+
+def _nuclei_git_parser():
+    if __package__:
+        from . import network_tools_nuclei_git_parser as parser
+    else:
+        import network_tools_nuclei_git_parser as parser
+    return parser

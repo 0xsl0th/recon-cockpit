@@ -29,8 +29,8 @@ RUNTIME_TAGS = {'owned_nmap_lab': 'nmap-launch-preconditions', 'owned_web_lab': 
 
 def runtime_tag(config, closure):
     if (config['profile'] == 'owned_network_tools_lab'
-            and closure.get('network_tools_runtime', {}).get('tool_id') == 'nuclei_directory_listing_v1'):
-        from .network_tools_nuclei_runtime import validate_manifest
+            and closure.get('network_tools_runtime', {}).get('tool_id') in ('nuclei_directory_listing_v1', 'nuclei_git_head_v1')):
+        from .network_tools_runtime import validate_manifest
         validate_manifest(closure['network_tools_runtime'])
         return 'nuclei-tools-launch-preconditions'
     if (config['profile'] == 'owned_network_tools_lab'

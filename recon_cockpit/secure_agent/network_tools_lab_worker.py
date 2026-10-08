@@ -26,6 +26,7 @@ if __package__:
     from . import network_tools_dns_srv_fixture as dns_srv_fixture
     from . import network_tools_dns_nsid_fixture as dns_nsid_fixture
     from . import network_tools_nuclei_fixture as nuclei_fixture
+    from . import network_tools_nuclei_git_fixture as nuclei_git_fixture
     from . import network_tools_tls_certificate_fixture as tls_certificate_fixture
     from . import network_tools_ssh_algorithms_fixture as ssh_algorithms_fixture
     from . import network_tools_snmp_next_fixture as snmp_next_fixture
@@ -58,6 +59,7 @@ else:
     dns_srv_fixture = _load("network_tools_fixed_dns_srv", "network_tools_dns_srv_fixture.py")
     dns_nsid_fixture = _load("network_tools_fixed_dns_nsid", "network_tools_dns_nsid_fixture.py")
     nuclei_fixture = _load("network_tools_fixed_nuclei", "network_tools_nuclei_fixture.py")
+    nuclei_git_fixture = _load("network_tools_fixed_nuclei_git", "network_tools_nuclei_git_fixture.py")
     tls_certificate_fixture = _load("network_tools_fixed_tls_certificate", "network_tools_tls_certificate_fixture.py")
     ssh_algorithms_fixture = _load("network_tools_fixed_ssh_algorithms", "network_tools_ssh_algorithms_fixture.py")
     snmp_next_fixture = _load("network_tools_fixed_snmp_next", "network_tools_snmp_next_fixture.py")
@@ -410,6 +412,7 @@ class NucleiService(owner.Service):
     """One HTTP send transcript, independent of expected fixture outcomes."""
 
     def __init__(self, request, listener):
+        self.fixture = nuclei_git_fixture if request["case"] in fixture.NUCLEI_GIT_CASES else nuclei_fixture
         self.deadline = request["deadline"]
         self._response_bytes = bytearray()
         self._response_complete = False
@@ -427,7 +430,7 @@ class NucleiService(owner.Service):
     def _sent(self, raw):
         with self.condition:
             if (type(raw) is not bytes or not raw or self.requests != 1 or self._response_settled
-                    or len(self._response_bytes) + len(raw) > nuclei_fixture.NUCLEI_MAX_RESPONSE_BYTES):
+                    or len(self._response_bytes) + len(raw) > 4096):
                 raise ValueError("nuclei_owner_response_limit")
             self._response_bytes.extend(raw)
             self.condition.notify_all()
@@ -444,7 +447,7 @@ class NucleiService(owner.Service):
                     self.condition.notify_all()
                 completed, closed = False, False
                 try:
-                    result = nuclei_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                    result = self.fixture.serve(connection, case=self.case, deadline=self.deadline,
                         on_request=self._requested, on_response=self._sent)
                     if (type(result) is not dict or set(result) != {"response_bytes_sent", "response_send_complete"}
                             or type(result["response_bytes_sent"]) is not int
@@ -504,7 +507,7 @@ class NetworkToolsOwner(owner.Owner):
         return rpc_fixture.firewall_rules() if request["case"].startswith(("rpc-", "nfs-")) else super().firewall_rules(request)
 
     def create_service(self, request, listener):
-        return (NucleiService(request, listener) if request["case"] in fixture.NUCLEI_CASES
+        return (NucleiService(request, listener) if request["case"] in fixture.NUCLEI_CASES + fixture.NUCLEI_GIT_CASES
                 else NetworkToolsService(request, listener))
 
 

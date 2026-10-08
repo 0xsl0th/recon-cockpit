@@ -61,6 +61,7 @@ RDP_TOOL_ID = "rdp_initial_negotiation_v1"
 SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 NUCLEI_TOOL_ID = "nuclei_directory_listing_v1"
+NUCLEI_GIT_TOOL_ID = "nuclei_git_head_v1"
 TLS_CERTIFICATE_TOOL_ID = "openssl_peer_certificate_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 SSH_ALGORITHMS_TOOL_ID = "ssh_transport_algorithms_v1"
@@ -95,6 +96,7 @@ RDP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_outp
 SMB2_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 NUCLEI_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+NUCLEI_GIT_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 TLS_CERTIFICATE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_ALGORITHMS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -288,6 +290,14 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
          "fixed_tls_name", "no_application_request"),
+    ),
+    NUCLEI_GIT_TOOL_ID: ToolAdapter(
+        NUCLEI_GIT_TOOL_ID, NucleiParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "inspect_owned_git_head_signature", "owned-nuclei-git-head-v1",
+        "bounded-nuclei-git-head-result-v1", "nuclei-git-head-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_static_runtime",
+         "exact_compiled_template", "bounded_private_scratch", "no_child_processes",
+         "no_credentials", "no_updates", "no_response_directed_followup"),
     ),
     NUCLEI_TOOL_ID: ToolAdapter(
         NUCLEI_TOOL_ID, NucleiParameters, ("port", "timeout_seconds", "max_output_bytes"),

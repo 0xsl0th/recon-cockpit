@@ -50,6 +50,23 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("nuclei-git-"):
+        from . import network_tools_nuclei_git_fixture as fixture
+        response = fixture.response(case)
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-nuclei-git-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "http"}],
+            "method": "GET", "path": "/.git/HEAD", "max_connections": 1, "max_requests": 1,
+            "request_count_means": "validated_fixed_http_get_before_response",
+            "response_sha256": None if response is None else hashlib.sha256(response).hexdigest(),
+            "max_fixture_response_bytes": NUCLEI_MAX_OWNER_RESPONSE_BYTES,
+            "owner_response_evidence": "actual_send_acknowledged_bytes_and_connection_close",
+            "owner_response_does_not_prove": "valid_http_framing_or_client_reception",
+            "counter_semantics": "last_acknowledged_service_totals",
+            "connection_evidence": "accepted_connections_lower_bound", "data": "public_synthetic_fixture_only",
+            "lifetime": "authority_session", "reset": "destroy_and_create_new_instance",
+            "external_egress": False, "resume": False, "credentials": False,
+            "followup": False, "vulnerability_claim": False, "behavior": case.removeprefix("nuclei-git-")}
     if case.startswith("nuclei-"):
         from . import network_tools_nuclei_fixture as fixture
         response = fixture.response(case)

@@ -26,7 +26,7 @@ from .tool_parameters import (
     _fields, _integer, _reject, _string,
 )
 from .tool_adapters import (CONFIGURABLE_NMAP_TOOL_ID, CONFIGURABLE_HEADERS_TOOL_ID,
-    NUCLEI_TOOL_ID, CURL_TOOL_ID, FFUF_TOOL_ID, HTTP_HEADERS_TOOL_ID, HTTP_OPTIONS_TOOL_ID, NMAP_TOOL_ID,
+    NUCLEI_GIT_TOOL_ID, NUCLEI_TOOL_ID, CURL_TOOL_ID, FFUF_TOOL_ID, HTTP_HEADERS_TOOL_ID, HTTP_OPTIONS_TOOL_ID, NMAP_TOOL_ID,
     DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID, NMAP_SERVICE_TOOL_ID, SUPPORTED_TOOLS, get_adapter)
 
 MAX_JSON_BYTES = 32_768
@@ -243,7 +243,7 @@ class Policy:
             reasons.append("port_not_allowed")
         if action.tool_id in ("http_probe", HTTP_HEADERS_TOOL_ID, CURL_TOOL_ID, CONFIGURABLE_HEADERS_TOOL_ID) and action.parameters.method not in self.allowed_methods:
             reasons.append("method_not_allowed")
-        if action.tool_id in (NUCLEI_TOOL_ID, FFUF_TOOL_ID, DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID, NMAP_SERVICE_TOOL_ID, CONFIGURABLE_NMAP_TOOL_ID) and "GET" not in self.allowed_methods:
+        if action.tool_id in (NUCLEI_GIT_TOOL_ID, NUCLEI_TOOL_ID, FFUF_TOOL_ID, DOCKER_PING_TOOL_ID, DOCKER_VERSION_TOOL_ID, WINRM_TOOL_ID, NMAP_SERVICE_TOOL_ID, CONFIGURABLE_NMAP_TOOL_ID) and "GET" not in self.allowed_methods:
             reasons.append("method_not_allowed")
         if action.tool_id == HTTP_OPTIONS_TOOL_ID and "OPTIONS" not in self.allowed_methods:
             reasons.append("method_not_allowed")
