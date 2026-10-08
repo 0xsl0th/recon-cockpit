@@ -888,7 +888,7 @@ separates current capabilities from future professional-use work and PR estimate
 The next active candidate is [C18 DNS MX metadata](docs/dns-mx-tools.md), reusing
 dig for one fixed nonrecursive TCP question with no returned-host follow-up.
 Its development catalog has **43 profiles/16 programs**; accepted main remains
-**42/16** while validation and review are pending. The
+**42/16** while acceptance review/merge remain pending; local G1–G5 validation passed. The
 [finite professional-v1 coverage checklist](docs/professional-v1-coverage.md)
 records six required operator outcomes and their acceptance gates. After C18,
 the next gap is bounded TLS version-posture feasibility. Credentials, paid calls,

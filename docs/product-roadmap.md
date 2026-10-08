@@ -15,7 +15,7 @@ also passed; reviewed and merged trees match. The private receipt is
 [finite coverage contract](professional-v1-coverage.md) maps the 42 accepted
 profiles and names six required remaining operator outcomes. C18 DNS MX is the
 active candidate: **43 profiles/16 programs on the development branch**, with
-G1–G5 validation in progress and G6 pending. Accepted main remains **42/16**.
+G1–G5 passed locally and G6 pending final review/checks/merge. Accepted main remains **42/16**.
 
 ## Product destination
 
@@ -183,7 +183,7 @@ needed later are:
 **Current implementation: C18/T01**, one fixed nonrecursive TCP DNS MX question,
 at most four typed preference/exchange rows, with useful null-MX/NODATA/NXDOMAIN
 results and no returned-host follow-up. It reuses `dig`; see the
-[C18 runbook](dns-mx-tools.md). Validation and review are pending, so it does not
+[C18 runbook](dns-mx-tools.md). Local validation passed; acceptance review/merge remain pending, so it does not
 increase accepted coverage yet.
 
 **Next after C18: T02 bounded TLS version-posture feasibility**, beginning with

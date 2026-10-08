@@ -4,7 +4,7 @@ C18 adds `dig_dns_mx_v1`, a fixed mail-routing metadata query through the existi
 secure CLI. It reuses the installed `dig` executable, isolated authority services
 and disconnected owned DNS fixture. This is a candidate: main accepts 42 profiles
 across 16 external programs; C18 makes 43 profiles with the same 16 programs.
-G1–G5 validation is in progress; G6 review and merge remain open.
+G1–G5 passed locally; G6 final review, checks and merge remain open.
 
 The [professional-v1 coverage contract](professional-v1-coverage.md) names this
 T01 and makes T02 bounded TLS-version posture feasibility the next gap. Completed
@@ -139,9 +139,38 @@ All accepted actions, descriptors, cards, specs, adapter data, argv, environment
 compiled files and Nuclei manifests must remain identical. Exclude only additive
 C18 entries; never regenerate old hashes to make a regression pass.
 
-Current validation: the first actual owned `dig-mx-ok` smoke trial passed, as did
-the focused parser, fixture, evidence, runtime and accepted-baseline checks.
-Full portable/native validation, independent replay of thirteen new bundles and
-133 accepted predecessor bundles, source pins and final review are still pending.
-The private root is `.secure-agent/dns-mx-20261008/` in the primary checkout.
-No candidate acceptance or completed G1–G5 claim is made before those results.
+**Local validation passed at `89d4465`: 19,888 portable and 37 native tests**,
+with zero skips, failures or errors. C18 achieved 5/5 ordinary plus 1/1 robustness
+completions, seven inconclusive negatives, zero unnecessary refusals, 26/26
+blocked destinations and 130/130 boundary fields. Thirteen new and 133 accepted
+bundles replayed unchanged through both inspectors; twelve additional fresh DNS
+regression bundles also replayed unchanged. All 717 source hashes, seventeen
+inherited receipt links and the 303-case/42-adapter/33-runtime baseline matched.
+Scenario wall time was 2931–5089 ms, median 3550 ms;
+actual provider calls and cost were zero. This is descriptive timing, not
+comparative overhead. G1–G5 passed locally; G6 remains open pending final PR
+review, required checks and an authorized merge. Accepted main remains 42/16.
+Final follow-up changes documentation and the terminal-test fixture only;
+native-validated production bytes remain identical. The fixture correction uses
+`O_NOCTTY` after an isolated child reproduced the interrupted first portable run;
+all thirteen corrected terminal tests passed in that same session setting.
+
+Private verification: `.secure-agent/dns-mx-20261008/verification.json`, SHA-256
+`59e3e89ced9a0887095bb62fe238a2c34fa45e4f724a2fefe2cf7b4c73505093`. Development test corrections and the exploratory smoke run are
+retained in the private development review; no historical hash was regenerated.
+
+The first exploratory owned `dig-mx-ok` smoke trial also passed. Early development
+checks identified a test-only result-label assertion, additive registry ordering
+and the then-missing runbook. These were corrected before final validation;
+initial logs and prior milestone failure history remain preserved. The retained
+DNS text limitation above is unchanged. Synthetic authority checks do not claim
+personal acceptance.
+
+The initial complete portable attempt ended at the first terminal test with
+SIGHUP and produced no final report; it is not counted as passing. An isolated
+session-leading child reproduced the pre-existing fixture issue. The test-only
+`O_NOCTTY` correction prevents acquiring a controlling terminal; all thirteen
+terminal tests passed in that same child-session setting. The frozen-source full
+rerun used its own controlling terminal and passed before this final fixture
+correction. Final PR CI checks the corrected fixture too. No production change,
+signal suppression or acceptance-threshold relaxation was used.

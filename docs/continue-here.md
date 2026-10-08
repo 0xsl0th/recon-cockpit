@@ -58,10 +58,25 @@ and NXDOMAIN have useful distinct meanings; no returned-host follow-up or mail
 operation is allowed. The candidate has **43 profiles/16 programs**; accepted
 main remains **42/16**. See the [C18 runbook](dns-mx-tools.md).
 
-**Validation pending:** G1–G5 verification is in progress; final portable/native
-totals, actual usefulness/enforcement/replay results and descriptive latency must
-be recorded after the frozen-source checks finish. G6 review/CI/merge is pending.
-No candidate result is counted as accepted coverage yet.
+**Local validation passed at `89d4465`: 19,888 portable and 37 native tests**,
+with zero skips, failures or errors. C18 achieved 5/5 ordinary plus 1/1 robustness
+completions, seven inconclusive negatives, zero unnecessary refusals, 26/26
+blocked destinations and 130/130 boundary fields. Thirteen new and 133 accepted
+bundles replayed unchanged through both inspectors; twelve additional fresh DNS
+regression bundles also replayed unchanged. All 717 source hashes, seventeen
+inherited receipt links and the 303-case/42-adapter/33-runtime baseline matched.
+Scenario wall time was 2931–5089 ms, median 3550 ms;
+actual provider calls and cost were zero. This is descriptive timing, not
+comparative overhead. G1–G5 passed locally; G6 remains open pending final PR
+review, required checks and an authorized merge. Accepted main remains 42/16.
+Final follow-up changes documentation and the terminal-test fixture only;
+native-validated production bytes remain identical. The fixture correction uses
+`O_NOCTTY` after an isolated child reproduced the interrupted first portable run;
+all thirteen corrected terminal tests passed in that same session setting.
+
+Private verification: `.secure-agent/dns-mx-20261008/verification.json`, SHA-256
+`59e3e89ced9a0887095bb62fe238a2c34fa45e4f724a2fefe2cf7b4c73505093`. Development test corrections and the exploratory smoke run are
+retained in the private development review; no historical hash was regenerated.
 
 **Next after C18: T02 bounded TLS version-posture feasibility**, initially
 assessing sslscan against a finite owned request/runtime contract. No T02 engine
@@ -1824,15 +1839,15 @@ Planning uses synthetic responses.
    five final CI jobs passed. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37818772689)
    also passed; reviewed and merged trees match. Preserve accepted C17 and
    predecessor validation rather than reopening those scopes.
-2. Complete the current C18 candidate in `/tmp/recon-dns-mx`: freeze source,
-   validate actual useful owned execution and enforcement, replay evidence,
-   finish portable/native checks and record the results in the
-   [runbook](dns-mx-tools.md). G1–G5 validation is in progress; G6 is pending.
-   Accepted coverage is 42 profiles/16 programs; the unaccepted candidate is 43/16.
-3. Obtain independent review, pass required CI and leave the C18 PR ready for
-   operator review. Use the [finite coverage contract](professional-v1-coverage.md)
-   to retain all six required outcomes. Next is T02 bounded TLS version-posture
-   feasibility with sslscan as a candidate, not an already selected secure engine.
+2. C18 in `/tmp/recon-dns-mx` has passed frozen-source portable/native validation,
+   enforcement and unchanged evidence replay. Preserve its private receipt and
+   source pin; only documentation and the terminal-test O_NOCTTY correction may
+   differ from native-tested `89d4465`; production bytes remain identical.
+   Accepted coverage remains 42 profiles/16 programs; the candidate is 43/16.
+3. Review the latest C18 PR and required checks before any later authorized merge.
+   Use the [finite coverage contract](professional-v1-coverage.md) to retain all six
+   outcomes. Next is T02 bounded TLS version-posture feasibility with sslscan as a
+   candidate, not an already selected secure engine; no T02 installation is done.
 4. Keep offline R5, accepted local R6, B0–B8, C1–C17 and the initial GUI closed.
    Preserve the private proposal/PDF, GUI mocks, native receipts and failure history.
 5. Deeper workflows/benchmarks, real credentials, attached or external networks,

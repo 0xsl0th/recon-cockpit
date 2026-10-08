@@ -370,8 +370,8 @@ separates current capabilities from future professional-use work and PR estimate
 
 The active C18 [DNS MX candidate](dns-mx-tools.md) adds `dig_dns_mx_v1` using
 the same dig program. This development catalog therefore contains **43 profiles
-using 16 programs**, while accepted main remains **42/16**. G1–G5 validation is
-in progress and G6 review/CI/merge is pending; catalog visibility is not acceptance.
+using 16 programs**, while accepted main remains **42/16**. G1–G5 passed locally;
+G6 final review/CI/merge remains pending; catalog visibility is not acceptance.
 The fixed TCP query retains at most four preference/exchange rows, distinguishes
 null-MX/NODATA/NXDOMAIN, and authorizes no name resolution or mail-server follow-up.
 
