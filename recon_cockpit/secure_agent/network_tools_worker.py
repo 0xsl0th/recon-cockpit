@@ -64,7 +64,7 @@ def _landlock_permissions(manifest):
     permissions[manifest["interpreter"]] |= 1
     permissions.update({"/dev/null": 6, "/dev/urandom": 4, "/dev/random": 4,
                         "/proc/self/status": 4})
-    if manifest["tool_id"] in (runtime.OPENSSL, runtime.NMAP_SERVICE, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS):
+    if manifest["tool_id"] in (runtime.OPENSSL, runtime.TLS_CERTIFICATE, runtime.NMAP_SERVICE, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS):
         permissions["/tool/data"] = 8
     if manifest["tool_id"] == runtime.WHATWEB:
         # RubyGems and WhatWeb enumerate only directories containing the
@@ -80,7 +80,7 @@ def landlock(manifest):
 
 
 def syscall_filter(tool_id):
-    if tool_id not in (runtime.DIG, runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.OPENSSL, runtime.SSH, runtime.LDAP, runtime.SMB,
+    if tool_id not in (runtime.DIG, runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.OPENSSL, runtime.TLS_CERTIFICATE, runtime.SSH, runtime.LDAP, runtime.SMB,
                        runtime.RPCINFO, runtime.SHOWMOUNT, runtime.FTP, runtime.SMTP,
                        runtime.DOCKER_PING, runtime.DOCKER_VERSION, runtime.WINRM, runtime.HTTP_OPTIONS, runtime.NMAP_SERVICE,
                        runtime.KERBRUTE, runtime.REDIS, runtime.SNMP, runtime.SNMP_NEXT, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
@@ -166,7 +166,7 @@ def main():
             _thread_bound_witness()
         if request["tool_id"] == runtime.KERBRUTE:
             _kerberos_transport_witness()
-        if request["tool_id"] in (runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.REDIS, runtime.SNMP, runtime.SNMP_NEXT, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
+        if request["tool_id"] in (runtime.DIG_SRV, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.REDIS, runtime.SNMP, runtime.SNMP_NEXT, runtime.TLS_CERTIFICATE, runtime.POSTGRESQL_TLS, runtime.MYSQL_TLS,
                                   runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SSH_ALGORITHMS, runtime.SMTP_TLS, runtime.LDAP_TLS, runtime.FTP_TLS):
             _metadata_transport_witness()
         # The authority stdin and any loader-retained descriptors are gone.

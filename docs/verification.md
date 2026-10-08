@@ -1,5 +1,25 @@
 # Verification record
 
+## PR #68 review and merge — 8 October 2026
+
+**C14 is accepted and closed in [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68).**
+Reviewed head `3bdaa7a10e05f014edcbf46a6fb7e24942da846c` merged as
+`a6f11b7eea0b28c0e5bb7191e62793624d9d5378` at 02:41:36 UTC. Reviewed and
+merged trees match `61c587cfd428bb158286372f588d0fe7de27eee0`.
+Fresh independent cross-reviews of non-authored runtime/authority/fixture and
+parser/evidence changes found no blockers. All 593 frozen source hashes,
+111 reports, 126 artifacts and thirteen inherited receipt links reconciled.
+The final seven changed files after implementation were documentation only.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37718482035)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37719116743)
+passed. Preserve 17,728 portable and 44 native passes, 4/4 ordinary and 2/2 robustness
+completions, eight inconclusive negatives, zero unnecessary refusals, 28/28 destination
+witnesses, 140/140 boundary fields and 97 unchanged accepted-bundle replays.
+All 265 accepted case contracts, 39 adapters and 30 runtimes form C15's baseline.
+No formal GitHub approval is claimed; private merge receipt is
+`.secure-agent/pr68-merge-review.json`. C14 stays closed at 39 profiles using 15 programs.
+
 ## C14 bounded SSH transport algorithm advertisements — 8 October 2026
 
 The [C14 runbook](ssh-algorithms-tools.md) defines `ssh_transport_algorithms_v1`:
@@ -7,8 +27,8 @@ one fixed identification/KEXINIT template with a fresh opaque cookie, followed b
 write-half-close and one bounded response. Implementation
 `80b2ffe83bcfb011bde703120d942da552871a46` contains **39 secure profiles using the
 same 15 external programs**. It reuses the sealed Ruby runtime. C13 is accepted
-and closed; [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68) leaves C14
-open for latest-revision review/checks and an authorized merge.
+and closed; [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68) accepted C14
+as recorded above.
 
 | Verification | Result |
 | --- | --- |

@@ -13,7 +13,7 @@ from types import MappingProxyType
 
 from .tool_parameters import (
     CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters, HTTPOptionsParameters,
-    OpenSSLTLSParameters, SSHHostKeysParameters, SSHAlgorithmsParameters, LDAPRootDSEParameters, SMBShareListParameters,
+    OpenSSLTLSParameters, TLSCertificateParameters, SSHHostKeysParameters, SSHAlgorithmsParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters,
@@ -60,6 +60,7 @@ DIG_AXFR_TOOL_ID = "dig_dns_axfr_v1"
 RDP_TOOL_ID = "rdp_initial_negotiation_v1"
 SMB2_TOOL_ID = "smb2_negotiate_metadata_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
+TLS_CERTIFICATE_TOOL_ID = "openssl_peer_certificate_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 SSH_ALGORITHMS_TOOL_ID = "ssh_transport_algorithms_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
@@ -92,6 +93,7 @@ DIG_NSID_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max
 RDP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SMB2_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 OPENSSL_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+TLS_CERTIFICATE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SSH_ALGORITHMS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 LDAP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -284,6 +286,15 @@ ADAPTERS = MappingProxyType({
         ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
          "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
          "fixed_tls_name", "no_application_request"),
+    ),
+    TLS_CERTIFICATE_TOOL_ID: ToolAdapter(
+        TLS_CERTIFICATE_TOOL_ID, TLSCertificateParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_tls_peer_certificate", "owned-openssl-peer-certificate-v1",
+        "bounded-openssl-peer-certificate-result-v1", "openssl-peer-certificate-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "verified_fixture_tls",
+         "fixed_tls_name", "dedicated_public_fixture_ca", "stdin_eof", "no_application_request",
+         "no_client_credentials", "no_host_trust_configuration", "no_response_directed_followup"),
     ),
     POSTGRESQL_TLS_TOOL_ID: ToolAdapter(
         POSTGRESQL_TLS_TOOL_ID, PostgreSQLTLSParameters, ("port", "timeout_seconds", "max_output_bytes"),

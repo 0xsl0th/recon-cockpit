@@ -244,6 +244,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_nsid_observed": "dns_nsid_observed",
                "dns_nsid_empty": "dns_nsid_empty",
                "dns_nsid_absent": "dns_nsid_absent",
+               "tls_peer_certificate_observed": "tls_peer_certificate_observed",
                "ssh_algorithm_advertisements_observed": "ssh_algorithm_advertisements_observed",
                "snmp_interface_next_observed": "snmp_interface_next_observed",
                "http_options_observed": "http_options_observed",
@@ -474,6 +475,15 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Hostile NSID bytes remain inert untrusted metadata and raw evidence; this deterministic trial does not demonstrate model injection resistance or measure real-model susceptibility.",
                 "Owner counters record the validated fixed question before the fixture response, including negative cases. One request does not itself establish useful NSID metadata. Bounded raw channels are independently reparsed without network; inspection restores no approval, budget or execution authority.",
             ]
+        if manifest["fixture_case"].startswith("tls-cert-"):
+            report["limitations"] = [
+                "One fixed owned TLS1.3 handshake verifies a dedicated public fixture CA and harbordesk.test name, then sends EOF without application data. No external engagement compatibility is established.",
+                "Fingerprint hashes retained leaf DER, not PEM or a complete validated chain. Validity dates and supported DNS/IP SANs are certificate contents; replay does not reassess current expiry or trust. An absent SAN may use OpenSSL CN fallback.",
+                "The independent metadata parser supports one PEM leaf, canonical bounded DER, at most 4096 DER bytes, sixteen extensions and eight DNS/IP SANs. Unsupported names, structures and larger certificates remain inconclusive.",
+                "Subject, issuer and unselected extensions remain raw evidence only. Certificate names and URLs cannot cause DNS resolution, OCSP/AIA fetching, redirects or any follow-up. Revocation is not checked.",
+                "The owner disables TLS tickets and requires clean TLS close for completed handshakes. Native verbose output is bounded to 8192 combined bytes; unexpected session dumps or application text are rejected. Prefix counters on failed handshakes establish progress only.",
+                "No client credentials, authenticated application session, resumption, cipher sweep, vulnerability conclusion or real-model injection-resistance claim is made.",
+            ]
         if manifest["fixture_case"].startswith("ssh-algos-"):
             report["limitations"] = [
                 "This one-action SSH advertisement trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
@@ -681,6 +691,16 @@ def _markdown(report):
             else:
                 lines.extend(["", "The reported protocol selection does not establish a working or verified security channel."])
             lines.extend(["", "Capture ends at the first complete confirmation frame; trailing peer data is not retained."])
+        elif type(details) is dict and details.get("kind") == "tls_peer_certificate":
+            lines.extend(["", "TLS peer certificate metadata:",
+                "- Leaf DER SHA-256: " + _metadata_literal(details["leaf_der_sha256"]),
+                "- Not before (UTC): " + _metadata_literal(details["not_before_utc"]),
+                "- Not after (UTC): " + _metadata_literal(details["not_after_utc"]),
+                "- SAN extension: " + ("absent" if details["subject_alt_names"] is None else "present"),
+                "- Revocation checked: false; authenticated application session: false."])
+            if details["subject_alt_names"] is not None:
+                for name in ("dns", "ip"):
+                    lines.append("- " + name + ": " + _metadata_literal(details["subject_alt_names"][name]))
         elif type(details) is dict and details.get("kind") == "ssh_algorithm_metadata":
             lines.extend(["", "## SSH transport algorithm advertisements", "",
                 "Untrusted peer advertisements only. No algorithm was negotiated, no key exchange completed and no authenticated session opened.",

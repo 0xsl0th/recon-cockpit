@@ -1,11 +1,12 @@
 # Owned SSH transport algorithm advertisements
 
 C14 adds `ssh_transport_algorithms_v1` to the existing secure CLI, authority and
-evidence path. Accepted C13/PR #67 has **38 profiles using 15 external programs**;
-this candidate has **39 profiles using the same 15 programs**. Implementation
-`80b2ffe` passed local validation and is awaiting review in
-[PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68); C14 is not yet accepted.
-No GUI workflow or real-network attachment is added.
+evidence path, for **39 profiles using 15 external programs**. It is accepted in
+[PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68), merged as
+`a6f11b7eea0b28c0e5bb7191e62793624d9d5378` after independent review and all five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37718482035)
+passed. All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37719116743)
+also passed. C14 remains closed; no GUI workflow or real-network attachment was added.
 
 The interactive cockpit already suggests Nmap `ssh2-enum-algos`. That integration
 does not establish secure execution support: the stock route adds a scan connection,
@@ -160,11 +161,10 @@ Independent audit rebuilt all fourteen reports and matched 593 frozen source fil
 Six useful receipt rows reuse their original native evidence. Scenario wall time
 was 2588–4739 ms (median 3159.5 ms); this is descriptive, not comparative overhead.
 Provider calls and cost were zero. Synthetic unattended trials do not claim personal
-acceptance; the shipped policy still requires fresh approval. C14 remains open for
-latest-revision review/checks and merge. See [verification.md](verification.md) for
+acceptance; the shipped policy still requires fresh approval. C14 passed latest-revision review/checks and is merged. See [verification.md](verification.md) for
 the retained validation and limits.
 
-B0–B8, C1–C13, offline R5, accepted local R6 and the initial GUI remain closed.
+B0–B8, C1–C14, offline R5, accepted local R6 and the initial GUI remain closed.
 Preserve the earlier unexplained C9 stall. Credentials, paid/live evaluation,
 external engagements, deeper workflows and comparative benchmarking remain
 deferred. Further coverage is selected through the

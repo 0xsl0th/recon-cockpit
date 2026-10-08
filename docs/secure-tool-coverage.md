@@ -122,8 +122,8 @@ Model credentials, paid calls and live evaluation remain much later.
 
 ## Successive product coverage batches
 
-Priority 3 follows the accepted initial GUI. Accepted main has **38 bounded profiles
-from 15 external programs** after C13 in PR #67; the C14 candidate has 39 profiles
+Priority 3 follows the accepted initial GUI. Accepted main has **39 bounded profiles
+from 15 external programs** after C14 in PR #68; the C15 candidate has 40 profiles
 using the same 15 programs. Installed binaries and interactive
 commands do not satisfy secure coverage. The following rows distinguish existing
 integration from a candidate secure profile.
@@ -145,8 +145,9 @@ integration from a candidate secure profile.
 | C11 | DNS zone-transfer behavior; existing secure dig runtime, no interactive AXFR profile | One fixed synthetic TCP AXFR; accept four messages/16 records with matching SOAs; 3/3 ordinary complete/multiframe/refused tasks, 2/2 robustness, nine inconclusive cases, actual query progress, 28 destination/140 boundary checks, replay and G1–G6. Five-second/8192-byte native limits; no credentials, recursion or returned-host follow-up. | Implemented at `25b9395c`; 15,464 portable/61 native tests, five clean-commit trials and 78 accepted-bundle replays passed; [x] accepted in PR #65 at `82dd85a`; all five final and post-merge jobs passed. See [C11 runbook](dns-axfr-tools.md). |
 | C12 | HTTP OPTIONS metadata; existing secure curl runtime, no interactive OPTIONS profile | One fixed resource, complete bounded HTTP/1.1 status/Allow/auth-scheme metadata; require 6/6 ordinary and 2/2 robustness tasks, six inconclusive negative cases, 28 destination/140 boundary checks, five authority gates, unchanged evidence replay and G1–G6. No advertised-method execution, redirects, credentials or GUI work. | Implemented at `c875820`; 16,138 portable/40 native tests and 83 accepted-bundle replays passed. [x] Accepted in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) at `7faf974`; all five final CI jobs passed. See [C12 runbook](http-options-tools.md). |
 | C13 | SNMP interface successor metadata; accepted GET covers three system scalars, no interactive GETNEXT integration | One fixed ifDescr column seed through snmpgetnext; 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, authority/cleanup gates, unchanged replay and G1–G6. No walk, GETBULK, SET, UDP, real community or returned-OID follow-up. | [x] Accepted in [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) at `7cc6645`; 16,687 portable/43 native tests, 91 accepted replays and all five final CI jobs passed. See [C13 runbook](snmp-next-tools.md). |
-| C14 — current | SSH transport algorithm advertisements; interactive Nmap `ssh2-enum-algos` suggestion exists, secure host-key collection remains separate | One 184-byte request template with a fresh 16-byte cookie, write EOF and one bounded identification/KEXINIT reply; require 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, six authority/cleanup gates, replay and G1–G6. Finite ordered directional lists; no completed key exchange, login, session or general NSE. | [ ] Implemented at `80b2ffe`; 17,728 portable/44 native tests and 97 accepted-bundle replays passed. [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68) awaits review and merge. See [C14 runbook](ssh-algorithms-tools.md). |
-| Next gap to reassess | TLS peer-certificate metadata; accepted OpenSSL profiles verify fixed fixture handshakes but do not expose a bounded leaf-certificate inventory | One fixed CA/name-verified handshake plus finite offline parsing of fingerprint, validity and SAN metadata; ordinary/adversarial owned execution, strict certificate/list/output limits, independent evidence and G1–G6. No cipher sweep, trust bypass, credential, OCSP/AIA fetch or application request. | Recommendation only; select exact capture/parser/runtime and scenarios before implementing. |
+| C14 | SSH transport algorithm advertisements; interactive Nmap suggestion, secure host-key collection separate | One fixed KEXINIT template with random cookie, write EOF and one bounded reply; 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, replay and G1–G6. No completed key exchange, login or session. | [x] Accepted in [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68) at `a6f11b7`; 17,728 portable/44 native tests, 97 accepted replays and all final/post-merge CI jobs passed. See [C14 runbook](ssh-algorithms-tools.md). |
+| C15 — current | TLS peer-certificate metadata; existing OpenSSL runtime, no interactive certificate inventory | One fixed CA/name-verified TLS 1.3 exchange with clean close, finite leaf DER fingerprint/validity and DNS/IP SANs; require 3/3 ordinary and 1/1 separate robustness completions, eight inconclusive negatives, actual request/closure/boundary evidence, unchanged replay and G1–G6. No application data, credentials, revocation/AIA fetch or name follow-up. | [ ] Implementation in progress; full portable/native validation, independent replay, review/checks and merge pending. Candidate: 40 profiles/15 programs. See [C15 runbook](tls-certificate-tools.md). |
+| Next gap to reassess | Vulnerability-specific HTTP validation; no secure scanner integration, Nuclei absent on this host | Review feasibility of one pinned harmless HTTP misconfiguration template against owned positive/negative fixtures; fixed request, useful matched/unmatched outcomes, raw response evidence, strict output/enforcement and G1–G6. No generic CVE claim, arbitrary/community templates, code/headless, Interactsh, auto-download, credentials or follow-up. | Recommendation only; missing executable prerequisite and runtime closure must be resolved before selecting a new batch. No installation performed or assumed by this plan. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 
@@ -156,15 +157,25 @@ repository-owned Ruby client avoids its additional scan connection, larger NSE
 closure and unbounded peer-declared packet read. B7's deny-all NSE shim stays fixed.
 Advertisements do not verify algorithm implementation, identity or a vulnerability.
 
-The next recommendation narrows the inventory's broader-TLS gap to peer-certificate
-metadata, reusing OpenSSL. [s_client certificate capture](https://docs.openssl.org/3.5/man1/openssl-s_client/)
-and [x509 metadata controls](https://docs.openssl.org/3.5/man1/openssl-x509/)
-provide existing-tool precedents; a displayed peer chain is not a verified chain.
-Require a reviewed finite capture/parser path and actual owned evidence before
-selecting the batch. Retain the existing trust/name verification and clean close;
-certificate contents must not trigger name resolution or network fetches.
+C15 fills the existing broader-TLS inventory gap with bounded certificate metadata,
+preserving fixture trust/name verification and clean close. Its dedicated public
+CA and owner-only synthetic key do not alter accepted fixtures. The finite parser
+rejects unknown SAN kinds and size pressure; certificate contents never become
+network authority. Detailed compatibility and prefix-counter limits are in the
+[C15 runbook](tls-certificate-tools.md).
 
-C1–C13 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
+The next recommendation addresses the uncovered vulnerability-validation category
+through one harmless HTTP misconfiguration check using Nuclei. The
+[official CLI documentation](https://github.com/projectdiscovery/nuclei) exposes
+controls for automatic update checks, Interactsh and implicit HTTP probing, but
+flags alone do not establish a secure runtime. First review the installed-tool
+prerequisite and a sealed fixed-template closure. The engine is currently absent;
+Nikto is installed, but a binary's presence does not establish a finite, validated
+operation. Require ordinary positive and negative task completion rather than
+treating every empty scanner result as evidence of a completed safe assessment.
+No broad scanner mode or new implementation is selected by this recommendation.
+
+C1–C14 are closed. Redis/SNMP metadata remains `untrusted_service_report`, and
 TCP SNMP does not establish UDP coverage. C2 reuses the existing single-action
 authority, OpenSSL runtime, strict TLS parser and evidence infrastructure. Its two
 profiles brought accepted main to **27 profiles from the same 13 programs**.
@@ -326,62 +337,70 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current work: priority 3 secure-tool coverage, C14 bounded SSH algorithm advertisements.**
-The review candidate is on `feature/ssh-algorithms-coverage` in
-`/tmp/recon-ssh-algorithms-coverage`, based on accepted main `7cc6645`.
+**Current work: priority 3 secure-tool coverage, C15 bounded TLS peer-certificate metadata.**
+The implementation candidate is on `feature/tls-certificate-coverage` in
+`/tmp/recon-tls-certificate-coverage`, based on accepted main `a6f11b7`.
 See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
-and [C14 runbook](ssh-algorithms-tools.md). One fixed identification/KEXINIT template
-uses the accepted sealed Ruby-runtime pattern, followed by a write-half-close and
-one bounded response. The candidate has **39 profiles using 15 external programs**;
-accepted main has 38 profiles using the same 15. Ruby is supporting runtime, not a
-new third-party assessment tool. No GUI workflow is added.
+and [C15 runbook](tls-certificate-tools.md). One fixed OpenSSL TLS 1.3 handshake
+verifies the dedicated public fixture CA and `harbordesk.test`, then closes without
+application data. The candidate has **40 profiles using 15 external programs**;
+accepted main has 39 profiles using the same 15. This is a profile count, not forty
+independent tools or professional engagement readiness. No GUI workflow is added.
 
-The 184-byte request template has one fresh 16-byte random cookie at offset 30;
-all other bytes, including padding, are fixed. The owner validates the template
-and actual write EOF before counting progress. Evidence hashes the zero-cookie
-template, not the actual native request: its random cookie is not retained.
-The client captures one SSH-2.0 CRLF identification (255-byte cap) and the first
-packet (4096-byte packet_length cap), at most 4355 bytes. The closed nine-field
-summary preserves eight directional algorithm lists and a guessed-packet flag,
-with key-exchange completion, authenticated session and verified identity all false.
-Names retain case/preference order and have finite 32-name/1024-byte list and
-64-byte name limits; compact summary JSON is at most 3072 bytes. Optional banner
-comments remain raw evidence only. No full key exchange, credentials, login,
-session, general NSE loading or second client request is allowed.
+The finite offline parser reports leaf DER SHA-256, validity dates and at most
+eight DNS/IP SANs, separately from native trust/name verification. Leaf DER is
+limited to 4096 bytes, extensions to 16 and compact summary JSON to 3072 bytes.
+Absent SAN remains distinct from an empty extension; subject/issuer text and
+unsupported extension values remain raw evidence. No credential, client certificate,
+application request, cipher sweep, revocation/AIA fetch or returned-name lookup is
+available. The owner requires fixed SNI, disables tickets and rejects application
+data/ragged EOF. Its negative progress counter means only a bounded nine-byte
+ClientHello prefix; complete cases require TLS 1.3 and clean close_notify.
 
-**C14 is implemented and awaiting review in [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68).**
-Implementation `80b2ffe` passed **17,728 portable and 44 native tests**: twenty
-new-profile tests and 24 accepted SMB2/SSH regressions. All 4/4 ordinary and 2/2
-separate robustness tasks completed with zero unnecessary refusals; eight negative
-cases remained inconclusive after validated request progress. All 28 destination
-witnesses and 140 boundary fields passed, with closed owners. Independent audit
-reconciled all fourteen reports and 593 frozen source files; **97 accepted bundles**
-replayed unchanged with thirteen inherited receipt links. Six useful receipt rows
-reuse original native evidence without another tool execution. Native scenario
-wall time was 2588–4739 ms, median 3159.5 ms; these are descriptive measurements,
-not comparative overhead. Provider calls and cost were zero. Latest-revision
-review/checks and an authorized merge remain required before closing C14. See
-[verification.md](verification.md) and `.secure-agent/ssh-algorithms-20261008/verification.json`.
+**C15 is in progress; full local validation and G6 remain pending.** Twelve finite
+scenarios require 3/3 ordinary and 1/1 separate robustness completions, zero
+unnecessary refusals and eight inconclusive negative results. Seventeen new native
+tests are planned: twelve scenarios and five authority/cleanup gates. Capture,
+request counts, destination and boundary enforcement, accepted regressions,
+frozen-source evidence audit and unchanged replay must be verified before review.
+Provider calls and cost remain zero. No result is accepted on main until the latest
+revision passes review, hosted checks and an authorized merge. See
+[verification.md](verification.md) for final validation when available.
 
-The owned half-close and finite grammar restrict compatibility: preliminary
-server lines, SSH-1.99, nonempty language lists and larger valid advertisements
-remain unsupported. The native client leaves trailing packets unread, including
-a guessed method packet; retained evidence cannot validate those bytes or prove
-algorithm implementation. The existing interactive Nmap suggestion is preserved;
-its scan connection, NSE closure and unbounded packet reader are outside this
-profile. Preserve accepted Nmap's deny-all NSE shim.
+The parser supports a finite reviewed OpenSSL text/DER subset, not general X.509
+or arbitrary-server compatibility. The owned no-SAN case uses this client's CN
+fallback. Oversized/unsupported certificates can complete TLS and still remain
+inconclusive. OpenSSL text is not a wire capture; unseen server bytes cannot be
+reconstructed from it. Metadata dates are not a fresh revocation or current-time
+assessment during replay. Preserve these limitations and the earlier unexplained
+C9 stall.
 
-After C14 review, reassess **bounded TLS peer-certificate metadata**, the smallest
-remaining gap in the existing broader-TLS inventory row. Reuse a fixed OpenSSL
-fixture-CA/name-verified handshake and a separately reviewed finite offline
-certificate parser for fingerprint, validity and a bounded SAN subset. Keep
-certificate contents distinct from trust/hostname verification, with no cipher
-sweep, trust bypass, client credential, OCSP/AIA fetch or application request.
-This is a recommendation only; its exact runtime, schema and native evidence
-must be designed before another batch is selected. Credentials, paid/live
-evaluation, external engagements, deeper workflows and comparative benchmarking
-remain deferred. B0–B8, C1–C13, offline R5, accepted local R6 and the initial GUI
-remain closed. Preserve the proposal/PDF and recorded GUI mocks.
+After C15, reassess **one harmless, pinned HTTP misconfiguration check through
+Nuclei** against owned positive/negative fixtures. This addresses the inventory's
+uncovered vulnerability-validation category with an actual new assessment engine,
+not another negotiation profile. First review runtime feasibility and the missing
+Nuclei prerequisite; no installation is performed or assumed here. Keep a fixed
+request/template, complete matched and unmatched outcomes, independently retained
+response evidence and G1–G6. No community template pack, arbitrary template, code,
+headless browser, Interactsh, automatic update/download, credentials, follow-up or
+generic CVE-detection claim is authorized by this recommendation. Deeper workflows,
+comparison, real credentials, paid/live models and external engagements remain
+deferred. B0–B8, C1–C14, offline R5, accepted local R6 and the initial GUI remain
+closed. Preserve the proposal/PDF and recorded GUI mocks.
+
+**C14 is accepted in [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68).**
+The reviewed candidate merged as `a6f11b7eea0b28c0e5bb7191e62793624d9d5378` after
+independent review and all five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37718482035)
+passed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37719116743)
+also passed. Preserve **17,728 portable and 44 native tests**, 4/4 ordinary and
+2/2 separate robustness completions, eight inconclusive negatives, zero unnecessary
+refusals, 28/28 destination and 140/140 boundary fields, and **97 unchanged accepted
+bundle replays** with thirteen inherited receipt links. All 593 frozen sources
+matched implementation `80b2ffe`; six useful receipt rows reused original native
+evidence. Scenario wall time was 2588–4739 ms, median 3159.5 ms, with zero provider
+calls/cost. C14 stays closed at **39 profiles using 15 programs**. Its half-close,
+unretained random cookie, finite advertisement grammar and unread trailing-packet
+limitations remain in the [C14 runbook](ssh-algorithms-tools.md).
 
 **C13 is accepted in [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67).**
 Reviewed head `ae34672` merged as `7cc66451295d1e5013fff31e753d01a79ccaf53c`

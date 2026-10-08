@@ -17,7 +17,7 @@ def test_all_23_accepted_runtime_profiles_remain_byte_identical():
     # Independently captured from merged PR61 7c5e88a before C8 runtime edits.
     selected = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.LDAP_TLS, runtime.FTP_TLS, runtime.DIG_NSID, runtime.DIG_AXFR, runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE)}
     assert len(selected) == 23
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == 'a11f2bfaff707286dd9f7317d33f864e533fa34434694a28b85cf7ad90165337'
 

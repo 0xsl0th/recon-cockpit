@@ -13,6 +13,7 @@ DIG_TOOL_ID = "dig_dns_query_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 SSH_ALGORITHMS_TOOL_ID = "ssh_transport_algorithms_v1"
+TLS_CERTIFICATE_TOOL_ID = "openssl_peer_certificate_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
 SMB_TOOL_ID = "smb_share_list_v1"
 RPCINFO_TOOL_ID = "rpcinfo_dump_v1"
@@ -43,6 +44,7 @@ FTP_TLS_FINAL_GREETING = b"220 harbordesk.test ready\r\n"
 DATABASE_TLS_SERVICES = {POSTGRESQL_TLS_TOOL_ID: "postgresql", MYSQL_TLS_TOOL_ID: "mysql"}
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_ALGORITHMS_TOOL_ID: "ssh-kexinit-wire-v1",
+    TLS_CERTIFICATE_TOOL_ID: "openssl-peer-certificate-v1",
     SSH_TOOL_ID: "ssh-keyscan-rsa-v1", LDAP_TOOL_ID: "ldap-rootdse-ldif-v1", SMB_TOOL_ID: "smb-share-list-v1",
     RPCINFO_TOOL_ID: "rpcinfo-dump-v1", SHOWMOUNT_TOOL_ID: "showmount-exports-v1",
     FTP_TOOL_ID: "curl-ftp-list-v1", SMTP_TOOL_ID: "curl-smtp-capabilities-v1", DOCKER_PING_TOOL_ID: "curl-docker-ping-v1",
@@ -165,6 +167,8 @@ def validate_result(tool_id, value):
         return _snmp_next_parser().validate_result(value)
     if tool_id == SSH_ALGORITHMS_TOOL_ID:
         return _ssh_algorithms_parser().validate_result(value)
+    if tool_id == TLS_CERTIFICATE_TOOL_ID:
+        return _tls_certificate_parser().validate_result(value)
     if tool_id == WHATWEB_TOOL_ID:
         return _whatweb_parser().validate_result(value)
     if tool_id == NMAP_SERVICE_TOOL_ID:
@@ -826,6 +830,18 @@ def _parse_ssh_algorithms(output, stderr):
     return _ssh_algorithms_parser().parse_output(output, stderr)
 
 
+def _tls_certificate_parser():
+    if __package__:
+        from . import network_tools_tls_certificate_parser
+    else:
+        import network_tools_tls_certificate_parser
+    return network_tools_tls_certificate_parser
+
+
+def _parse_tls_certificate(output, stderr):
+    return _tls_certificate_parser().parse_output(output, stderr)
+
+
 def _rdp_parser():
     if __package__:
         from . import network_tools_rdp_parser
@@ -926,6 +942,7 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp,
             SNMP_NEXT_TOOL_ID: _parse_snmp_next,
             SSH_ALGORITHMS_TOOL_ID: _parse_ssh_algorithms,
+            TLS_CERTIFICATE_TOOL_ID: _parse_tls_certificate,
             WHATWEB_TOOL_ID: _parse_whatweb, DNS_SRV_TOOL_ID: _parse_dns_srv,
             DNS_NSID_TOOL_ID: _parse_dns_nsid,
             DNS_AXFR_TOOL_ID: _parse_dns_axfr,

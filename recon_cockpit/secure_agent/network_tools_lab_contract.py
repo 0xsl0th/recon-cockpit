@@ -21,6 +21,29 @@ def _encode(value):
 
 def spec(case):
     tool = tool_for_case(case)
+    if case.startswith("tls-cert-"):
+        from . import network_tools_fixture as fixture
+        complete = case in fixture.TLS_CERTIFICATE_COMPLETE_CASES
+        return {"id": LAB_ID, "version": LAB_VERSION, "scenario": case,
+            "fixture_marker": "recon-harbordesk-tls-certificate-v1", "tool_id": tool,
+            "topology": [{"target": "127.0.0.1", "port": 8080, "protocol": "tls_tcp"}],
+            "protocol": "TLSv1.3", "server_name": TLS_NAME,
+            "ca_sha256": hashlib.sha256(fixture.TLS_CERTIFICATE_CA_PEM).hexdigest(),
+            "certificate_sha256": fixture.TLS_CERTIFICATE_CERT_SHA256[case],
+            "leaf_der_sha256": fixture.TLS_CERTIFICATE_DER_SHA256[case],
+            "max_leaf_der_bytes": 4096, "max_subject_alt_names": 8, "max_extensions": 16,
+            "max_connections": 1, "max_requests": 1, "session_tickets": False,
+            "counter_semantics": "last_acknowledged_service_totals",
+            "request_count_means": "tls13_handshake_and_clean_close" if complete else "bounded_client_hello_prefix_received",
+            "counter_includes_clean_tls_close": complete,
+            "connection_evidence": "accepted_connections_lower_bound",
+            "data": "public_synthetic_fixture_only", "lifetime": "authority_session",
+            "reset": "destroy_and_create_new_instance", "external_egress": False, "resume": False,
+            "application_requests": False, "client_certificate": False, "credentials": False,
+            "authentication": False, "revocation_checked": False, "ocsp": False, "aia_fetch": False,
+            "dns_resolution": False, "retries": False, "followup": False,
+            "service_identity_claim": False, "vulnerability_claim": False,
+            "behavior": case.removeprefix("tls-cert-")}
     if case.startswith("ssh-algos-"):
         from . import network_tools_fixture as fixture
         response = fixture.ssh_algorithms_response(case)

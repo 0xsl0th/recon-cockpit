@@ -27,6 +27,10 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('tls-cert-ok', 'tls-cert-multi-san', 'tls-cert-no-san', 'tls-cert-injected',
+                    'tls-cert-wrong-name', 'tls-cert-expired', 'tls-cert-untrusted', 'tls-cert-unsupported-san',
+                    'tls-cert-too-many-san', 'tls-cert-oversized', 'tls-cert-malformed', 'tls-cert-stalled'),
+                   'openssl_peer_certificate_v1'),
     **dict.fromkeys(('ssh-algos-ok', 'ssh-algos-directional', 'ssh-algos-legacy',
                     'ssh-algos-guessed', 'ssh-algos-fragmented', 'ssh-algos-injected',
                     'ssh-algos-malformed-banner', 'ssh-algos-wrong-message', 'ssh-algos-malformed-list',

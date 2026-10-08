@@ -170,17 +170,25 @@ credentials or returned-OID follow-up. **16,687 portable/43 native tests and
 merged at `7cc6645` after independent review and all five final CI jobs passed.
 C13 remains closed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715717067) also passed.
 
-The current C14 [SSH algorithm candidate](docs/ssh-algorithms-tools.md) adds one
-bounded identification/KEXINIT exchange through the accepted Ruby-runtime pattern,
-for **39 profiles using the same 15 programs**. Its 184-byte template has one fresh
-16-byte cookie; a write-half-close prevents another client request. Typed
-directional algorithm advertisements remain unverified data, with no completed
-key exchange, login or session. The client captures at most 4355 bytes and leaves
-later packets unread. **17,728 portable/44 native tests and 97 accepted-bundle
-replays passed**, with four ordinary and two robustness completions, zero
-unnecessary refusals and eight inconclusive negatives. [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68)
-is awaiting review and merge; C14 is not yet accepted. No GUI or general NSE
-execution is added.
+The accepted C14 [SSH algorithm profile](docs/ssh-algorithms-tools.md) adds one
+bounded identification/KEXINIT exchange through the sealed Ruby runtime, for
+**39 profiles using 15 programs**. Its finite directional advertisements do not
+complete key exchange or authentication. **17,728 portable/44 native tests and
+97 accepted-bundle replays passed**. [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68)
+merged at `a6f11b7` after review and all five final CI jobs passed; all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37719116743)
+also passed. C14 remains closed with its documented half-close/capture limits.
+
+The current C15 [TLS certificate candidate](docs/tls-certificate-tools.md) adds
+one fixed fixture-CA/name-verified OpenSSL handshake and finite offline leaf
+fingerprint, validity and DNS/IP SAN parsing, for **40 profiles using the same
+15 programs**. Raw subject text cannot grant scope; absent SAN is distinct from
+an empty extension, and unsupported/oversized certificates remain inconclusive.
+No credential, application request, cipher sweep, revocation/AIA fetch or returned
+name lookup is added. Three ordinary and one separate hostile-CN task must complete
+with zero unnecessary refusals; eight negatives must retain honest evidence.
+Full portable/native validation, independent replay and review remain pending;
+C15 is not yet accepted. No GUI workflow or external engagement is enabled.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model
