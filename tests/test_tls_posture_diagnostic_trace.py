@@ -423,3 +423,18 @@ def test_conflicting_success_summary_cannot_coexist_with_rejection():
     result = trace.analyze_trial(value)
     assert result["outcome"] == "inconclusive"
     assert "conflicting_rejection_summary" in result["issues"]
+
+
+@pytest.mark.parametrize("version", trace.VERSIONS)
+@pytest.mark.parametrize("field,index", [("Protocol version", 0), ("Ciphersuite", 1)])
+@pytest.mark.parametrize("mutation", ["duplicate", "conflicting"])
+def test_handshake_requires_one_unambiguous_protocol_and_cipher_summary(version, field, index, mutation):
+    value = trial(version)
+    expected = trace.VERSIONS[version][index]
+    addition = expected if mutation == "duplicate" else next(
+        row[index] for row in trace.VERSIONS.values() if row[index] != expected)
+    stderr = base64.b64decode(value["execution"]["raw_stderr_base64"])
+    value["execution"]["raw_stderr_base64"] = b64(stderr + f"{field}: {addition}\n".encode("ascii"))
+    result = trace.analyze_trial(value)
+    assert result["outcome"] == "inconclusive"
+    assert "missing_or_conflicting_client_verification" in result["issues"]

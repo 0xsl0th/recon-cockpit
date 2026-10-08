@@ -349,7 +349,8 @@ def analyze_trial(trial):
             if (selected != [(version[2], version[3], False)] or finish_directions != expected_directions
                     or any(len(m["data"]) != expected_size + 4 for m in finished)):
                 issues.append("incomplete_or_mismatched_handshake")
-            if (text.count("Protocol version: " + version[0]) != 1 or text.count("Ciphersuite: " + version[1]) != 1
+            if ([line for line in text if line.startswith("Protocol version:")] != ["Protocol version: " + version[0]]
+                    or [line for line in text if line.startswith("Ciphersuite:")] != ["Ciphersuite: " + version[1]]
                     or text.count("Verification: OK") != 1 or text.count("Verified peername: harbordesk.test") != 1):
                 issues.append("missing_or_conflicting_client_verification")
             if any(m["data"] != b"\x01\x00" for m in alerts) or not any(m["direction"] == "write" and m["data"] == b"\x01\x00" for m in alerts):

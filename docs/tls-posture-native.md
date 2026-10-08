@@ -106,7 +106,7 @@ callbacks. It reports `server_close_notify_observed_by_client=false`; it never
 claims that the client received the server shutdown. Missing handshake records
 or additional unread records remain inconclusive.
 
-The 268 focused portable checks pass. They cover finite trace/owner grammar,
+The 284 focused portable checks pass. They cover finite trace/owner grammar,
 rejection ambiguity, missing/mutated shutdown evidence, bounds, confinement
 construction and real socket-free MemoryBIO handshakes. The portable certificate
 loader is test-only and exercised on every OS; native Linux execution bytes are
@@ -131,6 +131,11 @@ CLI grammar and the owner association were added before the frozen corpus.
 The initial received-rejection and HRR-failure captures are also retained.
 Parser review subsequently tightened the rejection sequence, owner-case binding
 and required process exit without changing any native execution source.
+A fresh pre-merge review also found that an additional contradictory supported
+protocol/cipher summary could pass the text check. The parser now requires exactly
+one expected summary of each kind; sixteen new mutation cases cover duplicates
+and contradictions for all four versions. All thirteen retained native analyses
+remain unchanged. Historical validation receipts are preserved.
 
 ## Next required slice
 
