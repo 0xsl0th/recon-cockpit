@@ -179,18 +179,19 @@ merged at `a6f11b7` after review and all five final CI jobs passed; all five
 [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37719116743)
 also passed. C14 remains closed with its documented half-close/capture limits.
 
-The current C15 [TLS certificate candidate](docs/tls-certificate-tools.md) adds
-one fixed fixture-CA/name-verified OpenSSL handshake and finite offline leaf
-fingerprint, validity and DNS/IP SAN parsing, for **40 profiles using the same
-15 programs**. Raw subject text cannot grant scope; absent SAN is distinct from
-an empty extension, and unsupported/oversized certificates remain inconclusive.
-No credential, application request, cipher sweep, revocation/AIA fetch or returned
-name lookup is added. Three ordinary and one separate hostile-CN task completed
-with zero unnecessary refusals; eight negatives remained inconclusive.
+[C15 TLS certificate coverage](docs/tls-certificate-tools.md) is accepted in
+[PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69), merged as `e4c9d64`
+after independent review and all five final jobs passed. Coverage is now
+**40 secure profiles using 15 external programs**. Its fixed fixture-verified
+OpenSSL handshake yields bounded DER fingerprint, validity and DNS/IP SAN metadata.
 **18,396 portable/39 native tests and 103 accepted-bundle replays passed.**
-[PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69) awaits latest-revision
-review, hosted checks and merge; C15 is not yet accepted. No GUI workflow or
-external engagement is enabled.
+Finite compatibility, CN fallback and trust/revocation limits remain documented.
+
+The [next-step assessment](docs/nuclei-feasibility.md) evaluates one pinned harmless Nuclei HTTP
+check. Static inspection found that its large static binary and mandatory startup
+writes cannot use the existing runtime unchanged. A separate bounded runtime needs
+review and authorization before implementation. No Nuclei integration, installation
+or execution is claimed; accepted capability counts remain unchanged.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

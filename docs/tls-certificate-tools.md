@@ -1,12 +1,11 @@
 # Owned TLS peer-certificate metadata
 
-C15 adds `openssl_peer_certificate_v1` through the existing secure CLI, authority,
-OpenSSL runtime and evidence path. Accepted C14/PR #68 has **39 profiles using
-15 external programs**; the C15 candidate has **40 profiles using the same
-15 programs**. Forty bounded profiles do not mean forty independent tools or
-professional engagement readiness. C15 is locally validated in
-[PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69); latest-revision review,
-hosted checks and merge remain required.
+C15 is accepted in [PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69),
+merged as `e4c9d64` after independent review and five final CI passes. It adds
+`openssl_peer_certificate_v1` through the existing secure CLI, authority, OpenSSL
+runtime and evidence path. Accepted coverage is **40 profiles using 15 external
+programs**. Forty bounded profiles do not mean forty independent tools or
+professional engagement readiness. G1–G6 are complete for this finite profile.
 No GUI workflow or real-network attachment is added.
 
 ## Exact operation and authority
@@ -170,9 +169,9 @@ All 24 destination witnesses and 120 boundary fields passed. All 603 frozen sour
 hashes matched; 103 accepted bundles replayed unchanged with fourteen inherited
 receipt links. Scenario wall time was 2688–7001 ms, median 3123 ms, with zero calls
 and cost. Two initial test assertions were corrected without changing production
-source; both failed runs remain recorded. G6 remains open until latest-revision
-review, hosted checks and merge. See [verification.md](verification.md).
-B0–B8, C1–C14, offline R5, accepted local R6 and the initial GUI remain closed.
+source; both failed runs remain recorded. G6 passed through independent review,
+five final CI jobs and the authorized merge. See [verification.md](verification.md).
+B0–B8, C1–C15, offline R5, accepted local R6 and the initial GUI remain closed.
 Preserve the earlier unexplained C9 stall. Credentials, paid/live evaluation,
 external engagements, deeper workflows and comparative benchmarking remain
 deferred. Select further work from the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches).

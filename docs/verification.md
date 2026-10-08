@@ -1,11 +1,57 @@
 # Verification record
 
+## PR #69 review and merge — 8 October 2026
+
+**C15 is accepted and closed in [PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69).**
+Reviewed head `ca88e2f601308dc60e1033a0cd6a4e29bfa8a1ad` merged as
+`e4c9d645ead8f02bbc0603f8731cef0e46ee3b86` at 03:32:40 UTC. Reviewed and
+merged trees match `72eb7947f5b08974fe799a45fefc813db8e36536`.
+Fresh independent runtime/authority/fixture and parser/evidence reviews found
+no blockers. All 603 frozen source hashes, 115 reports, 130 artifacts and fourteen
+inherited receipts reconciled. The final seven changed files were documentation
+only. All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37722279228)
+passed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37723229406)
+also passed. No formal GitHub approval is claimed; applicable rules and review
+comments were empty. Private merge receipt: `.secure-agent/pr69-merge-review.json`.
+
+Preserve 18,396 portable and 39 native passes, 3/3 ordinary and 1/1 robustness
+completions, eight inconclusive negatives, zero unnecessary refusals, 24/24 blocked
+destinations, 120/120 boundary fields and 103 unchanged accepted replays.
+All 265 prior case contracts, 39 adapters, 30 runtime definitions and 48
+nondispatch parser ASTs remain unchanged. C15 stays closed at 40 profiles/15 programs.
+Initial test-only failures and finite compatibility limitations below remain.
+
+## Nuclei feasibility assessment — 8 October 2026
+
+The [assessment](nuclei-feasibility.md) is documentation and static inspection.
+Twenty text source files are pinned to upstream v3.11.1 commit
+`a8c88feb4a1c8e961b7902534ce3af97e9d524a4`. The official Linux amd64 release
+archive was verified against its published SHA256, read as ZIP data and its ELF
+headers parsed in memory. No executable was extracted, installed or invoked.
+The 143,294,626-byte static binary and mandatory temporary-directory creation
+conflict with the existing runtime. No Nuclei capability or native result is claimed.
+
+Local `/usr/bin/go` reports Go 1.24.9; pinned source requires 1.26. No build,
+toolchain upgrade, dependency install, template-pack download, model call or
+external assessment occurred. No tests were added or rerun for documentation-only
+changes. Markdown links, whitespace and artifact pins passed validation; all eight
+changed files are Markdown and production/test/example trees are unchanged.
+Independent runtime-boundary and evidence-design reviews found no blockers.
+
+Private records are in `.secure-agent/nuclei-feasibility-20261008/`:
+`artifact-inspection.json` SHA256
+`a580d065780a3625c08d55a31fcc3cdc9fbe307da5b67a2a07983cad21e82e4d`;
+`reviewed-source-files.json` SHA256
+`4b41c3c4915d9554798249b9cd4ac55e1e1e91075e49339a2fb2ec9da6b6c51c`.
+Runtime implementation requires separate boundary review and authorization;
+completed milestones remain closed and paid/live work stays deferred.
+
 ## C15 bounded TLS peer-certificate metadata — 8 October 2026
 
 [PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69) contains locally validated
 implementation `1e661b1a8c7615dbab59cf92d3f22260dc887562` based on accepted main
-`a6f11b7`. Latest-revision review, hosted checks and merge remain G6 requirements;
-C15 is not accepted on main. The [runbook](tls-certificate-tools.md) describes
+`a6f11b7`. C15 was accepted at `e4c9d64` after G6 review, checks and merge
+as recorded above. The [runbook](tls-certificate-tools.md) describes
 `openssl_peer_certificate_v1`: one fixed fixture-CA/name-verified TLS 1.3 exchange
 and finite offline leaf metadata parsing. Candidate coverage is **40 secure
 profiles using 15 external programs**, not forty independent tools.
