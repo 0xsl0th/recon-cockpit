@@ -112,4 +112,3 @@ def validate_client_hello(raw, version, *, retry=False):
     return {"version": version, "session_id_hex": session.hex(), "cipher": cipher,
             "random_hex": random.hex(),
             "extension_types": sorted(extensions), "sha256": hashlib.sha256(raw).hexdigest()}
-
