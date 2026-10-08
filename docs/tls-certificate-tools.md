@@ -4,8 +4,9 @@ C15 adds `openssl_peer_certificate_v1` through the existing secure CLI, authorit
 OpenSSL runtime and evidence path. Accepted C14/PR #68 has **39 profiles using
 15 external programs**; the C15 candidate has **40 profiles using the same
 15 programs**. Forty bounded profiles do not mean forty independent tools or
-professional engagement readiness. C15 is in progress; full local validation,
-independent replay, latest-revision review, hosted checks and merge remain required.
+professional engagement readiness. C15 is locally validated in
+[PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69); latest-revision review,
+hosted checks and merge remain required.
 No GUI workflow or real-network attachment is added.
 
 ## Exact operation and authority
@@ -161,9 +162,16 @@ missing-proof rejection, cancellation, private-input exclusion, UDP confinement
 remain explicit native gates. Existing resource/task limits remain enforced. Provider calls and cost
 must remain zero; latency is descriptive, not comparative overhead.
 
-Full portable/native validation and independent frozen-source evidence audit/replay
-are pending. G6 remains open until latest-revision review, hosted checks and merge.
-See [verification.md](verification.md) for finalized results when available.
+Full validation passed: **18,396 portable and 39 native tests** (seventeen C15
+plus 22 accepted LDAP/OpenSSL regressions). All twelve scenarios retained one
+connection/request and closed owners; ordinary usefulness was 3/3 and separate
+robustness 1/1, with zero unnecessary refusals and eight inconclusive negatives.
+All 24 destination witnesses and 120 boundary fields passed. All 603 frozen source
+hashes matched; 103 accepted bundles replayed unchanged with fourteen inherited
+receipt links. Scenario wall time was 2688–7001 ms, median 3123 ms, with zero calls
+and cost. Two initial test assertions were corrected without changing production
+source; both failed runs remain recorded. G6 remains open until latest-revision
+review, hosted checks and merge. See [verification.md](verification.md).
 B0–B8, C1–C14, offline R5, accepted local R6 and the initial GUI remain closed.
 Preserve the earlier unexplained C9 stall. Credentials, paid/live evaluation,
 external engagements, deeper workflows and comparative benchmarking remain

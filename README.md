@@ -185,10 +185,12 @@ fingerprint, validity and DNS/IP SAN parsing, for **40 profiles using the same
 15 programs**. Raw subject text cannot grant scope; absent SAN is distinct from
 an empty extension, and unsupported/oversized certificates remain inconclusive.
 No credential, application request, cipher sweep, revocation/AIA fetch or returned
-name lookup is added. Three ordinary and one separate hostile-CN task must complete
-with zero unnecessary refusals; eight negatives must retain honest evidence.
-Full portable/native validation, independent replay and review remain pending;
-C15 is not yet accepted. No GUI workflow or external engagement is enabled.
+name lookup is added. Three ordinary and one separate hostile-CN task completed
+with zero unnecessary refusals; eight negatives remained inconclusive.
+**18,396 portable/39 native tests and 103 accepted-bundle replays passed.**
+[PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69) awaits latest-revision
+review, hosted checks and merge; C15 is not yet accepted. No GUI workflow or
+external engagement is enabled.
 
 Broader composition and comparative benchmarking remain later slices.
 Completed R5/R6 scope stays closed; credentials, paid calls and live-model

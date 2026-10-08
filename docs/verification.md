@@ -1,5 +1,92 @@
 # Verification record
 
+## C15 bounded TLS peer-certificate metadata — 8 October 2026
+
+[PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69) contains locally validated
+implementation `1e661b1a8c7615dbab59cf92d3f22260dc887562` based on accepted main
+`a6f11b7`. Latest-revision review, hosted checks and merge remain G6 requirements;
+C15 is not accepted on main. The [runbook](tls-certificate-tools.md) describes
+`openssl_peer_certificate_v1`: one fixed fixture-CA/name-verified TLS 1.3 exchange
+and finite offline leaf metadata parsing. Candidate coverage is **40 secure
+profiles using 15 external programs**, not forty independent tools.
+
+| Verification | Result |
+| --- | --- |
+| Full portable suite, integration excluded | **18,396 passed**, 1,137 deselected; zero failures/errors/skips; 335.097 JUnit seconds. |
+| Actual owned native execution | **39 passed**: seventeen C15 tests in 55.029 seconds and 22 accepted LDAP/OpenSSL regressions in 71.418 seconds. |
+| Ordinary usefulness | **3/3**: one DNS SAN, multiple DNS/IP SANs and absent SAN; zero unnecessary refusals. |
+| Separate robustness usefulness | **1/1**: hostile CN text stays raw while the legitimate certificate observation completes. |
+| Negative outcomes | **Eight inconclusive**: wrong name, expired, untrusted, unsupported SAN, too many SANs, oversized DER, malformed TLS and stall. |
+| Enforcement and closure | **24/24** blocked destination witnesses, **120/120** boundary fields, one connection/request and closed owner per scenario. |
+| Evidence | Twelve native reports rebuilt unchanged; **103 accepted bundles** replayed through shared inspection and isolated CLI unchanged, with fourteen inherited receipt links. |
+| Frozen source | **603 files**, unchanged from before final portable/native confirmation through audit and replay. |
+| Calls/cost | Zero actual provider calls and USD0; credentials and live calls remain disabled. |
+
+Five native authority gates cover one-use approval grants, missing consumed proof,
+cancellation after actual OpenSSL execution, private-input/authority-descriptor
+exclusion and rejection of broadened UDP permission. The shipped policy still
+requires fresh exact-action approval. Native tests use synthetic unattended
+policies or approval transports; they do not claim personal acceptance.
+The four useful receipt rows reuse original native evidence; neither a second
+tool execution nor fresh clean-source native execution is claimed by replay.
+
+Secure CLI wall time across twelve scenarios was **2688–7001 ms**, median
+**3123 ms**. This includes setup/reporting and is descriptive, not comparative
+overhead. The five-second native deadline and 60-second session deadline are
+separate limits. Seven cases completed TLS 1.3 and clean close_notify; five
+protocol/trust negatives counted only a bounded nine-byte ClientHello prefix,
+not a full ClientHello or handshake. All captures were nontruncated. Three parser
+negatives exited successfully and retained complete native evidence: unsupported
+SAN, nine SAN entries and a 4098-byte leaf. The other five had bounded native
+failure/timeout outcomes. All remained inconclusive.
+
+Independent implementation cross-reviews found no blockers. Snapshot tests
+preserve **265 accepted case contracts, 39 adapters and 30 runtime definitions**;
+48 accepted nondispatch parser function ASTs remain unchanged. Review also caught
+a missing OpenSSL data-directory permission for this new profile and report
+limitations assigned to an unused local variable; both were corrected before
+the first full-suite source freeze.
+
+Initial validation history is retained separately. The first native run had
+16 passes and one failing multi-SAN assertion: the test expected different IPs
+from the compiled fixture. The first portable run had 18,395 passes and one
+historical adapter-snapshot failure because its selector included the new profile.
+Only those two test files changed between initial and final 603-file manifests;
+production source was unchanged. Confirmation passed in full. The audit checks
+the exact initial failure identities and source transition. An earlier focused
+collection attempt preceded the saved parser test helper and failed import;
+the completed focused run passed 708 tests. Preserve these records and the
+earlier unexplained C9 stall rather than relabeling failures as passes.
+
+The fingerprint hashes DER, and dates/SANs are certificate contents. Native
+OpenSSL performs fixture trust/name/time verification during execution; the
+parser does not verify signatures or re-evaluate historical evidence against
+today's clock. The finite observed OpenSSL display and P-256/ECDSA/X25519MLKEM768
+forms support one leaf only. The no-SAN fixture uses the client's CN fallback.
+Unsupported certificate forms can complete TLS and still remain inconclusive.
+The parser cannot reconstruct unseen server bytes from native text output.
+Subject/issuer and other extension values stay raw. There is no chain inventory,
+revocation/OCSP/AIA/DNS fetch, client credential, application authentication,
+session-ticket evidence, cipher sweep or follow-up. Owned-fixture compatibility
+and a deterministic hostile-CN case do not establish general X.509 support,
+arbitrary-server readiness or live-model injection resistance.
+
+Private evidence is under `.secure-agent/tls-certificate-20261008/`, outside Git.
+Final source-manifest SHA256:
+`ebd2ce6322696994b6f9978c4f5120ad0b2080426ebc515e7509a63632dabc38`;
+initial source-manifest SHA256:
+`be07bcedad4edb5f4f78d8bbee4bf7347c0362c1f4cbdc93742a3f5eb49e645e`;
+`native-evidence-audit.json`:
+`3f2621d02f81bd32a2cab27e2727994d1c9104774672ce5e40bf8b44f384f296`;
+`verification.json`:
+`d6314b519ebe9fd49a8d9c473ed1daaf282a91ad171598ace897a1799ee95f82`.
+
+After C15 review, assess runtime feasibility of one pinned harmless Nuclei HTTP
+misconfiguration check with owned positive/negative fixtures. Its missing binary
+has not been installed, and no next batch is selected here. Keep B0–B8, C1–C14,
+offline R5, accepted local R6 and the initial GUI closed. Credentials, paid/live
+evaluation, external engagements, deeper workflows and comparison remain deferred.
+
 ## PR #68 review and merge — 8 October 2026
 
 **C14 is accepted and closed in [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68).**

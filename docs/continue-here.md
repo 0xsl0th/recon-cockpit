@@ -24,15 +24,19 @@ available. The owner requires fixed SNI, disables tickets and rejects applicatio
 data/ragged EOF. Its negative progress counter means only a bounded nine-byte
 ClientHello prefix; complete cases require TLS 1.3 and clean close_notify.
 
-**C15 is in progress; full local validation and G6 remain pending.** Twelve finite
-scenarios require 3/3 ordinary and 1/1 separate robustness completions, zero
-unnecessary refusals and eight inconclusive negative results. Seventeen new native
-tests are planned: twelve scenarios and five authority/cleanup gates. Capture,
-request counts, destination and boundary enforcement, accepted regressions,
-frozen-source evidence audit and unchanged replay must be verified before review.
-Provider calls and cost remain zero. No result is accepted on main until the latest
-revision passes review, hosted checks and an authorized merge. See
-[verification.md](verification.md) for final validation when available.
+**C15 is locally validated in [PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69);
+G6 remains open for latest-revision review, hosted checks and merge.** Implementation
+`1e661b1` passed **18,396 portable and 39 native tests**: seventeen new-profile
+tests and 22 accepted LDAP/OpenSSL regressions. Twelve finite scenarios achieved
+3/3 ordinary and 1/1 separate robustness completions, zero unnecessary refusals,
+eight inconclusive negatives, 24/24 blocked destinations and 120/120 boundary
+fields. Each retained one connection/request and a closed owner. All 603 frozen
+source hashes matched; **103 accepted bundles** replayed unchanged with fourteen
+inherited receipt links. Scenario wall time was 2688–7001 ms, median 3123 ms;
+these are descriptive timings, not comparative overhead. Provider calls and cost
+were zero. Two initial test-only assertion failures and their corrections remain
+recorded; production source was unchanged before confirmation. See
+[verification.md](verification.md) for the evidence and limitations.
 
 The parser supports a finite reviewed OpenSSL text/DER subset, not general X.509
 or arbitrary-server compatibility. The owned no-SAN case uses this client's CN

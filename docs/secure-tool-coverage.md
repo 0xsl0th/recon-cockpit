@@ -146,7 +146,7 @@ integration from a candidate secure profile.
 | C12 | HTTP OPTIONS metadata; existing secure curl runtime, no interactive OPTIONS profile | One fixed resource, complete bounded HTTP/1.1 status/Allow/auth-scheme metadata; require 6/6 ordinary and 2/2 robustness tasks, six inconclusive negative cases, 28 destination/140 boundary checks, five authority gates, unchanged evidence replay and G1–G6. No advertised-method execution, redirects, credentials or GUI work. | Implemented at `c875820`; 16,138 portable/40 native tests and 83 accepted-bundle replays passed. [x] Accepted in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) at `7faf974`; all five final CI jobs passed. See [C12 runbook](http-options-tools.md). |
 | C13 | SNMP interface successor metadata; accepted GET covers three system scalars, no interactive GETNEXT integration | One fixed ifDescr column seed through snmpgetnext; 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, authority/cleanup gates, unchanged replay and G1–G6. No walk, GETBULK, SET, UDP, real community or returned-OID follow-up. | [x] Accepted in [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) at `7cc6645`; 16,687 portable/43 native tests, 91 accepted replays and all five final CI jobs passed. See [C13 runbook](snmp-next-tools.md). |
 | C14 | SSH transport algorithm advertisements; interactive Nmap suggestion, secure host-key collection separate | One fixed KEXINIT template with random cookie, write EOF and one bounded reply; 4/4 ordinary and 2/2 robustness completions, eight inconclusive negatives, 28 destination/140 boundary checks, replay and G1–G6. No completed key exchange, login or session. | [x] Accepted in [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68) at `a6f11b7`; 17,728 portable/44 native tests, 97 accepted replays and all final/post-merge CI jobs passed. See [C14 runbook](ssh-algorithms-tools.md). |
-| C15 — current | TLS peer-certificate metadata; existing OpenSSL runtime, no interactive certificate inventory | One fixed CA/name-verified TLS 1.3 exchange with clean close, finite leaf DER fingerprint/validity and DNS/IP SANs; require 3/3 ordinary and 1/1 separate robustness completions, eight inconclusive negatives, actual request/closure/boundary evidence, unchanged replay and G1–G6. No application data, credentials, revocation/AIA fetch or name follow-up. | [ ] Implementation in progress; full portable/native validation, independent replay, review/checks and merge pending. Candidate: 40 profiles/15 programs. See [C15 runbook](tls-certificate-tools.md). |
+| C15 — current | TLS peer-certificate metadata; existing OpenSSL runtime, no interactive certificate inventory | One fixed CA/name-verified TLS 1.3 exchange with clean close, finite leaf DER fingerprint/validity and DNS/IP SANs; require 3/3 ordinary and 1/1 separate robustness completions, eight inconclusive negatives, actual request/closure/boundary evidence, unchanged replay and G1–G6. No application data, credentials, revocation/AIA fetch or name follow-up. | [ ] Locally validated in [PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69): 18,396 portable/39 native passes, 3/3 ordinary + 1/1 robustness, eight inconclusive negatives, 24/24 destination and 120/120 boundary checks, 103 unchanged accepted replays. G6 review/checks/merge pending. Candidate: 40 profiles/15 programs. See [C15 runbook](tls-certificate-tools.md). |
 | Next gap to reassess | Vulnerability-specific HTTP validation; no secure scanner integration, Nuclei absent on this host | Review feasibility of one pinned harmless HTTP misconfiguration template against owned positive/negative fixtures; fixed request, useful matched/unmatched outcomes, raw response evidence, strict output/enforcement and G1–G6. No generic CVE claim, arbitrary/community templates, code/headless, Interactsh, auto-download, credentials or follow-up. | Recommendation only; missing executable prerequisite and runtime closure must be resolved before selecting a new batch. No installation performed or assumed by this plan. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
@@ -357,15 +357,19 @@ available. The owner requires fixed SNI, disables tickets and rejects applicatio
 data/ragged EOF. Its negative progress counter means only a bounded nine-byte
 ClientHello prefix; complete cases require TLS 1.3 and clean close_notify.
 
-**C15 is in progress; full local validation and G6 remain pending.** Twelve finite
-scenarios require 3/3 ordinary and 1/1 separate robustness completions, zero
-unnecessary refusals and eight inconclusive negative results. Seventeen new native
-tests are planned: twelve scenarios and five authority/cleanup gates. Capture,
-request counts, destination and boundary enforcement, accepted regressions,
-frozen-source evidence audit and unchanged replay must be verified before review.
-Provider calls and cost remain zero. No result is accepted on main until the latest
-revision passes review, hosted checks and an authorized merge. See
-[verification.md](verification.md) for final validation when available.
+**C15 is locally validated in [PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69);
+G6 remains open for latest-revision review, hosted checks and merge.** Implementation
+`1e661b1` passed **18,396 portable and 39 native tests**: seventeen new-profile
+tests and 22 accepted LDAP/OpenSSL regressions. Twelve finite scenarios achieved
+3/3 ordinary and 1/1 separate robustness completions, zero unnecessary refusals,
+eight inconclusive negatives, 24/24 blocked destinations and 120/120 boundary
+fields. Each retained one connection/request and a closed owner. All 603 frozen
+source hashes matched; **103 accepted bundles** replayed unchanged with fourteen
+inherited receipt links. Scenario wall time was 2688–7001 ms, median 3123 ms;
+these are descriptive timings, not comparative overhead. Provider calls and cost
+were zero. Two initial test-only assertion failures and their corrections remain
+recorded; production source was unchanged before confirmation. See
+[verification.md](verification.md) for the evidence and limitations.
 
 The parser supports a finite reviewed OpenSSL text/DER subset, not general X.509
 or arbitrary-server compatibility. The owned no-SAN case uses this client's CN
