@@ -5,7 +5,8 @@
 This development checkpoint never resumes an assessment or restores approvals.
 
 **Current work: priority 3 secure-tool coverage, C10 bounded DNS NSID metadata.**
-Work is on `feature/dns-nsid-coverage` in `/tmp/recon-dns-nsid-coverage`, based on
+Review [PR #64](https://github.com/0xsl0th/recon-cockpit/pull/64), on
+`feature/dns-nsid-coverage` in `/tmp/recon-dns-nsid-coverage`, based on
 accepted main `e06e1a4`. See the [coverage checklist](secure-tool-coverage.md#successive-product-coverage-batches)
 and [C10 runbook](dns-nsid-tools.md). One fixed nonrecursive TCP question asks
 `harbordesk.test. IN A` with one empty EDNS NSID option. The existing dig runtime,
