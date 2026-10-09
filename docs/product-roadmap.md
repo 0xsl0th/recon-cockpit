@@ -1,6 +1,16 @@
 # Product roadmap and remaining PR estimate
 
-Status snapshot: **8 October 2026, after PR #78**, accepted main `efdb133`.
+Current continuation (9 October 2026): PR #79 merged as `5f4197f` after fresh
+review and five passing PR checks; all five post-merge checks also passed.
+The [T02 acceptance batch](tls-posture-acceptance.md) addresses the remaining
+corpus and a newly found plaintext-evidence consistency gap. T03 SSH policy
+assessment follows in review order, reusing the bounded C14 collector if the
+pinned source review rules out stock ssh-audit. Accepted coverage stays 43/16;
+T02–T06 remain open until their individual review/merge gates. Credentials,
+paid/live models, deeper workflows and comparative benchmarks remain deferred.
+
+
+Status snapshot: **9 October 2026, after PR #79**, accepted main `5f4197f`.
 The PR-count forecasts retain their explicitly dated PR #72 baseline below.
 This is the consolidated product plan. The [implementation roadmap](roadmap.md)
 retains milestone history; the [checkpoint](continue-here.md) records the next
@@ -111,7 +121,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | C18/T01 DNS MX is accepted; T02 mediation proves useful observations and tested retry prevention, with four production candidates under review, remaining T02 acceptance tests and T03–T06 still required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Three additional programs are now plausible; the historical 4–6 assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | C18/T01 DNS MX is accepted; T02 mediation proves useful observations and tested retry prevention, with four production candidates integrated in PR #79; the T02 acceptance corpus is under review and T03–T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Three additional programs are now plausible; the historical 4–6 assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |

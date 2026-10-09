@@ -21,6 +21,39 @@ def _digest(value):
     return type(value) is str and re.fullmatch(r"[0-9a-f]{64}", value) is not None
 
 
+def _corroborate_plaintext_handshakes(stdout, peer):
+    """Bind plaintext wire bodies to client trace bytes, not just record headers.
+
+    Handshakes after ChangeCipherSpec or inside application records are opaque
+    here. Their existing peer callback/Finished checks remain separate.
+    """
+    messages, _ = wire_trace._messages(stdout)
+    for direction, field in (("write", "received_records"), ("read", "sent_records")):
+        records = wire_trace._owner_records(peer, field)
+        plaintext = bytearray()
+        for record in records:
+            if record[0] in {20, 23}:
+                break
+            if record[0] == 22:
+                plaintext.extend(record[5:])
+        captured = []
+        while plaintext:
+            if len(plaintext) < 4:
+                raise ValueError("incomplete_tls_posture_plaintext_handshake")
+            size = 4 + int.from_bytes(plaintext[1:4], "big")
+            if size > len(plaintext):
+                raise ValueError("incomplete_tls_posture_plaintext_handshake")
+            captured.append(bytes(plaintext[:size]))
+            del plaintext[:size]
+        traced = [message["data"] for message in messages
+                  if message["kind"] == "Handshake" and message["direction"] == direction]
+        if not captured or captured != traced[:len(captured)]:
+            # A protocol rejection legitimately contains no server handshake.
+            if not captured and not traced:
+                continue
+            raise ValueError("tls_posture_plaintext_handshake_mismatch")
+
+
 def validate_result(tool_id, value):
     keys = {"parser_version", "kind", "tool_id", "tls_version", "fixture_variant", "outcome", "useful_task_completed",
             "extra_client_hello_prevented", "owner_sha256", "stdout_sha256", "stderr_sha256",
@@ -96,6 +129,7 @@ def parse_input(raw):
         _integer(owner[key], 1, 1)
     _peer(owner["diagnostic"])
     _mediation(owner["mediation"])
+    _corroborate_plaintext_handshakes(stdout, owner["diagnostic"])
     execution = {"exit_code": value["exit_code"], "stop_reason": value["stop_reason"],
                  "truncated": value["truncated"], "raw_stdout_base64": base64.b64encode(stdout).decode("ascii"),
                  "raw_stderr_base64": base64.b64encode(stderr).decode("ascii")}

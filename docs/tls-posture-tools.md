@@ -1,6 +1,6 @@
 # T02 — owned TLS version posture candidates
 
-Four production profiles are under review in
+Four production profiles were integrated in
 [PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79): `openssl_tls10_posture_v1`,
 `openssl_tls11_posture_v1`, `openssl_tls12_posture_v1` and
 `openssl_tls13_posture_v1`. T02 is open. Accepted coverage remains **43 profiles
@@ -40,8 +40,9 @@ approval required. Cases are `tls-posture-<tls1|tls1_1|tls1_2|tls1_3>-<modern|le
 and `tls-posture-tls1_3-hrr`. Development tests use explicitly synthetic approval
 or policy settings; they do not record personal operator acceptance.
 
-The remaining T02 acceptance corpus includes hostile-usefulness, ambiguity and
-pressure, enforcement, cancellation and unchanged accepted-bundle regression.
+The [T02 acceptance batch](tls-posture-acceptance.md) covers hostile-usefulness,
+ambiguity/pressure, enforcement, cancellation and full accepted-bundle regression.
+The task remains open until that batch passes review, CI and authorized merge.
 T03–T06 follow the coverage checklist. Credentials, paid/live models, external
 targets, deeper workflows and comparative benchmarking remain deferred.
 

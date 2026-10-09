@@ -1,5 +1,15 @@
 # Roadmap — secure AI pentesting workflows
 
+Current continuation (9 October 2026): PR #79 merged as `5f4197f` after fresh
+review and five passing PR checks; all five post-merge checks also passed.
+The [T02 acceptance batch](tls-posture-acceptance.md) addresses the remaining
+corpus and a newly found plaintext-evidence consistency gap. T03 SSH policy
+assessment follows in review order, reusing the bounded C14 collector if the
+pinned source review rules out stock ssh-audit. Accepted coverage stays 43/16;
+T02–T06 remain open until their individual review/merge gates. Credentials,
+paid/live models, deeper workflows and comparative benchmarks remain deferred.
+
+
 **Current product forecast: 8 October 2026.** See the [consolidated roadmap and PR estimate](product-roadmap.md).
 The historical planning baseline below began on 15 September 2026. This is a development plan, not a list
 of implemented capabilities. Start the next session with
