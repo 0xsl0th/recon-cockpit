@@ -917,3 +917,14 @@ It also binds plaintext owner/client evidence and retains extra-stream refusal
 without authorizing another stream. G6 and accepted-count changes await its
 review/merge. The separate [T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81)
 follows in review order. [Checkpoint](docs/continue-here.md).
+
+The next coverage candidates are ready for review in order:
+[T02 acceptance #80](https://github.com/0xsl0th/recon-cockpit/pull/80), then
+[T03 SSH policy #81](https://github.com/0xsl0th/recon-cockpit/pull/81). T02 adds the
+hostile/pressure corpus and stricter plaintext evidence binding. T03 reuses the
+bounded SSH collector to assess both transport directions against an immutable
+local policy; known deviations are useful, unknowns remain inconclusive.
+Native validation passed 65 and 52 checks respectively. There are **43 accepted
+profiles plus five candidates across 16 programs**; these reviews do not claim
+professional-service compatibility or complete product coverage. See the
+[checkpoint](docs/continue-here.md) for review order and remaining T04–T06 tasks.

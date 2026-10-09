@@ -1,7 +1,9 @@
 # T03 SSH advertisement policy: feasibility and bounded contract
 
-Status: 9 October 2026. T03 remains open pending production validation, independent
-review and its G1–G6 acceptance. The required operator outcome is an explicit,
+Status: 9 October 2026. The T03 candidate passed frozen production validation
+and independent review; see the [validation record](ssh-policy-tools.md#validation).
+Its G6 gate remains open pending final checks and authorized merge of PR #81
+after T02 PR #80. The required operator outcome is an explicit,
 pinned policy assessment of SSH transport advertisements. It is not an SSH login,
 host-identity verification, negotiated algorithm test or exploitability finding.
 

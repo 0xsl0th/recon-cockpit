@@ -40,6 +40,29 @@ program. C14 and all earlier accepted profile contracts remain unchanged.
 
 ## Validation
 
-Final source pins, actual lab results, portable checks and historical replays are
-recorded after validation. Until then, this is implementation under review, not an
-accepted capability or a professional-service compatibility result.
+Frozen production source `dbfa8b5` passed **52/52 native
+tests**: 25 T03 checks, thirteen T02 observations and fourteen unchanged C14
+cases. T03 completed **6/6 ordinary and 2/2 robustness tasks**, with zero
+unnecessary refusals. Two parsed unknown cases and nine malformed/pressure
+cases stayed inconclusive. All nineteen response trials reached the actual
+184-byte request and client write EOF; 38/38 destination witnesses and 190/190
+runtime boundary fields passed. Six authority/cancellation tests also passed.
+
+All 46 newly retained bundles passed both inspectors unchanged. Another **204
+historical bundles** (146 accepted, thirteen PR #79 and 45 T02 acceptance)
+replayed unchanged. Full portable validation passed **21,898 tests**,
+with zero skips/failures/errors. The six post-native changes only exclude new
+cases from older fixture snapshots; production, examples and native tests remain
+byte-identical. No historical expected hash was regenerated.
+
+T03 CLI wall time was 2,476–4,789 ms, median
+3,393 ms, excluding later inspector replay. This is
+descriptive timing under concurrent local validation, not comparative overhead.
+Actual provider calls and cost were zero. Synthetic approvals are test data and
+do not represent a personal operator walkthrough.
+
+Private immutable verification: `.secure-agent/ssh-policy-20261009/verification.json`,
+SHA-256 `d3512612eb1b37d4cbd5e0d46736fbc0c6f5f18ed5681d900fb4767076a01a75`. Retain the initial portable/CI failures, the earlier development
+selector fixes and the corrected deterministic Markdown replay finding. Final
+PR/check status is recorded in the private handoff. Review/merge follows T02;
+G6 remains open until that authorized decision.

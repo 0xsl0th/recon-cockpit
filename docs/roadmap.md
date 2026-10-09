@@ -1,14 +1,15 @@
 # Roadmap — secure AI pentesting workflows
 
-Current continuation (9 October 2026): PR #79 merged as `5f4197f` after fresh
-review and five passing PR checks; all five post-merge checks also passed.
-The [T02 acceptance batch](tls-posture-acceptance.md), PR #80, passed 65 native
-and 21,593 portable tests plus full historical replay. It fixes plaintext evidence
-consistency and retained refusal evidence. The separate SSH policy candidate in
-[PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) follows in review order,
-reusing the bounded C14 collector after source review ruled out stock ssh-audit. Accepted coverage stays 43/16;
-T02–T06 remain open until their individual review/merge gates. Credentials,
-paid/live models, deeper workflows and comparative benchmarks remain deferred.
+Current continuation (9 October 2026): PR #79 is merged at `5f4197f`.
+[T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) and
+[T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) are separate
+review candidates; review and merge #80 first. T02 has 65 native passes and full
+historical replay. T03 has 52 native passes, including 27 TLS/SSH regressions.
+Accepted coverage remains **43 profiles / 16 programs**, with **five candidates**
+(four TLS, one SSH policy). G6 remains open for those tasks until their authorized
+merges. T01/C18 and earlier milestones stay closed. T04 web hierarchy is next
+after these reviews; credentials, paid/live models, deeper workflows and
+comparative benchmarks remain deferred.
 
 
 **Current product forecast: 8 October 2026.** See the [consolidated roadmap and PR estimate](product-roadmap.md).
