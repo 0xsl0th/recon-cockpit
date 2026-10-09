@@ -409,8 +409,9 @@ can be useful evidence while retaining failed execution/exit 1; retry blocking
 alone does not count as task completion. Both inspectors verify separate bounded
 owner artifacts and restore the full committed authority result before replay.
 
-T02 remains open until its remaining hostile-usefulness, ambiguity/pressure and
-accepted-bundle regression corpus and G1–G6 pass. Existing accepted recipes,
-limits and frozen contract hashes remain unchanged. No new program or general
-real-server support is claimed. Credentials, paid/live models and attached
+PR #80 validates the T02 hostile-usefulness, ambiguity/pressure and regression
+corpus with 65 native and 21,593 portable tests. G1–G5 evidence is prepared; G6
+review, required checks and an authorized merge remain pending. Existing accepted
+recipes, limits and frozen contract hashes remain unchanged. No new program or
+general real-server support is claimed. Credentials, paid/live models and attached
 networks remain deferred.

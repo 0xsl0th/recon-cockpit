@@ -523,7 +523,10 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
     connections = context["connection_count"] - before["connection_count"]
     requests = context["request_count"] - before["request_count"]
     request_limit = 2 if expected["scenario"] in B8_CASES else 1
-    connection_limit = (2 if expected["scenario"] in B8_CASES else 3 if expected["scenario"] in B7_CASES else 4 if expected["scenario"] in B4_CASES else
+    # T02 may retain one queued/refused TCP connection as negative evidence;
+    # only one frontend/private-peer stream is admitted and useful results
+    # still require exactly one observed connection below.
+    connection_limit = (2 if expected["scenario"] in T02_CASES + B8_CASES else 3 if expected["scenario"] in B7_CASES else 4 if expected["scenario"] in B4_CASES else
                         2 if (expected["scenario"].startswith("ftp-") and expected["scenario"] not in C9_CASES) else 1)
     if (not 0 <= connections <= connection_limit or not 0 <= requests <= request_limit
             or (expected["scenario"] in {"openssl-untrusted", "openssl-malformed", "openssl-stalled",
@@ -574,12 +577,16 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
     if tool_id in tls_posture.TOOL_VERSIONS:
         from .network_tools_tls_posture_receipt import decode_owner_receipt, receipt_counter_context, validate_owner_selection
         raw = decode_owner_receipt(result.get("tls_posture_owner"))
-        validate_owner_selection(raw, expected["scenario"])
+        owner = validate_owner_selection(raw, expected["scenario"])
         counts = receipt_counter_context(raw)
         if any(counts[key] != context[key] for key in counts):
             raise ValueError("tls_posture_owner_counter_mismatch")
         if context.get("tls_posture_owner_sha256") != hashlib.sha256(raw).hexdigest():
             raise ValueError("tls_posture_owner_commitment_mismatch")
+        if connections == 2 and any(
+                type(owner["mediation"].get(key)) is not int or owner["mediation"][key] != 1
+                for key in ("frontend_connections_admitted", "extra_frontend_connections_refused", "peer_streams_admitted")):
+            raise ValueError("tls_posture_extra_connection_not_refused")
         observation = result.get("tool_observation")
         if observation is not None and (connections != 1 or requests != 1
                 or observation.get("owner_sha256") != context["tls_posture_owner_sha256"]

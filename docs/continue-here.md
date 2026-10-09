@@ -1,17 +1,45 @@
-# Continue here — 8 October 2026
+# Continue here — 9 October 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: [PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78)
-is merged at `efdb133`. C18/T01 stays accepted. Four T02 production TLS posture
-profiles are candidates in [PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79),
-branch `feature/tls-posture-production`, worktree
-`/tmp/recon-tls-posture-production`; see the [runbook](tls-posture-tools.md).
-They connect actual owned execution to policy, fresh per-action approval,
-consumed permits, independent owner evidence and both assessment inspectors.
-Accepted coverage remains 43 profiles / 16 programs; T02–T06 remain open.**
+**Current status: [PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79)
+is merged at `5f4197f`. Its four TLS posture profiles remain T02 candidates;
+accepted coverage stays 43 profiles / 16 programs until the acceptance review.
+[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) completes T02's hostile-usefulness, ambiguity/pressure and
+historical-bundle corpus in `/tmp/recon-tls-posture-acceptance`, branch
+`feature/tls-posture-acceptance`. The separate T03 SSH policy batch is in
+`/tmp/recon-ssh-policy`, branch `feature/ssh-policy-assessment`; it follows T02 in
+review order. T01/C18 and earlier milestones stay closed.**
+
+[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) now has **65 native
+and 21,593 portable passes**, with 20/20 useful ordinary/absence/robustness trials,
+20 inconclusive negatives, one HRR retry and four extra-stream refusals. All
+45 fresh and 159 historical bundles replayed unchanged; all 630 boundary fields
+passed. Source freeze `169047f` stayed unchanged during validation. Private
+verification SHA-256: `964dcaf566864236785c87938e826b00e447bf10c8875151b39dfdf7472cb58b`. See the
+[acceptance runbook](tls-posture-acceptance.md). G6 remains open until its merge;
+do not relabel earlier accepted milestones or count candidates prematurely.
+T03 is separately implemented in [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81),
+with 52 native passes and final portable/replay checks tracked in its worktree.
+Review #80 before #81, then select T04 web hierarchy from the finite checklist.
+
+Fresh PR #79 authority/runtime and parser/evidence reviews found no blockers;
+337 root-focused tests passed (independent overlapping review sets: 367 and 713).
+All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37861721326)
+and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37863266844)
+passed, including macOS. Reviewed `a77728c` and merge `5f4197f` share tree
+`a7a5c4ff15bcd04a68c8c01b55b21fe075b20b4b`. Retain
+`.secure-agent/pr79-merge-review.json`, SHA-256
+`9a87a5c634824431eb8e17fb09876e8269ba4dd8e102cbfcf027412e3de00018`.
+Original PR #78 failure evidence remains unchanged.
+
+Expanded T02 evidence testing found a new consistency gap after that merge:
+coherently changed plaintext handshake bodies in owner records were not bound
+to the original client trace. The [acceptance batch](tls-posture-acceptance.md)
+adds that check and preserves the counterexample. Encrypted contents remain
+opaque; no execution scope, old profile or limit is expanded.
 
 PR #78 merged reviewed `68c70b7` after two independent reviews, 294 fresh focused
 passes and all five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37856709330)
@@ -20,7 +48,7 @@ trees match `37b8509564e50a3d0fef28562efe33c77e41caaf`. The
 [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37858294523)
 passed all four Linux jobs but exposed an intermittent macOS cancellation test
 failure: a 0.5-second owner join could expire before a blocked peer read woke.
-This candidate adds explicit cancellable peer polling, tested independently of
+Merged PR #79 added explicit cancellable peer polling, tested independently of
 cross-thread socket close, while keeping normal HRR EOF distinct from cancellation.
 Retain `.secure-agent/pr78-merge-review.json`, SHA-256
 `8ba15b616880234f2ab3d7e02bd2cc2040ed9d400ad35c0838902d1f5af99865`.
@@ -198,9 +226,10 @@ not decrypt traffic or prove general encrypted application-data prevention.
 PR #77 accepted this diagnostic boundary and PR #78 accepted
 [closed diagnostic observation/replay](tls-posture-observations.md). The current
 [production integration](tls-posture-tools.md) connects four candidate profiles
-to policy, approval, consumed permits and both evidence inspectors. Finish the
-remaining hostile-usefulness, ambiguity/pressure and full regression corpus
-before G1–G6 acceptance.
+to policy, approval, consumed permits and both evidence inspectors. PR #80
+validates the hostile-usefulness, ambiguity/pressure and regression corpus with
+65 native and 21,593 portable tests. Its G1–G5 evidence is prepared; G6 review,
+required checks and an authorized merge remain pending.
 Diagnostic receipts do not close those product gates. Accepted coverage remains
 **43 profiles / 16 programs**; existing TLS profiles and limits stay unchanged.
 Continue through required T03–T06 using the
@@ -1958,46 +1987,30 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #77 merge is complete. PRs #6–#30 and #32–#77
-  stay closed; proposal PR #31 remains separate until its November refresh. Current
-  authorization covers the finite coverage continuation, now T02 diagnostic
-  observation/replay and its remaining product authority/evidence integration.
-  Later merges, submission, messages, paid calls and external targets retain
-  their corresponding gates.
+- The operator-authorized PR #79 merge is complete. PRs #6–#30 and #32–#79
+  stay closed; proposal PR #31 remains separate until its November refresh.
+  Current authorization covers T02 acceptance and T03 SSH policy development.
+  Follow-up PRs remain subject to exact-revision review/checks and merge review;
+  paid calls, external targets, publication and submission remain deferred.
 
 ## Next continuation
 
-1. PR #77 is accepted on main `942c815` from reviewed `90c7e79`; fresh
-   independent review and all five final and post-merge jobs passed as recorded
-   above. Retain `.secure-agent/pr77-merge-review.json` and prior merge receipts.
-   PR #74's C18/T01 G1–G6
-   stay closed; retain `.secure-agent/pr74-merge-review.json` and do not repeat
-   either merge.
-2. Preserve C18's immutable `.secure-agent/dns-mx-20261008/verification.json`,
-   native source pin `89d4465`, historical receipts and failure history. Only
-   documentation and the terminal-test `O_NOCTTY` correction differ from the
-   native-tested revision; accepted production bytes remain identical.
-   Accepted coverage is **43 profiles/16 programs**.
-3. Finish validation and review of [T02 diagnostic observations](tls-posture-observations.md)
-   in `/tmp/recon-tls-posture-observations`, branch `feature/tls-posture-observations`.
-   The thirteen fresh executions use grammar/owner freeze `1874c33`; 26/26
-   fresh/prior captures replay identically at parser source `a6a4739`, with 18/18
-   safe negative/cancellation/deadline outcomes. Final PR checks remain merge
-   gates. Retain the initial closed parser failure, all earlier captures and
-   original PR #76 prevention failure.
-   No version identifier is registered and no product assessment is authorized.
-   Then implement four separately versioned profiles through policy, fresh
-   per-action approval, consumed permits, admission and both production evidence
-   inspectors; complete hostile-usefulness, ambiguity/pressure, enforcement,
-   cancellation and regression cases. Keep the [six-task contract](professional-v1-coverage.md),
-   all four versions and existing limits; T02 stays open until its full G1–G6
-   review and merge.
-4. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
-   Preserve the private proposal/PDF, email draft, GUI mocks and native receipts.
-   Refresh PR #31 in November 2026 before the 15 November deadline; submission
-   remains separately authorized.
-5. Deeper workflows/benchmarks, real credentials, attached or external networks,
-   intrusive activity and paid/live models retain their separate later gates.
+1. Do not repeat the PR #79 merge. Preserve its merge receipt and the original
+   diagnostic/production captures, including prior failed development trials.
+2. Review the T02 [acceptance batch](tls-posture-acceptance.md), its final source
+   pin, complete native corpus, portable CI and full accepted-bundle replay.
+   T02 remains open until G6 review/merge; accepted coverage stays 43/16 meanwhile.
+3. Review the separate T03 SSH policy candidate in PR #81 after T02. Its pinned
+   source review selected the unchanged C14 collector plus a networkless local
+   policy evaluator; unknown or incomplete data remains inconclusive. G6 is open.
+   Reconcile catalog acceptance status/counts only on the respective merges.
+4. Then select T04 web hierarchy, T05 SNMP interface page and T06 AAAA/PTR from
+   the finite checklist. Do not substitute optional signatures or program quotas.
+5. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
+   Preserve proposal/PDF/email/mocks. Refresh PR #31 in November before the
+   15 November deadline; submission requires a separate decision.
+6. Credentials, paid/live models, attached/external networks, deeper workflows
+   and comparative benchmarks remain deferred.
 
 ## Recovery and verification
 
