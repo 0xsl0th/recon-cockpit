@@ -76,6 +76,10 @@ class Service:
         self.request, self.listener = request, listener
         self.condition = threading.Condition()
         self.stop = threading.Event()
+        # Relay completion also sets stop. Only explicit owner cancellation
+        # interrupts peer reads; an ordinary retry refusal must retain the
+        # actual EOF caused by withholding and closing the private stream.
+        self.cancel_peer = threading.Event()
         self.connected = threading.Event()
         self.connections, self.requests = 0, 0
         self.ledger = fixture.new_ledger(request["case"], request["version"])
@@ -158,7 +162,7 @@ class Service:
                 return
             fixture.serve(self.peer_pair, case=self.request["case"], version=self.request["version"],
                           deadline=self.deadline, context=self.context, ledger=self.ledger,
-                          on_request=self._progress)
+                          on_request=self._progress, cancel_event=self.cancel_peer)
         except (ValueError, OSError) as error:
             self.ledger["error"] = (str(error)[:160] if isinstance(error, ValueError)
                                     else type(error).__name__)
@@ -265,6 +269,7 @@ class Service:
             raise ValueError("tls_mediated_threads_unfinished")
 
     def close(self):
+        self.cancel_peer.set()
         self.stop.set()
         self.connected.set()
         if self.frontend is not None:

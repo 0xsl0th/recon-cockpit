@@ -66,8 +66,8 @@ def test_profiles_cannot_substitute_for_each_other_at_authority_gate():
 
 def test_all_accepted_case_adapter_and_runtime_bytes_remain_identical():
     # Captured on accepted main 1cfbf8b before C17 edits; never regenerate from C17.
-    old_cases = [case for case in contract.CASES if case not in contract.C17_CASES + contract.C18_CASES]
-    old_tools = set(tool_adapters.ADAPTERS) - {contract.NUCLEI_GIT_TOOL_ID, contract.DIG_MX_TOOL_ID}
+    old_cases = [case for case in contract.CASES if case not in contract.C17_CASES + contract.C18_CASES + contract.T02_CASES]
+    old_tools = set(tool_adapters.ADAPTERS) - set(contract.tls_posture.TOOL_VERSIONS) - {contract.NUCLEI_GIT_TOOL_ID, contract.DIG_MX_TOOL_ID}
     old_runtime = set(runtime.EXECUTABLES) - {contract.NUCLEI_GIT_TOOL_ID, contract.DIG_MX_TOOL_ID}
     assert (len(old_cases), len(old_tools), len(old_runtime)) == (290, 41, 32)
     value = {

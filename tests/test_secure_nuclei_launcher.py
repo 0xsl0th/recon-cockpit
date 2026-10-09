@@ -125,7 +125,7 @@ def test_worker_bootstrap_dispatch_keeps_every_legacy_tag(monkeypatch, tag, kwar
 def test_outer_bubblewrap_passes_reviewed_protocol_tag_to_worker(monkeypatch):
     monkeypatch.setattr(isolation, "_trusted_program", lambda name: "/usr/bin/" + name)
     monkeypatch.setattr(isolation, "_namespaces", lambda: {name: name + "host" for name in ("user", "net", "mnt", "pid")})
-    launcher = SimpleNamespace(_config={"profile": "owned_network_tools_lab"},
+    launcher = SimpleNamespace(_config={"profile": "owned_network_tools_lab", "case": "nuclei-index"},
         _approval_source={}, _witness_source={})
     closure = {"stdlib": "/usr/lib/python3.13", "network_tools_runtime": nuclei.manifest()}
     argv = isolation.LinuxFixtureLauncher._command(launcher, closure, [], "a" * 64)

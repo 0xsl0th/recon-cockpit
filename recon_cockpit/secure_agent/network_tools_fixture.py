@@ -33,6 +33,8 @@ UNTRUSTED_SERVER_CERT_SHA256 = "6ba00bbf8e6da527c442c5bdaadc83e576bf4067e3eedccc
 def tool_for_case(case):
     if type(case) is not str or case not in CASES:
         raise ValueError("invalid_network_tools_case")
+    if case in TLS_POSTURE_CASE_TO_TOOL:
+        return TLS_POSTURE_CASE_TO_TOOL[case]
     for prefix, tool in (("nuclei-git-", "nuclei_git_head_v1"), ("nuclei-", "nuclei_directory_listing_v1"), ("tls-cert-", "openssl_peer_certificate_v1"),
                          ("ssh-algos-", "ssh_transport_algorithms_v1"),
                          ("ftp-tls-", "ftp_starttls_handshake_v1"),
@@ -1272,4 +1274,19 @@ validate_dns_mx_query = _mx_fixture.validate_dns_mx_query
 dns_mx_records = _mx_fixture.dns_mx_records
 dns_mx_response = _mx_fixture.dns_mx_response
 CASES += DNS_MX_CASES
+VARIANTS = CASES
+
+# Kept pure for the small legacy fixture-worker closure. A contract test binds
+# these routes to the production-only TLS posture specification.
+TLS_POSTURE_CASE_TO_TOOL = {
+    **{f"tls-posture-{version}-{variant}": tool
+       for version, tool in (("tls1", "openssl_tls10_posture_v1"),
+                             ("tls1_1", "openssl_tls11_posture_v1"),
+                             ("tls1_2", "openssl_tls12_posture_v1"),
+                             ("tls1_3", "openssl_tls13_posture_v1"))
+       for variant in ("modern", "legacy", "reject")},
+    "tls-posture-tls1_3-hrr": "openssl_tls13_posture_v1",
+}
+TLS_POSTURE_CASES = tuple(TLS_POSTURE_CASE_TO_TOOL)
+CASES += TLS_POSTURE_CASES
 VARIANTS = CASES

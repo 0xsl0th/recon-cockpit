@@ -10,6 +10,7 @@ from uuid import UUID
 from .network_tools_fixture import (CASES, CA_PEM, FIXTURE_MARKER, QUERY_NAME, TLS_NAME,
     SERVER_CERT_SHA256, UNTRUSTED_SERVER_CERT_SHA256, TLS_MALFORMED_BYTES,
     dns_query, dns_response, tool_for_case)
+from .network_tools_tls_posture_spec import CASES as TLS_POSTURE_CASES
 
 LAB_ID = "harbordesk-owned-network-tools-lab"
 LAB_VERSION = "1"
@@ -49,6 +50,9 @@ def _encode(value):
 
 
 def spec(case):
+    if type(case) is str and case in TLS_POSTURE_CASES:
+        from .network_tools_tls_posture_identity import spec as tls_spec
+        return tls_spec(case)
     tool = tool_for_case(case)
     if case.startswith("nuclei-git-"):
         from . import network_tools_nuclei_git_fixture as fixture
@@ -750,6 +754,9 @@ def validate_identity(value, *, case=None):
 
 def _validate_counter_context(value, expected):
     expected = validate_identity(expected)
+    if expected["scenario"] in TLS_POSTURE_CASES:
+        from .network_tools_tls_posture_identity import validate_counter_context
+        return validate_counter_context(value, expected)
     request_limit = 2 if expected["scenario"].startswith("kerberos-") else 1
     connection_limit = (2 if expected["scenario"].startswith("kerberos-") else 3 if expected["scenario"].startswith("nmap-service-")
                         else 4 if expected["scenario"].startswith(("rpc-", "nfs-"))
@@ -765,6 +772,9 @@ def _validate_counter_context(value, expected):
 
 def validate_context(value, expected):
     expected = validate_identity(expected)
+    if expected["scenario"] in TLS_POSTURE_CASES:
+        from .network_tools_tls_posture_identity import validate_context as tls_context
+        return tls_context(value, expected)
     if not expected["scenario"].startswith("nuclei-"):
         return _validate_counter_context(value, expected)
     if type(value) is not dict or set(value) != {"identity", "connection_count", "request_count", "owner_response"}:
@@ -786,7 +796,8 @@ def validate_closure(value, expected, *, previous=None):
     before = {"identity": expected, "connection_count": 0, "request_count": 0} if previous is None else previous
     if previous is not None:
         before = validate_context(before, expected)
-        before = {key: item for key, item in before.items() if key != "owner_response"}
+        before = {key: item for key, item in before.items()
+                  if key not in {"owner_response", "tls_posture_owner_sha256"}}
     if context != _validate_counter_context(before, expected):
         raise ValueError("network_tools_lab_closure_mismatch")
     return copy.deepcopy(value)

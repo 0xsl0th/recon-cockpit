@@ -182,6 +182,11 @@ class TLSCertificateParameters(TCPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class TLSPostureParameters(TCPParameters):
+    """Bounds for one separately authorized fixed-version owned TLS probe."""
+
+
+@dataclass(frozen=True, slots=True)
 class SSHHostKeysParameters(TCPParameters):
     """Bounds for one fixed RSA host-key observation, without authentication."""
 

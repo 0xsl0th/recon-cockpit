@@ -32,7 +32,7 @@ def test_all_28_accepted_runtime_invocations_remain_byte_identical():
 
 def test_all_37_accepted_adapters_remain_byte_identical():
     selected = {tool: adapter.to_dict() for tool, adapter in adapters.ADAPTERS.items()
-                if tool not in (adapters.SNMP_NEXT_TOOL_ID, adapters.SSH_ALGORITHMS_TOOL_ID, adapters.TLS_CERTIFICATE_TOOL_ID, adapters.NUCLEI_TOOL_ID, adapters.NUCLEI_GIT_TOOL_ID, adapters.DIG_MX_TOOL_ID)}
+                if "_posture_" not in tool and tool not in (adapters.SNMP_NEXT_TOOL_ID, adapters.SSH_ALGORITHMS_TOOL_ID, adapters.TLS_CERTIFICATE_TOOL_ID, adapters.NUCLEI_TOOL_ID, adapters.NUCLEI_GIT_TOOL_ID, adapters.DIG_MX_TOOL_ID)}
     assert len(selected) == 37
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == (
         "8de073be292540c83863c885ec1696fa8d6dec6429d88551ed0d10dddd5365ff")

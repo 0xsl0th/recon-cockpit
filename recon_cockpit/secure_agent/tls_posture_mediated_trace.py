@@ -93,21 +93,37 @@ def _check_server(mediation, peer, ordinary):
 
 
 def analyze_trial(trial):
-    result = {"diagnostic_only": True, "mediated": True, "outcome": "inconclusive",
+    """Require real diagnostic confinement/cleanup before pure corroboration."""
+    failure = {"diagnostic_only": True, "mediated": True, "outcome": "inconclusive",
+               "issues": [], "evidence": {}, "useful_task_completed": False,
+               "extra_client_hello_prevented": False}
+    if type(trial) is not dict or trial.get("diagnostic_only") is not True or trial.get("mediated") is not True:
+        failure["issues"] = ["not_a_mediated_diagnostic"]
+        return failure
+    confinement = trial.get("confinement", {})
+    if (type(confinement) is not dict
+            or confinement.get("unix_socket_and_socketpair_denied") is not True
+            or any(confinement.get(name) is not True for name in trace.CONFINEMENT_WITNESSES)
+            or (type(trial.get("cleanup")) is not dict or trial["cleanup"].get("closed") is not True)):
+        failure["issues"] = ["mediation_or_confinement_incomplete"]
+        return failure
+    return {"diagnostic_only": True, "mediated": True, **analyze_mediated_wire(
+        trial.get("version"), trial.get("case"), trial.get("execution", {}), trial.get("owner", {}))}
+
+
+def analyze_mediated_wire(version, case, execution, owner):
+    result = {"outcome": "inconclusive",
               "issues": [], "evidence": {}, "useful_task_completed": False,
               "extra_client_hello_prevented": False}
     try:
-        if type(trial) is not dict or trial.get("diagnostic_only") is not True or trial.get("mediated") is not True:
-            raise ValueError("not_a_mediated_diagnostic")
-        ordinary = trace.analyze_trial(trial)
+        ordinary = trace.analyze_wire(version, case, execution, owner)
         result["execution"] = ordinary.get("execution", {})
         result["tls_observation"] = "inconclusive"
         result["evidence"] = dict(ordinary.get("evidence", {}))
-        owner = trial["owner"]
         peer, mediation = owner["diagnostic"], owner["mediation"]
         if (type(peer) is not dict or type(mediation) is not dict or mediation.get("version") != "1"
-                or trial.get("version") not in trace.VERSIONS
-                or peer.get("expected_version") != trial["version"] or peer.get("case") != trial.get("case")):
+                or version not in trace.VERSIONS
+                or peer.get("expected_version") != version or peer.get("case") != case):
             raise ValueError("invalid_mediated_owner")
         for values, fields in (
                 (owner, ("connection_count", "request_count")),
@@ -120,10 +136,7 @@ def analyze_trial(trial):
                 raise ValueError("invalid_mediated_counter")
         if mediation.get("blocked_record_index") is not None and type(mediation["blocked_record_index"]) is not int:
             raise ValueError("invalid_blocked_record_index")
-        if (trial["confinement"].get("unix_socket_and_socketpair_denied") is not True
-                or any(trial["confinement"].get(name) is not True for name in trace.CONFINEMENT_WITNESSES)
-                or trial.get("cleanup", {}).get("closed") is not True
-                or mediation.get("completed") is not True or mediation.get("threads_joined") is not True
+        if (mediation.get("completed") is not True or mediation.get("threads_joined") is not True
                 or mediation.get("connection_deadline_expired") is not False):
             raise ValueError("mediation_or_confinement_incomplete")
         if (owner.get("connection_count") != 1 or owner.get("request_count") != 1
@@ -136,7 +149,7 @@ def analyze_trial(trial):
         received = _raw_rows(peer.get("received_records"), peer.get("received_bytes"))
         if forwarded != received or mediation.get("client_transmitted_bytes") != sum(map(len, forwarded)):
             raise ValueError("mediator_peer_client_mismatch")
-        gate = ClientGate(trial["version"], validate_client_hello)
+        gate = ClientGate(version, validate_client_hello)
         for raw in forwarded:
             gate.check(raw)
             gate.forwarded(raw)
@@ -156,7 +169,7 @@ def analyze_trial(trial):
             result["tls_observation"] = ordinary["outcome"]
             return result
         # Only this declared native challenge can establish retry prevention.
-        if trial.get("case") != "hrr" or trial["version"] != "tls1_3":
+        if case != "hrr" or version != "tls1_3":
             raise ValueError("tls_observation_inconclusive")
         if (mediation.get("blocked") is not True or mediation.get("block_reason") != "extra_client_hello"
                 or mediation.get("blocked_record_index") != len(forwarded)
@@ -175,7 +188,6 @@ def analyze_trial(trial):
                 or peer.get("application_bytes") != 0 or peer.get("error") != "tls_posture_owner_eof"
                 or peer.get("clean_close") is not False):
             raise ValueError("peer_did_not_confirm_prevented_retry")
-        execution = trial["execution"]
         if (type(execution.get("exit_code")) is not int or execution["exit_code"] != 1
                 or execution.get("stop_reason") is not None or execution.get("truncated") is not False):
             raise ValueError("retry_client_execution_incomplete")

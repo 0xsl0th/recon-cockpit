@@ -18,7 +18,7 @@ from .tool_parameters import (
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters,
     PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigMXParameters, DigSRVParameters, DigNSIDParameters, DigAXFRParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters, FTPStartTLSParameters,
-    NmapTCPParameters, TCPParameters, _fields, _reject,
+    NmapTCPParameters, TCPParameters, TLSPostureParameters, _fields, _reject,
 )
 
 
@@ -172,6 +172,18 @@ class ToolAdapter:
 
 
 ADAPTERS = MappingProxyType({
+    **{tool: ToolAdapter(
+        tool, TLSPostureParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_tls_version_posture", "owned-" + tool.replace("_", "-"),
+        "bounded-openssl-tls-posture-result-v1", "openssl-tls-posture-wire-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_tls_version",
+         "dedicated_public_fixture_ca", "stdin_eof", "no_client_credentials",
+         "complete_record_mediation", "second_client_hello_blocked",
+         "client_unix_sockets_blocked", "client_socketpair_blocked",
+         "independent_owner_evidence", "no_response_directed_followup"),
+    ) for tool in ("openssl_tls10_posture_v1", "openssl_tls11_posture_v1",
+                   "openssl_tls12_posture_v1", "openssl_tls13_posture_v1")},
     "http_probe": ToolAdapter(
         "http_probe", HTTPParameters,
         ("port", "method", "path", "timeout_seconds", "max_output_bytes"),

@@ -258,7 +258,7 @@ def test_worker_emits_ready_only_after_seccomp_witnesses_and_descriptor_closure(
 
 def test_new_instrument_is_not_in_accepted_catalog():
     from recon_cockpit.secure_agent import tool_adapters, network_tools_runtime
-    assert not any("posture" in tool for tool in tool_adapters.ADAPTERS)
+    assert not any(tool.startswith("tls_posture_") for tool in tool_adapters.ADAPTERS)
     assert not any("posture" in tool for tool in network_tools_runtime.EXECUTABLES)
 
 

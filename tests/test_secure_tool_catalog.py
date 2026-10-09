@@ -16,6 +16,8 @@ from recon_cockpit.secure_agent.tool_adapters import ADAPTERS
 # Capability names and program families are the accepted coverage inventory,
 # independently of how the catalog happens to assemble its rows.
 PROGRAMS = {
+    "openssl_tls10_posture_v1": "openssl", "openssl_tls11_posture_v1": "openssl",
+    "openssl_tls12_posture_v1": "openssl", "openssl_tls13_posture_v1": "openssl",
     "dig_dns_mx_v1": "dig",
     "dig_dns_nsid_v1": "dig",
     "dig_dns_axfr_v1": "dig",
@@ -46,6 +48,10 @@ PROGRAMS = {
     "configurable_ssh_host_keys_v1": "ssh-keyscan",
 }
 NORMAL_NETWORK_CASES = {
+    "openssl_tls10_posture_v1": ("tls-posture-tls1-modern", "tls-posture"),
+    "openssl_tls11_posture_v1": ("tls-posture-tls1_1-modern", "tls-posture"),
+    "openssl_tls12_posture_v1": ("tls-posture-tls1_2-modern", "tls-posture"),
+    "openssl_tls13_posture_v1": ("tls-posture-tls1_3-modern", "tls-posture"),
     "dig_dns_mx_v1": ("dig-mx-ok", "dns-mx"),
     "dig_dns_nsid_v1": ("dig-nsid-ok", "dns-nsid"),
     "dig_dns_axfr_v1": ("dig-axfr-ok", "dns-axfr"),
@@ -98,8 +104,11 @@ def accepted_recipe(tool):
     if tool in NORMAL_NETWORK_CASES:
         from recon_cockpit.secure_agent import network_tools_contract as contract
         case, policy = NORMAL_NETWORK_CASES[tool]
+        limits = contract.LIMITS
+        if case.startswith("tls-posture-"):
+            from recon_cockpit.secure_agent.network_tools_tls_posture_spec import LIMITS as limits
         return ("--network-tool-assessment", case, policy, contract.WORKFLOW,
-                [contract.action(case)], contract.LIMITS)
+                [contract.action(case)], limits)
     if tool in {"curl_https_get_v1", "ffuf_content_discovery_v1"}:
         from recon_cockpit.secure_agent import web_tools_contract as contract
         case = "curl-ok" if tool == "curl_https_get_v1" else "ffuf-normal"
@@ -132,7 +141,9 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
     assert result["runtime_availability"] == "not_checked"
     ids = [row["tool_id"] for row in result["tools"]]
     assert ids == sorted(PROGRAMS) == sorted(ADAPTERS)
-    assert result["capability_count"] == len(ids) == 43
+    assert result["capability_count"] == len(ids) == 47
+    assert result["accepted_capability_count"] == 43
+    assert result["candidate_capability_count"] == 4
     families = {row["external_program"] for row in result["tools"] if row["external_program"] is not None}
     assert families == set(PROGRAMS.values()) - {None}
     assert result["external_program_count"] == len(families) == 16

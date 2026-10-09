@@ -27,6 +27,13 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **{f"tls-posture-{version}-{variant}": tool
+       for version, tool in (("tls1", "openssl_tls10_posture_v1"),
+                             ("tls1_1", "openssl_tls11_posture_v1"),
+                             ("tls1_2", "openssl_tls12_posture_v1"),
+                             ("tls1_3", "openssl_tls13_posture_v1"))
+       for variant in ("modern", "legacy", "reject")},
+    "tls-posture-tls1_3-hrr": "openssl_tls13_posture_v1",
     **dict.fromkeys(('nuclei-git-main', 'nuclei-git-release', 'nuclei-git-no-marker', 'nuclei-git-not-found', 'nuclei-git-injected', 'nuclei-git-redirect-ip', 'nuclei-git-redirect-port', 'nuclei-git-incomplete', 'nuclei-git-conflicting-length', 'nuclei-git-oversized', 'nuclei-git-chunked', 'nuclei-git-encoded', 'nuclei-git-stalled'), "nuclei_git_head_v1"),
     **dict.fromkeys(('nuclei-index', 'nuclei-index-variant', 'nuclei-no-index', 'nuclei-not-found', 'nuclei-injected', 'nuclei-redirect-ip', 'nuclei-redirect-port', 'nuclei-incomplete', 'nuclei-conflicting-length', 'nuclei-oversized', 'nuclei-chunked', 'nuclei-encoded', 'nuclei-stalled'), "nuclei_directory_listing_v1"),
     **dict.fromkeys(('tls-cert-ok', 'tls-cert-multi-san', 'tls-cert-no-san', 'tls-cert-injected',
@@ -198,7 +205,10 @@ def configuration(value):
             value['limits'][key] > maximum for key, maximum in WEB_TOOLS_LIMITS.items()):
         raise ValueError('invalid_web_tools_admission_limits')
     if value['profile'] == 'owned_network_tools_lab' and any(
-            value['limits'][key] > maximum for key, maximum in {'max_steps': 1, 'max_runtime_seconds': 60, 'max_output_bytes': 8192}.items()):
+            value['limits'][key] > maximum for key, maximum in {
+                'max_steps': 1,
+                'max_runtime_seconds': 30 if value['case'].startswith('tls-posture-') else 60,
+                'max_output_bytes': 8192}.items()):
         raise ValueError('invalid_network_tools_admission_limits')
     if value['profile'] == 'owned_service_web_lab' and any(
             value['limits'][key] > maximum for key, maximum in {'max_steps': 3, 'max_runtime_seconds': 60, 'max_output_bytes': 18432}.items()):

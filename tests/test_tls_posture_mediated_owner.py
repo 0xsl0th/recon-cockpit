@@ -8,6 +8,7 @@ import queue
 import socket
 import subprocess
 import sys
+import threading
 import time
 
 import pytest
@@ -152,6 +153,13 @@ def test_second_client_hello_reaches_ingress_but_never_private_peer(build_servic
     assert mediation["client_forwarded_bytes"] == len(initial + ccs)
     assert mediation["client_ingress_bytes"] == len(initial + ccs + retry)
     assert mediation["forwarded_client_hellos"] == mediation["peer_streams_admitted"] == 1
+    # A normal retry refusal closes the private stream and records actual EOF;
+    # it must not impersonate explicit owner cancellation during peer teardown.
+    assert service.stop.is_set() and not service.cancel_peer.is_set()
+    service.close()
+    assert service.cancel_peer.is_set()
+    assert service.ledger["error"] == "tls_posture_owner_eof"
+    assert service.mediation["completed"] and service.mediation["threads_joined"]
 
 
 def test_partial_first_hello_is_not_forwarded_until_complete(build_service):
@@ -243,6 +251,33 @@ def test_cancellation_interrupts_connected_partial_read(build_service):
     assert service.mediation["threads_joined"] and service.mediation["completed"]
     assert service.relay_pair.fileno() == service.peer_pair.fileno() == -1
     assert service.mediation["client_forwarded_records"] == []
+
+
+def test_peer_read_cancellation_does_not_depend_on_cross_thread_socket_close():
+    # Some platforms do not promptly wake a blocking read when another thread
+    # closes that descriptor. Keep both endpoints OPEN to test cancellation's
+    # independent wake mechanism instead of relying on shutdown behavior.
+    stop = threading.Event()
+    errors = []
+    receiving, sending = socket.socketpair()
+    with receiving, sending:
+        ledger = owner.fixture.new_ledger("hrr", "tls1_3")
+        records = owner.fixture.RecordIO(receiving, time.monotonic() + 3,
+                                         ledger, cancel_event=stop)
+        def receive():
+            try:
+                records.receive()
+            except ValueError as error:
+                errors.append(str(error))
+        thread = threading.Thread(target=receive)
+        thread.start()
+        sending.sendall(b"\x16\3")
+        wait_until(lambda: ledger["received_bytes"] == 2)
+        stop.set()
+        thread.join(timeout=0.5)
+        assert not thread.is_alive()
+        assert errors == ["tls_posture_owner_cancelled"]
+        assert receiving.fileno() >= 0 and sending.fileno() >= 0
 
 
 def test_record_metadata_hashes_server_without_duplicating_raw_bytes():

@@ -4,12 +4,27 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: [PR #77](https://github.com/0xsl0th/recon-cockpit/pull/77) is
-merged at `942c815`; C18/T01 stays accepted. The current T02 slice adds closed
-diagnostic observations and networkless replay, preserving useful rejection
-without changing exit 1 into success. Fresh native execution and 26 isolated
-replays passed; final PR checks remain required. Product authority/evidence
-integration remains next; T02–T06 remain open.**
+**Current status: [PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78)
+is merged at `efdb133`. C18/T01 stays accepted. Four T02 production TLS posture
+profiles are candidates in [PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79),
+branch `feature/tls-posture-production`, worktree
+`/tmp/recon-tls-posture-production`; see the [runbook](tls-posture-tools.md).
+They connect actual owned execution to policy, fresh per-action approval,
+consumed permits, independent owner evidence and both assessment inspectors.
+Accepted coverage remains 43 profiles / 16 programs; T02–T06 remain open.**
+
+PR #78 merged reviewed `68c70b7` after two independent reviews, 294 fresh focused
+passes and all five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37856709330)
+passed (20,860 tests per job, zero skips/failures/errors). Reviewed and merged
+trees match `37b8509564e50a3d0fef28562efe33c77e41caaf`. The
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37858294523)
+passed all four Linux jobs but exposed an intermittent macOS cancellation test
+failure: a 0.5-second owner join could expire before a blocked peer read woke.
+This candidate adds explicit cancellable peer polling, tested independently of
+cross-thread socket close, while keeping normal HRR EOF distinct from cancellation.
+Retain `.secure-agent/pr78-merge-review.json`, SHA-256
+`8ba15b616880234f2ab3d7e02bd2cc2040ed9d400ad35c0838902d1f5af99865`.
+The failed run remains historical evidence; a new green run must not erase it.
 
 PR #75 merged reviewed `ef412f79` as `cb17f0cb` after fresh independent review
 found no blockers and all five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37836316541)
@@ -46,25 +61,42 @@ retry prevented before peer delivery**, with cleanup and Unix-socket witnesses.
 Keep `.secure-agent/tls-posture-mediator-20261008/` unchanged. Accepting this
 development boundary added no secure profile and did not close T02.
 
-The current [diagnostic observation/replay slice](tls-posture-observations.md)
-is open in [PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78), branch
-`feature/tls-posture-observations` in `/tmp/recon-tls-posture-observations`.
-It adds a closed input
-and result contract, exact input digest, a networkless parser and read-only CLI.
-Four version identifiers remain unregistered. A received rejection keeps actual
-exit 1 and a failed process outcome while separately reporting useful completion.
-The owner and analyzer now share a pure ClientHello grammar, so all thirteen
-native trials were rerun at execution freeze `1874c33`: 8/8 ordinary and 4/4
-absence observations, zero unnecessary refusals and 1/1 retry blocked. At parser
-source `a6a4739`, 26/26 fresh/prior captures replayed identically and 18/18
-negative/cancellation/deadline cases had the expected safe outcomes. Prior
-capture bytes, modification times and modes stayed unchanged. The initial closed
-parser failure is retained; the correction closes bootstrap-created libffi
-file descriptors before importing or reading untrusted parser input. All 294
-focused checks pass. Complete portable validation and final PR checks remain
-merge gates; see the runbook and PR for those results and the private corpus.
-No production authority or assessment inspector changed; accepted coverage stays
-**43 profiles / 16 programs**.
+The [diagnostic observation/replay slice](tls-posture-observations.md) is
+accepted in PR #78. Its four diagnostic identifiers remain unregistered and do
+not grant authority. Preserve `.secure-agent/tls-posture-observations-20261008/`
+and the earlier PR #76/#77 captures unchanged. The original fresh diagnostic
+matrix had 8/8 ordinary and 4/4 absence observations, zero unnecessary refusals,
+1/1 retry blocked, 26/26 isolated replays and 18/18 safe negative cases. This is
+historical diagnostic validation, separate from fresh production trials.
+
+The production candidates are `openssl_tls10_posture_v1`,
+`openssl_tls11_posture_v1`, `openssl_tls12_posture_v1` and
+`openssl_tls13_posture_v1`. Each has a separate fixed action and permit, a
+30-second session, five-second client cap and 8,192 client-output-byte cap.
+Explicit rejection retains failed execution/exit 1 and can be a useful report
+observation; retry blocking is safety evidence and does not count as useful work.
+Owner bytes are preserved separately, with exact case/version/counter/hash
+binding and full authority-result reconstruction during read-only replay.
+
+Frozen production source `a0a0661` passed **33/33 native tests**: 8/8 ordinary
+plus 4/4 explicit-absence useful observations, one tested HRR retry prevented
+without counting it as useful, and twenty authority/cancellation checks. All
+fourteen confinement witnesses passed; thirteen bundles replayed unchanged
+through both inspectors. Four accepted native regressions and seven selected
+historical bundles also passed. Private native receipt:
+`.secure-agent/tls-posture-production-20261008/native/verification.json`, SHA-256
+`4f6201744eb64f38abdd13a83cf3cbf76ddebe132fc80a9324e4492ac4ba5621`.
+The top-level private verification/handoff records portable validation, final
+review and PR status. The [runbook](tls-posture-tools.md) retains the measurements
+and development failures; do not overwrite their evidence or claim full-corpus
+acceptance from selected regressions.
+
+Next finish T02's hostile-usefulness, ambiguity/pressure and full accepted-bundle
+regression corpus, then review G1–G6. Do not close T02 from this integration slice
+alone. After acceptance, select **T03 SSH policy assessment**, then T04 bounded
+web hierarchy, T05 SNMP interface page and T06 AAAA/PTR metadata from the finite
+coverage contract. Credentials, live/paid models, attached targets, deeper
+workflows and comparative benchmarks remain deferred.
 
 The owner chose to wait with the competition proposal until **November 2026**.
 Keep PR #31, its proposal/PDF and email draft unchanged this turn. Refresh them
@@ -163,13 +195,12 @@ failure** remains unchanged historical evidence; the new trial does not relabel 
 
 The gate validates plaintext framing and bounds encrypted record shapes; it does
 not decrypt traffic or prove general encrypted application-data prevention.
-PR #77 accepted this diagnostic boundary. The current
-[closed observation/replay slice](tls-posture-observations.md) validates retained
-captures without loading owner/key modules or creating execution authority.
-After its review, integrate four separately versioned profiles through policy,
-fresh per-action approval, consumed permits, admission and both production evidence
-inspectors. Complete the full hostile-usefulness, ambiguity/pressure,
-enforcement, cancellation and regression corpus before G1–G6 acceptance.
+PR #77 accepted this diagnostic boundary and PR #78 accepted
+[closed diagnostic observation/replay](tls-posture-observations.md). The current
+[production integration](tls-posture-tools.md) connects four candidate profiles
+to policy, approval, consumed permits and both evidence inspectors. Finish the
+remaining hostile-usefulness, ambiguity/pressure and full regression corpus
+before G1–G6 acceptance.
 Diagnostic receipts do not close those product gates. Accepted coverage remains
 **43 profiles / 16 programs**; existing TLS profiles and limits stay unchanged.
 Continue through required T03–T06 using the

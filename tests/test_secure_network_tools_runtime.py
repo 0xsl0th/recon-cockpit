@@ -22,6 +22,9 @@ from recon_cockpit.secure_agent.network_tools_worker import _landlock_permission
 
 
 def manifest(tool_id=runtime.DIG):
+    if tool_id in runtime.TLS_POSTURE_TOOLS:
+        from recon_cockpit.secure_agent.network_tools_tls_posture_runtime import PROFILE
+        return {**manifest(runtime.TLS_CERTIFICATE), "tool_id": tool_id, "profile": PROFILE}
     if tool_id in (runtime.NUCLEI, runtime.NUCLEI_GIT):
         from recon_cockpit.secure_agent.network_tools_nuclei_runtime import for_tool
         return for_tool(tool_id).manifest()
@@ -54,21 +57,32 @@ def policy():
 
 
 def configuration(case="dig-ok"):
+    from recon_cockpit.secure_agent.network_tools_tls_posture_spec import CASES as TLS_CASES, LIMITS as TLS_LIMITS
     return {"version": "1", "service_id": str(uuid4()), "session_id": str(uuid4()),
-        "policy": policy().to_dict(), "limits": dict(LIMITS), "execute": True,
+        "policy": policy_for_case(case).to_dict(), "limits": dict(TLS_LIMITS if case in TLS_CASES else LIMITS), "execute": True,
         "profile": "owned_network_tools_lab", "case": case}
 
 
+def policy_for_case(case):
+    from recon_cockpit.secure_agent.network_tools_tls_posture_spec import CASES as TLS_CASES
+    original = policy()
+    if case not in TLS_CASES:
+        return original
+    return parse_policy({**original.to_dict(), "allowed_tools": [action(case)["tool_id"]]})
+
+
 def envelope(case="dig-ok"):
+    from recon_cockpit.secure_agent.network_tools_tls_posture_spec import CASES as TLS_CASES, LIMITS as TLS_LIMITS
     selected = parse_action(action(case))
+    selected_limits = dict(TLS_LIMITS if case in TLS_CASES else LIMITS)
     host = {name: name + ":[100]" for name in ("user", "net", "mnt", "pid")}
     return {"mode": "owned_network_tools_lab", "identity": identity(case, str(uuid4())),
         "namespaces": {name: name + ":[200]" for name in host}, "runtime": manifest(selected.tool_id),
         "launch": {"schema_version": "1", "mode": "network_tools_owned", "execute": True,
             "session_id": str(uuid4()), "nonce": "a" * 64, "sequence": 1,
             "action": selected.to_dict(), "action_digest": selected.digest,
-            "policy": policy().to_dict(), "policy_digest": policy().digest,
-            "limits": dict(LIMITS), "limits_digest": digest(LIMITS), "deadline": 130,
+            "policy": policy_for_case(case).to_dict(), "policy_digest": policy_for_case(case).digest,
+            "limits": selected_limits, "limits_digest": digest(selected_limits), "deadline": 130,
             "output_reserved_before": 0, "output_reserved_after": 8192, "host_namespaces": host}}
 
 
