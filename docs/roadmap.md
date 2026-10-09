@@ -270,7 +270,7 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current status: PR #79 merged four T02 [production candidates](tls-posture-tools.md);
+**Historical pre-merge snapshot (before PRs #80/#81): PR #79 merged four T02 [production candidates](tls-posture-tools.md);
 C18/T01 stays accepted. PR #80 validates the acceptance corpus; G6 review/checks
 and authorized merge remain pending. PR #81 is a separate T03 candidate, reviewed
 after T02; T02–T06 remain open and accepted coverage stays 43/16.**

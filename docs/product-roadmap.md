@@ -239,7 +239,7 @@ most four typed preference/exchange rows, with useful null-MX/NODATA/NXDOMAIN
 results and no returned-host follow-up. It reuses `dig`; see the
 [C18 runbook](dns-mx-tools.md). Its merge adds one accepted profile and no program.
 
-**T02 remains open: the [mediated diagnostic](tls-posture-mediation.md) now
+**Historical pre-merge snapshot (before PRs #80/#81): T02 remains open; the [mediated diagnostic](tls-posture-mediation.md)
 preserves usefulness and blocks the tested plaintext retry before peer delivery.**
 Frozen source `4d92d1d` produced 8/8 ordinary observations across TLS
 1.0/1.1/1.2/1.3 and 4/4 explicit received rejections, with zero unnecessary

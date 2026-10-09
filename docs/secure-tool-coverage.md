@@ -383,7 +383,7 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current status: PR #79 is merged; C18/T01 stays accepted. Its four T02
+**Historical pre-merge snapshot (before PRs #80/#81): PR #79 is merged; C18/T01 stays accepted. Its four T02
 production profiles remain candidates. PR #80 validates the acceptance corpus;
 G6 review/checks and authorized merge remain pending. The separate T03 candidate
 in PR #81 follows in review order; accepted coverage stays 43 profiles/16 programs.**
