@@ -197,6 +197,11 @@ class SSHAlgorithmsParameters(TCPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class SSHPolicyParameters(TCPParameters):
+    """One fixed pre-authentication advertisement assessed against a pinned local policy."""
+
+
+@dataclass(frozen=True, slots=True)
 class LDAPRootDSEParameters(TCPParameters):
     """Bounds for one fixed anonymous RootDSE query, without follow-up searches."""
 

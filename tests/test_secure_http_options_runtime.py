@@ -24,7 +24,7 @@ from test_secure_network_tools_runtime import envelope, manifest, recommit, veri
 def test_all_27_accepted_runtime_invocations_remain_byte_identical():
     selected = {tool: [exe, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, exe in runtime.EXECUTABLES.items() if tool not in (runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
+        for tool, exe in runtime.EXECUTABLES.items() if tool != "ssh_transport_policy_v1" and tool not in (runtime.HTTP_OPTIONS, runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
     assert len(selected) == 27
     # Captured from accepted PR65 main before C12 changes.
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == (
@@ -33,7 +33,7 @@ def test_all_27_accepted_runtime_invocations_remain_byte_identical():
 
 def test_all_36_accepted_adapters_remain_byte_identical():
     selected = {tool: adapter.to_dict() for tool, adapter in adapters.ADAPTERS.items()
-                if "_posture_" not in tool and tool not in (adapters.HTTP_OPTIONS_TOOL_ID, adapters.SNMP_NEXT_TOOL_ID, adapters.SSH_ALGORITHMS_TOOL_ID, adapters.TLS_CERTIFICATE_TOOL_ID, adapters.NUCLEI_TOOL_ID, adapters.NUCLEI_GIT_TOOL_ID, adapters.DIG_MX_TOOL_ID)}
+                if "_posture_" not in tool and tool != adapters.SSH_POLICY_TOOL_ID and tool not in (adapters.HTTP_OPTIONS_TOOL_ID, adapters.SNMP_NEXT_TOOL_ID, adapters.SSH_ALGORITHMS_TOOL_ID, adapters.TLS_CERTIFICATE_TOOL_ID, adapters.NUCLEI_TOOL_ID, adapters.NUCLEI_GIT_TOOL_ID, adapters.DIG_MX_TOOL_ID)}
     assert len(selected) == 36
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == (
         "e4883258e64198b32eab6128066ee27f33cc802e03db5dcd3f3b349e00d178a1")

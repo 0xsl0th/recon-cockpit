@@ -43,7 +43,7 @@ class AuthorizedNetworkToolsBackend(AuthorizedOwnedLabBackend):
                        "redis_server_info_v1", "snmp_system_get_v1",
                        "postgresql_tls_handshake_v1", "mysql_tls_handshake_v1", "smtp_starttls_handshake_v1", "ldap_starttls_handshake_v1", "ftp_starttls_handshake_v1", "whatweb_http_fingerprint_v1", "dig_dns_mx_v1", "dig_dns_srv_v1", "dig_dns_nsid_v1", "dig_dns_axfr_v1", "curl_http_options_v1", "snmp_interface_next_v1", "ssh_transport_algorithms_v1", "openssl_peer_certificate_v1", "nuclei_directory_listing_v1", "nuclei_git_head_v1", "rdp_initial_negotiation_v1", "smb2_negotiate_metadata_v1")
     launch_mode = _envelope_mode = "owned_network_tools_lab"
-    supported_tools += tuple(TLS_POSTURE_TOOLS)
+    supported_tools += tuple(TLS_POSTURE_TOOLS) + ("ssh_transport_policy_v1",)
     _executor_mode = "network_tools_owned"
     _closure = None
     _network_tools_manifest = None

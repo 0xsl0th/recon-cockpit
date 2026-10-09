@@ -37,6 +37,7 @@ def tool_for_case(case):
         return TLS_POSTURE_CASE_TO_TOOL[case]
     for prefix, tool in (("nuclei-git-", "nuclei_git_head_v1"), ("nuclei-", "nuclei_directory_listing_v1"), ("tls-cert-", "openssl_peer_certificate_v1"),
                          ("ssh-algos-", "ssh_transport_algorithms_v1"),
+                         ("ssh-policy-", "ssh_transport_policy_v1"),
                          ("ftp-tls-", "ftp_starttls_handshake_v1"),
                          ("ldap-tls-", "ldap_starttls_handshake_v1"),
                          ("smtp-tls-", "smtp_starttls_handshake_v1"),
@@ -1290,3 +1291,39 @@ TLS_POSTURE_CASE_TO_TOOL = {
 TLS_POSTURE_CASES = tuple(TLS_POSTURE_CASE_TO_TOOL)
 CASES += TLS_POSTURE_CASES
 VARIANTS = CASES
+
+SSH_POLICY_CASES = tuple("ssh-policy-" + suffix for suffix in (
+    "conforming", "directional", "legacy", "c2s-deviation", "s2c-deviation", "guessed",
+    "fragmented", "injected", "unknown", "mixed-unknown", "malformed-banner", "wrong-message",
+    "malformed-list", "bad-padding", "nonzero-reserved", "truncated", "stalled", "oversized",
+    "summary-pressure"))
+CASES += SSH_POLICY_CASES
+VARIANTS = CASES
+
+
+def ssh_policy_response(case):
+    if type(case) is not str or case not in SSH_POLICY_CASES:
+        raise ValueError("invalid_ssh_policy_case")
+    suffix = case.removeprefix("ssh-policy-")
+    if suffix == "conforming":
+        return ssh_algorithms_response("ssh-algos-ok")
+    if "ssh-algos-" + suffix in SSH_ALGORITHMS_CASES:
+        return ssh_algorithms_response("ssh-algos-" + suffix)
+    names = list(SSH_ALGORITHMS_SERVER_NAME_LISTS)
+    if suffix == "c2s-deviation":
+        names[2] = b"3des-cbc"
+    elif suffix == "s2c-deviation":
+        names[5] = b"hmac-sha1"
+    elif suffix == "unknown":
+        names[0] = b"curve25519-sha256,unknown@owned.test"
+    elif suffix == "mixed-unknown":
+        names[0] = b"diffie-hellman-group1-sha1,unknown@owned.test"
+    elif suffix == "summary-pressure":
+        names[0] = b",".join(bytes([65 + index]) * 40 for index in range(16))
+    else:
+        raise ValueError("unsupported_ssh_policy_case")
+    raw = SSH_ALGORITHMS_SERVER_IDENTIFICATION + _ssh_algorithms_packet(
+        _ssh_algorithms_kex_payload(names))
+    if len(raw) > SSH_ALGORITHMS_MAX_RESPONSE_BYTES:
+        raise ValueError("ssh_policy_fixture_response_limit")
+    return raw

@@ -216,7 +216,7 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         for field in ('session_tickets', 'application_requests', 'client_certificate', 'credentials',
                 'authentication', 'revocation_checked', 'ocsp', 'aia_fetch', 'dns_resolution', 'retries', 'followup'):
             assert definition[field] is False
-    elif case.startswith("ssh-algos-"):
+    elif case.startswith(("ssh-algos-", "ssh-policy-")):
         assert definition['request_template_sha256'] == hashlib.sha256(fixture.SSH_ALGORITHMS_REQUEST).hexdigest()
         assert definition['request_random_cookie'] == {'offset': fixture.SSH_ALGORITHMS_COOKIE_OFFSET,
             'bytes': 16, 'retained': False, 'template_cookie_is_zero': True}

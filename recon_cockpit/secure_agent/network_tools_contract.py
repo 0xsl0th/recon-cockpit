@@ -40,6 +40,10 @@ from .network_tools_fixture import (QUERY_NAME, TLS_NAME, CA_PEM, tool_for_case,
 
 from . import network_tools_tls_posture_spec as tls_posture
 T02_CASES = tls_posture.CASES
+from . import network_tools_ssh_policy_spec as ssh_policy
+from .network_tools_ssh_policy_parser import POLICY_ID as SSH_POLICY_ID, POLICY_SHA256 as SSH_POLICY_SHA256
+T03_CASES = ssh_policy.CASES
+SSH_POLICY_TOOL_ID = ssh_policy.TOOL_ID
 
 
 TOOL_ID = DIG_TOOL_ID
@@ -123,6 +127,8 @@ PARAMETERS[HTTP_OPTIONS_TOOL_ID] = dict(HTTP_OPTIONS_PARAMETERS)
 PARSER_VERSIONS[HTTP_OPTIONS_TOOL_ID] = "curl-http-options-v1"
 PARAMETERS.update({tool: dict(tls_posture.PARAMETERS) for tool in tls_posture.TOOL_VERSIONS})
 PARSER_VERSIONS.update({tool: tls_posture.PARSER_VERSION for tool in tls_posture.TOOL_VERSIONS})
+PARAMETERS[SSH_POLICY_TOOL_ID] = dict(ssh_policy.PARAMETERS)
+PARSER_VERSIONS[SSH_POLICY_TOOL_ID] = "ssh-policy-wire-v1"
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
     "capabilities_dropped", "no_new_privs", "root_read_only", "process_creation_blocked",
     "raw_sockets_blocked", "landlock_applied", "python_unreadable"})
@@ -154,8 +160,24 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES + C15_CASES + C16_CASES + C17_CASES + C18_CASES + T02_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES + C15_CASES + C16_CASES + C17_CASES + C18_CASES + T02_CASES + T03_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in T03_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(SSH_POLICY_TOOL_ID).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "ssh_policy": {"policy_id": SSH_POLICY_ID, "policy_sha256": SSH_POLICY_SHA256,
+                "protocol": "2.0", "max_connections": 1, "max_requests": 1,
+                "client_write_half_close_before_response": True, "max_identification_bytes": 255,
+                "max_packet_length": 4096, "max_capture_bytes": 4355,
+                "both_directions_assessed": True, "unknown_algorithms": "inconclusive",
+                "preference_assessed": False, "key_exchange_completion": False,
+                "authentication": False, "session": False, "credentials": False,
+                "rate_test": False, "stress_test": False, "retries": False,
+                "response_directed_followup": False, "service_identity_verified": False},
+            "result_semantics": "untrusted_ssh_advertisements_against_pinned_local_policy",
+            "parser_versions": {SSH_POLICY_TOOL_ID: PARSER_VERSIONS[SSH_POLICY_TOOL_ID]}}
     if case in T02_CASES:
         tool_id = tls_posture.tool_for_case(case)
         return {"schema_version": "1", "workflow_id": WORKFLOW,
@@ -545,6 +567,8 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
             or (expected["scenario"] in C16_CASES + C17_CASES and result.get("tool_observation") is not None and connections != 1)
             or (expected["scenario"] in C15_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in TLS_CERTIFICATE_SUCCESS_CASES))
+            or (expected["scenario"] in T03_CASES and result.get("tool_observation") is not None
+                and (connections != 1 or expected["scenario"] not in ssh_policy.SUCCESS_CASES))
             or (expected["scenario"] in C14_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in SSH_ALGORITHMS_SUCCESS_CASES))
             or (expected["scenario"] in C13_CASES and result.get("tool_observation") is not None
@@ -676,6 +700,10 @@ def classify_tool(tool_id, normalized):
         return _observation(tool_id, normalized["outcome"], normalized["outcome"], normalized)
     if tool_id == TLS_CERTIFICATE_TOOL_ID:
         return _observation(tool_id, "tls_peer_certificate_observed", "tls_peer_certificate_observed", normalized)
+    if tool_id == SSH_POLICY_TOOL_ID:
+        reason = "ssh_policy_" + normalized["policy_status"]
+        return _observation(tool_id, "inconclusive" if normalized["policy_status"] == "inconclusive" else reason,
+                            reason, normalized)
     if tool_id == SSH_ALGORITHMS_TOOL_ID:
         return _observation(tool_id, "ssh_algorithm_advertisements_observed", "ssh_algorithm_advertisements_observed", normalized)
     if tool_id == SNMP_NEXT_TOOL_ID:
