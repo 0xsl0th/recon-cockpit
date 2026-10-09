@@ -37,6 +37,10 @@ general hardening compliance is claimed.
 The compiled catalog now reports **48 accepted profiles, zero candidates and
 16 programs**, matching the reviewed merges above. Only acceptance metadata and
 its documentation change; G1–G6 stay closed and execution controls stay fixed.
+This reconciliation and the source-only T04 plan are in
+[PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82), pending final review and
+the five-job portable matrix before merge. The private handoff records the final
+head and check status; T04 execution is not part of this PR.
 The [T04 source review](web-hierarchy-feasibility.md) selects a separate bounded
 ffuf hierarchy candidate. Native prototype, registration and G1–G6 remain open;
 no T04 profile is accepted. T05 SNMP interface page and T06 AAAA/PTR remain required.

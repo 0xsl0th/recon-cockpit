@@ -149,7 +149,7 @@ features, not confinement or compatibility:
 - The [pinned ssh-audit source review](ssh-policy-feasibility.md) found that
   `--skip-rate-test` still permits other probes before policy evaluation. T03
   therefore uses the accepted bounded collector and a local policy snapshot.
-- The [pinned feroxbuster/ffuf source review](web-hierarchy-feasibility.md) found
+- The [pinned feroxbuster source review](web-hierarchy-feasibility.md) found
   six generated concurrent wildcard GETs in stock feroxbuster calibration. The
   selected finite ffuf candidate still needs native usefulness and confinement
   evidence; source feasibility does not establish acceptance.
