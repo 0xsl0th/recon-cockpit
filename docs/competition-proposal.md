@@ -49,38 +49,96 @@ la salida de una herramienta, manteniendo la capacidad de resolver la tarea leg�
 
 ## 3. Arquitectura y límites de confianza
 
-El esquema resume el flujo propuesto. La autoridad, los ejecutores y la auditoría
-ya tienen implementaciones verificadas con datos sintéticos. La conexión de un
-modelo real a la demostración adversarial es trabajo planificado.
+La arquitectura separa **proponer, autorizar, acreditar condiciones y ejecutar**.
+El primer esquema muestra relaciones lógicas; no concede al agente acceso directo
+a servicios internos. Los adaptadores del host median los mensajes acotados.
+La ruta de referencia utiliza planificación sintética y servicios propios sin
+salida externa. Los adaptadores de modelo se validan con mocks; las credenciales,
+las llamadas pagadas y la evaluación real permanecen desactivadas y diferidas.
 
 ```mermaid
-flowchart TD
-    O[Operador: alcance y límites] --> A[Autoridad de sesión]
-    B[Proveedor sintético o modelo real planificado] --> P[Planificador aislado]
-    P -->|Propuesta estructurada| A
-    A -->|Revisión si corresponde| H[Aprobación humana]
-    H -->|Permiso vinculado de un solo uso| A
-    A -->|Intención previa a ejecutar| L[Auditoría]
-    A -->|Acción autorizada| X[Ejecutor aislado]
-    X --> T[Servicio propio autorizado]
-    T -->|Respuesta no confiable| X
-    X --> E[Evidencia y observación acotada]
-    E -->|Datos sin autoridad| P
-    A -->|Fuera de alcance| N[Rechazo sin ejecución]
-    N -->|Motivo de rechazo| L
+flowchart TB
+    operator["Operador: alcance, reglas y presupuesto"] --> authority["Autoridad de sesión"]
+    context["Perfil revisado: objetivo, destino y capacidades fijas"] -->|"Contexto informativo, sin permisos"| planner["Planificador y parser aislados"]
+    knowledge["Conocimiento curado y motores especializados: futuro"] -.-> planner
+    planner -->|"Solicitud acotada, mediante adaptador"| broker["Broker de IA: transporte sintético offline"]
+    broker -->|"Respuesta acotada tras controles y contabilidad"| planner
+    planner -->|"Propuesta tipada, sin autoridad"| authority
+    authority -->|"Solicitar lanzamiento de la acción exacta"| gate["Comprobaciones independientes previas"]
+    gate -->|"Solo si todas pasan"| executor["Adaptador y ejecutor aislado"]
+    executor -->|"Operación limitada"| target["Servicio propio autorizado"]
+    target -->|"Respuesta no confiable"| executor
+    executor -->|"Resultado, estado y recursos"| authority
+    gate -->|"Denegación o fallo previo: sin lanzamiento"| authority
+    authority -->|"Decisión, estado y motivo de cierre"| operator
+    authority -->|"Resultado y procedencia"| evidence["Evidencia e informe revisable"]
+    evidence -->|"Proyección autorizada si procede otro paso"| planner
 ```
 
-La política y los permisos permanecen fuera del planificador. Una aprobación se
-vincula a una acción exacta y no habilita sus pasos posteriores. Si falla una
-precondición de autorización o el registro previo, no se inicia la acción. El
-lanzador comprueba los testigos de auditoría y, cuando la política lo exige, de
-aprobación. El sistema conserva límites de tiempo, salida y consumo.
+El contexto del agente describe la tarea; **no es una autorización**. Hoy procede
+de perfiles e instrucciones fijas revisadas y de observaciones limitadas. El
+agente no recibe la política mutable, concesiones humanas, credenciales ni
+manejadores del ejecutor. Un contexto dinámico general para múltiples agentes
+es trabajo futuro. Las fichas actuales tampoco equivalen a una plataforma
+completa de conocimiento curado.
 
-El entorno Linux, el arranque y los componentes de autoridad siguen siendo
-confiables. El aislamiento no protege frente a un propietario malicioso del host
-ni frente al compromiso del kernel. Tampoco elimina errores dentro de acciones
-permitidas. El detalle de estos límites y de sus pruebas está en el
-[anexo técnico](#anexo-tecnico).
+El broker verifica la solicitud contra la configuración y los datos que el host
+permite liberar, aplica límites y contabilidad, y acota la respuesta antes de
+entregarla al parser. En la ruta sintética integrada se liquida el uso simulado
+antes de liberar una propuesta. La respuesta del proveedor sigue siendo no
+confiable: no concede permiso para ejecutar. La vista de evidencia depende del
+perfil; no implica entregar todos los artefactos ni el cuerpo HTTP crudo al modelo.
+
+**Antes de lanzar una herramienta se comprueban condiciones distintas y necesarias.**
+El segundo esquema detalla la ruta con lanzador aislado y verificación directa
+de auditoría y aprobación; estas opciones no describen todos los modos heredados.
+
+```mermaid
+flowchart TB
+    authority["Autoridad de sesión"] -->|"Acción exacta y contexto de sesión"| launcher["Lanzador: comprueba todas las condiciones"]
+    authority -->|"Persistir intención antes de ejecutar"| audit["Escritor de auditoría: escritura durable"]
+    audit -->|"Testigo independiente del registro previo"| launcher
+    authority -->|"Revisión y consumo, si la política exige aprobación"| approval["Servicio de aprobación humana"]
+    approval -->|"Testigo de concesión consumida, vigente y vinculada"| launcher
+    launcher -->|"Revalidar política, perfil y límites"| admission["Admisión: emitir y consumir permiso de un uso"]
+    admission -->|"Decisión y reservas verificadas"| launcher
+    launcher -->|"Falla una condición"| denied["Sin lanzamiento"]
+    launcher -->|"Todas pasan; aprobación aún vigente si se exige"| execution["Ejecución aislada y limitada"]
+    denied -->|"Estado de rechazo o fallo"| authority
+    execution -->|"Estado y uso de recursos"| authority
+```
+
+- **Autorización:** la autoridad y la admisión aplican esquema, alcance, perfil,
+  modo, secuencia y límites. El permiso de lanzamiento se vincula a la acción y
+  política exactas y se consume una sola vez. Una aprobación humana no puede
+  convertir una denegación de política en una acción permitida.
+- **Auditoría:** después de escribir y sincronizar la intención, el escritor
+  envía su testigo directamente al lanzador. Este verifica identidad, contenido,
+  secuencia y frescura. El testigo acredita un registro durable; **no autoriza la
+  acción ni demuestra que se ejecutó**.
+- **Aprobación requerida:** el servicio separado acredita el consumo de una
+  concesión humana vigente, ligada a sesión, acción y política. El lanzador
+  verifica esa prueba y vuelve a comprobar su vigencia después de consumir el
+  permiso de admisión. Una acción que la política permite sin revisión no
+  requiere esa concesión; los pasos posteriores se evalúan de nuevo.
+
+Si falta o falla una condición previa, no se lanza la acción ni se usa una ruta
+alternativa. El estado de ejecución, los recursos y los rechazos vuelven a la
+autoridad y al operador; las decisiones se registran mientras la auditoría esté
+disponible. Un fallo de auditoría detiene el flujo, sin inventar un registro de
+cierre exitoso. Si se pierde una confirmación después de iniciar la ejecución,
+el resultado puede ser incierto: no equivale a «no ejecutado» ni autoriza repetir.
+En el flujo actual una denegación cierra la sesión; **no genera otra llamada al
+modelo ni un reintento automático**. Solo un siguiente paso elegible recibe la
+proyección acotada y no confiable del resultado anterior.
+
+La política elegida, el arranque, los componentes fijos, el propietario del host
+y el kernel siguen siendo parte de la base de confianza. No se afirma resistencia
+a su compromiso ni a toda inyección de instrucciones. Estas relaciones se
+contrastan con los contratos de [auditoría](launch-audit-witness.md),
+[aprobación](launch-approval-witness.md), [admisión](isolated-launch-admission.md)
+y [planificación offline](owned-tls-assessment-planning.md); el
+[anexo técnico](#anexo-tecnico) conserva la evidencia histórica y sus límites.
 
 ## 4. Qué está verificado y qué falta
 

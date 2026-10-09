@@ -10,6 +10,8 @@ import time
 from uuid import UUID
 
 from .models import load_json, parse_action, parse_policy
+from .tool_adapters import (NMAP_SESSION_LIMITS, WEB_TOOLS_LIMITS, CURL_TOOL_ID, FFUF_TOOL_ID,
+                            CURL_PARAMETERS, FFUF_PARAMETERS, NMAP_SERVICE_PARAMETERS, HTTP_HEADERS_PARAMETERS)
 
 MAX_PACKET = 32768
 MAX_REQUESTS = 32
@@ -22,6 +24,123 @@ REASONS = frozenset({'admission_dry_run', 'admission_policy_changed', 'admission
     'admission_missing', 'admission_unknown_or_replayed', 'admission_expired',
     'admission_action_changed'})
 COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
+# Keep the admission worker's dependency closure small and dispatch closed.
+# A portable contract test checks every case against the owned fixture map.
+NETWORK_TOOL_CASES = {
+    **{f"tls-posture-{version}-{variant}": tool
+       for version, tool in (("tls1", "openssl_tls10_posture_v1"),
+                             ("tls1_1", "openssl_tls11_posture_v1"),
+                             ("tls1_2", "openssl_tls12_posture_v1"),
+                             ("tls1_3", "openssl_tls13_posture_v1"))
+       for variant in ("modern", "legacy", "reject")},
+    "tls-posture-tls1_3-hrr": "openssl_tls13_posture_v1",
+    **dict.fromkeys(('nuclei-git-main', 'nuclei-git-release', 'nuclei-git-no-marker', 'nuclei-git-not-found', 'nuclei-git-injected', 'nuclei-git-redirect-ip', 'nuclei-git-redirect-port', 'nuclei-git-incomplete', 'nuclei-git-conflicting-length', 'nuclei-git-oversized', 'nuclei-git-chunked', 'nuclei-git-encoded', 'nuclei-git-stalled'), "nuclei_git_head_v1"),
+    **dict.fromkeys(('nuclei-index', 'nuclei-index-variant', 'nuclei-no-index', 'nuclei-not-found', 'nuclei-injected', 'nuclei-redirect-ip', 'nuclei-redirect-port', 'nuclei-incomplete', 'nuclei-conflicting-length', 'nuclei-oversized', 'nuclei-chunked', 'nuclei-encoded', 'nuclei-stalled'), "nuclei_directory_listing_v1"),
+    **dict.fromkeys(('tls-cert-ok', 'tls-cert-multi-san', 'tls-cert-no-san', 'tls-cert-injected',
+                    'tls-cert-wrong-name', 'tls-cert-expired', 'tls-cert-untrusted', 'tls-cert-unsupported-san',
+                    'tls-cert-too-many-san', 'tls-cert-oversized', 'tls-cert-malformed', 'tls-cert-stalled'),
+                   'openssl_peer_certificate_v1'),
+    **dict.fromkeys(('ssh-algos-ok', 'ssh-algos-directional', 'ssh-algos-legacy',
+                    'ssh-algos-guessed', 'ssh-algos-fragmented', 'ssh-algos-injected',
+                    'ssh-algos-malformed-banner', 'ssh-algos-wrong-message', 'ssh-algos-malformed-list',
+                    'ssh-algos-bad-padding', 'ssh-algos-nonzero-reserved', 'ssh-algos-truncated',
+                    'ssh-algos-stalled', 'ssh-algos-oversized'), 'ssh_transport_algorithms_v1'),
+    **dict.fromkeys(('snmp-next-ok', 'snmp-next-empty', 'snmp-next-end-of-view',
+                    'snmp-next-outside-subtree', 'snmp-next-fragmented', 'snmp-next-injected',
+                    'snmp-next-nonincreasing', 'snmp-next-wrong-type', 'snmp-next-extra-varbind',
+                    'snmp-next-malformed', 'snmp-next-truncated', 'snmp-next-denied',
+                    'snmp-next-stalled', 'snmp-next-output-limit'), 'snmp_interface_next_v1'),
+    **dict.fromkeys(('http-options-ok', 'http-options-no-content', 'http-options-absent-allow',
+                    'http-options-empty-allow', 'http-options-auth-required', 'http-options-method-not-allowed',
+                    'http-options-fragmented', 'http-options-injected', 'http-options-malformed',
+                    'http-options-truncated', 'http-options-stalled', 'http-options-output-limit',
+                    'http-options-redirect-ip', 'http-options-redirect-port'), 'curl_http_options_v1'),
+    **dict.fromkeys(('dig-axfr-ok', 'dig-axfr-multiframe', 'dig-axfr-refused',
+                    'dig-axfr-fragmented', 'dig-axfr-injected', 'dig-axfr-missing-soa',
+                    'dig-axfr-mismatched-soa', 'dig-axfr-truncated', 'dig-axfr-wrong-question',
+                    'dig-axfr-midstream-error', 'dig-axfr-record-limit', 'dig-axfr-frame-limit',
+                    'dig-axfr-stalled', 'dig-axfr-output-limit'), 'dig_dns_axfr_v1'),
+    **dict.fromkeys(('dig-nsid-ok', 'dig-nsid-binary', 'dig-nsid-empty', 'dig-nsid-absent',
+                    'dig-nsid-noedns', 'dig-nsid-injected', 'dig-nsid-refused', 'dig-nsid-malformed',
+                    'dig-nsid-duplicate', 'dig-nsid-oversize', 'dig-nsid-stalled', 'dig-nsid-output-limit',
+                    'dig-nsid-unexpected-option', 'dig-nsid-badvers'), 'dig_dns_nsid_v1'),
+    **dict.fromkeys(('dig-mx-ok', 'dig-mx-single', 'dig-mx-nodata', 'dig-mx-nxdomain',
+                    'dig-mx-null', 'dig-mx-injected', 'dig-mx-malformed', 'dig-mx-record-limit',
+                    'dig-mx-null-mixed', 'dig-mx-null-preference', 'dig-mx-refused', 'dig-mx-stalled',
+                    'dig-mx-output-limit'), 'dig_dns_mx_v1'),
+    **dict.fromkeys(('dig-srv-ok', 'dig-srv-nodata', 'dig-srv-nxdomain', 'dig-srv-unavailable',
+                    'dig-srv-injected', 'dig-srv-malformed', 'dig-srv-record-limit', 'dig-srv-refused',
+                    'dig-srv-stalled', 'dig-srv-output-limit'), 'dig_dns_srv_v1'),
+    **dict.fromkeys(('ftp-tls-ok', 'ftp-tls-multiline', 'ftp-tls-fragmented', 'ftp-tls-injected',
+                    'ftp-tls-wrong-status', 'ftp-tls-untrusted', 'ftp-tls-refused', 'ftp-tls-malformed',
+                    'ftp-tls-stalled', 'ftp-tls-bad-banner', 'ftp-tls-extra-output'), 'ftp_starttls_handshake_v1'),
+    **dict.fromkeys(('ldap-tls-ok', 'ldap-tls-response-name', 'ldap-tls-injected', 'ldap-tls-mismatched-id',
+                    'ldap-tls-untrusted', 'ldap-tls-refused', 'ldap-tls-referral', 'ldap-tls-malformed',
+                    'ldap-tls-truncated', 'ldap-tls-fragmented', 'ldap-tls-stalled',
+                    'ldap-tls-bad-tls'), 'ldap_starttls_handshake_v1'),
+    **dict.fromkeys(('smtp-tls-ok', 'smtp-tls-multiline', 'smtp-tls-fragmented', 'smtp-tls-injected',
+                    'smtp-tls-untrusted', 'smtp-tls-refused', 'smtp-tls-malformed', 'smtp-tls-stalled',
+                    'smtp-tls-no-advertisement', 'smtp-tls-ehlo-refused', 'smtp-tls-extra-output',
+                    'smtp-tls-truncated'), 'smtp_starttls_handshake_v1'),
+    **dict.fromkeys(('smb2-21-optional', 'smb2-21-required', 'smb2-302-optional',
+                    'smb2-302-required', 'smb2-not-supported', 'smb2-fragmented', 'smb2-opaque',
+                    'smb2-malformed', 'smb2-unoffered', 'smb2-unknown-status', 'smb2-invalid-buffer',
+                    'smb2-truncated', 'smb2-stalled', 'smb2-oversized'), 'smb2_negotiate_metadata_v1'),
+    **dict.fromkeys(('rdp-tls', 'rdp-standard', 'rdp-legacy', 'rdp-nla-required',
+                    'rdp-entra-required', 'rdp-fragmented', 'rdp-trailing', 'rdp-malformed',
+                    'rdp-unoffered', 'rdp-unknown-failure', 'rdp-truncated', 'rdp-stalled',
+                    'rdp-oversized'), 'rdp_initial_negotiation_v1'),
+    **dict.fromkeys(('whatweb-ok', 'whatweb-no-hints', 'whatweb-injected', 'whatweb-redirect',
+                    'whatweb-meta-redirect', 'whatweb-denied', 'whatweb-malformed', 'whatweb-eof',
+                    'whatweb-stalled', 'whatweb-oversized', 'whatweb-output-limit'), 'whatweb_http_fingerprint_v1'),
+    "postgresql-tls-ok": "postgresql_tls_handshake_v1",
+    "postgresql-tls-untrusted": "postgresql_tls_handshake_v1",
+    "postgresql-tls-refused": "postgresql_tls_handshake_v1",
+    "postgresql-tls-malformed": "postgresql_tls_handshake_v1",
+    "postgresql-tls-stalled": "postgresql_tls_handshake_v1",
+    "postgresql-tls-injected": "postgresql_tls_handshake_v1",
+    "mysql-tls-ok": "mysql_tls_handshake_v1",
+    "mysql-tls-untrusted": "mysql_tls_handshake_v1",
+    "mysql-tls-refused": "mysql_tls_handshake_v1",
+    "mysql-tls-malformed": "mysql_tls_handshake_v1",
+    "mysql-tls-stalled": "mysql_tls_handshake_v1",
+    "mysql-tls-injected": "mysql_tls_handshake_v1",
+
+    **dict.fromkeys(('redis-ok', 'redis-empty', 'redis-denied', 'redis-injected',
+                    'redis-malformed', 'redis-oversized', 'redis-stalled',
+                    'redis-redirect-ip', 'redis-redirect-port'), 'redis_server_info_v1'),
+    **dict.fromkeys(('snmp-ok', 'snmp-no-such-object', 'snmp-denied', 'snmp-injected',
+                    'snmp-malformed', 'snmp-oversized', 'snmp-stalled'), 'snmp_system_get_v1'),
+    **dict.fromkeys(("kerberos-ok", "kerberos-empty", "kerberos-denied", "kerberos-injected",
+                    "kerberos-spoof", "kerberos-malformed", "kerberos-stalled"), "kerbrute_userenum_v1"),
+    **dict.fromkeys(('nmap-service-http', 'nmap-service-ssh', 'nmap-service-unknown',
+                    'nmap-service-injected', 'nmap-service-malformed', 'nmap-service-stalled'), 'nmap_service_identify_v1'),
+    **dict.fromkeys(('dig-ok', 'dig-nxdomain', 'dig-injected', 'dig-malformed', 'dig-stalled'),
+                    'dig_dns_query_v1'),
+    **dict.fromkeys(('openssl-ok', 'openssl-untrusted', 'openssl-malformed', 'openssl-stalled'),
+                    'openssl_tls_handshake_v1'),
+    **dict.fromkeys(('ssh-ok', 'ssh-malformed', 'ssh-stalled', 'ssh-injected'), 'ssh_host_keys_v1'),
+    **dict.fromkeys(('ldap-ok', 'ldap-empty', 'ldap-referral', 'ldap-malformed', 'ldap-stalled',
+                    'ldap-injected'), 'ldap_rootdse_v1'),
+    **dict.fromkeys(('smb-ok', 'smb-empty', 'smb-denied', 'smb-injected', 'smb-malformed',
+                    'smb-stalled'), 'smb_share_list_v1'),
+    **dict.fromkeys(('rpc-ok', 'rpc-empty', 'rpc-injected', 'rpc-malformed', 'rpc-stalled'),
+                    'rpcinfo_dump_v1'),
+    **dict.fromkeys(('nfs-ok', 'nfs-empty', 'nfs-injected', 'nfs-malformed', 'nfs-stalled',
+                    'nfs-redirected'), 'showmount_exports_v1'),
+    **dict.fromkeys(('ftp-ok', 'ftp-empty', 'ftp-denied', 'ftp-injected', 'ftp-malformed',
+                    'ftp-stalled', 'ftp-passive-ip', 'ftp-passive-port'), 'curl_ftp_list_v1'),
+    **dict.fromkeys(('smtp-ok', 'smtp-empty', 'smtp-injected', 'smtp-malformed',
+                    'smtp-rejected', 'smtp-stalled'), 'curl_smtp_capabilities_v1'),
+    **dict.fromkeys(('docker-ping-ok', 'docker-ping-unavailable', 'docker-ping-injected',
+                    'docker-ping-malformed', 'docker-ping-stalled', 'docker-ping-redirect-ip',
+                    'docker-ping-redirect-port'), 'curl_docker_ping_v1'),
+    **dict.fromkeys(('docker-version-ok', 'docker-version-empty', 'docker-version-injected',
+                    'docker-version-malformed', 'docker-version-stalled', 'docker-version-redirect-ip',
+                    'docker-version-redirect-port'), 'curl_docker_version_v1'),
+    **dict.fromkeys(('winrm-ok', 'winrm-no-auth', 'winrm-injected', 'winrm-malformed',
+                    'winrm-stalled', 'winrm-redirect-ip', 'winrm-redirect-port'), 'curl_winrm_metadata_v1'),
+}
 
 
 def encode(value):
@@ -64,14 +183,43 @@ def configuration(value):
     if (type(value) is not dict
             or set(value) != {'version', 'service_id', 'session_id', 'policy', 'limits', 'execute', 'profile', 'case'}
             or value['version'] != '1' or type(value['execute']) is not bool
-            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab'}
-            or (value['profile'] == 'owned_lab' and (type(value['case']) is not str or value['case'] not in 'abcdef'
+            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'}
+            or (value['profile'] in {'owned_lab', 'owned_nmap_lab'} and (type(value['case']) is not str or value['case'] not in 'abcdef'
                                                      or len(value['case']) != 1))
-            or (value['profile'] != 'owned_lab' and value['case'] is not None)):
+            or (value['profile'] in {'owned_web_lab', 'owned_http_headers_lab', 'owned_service_web_lab'} and (type(value['case']) is not str
+                or value['case'] not in ('vulnerable', 'corrected', 'injected')))
+            or (value['profile'] == 'owned_web_tools_lab' and (type(value['case']) is not str
+                or value['case'] not in ('curl-ok', 'curl-untrusted', 'curl-redirect', 'curl-injected', 'curl-stalled',
+                    'curl-malformed', 'ffuf-normal', 'ffuf-wildcard', 'ffuf-injected', 'ffuf-stalled')))
+            or (value['profile'] == 'owned_network_tools_lab' and (type(value['case']) is not str
+                or value['case'] not in NETWORK_TOOL_CASES))
+            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'} and value['case'] is not None)):
         raise ValueError('invalid_admission_configuration')
     identity(value['service_id'])
     identity(value['session_id'])
     limits(value['limits'])
+    if value['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'} and any(
+            value['limits'][key] > maximum for key, maximum in NMAP_SESSION_LIMITS.items()):
+        raise ValueError('invalid_nmap_admission_limits')
+    if value['profile'] == 'owned_web_tools_lab' and any(
+            value['limits'][key] > maximum for key, maximum in WEB_TOOLS_LIMITS.items()):
+        raise ValueError('invalid_web_tools_admission_limits')
+    if value['profile'] == 'owned_network_tools_lab' and any(
+            value['limits'][key] > maximum for key, maximum in {
+                'max_steps': 1,
+                'max_runtime_seconds': 30 if value['case'].startswith('tls-posture-') else 60,
+                'max_output_bytes': 8192}.items()):
+        raise ValueError('invalid_network_tools_admission_limits')
+    if value['profile'] == 'owned_service_web_lab' and any(
+            value['limits'][key] > maximum for key, maximum in {'max_steps': 3, 'max_runtime_seconds': 60, 'max_output_bytes': 18432}.items()):
+        raise ValueError('invalid_service_web_admission_limits')
+    if value['profile'] == 'configurable_owned_lab':
+        from . import configurable_contract
+        from .configurable_scope import validate_scope
+
+        validate_scope(value['case'])
+        if any(value['limits'][key] > maximum for key, maximum in configurable_contract.LIMITS.items()):
+            raise ValueError('invalid_configurable_admission_limits')
     parse_policy(value['policy'])
     return deepcopy(value)
 
@@ -127,15 +275,50 @@ def receipt(value, outcome):
 
 
 def profile_allows(action, config):
-    if action.targets != ('127.0.0.1',) or not 1024 <= action.parameters.port <= 65534:
+    if config['profile'] == 'configurable_owned_lab':
+        from .configurable_contract import profile_allows as configurable_allows
+
+        return configurable_allows(action, config['case'])
+    if action.targets != ('127.0.0.1',):
+        return False
+    if config['profile'] == 'owned_service_web_lab':
+        parameters = {'nmap_service_identify_v1': NMAP_SERVICE_PARAMETERS,
+                      'ffuf_content_discovery_v1': FFUF_PARAMETERS, 'http_headers_v1': HTTP_HEADERS_PARAMETERS}
+        return (type(config.get('case')) is str and config['case'] in ('vulnerable', 'corrected', 'injected')
+                and action.tool_id in parameters and action.parameters.to_dict() == parameters[action.tool_id])
+    if config['profile'] == 'owned_network_tools_lab':
+        tool_id = NETWORK_TOOL_CASES.get(config['case']) if type(config['case']) is str else None
+        return action.tool_id == tool_id and action.parameters.to_dict() == {
+            'port': 111 if tool_id in ('rpcinfo_dump_v1', 'showmount_exports_v1') else 8080,
+            'timeout_seconds': 5, 'max_output_bytes': 8192}
+    if not 1024 <= action.parameters.port <= 65534:
         return False
     if config['profile'] == 'fixture':
         return action.tool_id == 'http_probe'
     if action.parameters.port != 8080:
         return False
+    if config['profile'] == 'owned_web_tools_lab':
+        tool_id, parameters = ((CURL_TOOL_ID, CURL_PARAMETERS) if config['case'].startswith('curl-')
+                               else (FFUF_TOOL_ID, FFUF_PARAMETERS))
+        return action.tool_id == tool_id and action.parameters.to_dict() == parameters
+    if action.tool_id == 'nmap_tcp_connect_v1':
+        return (config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'} and action.parameters.to_dict() ==
+                {'port': 8080, 'timeout_seconds': 5, 'max_output_bytes': 16384})
+    if config['profile'] == 'owned_http_headers_lab':
+        return (action.tool_id == 'http_headers_v1' and action.parameters.to_dict() == {
+            'port': 8080, 'method': 'GET', 'path': '/harbordesk/portal.html',
+            'timeout_seconds': 1, 'max_output_bytes': 2048})
+    if action.tool_id not in {'http_probe', 'tcp_connect'}:
+        return False
+    if config['profile'] in {'owned_nmap_lab', 'owned_web_lab'} and action.tool_id != 'http_probe':
+        return False
+    if config['profile'] == 'owned_web_lab':
+        return (action.parameters.method == 'GET' and action.parameters.timeout_seconds == 1
+                and action.parameters.max_output_bytes == 1024
+                and action.parameters.path in {'/harbordesk/index.json', '/harbordesk/diagnostics.json'})
     if action.tool_id == 'tcp_connect':
         return action.parameters.to_dict() == {'port': 8080, 'timeout_seconds': 1, 'max_output_bytes': 1024}
-    if config['profile'] == 'owned_lab':
+    if config['profile'] in {'owned_lab', 'owned_nmap_lab'}:
         return (action.parameters.method == 'GET' and action.parameters.timeout_seconds == 1
                 and action.parameters.max_output_bytes == 1024
                 and action.parameters.path in {f"/assessment/{config['case']}/index.json",
@@ -182,6 +365,12 @@ class AdmissionState:
             reason = 'admission_policy_denied'
         elif not profile_allows(action, self.config):
             reason = 'admission_profile_denied'
+        elif (self.config['profile'] == 'owned_service_web_lab' and self._steps < 3
+                and action.tool_id != ('nmap_service_identify_v1', 'ffuf_content_discovery_v1', 'http_headers_v1')[self._steps]):
+            reason = 'admission_profile_denied'
+        elif (self.config['profile'] == 'configurable_owned_lab'
+                and not self._configurable_step_allows(action)):
+            reason = 'admission_profile_denied'
         elif self._steps >= self.config['limits']['max_steps']:
             reason = 'admission_step_limit'
         elif self._output + action.parameters.max_output_bytes > self.config['limits']['max_output_bytes']:
@@ -193,3 +382,8 @@ class AdmissionState:
             self._permits[permit] = (action.digest, self._policy.digest, min(now + PERMIT_SECONDS, self._deadline))
         return {'permit': permit, 'reason': reason,
                 'snapshot': {'executions_reserved': self._steps, 'output_bytes_reserved': self._output}}
+
+    def _configurable_step_allows(self, action):
+        from .configurable_contract import step_for_action
+
+        return step_for_action(self.config['case'], action) == self._steps + 1

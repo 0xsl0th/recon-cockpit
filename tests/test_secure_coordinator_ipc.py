@@ -148,15 +148,34 @@ def test_unverified_ready_never_reaches_authority(processes, ready):
 
 
 @pytest.mark.parametrize("wire", [
-    b"", b"\0\0", ipc.frame(ipc.REQUEST, b"early"), ipc.frame(ipc.RESULT, b"early"),
-    ipc.frame(ipc.READY, READY) + ipc.frame(ipc.REQUEST, b"one") + ipc.frame(ipc.REQUEST, b"two"),
-    ipc.frame(ipc.READY, READY) + (ipc.MAX_REQUEST_BYTES + 2).to_bytes(4, "big") + b"\x02",
+    b"", b"\0\0",
     ipc.frame(ipc.READY, READY) + b"\0\0\0\x04\x02x",
 ])
-def test_missing_out_of_order_and_pipelined_frames_are_rejected(processes, wire):
-    with pytest.raises(ipc.IPCError):
-        ipc.supervise(command(f"read(); os.write(1,{wire!r})"), b"init",
+def test_missing_and_truncated_frames_require_eof(processes, wire):
+    # Deliver EOF explicitly while leaving a live peer for supervisor cleanup.
+    # Merely keeping stdout open would turn truncation into a deadline failure.
+    code = f"read(); os.write(1,{wire!r}); os.close(1); time.sleep(30)"
+    with pytest.raises(ipc.IPCError, match="^truncated_ipc_dialogue$"):
+        ipc.supervise(command(code), b"init",
                       lambda *_a, **_k: pytest.fail("no authority call"), control=control())
+    assert processes[0].returncode == -signal.SIGKILL
+
+
+@pytest.mark.parametrize("wire,expected", [
+    (ipc.frame(ipc.REQUEST, b"early"), "unexpected_ipc_frame"),
+    (ipc.frame(ipc.RESULT, b"early"), "unexpected_ipc_frame"),
+    (ipc.frame(ipc.READY, READY) + ipc.frame(ipc.REQUEST, b"one") + ipc.frame(ipc.REQUEST, b"two"),
+     "extra_ipc_output"),
+    (ipc.frame(ipc.READY, READY) + (ipc.MAX_REQUEST_BYTES + 2).to_bytes(4, "big") + b"\x02",
+     "ipc_frame_limit"),
+])
+def test_out_of_order_and_pipelined_frames_are_rejected_before_eof(processes, wire, expected):
+    # Rejection must not depend on EOF or race an already exiting child group.
+    code = f"read(); os.write(1,{wire!r}); time.sleep(30)"
+    with pytest.raises(ipc.IPCError, match="^" + expected + "$"):
+        ipc.supervise(command(code), b"init",
+                      lambda *_a, **_k: pytest.fail("no authority call"), control=control())
+    assert processes[0].returncode == -signal.SIGKILL
 
 
 @pytest.mark.parametrize("tail", ["request", "eof", "stderr_overflow"])
@@ -219,29 +238,46 @@ def test_queued_output_at_request_read_boundary_never_reaches_authority(processe
     assert calls == []
 
 
-@pytest.mark.parametrize("tail", [
-    b"", b"\0\0", ipc.frame(ipc.REQUEST, b"after stop"),
-    ipc.frame(ipc.RESULT, b"closed") + b"x",
-    ipc.frame(ipc.RESULT, b"closed") + ipc.frame(ipc.RESULT, b"again"),
-    (ipc.MAX_RESULT_BYTES + 2).to_bytes(4, "big") + b"\x04",
-])
-def test_stop_requires_one_complete_final_result_and_clean_eof(processes, tail):
+@pytest.mark.parametrize("tail", [b"", b"\0\0"])
+def test_stop_rejects_missing_or_truncated_final_result_at_eof(processes, tail):
     calls = []
 
     def exchange(request, *, control):
         calls.append(request)
         return STOP
 
-    code = f"read(); send(5,READY); send(2,b'request'); read(); os.write(1,{tail!r})"
-    with pytest.raises(ipc.IPCError):
+    code = f"read(); send(5,READY); send(2,b'request'); read(); os.write(1,{tail!r}); os.close(1); time.sleep(30)"
+    with pytest.raises(ipc.IPCError, match="^truncated_ipc_dialogue$"):
         ipc.supervise(command(code), b"init", exchange, control=control())
     assert calls == [b"request"]
+    assert processes[0].returncode == -signal.SIGKILL
+
+
+@pytest.mark.parametrize("tail,expected", [
+    (ipc.frame(ipc.REQUEST, b"after stop"), "unexpected_ipc_frame"),
+    (ipc.frame(ipc.RESULT, b"closed") + b"x", "extra_ipc_output"),
+    (ipc.frame(ipc.RESULT, b"closed") + ipc.frame(ipc.RESULT, b"again"), "extra_ipc_output"),
+    ((ipc.MAX_RESULT_BYTES + 2).to_bytes(4, "big") + b"\x04", "ipc_frame_limit"),
+])
+def test_stop_rejects_invalid_or_pipelined_final_result_before_eof(processes, tail, expected):
+    calls = []
+
+    def exchange(request, *, control):
+        calls.append(request)
+        return STOP
+
+    code = f"read(); send(5,READY); send(2,b'request'); read(); os.write(1,{tail!r}); time.sleep(30)"
+    with pytest.raises(ipc.IPCError, match="^" + expected + "$"):
+        ipc.supervise(command(code), b"init", exchange, control=control())
+    assert calls == [b"request"]
+    assert processes[0].returncode == -signal.SIGKILL
 
 
 def test_result_without_host_stop_is_rejected(processes):
-    code = "read(); send(5,READY); send(2,b'request'); read(); send(4,b'closed')"
-    with pytest.raises(ipc.IPCError):
+    code = "read(); send(5,READY); send(2,b'request'); read(); send(4,b'closed'); time.sleep(30)"
+    with pytest.raises(ipc.IPCError, match="^unexpected_ipc_frame$"):
         ipc.supervise(command(code), b"init", lambda *_a, **_k: CONTINUE, control=control())
+    assert processes[0].returncode == -signal.SIGKILL
 
 
 @pytest.mark.parametrize("stop", [True, False])

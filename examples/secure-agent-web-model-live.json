@@ -1,0 +1,18 @@
+{
+  "schema_version": "1",
+  "enabled": false,
+  "provider_ip": "PENDING_OPERATOR_REVIEWED_PIN",
+  "credential_file": "/PENDING_OPERATOR_PRIVATE_CREDENTIAL",
+  "ca_file": "/etc/ssl/certs/ca-certificates.crt",
+  "price": {
+    "provider": "openai",
+    "model": "gpt-4.1-mini-2025-04-14",
+    "version": "openai-standard-2026-09-30",
+    "input_microusd_per_million": 400000,
+    "cached_input_microusd_per_million": 100000,
+    "output_microusd_per_million": 1600000,
+    "request_microusd": 0,
+    "currency": "USD"
+  },
+  "max_call_microusd": 450000
+}

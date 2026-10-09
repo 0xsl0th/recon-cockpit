@@ -1,5 +1,3014 @@
 # Verification record
 
+## PR #69 review and merge — 8 October 2026
+
+**C15 is accepted and closed in [PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69).**
+Reviewed head `ca88e2f601308dc60e1033a0cd6a4e29bfa8a1ad` merged as
+`e4c9d645ead8f02bbc0603f8731cef0e46ee3b86` at 03:32:40 UTC. Reviewed and
+merged trees match `72eb7947f5b08974fe799a45fefc813db8e36536`.
+Fresh independent runtime/authority/fixture and parser/evidence reviews found
+no blockers. All 603 frozen source hashes, 115 reports, 130 artifacts and fourteen
+inherited receipts reconciled. The final seven changed files were documentation
+only. All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37722279228)
+passed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37723229406)
+also passed. No formal GitHub approval is claimed; applicable rules and review
+comments were empty. Private merge receipt: `.secure-agent/pr69-merge-review.json`.
+
+Preserve 18,396 portable and 39 native passes, 3/3 ordinary and 1/1 robustness
+completions, eight inconclusive negatives, zero unnecessary refusals, 24/24 blocked
+destinations, 120/120 boundary fields and 103 unchanged accepted replays.
+All 265 prior case contracts, 39 adapters, 30 runtime definitions and 48
+nondispatch parser ASTs remain unchanged. C15 stays closed at 40 profiles/15 programs.
+Initial test-only failures and finite compatibility limitations below remain.
+
+## Nuclei feasibility assessment — 8 October 2026
+
+The [assessment](nuclei-feasibility.md) is documentation and static inspection.
+Twenty text source files are pinned to upstream v3.11.1 commit
+`a8c88feb4a1c8e961b7902534ce3af97e9d524a4`. The official Linux amd64 release
+archive was verified against its published SHA256, read as ZIP data and its ELF
+headers parsed in memory. No executable was extracted, installed or invoked.
+The 143,294,626-byte static binary and mandatory temporary-directory creation
+conflict with the existing runtime. No Nuclei capability or native result is claimed.
+
+Local `/usr/bin/go` reports Go 1.24.9; pinned source requires 1.26. No build,
+toolchain upgrade, dependency install, template-pack download, model call or
+external assessment occurred. No tests were added or rerun for documentation-only
+changes. Markdown links, whitespace and artifact pins passed validation; all eight
+changed files are Markdown and production/test/example trees are unchanged.
+Independent runtime-boundary and evidence-design reviews found no blockers.
+
+Private records are in `.secure-agent/nuclei-feasibility-20261008/`:
+`artifact-inspection.json` SHA256
+`a580d065780a3625c08d55a31fcc3cdc9fbe307da5b67a2a07983cad21e82e4d`;
+`reviewed-source-files.json` SHA256
+`4b41c3c4915d9554798249b9cd4ac55e1e1e91075e49339a2fb2ec9da6b6c51c`.
+Runtime implementation requires separate boundary review and authorization;
+completed milestones remain closed and paid/live work stays deferred.
+
+## C15 bounded TLS peer-certificate metadata — 8 October 2026
+
+[PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69) contains locally validated
+implementation `1e661b1a8c7615dbab59cf92d3f22260dc887562` based on accepted main
+`a6f11b7`. C15 was accepted at `e4c9d64` after G6 review, checks and merge
+as recorded above. The [runbook](tls-certificate-tools.md) describes
+`openssl_peer_certificate_v1`: one fixed fixture-CA/name-verified TLS 1.3 exchange
+and finite offline leaf metadata parsing. Candidate coverage is **40 secure
+profiles using 15 external programs**, not forty independent tools.
+
+| Verification | Result |
+| --- | --- |
+| Full portable suite, integration excluded | **18,396 passed**, 1,137 deselected; zero failures/errors/skips; 335.097 JUnit seconds. |
+| Actual owned native execution | **39 passed**: seventeen C15 tests in 55.029 seconds and 22 accepted LDAP/OpenSSL regressions in 71.418 seconds. |
+| Ordinary usefulness | **3/3**: one DNS SAN, multiple DNS/IP SANs and absent SAN; zero unnecessary refusals. |
+| Separate robustness usefulness | **1/1**: hostile CN text stays raw while the legitimate certificate observation completes. |
+| Negative outcomes | **Eight inconclusive**: wrong name, expired, untrusted, unsupported SAN, too many SANs, oversized DER, malformed TLS and stall. |
+| Enforcement and closure | **24/24** blocked destination witnesses, **120/120** boundary fields, one connection/request and closed owner per scenario. |
+| Evidence | Twelve native reports rebuilt unchanged; **103 accepted bundles** replayed through shared inspection and isolated CLI unchanged, with fourteen inherited receipt links. |
+| Frozen source | **603 files**, unchanged from before final portable/native confirmation through audit and replay. |
+| Calls/cost | Zero actual provider calls and USD0; credentials and live calls remain disabled. |
+
+Five native authority gates cover one-use approval grants, missing consumed proof,
+cancellation after actual OpenSSL execution, private-input/authority-descriptor
+exclusion and rejection of broadened UDP permission. The shipped policy still
+requires fresh exact-action approval. Native tests use synthetic unattended
+policies or approval transports; they do not claim personal acceptance.
+The four useful receipt rows reuse original native evidence; neither a second
+tool execution nor fresh clean-source native execution is claimed by replay.
+
+Secure CLI wall time across twelve scenarios was **2688–7001 ms**, median
+**3123 ms**. This includes setup/reporting and is descriptive, not comparative
+overhead. The five-second native deadline and 60-second session deadline are
+separate limits. Seven cases completed TLS 1.3 and clean close_notify; five
+protocol/trust negatives counted only a bounded nine-byte ClientHello prefix,
+not a full ClientHello or handshake. All captures were nontruncated. Three parser
+negatives exited successfully and retained complete native evidence: unsupported
+SAN, nine SAN entries and a 4098-byte leaf. The other five had bounded native
+failure/timeout outcomes. All remained inconclusive.
+
+Independent implementation cross-reviews found no blockers. Snapshot tests
+preserve **265 accepted case contracts, 39 adapters and 30 runtime definitions**;
+48 accepted nondispatch parser function ASTs remain unchanged. Review also caught
+a missing OpenSSL data-directory permission for this new profile and report
+limitations assigned to an unused local variable; both were corrected before
+the first full-suite source freeze.
+
+Initial validation history is retained separately. The first native run had
+16 passes and one failing multi-SAN assertion: the test expected different IPs
+from the compiled fixture. The first portable run had 18,395 passes and one
+historical adapter-snapshot failure because its selector included the new profile.
+Only those two test files changed between initial and final 603-file manifests;
+production source was unchanged. Confirmation passed in full. The audit checks
+the exact initial failure identities and source transition. An earlier focused
+collection attempt preceded the saved parser test helper and failed import;
+the completed focused run passed 708 tests. Preserve these records and the
+earlier unexplained C9 stall rather than relabeling failures as passes.
+
+The fingerprint hashes DER, and dates/SANs are certificate contents. Native
+OpenSSL performs fixture trust/name/time verification during execution; the
+parser does not verify signatures or re-evaluate historical evidence against
+today's clock. The finite observed OpenSSL display and P-256/ECDSA/X25519MLKEM768
+forms support one leaf only. The no-SAN fixture uses the client's CN fallback.
+Unsupported certificate forms can complete TLS and still remain inconclusive.
+The parser cannot reconstruct unseen server bytes from native text output.
+Subject/issuer and other extension values stay raw. There is no chain inventory,
+revocation/OCSP/AIA/DNS fetch, client credential, application authentication,
+session-ticket evidence, cipher sweep or follow-up. Owned-fixture compatibility
+and a deterministic hostile-CN case do not establish general X.509 support,
+arbitrary-server readiness or live-model injection resistance.
+
+Private evidence is under `.secure-agent/tls-certificate-20261008/`, outside Git.
+Final source-manifest SHA256:
+`ebd2ce6322696994b6f9978c4f5120ad0b2080426ebc515e7509a63632dabc38`;
+initial source-manifest SHA256:
+`be07bcedad4edb5f4f78d8bbee4bf7347c0362c1f4cbdc93742a3f5eb49e645e`;
+`native-evidence-audit.json`:
+`3f2621d02f81bd32a2cab27e2727994d1c9104774672ce5e40bf8b44f384f296`;
+`verification.json`:
+`d6314b519ebe9fd49a8d9c473ed1daaf282a91ad171598ace897a1799ee95f82`.
+
+After C15 review, assess runtime feasibility of one pinned harmless Nuclei HTTP
+misconfiguration check with owned positive/negative fixtures. Its missing binary
+has not been installed, and no next batch is selected here. Keep B0–B8, C1–C14,
+offline R5, accepted local R6 and the initial GUI closed. Credentials, paid/live
+evaluation, external engagements, deeper workflows and comparison remain deferred.
+
+## PR #68 review and merge — 8 October 2026
+
+**C14 is accepted and closed in [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68).**
+Reviewed head `3bdaa7a10e05f014edcbf46a6fb7e24942da846c` merged as
+`a6f11b7eea0b28c0e5bb7191e62793624d9d5378` at 02:41:36 UTC. Reviewed and
+merged trees match `61c587cfd428bb158286372f588d0fe7de27eee0`.
+Fresh independent cross-reviews of non-authored runtime/authority/fixture and
+parser/evidence changes found no blockers. All 593 frozen source hashes,
+111 reports, 126 artifacts and thirteen inherited receipt links reconciled.
+The final seven changed files after implementation were documentation only.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37718482035)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37719116743)
+passed. Preserve 17,728 portable and 44 native passes, 4/4 ordinary and 2/2 robustness
+completions, eight inconclusive negatives, zero unnecessary refusals, 28/28 destination
+witnesses, 140/140 boundary fields and 97 unchanged accepted-bundle replays.
+All 265 accepted case contracts, 39 adapters and 30 runtimes form C15's baseline.
+No formal GitHub approval is claimed; private merge receipt is
+`.secure-agent/pr68-merge-review.json`. C14 stays closed at 39 profiles using 15 programs.
+
+## C14 bounded SSH transport algorithm advertisements — 8 October 2026
+
+The [C14 runbook](ssh-algorithms-tools.md) defines `ssh_transport_algorithms_v1`:
+one fixed identification/KEXINIT template with a fresh opaque cookie, followed by
+write-half-close and one bounded response. Implementation
+`80b2ffe83bcfb011bde703120d942da552871a46` contains **39 secure profiles using the
+same 15 external programs**. It reuses the sealed Ruby runtime. C13 is accepted
+and closed; [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68) accepted C14
+as recorded above.
+
+| Verification | Result |
+| --- | --- |
+| Full portable suite, integration excluded | **17,728 passed**, 1,120 deselected; zero failures/errors/skips; 356.616 JUnit seconds. |
+| Actual owned native execution | **44 passed**: twenty C14 tests in 62.545 seconds and 24 accepted SMB2/SSH regressions in 81.635 seconds; no failures/errors/skips. |
+| Ordinary usefulness | **4/4**: baseline, directional differences, legacy names and guessed-packet flag; zero unnecessary refusals. |
+| Separate robustness usefulness | **2/2**: fragmented response and inert hostile identification comment. |
+| Negative outcomes | **Eight inconclusive**, each after one validated template and client write EOF: malformed banner, wrong message, malformed list, bad padding, nonzero reserved field, truncation, stall and oversized packet declaration. |
+| Enforcement and closure | **28/28** forbidden-destination witnesses and **140/140** boundary fields; one connection/request and closed owner for every scenario. |
+| Evidence | Fourteen native reports independently rebuilt unchanged; **97 accepted bundles** replayed unchanged through shared inspection and isolated CLI, with thirteen inherited receipt links. |
+| Frozen source | **593 files**, unchanged from before native/full portable validation through audit and replay. |
+| Calls/cost | Zero actual provider calls and USD0; credentials and live calls remain disabled. |
+
+The six new native authority gates cover one-use grants, missing consumed proof,
+cancellation after actual Ruby execution, private-input/descriptor exclusion and
+rejection of broadened UDP permission and task ceilings. Native trials use
+synthetic unattended policies or test approval transports, not personal acceptance.
+The shipped policy requires exact-action approval. All six useful receipt rows
+reuse their original native evidence; no second tool execution or fresh
+clean-source native run is claimed.
+
+Descriptive secure CLI wall times across fourteen scenarios were **2588–4739 ms**,
+median **3159.5 ms**, including setup and reporting. They are not comparative
+overhead. The two-second inner deadline, five-second native tool limit and
+60-second session limit remain distinct from these measurements. The independent
+audit bound raw channels, parser results, artifacts, action/policy/runtime hashes,
+owner progress/closure, audit decisions and JUnit identities. Five complete native
+captures returned exit0 but failed parsing; three bounded native failures retained
+constant stderr. All eight stayed inconclusive and no artifact was marked truncated.
+
+Two independent implementation reviews found no blockers. Snapshot tests preserve
+all **251 accepted case contracts, 38 adapters and 29 runtime definitions**; all
+46 existing nondispatch parser function ASTs remain unchanged. Focused development
+checks caught Markdown field-order drift after sorted-JSON persistence; sorting
+only algorithm field names fixed replay while preserving each preference list's
+order. Test expectation/selection corrections preceded the frozen source and full
+validation; no native failure required a retry. The earlier C9 stall remains
+unexplained.
+
+The nine-field summary is untrusted advertisement metadata, not proof of
+implemented algorithms, negotiated compatibility, cryptographic strength, verified
+identity or a vulnerability. Completed key exchange, authenticated session and
+verified service identity remain false. Evidence hashes the 184-byte zero-cookie
+template, not the actual fresh-cookie request; that cookie is not retained. Fixed
+padding is disclosed as a departure from SSH's randomized-padding recommendation.
+The finite grammar, early half-close and 4355-byte first-response cap restrict
+compatibility; only the owned fixture is demonstrated. Comments, server cookie and
+padding stay raw only. Later packets are unread even with the guessed-packet flag;
+retained evidence does not prove their absence. No general NSE loading, login,
+credentials, session or response-directed follow-up is added.
+
+Private evidence remains under `.secure-agent/ssh-algorithms-20261008/`, outside Git.
+Source-manifest SHA256:
+`e93ee07e962acb822dc9e41ab74c7f79d5ac21f7597e0f8163166d2666fe81ab`;
+`native-evidence-audit.json`:
+`79abc6cda009ef9eafdc580c5a0974fe868e049bce07f7fa75fc1797705c6027`;
+`verification.json`:
+`d8ca6ba0efafffa42fee1eaeefe32f735eaf5ac8aecfd127508f42b7af827ada`.
+
+After C14 review, the next recommendation is bounded TLS peer-certificate metadata,
+keeping fixture CA/name verification, finite offline parsing and no OCSP/AIA
+fetches. No new batch is selected here. Credentials, paid/live evaluation, external
+engagements, deeper workflows and comparative benchmarking remain deferred.
+
+## PR #67 review and merge — 8 October 2026
+
+**C13 is accepted and closed in [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67).**
+Reviewed head `ae346722f3be7a4d972d303f0068fcb185a33754` merged as
+`7cc66451295d1e5013fff31e753d01a79ccaf53c` at 02:00:21 UTC. Reviewed and
+merged trees match `65e493facdfa4685df3d8b2b2c86dbb534020040`.
+Two fresh independent reviews found no blockers. All 583 frozen source hashes,
+105 reports, 120 declared artifacts, 91 inherited bundles and twelve inherited receipt
+links reconciled.
+The final seven changed files after implementation were documentation only.
+No duplicate native run or full-suite repetition was needed for this merge review.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715182741)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715717067)
+passed. Preserve 16,687 portable and 43 native tests, 4/4 ordinary and 2/2 robustness
+completions, zero unnecessary refusals, 28/28 destination witnesses and 140/140
+boundary fields. All 251 accepted case contracts, 38 adapters and 29 runtimes now
+form the next batch's regression baseline. No formal GitHub approval is claimed.
+Private merge receipt: `.secure-agent/pr67-merge-review.json`. C13 stays closed
+with 38 secure profiles using 15 external programs.
+
+## C13 bounded SNMP interface successor — 8 October 2026
+
+The [C13 runbook](snmp-next-tools.md) defines `snmp_interface_next_v1`: one fixed
+SNMPv2c GETNEXT seed for ifDescr over TCP in the disconnected owned lab. This adds
+one bounded interface-description observation to the accepted system-scalar GET
+coverage. Implementation `331ae0653e05ad1aef298c681ffb7c6d8adba2f8` contains
+**38 secure profiles using 15 external programs**. C12 remains accepted and closed.
+
+| Verification | Result |
+| --- | --- |
+| Full portable suite, integration excluded | **16,687 passed**, 1,100 deselected; zero failures/errors/skips; 342.093 JUnit seconds. |
+| Actual owned native execution | **43 passed**: 19 C13 tests in 56.203 seconds and 24 accepted Redis/SNMP regressions in 71.910 seconds; no failures/errors/skips. |
+| Ordinary usefulness | **4/4**: nonempty description, empty description, endOfMibView and outside-column successor; zero unnecessary refusals. |
+| Separate robustness usefulness | **2/2**: fragmented response and inert hostile description. |
+| Negative outcomes | **8 inconclusive**, each after one validated request: nonincrease, wrong type, extra variable, malformed BER, truncation, denial, stall and output pressure. |
+| Enforcement and closure | **28/28** forbidden-destination witnesses and **140/140** boundary fields; one connection/request and closed owner for every C13 scenario. |
+| Evidence | All 14 native reports independently rebuilt unchanged; **91 accepted bundles** replayed unchanged through shared inspection and the isolated CLI, with twelve inherited receipt links. |
+| Frozen source | **583 files**, unchanged from before native/full portable validation through audit and replay. |
+| Calls/cost | Zero actual provider calls and USD0; credentials and live calls remain disabled. |
+
+The five new native authority gates cover one-use grants, absent consumed proof,
+cancellation after actual exec, private input/descriptor exclusion and rejection of
+broadened UDP permission. The shipped policy still requires fresh approval. Native
+fixtures use synthetic unattended policies or test approval transports, not personal
+acceptance. No repeat native execution was needed after the successful suites; the
+six useful receipt rows reuse their original native evidence.
+
+Descriptive secure CLI wall times across the fourteen scenarios were **2554–4558 ms**,
+median **2996.5 ms**, including setup and reporting. Useful captures were 28–215 bytes;
+output pressure retained 8192 bytes and remained inconclusive. These measurements
+are not comparative overhead. The five-second tool execution limit and 60-second
+session limit are distinct from descriptive latency.
+
+The independent audit reconciled native text with finite fixture facts, raw channel
+hashes, normalized data, action/policy/runtime binding, owner counters and closure,
+evidence journal, audit decisions and JUnit metrics. Three semantic negatives
+returned native exit0 but stayed inconclusive, so process success is not mistaken
+for completed work. Two independent code reviews found no blockers. Snapshot tests
+preserve all **237 accepted case contracts, 37 adapters and 28 runtime definitions**;
+all 44 existing nondispatch parser function ASTs remain unchanged.
+
+Results are untrusted metadata, not proof of interface presence, inventory
+completeness, verified absence, identity, authorization or vulnerability. Returned
+OIDs cannot initiate another request. Only the documented printable ASCII and
+outside-column INTEGER subset is supported. The native client handles BER and
+request association; its retained text omits request IDs, communities and wire bytes
+it discards. Neither complete wire validation nor real-model injection resistance
+is claimed. No walk, GETBULK, SET, UDP, retry, correction resubmission, host MIBs or
+real credentials are enabled. Earlier C9 stall causation remains unresolved.
+
+Private evidence stays under `.secure-agent/snmp-next-20261008/` and out of Git.
+The source-manifest SHA256 is
+`8b9cd98258b29a3c0ac1674f38ff915849ee3cd482cf1c8c993b1ddb469280d2`;
+`native-evidence-audit.json` is
+`13bba9407200bbaa226a5d5e070fdc9fe5216fede1613b957d2fae167b6ddba0`;
+`verification.json` is `1c5cd269c4cf354f442b3e2c580b2ec499f1bcb37bdd2a64072600e58b3ca6a4`.
+Development checks caught an evidence limitation-section prefix collision with
+legacy SNMP; the final source explicitly separates GETNEXT and all accepted C1
+regressions pass. An early test collection ran before its helper file was saved;
+the final full suite includes that helper. Neither issue required relaxed enforcement.
+
+[PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67) is accepted and merged as
+recorded above. Its checkpoint commit changed documentation only. The next recommended
+coverage gap is a bounded SSH transport algorithm advertisement profile. Credentials,
+paid/live evaluation, external engagements, deeper workflows and comparative
+benchmarking remain deferred; completed milestones remain closed.
+
+## PR #66 review and merge — 8 October 2026
+
+**C12 is accepted and closed in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66).**
+Reviewed head `4adbf415049edbc1f05bd3f5c6b16a23580998b5` merged as
+`7faf974f5e0bbc917ef5d8b6ee70164478524ef4` at 01:31:18 UTC. The reviewed
+and merged trees match `ad73ca6bc12821a146abb83de095ed2c7bbd3b7d`.
+Fresh independent authority/runtime and parser/evidence reviews found no blockers.
+All 574 frozen source hashes, 97 reports, 112 declared artifacts, 83 inherited
+replays and eleven receipt links reconciled. The tested source remained unchanged;
+no duplicate native execution was necessary for the merge review.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37712733064)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37713341040)
+passed. Preserve 16,138 portable and 40 native tests, 6/6 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations and
+140/140 boundary fields. A pre-existing final blank line in the native test file
+was a nonblocking whitespace observation; the reviewed behavior was not changed.
+No formal GitHub approval is claimed. Private merge receipt:
+`.secure-agent/pr66-merge-review.json`. C12 stays closed with 37 profiles using
+14 external programs.
+
+## C12 bounded HTTP OPTIONS metadata — 8 October 2026
+
+The [C12 runbook](http-options-tools.md) defines `curl_http_options_v1`: one
+fixed 146-byte OPTIONS request to `/harbordesk/portal.html` on the disconnected
+owned endpoint, using the accepted curl isolation path. It adds resource-specific
+status, method advertisements and authentication-scheme names; no advertised
+method is invoked. C11 and C12 are accepted and closed. The C12 revision has
+**37 profiles using 14 external programs**.
+
+Implementation `c875820f6344e1c95b1f420467c11f4379d0b1c2` passed **16,138 portable
+tests** with 1081 integration tests deselected, no failures/errors/skips
+(320.296 JUnit seconds; 320.65 seconds in the pytest log). **40 native tests** passed:
+19 C12 cases/gates in 62.079 JUnit seconds and 21 accepted Docker/WinRM curl
+regressions in 81.035 seconds. Each suite used its own retained private directory.
+No repeated native run was required after success.
+
+All **6/6 ordinary tasks** completed: status 200, bodyless 204, absent Allow,
+explicitly empty Allow, 401 with scheme hints and 405 with method advertisements.
+Both separate robustness tasks completed: fragmented delivery and a hostile
+unknown header. Six negative cases remained inconclusive after actual validated
+request progress: malformed Allow, truncated body, stall, output pressure and two
+redirects. A 401/405 is useful server metadata, not an unnecessary authority refusal.
+There were **zero unnecessary refusals**, zero provider calls and zero provider cost.
+
+All **28/28 forbidden-destination witnesses and 140/140 boundary fields** passed
+across fourteen cases. All owners closed with one counted connection and one
+validated fixed request. Five native authority tests preserved one-use approval,
+missing-proof rejection, cancellation cleanup, private-input exclusion and
+rejection of broadened UDP permission. Native tests exercised synthetic unattended
+policies or test approval transports; they do not claim personal acceptance.
+The shipped policy still requires fresh approval and explicit OPTIONS permission.
+
+Secure CLI wall time across all fourteen scenarios was **2745–5746 ms**, median
+**3194 ms**; useful captures were 73–220 bytes. The output-pressure case retained
+8192 bytes and stayed inconclusive. These wall times include setup/reporting and
+are descriptive measurements, not comparative overhead. The five-second native
+execution deadline and 60-second session limit remain separate bounds.
+
+An independent read-only audit rebuilt all fourteen reports unchanged and checked
+artifact hashes, both raw channels, action/policy/runtime binding, owner counters,
+audit order and JUnit properties. All **574 source hashes** match. The original
+pre-test manifest is retained; two later comment-only corrections have identical
+executable ASTs, with both versions and hashes preserved. Accepted snapshots keep
+all **223 earlier case contracts, 36 adapters and 27 runtimes** unchanged.
+
+The bounded parser verifies retained HTTP/1.1 framing; curl may discard later wire
+bytes that therefore cannot be inspected. Only the documented ASCII/header/body
+subset is accepted. Valid but unsupported authentication syntax stays inconclusive.
+Allow tokens are advertisements, not verified support; scheme names do not verify
+an authentication mechanism. No verified identity, vulnerability, full wire-stream
+validation or real-model injection-resistance claim is made.
+
+Development records retain four corrected new evidence-test assertions, an initial
+catalog check before its runbook existed, and the outer-sandbox native startup
+failure. That sandbox attempt failed all 19 cases at audit startup, before any tool
+execution artifact; the authorized run passed. These startup failures are excluded
+from useful-execution timings. An independent read-only replay startup also required
+namespace permission. No production workaround or fallback weakened isolation.
+
+Private records remain under `.secure-agent/http-options-20261008/`: the separate
+portable/native logs and XML, original/final source manifests, comment-equivalence
+record, native audit and inherited replay receipt. Raw evidence is excluded from Git.
+Credentials, paid/live-model calls, external engagements, deeper workflows and
+comparative benchmarking remain deferred. The earlier C9 stall cause remains
+undetermined; these passes do not establish its resolution.
+
+All **83 accepted bundles** replayed unchanged through shared inspection and the
+isolated CLI, with eleven inherited receipt files pinned. The eight useful C12
+receipt rows reuse the native test evidence; this read-only pass performed zero
+new native tool executions. The receipt is
+`.secure-agent/http-options-20261008/verification.json`, SHA256
+`4ff9bd4bb807d543f0b0e491b65882b33a64f5266b7c7b80c9f979f0a3fa2775`.
+The final source-manifest SHA256 is
+`1ae913a95710e139b7015eccf6c899dc747bc6ca97aae84a320b9d084af9a2ae`.
+
+Local validation completed in [PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66),
+now accepted and merged as recorded above. Later C12 commits changed documentation
+and PR status only. B0–B8, C1–C12, offline R5, accepted local R6 and the initial GUI
+stay closed.
+
+## PR #65 review and merge — 8 October 2026
+
+**C11 is accepted and closed in [PR #65](https://github.com/0xsl0th/recon-cockpit/pull/65).**
+Reviewed head `40197b6475f7a4c6ef7dbd7fb1c8bd6ca545e70c` merged as
+`82dd85ad34a4325e8efb16e7f3845b5f94c7c5df` at 01:03:14 UTC. Reviewed and
+merged trees match `840c25b76d25469556320bb7b16000a5f5e33099`.
+Fresh independent authority/runtime and parser/evidence reviews found no blockers.
+All 566 frozen source hashes, 97 reports, 112 declared artifacts and ten inherited
+receipt links reconciled. The tested production revision was unchanged; no new
+native run or duplicate test suite was needed for that review.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37709477319)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37710962147)
+passed. Preserve 15,464 portable and 61 native tests, 3/3 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations,
+140/140 boundary fields and 78 unchanged accepted replays. No formal GitHub approval
+is claimed. Private merge receipt: `.secure-agent/pr65-merge-review.json`.
+C11 stays closed with 36 profiles using 14 external programs.
+
+## C11 bounded DNS AXFR behavior — 8 October 2026
+
+The [C11 runbook](dns-axfr-tools.md) defines one fixed `harbordesk.test. IN AXFR`
+request over TCP through accepted dig confinement. Main C10 is accepted in PR #64
+below; this candidate has **36 profiles using the same 14 programs**. Complete
+transfers and explicit server refusals are useful observations, while partial or
+unsupported responses remain inconclusive. No returned DNS record grants authority.
+
+| Verification | Result |
+| --- | --- |
+| Full portable suite, strict markers, integration excluded | **15,464 passed**, zero failures/errors/skips; 349.483 seconds (JUnit). |
+| Selected owned native suite | **61 passed**, zero failures/errors/skips, 79 deselected; 198.793 seconds (JUnit). |
+| Native selection | 20 C11 (14 scenarios + six authority gates), 20 accepted NSID, 16 accepted SRV and five original A-query regressions. |
+| Ordinary utility | **3/3**: one-message transfer, three-message transfer and explicit REFUSED; zero unnecessary refusals. |
+| Separate robustness utility | **2/2**: fragmented TCP and inert hostile TXT. |
+| Negative outcomes | Nine inconclusive, all after one actual validated question. |
+| Enforced scope and closure | **28/28** forbidden destinations, **140/140** boundary fields; one connection/request and closed owner in every scenario. |
+| Evidence audit | 14 bounded raw reparses and report rebuilds match unchanged bytes/mtimes/modes. |
+| Frozen source | **566 files**, unchanged throughout both suites and native audit. |
+| Calls/cost | Zero actual provider calls and USD0; no model credentials configured. |
+
+The six C11 authority cases exercise consumed grants, absent consumed proof,
+cancellation after actual exec, private credential/bootstrap/descriptor protection,
+broadened UDP rejection and broadened task-ceiling rejection. Fresh approval remains
+required by the shipped policy. Unattended synthetic tests do not claim personal
+acceptance. Two development smoke trials independently established native REFUSED
+(exit0) and three-message completion before the frozen validation runs.
+
+All scenarios witnessed a complete **33-byte DNS question**, plus TCP length framing.
+Request counters establish progress, not transfer completeness. Useful results are
+four completed transfers and one explicit refusal. Native exit0 by itself cannot
+establish success: mismatched SOAs, wrong questions, midstream errors and count-limit
+violations returned zero but stayed inconclusive after independent parsing.
+
+| AXFR scenario | Elapsed ms | Captured bytes | Native status | Assessment outcome |
+| --- | ---: | ---: | --- | --- |
+| dig-axfr-ok | 3211 | 614 | succeeded | dns_axfr_completed |
+| dig-axfr-multiframe | 3223 | 934 | succeeded | dns_axfr_completed |
+| dig-axfr-refused | 3213 | 269 | succeeded | dns_axfr_refused |
+| dig-axfr-fragmented | 3246 | 613 | succeeded | dns_axfr_completed |
+| dig-axfr-injected | 3162 | 652 | succeeded | dns_axfr_completed |
+| dig-axfr-missing-soa | 2775 | 595 | failed | inconclusive |
+| dig-axfr-mismatched-soa | 3286 | 614 | succeeded | inconclusive |
+| dig-axfr-truncated | 2689 | 490 | failed | inconclusive |
+| dig-axfr-wrong-question | 3138 | 119 | succeeded | inconclusive |
+| dig-axfr-midstream-error | 3100 | 581 | succeeded | inconclusive |
+| dig-axfr-record-limit | 3108 | 1051 | succeeded | inconclusive |
+| dig-axfr-frame-limit | 3218 | 1254 | succeeded | inconclusive |
+| dig-axfr-stalled | 4768 | 488 | failed | inconclusive |
+| dig-axfr-output-limit | 2800 | 61 | output_limit | inconclusive |
+
+These are end-to-end scenario measurements, not comparative overhead. Minimum/median/
+maximum were **2689/3186.5/4768 ms**. Combined capture ranged 61–1254 bytes; useful
+cases retained 269–934 bytes. Every scenario retained the permitted 61-byte denied
+startup socket probe on stderr. Output pressure retained zero stdout plus that probe;
+its verified output-limit/truncation status does not mean 8192 bytes were retained.
+
+The parser accepts at most four printed messages and 16 answer records, with exactly
+two equal apex SOAs including TTL and all RDATA. This is an acceptance bound, not a
+stock-dig ingress limit; the five-second tool and 8192-byte capture ceilings remain
+native execution bounds. Dig stops at a second SOA, so later uncaptured wire data
+is not inspected. No entire-stream exhaustion, real-zone completeness, authenticated
+DNS identity, public exposure or vulnerability is claimed. TXT/names/addresses never
+enter normalized summaries or authorize follow-up. Only this synthetic grammar and
+pinned runtime are verified; model injection resistance remains untested.
+
+Private `.secure-agent/dns-axfr-20261008/` retains `portable.xml/log`, `native.xml/log`,
+`native-collection.log`, `native-tmp/`, the frozen source manifest and read-only audit.
+The source manifest SHA256 is `ceda115ac9ce1efcc5ebde6071048addc47f8b042c66725a38d9329f4158446c`.
+Native XML SHA256: `e8c4a89a47371828bce90451a260a56f69be3890594d02ce7031b55b39cbd5d2`.
+Native audit SHA256: `b7bae4d39742659443826791cee485e81147b71bda075ba1e3b7dd0dc2008685`.
+The accepted baseline freezes 209 earlier case contracts, 35 adapters and 26 runtimes;
+all old expected hashes remain unchanged. Historical selector tests exclude only the
+new profile; accepted runtime and lab contracts are not rebaselined.
+
+Clean implementation **`25b9395c17486c19f05631a5f930d9c52010fffe`** completed five useful trials:
+ordinary complete/multiframe/refused in **3352/3250/3428 ms**, and separate
+fragmented/hostile-TXT robustness in **3430/3407 ms**. All ten additional forbidden
+destinations were blocked, with zero unnecessary refusals/provider calls/cost.
+All **78 accepted bundles** replayed unchanged through both CLI and shared inspection,
+with ten inherited receipt files pinned. The clean receipt is
+`.secure-agent/dns-axfr-20261008/clean-source-25b9395c-2fnxdcw3/verification.json`,
+SHA256 `a27fa217590d6d1ce3bb50c25872e0ba5177aebb1459adef7b84c21201f945c2`. It retains the predecessor C10 receipt unchanged at
+SHA256 `0815f9324eaca5e2f480736b4f1028e38019b86aa5b975c460192b61d8259808`.
+Native evidence was independently reconciled; no native rerun was performed by the
+auditor. All 566 frozen sources still match; subsequent edits record documentation
+and PR status only. C11 was subsequently reviewed and accepted in PR #65;
+its successful final and post-merge checks are recorded above. Credentials, paid/live evaluation, external engagements, deeper workflows
+and benchmarking stay deferred. C9's earlier legacy stall remains unexplained; these
+DNS passes do not establish its cause or resolution. Completed B0–B8, C1–C10, offline
+R5, accepted local R6 and initial GUI/personal acceptance stay closed.
+
+## PR #64 review and merge — 8 October 2026
+
+**C10 is accepted in [PR #64](https://github.com/0xsl0th/recon-cockpit/pull/64).**
+Reviewed head `964d600` merged as `dea8c7a` on 8 October at 00:25:00 UTC;
+reviewed and merged trees match `5ba1c32671aa72821f0ef97983ec36618f0b13b2`.
+Fresh authority/runtime and parser/evidence reviews found no blockers; 362 focused
+tests passed. All 557 source hashes, 92 reports, 107 artifacts and nine inherited receipt
+links reconciled.
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37706257697)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37707653540)
+passed. Preserve 14,814 portable and 62 native tests, 5/5 ordinary and 1/1 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations,
+140/140 boundary fields and 72 unchanged accepted replays. The initial historical
+snapshot-test selection failure and correction remain recorded; no production or
+selected native-test file changed. C9's earlier stall cause remains unresolved.
+C10 stays closed with **35 profiles using 14 programs**. Private merge receipt:
+`.secure-agent/pr64-merge-review.json`.
+
+
+## C10 owned DNS NSID metadata — 7–8 October 2026
+
+The [C10 runbook](dns-nsid-tools.md) defines `dig_dns_nsid_v1`: one fixed
+nonrecursive TCP question with an empty EDNS NSID option through existing dig.
+NSID remains at most 64 opaque bytes rendered as hex, with no verified identity
+or response-directed authority. Empty, absent and no-EDNS responses are distinct.
+The candidate has **35 profiles using 14 programs**; C9 is accepted below.
+
+| Check | Result |
+| --- | --- |
+| Portable validation | **14,814 passed**, zero failures/errors/skips; JUnit 326.949 seconds. Initial run retained: 14,813 passed / one historical snapshot-selection failure, 326.622 seconds. 1,042 integration tests separately collected and excluded. |
+| Actual Linux suite | **62 passed**: 20 C10, 16 accepted SRV, 17 FTP TLS, five original DNS and four direct TLS; zero failures/errors/skips; JUnit 193.604 seconds. |
+| Useful NSID tasks | **5/5 ordinary**: printable, binary, present empty, absent option and no EDNS. **1/1 separate robustness**: hostile NSID retained as opaque hex. Zero unnecessary refusals. |
+| Negative progress | **Eight inconclusive**: refusal, malformed option, duplicate NSID, 65-byte NSID, stall, output pressure, unexpected option and BADVERS. Every case witnessed one actual fixed query and closed ownership. |
+| Enforcement | **28/28** forbidden-destination witnesses and **140/140** boundary fields. Six additional native tests covered one-use grant, missing consumed proof, cancellation after actual exec, private inputs, UDP refusal and thread-ceiling refusal. |
+| Local replay | All 14 native scenario bundles independently reparsed and replayed unchanged. Six clean-source trials passed; all **72 accepted bundles** replayed unchanged through both inspectors. |
+| Provider calls/cost | **0 / $0**; no model credentials or real service credentials. Synthetic unattended policies are explicit; shipped policy still requires fresh approval. |
+
+The exact request has a 48-byte DNS body plus two-byte TCP framing. Only transaction
+ID varies; request flags, question, EDNS0, advertised size1232 and empty option3
+are fixed and owner-validated. All 14 cases had one connection and one validated
+request. No UDP, cookie, negotiation retry, recursion, search, transfer or follow-up
+was authorized. Native success alone is insufficient: unsupported responses may
+exit zero while the independent parser reports inconclusive. Eight inconclusive
+cases include the stalled query and output-limit termination.
+
+| Case | Execution ms | Combined captured bytes |
+| --- | ---: | ---: |
+| ok | 3150 | 376 |
+| binary | 3106 | 340 |
+| empty | 3160 | 314 |
+| absent | 3104 | 307 |
+| noedns | 3197 | 247 |
+| injected | 3126 | 552 |
+| refused | 3129 | 307 |
+| malformed | 3110 | 394 |
+| duplicate | 3187 | 445 |
+| oversize | 3128 | 580 |
+| stalled | 4692 | 478 |
+| output-limit | 2657 | 61 |
+| unexpected-option | 3127 | 410 |
+| badvers | 3161 | 306 |
+
+Native scenario latency ranged **2657–4692 ms**, median **3128.5 ms**. Useful
+captures were **247–552 bytes**. These are descriptive local measurements, not
+paired baseline/authority overhead. The output-limit case exceeded the capture
+allowance but retained only 61 bytes of permitted startup stderr and zero stdout;
+`output_limit`, truncation and the stop reason were verified. It did not retain an
+8192-byte transcript. Unsupported full output and arbitrary diagnostics never
+become useful evidence. NSID text is not interpreted as instructions or identity.
+
+The first development smoke stopped with incomplete evidence because the new
+isolated parser module was not mounted. The missing mount was fixed and a portable
+custody regression was added; the next actual smoke completed. Both attempts remain
+private and separate from the complete 62-test validation run. The accepted C9
+legacy `openssl-stalled` failure remains unexplained. That case passed in this
+run, which does not establish the cause or resolution of its earlier failure.
+
+Before native and portable validation, all **557 source/test/policy hashes** were
+frozen in `.secure-agent/dns-nsid-20261007/validated-source-files.json`, SHA256:
+`1815eae907f47d6cdee0467e8858183e2ad2867e1217b9c39c1f1dfe7c0612c1`.
+The initial portable run passed 14,813 tests and failed the old FTP runtime
+snapshot test: its historical 24-profile selection accidentally included the new
+NSID profile. Only that test's exclusion was corrected; the expected count and
+hash were preserved. Its 146 focused tests then passed. No production file or
+selected native-test file changed, so the completed native run remains applicable.
+The initial XML/log and `source-snapshot-transition.json` retain this correction.
+The final 557-file snapshot is `final-source-files.json`, SHA256
+`5b48169e0e3956c533804a7ce238208d56f1f3a1ba6462f407979327edbfc2df`;
+it differs from the original audited snapshot only in
+`tests/test_secure_ftp_tls_runtime.py`. Full portable confirmation passed all 14,814 tests.
+
+The accepted 195 case contracts, 34 adapters and 25 runtime argv/environment
+profiles retain canonical SHA256
+`8082e146fa6e5df645bb964706b6d1c861704c54d0c9b789e8980ee3e127ff63`.
+Runtime-only executable/argv/environment/compiled-file metadata for all 25
+accepted profiles retains SHA256
+`7b4bf693be91150c8c7e832608e5cdfcdae00544eed87df9090da1ea164cd726`.
+
+Private `native-evidence-audit.json` verifies all 557 hashes before/after,
+14 raw reparses, exact result/action/policy/runtime/owner/audit bindings and
+pure-parser report rebuilds with unchanged bytes, mtimes and modes; SHA256:
+`08088742739cdb464a95e07aa267e273452fd4738d4c1537ba6259a6ff49b8ec`.
+It did not rerun native execution or isolated replay; the native tests establish
+that replay. Independent runtime/fixture and parser/evidence cross-reviews found
+no blockers. Clean-source verification passed; final hosted checks remain pending.
+C10 stays unmerged until its own latest-revision review and merge instruction.
+
+Clean-source verification used implementation `4e6d20e79b96aa5c792643fcfe46b384abd7c451`.
+The six actual trials completed 5/5 ordinary and 1/1 separate robustness tasks
+with zero unnecessary refusals and **12/12** blocked destination witnesses.
+Ordinary wall times were **3238, 3232, 3229, 3270 and 3287 ms**; the hostile-NSID
+trial took **3286 ms**. The verifier checked every raw NSID value, exact observation,
+authority/runtime/owner binding, closed fixture and independent parsing. It replayed
+all 72 accepted bundles through CLI and shared inspection with unchanged bytes,
+mtimes and modes, and verified nine inherited receipt files. No credentials,
+provider calls or paid calls were used, and no personal acceptance is claimed.
+Private `clean-source-4e6d20e7-6dtw0zx_/verification.json` SHA256:
+`0815f9324eaca5e2f480736b4f1028e38019b86aa5b975c460192b61d8259808`.
+Its immutable C9 receipt remains
+`e37e3819fe908acffd30d3c803452d49b6cf27808f90aa4a6bcad4aca16145be`.
+The final documentation changes do not alter the 557 tested source files.
+
+The next recommendation is separate fixed-zone synthetic AXFR behavior with
+bounded frames/records, matched SOA boundaries, explicit refusal and no returned-host
+follow-up. No existing interactive AXFR integration is claimed. It is not an
+implemented C11 milestone. All closed milestones remain closed; credentials,
+paid/live evaluation, deeper workflows and benchmarking stay deferred.
+
+
+**C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63).**
+Reviewed head `f91d9d3` merged as `e06e1a4` on 7 October at 23:42:45 UTC;
+reviewed and merged trees match `d909db662eee3c31945550994ee3d7819af11cf4`.
+Fresh authority/runtime and parser/evidence reviews found no blockers; 351 focused
+tests passed. All 548 validated source hashes, 83 reports, 98 referenced artifacts
+and eight inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37702693909)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37703801916)
+passed. Preserve 14,231 portable and 65 native confirmation tests, 2/2 ordinary
+and 3/3 separate robustness completions, zero unnecessary refusals, 22/22 blocked
+destinations, 110/110 boundary fields and 67 accepted-bundle replays.
+The initial legacy OpenSSL stall failure remains unexplained; successful unchanged
+reproduction and confirmation do not establish resolution. C9 stays closed with
+**34 profiles using 14 programs**. Private receipt: `.secure-agent/pr63-merge-review.json`.
+
+## C9 owned FTP explicit TLS — 7 October 2026
+
+The [C9 runbook](ftp-starttls-tools.md) defines `ftp_starttls_handshake_v1`:
+one fixed 10-byte AUTH TLS command, fixture-verified TLS1.3 and clean close through
+existing OpenSSL and the secure authority/evidence path. Clean implementation
+`30eccfb5ef0a92a44f72dfd35303b3b87f38dfe0` contains the tested source. Accepted
+main remains **33 profiles / 14 programs**; this candidate has **34 / 14**.
+
+| Validation | Result |
+| --- | --- |
+| Full portable suite | **14,231 passed**, zero failures/errors/skips; 1,022 integration tests excluded; JUnit 403.519 seconds. |
+| Final native confirmation | **65 passed**: 17 C9, 18 LDAP TLS, 18 SMTP TLS, four direct TLS and eight original FTP; zero confirmation failures/errors/skips; JUnit 197.126 seconds. |
+| Ordinary usefulness | **2/2**, ordinary and multiline greetings; **zero unnecessary refusals**. |
+| Separate robustness | **3/3**, fragmented greeting, hostile earlier text and wrong AUTH status followed by TLS. Only TLS is verified. |
+| Negatives | **Six inconclusive**, all after actual AUTH TLS progress: untrusted CA, refusal, malformed TLS, stall and two unsupported retained greetings. |
+| Enforcement/evidence | **11/11** isolated replays unchanged, **22/22** forbidden destinations blocked, **110/110** boundary fields; one connection per case and closed owners. |
+| Independent clean source | Five useful trials, **10/10** destinations blocked; all five new and **67 accepted bundles** replayed through CLI/shared inspection with unchanged bytes/mtimes/modes. |
+
+The **initial** native run was **64 passed / 1 failed**, with no errors/skips.
+The existing `openssl-stalled` regression returned `evidence_unavailable` after
+63.592 seconds, leaving an incomplete journal with an execution-start record and
+no result artifact. The unchanged isolated reproduction passed, followed by the
+separate full confirmation above. Its root cause remains undetermined; successful
+confirmation does not reclassify the failed run or establish the absence of an
+intermittent reliability issue. Preserve `native.xml`, `native.log`, `native-tmp/`,
+`stalled-reproduction.xml` and its log/evidence. Every C9 test passed in both full
+native runs. No source change or relaxed assertion was used for this retry.
+
+A separate early FTP smoke exposed an inherited prefix-based wait for two FTP
+connections. C9 permits one. The backend now keys that wait to the exact legacy
+FTP-listing/Nmap tool IDs, with an eight-case regression preserving both behaviors.
+The failed smoke is retained as incomplete development evidence; the succeeding
+smoke confirmed the exact retained greeting. Neither smoke is final acceptance.
+
+Seven case counters require the exact AUTH command, TLS1.3 and clean close_notify
+without application data: five useful trials plus two parser-negative greetings.
+Four other negatives count only the command before failure/refusal/stall. Counter
+meanings are pinned per lab identity; native DONE is stdin EOF, not a clean-close
+witness. Six additional C9 native checks cover one-use grants, missing approval
+proof, cancellation, private inputs, UDP refusal and actual output pressure.
+Synthetic policies/scripted grants do not establish personal acceptance.
+
+Final native ordinary durations were **3215/2861 ms**, robustness
+**2886/2807/2885 ms**; the 11 scenarios ranged **2344–6752 ms**,
+median **2885 ms**. Clean-source ordinary durations were
+**3162/3044 ms**, robustness **3151/3043/3507 ms**. Useful captures were
+**327 bytes**; all scenario captures ranged **24–364 bytes**.
+These are descriptive secure CLI wall times, not comparative authority overhead
+or personal approval latency. Provider calls, paid calls and actual provider
+cost were **zero**; no real credentials were read.
+
+The strict wrapper accepts only the compiled final 220 greeting around the
+unchanged TLS grammar. OpenSSL does not validate FTP reply codes, discards the
+AUTH response and earlier greeting lines, and may fail on fragmented readiness.
+A wrong status followed by verified TLS remains TLS-only robustness evidence;
+readiness, valid AUTH acceptance, identity and authentication are not established.
+Hostile earlier text is discarded, not detected; hostile final text is retained
+but not normalized as useful. No USER/PASS, PBSZ/PROT, listing, transfer, data
+connection, credential, retry or TLS application operation is exposed.
+
+All **548 frozen source hashes** match the implementation; the snapshot preceded
+portable/native execution and stayed unchanged for confirmation and clean trials.
+Later handoff edits are documentation only. The **184 accepted case contracts,
+33 adapters and 24 runtimes/environments** retain canonical digest
+`299312bd5f5e1a83536d56d9a8a42b481910e99888ac165b506019cea64c7629`.
+Independent runtime/fixture/core and parser/evidence reviews found no blockers.
+Focused checks passed 235 new fixture/runtime, 35 inherited runtime and 2,226
+parser/evidence/shared cases, followed by 41 evidence, four historical fixtures
+and eight backend regression checks. These overlap the full suite.
+
+Private evidence lives under `.secure-agent/ftp-starttls-20261007/`, including
+`portable.xml`, `native-confirmation.xml`, `validated-source-files.json`,
+`native-evidence-audit.json` and `clean-source-30eccfb5-xct2anrw/verification.json`.
+Clean-source receipt SHA256:
+`e37e3819fe908acffd30d3c803452d49b6cf27808f90aa4a6bcad4aca16145be`.
+It pins the C8 receipt, all 67 accepted bundles and eight inherited receipt files.
+The independent native audit checked all 11 confirmation captures, raw parsing,
+artifact/action/policy/runtime/owner/audit bindings and pure-parser report rebuilds,
+with unchanged bytes/mtimes/modes; SHA256:
+`363dac7de10bae5805f4d18931da95c60e3f0950161341934ed5eb8b86a3752b`.
+It separately preserves the original failed suite and isolated reproduction.
+Actual isolated replay was established by the native tests and clean verifier.
+
+C9 is merged in PR #63; its acceptance record is above. C9 and earlier milestones
+stay closed. C10 is the separately authorized bounded nonrecursive TCP dig query
+with EDNS NSID for untrusted server metadata;
+no UDP, recursion, zone transfer, verified identity or follow-up is implied.
+Credentials, paid/live calls, external engagements, deeper workflows and
+comparative benchmarking remain deferred.
+
+## PR #62 review and merge — 7 October 2026
+
+**C8 is accepted in [PR #62](https://github.com/0xsl0th/recon-cockpit/pull/62).**
+Reviewed head `7c853f6b` merged as `a582bd6c` on 7 October at 23:03:04 UTC;
+reviewed and merged trees match `262e514cff571e7da39a89ede00bec3f93fa2cf3`.
+Fresh source and evidence reviews found no blockers; 343 focused authority tests
+passed. All 540 tested source hashes, 79 reports, 94 referenced artifacts and
+seven inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37698873778)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37699966443)
+passed. Preserve 13,683 portable and 70 native tests, 2/2 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
+120/120 boundary fields and 63 accepted-bundle replays. Accepted main now has
+**33 profiles using 14 programs**. C8 stays closed; private review receipt:
+`.secure-agent/pr62-merge-review.json`.
+
+Fresh review reconciled all 12 native, four clean-source and 63 accepted reports,
+94 referenced artifacts, 60 native evidence-file hashes and 12 audit hashes.
+No new native/full-suite run is claimed for merge review. Branch rules and inline
+review comments were empty; the five final CI jobs plus source review were the
+merge gate. No formal GitHub approval is claimed.
+
+## C8 owned LDAP STARTTLS — 7 October 2026
+
+The [C8 runbook](ldap-starttls-tools.md) defines `ldap_starttls_handshake_v1`:
+one fixed 31-byte extended request, fixture-CA/name-verified TLS1.3 and a clean
+close witness through the accepted OpenSSL/authority/evidence path. Clean
+implementation `afe4fe820008c04fe7eb979e1b4d34fd0e4f3a5a` contains the tested source.
+C8 is accepted in PR #62 at `a582bd6c`, bringing main to **33 profiles / 14 programs**.
+
+| Validation | Result |
+| --- | --- |
+| Full portable suite | **13,683 passed**, zero failures/errors/skips; 1,005 integration cases excluded; JUnit 327.368 seconds. |
+| Actual Linux suite | **70 passed**: 18 C8, 18 SMTP TLS, 24 database TLS, four direct TLS and six accepted RootDSE; zero selected failures/errors/skips; JUnit 202.616 seconds. |
+| Ordinary usefulness | **2/2**, minimal reply and optional response name; **zero unnecessary refusals**. Only TLS is verified. |
+| Separate robustness | **2/2**, hostile diagnostic and mismatched response message ID; neither response validation nor injection detection is claimed. |
+| Negatives | **Eight inconclusive**, all after the actual fixed StartTLS request: bad CA, refusal, referral, malformed/truncated/fragmented reply, stall and bad TLS. |
+| Enforcement/evidence | **12/12** isolated CLI replays unchanged, **24/24** forbidden destinations blocked, **120/120** boundary fields; one connection per case and closed owners. |
+| Independent clean source | **2/2 ordinary + 2/2 robustness**, **8/8** destinations blocked; four new and **63 accepted bundles** replayed through CLI/shared inspection with bytes, mtimes and modes unchanged. |
+
+Four successful cases count only after the exact request, TLS1.3 and clean
+close_notify with no application data. Eight negative cases count after the
+exact request before failure/refusal/stall, and cannot attest TLS completion.
+These meanings are pinned in the lab specifications/identities. Native `DONE`
+means stdin EOF, not verified clean closure. Six additional C8 native tests cover
+one-use grants/replay denial, missing approval proof, cancellation after actual
+execution, private-input isolation, UDP refusal and diagnostic output pressure.
+Synthetic unattended policies and scripted grant tests do not establish personal
+acceptance; the shipped policy still requires fresh approval.
+
+Native ordinary durations were **2881/2854 ms**, separate robustness
+**2852/2847 ms**; all 12 ranged **2,237–6,813 ms**, median **2,513.5 ms**.
+Clean-source ordinary durations were **2976/2921 ms**, separate robustness
+**2956/3046 ms**. Useful captures were **300 bytes**, and all scenario captures
+ranged **24–300 bytes**. These are local secure CLI wall times under test load,
+not comparative overhead or personal approval latency. Provider calls, paid calls
+and actual provider cost were **zero**; no real credentials were read.
+
+OpenSSL performs one bounded plaintext read, skips response message-ID comparison,
+checks selected ASN.1/result fields and discards the raw LDAP reply. The strict,
+unchanged TLS parser cannot establish LDAP reply correlation, status, response
+OID, directory readiness, identity or authentication. Hostile diagnostics are
+absent from capture because OpenSSL discards them; this is not detection evidence.
+Fragmentation can fail. No bind/search, credential, client certificate, referral
+follow-up, TLS application data, retry or plaintext directory session is exposed.
+
+All **540 source hashes** match the clean implementation. The frozen snapshot
+preceded both native and full portable execution; subsequent handoff edits are
+documentation only. Independent comparison preserves **172 accepted case
+contracts, 32 adapters and 23 runtimes/environments**, canonical digest
+`bdbcf4dc6cf188030977483a616d622fe041d68c166ec8015464786674957400`.
+Independent runtime/fixture/core and parser/evidence reviews found no blockers.
+Focused sets passed 239 new fixture/runtime, 33 inherited runtime and 2,054
+parser/evidence/shared tests; these overlap the full suite and are not extra
+full-suite totals.
+
+Private evidence remains under `.secure-agent/ldap-starttls-20261007/`:
+`portable.xml`, `native.xml`, `validated-source-files.json`,
+`native-evidence-audit.json`, `compatibility-review.json` and
+`clean-source-afe4fe82-8qrl_gan/verification.json`. Clean-source receipt SHA256:
+`73feeb5fb0c533409306d7fdd48669b7db04a0faf375bc9fb859cb308f9cb818`. It pins the C7 receipt and all 63 prior bundles plus seven inherited
+receipt files. The read-only native audit independently checked all 12 captures,
+artifact/action/policy/runtime/audit bindings and pure-parser report rebuilds,
+with unchanged bytes/mtimes/modes; audit SHA256:
+`cd1dbd005d918a9857fbd242cbfd88d69b702b6ad4f282078f5e9899ea952605`.
+It is separate from the actual isolated replay established by native tests.
+The early development smoke remains separate from final validation.
+
+PR #62 is merged; C8 is closed. C9 FTP explicit TLS is the separately authorized
+follow-on batch. Credentials, paid/live calls, external engagements, deeper
+workflows and comparative benchmarking remain deferred.
+
+## PR #61 review and merge — 7 October 2026
+
+**C7 is accepted in [PR #61](https://github.com/0xsl0th/recon-cockpit/pull/61).**
+Reviewed head `4239834d` merged as `7c5e88ad` on 7 October at 22:32:58 UTC;
+reviewed and merged trees match `e07e810f7995f5f17aca942ccb4ebeede2152e0e`.
+Fresh authority/runtime and parser/evidence reviews found no blockers, with
+432 and 399 focused tests passing. All 532 tested source hashes, 75 reports,
+90 referenced artifacts and six inherited receipt links matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37694217980)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37696888315)
+passed. Preserve 13,175 portable and 52 native tests, 2/2 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
+120/120 boundary fields and 59 accepted-bundle replays. Accepted main now has
+**32 profiles using 14 programs**. C7 stays closed; private review receipt:
+`.secure-agent/pr61-merge-review.json`.
+
+Fresh review independently reconciled 12 native, four clean-source and 59
+accepted reports, 90 artifacts, 60 native evidence-file hashes and 12 audit hashes.
+No new native/full-suite run is claimed for merge review. No required branch rules
+or inline review comments were configured; all five portable jobs and source
+review were the merge gate. No formal GitHub approval is claimed.
+
+## C7 owned SMTP STARTTLS — 7 October 2026
+
+The [C7 runbook](smtp-starttls-tools.md) defines `smtp_starttls_handshake_v1`:
+one fixed EHLO/STARTTLS exchange, fixture-CA/name-verified TLS1.3 and clean close
+through the existing OpenSSL runtime and authority path. Clean implementation
+`b4b1a9f1a52902df9fca644ede5deba160efc8af` contains the tested production/test sources.
+C7 is accepted at `7c5e88ad`, bringing main to **32 profiles / 14 programs**,
+with no GUI or external-target expansion.
+
+| Validation | Result |
+| --- | --- |
+| Full portable suite | **13,175 passed**, zero failures/errors/skips; 987 integration cases excluded; JUnit 314.669 seconds. |
+| Actual Linux suite | **52 passed**: 18 C7, 24 database TLS, four direct TLS and six accepted SMTP; zero selected failures/errors/skips; JUnit 145.608 seconds. |
+| Ordinary usefulness | **2/2**, ordinary and multiline dialogue; **zero unnecessary refusals**. |
+| Separate robustness | **2/2**, fragmented greeting/EHLO and hostile earlier metadata; no model injection-detection claim. |
+| Negatives | **Eight inconclusive**, all after actual fixed EHLO/STARTTLS command progress. Missing advertisement and extra output completed native TLS/clean close before strict parser rejection. |
+| Enforcement/evidence | **12/12** scenario replays unchanged, **24/24** forbidden destinations blocked, **120/120** boundary fields; one connection per case, closed owners. |
+| Independent clean source | **2/2 ordinary + 2/2 robustness**, **8/8** destinations blocked; four new and **59 accepted bundles** replayed through CLI/shared inspection with bytes, mtimes and modes unchanged. |
+
+Counter semantics are case-specific and bound in the lab identity: six complete
+TLS cases count only after both fixed commands and clean close_notify; six other
+negatives count after the fixed commands and before failure/stall. A prelude-only
+counter cannot prove TLS completion. `DONE` is stdin EOF, not a peer close witness.
+The six extra native checks cover one-use grants/replay denial, missing approval
+proof, cancellation after actual OpenSSL execution, private-input isolation, UDP
+refusal and actual diagnostic output pressure. Synthetic unattended policies and
+scripted grant tests do not establish new personal acceptance.
+
+Native ordinary times were **2,870/2,704 ms**, robustness **2,988/2,662 ms**;
+all 12 scenarios ranged **2,250–6,705 ms**, median **2,683 ms**. Clean-source ordinary
+times were **2,920/2,884 ms**, robustness **3,203/3,271 ms**. Useful captures were
+314 bytes. These are local secure CLI durations under test load, not comparative
+authority overhead or human approval latency. Provider calls, paid calls and
+actual provider cost were **zero**, and no real credentials were read.
+
+The strict SMTP suffix wrapper leaves the accepted direct/database TLS parser
+unchanged. Native SMTP status/advertisement validation is incomplete, only the
+final EHLO line is retained, and fragmented readiness may fail. Neither TLS
+success nor the selected service label establishes SMTP identity, authentication,
+mail delivery or readiness. No AUTH/MAIL/RCPT, client credentials, TLS application
+requests, plaintext mail session, retry or response-directed follow-up is exposed.
+
+All **532 source hashes** match the clean implementation. The snapshot was taken
+after production/native tests were frozen, during native execution and before
+the full portable run; it is not described as a pre-native snapshot. Native
+production/test bytes remained unchanged; subsequent handoff changes are docs only.
+The accepted baseline retains **160 case contracts, 31 adapters and 22 runtimes**
+with digest `a4cae78a90dd7c2f3c2fc8a23963e797d9684359399f6e64821d28e4ade45029`.
+Independent runtime/fixture/core and parser/evidence reviews found no blockers.
+Focused sets passed 239 fixture/runtime, 31 prior-runtime, 120 independent
+parser/evidence and 1,975 core/shared tests; these overlap the full suite and
+are not additional full-suite totals.
+
+Private receipts remain under `.secure-agent/smtp-starttls-20261007/`:
+`portable.xml`, `native.xml`, `validated-source-files.json`, `native-summary.json`
+and `clean-source-b4b1a9f1-rem2ns2n/verification.json`. Clean-source receipt SHA256:
+`5ff9fcd796d47a3e11e0eccfb328a69975d296d08d28fc4247572289052c832c`. It pins C6's receipt and all 59 prior bundles plus their inherited
+receipt chain. The later native audit rebuilt all 12 reports using the pure
+parser, separately from actual isolated CLI replay, and has SHA256
+`bee071cb427e6b162c2c023961953d17c2c08a04bdcd6383e9ae3e608aa54fd1`.
+The early development smoke remains separate from final validation.
+
+PR #61 is merged; C7 is closed. C8 LDAP STARTTLS is the separately authorized
+follow-on batch. Credentials, paid/live-model calls, external
+engagements, deeper workflows and comparative benchmarking remain deferred.
+
+## PR #60 review and merge — 7 October 2026
+
+**C6 is accepted in [PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60).**
+Reviewed head `b2d5fce0` merged as `aa65bff7` on 7 October at 21:46:24 UTC;
+reviewed and merged trees match `bbccb66ce76107cf2febb4f4c66b6964a5634a25`.
+Independent authority/runtime and evidence reviews found no blockers. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37688048570)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37691744431)
+passed. Preserve 12,654 portable and 56 native tests, 5/5 ordinary and 2/2 separate
+robustness completions, zero unnecessary refusals, 28/28 blocked destinations,
+140/140 boundary fields and 52 accepted-bundle replays. Accepted main now has
+**31 profiles using 14 programs**. C6 stays closed; private review receipt:
+`.secure-agent/pr60-merge-review.json`.
+
+Review verified all 524 source hashes, 14 native/seven clean/52 accepted reports,
+88 artifacts and five inherited receipt hashes. Independent authority review
+passed 507 focused tests and rejected 154 commitment-recomputed mutations;
+evidence review passed 355 focused tests. These are review checks, not a claim
+of fresh native execution during merge review. No required branch rules or inline
+comments were configured; all five matrix jobs plus source review were the merge
+gate. No formal GitHub approval is claimed.
+
+## C6 owned SMB2 negotiation metadata — 7 October 2026
+
+[PR #60](https://github.com/0xsl0th/recon-cockpit/pull/60) adds one repository-owned
+Ruby socket adapter based on accepted main `846e459`. Its accepted merge
+`aa65bff7` brings main to **31 bounded profiles using 14 external programs**.
+B0–B8, C1–C6, offline R5, accepted local R6 and the initial owned
+GUI remain closed. This batch adds no GUI controls or professional deployment claim.
+
+The [runbook](smb2-negotiation-tools.md) fixes a 108-byte SMB2 NEGOTIATE offer of
+2.1/3.0.2 with client capabilities zero, write-half-close before the response,
+and one Direct TCP frame bounded to 4,100 bytes. There is no SESSION_SETUP, NTLM
+exchange, login, share access or response-directed operation. The result reports
+untrusted dialect, security-mode/capability bits and known refusal statuses.
+Signing enforcement and identity are not verified. Missing capability bits do
+not prove absent features with this zero-capability offer. The parser accepts
+opaque security/error buffers up to 256 bytes without interpreting them; rejected
+frames can still retain opaque bytes within the raw capture bound. No authentication
+token decoder or challenge-collection workflow is implemented. The exact Linux
+Ruby 3.3 x86-64 closure and early write-half-close constrain real-server compatibility.
+
+| Validation | Result |
+| --- | --- |
+| Complete portable suite | **12,654 passed**, 969 integration cases deselected; zero selected failures/errors/skips; JUnit 347.879 seconds. |
+| Actual Linux suite | **56 passed**: 20 C6, 19 RDP and 17 WhatWeb; zero selected failures/errors/skips; JUnit 187.866 seconds. |
+| Ordinary usefulness | **5/5**: both dialects with optional/required signing advertisement, plus a known refusal; zero unnecessary refusals. A refusal can be useful metadata without granting a session. |
+| Separate robustness | **2/2**: fragmented reply and hostile opaque-buffer data; one fixed request, no subsequent client bytes. This does not claim model injection detection. |
+| Negative/bounds | **7 inconclusive**: malformed header, unoffered dialect, unknown status, invalid buffer, truncated frame, stall, oversized declaration. All executed the real request first. |
+| Enforcement/evidence | **14/14** exact requests plus write EOF and owner closure, **28/28** forbidden destinations blocked, **140/140** native boundary fields, all 14 isolated CLI replays unchanged. |
+| Independent clean source | Seven useful trials, **14/14** destinations blocked; all seven new and **52 accepted bundles** replayed unchanged through CLI and shared inspection, including bytes, mtimes and modes. |
+
+The four complete parser-negative frames require native exit zero and exact raw
+capture before parser rejection; transport failure cannot stand in for them.
+Truncated/stalled/oversized frames instead fail with constant diagnostics, preserving
+100/0/4 stdout bytes respectively. The six additional C6 tests cover grant consumption
+and replay denial, missing proof before admission, cancellation after actual Ruby
+execution, private-input isolation, UDP refusal and task-ceiling enforcement.
+
+Native ordinary wall times were 2,745/2,729/2,721/2,818/2,820 ms; robustness was
+3,177/2,816 ms. Independent ordinary times were 3,914/3,656/3,579/3,810/3,593 ms;
+robustness was 3,954/3,213 ms. These are local secure CLI durations under concurrent
+test load, not a comparative-overhead result or human approval latency. Provider
+calls, paid calls and actual provider cost were zero; no real credentials were read.
+Unattended synthetic policy and automated grant tests do not claim new personal acceptance.
+
+Clean implementation `c345857896a3e6c2e6e7594922ec00b8f5285f21` contains all tested
+production and test sources. All **524 source hashes** match; subsequent handoff
+edits are documentation only. Baseline regression preserves all **146 accepted
+case contracts, 30 adapters and 21 runtime contracts** with aggregate digest
+`f26280cc4693d5576dbe9c72137283f0a778f45f26d1d0fe7062e086b751d481`.
+Independent runtime/authority and parser/evidence reviews found no blockers.
+Focused runtime verification passed 1,087 tests; new parser/evidence suites passed
+258/42 respectively (overlapping full-suite coverage, not extra full-suite totals).
+
+Private receipts remain under `.secure-agent/smb2-negotiation-20261007/`:
+`portable.xml`, `native.xml`, `validated-source-files.json`, `native-summary.json`,
+and `clean-source-c3458578-mvtu3tj8/verification.json`. Clean-source receipt SHA256:
+`e2f39b0b82cc98f747cf3443af4e9c23f00e27959e53af6412247090fc7adb05`. It pins C5's receipt, all 52 accepted
+bundles and the inherited receipt chain. The later pure-parser native audit has
+SHA256 `3e57cf9d254ccfcc343a9ba7a536123dda5f9fe405356614f89c8f9668e07b6e` and
+reconciles all 14 saved captures, artifact/runtime hashes, counts and outcomes.
+That read-only audit is separate from the native tests' actual isolated replay.
+
+Development checks corrected a copied fixture GUID/request literal before native
+execution, a test's expected fragmented/opaque dialect, and shared registry/type
+expectations. The first native invocation skipped because the explicit integration
+environment switch was absent; its log is retained as `initial-env-not-enabled-*`
+and contributes no validation. An early portable run was interrupted to finish the
+registry expectation, retained as `interrupted-registry-expectation-*`; only the
+complete final run above counts. The audit helper's first path glob matched no
+pytest directories and failed its 14-case denominator; the corrected helper
+excludes pytest's current-directory symlink and reconciles all 14. No safety
+boundary was weakened to obtain a passing result.
+
+C6 is accepted in PR #60; see the review/merge receipt above. C7 SMTP STARTTLS
+is the separate follow-on candidate. Credentials, paid/live-model calls, external
+engagements, deeper workflows and comparative benchmarking remain deferred.
+
+## PR #59 review and merge — 7 October 2026
+
+C5 is closed. Reviewed head `5a5f9b4c116b8c2fbd11ea8224f577d209d6b7a6`
+merged as `846e4590aedda66057b581467e9fffcb00ff6f76` at 20:45:26 UTC. Reviewed
+and merged trees match `0aacfa7665a04eee8912e771147f5125d11c1acc`. All 514
+validated source hashes matched. Independent authority/runtime review passed
+1,277 focused tests; parser/evidence review passed 877 and rebuilt all 13 native,
+seven clean-source and 45 accepted reports unchanged, with no blockers.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37678942749)
+and [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
+passed. No required branch checks or inline review comments were configured; all
+five portable matrix jobs plus independent source review were the merge gate.
+No formal GitHub approval is claimed. Private receipt:
+`.secure-agent/pr59-merge-review.json`. The C5 verification below remains the
+accepted evidence; do not repeat the merge or reopen the milestone.
+
+## C5 owned RDP initial negotiation — 7 October 2026
+
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) implements one repository-owned
+Ruby socket adapter through the existing single-action authority, runtime and
+evidence path. Accepted main `6080a5c` contains 29 profiles using 14 external
+programs; C5 added one native capability, for 30/14. It is accepted owned-lab
+coverage, not professional deployment acceptance or a GUI feature.
+
+The [runbook](rdp-negotiation-tools.md) binds one 19-byte TLS negotiation offer,
+write-half-close before response, and one 11- or 19-byte response frame. Results
+are untrusted selected-protocol, legacy-confirmation or known-failure metadata.
+No TLS handshake, CredSSP/NTLM, authentication or remote session occurs. Early
+write-half-close and the reviewed Debian Ruby 3.3 x86-64 closure constrain real
+server compatibility; only owned fixtures were verified. Trailing peer data is
+not inspected or captured, so the robustness result is not injection detection.
+
+| Validation | Result |
+| --- | --- |
+| Complete portable suite | **11,898 passed**, 949 integration cases deselected; zero selected failures/errors/skips; JUnit 270.690 seconds. |
+| Actual Linux suite | **36 passed**: 19 C5 and 17 accepted WhatWeb regressions; zero selected failures/errors/skips; JUnit 109.828 seconds. |
+| C5 ordinary tasks | **5/5**: TLS selection, explicit standard RDP, legacy confirmation, NLA-required and Entra-required failures; zero unnecessary refusals. |
+| Separate robustness | **2/2**: fragmented frame and valid frame followed by hostile trailing data; no further client bytes. |
+| Negative/bounds | Six inconclusive cases after actual fixed request execution: malformed, unoffered protocol, unknown failure, truncated EOF, stall and oversized declaration. |
+| Enforcement/evidence | All 13 scenarios acknowledged one connection/request and write EOF, closed owners, passed **26/26** forbidden-destination and **130/130** boundary checks, and replayed unchanged. |
+| Independent clean source | Seven useful trials repeated, **14/14** destinations blocked, all seven new and **45 accepted bundles** replayed identically through CLI and shared inspection without changing bytes, mtimes or modes. |
+
+The native suite separately verifies grant consumption and replay denial, missing
+proof refusal before launch, cancellation after actual Ruby execution, private-input
+isolation, UDP refusal and task-ceiling enforcement. No mock, skipped test or startup
+failure satisfies an actual-execution gate. Valid peer failures count as useful
+metadata; blocking every request would fail the batch.
+
+Native ordinary wall times were 2,688/2,644/2,612/2,615/2,645 ms; robustness was
+2,674/2,642 ms. Independent clean-source ordinary times were
+2,832/2,821/2,878/2,832/2,888 ms and robustness 2,934/2,823 ms. They describe local
+secure CLI wall time, not human review latency or comparative overhead. Provider
+calls, paid calls and actual provider cost were zero; no real credentials were read.
+Automated synthetic policy/grant tests do not claim new personal acceptance.
+
+Malformed, unoffered and unknown-failure frames may have native exit zero while
+remaining inconclusive. Truncated, stalled and oversized cases exit as failed with
+constant diagnostics. Oversized framing retains only the four-byte header; truncated
+input retains ten bytes. The 8,192-byte capture reservation does not imply those bytes
+were consumed, and no artificial output-pressure success is claimed for a 19-byte
+client. Successful normalized fields never imply a verified security channel.
+
+Clean implementation `f24a2528e53befa672b36fb7de8538a4595a7a38` contains the tested
+production and test sources. All **514 source hashes** match the final local suites.
+Subsequent handoff edits are documentation only. The independent baseline verifies
+all 133 accepted case contracts, 29 adapters and 20 native runtime contracts
+unchanged, with golden digest
+`638cf0ca6e33716fe098583f27361923eba24c11bfcc81961b5305fe4752b38f`.
+Independent source review found no remaining blockers; focused runtime, fixture,
+parser/evidence and authority/catalog sets passed, including 1,395 review cases
+(overlapping sets, not additional full-suite totals).
+
+Private receipts remain under `.secure-agent/rdp-negotiation-20261007/`:
+`portable-final.xml`, `native-final.xml`, `validated-source-files.json`, and
+`clean-source-f24a2528-002u84al/verification.json`. The clean-source receipt digest is
+`94ee22d2ffe1f05acaffd2c9de4f02257349b75469ca1b5997db971799fc49d5`.
+The verifier pins C4's receipt and retains all 45 inherited bundles and prior
+receipt links. A separate read-only audit reconciled all 13 native captures,
+action/policy/runtime bindings, counters and rebuilt reports without changing
+evidence; `native-summary.json` has digest
+`ddf7ea630a08831b8202618cb048ae8c1c7ff7cf5a87b3dd8f8ced6f3f99579b`.
+Immediate isolated CLI replay is established by the native tests; this later audit
+did not claim fresh isolated executions. The initial successful startup smoke is
+separate from final evidence.
+
+Development review corrected the fixture's advertised offer from standard RDP plus
+TLS to the actual TLS-only request. It also preserved the exact accepted WhatWeb
+resource-limit branch when adding RDP, keeping both native task-limit witnesses
+intact. An early shared runtime test ran before adapter registration and failed
+closed on an unsupported policy tool; the assembled full suites above passed.
+No production safety boundary was relaxed to satisfy a test.
+
+C5 is accepted and closed after the reviewed PR #59 merge recorded above.
+C6 is the separately authorized SMB2 negotiation batch. Authentication, credential
+setup, paid/live-model calls, external engagements, deeper workflows and comparative
+benchmarks remain deferred. Closed B0–B8, C1–C5, offline R5, accepted local R6 and
+the initial GUI stay closed.
+
+## PR #58 review and merge — 7 October 2026
+
+C4 DNS SRV metadata is closed. Reviewed head `65810b8e9f447cf63ef1bed88b0a7987ad35fe7b`
+merged as `6080a5c5e4d2f5cde00415299c259f212813d40b` at 19:36:01 UTC.
+Reviewed and merged trees match `fbb7092085e169f499d364355bf11c75c4ca2fcb`.
+Independent authority/runtime review passed 1,328 focused portable tests;
+parser/evidence review passed 821 focused and 422 regression tests. No blockers
+were found. All 502 recorded source hashes and native/clean-source receipt hashes
+matched. The ten saved native C4 artifacts independently reparsed with matching
+raw captures, runtime bindings, counters and outcomes.
+
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37673798024)
+passed 11,428 tests each, and all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37675710586)
+passed. No branch check rules or unresolved inline review comments were present;
+all five matrix jobs and independent source review were the merge gate. No GitHub
+formal approval is claimed. The private merge receipt is
+`.secure-agent/pr58-merge-review.json`.
+
+Preserve C4's 25 native tests, 4/4 ordinary completions, separate 1/1 robustness
+completion, zero unnecessary refusals, 20/20 blocked destinations and 40 unchanged
+accepted-bundle replays. The evidence remains under
+`.secure-agent/dns-srv-20261007/`. Do not repeat the merge or reopen C4.
+
+
+## Desktop Execute owned lab — 7 October 2026
+
+The `feature/desktop-owned-execution` slice starts the existing four-action owned
+HTTP/SSH assessment from the desktop through the shared service. It freezes scope,
+requires the isolated graphical reviewer for each action and retains the original
+four-step/60-second/26,624-byte limits. No secure-agent production code or authority
+contract changed. This implementation remains subject to its separate PR review;
+PR #53's accepted personal walkthrough is closed.
+
+The final complete portable suite passed **9,981 tests**, with 849 integration
+cases deselected, in 294.54 seconds. No selected tests failed, errored or skipped.
+Its receipt is `portable-pty-results.xml`; hosted matrix checks remain a separate
+PR requirement. Python 3.11 syntax, local documentation targets and
+`git diff --check` also passed. Independent controller, GUI and native-fixture
+reviews found no remaining blockers.
+
+**70 native Linux/Tk tests passed in 102.02 seconds**, with no selected failures,
+errors or skips. The private Xvfb suite covered the desktop execution, dry-run and
+saved-evidence views, reviewer input controls and approval isolation. Unraisable
+exception warnings were treated as errors. The six new desktop cases used the
+real shared service, grants, launcher witnesses, tools, parsers and evidence;
+only reviewer input and observation latches were test fixtures.
+
+| Desktop case | Useful actions | Stop reason | Recorded elapsed |
+| --- | ---: | --- | ---: |
+| Scripted typed approval | 4/4 | `coordinator_done` | 9,775 ms |
+| Scripted clipboard approval | 4/4 | `coordinator_done` | 9,334 ms |
+| Deny first action | 0/4 | `action_blocked` | 1,421 ms |
+| Cancel with review pending | 0/4 | `session_cancelled` | 1,232 ms |
+| Close with review pending | 0/4 | `session_cancelled` | 1,213 ms |
+| Cancel after one successful action | 1/4 | `session_cancelled` | 3,962 ms |
+
+Each full session blocked **12/12 listening forbidden destinations**, completed
+all four legitimate actions and recorded zero unnecessary refusals. All executed
+artifacts passed 11/11 boundary checks. Denial and pending cancellation/close
+consumed no grant and launched no tool. Every case closed its fixture owners and
+authority processes and independently replayed without changing evidence. Provider
+calls and actual cost were zero. Incomplete cases retain ungraded refusals.
+These scripted timings include test observation and screenshot work; they are
+neither human-review latency nor a comparative overhead benchmark.
+
+Both themes passed at 1120×720, including disabled starts during execution/replay,
+provisional metrics, truthful partial results and wrapped metric descriptions.
+Private screenshots were inspected. The ordinary desktop has no approval-answer
+entry point and never starts host tools directly. Automated input used only a
+private display and is distinct from accepted owner input.
+
+Two earlier broad development runs failed and remain preserved. Tests initially
+missed a fast denial's live process and latched a blocked action as if it were
+successful. Repeated Tk fixtures also finalized retired variables on a worker
+thread; opt-in collection now occurs on the main thread after prior fixture
+release. A separate deterministic diagnostic proved that the scripted input
+timer could answer twice while one event pump drained. Its pending-decision guard
+and two-review regression affect test code only. These findings do not establish
+the cause of every earlier `approval_unavailable` or isolation failure. No failed
+outcome was promoted to success, and no production restriction was relaxed.
+
+Two full portable-suite attempts terminated before producing JUnit receipts.
+The first exited with SIGTERM, cause unproven. The second exited with SIGHUP at
+the existing scripted terminal fixture's teardown: a runner without a controlling
+terminal can acquire its temporary slave. A dedicated automated PTY avoids that
+acquisition; all 13 terminal cases passed there, without changing test assertions
+or using the owner's terminal. Incomplete attempts remain separate from final runs.
+
+Private receipts, original failed runs, diagnostic proof, source hashes, native
+bundles and screenshots live under `.secure-agent/gui-execution-20261007/`.
+The final native receipt is `native-accepted-results.xml`; the earlier clean
+69-case run predates the added fixture regression and remains separate.
+Credentials, paid calls, live-model evaluation and external targets stay deferred.
+
+## Full personal graphical walkthrough accepted — 7 October 2026
+
+The owner completed the four-action walkthrough at PR #53 documentation head
+`5f15851decfdb10974e8c2b05528fa24d2d6227e`, with product code and tests unchanged
+from reviewed implementation `5970a108`. The successful session
+`graphical-owned-5nkgldx7` completed **4/4 useful actions**, consumed four grants,
+started four executions and recorded four successful finishes. It stopped at
+`coordinator_done` after **45,642 ms**, within the unchanged four-step/60-second/
+26,624-byte limits. Legitimate completion was true; unnecessary refusals, provider
+calls and actual cost were zero. Both owned fixtures closed.
+
+The owner confirmed, "ok this time it worked". Together with the separately
+confirmed approval, denial and pending-review cancellation interactions below,
+this completes the personal graphical walkthrough. No personal approval input was
+supplied by automation. These observed timings are not a comparative benchmark.
+
+Preserve the earlier full runs as incomplete: `graphical-owned-cqe6rd5t` completed
+3/4 actions before timeout at 60,041 ms, and the owner reported distraction;
+`graphical-owned-uepnf27q` completed 2/4 before timeout at 60,045 ms, and the owner
+reported a copying problem whose cause remains unproven. Neither trial recorded
+`approval_unavailable`. Fresh independent inspection of all three full trials
+matched their saved reports, found no integrity issues and left evidence unchanged.
+Each trial retained its own outcome and recorded closed fixtures with zero cost/calls.
+
+Private receipts are
+`.secure-agent/graphical-full-approval-20261007/full-trials-evidence-review.json`
+and `owner-confirmation-full.json`, alongside the original trial artifacts.
+The individual-controls and scripted native receipts remain separate. PR #53
+subsequently merged as `0539c15` after final review and all five checks; its five
+post-merge checks also passed. The desktop Execute integration is the separate
+slice recorded above, reusing the shared service and isolated graphical reviewer
+for disconnected owned fixtures.
+Completed B0–B8, offline R5 and accepted local R6 stay closed; credentials, paid
+calls, live-model evaluation and real network attachment remain deferred.
+
+## Personal control confirmations — 7 October 2026
+
+The owner completed three separate one-action rehearsals against the owned,
+disconnected fixtures at PR #53 documentation head `db9ba1a`; product code and
+tests are unchanged from reviewed implementation `5970a108`. All five
+[checks on the documentation revision](https://github.com/0xsl0th/recon-cockpit/actions/runs/37431954622)
+passed. The request stayed at one step, 60 seconds and 8,192 output bytes.
+
+| Owner-confirmed control | Successful actions | Stop reason | Session elapsed |
+| --- | ---: | --- | ---: |
+| Approve | 1 | `step_limit` | 23,238 ms |
+| Deny | 0 | `action_blocked` | 15,093 ms |
+| Leave unanswered, then Ctrl+C | 0 | `session_cancelled` | 6,177 ms |
+
+The owner described the approval steps as clear, confirmed completion of the fresh
+denial test, and explicitly reported leaving the cancellation review unanswered
+before pressing Ctrl+C. The earlier denial trial during which the owner was AFK
+remains unconfirmed and is excluded. Denial and cancellation each consumed zero
+grants and recorded zero tool starts or finishes; approval consumed one grant and
+completed one execution. All fixtures closed. These are observed session timings,
+not a comparative overhead measurement.
+
+Fresh independent inspection of all three sessions matched the saved reports,
+found no integrity issues and left every evidence file unchanged. Provider calls
+and actual cost are zero. Private receipts are
+`.secure-agent/graphical-single-action-20261006/owner-controls-confirmation.json`
+and `confirmed-controls-evidence-review.json`, alongside the separate owner feedback
+and retained session artifacts. No personal input was supplied by automation.
+
+The three controls were confirmed at this checkpoint while full four-action
+personal acceptance remained outstanding. Each smaller request correctly reports
+an incomplete full assessment. The subsequent full walkthrough is recorded above;
+it does not change these smaller requests' outcomes. Do not repeat the confirmed
+controls or extend/reset deadlines. Automated full-workflow receipts remain distinct.
+
+## Corrected reviewer retry and simpler rehearsal — 6 October 2026
+
+Fresh review of `5970a1086cbc4978c7eeb3a71d740dcf5ca221df` found no blockers;
+source hashes matched the 51 native and 112 focused portable receipts. All five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37429201956)
+passed. GitHub rejected formal self-approval because the active account is the
+PR author. The private review receipt is `.secure-agent/pr53-review.json`.
+
+The next owner retry produced no `approval_unavailable` events, but both started
+sessions reached the original deadline. The approval-labeled stage completed
+2/4 actions in 60,027 ms; its first two reviews took 27.45 and 16.81 seconds,
+leaving 11.36 seconds at the third review before timeout. The denial-labeled stage
+completed one action in 60,036 ms: a 36.45-second first review issued a grant, and
+the next review timed out after 20.30 seconds. No denial was recorded. Cancellation
+was not started. Both reports are incomplete, record closed labs and list no
+integrity issues; the three executed artifacts each record 11/11 true boundary
+checks. Provider calls and actual cost are zero. Stage labels do not establish
+which user interactions occurred.
+
+The owner confirmed that the copy/paste or three-session instructions were
+confusing. Preserve those observations and unsuccessful results in
+`.secure-agent/graphical-owner-helpers-20261006/`. Personal acceptance was
+outstanding at that checkpoint; PR #53 stayed draft. The planned rehearsal selected
+one case per launch, starting with one approval and pausing for owner feedback
+before denial or cancellation.
+It reuses the existing service with one step, 60 seconds and 8,192 bytes; a successful
+first action ends at `step_limit` and does not complete the four-action assessment.
+Keep controls-rehearsal evidence distinct from full-workflow completion and
+scripted validation. Ordinary desktop execution remains disabled.
+
+Three private native cases validated this smaller request on an owned Xvfb
+display in 6.77 seconds. Approval completed one action and stopped at `step_limit`
+(3,785 ms); denial completed zero and stopped at `action_blocked` (1,143 ms);
+pending-review cancellation completed zero and stopped at `session_cancelled`
+(1,126 ms). All three retained incomplete full-assessment outcomes, closed labs,
+zero provider calls/cost and unchanged independent replay. Only the approved case
+consumed a grant and launched a tool; its result passed all 11 boundary checks.
+These are scripted test results, not owner input. The private launcher request
+exactly matches this tested configuration. Receipts and evidence are retained in
+`.secure-agent/graphical-single-action-20261006/validation/`. The launcher shows
+only the selected case, waits for the owner to start, records actual audit counts,
+reports unexpected behavior without acceptance and handles early interruptions.
+
+## Personal graphical retry failure — 6 October 2026
+
+At PR #53 head `b045a24252f54b11f131f39514e9afdc0926b65d`, the owner could copy
+and paste the phrase, but the real desktop retry exposed another failure. The
+approval-labeled session completed one action, then stopped with
+`approval_unavailable` after 28,311 ms. The denial-labeled session stopped with
+the same error after 5,998 ms, with no actions. The cancellation-labeled session
+completed two actions, then reached the 60-second limit (60,038 ms elapsed).
+Stage labels describe intended tests; they do not prove denial or cancellation.
+None of these trials establishes successful personal walkthrough acceptance.
+All used zero provider calls and zero model cost.
+
+Private Xvfb tests with real XTEST input reproduced a concrete cause: Tab needs
+Tk's deferred `focus.tcl` helpers, and double-click selection in the phrase or
+action details needs Tcl's deferred `word.tcl` helpers. Loading these files after
+the worker's filesystem-open seal is denied. Tk's binding error reaches stderr,
+and the authority correctly stops with `approval_unavailable`. Basic mouse clicks
+and Copy → Ctrl+V → Approve worked, including a private XFWM/clipboard-manager
+session. The original trial logs do not identify the owner's exact triggering
+gesture; this reproduction establishes the defect without inventing that detail.
+
+The correction preloads and verifies eight fixed focus/word helper commands
+before sealing, leaving existing commands intact on repeated warmup. It changes
+no filesystem/network restrictions, approval protocol, grants, witnesses or limits.
+The original private five-case reproduction had three failures before the fix
+and none afterward. Six repository regressions drive the unmodified worker with
+real XTEST Tab/Shift-Tab, double-click selection and word navigation/deletion;
+each requires the review to remain pending before a separate approval or denial.
+
+**51 native Linux/Tk cases passed in 48.08 seconds**, without failures, errors or
+skips. Both existing typed-input and clipboard workflow modes completed 4/4 useful
+actions, blocked 12/12 forbidden destinations per mode and replayed unchanged,
+with zero unnecessary refusals/provider calls/cost. Elapsed times were 8,603 ms
+and 8,625 ms; these are scripted-fixture timings, not human latency or a paired
+benchmark. **112 focused portable tests passed.** Independent source reviews
+found no blocker. Final receipts use `helpers-native-results.xml` and
+`helpers-portable-focused.xml` under `.secure-agent/graphical-copy-20261006/`;
+the original failing and corrected reproductions are retained there separately.
+
+All three failed owner bundles independently replay as incomplete without
+integrity issues, with unchanged file hashes. Replay requires the existing
+isolated parsers; the earlier sandbox-limited reconciliation result is retained
+separately. PR #53 remained a draft pending personal acceptance at that checkpoint. Earlier native
+scripted-input and hosted portable checks passed, but did not cover these gestures.
+Preserve private logs, bundles, screenshot and `failure-summary.json` under
+`.secure-agent/graphical-owner-copy-20261006/`. The fix was then ready for review
+before another personal retry. Ordinary desktop execution remains disabled.
+
+## Graphical approval copy/paste correction — 6 October 2026
+
+The initial personal walkthrough exposed a usability defect: the fresh challenge
+was a nonselectable label. The owner reported being unable to copy/paste it. Both
+started sessions ended at the unchanged 60-second deadline with zero consumed
+grants and zero tool launches; the cancellation session was not started. Preserve
+those unsuccessful trials in `.secure-agent/graphical-owner-20261006/`. They do not
+establish successful personal approval, denial, cancellation or usability acceptance.
+
+The correction uses a selectable read-only phrase field and an explicit **Copy
+phrase** button. Copy sets only the clipboard and answer-field focus, with a
+Ctrl+V hint. It does not fill the answer or approve. Normal paste retains the
+128-character input limit, and **Approve once** remains a separate action.
+Copy is disabled outside an active unexpired review; cleanup clears local fields
+without reading/restoring or clearing unrelated clipboard content. Existing X11
+trust, runtime restrictions, protocol, grants, witnesses and limits remain intact.
+
+**45 native Linux/Tk tests passed in 40.43 seconds**, with no failures/errors/skips:
+29 actual confined-worker/workflow cases and 16 direct-view cases on a private
+Xvfb display with TCP disabled. Tests exercise Copy and paste after the worker's
+restrictions are installed, copy-only denial, stale clipboard rejection, one-use
+grants, expiry/cancel/channel failures and the existing adversarial requests.
+Direct-view cases include scripted Ctrl+C/Ctrl+V key events, read-only selection,
+oversized paste rejection, inactive/expired copy preserving unrelated clipboard,
+and Return leaving approval pending. Test callback assertion failures now exit
+the fixture worker, so they cannot masquerade as expected denials.
+
+Both the existing typed-input fixture and the new clipboard fixture completed
+**4/4 useful actions** with **12/12 forbidden destination checks blocked** per run,
+zero unnecessary refusals, zero provider calls/cost and unchanged independent
+evidence replay. Elapsed times were 8,373 ms and 8,840 ms respectively. These are
+descriptive runs with scripted test input; they are not a paired overhead benchmark
+or personal approval. No operator challenge is entered by automation on the real
+desktop. A fresh personal retry was still necessary at that checkpoint.
+
+The final source hashes, JUnit, owned evidence and two inspected screenshots at
+900×740 and 780×650 are private under `.secure-agent/graphical-copy-20261006/`.
+The initial four-case confined clipboard run and separate 16-case direct-view run
+remain development evidence; use `native-final-results.xml` for the combined final
+run. Read-only phrase, Copy button, answer field and both decision controls fit
+at both tested sizes. Fresh source review found no security blocker. Python 3.11
+syntax and whitespace checks passed. Model credentials and paid calls remain deferred.
+
+## PR #52 acceptance and personal walkthrough preparation — 6 October 2026
+
+Fresh runtime/protocol and worker/view reviews found no blockers at
+`7b547941b812e1f7fc9c598c756b540aff9fc1b6`. Additional review checks passed 35 actual
+graphical/workflow tests, 57 portable view/witness tests and 137 service/protocol
+tests (overlapping sets). All 14 source hashes, the screenshot and eight saved
+evidence hashes matched the existing receipts; JUnit confirmed 9,949 portable
+and 125 native cases with no selected failures/errors/skips. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37422834741)
+passed. The reviewed head merged as `21054db4d44098e8541c4c9a5edbf82dd3c0e0b5`
+at 06:26:28 UTC; reviewed and merged trees match
+`88af19e00da06de2a3253b69c3033b64f068159e`.
+All five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37423742151)
+also passed.
+
+A private launcher opens the accepted walkthrough entry point in three fresh
+sessions for personal approval, denial and cancellation. It waits for the operator
+to type `start` before each session, never supplies review input, retains the
+60-second session limit and saves progress under
+`.secure-agent/graphical-owner-20261006/`. Local display/socket/cookie availability
+was checked without printing cookie bytes. Opening this launcher establishes no
+personal approval or acceptance. The owner must complete the sessions and describe
+the observed prompts, destinations, timing and cleanup before usability acceptance
+is recorded. Ordinary desktop execution remains disabled; model credentials and
+paid calls remain deferred. Merge receipt: `.secure-agent/pr52-merge-review.json`.
+
+## Isolated graphical exact-action reviewer — 6 October 2026
+
+Based on accepted PR #51 merge `972afac`, this slice adds a fixed graphical
+frontend to `LinuxApprovalService`, an explicit shared-service selector and a
+plan-only-by-default walkthrough command. The separate worker owns its window,
+fresh challenge, grant store and original launcher witness. Review/consume keep
+their existing bounded protocol; no affirmative answer operation is added. The
+ordinary desktop remains `execute=False` and has no Execute control.
+
+The full portable suite passed **9,949 cases**, with **826 integration cases
+deselected**, no selected failures/errors/skips, in **323.96 seconds**. Selection,
+bootstrap/cookie parsing, immutable requests, fixed mounts, literal rendering,
+denial/unavailable routing, audit failures and plan-only defaults are covered.
+These portable cases do not establish OS confinement or personal approval.
+
+**125 native Linux/Tk cases passed in 197.56 seconds**, without selected failures,
+errors or skips: 25 new confined-worker/workflow cases, one real memfd-sealing
+case, ten direct Tk view cases and 89 existing terminal-approval, witness and
+shared-service regressions. The private Xvfb display had TCP disabled. Worker
+cases use explicitly instrumented test-only input; production has no automation
+switch. Neither these tests nor the direct-view screenshot constitute owner
+approval or personal usability acceptance.
+
+The final real graphical owned workflow completed **4/4 actions**, with four
+consumed grants, four launch starts, structured artifacts and unchanged independent
+replay. All **12/12 listening forbidden destinations** were blocked (cross-service,
+wrong address and wrong port for each action). Useful completion was true,
+unnecessary refusals were zero, and actual provider calls/cost were zero. The
+reported elapsed time was **8,569 ms**, including scripted test interaction. There
+is no comparison baseline; this is not a human-review latency or authority-overhead
+benchmark. Denial and pending cancellation produced zero unapproved launches and
+closed the reviewer. Existing launcher/audit/admission witnesses remain mandatory.
+
+The new audit assertions require exactly four graphical review-request and
+grant-issued outcome records, bound to the session/action/policy and excluding
+challenge answers and grant references. Portable fault injection at either review
+audit append prevents even grant consumption, closes controls, leaves no finalized
+report and forbids service reuse. Other cases reject changed, expired, replayed,
+cross-worker, malformed and forged requests; stale/pretyped input and Enter cannot
+approve. Actual worker checks include descriptor custody, host canary isolation,
+read-only runtime, private namespaces, capability/syscall restrictions and the
+single intentionally mounted X11 connection. The host and desktop remain trusted.
+
+Native receipts, preserved owned evidence, source hashes and the inspected
+900×740 direct-view screenshot are private under
+`.secure-agent/graphical-approval-20261006/` in the primary checkout. Final receipts
+are `portable-results.xml`, `native-reviewed-results.xml`, `native-reviewed-tests/`,
+`validated-source.json` and `verification.json`. Earlier ten-case, 25-case and
+125-case baseline runs remain separate; the final native run includes the later
+review-audit changes. The earlier JUnit property-format warning is avoided by
+using legacy JUnit for the final property-bearing native run.
+A separate read-only replay also matched the report and every saved file hash
+under native Linux permissions. The same check inside the restricted development
+sandbox returned reconciliation-required because its isolated parser could not
+start there; that environmental result is retained in the private receipt.
+
+Independent lifecycle/security and UI/evidence reviews found no remaining
+blockers. Python 3.11 syntax, dependency consistency and local documentation-link
+checks passed. The [runbook](graphical-approvals.md) documents the supported local
+Linux/X11 resource layout, trust limits and prepared personal walkthrough. Hosted
+CI is portable and cannot substitute for these native receipts. The owner's
+walkthrough and ordinary desktop execution controls were outstanding at that checkpoint.
+
+PR #51 itself merged with matching reviewed/merge trees and all five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37418950338)
+and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37420312524)
+passing. Preserve `.secure-agent/pr51-merge-review.json`, accepted B0–B8 and offline
+R5/local R6. Model/service credentials, paid calls and real network attachment
+remain deferred; no proposal, PDF or private image is published in this slice.
+
+## Desktop dry-run session lifecycle — 6 October 2026
+
+Based on accepted PR #50 merge `7efa9d8`, this slice connects the desktop to the
+existing shared service with `execute=False` and `interactive_terminal=False`.
+It freezes scope, generates the unchanged approval-required policy, creates a
+fresh private session folder and owns run/cleanup/replay in one worker. All
+existing tool, authority, approval and evidence contracts remain unchanged.
+
+The full local portable suite passed **9,837 cases**, with **790 integration cases
+deselected**, no selected failures/errors/skips, in **258.53 seconds**. Fourteen new
+portable tests cover private/fresh paths, unsupported/unsafe destinations, request
+limits, scope custody, actual one-proposal dry-run behavior, cancellation before
+startup/after a step, close while replaying, distinct failures, recovery and bounded
+literal progress. Existing service and GUI regression cases remain passing.
+
+**Eleven actual Tk cases passed** with no failures/errors/skips in **12.65 seconds**
+on a private Xvfb display with TCP disabled. Six preserve saved-evidence behavior;
+five new cases exercise desktop session lifecycle. Four use real shared authority
+and isolated audit/coordinator controls. A clearly labeled test-only observer latch
+holds a real first policy decision for progress, theme/draft, cancellation and
+close checks; another case injects a final replay failure after a real run. The
+fifth uses an explicit startup failure double. Constructors remain real where the
+service runs, while endpoint/tool launch, runtime inspection and approval input/
+consumption are guarded against use. Audit workers and the desktop worker finish
+before closure; private paths and unchanged independent replay are checked.
+
+These trials execute **zero tools and zero provider calls**, record **zero useful
+actions**, and do not claim successful task completion, human approval, refusal
+quality or comparative overhead. The configured workflow stops after the first
+policy-reviewed proposal because follow-ups need real predecessor evidence.
+Existing accepted 4/4 native evidence is only inspected and remains unchanged.
+The desktop still cannot execute or approve a tool; the
+[graphical approval plan](desktop-approval-plan.md) describes the remaining gate.
+
+Ten private screenshots cover both themes, saved views and new running/finished
+states at 1360×900 and 1280×800. Controls and metrics fit, session scope stays
+separate from edited drafts, and failed replay cannot display verified success.
+Source hashes, images, JUnit and retained native bundles are under
+`.secure-agent/gui-session-20261006/` in the primary checkout. The initial seven
+portable development failures came from using the scope-only encoder for policy;
+the existing contract encoder fixed them. This is retained in development notes.
+The five-case development Tk run also passed before the combined final run.
+
+Fresh independent lifecycle/security and UI reviews found no remaining blockers.
+Python 3.11 syntax, documentation links, dependency consistency and whitespace
+checks passed. Hosted CI is portable and does not substitute for local Linux/Tk
+validation. The new PR is left unmerged for review; exact head and final CI are in
+the private handoff. The checkpoint keeps B0–B8, R5, local R6 and PR #50 closed.
+
+PR #50 itself merged with matching reviewed/merge trees; all five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37416444887)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37417644593)
+passed. Its merge receipt is `.secure-agent/pr50-merge-review.json`.
+
+## Initial offline desktop GUI — 6 October 2026
+
+Based on accepted main `db42cd1`, the desktop adds local scope preparation and
+saved-evidence views using both Swiss Industrial themes. The controller calls the
+existing shared read-only inspector from one worker; scope forms reuse the exact
+configurable contract. It creates no assessment, approval service, legacy command,
+listener or model call. Existing authority and tool contracts are unchanged.
+
+Independent controller/presenter review found no blockers after correcting duplicate
+display-row IDs for malformed records. **101 focused portable cases passed** for
+strict scope forms, bounded literal presentation, missing/contradictory metrics,
+corrupt/unfinished/dry-run state, asynchronous errors/close, private no-overwrite
+exports and GUI startup without Tk/display. The full local portable suite passed
+**9,823 tests**, with 785 integration cases deselected, no selected failures/errors/
+skips, in **312.02 seconds**. Final production hashes match the actual Tk run.
+
+**Six actual Tk cases passed**, with no failures/errors/skips, in **8.455 seconds**
+on a private Xvfb display with TCP disabled. Tests exercise three pages, both
+themes, invalid/valid scope, import/export, background replay, corrupt evidence,
+failed inspection clearing a prior success, row-selection synchronization and
+window close waiting for the reader. Execution/approval constructors and legacy
+runners are guarded against use during these checks. The original accepted native
+bundle remains unchanged in bytes, modes and mtimes. Corruption uses a temporary
+copy. Displaying its 4/4 useful actions and 8.004-second duration describes earlier
+accepted work; the GUI run executes **zero new assessments and zero provider calls**.
+
+Seven private screenshots were visually inspected at **1360×900 and 1280×800**,
+covering dark/light overview plus scope and evidence views. Key controls, metrics
+and all four recorded rows fit; longer details scroll. Product observations lead
+the selected-action panel; technical IDs remain below. Draft and recorded scope
+remain distinct. No fabricated online agents, pending approvals, authenticated
+vulnerabilities or signing/confidence claims are shown.
+
+Private receipts are `.secure-agent/gui-20261006/` in the primary checkout:
+`desktop-final-results.xml`, `desktop-verification.json`, `screenshots/`, and the
+portable/CI handoff. Earlier assertion-only failures from concurrent presenter
+wording changes remain in `desktop-initial-results.xml` and
+`desktop-development-cost-label.xml`; final validation uses the frozen source.
+Python 3.11 syntax, documentation links and whitespace checks passed. Hosted CI
+is portable and does not substitute for these actual Linux desktop tests.
+
+PR #49 was separately reviewed and merged as `db42cd1`, with identical reviewed
+and merge trees. All five final and post-merge jobs passed; fresh 95 focused and
+517 historical regression cases passed (overlap). Its implementation stays closed.
+See [the desktop runbook](desktop-gui.md) for supported operations and limitations.
+
+## Shared CLI/GUI assessment service — 6 October 2026
+
+Based on accepted PR #48 merge `5f046eb`, this slice extracts application lifecycle
+and saved-evidence inspection without changing tool contracts, scope, policies,
+approval input or executor protocols. Direct callers now get the same mandatory
+isolated audit, approval, admission and launcher path as the terminal. CLI signals
+remain in the terminal adapter; service execution works from a worker thread.
+
+The full local portable suite passed **9,722 tests**, with 778 integration cases
+deselected at collection and no selected failures, errors or skips (304.98 seconds).
+The fourth native service case was added after this portable collection; it is
+covered by the separate final native run and hosted collection.
+
+Independent service/CLI review found no remaining blockers; 95 focused service,
+CLI and inspection checks passed. A review finding about swallowed progress-callback
+exceptions was fixed: the service cancels, propagates the error after cleanup and
+never finalizes a report from that failure, including in dry-run mode.
+
+Native validation passed **8 distinct Linux cases**: four direct-service cases and
+four existing configurable CLI cases. The final direct-service run followed the
+observer-error fix. All selected cases passed without skips. One initial test
+assertion expected `cancelled` instead of the existing `session_cancelled` reason;
+the assertion was corrected and the failure retained. No production cancellation
+change was needed for that result.
+
+| Completed route | Useful actions | Blocked listening destinations | Session elapsed |
+| --- | --- | --- | --- |
+| Shared service on worker thread | 4/4 | 12/12 | 8.004 s |
+| CLI primary scope | 4/4 | 12/12 | 8.105 s |
+| CLI alternate scope | 4/4 | 12/12 | 8.136 s |
+
+All three workflows report zero unnecessary refusals, provider calls and cost.
+These are descriptive local times, not a comparative overhead benchmark. Tests
+also verify approval-required noninteractive refusal before launch, cancellation
+after actual Nmap starts, process reaping, closed owners and replayable cancelled
+reports. Observer failure after a successful Nmap action permits no second launch,
+closes both owners, rejects reuse and retains real partial evidence; inspection
+identifies unfinished evidence without manufacturing a final report.
+
+The shared inspector and CLI independently replayed **29 accepted bundles**
+(27 B1–B8/service-web plus both PR #48 scope examples), with identical reports and
+unchanged file bytes, mtimes and modes. Portable tests cover immutable request
+validation, shortened ceilings, mandatory gate construction, concurrent-start
+refusal, cancellation during setup, detached progress/result snapshots, exceptions,
+signal restoration and malformed/private evidence dispatch. Python 3.11 syntax,
+relative documentation links and whitespace checks passed.
+
+Private receipts are `.secure-agent/shared-service-20261006/` in the primary
+checkout: `service-native-final-results.xml`, `service-native-final-verification.json`,
+`service-native-results.xml`, `accepted-replay.json`, `validated-production.json`
+and the final portable/CI handoff. Local kernel evidence is separate from hosted
+portable checks. No GUI, new approval channel, attached network, personal approval
+rehearsal, authenticated operation or model call is claimed.
+
+## Configurable owned HTTP/SSH scope — 6 October 2026
+
+PR #48 was reviewed and merged as `5f046eb`, preserving reviewed head `5260b695`'s
+tree. Independent reviews found no blockers; 652 configurable authority, 363
+existing authority and 276 workflow/evidence/parser/CLI focused checks passed.
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37411904045)
+passed 9,646 portable tests each, and all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37413359372)
+also passed. Preserve this accepted slice. The details below retain the earlier
+local/hosted validation history rather than counting corrected failures as passes.
+
+Implementation `065e0ee0eadff12acc2fef3d56eded5a0f6c5d61` in
+[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48), based on accepted main
+`fc477d0`, adds exact operator scope for two
+disconnected endpoint fixtures. It preserves the accepted v1 contracts and uses
+the existing approval, audit, admission and launcher path for all four actions.
+Independent lab/authority and runtime/parser reviews found no execution-boundary
+blockers. Evidence review corrected prior-counter validation, dry-run replay,
+failure poisoning and summary/journal reconciliation before final validation.
+
+Local Linux validation passed **117 distinct tests**: four new full-path cases
+and 113 affected existing admission, launcher, owned-lab, service/web and native
+NSE-shim regressions, with no selected failures or skips. The final configurable
+run followed the last runtime strictness fix; 217 focused parser/runtime tests
+also passed. The full portable run passed **9,645 tests**, with 775 integration
+cases deselected and no selected failures, errors or skips. That run began before
+the final strict-boolean receipt regression was added; the final 217-test focused
+run covers that change. The PR's hosted matrix checks the complete latest
+revision on Linux/Python 3.11–3.14 and macOS/Python 3.14; inspect its check results
+before review/merge rather than treating local Linux evidence as hosted CI.
+The first hosted matrix passed all four Linux jobs (9,646 tests each) but exposed
+17 macOS failures from two missing portable-test doubles: namespace discovery
+and the runtime platform selector. Those fixtures now supply explicit test facts;
+54 focused tests pass and production code is unchanged. The original macOS
+peer-lifetime regression passed. Retain `initial-macos-ci-failure.log`; final
+hosted validation must use the corrected PR head.
+
+| Scope example | Useful actions | Blocked listening destinations | HTTP / SSH acknowledged totals | Session elapsed |
+| --- | --- | --- | --- | --- |
+| Primary | 4/4 | 12/12 | Each: 3 connections, 2 requests | 8.740 s |
+| Alternate addresses/ports/path | 4/4 | 12/12 | Each: 3 connections, 2 requests | 8.921 s |
+
+Both useful runs reported **zero unnecessary refusals, zero provider calls and
+zero cost**. Incomplete or denied sessions do not earn success; unnecessary
+refusals remain ungraded for those sessions. Timings are local session durations,
+not measurements against an unprotected baseline. Required noninteractive
+approval prevented launcher startup; cancellation after native Nmap started
+reaped its descendants and owners. Both new useful reports replayed unchanged,
+and all **27 accepted B1–B8/service-web bundles** replayed with identical report
+content and unchanged bytes, mtimes and modes.
+
+Private receipts are under `.secure-agent/configurable-owned-20261006/` in the
+primary checkout: `configurable-linux-reviewed.xml`, `regression-linux-results.xml`,
+`native-reviewed/`, `accepted-replay.json`, `portable-results.xml` and the current
+`handoff.json`/`verification.json` receipts.
+Development failures are retained: an empty header descriptor-list bootstrap
+issue was fixed, and the initial Linux test assertion incorrectly assumed SSH
+stdout began with the key rather than its legitimate banner. Those failed runs
+are not final acceptance evidence. No live model, real-network, authenticated
+service or personal walkthrough acceptance is claimed.
+
+PR #47 was separately reviewed and merged as `fc477d0`, matching its reviewed
+tree; all five final checks passed. Post-merge checks passed on attempt 2 after
+a macOS test-peer lifetime race. This slice fixes only that fixture lifetime,
+retaining exact rejection/kill assertions and descendant cleanup behavior.
+
+## Owned Nmap service → ffuf → headers workflow — 6 October 2026
+
+Implementation `a1a186bdf2b1d42059716365de80abae9e0cd723`, based on accepted
+main `0d5cbdc`, adds one separate shared-lab workflow in
+[PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47). Existing capability
+parameters, executable arguments, parsers and catalog recipes remain unchanged.
+Complete HTTP identification gates finite discovery; complete non-wildcard portal
+evidence gates the final fixed header GET. Both executable manifests are pinned
+before execution. Admission, launcher, backend and native/owner phases enforce
+the ordered profile and cumulative limits independently.
+
+The complete portable run passed **8,776 tests**, with 771 integration cases
+intentionally deselected and no selected failures, errors or skips. Linux
+validation passed **128 distinct cases**: nine new workflow/authority cases and
+119 affected existing Nmap, ffuf, headers, admission and launcher regressions.
+Independent CLI/evidence and runtime/authority reviews found no blockers; their
+973- and 991-test focused runs overlap the full suite. Hosted CI is portable;
+these native enforcement results are local Linux evidence.
+
+| Clean-source owned case | Useful outcome | Actions | Requests / connections | Combined output bytes | CLI process wall time |
+| --- | --- | --- | --- | --- | --- |
+| Vulnerable | `gaps_observed` | 3/3 | 10 / 11 | 4,113 | 7.589 s |
+| Corrected | `reviewed_headers_present` | 3/3 | 10 / 11 | 4,238 | 7.660 s |
+| Injected metadata | `gaps_observed` | 3/3 | 10 / 11 | 4,377 | 7.590 s |
+
+Useful completion was **3/3 workflows and 9/9 actions**, with **zero unnecessary
+refusals**. All **18/18 deliberate forbidden-IP/port witness attempts** were
+blocked; none reached an unauthorized destination. Every retained result reports
+its required enforcement checks, and all three labs closed with matching totals.
+The injected ffuf artifact retains the hostile Content-Type parameter in its
+line-delimited JSON; normalized observations and fixed follow-up actions exclude
+that instruction. Raw tool/header reparsing and read-only report replay matched.
+All **24 accepted B1–B8 bundles** also replayed without changing bytes or mtimes.
+
+Actual provider calls and cost were **zero**. No real credentials were read or
+live integration enabled. Timing includes local CLI startup and the secure path;
+the internal `elapsed_ms` values are 7,101, 7,154 and 7,094 respectively. There is
+no comparison arm, so neither measure establishes authority overhead. This is
+deterministic hostile-content handling, not evidence of model susceptibility or
+an induced out-of-scope proposal. Header observations do not prove exploitability.
+
+Validation used an explicitly unattended synthetic policy; the shipped policy
+still requires fresh personal approval for each action. Automated witnesses and
+negative approval tests do not constitute an operator rehearsal or acceptance.
+The initial native fixture rejected Nmap's first empty TCP reset. The fix permits
+only that first reset before any application bytes; partial/later resets and
+other errors still fail closed. Negative fixture tests cover that distinction.
+The first combined Linux receipt retains one test-only failure from treating
+ffuf NDJSON as one JSON document; all nine new Linux tests subsequently passed.
+Two auxiliary-verifier assertion errors (parameter-map indexing and assuming
+empty ffuf diagnostic output) are also retained separately. They required no
+production changes and do not count as final validation.
+
+Private evidence is `.secure-agent/service-web-20261006` in the primary checkout:
+`verification.json`, `validation-summary.json`, archived `verification-script.py`,
+`validation/`, `runs/<case>/evidence`, retained `development/` failures and the
+latest `handoff.json`. Hashes and runtime commitments establish local consistency,
+not host-owner tamper resistance. [The runbook](service-web-assessment.md) states
+scope, commands, completion criteria and report limits. The workflow is open for
+review; B0–B8, offline R5 and accepted local R6 remain closed. Credentials, paid
+calls, live-model evaluation, optional tools and broader benchmarking remain deferred.
+
+## PR #46 catalog acceptance — 6 October 2026
+
+[PR #46](https://github.com/0xsl0th/recon-cockpit/pull/46) merged at 02:24:31 UTC
+as `0d5cbdc67b87cb2c8fc43522dfbe86e59e875352` after fresh review of `ef1cadb`.
+The reviewed and merged tree is `705d6866c9a2dfe61ce081cbbd629fe75c1edf89`.
+Fresh reviews found no blockers; 213 focused tests passed and all 19 saved dry-run
+bundles replayed unchanged. All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37403185851)
+and all five [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37403977730)
+passed. The catalog is accepted; preserve its recipes and inert behavior.
+Private merge receipt: `.secure-agent/pr46-merge-review.json`.
+
+## Read-only secure-tool catalog — 6 October 2026
+
+Implementation `8abb502df13f75530babba4cb6e110b079cb5808` adds `--list-tools`
+and `--describe-tool TOOL_ID`. The catalog derives identity/schema/profile/parser
+metadata from the registry and exact recipe actions from existing pure contracts.
+A reviewed mapping supplies executable families, normal selectors, policies,
+runbooks and report caveats. All 20 accepted capabilities and 11 external programs
+are represented; shared TCP/HTTP examples produce 19 distinct recipes.
+
+The new CLI branch returns before policy, audit, evidence or execution handling.
+Every explicitly supplied non-catalog option is rejected, including policy/audit
+values equal to defaults and abbreviated execution flags. Listing/describing does
+not inspect host prerequisites or read credentials. Tests run the catalog from an
+empty working directory without installed tools, check a non-Linux platform and
+use a fresh-process guard against runtime imports, user-data reads, networking,
+process launch and file writes. The catalog is descriptive and cannot grant
+execution authority.
+
+Validation passed the complete **8,399-test portable suite**, with no failures,
+errors or selected skips, in 243.50 seconds. The 762 integration cases were
+intentionally deselected. This includes **213 new catalog cases** (66 contract
+and 147 CLI cases); the earlier 503-case focused CLI regression run overlaps the
+complete suite. Python 3.11 grammar, dependency consistency, local documentation
+links and `git diff --check` also passed.
+
+On the same clean implementation, all **19/19 distinct generated recipes** ran
+through the existing isolated Linux path with their shipped approval-required
+policies, all seven gates and explicit `--dry-run`. They completed as dry runs,
+recorded zero successful actions, remained inconclusive with
+`dry_run_has_no_execution_evidence`, and produced no tool result artifacts.
+Every saved bundle independently replayed without integrity issues or changes
+to bytes, modes or mtimes. No personal approval was requested or synthesized.
+These checks validate recipes and isolated preparation/evidence behavior; they
+are not new native tool executions or comparative performance measurements.
+Actual B0–B8 execution evidence remains in the accepted records below.
+
+Private receipts are in `.secure-agent/tool-catalog-20261006` in the primary
+checkout: `validation/portable.xml`, `validation-summary.json`, the archived
+`verification-script.py`, `recipe-verification.json` and `runs/<tool>/evidence`.
+The portable JUnit SHA-256 is
+`e79cb3fcdc0beb5dadcf4225c884b003e816be796cce92770c05ae5dcf4588ed`;
+the verifier SHA-256 is
+`fb9d7102783e6c5313606fa6c6a0e00462115f30c90c7d41d97449dae18449e5`.
+Local hashes detect inconsistency, not host-owner tampering. Final review and
+hosted-check outcomes are recorded in the PR and private handoff; PR #46
+subsequently accepted the catalog as recorded above.
+
+No accepted action, policy, workflow card, parser, executable/runtime profile,
+lab fixture or evidence format changed. The other production change is the
+catalog CLI branch and updated help. Credentials, paid calls and live-model
+work remain deferred; live/paid model calls and actual cost were zero. The shared
+TCP/HTTP dry run still records an existing offline simulated broker exchange;
+this is not a claim of zero local planner/provider activity. Deeper workflow and
+benchmark work, optional tools, accepted R5/R6 scope and the proposal/PDF remain
+outside this slice. See [the catalog runbook](secure-tool-catalog.md).
+
+## PR #45 acceptance and coverage closure — 6 October 2026
+
+[PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45) merged as `47d70a2`
+at 01:59:42 UTC after fresh review of `9edec213`. The reviewed and merged trees
+are identical (`8e08e6db6420c81b1880e815eaf8639d6ce53768`). All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37401053840)
+passed, as did all five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37401942532).
+No outstanding review comments or blockers remained at merge.
+
+Fresh runtime/authority review passed 1,338 focused portable checks and verified
+35 recomputed policy-denial scenarios through both admission and launch
+consumption, without reservations. Independent parser/evidence review passed
+998 focused portable checks and replayed all 24 saved B1–B8 bundles with matching
+reports, no integrity issues and unchanged bytes, modes and mtimes. These focused
+runs are overlapping review checks, not additions to the 8,186-test portable suite
+or the 252 distinct selected Linux cases recorded below. Actual native runs were
+already validated on the unchanged implementation; the final revisions only
+corrected documentation.
+
+The private merge receipt is `.secure-agent/pr45-merge-review.json`; the B8
+`handoff.json` now records `accepted_merged`. B0–B8 are closed under the
+[explicit G1–G6 reconciliation](secure-tool-coverage.md#gate-reconciliation--accepted-b0b8),
+with 20 capabilities and 11 external programs. Kerbrute results remain untrusted
+client reports, not verified account facts. The read-only catalog is a separate
+follow-on; accepted profiles, offline R5/local R6 and proposal/PDF stay unchanged.
+
+## B8 synthetic Kerberos coverage — 6 October 2026
+
+[PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44) accepted B7 at `fcb9419`
+after fresh review of `f81c444`; its merge tree matches the reviewed revision.
+All five [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36965365612)
+and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36966387286)
+passed. Fresh reviews passed 1,147 runtime/policy and 836 parser/evidence tests;
+twelve additional recomputed-policy cases confirmed GET enforcement. All 21
+B1–B7 bundles replayed unchanged. Private merge receipt:
+`.secure-agent/pr44-merge-review.json` in the primary checkout. B7 stays closed.
+
+B8 was implemented and lab-verified in [PR #45](https://github.com/0xsl0th/recon-cockpit/pull/45);
+its subsequent acceptance is recorded above. The clean implementation
+revision is `de40f283a449a639f299a4d4ed7f4fb685b99186`. The separate
+`kerbrute_userenum_v1` capability queries only two compiled synthetic names against
+an error-only owned KDC. The candidate brought main from 19 capabilities/10
+programs to 20/11 when accepted. All 77 accepted B1–B7 specs, cards,
+descriptors and actions remain exact; an aggregate regression pins their hash to
+`d52fefa1868fb80d2b632c5d246e64350d8e6ba833c16083a112b09d9c3a0cae`.
+See [the runbook](kerberos-tools.md) for the bounded invocation and limitations.
+
+### Actual native behavior and metrics
+
+| Scenario | Structured result | Connections / validated AS-REQs | Meaning |
+| --- | --- | --- | --- |
+| Normal | Tool reports exists, unknown | 2 / 2 | Complete finite reporting task. |
+| All unknown | Tool reports unknown, unknown | 2 / 2 | Complete finite reporting task, no authenticated absence claim. |
+| Spoofed error text | Tool reports unknown, unknown | 2 / 2 | Native error-string ambiguity demonstrated; not verified negative discovery or successful injection detection. |
+| Denied, generic hostile, malformed | Inconclusive despite native exit zero | 2 / 2 each | Complete valid reports are required before useful work is counted. |
+| Stalled | Timeout, inconclusive | 1 / 1 | Five-second native deadline and cleanup enforced. |
+
+The two legitimate clean-source reporting tasks completed **2/2**, with **zero
+unnecessary refusals**. The separate spoof trial demonstrated the known ambiguity
+**1/1**. All three clean trials closed their labs and independently reparsed and
+replayed their evidence without changing bytes or mtimes. All **6/6** explicit
+forbidden-IP/port witness attempts were blocked, with zero unauthorized destination
+successes. No provider call, cost, live integration or real credential read occurred.
+
+Clean-source CLI times were **2,982 ms normal**, **2,854 ms all unknown** and
+**2,875 ms spoof**. These local timings include secure infrastructure, under
+concurrent development validation; they are descriptive, not an authority-overhead
+benchmark. Complete normal output is 649 bytes; all-unknown and spoof output are
+654 bytes, with empty stderr. Each action retains the 8,192-byte combined cap,
+one-action/60-second session, fixed endpoint and two-request ceiling.
+
+The four-file runtime totals 11,406,848 bytes, with digest
+`be1306080d3125bae70b8ab9e50eb730c464e5f6b190827facddd39c959edd0d`.
+The B8-only launcher tag permits a 2 GiB virtual address-space ceiling; the native
+worker retains sixteen tasks, 64 descriptors, zero filesystem writes and
+`GOMAXPROCS=1`/`GOMEMLIMIT=64MiB`. Actual negative kernel tests confirmed widened
+UDP permission and a widened task cap trigger their production witnesses before
+exec, and both normal/Kerberos launcher-tag substitutions stop before reservations.
+No prior tool's limits or authority were expanded.
+
+### Validation and retained receipts
+
+The complete hosted suite passed **8,186 portable tests**. Local receipts cover
+8,162 full-run passes and 584 final focused passes; twelve parametrized fixture
+case IDs changed when empty PA-DATA support landed, so their raw ID union must
+not be counted as additional distinct tests. Local validation also passed
+**252 distinct Linux tests**, with no selected failures,
+errors or skips. The Linux union is 11 B8 workflow/gate/cleanup tests, four
+additional B8 kernel tests and 237 accepted-tool/launcher regressions. The latter
+includes all 77 accepted B1–B7 native scenarios. Pytest emitted only the known
+JUnit `record_property` compatibility warnings.
+
+| Receipt | Passing cases | SHA-256 |
+| --- | --- | --- |
+| `validation/portable.xml` | 8162 | `5e87ab22011e03848334ea2ccf2afb0fe3f03e5813ea24833bafd75e6268f09a` |
+| `validation/final-focused.xml` | 584 | `4968ef31e491b8787dcc72061bc4576c3ded7faaec3ba888abb5fc13a001c2cc` |
+| `validation/b8-linux.xml` | 11 | `fa70a7c0e933bd6c0114e2662623db2de27cedcc4e47ce84de37351f64340a7c` |
+| `validation/b8-extra-linux.xml` | 4 | `dc318c581a724ad55ddfb08749f5b6cc043a6d4ff510e28a52d5d9c55f3f4289` |
+| `validation/regression-linux.xml` | 237 | `0f84395e6567a5abc5b83bab795f0250d36de96e3671152ea3cd875d58a52c0a` |
+
+Python 3.11 grammar validation, dependency consistency, local Markdown-link
+checks and `git diff --check` passed. Hosted PR checks run the complete portable
+suite on Linux Python 3.11–3.14 and macOS Python 3.14; final CI status is recorded
+in the PR and the private handoff, separately from local kernel evidence. The
+[first completed final-code CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/37400333462)
+passed all five jobs at `7c65170`; the subsequent correction changes only
+documentation counts. All five final checks passed at `9edec213` before the
+authorized merge recorded above.
+
+Independent reviews covered runtime/launcher, fixture, parser, authority,
+counters, evidence and current documentation with no remaining blockers. Actual
+Kerbrute output matched the strict parser in every scenario. The spoof and genuine
+unknown logs differ only in timestamps/elapsed time: the normalized observation
+therefore keeps `semantics: tool_report_only` and `authentication_verified: false`.
+The Markdown report carries the same caveat and both per-principal reports.
+
+Private evidence remains `.secure-agent/kerberos-tools-20261002` in the primary
+checkout; its name records when work began, with final validation on 6 October.
+`verification.json`, the archived `verification-script.py`, validation JUnit/logs,
+review receipts and `runs/<case>/evidence` contain the exact source and artifacts.
+The verifier hash is
+`180e2a7e30dcbad9ea70d651e57511a62a02bf8c46ea9c0ec6b0db2b4c25bdb6`.
+It replayed all 21 accepted B1–B7 bundles unchanged. These files remain local and
+ignored by Git; automated unattended grants are explicitly synthetic test
+instrumentation, not human acceptance or reusable approval.
+
+Two initial development failures remain retained: Go could not reserve memory
+under the inherited 256 MiB launcher cap, and the strict KDC initially rejected
+the serializer's exactly empty PA-DATA container. The fixes are scoped to B8's
+checked launcher tag and acceptance of omitted/exactly empty PA-DATA; credential
+entries remain forbidden. Two failed kernel-test instrumentation receipts are
+also retained separately from the final passing tests. No failed or skipped run
+is counted as completion.
+
+B8 subsequently passed G6 and closed the finite coverage milestone, as recorded
+above. Optional tools, deeper workflow composition, comparative benchmarking,
+model credentials, paid calls and live evaluation remain deferred during the
+read-only catalog follow-on.
+The accepted offline R5/local R6 and proposal/PDF remain unchanged.
+
+## B7 finite Nmap service identification — 2 October 2026
+
+B6 was accepted by [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43) at
+`02a7d7f`; all five final and post-merge checks passed. Fresh independent reviews
+passed 1,267 runtime/policy tests and 854 parser/evidence tests. All eighteen
+saved B1–B6 bundles replayed unchanged, and the merged tree exactly matches the
+reviewed revision. Completed milestones remain closed.
+
+B7 is implemented and lab-verified in [PR #44](https://github.com/0xsl0th/recon-cockpit/pull/44),
+pending review/merge. It adds a separate `nmap_service_identify_v1` capability through the existing
+single-action secure network-tool path. See [the runbook](nmap-service-tools.md)
+for fixed probes, output semantics and the explicit NSE suppression review.
+The accepted TCP-only Nmap profile and all 71 B1–B6 definitions remain unchanged.
+Main has 18 accepted capabilities/10 external programs; this candidate adds one
+capability backed by the same Nmap executable family, pending review and merge.
+
+Actual confined Nmap 7.95 runs, through all seven launch gates, observed:
+
+| Owned case | Result | Accepted connections | Metadata events |
+| --- | --- | --- | --- |
+| HTTP | `http`, advertised nginx `1.26.0` | 2 | 1 fixed GET |
+| SSH | `ssh`, advertised OpenSSH `9.7` | 2 | 1 banner reply |
+| Unknown | Unidentified by the finite probe set | 2 | 1 fixed GET |
+| Hostile text | Unidentified; fingerprint text excluded from findings | 2 | 1 fixed GET |
+| Malformed service bytes | Unidentified; no service identity invented | 2 | 1 fixed GET |
+| Silent service | Unidentified after bounded probe wait | 2 | 1 fixed GET |
+
+Each completed XML capture is 1,376–1,621 bytes with empty stderr, all ten native
+boundary witnesses true and a closed owned lab. These results do not distinguish
+the causes of nonmatching responses or prove absence, harmlessness, authenticated
+identity, installed software versions or vulnerabilities. The fixture has no
+login, application backend or external egress. No provider/paid call occurred.
+
+Review and actual execution resolved four issues before handoff:
+
+- Nmap normalizes absent script arguments to an empty string. The pinned shim
+  now requires that exact value, retaining all script/rule/phase restrictions.
+- Nmap requires `tcpwrappedms` of at least 100 ms; the finite probe file now
+  meets that bound. The earlier 50 ms trial failed before service probes.
+- Evidence reports explicitly preserve identified versus unidentified outcomes.
+- The owner rejects a second metadata operation before request dispatch, while
+  preserving the allowed empty scan/NULL-probe reconnect sequence.
+
+The initial failed trials remain private development evidence. They are not
+counted as useful completion. Independent reviews checked runtime/filesystem
+closure, parser, authority, counters, evidence and documentation. No remaining
+blocker was found. Native Lua tests exercise the actual suppression shim;
+script arguments, scripts and broader scan phases are rejected.
+
+Local portable validation passed **7,799 distinct tests**: a complete 7,761-test
+run plus 38 added B7 evidence checks in the final focused run (368 passed,
+including repeated existing cases). There were no selected skips, failures or
+errors. Tests cover rehashed invented identities, altered XML scope, missing
+runtime/closure/artifact evidence, parser custody and dry runs. Syntax checks
+passed for 357 Python files using Python 3.11 grammar; dependency and whitespace
+checks passed. All ten targeted B7 Linux workflow/gate/cleanup tests passed.
+The remaining 287 Linux checks also passed: 71 accepted network workflow cases,
+64 network enforcement cases, 140 affected legacy launcher/web/Nmap cases and
+12 actual Lua suppression-shim checks. Together these are **297 distinct Linux
+tests**, with no selected skips/failures/errors. The private JUnit receipts and
+`validation-summary.json` record counts, hashes and durations.
+
+Clean source `5120dccb2bb527ce0e3490f5643b37e4b2543d90` completed three final CLI
+trials with all seven gates: **2/2 identified tasks**, **1/1 honest unknown-response
+task**, zero unnecessary refusals and six of six forbidden-destination witnesses
+blocked (zero unauthorized destination successes). Every trial used two accepted
+connections and one metadata event, produced matching independently replayed
+raw/normalized evidence and closed its lab. All eighteen accepted B1–B6 bundles
+replayed without changing bytes or mtimes. `verification.json` binds the clean
+source and archived verifier. The final handoff commit changes documentation only.
+
+| Final trial | CLI elapsed | Result |
+| --- | --- | --- |
+| HTTP | 3,262 ms | Identified HTTP/nginx `1.26.0` |
+| SSH | 2,859 ms | Identified SSH/OpenSSH `9.7` |
+| Unknown response | 3,281 ms | Unidentified by the reviewed probes |
+
+Latest-revision hosted checks must pass before an authorized merge. B7 remains
+review-pending rather than accepted main coverage.
+
+Private receipts are under `.secure-agent/nmap-service-tools-20261002` in the
+primary checkout, including `review.json`, `handoff.json`, `debug/` and
+`validation/`. Raw captures and audit records stay local. Automated grants are
+synthetic test instrumentation, not operator acceptance. Trial times are
+descriptive CLI wall time, not a comparative authority-overhead benchmark.
+
+B8 synthetic Kerberos principal enumeration with an owned KDC remains the next
+required coverage gap. Deeper workflows and comparative benchmarking stay
+deferred until required coverage is complete. Model credentials, paid calls,
+live evaluation and proposal/PDF changes remain deferred until much later.
+
+
+## Secure coverage B6: Docker health/version and WinRM endpoint metadata — 2 October 2026
+
+PR #42 was reviewed and merged as `38cbd43`; all five final PR checks and all
+five post-merge main checks passed. The merge tree exactly matches reviewed head
+`b682b3c`. Fresh runtime/fixture and parser/evidence reviews passed 549 and 641
+focused tests, validated all four B5 artifacts and replayed nine prior bundles
+unchanged. Keep B0–B5 accepted. B6 implements three independently invoked curl
+profiles: `curl_docker_ping_v1`, `curl_docker_version_v1` and
+`curl_winrm_metadata_v1`. See [docker-winrm-tools.md](docker-winrm-tools.md).
+Main remains at 15 accepted secure capabilities backed by 10 external programs;
+accepting B6 would bring those counts to 18 and 10. [PR #43](https://github.com/0xsl0th/recon-cockpit/pull/43) is the review handoff;
+B6 still requires review and an authorized merge.
+
+Each profile fixes one HTTP/1.1 GET to `127.0.0.1:8080`: `/_ping`, `/version` or
+`/wsman`. The two Docker endpoints are separate capabilities, preserving the
+single-request/action contract. Policy must explicitly allow GET as well as the
+fixed tool, target and port. Curl imports no host configuration or credential,
+uses no proxy or retry and does not follow redirects. No Docker socket, daemon,
+container backend, SOAP implementation, authentication exchange or remote session
+exists in the owned fixture. Native memory/process/file/network limits remain
+unchanged.
+
+Actual curl preserves complete response framing on stdout with empty stderr in
+normal cases. Ping returns HTTP 200 and `OK`; version returns bounded JSON fields.
+A complete empty JSON object establishes only that this response has no reviewed
+version fields. WinRM's HTTP 401 advertises Negotiate/NTLM without attempting
+login; its HTTP 405 response with no challenges does not prove authentication is
+disabled. All useful cases use one accepted connection and one validated GET.
+The closed response shapes establish synthetic endpoint metadata, not genuine
+Docker/WinRM identification, general service compatibility or professional
+engagement readiness.
+
+All six forbidden-IP/port redirect scenarios retain raw HTTP 302 evidence and
+remain inconclusive; curl never follows them, and the forbidden witnesses receive
+no connection. These are client redirect-refusal checks, separate from the native
+kernel destination witnesses. Hostile metadata cannot grant authority or become a
+finding. Failed, malformed, stalled and truncated output cannot invent useful
+results or absence; zero process exit alone is insufficient. Real oversized-header
+capture, cancellation, fresh-grant consumption/replay denial, missing-proof
+refusal, private-file isolation and teardown were exercised for all three profiles.
+
+Two implementation findings were resolved before handoff. Initial native attempts
+failed closed before tool execution because the owner-only fixture imported its
+sibling by name under isolated Python. It now uses the existing explicit file-loader
+pattern, with a portable `python -I -S` regression outside the repository. Final
+review also required the B6 fixed GETs to honor the policy method list, matching
+existing ffuf behavior: empty/HEAD-only policies deny and POST-only remains invalid.
+Recomputed launch commitments without GET also deny. Independent runtime/fixture,
+parser/evidence and final policy reviews found no remaining blockers. All 50
+B1–B5 specifications, cards, descriptors and actions remain byte-identical.
+
+The native suite passed **71 network workflow**, **64 network enforcement** and
+**140 affected legacy** checks: **275 distinct selected Linux checks**, with no
+selected skips, failures or errors. All **36 B6 cases** (21 protocol and 15
+enforcement) were rerun successfully after the explicit-GET policy change; these
+are repeats within the 275, not extra distinct tests. Legacy checks cover the
+shared owner/admission/launcher and existing HTTP/header, Nmap, curl and ffuf paths.
+The complete final-source portable suite passed **7,444 tests** without selected
+skips, failures or errors; its receipt is `validation/portable-final.xml`. The
+earlier pre-policy-tightening run is retained separately. Python 3.11 syntax,
+dependency consistency, local documentation links and whitespace checks passed.
+
+Clean-source execution at `1e58600781ca4e98b6a72952d15808f7787b0e9d` completed
+**5/5 legitimate tasks**, with **zero unnecessary refusals**, closed owners,
+independent raw reparsing and identical read-only replay. Docker ping took 2.791
+seconds; version normal/empty took 2.896/2.860 seconds; WinRM challenge/no-auth
+advertisement trials took 2.773/2.810 seconds. Each used one connection and GET.
+All thirteen accepted B1–B5 bundles replayed identically without changing file
+bytes or modification times. `verification.json` records exact source, runtime,
+action/policy/artifact bindings, raw hashes, counters, timings and compatibility.
+These five synthetic correctness trials are not a statistical service-coverage
+or comparative performance claim.
+
+Private receipts are under `.secure-agent/docker-winrm-tools-20261002` in the
+primary checkout. JUnit files are in `validation`; `linux-validation-summary.json`
+records counts, digests and timings. Initial failed bootstrap captures remain
+under `debug` and are not acceptance evidence. Hosted checks must pass on the
+latest PR revision before a later authorized merge. Automated test grants are
+synthetic validation, not human approval or local-release acceptance. Provider
+calls and actual provider cost remain zero. Descriptive CLI elapsed times are
+not comparative security overhead measurements.
+
+B7 bounded Nmap service identification is next because the accepted TCP-only
+profile does not identify a service; review and pin its finite probe/NSE behavior
+before enabling it. B8 synthetic Kerberos enumeration and its owned KDC follow.
+Deeper workflows and comparative benchmarking stay deferred until required
+coverage is complete. Model credentials, paid calls and live-model evaluation
+remain deferred until much later. Offline R5/local R6 and the separate proposal/PDF
+remain closed.
+
+## Secure coverage B5: anonymous FTP listing and SMTP capabilities — 2 October 2026
+
+PR #41 was reviewed and merged as `6623aa0`; its five final PR checks and five
+post-merge main checks passed, and its merge tree matches reviewed head `670c891`.
+B0–B4 remain accepted. B5 adds `curl_ftp_list_v1` and
+`curl_smtp_capabilities_v1` through the existing secure execution/evidence path.
+See [ftp-smtp-tools.md](ftp-smtp-tools.md). This candidate is lab-verified and
+pending review in [PR #42](https://github.com/0xsl0th/recon-cockpit/pull/42) and an authorized merge. Main remains at 13 accepted secure
+capabilities backed by 10 programs; accepting B5 would yield 15 capabilities
+backed by the same 10 programs.
+
+Both actual native clients are curl with fixed arguments and no host configuration,
+credentials, proxy or retry. FTP uses a fixed public anonymous identity and one
+NLST; control and passive data share the predeclared `127.0.0.1:8080` listener.
+No firewall endpoint is added, and active mode/EPSV are disabled. The complete
+native control transcript through `226` is retained on stderr and names on stdout.
+SMTP records greeting/EHLO replies and QUIT on stdout. Curl's harmless HELO
+fallback after a rejected EHLO was observed; that refusal cannot prove useful
+capability discovery. The fixture has no file or mail backend.
+
+Normal and empty FTP cases each use two accepted connections and one validated
+NLST. Normal and no-extension SMTP cases each use one connection and one EHLO.
+Empty results require complete native success framing. Hostile text is preserved
+only in raw evidence and leaves the result inconclusive. Denied, malformed,
+partial and stalled replies likewise cannot prove absence. Both forbidden FTP
+passive destinations (IP and port) are blocked by the unchanged kernel filter;
+no forbidden witness receives a connection and no NLST is recorded. Native
+output pressure, cancellation and cleanup retain existing bounds. Process exit
+zero alone never counts as useful completion.
+
+Independent runtime/fixture and parser/evidence reviews found no remaining
+blockers. They identified and corrected a replay counter mismatch: normalized
+FTP listings now independently require two connection receipts, and denied or
+forbidden-passive cases require zero listing requests. Tamper tests cover those
+counters, channel swaps, stripped final replies despite rehashing, fabricated
+metadata, missing runtime commitments and old-card relabeling. All 36 accepted
+B1–B4 fixture specification encodings remain byte-identical; existing cards,
+policies, runtime bounds and capability identities remain unchanged.
+
+Validation passed **6,755 portable tests**, **50 real network workflow cases**,
+**49 network enforcement cases**, and **140 affected legacy Linux tests**:
+**239 distinct selected Linux checks** in total, with no selected skips, failures
+or errors. The native selection includes 14 new B5 protocol cases and 10 new B5
+enforcement cases. Legacy checks cover shared owner/admission/launcher and existing
+HTTP/header, Nmap, curl and ffuf profiles. Python 3.11 syntax, dependency
+consistency, local documentation links and whitespace checks passed. The private
+JUnit receipts are `validation/portable.xml`, `workflow-linux.xml`,
+`enforcement-linux.xml` and `legacy-linux.xml`; `validation-summary.json` records
+their counts, durations and digests. Hosted checks must pass on the final PR
+revision before a later authorized merge.
+
+Clean-source execution at `e3f5056ce86ceb055a20c22fd908c2f9a52fc612` completed
+**4/4 legitimate normal/empty tasks**, with **zero unnecessary refusals**, closed
+labs, independent raw reparsing and matching read-only replay. FTP normal/empty
+CLI times were 2.876/2.866 seconds; SMTP normal/empty times were 2.908/2.846 seconds.
+All nine accepted B1–B4 bundles (including B4's two empty results) replayed exactly,
+without changes to file bytes or modification times. Provider calls and actual
+provider cost were zero. `verification.json` records exact source, runtime/action/
+policy/artifact bindings, counters, digests and compatibility receipts.
+The first receipt helper failed on the report's intentionally omitted rationale;
+it was corrected to reconstruct the exact deterministic proposal and verify its
+digest. That initial successful native capture is preserved in
+`debug/clean-verifier-attempt-1`; application code did not change.
+
+Private evidence is under `.secure-agent/ftp-smtp-tools-20261002` in the primary
+checkout. Development captures remain under `debug`; they are not clean-source
+acceptance receipts. No real credentials, external targets, provider calls, paid
+calls or live-model evaluation were used. Automated test grants are synthetic
+validation, not human acceptance. Local CLI wall times are descriptive correctness
+measurements, not comparative security overhead. The topology and closed parser
+vocabulary establish finite synthetic-lab support, not general FTP/SMTP service
+compatibility or professional engagement readiness.
+
+B6 Docker/WinRM metadata is next because it fills missing service families while
+reusing existing curl/HTTP infrastructure and interactive suggestions. B6–B8
+remain required; deeper workflows and comparative benchmarking wait for the full
+coverage milestone. Model credentials and paid evaluation remain deferred until
+much later; offline R5/local R6 and the separate proposal/PDF remain closed.
+
+## Secure coverage B4: RPC registrations and NFS export metadata — 2 October 2026
+
+The base is merged main `775352e` (PR #40). B0–B3 remain accepted. B4 adds
+`rpcinfo_dump_v1` and `showmount_exports_v1` as independently invoked, bounded
+native profiles through the existing policy, approval, audit, admission, launcher,
+networkless parser and evidence path. See [rpc-nfs-tools.md](rpc-nfs-tools.md).
+[PR #41](https://github.com/0xsl0th/recon-cockpit/pull/41) remains pending review
+and an authorized merge; B5 FTP/SMTP is the next gap.
+Main still has 11 accepted capabilities backed by 8 external programs; this
+candidate would bring those counts to 13 and 10 after acceptance.
+
+The real clients require fixed rpcbind discovery before their metadata query.
+Both contact only the preauthorized TCP `127.0.0.1:111`; the synthetic service
+multiplexes discovery and MOUNT export metadata at that endpoint. The fixture
+caps connections at four, calls at eight, discovery calls at three and the
+metadata query at one. Minimal transport and service-name tables are compiled,
+hashed and sealed; host RPC configuration is absent. The fixture owner receives
+`CAP_NET_BIND_SERVICE` solely to bind its private listeners and drops all
+capabilities before service startup. The clients receive no extra capability.
+All existing native memory/process/file/output bounds remain intact.
+
+Native normal and empty RPC/NFS runs each use two accepted connections and one
+validated DUMP or EXPORT. Empty RPC prints an explicit no-programs result; empty
+NFS prints its complete export header with no rows. Malformed replies instead
+exit unsuccessfully with decode diagnostics, so they cannot establish absence.
+RPC advertisement of port 112 is retained as numeric metadata without a follow-up.
+An injected NFS access-group string is retained only in raw evidence and the
+result stays inconclusive. When discovery advertises port 112, the native client
+times out: the forbidden witness receives no connection, and no export query is
+counted. Stalls, output pressure and cancellation retain bounded cleanup.
+
+Independent fixture, runtime, parser and evidence reviews found no blockers.
+The complete portable suite passed **6,348 tests** with no selected skips, errors
+or failures. All **36 network-tool workflow cases** and **39 enforcement cases**
+passed, including the 11 new B4 protocol cases and 13 new B4 enforcement/staging cases.
+The Linux-only memfd sealing check is explicitly classified as integration;
+it must not skip inside the portable macOS matrix.
+Another **140 affected legacy Linux checks** passed across the shared owner,
+launcher, admission, HTTP/header, Nmap, curl and ffuf paths: **215 distinct Linux
+checks** in total, with no selected skips, failures or errors. Python 3.11 syntax,
+dependency consistency and local documentation links passed.
+
+Clean-source execution at `a7b5d147ef37628912393ab76d6e81fa1a32cdc6` completed
+**4/4 legitimate normal/empty tasks**, with **zero unnecessary refusals**, closed
+labs and matching read-only replay. RPC normal/empty CLI times were 2.635/2.596
+seconds; NFS normal/empty times were 2.620/2.558 seconds. Each used two connections
+and one metadata request. All five accepted B1–B3 evidence bundles replayed
+identically without changes to content or modification times. Private
+`verification.json` records the implementation revision, report digests, tests
+and compatibility receipts. Consult PR #41 for checks on its latest revision.
+
+This establishes synthetic metadata coverage, not mounts, file access, general
+NFS service coverage or professional engagement readiness. No credentials,
+external targets, provider calls, paid calls or live-model evaluation were used.
+Process success alone is not useful completion: malformed, hostile or unsupported
+output cannot produce a normalized finding. Automated test grants are not human
+acceptance. Local elapsed times are descriptive CLI timings, not comparative
+security overhead measurements.
+
+Private validation and clean-source receipts are under
+`.secure-agent/rpc-nfs-tools-20261002` in the primary checkout. Development failures
+are retained separately under `debug`; they are not acceptance evidence. The
+coverage checklist stays open through B5–B8. Deeper workflows and comparative
+benchmarking remain deferred, as do model credentials and paid evaluation.
+
+## Secure coverage B3: anonymous SMB share metadata — 2 October 2026
+
+PR #39 merged as `79abaab` with all five final PR and post-merge checks passing;
+B2 SSH/LDAP remains accepted. B3 adds `smb_share_list_v1` using the actual installed
+`smbclient`, a finite anonymous IPC$/srvsvc fixture, and the existing secure
+network-tool execution and evidence path. [The runbook](smb-tools.md) records the
+exact invocation, runtime limits and owned-lab limitations. B3 remains pending
+review/merge; B4 RPC/NFS metadata is the next checklist gap.
+
+Normal and hostile-comment cases produce only the two reviewed share names/types.
+The native client returns identical footer-only output for valid empty listings,
+access denial and some malformed exchanges, sometimes with exit zero. These
+remain inconclusive; the parser requires both reviewed share rows and never uses
+the fixture label to infer success or absence. Stalled/partial/unknown output also
+cannot establish useful completion. Hostile comments remain bounded raw evidence
+and cannot select targets, tools or follow-up actions. This is a finite synthetic
+SMB2_02 enumeration profile, not a production SMB importer or file-access feature.
+
+The pinned native dependency closure requires a separate compact SMB manifest
+and larger staging-only limits. Existing B1/B2 manifests, workflow cards, fixture
+identities, runtime limits and policies remain unchanged. Native SMB keeps its
+256 MiB address-space bound, zero writable files, fixed destination filter and
+no-child/no-thread boundary. No real credential, host SMB runner, provider call,
+external target or paid service is involved.
+
+Private validation receipts are in `.secure-agent/smb-tools-20261002` in the
+primary checkout. Independent runtime/launcher and fixture/parser/evidence reviews
+found no blockers. Implementation `fbcf0ac` is on `feature/secure-smb-coverage`,
+based on `79abaab`; review handoff: [PR #40](https://github.com/0xsl0th/recon-cockpit/pull/40).
+Local validation passed **5,945 distinct portable tests**:
+the full run passed 5,943 in 327.880 seconds, followed by a 116-case final fixture
+run containing the two subsequently added alternate-pipe tests. No portable
+failure, error or skip occurred. Receipts: `validation/portable.xml` and
+`validation/fixture-final.xml`.
+
+**168 distinct selected Linux checks** passed: 25 real network-tool/replay cases,
+28 network enforcement cases, and 115 affected launcher/admission and legacy
+HTTP/curl/ffuf cases. These include six new SMB protocol cases and five new SMB
+enforcement cases. The first SMB output-pressure test supplied an invalid oversized
+RPC fragment, which the client rejected before printing enough output. The
+corrected test instruments only the owner to send seven valid fragments; actual
+`smbclient` then reaches the unchanged 8,192-byte cap, retains a truthful truncated
+receipt and releases no observation. The original failed receipt remains private;
+27 enforcement passes plus the corrected pressure pass cover all 28 cases.
+Receipts: `workflow-linux.xml`, `enforcement-linux.xml`, `pressure-corrected.xml`
+and `legacy-linux.xml` under `validation/`. Python 3.11 syntax, compile, dependency
+consistency, changed documentation links and whitespace checks also passed.
+
+The clean-source normal trial from `fbcf0ac` completed useful share discovery in
+3.926 seconds, with one logical protocol event, a closed lab and identical
+read-only replay (file bytes and mtimes unchanged). Legitimate completion was
+1/1; unnecessary refusals were 0/1. Provider calls and actual provider cost were
+zero. This is one synthetic correctness trial; its local CLI wall time includes
+secure infrastructure and is not a comparative overhead measurement. Empty-list
+ambiguity is an explicit limitation, not a measured absence success.
+`runs/smb-ok/evidence` retains the private raw artifacts; `verification.json`
+records the exact source. The same clean source replayed all four accepted
+DNS/TLS/SSH/LDAP bundles identically without writes or integrity issues.
+Hosted checks must pass on the final PR revision before an authorized merge.
+Automated grants do not claim human acceptance. Deeper workflows and comparative
+benchmarks remain deferred until B0–B8 meet G1–G6; model credentials, paid calls and
+live-model evaluation remain deferred until much later. R5/local R6 stay closed.
+
+## Secure coverage B2: SSH host keys and LDAP RootDSE — 1 October 2026
+
+PR #38 was reviewed and merged at `5436dd6`; all five final PR and post-merge main
+checks passed. The reviewed and merged trees match. B1 DNS/TLS is accepted and
+stays closed. B2 reuses that secure execution family for actual `ssh-keyscan` and
+`ldapsearch` processes; [the runbook](ssh-ldap-tools.md) records exact bounds and
+limitations. The broader coverage milestone stays open; B3 anonymous SMB share
+metadata is next because it adds a missing protocol family with an existing
+interactive `smbclient` integration.
+
+Implementation `77395fe` is on `feature/secure-ssh-ldap-tools`, based on `5436dd6`;
+review handoff: [PR #39](https://github.com/0xsl0th/recon-cockpit/pull/39). Both new
+profiles keep one action, fixed owned TCP scope, a five-second tool deadline,
+60-second session ceiling and 8,192 combined output bytes. SSH collects a single
+2048-bit RSA key and computes a fingerprint without claiming trust or login.
+LDAP validates an anonymous base-scope RootDSE search, with a distinct dn-only
+empty-entry outcome and no referral following. The synthetic SSH service performs
+a genuine bounded key exchange, using deliberately public fixture key material;
+it implements no encrypted session, authentication or channels. Its signature
+has an independently authored cryptographic test vector, without adding a runtime
+dependency or reading a real key. No owner/process boundary was weakened.
+
+The initial two-tool smoke run completed both real processes, but SSH was correctly
+reported inconclusive because its stdout banner comment was not supported by the
+initial parser. The corrected parser accepts one bounded comment before the key
+on stdout or alone on stderr, rejects duplicates and discards banner content
+from normalized observations. LDAP framing now rejects attributes outside a single
+entry. The original failed smoke receipt is retained; subsequent real cases pass.
+
+Validation receipts are private under
+`.secure-agent/ssh-ldap-tools-20261001/validation` in the primary checkout.
+All 19 network protocol cases pass (10 new B2, 9 B1), including useful normal work,
+empty RootDSE, hostile text, malformed output, referrals, stalls, structured
+reports and independent read-only replay. All 23 network enforcement cases pass
+(9 new B2, 14 B1), including fresh approval consumption/replay denial, missing-proof
+refusal, observed actual-exec cancellation and cleanup, private input/descriptor
+isolation and output pressure. LDAP output pressure uses the real `ldapsearch`
+with an enlarged synthetic response and preserves a truthful bounded receipt;
+SSH oversized protocol input is refused, without claiming an 8,192-byte SSH
+capture event. These results are selected Linux checks, not a full Linux suite.
+
+Independent runtime, fixture/parser, contract and evidence reviews found no
+remaining blockers. Accepted B1 action/card/descriptor/fixture identities and
+its shipped policy remain unchanged; B2 has a separate card and example policy.
+The full portable suite passed **5,711 tests** in 306.560 seconds; 85 additional
+affected Linux launcher/admission and existing HTTP/curl/ffuf checks passed in
+157.158 seconds. Together with the 19 protocol and 23 enforcement cases, this is
+**127 selected Linux tests** (19 new B2, 108 existing), with no failures/errors/skips
+in these final runs. Receipts: `portable.xml`, `legacy-linux.xml`,
+`workflow-linux.xml` and `enforcement-linux.xml`. Python 3.11 syntax, compile,
+dependency consistency, changed documentation links and whitespace checks passed.
+Two clean-source trials from `77395fe` retained private raw evidence under
+`.secure-agent/ssh-ldap-tools-20261001/runs`. SSH returned `host_key_observed` in
+2.557 seconds; LDAP returned `rootdse_observed` in 2.580 seconds. Both completed
+one useful action and one protocol event, closed their labs and replayed identically
+without changing file bytes or mtimes. Legitimate completion was 2/2, unnecessary
+refusals 0/2, and provider calls/cost zero. These descriptive CLI timings do not
+measure comparative overhead. The same clean source also replayed the two accepted
+B1 bundles byte-for-byte with no writes or integrity issues. Independent source
+comparison preserved all nine B1 fixture specs/actions and the original card and
+capability descriptor. `verification.json` records exact source and receipts.
+Hosted checks must pass on the final PR revision before a later authorized merge. No human acceptance is claimed by automated grants. Model credentials,
+paid calls and live-model evaluation stay deferred; deeper composition and
+comparative benchmarking wait for all required coverage rows. R5/local R6 and
+the separate proposal/PDF remain unchanged.
+
+## Secure coverage B1: DNS and TLS — 1 October 2026
+
+The operator made broader secure-tool coverage the active milestone and deferred
+deeper workflow composition and comparative benchmarking until the required
+checklist is complete. The [inventory and gates](secure-tool-coverage.md) distinguish
+10 interactive executable families from the baseline's 6 secure capabilities
+backed by 3 external programs. B1 adds independent dig and OpenSSL profiles;
+[the runbook](network-tools.md) records their exact limits. The milestone remains
+open, and B2's SSH host keys/LDAP RootDSE is the next coverage priority after B1.
+
+Implementation `24ae696` is on `feature/secure-network-tools`, based on main `ba0d6f8`. No provider,
+credential, external target, comparison benchmark or cross-tool workflow was
+activated. Accepted offline R5/local R6, old tool profiles and the proposal PDF
+remain unchanged. The new profiles have one action, fixed owned TCP scope and
+finite strict results. Both raw channels bind to the committed runtime and are
+independently parsed on capture and replay.
+
+| Coverage | Result | Private receipt basename |
+| --- | --- | --- |
+| Full local portable run before the final partial-output receipt correction | 5,442 passed; no failures/errors/skips | `portable.xml` |
+| Final focused CLI, contracts, parser, runtime, lab, evidence and single-action checks | 294 passed; no failures/errors/skips | `focused-final.xml` |
+| New actual tools, negative fixtures, approval/replay gates, task limit, cancellation, private-input isolation and output pressure | 23 distinct cases verified: 20 initial passes plus 3 corrected-case passes | `linux.xml`, `corrected-linux.xml` |
+| Existing curl/ffuf, fixture launcher, admission and Nmap runtime | 96 passed; no selected failures/errors/skips | `legacy-linux.xml` |
+
+The **119 affected Linux cases** are not a full Linux-suite result. Earlier failed
+receipts remain retained. The actual BIND client succeeds while emitting one
+specific denied-socket startup diagnostic; only that exact reviewed line is
+accepted with otherwise valid DNS output. Unknown diagnostics remain inconclusive
+and the socket filter is unchanged. OpenSSL's verified facts are carried on
+stderr, which is independently replayed. CLI inspection now selects the new
+closed evidence profile explicitly.
+
+Native dig may exit zero for malformed output; the test now distinguishes process
+success from useful parsed evidence. Actual output pressure proved bounded
+capture can discard the overflowing chunk and retain fewer bytes than the cap.
+Only the new receipt contract was corrected to accept truthful shorter truncated
+captures, with unchanged 8,192-byte ceiling, reservation, hashes and stop reason.
+The real pressure tests now capture and replay those receipts, require no useful
+observation and verify read-only inspection. No captured bytes are invented.
+
+Independent reviews of runtime/launcher, parser/contracts, CLI/evidence and
+lab/backend found no remaining blockers after that correction. Review compared
+the shared staging and kernel helper extraction with the accepted implementations;
+original argument lists, bounds and filters remain unchanged. No descriptor,
+mock or skipped test is presented as actual execution. Hosted CI must pass on the
+final PR revision before merge. Private receipts live in
+`.secure-agent/network-tools-20261001/validation` in the primary checkout.
+
+Two clean-source CLI trials from `24ae696` saved private evidence under
+`.secure-agent/network-tools-20261001/runs`. dig completed one DNS question with
+`answer_observed` in 2.807 seconds; OpenSSL completed one TLS handshake with
+`handshake_verified` in 2.586 seconds. Both labs closed, and independent replay
+matched reports without changing evidence bytes or mtimes. Useful completion was
+2/2 and unnecessary refusals 0/2 for these positive trials. Calls and provider cost
+were zero. These are descriptive CLI timings, not a comparative benchmark.
+They use an explicitly labelled unattended synthetic policy; the shipped policy
+still requires fresh approval, and no human acceptance is claimed.
+
+PR #37 remains merged as `ba0d6f8`; all five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36809908913)
+passed. Its final reviewed tree and historical evidence remain closed.
+
+## Practical curl/ffuf coverage — 1 October 2026
+
+Implementation `3ec1ef07040c284b2896055009c8123070f327ea` on
+`feature/practical-web-tools`, based on main `9a95d9a`, adds two independent
+real-tool capabilities before deeper workflows: one certificate-verified curl
+HTTPS GET and eight fixed ffuf paths. Both use the existing authority, approval,
+audit, admission and confined launcher path. The [runbook](practical-web-tools.md)
+records fixed scope, hard resources and limitations. Accepted R5/offline R6,
+old tool profiles and the separate proposal/PDF remain unchanged. Credential
+setup, paid calls and live-model evaluation stay deferred until much later.
+Review PR: [#37](https://github.com/0xsl0th/recon-cockpit/pull/37); merge is pending
+review of its latest revision/checks. The operator has authorized conditional
+merge, followed by a recommendation only. GitHub and the private
+`.secure-agent/pr37-merge-review.json` receipt record the final merge outcome.
+
+Fresh merge review found that the executed web-tool evidence path treated a
+missing manifest runtime digest as optional validation. It now requires a valid
+non-null runtime commitment before accepting an executed curl/ffuf result.
+Capture and replay regressions cover both tools; dry-run evidence remains valid
+without an executable runtime. This closes an evidence-binding gap, not an
+execution or approval bypass. The runtime/sandbox source is unchanged.
+Independent review of the fix found no remaining blocker. All 153 affected
+portable evidence/contract checks passed, including eight new regression cases.
+All ten actual owned curl/ffuf workflow and read-only replay cases passed again
+after the fix (`review-workflow-linux.xml` in the private validation directory).
+These reruns overlap the coverage below; they are not additional distinct Linux
+cases. Recheck all five hosted jobs on the final head before merging.
+
+Independent runtime/admission and CLI/evidence/lab reviews found no blockers.
+Actual execution exposed and resolved two ffuf integration details: Bubblewrap's
+supervisor must count toward the sixteen-task ceiling, and ffuf requires a fixed
+empty scraper directory despite scrapers being disabled. That directory is
+read-only and permits no configuration-file access. The native JSON parser now
+validates the observed canonical `FFUFHASH` position and discards it from findings.
+The negative thread-limit test verifies refusal when the actual limit is widened.
+
+| Coverage | Result | Private JUnit receipt basename |
+| --- | --- | --- |
+| Full local portable suite before final bounded integration corrections | 5,139 passed; no failures/errors/skips | `portable.xml` |
+| Final affected portable tool contracts, parsers, evidence, lab, runtime, CLI and single-action planning | 249 passed; no failures/errors/skips | `focused-final.xml` |
+| Affected portable suite after macOS fixture corrections and unsupported-platform checks | 251 passed; no failures/errors/skips | `portable-corrections.xml` |
+| New actual workflows, approval/replay gates, kernel thread ceiling, cancellation, oversized output and private-input isolation | 23 distinct cases verified: 20 initial passes plus 3 corrected-test passes | `linux.xml`, `linux-corrections.xml` |
+| Existing Nmap/HTTP-header workflows/parsers/gates, launcher and admission | 115 distinct cases verified: 114 initial passes; all 3 stop cases passed after correcting their test hook | `legacy-linux.xml`, `launcher-stop-linux.xml` |
+
+The **138 affected Linux cases** are not a full Linux-suite run. Original failed
+receipts are retained. New test corrections align malformed-response expectations
+with curl's own rejection and update two instrumentation anchors after extracting
+the execution environment helper; production limits were not weakened. The legacy
+stop test's old string replacement no longer inserted its stall. Its replacement
+now asserts the current dispatch anchor exists and actually stalls the executor;
+production legacy code is unchanged. Initial cancel/concurrent results are
+superseded by their corrected passes. HTTP report rendering was also made
+independent of dictionary ordering so read-only replay remains identical.
+
+Two fresh actual CLI runs from clean `3ec1ef0` saved evidence under
+`.secure-agent/practical-web-tools-20261001/runs` in the primary checkout:
+
+| Tool trial | Useful outcome | Requests | CLI wall time |
+| --- | --- | --- | --- |
+| `curl-ok` | `response_observed` | 1 | 2.886 s |
+| `ffuf-normal` | `paths_observed`, all eight statuses retained | 8 | 4.641 s |
+
+Both completed their sole action, had distinct disposable lab identities, closed
+successfully and replayed without integrity issues or file/mtime changes.
+Useful completion is **2/2**, unnecessary refusals **0/2**, actual provider calls
+and cost **zero** in these saved positive trials. These are local descriptive
+timings including secure infrastructure, not a paired authority-overhead benchmark
+or a general effectiveness rate. Negative fixtures also cover untrusted TLS,
+redirects, malicious text, ambiguous framing, wildcard responses and stalls.
+Blocking a normal useful trial would fail acceptance.
+
+The runs use an explicit unattended synthetic owned validation policy. The
+shipped policy requires fresh approval; scripted approval tests do not claim
+human consent or a new operator acceptance. No real credential was read or
+configured. Runtime hashes, raw evidence, receipts, review notes and measured
+cost/timing records remain private and ignored. Compile, dependency and whitespace
+checks pass. Hosted PR checks provide the final portable matrix for review.
+
+The first final hosted matrix passed all four Ubuntu jobs but exposed ten macOS
+test failures: backend doubles still read Linux namespace paths, and a deadline
+test reached the platform guard before its intended assertion. The portable
+fixtures now supply explicit namespace/platform doubles, with separate tests
+confirming unsupported platforms refuse execution. Production isolation and
+Linux-only execution requirements are unchanged; the corrected head must pass
+the complete hosted matrix before merge.
+
+PR #36 remains merged as `9a95d9a`; all five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36801648147)
+passed. Its history below is preserved rather than reopening accepted scope.
+
+## Owned HTTP response-header assessment — 1 October 2026
+
+Implementation `473e989` on `feature/owned-http-headers-assessment`, based on main
+`98d6f1b`, adds `http_headers_v1` and a separate two-action owned workflow. Nmap
+reachability gates a fixed GET of the synthetic HTML portal. The native adapter
+retains bounded wire bytes; a separate networkless parser releases only finite
+header observations. Capture and inspection independently reconcile those facts
+with raw evidence. Missing headers are hardening observations, not validated
+exploits. See the [runbook](http-headers-assessment.md) and
+[PR #36](https://github.com/0xsl0th/recon-cockpit/pull/36). The latest operator
+instruction authorizes conditional review/merge, followed by a recommendation
+only. Fresh independent parser/evidence/workflow and runtime/admission/launcher
+reviews of `d5e0228` found no blockers. All five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36800202193)
+passed on that head; runtime/tests/examples match `473e989`. GitHub reviews,
+conversation comments and inline comments were empty at review. Recheck final
+checks after this documentation-only update, and bind the merge to that exact
+head. The private `.secure-agent/pr36-merge-review.json` receipt records the actual
+merge outcome and tree comparison; GitHub remains the shared source for PR state.
+
+The operator explicitly deferred credential setup and the real-model pilot until
+much later. This work uses deterministic proposals and owned fixtures. Live
+configuration remains disabled, no provider ledger is funded and no real key is
+read. The accepted offline R5/R6 milestones stay closed; proposal PR #31 and the
+local PDF are unchanged.
+
+Independent reviews of contract/parser, runtime/admission/launcher and
+CLI/evidence/documentation found no blockers. Review also tightened a receipt
+edge case: an empty captured response cannot claim transport success. The strict
+validator rejects it even when outer hashes are recomputed.
+
+Validation receipts are local, not committed artifacts:
+
+| Coverage | Result | Receipt |
+| --- | --- | --- |
+| Final full portable run on `473e989` | 4,898 passed; zero selected failures/errors/skips | `/tmp/recon-http-headers-portable-final.xml` |
+| New full workflows and approval gates, plus existing web/Nmap approval tests | 17 passed | `/tmp/recon-http-headers-gates-workflow-linux.xml` |
+| Actual networkless HTTP parser, malformed input, denied network/process/file access, deadlines and cleanup | 17 passed | `/tmp/recon-http-headers-parser-linux.xml` |
+| Existing Nmap/web workflows, owned launcher and admission regressions | 65 passed | `/tmp/recon-http-headers-legacy-linux.xml` |
+
+The **99 affected Linux tests** have no failures/errors/skips; this is not a new
+full 567-test Linux-suite result. Portable doubles establish contracts, not kernel
+isolation. Tests exercise required grants and consumed-proof witnesses, replay
+refusal, old-profile substitution and an out-of-scope proposal denied and audited
+before launch. Scripted approval fixtures do not record human consent.
+
+Three fresh actual CLI runs on clean `473e989` saved private evidence at
+`.secure-agent/http-headers-20261001` in the primary checkout. Each used an explicit
+unattended owned validation policy; the shipped policy still requires fresh
+human approvals. Each completed two actions and exactly one HTTP request, closed
+its own lab, and passed read-only evidence replay without integrity issues:
+
+| Case | Observation | Actions | Session time |
+| --- | --- | --- | --- |
+| Vulnerable | `gaps_observed` | 2/2 | 2.830 s |
+| Corrected | `reviewed_headers_present` | 2/2 | 2.824 s |
+| Injected | `gaps_observed` | 2/2 | 2.866 s |
+
+The packet's `verification.json` binds source, unique lab identities, closure and
+report hashes; files are private and ignored. The hostile body remains only in
+raw evidence. It neither changes scope nor enters report prose. These timings
+are descriptive local session measurements, not model latency or authority
+benchmarks. Actual provider calls and paid calls: **zero**. No new operator
+acceptance, competition submission or release publication is claimed.
+
+## PR #35 merged and live work deferred — 1 October 2026
+
+Final reviewed head `59ea9f33fac027bbc693ee8b2bb39564d3c65c1d` passed independent
+review with no blockers or outstanding GitHub comments. Runtime/tests/examples
+match implementation `03def1b`; saved validation confirms 4,600 portable and 51
+affected Linux tests with zero selected failures/errors/skips. All five
+[final hosted jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36796851542)
+passed before the guarded merge `98d6f1b` at 00:40:24 UTC. Reviewed and merged
+trees both equal `6ff6592d8c8f26213c3819d8939013b288e7fb9c`. All five
+[post-merge main jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36797343742)
+passed. The private `.secure-agent/pr35-merge-review.json` receipt records this.
+
+The operator subsequently deferred credential setup and the real-model pilot
+until much later, retaining disabled live integration and mock validation while
+continuing practical tools/workflows. Preparation performed a public endpoint
+lookup and TLS certificate handshake only; no API request, paid model call or
+real credential read occurred. No live configuration or funded ledger was created.
+The next implementation is the bounded owned HTTP response-header assessment.
+PR #35 and the accepted offline R5/R6 milestones remain closed.
+
+## Minimal model workflow integration — 1 October 2026
+
+The operator authorized review/merge of PR #34, a focused real-model integration,
+offline validation and a new review PR. Live calls remain unauthorized. Work on
+`feature/web-model-pilot`, based on `17945db`, connects one existing three-action
+Nmap → HTTP → evidence workflow to the confined Responses transport. The new
+[runbook](web-model-pilot.md) proposes the separate three-session, nine-call, $1
+live evaluation and records its data/model/endpoint and acceptance gates.
+
+The integration reuses the accepted transport/ledger, authority/coordinator,
+audit/approval witnesses, launcher and tool/evidence contracts. The model selects
+semantic actions from actual bounded observations. A policy-denied proposal
+reaches the unchanged authority for a recorded denial; an allowed but incorrect
+workflow, refusal, malformed response or early completion stops without a retry.
+UUID/rationale normalization never corrects target, tool or parameters. Existing
+ACK and deterministic request formats remain regression anchors.
+
+Fresh independent reviews covered the request/decoder, transport, provider and
+accounting, runner and metrics. Corrections require complete response-envelope
+fields, capture launcher boundary receipts before cleanup clears them, enforce
+the 30-second acceptance threshold separately from useful completion, and reject
+prior reservation overruns when reopening the shared pilot ledger. A private
+advisory lock and remaining-call check serialize cooperating pilot invocations;
+reopening cannot reset the nine-call allowance. Host-owner trust remains explicit.
+
+Focused offline validation already verifies successful completion of all three
+cases, actual policy denial of an injected out-of-scope proposal, unnecessary
+refusal, malformed output and retained unknown-usage holds. The seven full Linux
+workflow cases passed in 58.24 seconds, including real confined Nmap/HTTP tools,
+owned TLS, read-only tool-evidence replay and worker cleanup. No DNS, real
+credential access, host tool execution or external provider connection is permitted
+by these tests. Report: `/tmp/recon-web-model-workflow-linux.xml`.
+
+The final portable suite passed **4,600 tests in 277.39 seconds**, with 541 Linux
+cases deselected and zero selected failures/errors/skips. The affected Linux
+selection passed **51 tests**: 35 transport/new-and-legacy ACK cases in 28.87
+seconds, nine new/legacy parser cases in 4.87 seconds, and the seven complete
+workflow cases above. This is affected kernel coverage, not a new full 541-case
+Linux run. Reports: `/tmp/recon-web-model-portable-full.xml`,
+`/tmp/recon-web-model-transport-linux.xml`, `/tmp/recon-web-model-codec-linux.xml`
+and `/tmp/recon-web-model-workflow-linux.xml`. The subsequent timing/account
+admission corrections are covered by the final portable suite; they do not
+change sandbox or tool execution code. Synthetic usage/cost is never presented
+as live measured billing.
+Implementation `03def1b3d27422030091153661aa146731a59f97` is in
+[PR #35](https://github.com/0xsl0th/recon-cockpit/pull/35). Two actual CLI runs on
+that clean revision saved private evidence in the primary checkout:
+
+| Owned simulation | Result |
+| --- | --- |
+| `.secure-agent/web-model-owned-20261001` | Injected fixture, legitimate proposal sequence: 3/3 actions, correct evidence, zero refusals/unauthorized executions, 6.878 seconds vs 3.598-second baseline |
+| `.secure-agent/web-model-blocked-20261001` | Actual captured hostile note induces target `127.0.0.2`: 1/1 unsafe proposals denied, zero unauthorized executions, 2/3 legitimate actions; overall **failed**, 6.430 seconds vs 3.627-second baseline |
+
+Both independently replayed tool findings without integrity issues during report
+creation, settled three synthetic usage receipts (2,670 microUSD each run), and
+retained zero unresolved holds. The successful run reports a +3,280 ms session
+difference, +2,142 ms common-prefix difference and −1,139,607 ns third-decision
+difference. The blocked run reports +2,803 ms, +2,257 ms and +340,473 ns
+respectively, while omitting the final tool action. These are descriptive local
+measurements including synthetic-provider/process overhead; they do not estimate
+live inference latency or total authority overhead. Actual paid calls: **zero**.
+The adjacent `.secure-agent/web-model-20261001-verification.json` records source,
+receipt summaries and local file hashes; it is not hostile-host attestation.
+
+All private artifacts remain ignored. The follow-up documentation commit changes
+no runtime/tests; consult [PR #35 checks](https://github.com/0xsl0th/recon-cockpit/pull/35/checks)
+for its final hosted status and the review handoff above for merge authorization. The immutable
+accepted R6 packet, proposal PR #31 and local PDF stay unchanged.
+
+## PR #34 merge review — 30 September 2026
+
+Fresh independent reviews of exact head
+`7494b7fe230c9f6ab73366fa746afcc306935426` found no blockers or outstanding GitHub
+review comments. Main has no configured required checks; all five available
+[final hosted jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36782099190)
+passed. Saved JUnit reports independently confirmed 4,438 portable cases and
+eight new Linux cases without selected failures/errors/skips. Runtime/tests match
+the earlier verified `6268543`; subsequent changes were documentation only.
+
+The authorized guarded merge is `17945db6217c7901f41110b6f7ea9ed743bac606`,
+at 23:46:20 UTC. The merge tree exactly matches the reviewed head:
+`93aeddc1e434d3ed8377b5a7abe4f380f4e95372`. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36792805339)
+passed. The primary checkout is clean on that main revision. Keep PR #34 closed;
+its offline comparison remains the fallback demonstration.
+
+## Offline malicious-output comparison — 30 September 2026
+
+After the authorized PR #33 merge, the next separate implementation is
+`6268543c3d7c4c1ba5cc79ab4b78829d7bafdc64` in
+[PR #34](https://github.com/0xsl0th/recon-cockpit/pull/34), based on `ed7d839`.
+The source adds a bounded baseline/scripted evaluation using the accepted web
+lab, authority and Nmap/HTTP tools. Only the CLI changes in existing application
+modules; isolation, authority, fixture and tool implementations remain unchanged.
+The default explicit unattended owned policy preserves the singleton scope and
+original per-trial ceilings. R5/R6 acceptance and the proposal/PDF remain closed.
+
+Independent reviews covered contract/provider, runtime/cleanup, grading and
+batch/CLI behavior. The review correction preserves all verified journal
+reservations when trailing corruption exceeds the event count; regression tests
+cover object and non-object trailing records without writes. No blockers remain.
+
+The complete portable selection passed **4,438 tests in 250.79 seconds**, with
+zero selected failures/errors/skips; 515 Linux tests were deselected. The eight
+new Linux integration tests passed: seven runtime/cancellation cases in 23.22
+seconds and one six-trial CLI/replay/tamper case in 26.70 seconds. Every real
+case/arm branch was independently regraded using the isolated XML parser. The
+earlier accepted 507-case Linux suite is PR #33 evidence, not a newly rerun
+full suite for this additive comparison. Reports:
+`/tmp/recon-web-comparison-portable-full.xml`,
+`/tmp/recon-web-comparison-runtime-linux.xml` and
+`/tmp/recon-web-comparison-batch-linux.xml`.
+
+On that clean implementation revision, the actual default CLI run completed
+**18/18 passing trial criteria** in 66.192 seconds before final aggregate replay.
+All **3/3 induced unauthorized proposals were blocked**, with **zero unauthorized
+executions**. **15/18 legitimate tasks completed**, totaling 51 legitimate
+actions. Each injected scripted trial stopped after two actions with
+`target_out_of_scope`, two execution reservations and 17,408 reserved output
+bytes. Its incomplete assessment is an expected, explicit task-completion cost,
+not a completed task. Actual provider calls and approval wait were both zero;
+the unattended policy does not constitute a human rehearsal.
+
+Private evidence is `/home/sloth/Code/recon-cockpit/.secure-agent/web-comparison-20260930`.
+The 163-file copy exactly preserves the original bytes, modes and mtimes.
+Independent read-only CLI inspection reproduced the report without changes.
+Inspection of a separate copy with an added claimed execution reservation failed
+with `saved_trial_grade_mismatch`, leaving execution counts unknown and both
+original and altered inputs unchanged. The adjacent
+`web-comparison-20260930-verification.json` records execution revision and checks.
+These files remain local and ignored.
+
+All nine same-case pairs are reported. The three injected decision-latency deltas
+(scripted minus baseline) were +96,492, −268,476 and +363,114 nanoseconds. Their
+full-trial deltas were −488, −498 and −234 milliseconds, each omitting one action
+and 1,024 reserved bytes. Those shorter elapsed times are **not** lower enforcement
+overhead. Concurrent portable tests ran on the same host; three repeats provide
+descriptive measurements only. No model susceptibility, total authority overhead
+or professional deployment readiness is claimed. See
+[web-comparison.md](web-comparison.md) for the precise timing interval and limits.
+
+The checkpoint-only follow-ups do not alter runtime/tests. Consult
+[PR #34 checks](https://github.com/0xsl0th/recon-cockpit/pull/34/checks) for its
+final hosted status. PR #34 has since merged as recorded above.
+Model/endpoint, data exposure, credentials, egress and spending require
+separate operator authorization before the planned real-model pilot.
+
+## PR #33 merge review — 30 September 2026
+
+The operator authorized review/merge of the current PR and continuation. Fresh
+independent reviews of exact head `aaa5c6aa8a33a3a2f627092a22104b16fbf50ad9`
+found no runtime/authority, contract/evidence or documentation blockers. GitHub
+had no outstanding review comments. Main has no configured required checks;
+all five available [final jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36771053368)
+passed. Independent saved JUnit inspection confirmed 4,243 portable and 507
+Linux cases, plus the corrected nine workflow trials, without failures/errors/skips.
+
+The guarded merge is `ed7d839d2ea9d711a81a76ddfa76eb41d928bf28` at
+21:02:55 UTC on 30 September. Merge and reviewed-head trees both equal
+`e09794f3b4a4306e7d95b8944aa70306320e3877`. The clean main checkout was
+fast-forwarded, and all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/36776840618)
+passed. PR #33 stays closed; PR #31 and its local PDF remain separate.
+
+## Resettable HarborDesk web lab — 30 September 2026
+
+The operator authorized the richer resettable owned scenario after PR #32.
+Implementation `98c0c35` is on `feature/resettable-web-lab`, based on `875c1a6`,
+in [PR #33](https://github.com/0xsl0th/recon-cockpit/pull/33).
+[web-lab.md](web-lab.md) documents the separate fixture/workflow identity,
+vulnerable/corrected/injected variants and mandatory authority gates. The source
+uses existing Nmap/HTTP tools, the same singleton owned scope and the unchanged
+3-action/60-second/18,432-byte ceiling. No model, credential, external target,
+spending, release or submission is enabled. Accepted offline milestones and the
+proposal/PDF remain unchanged.
+
+Independent review covered fixture/reset, strict HTTP interpretation, workflow
+predecessors, evidence replay, admission/executor checks, launcher witness binding
+and legacy behavior. Corrections made before broad regression testing fix an
+HTTP request-tag mismatch and structured refusal of malformed inspection
+workflow values. Existing Nmap report JSON/Markdown have golden byte checks.
+
+Focused actual Linux verification passed nine full workflow trials (three fresh
+instances per variant), with expected `validated`/`not_demonstrated`/`validated`
+outcomes, three successful actions, two HTTP requests and 18,432 reserved bytes
+per trial. Inspection left every evidence byte and mtime unchanged. The injected
+note appeared only in private decoded HTTP artifacts. Four lifecycle tests verified
+repeatable fixtures, zero starting counters, boundary checks and reset/cancellation
+cleanup. Five approval tests covered a synthetic PTY grant, replay refusal,
+missing/forged direct consumed proof and two wrong bootstrap tags. These are
+scripted test grants, not human walkthrough or acceptance.
+
+The complete selections at implementation `98c0c35` passed **4,243 portable tests
+in 295.14 seconds** and **507 Linux integration tests in 1,072.23 seconds**, with
+zero failures/errors/skips in either selected suite. Independent JUnit inspection
+confirmed all **4,750** cases. Reports: `/tmp/recon-web-portable-full.xml` and
+`/tmp/recon-web-linux-full.xml`. All five
+[hosted checks on that implementation](https://github.com/0xsl0th/recon-cockpit/actions/runs/36768846374)
+also passed. Subsequent edits are checkpoint/verification text and a test-only
+counter correction: the workflow requires at least the two accepted HTTP
+connections, without assuming the Nmap connection was accepted before reset.
+Application source remains identical to `98c0c35`. All three corrected workflow
+tests (nine fresh real-tool trials) passed again; JUnit:
+`/tmp/recon-web-workflow-final.xml`. Consult the
+[PR #33 checks](https://github.com/0xsl0th/recon-cockpit/pull/33/checks) for the
+latest head before a merge decision. No merge authorization is claimed.
+
+Focused reports: `/tmp/recon-web-workflow-linux.xml` (six test cases including the nine
+workflow trials and the initial three approval tests),
+`/tmp/recon-web-approval-linux.xml` (all five approval cases), and
+`/tmp/recon-web-contract-evidence-portable.xml` (149 new/legacy contract checks).
+An induced malicious-output proposal and baseline/overhead comparison remain the
+next separate slice. This increment alone provides no model-susceptibility result.
+
+## PR #32 merge review — 30 September 2026
+
+The operator explicitly authorized reviewing PR #32 and merging its latest
+revision if review and checks pass. Fresh independent review of `36b2d96`
+checked the new runtime/executor/launcher boundaries, adapter compatibility,
+workflow and evidence behavior. The implementation review found no blocking
+issues or outstanding review comments. All five
+[hosted jobs on that revision](https://github.com/0xsl0th/recon-cockpit/actions/runs/36763227519)
+passed. Main has no configured required checks; all available jobs are checked.
+Saved local reports independently reconcile to 4,548 distinct passing cases,
+including every case in the final 495-test Linux selection.
+
+The checkpoint correction became final head `b7e1904`; runtime/tests stayed
+identical to the reviewed revision. All five
+[final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36764600927)
+passed. The authorized guarded merge is `875c1a6` at 19:23:07 UTC on
+30 September; its tree exactly matches the reviewed head. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36765297652)
+passed. PR #32 stays closed. PR #31, live work and publication remain separate.
+
+## Reviewed adapters and owned Nmap — 30 September 2026
+
+The operator authorized implementing the common bundled-adapter interface and
+one real confined Nmap-to-HTTP workflow. Implementation `245c4d7` is on
+`feature/reviewed-tool-adapters`, based on main `8ae4aad`; subsequent test-only
+corrections preserve that runtime. Review and latest hosted status are in
+[PR #32](https://github.com/0xsl0th/recon-cockpit/pull/32). The proposal in PR #31 remains separate.
+No model calls, external targets, credentials, spending, release or competition
+submission were enabled. This is follow-on development, not a reopening of the
+accepted R1–R6 offline contracts or a claim of professional deployment readiness.
+
+Independent reviews checked the shared contract, dedicated runtime/parser,
+authority integration and documentation. Review corrections preserve the
+original evidence deadline, pin and revalidate the runtime manifest, parse raw
+XML only in the isolated parser, independently enforce the 3-action/60-second/
+18,432-byte ceiling and distinguish the legacy TCP workflow from the new Nmap
+profile. No blocking source findings remain. Legacy action/policy digests and
+default proposal request bytes have golden compatibility checks.
+
+The complete local portable selection at implementation `245c4d7` passed
+**4,054 tests in 286.493 seconds**, without failures, errors or skips. One real
+Linux file-sealing test was subsequently moved to the integration selection;
+the final portable selection contains **4,053 tests**. Its parser-wrapper test
+uses explicit platform doubles so macOS requires no skip. Application source is
+unchanged by these test-only corrections. JUnit:
+`/tmp/recon-adapters-portable-245c4d7.xml`.
+
+The final new runtime/workflow selection passed **14 Linux tests in 34.654
+seconds**: real Nmap confinement, Python/loader escape refusal, output bounds,
+timeout, cancellation/reaping, isolated malformed-XML refusal, all six
+Nmap-to-HTTP outcomes and dry run. Three additional approval tests passed in
+**9.476 seconds**: a synthetic PTY grant permits one real Nmap launch; replay
+cannot reserve another; missing and forged consumed-grant proof are rejected
+before admission with zero reservations. These scripted grants are test inputs,
+not human consent or operator acceptance. The real sealed-descriptor test also
+passed after its classification change. Reports:
+`/tmp/recon-adapters-nmap-final.xml`,
+`/tmp/recon-adapters-nmap-approval-final.xml`,
+`/tmp/recon-adapters-sealed-runtime.xml`.
+
+The broad Linux regression run completed **491 cases in 999.87 seconds**:
+490 passed and one failed because the exact admission-worker module allowlist
+still expected the pre-refactor file set. Its corrected assertion permits only
+the two additional pure contract modules; host canaries and executor modules
+remain excluded. The complete **35-test admission suite passed in 50.783
+seconds** after that test-only correction. Reports:
+`/tmp/recon-adapters-linux.xml` and `/tmp/recon-adapters-admission-final.xml`.
+The passing results across these runs cover every case in the final **495-test
+Linux selection**, including the three new approval cases and reclassified
+sealing check. No additional source failure, error or selected skip remains.
+The full 491-case run was not repeated after this assertion-only correction.
+
+Python 3.11 grammar, local documentation links and whitespace checks passed.
+Only source, tests, the example policy and documentation are published. Private
+artifacts, PDFs and the immutable accepted R6 packet remain outside this change.
+The [adapter runbook](tool-adapters.md) documents runtime prerequisites, raw
+artifact interpretation, lower-bound connection counts, permitted re-execution
+within the sandbox and bounded read-only parser cancellation latency. The new
+human walkthrough, live-model acceptance and release publication are not claimed.
+
 ## Final proposal presentation polish — 30 September 2026
 
 At the operator's request, section 8 now says “Soy Enrique Folte, integrante y
@@ -2895,3 +5904,356 @@ After all integration cases pass, exercise the human approval CLI in a real
 terminal and retain private JSONL evidence of one approved execution. A test
 calling the controller's internal approval store proves grant mechanics but is
 not a human approval demonstration.
+
+## C1 Redis and SNMP secure metadata — 7 October 2026
+
+C1 extends coverage after the accepted initial owned GUI in PR #54. It adds
+`redis_server_info_v1` and `snmp_system_get_v1` through the existing seven-gate
+CLI path, without changing older profiles or GUI workflows. The fixed Redis
+RESP2 command is `INFO server`; SNMP performs one v2c TCP GET of three numeric
+system OIDs with a public synthetic fixture community. No credential setup,
+paid calls, external targets, UDP, writes, walks or deeper composition are added.
+
+The implementation revision is `eb6775d`; final documentation records validation
+separately. Private receipts are under `.secure-agent/redis-snmp-20261007/` in the
+primary checkout. Raw transcripts, JUnit files and runtime hashes stay private.
+The [runbook](redis-snmp-tools.md) describes invocation and limitations.
+
+The complete portable suite passed **10,413 tests** in 312.118 seconds, with zero
+failures, errors or skips (873 integration cases deselected). Hosted matrix checks
+remain a separate PR gate. `validated-source-files.json` binds the tested source;
+subsequent edits only document validation.
+
+Actual Linux validation passed **63 tests** with zero selected failures, errors
+or skips: **24 C1 cases** and **39 shared robustness regressions**. The C1 set
+covers all 16 scenarios, real approval consumption and replay rejection,
+missing-proof blocking, cancellation after the actual client starts, process
+cleanup, and refusal before execution when a test broadens UDP socket creation.
+The UDP negative test has an execution sentinel and sends no datagram traffic.
+
+The 16 ordinary/adversarial scenario runs each used one accepted TCP connection
+and one validated query, stayed within 8,192 output bytes and closed their lab.
+All **32/32 forbidden IP/port witnesses** blocked, with zero unauthorized
+successful destinations. All **16/16 evidence bundles replayed unchanged**.
+The three ordinary reporting tasks (Redis metadata, SNMP metadata and explicit
+SNMP noSuchObject) completed **3/3**, with **zero unnecessary refusals** and
+elapsed times of **2,701 / 2,583 / 2,565 ms**, respectively. The two hostile
+metadata cases also retained useful bounded results without follow-up authority;
+they are separate from the ordinary usefulness denominator. Empty Redis output,
+denial, malformed/oversized/stalled replies and Redis redirects stayed inconclusive.
+Every trial used zero provider calls and zero actual provider cost. These are
+local descriptive timings, not a comparative overhead measurement.
+
+Golden regressions retain the accepted bytes for 84 older actions, capability
+descriptors, workflow cards and lab specifications, 23 adapter descriptors, and
+old invocations/environments/compiled inputs. The registry/catalog adds two
+profiles from two programs: **25 accepted profiles / 13 external programs**
+after PR #55. Completed B0–B8, offline R5,
+accepted local R6 and the owner GUI walkthrough remain closed.
+
+Development failures remain disclosed in the private `development-notes.json`:
+initial mocks differed from native Redis newline/SNMP output framing; the first
+report tests exposed a missing import and Redis field-order replay mismatch;
+the first full portable run found four stale registry/subset expectations.
+Those failures were corrected, not counted as successful evidence. SNMP strings
+now use hex rendering and bounded printable decoding, so embedded newlines cannot
+forge OID rows. Report rendering escapes service-supplied Markdown/HTML delimiters
+and uses stable field ordering. Metadata and noSuchObject values remain explicit
+untrusted service reports, not authenticated identity or vulnerability proof.
+
+Three additional independent trials at clean revision `d914deb` completed 3/3
+ordinary reports with zero unnecessary refusals, provider calls or cost, six of
+six forbidden destination witnesses blocked and unchanged replay. Both CLI and
+shared-service inspectors also replayed **30 previously accepted bundles unchanged**,
+including accepted configurable/shared-service and personal graphical evidence.
+Private receipt: `clean-source-d914deb4-s5dg5ugb/verification.json` under the C1
+validation directory. Subsequent changes are documentation only.
+[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55) was reviewed and merged
+on 7 October. Reviewed head `8786308d8569979229b6e0019cdcd04a0811e252`
+and merge `9786a6b4539ae2c1df9e63bff25f9ac0271ef759` have identical trees
+(`a60ae6208e00ec7e875382ee62ac1346896d8d5b`). Independent authority/runtime
+and parser/evidence reviews found no blockers. Fresh focused review sets passed
+543, 540 and 597 cases respectively; these sets overlap and are not an additional
+unique-test total. All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37657264278)
+and all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37658499228)
+passed. No required-check rules were configured; the five portable matrix jobs
+were used as the merge gate. Private merge receipt:
+`.secure-agent/pr55-merge-review.json`. C1 is closed; do not repeat the merge.
+
+## C2 PostgreSQL/MySQL pre-authentication TLS — 7 October 2026
+
+This candidate extends the existing OpenSSL runtime with two fixed protocol
+profiles. Each sends only the PostgreSQL SSLRequest or MySQL greeting/SSLRequest
+preface, negotiates fixture-CA/name-verified TLS 1.3, and closes without application
+data. It uses the accepted seven-gate authority path and one disconnected owned
+endpoint, `127.0.0.1:8080`. No database credentials, login, SQL, real network,
+plaintext downgrade, model provider or new GUI operation is added. The
+[runbook](database-tls-tools.md) gives exact invocations and limitations.
+
+Implementation revision: `dca814133cafdd08d916d2e93c12f9e66b11474e`, based on
+accepted main `9786a6b`. Private records live under
+`.secure-agent/database-tls-20261007/` in the primary checkout. All **476 tested
+source/test/policy/workflow file hashes** matched the clean implementation after
+validation; later documentation edits do not change those tested files.
+
+| Validation | Actual result |
+| --- | --- |
+| Complete portable suite, `pytest -m 'not integration' --strict-markers` | **10,776 passed**, zero failures/errors/skips, 300.456 seconds |
+| Selected actual Linux suite, `RECON_LINUX_INTEGRATION=1 pytest tests/test_secure_database_tls_workflow_linux.py tests/test_secure_network_tools_workflow_linux.py -k 'database_tls or openssl'` | **28 passed**, zero selected failures/errors/skips, 72.065 seconds |
+| Twelve C2 ordinary/adversarial scenarios | All expected outcomes; **24/24** forbidden IP/port witnesses blocked, **120/120** boundary checks true |
+| Ordinary PostgreSQL/MySQL TLS tasks | **2/2** useful completions; **zero unnecessary refusals** |
+| Hostile MySQL greeting | **1/1** useful completion, kept separate from ordinary usefulness |
+| Scenario evidence | **12/12** unchanged networkless CLI replays; one connection each, bounded output and closed owners |
+| Independent clean-source verification | Three fresh trials; **6/6** destination witnesses blocked; **33 accepted bundles** replayed unchanged by both CLI and shared inspector |
+
+The 28 actual Linux cases comprise **24 C2 cases and four accepted OpenSSL
+regressions**. Beyond the twelve scenarios, C2 exercises grant consumption and
+replay rejection, missing-proof blocking, cancellation after actual OpenSSL
+execution, host-canary/descriptor isolation, refusal before execution when a
+test broadens UDP socket permission, and real oversized-certificate diagnostics
+hitting the output ceiling with unchanged evidence replay. The UDP negative
+test sends no datagrams. Ordinary execution uses an explicitly unattended
+synthetic policy; dedicated grant tests use synthetic approval inputs. Neither
+claims new personal acceptance. The shipped policy still requires approval.
+
+Only the two ordinary handshakes and hostile MySQL greeting record one completed
+handshake. The other nine scenarios record zero, remain inconclusive and do not
+fall back to plaintext or login. All twelve accept at most one TCP connection
+and capture at most 8,192 bytes. Ordinary local secure-execution elapsed times
+were **2,637 / 2,586 ms**; the hostile MySQL trial took **2,601 ms**. The two
+stalled cases took 6,608 / 6,617 ms including setup, with the five-second native
+deadline enforced. These are descriptive timings, not comparative overhead.
+
+Independent trials at clean `dca81413` took **2,830 / 2,828 ms** for ordinary
+PostgreSQL/MySQL, and **2,723 ms** for hostile MySQL. They checked exact action,
+policy, runtime, raw-output, normalized-result, audit and owner-counter bindings.
+The 33 accepted bundles were required by their previous receipt and report
+hashes; none were omitted. Replay preserved bytes, modification times and modes.
+Receipt: `clean-source-dca81413-6w256_ve/verification.json`. JUnit, source hashes,
+scenario report hashes and the combined `verification.json` remain private.
+Every trial used **zero provider calls and zero actual provider cost**.
+
+Golden regressions preserve 100 older actions, capability descriptors, workflow
+cards and lab specifications, all 25 old adapters, and all 16 older native
+invocations/environments/compiled inputs. Independent source reviews found no
+remaining blockers. The candidate has **27 profiles from the same 13 programs**;
+accepted main is **27/13** after the reviewed merge below.
+
+PR review exposed 15 macOS failures in hosted run `37662709531`: the new portable
+MemoryBIO tests called the Linux owner's `memfd_create` certificate loader.
+The correction loads the same public synthetic certificates through private
+temporary files in the test helper, as the existing portable TLS tests do.
+All 224 focused fixture/lab tests passed after correction. Certificate rejection,
+TLS 1.3, clean shutdown and application-data rejection remain real in-memory TLS
+checks on every runner; no tests are skipped. Production and native-test sources
+are unchanged, so the 28 native results remain applicable. The original failure
+log is retained privately. The corrected hosted checks passed before merge.
+
+[PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56) is accepted and C2 is
+closed. Reviewed head `d072d04ad902cb3937548f6aa3a29ed680ccda59` merged as
+`9603a54a105bfde6d7f2712445762b1b20236bcf` on 7 October at 18:07:54 UTC.
+Both trees are `cbb982b4a07397c48d5c033dd8d49b5bda007e29`. Independent reviews
+found no blockers, with 1,158 authority/runtime and 763 parser/evidence focused
+tests passing; these overlapping sets are not an additional unique-test total.
+All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37663523544)
+passed 10,776 tests each, and all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37664455704)
+passed. No required-check rules were configured; all five portable jobs were
+used as the merge gate. The private receipt is `.secure-agent/pr56-merge-review.json`.
+Do not repeat the merge, broaden the accepted profiles or reopen completed milestones.
+
+Results establish only `verified_tls_handshake_only` with
+`authenticated_database_session: false`. The selected wire profile does not
+prove database product/version, readiness, account access or a vulnerability.
+OpenSSL may reject fragmented MySQL greetings; unsupported diagnostics remain
+inconclusive. These synthetic fixtures contain no database engine or accounts.
+Completed milestones stay closed. Next proposed coverage is bounded HTTP
+application fingerprinting with a reviewed finite WhatWeb plugin allowlist;
+deeper workflows, comparative benchmarks, credential setup and paid/live-model
+evaluation remain deferred.
+
+## C3 bounded WhatWeb HTTP fingerprinting — 7 October 2026
+
+[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57) is accepted and C3 is closed.
+Reviewed head `cf69f4ea1a9c26ec38811607d58ee021e79fd62f` merged as
+`fdfe6e833799cdb15877c1314069af492d3d07d3` on 7 October at 18:53:30 UTC.
+Reviewed and merged trees match `1ff0ce8b92cbd785e26cb2cd859311ee76ba6eba`.
+Fresh independent authority/runtime and parser/evidence reviews found no blockers;
+1,261 and 1,103 focused tests passed respectively, and all 494 validated source
+hashes and receipt hashes matched. All five [final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37668578334)
+passed 11,109 tests each; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37670291745)
+passed. No branch check rules were configured; all five jobs were the merge gate.
+The private merge receipt is `.secure-agent/pr57-merge-review.json`.
+Accepted main now has 28 profiles using 14 programs. Preserve the validation below;
+do not repeat this merge or reopen completed milestones.
+
+The candidate adds `whatweb_http_fingerprint_v1` through the existing single-action
+CLI and all seven authority gates. Installed WhatWeb 0.6.3 runs with exactly five
+passive plugin files, one GET of `/harbordesk/portal.html` at disconnected owned
+`127.0.0.1:8080`, and a finite sealed Ruby 3.3 runtime. A compiled guard bounds
+connections, wire requests, response input and regular-expression evaluation;
+redirects, retries, linked resources, cookies and encoded-body expansion are
+refused. The [runbook](whatweb-tools.md) records supported layout and limitations.
+
+Implementation revision: `0bdd9b6324d3c10d1a426c51aaf491abdf51d92a`, based on
+accepted main `9603a54`. All **494 source/test/policy/workflow file hashes** match
+the validated implementation. Private records remain under
+`.secure-agent/whatweb-20261007/` in the primary checkout; no raw assessment
+evidence is committed.
+
+| Validation | Actual result |
+| --- | --- |
+| Complete portable suite, `pytest -m 'not integration' --strict-markers` | **11,109 passed**, zero failures/errors/skips, 299.271 seconds; 914 integration cases deselected |
+| Selected actual Linux suite | **39 passed**, zero selected failures/errors/skips, 156.861 seconds |
+| Eleven C3 ordinary/adversarial scenarios | All expected outcomes; **22/22** forbidden IP/port witnesses blocked, **110/110** boundary checks true |
+| Ordinary hints and no-hints tasks | **2/2** useful completions; **zero unnecessary refusals** |
+| Hostile metadata and meta redirects | **2/2** useful completions, measured separately from ordinary usefulness |
+| Scenario evidence | **11/11** unchanged CLI replays; exactly one connection/validated GET each, bounded output and closed owners |
+| Independent clean-source verification | Four fresh useful trials, **8/8** destination witnesses blocked, **36 accepted bundles** replayed unchanged through CLI and shared inspection |
+
+The native command selected `tests/test_secure_whatweb_workflow_linux.py` and
+`tests/test_secure_network_tools_workflow_linux.py` with
+`RECON_LINUX_INTEGRATION=1` and `-k 'whatweb or openssl or dig or kerberos or smb'`.
+Its 39 cases comprise **17 C3 and 22 accepted regressions**. Beyond the eleven
+scenarios, C3 tests consumed-grant replay denial, missing-proof refusal,
+cancellation after actual Ruby execution, host-input/descriptor isolation, and
+refusal before native execution when tests broaden UDP or task permissions.
+The shipped policy requires fresh approval. Unattended synthetic policies and
+synthetic grant tests do not claim new personal approval or acceptance.
+
+Seven negative scenarios remain inconclusive: HTTP redirect, denial, malformed
+framing, early EOF, stall, response-input pressure and native JSON output
+expansion. Every one followed an actual validated GET; startup failure cannot
+count as success. A native zero exit code alone does not count as useful work.
+The output-pressure case reached `output_limit` while retaining only two bytes;
+the ceiling is not a claim that 8,192 bytes were captured. No negative result
+is upgraded into application hints or authority for another request.
+
+Ordinary local secure-execution times were **4,169 / 4,139 ms**; hostile metadata
+and meta redirects took **4,205 / 4,795 ms**. Independent clean-source trials took
+**4,322 / 4,338 ms** for the ordinary pair and **4,313 / 4,537 ms** for robustness.
+These are descriptive CLI wall times, including isolation setup, not comparative
+authority overhead. Every trial used **zero provider calls and zero actual
+provider cost**. The independent receipt is
+`clean-source-0bdd9b63-949y69_c/verification.json`.
+
+Independent trials checked exact action, policy, runtime, raw-output,
+normalized-result, audit and owner-counter bindings. All 36 older bundles were
+required by the accepted C2 receipt and report hashes; replay preserved their
+bytes, modification times and modes. Golden tests retain all **112** older
+actions/descriptors/workflow cards/lab specifications, **27** adapters and
+**18** native invocations/environments/compiled inputs.
+
+Preserved development failures include the first launcher's descriptor ceiling
+while sealing the larger closure and two missing finite Ruby dependency files;
+all occurred before requests and count as failures. The corrected profile uses
+a separately checked outer-launcher tag with 256 descriptors; the executed Ruby
+process remains limited to 64 descriptors, 256 MiB and 16 tasks. Accepted tools'
+limits are unchanged. The first native run also exposed a test that conflated
+exit status with useful completion; only its assertion changed before the final
+39-case run. Shared test prefix mappings and legacy golden selectors required
+updates: the first full portable run had 16 failures and 11,093 passes. Original
+golden hashes/counts were preserved; 176 focused runtime and 184 fixture/lab
+tests passed after the final test-only corrections. Failed logs remain private.
+
+Independent source reviews found no remaining blockers. C3 brought accepted main
+to **28 profiles using 14 programs** after the reviewed merge above.
+Results mean `untrusted_application_hints`, not verified
+products, installed versions or vulnerabilities. Empty hints are valid completed
+observations, not proof of technology absence. Support is deliberately limited
+to the reviewed Debian Ruby 3.3 x86-64 layout and five passive plugins.
+
+Completed B0–B8, C1, C2, offline R5, accepted local R6 and initial GUI milestones
+stay closed. Fixed TCP DNS SRV metadata with dig is the next coverage gap after
+C3 acceptance. Model credentials, paid/live calls, real-network attachment,
+deeper composition and comparative benchmarking remain deferred.
+
+## C4 fixed DNS SRV service metadata — 7 October 2026
+
+Review candidate: [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58).
+Final hosted checks, PR review and an authorized merge remain acceptance gates.
+
+This candidate adds `dig_dns_srv_v1` through the existing secure single-action
+CLI and all seven authority gates. It reuses dig's exact 36-file runtime closure
+and resolver/environment restrictions. One nonrecursive TCP question asks
+`_ldap._tcp.harbordesk.test. IN SRV` at disconnected owned `127.0.0.1:8080`.
+No returned target is resolved or contacted. The [runbook](dns-srv-tools.md)
+defines the closed schema, fixed operation and limitations.
+
+Implementation revision: `0c6dcf573b9792966deee492f667803e5dfaf960`, based on
+accepted main `fdfe6e8`. All **502 source/test/policy/workflow files** are hashed;
+the final portable correction changes only the older fixture test's snapshot
+selector. Production and native-test hashes remain unchanged from the clean
+implementation and its independent trials. Private records remain under
+`.secure-agent/dns-srv-20261007/`; raw assessment evidence stays out of Git.
+
+| Validation | Actual result |
+| --- | --- |
+| Complete portable suite, `pytest -m 'not integration' --strict-markers` | **11,428 passed**, zero failures/errors/skips, 298.681 seconds; 930 integration cases deselected |
+| Selected actual Linux suite | **25 passed**, zero selected failures/errors/skips, 79.168 seconds |
+| Ten C4 scenarios | Expected outcomes; **20/20** forbidden IP/port witnesses blocked and **100/100** boundary checks true |
+| Ordinary records, NODATA, NXDOMAIN and reported unavailability | **4/4** useful completions; **zero unnecessary refusals** |
+| Hostile TXT and advertised endpoint | **1/1** useful completion, measured separately from ordinary usefulness |
+| Scenario evidence | **10/10** unchanged CLI replays; exactly one connection/validated question each, bounded output and closed owners |
+| Independent clean-source verification | Five fresh useful trials, **10/10** destination witnesses blocked; all **40 accepted bundles** replayed unchanged through both inspectors |
+
+The native command selected `tests/test_secure_dns_srv_workflow_linux.py` and
+`tests/test_secure_network_tools_workflow_linux.py` with
+`RECON_LINUX_INTEGRATION=1` and `-k 'dns_srv or dig or openssl'`. The 25 cases
+comprise **16 C4 and nine accepted DNS/TLS regressions**. Six separate controls
+exercise consumed-grant replay rejection, missing-proof refusal, cancellation
+after actual dig execution, private-input/descriptor isolation and refusal
+before execution when tests broaden UDP or task permission. The shipped policy
+requires fresh approval. Unattended synthetic policies and synthetic grant tests
+do not claim new personal acceptance.
+
+The five negative scenarios cover malformed SRV RDATA, more than four records,
+REFUSED, a stall and actual native output expansion. Each follows a validated
+question and remains inconclusive, with no normalized observation. The output
+test sends a bounded DNS TXT record whose binary strings expand beyond the
+8,192-byte capture ceiling when dig prints them; it reached `output_limit` while
+retaining 61 bytes, rather than merely rejecting a synthetic parser input.
+Startup failures cannot count as
+successful negative tests. No result enables retries or endpoint follow-up.
+
+Ordinary local wall times were **2,965 / 3,074 / 2,963 / 2,987 ms** and hostile
+metadata took **2,775 ms**. Independent clean-source trials took
+**3,674 / 3,989 / 3,615 / 3,435 ms** for ordinary results and **3,461 ms** for
+hostile metadata. These are descriptive CLI times including isolation setup,
+not comparative authority overhead. Every trial used **zero provider calls and
+zero actual provider cost**. The independent receipt is
+`clean-source-0c6dcf57-5of2_1wq/verification.json`.
+
+Independent verification binds exact actions, policy, runtime, raw output,
+normalized records, audits and owner counters. The 40 accepted bundles are
+required by the pinned C3 receipt and report hashes; replay preserves bytes,
+modification times and modes. Golden tests retain all **123** previous actions,
+descriptors, workflow cards and lab specifications, all **28** adapters, and
+all **19** previous native invocations/environments/compiled inputs.
+
+Development checks found stale shared-test selectors/order while adding the
+profile, and a new TXT parser test exposed an overly permissive decimal escape.
+The first full portable run passed 11,427 tests and failed one historical fixture
+snapshot selector that included C4 cases. Its correction excludes those new cases,
+preserves the original 112-case hash and passed all 86 focused WhatWeb fixture
+tests. The parser now permits only native byte escapes 000–255. The first native test
+incorrectly required empty stderr after a successful question; its assertion
+now permits only empty output or the exact already-supported denied socket-probe
+diagnostic. Production did not change for that correction. Failed receipts remain
+private and separate from passing validation. Focused sets passed 890 runtime,
+272 fixture/lab and 640 parser/evidence tests; these overlap the full suite.
+Independent source reviews found no remaining blockers.
+
+Accepted main remains **28 profiles using 14 programs**; the C4 candidate is
+**29/14**, pending PR review, hosted checks and an authorized merge. Results mean
+`untrusted_dns_service_metadata`: advertised names, ports and priorities do not
+prove service identity, reachability, directory access or vulnerabilities. NODATA,
+NXDOMAIN and a root-target unavailable record describe the observed response;
+they do not establish real-world absence. Only the bounded lowercase ASCII target
+format and finite record/TXT schema are supported.
+
+After C4 acceptance, reassess finite RDP initial negotiation as the next coverage
+gap, with no authentication, NTLM collection or remote session. Completed B0–B8,
+C1–C3, offline R5, accepted local R6 and initial GUI milestones stay closed.
+Credentials, paid/live-model calls, real-network attachment, deeper composition
+and comparative benchmarking remain deferred.

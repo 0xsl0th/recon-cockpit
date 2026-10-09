@@ -34,6 +34,27 @@ def _print(outcome: dict) -> None:
                       if key != "untrusted_result"}, sort_keys=True, ensure_ascii=True))
 
 
+def _run_tool_catalog(parser, args, argv) -> int:
+    # Parse explicit options again without defaults or abbreviation. Comparing
+    # parsed values with defaults would miss an explicitly supplied policy or
+    # audit path, and a catalog request must never silently ignore such options.
+    catalog_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+    selection = catalog_parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--list-tools", action="store_true")
+    selection.add_argument("--describe-tool")
+    _, incompatible = catalog_parser.parse_known_args(argv)
+    if incompatible:
+        parser.error("tool catalog commands cannot be combined with other options")
+    from .tool_catalog import describe_tool, list_tools
+
+    try:
+        result = list_tools() if args.list_tools else describe_tool(args.describe_tool)
+    except ValueError:
+        parser.error("unknown tool identifier; use --list-tools to see the catalog")
+    _print(result)
+    return 0
+
+
 def _human_approval(controller: Controller, raw: bytes | str, *, control=None) -> str | None:
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         return None
@@ -244,6 +265,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Secure Agent Mode: isolated actions and bounded mock sessions")
     parser.add_argument("--policy", type=Path, default=Path("examples/secure-agent-policy.json"))
     source = parser.add_mutually_exclusive_group()
+    source.add_argument("--list-tools", action="store_true",
+                        help="list bundled secure capabilities as JSON without reading policy or executing tools")
+    source.add_argument("--describe-tool", metavar="TOOL_ID",
+                        help="describe one secure capability, its limits and owned-lab recipe without execution")
     source.add_argument("--mock", action="store_true", help="use the deterministic mock (default)")
     source.add_argument("--proposal", type=Path, help="read strictly bounded untrusted action JSON")
     source.add_argument("--session-mock", choices=SCENARIOS,
@@ -260,6 +285,22 @@ def main(argv: list[str] | None = None) -> int:
                         help="run the fixed owned HTTP assessment with private evidence; no live model")
     source.add_argument("--discovery-assessment", choices=tuple("abcdef"),
                         help="gate owned HTTP assessment on one TCP connection; policy must allow tcp_connect")
+    source.add_argument("--nmap-assessment", choices=tuple("abcdef"),
+                        help="run reviewed Nmap discovery and HTTP validation inside the owned lab")
+    source.add_argument("--web-assessment", choices=("vulnerable", "corrected", "injected"),
+                        help="run the resettable synthetic HarborDesk web assessment in the owned lab")
+    from .web_tools_lab_contract import CASES as WEB_TOOL_CASES
+    source.add_argument("--web-tool-assessment", choices=WEB_TOOL_CASES,
+                        help="one bounded curl or ffuf action in the disconnected owned lab")
+    from .network_tools_lab_contract import CASES as NETWORK_TOOL_CASES
+    source.add_argument("--network-tool-assessment", choices=NETWORK_TOOL_CASES,
+                        help="one bounded network-tool action in the disconnected owned lab, including synthetic Kerberos reports")
+    source.add_argument("--service-web-assessment", choices=("vulnerable", "corrected", "injected"),
+                        help="run fixed Nmap service identification, ffuf discovery and HTTP headers in one owned lab")
+    source.add_argument("--configurable-assessment", type=Path,
+                        help="declare HTTP/SSH addresses, ports and path for two disconnected owned endpoint fixtures")
+    source.add_argument("--http-headers-assessment", choices=("vulnerable", "corrected", "injected"),
+                        help="assess bounded HTTP response headers after owned Nmap discovery; no live model")
     source.add_argument("--workflow-assessment", choices=tuple("abcdef"),
                         help="run the reviewed TCP-to-HTTP workflow card and record each decision")
     source.add_argument("--inspect-assessment", type=Path,
@@ -272,8 +313,12 @@ def main(argv: list[str] | None = None) -> int:
                         help="repeat owned TLS planning with all isolated launch gates and simulated costs")
     source.add_argument("--inspect-planning-evaluation", type=Path,
                         help="regrade an owned planning batch and simulation ledger without execution or writes")
+    source.add_argument("--evaluate-web-comparison", action="store_true",
+                        help="compare baseline and scripted malicious-output proposals in the owned HarborDesk lab")
+    source.add_argument("--inspect-web-comparison", type=Path,
+                        help="regrade an offline HarborDesk comparison without execution or writes")
     parser.add_argument("--evaluation-dir", type=Path, help="fresh private batch directory; parent must exist")
-    parser.add_argument("--evaluation-repeats", type=int, help="repetitions of cases a-f: 1-10 (default: 3, 18 trials)")
+    parser.add_argument("--evaluation-repeats", type=int, help="repetitions of the selected owned corpus: 1-10 (default: 3, 18 trials)")
     parser.add_argument("--evaluation-max-seconds", type=int, help="absolute batch lifetime: 1-3600 seconds (default: 600)")
     parser.add_argument("--assessment-dir", type=Path,
                         help="new private directory for assessment artifacts, decisions and reports")
@@ -321,9 +366,37 @@ def main(argv: list[str] | None = None) -> int:
     backend_selection.add_argument("--owned-lab", action="store_true",
                                    help="keep one owned fixture alive across a workflow; reset on each run")
     args = parser.parse_args(argv)
+    if args.list_tools or args.describe_tool is not None:
+        return _run_tool_catalog(parser, args, argv)
     offline_scenario = args.openai_offline or args.control_plane_openai_offline
-    assessment_case = args.http_assessment or args.discovery_assessment or args.workflow_assessment
+    assessment_case = (args.http_assessment or args.discovery_assessment or args.workflow_assessment
+                       or args.nmap_assessment or args.web_assessment or args.http_headers_assessment
+                       or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment
+                       or args.configurable_assessment)
     authority_mode = args.control_plane_mock or args.control_plane_openai_offline or assessment_case
+    if (args.nmap_assessment or args.web_assessment or args.http_headers_assessment
+            or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment or args.configurable_assessment):
+        if not (args.owned_lab and args.isolated_audit and args.isolated_approvals
+                and args.isolated_launch_admission and args.isolated_launcher
+                and args.require_launch_audit and args.require_launch_approval):
+            parser.error("Nmap/web assessment requires --owned-lab and all isolated launch/approval/audit gates")
+        if args.configurable_assessment:
+            from .configurable_contract import LIMITS
+        elif args.service_web_assessment:
+            from .service_web_contract import LIMITS
+        elif args.network_tool_assessment:
+            from .network_tools_contract import LIMITS
+            from .network_tools_tls_posture_spec import CASES as TLS_POSTURE_CASES
+            if args.network_tool_assessment in TLS_POSTURE_CASES:
+                from .network_tools_tls_posture_spec import LIMITS
+        elif args.web_tool_assessment:
+            from .web_tools_contract import LIMITS
+        else:
+            from .nmap_contract import LIMITS
+        for value, ceiling in zip((args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes),
+                                  LIMITS.values()):
+            if value is not None and (not 1 <= value <= ceiling):
+                parser.error("Session overrides may only shorten the selected reviewed tool profile")
     if args.isolated_audit and not authority_mode:
         parser.error("--isolated-audit requires an authority session or owned assessment")
     if args.isolated_approvals and not authority_mode:
@@ -359,13 +432,15 @@ def main(argv: list[str] | None = None) -> int:
     session_options = (args.session_max_steps, args.session_max_seconds, args.session_max_output_bytes)
     broker_options = (args.broker_max_calls, args.broker_max_output_tokens, args.broker_max_request_bytes)
     evaluation_options = (args.evaluation_dir, args.evaluation_repeats, args.evaluation_max_seconds)
-    evaluation_run = args.evaluate_owned_lab or args.evaluate_owned_planning
-    evaluation_inspect = args.inspect_evaluation is not None or args.inspect_planning_evaluation is not None
-    if ((args.evaluate_owned_planning or args.inspect_planning_evaluation is not None)
+    evaluation_run = args.evaluate_owned_lab or args.evaluate_owned_planning or args.evaluate_web_comparison
+    evaluation_inspect = (args.inspect_evaluation is not None or args.inspect_planning_evaluation is not None
+                          or args.inspect_web_comparison is not None)
+    if ((args.evaluate_owned_planning or args.inspect_planning_evaluation is not None
+            or args.evaluate_web_comparison or args.inspect_web_comparison is not None)
             and args.audit != Path(".secure-agent/audit.jsonl")):
-        parser.error("planning evaluation fixes each trial's audit path inside the batch")
+        parser.error("planning/web evaluation fixes each trial's audit path inside the batch")
     if not evaluation_run and any(value is not None for value in evaluation_options):
-        parser.error("evaluation options require --evaluate-owned-lab or --evaluate-owned-planning")
+        parser.error("evaluation options require --evaluate-owned-lab, --evaluate-owned-planning or --evaluate-web-comparison")
     if evaluation_run and args.evaluation_dir is None:
         parser.error("evaluation requires --evaluation-dir")
     if (evaluation_run or evaluation_inspect) and (args.fixture or args.routed or args.owned_lab):
@@ -385,16 +460,23 @@ def main(argv: list[str] | None = None) -> int:
     if assessment_case and args.assessment_dir is None:
         parser.error("assessment requires --assessment-dir")
     if args.assessment_dir is not None and not assessment_case:
-        parser.error("--assessment-dir requires --http-assessment, --discovery-assessment or --workflow-assessment")
-    if args.owned_lab and not args.workflow_assessment:
-        parser.error("--owned-lab requires --workflow-assessment")
+        parser.error("--assessment-dir requires an assessment source")
+    if args.owned_lab and not (args.workflow_assessment or args.nmap_assessment
+                               or args.web_assessment or args.http_headers_assessment
+                               or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment
+                               or args.configurable_assessment):
+        parser.error("--owned-lab requires an owned workflow or tool assessment")
     if assessment_case and args.execute and not (args.fixture or args.owned_lab):
         parser.error("executing an assessment requires --fixture or --owned-lab")
     if args.inspect_assessment and (args.execute or args.dry_run or args.fixture or args.routed or args.owned_lab):
         parser.error("--inspect-assessment cannot select an execution mode or backend")
     try:
         if evaluation_inspect:
-            if args.inspect_planning_evaluation is not None:
+            if args.inspect_web_comparison is not None:
+                from .web_comparison import inspect_comparison
+
+                report = inspect_comparison(args.inspect_web_comparison)
+            elif args.inspect_planning_evaluation is not None:
                 from .planning_evaluation import inspect_planning_evaluation
 
                 report = inspect_planning_evaluation(args.inspect_planning_evaluation)
@@ -415,6 +497,10 @@ def main(argv: list[str] | None = None) -> int:
                 from .planning_evaluation import PlanningEvaluationRunner
 
                 runner_type = PlanningEvaluationRunner
+            if args.evaluate_web_comparison:
+                from .web_comparison import WebComparisonRunner
+
+                runner_type = WebComparisonRunner
             runner = runner_type(args.evaluation_dir, parse_policy(_read_bounded(args.policy)), limits)
             previous = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
             try:
@@ -430,11 +516,14 @@ def main(argv: list[str] | None = None) -> int:
             _print(report)
             return 0 if report["status"] in {"passed", "dry_run"} else 2
         if args.inspect_assessment is not None:
-            from .evidence import inspect_assessment
+            from .assessment_inspection import inspect_saved_assessment
 
-            report = inspect_assessment(args.inspect_assessment)
+            report = inspect_saved_assessment(args.inspect_assessment)
             _print(report)
             return 0 if not report["integrity_issues"] else 2
+        if args.configurable_assessment:
+            from .configurable_cli import run_assessment
+            return run_assessment(args)
         policy = parse_policy(_read_bounded(args.policy))
         backend = None
         if args.fixture and not authority_mode:
@@ -448,6 +537,10 @@ def main(argv: list[str] | None = None) -> int:
             from .audit_isolation import LinuxAuditSink
             audit_type = LinuxAuditSink
         with audit_type(args.audit, **({'launch_witness': True} if args.require_launch_audit else {})) as audit, ExitStack() as services:
+            if (args.nmap_assessment or args.web_assessment or args.http_headers_assessment
+                    or args.web_tool_assessment or args.network_tool_assessment or args.service_web_assessment):
+                from .nmap_cli import run_assessment
+                return run_assessment(args, policy, audit)
             if assessment_case:
                 return _run_http_assessment(args, policy, audit)
             if session_scenario:

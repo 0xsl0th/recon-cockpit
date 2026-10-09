@@ -76,6 +76,11 @@ class Service:
         self.thread = threading.Thread(target=self._serve, daemon=True)
         self.thread.start()
 
+    def response(self, path):
+        allowed = {f"/assessment/{self.case}/index.json", f"/assessment/{self.case}/diagnostics.json"}
+        return (worker._response(path) if path in allowed
+                else (404, b'{"error":"not_found"}', b""))
+
     def _serve(self):
         try:
             while True:
@@ -101,9 +106,7 @@ class Service:
                         with self.condition:
                             self.requests += 1
                             self.condition.notify_all()
-                        allowed = {f"/assessment/{self.case}/index.json", f"/assessment/{self.case}/diagnostics.json"}
-                        status, body, extra = (worker._response(path) if path in allowed
-                                               else (404, b'{"error":"not_found"}', b""))
+                        status, body, extra = self.response(path)
                         headers = (f"HTTP/1.1 {status} Owned\r\nContent-Length: {len(body)}\r\n"
                                    "Connection: close\r\n").encode("ascii") + extra + b"\r\n"
                         connection.sendall(headers + (b"" if line[0] == b"HEAD" else body))
@@ -125,66 +128,86 @@ class Service:
             return {"connection_count": self.connections, "request_count": self.requests}
 
 
+class Owner:
+    """Fixed owner lifecycle, specialized only by reviewed subclass methods."""
+
+    def read_request(self, source):
+        return read_request(source)
+
+    def create_service(self, request, listener):
+        return Service(request["case"], listener)
+
+    def service_port(self, request):
+        return 8080
+
+    def firewall_rules(self, request):
+        return worker.firewall_rules("127.0.0.1", 8080)
+
+    def run(self):
+        listeners = []
+        try:
+            if not stat.S_ISFIFO(os.fstat(0).st_mode):
+                raise ValueError("owned_lab_requires_private_pipe")
+            request = self.read_request(sys.stdin.buffer)
+            worker.assert_private_namespaces(request["host_namespaces"])
+            deadline = request["deadline"]
+            worker._set_limits(worker._remaining(deadline, 600))
+            signal.signal(signal.SIGALRM, worker._deadline)
+            signal.setitimer(signal.ITIMER_REAL, worker._remaining(deadline, 600))
+            port = self.service_port(request)
+            for address in (("127.0.0.1", port), ("127.0.0.2", port), ("127.0.0.1", port + 1)):
+                listeners.append(_listen(address))
+            # Demonstrate both forbidden witnesses really accept before filtering.
+            # The allowed service is untouched, so only actions advance its counters.
+            for listener in listeners[1:]:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connection:
+                    connection.settimeout(worker._remaining(deadline, 1))
+                    connection.connect(listener.getsockname())
+                    accepted, _ = listener.accept()
+                    accepted.close()
+            subprocess.run(["/usr/sbin/nft", "-f", "-"], input=self.firewall_rules(request).encode("ascii"),
+                           stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True,
+                           timeout=worker._remaining(deadline, 3), env={"PATH": "/usr/sbin:/usr/bin", "LC_ALL": "C"},
+                           close_fds=True)
+            worker.drop_privileges()
+            service = self.create_service(request, listeners[0])
+            resource.setrlimit(resource.RLIMIT_NPROC, (1, 1))
+            worker.install_syscall_filter()
+            namespaces = {name: os.readlink(f"/proc/self/ns/{name}") for name in ("user", "net", "mnt", "pid")}
+            print(json.dumps({"ready": True, "namespaces": namespaces, "witness_baselines": True,
+                              "connection_count": 0, "request_count": 0}, separators=(",", ":")), flush=True)
+            sequence = 0
+            while True:
+                ready, _, _ = select.select([0, *listeners[1:]], [], [], worker._remaining(deadline, 1))
+                if any(listener in ready for listener in listeners[1:]):
+                    raise RuntimeError("owned_lab_witness_leak")
+                if 0 not in ready:
+                    continue
+                raw = sys.stdin.buffer.readline(1025)
+                if not raw:
+                    return 0
+                if len(raw) > 1024 or not raw.endswith(b"\n"):
+                    raise ValueError("invalid_owned_lab_command")
+                command = json.loads(raw, object_pairs_hook=_unique)
+                if (type(command) is not dict or set(command) != {"sequence", "minimum_connections", "minimum_requests"}
+                        or type(command["sequence"]) is not int or command["sequence"] != sequence + 1
+                        or not 1 <= command["sequence"] <= 32
+                        or any(type(command[key]) is not int or not 0 <= command[key] <= 16
+                               for key in ("minimum_connections", "minimum_requests"))):
+                    raise ValueError("invalid_owned_lab_command")
+                sequence += 1
+                snapshot = service.snapshot(command["minimum_connections"], command["minimum_requests"], deadline)
+                print(json.dumps({"sequence": sequence, **snapshot}, separators=(",", ":")), flush=True)
+        except Exception:
+            sys.stderr.write("owned_lab_owner_refused\n")
+            return 78
+        finally:
+            for listener in listeners:
+                listener.close()
+
+
 def main():
-    listeners = []
-    try:
-        if not stat.S_ISFIFO(os.fstat(0).st_mode):
-            raise ValueError("owned_lab_requires_private_pipe")
-        request = read_request(sys.stdin.buffer)
-        worker.assert_private_namespaces(request["host_namespaces"])
-        deadline = request["deadline"]
-        worker._set_limits(worker._remaining(deadline, 600))
-        signal.signal(signal.SIGALRM, worker._deadline)
-        signal.setitimer(signal.ITIMER_REAL, worker._remaining(deadline, 600))
-        for address in (("127.0.0.1", 8080), ("127.0.0.2", 8080), ("127.0.0.1", 8081)):
-            listeners.append(_listen(address))
-        # Demonstrate both forbidden witnesses really accept before filtering.
-        # The allowed service is untouched, so only actions advance its counters.
-        for listener in listeners[1:]:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connection:
-                connection.settimeout(worker._remaining(deadline, 1))
-                connection.connect(listener.getsockname())
-                accepted, _ = listener.accept()
-                accepted.close()
-        subprocess.run(["/usr/sbin/nft", "-f", "-"], input=worker.firewall_rules("127.0.0.1", 8080).encode("ascii"),
-                       stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True,
-                       timeout=worker._remaining(deadline, 3), env={"PATH": "/usr/sbin:/usr/bin", "LC_ALL": "C"},
-                       close_fds=True)
-        worker.drop_privileges()
-        service = Service(request["case"], listeners[0])
-        resource.setrlimit(resource.RLIMIT_NPROC, (1, 1))
-        worker.install_syscall_filter()
-        namespaces = {name: os.readlink(f"/proc/self/ns/{name}") for name in ("user", "net", "mnt", "pid")}
-        print(json.dumps({"ready": True, "namespaces": namespaces, "witness_baselines": True,
-                          "connection_count": 0, "request_count": 0}, separators=(",", ":")), flush=True)
-        sequence = 0
-        while True:
-            ready, _, _ = select.select([0, *listeners[1:]], [], [], worker._remaining(deadline, 1))
-            if any(listener in ready for listener in listeners[1:]):
-                raise RuntimeError("owned_lab_witness_leak")
-            if 0 not in ready:
-                continue
-            raw = sys.stdin.buffer.readline(1025)
-            if not raw:
-                return 0
-            if len(raw) > 1024 or not raw.endswith(b"\n"):
-                raise ValueError("invalid_owned_lab_command")
-            command = json.loads(raw, object_pairs_hook=_unique)
-            if (type(command) is not dict or set(command) != {"sequence", "minimum_connections", "minimum_requests"}
-                    or type(command["sequence"]) is not int or command["sequence"] != sequence + 1
-                    or not 1 <= command["sequence"] <= 32
-                    or any(type(command[key]) is not int or not 0 <= command[key] <= 16
-                           for key in ("minimum_connections", "minimum_requests"))):
-                raise ValueError("invalid_owned_lab_command")
-            sequence += 1
-            snapshot = service.snapshot(command["minimum_connections"], command["minimum_requests"], deadline)
-            print(json.dumps({"sequence": sequence, **snapshot}, separators=(",", ":")), flush=True)
-    except Exception:
-        sys.stderr.write("owned_lab_owner_refused\n")
-        return 78
-    finally:
-        for listener in listeners:
-            listener.close()
+    return Owner().run()
 
 
 if __name__ == "__main__":

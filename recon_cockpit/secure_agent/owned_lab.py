@@ -50,7 +50,7 @@ class OwnedLab:
         if (type(session_id) is not str or str(UUID(session_id)) != session_id
                 or type(limits) is not SessionLimits or type(execute) is not bool):
             raise ValueError("invalid_owned_lab_configuration")
-        self._identity = identity(case, str(uuid4()))
+        self._identity = self._make_identity(case, str(uuid4()))
         self.session_id = session_id
         self.limits = SessionLimits(**asdict(limits))
         self.execute = execute
@@ -81,6 +81,16 @@ class OwnedLab:
 
     def __exit__(self, *_):
         self.close()
+
+    def _make_identity(self, case, instance_id):
+        return identity(case, instance_id)
+
+    def _validate_context(self, value, expected):
+        return validate_context(value, expected)
+
+    def _owner_request(self, host, control):
+        return {"case": self._identity["scenario"], "deadline": control.deadline,
+                "host_namespaces": host}
 
     def _owner_command(self, stdlib, files, info_fd):
         argv = LinuxFixtureBackend()._command(stdlib, files)
@@ -145,8 +155,7 @@ class OwnedLab:
                 proc = self._supervisor.launch("lab", self._owner_command(stdlib, files, info_w),
                                                pass_fds=(info_w,), stdin=subprocess.PIPE)
                 self._supervisor.close_fd(info_w)
-                proc.stdin.write(encode({"case": self._identity["scenario"], "deadline": control.deadline,
-                                         "host_namespaces": host}) + b"\n")
+                proc.stdin.write(encode(self._owner_request(host, control)) + b"\n")
                 ready = self._read_message()
                 self._supervisor.wait_for(lambda: "info" in self._supervisor.eof)
                 if (type(ready) is not dict or set(ready) != {"ready", "namespaces", "witness_baselines", "connection_count", "request_count"}
@@ -192,7 +201,7 @@ class OwnedLab:
                 if (type(value) is not dict or set(value) != {"sequence", "connection_count", "request_count"}
                         or type(value["sequence"]) is not int or value["sequence"] != self._sequence):
                     raise IsolationUnavailable("Owned lab counter acknowledgement is invalid")
-                context = validate_context({"identity": self.identity, **{key: value[key] for key in self._counts}}, self.identity)
+                context = self._validate_context({"identity": self.identity, **{key: value[key] for key in self._counts}}, self.identity)
                 if (any(context[key] < self._counts[key] for key in self._counts)
                         or context["connection_count"] < minimum_connections
                         or context["request_count"] < minimum_requests):
@@ -222,6 +231,9 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
     """Fixed-session launches; no supplied action can choose a lab or namespace."""
 
     name = BACKEND
+    _envelope_mode = "owned_lab"
+    _executor_mode = "discovery_fixture"
+    _http_tools = ("http_probe",)
 
     def __init__(self, policy, session_id, limits, lab, *, execute=False):
         super().__init__(policy, session_id, limits, execute=execute)
@@ -237,6 +249,10 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
 
     def _runtime(self, control):
         return _runtime_files("/usr/bin/python3", None, control=control)
+
+    def _validate_result_context(self, result, *, action):
+        return validate_result_context(result, self._lab_identity,
+            previous=self._previous_context, tool_id=action.tool_id, execution_status=result["status"])
 
     def check_available(self, action=None):
         super().check_available(action)
@@ -258,7 +274,7 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
         mounts = []
         for destination in ("/app/recon_cockpit/__init__.py", "/app/recon_cockpit/secure_agent/__init__.py"):
             mounts.extend(("--ro-bind", str((directory / "__init__.py").resolve()), destination))
-        for module in ("models.py", "executor_worker.py", "owned_lab_contract.py", "assessment_contract.py"):
+        for module in ("models.py", "tool_parameters.py", "tool_adapters.py", "executor_worker.py", "owned_lab_contract.py", "assessment_contract.py"):
             mounts.extend(("--ro-bind", str((directory / module).resolve()), "/app/recon_cockpit/secure_agent/" + module))
         # executor_worker imports its sibling worker when loaded as a package.
         mounts.extend(("--ro-bind", str((directory / "worker.py").resolve()), "/app/recon_cockpit/secure_agent/worker.py",
@@ -299,14 +315,14 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
             self._output += action.parameters.max_output_bytes
             self.lab.start(control)
             nonce = secrets.token_hex(32)
-            launch = {"schema_version": "1", "mode": "discovery_fixture", "execute": True,
+            launch = {"schema_version": "1", "mode": self._executor_mode, "execute": True,
                 "session_id": self._session_id, "nonce": nonce, "sequence": self._sequence,
                 "action": action.to_dict(), "action_digest": action.digest,
                 "policy": self._policy.to_dict(), "policy_digest": self._policy_digest,
                 "limits": asdict(self._limits), "limits_digest": self._limits_digest,
                 "deadline": control.deadline, "output_reserved_before": before,
                 "output_reserved_after": self._output, "host_namespaces": _namespaces()}
-            request = encode({"mode": "owned_lab", "launch": launch, "identity": self._lab_identity,
+            request = encode({"mode": self._envelope_mode, "launch": launch, "identity": self._lab_identity,
                               "namespaces": self.lab._lab_namespaces})
             if len(request) > MAX_OWNED_LAUNCH_BYTES:
                 raise IsolationUnavailable("Owned lab executor launch exceeds its bound")
@@ -333,12 +349,11 @@ class AuthorizedOwnedLabBackend(AuthorizedDiscoveryFixtureBackend):
                 # owner before acknowledging continuity, independent of scheduling.
                 settled = result["status"] == "succeeded" or result["status"] == "output_limit"
                 minimum_connections = previous["connection_count"] + int(settled)
-                minimum_requests = previous["request_count"] + int(settled and action.tool_id == "http_probe")
+                minimum_requests = previous["request_count"] + int(settled and action.tool_id in self._http_tools)
                 counts = self.lab.snapshot(control, minimum_connections=minimum_connections,
                                            minimum_requests=minimum_requests)
                 result["owned_lab"] = {"identity": self._lab_identity, **counts}
-                self._previous_context = validate_result_context(result, self._lab_identity,
-                    previous=self._previous_context, tool_id=action.tool_id, execution_status=result["status"])
+                self._previous_context = self._validate_result_context(result, action=action)
             except (ValueError, UnicodeError, RecursionError) as exc:
                 raise IsolationUnavailable("Owned lab executor returned invalid evidence") from exc
             control.check()

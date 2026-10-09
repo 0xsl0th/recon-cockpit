@@ -1,0 +1,13 @@
+{
+  "schema_version": "1",
+  "scope_id": "owned-http-ssh-primary",
+  "http": {
+    "target": "10.77.0.10",
+    "port": 8080,
+    "path": "/harbordesk/portal.html"
+  },
+  "ssh": {
+    "target": "10.77.0.20",
+    "port": 2222
+  }
+}

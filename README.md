@@ -3,12 +3,206 @@
 For project direction, see the [development roadmap](docs/roadmap.md) and
 [competition proposal](docs/competition-proposal.md). To resume work after an
 interruption, start with [the current checkpoint](docs/continue-here.md).
-R5's agreed offline implementation and evaluation are complete. Live-model
-integration, validation and acceptance remain deferred pending authorization.
-The current priority is R6 under the disclosed offline fallback; see the
-[completion order](docs/roadmap.md#milestone-completion-order).
-Additional session-view and GUI work follows milestone completion. Live provider
-execution remains disabled, with development and verification using owned/mock fixtures.
+R5's agreed offline implementation and evaluation are complete, and the local
+R6 offline candidate is accepted. The merged
+[HarborDesk adversarial comparison](docs/web-comparison.md) provides the fallback
+demonstration. The new [bounded model pilot](docs/web-model-pilot.md) connects one
+Nmap → HTTP → evidence workflow to the existing confined provider transport,
+with usefulness, safety, cost and latency measurements against a fresh protected
+baseline. Validation uses owned TLS fixtures; real-model results remain pending.
+The operator has deferred credential setup and the live pilot until much later;
+live integration stays disabled. The [HTTP response-header assessment](docs/http-headers-assessment.md)
+is merged. The finite [secure-tool coverage milestone](docs/secure-tool-coverage.md)
+is complete: all B0–B8 rows are accepted, with 20 secure capabilities backed by
+11 external programs and explicit completion evidence.
+Nmap, curl, ffuf, dig, OpenSSL, SSH key collection, LDAP RootDSE and
+[anonymous SMB share metadata](docs/smb-tools.md) have accepted bounded secure
+profiles. [RPC registration and NFS export metadata](docs/rpc-nfs-tools.md) are also accepted.
+[Bounded FTP listing and SMTP capability discovery](docs/ftp-smtp-tools.md) are accepted.
+[Fixed Docker health/version and WinRM endpoint metadata](docs/docker-winrm-tools.md) are accepted.
+[Finite Nmap service identification](docs/nmap-service-tools.md) is accepted in PR #44.
+[Synthetic Kerberos principal reports](docs/kerberos-tools.md) are accepted in PR #45,
+with client-report limitations preserved. The merged
+[read-only CLI catalog](docs/secure-tool-catalog.md) lists accepted profiles,
+shows their exact scope and supplies existing owned-lab dry-run recipes. The
+accepted follow-on is a bounded [Nmap → ffuf → HTTP header workflow](docs/service-web-assessment.md)
+using three existing capabilities in one disconnected owned lab. Complete
+service and path-discovery evidence gates the next fixed action. This separate
+workflow merged in [PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47).
+[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) accepted
+[configurable HTTP/SSH owned endpoint fixtures](docs/configurable-owned-lab.md)
+with exact operator scope and the same isolated authority path. Its three
+configurable profiles reuse existing programs without real-network attachment.
+The [shared application service](docs/shared-assessment-service.md) now supplies
+validated requests, detached progress/session views, cancellation and read-only
+evidence inspection to both interfaces. The [offline desktop](docs/desktop-gui.md)
+uses the saved [Swiss Industrial references](docs/gui-design-references.md) for
+light/dark scope preparation, saved evidence, fresh dry runs and **Execute owned lab**
+sessions with progress and cancellation. Launch `python -m recon_cockpit.gui` from
+an appropriate local graphical session. Execution is restricted to the existing
+four-action disconnected HTTP/SSH fixtures and requires fresh approval for every
+action in the [isolated review window](docs/graphical-approvals.md). Dry runs execute
+no tools. Both modes replay saved evidence before displaying final usefulness.
+PR #53's reviewer correction and personal walkthrough are merged and accepted;
+the desktop Execute integration is accepted in PR #54.
+[Redis and SNMP metadata](docs/redis-snmp-tools.md) are accepted in
+[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55). The accepted
+[database TLS slice](docs/database-tls-tools.md), [PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56),
+brought main to 27 bounded profiles using 13 external programs. It adds PostgreSQL
+and MySQL pre-authentication TLS through existing OpenSSL and the secure CLI.
+Validation passed 10,776 portable and 28 native Linux tests; both
+ordinary database TLS tasks completed and all 24 forbidden-destination witnesses
+blocked. The result establishes a verified fixture TLS handshake; it makes no
+database login, SQL query, readiness or product-identity claim.
+The accepted [WhatWeb profile](docs/whatweb-tools.md),
+[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57), adds one fixed HTTP GET
+with five passive plugins, bringing main to 28 profiles using 14 programs.
+Its structured hints are untrusted metadata; even an empty hint list can be useful
+completion. Local validation passed 11,109 portable and 39 selected native tests,
+including both ordinary tasks and both hostile/meta-redirect trials. Independent verification replayed 36
+accepted bundles unchanged. Independent review and all five hosted checks passed
+before the authorized merge.
+The accepted [DNS SRV profile](docs/dns-srv-tools.md) in
+[PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) reuses dig for one fixed
+nonrecursive TCP question. It distinguishes bounded service advertisements,
+NODATA, NXDOMAIN and a reported unavailable service; advertised targets and ports
+remain untrusted evidence without follow-up authority. That slice brought main to
+29 bounded profiles using the same 14 programs. Native validation passed 25 selected tests:
+16 C4 and nine accepted regressions. All four ordinary tasks and the separate
+hostile-metadata task completed, with zero unnecessary refusals and 20/20 blocked
+destinations across ten scenarios. Independent clean-source verification repeated
+those useful results and replayed 40 accepted bundles unchanged. All 11,428
+portable tests passed. Independent review and all five final hosted jobs passed;
+reviewed head `65810b8` merged as `6080a5c` with an identical tree.
+The accepted [RDP initial-negotiation profile](docs/rdp-negotiation-tools.md)
+adds `rdp_initial_negotiation_v1`, a repository-owned Ruby socket adapter.
+It sends one fixed TLS offer, closes its write side and reads one bounded reply
+frame, without TLS, CredSSP, NTLM, authentication or a remote session. A selection,
+legacy confirmation or known failure is untrusted metadata, not verified service
+identity or a list of every supported protocol. Accepted main has 30 profiles
+using the same 14 external programs; Ruby is supporting runtime, not another
+third-party assessment tool. All 13 owned cases passed validation: 5/5 ordinary
+and 2/2 separate robustness tasks completed, six negative cases stayed inconclusive,
+and 26/26 unauthorized destinations were blocked. Local validation passed 11,898
+portable and 36 native tests; clean-source replay preserved all 45 accepted bundles.
+[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) merged as `846e459`.
+All five [final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37678942749)
+and the [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
+passed. The exact reviewed Linux Ruby 3.3 x86-64 runtime and write-half-close
+limit compatibility; no GUI workflow is added.
+The accepted C6 [SMB2 negotiation profile](docs/smb2-negotiation-tools.md) adds
+`smb2_negotiate_metadata_v1`, bringing that accepted slice to 31 profiles using the same
+14 programs. Its fixed 108-byte request offers SMB 2.1 and 3.0.2 with client
+capabilities zero, closes the write side and captures only one response frame,
+at most 4,100 bytes. Dialect, signing and capability fields are untrusted peer
+reports; they do not verify signing enforcement, authentication or identity.
+Supported opaque buffers are limited to 256 bytes by the parser. Raw peer bytes
+remain private evidence and are never decoded as authentication tokens; rejected
+frames can remain within the larger raw capture bound. There is no SESSION_SETUP,
+NTLM challenge collection workflow, credential use, login, share access or
+follow-up. C6 is accepted in PR #60, merged as `aa65bff7` after review and passing checks.
+Its catalog entry enables no real-network or GUI execution.
+The accepted C7 [SMTP STARTTLS profile](docs/smtp-starttls-tools.md) adds one bounded
+profile through existing OpenSSL, for **32 profiles using the same 14 programs**.
+It sends fixed EHLO/STARTTLS, verifies the fixture CA/name and records clean TLS
+closure without authentication, mail or application requests. Structured output
+means verified TLS only; SMTP reply codes, advertisement and product identity
+are not verified. Full portable, native/usefulness, enforcement and evidence
+checks passed. C7 is accepted in PR #61 at `7c5e88ad`; all five final and
+post-merge jobs passed.
+
+The accepted C8 [LDAP STARTTLS profile](docs/ldap-starttls-tools.md) adds one fixed
+extended request and verified fixture TLS/clean close through existing OpenSSL,
+for **33 profiles using the same 14 programs**. It permits no bind, search,
+credentials, referral follow-up or application request. The native client leaves
+response IDs/remaining LDAP fields unchecked and discards the raw LDAP reply;
+only TLS facts are reported. Validation passed **13,683 portable** and **70 native
+tests**, including 2/2 ordinary and 2/2 separate robustness completions, eight
+inconclusive cases and 24/24 blocked destinations. Four clean-source trials and
+63 accepted evidence replays also passed. C8 is accepted in PR #62 at `a582bd6c`;
+all five final and post-merge jobs passed.
+
+The accepted C9 [FTP explicit TLS profile](docs/ftp-starttls-tools.md) adds one fixed
+AUTH TLS command and verified fixture TLS/clean close through existing OpenSSL,
+for **34 profiles using the same 14 programs**. It exposes no login, credentials,
+listing, transfer or data connection. The native client discards unchecked AUTH
+replies and retains only the final greeting; the bounded result reports TLS only.
+Validation passed 14,231 portable tests and a 65-test native confirmation, with
+2/2 ordinary and 3/3 robustness completions, 22/22 blocked destinations and 67
+accepted-bundle replays. One initial legacy stall error did not reproduce;
+its cause remains undetermined and is recorded in the verification report.
+C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63) at `e06e1a4`; all five final and post-merge jobs passed.
+
+The accepted C10 [DNS NSID profile](docs/dns-nsid-tools.md) adds one fixed nonrecursive TCP query
+requesting opaque server metadata through existing dig. Empty and absent replies
+are distinct; identifiers remain unverified, and no returned text selects follow-up.
+C10 brings accepted main to **35 secure profiles using 14 programs**. Validation passed
+**14,814 portable / 62 native tests**, six useful clean-source trials and 72
+unchanged accepted-bundle replays. PR #64 is merged at `dea8c7a`; all final and post-merge checks passed. Credentials
+and paid calls stay deferred. The initial historical snapshot-test failure was
+corrected without changing production code and remains recorded.
+
+The accepted C11 [DNS AXFR profile](docs/dns-axfr-tools.md) observes one fixed
+synthetic zone transfer through existing dig. Completed transfer and explicit refusal
+are useful outcomes; partial/malformed transfers remain inconclusive. Accepted main
+has **36 profiles using 14 programs**. Validation passed **15,464 portable and 61
+native tests**, 3/3 ordinary and 2/2 robustness trials, five clean-commit trials and
+78 unchanged accepted-bundle replays. PR #65 merged at `82dd85a`; all five final
+and post-merge jobs passed. Returned data cannot select follow-up.
+
+The accepted C12 [HTTP OPTIONS profile](docs/http-options-tools.md) adds one fixed
+resource-specific request through existing curl, for **37 profiles using 14 programs**.
+Typed status, distinct absent/empty Allow and authentication-scheme names remain
+untrusted advertisements; no advertised method, redirect or login is executed.
+Validation passed **16,138 portable and 40 native tests**, with 6/6 ordinary and
+2/2 robustness completions, six inconclusive negatives, 28/28 blocked destinations,
+zero unnecessary refusals and 83 unchanged accepted-bundle replays.
+[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) merged at `7faf974` after
+all five final CI jobs passed; its [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37713341040)
+also passed. C12 remains closed.
+
+The accepted C13 [SNMP successor profile](docs/snmp-next-tools.md) adds one fixed
+TCP GETNEXT for the ifDescr column through snmpgetnext, for **38 profiles using
+15 programs**. It distinguishes a reported description, empty description,
+endOfMibView and a supported outside-subtree successor without walks, UDP,
+credentials or returned-OID follow-up. **16,687 portable/43 native tests and
+91 accepted-bundle replays passed**. [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67)
+merged at `7cc6645` after independent review and all five final CI jobs passed.
+C13 remains closed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715717067) also passed.
+
+The accepted C14 [SSH algorithm profile](docs/ssh-algorithms-tools.md) adds one
+bounded identification/KEXINIT exchange through the sealed Ruby runtime, for
+**39 profiles using 15 programs**. Its finite directional advertisements do not
+complete key exchange or authentication. **17,728 portable/44 native tests and
+97 accepted-bundle replays passed**. [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68)
+merged at `a6f11b7` after review and all five final CI jobs passed; all five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37719116743)
+also passed. C14 remains closed with its documented half-close/capture limits.
+
+[C15 TLS certificate coverage](docs/tls-certificate-tools.md) is accepted in
+[PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69), merged as `e4c9d64`
+after independent review and all five final jobs passed. That slice reached
+**40 secure profiles using 15 external programs**. Its fixed fixture-verified
+OpenSSL handshake yields bounded DER fingerprint, validity and DNS/IP SAN metadata.
+**18,396 portable/39 native tests and 103 accepted-bundle replays passed.**
+Finite compatibility, CN fallback and trust/revocation limits remain documented.
+
+The accepted [C16 Nuclei check](docs/nuclei-tools.md) adds one pinned directory-listing
+signature check through a separate static runtime with bounded private scratch.
+The feasibility assessment was accepted in [PR #70](https://github.com/0xsl0th/recon-cockpit/pull/70)
+at `2f7fb5a`; the operator then authorized implementation and owned execution.
+[PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71) brings accepted coverage
+to **41 profiles using 16 programs**, with 18,958 portable and 23 Linux checks
+passed plus 107 unchanged accepted-bundle replays. Fresh independent reviews
+found no blockers; all five final CI jobs gate the merge.
+Useful matched and unmatched results require complete independent owner bytes,
+a supported native dump and recomputed signature agreement. This is no generic
+vulnerability scan or CVE claim; credential/model/paid work remains deferred.
+
+Broader composition and comparative benchmarking remain later slices.
+Completed R5/R6 scope stays closed; credentials, paid calls and live-model
+evaluation remain deferred until much later.
+
 
 The merged [confined audit writer](docs/isolated-audit.md) is available through
 `--isolated-audit`. The merged [isolated terminal approval](docs/isolated-approvals.md) is selected
@@ -142,7 +336,24 @@ must explicitly allow `tcp_connect`. The three execution records contribute to
 the draft report. See [the discovery contract](docs/discovery-assessment.md) for
 the command, evidence semantics and fixed topology.
 
-`--workflow-assessment` runs that path from a reviewed, versioned workflow card.
+`--nmap-assessment` adds a separately versioned, owned-lab workflow using a real
+confined Nmap TCP-connect scan followed by HTTP validation. Its reviewed adapter
+contract is the foundation for later bundled tools. All isolated approval,
+admission and audit gates are mandatory; no public model is enabled. See
+[reviewed tool adapters](docs/tool-adapters.md) for prerequisites, limits and the
+complete command. Existing assessment profiles and evidence remain compatible.
+
+`--service-web-assessment` composes the accepted Nmap service-identification,
+ffuf and HTTP-header capabilities in one persistent owned lab. A complete HTTP
+service observation gates eight fixed path checks; complete non-wildcard discovery
+with a successful fixed portal gates its header request. The three-action session
+keeps every approval, admission and audit gate, and records useful completion,
+raw/structured evidence, elapsed time and zero provider calls/cost. The injected
+variant retains hostile ffuf metadata while deterministic planning stays fixed.
+See [the service/web workflow](docs/service-web-assessment.md) for the policy,
+commands, validation criteria and limits. It does not enable a model provider.
+
+`--workflow-assessment` runs the TCP-connect/HTTP path from a reviewed, versioned workflow card.
 The deterministic engine records the evidence and reason for each proposal or
 stop before requesting a synthetic provider reply. Reports distinguish proposed
 actions from executions and retain the card digest and decision trace. See
@@ -666,3 +877,35 @@ pytest
 The tests cover nmap XML parsing, NetExec extraction, Markdown preservation and
 deduplication, target validation, scan confirmations, service-gated Linux/Unix and
 Windows suggestions, and conservative host-posture inference.
+
+C17 [Git HEAD marker coverage](docs/nuclei-git-tools.md) is accepted in
+[PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72), bringing the catalog to
+**42 bounded profiles using 16 external programs**. It adds one finite synthetic
+check through the existing Nuclei runtime; no repository download, credentials
+or live-model work is included. The [product roadmap](docs/product-roadmap.md)
+separates current capabilities from future professional-use work and PR estimates.
+
+[C18 DNS MX metadata](docs/dns-mx-tools.md) is accepted in
+[PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74), bringing accepted
+coverage to **43 profiles/16 programs**. It reuses dig for one fixed nonrecursive
+TCP question with no returned-host follow-up; G1–G6 are closed. The
+[finite professional-v1 coverage checklist](docs/professional-v1-coverage.md)
+records six required operator outcomes: T01 is accepted and T02–T06 remain open.
+[T02 source feasibility](docs/tls-posture-feasibility.md) rejected stock sslscan
+because it loses received rejection evidence. [PR #76](https://github.com/0xsl0th/recon-cockpit/pull/76)
+accepted the native diagnostic and its retained retry-boundary failure.
+[PR #77](https://github.com/0xsl0th/recon-cockpit/pull/77) accepted the
+[mediated diagnostic](docs/tls-posture-mediation.md): 8/8 ordinary observations,
+4/4 explicit rejections and the tested retry blocked before peer delivery, 1/1.
+[PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78) accepted the
+[diagnostic observation/replay slice](docs/tls-posture-observations.md), with
+26/26 isolated replays and 18/18 safe negative cases. Those diagnostic receipts
+grant no execution authority. [PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79)
+adds four separately versioned [production TLS posture candidates](docs/tls-posture-tools.md)
+through policy, fresh per-action approval, consumed permits, admission and both
+evidence inspectors. A corroborated protocol rejection can be useful while the
+actual process exit 1 remains a failed execution. T02 stays open pending its
+remaining corpus and G1–G6 review; accepted coverage remains **43 profiles / 16
+programs**, with no T02 profile accepted yet.
+Credentials, paid calls, live models and deeper workflow work remain deferred. The owner has deferred the proposal
+refresh until November 2026; its separate submission decision remains pending.

@@ -1,0 +1,13 @@
+{
+  "schema_version": "1",
+  "scope_id": "owned-http-ssh-alternate",
+  "http": {
+    "target": "172.23.0.10",
+    "port": 18080,
+    "path": "/portal/index.html"
+  },
+  "ssh": {
+    "target": "172.23.0.20",
+    "port": 12222
+  }
+}

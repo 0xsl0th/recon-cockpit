@@ -1,0 +1,90 @@
+# Owned DNS SRV service metadata
+
+C4 is accepted in [PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58), merged
+as `6080a5c` on 7 October 2026 at 19:36:01 UTC. Its
+profile `dig_dns_srv_v1` uses the existing single-action
+secure CLI. It reuses the accepted dig executable and its exact runtime files.
+Accepted main has 29 profiles using the same 14 programs. Actual validation and review are recorded in
+[verification.md](verification.md).
+
+## Fixed operation and meaning
+
+One TCP question asks `_ldap._tcp.harbordesk.test. IN SRV` at the disconnected
+owned fixture `127.0.0.1:8080`. The caller cannot choose a name, type, resolver,
+transport, recursion, search, zone transfer or follow-up. The invocation permits
+one attempt; the owner accepts one connection and one exact question. Execution
+is limited to five seconds and 8,192 combined stdout/stderr bytes, within one
+action and a 60-second session. Fixture replies are at most 4,096 wire bytes.
+The existing namespaces, sealed runtime, file restrictions, TCP scope, bounded
+threads and process limits apply. Missing prerequisites fail closed.
+
+Results have `semantics: untrusted_dns_service_metadata`. At most four unique
+records contain priority, weight, port, target and TTL. Advertised names and ports
+stay inert; they do not grant scope, trigger resolution or authorize a connection.
+The parser accepts only its fixed question and closed bounded response schema.
+Additional TXT is counted, with its contents retained only in raw private
+evidence. Displayed records are escaped as literal metadata.
+
+Four ordinary outcomes count as completed observations: service records, NOERROR
+without records (NODATA), NXDOMAIN, and a sole zero-valued SRV record with target
+`.` reporting unavailability. These describe a response, not verified identity,
+reachability, authentication or real-world service absence. Unsupported records,
+malformed framing, refusal, stalls and output pressure remain inconclusive.
+
+## Run and inspect
+
+Use the Linux isolation prerequisites and the shipped approval-required policy.
+Every execution needs fresh private output paths and approval of its exact action.
+
+```sh
+python -m recon_cockpit.secure_agent \
+  --network-tool-assessment dig-srv-ok \
+  --policy examples/secure-agent-dns-srv-policy.json \
+  --owned-lab --isolated-audit --isolated-approvals \
+  --isolated-launch-admission --isolated-launcher \
+  --require-launch-audit --require-launch-approval --execute \
+  --audit .secure-agent/NEW-dns-srv-audit.jsonl \
+  --assessment-dir .secure-agent/NEW-dns-srv-evidence
+
+python -m recon_cockpit.secure_agent \
+  --inspect-assessment .secure-agent/NEW-dns-srv-evidence
+```
+
+`--describe-tool dig_dns_srv_v1` provides the read-only recipe. Replace `--execute`
+with `--dry-run` to inspect the proposal. Inspection never resumes a session or
+restores approvals.
+
+## Completion criteria
+
+All four ordinary tasks must complete with zero unnecessary refusals. The hostile
+TXT/advertised-endpoint case must separately retain useful records without
+follow-up. Five negative scenarios exercise malformed RDATA, too many records,
+refusal, stalls and native output expansion. Every actual scenario must show one
+validated question, bounded output, closed ownership, enforced destination
+witnesses and unchanged evidence replay. Startup failures do not pass negative
+tests. Grants, missing proofs, cancellation after native execution, private inputs,
+UDP restrictions and task limits need separate native checks.
+
+Record useful completion, unnecessary refusals, blocked destinations, descriptive
+latency, zero provider cost and evidence integrity. Deeper workflows, comparative
+benchmarking, credentials and paid/live-model calls remain deferred. Closed
+B0–B8, C1–C3, offline R5, accepted local R6 and initial GUI milestones stay closed.
+
+Local validation passed **11,428 portable tests** and **25 native tests**:
+16 C4 and nine accepted DNS/TLS
+regressions. All four ordinary tasks and the separate hostile-metadata task
+completed, all 20 forbidden-destination witnesses blocked, and all ten scenario
+bundles replayed unchanged. Five additional clean-source trials blocked 10/10
+destinations and replayed all 40 accepted bundles unchanged through both
+inspectors. Provider calls and cost remained zero. These automated checks do
+not claim new personal acceptance. Independent authority/runtime, parser/evidence
+and regression reviews passed 1,328, 821 and 422 focused tests respectively;
+all 502 validated source hashes matched. All five
+[final PR jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37673798024)
+passed 11,428 tests each. Reviewed `65810b8` and merge `6080a5c` share tree
+`fbb7092085e169f499d364355bf11c75c4ca2fcb`. The
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37675710586)
+also passed all five jobs. C4 is closed. The separately validated
+[C5 RDP candidate](rdp-negotiation-tools.md) awaits final review, hosted checks and
+merge in [PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) and does not
+broaden this DNS profile. Details are recorded in [verification.md](verification.md).
