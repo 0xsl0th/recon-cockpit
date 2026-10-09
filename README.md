@@ -904,9 +904,9 @@ grant no execution authority. [PR #79](https://github.com/0xsl0th/recon-cockpit/
 adds four separately versioned [production TLS posture candidates](docs/tls-posture-tools.md)
 through policy, fresh per-action approval, consumed permits, admission and both
 evidence inspectors. A corroborated protocol rejection can be useful while the
-actual process exit 1 remains a failed execution. T02 stays open pending its
-remaining corpus and G1–G6 review; accepted coverage remains **43 profiles / 16
-programs**, with no T02 profile accepted yet.
+actual process exit 1 remains a failed execution. PR #80 validates the remaining
+corpus; T02 stays open pending G6 review/checks and authorized merge. Accepted
+coverage remains **43 profiles / 16 programs**, with no T02 profile accepted yet.
 Credentials, paid calls, live models and deeper workflow work remain deferred. The owner has deferred the proposal
 refresh until November 2026; its separate submission decision remains pending.
 

@@ -43,11 +43,12 @@ five final/post-merge checks. It retains 8/8 ordinary and 4/4 explicit-absence
 observations while preventing the tested retry before peer delivery, 1/1.
 [PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78) accepted closed
 diagnostic observations after review and five passing PR checks. A later macOS
-cancellation failure is retained in the checkpoint and corrected in the current
-[production candidate slice](tls-posture-tools.md). Four fixed-version profiles
-now enter the secure authority/evidence path for review; accepted coverage stays
-43 profiles / 16 programs. T02 acceptance still requires the remaining corpus.
-T03–T06 and the dated PR-count forecast below remain unchanged.
+cancellation failure is retained in the checkpoint and corrected by merged
+[production PR #79](tls-posture-tools.md). Its four fixed-version profiles remain
+candidates. PR #80 validates the T02 acceptance corpus with 65 native and 21,593
+portable passes; G6 review/checks and authorized merge remain pending. Accepted
+coverage stays 43 profiles / 16 programs. The separate T03 candidate in PR #81
+follows in review order; T04–T06 and the dated PR-count forecast remain required.
 
 ## Product destination
 
@@ -123,7 +124,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | C18/T01 DNS MX is accepted; T02 mediation proves useful observations and tested retry prevention, with four production candidates integrated in PR #79; the T02 acceptance corpus is under review and T03–T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Two additional programs are now plausible; the historical 4–6 assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | C18/T01 DNS MX is accepted; T02 mediation proves useful observations and tested retry prevention, with four production candidates integrated in PR #79; the T02 acceptance corpus is under review and T03–T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Two additional programs remain plausible after T03 reused C14; the historical 4–6 assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
@@ -242,8 +243,9 @@ PR #77 accepted this diagnostic boundary and PR #78 accepted
 [closed diagnostic observation/replay](tls-posture-observations.md). The current
 [production integration](tls-posture-tools.md) connects four candidate profiles
 to policy, per-action approval, consumed permits and both evidence inspectors.
-Finish the remaining hostile-usefulness, ambiguity/pressure and full accepted-bundle
-regression corpus before G1–G6 acceptance.
+PR #80 validates the hostile-usefulness, ambiguity/pressure and full accepted-bundle
+regression corpus with 65 native and 21,593 portable passes. G6 review/checks and
+authorized merge remain pending.
 Diagnostic receipts do not close those product gates. Accepted coverage remains
 **43 profiles / 16 programs**; existing TLS profiles and limits stay unchanged.
 Deeper workflows, credentials and paid/live models stay deferred.

@@ -56,7 +56,7 @@ trees match `37b8509564e50a3d0fef28562efe33c77e41caaf`. The
 [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37858294523)
 passed all four Linux jobs but exposed an intermittent macOS cancellation test
 failure: a 0.5-second owner join could expire before a blocked peer read woke.
-This candidate adds explicit cancellable peer polling, tested independently of
+Merged PR #79 added explicit cancellable peer polling, tested independently of
 cross-thread socket close, while keeping normal HRR EOF distinct from cancellation.
 Retain `.secure-agent/pr78-merge-review.json`, SHA-256
 `8ba15b616880234f2ab3d7e02bd2cc2040ed9d400ad35c0838902d1f5af99865`.
@@ -234,9 +234,10 @@ not decrypt traffic or prove general encrypted application-data prevention.
 PR #77 accepted this diagnostic boundary and PR #78 accepted
 [closed diagnostic observation/replay](tls-posture-observations.md). The current
 [production integration](tls-posture-tools.md) connects four candidate profiles
-to policy, approval, consumed permits and both evidence inspectors. Finish the
-remaining hostile-usefulness, ambiguity/pressure and full regression corpus
-before G1–G6 acceptance.
+to policy, approval, consumed permits and both evidence inspectors. PR #80
+validates the hostile-usefulness, ambiguity/pressure and regression corpus with
+65 native and 21,593 portable tests. Its G1–G5 evidence is prepared; G6 review,
+required checks and an authorized merge remain pending.
 Diagnostic receipts do not close those product gates. Accepted coverage remains
 **43 profiles / 16 programs**; existing TLS profiles and limits stay unchanged.
 Continue through required T03–T06 using the

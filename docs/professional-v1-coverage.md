@@ -18,7 +18,8 @@ the [product roadmap](product-roadmap.md) and authorized continued coverage work
 observations and networkless replay. Four separate [production TLS posture
 profiles](tls-posture-tools.md) now integrate the secure authority/evidence path
 as candidates for review. They are not yet accepted capabilities. Keep accepted
-coverage at 43 profiles / 16 programs until the remaining T02 corpus and G1–G6 pass.
+coverage at 43 profiles / 16 programs until T02 passes G6 review/checks and
+authorized merge. PR #80 already validates its acceptance corpus.
 The post-merge macOS cancellation failure and its correction are recorded in the
 checkpoint; original diagnostic receipts remain unchanged.
 
@@ -102,8 +103,9 @@ ClientHello from reaching the peer, 1/1; PR #77 accepted that diagnostic boundar
 PR #78 accepted [observation/replay](tls-posture-observations.md), keeping
 process failure distinct from useful rejection. The current [production slice](tls-posture-tools.md)
 registers four candidate profiles with separate action approvals and permits,
-case-bound owner evidence and both assessment inspectors. Complete the remaining
-hostile-usefulness, ambiguity/pressure and regression corpus before G1–G6 acceptance. The mediator checks plaintext
+case-bound owner evidence and both assessment inspectors. PR #80 validates the
+hostile-usefulness, ambiguity/pressure and regression corpus with 65 native and
+21,593 portable passes; G6 review/checks and authorized merge remain pending. The mediator checks plaintext
 framing and encrypted record shapes; it does not decrypt application traffic. The
 already-installed sslscan remains outside the secure catalog. Do not substitute
 another HTTP signature solely because its existing adapter is convenient.

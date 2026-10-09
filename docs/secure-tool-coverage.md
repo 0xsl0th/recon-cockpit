@@ -149,8 +149,9 @@ delivery, **1/1**. PR #78 accepted the
 replays and 18/18 safe negative cases; its diagnostic receipts grant no authority.
 PR #79 adds four separately versioned [production candidates](tls-posture-tools.md)
 through policy, fresh per-action approval, consumed permits, admission and both
-evidence inspectors. T02 stays open pending its remaining corpus and G1–G6
-review, and adds no accepted profile. Every new operation must satisfy G1–G6
+evidence inspectors. PR #80 validates the remaining corpus with 65 native and
+21,593 portable passes. T02 stays open pending G6 review/checks and authorized
+merge, and adds no accepted profile. Every new operation must satisfy G1–G6
 independently. The
 [finite professional-v1 contract](professional-v1-coverage.md) now fixes six
 required task outcomes under the accepted [product roadmap](product-roadmap.md),
@@ -178,7 +179,7 @@ without changing the scope or closure of the accepted core milestone.
 | C16 — accepted | One harmless HTTP directory-listing signature using pinned Nuclei v3.11.1; no existing interactive Nuclei integration | One fixed GET and compiled matcher; 4/4 ordinary matched/unmatched completions, 1/1 separate hostile-body robustness task, eight inconclusive negatives, complete original owner and normalized native response reconciliation, scratch/enforcement witnesses, replay and G1–G6. No general templates, credentials, redirects or follow-up. | [x] Accepted in PR #71; 23 Linux tests, 4/4 ordinary + 1/1 robustness, eight inconclusive negatives, 107 unchanged accepted replays. 18,958 portable passes; fresh independent reviews and all five checks gate the merge. Separate static runtime/private scratch authorized after PR #70 feasibility acceptance at `2f7fb5a`. Accepted 41 profiles/16 programs. See [C16 runbook](nuclei-tools.md). |
 | C17 — accepted | One fixed synthetic Git HEAD marker using the accepted Nuclei runtime | One GET; four ordinary completions, one hostile-HTML nonmatch, eight inconclusive cases, independent owner/native reconciliation, replay and G1–G6. New versioned response contract; preserve C16. No repository download or returned-ref follow-up. | [x] G1–G6 closed by PR #72 at `e004824` after fresh review and five passing final checks. 19,437 portable and 44 native checks, 4/4 ordinary + 1/1 robustness, eight inconclusive cases, 26/26 destination and 195/195 boundary fields, 120 unchanged accepted replays. Development refusals and test-routing correction retained. See [C17 runbook](nuclei-git-tools.md). |
 | C18 / T01 — accepted | DNS MX metadata; separately versioned `dig_dns_mx_v1` reuses the accepted dig runtime | One fixed nonrecursive TCP question, at most four typed preference/exchange rows; ordinary records, null-MX, NODATA and NXDOMAIN must complete with zero unnecessary refusals. Actual bounded query/closure, malformed/hostile cases, enforcement, unchanged replay and G1–G6. No advertised-server follow-up, credentials or mail delivery. | [x] G1–G6 closed in [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74) at `b1afbbab`: 19,888 portable/37 native, 5/5 ordinary + 1/1 robustness, seven inconclusive, 26/26 destination and 130/130 boundary checks, 133 unchanged accepted replays. Fresh review, 407 focused tests and all five final CI jobs passed. Accepted 43 profiles/16 programs. See [C18 runbook](dns-mx-tools.md). |
-| T02 — four production candidates; acceptance gates open | Finite TLS protocol-version posture; accepted OpenSSL proves its selected handshake only | Stock sslscan rejected because it loses received rejection evidence. Four separately versioned OpenSSL profiles must retain useful TLS 1.0/1.1/1.2/1.3 observations, finite mediation, independent approvals and bounded execution. Production policy, consumed permits, admission and both inspectors are integrated in PR #79; complete the remaining hostile-usefulness, ambiguity/pressure, enforcement and regression corpus and G1–G6 review. No implicit retry allowance, unrestricted cipher sweep, vulnerability tests or credentials. | Required gap remains open. The [mediated diagnostic](tls-posture-mediation.md) on `4d92d1d` produced 8/8 ordinary observations, 4/4 explicit received rejections and 1/1 HRR retry prevented before peer delivery. PR #77 accepted this boundary; the earlier 0/1 diagnostic failure remains historical evidence. PR #78 accepted diagnostic observations with 26/26 isolated replays and 18/18 safe negative cases. PR #79 adds four [production candidates](tls-posture-tools.md), with no T02 G1–G6 acceptance yet; accepted coverage remains 43 profiles/16 programs. See [six-task contract](professional-v1-coverage.md#six-required-tasks-in-priority-order). |
+| T02 — four production candidates; acceptance gates open | Finite TLS protocol-version posture; accepted OpenSSL proves its selected handshake only | Stock sslscan rejected because it loses received rejection evidence. Four separately versioned OpenSSL profiles must retain useful TLS 1.0/1.1/1.2/1.3 observations, finite mediation, independent approvals and bounded execution. Production policy, consumed permits, admission and both inspectors are integrated in merged PR #79. PR #80 validates hostile-usefulness, ambiguity/pressure, enforcement and regression with 65 native and 21,593 portable passes; G6 review/checks and authorized merge remain pending. No implicit retry allowance, unrestricted cipher sweep, vulnerability tests or credentials. | Required gap remains open. The [mediated diagnostic](tls-posture-mediation.md) on `4d92d1d` produced 8/8 ordinary observations, 4/4 explicit received rejections and 1/1 HRR retry prevented before peer delivery. PR #77 accepted this boundary; the earlier 0/1 diagnostic failure remains historical evidence. PR #78 accepted diagnostic observations with 26/26 isolated replays and 18/18 safe negative cases. PR #79 adds four [production candidates](tls-posture-tools.md), with no T02 G1–G6 acceptance yet; accepted coverage remains 43 profiles/16 programs. See [six-task contract](professional-v1-coverage.md#six-required-tasks-in-priority-order). |
 | T03 — SSH policy candidate | Pinned local advertisement policy in both transport directions | Reuse byte-identical C14 collector; one request/write EOF/first packet, no login or extra probe. Known deviations useful, unknowns inconclusive. | [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81): 52 native passes; review after T02. No new external program, G6 pending. |
 | T04–T06 — remaining finite tranche | Controlled web hierarchy, one SNMP interface page and fixed AAAA/PTR metadata | Useful/absent/negative corpus, secure execution, evidence, enforcement and G1–G6 for each. | Required and unstarted; deeper workflows and benchmarking remain deferred. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
@@ -369,9 +370,10 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current status: PR #78 is merged; C18/T01 stays accepted. PR #79 adds four T02
-production candidates for review. T02 remains open pending its remaining corpus
-and G1–G6 review; accepted coverage remains 43 profiles/16 programs.**
+**Current status: PR #79 is merged; C18/T01 stays accepted. Its four T02
+production profiles remain candidates. PR #80 validates the acceptance corpus;
+G6 review/checks and authorized merge remain pending. The separate T03 candidate
+in PR #81 follows in review order; accepted coverage stays 43 profiles/16 programs.**
 [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72) merged as
 `e00482409362f1f9380bc225063b84762446dee9` after fresh authority/runtime and
 parser/evidence reviews found no blockers and all five final PR checks passed. All five
@@ -457,8 +459,9 @@ PR #79 adds four separately versioned [production candidates](tls-posture-tools.
 through policy, fresh per-action approval, consumed permits, admission and both
 production evidence inspectors. These candidates require their own production
 evidence; the earlier diagnostic receipts do not substitute for authority gates.
-Complete the remaining hostile-usefulness, ambiguity/pressure, enforcement,
-cancellation and regression corpus and G1–G6 review before accepting T02.
+PR #80 validates hostile-usefulness, ambiguity/pressure, enforcement, cancellation
+and regression with 65 native and 21,593 portable passes. G6 review/checks and
+authorized merge remain pending before accepting T02.
 Accepted coverage remains **43 profiles / 16 programs**. Nothing was installed;
 the already-installed sslscan still has no secure integration.
 Continue through required T03–T06 using the
