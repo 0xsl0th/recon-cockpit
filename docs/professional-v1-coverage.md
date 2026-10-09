@@ -1,14 +1,15 @@
 # Professional-v1 coverage contract
 
-Current continuation (9 October 2026): PR #79 merged as `5f4197f` after fresh
-review and five passing PR checks; all five post-merge checks also passed.
-The [T02 acceptance batch](tls-posture-acceptance.md), PR #80, passed 65 native
-and 21,593 portable tests plus full historical replay. It fixes plaintext evidence
-consistency and retained refusal evidence. The separate SSH policy candidate in
-[PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) follows in review order,
-reusing the bounded C14 collector after source review ruled out stock ssh-audit. Accepted coverage stays 43/16;
-T02–T06 remain open until their individual review/merge gates. Credentials,
-paid/live models, deeper workflows and comparative benchmarks remain deferred.
+Current continuation (9 October 2026): PR #79 is merged at `5f4197f`.
+[T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) and
+[T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) are separate
+review candidates; review and merge #80 first. T02 has 65 native passes and full
+historical replay. T03 has 52 native passes, including 27 TLS/SSH regressions.
+Accepted coverage remains **43 profiles / 16 programs**, with **five candidates**
+(four TLS, one SSH policy). G6 remains open for those tasks until their authorized
+merges. T01/C18 and earlier milestones stay closed. T04 web hierarchy is next
+after these reviews; credentials, paid/live models, deeper workflows and
+comparative benchmarks remain deferred.
 
 
 Status: **9 October 2026, PR #79 merged at `5f4197f`**. The owner agreed
@@ -86,7 +87,7 @@ report alone cannot complete any row.
 | --- | --- | --- | --- | --- |
 | **T01 / C18 — accepted** | Observe a domain's advertised mail routing; C18 closes the former fixed-MX gap. | Reuse `dig`; one fixed nonrecursive TCP MX question, at most four typed preference/exchange rows. No mail delivery, additional name resolution or returned-server connection. | Ordinary MX records, null-MX, NODATA and NXDOMAIN all complete. Distinguish explicit no-mail advertisement from missing data. Reject malformed/null-MX mixtures and incomplete or excess-record responses; hostile names remain data. | **G1–G6 closed in [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74).** |
 | **T02 — mediated usefulness and retry prevention proved; product gates open** | Determine acceptance/rejection of TLS 1.0, 1.1, 1.2 and 1.3; the accepted TLS profile proves only its selected handshake. | Stock **sslscan** rejected because it discards received rejection evidence. Use four separately versioned **OpenSSL** probes with the reviewed mediator: one numeric owned endpoint and one ClientHello delivered to the peer per action, exact version, independent grants and bounded connection ledger. Four independent actions preserve the original at-most-eight-connection whole-task target without an implicit retry allowance. No client credential, application request, retry escalation or peer-directed fetch; accepted OpenSSL profiles stay unchanged. | A modern-only fixture and a deliberately legacy-enabled fixture produce correct observations for all four versions. Explicit protocol rejection is useful only with retained client-received evidence, independently corroborated by owner records. Reset, timeout or unsupported-client behavior is inconclusive. Unknown or incomplete results cannot be reported as disabled versions. | **Current: integration merged in PR #79; [acceptance corpus](tls-posture-acceptance.md) under review.** Separate version actions, approvals/permits and case-bound owner evidence are implemented. G6 remains open; accepted count unchanged. |
-| **T03** | Assess SSH transport advertisements against an explicit pinned local policy; accepted collection alone supplies no policy assessment. | The separate **PR #81 candidate** reuses unchanged C14 collection plus a pinned networkless policy evaluator after source review ruled out stock ssh-audit. One fixed owned endpoint, one identification/KEXINIT request, write EOF before reading and one bounded reply; no completed key exchange, rate test, stress test, authentication or session. | A conforming and a deliberately nonconforming synthetic peer both complete with correct observed algorithm lists and rule outcomes. Unknown algorithms and incomplete handshakes stay unknown/inconclusive. Report a policy deviation, not verified exploitability or host identity. | **Separate [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) candidate implemented; G6 pending after T02.** This branch contains only the four T02 candidates. |
+| **T03 — candidate review pending** | Assess SSH transport advertisements against an explicit pinned local policy; collection alone supplies no assessment. | Pinned [ssh-audit source review](ssh-policy-feasibility.md) rejects its extra host-key/KEX probes. A separate `ssh_transport_policy_v1` reuses byte-identical C14 collection and a networkless immutable policy evaluator. One numeric owned endpoint, one 184-byte request/write-half-close, one bounded packet; no login, completed key exchange, rate/stress test, session or downloaded policy. | Six ordinary and two robustness tasks complete usefully, including deliberate deviations in either direction. Two complete unknown cases and nine malformed/pressure cases stay inconclusive. Policy judgments do not verify exploitability, identity, negotiated strength or general compliance. | **[PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81): 52 native passes; review after T02.** G6 remains open and no program is added. See [runbook](ssh-policy-tools.md). |
 | **T04** | Discover a controlled one-level web directory hierarchy; accepted ffuf covers only its flat eight-path corpus. | Assess **feroxbuster**, reusing its interactive precedent but creating a separate secure profile. Use compiled words, predeclared same-origin prefixes and a finite path universe, depth at most one below the starting path, one active request and an initial total target of at most 24 GETs including calibration. No arbitrary link extraction, off-origin redirects, credentials, uploads or unbounded recursion. | Known nested resources and an empty hierarchy both complete; every planned path/request is accounted for. Wildcard responses must not invent resources. Redirects, path traversal, hostile links, unexpected paths and partial scans cannot expand scope or claim complete discovery. | **Required; no secure profile yet.** |
 | **T05** | Obtain one bounded page of SNMP interface descriptions; C13 returns a single successor, not a page. | Assess **snmpbulkget**, reusing the Net-SNMP runtime/fixture patterns. One TCP GETBULK, one fixed ifDescr seed, non-repeaters zero and maximum repetitions four; public synthetic community only. No paging continuation, walks, SET, UDP or real credentials. | A populated page, empty descriptions, endOfMibView and a supported outside-column boundary all have explicit results. Require ordered typed OIDs and a complete response; excess, malformed or partial rows stay inconclusive. A full page means capped observation, not a complete interface inventory. | **Required; no secure profile yet.** |
 | **T06** | Observe selected IPv6-address and reverse-name metadata alongside accepted A records. | Reuse `dig` in separate fixed nonrecursive TCP AAAA and PTR profiles, one question and at most four typed answers per action. Returned IPv6 addresses are data, not IPv6 network authorization. No reverse-to-forward lookup, recursion, alias chasing or returned-host follow-up. | Positive records, NODATA and NXDOMAIN complete for both questions. Validate the exact question, record type, name and complete bounded response; malformed names, unsupported alias chains and excess/partial records remain inconclusive. | **Required; no secure profiles yet.** |
@@ -109,9 +110,9 @@ framing and encrypted record shapes; it does not decrypt application traffic. Th
 already-installed sslscan remains outside the secure catalog. Do not substitute
 another HTTP signature solely because its existing adapter is convenient.
 
-Two additional programs remain plausible if feroxbuster and snmpbulkget prove
-suitable. T02 reuses OpenSSL; the separate T03 candidate in PR #81 reuses the
-accepted C14 collector and adds no external program. The
+Two additional programs are plausible if feroxbuster and snmpbulkget prove
+suitable. T02 reuses OpenSSL; T03 reuses the accepted repository-owned SSH
+collector after the pinned ssh-audit source review. Neither adds a program. The
 historical **4–6-program assumption is not a quota, gate or reason to add
 overlapping tools**. The six outcomes are unchanged. Program count changes only
 after accepted actual secure execution; new modes of `dig` or `openssl` add
@@ -119,7 +120,7 @@ profiles, not programs. Keep the 8–12-PR coverage allowance subject to native
 findings; re-estimate it without silently reducing the task list.
 
 OpenSSL has native diagnostic results and four production candidates merged;
-the remaining candidate engines are unverified. Primary documentation establishes features,
+T03 now has a separate verified native candidate, while the remaining candidate engines are unverified. Primary documentation establishes features,
 not confinement or compatibility:
 
 - The [pinned sslscan source review](tls-posture-feasibility.md#why-stock-sslscan-is-unsuitable)
@@ -127,9 +128,9 @@ not confinement or compatibility:
   selection and XML. The [OpenSSL mediation runbook](tls-posture-mediation.md)
   records native usefulness and the narrow retry-enforcement result, with product
   gates still open.
-- [ssh-audit's upstream documentation](https://github.com/jtesta/ssh-audit)
-  describes policy evaluation and `--skip-rate-test`; the ordinary audit's broader
-  behavior must be inspected and constrained before use.
+- The [pinned ssh-audit source review](ssh-policy-feasibility.md) found that
+  `--skip-rate-test` still permits other probes before policy evaluation. T03
+  therefore uses the accepted bounded collector and a local policy snapshot.
 - [feroxbuster's upstream project](https://github.com/epi052/feroxbuster)
   provides directory discovery, but its stock recursion/configuration behavior is
   not an accepted authority boundary.

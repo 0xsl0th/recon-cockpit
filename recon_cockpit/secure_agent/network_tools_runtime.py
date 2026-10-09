@@ -54,6 +54,7 @@ WHATWEB = "whatweb_http_fingerprint_v1"
 RDP = "rdp_initial_negotiation_v1"
 SMB2 = "smb2_negotiate_metadata_v1"
 SSH_ALGORITHMS = "ssh_transport_algorithms_v1"
+SSH_POLICY = "ssh_transport_policy_v1"
 SMTP_TLS = "smtp_starttls_handshake_v1"
 LDAP_TLS = "ldap_starttls_handshake_v1"
 FTP_TLS = "ftp_starttls_handshake_v1"
@@ -219,6 +220,7 @@ from . import network_tools_whatweb_runtime as whatweb_runtime
 from . import network_tools_rdp_runtime as rdp_runtime
 from . import network_tools_smb2_runtime as smb2_runtime
 from . import network_tools_ssh_algorithms_runtime as ssh_algorithms_runtime
+from . import network_tools_ssh_policy_runtime as ssh_policy_runtime
 from . import network_tools_nuclei_runtime as nuclei_runtime
 
 EXECUTABLES[NUCLEI] = nuclei_runtime.EXECUTABLE
@@ -229,6 +231,8 @@ FIXED_ARGV[WHATWEB] = whatweb_runtime.FIXED_ARGV
 FIXED_ARGV[RDP] = rdp_runtime.FIXED_ARGV
 FIXED_ARGV[SMB2] = smb2_runtime.FIXED_ARGV
 FIXED_ARGV[SSH_ALGORITHMS] = ssh_algorithms_runtime.FIXED_ARGV
+FIXED_ARGV[SSH_POLICY] = ssh_policy_runtime.FIXED_ARGV
+EXECUTABLES[SSH_POLICY] = ssh_policy_runtime.EXECUTABLE
 FIXED_ARGV[TLS_CERTIFICATE] = tuple(arg for arg in FIXED_ARGV[OPENSSL] if arg != "-brief") + (
     "-showcerts", "-nameopt", "RFC2253", "-verify_quiet", "-no_ticket")
 FIXED_ARGV[SMTP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "smtp", "-name", "harbordesk.test")
@@ -245,7 +249,9 @@ MODULES = ("tool_runtime_common", "tool_worker_common", "network_tools_runtime",
            "isolation", "owned_lab_executor", "executor_worker", "owned_lab_contract",
            "assessment_contract", "tool_parameters", "tool_adapters")
 MODULES += ("network_tools_nuclei_runtime", "network_tools_nuclei_git_runtime", "network_tools_nuclei_fixture",
-            "network_tools_nuclei_git_fixture", "network_tools_tls_posture_spec")
+            "network_tools_nuclei_git_fixture", "network_tools_tls_posture_spec",
+            "network_tools_ssh_policy_runtime", "network_tools_ssh_policy_parser",
+            "network_tools_ssh_policy_spec")
 
 
 def encode(value):
@@ -259,6 +265,8 @@ def execution_environment(tool_id):
         return dict(ENVIRONMENT)
     if tool_id in (NUCLEI, NUCLEI_GIT):
         return dict(nuclei_runtime.for_tool(tool_id).ENVIRONMENT)
+    if tool_id == SSH_POLICY:
+        return dict(ssh_policy_runtime.ENVIRONMENT)
     if tool_id == SSH_ALGORITHMS:
         return dict(ssh_algorithms_runtime.ENVIRONMENT)
     if type(tool_id) is not str or tool_id not in EXECUTABLES:
@@ -293,6 +301,8 @@ def _compiled(tool_id):
         return "compiled:fixture-ca", "/tool/data/fixture-ca.pem", TLS_CERTIFICATE_CA_PEM
     if tool_id in (NUCLEI, NUCLEI_GIT):
         return nuclei_runtime.for_tool(tool_id).COMPILED[0]
+    if tool_id == SSH_POLICY:
+        return ssh_policy_runtime.COMPILED[0]
     if tool_id == SSH_ALGORITHMS:
         return ssh_algorithms_runtime.COMPILED[0]
     if tool_id == SMB2:
@@ -411,6 +421,8 @@ def validate_manifest(value, *, tool_id=None):
         return validate_tls_posture(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") in (NUCLEI, NUCLEI_GIT):
         return nuclei_runtime.for_tool(value["tool_id"]).validate_manifest(value, tool_id=tool_id)
+    if type(value) is dict and value.get("tool_id") == SSH_POLICY:
+        return ssh_policy_runtime.validate_manifest(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") == SSH_ALGORITHMS:
         return ssh_algorithms_runtime.validate_manifest(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") == SMB2:
@@ -476,6 +488,8 @@ def inspect_tool_runtime(tool_id, control):
     control.check()
     if tool_id in (NUCLEI, NUCLEI_GIT):
         return nuclei_runtime.for_tool(tool_id).inspect_runtime(control)
+    if tool_id == SSH_POLICY:
+        return ssh_policy_runtime.inspect_runtime(control)
     if tool_id == SSH_ALGORITHMS:
         return ssh_algorithms_runtime.inspect_runtime(control)
     if tool_id == SMB2:

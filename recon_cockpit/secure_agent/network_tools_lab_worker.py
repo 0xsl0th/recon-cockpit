@@ -30,6 +30,7 @@ if __package__:
     from . import network_tools_nuclei_git_fixture as nuclei_git_fixture
     from . import network_tools_tls_certificate_fixture as tls_certificate_fixture
     from . import network_tools_ssh_algorithms_fixture as ssh_algorithms_fixture
+    from . import network_tools_ssh_policy_fixture as ssh_policy_fixture
     from . import network_tools_snmp_next_fixture as snmp_next_fixture
     from . import network_tools_http_options_fixture as http_options_fixture
     from . import network_tools_dns_axfr_fixture as dns_axfr_fixture
@@ -64,6 +65,7 @@ else:
     nuclei_git_fixture = _load("network_tools_fixed_nuclei_git", "network_tools_nuclei_git_fixture.py")
     tls_certificate_fixture = _load("network_tools_fixed_tls_certificate", "network_tools_tls_certificate_fixture.py")
     ssh_algorithms_fixture = _load("network_tools_fixed_ssh_algorithms", "network_tools_ssh_algorithms_fixture.py")
+    ssh_policy_fixture = _load("network_tools_fixed_ssh_policy", "network_tools_ssh_policy_fixture.py")
     snmp_next_fixture = _load("network_tools_fixed_snmp_next", "network_tools_snmp_next_fixture.py")
     http_options_fixture = _load("network_tools_fixed_http_options", "network_tools_http_options_fixture.py")
     dns_axfr_fixture = _load("network_tools_fixed_dns_axfr", "network_tools_dns_axfr_fixture.py")
@@ -285,7 +287,7 @@ class NetworkToolsService(owner.Service):
                     raw.close()
                     raise RuntimeError("nmap_service_fixture_request_limit")
                 if self.case.startswith(("ftp-", "smtp-", "docker-ping-", "docker-version-", "winrm-", "redis-", "snmp-",
-                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-mx-", "dig-srv-", "dig-nsid-", "dig-axfr-", "http-options-", "ssh-algos-", "tls-cert-", "nuclei-", "rdp-", "smb2-", "ldap-tls-")) and self.connections:
+                                         "postgresql-tls-", "mysql-tls-", "whatweb-", "dig-mx-", "dig-srv-", "dig-nsid-", "dig-axfr-", "http-options-", "ssh-algos-", "ssh-policy-", "tls-cert-", "nuclei-", "rdp-", "smb2-", "ldap-tls-")) and self.connections:
                     raw.close()
                     raise RuntimeError("single_metadata_fixture_connection_limit")
                 with self.condition:
@@ -317,6 +319,9 @@ class NetworkToolsService(owner.Service):
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.SSH_ALGORITHMS_CASES:
                         ssh_algorithms_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            on_request=self._smb_enumerated)
+                    elif self.case in fixture.SSH_POLICY_CASES:
+                        ssh_policy_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.SNMP_NEXT_CASES:
                         snmp_next_fixture.serve(connection, case=self.case, deadline=self.deadline,

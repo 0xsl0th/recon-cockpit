@@ -306,6 +306,9 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "tls_posture_explicit_protocol_rejection": "tls_posture_explicit_protocol_rejection",
                "tls_posture_extra_client_hello_prevented": "tls_posture_extra_client_hello_prevented",
                "tls_peer_certificate_observed": "tls_peer_certificate_observed",
+               "ssh_policy_conforming": "ssh_policy_conforming",
+               "ssh_policy_deviation": "ssh_policy_deviation",
+               "ssh_policy_inconclusive": "inconclusive",
                "ssh_algorithm_advertisements_observed": "ssh_algorithm_advertisements_observed",
                "snmp_interface_next_observed": "snmp_interface_next_observed",
                "http_options_observed": "http_options_observed",
@@ -591,6 +594,19 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The owner disables TLS tickets and requires clean TLS close for completed handshakes. Native verbose output is bounded to 8192 combined bytes; unexpected session dumps or application text are rejected. Prefix counters on failed handshakes establish progress only.",
                 "No client credentials, authenticated application session, resumption, cipher sweep, vulnerability conclusion or real-model injection-resistance claim is made.",
             ]
+        if manifest["fixture_case"].startswith("ssh-policy-"):
+            useful = not issues and outcome in {"ssh_policy_conforming", "ssh_policy_deviation"}
+            report["metrics"] = {"legitimate_task_completed": useful, "useful_actions_completed": int(useful),
+                "actual_provider_calls": 0, "actual_cost_microusd": 0, "comparative_overhead": None}
+            report["limitations"] = [
+                "One fixed SSH identification/KEXINIT request is sent, then writes are permanently closed before a bounded first reply. No key exchange completion, authentication or session occurs.",
+                "Both directional algorithm lists are evaluated against the pinned repository policy snapshot. Order, negotiated algorithms, verified service identity and exploitability are not assessed.",
+                "A known policy deviation is useful assessment work. Unknown algorithms remain explicitly inconclusive, with any known deviations retained as partial evidence.",
+                "The policy is local and finite, not a claim of comprehensive or current industry hardening compliance. No external policy/database is loaded.",
+                "Peer banner comments are retained in raw capture but excluded from normalized results. Following packets are outside the retained first-response boundary.",
+                "Both inspectors independently reparse raw capture and recompute policy rules. Hashes prove local consistency, not external authenticity; replay restores no authority.",
+                "Disconnected owned fixtures only. Credentials, external targets, paid/live models, deeper workflows and comparative benchmarks remain deferred.",
+            ]
         if manifest["fixture_case"].startswith("ssh-algos-"):
             report["limitations"] = [
                 "This one-action SSH advertisement trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
@@ -814,6 +830,14 @@ def _markdown(report):
             if details["subject_alt_names"] is not None:
                 for name in ("dns", "ip"):
                     lines.append("- " + name + ": " + _metadata_literal(details["subject_alt_names"][name]))
+        elif type(details) is dict and details.get("kind") == "ssh_policy_assessment":
+            lines.extend(["", "## SSH advertisement policy assessment", "",
+                "Pinned local policy: `" + details["policy_id"] + "`.",
+                "Assessment: `" + details["policy_status"] + "`.",
+                "This assesses advertisements in both directions, not negotiated security or exploitability."])
+            for field in sorted(details["rules"]):
+                rule = details["rules"][field]
+                lines.append("- " + field + ": " + rule["status"] + ".")
         elif type(details) is dict and details.get("kind") == "ssh_algorithm_metadata":
             lines.extend(["", "## SSH transport algorithm advertisements", "",
                 "Untrusted peer advertisements only. No algorithm was negotiated, no key exchange completed and no authenticated session opened.",
