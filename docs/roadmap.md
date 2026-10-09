@@ -1,23 +1,35 @@
 # Roadmap — secure AI pentesting workflows
 
-Current continuation (9 October 2026): PR #79 is merged at `5f4197f`.
-[T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) and
-[T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) are separate
-review candidates; review and merge #80 first. T02 has 65 native passes and full
-historical replay. T03 has 52 native passes, including 27 TLS/SSH regressions.
-Accepted coverage remains **43 profiles / 16 programs**, with **five candidates**
-(four TLS, one SSH policy). G6 remains open for those tasks until their authorized
-merges. T01/C18 and earlier milestones stay closed. T04 web hierarchy is next
-after these reviews; credentials, paid/live models, deeper workflows and
-comparative benchmarks remain deferred.
+Current continuation (9 October 2026):
+[T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) merged as
+`f2e7b785dbea5c8c9f86526f9b3c4deede544125`, followed by
+[T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) as
+`b90a365ef01fb6a6841b367fe52b4597aa6a219f`, after review and all five final checks.
+**T02 and T03 meet G1–G6 and are closed: 48 accepted profiles / 16 programs.**
+T02 retains 65 native and 21,593 portable passes; T03 retains 52 native and
+21,898 portable passes. The compiled catalog still labels 43 accepted profiles
+and five candidates; reconcile those metadata labels in the next code change,
+without repeating acceptance or changing execution controls. This documentation
+change intentionally leaves runtime/catalog code unchanged.
 
+The next coverage task is **T04 bounded web hierarchy**, after catalog-label
+housekeeping; T05/T06 remain required. Earlier milestones stay closed. Proposal
+PR #31's section 3 architecture correction has passed review and Mermaid
+validation; its final CI/merge state is recorded in GitHub and the private
+merge receipt. Once this revision is on main, the correction is integrated and
+its merge must not be repeated. Submission and the wider proposal refresh
+remain deferred to November. Credentials, paid/live models, attached targets,
+deeper workflows and comparative benchmarking remain deferred.
+
+The dated baseline and candidate wording below preserve their historical
+snapshots; this continuation supersedes their pre-merge status.
 
 **Current product forecast: 8 October 2026.** See the [consolidated roadmap and PR estimate](product-roadmap.md).
 The historical planning baseline below began on 15 September 2026. This is a development plan, not a list
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
 
-**Current slice — PR #79 merged four T02 production candidates. PR #80 validates
+**Historical pre-merge slice — PR #79 merged four T02 production candidates. PR #80 validates
 the acceptance corpus with 65 native and 21,593 portable passes; G6 review/checks
 and authorized merge remain pending. The separate PR #81 SSH policy candidate
 follows in review order. Accepted coverage stays 43 profiles / 16 programs. See
@@ -579,8 +591,17 @@ intrusive and external-target product capabilities retain separate authorization
 With configurable scope and the initial GUI accepted, use the remaining October
 work for bounded secure-tool batches and owned-lab validation. Refresh the proposal
 with verified results in early November, targeting submission around 9 November
-after operator review. Proposal PR #31 remains separate and unmerged; its local PDF is unchanged.
+after operator review. PR #31's architecture correction is authorized for review and conditional merge;
+its existing local PDF is unchanged.
 Publication and competition submission remain separate later decisions.
+
+**Proposal documentation:** the September jury-facing proposal and technical
+appendix retain the bounded real-model evaluation as a planned milestone. The
+9 October task clarifies section 3 against the implemented architecture and
+authorizes conditional review/merge of PR #31. It changes documentation only;
+it does not enable a provider, spending or new controls. The existing offline
+candidate remains the disclosed fallback. See the
+[proposal](competition-proposal.md) and [protocol](competition-proposal-appendix.md).
 
 The R5 offline baseline is `1605606`, the authorized merge of PR #26
 ([offline planning evaluation](planning-evaluation.md)). PRs #16–#26 remain
@@ -1029,27 +1050,30 @@ a convincing report without evidence is not success.
 ## Competition scope and schedule
 
 **Owner decision, 8 October 2026:** wait with the proposal until November 2026.
-PR #31, the private PDF and email draft remain unchanged now. Refresh verified
-capabilities and limitations in November before the **15 November 2026** deadline,
-then obtain the separate submission decision. Continuing tool development does
-not authorize submission, paid calls or release publication.
+The 9 October instruction separately authorizes a documentation-only section 3
+architecture correction and conditional review/merge of PR #31. The private PDF
+and email draft remain unchanged. Refresh verified capabilities and limitations
+in November before the **15 November 2026** deadline, then obtain the separate
+submission decision. Continuing tool development does not authorize submission,
+paid calls or release publication.
 
 Confirmed on 22 September: Enrique Folte is the sole human participant and
 project contact, with Codex assisting development under his review. No other
-members or institutional affiliation are declared. These are target windows,
-not completed-capability claims. R1/R2, the smallest R3 slice and the first R4
-card/engine slice are merged. The windows below preserve the original schedule;
-they do not override the current coverage priority or reopen accepted R5/R6 scope.
+members or institutional affiliation are declared. The jury-proposal schedule
+was revised on 30 September. These are target windows, not completed-capability
+claims; they do not override the current coverage priority or reopen accepted
+R5/R6 scope. The real-model pilot remains a separately authorized future
+milestone. Neither the timetable nor this documentation task authorizes provider
+access or spending.
 
 | Target window | Outcome |
 | --- | --- |
-| September–October 2026 | R1–R4 bounded implementations, persistent lab and 18-trial baseline merged; offline R5 complete, live work deferred. Continue R6 under the disclosed offline fallback. |
-| Through 8 November | Finalize proposal and measured baseline; build repeatable owned evaluation where ready. Tool breadth is not a submission prerequisite. |
+| October–8 November 2026 | Review jury proposal, evidence appendix and adversarial protocol; retain the accepted offline demonstrator. |
 | 9–15 November | Human review and project submission; aim for 9 November for margin. |
-| 16 November–10 January 2027 | Complete R3/R4 and the lab assessment corpus. |
-| 11 January–28 February | R5 controls and explicitly approved live-model evaluation. |
-| 1 March–25 April | R6 repeated evaluation, operator review and documentation. |
-| 26 April–13 May | Freeze capabilities, reproduce release and rehearse. |
+| 16 November–10 January 2027 | Planned preparation of the bounded data-release profile, experimental adapter and paired fixtures; separately review provider/data/credential/egress/budget authorization. |
+| 11 January–28 February | Planned bounded real-model integration/evaluation: 36 assessment sessions, up to 2 preparation sessions, 114 calls and a proposed USD 5 aggregate cap. If unavailable, disclose the fallback without declaring live acceptance. |
+| 1 March–15 April | Analyze blocking, legitimate completion and control overhead; correct evidenced defects and verify changes. Additional live work requires fresh authorization. |
+| 16 April–13 May | Freeze scope, prepare technical package and rehearse with the offline fallback available. |
 | 14–20 May | Delivery buffer; no unvalidated expansion. |
 
 **Minimum final target:** one real-agent lab assessment using discovery and HTTP

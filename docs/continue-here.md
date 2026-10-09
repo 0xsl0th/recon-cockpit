@@ -4,34 +4,56 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: PR #79 is merged at `5f4197f`. Review
-[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) for T02 acceptance, then
-[PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) for T03 SSH policy.
-Both are implemented candidates with frozen native validation; neither task is
-closed before its G6 review/merge. Accepted coverage stays 43 profiles / 16
-programs, with four TLS and one SSH policy candidates. T01/C18 stays closed.**
+**Current status: T02 and T03 are accepted and closed, including G6.**
+[T02 PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) merged as
+`f2e7b785dbea5c8c9f86526f9b3c4deede544125` after review and five passing final
+checks; all five post-merge checks also passed.
+[T03 PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) then merged as
+`b90a365ef01fb6a6841b367fe52b4597aa6a219f` after review and all five final checks
+on `988179d`. Its reviewed and merged trees match
+`1705797e9020f72ba65e6490eb0daf42444fcc11`.
+**Accepted coverage is now 48 profiles / 16 programs.** T01/C18 and earlier
+milestones remain closed; do not repeat these reviews or merges.
 
-T02 passed **65 native and 21,593 portable tests**, including 20 useful
+T02 retains **65 native and 21,593 portable passes**, including 20 useful
 ordinary/absence/robustness observations and 20 inconclusive negatives. All 45
 fresh and 159 historical bundles replayed unchanged. Its [acceptance runbook](tls-posture-acceptance.md)
-records the frozen source, evidence hash, refusal tests and remaining G6 gate.
+retains frozen source, evidence, refusal tests and historical candidate status;
+this accepted merge closes its remaining G6 gate.
 
-T03 uses the byte-identical C14 collector plus an immutable networkless policy
-snapshot, after [source review](ssh-policy-feasibility.md) ruled out stock
-ssh-audit's additional probes. Six ordinary and two robustness tasks completed;
-two unknown and nine malformed/pressure cases stayed inconclusive. All 52 native
-checks passed, including thirteen TLS and fourteen C14 regressions. Its complete
-[runbook](ssh-policy-tools.md) records limits, policy semantics and validation.
-Private evidence: `.secure-agent/ssh-policy-20261009/verification.json`, SHA-256
-`d3512612eb1b37d4cbd5e0d46736fbc0c6f5f18ed5681d900fb4767076a01a75`. The initial six historical-selector CI failures are retained;
-only case exclusions changed, with predecessor hashes intact. Model calls/cost
-remain zero. No professional-service or general hardening compliance is claimed.
+T03 retains **52 native and 21,898 portable passes**. It uses the byte-identical
+C14 collector plus an immutable networkless policy snapshot after [source
+review](ssh-policy-feasibility.md) ruled out stock ssh-audit's additional probes.
+Six ordinary and two robustness tasks completed; two unknown and nine
+malformed/pressure cases stayed inconclusive. Its [runbook](ssh-policy-tools.md)
+retains limits, policy semantics and validation, including thirteen TLS and
+fourteen C14 native regressions. Private evidence:
+`.secure-agent/ssh-policy-20261009/verification.json`, SHA-256
+`d3512612eb1b37d4cbd5e0d46736fbc0c6f5f18ed5681d900fb4767076a01a75`.
+The initial six historical-selector CI failures remain recorded; predecessor
+hashes stay intact. Model calls/cost remain zero. No professional-service or
+general hardening compliance is claimed.
 
-Worktrees: `/tmp/recon-tls-posture-acceptance` (`feature/tls-posture-acceptance`)
-and `/tmp/recon-ssh-policy` (`feature/ssh-policy-assessment`). PR #81 contains
-PR #80's changes and must follow it in merge order. After both are accepted,
-reconcile candidate status/counts in the catalog and select T04's bounded web
-hierarchy source-feasibility slice. T05/T06 remain required after T04.
+**Remaining housekeeping:** the compiled catalog still reports 43 accepted
+profiles plus four TLS and one SSH policy candidates. Reconcile those metadata
+labels in the next code change; their accepted status follows the reviewed
+merges above, without reopening G1–G6 or changing execution controls. This
+proposal task changes documentation only. Then select **T04 bounded web
+hierarchy**; T05 SNMP interface page and T06 AAAA/PTR remain required.
+
+**Proposal PR #31:** section 3 now separates authorization, durable audit intent
+and required approval proof before launch, with broker request/response, scope
+context and execution/denial feedback. Architecture review found no required
+runtime change. Mermaid CLI 12 and the existing proposal exporter validated the
+diagram (13 nodes and 22 directed edges). Final CI/merge state is recorded in
+GitHub and the private merge receipt. Once this revision is on main, the
+correction is integrated; do not repeat its merge. Existing PDFs/email/mocks stay unchanged; the broader proposal
+refresh and submission decision remain in November. Credentials, paid/live
+models, attached targets, deeper workflows and comparative benchmarks remain
+deferred.
+
+The dated candidate descriptions below preserve historical development states;
+the current accepted status above supersedes them.
 
 Fresh PR #79 authority/runtime and parser/evidence reviews found no blockers;
 337 root-focused tests passed (independent overlapping review sets: 367 and 713).
@@ -135,9 +157,11 @@ coverage contract. Credentials, live/paid models, attached targets, deeper
 workflows and comparative benchmarks remain deferred.
 
 The owner chose to wait with the competition proposal until **November 2026**.
-Keep PR #31, its proposal/PDF and email draft unchanged this turn. Refresh them
-with verified progress in November, before the **15 November 2026** deadline;
-submission requires a separate owner decision. Nothing has been submitted here.
+The 9 October instruction permits a documentation-only architecture correction
+and conditional merge of PR #31 now. Keep its existing PDF and email draft local
+and unchanged; refresh the proposal's verified-capability status in November,
+before the **15 November 2026** deadline. Submission requires a separate owner
+decision. Nothing has been submitted here.
 
 [PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72) merged as
 `e00482409362f1f9380bc225063b84762446dee9` after fresh authority/runtime and
@@ -1171,48 +1195,81 @@ exactly matches the reviewed head. All five
 [post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36672797756)
 passed. The Spanish proposal reconciliation is complete; do not repeat it.
 
-**PR #30 merged; its earlier local draft remains a historical export.**
-Final head `1634097` merged as `8ae4aad` at 06:14:59 UTC on 30 September.
-Do not repeat that merge. PR #31 contains the subsequent jury-focused proposal
-and author-voice revisions; the latest polished PDF remains local and unchanged.
-No competition submission has occurred.
+**PR #30 is merged and stays closed.** Final head `1634097` passed review after
+correcting the obsolete interruption checkpoint, with all five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36676777225)
+passing. The guarded merge is `8ae4aad` at 06:14:59 UTC; its tree exactly matches
+the reviewed head. All five
+[post-merge main checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/36677270493)
+passed. The local PDF was not included in Git or uploaded by the merge.
 
-For the earlier PR #30 export, the operator
-authorized a readable proposal PDF, an unsent email, references to the accepted
-evidence/runbook and this checkpoint update. Branch `docs/submission-draft-package`
-starts from `cba8059` and is tracked in
-[PR #30](https://github.com/0xsl0th/recon-cockpit/pull/30). The final PDF and
-supporting files are in `.secure-agent/submission-draft-20260930-final`; visual,
-content and privacy checks are complete. The earlier interrupted-work snapshot
-and `submission-draft-20260930-layout` are superseded. The PDF remains ignored
-and local; it was not part of the PR.
-The proposal text remains unchanged; the local PDF uses
-that full source revision for its document links. This document revision is
-distinct from the accepted packet's verification source `070257b` and the
-rehearsal's execution revision `dd4bbe4`.
+**Historical PR #31 preparation — 30 September 2026: jury proposal and bounded evaluation plan.** The
+operator requested a repository-grounded rewrite centered on problem, contribution
+and demonstration, with detailed evidence moved into a technical appendix.
+This prepared [PR #31](https://github.com/0xsl0th/recon-cockpit/pull/31) on
+`docs/proposal-author-voice`, based on `8ae4aad`; its earlier wording-only
+scope was superseded by documentation and evaluation planning.
+No new live integration, data-release profile, fixture scenario or runtime
+control is implemented or authorized by this task.
+
+The [proposal](competition-proposal.md) distinguishes verified synthetic hostile
+follow-up rejection from a planned real-model experiment. The
+[technical appendix](competition-proposal-appendix.md) maps claims to evidence
+and specifies 36 paired-condition trials, up to 2 preparation sessions, a
+proposed 114-call/USD 5 aggregate ceiling, separate security/utility/overhead
+comparisons and failure accounting. These limits require later configuration
+review and explicit approval; they do not authorize spending. At that preparation revision, the integrated
+assessment planner excluded raw HTTP bodies and pinned the host-selected action;
+the new experimental data/evidence contract was planned work. Keep the accepted
+offline scope closed and retain its demonstrator as the disclosed fallback.
+
+The preserved September Spanish PDF is
+`.secure-agent/submission-ready-20260930-jury/recon-cockpit-propuesta-20260930.pdf`:
+six jury-facing pages plus six appendix pages. Both document sources are pinned
+to `c4acf63ff53e03bcaf6faf15d9d5911a5766eaa1`, also the renderer/layout revision.
+At the operator's request, section 8 says “Soy Enrique Folte, integrante y
+contacto del proyecto.” Visible draft/not-submitted labels and the PDF title's
+draft marker are removed. All 175 text blocks, 15 HTTPS annotations and the
+internal appendix link passed checks. The preceding layout's twelve pages were
+visually inspected; the two pages affected by the final wording changes were
+inspected again. SHA-256:
+`bf49f1ab65089ee23d9e0504edb9875be168b5eca93b020988eb9658e636558e`.
+This export is historical: it predates the October architecture clarification
+and has not been regenerated. The PDF remains ignored and local. Earlier Spanish
+exports and the English copy remain unchanged; the English copy does not include
+that jury rewrite.
+The earlier English copy was sent only to the operator's own Gmail at their
+explicit request; the competition email remains unsent. On 9 October the operator
+authorized the section 3 architecture clarification
+and conditional review/merge of PR #31; that does not authorize competition
+submission, a new PDF export, messages or live calls.
+The proposal revision is distinct from packet verification source `070257b`
+and rehearsal execution revision `dd4bbe4`.
 
 The [local renderer](../scripts/render_submission_draft.py) and
 [print stylesheet](submission-print.css) use the prepared host Python, Markdown,
 BeautifulSoup, WeasyPrint, Graphviz and DejaVu fonts. They are documentation
-tools, not new application dependencies. Asset retrieval is disabled; the
-architecture preserves the existing diagram's labels and directed edges. Output
-goes to a new private directory with a PDF, unsent copy of
-[the email draft](submission-email.txt), source/HTML/SVG, review notes and a hash
-manifest. Private evaluation records are referenced for the operator, not copied
-into proposed attachments. The PDF is the only proposed email attachment.
+tools, not new application dependencies. Asset retrieval is disabled. The updated
+conceptual diagram includes the denial path; future live integration is labeled.
+Both proposal and appendix must match the selected source revision. Output goes
+to a new private directory with the combined PDF, unsent copy of
+[the email draft](submission-email.txt), both Markdown sources, HTML/SVG,
+review notes and a hash manifest. The PDF includes summarized technical evidence,
+not private raw evaluation records. It is the only proposed email attachment.
 
 ```sh
 python3 scripts/render_submission_draft.py \
-  --revision cba8059e084655c355301d15dfd374505352c2b3 \
+  --revision c4acf63ff53e03bcaf6faf15d9d5911a5766eaa1 \
   --output .secure-agent/submission-draft-NEW
 ```
 
-The renderer refuses existing output directories and a proposal that differs
+The renderer refuses existing output directories and either document differing
 from the selected source revision. It does not install dependencies, run agents,
-submit email or publish a release. The dated draft remains for operator review;
-submission/publication, live work and merges after PR #30 require their
-corresponding operator instruction. See [verification.md](verification.md) for
-the final local artifact and export checks.
+submit email or publish a release. The polished PDF remains local and unsent;
+submission/publication and live work require their corresponding operator
+instruction. The current conditional PR #31 merge authorization is separate.
+See [verification.md](verification.md) for the historical local artifact and
+export checks.
 
 **PR #25 is merged and stays closed.** The operator authorized review and merge
 on 30 September. Final head `c7f7791` passed a fresh review with no blockers or
@@ -1995,29 +2052,30 @@ Planning uses synthetic responses.
   preconditions; the host still owns assessment authority and selected policy.
   Hashes detect inconsistency, not host-owner tampering. R1 callback and R2 HTTP
   framing limits remain documented.
-- The operator-authorized PR #79 merge is complete. PRs #6–#30 and #32–#79
-  stay closed; proposal PR #31 remains separate until its November refresh.
-  Current authorization covers T02 acceptance and T03 SSH policy development.
-  Follow-up PRs remain subject to exact-revision review/checks and merge review;
-  paid calls, external targets, publication and submission remain deferred.
+- Completed coverage merges stay closed. On 9 October the operator authorized
+  review and conditional merge of proposal PR #31 and coverage PRs #80/#81.
+  The proposal work is limited to documentation; its submission and broader
+  verified-capability refresh remain deferred to November. Messages, paid calls
+  and external targets retain their separate authorization gates.
 
 ## Next continuation
 
-1. Do not repeat the PR #79 merge. Preserve its merge receipt and the original
-   diagnostic/production captures, including prior failed development trials.
-2. Review the T02 [acceptance batch](tls-posture-acceptance.md), its final source
-   pin, complete native corpus, portable CI and full accepted-bundle replay.
-   T02 remains open until G6 review/merge; accepted coverage stays 43/16 meanwhile.
-3. Review the separate T03 SSH policy candidate in PR #81 after T02. Its pinned
-   source review selected the unchanged C14 collector plus a networkless local
-   policy evaluator; unknown or incomplete data remains inconclusive. G6 is open.
-   Reconcile catalog acceptance status/counts only on the respective merges.
-4. Then select T04 web hierarchy, T05 SNMP interface page and T06 AAAA/PTR from
-   the finite checklist. Do not substitute optional signatures or program quotas.
-5. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
-   Preserve proposal/PDF/email/mocks. Refresh PR #31 in November before the
-   15 November deadline; submission requires a separate decision.
-6. Credentials, paid/live models, attached/external networks, deeper workflows
+1. Preserve the completed PR #79/#80/#81 merges and their receipts, frozen source
+   pins, accepted evidence and earlier failed development trials. T02/T03 G1–G6
+   are closed at 48 accepted profiles / 16 programs.
+2. Confirm proposal PR #31's final CI/merge from GitHub and its private receipt;
+   do not repeat the merge when this revision is on main. Section 3 architecture
+   review and Mermaid validation are complete.
+   Preserve existing PDFs and email; submission remains a separate November
+   decision, alongside the broader verified-capability refresh.
+3. Reconcile the compiled catalog's five stale candidate labels in the next
+   code change, preserving accepted contracts and execution behavior. Then begin
+   T04 bounded web hierarchy source feasibility from the finite checklist.
+   T05 SNMP interface page and T06 AAAA/PTR remain required after T04; do not
+   substitute optional signatures or program quotas.
+4. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
+   No accepted milestone or personal walkthrough needs to be repeated.
+5. Credentials, paid/live models, attached/external networks, deeper workflows
    and comparative benchmarks remain deferred.
 
 ## Recovery and verification

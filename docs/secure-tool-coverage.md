@@ -1,16 +1,28 @@
 # Secure-tool coverage milestone
 
-Current continuation (9 October 2026): PR #79 is merged at `5f4197f`.
-[T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) and
-[T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) are separate
-review candidates; review and merge #80 first. T02 has 65 native passes and full
-historical replay. T03 has 52 native passes, including 27 TLS/SSH regressions.
-Accepted coverage remains **43 profiles / 16 programs**, with **five candidates**
-(four TLS, one SSH policy). G6 remains open for those tasks until their authorized
-merges. T01/C18 and earlier milestones stay closed. T04 web hierarchy is next
-after these reviews; credentials, paid/live models, deeper workflows and
-comparative benchmarks remain deferred.
+Current continuation (9 October 2026):
+[T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) merged as
+`f2e7b785dbea5c8c9f86526f9b3c4deede544125`, followed by
+[T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) as
+`b90a365ef01fb6a6841b367fe52b4597aa6a219f`, after review and all five final checks.
+**T02 and T03 meet G1–G6 and are closed: 48 accepted profiles / 16 programs.**
+T02 retains 65 native and 21,593 portable passes; T03 retains 52 native and
+21,898 portable passes. The compiled catalog still labels 43 accepted profiles
+and five candidates; reconcile those metadata labels in the next code change,
+without repeating acceptance or changing execution controls. This documentation
+change intentionally leaves runtime/catalog code unchanged.
 
+The next coverage task is **T04 bounded web hierarchy**, after catalog-label
+housekeeping; T05/T06 remain required. Earlier milestones stay closed. Proposal
+PR #31's section 3 architecture correction has passed review and Mermaid
+validation; its final CI/merge state is recorded in GitHub and the private
+merge receipt. Once this revision is on main, the correction is integrated and
+its merge must not be repeated. Submission and the wider proposal refresh
+remain deferred to November. Credentials, paid/live models, attached targets,
+deeper workflows and comparative benchmarking remain deferred.
+
+The dated baseline and candidate wording below preserve their historical
+snapshots; this continuation supersedes their pre-merge status.
 
 **Closed on 6 October 2026:** all required rows B0–B8 are accepted on main,
 with 20 bounded secure capabilities backed by 11 external programs. The operator's
