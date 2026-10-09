@@ -4,34 +4,56 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: PR #79 is merged at `5f4197f`. Review
-[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) for T02 acceptance, then
-[PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) for T03 SSH policy.
-Both are implemented candidates with frozen native validation; neither task is
-closed before its G6 review/merge. Accepted coverage stays 43 profiles / 16
-programs, with four TLS and one SSH policy candidates. T01/C18 stays closed.**
+**Current status: T02 and T03 are accepted and closed, including G6.**
+[T02 PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) merged as
+`f2e7b785dbea5c8c9f86526f9b3c4deede544125` after review and five passing final
+checks; all five post-merge checks also passed.
+[T03 PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) then merged as
+`b90a365ef01fb6a6841b367fe52b4597aa6a219f` after review and all five final checks
+on `988179d`. Its reviewed and merged trees match
+`1705797e9020f72ba65e6490eb0daf42444fcc11`.
+**Accepted coverage is now 48 profiles / 16 programs.** T01/C18 and earlier
+milestones remain closed; do not repeat these reviews or merges.
 
-T02 passed **65 native and 21,593 portable tests**, including 20 useful
+T02 retains **65 native and 21,593 portable passes**, including 20 useful
 ordinary/absence/robustness observations and 20 inconclusive negatives. All 45
 fresh and 159 historical bundles replayed unchanged. Its [acceptance runbook](tls-posture-acceptance.md)
-records the frozen source, evidence hash, refusal tests and remaining G6 gate.
+retains frozen source, evidence, refusal tests and historical candidate status;
+this accepted merge closes its remaining G6 gate.
 
-T03 uses the byte-identical C14 collector plus an immutable networkless policy
-snapshot, after [source review](ssh-policy-feasibility.md) ruled out stock
-ssh-audit's additional probes. Six ordinary and two robustness tasks completed;
-two unknown and nine malformed/pressure cases stayed inconclusive. All 52 native
-checks passed, including thirteen TLS and fourteen C14 regressions. Its complete
-[runbook](ssh-policy-tools.md) records limits, policy semantics and validation.
-Private evidence: `.secure-agent/ssh-policy-20261009/verification.json`, SHA-256
-`d3512612eb1b37d4cbd5e0d46736fbc0c6f5f18ed5681d900fb4767076a01a75`. The initial six historical-selector CI failures are retained;
-only case exclusions changed, with predecessor hashes intact. Model calls/cost
-remain zero. No professional-service or general hardening compliance is claimed.
+T03 retains **52 native and 21,898 portable passes**. It uses the byte-identical
+C14 collector plus an immutable networkless policy snapshot after [source
+review](ssh-policy-feasibility.md) ruled out stock ssh-audit's additional probes.
+Six ordinary and two robustness tasks completed; two unknown and nine
+malformed/pressure cases stayed inconclusive. Its [runbook](ssh-policy-tools.md)
+retains limits, policy semantics and validation, including thirteen TLS and
+fourteen C14 native regressions. Private evidence:
+`.secure-agent/ssh-policy-20261009/verification.json`, SHA-256
+`d3512612eb1b37d4cbd5e0d46736fbc0c6f5f18ed5681d900fb4767076a01a75`.
+The initial six historical-selector CI failures remain recorded; predecessor
+hashes stay intact. Model calls/cost remain zero. No professional-service or
+general hardening compliance is claimed.
 
-Worktrees: `/tmp/recon-tls-posture-acceptance` (`feature/tls-posture-acceptance`)
-and `/tmp/recon-ssh-policy` (`feature/ssh-policy-assessment`). PR #81 contains
-PR #80's changes and must follow it in merge order. After both are accepted,
-reconcile candidate status/counts in the catalog and select T04's bounded web
-hierarchy source-feasibility slice. T05/T06 remain required after T04.
+**Remaining housekeeping:** the compiled catalog still reports 43 accepted
+profiles plus four TLS and one SSH policy candidates. Reconcile those metadata
+labels in the next code change; their accepted status follows the reviewed
+merges above, without reopening G1–G6 or changing execution controls. This
+proposal task changes documentation only. Then select **T04 bounded web
+hierarchy**; T05 SNMP interface page and T06 AAAA/PTR remain required.
+
+**Proposal PR #31:** section 3 now separates authorization, durable audit intent
+and required approval proof before launch, with broker request/response, scope
+context and execution/denial feedback. Architecture review found no required
+runtime change. Mermaid CLI 12 and the existing proposal exporter validated the
+diagram (13 nodes and 22 directed edges). Final CI/merge state is recorded in
+GitHub and the private merge receipt. Once this revision is on main, the
+correction is integrated; do not repeat its merge. Existing PDFs/email/mocks stay unchanged; the broader proposal
+refresh and submission decision remain in November. Credentials, paid/live
+models, attached targets, deeper workflows and comparative benchmarks remain
+deferred.
+
+The dated candidate descriptions below preserve historical development states;
+the current accepted status above supersedes them.
 
 Fresh PR #79 authority/runtime and parser/evidence reviews found no blockers;
 337 root-focused tests passed (independent overlapping review sets: 367 and 713).
@@ -2038,22 +2060,22 @@ Planning uses synthetic responses.
 
 ## Next continuation
 
-1. Do not repeat the PR #79 merge. Preserve its merge receipt and the original
-   diagnostic/production captures, including prior failed development trials.
-2. Review the T02 [acceptance batch](tls-posture-acceptance.md), its final source
-   pin, complete native corpus, portable CI and full accepted-bundle replay.
-   T02 remains open until G6 review/merge; accepted coverage stays 43/16 meanwhile.
-3. Review the separate T03 SSH policy candidate in PR #81 after T02. Its pinned
-   source review selected the unchanged C14 collector plus a networkless local
-   policy evaluator; unknown or incomplete data remains inconclusive. G6 is open.
-   Reconcile catalog acceptance status/counts only on the respective merges.
-4. Then select T04 web hierarchy, T05 SNMP interface page and T06 AAAA/PTR from
-   the finite checklist. Do not substitute optional signatures or program quotas.
-5. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
-   Review the section 3 architecture correction in proposal PR #31 now. Preserve
-   historical PDFs/email/mocks; refresh broader capability claims in November
-   before the 15 November deadline. Submission requires a separate decision.
-6. Credentials, paid/live models, attached/external networks, deeper workflows
+1. Preserve the completed PR #79/#80/#81 merges and their receipts, frozen source
+   pins, accepted evidence and earlier failed development trials. T02/T03 G1–G6
+   are closed at 48 accepted profiles / 16 programs.
+2. Confirm proposal PR #31's final CI/merge from GitHub and its private receipt;
+   do not repeat the merge when this revision is on main. Section 3 architecture
+   review and Mermaid validation are complete.
+   Preserve existing PDFs and email; submission remains a separate November
+   decision, alongside the broader verified-capability refresh.
+3. Reconcile the compiled catalog's five stale candidate labels in the next
+   code change, preserving accepted contracts and execution behavior. Then begin
+   T04 bounded web hierarchy source feasibility from the finite checklist.
+   T05 SNMP interface page and T06 AAAA/PTR remain required after T04; do not
+   substitute optional signatures or program quotas.
+4. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
+   No accepted milestone or personal walkthrough needs to be repeated.
+5. Credentials, paid/live models, attached/external networks, deeper workflows
    and comparative benchmarks remain deferred.
 
 ## Recovery and verification
