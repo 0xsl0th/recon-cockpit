@@ -13,6 +13,7 @@ DIG_TOOL_ID = "dig_dns_query_v1"
 OPENSSL_TOOL_ID = "openssl_tls_handshake_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 SSH_ALGORITHMS_TOOL_ID = "ssh_transport_algorithms_v1"
+SSH_POLICY_TOOL_ID = "ssh_transport_policy_v1"
 NUCLEI_TOOL_ID = "nuclei_directory_listing_v1"
 NUCLEI_GIT_TOOL_ID = "nuclei_git_head_v1"
 TLS_CERTIFICATE_TOOL_ID = "openssl_peer_certificate_v1"
@@ -47,6 +48,7 @@ FTP_TLS_FINAL_GREETING = b"220 harbordesk.test ready\r\n"
 DATABASE_TLS_SERVICES = {POSTGRESQL_TLS_TOOL_ID: "postgresql", MYSQL_TLS_TOOL_ID: "mysql"}
 PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_ALGORITHMS_TOOL_ID: "ssh-kexinit-wire-v1",
+    SSH_POLICY_TOOL_ID: "ssh-policy-wire-v1",
     NUCLEI_TOOL_ID: "nuclei-directory-listing-v1",
     NUCLEI_GIT_TOOL_ID: "nuclei-git-head-v1",
     TLS_CERTIFICATE_TOOL_ID: "openssl-peer-certificate-v1",
@@ -182,6 +184,8 @@ def validate_result(tool_id, value):
         return _http_options_parser().validate_result(value)
     if tool_id == SNMP_NEXT_TOOL_ID:
         return _snmp_next_parser().validate_result(value)
+    if tool_id == SSH_POLICY_TOOL_ID:
+        return _ssh_policy_parser().validate_result(value)
     if tool_id == SSH_ALGORITHMS_TOOL_ID:
         return _ssh_algorithms_parser().validate_result(value)
     if tool_id == TLS_CERTIFICATE_TOOL_ID:
@@ -835,6 +839,18 @@ def _parse_snmp_next(output, stderr):
     return _snmp_next_parser().parse_output(output, stderr)
 
 
+def _ssh_policy_parser():
+    if __package__:
+        from . import network_tools_ssh_policy_parser
+    else:
+        import network_tools_ssh_policy_parser
+    return network_tools_ssh_policy_parser
+
+
+def _parse_ssh_policy(output, stderr):
+    return _ssh_policy_parser().parse_output(output, stderr)
+
+
 def _ssh_algorithms_parser():
     if __package__:
         from . import network_tools_ssh_algorithms_parser
@@ -985,6 +1001,7 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp,
             SNMP_NEXT_TOOL_ID: _parse_snmp_next,
             SSH_ALGORITHMS_TOOL_ID: _parse_ssh_algorithms,
+            SSH_POLICY_TOOL_ID: _parse_ssh_policy,
             TLS_CERTIFICATE_TOOL_ID: _parse_tls_certificate,
             WHATWEB_TOOL_ID: _parse_whatweb, DNS_MX_TOOL_ID: _parse_dns_mx, DNS_SRV_TOOL_ID: _parse_dns_srv,
             DNS_NSID_TOOL_ID: _parse_dns_nsid,

@@ -26,6 +26,7 @@ PROGRAMS = {
     "nuclei_directory_listing_v1": "nuclei",
     "openssl_peer_certificate_v1": "openssl",
     "ssh_transport_algorithms_v1": None,
+    "ssh_transport_policy_v1": None,
     "snmp_interface_next_v1": "snmpgetnext",
     "ftp_starttls_handshake_v1": "openssl",
     "ldap_starttls_handshake_v1": "openssl",
@@ -60,6 +61,7 @@ NORMAL_NETWORK_CASES = {
     "nuclei_directory_listing_v1": ("nuclei-index", "nuclei"),
     "openssl_peer_certificate_v1": ("tls-cert-ok", "tls-certificate"),
     "ssh_transport_algorithms_v1": ("ssh-algos-ok", "ssh-algorithms"),
+    "ssh_transport_policy_v1": ("ssh-policy-conforming", "ssh-policy"),
     "snmp_interface_next_v1": ("snmp-next-ok", "snmp-next"),
     "ftp_starttls_handshake_v1": ("ftp-tls-ok", "ftp-starttls"),
     "ldap_starttls_handshake_v1": ("ldap-tls-ok", "ldap-starttls"),
@@ -141,9 +143,9 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
     assert result["runtime_availability"] == "not_checked"
     ids = [row["tool_id"] for row in result["tools"]]
     assert ids == sorted(PROGRAMS) == sorted(ADAPTERS)
-    assert result["capability_count"] == len(ids) == 47
+    assert result["capability_count"] == len(ids) == 48
     assert result["accepted_capability_count"] == 43
-    assert result["candidate_capability_count"] == 4
+    assert result["candidate_capability_count"] == 5
     families = {row["external_program"] for row in result["tools"] if row["external_program"] is not None}
     assert families == set(PROGRAMS.values()) - {None}
     assert result["external_program_count"] == len(families) == 16

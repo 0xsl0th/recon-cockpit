@@ -4,26 +4,34 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: [PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79)
-is merged at `5f4197f`. Its four TLS posture profiles remain T02 candidates;
-accepted coverage stays 43 profiles / 16 programs until the acceptance review.
-[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) completes T02's hostile-usefulness, ambiguity/pressure and
-historical-bundle corpus in `/tmp/recon-tls-posture-acceptance`, branch
-`feature/tls-posture-acceptance`. The separate T03 SSH policy batch is in
-`/tmp/recon-ssh-policy`, branch `feature/ssh-policy-assessment`; it follows T02 in
-review order. T01/C18 and earlier milestones stay closed.**
+**Current status: PR #79 is merged at `5f4197f`. Review
+[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) for T02 acceptance, then
+[PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) for T03 SSH policy.
+Both are implemented candidates with frozen native validation; neither task is
+closed before its G6 review/merge. Accepted coverage stays 43 profiles / 16
+programs, with four TLS and one SSH policy candidates. T01/C18 stays closed.**
 
-[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) now has **65 native
-and 21,593 portable passes**, with 20/20 useful ordinary/absence/robustness trials,
-20 inconclusive negatives, one HRR retry and four extra-stream refusals. All
-45 fresh and 159 historical bundles replayed unchanged; all 630 boundary fields
-passed. Source freeze `169047f` stayed unchanged during validation. Private
-verification SHA-256: `964dcaf566864236785c87938e826b00e447bf10c8875151b39dfdf7472cb58b`. See the
-[acceptance runbook](tls-posture-acceptance.md). G6 remains open until its merge;
-do not relabel earlier accepted milestones or count candidates prematurely.
-T03 is separately implemented in [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81),
-with 52 native passes and final portable/replay checks tracked in its worktree.
-Review #80 before #81, then select T04 web hierarchy from the finite checklist.
+T02 passed **65 native and 21,593 portable tests**, including 20 useful
+ordinary/absence/robustness observations and 20 inconclusive negatives. All 45
+fresh and 159 historical bundles replayed unchanged. Its [acceptance runbook](tls-posture-acceptance.md)
+records the frozen source, evidence hash, refusal tests and remaining G6 gate.
+
+T03 uses the byte-identical C14 collector plus an immutable networkless policy
+snapshot, after [source review](ssh-policy-feasibility.md) ruled out stock
+ssh-audit's additional probes. Six ordinary and two robustness tasks completed;
+two unknown and nine malformed/pressure cases stayed inconclusive. All 52 native
+checks passed, including thirteen TLS and fourteen C14 regressions. Its complete
+[runbook](ssh-policy-tools.md) records limits, policy semantics and validation.
+Private evidence: `.secure-agent/ssh-policy-20261009/verification.json`, SHA-256
+`d3512612eb1b37d4cbd5e0d46736fbc0c6f5f18ed5681d900fb4767076a01a75`. The initial six historical-selector CI failures are retained;
+only case exclusions changed, with predecessor hashes intact. Model calls/cost
+remain zero. No professional-service or general hardening compliance is claimed.
+
+Worktrees: `/tmp/recon-tls-posture-acceptance` (`feature/tls-posture-acceptance`)
+and `/tmp/recon-ssh-policy` (`feature/ssh-policy-assessment`). PR #81 contains
+PR #80's changes and must follow it in merge order. After both are accepted,
+reconcile candidate status/counts in the catalog and select T04's bounded web
+hierarchy source-feasibility slice. T05/T06 remain required after T04.
 
 Fresh PR #79 authority/runtime and parser/evidence reviews found no blockers;
 337 root-focused tests passed (independent overlapping review sets: 367 and 713).

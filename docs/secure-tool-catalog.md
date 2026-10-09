@@ -402,8 +402,8 @@ now listed with `acceptance_status: candidate_pending_T02`:
 | `openssl_tls12_posture_v1` | TLS 1.2 | Pending T02 |
 | `openssl_tls13_posture_v1` | TLS 1.3 | Pending T02 |
 
-The catalog distinguishes 47 registered profiles from **43 accepted + 4 candidate**
-profiles, using 16 programs. Each candidate needs its own exact approval and
+The catalog distinguishes 48 registered profiles from **43 accepted + 5 candidate**
+profiles, using 16 programs. Each TLS candidate needs its own exact approval and
 consumed permit, within one 30-second owned session. Explicit protocol rejection
 can be useful evidence while retaining failed execution/exit 1; retry blocking
 alone does not count as task completion. Both inspectors verify separate bounded
@@ -415,3 +415,13 @@ review, required checks and an authorized merge remain pending. Existing accepte
 recipes, limits and frozen contract hashes remain unchanged. No new program or
 general real-server support is claimed. Credentials, paid/live models and attached
 networks remain deferred.
+
+## T03 SSH policy candidate
+
+`ssh_transport_policy_v1` is listed with `acceptance_status: candidate_pending_T03`.
+It reuses the accepted C14 collector bytes and assesses both directional
+advertisements in a networkless pinned policy evaluator. Known deviations can be
+useful; unknown algorithms remain inconclusive. This adds no external program.
+[PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) follows T02 PR #80 in review
+order; see the [runbook](ssh-policy-tools.md). Credentials, paid calls and broader
+workflows remain deferred. Accepted count stays 43 until the respective merges.

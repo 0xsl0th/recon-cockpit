@@ -13,7 +13,7 @@ from types import MappingProxyType
 
 from .tool_parameters import (
     CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters, HTTPOptionsParameters,
-    NucleiParameters, OpenSSLTLSParameters, TLSCertificateParameters, SSHHostKeysParameters, SSHAlgorithmsParameters, LDAPRootDSEParameters, SMBShareListParameters,
+    NucleiParameters, OpenSSLTLSParameters, TLSCertificateParameters, SSHHostKeysParameters, SSHAlgorithmsParameters, SSHPolicyParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters,
@@ -66,6 +66,7 @@ NUCLEI_GIT_TOOL_ID = "nuclei_git_head_v1"
 TLS_CERTIFICATE_TOOL_ID = "openssl_peer_certificate_v1"
 SSH_TOOL_ID = "ssh_host_keys_v1"
 SSH_ALGORITHMS_TOOL_ID = "ssh_transport_algorithms_v1"
+SSH_POLICY_TOOL_ID = "ssh_transport_policy_v1"
 LDAP_TOOL_ID = "ldap_rootdse_v1"
 SMB_TOOL_ID = "smb_share_list_v1"
 RPCINFO_TOOL_ID = "rpcinfo_dump_v1"
@@ -414,6 +415,17 @@ ADAPTERS = MappingProxyType({
          "reviewed_exec_allowlist", "bounded_threads", "no_child_processes", "fixed_tcp_endpoint",
          "single_fixed_identification_and_kexinit", "fresh_cookie_only", "write_shutdown_before_response",
          "one_bounded_server_packet", "no_key_exchange_completion", "no_authentication",
+         "no_host_trust_claim", "no_response_directed_followup", "untrusted_algorithm_advertisements"),
+    ),
+    SSH_POLICY_TOOL_ID: ToolAdapter(
+        SSH_POLICY_TOOL_ID, SSHPolicyParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "assess_owned_ssh_transport_policy", "owned-ssh-transport-policy-v1",
+        "bounded-ssh-transport-policy-result-v1", "ssh-policy-wire-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "bounded_threads", "no_child_processes", "fixed_tcp_endpoint",
+         "single_fixed_identification_and_kexinit", "fresh_cookie_only", "write_shutdown_before_response",
+         "one_bounded_server_packet", "pinned_local_policy", "both_transport_directions",
+         "unknown_algorithms_inconclusive", "no_key_exchange_completion", "no_authentication",
          "no_host_trust_claim", "no_response_directed_followup", "untrusted_algorithm_advertisements"),
     ),
     LDAP_TOOL_ID: ToolAdapter(

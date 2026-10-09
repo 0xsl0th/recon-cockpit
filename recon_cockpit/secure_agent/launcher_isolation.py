@@ -44,6 +44,8 @@ WEB_TOOLS_MODULES = ('web_tools_backend', 'web_tools_lab', 'web_tools_lab_worker
     'web_tools_parser_worker', 'http_headers_parser', 'tool_runtime_common', 'tool_worker_common')
 NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_tools_lab_worker',
     'network_tools_tls_posture_spec',
+    'network_tools_ssh_policy_spec', 'network_tools_ssh_policy_fixture',
+    'network_tools_ssh_policy_parser', 'network_tools_ssh_policy_runtime',
     'network_tools_fixture', 'web_tools_tls_fixture', 'network_tools_ssh_fixture', 'network_tools_smb_fixture',
     'network_tools_rpc_fixture', 'network_tools_ftp_smtp_fixture', 'network_tools_http_metadata_fixture',
     'network_tools_nmap_fixture', 'network_tools_nmap_parser',

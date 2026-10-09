@@ -34,7 +34,7 @@ def manifest():
 def test_all_twenty_nine_accepted_runtime_contracts_remain_byte_identical():
     values = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in (runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool != "ssh_transport_policy_v1" and tool not in (runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
     assert len(values) == 29
     # Captured from accepted main 7cc6645 before any C14 runtime edits.
     assert hashlib.sha256(runtime.encode(values)).hexdigest() == (
@@ -50,7 +50,7 @@ def test_compiled_client_pins_the_public_negotiation_request():
 
 def test_all_38_accepted_adapters_remain_byte_identical():
     values = {tool: adapter.to_dict() for tool, adapter in adapters.ADAPTERS.items()
-              if "_posture_" not in tool and tool not in (adapters.SSH_ALGORITHMS_TOOL_ID, adapters.TLS_CERTIFICATE_TOOL_ID, adapters.NUCLEI_TOOL_ID, adapters.NUCLEI_GIT_TOOL_ID, adapters.DIG_MX_TOOL_ID)}
+              if "_posture_" not in tool and tool != adapters.SSH_POLICY_TOOL_ID and tool not in (adapters.SSH_ALGORITHMS_TOOL_ID, adapters.TLS_CERTIFICATE_TOOL_ID, adapters.NUCLEI_TOOL_ID, adapters.NUCLEI_GIT_TOOL_ID, adapters.DIG_MX_TOOL_ID)}
     assert len(values) == 38
     assert hashlib.sha256(runtime.encode(values)).hexdigest() == (
         "01fdd622d95c321c96dd941b6edc0f4e8086c8012453d12d03e1fbb03148e0dc")

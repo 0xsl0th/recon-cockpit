@@ -88,6 +88,10 @@ _ENTRIES = MappingProxyType({
     adapters.TLS_CERTIFICATE_TOOL_ID: _network("openssl", "tls-cert-ok", "tls-certificate", "tls-certificate-tools",
         "Bounded leaf certificate fingerprint, validity and DNS/IP names from a verified owned TLS handshake.",
         "No application session, credentials, revocation fetch, cipher sweep or certificate-directed follow-up."),
+    adapters.SSH_POLICY_TOOL_ID: _network(None, "ssh-policy-conforming", "ssh-policy", "ssh-policy-tools",
+        "T03 candidate: one bounded pre-authentication advertisement, assessed against an immutable local policy in both directions.",
+        "Conforming and known-deviation observations can both be useful; unknown algorithms and partial replies remain inconclusive.",
+        "No stock ssh-audit integration, host identity, negotiated security, exploitability, login, stress or rate test is claimed."),
     adapters.SSH_ALGORITHMS_TOOL_ID: _network(None, "ssh-algos-ok", "ssh-algorithms", "ssh-algorithms-tools",
         "Repository-owned Ruby adapter collects one bounded SSH identification and KEXINIT advertisement, after half-closing writes; no authentication or session.",
         "Lists preserve untrusted peer preference order and direction; no selected algorithm, verified security, identity or vulnerability is claimed."),
@@ -205,15 +209,16 @@ def _summary(tool_id, entry):
             "external_program": entry.program, "execution_profile": adapter.execution_profile,
             "parser_version": adapter.parser_version,
             **({"acceptance_status": "candidate_pending_T02"}
-               if tool_id in tls_posture.TOOL_VERSIONS else {})}
+               if tool_id in tls_posture.TOOL_VERSIONS else {"acceptance_status": "candidate_pending_T03"}
+               if tool_id == adapters.SSH_POLICY_TOOL_ID else {})}
 
 
 def list_tools():
     """List reviewed capabilities, without claiming their prerequisites exist."""
     tools = [_summary(tool_id, _entry(tool_id)) for tool_id in sorted(adapters.ADAPTERS)]
     return {**_common(), "capability_count": len(tools),
-            "accepted_capability_count": len(tools) - len(tls_posture.TOOL_VERSIONS),
-            "candidate_capability_count": len(tls_posture.TOOL_VERSIONS),
+            "accepted_capability_count": len(tools) - len(tls_posture.TOOL_VERSIONS) - 1,
+            "candidate_capability_count": len(tls_posture.TOOL_VERSIONS) + 1,
             "external_program_count": len({row["external_program"] for row in tools
                                            if row["external_program"] is not None}),
             "tools": tools}

@@ -50,6 +50,19 @@ def _encode(value):
 
 
 def spec(case):
+    if type(case) is str and case.startswith("ssh-policy-"):
+        from . import network_tools_ssh_policy_spec as policy
+        if case not in policy.CASES:
+            raise ValueError("invalid_ssh_policy_case")
+        response = policy.response(case)
+        # Reuse the exact C14 boundary, with a distinct case and policy identity.
+        result = spec("ssh-algos-ok")
+        result.update(scenario=case, fixture_marker="recon-harbordesk-ssh-policy-v1",
+            tool_id=policy.TOOL_ID, behavior=case.removeprefix("ssh-policy-"),
+            response_sha256=None if response is None else hashlib.sha256(response).hexdigest(),
+            policy_id=policy.POLICY_ID, policy_sha256=policy.POLICY_SHA256,
+            policy_semantics="advertisements_only_not_verified_security")
+        return result
     if type(case) is str and case in TLS_POSTURE_CASES:
         from .network_tools_tls_posture_identity import spec as tls_spec
         return tls_spec(case)

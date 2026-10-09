@@ -27,6 +27,11 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(tuple("ssh-policy-" + suffix for suffix in (
+        "conforming", "directional", "legacy", "c2s-deviation", "s2c-deviation", "guessed",
+        "fragmented", "injected", "unknown", "mixed-unknown", "malformed-banner",
+        "wrong-message", "malformed-list", "bad-padding", "nonzero-reserved",
+        "truncated", "stalled", "oversized", "summary-pressure")), "ssh_transport_policy_v1"),
     **{f"tls-posture-{version}-{variant}": tool
        for version, tool in (("tls1", "openssl_tls10_posture_v1"),
                              ("tls1_1", "openssl_tls11_posture_v1"),
