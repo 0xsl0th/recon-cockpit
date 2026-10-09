@@ -1,8 +1,10 @@
 # T03 — bounded SSH advertisement policy assessment
 
-`ssh_transport_policy_v1` is a candidate secure profile. It reuses the accepted
-C14 collector bytes and adds a pinned networkless policy assessment. T03 remains
-open until its full validation, review and authorized merge; review T02 first.
+`ssh_transport_policy_v1` is an accepted secure profile. It reuses the accepted
+C14 collector bytes and adds a pinned networkless policy assessment. [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81)
+closed T03 G1–G6 at `b90a365e` after review and five passing final checks, following
+accepted T02. The catalog now reports 48 accepted profiles, zero candidates and
+16 programs.
 Stock ssh-audit is not integrated: its pinned source performs extra host-key and
 key-exchange probes before policy evaluation, even with rate testing disabled.
 See the [source review and exact corpus](ssh-policy-feasibility.md).
@@ -35,7 +37,7 @@ and write EOF, preserve bounds and close the lab. Startup refusal is not success
 Both inspectors must replay original bytes and recompute every policy rule.
 
 Credentials, paid/live models, external networks, deeper workflows and comparative
-benchmarking remain deferred. This adds one candidate profile and no external
+benchmarking remain deferred. This adds one accepted profile and no external
 program. C14 and all earlier accepted profile contracts remain unchanged.
 
 ## Validation
@@ -64,5 +66,6 @@ do not represent a personal operator walkthrough.
 Private immutable verification: `.secure-agent/ssh-policy-20261009/verification.json`,
 SHA-256 `d3512612eb1b37d4cbd5e0d46736fbc0c6f5f18ed5681d900fb4767076a01a75`. Retain the initial portable/CI failures, the earlier development
 selector fixes and the corrected deterministic Markdown replay finding. Final
-PR/check status is recorded in the private handoff. Review/merge follows T02;
-G6 remains open until that authorized decision.
+PR/check status is recorded in the private handoff. T03 G1–G6 are closed by the
+reviewed, authorized merge in PR #81; this catalog reconciliation changes no
+collector, policy, runtime or evidence contract. A native T04 prototype follows the [source review](web-hierarchy-feasibility.md).

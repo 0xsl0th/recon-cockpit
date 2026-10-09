@@ -37,7 +37,6 @@ def _network(program, case, policy, runbook, *limitations):
 
 _ENTRIES = MappingProxyType({
     **{tool: _network("openssl", f"tls-posture-{version}-modern", "tls-posture", "tls-posture-tools",
-        "T02 candidate: production integration is available for review; product acceptance remains pending.",
         "One separately authorized fixed-version probe through an owned complete-record mediator; independent peer receipt is required.",
         "Explicit protocol rejection is useful evidence, not process success. Retry blocking alone is not useful completion.",
         "Encrypted record contents remain opaque; this is not a general encrypted application-data prevention claim.",
@@ -89,7 +88,7 @@ _ENTRIES = MappingProxyType({
         "Bounded leaf certificate fingerprint, validity and DNS/IP names from a verified owned TLS handshake.",
         "No application session, credentials, revocation fetch, cipher sweep or certificate-directed follow-up."),
     adapters.SSH_POLICY_TOOL_ID: _network(None, "ssh-policy-conforming", "ssh-policy", "ssh-policy-tools",
-        "T03 candidate: one bounded pre-authentication advertisement, assessed against an immutable local policy in both directions.",
+        "One bounded pre-authentication advertisement, assessed against an immutable local policy in both directions.",
         "Conforming and known-deviation observations can both be useful; unknown algorithms and partial replies remain inconclusive.",
         "No stock ssh-audit integration, host identity, negotiated security, exploitability, login, stress or rate test is claimed."),
     adapters.SSH_ALGORITHMS_TOOL_ID: _network(None, "ssh-algos-ok", "ssh-algorithms", "ssh-algorithms-tools",
@@ -207,18 +206,15 @@ def _summary(tool_id, entry):
     return {"tool_id": tool_id, "effect": adapter.effect,
             "implementation": "native" if entry.program is None else "external_program",
             "external_program": entry.program, "execution_profile": adapter.execution_profile,
-            "parser_version": adapter.parser_version,
-            **({"acceptance_status": "candidate_pending_T02"}
-               if tool_id in tls_posture.TOOL_VERSIONS else {"acceptance_status": "candidate_pending_T03"}
-               if tool_id == adapters.SSH_POLICY_TOOL_ID else {})}
+            "parser_version": adapter.parser_version}
 
 
 def list_tools():
     """List reviewed capabilities, without claiming their prerequisites exist."""
     tools = [_summary(tool_id, _entry(tool_id)) for tool_id in sorted(adapters.ADAPTERS)]
     return {**_common(), "capability_count": len(tools),
-            "accepted_capability_count": len(tools) - len(tls_posture.TOOL_VERSIONS) - 1,
-            "candidate_capability_count": len(tls_posture.TOOL_VERSIONS) + 1,
+            "accepted_capability_count": len(tools),
+            "candidate_capability_count": 0,
             "external_program_count": len({row["external_program"] for row in tools
                                            if row["external_program"] is not None}),
             "tools": tools}

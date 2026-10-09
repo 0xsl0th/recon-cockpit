@@ -7,19 +7,19 @@ Current continuation (9 October 2026):
 `b90a365ef01fb6a6841b367fe52b4597aa6a219f`, after review and all five final checks.
 **T02 and T03 meet G1–G6 and are closed: 48 accepted profiles / 16 programs.**
 T02 retains 65 native and 21,593 portable passes; T03 retains 52 native and
-21,898 portable passes. The compiled catalog still labels 43 accepted profiles
-and five candidates; reconcile those metadata labels in the next code change,
-without repeating acceptance or changing execution controls. This documentation
-change intentionally leaves runtime/catalog code unchanged.
+21,898 portable passes. The compiled catalog now reports **48 accepted profiles,
+zero candidates and 16 programs**, matching those merges. This metadata
+reconciliation changes no accepted contract, execution control or runtime limit.
 
-The next coverage task is **T04 bounded web hierarchy**, after catalog-label
-housekeeping; T05/T06 remain required. Earlier milestones stay closed. Proposal
-PR #31's section 3 architecture correction has passed review and Mermaid
-validation; its final CI/merge state is recorded in GitHub and the private
-merge receipt. Once this revision is on main, the correction is integrated and
-its merge must not be repeated. Submission and the wider proposal refresh
-remain deferred to November. Credentials, paid/live models, attached targets,
-deeper workflows and comparative benchmarking remain deferred.
+The [T04 source review](web-hierarchy-feasibility.md) selects a separate bounded
+ffuf hierarchy candidate. Native prototype, registration and G1–G6 remain open;
+no T04 profile is accepted. T05/T06 remain required. Earlier milestones stay closed. Proposal PR #31's
+section 3 architecture correction merged as `e23f561` after review, Mermaid
+validation and five passing final checks. All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37870742628)
+also passed; do not repeat the merge. Submission and the
+wider proposal refresh remain deferred to November. Credentials, paid/live
+models, attached targets, deeper workflows and comparative benchmarking remain
+deferred.
 
 The dated baseline and candidate wording below preserve their historical
 snapshots; this continuation supersedes their pre-merge status.
@@ -58,7 +58,7 @@ claim that today's bounded fixtures support professional engagements.
 | --- | --- | --- |
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
-| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX is accepted. [T02 mediation](tls-posture-mediation.md) preserves 8/8 ordinary and 4/4 absence observations while blocking the tested second ClientHello before peer delivery, 1/1. Closed diagnostic observations passed 26/26 isolated replays and 18/18 safe negative cases; PR #79 merged four production candidates; PR #80 validates their remaining acceptance corpus, with G6 review/merge pending. The separate PR #81 SSH policy candidate follows in review order. T02 stays open with no accepted profile. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
+| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted with G1–G6 closed in PRs #74/#80/#81. The catalog records 48 accepted profiles and no candidates across 16 programs. T04 has a [source-reviewed ffuf candidate](web-hierarchy-feasibility.md); native prototype and G1–G6 are next. T05/T06 remain required. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
 | 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
@@ -270,7 +270,7 @@ robustness completions, zero unnecessary refusals, 24/24 blocked destinations,
 **33 profiles using 14 programs**. C8 stays closed; private review receipt:
 `.secure-agent/pr62-merge-review.json`.
 
-**Current status: PR #79 merged four T02 [production candidates](tls-posture-tools.md);
+**Historical pre-merge snapshot (before PRs #80/#81): PR #79 merged four T02 [production candidates](tls-posture-tools.md);
 C18/T01 stays accepted. PR #80 validates the acceptance corpus; G6 review/checks
 and authorized merge remain pending. PR #81 is a separate T03 candidate, reviewed
 after T02; T02–T06 remain open and accepted coverage stays 43/16.**

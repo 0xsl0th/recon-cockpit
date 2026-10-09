@@ -34,20 +34,32 @@ The initial six historical-selector CI failures remain recorded; predecessor
 hashes stay intact. Model calls/cost remain zero. No professional-service or
 general hardening compliance is claimed.
 
-**Remaining housekeeping:** the compiled catalog still reports 43 accepted
-profiles plus four TLS and one SSH policy candidates. Reconcile those metadata
-labels in the next code change; their accepted status follows the reviewed
-merges above, without reopening G1–G6 or changing execution controls. This
-proposal task changes documentation only. Then select **T04 bounded web
-hierarchy**; T05 SNMP interface page and T06 AAAA/PTR remain required.
+The compiled catalog now reports **48 accepted profiles, zero candidates and
+16 programs**, matching the reviewed merges above. Only acceptance metadata and
+its documentation change; G1–G6 stay closed and execution controls stay fixed.
+This reconciliation and the source-only T04 plan are in
+[PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82), pending final review and
+the five-job portable matrix before merge. The private handoff records the final
+head and check status; T04 execution is not part of this PR.
+The [T04 source review](web-hierarchy-feasibility.md) selects a separate bounded
+ffuf hierarchy candidate. Native prototype, registration and G1–G6 remain open;
+no T04 profile is accepted. T05 SNMP interface page and T06 AAAA/PTR remain required.
+
+Catalog reconciliation passed **300 focused tests** with no failures, errors or
+skips, including CLI non-execution guards and frozen T02/T03 contract hashes.
+The before/after API comparison confirms that only acceptance counts, temporary
+status fields and five stale description texts changed; all 48 descriptors,
+recipes, parameters and limits are unchanged. Private proof:
+`.secure-agent/catalog-acceptance-20261009/verification.json`.
 
 **Proposal PR #31:** section 3 now separates authorization, durable audit intent
 and required approval proof before launch, with broker request/response, scope
 context and execution/denial feedback. Architecture review found no required
 runtime change. Mermaid CLI 12 and the existing proposal exporter validated the
-diagram (13 nodes and 22 directed edges). Final CI/merge state is recorded in
-GitHub and the private merge receipt. Once this revision is on main, the
-correction is integrated; do not repeat its merge. Existing PDFs/email/mocks stay unchanged; the broader proposal
+diagram (13 nodes and 22 directed edges). It merged as `e23f561` after five
+passing final checks; all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37870742628)
+also passed. Do not repeat its merge. Existing PDFs/email/mocks stay unchanged;
+the broader proposal
 refresh and submission decision remain in November. Credentials, paid/live
 models, attached targets, deeper workflows and comparative benchmarks remain
 deferred.
@@ -2063,14 +2075,15 @@ Planning uses synthetic responses.
 1. Preserve the completed PR #79/#80/#81 merges and their receipts, frozen source
    pins, accepted evidence and earlier failed development trials. T02/T03 G1–G6
    are closed at 48 accepted profiles / 16 programs.
-2. Confirm proposal PR #31's final CI/merge from GitHub and its private receipt;
-   do not repeat the merge when this revision is on main. Section 3 architecture
-   review and Mermaid validation are complete.
-   Preserve existing PDFs and email; submission remains a separate November
-   decision, alongside the broader verified-capability refresh.
-3. Reconcile the compiled catalog's five stale candidate labels in the next
-   code change, preserving accepted contracts and execution behavior. Then begin
-   T04 bounded web hierarchy source feasibility from the finite checklist.
+2. Preserve proposal PR #31's accepted architecture correction at `e23f561`;
+   review, Mermaid validation and all five final/post-merge checks passed.
+   Preserve its private receipt, existing PDFs and email; submission remains a
+   separate November decision, alongside
+   the broader verified-capability refresh.
+3. The compiled catalog is reconciled to 48 accepted profiles, zero candidates
+   and 16 programs. Follow the [T04 source review](web-hierarchy-feasibility.md)
+   with a native bounded ffuf hierarchy prototype, preserving the existing ffuf
+   profile and all accepted contracts. Registration and G1–G6 remain open.
    T05 SNMP interface page and T06 AAAA/PTR remain required after T04; do not
    substitute optional signatures or program quotas.
 4. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
