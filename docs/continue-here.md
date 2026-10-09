@@ -7,11 +7,23 @@ This development checkpoint never resumes an assessment or restores approvals.
 **Current status: [PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79)
 is merged at `5f4197f`. Its four TLS posture profiles remain T02 candidates;
 accepted coverage stays 43 profiles / 16 programs until the acceptance review.
-The current batch completes T02's hostile-usefulness, ambiguity/pressure and
+[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) completes T02's hostile-usefulness, ambiguity/pressure and
 historical-bundle corpus in `/tmp/recon-tls-posture-acceptance`, branch
 `feature/tls-posture-acceptance`. The separate T03 SSH policy batch is in
 `/tmp/recon-ssh-policy`, branch `feature/ssh-policy-assessment`; it follows T02 in
 review order. T01/C18 and earlier milestones stay closed.**
+
+[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) now has **65 native
+and 21,593 portable passes**, with 20/20 useful ordinary/absence/robustness trials,
+20 inconclusive negatives, one HRR retry and four extra-stream refusals. All
+45 fresh and 159 historical bundles replayed unchanged; all 630 boundary fields
+passed. Source freeze `169047f` stayed unchanged during validation. Private
+verification SHA-256: `964dcaf566864236785c87938e826b00e447bf10c8875151b39dfdf7472cb58b`. See the
+[acceptance runbook](tls-posture-acceptance.md). G6 remains open until its merge;
+do not relabel earlier accepted milestones or count candidates prematurely.
+T03 is separately implemented in [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81),
+with 52 native passes and final portable/replay checks tracked in its worktree.
+Review #80 before #81, then select T04 web hierarchy from the finite checklist.
 
 Fresh PR #79 authority/runtime and parser/evidence reviews found no blockers;
 337 root-focused tests passed (independent overlapping review sets: 367 and 713).
@@ -1987,10 +1999,10 @@ Planning uses synthetic responses.
 2. Review the T02 [acceptance batch](tls-posture-acceptance.md), its final source
    pin, complete native corpus, portable CI and full accepted-bundle replay.
    T02 remains open until G6 review/merge; accepted coverage stays 43/16 meanwhile.
-3. Continue T03's separate SSH policy assessment batch after T02 in review order.
-   Inspect stock ssh-audit before choosing the engine; preserve the accepted C14
-   collector and evaluate both advertised transport directions against an explicit
-   immutable local policy. Unknown or incomplete data must remain inconclusive.
+3. Review the separate T03 SSH policy candidate in PR #81 after T02. Its pinned
+   source review selected the unchanged C14 collector plus a networkless local
+   policy evaluator; unknown or incomplete data remains inconclusive. G6 is open.
+   Reconcile catalog acceptance status/counts only on the respective merges.
 4. Then select T04 web hierarchy, T05 SNMP interface page and T06 AAAA/PTR from
    the finite checklist. Do not substitute optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.

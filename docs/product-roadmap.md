@@ -2,10 +2,11 @@
 
 Current continuation (9 October 2026): PR #79 merged as `5f4197f` after fresh
 review and five passing PR checks; all five post-merge checks also passed.
-The [T02 acceptance batch](tls-posture-acceptance.md) addresses the remaining
-corpus and a newly found plaintext-evidence consistency gap. T03 SSH policy
-assessment follows in review order, reusing the bounded C14 collector if the
-pinned source review rules out stock ssh-audit. Accepted coverage stays 43/16;
+The [T02 acceptance batch](tls-posture-acceptance.md), PR #80, passed 65 native
+and 21,593 portable tests plus full historical replay. It fixes plaintext evidence
+consistency and retained refusal evidence. The separate SSH policy candidate in
+[PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) follows in review order,
+reusing the bounded C14 collector after source review ruled out stock ssh-audit. Accepted coverage stays 43/16;
 T02–T06 remain open until their individual review/merge gates. Credentials,
 paid/live models, deeper workflows and comparative benchmarks remain deferred.
 
