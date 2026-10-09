@@ -50,29 +50,36 @@ la salida de una herramienta, manteniendo la capacidad de resolver la tarea leg�
 ## 3. Arquitectura y límites de confianza
 
 La arquitectura separa **proponer, autorizar, acreditar condiciones y ejecutar**.
-El primer esquema muestra relaciones lógicas; no concede al agente acceso directo
+El esquema muestra relaciones lógicas; no concede al agente acceso directo
 a servicios internos. Los adaptadores del host median los mensajes acotados.
 La ruta de referencia utiliza planificación sintética y servicios propios sin
 salida externa. Los adaptadores de modelo se validan con mocks; las credenciales,
 las llamadas pagadas y la evaluación real permanecen desactivadas y diferidas.
 
 ```mermaid
-flowchart TB
-    operator["Operador: alcance, reglas y presupuesto"] --> authority["Autoridad de sesión"]
-    context["Perfil revisado: objetivo, destino y capacidades fijas"] -->|"Contexto informativo, sin permisos"| planner["Planificador y parser aislados"]
-    knowledge["Conocimiento curado y motores especializados: futuro"] -.-> planner
-    planner -->|"Solicitud acotada, mediante adaptador"| broker["Broker de IA: transporte sintético offline"]
-    broker -->|"Respuesta acotada tras controles y contabilidad"| planner
-    planner -->|"Propuesta tipada, sin autoridad"| authority
-    authority -->|"Solicitar lanzamiento de la acción exacta"| gate["Comprobaciones independientes previas"]
-    gate -->|"Solo si todas pasan"| executor["Adaptador y ejecutor aislado"]
-    executor -->|"Operación limitada"| target["Servicio propio autorizado"]
-    target -->|"Respuesta no confiable"| executor
-    executor -->|"Resultado, estado y recursos"| authority
-    gate -->|"Denegación o fallo previo: sin lanzamiento"| authority
-    authority -->|"Decisión, estado y motivo de cierre"| operator
-    authority -->|"Resultado y procedencia"| evidence["Evidencia e informe revisable"]
-    evidence -->|"Proyección autorizada si procede otro paso"| planner
+flowchart TD
+    O[Operador: alcance, reglas y presupuesto] --> A[Autoridad de sesión]
+    O -->|Selecciona perfil| C[Contexto fijo: objetivo, destino y capacidades]
+    C -->|Información, nunca permisos| P[Planificador y parser aislados]
+    P -->|Solicitud acotada mediante adaptador| B[Broker de IA: transporte sintético offline]
+    B -->|Respuesta no confiable tras controles y contabilidad| P
+    P -->|Propuesta tipada, sin autoridad| A
+    A -->|Acción exacta y contexto de sesión| G[Lanzador: comprobar todas las condiciones]
+    A -->|Persistir intención antes de ejecutar| L[Escritor de auditoría]
+    L -->|Testigo independiente del registro durable| G
+    A -->|Revisión y consumo si exige aprobación| H[Servicio de aprobación humana]
+    H -->|Testigo de concesión consumida y vigente| G
+    G -->|Revalidar política, perfil y límites| D[Admisión: permiso vinculado de un solo uso]
+    D -->|Permiso consumido y reservas verificadas| G
+    G -->|Todas pasan y aprobación vigente si se exige| X[Adaptador y ejecutor aislado]
+    G -->|Falla una condición previa| N[Sin lanzamiento]
+    N -->|Estado de rechazo o fallo| A
+    X -->|Operación limitada| T[Servicio propio autorizado]
+    T -->|Respuesta no confiable| X
+    X -->|Resultado, estado y recursos| A
+    A -->|Decisión, estado y motivo de cierre| O
+    A -->|Decisiones y resultados disponibles| E[Evidencia e informe revisable]
+    E -->|Datos no confiables liberados para otro paso elegible| P
 ```
 
 El contexto del agente describe la tarea; **no es una autorización**. Hoy procede
@@ -90,23 +97,9 @@ confiable: no concede permiso para ejecutar. La vista de evidencia depende del
 perfil; no implica entregar todos los artefactos ni el cuerpo HTTP crudo al modelo.
 
 **Antes de lanzar una herramienta se comprueban condiciones distintas y necesarias.**
-El segundo esquema detalla la ruta con lanzador aislado y verificación directa
-de auditoría y aprobación; estas opciones no describen todos los modos heredados.
-
-```mermaid
-flowchart TB
-    authority["Autoridad de sesión"] -->|"Acción exacta y contexto de sesión"| launcher["Lanzador: comprueba todas las condiciones"]
-    authority -->|"Persistir intención antes de ejecutar"| audit["Escritor de auditoría: escritura durable"]
-    audit -->|"Testigo independiente del registro previo"| launcher
-    authority -->|"Revisión y consumo, si la política exige aprobación"| approval["Servicio de aprobación humana"]
-    approval -->|"Testigo de concesión consumida, vigente y vinculada"| launcher
-    launcher -->|"Revalidar política, perfil y límites"| admission["Admisión: emitir y consumir permiso de un uso"]
-    admission -->|"Decisión y reservas verificadas"| launcher
-    launcher -->|"Falla una condición"| denied["Sin lanzamiento"]
-    launcher -->|"Todas pasan; aprobación aún vigente si se exige"| execution["Ejecución aislada y limitada"]
-    denied -->|"Estado de rechazo o fallo"| authority
-    execution -->|"Estado y uso de recursos"| authority
-```
+La puerta de lanzamiento representa la ruta con lanzador aislado y verificación
+directa de auditoría y aprobación; estas opciones no describen todos los modos
+heredados.
 
 - **Autorización:** la autoridad y la admisión aplican esquema, alcance, perfil,
   modo, secuencia y límites. El permiso de lanzamiento se vincula a la acción y
