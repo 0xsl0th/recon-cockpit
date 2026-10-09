@@ -11,9 +11,19 @@ T02 retains 65 native and 21,593 portable passes; T03 retains 52 native and
 zero candidates and 16 programs**, matching those merges. This metadata
 reconciliation changes no accepted contract, execution control or runtime limit.
 
-The [T04 source review](web-hierarchy-feasibility.md) selects a separate bounded
-ffuf hierarchy candidate. Native prototype, registration and G1–G6 remain open;
-no T04 profile is accepted. T05/T06 remain required. Earlier milestones stay closed. Proposal PR #31's
+[PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82) accepted the catalog
+reconciliation and [T04 source review](web-hierarchy-feasibility.md) at `945ba2b`;
+the merged tree matches reviewed head `fb19b606`. All five final and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37872575949)
+passed. That source-only batch stays closed.
+
+The [T04 native diagnostic](web-hierarchy-native.md) now executes real ffuf
+against the twelve compiled paths in a disconnected owned fixture. All eight
+native tests and **22,113 portable tests** passed on frozen source `1b03814`,
+with no failures, errors or skips; all 707 source hashes remained unchanged.
+This diagnostic grants no product authority and adds no registered or accepted
+profile. Next integrate a separate production profile with policy, approval,
+audit, consumed permits and both evidence inspectors, then complete G1–G6.
+T05/T06 remain required after T04. Earlier milestones stay closed. Proposal PR #31's
 section 3 architecture correction merged as `e23f561` after review, Mermaid
 validation and five passing final checks. All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37870742628)
 also passed; do not repeat the merge. Submission and the
@@ -137,7 +147,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted. T04 has a [source-reviewed ffuf candidate](web-hierarchy-feasibility.md); native prototype and G1–G6 are next. T05/T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. One additional program remains plausible after T03 reused C14 and T04 selected ffuf; the historical 4–6 assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted. T04 has a [real ffuf native diagnostic](web-hierarchy-native.md), with eight native and 22,113 portable tests passed; separate production integration and G1–G6 remain open. T05/T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. One additional program remains plausible after T03 reused C14 and T04 selected ffuf; the historical 4–6 assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |

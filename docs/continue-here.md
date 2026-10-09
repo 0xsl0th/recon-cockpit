@@ -35,15 +35,37 @@ hashes stay intact. Model calls/cost remain zero. No professional-service or
 general hardening compliance is claimed.
 
 The compiled catalog now reports **48 accepted profiles, zero candidates and
-16 programs**, matching the reviewed merges above. Only acceptance metadata and
-its documentation change; G1–G6 stay closed and execution controls stay fixed.
-This reconciliation and the source-only T04 plan are in
-[PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82), pending final review and
-the five-job portable matrix before merge. The private handoff records the final
-head and check status; T04 execution is not part of this PR.
-The [T04 source review](web-hierarchy-feasibility.md) selects a separate bounded
-ffuf hierarchy candidate. Native prototype, registration and G1–G6 remain open;
-no T04 profile is accepted. T05 SNMP interface page and T06 AAAA/PTR remain required.
+16 programs**, matching the reviewed merges above. PR #82 reconciled only
+acceptance metadata and its documentation; T02/T03 G1–G6 stayed closed and
+execution controls stayed fixed.
+[PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82) merged this reconciliation
+and the source-only T04 plan as `945ba2b`; its tree matches reviewed head
+`fb19b606`.
+All five final and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37872575949)
+passed; preserve its accepted scope and do not repeat the merge.
+
+The [T04 native diagnostic](web-hierarchy-native.md) now executes real ffuf
+against the fixed twelve-path corpus, with an independent owned-server ledger,
+measured request concurrency and confined client execution. Frozen source
+`1b03814c1e92fe7ff89d3ff6fdbb8a2b7c260ff1` passed **8/8 native tests**, with all
+707 source hashes unchanged. Both ordinary tasks completed usefully, with zero
+unnecessary refusals; hostile output retained a separate useful completion.
+Wildcard, mixed controls and redirect cases remained ambiguous; the stalled
+case remained inconclusive after actual request progress. Cancellation followed
+an observed incomplete GET and closed the client and owner. The same frozen
+source passed **22,113 portable tests**, with 1,298 integration tests deselected,
+no failures/errors/skips and all 707 source hashes unchanged. Private evidence:
+`.secure-agent/web-hierarchy-native-20261009/`, including `portable/summary.json`.
+The combined `verification.json` SHA-256 is
+`9fc4db38dbdada5088ce50247030ccef58838508e2ef318f20fdffdc597f40f4`.
+Branch `feature/t04-web-hierarchy-native` is ready for PR review; the private
+handoff records its eventual PR link, exact head and check state.
+The diagnostic adds no registered profile and does not validate product
+authorization, audit or human-approval gates. Accepted coverage stays **48 profiles,
+zero candidates and 16 programs**. Next integrate the separate production
+profile with policy, approval, audit, consumed permits and both evidence
+inspectors before completing T04 G1–G6. T05 SNMP interface page and T06 AAAA/PTR
+remain required after T04.
 
 Catalog reconciliation passed **300 focused tests** with no failures, errors or
 skips, including CLI non-execution guards and frozen T02/T03 contract hashes.
@@ -2080,15 +2102,22 @@ Planning uses synthetic responses.
    Preserve its private receipt, existing PDFs and email; submission remains a
    separate November decision, alongside
    the broader verified-capability refresh.
-3. The compiled catalog is reconciled to 48 accepted profiles, zero candidates
-   and 16 programs. Follow the [T04 source review](web-hierarchy-feasibility.md)
-   with a native bounded ffuf hierarchy prototype, preserving the existing ffuf
-   profile and all accepted contracts. Registration and G1–G6 remain open.
-   T05 SNMP interface page and T06 AAAA/PTR remain required after T04; do not
-   substitute optional signatures or program quotas.
-4. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
+3. Preserve accepted PR #82 (`945ba2b`, reviewed head `fb19b606`) and its five
+   passing final/post-merge checks. The [T04 native diagnostic](web-hierarchy-native.md)
+   passed eight native and 22,113 portable tests on frozen source `1b03814`.
+   Review branch `feature/t04-web-hierarchy-native` and its final required checks,
+   retaining failed developmental captures and exact useful/negative/cancellation
+   results; PR details belong in the private handoff. This diagnostic adds no
+   registered profile; the catalog stays 48 accepted, zero candidates, 16 programs.
+4. Then integrate a separate T04 production profile through policy, exact
+   approval, durable audit, consumed permits and both evidence inspectors,
+   preserving the existing eight-path ffuf profile. Complete independent review,
+   required checks and authorized merge before closing G1–G6. T05 SNMP interface
+   page and T06 AAAA/PTR remain required afterward; do not substitute optional
+   signatures or program quotas.
+5. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
    No accepted milestone or personal walkthrough needs to be repeated.
-5. Credentials, paid/live models, attached/external networks, deeper workflows
+6. Credentials, paid/live models, attached/external networks, deeper workflows
    and comparative benchmarks remain deferred.
 
 ## Recovery and verification

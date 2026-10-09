@@ -11,9 +11,19 @@ T02 retains 65 native and 21,593 portable passes; T03 retains 52 native and
 zero candidates and 16 programs**, matching those merges. This metadata
 reconciliation changes no accepted contract, execution control or runtime limit.
 
-The [T04 source review](web-hierarchy-feasibility.md) selects a separate bounded
-ffuf hierarchy candidate. Native prototype, registration and G1–G6 remain open;
-no T04 profile is accepted. T05/T06 remain required. Earlier milestones stay closed. Proposal PR #31's
+[PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82) accepted the catalog
+reconciliation and [T04 source review](web-hierarchy-feasibility.md) at `945ba2b`;
+the merged tree matches reviewed head `fb19b606`. All five final and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37872575949)
+passed. That source-only batch stays closed.
+
+The [T04 native diagnostic](web-hierarchy-native.md) now executes real ffuf
+against the twelve compiled paths in a disconnected owned fixture. All eight
+native tests and **22,113 portable tests** passed on frozen source `1b03814`,
+with no failures, errors or skips; all 707 source hashes remained unchanged.
+This diagnostic grants no product authority and adds no registered or accepted
+profile. Next integrate a separate production profile with policy, approval,
+audit, consumed permits and both evidence inspectors, then complete G1–G6.
+T05/T06 remain required after T04. Earlier milestones stay closed. Proposal PR #31's
 section 3 architecture correction merged as `e23f561` after review, Mermaid
 validation and five passing final checks. All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37870742628)
 also passed; do not repeat the merge. Submission and the
@@ -58,7 +68,7 @@ claim that today's bounded fixtures support professional engagements.
 | --- | --- | --- |
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
-| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted with G1–G6 closed in PRs #74/#80/#81. The catalog records 48 accepted profiles and no candidates across 16 programs. T04 has a [source-reviewed ffuf candidate](web-hierarchy-feasibility.md); native prototype and G1–G6 are next. T05/T06 remain required. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
+| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted with G1–G6 closed in PRs #74/#80/#81. The catalog records 48 accepted profiles and no candidates across 16 programs. T04 has a [real ffuf native diagnostic](web-hierarchy-native.md), with eight native and 22,113 portable tests passed; separate production integration and G1–G6 remain open. T05/T06 remain required. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
 | 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
