@@ -1,16 +1,18 @@
-# T02 — owned TLS version posture candidates
+# T02 — accepted owned TLS version posture
 
 Four production profiles were integrated in
 [PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79): `openssl_tls10_posture_v1`,
 `openssl_tls11_posture_v1`, `openssl_tls12_posture_v1` and
-`openssl_tls13_posture_v1`. T02 is open. Accepted coverage remains **43 profiles
-using 16 programs**; these four candidates reuse OpenSSL and add no program.
+`openssl_tls13_posture_v1`. [PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80)
+accepted T02 and closed G1–G6 at `f2e7b785` after review and five passing final
+checks. With accepted T03, the catalog contains **48 accepted profiles, zero
+candidates and 16 programs**. These four profiles reuse OpenSSL and add no program.
 
 Each profile uses the secure policy, approval, audit and consumed-permit path
 for one fixed-version probe against an owned disconnected `127.0.0.1:8080`
 fixture. Each action needs its own authorization. Sessions allow one step,
 30 seconds and 8,192 client output bytes, with a five-second client deadline.
-These candidates do not attach to real internal networks.
+These profiles do not attach to real internal networks.
 
 The owner reuses the reviewed complete-record mediator and an unnamed private
 socketpair. It withholds a second plaintext ClientHello before peer delivery.
@@ -42,9 +44,9 @@ or policy settings; they do not record personal operator acceptance.
 
 The [T02 acceptance batch](tls-posture-acceptance.md) covers hostile-usefulness,
 ambiguity/pressure, enforcement, cancellation and full accepted-bundle regression.
-The task remains open until that batch passes review, CI and authorized merge.
-T03–T06 follow the coverage checklist. Credentials, paid/live models, external
-targets, deeper workflows and comparative benchmarking remain deferred.
+That batch is accepted in PR #80, and T03 is accepted in PR #81. A native T04 prototype follows the
+[source review](web-hierarchy-feasibility.md); T04–T06 remain required by the coverage checklist. Credentials, paid/live models,
+external targets, deeper workflows and comparative benchmarking remain deferred.
 
 ## Validation of this integration slice
 
@@ -68,7 +70,7 @@ Its `verification.json` SHA-256 is
 All 681 tracked Python/test/example files remained unchanged before and after
 the frozen native run. The private top-level `verification.json` and
 `handoff.json` record the completed portable run, review and final PR status.
-The complete portable matrix remains a PR merge gate.
+The completed acceptance and merge status is recorded in the [acceptance runbook](tls-posture-acceptance.md).
 
 Retain `.secure-agent/tls-posture-production-development-20261008/` unchanged:
 it includes the initial parser-closure refusal and the 32/33 run whose HRR

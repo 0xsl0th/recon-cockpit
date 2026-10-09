@@ -2,8 +2,10 @@
 
 PR #79 merged the four fixed-version TLS posture candidates. This follow-up
 validates the remaining task contract and fixes a plaintext-evidence consistency
-gap. T02 stays open until final independent review, CI and authorized merge.
-Accepted coverage remains 43 profiles / 16 programs meanwhile.
+gap. [PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) accepted T02 at
+`f2e7b785` after independent review and five passing final checks, closing G1–G6.
+With accepted T03, the compiled catalog reports 48 accepted profiles, zero
+candidates and 16 programs.
 
 The exact action, five-second client, 8,192-byte combined output reservation,
 30-second session, one delivered ClientHello and owned `127.0.0.1:8080` endpoint
@@ -102,9 +104,9 @@ local-socket permission failures; the complete host-environment rerun above
 passed. Preserve that attempt alongside the developmental capture assertion and
 second-connection evidence failures; none counts as successful validation.
 
-[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) supplies G1–G5 evidence;
-**G6 remains open until exact-revision review/checks and authorized merge**. Only
-then reconcile catalog acceptance status and add the four profiles to accepted
-coverage. [T03 PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) follows in
-review order; it does not reopen T01/C18 or authorize credentials, paid calls,
-external networks, deeper workflows or comparative benchmarks.
+[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) closed **G1–G6** after
+exact-revision review, all five final checks and authorized merge at `f2e7b785`.
+The catalog records all four TLS profiles as accepted. [T03 PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81)
+then closed its own G1–G6 at `b90a365e`. A native T04 prototype follows the [source review](web-hierarchy-feasibility.md); completed
+milestones stay closed. Credentials, paid calls, external networks, deeper
+workflows and comparative benchmarks remain deferred.

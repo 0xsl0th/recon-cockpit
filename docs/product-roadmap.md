@@ -7,19 +7,19 @@ Current continuation (9 October 2026):
 `b90a365ef01fb6a6841b367fe52b4597aa6a219f`, after review and all five final checks.
 **T02 and T03 meet G1–G6 and are closed: 48 accepted profiles / 16 programs.**
 T02 retains 65 native and 21,593 portable passes; T03 retains 52 native and
-21,898 portable passes. The compiled catalog still labels 43 accepted profiles
-and five candidates; reconcile those metadata labels in the next code change,
-without repeating acceptance or changing execution controls. This documentation
-change intentionally leaves runtime/catalog code unchanged.
+21,898 portable passes. The compiled catalog now reports **48 accepted profiles,
+zero candidates and 16 programs**, matching those merges. This metadata
+reconciliation changes no accepted contract, execution control or runtime limit.
 
-The next coverage task is **T04 bounded web hierarchy**, after catalog-label
-housekeeping; T05/T06 remain required. Earlier milestones stay closed. Proposal
-PR #31's section 3 architecture correction has passed review and Mermaid
-validation; its final CI/merge state is recorded in GitHub and the private
-merge receipt. Once this revision is on main, the correction is integrated and
-its merge must not be repeated. Submission and the wider proposal refresh
-remain deferred to November. Credentials, paid/live models, attached targets,
-deeper workflows and comparative benchmarking remain deferred.
+The [T04 source review](web-hierarchy-feasibility.md) selects a separate bounded
+ffuf hierarchy candidate. Native prototype, registration and G1–G6 remain open;
+no T04 profile is accepted. T05/T06 remain required. Earlier milestones stay closed. Proposal PR #31's
+section 3 architecture correction merged as `e23f561` after review, Mermaid
+validation and five passing final checks. All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37870742628)
+also passed; do not repeat the merge. Submission and the
+wider proposal refresh remain deferred to November. Credentials, paid/live
+models, attached targets, deeper workflows and comparative benchmarking remain
+deferred.
 
 The dated baseline and candidate wording below preserve their historical
 snapshots; this continuation supersedes their pre-merge status.
@@ -94,7 +94,7 @@ release criteria still need their later concrete contracts before completion.
 | Area | Implemented and accepted | Remaining product gap |
 | --- | --- | --- |
 | Execution authority | Typed actions, policy/scope checks, isolated approval/audit/admission services, consumed grants, confined launch, bounds and cleanup. | Revalidate these guarantees for broader target configurations, credentials, sessions and intrusive effects. Local consistency hashes do not establish protection from a malicious host owner. |
-| Secure tools | **43 bounded profiles backed by 16 external programs**, plus repository-native capabilities represented in that profile count. Actual owned-lab execution and structured evidence exist for accepted operations. | Most profiles have fixed targets/requests and finite response grammars. They do not expose each program's full feature set or establish general real-server compatibility. |
+| Secure tools | **48 bounded profiles backed by 16 external programs**, plus repository-native capabilities represented in that profile count. Actual owned-lab execution and structured evidence exist for accepted operations. | Most profiles have fixed targets/requests and finite response grammars. They do not expose each program's full feature set or establish general real-server compatibility. |
 | GUI | Accepted local Tk desktop, light/dark Swiss Industrial themes, scope import/export, separate dry run and owned execution, isolated exact-action review, cancellation and evidence inspection. | Execution currently exposes one four-action disconnected HTTP/SSH workflow. Broader tool selection, engagement/assets/findings/report views and operational usability are future work. Extend this GUI; its initial milestone is already closed. |
 | Workflows | Accepted bounded discovery/HTTP/SSH and service/web workflows, with predecessor evidence, stops and saved decisions. | General multi-asset planning, durable engagement coordination and wider evidence-driven composition remain deferred. |
 | Evidence and reporting | Private bounded raw artifacts, structured observations, action/policy/runtime bindings, reports and read-only replay. | Engagement-wide asset/finding models, deduplication, reviewed severity, remediation, client deliverables and retest history. |
@@ -111,8 +111,9 @@ accepted secure integrations.
 
 The **offline R5**, **accepted local R6**, **B0–B8 core coverage**, **initial GUI**
 and **C1–C18 accepted batches** stay closed. Deferred live-model criteria and
-publication do not reopen their accepted local scopes. Proposal PR #31, the
-private PDFs, email draft and GUI mock PNGs remain separate and unchanged.
+publication do not reopen their accepted local scopes. Proposal PR #31's
+architecture correction is merged; the private PDFs, email draft and GUI mock
+PNGs remain unchanged.
 The owner chose to wait with the proposal until **November 2026**; refresh it with
 verified progress before the **15 November 2026** deadline. Submission remains a
 separate owner decision.
@@ -136,7 +137,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | C18/T01 DNS MX is accepted; T02 mediation proves useful observations and tested retry prevention, with four production candidates integrated in PR #79; the T02 acceptance corpus is under review and T03–T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. Two additional programs remain plausible after T03 reused C14; the historical 4–6 assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted. T04 has a [source-reviewed ffuf candidate](web-hierarchy-feasibility.md); native prototype and G1–G6 are next. T05/T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. One additional program remains plausible after T03 reused C14 and T04 selected ffuf; the historical 4–6 assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
@@ -150,7 +151,8 @@ The [finite checklist](professional-v1-coverage.md#six-required-tasks-in-priorit
 fixes six required operator outcomes: **T01 MX, T02 TLS version posture,
 T03 SSH policy assessment, T04 controlled web hierarchy discovery, T05 one SNMP
 interface-description page and T06 AAAA/PTR metadata**. T01 is accepted in
-PR #74; T02–T06 remain open. It maps all 43 accepted profiles separately and
+PR #74; T02/T03 are accepted in PRs #80/#81 and T04–T06 remain open. It maps all
+48 accepted profiles separately and
 records supported limits, meaningful positive/absent and
 negative cases, evidence and G1–G6 for each new task. Candidate engines remain
 subject to short feasibility reviews; engine selection cannot silently remove or
@@ -178,10 +180,10 @@ the PR #72 accepted baseline**. They are not another 80–130 on top of v1.
 | **Additional expansion** | **Broader professional lifecycle and evaluated model assistance, subject to its separate approvals.** | **40–70** |
 | **Total from PR #72** | **Professional v1 plus broader expansion.** | **80–130** |
 
-Today the literal 40-program target leaves **24 programs**. If the OpenSSL
-substitution succeeds and the three remaining new-program candidates are accepted,
-Stage 2 adds three and **21 programs** remain for expansion. The historical
-4–6-program assumption was not a quota. The expansion's 24–40-PR allowance covers
+Today the literal 40-program target leaves **24 programs**. Accepted T02/T03
+reuse existing implementations, and T04's selected candidate reuses ffuf. If
+T05's snmpbulkget candidate is accepted, Stage 2 adds one program and **23 programs**
+remain for expansion. The historical 4–6-program assumption was not a quota. The expansion's 24–40-PR allowance covers
 the remaining gap rather than charging for all 24 twice; retain the Stage 2
 8–12-PR estimate subject to native feasibility findings. This assumes many additions
 can reuse a reviewed runtime and be delivered in one or two cohesive PRs. A new

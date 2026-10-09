@@ -1,5 +1,11 @@
 # Discover accepted secure tools
 
+The compiled catalog contains **48 accepted secure profiles, zero candidates and
+16 external programs** after T02/T03 acceptance in PRs #80/#81. Acceptance applies
+to the documented disconnected owned-lab profiles; it grants no execution
+authority or general engagement readiness. The slices below retain their
+historical counts.
+
 The read-only CLI catalog makes the accepted B0–B8 profiles discoverable without
 starting an assessment. The accepted B0–B8 baseline contains 20 capabilities backed by 11 external
 programs; the native TCP, HTTP and header adapters are capabilities without a
@@ -370,13 +376,13 @@ separates current capabilities from future professional-use work and PR estimate
 
 The C18 [DNS MX profile](dns-mx-tools.md) is accepted in
 [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74), adding `dig_dns_mx_v1`
-through the same dig program. The accepted catalog now contains **43 profiles
+through the same dig program. That accepted slice brought the catalog to **43 profiles
 using 16 programs**, with C18 G1–G6 closed after fresh review and passing final CI.
 The fixed TCP query retains at most four preference/exchange rows, distinguishes
 null-MX/NODATA/NXDOMAIN, and authorizes no name resolution or mail-server follow-up.
 
 The [finite coverage contract](professional-v1-coverage.md) maps all accepted
-profiles to six required operator outcomes: T01 is accepted; T02–T06 remain open.
+profiles to six required operator outcomes: T01–T03 are accepted; T04–T06 remain open.
 [T02 source feasibility](tls-posture-feasibility.md) is complete: stock sslscan
 cannot preserve the received rejection evidence required by this task. The
 [OpenSSL native diagnostic](tls-posture-native.md), accepted in PR #76,
@@ -392,36 +398,37 @@ not decrypt traffic or prove general encrypted application-data prevention.
 [PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78) accepted the
 [closed diagnostic observation/replay slice](tls-posture-observations.md).
 Its diagnostic identifiers remain unregistered and cannot substitute for product
-authorization. Four separate [production candidates](tls-posture-tools.md) are
-now listed with `acceptance_status: candidate_pending_T02`:
+authorization. Four separate [production profiles](tls-posture-tools.md) are
+accepted in PR #80; their temporary candidate labels are removed:
 
 | Profile | Fixed version | Acceptance |
 | --- | --- | --- |
-| `openssl_tls10_posture_v1` | TLS 1.0 | Pending T02 |
-| `openssl_tls11_posture_v1` | TLS 1.1 | Pending T02 |
-| `openssl_tls12_posture_v1` | TLS 1.2 | Pending T02 |
-| `openssl_tls13_posture_v1` | TLS 1.3 | Pending T02 |
+| `openssl_tls10_posture_v1` | TLS 1.0 | Accepted in PR #80 |
+| `openssl_tls11_posture_v1` | TLS 1.1 | Accepted in PR #80 |
+| `openssl_tls12_posture_v1` | TLS 1.2 | Accepted in PR #80 |
+| `openssl_tls13_posture_v1` | TLS 1.3 | Accepted in PR #80 |
 
-The catalog distinguishes 48 registered profiles from **43 accepted + 5 candidate**
-profiles, using 16 programs. Each TLS candidate needs its own exact approval and
+The catalog reports **48 registered and accepted profiles, zero candidates and
+16 programs**. Each TLS profile still needs its own exact approval and
 consumed permit, within one 30-second owned session. Explicit protocol rejection
 can be useful evidence while retaining failed execution/exit 1; retry blocking
 alone does not count as task completion. Both inspectors verify separate bounded
 owner artifacts and restore the full committed authority result before replay.
 
-PR #80 validates the T02 hostile-usefulness, ambiguity/pressure and regression
-corpus with 65 native and 21,593 portable tests. G1–G5 evidence is prepared; G6
-review, required checks and an authorized merge remain pending. Existing accepted
+PR #80 accepted the T02 hostile-usefulness, ambiguity/pressure and regression
+corpus with 65 native and 21,593 portable tests, independent review and all five
+final checks. The authorized merge at `f2e7b785` closed G1–G6. Existing accepted
 recipes, limits and frozen contract hashes remain unchanged. No new program or
 general real-server support is claimed. Credentials, paid/live models and attached
 networks remain deferred.
 
-## T03 SSH policy candidate
+## Accepted T03 SSH policy assessment
 
-`ssh_transport_policy_v1` is listed with `acceptance_status: candidate_pending_T03`.
+`ssh_transport_policy_v1` is accepted in PR #81; its temporary candidate label is removed.
 It reuses the accepted C14 collector bytes and assesses both directional
 advertisements in a networkless pinned policy evaluator. Known deviations can be
 useful; unknown algorithms remain inconclusive. This adds no external program.
-[PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) follows T02 PR #80 in review
-order; see the [runbook](ssh-policy-tools.md). Credentials, paid calls and broader
-workflows remain deferred. Accepted count stays 43 until the respective merges.
+[PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) merged as `b90a365e` after
+T02, independent review and all five final checks, closing G1–G6. See the
+[runbook](ssh-policy-tools.md). A native T04 prototype follows the [source review](web-hierarchy-feasibility.md); credentials,
+paid calls and broader workflows remain deferred.
