@@ -1,5 +1,15 @@
 # Secure-tool coverage milestone
 
+Current continuation (9 October 2026): PR #79 merged as `5f4197f` after fresh
+review and five passing PR checks; all five post-merge checks also passed.
+The [T02 acceptance batch](tls-posture-acceptance.md) addresses the remaining
+corpus and a newly found plaintext-evidence consistency gap. T03 SSH policy
+assessment follows in review order, reusing the bounded C14 collector if the
+pinned source review rules out stock ssh-audit. Accepted coverage stays 43/16;
+T02–T06 remain open until their individual review/merge gates. Credentials,
+paid/live models, deeper workflows and comparative benchmarks remain deferred.
+
+
 **Closed on 6 October 2026:** all required rows B0–B8 are accepted on main,
 with 20 bounded secure capabilities backed by 11 external programs. The operator's
 1 October priority was to broaden useful secure coverage before deeper workflows
