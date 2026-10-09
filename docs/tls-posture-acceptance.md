@@ -68,9 +68,43 @@ now requires exact integer counters for one admitted frontend, one peer stream
 and one refused extra connection. Useful observations still require one observed
 connection. This preserves evidence of refusal without granting a second stream.
 
-## Validation status
+## Frozen validation and review status
 
-Final frozen native, portable, replay and independent-review results are recorded
-here after completion. G1–G5 require those concrete results; G6 also requires
-review, required checks and authorized merge. T03 follows in review order without
-reopening T01/C18 or counting a candidate as an accepted profile.
+Frozen source `169047f` passed **65/65 native tests** and **21,593 portable tests**,
+with zero skips/failures/errors. All 682 tracked Python/test/example file hashes,
+modes and modification times stayed unchanged during both completed runs.
+Independent parser/native-corpus and authority/context reviews found no remaining
+blocker. All five [implementation CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37865162860)
+also passed. Final revision/check state is recorded in the private handoff.
+
+The native results were **8/8 ordinary + 4/4 explicit-absence observations**, plus
+**4/4 hostile-certificate and 4/4 fragmented-response completions**, with zero
+unnecessary refusals. Twenty negative cases stayed inconclusive; all four output
+pressure trials triggered the actual client capture limit. One HRR retry and
+four extra private streams were refused in separate safety denominators. Twenty
+synthetic authority/cancellation tests also passed.
+
+All 45 newly retained bundles passed both inspectors unchanged. The full
+historical corpus of **146 accepted + 13 PR #79 bundles** also replayed unchanged.
+Native response trials passed **90/90 forbidden-destination witnesses** and
+**630/630 runtime boundary fields**, with owner closure and cleanup. Across
+those trials there were 45 validated requests and 49 observed TCP connections;
+the four extra queued connections each received no second peer stream.
+
+CLI wall time was **2,496–9,303 ms**, median
+**4,118 ms**, excluding later inspector replay. Validation
+ran concurrently with other local checks; this is descriptive timing, not
+comparative overhead. Actual provider calls and cost were zero.
+
+Private immutable verification: `.secure-agent/tls-posture-acceptance-20261009/verification.json`,
+SHA-256 `964dcaf566864236785c87938e826b00e447bf10c8875151b39dfdf7472cb58b`. The first full portable attempt retained seventeen sandbox
+local-socket permission failures; the complete host-environment rerun above
+passed. Preserve that attempt alongside the developmental capture assertion and
+second-connection evidence failures; none counts as successful validation.
+
+[PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) supplies G1–G5 evidence;
+**G6 remains open until exact-revision review/checks and authorized merge**. Only
+then reconcile catalog acceptance status and add the four profiles to accepted
+coverage. [T03 PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) follows in
+review order; it does not reopen T01/C18 or authorize credentials, paid calls,
+external networks, deeper workflows or comparative benchmarks.

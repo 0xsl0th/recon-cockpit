@@ -909,3 +909,11 @@ remaining corpus and G1–G6 review; accepted coverage remains **43 profiles / 1
 programs**, with no T02 profile accepted yet.
 Credentials, paid calls, live models and deeper workflow work remain deferred. The owner has deferred the proposal
 refresh until November 2026; its separate submission decision remains pending.
+
+[T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) completes
+the finite TLS corpus with 65 native and 21,593 portable passes, 20 useful
+observations, strict malformed/pressure results and unchanged historical replay.
+It also binds plaintext owner/client evidence and retains extra-stream refusal
+without authorizing another stream. G6 and accepted-count changes await its
+review/merge. The separate [T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81)
+follows in review order. [Checkpoint](docs/continue-here.md).
