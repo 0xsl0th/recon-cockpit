@@ -1,9 +1,20 @@
 # T04: controlled web hierarchy source feasibility
 
-Status: **source review and proposed contract only, 9 October 2026**. This does
-not register a tool, prove native execution or complete any T04 acceptance gate.
-The required outcome remains discovery of a finite, controlled one-level web
-hierarchy, including useful empty results. It is not another exposure signature.
+Status: **source review accepted in PR #82, 9 October 2026**. The merge at
+`945ba2b` has the same tree as reviewed head `fb19b606`; all five final and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37872575949)
+passed. This accepted source review registers no tool and closes no T04 product
+acceptance gate. The required outcome remains discovery of a finite, controlled
+one-level web hierarchy, including useful empty results.
+
+A separate [native diagnostic](web-hierarchy-native.md) now executes real ffuf
+against the twelve compiled paths in the disconnected owned fixture. Eight native
+tests and 22,113 portable tests passed on frozen source `1b03814`, with no
+failures, errors or skips and all 707 source hashes unchanged.
+Detailed results belong to that runbook, separate from this source-review record. The diagnostic grants no product authority.
+Next integrate a distinct production profile with policy, exact approval,
+durable audit, consumed permits and both evidence inspectors before T04 G1–G6
+acceptance. The catalog stays at 48 accepted profiles, zero candidates and
+16 programs; T05/T06 remain required after T04.
 
 ## Engine review
 
