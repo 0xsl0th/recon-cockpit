@@ -1,7 +1,7 @@
 # Discover accepted secure tools
 
-The compiled catalog contains **48 accepted secure profiles, zero candidates and
-16 external programs** after T02/T03 acceptance in PRs #80/#81. Acceptance applies
+The compiled catalog contains **49 registered profiles: 48 accepted, one T04
+candidate and 16 external programs**. T02/T03 are accepted in PRs #80/#81. Acceptance applies
 to the documented disconnected owned-lab profiles; it grants no execution
 authority or general engagement readiness. The slices below retain their
 historical counts.
@@ -408,8 +408,9 @@ accepted in PR #80; their temporary candidate labels are removed:
 | `openssl_tls12_posture_v1` | TLS 1.2 | Accepted in PR #80 |
 | `openssl_tls13_posture_v1` | TLS 1.3 | Accepted in PR #80 |
 
-The catalog reports **48 registered and accepted profiles, zero candidates and
-16 programs**. Each TLS profile still needs its own exact approval and
+After T02/T03 acceptance the catalog reported **48 accepted profiles**; the new
+T04 candidate brings registration to 49 across the same 16 programs. Each TLS
+profile still needs its own exact approval and
 consumed permit, within one 30-second owned session. Explicit protocol rejection
 can be useful evidence while retaining failed execution/exit 1; retry blocking
 alone does not count as task completion. Both inspectors verify separate bounded
@@ -430,5 +431,14 @@ advertisements in a networkless pinned policy evaluator. Known deviations can be
 useful; unknown algorithms remain inconclusive. This adds no external program.
 [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) merged as `b90a365e` after
 T02, independent review and all five final checks, closing G1–G6. See the
-[runbook](ssh-policy-tools.md). A native T04 prototype follows the [source review](web-hierarchy-feasibility.md); credentials,
-paid calls and broader workflows remain deferred.
+[runbook](ssh-policy-tools.md).
+
+## T04 secure web hierarchy candidate
+
+`ffuf_web_hierarchy_v1` is a separate candidate after the source review and native
+diagnostic accepted in PRs #82/#83. Its [runbook](web-hierarchy-tools.md) describes
+the secure authority path, independent owner evidence, both inspectors and the
+remaining acceptance review. Twelve unique compiled requests are required for
+useful completion; native error retries and partial results remain inconclusive.
+It adds no program and changes no accepted ffuf recipe. Credentials, paid calls,
+live evaluation and broader workflows remain deferred.

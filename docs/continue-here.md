@@ -2115,19 +2115,16 @@ Planning uses synthetic responses.
    Preserve its private receipt, existing PDFs and email; submission remains a
    separate November decision, alongside
    the broader verified-capability refresh.
-3. Preserve accepted PR #82 (`945ba2b`, reviewed head `fb19b606`) and its five
+3. Preserve accepted PR #82 (`945ba2b`) and PR #83 (`69406cd`) with their five
    passing final/post-merge checks. The [T04 native diagnostic](web-hierarchy-native.md)
-   passed eight native and 22,113 portable tests on frozen source `1b03814`.
-   Review branch `feature/t04-web-hierarchy-native` and its final required checks,
-   retaining failed developmental captures and exact useful/negative/cancellation
-   results; PR details belong in the private handoff. This diagnostic adds no
-   registered profile; the catalog stays 48 accepted, zero candidates, 16 programs.
-4. Then integrate a separate T04 production profile through policy, exact
-   approval, durable audit, consumed permits and both evidence inspectors,
-   preserving the existing eight-path ffuf profile. Complete independent review,
-   required checks and authorized merge before closing G1–G6. T05 SNMP interface
-   page and T06 AAAA/PTR remain required afterward; do not substitute optional
-   signatures or program quotas.
+   passed eight native and 22,113 portable tests; this completed batch stays closed.
+4. Review the separately registered [T04 secure hierarchy candidate](web-hierarchy-tools.md)
+   on `feature/t04-web-hierarchy-secure`, including its frozen production evidence,
+   exact head and required checks. The catalog is 48 accepted plus one candidate
+   across 16 programs; the accepted eight-path ffuf recipe stays unchanged.
+   Complete required review/checks and authorized merge before closing T04 G6.
+   T05 SNMP interface page and T06 AAAA/PTR remain required afterward; do not
+   substitute optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
    No accepted milestone or personal walkthrough needs to be repeated.
 6. Credentials, paid/live models, attached/external networks, deeper workflows

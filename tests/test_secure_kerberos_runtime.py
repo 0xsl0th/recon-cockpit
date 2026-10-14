@@ -113,8 +113,8 @@ def test_b8_snapshots_only_the_two_compiled_synthetic_principals(monkeypatch):
                    for source, _ in runtime.runtime_source_mounts(value))
 
 
-# Nuclei uses its separately constrained static worker, not this accepted worker.
-@pytest.mark.parametrize("tool_id", tuple(tool for tool in runtime.EXECUTABLES if tool != "ssh_transport_policy_v1" and tool not in (runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)))
+# Nuclei and T04 hierarchy use separate workers, not this accepted worker.
+@pytest.mark.parametrize("tool_id", tuple(tool for tool in runtime.EXECUTABLES if tool != "ssh_transport_policy_v1" and tool not in (runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX, runtime.WEB_HIERARCHY)))
 def test_go_runtime_allowances_do_not_expand_accepted_other_tools(monkeypatch, tool_id):
     calls, limits = [], {}
     monkeypatch.setattr(worker.common, "syscall_filter", lambda **kwargs: calls.append(kwargs))
@@ -179,7 +179,8 @@ def test_only_b8_gets_its_distinct_outer_launcher_tag(tool_id):
     from recon_cockpit.secure_agent import launcher_protocol
     config = {"profile": "owned_network_tools_lab"}
     closure = {"network_tools_runtime": manifest(tool_id)}
-    wanted = ("nuclei-tools-launch-preconditions" if tool_id in (runtime.NUCLEI, runtime.NUCLEI_GIT) else
+    wanted = ("web-hierarchy-launch-preconditions" if tool_id == runtime.WEB_HIERARCHY else
+              "nuclei-tools-launch-preconditions" if tool_id in (runtime.NUCLEI, runtime.NUCLEI_GIT) else
               "whatweb-tools-launch-preconditions" if tool_id == runtime.WHATWEB else
               "kerberos-tools-launch-preconditions" if tool_id == runtime.KERBRUTE else
               "smb-tools-launch-preconditions" if tool_id == runtime.SMB else "network-tools-launch-preconditions")
@@ -187,7 +188,7 @@ def test_only_b8_gets_its_distinct_outer_launcher_tag(tool_id):
     launcher_protocol.validate_runtime_tag(wanted, config, closure)
     for incorrect in {"network-tools-launch-preconditions", "smb-tools-launch-preconditions",
                       "kerberos-tools-launch-preconditions", "whatweb-tools-launch-preconditions",
-                      "web-tools-launch-preconditions", "nuclei-tools-launch-preconditions", None} - {wanted}:
+                      "web-tools-launch-preconditions", "nuclei-tools-launch-preconditions", "web-hierarchy-launch-preconditions", None} - {wanted}:
         with pytest.raises(ValueError, match="runtime_profile_changed"):
             launcher_protocol.validate_runtime_tag(incorrect, config, closure)
 

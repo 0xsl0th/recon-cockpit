@@ -167,7 +167,7 @@ def test_owner_artifact_custody_failures_make_replay_inconclusive(tmp_path, faul
     lambda result: result["web_hierarchy_owner"].update(representation="different-v1"),
     lambda result: result["boundary_checks"].update(udp_sockets_blocked=False),
 ])
-def test_rehashed_saved_claims_cannot_replace_original_authority_bound_evidence(tmp_path, mutation):
+def test_rehashed_saved_claims_must_match_retained_journal_and_contract(tmp_path, mutation):
     path = tmp_path / "bundle"
     complete(path)
     mutate_result(path, 1, mutation)
@@ -200,7 +200,7 @@ def test_cli_inspection_replays_without_writes(tmp_path, capsys):
 
 
 @pytest.mark.parametrize("fault", ["same_length_body", "coherent_status"])
-def test_coherently_rehashed_owner_and_client_still_require_original_authority_commitment(tmp_path, fault):
+def test_coherently_rehashed_owner_and_client_must_match_retained_journal_observation(tmp_path, fault):
     from recon_cockpit.secure_agent.assessment_inspection import inspect_saved_assessment
     path = tmp_path / "bundle"
     complete(path)
@@ -227,7 +227,8 @@ def test_coherently_rehashed_owner_and_client_still_require_original_authority_c
     stderr = base64.b64decode(result["raw_stderr_base64"])
     normalized = parser.parse(TOOL_ID, out, stderr, owner_raw=owner_raw,
         exit_code=0, stop_reason=None, truncated=False)
-    # Coherent data still parses. Custody must bind it to the original result.
+    # Coherent data still parses. Replay must compare it with the retained
+    # journal observation, which the artifact mutation does not replace.
     assert normalized["useful_task_completed"]
     def change(value):
         value["web_hierarchy_owner"].update(bytes=len(owner_raw), sha256=owner_sha)
@@ -236,6 +237,15 @@ def test_coherently_rehashed_owner_and_client_still_require_original_authority_c
                      bytes_received=len(out) + len(stderr))
         value["provenance"].update(output_sha256=hashlib.sha256(out).hexdigest())
     mutate_result(path, 1, change)
+    events = [json.loads(line) for line in (path / "evidence.jsonl").read_text().splitlines()]
+    record = next(event["record"] for event in events if event["event_type"] == "assessment_execution_finished")
+    changed = json.loads(result_path.read_bytes())
+    restored = {**changed, "web_hierarchy_owner": encode_owner_receipt(owner_raw)}
+    recomputed = contract.parse_observation(record["action"], restored, execution_status="succeeded")
+    assert recomputed != record["observation"]
+    # The planner-view digest covers status/body, not the full tool result.
+    # Here results=[]; artifact changes are caught by the journal comparison.
+    assert evidence._observation_digest(1, "succeeded", restored) == record["authority_observation_sha256"]
     for inspect in (evidence.inspect_evidence, inspect_saved_assessment):
         report = inspect(path)
         assert report["outcome"] == "inconclusive" and report["integrity_issues"]

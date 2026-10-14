@@ -11,9 +11,10 @@ against the twelve compiled paths in the disconnected owned fixture. Eight nativ
 tests and 22,113 portable tests passed on frozen source `1b03814`, with no
 failures, errors or skips and all 707 source hashes unchanged.
 Detailed results belong to that runbook, separate from this source-review record. The diagnostic grants no product authority.
-Next integrate a distinct production profile with policy, exact approval,
+That diagnostic is now merged in PR #83. A distinct [production candidate](web-hierarchy-tools.md)
+now integrates policy, exact approval,
 durable audit, consumed permits and both evidence inspectors before T04 G1–G6
-acceptance. The catalog stays at 48 accepted profiles, zero candidates and
+acceptance. The catalog now has 48 accepted profiles, one T04 candidate and
 16 programs; T05/T06 remain required after T04.
 
 ## Production observation — 14 October 2026

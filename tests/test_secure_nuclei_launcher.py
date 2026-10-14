@@ -23,14 +23,14 @@ def test_nuclei_static_staging_tag_does_not_change_existing_tool_tags(tool_id):
     value = nuclei.for_tool(tool_id).manifest() if tool_id in (runtime.NUCLEI, runtime.NUCLEI_GIT) else manifest(tool_id)
     config = {"profile": "owned_network_tools_lab"}
     closure = {"network_tools_runtime": value}
-    expected = (TAG if tool_id in (runtime.NUCLEI, runtime.NUCLEI_GIT) else
+    expected = ("web-hierarchy-launch-preconditions" if tool_id == runtime.WEB_HIERARCHY else TAG if tool_id in (runtime.NUCLEI, runtime.NUCLEI_GIT) else
         "whatweb-tools-launch-preconditions" if tool_id == runtime.WHATWEB else
         "kerberos-tools-launch-preconditions" if tool_id == runtime.KERBRUTE else
         "smb-tools-launch-preconditions" if tool_id == runtime.SMB else "network-tools-launch-preconditions")
     assert protocol.runtime_tag(config, closure) == expected
     protocol.validate_runtime_tag(expected, config, closure)
     for tag in {*protocol.RUNTIME_TAGS.values(), TAG, "smb-tools-launch-preconditions",
-                "kerberos-tools-launch-preconditions", "whatweb-tools-launch-preconditions", None} - {expected}:
+                "kerberos-tools-launch-preconditions", "whatweb-tools-launch-preconditions", "web-hierarchy-launch-preconditions", None} - {expected}:
         with pytest.raises(ValueError, match="runtime_profile_changed"):
             protocol.validate_runtime_tag(tag, config, closure)
 

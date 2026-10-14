@@ -63,11 +63,13 @@ and scripted terminal answers are synthetic test material, not personal approval
 Neither catalog recipes nor diagnostic receipts grant execution authority.
 
 Both `--inspect-assessment` and the existing saved-assessment inspector restore
-the separately hashed owner artifact before checking the original authority
-result digest and recomputing the observation in isolation. Inspection does not
-modify evidence or launch a tool. This checks local consistency and retained
-authority commitments; it does not provide tamper resistance against a host
-operator who can rewrite every local record.
+the separately hashed owner artifact and recompute the observation in isolation.
+They compare artifact hashes, metadata and the normalized observation with the
+retained journal. The separate authority observation digest commits only to the
+bounded planner view (execution status and body), not the full tool result.
+Inspection does not modify evidence or launch a tool. These local consistency
+checks do not provide tamper resistance against a host operator who can rewrite
+the artifacts and all corresponding journal records.
 
 ## Validation and roadmap status
 
