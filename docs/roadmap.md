@@ -63,6 +63,12 @@ requirements justify splitting S3.3 into preparation and **S3.3b native
 integration**. Stage 3 is re-estimated from 6–8 to **nine PRs total**, with three
 accepted and six remaining. No native case or safety bound is removed.
 
+S3.3a validation at `274140b` passed **26 installed-runtime inspections** and
+**24,761 portable tests**, with all **882 tracked source hashes unchanged**.
+No service, tool action or authority was created; provider calls/spend remain zero.
+See the [preparation evidence](stock-apache-feasibility.md). PR review and
+acceptance remain pending; the read-only preparation is not production support.
+
 After S3.3a review/acceptance, implement S3.3b and run all 26 corpus rows on each
 server through the new production mode, plus authority, denial, budget, cleanup
 and unchanged-inspection gates. Then continue S3.4–S3.7 in order. Stage 3 stays
