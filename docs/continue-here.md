@@ -26,6 +26,9 @@ no added scope or follow-up authority. Private original evidence remains under
 `.secure-agent/dns-address-20261014/`.
 
 **Current work is S3.1: the finite Stage 3 compatibility and routing contract.**
+It is open for review in [PR #87](https://github.com/0xsl0th/recon-cockpit/pull/87)
+on `docs/stage3-compatibility-contract`; review its latest revision and required
+checks before merge. This checkpoint does not mark S3.1 or Stage 3 accepted.
 The [new contract](stage3-compatibility-routing.md) defines the service matrix,
 exact action and target bindings, exclusions, budgets, evidence and acceptance
 criteria. This slice reconciles catalog acceptance metadata and prepares the
