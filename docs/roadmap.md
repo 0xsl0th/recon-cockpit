@@ -25,7 +25,10 @@ The separate [T04 secure hierarchy candidate](web-hierarchy-tools.md) now adds
 `ffuf_web_hierarchy_v1` through policy, audit, required approval, consumed permits,
 confined native execution and both evidence inspectors. Current catalog:
 **48 accepted profiles, one T04 candidate, 16 programs**. Production validation
-and review are in progress; T04 G6 remains open and no T04 acceptance is claimed.
+passed **26 native and 22,577 portable tests**; independent review found no
+remaining blocker. The runbook records separate frozen source pins and unchanged
+production/native-test sources. T04 G6 review and merge remain open; no T04
+acceptance is claimed.
 Keep the twelve-path completion requirement distinct from the owner’s sixteen-
 connection bound: native error retries remain recorded and inconclusive, and the
 configured input rate is not a strict retry-inclusive wire-rate guarantee.
@@ -74,7 +77,7 @@ claim that today's bounded fixtures support professional engagements.
 | --- | --- | --- |
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
-| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted with G1–G6 closed in PRs #74/#80/#81. The catalog records 48 accepted profiles and one T04 candidate across 16 programs. T04 has accepted [native feasibility evidence](web-hierarchy-native.md) and a separate [secure production candidate](web-hierarchy-tools.md); validation and G6 review remain open. T05/T06 remain required. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
+| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted with G1–G6 closed in PRs #74/#80/#81. The catalog records 48 accepted profiles and one T04 candidate across 16 programs. T04 has accepted [native feasibility evidence](web-hierarchy-native.md) and a separate [secure production candidate](web-hierarchy-tools.md); 26 native and 22,577 portable passes are recorded; G6 review and merge remain open. T05/T06 remain required. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
 | 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`

@@ -25,7 +25,10 @@ The separate [T04 secure hierarchy candidate](web-hierarchy-tools.md) now adds
 `ffuf_web_hierarchy_v1` through policy, audit, required approval, consumed permits,
 confined native execution and both evidence inspectors. Current catalog:
 **48 accepted profiles, one T04 candidate, 16 programs**. Production validation
-and review are in progress; T04 G6 remains open and no T04 acceptance is claimed.
+passed **26 native and 22,577 portable tests**; independent review found no
+remaining blocker. The runbook records separate frozen source pins and unchanged
+production/native-test sources. T04 G6 review and merge remain open; no T04
+acceptance is claimed.
 Keep the twelve-path completion requirement distinct from the owner’s sixteen-
 connection bound: native error retries remain recorded and inconclusive, and the
 configured input rate is not a strict retry-inclusive wire-rate guarantee.
@@ -153,7 +156,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted. T04 has accepted [native feasibility evidence](web-hierarchy-native.md) and a separate [secure production candidate](web-hierarchy-tools.md); validation and G6 review remain open. T05/T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. One additional program remains plausible after T03 reused C14 and T04 selected ffuf; the historical 4–6 assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted. T04 has accepted [native feasibility evidence](web-hierarchy-native.md) and a separate [secure production candidate](web-hierarchy-tools.md); 26 native and 22,577 portable passes are recorded; G6 review and merge remain open. T05/T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. One additional program remains plausible after T03 reused C14 and T04 selected ffuf; the historical 4–6 assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |

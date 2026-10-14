@@ -67,8 +67,17 @@ The separate [T04 production candidate](web-hierarchy-tools.md) on
 `feature/t04-web-hierarchy-secure` integrates exact policy, audit, consumed
 required approval, admission, confined ffuf execution, independent owner evidence
 and both inspectors. The catalog now reports **48 accepted profiles, one T04
-candidate and 16 programs**. Production validation is in progress and G6 remains
-open. Native retries of timed-out inputs remain explicit inconclusive evidence;
+candidate and 16 programs**. Production validation passed **26 native and 22,577
+portable tests**, with no failures, errors or skips. Native source `6a8d00a` and
+portable source `005c948` share identical production code, policies and native
+tests; only four portable tests changed. Both runs preserved all 724 recorded
+source files. Nineteen native bundles replayed through both inspectors without
+writes. The two ordinary tasks completed without unnecessary refusals; hostile
+output completed separately, while wildcard, mixed controls, redirect and
+stalled cases stayed non-useful. Two out-of-scope proposals were blocked before
+execution; approval, audit, replay and active-client cancellation tests passed.
+Independent review found no remaining blocker. G6 review and merge remain open.
+Native retries of timed-out inputs remain explicit inconclusive evidence;
 twelve unique requests define useful completion, while the owner retains up to
 sixteen attempted requests/connections. The configured input rate is not a strict
 retry-inclusive wire rate. Existing accepted contracts and closed milestones
@@ -76,6 +85,11 @@ remain unchanged.
 
 Private development and frozen validation records belong under
 `.secure-agent/web-hierarchy-secure-20261009/`; preserve the initial failures.
+`verification.json` SHA-256 is
+`7877620e22e11dfac83397e96c1a1282fedbb651ccd09b73b42f4852d72f619c`.
+Review corrected one evidence claim: the planner-view digest does not commit to
+the full result. Inspectors verify artifact/journal consistency and independently
+recompute observations; coordinated host-owner rewriting is outside that guarantee.
 Finish and review this candidate before T05 SNMP interface-page work, then T06
 AAAA/PTR. Do not start deeper workflows, comparative benchmarking, credentials,
 paid calls or live-model work.
