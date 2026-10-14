@@ -147,15 +147,30 @@ def test_seccomp_unknown_syscall_refuses_and_releases(monkeypatch):
 
 @pytest.mark.parametrize("failure", ("unexpected_descriptor", "unexpected_ancillary", "truncated"))
 def test_received_directory_is_closed_on_every_failure(tmp_path, monkeypatch, failure):
-    descriptor = os.open(tmp_path, os.O_PATH | os.O_CLOEXEC)
+    # The fake channel does not need Linux O_PATH semantics: custody must close
+    # an actual inherited directory FD on every rejected ancillary-message path.
+    # Remove the Linux-only attributes even on Linux to exercise the POSIX test.
+    monkeypatch.delattr(os, "O_PATH", raising=False)
+    monkeypatch.delattr(socket, "MSG_CMSG_CLOEXEC", raising=False)
+    linux_cloexec = 0x40000000
+    monkeypatch.setattr(socket, "MSG_CMSG_CLOEXEC", linux_cloexec, raising=False)
+    descriptor = os.open(tmp_path, os.O_RDONLY)
+    assert stat.S_ISDIR(os.fstat(descriptor).st_mode)
+    assert not os.get_inheritable(descriptor)
     ancillary = [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array("i", [descriptor]).tobytes())]
     if failure == "unexpected_ancillary": ancillary.insert(0, (99, 99, b"bad"))
     selected = lab_module.StockHttpLab.__new__(lab_module.StockHttpLab)
-    selected._channel = SimpleNamespace(recvmsg=lambda *args: (b'{"ready":true}', ancillary,
-        socket.MSG_CTRUNC if failure == "truncated" else 0, None))
+    calls = []
+    def recvmsg(packet_limit, ancillary_limit, flags):
+        calls.append((packet_limit, ancillary_limit, flags))
+        assert (packet_limit, ancillary_limit, flags) == (
+            lab_module.MAX_PACKET + 1, socket.CMSG_SPACE(8 * 4), linux_cloexec)
+        return b'{"ready":true}', ancillary, socket.MSG_CTRUNC if failure == "truncated" else 0, None
+    selected._channel = SimpleNamespace(recvmsg=recvmsg)
     selected._supervisor = SimpleNamespace(wait_for=lambda predicate: None, fds=set())
     with pytest.raises((OSError, ValueError)):
         selected._receive()
+    assert len(calls) == 1
     with pytest.raises(OSError) as error:
         os.fstat(descriptor)
     assert error.value.errno == errno.EBADF
@@ -168,11 +183,30 @@ def test_storage_partition_is_aggregate_not_per_file():
     assert worker.BOUNDS["scratch_bytes"] < worker.BOUNDS["aggregate_storage_bytes"]
 
 
-def test_owner_rejects_inherited_descriptors_before_loading_native_libraries(tmp_path):
+@pytest.mark.parametrize("descriptor_directory", ("platform", "/dev/fd"))
+def test_owner_rejects_inherited_descriptors_before_loading_native_libraries(tmp_path, descriptor_directory):
     source = Path(worker.__file__).read_text()
+    if descriptor_directory == "platform":
+        descriptor_directory = "/dev/fd" if sys.platform == "darwin" else "/proc/self/fd"
+    # Keep the production bootstrap byte-for-byte intact. Only map its Linux
+    # proc directory to the test host's descriptor directory. Both listings are
+    # real and fstat/pass_fds stay untouched; the explicit /dev/fd case exercises
+    # the Darwin-compatible fixture on Linux as well.
+    fixture = (
+        "import os as _fixture_os\n"
+        "_fixture_listdir = _fixture_os.listdir\n"
+        "_fixture_enumerations = 0\n"
+        "def _fixture_descriptor_listdir(path):\n"
+        "    global _fixture_enumerations\n"
+        "    assert path == '/proc/self/fd'\n"
+        "    _fixture_enumerations += 1\n"
+        f"    return _fixture_listdir({descriptor_directory!r})\n"
+        "_fixture_os.listdir = _fixture_descriptor_listdir\n"
+    )
     bootstrap = tmp_path / "owner_entry.py"
-    bootstrap.write_text(source[:source.index("\nimport array\n")] +
-        '\nassert ENTRY_DESCRIPTORS_VERIFIED\nassert "ctypes" not in sys.modules\nprint("verified")\n')
+    bootstrap.write_text(fixture + source[:source.index("\nimport array\n")] +
+        '\nassert ENTRY_DESCRIPTORS_VERIFIED\nassert _fixture_enumerations == 1\n'
+        'assert "ctypes" not in sys.modules\nprint("verified")\n')
     clean = subprocess.run([sys.executable, "-I", "-S", str(bootstrap)],
         capture_output=True, timeout=5, check=False)
     assert clean.returncode == 0 and clean.stdout == b"verified\n" and clean.stderr == b""

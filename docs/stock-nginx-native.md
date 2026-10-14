@@ -142,6 +142,15 @@ The first stock corpus at `f22905a` already passed all 60 native checks. That ru
 
 Summary generation left every native-run artifact unchanged. Earlier startup failures, smoke runs, baseline regression failures and the first successful corpus remain separate; none replaces a final corpus row. Private artifacts stay outside Git. This diagnostic changes no catalog count or production-compatibility claim; S3.3 remains the next separate implementation and acceptance slice.
 
+A subsequent portability review corrected Linux-specific assumptions in the
+portable owner fixtures: the fake ancillary channel now supplies its explicit
+Linux flag, directory-FD cleanup uses portable read-only descriptors, and the
+unchanged early bootstrap is exercised with both real descriptor-directory
+mappings. An additional portable case brings the current suite to **24,643**.
+Production code and the native test cases remain byte-identical to `d0bbdf2`.
+The final portable follow-up is retained in `portable-final-03/`; latest PR CI
+must pass before acceptance. No native guard or enforcement assertion was weakened.
+
 ## Completion gate
 
 Both configurations must pass all six ordinary, two robustness and five

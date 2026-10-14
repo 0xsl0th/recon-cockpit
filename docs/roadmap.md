@@ -47,6 +47,12 @@ faults had their declared outcome, and all 16 distinct forbidden-destination
 combinations were blocked. The 26 bundles passed 52 unchanged Python/CLI
 inspections. Provider calls and spend stayed zero.
 
+A later portability review corrected Linux-only assumptions in the portable
+owner test fixtures and added one descriptor-enumeration case. The current
+portable suite contains **24,643 tests**; production code and native test cases
+remain identical to the frozen native validation. Check the latest PR checks
+and `.secure-agent/stock-nginx-native-20261014/portable-final-03/` before merging.
+
 Regression validation also found a missing public fixture dependency on merged
 main. Adding that exact read-only module restored the existing four-action
 HTTP/SSH workflow; no scope, policy, action or resource limit changed. Retain the
