@@ -43,7 +43,7 @@ class ConfigurableEndpointLab(OwnedLab):
         directory = Path(__file__).resolve().parent
         mounts = []
         for name in ("configurable_lab_worker.py", "configurable_scope.py", "http_headers_fixture.py",
-                     "network_tools_fixture.py", "network_tools_ssh_fixture.py"):
+                     "network_tools_fixture.py", "network_tools_dns_mx_fixture.py", "network_tools_ssh_fixture.py"):
             mounts += ["--ro-bind", str(directory / name), "/app/" + name]
         index = argv.index("--remount-ro")
         argv[index:index] = mounts

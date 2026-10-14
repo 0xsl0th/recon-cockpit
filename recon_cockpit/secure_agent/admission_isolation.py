@@ -52,7 +52,9 @@ class LinuxLaunchAdmission:
                      '/app/planner_worker.py'))
         for name in ('admission_worker', 'launch_admission', 'models', 'tool_parameters', 'tool_adapters',
                      *(('configurable_scope', 'configurable_contract')
-                       if self._config['profile'] == 'configurable_owned_lab' else ())):
+                       if self._config['profile'] == 'configurable_owned_lab' else ()),
+                     *(('stock_http_contract', 'stock_http_spec', 'configurable_scope', 'configurable_contract')
+                       if self._config['profile'] == 'stock_nginx_diagnostic_v1' else ())):
             argv.extend(('--ro-bind', str(Path(__file__).with_name(name + '.py').resolve()),
                          '/app/admission_runtime/' + name + '.py'))
         argv.extend(('--remount-ro', '/proc', '--remount-ro', '/dev', '--remount-ro', '/',
