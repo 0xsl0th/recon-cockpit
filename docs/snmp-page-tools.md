@@ -8,7 +8,9 @@ It reuses the existing Net-SNMP confinement, authority and evidence paths with t
 separately pinned `snmpbulkget` executable. Accepted C1 GET, C13 GETNEXT and T04
 profiles stay closed. T05 brings accepted coverage to 50 profiles across
 17 programs. The separate [T06 AAAA/PTR candidates](dns-address-tools.md) bring
-registration to 52 profiles while validation and acceptance remain pending.
+registration to 52 profiles in open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86).
+T06 passed 83 native and 24,163 portable tests; latest required CI checks and
+acceptance remain pending.
 There is no interactive or GUI integration for this operation.
 
 ## Exact operation

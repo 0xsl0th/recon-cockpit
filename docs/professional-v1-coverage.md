@@ -16,15 +16,20 @@ reopen earlier milestones.
 
 **Current work is T06: separate fixed AAAA and PTR metadata profiles.**
 The [T06 candidates](dns-address-tools.md), `dig_dns_aaaa_v1` and `dig_dns_ptr_v1`,
-reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
+are open in [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86).
+They reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
 The catalog records **52 registered profiles: 50 accepted and two T06 candidates,
 across the same 17 programs**. Returned IPv6 addresses and PTR names are data,
-not network scope or follow-up authority. The predeclared corpus requires
-11 ordinary and four separate robustness completions, with 23 inconclusive
-negative cases. Native and final portable validation remain pending; neither
-T06 profile is accepted merely because it is registered.
+not network scope or follow-up authority. **83 frozen native tests passed** on
+`58e4ad2`, with all 747 recorded source files unchanged: all 11 ordinary tasks
+completed without unnecessary refusals, four robustness tasks completed and
+23 negative cases stayed inconclusive. Four out-of-scope proposals were blocked;
+57 saved reports passed 114 unchanged CLI/Python inspection checks. Full portable
+validation passed **24,163 tests**, with 1,399 integration tests deselected and
+all 747 recorded source files unchanged. Verify the latest required PR checks
+before merge; **T06 G6 stays open**.
 
-Finish T06 validation, independent review, required checks and authorized merge
+Finish T06 review, latest required checks and authorized merge
 before closing the finite Stage 2 tranche. Stage 3 follows with a concrete owned
 service-compatibility and controlled target-routing contract under the existing
 offline boundary. Any attached-network work requires separate authorization.
@@ -115,13 +120,13 @@ report alone cannot complete any row.
 | **T03 — accepted** | Assess SSH transport advertisements against an explicit pinned local policy; collection alone supplies no assessment. | Pinned [ssh-audit source review](ssh-policy-feasibility.md) rejects its extra host-key/KEX probes. A separate `ssh_transport_policy_v1` reuses byte-identical C14 collection and a networkless immutable policy evaluator. One numeric owned endpoint, one 184-byte request/write-half-close, one bounded packet; no login, completed key exchange, rate/stress test, session or downloaded policy. | Six ordinary and two robustness tasks complete usefully, including deliberate deviations in either direction. Two complete unknown cases and nine malformed/pressure cases stay inconclusive. Policy judgments do not verify exploitability, identity, negotiated strength or general compliance. | **G1–G6 closed in [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) at `b90a365e`.** 52 native and 21,898 portable passes, independent review and all five final checks; no program added. See [runbook](ssh-policy-tools.md). |
 | **T04** | Discover a controlled one-level web directory hierarchy beyond the flat eight-path ffuf corpus. | The [source review](web-hierarchy-feasibility.md) selected a separate finite **ffuf** profile after stock feroxbuster calibration conflicted with the boundary. Three predeclared prefixes, each with two resource and two compiled control names: useful completion needs twelve unique serial GETs and one active request. Native error retries may occur; the owner retains up to sixteen attempts/connections and duplicate or partial captures stay inconclusive. No recursion, arbitrary link extraction, redirects, credentials, uploads or response-directed follow-up; preserve the original ffuf profile. | Known nested resources and an empty hierarchy both complete; every planned path/request is accounted for. Wildcard responses do not invent resources. Redirects, path traversal, hostile links, unexpected paths and partial scans cannot expand scope or claim complete discovery. | **Accepted; G1–G6 closed in [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) at `435a271`.** The [secure hierarchy profile](web-hierarchy-tools.md) retains 26 native and 22,577 portable passes; review and all five final/post-merge checks passed. |
 | **T05** | Obtain one bounded page of SNMP interface descriptions; C13 returns a single successor, not a page. | The accepted `snmp_interface_page_v1` profile uses **snmpbulkget**, reusing Net-SNMP confinement and finite fixture patterns. One TCP GETBULK, one fixed ifDescr seed, non-repeaters zero and maximum repetitions four; public synthetic community only. No paging continuation, walks, SET, UDP or real credentials. | A populated page, empty descriptions, endOfMibView and a supported outside-column boundary have explicit results. Require typed ordered rows and either four normal bindings or an explicit terminal boundary within four bindings. Excess, malformed or short nonterminal output stays inconclusive; shortened replies can be valid SNMP but are unsupported here. A full page means capped observation, not complete interface inventory. | **[Accepted](snmp-page-tools.md), G1–G6 closed in PR #85 at `8ca3887`.** 51 native and 23,170 portable passes, independent review, 357 fresh focused passes and all five final/post-merge checks. |
-| **T06** | Observe selected IPv6-address and reverse-name metadata alongside accepted A records. | Reuse `dig` in separate fixed nonrecursive TCP AAAA and PTR profiles, one question and at most four typed answers per action. Returned IPv6 addresses are data, not IPv6 network authorization. No reverse-to-forward lookup, recursion, alias chasing or returned-host follow-up. | Positive records, NODATA and NXDOMAIN complete for both questions. Validate the exact question, record type, name and complete bounded response; malformed names, unsupported alias chains and excess/partial records remain inconclusive. | **Current [two-profile candidate](dns-address-tools.md); not accepted.** Native/final portable validation, review and merge remain pending. Require 11 ordinary and four robustness completions, 23 inconclusive negatives, enforcement and unchanged replay for this fixed corpus. |
+| **T06** | Observe selected IPv6-address and reverse-name metadata alongside accepted A records. | Reuse `dig` in separate fixed nonrecursive TCP AAAA and PTR profiles, one question and at most four typed answers per action. Returned IPv6 addresses are data, not IPv6 network authorization. No reverse-to-forward lookup, recursion, alias chasing or returned-host follow-up. | Positive records, NODATA and NXDOMAIN complete for both questions. Validate the exact question, record type, name and complete bounded response; malformed names, unsupported alias chains and excess/partial records remain inconclusive. | **Current [two-profile candidate](dns-address-tools.md), open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86); not accepted.** 83 native passes: 11 ordinary completions with zero unnecessary refusals, four robustness completions and 23 inconclusive negatives. Four out-of-scope proposals blocked; 57 reports/114 inspection checks unchanged. Full portable validation passed 24,163 tests; latest required CI checks and G6 remain pending. |
 
 T04 and T05 are accepted in PRs #84/#85 and stay closed. T06 is the final
 required gap in this finite tranche: separate AAAA/PTR observations through the
-existing dig confinement. Complete both [candidate profiles](dns-address-tools.md)
-through useful native execution, enforcement, unchanged replay, final portable
-validation, independent review and required checks before acceptance. Stage 3
+existing dig confinement. Both [candidate profiles](dns-address-tools.md) passed
+native usefulness, enforcement and unchanged replay plus 24,163 portable tests
+in PR #86. Complete review and latest required checks before acceptance. Stage 3
 then defines finite owned service compatibility and controlled target routing;
 network attachment remains separately authorized.
 
@@ -155,7 +160,8 @@ findings; re-estimate it without silently reducing the task list.
 
 T02's four OpenSSL profiles, T03 SSH policy, T04 hierarchy and T05's bounded
 SNMP page are accepted. T05 retains 51 native and 23,170 portable passes;
-PR #85 closes its G6. T06 validation and acceptance remain pending. Primary
+PR #85 closes its G6. T06 has 83 native and 24,163 portable passes; latest
+required CI checks and acceptance remain pending. Primary
 documentation establishes features, not confinement or compatibility:
 
 - The [pinned sslscan source review](tls-posture-feasibility.md#why-stock-sslscan-is-unsuitable)

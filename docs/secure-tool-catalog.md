@@ -4,8 +4,9 @@ The compiled catalog contains **52 registered profiles: 50 accepted, two T06
 candidates and 17 external programs**. T01–T05 are accepted; [PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85)
 closed the [SNMP page profile](snmp-page-tools.md) at `8ca3887` after review and
 required checks, preserving its 51 native and 23,170 portable passes. The separate
-[T06 AAAA/PTR candidates](dns-address-tools.md) reuse dig; native/final portable
-validation and G6 remain pending. Acceptance applies to the documented
+[T06 AAAA/PTR candidates](dns-address-tools.md), open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86),
+reuse dig and passed 83 native and 24,163 portable tests. Latest required CI
+checks and G6 remain pending. Acceptance applies to the documented
 disconnected owned-lab profiles; it grants no execution authority or general
 engagement readiness. The slices below retain their historical counts.
 
@@ -463,9 +464,12 @@ No supplied community, walk, continuation, SET or UDP is available.
 `dig_dns_aaaa_v1` and `dig_dns_ptr_v1` are separate `candidate` entries, milestone
 `T06`, using the existing dig program. Each fixed nonrecursive question uses
 IPv4 TCP and accepts at most four typed records; returned addresses and names
-create no authority. The [runbook](dns-address-tools.md) defines 11 ordinary and
-four robustness completions plus 23 inconclusive negatives. Native/final portable
-validation, review and merge remain pending. Both operations are available through
+create no authority. Open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86)
+passed 83 native tests: 11 ordinary tasks completed with zero unnecessary refusals,
+four robustness tasks completed and 23 negatives stayed inconclusive. All
+57 saved reports passed 114 unchanged inspection checks. The [runbook](dns-address-tools.md)
+retains source pins and limits. Full portable validation passed 24,163 tests;
+review, latest required CI checks and merge remain pending. Both operations are available through
 the secure CLI/catalog; no new interactive or GUI support is claimed.
 
 Complete T06 acceptance before Stage 3's finite service-compatibility and routing

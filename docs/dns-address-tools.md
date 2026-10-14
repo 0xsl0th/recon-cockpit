@@ -2,8 +2,8 @@
 
 T06 adds two separate fixed questions through the existing secure `dig` runtime:
 `dig_dns_aaaa_v1` observes IPv6-address records and `dig_dns_ptr_v1` observes
-reverse-name records. These are pending candidates for the final required row of
-the [professional-v1 coverage tranche](professional-v1-coverage.md). T01–T05
+reverse-name records. These candidates are open in
+[PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) for the final required row of the [professional-v1 coverage tranche](professional-v1-coverage.md). T01–T05
 remain closed; acceptance of T06 requires useful native execution, enforcement,
 independent evidence replay, review and required checks for both profiles.
 
@@ -118,9 +118,54 @@ without regenerating previous hashes to make a regression pass.
 
 Record ordinary and hostile usefulness separately, refusals, blocked unauthorized
 destinations, actual model calls/cost and descriptive wall-clock latency. Model
-calls and cost must be zero; comparative overhead remains unmeasured. Offline
-validation and G6 review are pending, so this runbook does not yet claim passing
-counts or accepted T06 capability.
+calls and cost must be zero; comparative overhead remains unmeasured.
+
+## Recorded validation; acceptance pending
+
+Frozen native source `58e4ad2781d9a276c2cb799dadf937209dc5e7fd` passed **83 tests**
+with all **747 recorded source files unchanged**, no failures, errors or skips.
+This includes all 38 T06 cases, 20 T06 enforcement checks and 25 accepted-tool
+regressions: the full MX native module plus selected A, SRV, NSID, AXFR and T05
+SNMP page cases. Both ordinary questions and their supported empty/name-absence
+responses completed usefully: **11/11 ordinary completions, zero unnecessary
+refusals**, plus **4/4 robustness completions**. All **23/23 negative cases** stayed
+inconclusive after one actual validated question and connection.
+
+All **four out-of-scope proposals were blocked before execution**. Approval,
+audit, replay, cross-profile binding, active-client cancellation, private-input,
+UDP and task-ceiling checks passed. Every T06 response trial verified all ten
+execution-boundary fields, including **76/76 forbidden IP/port witnesses**.
+Ordinary end-to-end latency was **3705–3972 ms**, median **3875 ms**, while the
+portable suite ran concurrently. These are descriptive measurements of this
+fixture/session path, not a baseline comparison. Actual provider calls and cost
+were **zero**; comparative overhead remains unmeasured.
+
+A separate read-only replay checked **all 57 saved reports through both CLI and
+Python entry points: 114 checks**, preserving every evidence file's bytes, mode
+and mtime. The entry points share the same inspection implementation. The initial
+replay attempt inside the outer development sandbox could not start the nested
+parser boundary; rerunning with permission for that boundary completed without
+changing product code or evidence. No approval or execution authority was restored.
+
+Private receipts belong under `.secure-agent/dns-address-20261014/`:
+`native-verification.json` SHA-256
+`3919bcc09009a2b7ab00691d69c0e27f52e702c35aef5245b21c590ba7d903d1`, and
+`all-inspectors-replay.json` SHA-256
+`7cb627b36e0ba7b37f2fc27e4cc1c69a0093959c1ea4c8bdfef4cf1048281c91`.
+
+The initial full portable run retained **24,158 passes and five failures**.
+Three historical selectors included the two new profiles; two shared runtime
+expectations omitted their existing dig thread allowance. Four portable test
+files were corrected without changing historical count/hash assertions,
+production code, policies or native tests. The complete rerun on
+`ce8dec2bf5651469cad3372ce568811760ccb8b1` passed **24,163 portable tests**, with
+1,399 integration tests deselected and no failures, errors or skips. All 747
+recorded source files remained unchanged during that run. The native and portable
+revisions differ only in the four portable test files; production code, policies
+and native tests are identical. Combined `verification.json` SHA-256 is
+`07887552aebf5d8680b222f219c852a856c4f73b71ab172a34cbf47bbb27d5fe`.
+Independent runtime/authority and parser/evidence reviews found no blocking code
+issues. **T06 remains a candidate until final review, required checks and merge.**
 
 ## Describe and inspect
 

@@ -20,15 +20,27 @@ reopen earlier milestones.
 
 **Current work is T06: separate fixed AAAA and PTR metadata profiles.**
 The [T06 candidates](dns-address-tools.md), `dig_dns_aaaa_v1` and `dig_dns_ptr_v1`,
-reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
+are open in [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86).
+They reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
 The catalog records **52 registered profiles: 50 accepted and two T06 candidates,
 across the same 17 programs**. Returned IPv6 addresses and PTR names are data,
-not network scope or follow-up authority. The predeclared corpus requires
-11 ordinary and four separate robustness completions, with 23 inconclusive
-negative cases. Native and final portable validation remain pending; neither
-T06 profile is accepted merely because it is registered.
+not network scope or follow-up authority. **83 frozen native tests passed** on
+`58e4ad2`, with all 747 recorded source files unchanged: all 11 ordinary tasks
+completed without unnecessary refusals, four robustness tasks completed and
+23 negative cases stayed inconclusive. Four out-of-scope proposals were blocked;
+57 saved reports passed 114 unchanged CLI/Python inspection checks. Full portable
+validation passed **24,163 tests**, with 1,399 integration tests deselected and
+all 747 recorded source files unchanged. Verify the latest required PR checks
+before merge; **T06 G6 stays open**.
+The native pin is `58e4ad2781d9a276c2cb799dadf937209dc5e7fd`; its 83 tests comprise
+38 corpus cases, 20 enforcement checks and 25 accepted regressions. The passing
+portable revision is `ce8dec2bf5651469cad3372ce568811760ccb8b1`; only four portable
+test files differ from the native pin, leaving implementation, policies and
+native tests unchanged. Keep the initial portable failures and passing rerun
+under `.secure-agent/dns-address-20261014/`. Combined `verification.json` SHA-256:
+`07887552aebf5d8680b222f219c852a856c4f73b71ab172a34cbf47bbb27d5fe`.
 
-Finish T06 validation, independent review, required checks and authorized merge
+Finish T06 review, latest required checks and authorized merge
 before closing the finite Stage 2 tranche. Stage 3 follows with a concrete owned
 service-compatibility and controlled target-routing contract under the existing
 offline boundary. Any attached-network work requires separate authorization.
@@ -2180,8 +2192,10 @@ Planning uses synthetic responses.
    at `8ca3887`; G1–G6 are closed after review, 357 fresh focused passes and five
    passing final checks. Keep its 51 native and 23,170 portable passes and
    immutable receipts. The current catalog is 52 registered profiles: 50 accepted
-   plus two T06 candidates across 17 programs. Complete [T06 AAAA/PTR](dns-address-tools.md)
-   native/portable validation, review, required checks and authorized merge before
+   plus two T06 candidates across 17 programs. [T06 AAAA/PTR](dns-address-tools.md)
+   has 83 native and 24,163 portable passes plus 114 unchanged inspection checks.
+   Review open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86), verify its
+   latest required checks and complete the authorized merge if they pass before
    closing Stage 2. Stage 3 then defines finite owned service compatibility and
    controlled target routing; network attachment still requires separate approval.
    Do not substitute optional signatures or program quotas.

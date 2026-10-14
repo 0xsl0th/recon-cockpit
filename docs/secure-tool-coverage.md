@@ -16,15 +16,20 @@ reopen earlier milestones.
 
 **Current work is T06: separate fixed AAAA and PTR metadata profiles.**
 The [T06 candidates](dns-address-tools.md), `dig_dns_aaaa_v1` and `dig_dns_ptr_v1`,
-reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
+are open in [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86).
+They reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
 The catalog records **52 registered profiles: 50 accepted and two T06 candidates,
 across the same 17 programs**. Returned IPv6 addresses and PTR names are data,
-not network scope or follow-up authority. The predeclared corpus requires
-11 ordinary and four separate robustness completions, with 23 inconclusive
-negative cases. Native and final portable validation remain pending; neither
-T06 profile is accepted merely because it is registered.
+not network scope or follow-up authority. **83 frozen native tests passed** on
+`58e4ad2`, with all 747 recorded source files unchanged: all 11 ordinary tasks
+completed without unnecessary refusals, four robustness tasks completed and
+23 negative cases stayed inconclusive. Four out-of-scope proposals were blocked;
+57 saved reports passed 114 unchanged CLI/Python inspection checks. Full portable
+validation passed **24,163 tests**, with 1,399 integration tests deselected and
+all 747 recorded source files unchanged. Verify the latest required PR checks
+before merge; **T06 G6 stays open**.
 
-Finish T06 validation, independent review, required checks and authorized merge
+Finish T06 review, latest required checks and authorized merge
 before closing the finite Stage 2 tranche. Stage 3 follows with a concrete owned
 service-compatibility and controlled target-routing contract under the existing
 offline boundary. Any attached-network work requires separate authorization.
@@ -212,7 +217,7 @@ without changing the scope or closure of the accepted core milestone.
 | T03 — accepted | Pinned local advertisement policy in both transport directions | Reuse byte-identical C14 collector; one request/write EOF/first packet, no login or extra probe. Known deviations useful, unknowns inconclusive. | [x] G1–G6 closed in [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) at `b90a365e`: 52 native / 21,898 portable passes, six ordinary and two robustness completions, two unknown and nine malformed/pressure inconclusive cases. Fresh review and five final checks passed; no new program. See [runbook](ssh-policy-tools.md). |
 | T04 — accepted | Controlled one-level web hierarchy | Twelve unique compiled GETs, independent owner/native reconciliation, empty and populated completion, explicit ambiguity, authority and replay. Native retries remain negative evidence. | [x] G1–G6 closed in [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) at `435a271`; 26 native and 22,577 portable passes retained, two independent reviews, 319 fresh focused tests and five final/post-merge checks passed. See [accepted runbook](web-hierarchy-tools.md). |
 | T05 — accepted | One bounded SNMP interface-description page | One fixed-seed TCP GETBULK, zero non-repeaters, four maximum repetitions, typed ordered rows or an explicit terminal boundary, authority, evidence and G1–G6. | [x] [Accepted profile](snmp-page-tools.md) in PR #85 at `8ca3887`; 51 native and 23,170 portable tests passed, followed by independent review, 357 fresh focused passes and five final checks. No walks, continuation, UDP or real communities. |
-| T06 — current candidates | Fixed AAAA/PTR metadata | Positive, NODATA and NXDOMAIN outcomes, bounded typed responses, secure execution, evidence and G1–G6 for each separate profile. | [ ] [Two secure candidates](dns-address-tools.md), reusing dig. Native and final portable validation remain pending. Required corpus: 11 ordinary and four robustness completions, 23 inconclusive negatives, enforcement and unchanged replay; G6 remains open. Stage 3 follows acceptance. |
+| T06 — current candidates | Fixed AAAA/PTR metadata | Positive, NODATA and NXDOMAIN outcomes, bounded typed responses, secure execution, evidence and G1–G6 for each separate profile. | [ ] [Two secure candidates](dns-address-tools.md), open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86), reusing dig. 83 native passes: 11 ordinary completions/zero unnecessary refusals, four robustness completions, 23 inconclusive negatives; four out-of-scope proposals blocked and 57 reports/114 inspection checks unchanged. Full portable validation passed 24,163 tests; latest required CI checks and G6 remain open. Stage 3 follows acceptance. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 

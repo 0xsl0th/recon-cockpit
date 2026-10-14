@@ -16,15 +16,20 @@ reopen earlier milestones.
 
 **Current work is T06: separate fixed AAAA and PTR metadata profiles.**
 The [T06 candidates](dns-address-tools.md), `dig_dns_aaaa_v1` and `dig_dns_ptr_v1`,
-reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
+are open in [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86).
+They reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
 The catalog records **52 registered profiles: 50 accepted and two T06 candidates,
 across the same 17 programs**. Returned IPv6 addresses and PTR names are data,
-not network scope or follow-up authority. The predeclared corpus requires
-11 ordinary and four separate robustness completions, with 23 inconclusive
-negative cases. Native and final portable validation remain pending; neither
-T06 profile is accepted merely because it is registered.
+not network scope or follow-up authority. **83 frozen native tests passed** on
+`58e4ad2`, with all 747 recorded source files unchanged: all 11 ordinary tasks
+completed without unnecessary refusals, four robustness tasks completed and
+23 negative cases stayed inconclusive. Four out-of-scope proposals were blocked;
+57 saved reports passed 114 unchanged CLI/Python inspection checks. Full portable
+validation passed **24,163 tests**, with 1,399 integration tests deselected and
+all 747 recorded source files unchanged. Verify the latest required PR checks
+before merge; **T06 G6 stays open**.
 
-Finish T06 validation, independent review, required checks and authorized merge
+Finish T06 review, latest required checks and authorized merge
 before closing the finite Stage 2 tranche. Stage 3 follows with a concrete owned
 service-compatibility and controlled target-routing contract under the existing
 offline boundary. Any attached-network work requires separate authorization.
@@ -150,7 +155,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | T01–T05 are accepted with G1–G6 closed, most recently T05 in PR #85 at `8ca3887`. The separate [T06 AAAA/PTR candidates](dns-address-tools.md) reuse dig; native and final portable validation, review and merge remain pending. Current counts are 52 registered / 50 accepted / two candidates across 17 programs. Each row requires useful execution, structured results, evidence, enforcement and review. After T06 acceptance, Stage 3 defines finite service compatibility and target-routing support under the retained offline boundary. The historical 4–6-program assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | T01–T05 are accepted with G1–G6 closed, most recently T05 in PR #85 at `8ca3887`. The separate [T06 AAAA/PTR candidates](dns-address-tools.md), open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86), reuse dig and passed 83 native and 24,163 portable tests. Review, latest required CI checks and merge remain pending. Current counts are 52 registered / 50 accepted / two candidates across 17 programs. Each row requires useful execution, structured results, evidence, enforcement and review. After T06 acceptance, Stage 3 defines finite service compatibility and target-routing support under the retained offline boundary. The historical 4–6-program assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
@@ -165,7 +170,8 @@ fixes six required operator outcomes: **T01 MX, T02 TLS version posture,
 T03 SSH policy assessment, T04 controlled web hierarchy discovery, T05 one SNMP
 interface-description page and T06 AAAA/PTR metadata**. T01 is accepted in
 PR #74; T02/T03 are accepted in PRs #80/#81, T04 in PR #84 and T05 in PR #85.
-T06's two profiles are current candidates pending validation and acceptance.
+T06's two profiles are current candidates in PR #86, with 83 native and 24,163
+portable passes. Verify latest required CI checks and review before acceptance.
 The contract maps all 50 accepted profiles separately and
 records supported limits, meaningful positive/absent and
 negative cases, evidence and G1–G6 for each new task. Candidate engines remain
