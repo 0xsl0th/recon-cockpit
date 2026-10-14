@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 from .tool_parameters import (
-    CurlHTTPSParameters, DigDNSParameters, FFufParameters, HTTPHeadersParameters, HTTPParameters, HTTPOptionsParameters,
+    CurlHTTPSParameters, DigDNSParameters, FFufParameters, FFufHierarchyParameters, HTTPHeadersParameters, HTTPParameters, HTTPOptionsParameters,
     NucleiParameters, OpenSSLTLSParameters, TLSCertificateParameters, SSHHostKeysParameters, SSHAlgorithmsParameters, SSHPolicyParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
@@ -47,6 +47,7 @@ CURL_TOOL_ID = "curl_https_get_v1"
 HTTP_OPTIONS_TOOL_ID = "curl_http_options_v1"
 HTTP_OPTIONS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 FFUF_TOOL_ID = "ffuf_content_discovery_v1"
+FFUF_HIERARCHY_TOOL_ID = "ffuf_web_hierarchy_v1"
 CURL_PARAMETERS = MappingProxyType({
     "port": 8080, "method": "GET", "path": "/harbordesk/portal.html",
     "timeout_seconds": 3, "max_output_bytes": 8192,
@@ -173,6 +174,15 @@ class ToolAdapter:
 
 
 ADAPTERS = MappingProxyType({
+    FFUF_HIERARCHY_TOOL_ID: ToolAdapter(
+        FFUF_HIERARCHY_TOOL_ID, FFufHierarchyParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_http_hierarchy", "owned-ffuf-web-hierarchy-v1",
+        "bounded-ffuf-web-hierarchy-owner-result-v1", "ffuf-web-hierarchy-owner-json-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "compiled_twelve_path_corpus",
+         "serial_requests", "configured_input_rate", "independent_owner_evidence",
+         "per_prefix_negative_controls", "no_redirect_following", "no_response_directed_followup"),
+    ),
     **{tool: ToolAdapter(
         tool, TLSPostureParameters, ("port", "timeout_seconds", "max_output_bytes"),
         "observe_owned_tls_version_posture", "owned-" + tool.replace("_", "-"),

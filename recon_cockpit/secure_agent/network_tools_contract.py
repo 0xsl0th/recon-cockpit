@@ -43,6 +43,8 @@ T02_CASES = tls_posture.CASES
 from . import network_tools_ssh_policy_spec as ssh_policy
 from .network_tools_ssh_policy_parser import POLICY_ID as SSH_POLICY_ID, POLICY_SHA256 as SSH_POLICY_SHA256
 T03_CASES = ssh_policy.CASES
+from . import network_tools_web_hierarchy_spec as web_hierarchy
+T04_CASES = web_hierarchy.CASES
 SSH_POLICY_TOOL_ID = ssh_policy.TOOL_ID
 
 
@@ -127,6 +129,8 @@ PARAMETERS[HTTP_OPTIONS_TOOL_ID] = dict(HTTP_OPTIONS_PARAMETERS)
 PARSER_VERSIONS[HTTP_OPTIONS_TOOL_ID] = "curl-http-options-v1"
 PARAMETERS.update({tool: dict(tls_posture.PARAMETERS) for tool in tls_posture.TOOL_VERSIONS})
 PARSER_VERSIONS.update({tool: tls_posture.PARSER_VERSION for tool in tls_posture.TOOL_VERSIONS})
+PARAMETERS[web_hierarchy.TOOL_ID] = dict(web_hierarchy.PARAMETERS)
+PARSER_VERSIONS[web_hierarchy.TOOL_ID] = web_hierarchy.PARSER_VERSION
 PARAMETERS[SSH_POLICY_TOOL_ID] = dict(ssh_policy.PARAMETERS)
 PARSER_VERSIONS[SSH_POLICY_TOOL_ID] = "ssh-policy-wire-v1"
 BOUNDARY_FIELDS = frozenset({"forbidden_ip_blocked", "forbidden_port_blocked", "namespace_creation_blocked",
@@ -160,8 +164,23 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES + C15_CASES + C16_CASES + C17_CASES + C18_CASES + T02_CASES + T03_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES + C15_CASES + C16_CASES + C17_CASES + C18_CASES + T02_CASES + T03_CASES + T04_CASES):
         raise ValueError("invalid_network_tools_case")
+    if case in T04_CASES:
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(web_hierarchy.TOOL_ID).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(web_hierarchy.LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "web_hierarchy": {"paths": list(web_hierarchy.PATHS), "prefixes": list(web_hierarchy.PREFIXES),
+                "wordlist_sha256": hashlib.sha256(web_hierarchy.WORDLIST).hexdigest(),
+                "completion_request_count": 12, "max_connections": 16, "concurrency": 1,
+                "configured_input_rate_per_second": 4, "native_error_retry": "once_per_input",
+                "strict_request_rate_enforced": False, "max_recorded_request_attempts": 16,
+                "negative_controls_per_prefix": 2, "independent_owner_evidence": True,
+                "recursive_crawling": False, "redirects_followed": False, "credentials": False,
+                "response_directed_followup": False, "vulnerability_claim": False},
+            "result_semantics": "untrusted_finite_http_responses_with_per_prefix_controls",
+            "parser_versions": {web_hierarchy.TOOL_ID: web_hierarchy.PARSER_VERSION}}
     if case in T03_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(SSH_POLICY_TOOL_ID).to_dict()],
@@ -544,11 +563,11 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
     before = {"connection_count": 0, "request_count": 0} if previous is None else validate_context(previous, expected)
     connections = context["connection_count"] - before["connection_count"]
     requests = context["request_count"] - before["request_count"]
-    request_limit = 2 if expected["scenario"] in B8_CASES else 1
+    request_limit = 16 if expected["scenario"] in T04_CASES else 2 if expected["scenario"] in B8_CASES else 1
     # T02 may retain one queued/refused TCP connection as negative evidence;
     # only one frontend/private-peer stream is admitted and useful results
     # still require exactly one observed connection below.
-    connection_limit = (2 if expected["scenario"] in T02_CASES + B8_CASES else 3 if expected["scenario"] in B7_CASES else 4 if expected["scenario"] in B4_CASES else
+    connection_limit = (16 if expected["scenario"] in T04_CASES else 2 if expected["scenario"] in T02_CASES + B8_CASES else 3 if expected["scenario"] in B7_CASES else 4 if expected["scenario"] in B4_CASES else
                         2 if (expected["scenario"].startswith("ftp-") and expected["scenario"] not in C9_CASES) else 1)
     if (not 0 <= connections <= connection_limit or not 0 <= requests <= request_limit
             or (expected["scenario"] in {"openssl-untrusted", "openssl-malformed", "openssl-stalled",
@@ -591,7 +610,7 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
             or (expected["scenario"] in C6_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in SMB2_SUCCESS_CASES))
             or (expected["scenario"] in B7_CASES and result.get("tool_observation") is not None and connections < 2)
-            or (execution_status == "succeeded" and result.get("tool_observation") is not None and requests != request_limit)):
+            or (execution_status == "succeeded" and result.get("tool_observation") is not None and requests != (12 if expected["scenario"] in T04_CASES else request_limit))):
         raise ValueError("network_tools_request_continuity_mismatch")
     if tool_id in (NUCLEI_TOOL_ID, NUCLEI_GIT_TOOL_ID) and result.get("tool_observation") is not None:
         from .network_tools_lab_contract import decode_owner_response
@@ -616,6 +635,19 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
                 or observation.get("owner_sha256") != context["tls_posture_owner_sha256"]
                 or observation.get("fixture_variant") != tls_posture.case_parts(expected["scenario"])[1]):
             raise ValueError("tls_posture_owner_progress_mismatch")
+    if tool_id == web_hierarchy.TOOL_ID:
+        from .network_tools_web_hierarchy_receipt import decode_owner_receipt, receipt_counter_context, validate_owner_selection
+        raw = decode_owner_receipt(result.get("web_hierarchy_owner"))
+        validate_owner_selection(raw, expected["scenario"])
+        counts = receipt_counter_context(raw)
+        if any(counts[key] != context[key] for key in counts):
+            raise ValueError("web_hierarchy_owner_counter_mismatch")
+        if context.get("web_hierarchy_owner_sha256") != hashlib.sha256(raw).hexdigest():
+            raise ValueError("web_hierarchy_owner_commitment_mismatch")
+        observation = result.get("tool_observation")
+        if observation is not None and (connections != 12 or requests != 12
+                or observation.get("owner_sha256") != context["web_hierarchy_owner_sha256"]):
+            raise ValueError("web_hierarchy_owner_progress_mismatch")
     return context
 
 
@@ -626,11 +658,14 @@ def _digest(value):
 def validate_tool_result(result, *, tool_id, execution_status, runtime_sha256=None):
     """Check bounded capture/provenance; replay parsing is a separate boundary."""
     version = parser_version(tool_id)
-    omitted = {"backend", "owned_lab"} | ({"tls_posture_owner"} if tool_id in tls_posture.TOOL_VERSIONS else set())
+    omitted = {"backend", "owned_lab"} | ({"web_hierarchy_owner"} if tool_id == web_hierarchy.TOOL_ID else set()) | ({"tls_posture_owner"} if tool_id in tls_posture.TOOL_VERSIONS else set())
     core = {k: v for k, v in result.items() if k not in omitted} if type(result) is dict else result
     if tool_id in tls_posture.TOOL_VERSIONS:
         from .network_tools_tls_posture_receipt import decode_owner_receipt
         owner_raw = decode_owner_receipt(result.get("tls_posture_owner") if type(result) is dict else None)
+    if tool_id == web_hierarchy.TOOL_ID:
+        from .network_tools_web_hierarchy_receipt import decode_owner_receipt
+        owner_raw = decode_owner_receipt(result.get("web_hierarchy_owner") if type(result) is dict else None)
     if (type(core) is not dict or set(core) != {"status", "results", "raw_output_base64", "raw_stderr_base64",
             "bytes_received", "truncated", "provenance", "boundary_checks", "tool_observation"}
             or type(execution_status) is not str or execution_status not in {"succeeded", "failed", "timeout", "output_limit"}
@@ -640,7 +675,7 @@ def validate_tool_result(result, *, tool_id, execution_status, runtime_sha256=No
             or type(core["truncated"]) is not bool or core["truncated"] != (execution_status == "output_limit")):
         raise ValueError("invalid_network_tool_result")
     checks = core["boundary_checks"]
-    if type(checks) is not dict or set(checks) != (BOUNDARY_FIELDS | frozenset({"scratch_mount_bounded", "scratch_writes_confined", "scratch_noexec", "scratch_file_limit", "static_runtime_verified"}) if tool_id in (NUCLEI_TOOL_ID, NUCLEI_GIT_TOOL_ID) else BOUNDARY_FIELDS | tls_posture.BOUNDARY_FIELDS if tool_id in tls_posture.TOOL_VERSIONS else BOUNDARY_FIELDS) or any(v is not True for v in checks.values()):
+    if type(checks) is not dict or set(checks) != (BOUNDARY_FIELDS | frozenset({"scratch_mount_bounded", "scratch_writes_confined", "scratch_noexec", "scratch_file_limit", "static_runtime_verified"}) if tool_id in (NUCLEI_TOOL_ID, NUCLEI_GIT_TOOL_ID) else BOUNDARY_FIELDS | tls_posture.BOUNDARY_FIELDS if tool_id in tls_posture.TOOL_VERSIONS else BOUNDARY_FIELDS | web_hierarchy.BOUNDARY_FIELDS if tool_id == web_hierarchy.TOOL_ID else BOUNDARY_FIELDS) or any(v is not True for v in checks.values()):
         raise ValueError("invalid_network_tool_boundary_checks")
     decoded = []
     try:
@@ -689,6 +724,12 @@ def validate_tool_result(result, *, tool_id, execution_status, runtime_sha256=No
                     or observation["stdout_sha256"] != provenance["output_sha256"]
                     or observation["stderr_sha256"] != provenance["stderr_sha256"]):
                 raise ValueError("tls_posture_observation_provenance_mismatch")
+        if tool_id == web_hierarchy.TOOL_ID:
+            observation = core["tool_observation"]
+            if (observation["owner_sha256"] != hashlib.sha256(owner_raw).hexdigest()
+                    or observation["stdout_sha256"] != provenance["output_sha256"]
+                    or observation["stderr_sha256"] != provenance["stderr_sha256"]):
+                raise ValueError("web_hierarchy_observation_provenance_mismatch")
     return output, stderr
 
 
@@ -700,6 +741,9 @@ def _observation(tool_id, classification, reason, details=None):
 def classify_tool(tool_id, normalized):
     from .network_tools_parser import validate_result
     normalized = validate_result(tool_id, normalized)
+    if tool_id == web_hierarchy.TOOL_ID:
+        reason = "web_hierarchy_" + normalized["outcome"]
+        return _observation(tool_id, reason, reason, normalized)
     if tool_id in tls_posture.TOOL_VERSIONS:
         reason = "tls_posture_" + normalized["outcome"]
         return _observation(tool_id, reason, reason, normalized)

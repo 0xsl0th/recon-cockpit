@@ -37,6 +37,9 @@ def runtime_tag(config, closure):
             and closure.get('network_tools_runtime', {}).get('tool_id') == 'whatweb_http_fingerprint_v1'):
         return 'whatweb-tools-launch-preconditions'
     if (config['profile'] == 'owned_network_tools_lab'
+            and closure.get('network_tools_runtime', {}).get('tool_id') == 'ffuf_web_hierarchy_v1'):
+        return 'web-hierarchy-launch-preconditions'
+    if (config['profile'] == 'owned_network_tools_lab'
             and closure.get('network_tools_runtime', {}).get('tool_id') == 'kerbrute_userenum_v1'):
         return 'kerberos-tools-launch-preconditions'
     if (config['profile'] == 'owned_network_tools_lab'
@@ -47,7 +50,7 @@ def runtime_tag(config, closure):
 
 def validate_runtime_tag(tag, config, closure):
     expected = runtime_tag(config, closure)
-    special = tag in {*RUNTIME_TAGS.values(), 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions'}
+    special = tag in {*RUNTIME_TAGS.values(), 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions'}
     if (expected is not None) != special or (expected is not None and tag != expected):
         raise ValueError('launcher_runtime_profile_changed')
 

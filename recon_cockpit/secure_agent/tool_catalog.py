@@ -36,6 +36,10 @@ def _network(program, case, policy, runbook, *limitations):
 
 
 _ENTRIES = MappingProxyType({
+    adapters.FFUF_HIERARCHY_TOOL_ID: _network("ffuf", "web-hierarchy-nested", "web-hierarchy", "web-hierarchy-tools",
+        "T04 candidate pending acceptance review; twelve compiled paths across three fixed prefixes, with two negative controls per prefix.",
+        "Serial bounded discovery requires independent owner/client agreement; wildcard, redirect and partial results cannot establish useful completion.",
+        "No arbitrary URL, dictionary, recursive crawling, credentials, exploitability or response-directed follow-up."),
     **{tool: _network("openssl", f"tls-posture-{version}-modern", "tls-posture", "tls-posture-tools",
         "One separately authorized fixed-version probe through an owned complete-record mediator; independent peer receipt is required.",
         "Explicit protocol rejection is useful evidence, not process success. Retry blocking alone is not useful completion.",
@@ -206,15 +210,17 @@ def _summary(tool_id, entry):
     return {"tool_id": tool_id, "effect": adapter.effect,
             "implementation": "native" if entry.program is None else "external_program",
             "external_program": entry.program, "execution_profile": adapter.execution_profile,
-            "parser_version": adapter.parser_version}
+            "parser_version": adapter.parser_version,
+            **({"acceptance_status": "candidate", "milestone": "T04"}
+               if tool_id == adapters.FFUF_HIERARCHY_TOOL_ID else {})}
 
 
 def list_tools():
     """List reviewed capabilities, without claiming their prerequisites exist."""
     tools = [_summary(tool_id, _entry(tool_id)) for tool_id in sorted(adapters.ADAPTERS)]
     return {**_common(), "capability_count": len(tools),
-            "accepted_capability_count": len(tools),
-            "candidate_capability_count": 0,
+            "accepted_capability_count": len(tools) - 1,
+            "candidate_capability_count": 1,
             "external_program_count": len({row["external_program"] for row in tools
                                            if row["external_program"] is not None}),
             "tools": tools}

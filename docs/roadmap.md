@@ -1,28 +1,37 @@
 # Roadmap — secure AI pentesting workflows
 
-Current continuation (9 October 2026):
+Current continuation (14 October 2026):
 [T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) merged as
 `f2e7b785dbea5c8c9f86526f9b3c4deede544125`, followed by
 [T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) as
 `b90a365ef01fb6a6841b367fe52b4597aa6a219f`, after review and all five final checks.
 **T02 and T03 meet G1–G6 and are closed: 48 accepted profiles / 16 programs.**
 T02 retains 65 native and 21,593 portable passes; T03 retains 52 native and
-21,898 portable passes. The compiled catalog now reports **48 accepted profiles,
-zero candidates and 16 programs**, matching those merges. This metadata
-reconciliation changes no accepted contract, execution control or runtime limit.
+21,898 portable passes. After those merges, PR #82 reconciled the catalog to **48 accepted profiles,
+zero candidates and 16 programs** without changing accepted contracts,
+execution controls or runtime limits. The current T04 candidate is separate.
 
 [PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82) accepted the catalog
 reconciliation and [T04 source review](web-hierarchy-feasibility.md) at `945ba2b`;
 the merged tree matches reviewed head `fb19b606`. All five final and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37872575949)
 passed. That source-only batch stays closed.
 
-The [T04 native diagnostic](web-hierarchy-native.md) now executes real ffuf
-against the twelve compiled paths in a disconnected owned fixture. All eight
-native tests and **22,113 portable tests** passed on frozen source `1b03814`,
-with no failures, errors or skips; all 707 source hashes remained unchanged.
-This diagnostic grants no product authority and adds no registered or accepted
-profile. Next integrate a separate production profile with policy, approval,
-audit, consumed permits and both evidence inspectors, then complete G1–G6.
+[PR #83](https://github.com/0xsl0th/recon-cockpit/pull/83) merged the
+[T04 native diagnostic](web-hierarchy-native.md) as `69406cd` after review and
+all five final checks; its post-merge checks also passed. Its eight native and
+22,113 portable passes remain historical diagnostic evidence.
+
+The separate [T04 secure hierarchy candidate](web-hierarchy-tools.md) now adds
+`ffuf_web_hierarchy_v1` through policy, audit, required approval, consumed permits,
+confined native execution and both evidence inspectors. Current catalog:
+**48 accepted profiles, one T04 candidate, 16 programs**. Production validation
+passed **26 native and 22,577 portable tests**; independent review found no
+remaining blocker. The runbook records separate frozen source pins and unchanged
+production/native-test sources. T04 G6 review and merge remain open; no T04
+acceptance is claimed.
+Keep the twelve-path completion requirement distinct from the owner’s sixteen-
+connection bound: native error retries remain recorded and inconclusive, and the
+configured input rate is not a strict retry-inclusive wire-rate guarantee.
 T05/T06 remain required after T04. Earlier milestones stay closed. Proposal PR #31's
 section 3 architecture correction merged as `e23f561` after review, Mermaid
 validation and five passing final checks. All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37870742628)
@@ -68,7 +77,7 @@ claim that today's bounded fixtures support professional engagements.
 | --- | --- | --- |
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
-| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted with G1–G6 closed in PRs #74/#80/#81. The catalog records 48 accepted profiles and no candidates across 16 programs. T04 has a [real ffuf native diagnostic](web-hierarchy-native.md), with eight native and 22,113 portable tests passed; separate production integration and G1–G6 remain open. T05/T06 remain required. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
+| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted with G1–G6 closed in PRs #74/#80/#81. The catalog records 48 accepted profiles and one T04 candidate across 16 programs. T04 has accepted [native feasibility evidence](web-hierarchy-native.md) and a separate [secure production candidate](web-hierarchy-tools.md); 26 native and 22,577 portable passes are recorded; G6 review and merge remain open. T05/T06 remain required. Every task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Keep interactive support distinct and preserve all required outcomes. |
 | 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`

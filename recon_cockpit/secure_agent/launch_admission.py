@@ -27,6 +27,9 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(("web-hierarchy-nested", "web-hierarchy-empty", "web-hierarchy-wildcard",
+                    "web-hierarchy-mixed-controls", "web-hierarchy-redirect", "web-hierarchy-hostile",
+                    "web-hierarchy-stalled"), "ffuf_web_hierarchy_v1"),
     **dict.fromkeys(tuple("ssh-policy-" + suffix for suffix in (
         "conforming", "directional", "legacy", "c2s-deviation", "s2c-deviation", "guessed",
         "fragmented", "injected", "unknown", "mixed-unknown", "malformed-banner",
@@ -295,7 +298,7 @@ def profile_allows(action, config):
         tool_id = NETWORK_TOOL_CASES.get(config['case']) if type(config['case']) is str else None
         return action.tool_id == tool_id and action.parameters.to_dict() == {
             'port': 111 if tool_id in ('rpcinfo_dump_v1', 'showmount_exports_v1') else 8080,
-            'timeout_seconds': 5, 'max_output_bytes': 8192}
+            'timeout_seconds': 10 if tool_id == 'ffuf_web_hierarchy_v1' else 5, 'max_output_bytes': 8192}
     if not 1024 <= action.parameters.port <= 65534:
         return False
     if config['profile'] == 'fixture':

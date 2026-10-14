@@ -1,4 +1,4 @@
-# Continue here — 9 October 2026
+# Continue here — 14 October 2026
 
 ## Read this first
 
@@ -34,8 +34,8 @@ The initial six historical-selector CI failures remain recorded; predecessor
 hashes stay intact. Model calls/cost remain zero. No professional-service or
 general hardening compliance is claimed.
 
-The compiled catalog now reports **48 accepted profiles, zero candidates and
-16 programs**, matching the reviewed merges above. PR #82 reconciled only
+After those merges the compiled catalog reported **48 accepted profiles, zero
+candidates and 16 programs**. The current T04 candidate is recorded below. PR #82 reconciled only
 acceptance metadata and its documentation; T02/T03 G1–G6 stayed closed and
 execution controls stayed fixed.
 [PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82) merged this reconciliation
@@ -58,14 +58,42 @@ no failures/errors/skips and all 707 source hashes unchanged. Private evidence:
 `.secure-agent/web-hierarchy-native-20261009/`, including `portable/summary.json`.
 The combined `verification.json` SHA-256 is
 `9fc4db38dbdada5088ce50247030ccef58838508e2ef318f20fdffdc597f40f4`.
-Branch `feature/t04-web-hierarchy-native` is ready for PR review; the private
-handoff records its eventual PR link, exact head and check state.
-The diagnostic adds no registered profile and does not validate product
-authorization, audit or human-approval gates. Accepted coverage stays **48 profiles,
-zero candidates and 16 programs**. Next integrate the separate production
-profile with policy, approval, audit, consumed permits and both evidence
-inspectors before completing T04 G1–G6. T05 SNMP interface page and T06 AAAA/PTR
-remain required after T04.
+[PR #83](https://github.com/0xsl0th/recon-cockpit/pull/83) merged at
+`69406cd6d883b81d088564b7406715c423288f5a`; reviewed head `7d11e48` and the merged
+commit have the same tree. All five final and post-merge checks passed. Do not
+repeat its merge. The diagnostic itself grants no product authority.
+
+The separate [T04 production candidate](web-hierarchy-tools.md), opened as
+[PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) on
+`feature/t04-web-hierarchy-secure` integrates exact policy, audit, consumed
+required approval, admission, confined ffuf execution, independent owner evidence
+and both inspectors. The catalog now reports **48 accepted profiles, one T04
+candidate and 16 programs**. Production validation passed **26 native and 22,577
+portable tests**, with no failures, errors or skips. Native source `6a8d00a` and
+portable source `005c948` share identical production code, policies and native
+tests; only four portable tests changed. Both runs preserved all 724 recorded
+source files. Nineteen native bundles replayed through both inspectors without
+writes. The two ordinary tasks completed without unnecessary refusals; hostile
+output completed separately, while wildcard, mixed controls, redirect and
+stalled cases stayed non-useful. Two out-of-scope proposals were blocked before
+execution; approval, audit, replay and active-client cancellation tests passed.
+Independent review found no remaining blocker. G6 review and merge remain open.
+Native retries of timed-out inputs remain explicit inconclusive evidence;
+twelve unique requests define useful completion, while the owner retains up to
+sixteen attempted requests/connections. The configured input rate is not a strict
+retry-inclusive wire rate. Existing accepted contracts and closed milestones
+remain unchanged.
+
+Private development and frozen validation records belong under
+`.secure-agent/web-hierarchy-secure-20261009/`; preserve the initial failures.
+`verification.json` SHA-256 is
+`7877620e22e11dfac83397e96c1a1282fedbb651ccd09b73b42f4852d72f619c`.
+Review corrected one evidence claim: the planner-view digest does not commit to
+the full result. Inspectors verify artifact/journal consistency and independently
+recompute observations; coordinated host-owner rewriting is outside that guarantee.
+Finish and review this candidate before T05 SNMP interface-page work, then T06
+AAAA/PTR. Do not start deeper workflows, comparative benchmarking, credentials,
+paid calls or live-model work.
 
 Catalog reconciliation passed **300 focused tests** with no failures, errors or
 skips, including CLI non-execution guards and frozen T02/T03 contract hashes.
@@ -2102,19 +2130,16 @@ Planning uses synthetic responses.
    Preserve its private receipt, existing PDFs and email; submission remains a
    separate November decision, alongside
    the broader verified-capability refresh.
-3. Preserve accepted PR #82 (`945ba2b`, reviewed head `fb19b606`) and its five
+3. Preserve accepted PR #82 (`945ba2b`) and PR #83 (`69406cd`) with their five
    passing final/post-merge checks. The [T04 native diagnostic](web-hierarchy-native.md)
-   passed eight native and 22,113 portable tests on frozen source `1b03814`.
-   Review branch `feature/t04-web-hierarchy-native` and its final required checks,
-   retaining failed developmental captures and exact useful/negative/cancellation
-   results; PR details belong in the private handoff. This diagnostic adds no
-   registered profile; the catalog stays 48 accepted, zero candidates, 16 programs.
-4. Then integrate a separate T04 production profile through policy, exact
-   approval, durable audit, consumed permits and both evidence inspectors,
-   preserving the existing eight-path ffuf profile. Complete independent review,
-   required checks and authorized merge before closing G1–G6. T05 SNMP interface
-   page and T06 AAAA/PTR remain required afterward; do not substitute optional
-   signatures or program quotas.
+   passed eight native and 22,113 portable tests; this completed batch stays closed.
+4. Review the separately registered [T04 secure hierarchy candidate](web-hierarchy-tools.md)
+   on `feature/t04-web-hierarchy-secure`, including its frozen production evidence,
+   exact head and required checks. The catalog is 48 accepted plus one candidate
+   across 16 programs; the accepted eight-path ffuf recipe stays unchanged.
+   Complete required review/checks and authorized merge before closing T04 G6.
+   T05 SNMP interface page and T06 AAAA/PTR remain required afterward; do not
+   substitute optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
    No accepted milestone or personal walkthrough needs to be repeated.
 6. Credentials, paid/live models, attached/external networks, deeper workflows

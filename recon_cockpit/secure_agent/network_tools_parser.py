@@ -46,7 +46,7 @@ LDAP_TLS_TOOL_ID = "ldap_starttls_handshake_v1"
 FTP_TLS_TOOL_ID = "ftp_starttls_handshake_v1"
 FTP_TLS_FINAL_GREETING = b"220 harbordesk.test ready\r\n"
 DATABASE_TLS_SERVICES = {POSTGRESQL_TLS_TOOL_ID: "postgresql", MYSQL_TLS_TOOL_ID: "mysql"}
-PARSER_VERSIONS = {DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
+PARSER_VERSIONS = {"ffuf_web_hierarchy_v1": "ffuf-web-hierarchy-owner-json-v1", DIG_TOOL_ID: "dig-dns-text-v1", OPENSSL_TOOL_ID: "openssl-tls-brief-v1",
     SSH_ALGORITHMS_TOOL_ID: "ssh-kexinit-wire-v1",
     SSH_POLICY_TOOL_ID: "ssh-policy-wire-v1",
     NUCLEI_TOOL_ID: "nuclei-directory-listing-v1",
@@ -161,6 +161,9 @@ def validate_result(tool_id, value):
     version = parser_version(tool_id)
     if type(value) is not dict or value.get("parser_version") != version:
         raise ValueError("invalid_network_tool_observation")
+    if tool_id == "ffuf_web_hierarchy_v1":
+        from .network_tools_web_hierarchy_parser import validate_result as validate_hierarchy
+        return validate_hierarchy(tool_id, value)
     if tool_id in TLS_POSTURE_TOOLS:
         from .network_tools_tls_posture_parser import validate_result as validate_tls_posture
         return validate_tls_posture(tool_id, value)

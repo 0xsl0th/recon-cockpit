@@ -55,6 +55,7 @@ RDP = "rdp_initial_negotiation_v1"
 SMB2 = "smb2_negotiate_metadata_v1"
 SSH_ALGORITHMS = "ssh_transport_algorithms_v1"
 SSH_POLICY = "ssh_transport_policy_v1"
+WEB_HIERARCHY = "ffuf_web_hierarchy_v1"
 SMTP_TLS = "smtp_starttls_handshake_v1"
 LDAP_TLS = "ldap_starttls_handshake_v1"
 FTP_TLS = "ftp_starttls_handshake_v1"
@@ -222,6 +223,7 @@ from . import network_tools_smb2_runtime as smb2_runtime
 from . import network_tools_ssh_algorithms_runtime as ssh_algorithms_runtime
 from . import network_tools_ssh_policy_runtime as ssh_policy_runtime
 from . import network_tools_nuclei_runtime as nuclei_runtime
+from . import network_tools_web_hierarchy_runtime as web_hierarchy_runtime
 
 EXECUTABLES[NUCLEI] = nuclei_runtime.EXECUTABLE
 FIXED_ARGV[NUCLEI] = nuclei_runtime.FIXED_ARGV
@@ -233,6 +235,8 @@ FIXED_ARGV[SMB2] = smb2_runtime.FIXED_ARGV
 FIXED_ARGV[SSH_ALGORITHMS] = ssh_algorithms_runtime.FIXED_ARGV
 FIXED_ARGV[SSH_POLICY] = ssh_policy_runtime.FIXED_ARGV
 EXECUTABLES[SSH_POLICY] = ssh_policy_runtime.EXECUTABLE
+EXECUTABLES[WEB_HIERARCHY] = web_hierarchy_runtime.EXECUTABLE
+FIXED_ARGV[WEB_HIERARCHY] = web_hierarchy_runtime.FIXED_ARGV
 FIXED_ARGV[TLS_CERTIFICATE] = tuple(arg for arg in FIXED_ARGV[OPENSSL] if arg != "-brief") + (
     "-showcerts", "-nameopt", "RFC2253", "-verify_quiet", "-no_ticket")
 FIXED_ARGV[SMTP_TLS] = FIXED_ARGV[OPENSSL] + ("-starttls", "smtp", "-name", "harbordesk.test")
@@ -252,6 +256,7 @@ MODULES += ("network_tools_nuclei_runtime", "network_tools_nuclei_git_runtime", 
             "network_tools_nuclei_git_fixture", "network_tools_tls_posture_spec",
             "network_tools_ssh_policy_runtime", "network_tools_ssh_policy_parser",
             "network_tools_ssh_policy_spec")
+MODULES += ("network_tools_web_hierarchy_runtime", "network_tools_web_hierarchy_spec", "web_hierarchy_spec")
 
 
 def encode(value):
@@ -260,6 +265,8 @@ def encode(value):
 
 
 def execution_environment(tool_id):
+    if tool_id == WEB_HIERARCHY:
+        return dict(web_hierarchy_runtime.ENVIRONMENT)
     if tool_id in TLS_POSTURE_TOOLS:
         from .network_tools_tls_posture_runtime import ENVIRONMENT
         return dict(ENVIRONMENT)
@@ -296,6 +303,8 @@ def execution_environment(tool_id):
 
 
 def _compiled(tool_id):
+    if tool_id == WEB_HIERARCHY:
+        return web_hierarchy_runtime.COMPILED[0]
     if tool_id in TLS_POSTURE_TOOLS:
         from .network_tools_fixture import TLS_CERTIFICATE_CA_PEM
         return "compiled:fixture-ca", "/tool/data/fixture-ca.pem", TLS_CERTIFICATE_CA_PEM
@@ -416,6 +425,8 @@ def read_runtime_file(path, tool_id):
 
 
 def validate_manifest(value, *, tool_id=None):
+    if type(value) is dict and value.get("tool_id") == WEB_HIERARCHY:
+        return web_hierarchy_runtime.validate_manifest(value, tool_id=tool_id)
     if type(value) is dict and value.get("tool_id") in TLS_POSTURE_TOOLS:
         from .network_tools_tls_posture_runtime import validate_manifest as validate_tls_posture
         return validate_tls_posture(value, tool_id=tool_id)
@@ -486,6 +497,8 @@ def inspect_tool_runtime(tool_id, control):
     if type(tool_id) is not str or tool_id not in EXECUTABLES:
         raise ValueError("unsupported_network_tool")
     control.check()
+    if tool_id == WEB_HIERARCHY:
+        return web_hierarchy_runtime.inspect_runtime(control)
     if tool_id in (NUCLEI, NUCLEI_GIT):
         return nuclei_runtime.for_tool(tool_id).inspect_runtime(control)
     if tool_id == SSH_POLICY:
@@ -560,6 +573,10 @@ def _snapshot(manifest, control):
 
 
 def _command(lab, bootstrap, manifest, descriptors, nonce, commitment, *, service_web=False):
+    if manifest["tool_id"] == WEB_HIERARCHY:
+        if service_web:
+            raise ValueError("web_hierarchy_service_web_profile_forbidden")
+        return web_hierarchy_runtime.command(lab, bootstrap, manifest, descriptors, nonce, commitment)
     if manifest["tool_id"] in TLS_POSTURE_TOOLS:
         if service_web:
             raise ValueError("tls_posture_service_web_profile_forbidden")
@@ -626,6 +643,9 @@ def run_network_tool_owned(*, lab, launch, control, closure=None, manifest=None)
     if selected in TLS_POSTURE_TOOLS:
         from .network_tools_tls_posture_runtime import READY_PREFIX as tls_prefix, BOUNDARY_FIELDS
         selected_prefix, extra_checks = tls_prefix, tuple(sorted(BOUNDARY_FIELDS))
+    if selected == WEB_HIERARCHY:
+        selected_prefix = web_hierarchy_runtime.READY_PREFIX
+        extra_checks = tuple(sorted(web_hierarchy_runtime.BOUNDARY_FIELDS))
     prefix = selected_prefix + commitment.encode("ascii") + b"\n"
     descriptors = _snapshot(manifest, control)
     try:

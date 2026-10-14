@@ -1,28 +1,34 @@
 # Professional-v1 coverage contract
 
-Current continuation (9 October 2026):
+Current continuation (14 October 2026):
 [T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) merged as
 `f2e7b785dbea5c8c9f86526f9b3c4deede544125`, followed by
 [T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) as
 `b90a365ef01fb6a6841b367fe52b4597aa6a219f`, after review and all five final checks.
 **T02 and T03 meet G1–G6 and are closed: 48 accepted profiles / 16 programs.**
 T02 retains 65 native and 21,593 portable passes; T03 retains 52 native and
-21,898 portable passes. The compiled catalog now reports **48 accepted profiles,
-zero candidates and 16 programs**, matching those merges. This metadata
-reconciliation changes no accepted contract, execution control or runtime limit.
+21,898 portable passes. After those merges, PR #82 reconciled the catalog to **48 accepted profiles,
+zero candidates and 16 programs** without changing accepted contracts,
+execution controls or runtime limits. The current T04 candidate is separate.
 
 [PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82) accepted the catalog
 reconciliation and [T04 source review](web-hierarchy-feasibility.md) at `945ba2b`;
 the merged tree matches reviewed head `fb19b606`. All five final and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37872575949)
 passed. That source-only batch stays closed.
 
-The [T04 native diagnostic](web-hierarchy-native.md) now executes real ffuf
-against the twelve compiled paths in a disconnected owned fixture. All eight
-native tests and **22,113 portable tests** passed on frozen source `1b03814`,
-with no failures, errors or skips; all 707 source hashes remained unchanged.
-This diagnostic grants no product authority and adds no registered or accepted
-profile. Next integrate a separate production profile with policy, approval,
-audit, consumed permits and both evidence inspectors, then complete G1–G6.
+[PR #83](https://github.com/0xsl0th/recon-cockpit/pull/83) merged the
+[T04 native diagnostic](web-hierarchy-native.md) as `69406cd` after review and
+all five final checks; its post-merge checks also passed. Its eight native and
+22,113 portable passes remain historical diagnostic evidence.
+
+The separate [T04 secure hierarchy candidate](web-hierarchy-tools.md) now adds
+`ffuf_web_hierarchy_v1` through policy, audit, required approval, consumed permits,
+confined native execution and both evidence inspectors. Current catalog:
+**48 accepted profiles, one T04 candidate, 16 programs**. Production validation
+and review are in progress; T04 G6 remains open and no T04 acceptance is claimed.
+Keep the twelve-path completion requirement distinct from the owner’s sixteen-
+connection bound: native error retries remain recorded and inconclusive, and the
+configured input rate is not a strict retry-inclusive wire-rate guarantee.
 T05/T06 remain required after T04. Earlier milestones stay closed. Proposal PR #31's
 section 3 architecture correction merged as `e23f561` after review, Mermaid
 validation and five passing final checks. All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37870742628)
@@ -110,7 +116,7 @@ report alone cannot complete any row.
 | **T01 / C18 — accepted** | Observe a domain's advertised mail routing; C18 closes the former fixed-MX gap. | Reuse `dig`; one fixed nonrecursive TCP MX question, at most four typed preference/exchange rows. No mail delivery, additional name resolution or returned-server connection. | Ordinary MX records, null-MX, NODATA and NXDOMAIN all complete. Distinguish explicit no-mail advertisement from missing data. Reject malformed/null-MX mixtures and incomplete or excess-record responses; hostile names remain data. | **G1–G6 closed in [PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74).** |
 | **T02 — accepted** | Determine acceptance/rejection of TLS 1.0, 1.1, 1.2 and 1.3; the accepted TLS profile proves only its selected handshake. | Stock **sslscan** rejected because it discards received rejection evidence. Use four separately versioned **OpenSSL** probes with the reviewed mediator: one numeric owned endpoint and one ClientHello delivered to the peer per action, exact version, independent grants and bounded connection ledger. Four independent actions preserve the original at-most-eight-connection whole-task target without an implicit retry allowance. No client credential, application request, retry escalation or peer-directed fetch; accepted OpenSSL profiles stay unchanged. | A modern-only fixture and a deliberately legacy-enabled fixture produce correct observations for all four versions. Explicit protocol rejection is useful only with retained client-received evidence, independently corroborated by owner records. Reset, timeout or unsupported-client behavior is inconclusive. Unknown or incomplete results cannot be reported as disabled versions. | **G1–G6 closed in [PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) at `f2e7b785`.** The [acceptance corpus](tls-posture-acceptance.md) passed 65 native and 21,593 portable tests, independent review and all five final checks. Four accepted profiles reuse OpenSSL. |
 | **T03 — accepted** | Assess SSH transport advertisements against an explicit pinned local policy; collection alone supplies no assessment. | Pinned [ssh-audit source review](ssh-policy-feasibility.md) rejects its extra host-key/KEX probes. A separate `ssh_transport_policy_v1` reuses byte-identical C14 collection and a networkless immutable policy evaluator. One numeric owned endpoint, one 184-byte request/write-half-close, one bounded packet; no login, completed key exchange, rate/stress test, session or downloaded policy. | Six ordinary and two robustness tasks complete usefully, including deliberate deviations in either direction. Two complete unknown cases and nine malformed/pressure cases stay inconclusive. Policy judgments do not verify exploitability, identity, negotiated strength or general compliance. | **G1–G6 closed in [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) at `b90a365e`.** 52 native and 21,898 portable passes, independent review and all five final checks; no program added. See [runbook](ssh-policy-tools.md). |
-| **T04** | Discover a controlled one-level web directory hierarchy; accepted ffuf covers only its flat eight-path corpus. | The [source review](web-hierarchy-feasibility.md) selects a separate finite **ffuf** candidate after stock feroxbuster calibration conflicts with the boundary. Three predeclared prefixes, each with two resource and two compiled control names: twelve exact serial GETs, one active request. No recursion, arbitrary link extraction, redirects, credentials, uploads or response-directed follow-up; preserve the existing ffuf profile. | Known nested resources and an empty hierarchy must both complete; every planned path/request must be accounted for. Wildcard responses must not invent resources. Redirects, path traversal, hostile links, unexpected paths and partial scans cannot expand scope or claim complete discovery. | **Source review accepted in PR #82; [native diagnostic](web-hierarchy-native.md) implemented, eight native and 22,113 portable tests passed on `1b03814`.** Separate product registration, authority/audit/approval integration, inspectors and G1–G6 remain open. No accepted T04 profile. |
+| **T04** | Discover a controlled one-level web directory hierarchy; accepted ffuf covers only its flat eight-path corpus. | The [source review](web-hierarchy-feasibility.md) selects a separate finite **ffuf** candidate after stock feroxbuster calibration conflicts with the boundary. Three predeclared prefixes, each with two resource and two compiled control names: useful completion needs twelve unique serial GETs and one active request. Native error retries may occur; the owner retains up to sixteen attempts/connections and duplicate or partial captures stay inconclusive. No recursion, arbitrary link extraction, redirects, credentials, uploads or response-directed follow-up; preserve the existing ffuf profile. | Known nested resources and an empty hierarchy must both complete; every planned path/request must be accounted for. Wildcard responses must not invent resources. Redirects, path traversal, hostile links, unexpected paths and partial scans cannot expand scope or claim complete discovery. | **Source review and native diagnostic accepted in PRs #82/#83.** The separate [secure hierarchy candidate](web-hierarchy-tools.md) is registered and integrated; 26 native and 22,577 portable passes are recorded; G6 review and merge remain open. No accepted T04 profile. |
 | **T05** | Obtain one bounded page of SNMP interface descriptions; C13 returns a single successor, not a page. | Assess **snmpbulkget**, reusing the Net-SNMP runtime/fixture patterns. One TCP GETBULK, one fixed ifDescr seed, non-repeaters zero and maximum repetitions four; public synthetic community only. No paging continuation, walks, SET, UDP or real credentials. | A populated page, empty descriptions, endOfMibView and a supported outside-column boundary all have explicit results. Require ordered typed OIDs and a complete response; excess, malformed or partial rows stay inconclusive. A full page means capped observation, not a complete interface inventory. | **Required; no secure profile yet.** |
 | **T06** | Observe selected IPv6-address and reverse-name metadata alongside accepted A records. | Reuse `dig` in separate fixed nonrecursive TCP AAAA and PTR profiles, one question and at most four typed answers per action. Returned IPv6 addresses are data, not IPv6 network authorization. No reverse-to-forward lookup, recursion, alias chasing or returned-host follow-up. | Positive records, NODATA and NXDOMAIN complete for both questions. Validate the exact question, record type, name and complete bounded response; malformed names, unsupported alias chains and excess/partial records remain inconclusive. | **Required; no secure profiles yet.** |
 
@@ -118,10 +124,11 @@ T04 is the next gap: controlled hierarchy discovery beyond the accepted flat
 ffuf corpus. The [source review](web-hierarchy-feasibility.md), accepted in PR #82,
 selects a separate finite ffuf candidate. Its [native diagnostic](web-hierarchy-native.md)
 executes the actual confined binary against twelve compiled paths; eight native
-tests and 22,113 portable tests passed on frozen `1b03814`. Product registration,
-policy, approval, audit,
-consumed permits and both inspectors are the next integration step before
-G1–G6 acceptance. No T04 profile is registered or accepted yet.
+tests and 22,113 portable tests passed on frozen `1b03814`. The separate
+[production candidate](web-hierarchy-tools.md) now integrates registration,
+policy, required approval, audit, consumed permits and both inspectors.
+Production validation passed 26 native and 22,577 portable tests. G6 review and
+merge still govern acceptance; T04 remains a candidate.
 
 T02's accepted version posture adds a distinct outcome beyond one certificate
 or handshake. Its [source feasibility](tls-posture-feasibility.md)
@@ -166,8 +173,9 @@ features, not confinement or compatibility:
 - The [pinned feroxbuster source review](web-hierarchy-feasibility.md) found
   six generated concurrent wildcard GETs in stock feroxbuster calibration. The
   selected finite ffuf candidate now has [native diagnostic evidence](web-hierarchy-native.md):
-  eight native and 22,113 portable tests passed. Production policy, approval,
-  audit, consumed permits, inspectors and G1–G6 remain open; diagnostic success
+  eight native and 22,113 portable tests passed. The separate [production
+  candidate](web-hierarchy-tools.md) now integrates authority gates and inspectors;
+  26 native and 22,577 portable passes are recorded; G6 review and merge remain open. Diagnostic success alone
   does not establish product acceptance.
 - [Net-SNMP's snmpbulkget manual](https://www.net-snmp.org/docs/man/snmpbulkget.html)
   defines the non-repeaters and maximum-repetitions fields needed for a single

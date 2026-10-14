@@ -22,6 +22,9 @@ from recon_cockpit.secure_agent.network_tools_worker import _landlock_permission
 
 
 def manifest(tool_id=runtime.DIG):
+    if tool_id == runtime.WEB_HIERARCHY:
+        from test_secure_web_hierarchy_runtime import manifest as hierarchy_manifest
+        return hierarchy_manifest()
     if tool_id in runtime.TLS_POSTURE_TOOLS:
         from recon_cockpit.secure_agent.network_tools_tls_posture_runtime import PROFILE
         return {**manifest(runtime.TLS_CERTIFICATE), "tool_id": tool_id, "profile": PROFILE}
@@ -68,8 +71,9 @@ def configuration(case="dig-ok"):
 
 def policy_for_case(case):
     from recon_cockpit.secure_agent.network_tools_tls_posture_spec import CASES as TLS_CASES
+    from recon_cockpit.secure_agent.network_tools_web_hierarchy_spec import CASES as HIERARCHY_CASES
     original = policy()
-    if case not in TLS_CASES:
+    if case not in (*TLS_CASES, *HIERARCHY_CASES):
         return original
     return parse_policy({**original.to_dict(), "allowed_tools": [action(case)["tool_id"]]})
 

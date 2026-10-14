@@ -38,7 +38,19 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
     assert not first.started and first._supervisor is None
     definition = lab_contract.spec(case)
     assert definition["external_egress"] is False and definition["resume"] is False
-    if case in fixture.TLS_POSTURE_CASES:
+    if case in fixture.WEB_HIERARCHY_CASES:
+        from recon_cockpit.secure_agent import network_tools_web_hierarchy_spec as hierarchy
+        from recon_cockpit.secure_agent.web_hierarchy_fixture import wire_response
+        assert definition["method"] == "GET" and definition["paths"] == list(hierarchy.PATHS)
+        assert definition["max_requests"] == 12 and definition["max_connections"] == 16
+        assert definition["max_active_requests"] == 1
+        assert definition["wordlist_sha256"] == hashlib.sha256(hierarchy.WORDLIST).hexdigest()
+        assert definition["responses"] == {path: None if case.endswith("-stalled") else
+            hashlib.sha256(wire_response(hierarchy.case_parts(case), path)).hexdigest()
+            for path in hierarchy.PATHS}
+        assert definition["max_owner_receipt_bytes"] == 24576
+        assert all(definition[key] is False for key in ("credentials", "redirects", "recursion", "followup"))
+    elif case in fixture.TLS_POSTURE_CASES:
         assert definition["max_session_seconds"] == 30
         assert definition["max_connections"] == definition["max_requests"] == 1
         assert definition["owner_private_peer"] == "unnamed_socketpair"

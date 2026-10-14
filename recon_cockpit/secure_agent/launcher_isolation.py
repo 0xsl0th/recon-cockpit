@@ -43,7 +43,7 @@ WEB_TOOLS_MODULES = ('web_tools_backend', 'web_tools_lab', 'web_tools_lab_worker
     'web_tools_execution', 'web_tools_worker', 'web_tools_parser', 'web_tools_parser_runtime',
     'web_tools_parser_worker', 'http_headers_parser', 'tool_runtime_common', 'tool_worker_common')
 NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_tools_lab_worker',
-    'network_tools_tls_posture_spec',
+    'network_tools_tls_posture_spec', 'network_tools_web_hierarchy_spec', 'web_hierarchy_spec', 'network_tools_web_hierarchy_runtime',
     'network_tools_ssh_policy_spec', 'network_tools_ssh_policy_fixture',
     'network_tools_ssh_policy_parser', 'network_tools_ssh_policy_runtime',
     'network_tools_fixture', 'web_tools_tls_fixture', 'network_tools_ssh_fixture', 'network_tools_smb_fixture',
@@ -69,6 +69,13 @@ NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_
     'network_tools_contract', 'network_tools_runtime', 'network_tools_execution', 'network_tools_worker',
     'network_tools_parser', 'network_tools_parser_runtime', 'network_tools_parser_worker',
     'tool_runtime_common', 'tool_worker_common')
+WEB_HIERARCHY_MODULES = (
+    'network_tools_web_hierarchy_identity', 'network_tools_web_hierarchy_receipt',
+    'network_tools_web_hierarchy_lab', 'network_tools_web_hierarchy_owner',
+    'network_tools_web_hierarchy_runtime', 'network_tools_web_hierarchy_worker',
+    'network_tools_web_hierarchy_parser', 'network_tools_web_hierarchy_parser_runtime',
+    'network_tools_web_hierarchy_parser_worker', 'web_hierarchy_owner',
+    'web_hierarchy_fixture', 'web_hierarchy_observation')
 TLS_POSTURE_MODULES = (
     'network_tools_tls_posture_identity', 'network_tools_tls_posture_receipt',
     'network_tools_tls_posture_lab', 'network_tools_tls_posture_owner',
@@ -228,6 +235,8 @@ class LinuxFixtureLauncher:
                      *(HTTP_HEADERS_MODULES if self._config['profile'] == 'owned_http_headers_lab' else ()),
                      *(WEB_TOOLS_MODULES if self._config['profile'] == 'owned_web_tools_lab' else ()),
                      *(NETWORK_TOOLS_MODULES if self._config['profile'] == 'owned_network_tools_lab' else ()),
+                     *(WEB_HIERARCHY_MODULES if self._config['profile'] == 'owned_network_tools_lab'
+                       and self._config['case'].startswith('web-hierarchy-') else ()),
                      *(TLS_POSTURE_MODULES if self._config['profile'] == 'owned_network_tools_lab'
                        and self._config['case'].startswith('tls-posture-') else ()),
                      *(SERVICE_WEB_MODULES if self._config['profile'] == 'owned_service_web_lab' else ()),
@@ -439,6 +448,9 @@ class LinuxFixtureLauncher:
                             # Cleanup repeats the last acknowledged counters;
                             # the send transcript stays in the prior result.
                             context = {key: item for key, item in context.items() if key != 'owner_response'}
+                        elif self.identity['scenario'].startswith('web-hierarchy-'):
+                            context = {key: item for key, item in context.items()
+                                       if key != 'web_hierarchy_owner_sha256'}
                         elif self.identity['scenario'].startswith('tls-posture-'):
                             context = {key: item for key, item in context.items()
                                        if key != 'tls_posture_owner_sha256'}
