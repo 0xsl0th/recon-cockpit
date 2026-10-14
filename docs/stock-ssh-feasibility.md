@@ -19,6 +19,9 @@ The local server package is `openssh-server 1:10.2p1-2`. The inspected server
 chain contains `/usr/sbin/sshd`, `/usr/lib/openssh/sshd-session` and
 `/usr/lib/openssh/sshd-auth`; the installed client is `openssh-client 1:10.2p1-2`.
 These are installed package facts, not startup or source-to-binary verification.
+The selection's `reviewed_source_version` is source context, not a native binary
+version probe or attestation. Inspection hashes the currently selected files;
+the later native gate must separately verify the observed full software version.
 
 The [exact Debian source descriptor](https://snapshot.debian.org/file/ca7eeaf605b6520d163ca685880a893e5a08cc6b)
 matches the retained original and packaging archives by size and SHA-256. All
@@ -151,11 +154,35 @@ or approval option. Other package/architecture/library sets remain unsupported.
 
 ## Validation and next gate
 
-Validation receipts belong under the private
-`.secure-agent/stock-ssh-preflight-20261014/` directory, outside Git. Record actual
-installed inspections separately from portable mocks; retain source hashes,
-receipt hashes, elapsed metadata-inspection time and any failed attempts.
-Metadata latency is not tool latency or comparative overhead.
+Frozen source `2a261540aedefb3357a4fc41c6e5647dc8ec6f2a` passed **20 actual installed-runtime
+inspections** and **25,483 portable tests**, with zero failures, errors or skips.
+All **911 tracked source hashes** stayed unchanged in both runs. Each installed
+selection pins the same 25 native files and eleven generated files. Metadata
+inspection took **176–246 ms** per selection; this is neither tool latency nor
+comparative overhead. There were no daemon/helper launches, authentication
+attempts, tool actions, grants, provider calls or actual spend.
+
+All **169 focused tests** passed. Independent spec/documentation and runtime/CLI
+reviews found no remaining blockers within preparation scope. An independent
+evidence review rehashed all 25 installed files, all 20 receipts and the 911
+source files; manifests and zero-execution/readiness flags matched the exact
+specification. No accepted launcher, admission, parser, catalog or execution
+file changed. Private evidence stays outside Git:
+
+- `preflight-final-01/verification.json`: installed receipts, runtime pins and source custody.
+- `portable-final-01/verification.json`, `tests.xml` and `pytest.log`: full portable validation and source custody.
+- `independent-preflight-2a26154.json`: independent installed-evidence verification; SHA-256 `36cdf4e0bf92ea38379908f40aed03283c801572138e24ce0d232845457f663a`.
+- `runtime-cli-independent-review.json`: separate runtime/CLI code review and 125 fresh focused passes.
+- `source-audit/`: exact source archives, patches, anchors and explicit verification limits.
+
+These files are under `.secure-agent/stock-ssh-preflight-20261014/`. The separate
+`.secure-agent/stock-ssh-preflight-20261014-agent/` retains development receipts
+and `independent-spec-doc-review.json` (44 fresh spec passes). Its initial A/O1
+metadata smoke predates the final generated policy inputs and is not final
+acceptance evidence. A development spec assertion initially used `bits` instead
+of the existing parser's `key_bits`; the contract/test naming was corrected
+before the frozen validation above. No native test was substituted or skipped.
+S3.4a remains a reviewed preparation candidate until its PR checks and merge.
 
 After S3.4a review/checks/merge, implement S3.4b's separate admission and native
 owner. Require exact action authorization, independently verified durable audit

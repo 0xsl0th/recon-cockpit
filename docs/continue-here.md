@@ -91,6 +91,8 @@ focused tests** passed at final head `77aeb7b`; all five [final CI jobs](https:/
 passed **25,314 tests each**, with no skips, failures or errors. The reviewed and
 merged trees match. Retain `.secure-agent/pr91-review-20261014/` and the original
 production evidence; the merge does not require repeating accepted native runs.
+All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38653912630)
+also passed 25,314 tests each; retain `postmerge-ci-061c057.json` beside the review.
 
 S3.3a validation at `274140b` passed **26 installed-runtime inspections** and
 **24,761 portable tests**, with all **882 tracked source hashes unchanged**.
@@ -110,6 +112,14 @@ Stage 3 now has **ten increments: five accepted and five remaining**, counting
 S3.4a/S3.4b separately. S3.5–S3.7 follow in order; no required gate is removed.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
+S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
+**25,483 portable tests**, with **911 source hashes unchanged**. Independent
+spec/docs and runtime/CLI reviews passed; all 169 focused tests passed. Each
+inspection pins 25 native and eleven generated files; no daemon, authentication,
+action, grant, provider call or spend occurred. Preserve
+`.secure-agent/stock-ssh-preflight-20261014/`. Preparation awaits PR review and
+acceptance; the next implementation after that merge is S3.4b native SSH.
+
 
 S3.2a frozen source `8e130df` passed **26/26 actual installed-runtime inspections**
 and **100 focused boundary tests**. Every selection binds nine native files and
