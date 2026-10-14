@@ -190,8 +190,9 @@ preparation-only scope. The focused boundary suite passed **100 tests**.
 The first full portable attempt ran inside the coding sandbox: **24,246 passed
 and 17 existing TLS socket-pair tests failed** because `sendall` was denied with
 `EPERM`. Keep `portable-sandbox.xml` and `portable-sandbox.log`; that attempt is
-not a passing full run. The same frozen source is being validated outside the
-coding sandbox with native integration excluded. Its final `portable.xml`, log
-and `verification.json` are retained beside the earlier attempt; review those
-receipts and the PR's final CI before acceptance. No production change or test
+not a passing full run. The same frozen source must also pass full portable
+validation outside the coding sandbox with native integration excluded. Its
+final `portable.xml`, log and `verification.json` belong beside the earlier
+attempt; review those receipts and the PR's final CI before acceptance.
+No production change or test
 exclusion is used to work around the sandbox restriction.
