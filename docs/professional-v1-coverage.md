@@ -34,11 +34,24 @@ correct negatives and 16 distinct destination denials. S3.2 is closed; this
 adds no catalog profile or production HTTP support claim.
 
 Accepted [S3.3a PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90) prepared the fixed Apache runtime and
-separate production HTTP contract. Its different user, module and listener
-requirements require a preparation/native split; Stage 3 now estimates nine PRs,
-four accepted and five remaining. Current S3.3b must validate all 26 corpus rows on each
-server through the production path. Stage 3 remains open, accepted coverage
-stays 52/17, and attached networks/deeper composition stay deferred.
+separate production HTTP contract. Preparation itself proves no native startup.
+**S3.3b is implemented and validated in [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91),
+awaiting final review and merge.** Its [production evidence](stage3-http-production.md)
+records **106 native passes at `1cfa59a`**: 52 corpus rows and 54 boundary cases,
+32 useful completions with zero unnecessary refusals, 20 correct negatives and
+32 distinct destination denials. All 52 bundles passed 104 unchanged inspections;
+68 distinct accepted-profile native regressions and three separate Apache
+extra-request repetitions passed. All 904 source pins stayed unchanged during
+each native run. Full local portable validation at `d19eef3` passed
+**25,312 tests** with 904 unchanged source pins; all five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38649179063)
+passed at that revision. Original failed attempts remain recorded, including the
+unconfirmed cause of the earlier Apache budget-test failure.
+
+Stage 3 remains nine PRs, **four accepted and five remaining until PR #91 merges**.
+Next, review its latest revision/checks and merge if they pass, then begin S3.4's
+finite OpenSSH server/key/request contract and native compatibility work. Accepted
+coverage stays **52 profiles / 17 programs**; Stage 3 remains open and adds no
+catalog entry merely for running nginx or Apache.
 
 PRs #80/#81 (T02/T03), #82 (catalog/source review), #83/#84 (T04), #85/#86
 (T05/T06) and proposal PR #31 remain closed. Proposal submission and its broader

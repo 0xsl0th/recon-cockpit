@@ -63,10 +63,24 @@ also passed. The fixed Apache inspector remains preparation only; this acceptanc
 establishes no native startup, confinement or production compatibility.
 Retain `.secure-agent/stock-http-production-20261014/pr90-merge-review.json`.
 
-**Current: S3.3b, the separate [production HTTP path](stage3-http-production.md)
-and native compatibility on nginx and Apache.** Stage 3 remains **nine PRs total**,
-with four accepted and five remaining. Apache's nonzero user identity and private
-socket transfer require native verification; no corpus row or bound is removed.
+**Current: S3.3b is implemented and validated in [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91),
+awaiting final review and merge.** The separate [production HTTP path](stage3-http-production.md)
+passed **106 native checks at `1cfa59a`**: 52 nginx/Apache corpus rows and 54
+boundary checks, with all **904 source hashes unchanged**. It records **32 useful
+completions, zero unnecessary refusals, 20 correct negatives and 32 distinct
+destination denials**. All 52 bundles passed **104 unchanged Python/CLI inspections**;
+**68 distinct accepted-profile native regressions** and **three separately launched
+Apache extra-request repetitions** passed. These repetitions are not additional
+unique acceptance cases.
+
+Full local portable validation at `d19eef3` passed **25,312 tests**, with
+all **904 source hashes unchanged** during that run. All five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38649179063)
+also passed at `d19eef3`. Production code and native cases match `1cfa59a`; the
+later change corrected portable fixtures and recorded validation. Preserve the
+original smoke, native and macOS failures under
+`.secure-agent/stock-http-production-20261014/`; the original Apache budget-test
+failure's cause remains unconfirmed. Stage 3 stays **nine PRs total, four accepted
+and five remaining until PR #91 merges**. No required corpus row or bound was removed.
 
 S3.3a validation at `274140b` passed **26 installed-runtime inspections** and
 **24,761 portable tests**, with all **882 tracked source hashes unchanged**.
@@ -74,11 +88,12 @@ No service, tool action or authority was created; provider calls/spend remain ze
 See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
-S3.3b must run all 26 corpus rows on each
-server through the new production mode, plus authority, denial, budget, cleanup
-and unchanged-inspection gates. Then continue S3.4–S3.7 in order. Stage 3 stays
-open. Coverage remains **52 accepted profiles / 17 external programs**;
-completed milestones stay closed.
+Next, review PR #91's latest revision and required checks, and merge only if
+they pass. After that acceptance, begin **S3.4 stock OpenSSH compatibility**:
+first pin two finite server configurations and the public synthetic host-key,
+request and confinement contract; then validate bounded service identification
+and host-key collection. S3.5–S3.7 follow in order. Stage 3 stays open, and coverage
+remains **52 accepted profiles / 17 external programs**. Completed milestones stay closed.
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
 closed. Model credentials, paid calls, live-model evaluation, deeper workflows,
@@ -204,7 +219,7 @@ remain unchanged. Stages do not lift the current offline-only restrictions.
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
-| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md) has accepted S3.2a/S3.2b nginx preparation and diagnostic, then S3.3a Apache preparation/contract and S3.3b HTTP integration, OpenSSH compatibility, disconnected multi-host routing, explicit name/redirect/referral handling and acceptance. Add endpoint exclusions and shared request/rate budgets; demonstrate useful execution and denied out-of-scope traffic. Attached lab/engagement networks require separate authorization. None of this is accepted merely by the contract. Four increments are accepted and five remain. | 9 |
+| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production candidate is implemented and validated in PR #91, awaiting final review/merge. Next is S3.4 OpenSSH compatibility, then disconnected multi-host routing with exclusions and aggregate budgets, explicit name/redirect/referral handling and combined acceptance. Attached lab/engagement networks require separate authorization. Four increments are accepted and five remain until PR #91 merges. | 9 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |

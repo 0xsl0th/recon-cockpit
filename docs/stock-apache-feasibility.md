@@ -4,11 +4,14 @@ S3.2 is accepted in PR #89 at `c068a9d`. **[S3.3a PR #90](https://github.com/0xs
 preparation only.** It compiles the same 26 A/B corpus selections for Apache,
 pins the installed executable, four selected modules and their finite linked
 dependencies, and defines the [separate production HTTP contract](stage3-http-production.md).
-It creates no service, listener, session, grant or tool action. Apache startup,
-private transport and production compatibility remain unverified.
+The inspector creates no service, listener, session, grant or tool action and
+itself proves no Apache startup, private transport or production compatibility.
+The separate [S3.3b PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91)
+now has native production evidence and awaits final review/merge; its results
+do not change this accepted preparation-only contract.
 
 The accepted catalog remains 52 profiles across 17 external programs. Apache is
-a possible owned fixture server, not an additional pentest-tool integration.
+an owned fixture server, not an additional pentest-tool integration.
 All accepted milestones remain closed. Network attachment, credentials,
 paid/live models, deeper workflows, comparative benchmarks and proposal
 submission retain their later gates.
@@ -21,7 +24,10 @@ bytes. The upstream tag and package metadata do not establish a reproducible
 build, verify Debian patches or prove a source-to-installed-binary relationship.
 The selection's `reviewed_source_version` context is not a native version probe.
 
-| Primary source finding | Preparation consequence and remaining native gate |
+The table records S3.3a's source findings and the native questions left open by
+preparation. Their later finite validation belongs to the separate S3.3b record.
+
+| Primary source finding | Preparation consequence and then-unverified native gate |
 | --- | --- |
 | [`mod_unixd.c`](https://github.com/apache/httpd/blob/47490973d568337011e4073099fb570d4151083b/modules/arch/unix/mod_unixd.c) rejects a configured User resolving to UID zero. Its startup code can change user/group when starting as effective root. | Generate `reconlab` passwd/group entries for UID/GID 65534 and require a future nonzero namespace mapping. Never mount host account databases. This input does not prove that mapping, startup or privilege restrictions work. |
 | [`prefork.c`](https://github.com/apache/httpd/blob/47490973d568337011e4073099fb570d4151083b/server/mpm/prefork/prefork.c) has a one-process debug path; the [`httpd` command documentation](https://httpd.apache.org/docs/2.4/programs/httpd.html) describes `-X` debugging mode. | Propose the prefork module with `-X`, foreground operation and one configured worker. Native process/thread enforcement and startup must still pass; the flag is not a sandbox. |
@@ -34,8 +40,8 @@ No `apache2 -t`, `-S`, `-M`, configuration test, service manager, package instal
 or daemon launch is part of the inspector. Dependency metadata runs only the
 fixed trusted `ldd` command against the five exact selected ELF files. This is
 not an exhaustive startup trace: NSS, APR mechanisms, filesystem reads and
-module initialization can introduce further requirements, which must fail
-closed until reviewed during S3.3b.
+module initialization can introduce further requirements. S3.3b validates only
+its reviewed finite runtime; any additional dependency must still fail closed.
 
 ## Generated configuration and runtime boundary
 
@@ -43,8 +49,8 @@ closed until reviewed during S3.3b.
 the accepted stock-HTTP action, request, expected-outcome and budget functions.
 Its distinct selection digest covers the proposed Apache argv/environment,
 namespace UID/GID, private listener, modules and six generated public files.
-No new launch profile is registered, and the planned production contract is
-explicitly disabled.
+The inspector registers no launch profile and cannot enable production execution.
+PR #91 adds its separately bound production mode without changing that boundary.
 
 The proposed argv is `/tool/apache2 -X -d /scratch -f /tool/data/apache2.conf`.
 The fixed environment is `LC_ALL=C`, `MALLOC_ARENA_MAX=1`, `TZ=UTC0`. Config and
@@ -120,10 +126,19 @@ review receipt has SHA-256
 Private evidence and source-review material stay outside Git. Fresh independent
 review, 118 focused tests and all five latest checks passed before the merge.
 
-Current S3.3b must implement the separately versioned production
-boundary and demonstrate all 52 native corpus rows across nginx and Apache,
-plus authority/required-approval/audit, private-listener denial, budgets,
-cancellation/cleanup, unchanged inspection and accepted-profile regressions.
-The nonzero UID and private TCP handoff must be reviewed before starting Apache.
-Preparation does not close S3.3 or Stage 3 and does not substitute a different
-server for the required Apache comparison.
+The separate S3.3b candidate in PR #91 implements the production boundary and
+has passed **106 native checks at `1cfa59a`**: all 52 nginx/Apache corpus rows
+and 54 authority/approval/audit, denial, budget and lifecycle checks. It records
+32 useful completions without unnecessary refusals, 20 correct negatives,
+32 distinct destination denials, 104 unchanged inspections, 68 distinct native
+regressions and three separate extra-request repetitions. All 904 source pins
+stayed unchanged during each native run. The [production runbook](stage3-http-production.md)
+records the reviewed UID/private-socket custody, portable validation, five
+passing hosted checks at `d19eef3` and preserved failures, including the
+unconfirmed cause of the original budget-test failure.
+
+PR #91 awaits final review and merge. Stage 3 remains nine increments, four
+accepted and five remaining; the catalog stays 52/17. After that acceptance,
+S3.4 begins the finite stock OpenSSH contract and compatibility work.
+Preparation alone closes neither S3.3 nor Stage 3, and no substitute server
+replaced Apache in the required comparison.

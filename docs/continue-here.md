@@ -67,10 +67,24 @@ also passed. The fixed Apache inspector remains preparation only; this acceptanc
 establishes no native startup, confinement or production compatibility.
 Retain `.secure-agent/stock-http-production-20261014/pr90-merge-review.json`.
 
-**Current: S3.3b, the separate [production HTTP path](stage3-http-production.md)
-and native compatibility on nginx and Apache.** Stage 3 remains **nine PRs total**,
-with four accepted and five remaining. Apache's nonzero user identity and private
-socket transfer require native verification; no corpus row or bound is removed.
+**Current: S3.3b is implemented and validated in [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91),
+awaiting final review and merge.** The separate [production HTTP path](stage3-http-production.md)
+passed **106 native checks at `1cfa59a`**: 52 nginx/Apache corpus rows and 54
+boundary checks, with all **904 source hashes unchanged**. It records **32 useful
+completions, zero unnecessary refusals, 20 correct negatives and 32 distinct
+destination denials**. All 52 bundles passed **104 unchanged Python/CLI inspections**;
+**68 distinct accepted-profile native regressions** and **three separately launched
+Apache extra-request repetitions** passed. These repetitions are not additional
+unique acceptance cases.
+
+Full local portable validation at `d19eef3` passed **25,312 tests**, with
+all **904 source hashes unchanged** during that run. All five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38649179063)
+also passed at `d19eef3`. Production code and native cases match `1cfa59a`; the
+later change corrected portable fixtures and recorded validation. Preserve the
+original smoke, native and macOS failures under
+`.secure-agent/stock-http-production-20261014/`; the original Apache budget-test
+failure's cause remains unconfirmed. Stage 3 stays **nine PRs total, four accepted
+and five remaining until PR #91 merges**. No required corpus row or bound was removed.
 
 S3.3a validation at `274140b` passed **26 installed-runtime inspections** and
 **24,761 portable tests**, with all **882 tracked source hashes unchanged**.
@@ -78,11 +92,12 @@ No service, tool action or authority was created; provider calls/spend remain ze
 See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
-S3.3b must run all 26 corpus rows on each
-server through the new production mode, plus authority, denial, budget, cleanup
-and unchanged-inspection gates. Then continue S3.4–S3.7 in order. Stage 3 stays
-open. Coverage remains **52 accepted profiles / 17 external programs**;
-completed milestones stay closed.
+Next, review PR #91's latest revision and required checks, and merge only if
+they pass. After that acceptance, begin **S3.4 stock OpenSSH compatibility**:
+first pin two finite server configurations and the public synthetic host-key,
+request and confinement contract; then validate bounded service identification
+and host-key collection. S3.5–S3.7 follow in order. Stage 3 stays open, and coverage
+remains **52 accepted profiles / 17 external programs**. Completed milestones stay closed.
 
 S3.2a frozen source `8e130df` passed **26/26 actual installed-runtime inspections**
 and **100 focused boundary tests**. Every selection binds nine native files and
@@ -100,9 +115,9 @@ deselected and no failures, errors or skips. Both attempts remain recorded;
 no source change or test exclusion worked around the sandbox restriction.
 S3.2a and S3.2b are closed. Current implementation branch is
 `feature/stage3-http-production` in `/tmp/recon-stage3-http-production`. Preserve
-the accepted nginx corpus and earlier failures. S3.3a is closed; S3.3b native
-integration remains open; no accepted walkthrough or corpus needs repeating
-solely to update documentation.
+the accepted nginx corpus and earlier failures. S3.3a is closed; S3.3b is
+validated and awaits final PR #91 review/checks/merge. No accepted walkthrough
+or corpus needs repeating solely to update documentation.
 
 S3.1 catalog reconciliation passed **554 focused portable checks**, with no
 failures, errors or skips. An independent before/after comparison of all 52
