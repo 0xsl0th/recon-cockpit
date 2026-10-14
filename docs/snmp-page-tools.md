@@ -80,12 +80,26 @@ OIDs, wrong types, extra bindings, data after end-of-view, malformed/truncated B
 protocol denial, stall and output pressure. Negative trials must follow an actual
 validated request; startup failures do not count as exercised refusals.
 
-Validation is in progress. Require all six ordinary and both robustness tasks to
-complete, zero unnecessary refusals within that supported corpus, all twelve
-negatives inconclusive, exact enforcement and both read-only replays. Approval
-test answers are synthetic and make no personal-acceptance claim. Report local
-latency and zero provider calls/cost; comparative overhead remains deferred.
+Frozen native source `f6e515fe0292e7624a87ee3d0329abb7799e7374` passed **51 tests**
+with all 735 recorded source files unchanged. All six ordinary and both robustness
+tasks completed; ordinary unnecessary refusals were zero. All twelve negative
+cases stayed inconclusive after a validated request. Nine T05 enforcement tests
+and accepted GETNEXT/GET/T04 regressions passed. Both inspectors replayed all
+37 saved reports without writes. Ordinary end-to-end assessment latency ranged
+from 3,141 to 3,368 ms; provider calls and cost were zero. These are local timings,
+not comparative overhead measurements. Approval test answers are synthetic and
+make no personal-acceptance claim.
+
+Portable validation is still in progress. Its first frozen run retained 23,122
+passes and 48 failures: eight older baseline selectors included T05 and two
+shared test helpers lacked the new case (twenty cases each). Repairs retain all
+historical count/hash assertions and change only portable tests. Native production,
+policy and test sources remain unchanged. Preserve that failed run alongside the
+fresh complete rerun; it is not a passing validation claim.
+
 Private successful and failed records belong under `.secure-agent/snmp-page-20261014/`.
+`native-verification.json` SHA-256 is
+`354d2fff78ae7bf0a02c861a636b73ca3262fd731c747b41363d4495a646dee1`.
 T05 G6 stays open until review and merge; T06 AAAA/PTR follows it.
 
 ## Describe and inspect

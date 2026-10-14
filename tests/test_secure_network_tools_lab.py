@@ -237,6 +237,21 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         for field in ('key_exchange_completed', 'authentication', 'session', 'credentials',
                 'known_hosts', 'nse', 'udp', 'retries', 'followup', 'service_identity_claim', 'algorithm_security_verified'):
             assert definition[field] is False
+    elif case in fixture.SNMP_PAGE_CASES:
+        request = fixture.snmp_page_request()
+        response = fixture.snmp_page_response(case)
+        assert definition['snmp']['operation'] == 'GetBulkRequest'
+        assert definition['snmp']['seed_oid'] == fixture.SNMP_PAGE_SEED_OID
+        assert definition['snmp']['non_repeaters'] == 0
+        assert definition['snmp']['max_repetitions'] == definition['snmp']['max_bindings'] == 4
+        assert definition['max_connections'] == definition['max_requests'] == 1
+        assert definition['request_count_means'] == 'validated_fixed_snmp_getbulk_requests'
+        assert definition['canonical_request_bytes'] == len(request)
+        assert definition['canonical_request_sha256'] == hashlib.sha256(request).hexdigest()
+        assert definition['canonical_response_sha256'] == (None if response is None else hashlib.sha256(response).hexdigest())
+        for field in ('walk', 'paging_continuation', 'set', 'udp', 'retries',
+                'correction_resubmission', 'real_credentials', 'mib_imports', 'followup'):
+            assert definition['snmp'][field] is False
     elif case.startswith("snmp-next-"):
         assert definition['snmp']['operation'] == 'GetNextRequest'
         assert definition['snmp']['seed_oid'] == fixture.SNMP_NEXT_SEED_OID

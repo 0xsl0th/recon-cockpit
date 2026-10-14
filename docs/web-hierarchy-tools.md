@@ -1,11 +1,19 @@
-# T04 — bounded owned web hierarchy candidate
+# T04 — accepted bounded owned web hierarchy
 
-This separately versioned `ffuf_web_hierarchy_v1` candidate uses real ffuf in the
-existing secure network-tool path in [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84).
-T04 stays open until its review and acceptance
-gates close. The accepted eight-path `ffuf_content_discovery_v1` contract stays
-unchanged. The catalog has 48 accepted profiles and one candidate across 16
-programs. T05 and T06 follow T04; no deeper workflow work starts here.
+The separately versioned `ffuf_web_hierarchy_v1` profile is accepted in
+[PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84), merged as `435a271`.
+Review of `40d98b6`, two independent reviews without blockers and 319 fresh
+focused test passes preceded the merge. The reviewed and merged trees match
+`9de7a974b3683d1abdfed9904b90932bb2be714c`. All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38577572315)
+and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38580423750)
+passed. **T04 G1–G6 are closed.** The accepted eight-path
+`ffuf_content_discovery_v1` contract is unchanged.
+
+This acceptance brings the baseline to 49 accepted profiles across 16 programs.
+The separate [T05 SNMP page candidate](snmp-page-tools.md) now brings registration
+to 50 profiles across 17 programs; T05 validation/review and then required T06
+AAAA/PTR are the next work. No deeper workflow work starts here.
 
 ## Scope and execution
 
@@ -84,7 +92,9 @@ or skips. All 724 recorded source files stayed unchanged during that run. Only
 four portable test files changed between those revisions; production code,
 example policies and native test sources are identical. Independent runtime and
 evidence reviews found no remaining blockers after the claim correction below.
-G6 review and merge remain open; the profile stays a candidate.
+The later review and merge of PR #84 closed G6 as recorded above. These frozen
+validation receipts retain their original revisions; acceptance does not
+rewrite them or broaden the validated operation.
 
 | Owned case | Useful completion | Observed requests | End-to-end time |
 | --- | --- | --- | --- |

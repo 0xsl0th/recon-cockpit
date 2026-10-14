@@ -1,7 +1,10 @@
 # Discover accepted secure tools
 
-The compiled catalog contains **49 registered profiles: 48 accepted, one T04
-candidate and 16 external programs**. T02/T03 are accepted in PRs #80/#81. Acceptance applies
+The compiled catalog contains **50 registered profiles: 49 accepted, one T05
+candidate and 17 external programs**. T01–T04 are accepted; PR #84 closed T04 at
+`435a271`. The separate [T05 SNMP page candidate](snmp-page-tools.md) has a first
+native pass and 51 frozen native test passes; portable validation and review
+remain pending. Acceptance applies
 to the documented disconnected owned-lab profiles; it grants no execution
 authority or general engagement readiness. The slices below retain their
 historical counts.
@@ -382,7 +385,8 @@ The fixed TCP query retains at most four preference/exchange rows, distinguishes
 null-MX/NODATA/NXDOMAIN, and authorizes no name resolution or mail-server follow-up.
 
 The [finite coverage contract](professional-v1-coverage.md) maps all accepted
-profiles to six required operator outcomes: T01–T03 are accepted; T04–T06 remain open.
+profiles to six required operator outcomes: T01–T04 are accepted; T05 is the
+current candidate and T06 remains required afterward.
 [T02 source feasibility](tls-posture-feasibility.md) is complete: stock sslscan
 cannot preserve the received rejection evidence required by this task. The
 [OpenSSL native diagnostic](tls-posture-native.md), accepted in PR #76,
@@ -408,8 +412,8 @@ accepted in PR #80; their temporary candidate labels are removed:
 | `openssl_tls12_posture_v1` | TLS 1.2 | Accepted in PR #80 |
 | `openssl_tls13_posture_v1` | TLS 1.3 | Accepted in PR #80 |
 
-After T02/T03 acceptance the catalog reported **48 accepted profiles**; the new
-T04 candidate brings registration to 49 across the same 16 programs. Each TLS
+After T02/T03 acceptance the catalog reported **48 accepted profiles**; PR #84
+then accepted T04, bringing that baseline to 49 across the same 16 programs. Each TLS
 profile still needs its own exact approval and
 consumed permit, within one 30-second owned session. Explicit protocol rejection
 can be useful evidence while retaining failed execution/exit 1; retry blocking
@@ -433,12 +437,24 @@ useful; unknown algorithms remain inconclusive. This adds no external program.
 T02, independent review and all five final checks, closing G1–G6. See the
 [runbook](ssh-policy-tools.md).
 
-## T04 secure web hierarchy candidate
+## T04 accepted secure web hierarchy
 
-`ffuf_web_hierarchy_v1` is a separate candidate after the source review and native
-diagnostic accepted in PRs #82/#83. Its [runbook](web-hierarchy-tools.md) describes
-the secure authority path, independent owner evidence, both inspectors and the
-remaining acceptance review. Twelve unique compiled requests are required for
-useful completion; native error retries and partial results remain inconclusive.
-It adds no program and changes no accepted ffuf recipe. Credentials, paid calls,
-live evaluation and broader workflows remain deferred.
+`ffuf_web_hierarchy_v1` is accepted in [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84)
+at `435a271`, closing G1–G6 after review and all five final/post-merge checks.
+Its [runbook](web-hierarchy-tools.md) retains 26 native and 22,577 portable passes,
+independent owner evidence and both inspectors. Twelve unique compiled requests
+are required for useful completion; native error retries and partial results
+remain inconclusive. T04 adds no program and changes no accepted ffuf recipe.
+
+## T05 SNMP interface-page candidate
+
+`snmp_interface_page_v1` registers the separate snmpbulkget program and uses one
+fixed-seed TCP GETBULK with zero non-repeaters and four maximum repetitions.
+Its catalog entry is explicitly `candidate`, milestone `T05`. The
+[runbook](snmp-page-tools.md) defines the supported typed page and terminal
+boundaries, finite cases, exact approval and confinement. No supplied community,
+walk, continuation, SET or UDP is available. The first owned native execution
+passed; 51 frozen native tests on `f6e515f` also passed. Portable validation and
+review remain in progress.
+T06 AAAA/PTR follows T05 acceptance. Credentials, paid calls, live evaluation,
+deeper workflows and comparative benchmarking remain deferred.
