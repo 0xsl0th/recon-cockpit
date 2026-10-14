@@ -35,8 +35,8 @@ adds no catalog profile or production HTTP support claim.
 
 Accepted [S3.3a PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90) prepared the fixed Apache runtime and
 separate production HTTP contract. Preparation itself proves no native startup.
-**S3.3b is implemented and validated in [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91),
-awaiting final review and merge.** Its [production evidence](stage3-http-production.md)
+**S3.3b is accepted in [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91)
+at `061c057`. S3.3 is closed.** Its [production evidence](stage3-http-production.md)
 records **106 native passes at `1cfa59a`**: 52 corpus rows and 54 boundary cases,
 32 useful completions with zero unnecessary refusals, 20 correct negatives and
 32 distinct destination denials. All 52 bundles passed 104 unchanged inspections;
@@ -47,9 +47,12 @@ each native run. Full local portable validation at `d19eef3` passed
 passed at that revision. Original failed attempts remain recorded, including the
 unconfirmed cause of the earlier Apache budget-test failure.
 
-Stage 3 remains nine PRs, **four accepted and five remaining until PR #91 merges**.
-Next, review its latest revision/checks and merge if they pass, then begin S3.4's
-finite OpenSSH server/key/request contract and native compatibility work. Accepted
+Fresh final review passed 605 focused tests; all five final CI jobs at
+`77aeb7b` passed 25,314 tests each. The merged tree matches that reviewed head.
+Stage 3 now has **ten increments, five accepted and five remaining**. Current
+[S3.4a preparation](stock-ssh-feasibility.md) pins the finite OpenSSH inputs and
+installed runtime; S3.4b must separately prove the native fork/exec, transport
+and compatibility boundary. This split removes no required case. Accepted
 coverage stays **52 profiles / 17 programs**; Stage 3 remains open and adds no
 catalog entry merely for running nginx or Apache.
 

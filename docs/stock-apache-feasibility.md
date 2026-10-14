@@ -7,7 +7,7 @@ dependencies, and defines the [separate production HTTP contract](stage3-http-pr
 The inspector creates no service, listener, session, grant or tool action and
 itself proves no Apache startup, private transport or production compatibility.
 The separate [S3.3b PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91)
-now has native production evidence and awaits final review/merge; its results
+is accepted at `061c057` after final review and checks; its results
 do not change this accepted preparation-only contract.
 
 The accepted catalog remains 52 profiles across 17 external programs. Apache is
@@ -126,7 +126,7 @@ review receipt has SHA-256
 Private evidence and source-review material stay outside Git. Fresh independent
 review, 118 focused tests and all five latest checks passed before the merge.
 
-The separate S3.3b candidate in PR #91 implements the production boundary and
+The accepted S3.3b path in PR #91 implements the production boundary and
 has passed **106 native checks at `1cfa59a`**: all 52 nginx/Apache corpus rows
 and 54 authority/approval/audit, denial, budget and lifecycle checks. It records
 32 useful completions without unnecessary refusals, 20 correct negatives,
@@ -137,8 +137,10 @@ records the reviewed UID/private-socket custody, portable validation, five
 passing hosted checks at `d19eef3` and preserved failures, including the
 unconfirmed cause of the original budget-test failure.
 
-PR #91 awaits final review and merge. Stage 3 remains nine increments, four
-accepted and five remaining; the catalog stays 52/17. After that acceptance,
-S3.4 begins the finite stock OpenSSH contract and compatibility work.
+PR #91 merged as `061c057`, closing S3.3 after fresh independent review,
+605 focused passes and five final CI jobs with 25,314 passes each. Stage 3 now
+has ten increments, five accepted and five remaining; the catalog stays 52/17.
+[S3.4a](stock-ssh-feasibility.md) prepares the finite OpenSSH inputs/runtime;
+S3.4b must separately prove its native process/transport and compatibility gates.
 Preparation alone closes neither S3.3 nor Stage 3, and no substitute server
 replaced Apache in the required comparison.

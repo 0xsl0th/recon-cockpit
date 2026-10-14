@@ -8,8 +8,8 @@ closed. The baseline is **52 accepted secure profiles across 17 external
 programs**, with the repository-native profiles included in that profile count.
 Accepted offline R5/local R6, B0–B8, C1–C18 and the initial GUI stay closed.
 
-**S3.3b [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91) is implemented and
-validated, awaiting final review and merge.** Its [production HTTP evidence](stage3-http-production.md)
+**S3.3b [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91) is accepted at
+`061c057`; S3.3 is closed.** Its [production HTTP evidence](stage3-http-production.md)
 records 106 native passes at `1cfa59a` (52 corpus rows and 54 boundary cases),
 32 useful completions without unnecessary refusals, 20 correct negatives,
 32 distinct destination denials, 104 unchanged inspections and 68 distinct
@@ -18,7 +18,9 @@ passed without resolving the original failure's unconfirmed cause. All 904
 source pins stayed unchanged during each native run. At `d19eef3`, full local
 portable validation passed **25,312 tests** with 904 unchanged pins, and
 all five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38649179063)
-passed. The retained failure history remains part of the evidence.
+passed. Fresh independent final review passed 605 focused tests and reverified
+the retained evidence. All five final CI jobs at `77aeb7b` passed 25,314 tests
+each; its tree matches the merge. The failure history remains part of the evidence.
 
 The next required [product-roadmap](product-roadmap.md) outcome is useful work
 against varied real services in an owned, isolated lab, with explicit target
@@ -35,7 +37,7 @@ comparative benchmarking and proposal submission remain deferred.
 | --- | --- |
 | Accepted synthetic execution | Existing profiles have their own accepted finite owned-fixture evidence. The [configurable HTTP/SSH assessment](configurable-owned-lab.md) uses one disconnected namespace per endpoint, scripted responses, exact RFC1918 address/port/path binding and live denied-destination witnesses. It is not a shared multi-host topology or a stock-service compatibility result. |
 | Stock-daemon diagnostic | S3.2b's validated diagnostic runs an actual pinned nginx binary with generated public lab content and configuration inside a disposable owner. A diagnostic records native behavior and boundary failures; it grants no production capability and closes no existing compatibility claim by itself. |
-| Production integration | PR #91's separate HTTP candidate connects supported nginx/Apache observations to action authority, isolated parsing, evidence and inspection; its finite native corpus is validated and final review/merge remain pending. Accepted v1 behavior remains intact. SSH, shared routing and name/TLS binding remain later slices. |
+| Production integration | PR #91's accepted HTTP path connects supported nginx/Apache observations to action authority, isolated parsing, evidence and inspection; its finite native corpus, review and checks passed. Accepted v1 behavior remains intact. SSH, shared routing and name/TLS binding remain later slices. |
 | Network attachment | Remains unauthorized. A later concrete attachment plan needs owner-approved target ownership, scope, effects, exclusions and routing before any execution. Passing disconnected tests is not that permission. |
 
 Read-only local package inventory on 14 October found nginx `1.28.0-6`, Apache
@@ -50,18 +52,16 @@ S3.2a separately retains downloaded source/package archives as comparison data.
 
 ## Finite sequence and completion boundaries
 
-The seven logical slices originally used a **6–8 PR estimate**. S3.2's
-source/runtime and authorized-native split used eight increments. Apache's
-module loading, nonzero UID and private TCP listener now require a separately
-reviewed preparation/production boundary, so S3.3 also splits: **S3.3a Apache
-preparation/production contract**, followed by **S3.3b native integration**.
-Stage 3 is re-estimated to **nine PRs total: four accepted, five remaining**.
-This is one extra increment beyond the previous eight, not a reduced corpus or
-permission to relax confinement. S3.1 and S3.2a/S3.2b are accepted in PRs
-#87/#88/#89; S3.2 is closed, and S3.3a is accepted in PR #90. PR #91 remains a
-validated candidate; the four-accepted/five-remaining count changes only after
-its merge. See the [nginx results](stock-nginx-native.md) and
-[production HTTP evidence](stage3-http-production.md).
+The seven logical slices originally used a **6–8 PR estimate**. Splitting the
+nginx and Apache source/runtime preparation from native work brought the estimate
+to nine. OpenSSH host-key collection requires three pinned executable images and
+a mandatory preauthentication fork. This cannot inherit HTTP's no-fork boundary:
+**S3.4a source/runtime preparation** precedes **S3.4b native compatibility**.
+Stage 3 now has **ten increments: five accepted, five remaining**. This adds one
+reviewable boundary, removes no required corpus row and grants no launch authority.
+PRs #87–#91 accept S3.1, S3.2a/b and S3.3a/b; S3.2 and S3.3 are closed. Preserve
+the [HTTP evidence](stage3-http-production.md) and start the
+[OpenSSH preparation](stock-ssh-feasibility.md).
 
 | Slice | Required outcome | Completion evidence |
 | --- | --- | --- |
@@ -69,8 +69,9 @@ its merge. See the [nginx results](stock-nginx-native.md) and
 | **S3.2a — accepted: source/runtime preflight** | Review pinned nginx source/distribution changes, compile the finite A/B case/configuration identity and inspect the fixed installed ELF/dependency bytes without starting a service. | [Source review](stock-nginx-feasibility.md), strict manifest/configuration validation and real local inspection receipts. No authority, native execution or service compatibility is established. |
 | **S3.2b — accepted native diagnostic** | Exercise the two fixed HTTP endpoint configurations and exact actions below against a pinned nginx process in a disconnected owner, through a separate one-action authorization contract. Reuse existing Nmap probes, header reader, namespace lifecycle and evidence patterns. | Independent traffic accounting, the complete useful/negative corpus, authority and required approval checks, resource/cleanup receipts and explicit unsupported behavior. All declared native cases passed; PR #89 at `c068a9d`, fresh review and all five final checks close S3.2. No new workflow, generic endpoint option or production support claim. |
 | **S3.3a — accepted in PR #90: Apache preparation and production contract** | Compile the fixed Apache configurations, pin its executable/modules and exact ELF dependencies, and define the separately versioned production HTTP boundary. | [Apache preflight](stock-apache-feasibility.md), strict portable validation and 26 actual read-only runtime inspections. No server/tool launch, compatibility claim or catalog addition. |
-| **S3.3b — validated candidate, PR #91 awaiting review/merge** | Integrate the reviewed HTTP subset through the secure path and validate both nginx and Apache with the same observable outcomes. | [Production evidence](stage3-http-production.md): all 52 corpus rows and 54 boundary checks passed, with reviewed Apache UID/listener custody, exact action/endpoint enforcement, authority/approval/audit, budget/cleanup, 104 unchanged inspections and 68 distinct accepted-profile native regressions. Final review and required checks on the latest revision precede acceptance by merge. |
-| **S3.4 — next after PR #91 acceptance: SSH production compatibility** | Use stock OpenSSH with public synthetic host keys for bounded service identification and host-key collection. Test two explicit server configurations, with independent observations rather than a new discovery workflow. | Exact endpoint/key facts, received bytes, connection limits and refusal/cleanup corpus; no authentication, account probing, completed user session or verified host identity. Pin the concrete server configurations before implementation. |
+| **S3.3b — accepted in PR #91** | Integrate the reviewed HTTP subset through the secure path and validate both nginx and Apache with the same observable outcomes. | [Production evidence](stage3-http-production.md): all 52 corpus rows and 54 boundary checks passed, with reviewed Apache UID/listener custody, exact action/endpoint enforcement, authority/approval/audit, budget/cleanup, 104 unchanged inspections and 68 distinct accepted-profile native regressions. Fresh final review, 605 focused tests and five passing final CI jobs preceded merge `061c057`. |
+| **S3.4a — current: OpenSSH source/runtime preparation** | Compile two fixed configurations and the existing public test key, freeze the finite useful/negative corpus, inspect three pinned OpenSSH executables and their exact linked libraries. | [Preparation contract](stock-ssh-feasibility.md), portable validation and actual read-only installed-runtime receipts. No daemon, launcher registration, authentication or native-compatibility claim. |
+| **S3.4b — next: native SSH compatibility** | Execute independently authorized NULL/banner identification and RSA host-key collection against the two stock OpenSSH configurations. Enforce the separately reviewed fork/exec and packet/connection boundary. | Complete declared ordinary/robustness/negative corpus plus authority, required approval, audit, destination, process/exec, request/byte, cancellation, cleanup, tamper and immutable-evidence gates. No user authentication, account probe, completed encrypted user session or verified host identity. |
 | **S3.5 — disconnected multi-host routing** | Put the supported services in distinct owned network namespaces connected by controlled owned links, with exact action-specific destination binding, explicit exclusions and aggregate request/connection/rate budgets across hosts and actions. | At least two service hosts with distinct recorded network namespace identities, routed links and an excluded listening endpoint; loopback address aliases alone do not qualify. Demonstrate useful selected-target execution, denied other-service/excluded traffic, and attempted budget bypass by splitting actions or restarting workers. No host network namespace, physical interface, default external route or host firewall modification. |
 | **S3.6 — names, TLS binding, redirects and referrals** | Add a bounded owned-resolver case with a declared name mapped to an explicit IPv4 endpoint set; bind the observed answer, exact HTTP Host, TLS SNI, expected certificate name and pinned trust material to a separately authorized action. Include one selected bounded TLS mode. Reject rebinding, excluded/ambiguous answers, undeclared names and name/trust mismatches. Record redirects and referral advertisements without following them. | A pinned stock resolver and exact query/answer plus TLS name/trust corpus; useful allowed-name execution and denied changed/excluded answers, Host/SNI/certificate-name mismatches and untrusted certificates. No recursive external lookup, search suffix, alias chasing, IPv6 transport, peer-selected trust or automatic follow-up. Freeze the resolver and selected TLS runtime contract before implementation; returned data never enlarges scope. |
 | **S3.7 — combined acceptance** | Verify the finite HTTP/SSH/DNS routing and TLS name/trust subset together, preserve all accepted profiles and document remaining compatibility gaps. | Complete ordinary, hostile, negative and enforcement matrix; cleanup, unchanged replay, supported Linux prerequisites, independent review and required checks. Stage 3 closes only after S3.2–S3.6 are accepted, with no required case pending. |
@@ -145,7 +146,7 @@ S3.2 needs a separately versioned diagnostic request and admission contract that
 binds one exact action, endpoint, daemon configuration, runtime and budget.
 Reuse the reviewed readers, probe bytes, isolation and custody primitives;
 do not relax the accepted configurable v1 sequence. Diagnostic evidence alone
-grants no production authority; the separate S3.3b candidate is recorded above.
+grants no production authority; the separate accepted S3.3b path is recorded above.
 The diagnostic contract retains authorization, audit and required approval
 checks before launch.
 
@@ -304,7 +305,7 @@ budget and cleanup checks. Preserve failed development trials. Freeze the source
 before the accepted native run; record relevant portable tests, accepted-profile
 regressions, independent review and latest required checks. S3.2 acceptance is
 acceptance of diagnostic evidence only. S3.3b's separate production validation
-is recorded above and still awaits final review and merge.
+is accepted above after final review and checks.
 
 Record action latency, owner startup/teardown and whole-trial wall time,
 connection/request counts, bytes, reached caps and unnecessary refusals.
@@ -318,8 +319,8 @@ The separately authorized S3.2b diagnostic now has complete native, enforcement,
 cleanup and unchanged-replay evidence, plus portable and accepted-profile
 regressions. PR #89 at `c068a9d` completed review/checks/merge; S3.2 stays closed.
 S3.3a is accepted in PR #90 at `d30a2f1`. S3.3b's production integration on
-both servers is implemented and validated in PR #91. Review its latest revision
-and required checks, merge only if they pass, then begin S3.4's finite OpenSSH
-configuration, public-key and request/confinement contract before native work.
+both servers is accepted in PR #91 at `061c057`. Continue S3.4a's finite OpenSSH
+configuration, public-key and runtime inspection contract, followed by S3.4b's
+separate native process/transport and compatibility gates.
 Do not repeat accepted milestones, add optional signatures, set up model
 credentials or request network attachment for this disconnected stage.
