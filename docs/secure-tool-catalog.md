@@ -1,12 +1,17 @@
 # Discover accepted secure tools
 
-The compiled catalog contains **52 registered profiles: 50 accepted, two T06
-candidates and 17 external programs**. T01–T05 are accepted; [PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85)
-closed the [SNMP page profile](snmp-page-tools.md) at `8ca3887` after review and
-required checks, preserving its 51 native and 23,170 portable passes. The separate
-[T06 AAAA/PTR candidates](dns-address-tools.md), open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86),
-reuse dig and passed 83 native and 24,163 portable tests. Latest required CI
-checks and G6 remain pending. Acceptance applies to the documented
+The compiled catalog contains **52 accepted profiles, zero candidates and
+17 external programs**. T01–T06 meet G1–G6 and the finite Stage 2 tranche is closed.
+[PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) accepted the two
+[AAAA/PTR profiles](dns-address-tools.md) at `f0542a8` after independent review,
+646 fresh focused, 700 authority/runtime and 337 parser/evidence passes, and
+all five [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38595455084).
+Their 83 native and 24,163 portable passes remain intact. All five
+[post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38597857953)
+also passed at `f0542a8`; preserve `.secure-agent/stage3-20261014/pr86-merge-review.json`.
+Current work is the [S3.1 compatibility/routing contract](stage3-compatibility-routing.md),
+followed by an actual nginx diagnostic. Neither planning nor catalog metadata
+establishes a new service capability. Acceptance applies to the documented
 disconnected owned-lab profiles; it grants no execution authority or general
 engagement readiness. The slices below retain their historical counts.
 
@@ -459,19 +464,21 @@ closing G1–G6. The [runbook](snmp-page-tools.md) retains its typed page and te
 boundaries, exact approval and confinement, 51 native and 23,170 portable passes.
 No supplied community, walk, continuation, SET or UDP is available.
 
-## T06 AAAA/PTR candidates
+## T06 accepted AAAA/PTR metadata
 
-`dig_dns_aaaa_v1` and `dig_dns_ptr_v1` are separate `candidate` entries, milestone
-`T06`, using the existing dig program. Each fixed nonrecursive question uses
-IPv4 TCP and accepts at most four typed records; returned addresses and names
-create no authority. Open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86)
-passed 83 native tests: 11 ordinary tasks completed with zero unnecessary refusals,
-four robustness tasks completed and 23 negatives stayed inconclusive. All
-57 saved reports passed 114 unchanged inspection checks. The [runbook](dns-address-tools.md)
-retains source pins and limits. Full portable validation passed 24,163 tests;
-review, latest required CI checks and merge remain pending. Both operations are available through
-the secure CLI/catalog; no new interactive or GUI support is claimed.
+`dig_dns_aaaa_v1` and `dig_dns_ptr_v1` are separate accepted entries using the
+existing dig program. Each fixed nonrecursive question uses IPv4 TCP and accepts
+at most four typed records; returned addresses and names create no authority.
+[PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) accepted them at `f0542a8`
+after fresh independent review and all five final checks. The 83 native passes
+include 11 ordinary tasks completed with zero unnecessary refusals, four robustness
+tasks completed and 23 negatives kept inconclusive. All 57 saved reports passed
+114 unchanged inspection checks. The [runbook](dns-address-tools.md) retains
+source pins, limits and 24,163 portable passes. Both operations are available
+through the secure CLI/catalog; no new interactive or GUI support is claimed.
 
-Complete T06 acceptance before Stage 3's finite service-compatibility and routing
-contract. Credentials, paid calls, live evaluation, attached networks, deeper
-workflows and comparative benchmarking remain deferred.
+T06 G1–G6 and Stage 2 are closed. Current work is the
+[S3.1 finite compatibility/routing contract](stage3-compatibility-routing.md),
+with an actual nginx diagnostic planned next. Credentials, paid calls, live
+evaluation, attached networks, deeper workflows and comparative benchmarking
+remain deferred.

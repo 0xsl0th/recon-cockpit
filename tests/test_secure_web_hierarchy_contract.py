@@ -47,9 +47,9 @@ def test_no_scope_or_old_profile_substitution(field,value):
     assert not admission.profile_allows(selected,{'profile':contract.PROFILE,'case':case})
 
 
-def test_accepted_hierarchy_catalog_stays_separate_from_the_t06_candidates():
+def test_hierarchy_and_completed_t05_t06_profiles_remain_accepted():
     result=catalog.list_tools()
-    assert (result['capability_count'],result['accepted_capability_count'],result['candidate_capability_count'],result['external_program_count']) == (52,50,2,17)
+    assert (result['capability_count'],result['accepted_capability_count'],result['candidate_capability_count'],result['external_program_count']) == (52,52,0,17)
     row=catalog.describe_tool(spec.TOOL_ID)
     assert 'acceptance_status' not in row and 'milestone' not in row
     assert row['run']['case']=='web-hierarchy-nested'
@@ -57,8 +57,8 @@ def test_accepted_hierarchy_catalog_stays_separate_from_the_t06_candidates():
     accepted=catalog.describe_tool('snmp_interface_page_v1')
     assert 'acceptance_status' not in accepted and 'milestone' not in accepted
     for tool in ('dig_dns_aaaa_v1', 'dig_dns_ptr_v1'):
-        candidate=catalog.describe_tool(tool)
-        assert candidate['acceptance_status']=='candidate' and candidate['milestone']=='T06'
+        accepted=catalog.describe_tool(tool)
+        assert 'acceptance_status' not in accepted and 'milestone' not in accepted
 
 
 def test_all_48_previous_catalog_apis_348_network_cases_and_old_web_workflow_are_unchanged():

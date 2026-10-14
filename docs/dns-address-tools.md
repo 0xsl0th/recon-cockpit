@@ -2,10 +2,13 @@
 
 T06 adds two separate fixed questions through the existing secure `dig` runtime:
 `dig_dns_aaaa_v1` observes IPv6-address records and `dig_dns_ptr_v1` observes
-reverse-name records. These candidates are open in
-[PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) for the final required row of the [professional-v1 coverage tranche](professional-v1-coverage.md). T01–T05
-remain closed; acceptance of T06 requires useful native execution, enforcement,
-independent evidence replay, review and required checks for both profiles.
+reverse-name records. Both profiles are accepted in
+[PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86), merged as `f0542a8`.
+Their G1–G6 closure completes the final required row of the
+[professional-v1 coverage tranche](professional-v1-coverage.md): T01–T06 and
+Stage 2 remain closed, with 52 accepted profiles across 17 programs. Current work
+is the [S3.1 compatibility/routing contract](stage3-compatibility-routing.md);
+its planned actual-service diagnostics grant no new execution capability.
 
 This batch uses disconnected owned fixtures and deterministic planning. Model
 credentials, paid calls, live-model evaluation, deeper workflows, comparative
@@ -120,7 +123,7 @@ Record ordinary and hostile usefulness separately, refusals, blocked unauthorize
 destinations, actual model calls/cost and descriptive wall-clock latency. Model
 calls and cost must be zero; comparative overhead remains unmeasured.
 
-## Recorded validation; acceptance pending
+## Recorded validation and acceptance
 
 Frozen native source `58e4ad2781d9a276c2cb799dadf937209dc5e7fd` passed **83 tests**
 with all **747 recorded source files unchanged**, no failures, errors or skips.
@@ -160,12 +163,22 @@ files were corrected without changing historical count/hash assertions,
 production code, policies or native tests. The complete rerun on
 `ce8dec2bf5651469cad3372ce568811760ccb8b1` passed **24,163 portable tests**, with
 1,399 integration tests deselected and no failures, errors or skips. All 747
-recorded source files remained unchanged during that run. The native and portable
-revisions differ only in the four portable test files; production code, policies
-and native tests are identical. Combined `verification.json` SHA-256 is
+recorded source files remained unchanged during that run. Among source files,
+the native and portable revisions differ only in the four portable test files;
+one runbook documentation update also differs. Production code, policies and
+native tests are identical. Combined `verification.json` SHA-256 is
 `07887552aebf5d8680b222f219c852a856c4f73b71ab172a34cbf47bbb27d5fe`.
 Independent runtime/authority and parser/evidence reviews found no blocking code
-issues. **T06 remains a candidate until final review, required checks and merge.**
+issues. Final review of `28f1a18d2def230f3a337e50e9c365b4ce607e58` passed
+646 focused, 700 authority/runtime and 337 parser/evidence tests. All five
+[final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38595455084)
+passed before the authorized merge `f0542a8df2bbe8051178f587859af82b2780f7ad`;
+the reviewed and merged trees match `c475c0cb3648938fcbe0d66a3bb9a9168ed424d3`.
+The fresh review independently reconciled all 747 source hashes/modes/mtimes,
+12 receipt hashes and 57 saved reports/285 evidence files.
+All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38597857953)
+also passed at `f0542a8`; preserve `.secure-agent/stage3-20261014/pr86-merge-review.json`.
+**T06 G1–G6 and the finite Stage 2 tranche are closed.**
 
 ## Describe and inspect
 

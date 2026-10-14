@@ -152,13 +152,13 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
     ids = [row["tool_id"] for row in result["tools"]]
     assert ids == sorted(PROGRAMS) == sorted(ADAPTERS)
     assert result["capability_count"] == len(ids) == 52
-    assert result["accepted_capability_count"] == 50
-    assert result["candidate_capability_count"] == 2
+    assert result["accepted_capability_count"] == 52
+    assert result["candidate_capability_count"] == 0
     families = {row["external_program"] for row in result["tools"] if row["external_program"] is not None}
     assert families == set(PROGRAMS.values()) - {None}
     assert result["external_program_count"] == len(families) == 17
     for row in result["tools"]:
-        assert row.get("acceptance_status") == ("candidate" if row["tool_id"] in ("dig_dns_aaaa_v1", "dig_dns_ptr_v1") else None)
+        assert "acceptance_status" not in row and "milestone" not in row
         tool = row["tool_id"]
         adapter = ADAPTERS[tool]
         assert row["external_program"] == PROGRAMS[tool]
@@ -170,7 +170,7 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
 @pytest.mark.parametrize("tool", sorted(PROGRAMS))
 def test_owned_actions_parameters_and_session_budgets_match_the_existing_contract(tool):
     result = catalog.describe_tool(tool)
-    assert result.get("acceptance_status") == ("candidate" if tool in ("dig_dns_aaaa_v1", "dig_dns_ptr_v1") else None)
+    assert "acceptance_status" not in result and "milestone" not in result
     selector, case, policy_name, workflow, actions, limits = accepted_recipe(tool)
     assert result["read_only"] is True and result["live_calls_enabled"] is False
     assert result["adapter"] == ADAPTERS[tool].to_dict()

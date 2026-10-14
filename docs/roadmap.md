@@ -1,46 +1,43 @@
 # Roadmap — secure AI pentesting workflows
 
 Current continuation (14 October 2026):
-**T01–T05 meet G1–G6 and remain accepted and closed: 50 profiles across 17 programs.**
-[T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85) merged as `8ca3887`
-after review of `5cad354`, two independent reviews without blockers, 357 fresh
-focused test passes and five passing [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38585709909).
-All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38588119548) also passed.
-The reviewed and merged trees match `c30c127733005efbff62a8816cfcf353f93f078d`.
-The [accepted SNMP page runbook](snmp-page-tools.md) retains 51 native and 23,170
-portable passes, all source pins and its client-output evidence limitations.
-Its 37 saved reports passed 74 unchanged CLI/Python inspection checks. Preserve
-`.secure-agent/dns-address-20261014/pr85-merge-review.json` and the original
-`.secure-agent/snmp-page-20261014/` receipts. Do not repeat completed merges or
-reopen earlier milestones.
+**T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
+52 accepted profiles, zero candidates and 17 external programs.**
+[T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) merged as `f0542a8`
+after fresh authority/evidence review and all five
+[final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38595455084).
+Reviewed head `28f1a18` and the merge have identical tree
+`c475c0cb3648938fcbe0d66a3bb9a9168ed424d3`.
+All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38597857953)
+also passed. Preserve `.secure-agent/stage3-20261014/pr86-merge-review.json`
+and `pr86-postmerge-ci.json` beside it.
+Do not repeat completed merges or reopen accepted milestones.
 
-**Current work is T06: separate fixed AAAA and PTR metadata profiles.**
-The [T06 candidates](dns-address-tools.md), `dig_dns_aaaa_v1` and `dig_dns_ptr_v1`,
-are open in [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86).
-They reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
-The catalog records **52 registered profiles: 50 accepted and two T06 candidates,
-across the same 17 programs**. Returned IPv6 addresses and PTR names are data,
-not network scope or follow-up authority. **83 frozen native tests passed** on
-`58e4ad2`, with all 747 recorded source files unchanged: all 11 ordinary tasks
-completed without unnecessary refusals, four robustness tasks completed and
-23 negative cases stayed inconclusive. Four out-of-scope proposals were blocked;
-57 saved reports passed 114 unchanged CLI/Python inspection checks. Full portable
-validation passed **24,163 tests**, with 1,399 integration tests deselected and
-all 747 recorded source files unchanged. Verify the latest required PR checks
-before merge; **T06 G6 stays open**.
+The [accepted T06 runbook](dns-address-tools.md) retains 83 native and 24,163
+portable passes, all 747 frozen source pins, 57 saved reports and 114 unchanged
+inspection checks. All 11 ordinary and four robustness cases completed usefully;
+23 negative cases stayed inconclusive and four out-of-scope proposals were
+blocked. Returned IPv6 addresses and PTR names remain untrusted metadata, with
+no added scope or follow-up authority. Private original evidence remains under
+`.secure-agent/dns-address-20261014/`.
 
-Finish T06 review, latest required checks and authorized merge
-before closing the finite Stage 2 tranche. Stage 3 follows with a concrete owned
-service-compatibility and controlled target-routing contract under the existing
-offline boundary. Any attached-network work requires separate authorization.
-Do not replace required outcomes with optional signatures or program quotas.
+**Current work is S3.1: the finite Stage 3 compatibility and routing contract.**
+The [new contract](stage3-compatibility-routing.md) defines the service matrix,
+exact action and target bindings, exclusions, budgets, evidence and acceptance
+criteria. This slice reconciles catalog acceptance metadata and prepares the
+next implementation; it adds no executor, service launch or routing permission.
+**Next is S3.2: stock-nginx source/runtime review and a bounded disconnected
+owned-daemon diagnostic.** Reuse the existing authority and isolation services;
+keep diagnostic evidence distinct from integrated product support. The current
+scripted HTTP/SSH endpoints do not establish real-daemon compatibility or a
+shared multi-host topology. Stage 3 remains open.
 
-PRs #80/#81 (T02/T03), #82 (catalog/source review), #83/#84 (T04) and proposal
-PR #31 remain closed. Proposal submission and its broader refresh remain deferred
-to November. Model credentials, paid calls, live-model evaluation, attached/external
-targets, deeper workflows and comparative benchmarking remain deferred. The dated
-baseline and candidate wording below preserve historical snapshots; this
-continuation supersedes their pre-merge status.
+Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
+closed. Model credentials, paid calls, live-model evaluation, deeper workflows,
+comparative benchmarking and attached/external targets remain deferred.
+Network attachment requires separate ownership/scope/routing authorization.
+Proposal refresh and submission remain a separate November decision. Historical
+snapshots below retain their original counts; this continuation supersedes them.
 
 **Current product forecast: 8 October 2026.** See the [consolidated roadmap and PR estimate](product-roadmap.md).
 The historical planning baseline below began on 15 September 2026. This is a development plan, not a list
@@ -76,8 +73,9 @@ claim that today's bounded fixtures support professional engagements.
 | --- | --- | --- |
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
-| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | T01–T05 have G1–G6 closed in PRs #74/#80/#81/#84/#85: 50 accepted profiles across 17 programs. The [T06 AAAA/PTR candidates](dns-address-tools.md) bring registration to 52 profiles, with two candidates using the same dig program. Open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) passed 83 native and 24,163 portable tests; latest required CI checks and G6 remain pending. Complete both profiles before Stage 3's finite service-compatibility and controlled target-routing contract. Each task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Interactive support remains distinct; network attachment needs separate authorization and deeper workflows/comparative benchmarking stay deferred. |
-| 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
+| 3 — accepted, finite coverage tranche | T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | PRs #74/#80/#81/#84/#85/#86 close all required G1–G6 gates: 52 accepted profiles across 17 programs. T06 retains 83 native and 24,163 portable passes. Existing exact recipes, limits and evidence contracts stay closed; this is not general engagement compatibility. |
+| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 defines the matrix, boundaries and acceptance corpus. Next S3.2 reviews and diagnoses stock nginx in a disconnected owned namespace; HTTP/OpenSSH compatibility, multi-host routing and name/redirect/referral boundaries follow. No attached network or new execution support is granted by planning. |
+| 5 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
 after review and all five final portable jobs passed. Its two varied manifests
