@@ -65,7 +65,7 @@ def probe_headers_at_deadline(request, deadline):
     return result
 
 
-def verify_network_boundary(configuration):
+def verify_network_boundary(configuration, *, production=False):
     checks = {}
     names = ("other_configuration_blocked", "forbidden_ip_blocked", "forbidden_port_blocked", "excluded_destination_blocked")
     for name, destination in zip(names, spec.witness_endpoints(configuration), strict=True):
@@ -77,6 +77,17 @@ def verify_network_boundary(configuration):
                 checks[name] = True
             else:
                 raise RuntimeError("stock_forbidden_listener_reachable")
+    if production:
+        # This socket belongs to the recorder/client network namespace, never
+        # Apache's private network namespace. No private descriptor is inherited.
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connection:
+            connection.settimeout(0.15)
+            try:
+                connection.connect(("127.0.0.1", 19080))
+            except (TimeoutError, PermissionError):
+                checks["private_tcp_listener_blocked"] = True
+            else:
+                raise RuntimeError("production_private_listener_reachable")
     libc = ctypes.CDLL(None, use_errno=True)
     if libc.unshare(0x10000000) == 0 or ctypes.get_errno() != errno.EPERM:
         raise RuntimeError("stock_client_namespace_creation_allowed")
@@ -136,6 +147,9 @@ def main():
         if not raw.endswith(b"\n") or len(raw) > 32769:
             raise ValueError("stock_client_launch_frame")
         raw = raw[:-1]
+        production = load_json(raw).get("mode") == "stock_http_compatibility_v1"
+        if production:
+            from recon_cockpit.secure_agent.stock_http_production_execution import consume_launch
         request, session_deadline, namespaces, digest = consume_launch(raw, sys.argv[1], sys.argv[2])
         manifest = load_json(raw)["runtime"]["client"]
         selected = request["selection"]
@@ -155,7 +169,7 @@ def main():
         common.syscall_filter(allow_threads=False)
         if request["tool_id"] == HEADERS:
             worker.install_syscall_filter()
-        checks = verify_network_boundary(selected["configuration"])
+        checks = verify_network_boundary(selected["configuration"], production=production)
         if request["tool_id"] == HEADERS:
             common.apply_landlock({"/dev/null": 6, "/proc/self/status": 4})
         else:

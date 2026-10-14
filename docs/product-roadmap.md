@@ -55,21 +55,25 @@ Production code/native cases remain identical to frozen `d0bbdf2`; later
 portable fixture corrections and their original failures remain recorded.
 No diagnostic result grants production HTTP support or adds a catalog profile.
 
-**Current: [S3.3a PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90), Apache preparation and the separate
-[production HTTP contract](stage3-http-production.md), is open for review.** The fixed Apache
-configuration/runtime inspector remains read-only; native startup, confinement
-and production support remain unverified. Its UID, dynamic-module and listener
-requirements justify splitting S3.3 into preparation and **S3.3b native
-integration**. Stage 3 is re-estimated from 6–8 to **nine PRs total**, with three
-accepted and six remaining. No native case or safety bound is removed.
+**S3.3a is accepted in [PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90),
+merged as `d30a2f1` on 14 October.** Fresh independent code/evidence review and
+118 focused tests passed; all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38639047704)
+passed. The fixed Apache inspector remains preparation only; this acceptance
+establishes no native startup, confinement or production compatibility.
+Retain `.secure-agent/stock-http-production-20261014/pr90-merge-review.json`.
+
+**Current: S3.3b, the separate [production HTTP path](stage3-http-production.md)
+and native compatibility on nginx and Apache.** Stage 3 remains **nine PRs total**,
+with four accepted and five remaining. Apache's nonzero user identity and private
+socket transfer require native verification; no corpus row or bound is removed.
 
 S3.3a validation at `274140b` passed **26 installed-runtime inspections** and
 **24,761 portable tests**, with all **882 tracked source hashes unchanged**.
 No service, tool action or authority was created; provider calls/spend remain zero.
-See the [preparation evidence](stock-apache-feasibility.md). PR review and
-acceptance remain pending; the read-only preparation is not production support.
+See the accepted [preparation evidence](stock-apache-feasibility.md);
+read-only preparation is not production support.
 
-After S3.3a review/acceptance, implement S3.3b and run all 26 corpus rows on each
+S3.3b must run all 26 corpus rows on each
 server through the new production mode, plus authority, denial, budget, cleanup
 and unchanged-inspection gates. Then continue S3.4–S3.7 in order. Stage 3 stays
 open. Coverage remains **52 accepted profiles / 17 external programs**;
@@ -199,7 +203,7 @@ remain unchanged. Stages do not lift the current offline-only restrictions.
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
-| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md) has accepted S3.2a/S3.2b nginx preparation and diagnostic, then S3.3a Apache preparation/contract and S3.3b HTTP integration, OpenSSH compatibility, disconnected multi-host routing, explicit name/redirect/referral handling and acceptance. Add endpoint exclusions and shared request/rate budgets; demonstrate useful execution and denied out-of-scope traffic. Attached lab/engagement networks require separate authorization. None of this is accepted merely by the contract. Three increments are accepted and six remain. | 9 |
+| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md) has accepted S3.2a/S3.2b nginx preparation and diagnostic, then S3.3a Apache preparation/contract and S3.3b HTTP integration, OpenSSH compatibility, disconnected multi-host routing, explicit name/redirect/referral handling and acceptance. Add endpoint exclusions and shared request/rate budgets; demonstrate useful execution and denied out-of-scope traffic. Attached lab/engagement networks require separate authorization. None of this is accepted merely by the contract. Four increments are accepted and five remain. | 9 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |

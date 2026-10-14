@@ -158,9 +158,12 @@ def test_preparation_cannot_be_admitted_as_a_launcher_mode_or_skip_workflow_pred
         "session_id": "00000000-0000-0000-0000-000000000002", "execute": True,
         "policy": configurable_contract.policy_for_scope(scope).to_dict(),
         "limits": dict(configurable_contract.LIMITS), "profile": configurable_contract.PROFILE, "case": scope}
+    assert apache.PROFILE not in launcher_protocol.PROFILES
+    assert apache.PLANNED_CONTRACT in launcher_protocol.PROFILES
+    # Registering the separate production contract cannot turn preparation
+    # metadata or the configurable workflow policy into launch authority.
     for profile in (apache.PROFILE, apache.PLANNED_CONTRACT):
-        assert profile not in launcher_protocol.PROFILES
-        with pytest.raises(ValueError, match="invalid_admission_configuration"):
+        with pytest.raises(ValueError):
             launch_admission.configuration({**config, "profile": profile, "case": apache.selection("A", "O1")})
     request = {"version": "1", "service_id": config["service_id"], "session_id": config["session_id"],
         "sequence": 1, "operation": "execute", "action": apache.action("A", "O1"),

@@ -33,10 +33,10 @@ native checks, 15 accepted-profile regressions, 16 useful completions, ten
 correct negatives and 16 distinct destination denials. S3.2 is closed; this
 adds no catalog profile or production HTTP support claim.
 
-Current [S3.3a](stage3-http-production.md) prepares the fixed Apache runtime and
+Accepted [S3.3a PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90) prepared the fixed Apache runtime and
 separate production HTTP contract. Its different user, module and listener
 requirements require a preparation/native split; Stage 3 now estimates nine PRs,
-three accepted and six remaining. S3.3b must validate all 26 corpus rows on each
+four accepted and five remaining. Current S3.3b must validate all 26 corpus rows on each
 server through the production path. Stage 3 remains open, accepted coverage
 stays 52/17, and attached networks/deeper composition stay deferred.
 

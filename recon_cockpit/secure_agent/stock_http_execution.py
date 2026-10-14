@@ -13,6 +13,11 @@ from . import stock_http_contract as contract
 
 
 def consume_launch(raw, nonce, context_digest, *, now=None):
+    return _consume_launch(raw, nonce, context_digest, now=now, selected_contract=contract)
+
+
+def _consume_launch(raw, nonce, context_digest, *, now=None, selected_contract):
+    contract = selected_contract
     if (type(raw) is not bytes or len(raw) > 32768 or type(nonce) is not str
             or re.fullmatch(r"[a-f0-9]{64}", nonce) is None or type(context_digest) is not str
             or re.fullmatch(r"[a-f0-9]{64}", context_digest) is None

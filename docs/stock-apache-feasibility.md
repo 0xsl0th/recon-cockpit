@@ -1,7 +1,7 @@
 # Stock Apache: fixed configuration and read-only runtime preparation
 
-S3.2 is accepted in PR #89 at `c068a9d`. **[S3.3a PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90) is preparation only and awaits
-review/acceptance.** It compiles the same 26 A/B corpus selections for Apache,
+S3.2 is accepted in PR #89 at `c068a9d`. **[S3.3a PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90) is accepted at `d30a2f1`; its scope remains
+preparation only.** It compiles the same 26 A/B corpus selections for Apache,
 pins the installed executable, four selected modules and their finite linked
 dependencies, and defines the [separate production HTTP contract](stage3-http-production.md).
 It creates no service, listener, session, grant or tool action. Apache startup,
@@ -117,10 +117,10 @@ are preserved and count as no source archive or verification. No upstream tag
 signature, Debian patch or source-to-binary verification is claimed. The source
 review receipt has SHA-256
 `57f0848ad7e1f6fca4cdd3ba3b7c74e9cdc1a510fe4912b74e0957c28a0c1bd7`.
-Private evidence and source-review material stay outside Git. PR review and
-latest checks remain acceptance gates.
+Private evidence and source-review material stay outside Git. Fresh independent
+review, 118 focused tests and all five latest checks passed before the merge.
 
-After S3.3a acceptance, S3.3b must implement the separately versioned production
+Current S3.3b must implement the separately versioned production
 boundary and demonstrate all 52 native corpus rows across nginx and Apache,
 plus authority/required-approval/audit, private-listener denial, budgets,
 cancellation/cleanup, unchanged inspection and accepted-profile regressions.

@@ -55,21 +55,25 @@ Production code/native cases remain identical to frozen `d0bbdf2`; later
 portable fixture corrections and their original failures remain recorded.
 No diagnostic result grants production HTTP support or adds a catalog profile.
 
-**Current: [S3.3a PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90), Apache preparation and the separate
-[production HTTP contract](stage3-http-production.md), is open for review.** The fixed Apache
-configuration/runtime inspector remains read-only; native startup, confinement
-and production support remain unverified. Its UID, dynamic-module and listener
-requirements justify splitting S3.3 into preparation and **S3.3b native
-integration**. Stage 3 is re-estimated from 6–8 to **nine PRs total**, with three
-accepted and six remaining. No native case or safety bound is removed.
+**S3.3a is accepted in [PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90),
+merged as `d30a2f1` on 14 October.** Fresh independent code/evidence review and
+118 focused tests passed; all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38639047704)
+passed. The fixed Apache inspector remains preparation only; this acceptance
+establishes no native startup, confinement or production compatibility.
+Retain `.secure-agent/stock-http-production-20261014/pr90-merge-review.json`.
+
+**Current: S3.3b, the separate [production HTTP path](stage3-http-production.md)
+and native compatibility on nginx and Apache.** Stage 3 remains **nine PRs total**,
+with four accepted and five remaining. Apache's nonzero user identity and private
+socket transfer require native verification; no corpus row or bound is removed.
 
 S3.3a validation at `274140b` passed **26 installed-runtime inspections** and
 **24,761 portable tests**, with all **882 tracked source hashes unchanged**.
 No service, tool action or authority was created; provider calls/spend remain zero.
-See the [preparation evidence](stock-apache-feasibility.md). PR review and
-acceptance remain pending; the read-only preparation is not production support.
+See the accepted [preparation evidence](stock-apache-feasibility.md);
+read-only preparation is not production support.
 
-After S3.3a review/acceptance, implement S3.3b and run all 26 corpus rows on each
+S3.3b must run all 26 corpus rows on each
 server through the new production mode, plus authority, denial, budget, cleanup
 and unchanged-inspection gates. Then continue S3.4–S3.7 in order. Stage 3 stays
 open. Coverage remains **52 accepted profiles / 17 external programs**;

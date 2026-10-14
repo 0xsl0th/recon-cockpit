@@ -3,14 +3,15 @@
 PR #89 accepted the stock-nginx diagnostic at `c068a9d`. Its 26 native corpus
 rows, authority tests and immutable evidence close S3.2; they do not establish
 production HTTP integration. This document defines the next finite contract.
-The implementation and acceptance gates below remain open.
+S3.3a preparation is accepted in PR #90 at `d30a2f1`; S3.3b implementation
+and native acceptance remain open.
 
-S3.3a prepares the exact Apache runtime/configuration and this contract.
+S3.3a prepared the exact Apache runtime/configuration and this contract.
 S3.3b must implement and validate the secure production path on **both nginx and
 Apache**. Apache's listener, dynamically loaded modules and nonzero user mapping
 need a separate review from nginx's private Unix socket and namespace UID zero.
 This finding adds one reviewable increment: Stage 3 now forecasts **nine PRs**,
-three accepted and six remaining, rather than the original 6–8. No required
+four accepted and five remaining, rather than the original 6–8. No required
 corpus row, bound or later routing/name/TLS gate is removed to fit an estimate.
 
 ## Selection and authority
@@ -87,6 +88,38 @@ The Apache `127.0.0.1:19080` candidate is a future private daemon endpoint,
 different private transport from nginx; no transparent proxy may bypass the
 recorder's exact-request admission, counters or deadline. The final topology
 must be reviewed and tested before the new production backend is enabled.
+
+## S3.3b implementation under validation
+
+The candidate registers `stock_http_compatibility_v1` separately from the accepted
+nginx diagnostic. The controller, both isolated witness services, one-use
+admission, launcher, backend, confined client, parser and evidence validators all
+bind the implementation and its preparation/runtime digests. The default policy
+requires approval. Explicit unattended owned-lab test policy is mechanism evidence,
+not personal owner acceptance.
+
+Apache's bootstrap runs as the single mapped namespace UID/GID 65534, with no
+supplementary groups. It creates one unconnected IPv4 stream socket in its fresh
+disconnected network namespace. A private control channel transfers that socket
+through the launcher to the recorder; each receiver checks domain, type, TCP
+protocol, inode, namespace cookie, nonblocking state and unconnected zero address.
+Malformed transfers close their received descriptors. The daemon and launcher
+close their copies before client readiness. The client receives neither the
+private socket nor the daemon namespace descriptors.
+
+Only after the recorder validates the exact allowed request does it connect the
+one-use socket to the fixed private endpoint. The recorder cannot create TCP
+sockets, and Apache cannot call connect or create children/threads. Pinned process
+and namespace descriptors let the launcher inspect the bounded private TCP table
+for the sole expected listener without sending a readiness request. All forwarding
+uses the existing request ledger, shared action deadline and byte/connection/rate
+limits. Native proof remains required; this description is not a passing result.
+
+The production client checks that the private loopback listener is unreachable
+from its own namespace. Immutable evidence retains the server identity, real
+response bytes, separate injected-fault bytes, transfer custody, namespace identity,
+startup/action/cleanup latency, useful completion and denial results. The accepted
+diagnostic retains its original selection schema and default Unix-socket connector.
 
 ## Bounds retained from the diagnostic
 

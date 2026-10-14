@@ -392,9 +392,13 @@ class Service:
             self.ledger["requests_validated"] += 1
             if not self._event("validated", active["id"], len(raw)):
                 return
-            active["daemon"] = _private_connection()
+            active["daemon"] = self._connect_daemon()
             self.ledger["daemon_connections"] += 1
             active["stage"] = "connect"
+
+    def _connect_daemon(self):
+        """Diagnostic transport stays fixed; production overrides this boundary."""
+        return _private_connection()
 
     def _write_daemon(self):
         active = self.active
