@@ -14,16 +14,21 @@ accepted baseline to **49 profiles across 16 programs**. Do not repeat its merge
 or reopen earlier milestones.
 
 **Current work is T05: one bounded SNMP interface-description page.**
-The separate [T05 candidate](snmp-page-tools.md) integrates `snmp_interface_page_v1`
+The separate [T05 candidate](snmp-page-tools.md), open as
+[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), integrates `snmp_interface_page_v1`
 through the existing secure execution and evidence path. One TCP GETBULK uses
 one fixed ifDescr seed, zero non-repeaters and four maximum repetitions, with
 public synthetic fixture data and no continuation. The catalog records
 **50 registered profiles: 49 accepted and one T05 candidate, across 17 programs**.
 Frozen native validation on `f6e515fe0292e7624a87ee3d0329abb7799e7374`
-passed **51 tests**, with all 735 recorded source files unchanged. Portable
-validation is still in progress; T05 is not accepted. Private proof belongs
-under `.secure-agent/snmp-page-20261014/`.
-Finish T05 validation and review before T06's separate fixed AAAA/PTR profiles;
+passed **51 tests**. Full portable validation on
+`ae7e1b8fdb5309dd14e09850959b55e6c1eca6fe` passed **23,170 tests**, with 1,341
+integration tests deselected and no failures, errors or skips. Each run preserved
+all 735 recorded source files; only ten portable test files changed between
+those revisions, leaving production code, policies and native tests identical.
+Private proof belongs under `.secure-agent/snmp-page-20261014/`.
+**G6 review and merge remain open; T05 is not accepted.** Review PR #85 and its
+latest required checks before T06's separate fixed AAAA/PTR profiles;
 do not replace either required outcome with optional signatures or tool quotas.
 
 PRs #80/#81 (T02/T03), #82 (catalog/source review), #83 (T04 native diagnostic)
@@ -146,7 +151,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | T01–T04 are accepted with G1–G6 closed, most recently T04 in PR #84. The [T05 SNMP interface-page candidate](snmp-page-tools.md) is integrated and has a first owned native pass; full frozen validation and review remain in progress. Required T06 AAAA/PTR follows T05 acceptance. Reuse integrations and add only programs that contribute distinct coverage. Each row requires useful execution, structured results, evidence, enforcement and review. T05 registers snmpbulkget as a seventeenth program pending acceptance; the historical 4–6-program assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | T01–T04 are accepted with G1–G6 closed, most recently T04 in PR #84. The [T05 SNMP interface-page candidate](snmp-page-tools.md) is integrated in PR #85 with 51 native and 23,170 portable passes; G6 review and merge remain open. Required T06 AAAA/PTR follows T05 acceptance. Reuse integrations and add only programs that contribute distinct coverage. Each row requires useful execution, structured results, evidence, enforcement and review. T05 registers snmpbulkget as a seventeenth program pending acceptance; the historical 4–6-program assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |

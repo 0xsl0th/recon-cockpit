@@ -2,9 +2,9 @@
 
 The compiled catalog contains **50 registered profiles: 49 accepted, one T05
 candidate and 17 external programs**. T01–T04 are accepted; PR #84 closed T04 at
-`435a271`. The separate [T05 SNMP page candidate](snmp-page-tools.md) has a first
-native pass and 51 frozen native test passes; portable validation and review
-remain pending. Acceptance applies
+`435a271`. The separate [T05 SNMP page candidate](snmp-page-tools.md) is open as
+[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), with 51 native and
+23,170 portable passes. G6 review and merge remain open. Acceptance applies
 to the documented disconnected owned-lab profiles; it grants no execution
 authority or general engagement readiness. The slices below retain their
 historical counts.
@@ -453,8 +453,8 @@ fixed-seed TCP GETBULK with zero non-repeaters and four maximum repetitions.
 Its catalog entry is explicitly `candidate`, milestone `T05`. The
 [runbook](snmp-page-tools.md) defines the supported typed page and terminal
 boundaries, finite cases, exact approval and confinement. No supplied community,
-walk, continuation, SET or UDP is available. The first owned native execution
-passed; 51 frozen native tests on `f6e515f` also passed. Portable validation and
-review remain in progress.
+walk, continuation, SET or UDP is available. All 51 frozen native tests on
+`f6e515f` and 23,170 portable tests on `ae7e1b8` passed. G6 review and merge of
+PR #85 remain open.
 T06 AAAA/PTR follows T05 acceptance. Credentials, paid calls, live evaluation,
 deeper workflows and comparative benchmarking remain deferred.

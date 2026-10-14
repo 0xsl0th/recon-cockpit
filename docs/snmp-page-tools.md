@@ -1,6 +1,7 @@
 # T05 — bounded owned SNMP interface page
 
-`snmp_interface_page_v1` is the separate T05 candidate after T04 acceptance in
+`snmp_interface_page_v1` is the separate T05 candidate in
+[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), after T04 acceptance in
 [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84). It reuses the existing
 Net-SNMP confinement, authority and evidence paths with the separately pinned
 `snmpbulkget` executable. Accepted C1 GET, C13 GETNEXT and T04 profiles stay closed.
@@ -90,17 +91,28 @@ from 3,141 to 3,368 ms; provider calls and cost were zero. These are local timin
 not comparative overhead measurements. Approval test answers are synthetic and
 make no personal-acceptance claim.
 
-Portable validation is still in progress. Its first frozen run retained 23,122
-passes and 48 failures: eight older baseline selectors included T05 and two
-shared test helpers lacked the new case (twenty cases each). Repairs retain all
-historical count/hash assertions and change only portable tests. Native production,
-policy and test sources remain unchanged. Preserve that failed run alongside the
-fresh complete rerun; it is not a passing validation claim.
+The full portable rerun on `ae7e1b8fdb5309dd14e09850959b55e6c1eca6fe` passed
+**23,170 tests**, with 1,341 integration tests deselected and no failures, errors
+or skips. All 735 recorded source files stayed unchanged during each frozen run.
+Native and portable revisions differ only in ten portable test files; production,
+policies and native tests are identical. Independent runtime/authority and
+parser/evidence reviews found no blockers; a separate review confirmed historical
+count/hash assertions remain intact.
+
+The first portable run retained 23,122 passes and 48 failures: eight older
+baseline selectors included T05 and two shared test helpers lacked the new case
+(twenty cases each). Preserve that failed run alongside the successful rerun.
+Its repairs changed only portable tests and retained all historical count/hash
+assertions. The tests also pin all 49 accepted profiles, 355 predecessor network
+cases and 36 existing runtime invocations without changing their contracts.
 
 Private successful and failed records belong under `.secure-agent/snmp-page-20261014/`.
 `native-verification.json` SHA-256 is
 `354d2fff78ae7bf0a02c861a636b73ca3262fd731c747b41363d4495a646dee1`.
-T05 G6 stays open until review and merge; T06 AAAA/PTR follows it.
+Combined `verification.json` SHA-256 is
+`c6248dfa79bfa2acad427ea8efa2f3c7871e1aa173cc5c3d068234e677a8f7ff`.
+T05 G6 stays open until final PR checks, review and authorized merge;
+T06 AAAA/PTR follows it.
 
 ## Describe and inspect
 

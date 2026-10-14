@@ -12,8 +12,9 @@ passed. **T04 G1–G6 are closed.** The accepted eight-path
 
 This acceptance brings the baseline to 49 accepted profiles across 16 programs.
 The separate [T05 SNMP page candidate](snmp-page-tools.md) now brings registration
-to 50 profiles across 17 programs; T05 validation/review and then required T06
-AAAA/PTR are the next work. No deeper workflow work starts here.
+to 50 profiles across 17 programs. [PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85)
+retains 51 native and 23,170 portable passes; G6 review and merge remain open. Required T06 AAAA/PTR follows T05 acceptance. No deeper
+workflow work starts here.
 
 ## Scope and execution
 

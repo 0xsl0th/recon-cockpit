@@ -14,16 +14,21 @@ accepted baseline to **49 profiles across 16 programs**. Do not repeat its merge
 or reopen earlier milestones.
 
 **Current work is T05: one bounded SNMP interface-description page.**
-The separate [T05 candidate](snmp-page-tools.md) integrates `snmp_interface_page_v1`
+The separate [T05 candidate](snmp-page-tools.md), open as
+[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), integrates `snmp_interface_page_v1`
 through the existing secure execution and evidence path. One TCP GETBULK uses
 one fixed ifDescr seed, zero non-repeaters and four maximum repetitions, with
 public synthetic fixture data and no continuation. The catalog records
 **50 registered profiles: 49 accepted and one T05 candidate, across 17 programs**.
 Frozen native validation on `f6e515fe0292e7624a87ee3d0329abb7799e7374`
-passed **51 tests**, with all 735 recorded source files unchanged. Portable
-validation is still in progress; T05 is not accepted. Private proof belongs
-under `.secure-agent/snmp-page-20261014/`.
-Finish T05 validation and review before T06's separate fixed AAAA/PTR profiles;
+passed **51 tests**. Full portable validation on
+`ae7e1b8fdb5309dd14e09850959b55e6c1eca6fe` passed **23,170 tests**, with 1,341
+integration tests deselected and no failures, errors or skips. Each run preserved
+all 735 recorded source files; only ten portable test files changed between
+those revisions, leaving production code, policies and native tests identical.
+Private proof belongs under `.secure-agent/snmp-page-20261014/`.
+**G6 review and merge remain open; T05 is not accepted.** Review PR #85 and its
+latest required checks before T06's separate fixed AAAA/PTR profiles;
 do not replace either required outcome with optional signatures or tool quotas.
 
 PRs #80/#81 (T02/T03), #82 (catalog/source review), #83 (T04 native diagnostic)
@@ -67,7 +72,7 @@ claim that today's bounded fixtures support professional engagements.
 | --- | --- | --- |
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
-| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | T01–T04 have G1–G6 closed in PRs #74/#80/#81/#84: 49 accepted profiles across 16 programs. The [T05 SNMP interface-page candidate](snmp-page-tools.md) adds one registered profile/program, bringing the current catalog to 50 registered profiles and 17 programs. Its first native execution passed; frozen validation and review remain in progress. Finish T05, then implement T06 AAAA/PTR. Each task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Interactive support remains distinct; deeper workflows and comparative benchmarking stay deferred. |
+| 3 — current, finite coverage tranche | Complete T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | T01–T04 have G1–G6 closed in PRs #74/#80/#81/#84: 49 accepted profiles across 16 programs. The [T05 SNMP interface-page candidate](snmp-page-tools.md) adds one registered profile/program, bringing the current catalog to 50 registered profiles and 17 programs. Its 51 native and 23,170 portable tests passed; G6 review and merge of PR #85 remain open. Finish T05, then implement T06 AAAA/PTR. Each task needs actual useful owned execution, structured results, evidence, enforcement and G1–G6. Interactive support remains distinct; deeper workflows and comparative benchmarking stay deferred. |
 | 4 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`

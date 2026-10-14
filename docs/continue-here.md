@@ -18,16 +18,23 @@ accepted baseline to **49 profiles across 16 programs**. Do not repeat its merge
 or reopen earlier milestones.
 
 **Current work is T05: one bounded SNMP interface-description page.**
-The separate [T05 candidate](snmp-page-tools.md) integrates `snmp_interface_page_v1`
+The separate [T05 candidate](snmp-page-tools.md), open as
+[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), integrates `snmp_interface_page_v1`
 through the existing secure execution and evidence path. One TCP GETBULK uses
 one fixed ifDescr seed, zero non-repeaters and four maximum repetitions, with
 public synthetic fixture data and no continuation. The catalog records
 **50 registered profiles: 49 accepted and one T05 candidate, across 17 programs**.
 Frozen native validation on `f6e515fe0292e7624a87ee3d0329abb7799e7374`
-passed **51 tests**, with all 735 recorded source files unchanged. Portable
-validation is still in progress; T05 is not accepted. Private proof belongs
-under `.secure-agent/snmp-page-20261014/`.
-Finish T05 validation and review before T06's separate fixed AAAA/PTR profiles;
+passed **51 tests**. Full portable validation on
+`ae7e1b8fdb5309dd14e09850959b55e6c1eca6fe` passed **23,170 tests**, with 1,341
+integration tests deselected and no failures, errors or skips. Each run preserved
+all 735 recorded source files; only ten portable test files changed between
+those revisions, leaving production code, policies and native tests identical.
+Private proof belongs under `.secure-agent/snmp-page-20261014/`.
+The combined `verification.json` SHA-256 is
+`c6248dfa79bfa2acad427ea8efa2f3c7871e1aa173cc5c3d068234e677a8f7ff`.
+**G6 review and merge remain open; T05 is not accepted.** Review PR #85 and its
+latest required checks before T06's separate fixed AAAA/PTR profiles;
 do not replace either required outcome with optional signatures or tool quotas.
 
 PRs #80/#81 (T02/T03), #82 (catalog/source review), #83 (T04 native diagnostic)
@@ -128,7 +135,8 @@ Review corrected one evidence claim: the planner-view digest does not commit to
 the full result. Inspectors verify artifact/journal consistency and independently
 recompute observations; coordinated host-owner rewriting is outside that guarantee.
 T04 remains accepted. Finish the [T05 SNMP interface-page candidate](snmp-page-tools.md)
-with frozen validation and review, then implement T06 AAAA/PTR. Do not start
+by reviewing PR #85 and its required checks, then implement T06 AAAA/PTR. Its
+51 native and 23,170 portable passes are complete. Do not start
 deeper workflows, comparative benchmarking, credentials, paid calls or live-model work.
 
 Catalog reconciliation passed **300 focused tests** with no failures, errors or
@@ -2171,9 +2179,10 @@ Planning uses synthetic responses.
    passed eight native and 22,113 portable tests; this completed batch stays closed.
 4. Preserve accepted [T04 PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84)
    at `435a271`; all five final/post-merge checks passed and G1–G6 are closed.
-   Finish frozen validation of the [T05 SNMP interface-page candidate](snmp-page-tools.md)
-   on `feature/t05-snmp-interface-page`, update its retained evidence, and open
-   its PR for review. The current catalog is 49 accepted plus one T05 candidate
+   Review the exact latest head of [T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85)
+   and its required checks. Preserve the [candidate's](snmp-page-tools.md) completed
+   51 native and 23,170 portable passes; rerun only after a new change, failure
+   or unresolved concern. The current catalog is 49 accepted plus one T05 candidate
    across 17 registered programs; T05 is not yet accepted.
    Complete its review/checks and authorized merge, then implement required T06
    AAAA/PTR. Do not substitute optional signatures or program quotas.

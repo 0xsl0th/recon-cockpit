@@ -17,7 +17,9 @@ evidence inspectors. [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84)
 accepted it at `435a271`, closing T04 G1–G6 after review and all five final and
 post-merge checks. Accepted coverage became 49 profiles across 16 programs.
 The separate [T05 SNMP page candidate](snmp-page-tools.md) now adds a registered
-profile/program, with validation and review pending; required T06 follows T05.
+profile/program in [PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85).
+Its 51 native and 23,170 portable tests passed; G6 review and merge remain open.
+Required T06 follows T05 acceptance.
 This source-review record stays closed and preserves its original findings.
 
 ## Production observation — 14 October 2026
