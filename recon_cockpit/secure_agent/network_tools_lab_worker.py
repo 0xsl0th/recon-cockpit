@@ -32,6 +32,7 @@ if __package__:
     from . import network_tools_ssh_algorithms_fixture as ssh_algorithms_fixture
     from . import network_tools_ssh_policy_fixture as ssh_policy_fixture
     from . import network_tools_snmp_next_fixture as snmp_next_fixture
+    from . import network_tools_snmp_page_fixture as snmp_page_fixture
     from . import network_tools_http_options_fixture as http_options_fixture
     from . import network_tools_dns_axfr_fixture as dns_axfr_fixture
     from . import network_tools_rdp_fixture as rdp_fixture
@@ -67,6 +68,7 @@ else:
     ssh_algorithms_fixture = _load("network_tools_fixed_ssh_algorithms", "network_tools_ssh_algorithms_fixture.py")
     ssh_policy_fixture = _load("network_tools_fixed_ssh_policy", "network_tools_ssh_policy_fixture.py")
     snmp_next_fixture = _load("network_tools_fixed_snmp_next", "network_tools_snmp_next_fixture.py")
+    snmp_page_fixture = _load("network_tools_fixed_snmp_page", "network_tools_snmp_page_fixture.py")
     http_options_fixture = _load("network_tools_fixed_http_options", "network_tools_http_options_fixture.py")
     dns_axfr_fixture = _load("network_tools_fixed_dns_axfr", "network_tools_dns_axfr_fixture.py")
     rdp_fixture = _load("network_tools_fixed_rdp", "network_tools_rdp_fixture.py")
@@ -322,6 +324,9 @@ class NetworkToolsService(owner.Service):
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.SSH_POLICY_CASES:
                         ssh_policy_fixture.serve(connection, case=self.case, deadline=self.deadline,
+                            on_request=self._smb_enumerated)
+                    elif self.case in fixture.SNMP_PAGE_CASES:
+                        snmp_page_fixture.serve(connection, case=self.case, deadline=self.deadline,
                             on_request=self._smb_enumerated)
                     elif self.case in fixture.SNMP_NEXT_CASES:
                         snmp_next_fixture.serve(connection, case=self.case, deadline=self.deadline,

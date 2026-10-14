@@ -16,7 +16,7 @@ from .tool_parameters import (
     NucleiParameters, OpenSSLTLSParameters, TLSCertificateParameters, SSHHostKeysParameters, SSHAlgorithmsParameters, SSHPolicyParameters, LDAPRootDSEParameters, SMBShareListParameters,
     RPCInfoDumpParameters, ShowmountExportsParameters, CurlFTPListParameters, CurlSMTPCapabilitiesParameters,
     CurlDockerPingParameters, CurlDockerVersionParameters, CurlWinRMMetadataParameters, NmapServiceParameters,
-    KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters,
+    KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters, SNMPInterfacePageParameters,
     PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigMXParameters, DigSRVParameters, DigNSIDParameters, DigAXFRParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters, FTPStartTLSParameters,
     NmapTCPParameters, TCPParameters, TLSPostureParameters, _fields, _reject,
 )
@@ -82,6 +82,7 @@ KERBRUTE_TOOL_ID = "kerbrute_userenum_v1"
 REDIS_TOOL_ID = "redis_server_info_v1"
 SNMP_TOOL_ID = "snmp_system_get_v1"
 SNMP_NEXT_TOOL_ID = "snmp_interface_next_v1"
+SNMP_PAGE_TOOL_ID = "snmp_interface_page_v1"
 POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
 MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
 SMTP_TLS_TOOL_ID = "smtp_starttls_handshake_v1"
@@ -118,6 +119,7 @@ KERBRUTE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max
 REDIS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SNMP_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SNMP_NEXT_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
+SNMP_PAGE_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 POSTGRESQL_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 MYSQL_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
 SMTP_TLS_PARAMETERS = MappingProxyType({"port": 8080, "timeout_seconds": 5, "max_output_bytes": 8192})
@@ -521,6 +523,16 @@ ADAPTERS = MappingProxyType({
          "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
          "single_fixed_scalar_get", "public_synthetic_community", "no_walk_or_set",
          "no_mib_or_host_config", "no_udp", "no_followup_to_metadata"),
+    ),
+    SNMP_PAGE_TOOL_ID: ToolAdapter(
+        SNMP_PAGE_TOOL_ID, SNMPInterfacePageParameters, ("port", "timeout_seconds", "max_output_bytes"),
+        "observe_owned_snmp_interface_page", "owned-snmp-interface-page-v1",
+        "bounded-snmp-interface-page-result-v1", "snmp-interface-page-text-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "reviewed_exec_allowlist", "no_child_processes", "fixed_tcp_endpoint",
+         "single_fixed_seed_getbulk", "maximum_four_bindings", "public_synthetic_community",
+         "no_walk_or_set", "no_paging_continuation", "no_retries_or_oid_correction",
+         "no_mib_or_host_config", "no_udp", "no_followup_to_returned_oid"),
     ),
     SNMP_NEXT_TOOL_ID: ToolAdapter(
         SNMP_NEXT_TOOL_ID, SNMPInterfaceNextParameters, ("port", "timeout_seconds", "max_output_bytes"),

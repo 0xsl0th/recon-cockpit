@@ -77,7 +77,7 @@ def test_missing_confinement_never_runs_the_result_evaluator(monkeypatch):
 def test_native_instrument_is_not_a_registered_product_tool():
     from recon_cockpit.secure_agent.tool_catalog import list_tools
     inventory = list_tools()
-    assert inventory["accepted_capability_count"] == 48
+    assert inventory["accepted_capability_count"] == 49
     # Registration belongs to the separate production profile; the native
     # diagnostic manifest/parser cannot substitute for its authority contract.
     assert inventory["candidate_capability_count"] == 1
@@ -85,7 +85,10 @@ def test_native_instrument_is_not_a_registered_product_tool():
     assert [row["tool_id"] for row in hierarchy] == ["ffuf_web_hierarchy_v1"]
     assert hierarchy[0]["parser_version"] != spec.PARSER_VERSION
     assert hierarchy[0]["execution_profile"] == "owned-ffuf-web-hierarchy-v1"
-    assert hierarchy[0]["acceptance_status"] == "candidate"
+    assert "acceptance_status" not in hierarchy[0]
+    candidates = [row for row in inventory["tools"] if row.get("acceptance_status") == "candidate"]
+    assert [row["tool_id"] for row in candidates] == ["snmp_interface_page_v1"]
+    assert candidates[0]["milestone"] == "T05"
 
 
 def test_corpus_has_exactly_one_declared_directory_level_and_twelve_paths():

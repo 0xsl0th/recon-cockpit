@@ -61,6 +61,7 @@ NETWORK_TOOLS_MODULES = ('network_tools_backend', 'network_tools_lab', 'network_
     'network_tools_tls_certificate_fixture', 'network_tools_tls_certificate_material', 'network_tools_tls_certificate_parser',
     'network_tools_ssh_algorithms_fixture', 'network_tools_ssh_algorithms_parser', 'network_tools_ssh_algorithms_runtime',
     'network_tools_snmp_next_fixture', 'network_tools_snmp_next_parser',
+    'network_tools_snmp_page_fixture', 'network_tools_snmp_page_parser', 'network_tools_snmp_page_spec', 'network_tools_snmp_page_identity',
     'network_tools_http_options_fixture', 'network_tools_http_options_parser',
     'network_tools_dns_axfr_fixture', 'network_tools_dns_axfr_parser',
     'network_tools_rdp_fixture', 'network_tools_rdp_parser', 'network_tools_rdp_runtime',
