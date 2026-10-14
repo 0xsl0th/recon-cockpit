@@ -55,8 +55,8 @@ Production code/native cases remain identical to frozen `d0bbdf2`; later
 portable fixture corrections and their original failures remain recorded.
 No diagnostic result grants production HTTP support or adds a catalog profile.
 
-**Current: S3.3a Apache preparation and the separate
-[production HTTP contract](stage3-http-production.md).** The fixed Apache
+**Current: [S3.3a PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90), Apache preparation and the separate
+[production HTTP contract](stage3-http-production.md), is open for review.** The fixed Apache
 configuration/runtime inspector remains read-only; native startup, confinement
 and production support remain unverified. Its UID, dynamic-module and listener
 requirements justify splitting S3.3 into preparation and **S3.3b native

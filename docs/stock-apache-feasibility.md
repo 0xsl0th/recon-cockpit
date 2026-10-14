@@ -1,6 +1,6 @@
 # Stock Apache: fixed configuration and read-only runtime preparation
 
-S3.2 is accepted in PR #89 at `c068a9d`. **S3.3a is preparation only and awaits
+S3.2 is accepted in PR #89 at `c068a9d`. **[S3.3a PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90) is preparation only and awaits
 review/acceptance.** It compiles the same 26 A/B corpus selections for Apache,
 pins the installed executable, four selected modules and their finite linked
 dependencies, and defines the [separate production HTTP contract](stage3-http-production.md).
@@ -108,6 +108,7 @@ Private receipts remain under `.secure-agent/stock-apache-20261014/`:
 - `portable-final-01/`: preserved initial sandbox run; 24,625 passed and 136 tests failed under socket restrictions. It is not a passing full run and no test was excluded to obtain the later result.
 - `apache-source-review-partial.json`: upstream tag/commit and reviewed source anchors, installed ELF/module hashes and explicit review limitations.
 - `independent-roadmap-cli-review-274140b.json`: scoped documentation/CLI review; its permission-wording correction is applied here.
+- `independent-final-review-077b7f9.json`: final code/evidence review, including all 882 source pins, 26 receipts and the complete passing portable run.
 
 The upstream tag resolves to commit `47490973d568337011e4073099fb570d4151083b`.
 Source bodies were viewed from the official repository, not retained locally:
