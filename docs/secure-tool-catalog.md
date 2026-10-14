@@ -9,8 +9,9 @@ all five [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38
 Their 83 native and 24,163 portable passes remain intact. All five
 [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38597857953)
 also passed at `f0542a8`; preserve `.secure-agent/stage3-20261014/pr86-merge-review.json`.
-Current work is the [S3.1 compatibility/routing contract](stage3-compatibility-routing.md),
-followed by an actual nginx diagnostic. Neither planning nor catalog metadata
+S3.1 is accepted in PR #87 at `48c0bce`. Current work is the
+[S3.2a source/runtime preflight](stock-nginx-feasibility.md), followed by the
+separate S3.2b authorized nginx diagnostic. Neither planning nor catalog metadata
 establishes a new service capability. Acceptance applies to the documented
 disconnected owned-lab profiles; it grants no execution authority or general
 engagement readiness. The slices below retain their historical counts.
@@ -391,9 +392,9 @@ The fixed TCP query retains at most four preference/exchange rows, distinguishes
 null-MX/NODATA/NXDOMAIN, and authorizes no name resolution or mail-server follow-up.
 
 The [finite coverage contract](professional-v1-coverage.md) maps all accepted
-profiles to six required operator outcomes: T01–T05 are accepted; T06's separate
-AAAA/PTR profiles are the current candidates. Stage 3 compatibility/routing work
-follows their acceptance, under the retained offline boundary.
+profiles to six required operator outcomes: all T01–T06 are accepted and Stage 2
+is closed. Stage 3 compatibility/routing work follows the accepted S3.1 contract,
+under the retained offline boundary.
 [T02 source feasibility](tls-posture-feasibility.md) is complete: stock sslscan
 cannot preserve the received rejection evidence required by this task. The
 [OpenSSL native diagnostic](tls-posture-native.md), accepted in PR #76,
@@ -477,8 +478,8 @@ tasks completed and 23 negatives kept inconclusive. All 57 saved reports passed
 source pins, limits and 24,163 portable passes. Both operations are available
 through the secure CLI/catalog; no new interactive or GUI support is claimed.
 
-T06 G1–G6 and Stage 2 are closed. Current work is the
-[S3.1 finite compatibility/routing contract](stage3-compatibility-routing.md),
-with an actual nginx diagnostic planned next. Credentials, paid calls, live
+T06 G1–G6 and Stage 2 are closed. S3.1 is accepted in PR #87;
+[S3.2a source/runtime preparation](stock-nginx-feasibility.md) precedes the
+required S3.2b authorized native diagnostic. S3.2 remains open. Credentials, paid calls, live
 evaluation, attached networks, deeper workflows and comparative benchmarking
 remain deferred.

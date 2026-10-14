@@ -21,16 +21,24 @@ blocked. Returned IPv6 addresses and PTR names remain untrusted metadata, with
 no added scope or follow-up authority. Private original evidence remains under
 `.secure-agent/dns-address-20261014/`.
 
-**Current work is S3.1: the finite Stage 3 compatibility and routing contract.**
-The [new contract](stage3-compatibility-routing.md) defines the service matrix,
-exact action and target bindings, exclusions, budgets, evidence and acceptance
-criteria. This slice reconciles catalog acceptance metadata and prepares the
-next implementation; it adds no executor, service launch or routing permission.
-**Next is S3.2: stock-nginx source/runtime review and a bounded disconnected
-owned-daemon diagnostic.** Reuse the existing authority and isolation services;
-keep diagnostic evidence distinct from integrated product support. The current
-scripted HTTP/SSH endpoints do not establish real-daemon compatibility or a
-shared multi-host topology. Stage 3 remains open.
+**S3.1 is accepted in [PR #87](https://github.com/0xsl0th/recon-cockpit/pull/87),
+merged as `48c0bce`.** Fresh independent reviews and 554 focused checks passed;
+all five [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38599557928)
+and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38602810350)
+passed. Reviewed head `0377fd4` and the merge share tree
+`2fb54bff607f8e8a64a09eea12654f145327e570`. Preserve the private merge receipt
+under `.secure-agent/stock-nginx-20261014/`; do not repeat this merge.
+
+**Current work is S3.2a: pinned stock-nginx source/runtime preparation.**
+The [source review](stock-nginx-feasibility.md) and read-only preflight define the
+finite configuration and inspect the installed daemon/dependency bytes. This is
+the first part of S3.2, not a native compatibility result. **Next is S3.2b: the
+separate authorized one-action diagnostic, bounded recorder and full native
+corpus** in the [Stage 3 contract](stage3-compatibility-routing.md). Existing
+four-action assessment contracts and older authority-free diagnostics cannot
+substitute for that path. The two-part implementation uses the contract's allowed
+split within the 6–8 PR estimate. S3.2 and Stage 3 remain open; no service,
+external target, workflow or model is enabled by preflight inspection.
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
 closed. Model credentials, paid calls, live-model evaluation, deeper workflows,
@@ -109,7 +117,7 @@ release criteria still need their later concrete contracts before completion.
 | Area | Implemented and accepted | Remaining product gap |
 | --- | --- | --- |
 | Execution authority | Typed actions, policy/scope checks, isolated approval/audit/admission services, consumed grants, confined launch, bounds and cleanup. | Revalidate these guarantees for broader target configurations, credentials, sessions and intrusive effects. Local consistency hashes do not establish protection from a malicious host owner. |
-| Secure tools | **50 bounded profiles backed by 17 external programs**, plus repository-native capabilities represented in that profile count. Actual owned-lab execution and structured evidence exist for accepted operations. | Most profiles have fixed targets/requests and finite response grammars. They do not expose each program's full feature set or establish general real-server compatibility. |
+| Secure tools | **52 bounded profiles backed by 17 external programs**, plus repository-native capabilities represented in that profile count. Actual owned-lab execution and structured evidence exist for accepted operations. | Most profiles have fixed targets/requests and finite response grammars. They do not expose each program's full feature set or establish general real-server compatibility. |
 | GUI | Accepted local Tk desktop, light/dark Swiss Industrial themes, scope import/export, separate dry run and owned execution, isolated exact-action review, cancellation and evidence inspection. | Execution currently exposes one four-action disconnected HTTP/SSH workflow. Broader tool selection, engagement/assets/findings/report views and operational usability are future work. Extend this GUI; its initial milestone is already closed. |
 | Workflows | Accepted bounded discovery/HTTP/SSH and service/web workflows, with predecessor evidence, stops and saved decisions. | General multi-asset planning, durable engagement coordination and wider evidence-driven composition remain deferred. |
 | Evidence and reporting | Private bounded raw artifacts, structured observations, action/policy/runtime bindings, reports and read-only replay. | Engagement-wide asset/finding models, deduplication, reviewed severity, remediation, client deliverables and retest history. |
@@ -153,7 +161,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
-| 3. Realistic lab and controlled target routing — current | [S3.1 defines a finite compatibility/routing contract](stage3-compatibility-routing.md), followed by a stock-nginx diagnostic, HTTP integration, OpenSSH compatibility, disconnected multi-host routing, explicit name/redirect/referral handling and acceptance. Add endpoint exclusions and shared request/rate budgets; demonstrate useful execution and denied out-of-scope traffic. Attached lab/engagement networks require separate authorization. None of this is accepted merely by the contract. | 6–8 |
+| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md) now proceeds to S3.2a source/runtime preflight and S3.2b authorized native diagnostic, then HTTP integration, OpenSSH compatibility, disconnected multi-host routing, explicit name/redirect/referral handling and acceptance. Add endpoint exclusions and shared request/rate budgets; demonstrate useful execution and denied out-of-scope traffic. Attached lab/engagement networks require separate authorization. None of this is accepted merely by the contract. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |

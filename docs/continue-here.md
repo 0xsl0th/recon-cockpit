@@ -25,19 +25,40 @@ blocked. Returned IPv6 addresses and PTR names remain untrusted metadata, with
 no added scope or follow-up authority. Private original evidence remains under
 `.secure-agent/dns-address-20261014/`.
 
-**Current work is S3.1: the finite Stage 3 compatibility and routing contract.**
-It is open for review in [PR #87](https://github.com/0xsl0th/recon-cockpit/pull/87)
-on `docs/stage3-compatibility-contract`; review its latest revision and required
-checks before merge. This checkpoint does not mark S3.1 or Stage 3 accepted.
-The [new contract](stage3-compatibility-routing.md) defines the service matrix,
-exact action and target bindings, exclusions, budgets, evidence and acceptance
-criteria. This slice reconciles catalog acceptance metadata and prepares the
-next implementation; it adds no executor, service launch or routing permission.
-**Next is S3.2: stock-nginx source/runtime review and a bounded disconnected
-owned-daemon diagnostic.** Reuse the existing authority and isolation services;
-keep diagnostic evidence distinct from integrated product support. The current
-scripted HTTP/SSH endpoints do not establish real-daemon compatibility or a
-shared multi-host topology. Stage 3 remains open.
+**S3.1 is accepted in [PR #87](https://github.com/0xsl0th/recon-cockpit/pull/87),
+merged as `48c0bce`.** Fresh independent reviews and 554 focused checks passed;
+all five [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38599557928)
+and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38602810350)
+passed. Reviewed head `0377fd4` and the merge share tree
+`2fb54bff607f8e8a64a09eea12654f145327e570`. Preserve the private merge receipt
+under `.secure-agent/stock-nginx-20261014/`; do not repeat this merge.
+
+**Current work is S3.2a: pinned stock-nginx source/runtime preparation.**
+The [source review](stock-nginx-feasibility.md) and read-only preflight define the
+finite configuration and inspect the installed daemon/dependency bytes. This is
+the first part of S3.2, not a native compatibility result. **Next is S3.2b: the
+separate authorized one-action diagnostic, bounded recorder and full native
+corpus** in the [Stage 3 contract](stage3-compatibility-routing.md). Existing
+four-action assessment contracts and older authority-free diagnostics cannot
+substitute for that path. The two-part implementation uses the contract's allowed
+split within the 6–8 PR estimate. S3.2 and Stage 3 remain open; no service,
+external target, workflow or model is enabled by preflight inspection.
+
+S3.2a frozen source `8e130df` passed **26/26 actual installed-runtime inspections**
+and **100 focused boundary tests**. Every selection binds nine native files and
+five generated files; all 754 tracked source pins stayed unchanged. Independent
+authority, source, evidence and roadmap reviews found no blockers within this
+preparation-only scope. Private receipts remain under
+`.secure-agent/stock-nginx-20261014/`, with source provenance in `source-review/`
+and per-selection manifests in `preflight/`. The latter's `verification.json`
+has SHA-256 `1ba5c62e65a2c983a6f69fd92b2cd07b035f31f40db64e3114201ae1ec42d20f`.
+These inspections created no service, action, grant, provider call or spend.
+The first full portable attempt retained in `portable-sandbox.*` has 24,246
+passes and 17 sandbox-denied existing socket-pair tests (`EPERM`). The normal-user
+rerun and final CI are acceptance gates, recorded in the PR and private
+`portable.xml` / `verification.json`; do not mistake the initial attempt for a
+passing full run. Review branch `feature/stage3-nginx-diagnostic` before proceeding
+to S3.2b; its native corpus remains entirely open.
 
 S3.1 catalog reconciliation passed **554 focused portable checks**, with no
 failures, errors or skips. An independent before/after comparison of all 52
@@ -2199,9 +2220,11 @@ Planning uses synthetic responses.
    immutable receipts. Preserve accepted [T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86)
    at `f0542a8`: 83 native and 24,163 portable passes, 114 unchanged inspection
    checks and reviewed G1–G6 closure. The catalog now has 52 accepted profiles,
-   zero candidates and 17 programs; Stage 2 remains closed. Review S3.1's
-   [finite compatibility/routing contract](stage3-compatibility-routing.md), then
-   implement S3.2's stock-nginx source/runtime review and disconnected diagnostic.
+   zero candidates and 17 programs; Stage 2 remains closed. S3.1's
+   [finite compatibility/routing contract](stage3-compatibility-routing.md) is accepted
+   in PR #87 at `48c0bce`, with all final/post-merge checks passed. Review S3.2a's
+   pinned source/runtime preflight, then implement S3.2b's separate authorized
+   diagnostic and full native corpus. S3.2 is not complete until that corpus passes.
    Network attachment still requires separate authorization; do not substitute
    optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI closed.

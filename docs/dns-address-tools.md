@@ -7,8 +7,9 @@ reverse-name records. Both profiles are accepted in
 Their G1–G6 closure completes the final required row of the
 [professional-v1 coverage tranche](professional-v1-coverage.md): T01–T06 and
 Stage 2 remain closed, with 52 accepted profiles across 17 programs. Current work
-is the [S3.1 compatibility/routing contract](stage3-compatibility-routing.md);
-its planned actual-service diagnostics grant no new execution capability.
+is [S3.2a source/runtime preparation](stock-nginx-feasibility.md), after S3.1's
+accepted contract in PR #87. The separate authorized native diagnostic remains
+required; preflight inspection grants no execution capability.
 
 This batch uses disconnected owned fixtures and deterministic planning. Model
 credentials, paid calls, live-model evaluation, deeper workflows, comparative
