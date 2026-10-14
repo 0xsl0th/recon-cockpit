@@ -37,21 +37,24 @@ S3.2a separately retains downloaded source/package archives as comparison data.
 
 ## Finite sequence and completion boundaries
 
-The seven logical slices use the roadmap's **6–8 PR estimate, including this
-contract**. S3.2 now uses the permitted split: **S3.2a source/runtime preparation**
-and **S3.2b authorized native execution**, giving eight reviewable increments.
-The installed daemon and separate single-action authority boundary need their
-own reviewed closure; the older diagnostic bypass cannot satisfy this contract.
-This split retains every native case and bound. Native findings can require
-re-estimation; do not remove a required row or silently raise a bound to fit the
-estimate. S3.1 and S3.2a (PR #88 at `5686dc8`) are accepted. S3.2b's complete native corpus, enforcement, replay and portable validation now pass; its PR review and acceptance remain pending. See the [recorded results](stock-nginx-native.md).
+The seven logical slices originally used a **6–8 PR estimate**. S3.2's
+source/runtime and authorized-native split used eight increments. Apache's
+module loading, nonzero UID and private TCP listener now require a separately
+reviewed preparation/production boundary, so S3.3 also splits: **S3.3a Apache
+preparation/production contract**, followed by **S3.3b native integration**.
+Stage 3 is re-estimated to **nine PRs total: three accepted, six remaining**.
+This is one extra increment beyond the previous eight, not a reduced corpus or
+permission to relax confinement. S3.1 and S3.2a/S3.2b are accepted in PRs
+#87/#88/#89; S3.2 is closed. See the [nginx results](stock-nginx-native.md) and
+[new production contract](stage3-http-production.md).
 
 | Slice | Required outcome | Completion evidence |
 | --- | --- | --- |
 | **S3.1 — accepted contract** | Reconcile T06 acceptance, distinguish synthetic and real-service support, freeze the first diagnostic corpus and keep later gates visible. | PR #87 at `48c0bce`; fresh review, 554 focused checks and five final/post-merge checks passed. This closes planning only. |
 | **S3.2a — accepted: source/runtime preflight** | Review pinned nginx source/distribution changes, compile the finite A/B case/configuration identity and inspect the fixed installed ELF/dependency bytes without starting a service. | [Source review](stock-nginx-feasibility.md), strict manifest/configuration validation and real local inspection receipts. No authority, native execution or service compatibility is established. |
-| **S3.2b — validated; awaiting review/acceptance** | Exercise the two fixed HTTP endpoint configurations and exact actions below against a pinned nginx process in a disconnected owner, through a separate one-action authorization contract. Reuse existing Nmap probes, header reader, namespace lifecycle and evidence patterns. | Independent traffic accounting, the complete useful/negative corpus, authority and required approval checks, resource/cleanup receipts and explicit unsupported behavior. All declared native cases now pass; S3.2 stays open until PR review and acceptance close. No new workflow, generic endpoint option or production support claim. |
-| **S3.3 — HTTP production compatibility** | Integrate the reviewed HTTP subset through the secure path and validate a second stock implementation, initially Apache, with the same observable outcomes. | Separate production contract, complete HTTP corpus on both pinned implementations, exact action/endpoint enforcement and unchanged inspection. A substitute server needs a documented feasibility finding and reviewed contract change. |
+| **S3.2b — accepted native diagnostic** | Exercise the two fixed HTTP endpoint configurations and exact actions below against a pinned nginx process in a disconnected owner, through a separate one-action authorization contract. Reuse existing Nmap probes, header reader, namespace lifecycle and evidence patterns. | Independent traffic accounting, the complete useful/negative corpus, authority and required approval checks, resource/cleanup receipts and explicit unsupported behavior. All declared native cases passed; PR #89 at `c068a9d`, fresh review and all five final checks close S3.2. No new workflow, generic endpoint option or production support claim. |
+| **S3.3a — current: Apache preparation and production contract** | Compile the fixed Apache configurations, pin its executable/modules and exact ELF dependencies, and define the separately versioned production HTTP boundary. | [Apache preflight](stock-apache-feasibility.md), strict portable validation and 26 actual read-only runtime inspections. No server/tool launch, compatibility claim or catalog addition. |
+| **S3.3b — HTTP production/native compatibility** | Integrate the reviewed HTTP subset through the secure path and validate both nginx and Apache with the same observable outcomes. | [Production contract](stage3-http-production.md), complete 26-row HTTP corpus on each pinned implementation, exact action/endpoint enforcement, authority/approval/audit, budget/cleanup and unchanged inspection. Apache UID/listener custody must be reviewed before execution. A substitute server requires a documented finding and reviewed contract change. |
 | **S3.4 — SSH production compatibility** | Use stock OpenSSH with public synthetic host keys for bounded service identification and host-key collection. Test two explicit server configurations, with independent observations rather than a new discovery workflow. | Exact endpoint/key facts, received bytes, connection limits and refusal/cleanup corpus; no authentication, account probing, completed user session or verified host identity. Pin the concrete server configurations before implementation. |
 | **S3.5 — disconnected multi-host routing** | Put the supported services in distinct owned network namespaces connected by controlled owned links, with exact action-specific destination binding, explicit exclusions and aggregate request/connection/rate budgets across hosts and actions. | At least two service hosts with distinct recorded network namespace identities, routed links and an excluded listening endpoint; loopback address aliases alone do not qualify. Demonstrate useful selected-target execution, denied other-service/excluded traffic, and attempted budget bypass by splitting actions or restarting workers. No host network namespace, physical interface, default external route or host firewall modification. |
 | **S3.6 — names, TLS binding, redirects and referrals** | Add a bounded owned-resolver case with a declared name mapped to an explicit IPv4 endpoint set; bind the observed answer, exact HTTP Host, TLS SNI, expected certificate name and pinned trust material to a separately authorized action. Include one selected bounded TLS mode. Reject rebinding, excluded/ambiguous answers, undeclared names and name/trust mismatches. Record redirects and referral advertisements without following them. | A pinned stock resolver and exact query/answer plus TLS name/trust corpus; useful allowed-name execution and denied changed/excluded answers, Host/SNI/certificate-name mismatches and untrusted certificates. No recursive external lookup, search suffix, alias chasing, IPv6 transport, peer-selected trust or automatic follow-up. Freeze the resolver and selected TLS runtime contract before implementation; returned data never enlarges scope. |
@@ -297,7 +300,8 @@ unauthorized traffic occurs.
 
 The separately authorized S3.2b diagnostic now has complete native, enforcement,
 cleanup and unchanged-replay evidence, plus portable and accepted-profile
-regressions. Review its latest revision and required checks before acceptance.
-Then proceed to S3.3's separate production HTTP contract and Apache comparison.
+regressions. PR #89 at `c068a9d` completed review/checks/merge; S3.2 stays closed.
+Proceed with S3.3a's separate production contract and Apache preparation, then
+S3.3b's native production integration on both servers.
 Do not repeat accepted milestones, add optional signatures, set up model
 credentials or request network attachment for this disconnected stage.

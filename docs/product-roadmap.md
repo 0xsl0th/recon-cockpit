@@ -37,34 +37,37 @@ passed; reviewed head `1009be6` and the merge share tree
 `748fdb336a61d4d12fda5e4ad846641e061664a8`. Its full portable validation passed
 24,263 tests. Retain `.secure-agent/stock-nginx-native-20261014/pr88-merge-review.json`.
 
-**S3.2b is implemented and validated in [PR #89](https://github.com/0xsl0th/recon-cockpit/pull/89);
-PR review and acceptance remain pending.**
-The [stock-nginx diagnostic](stock-nginx-native.md) passed **60 native checks,
-15 accepted-workflow/authority regressions and 24,642 portable tests** at frozen
-source `d0bbdf2`, with all 874 tracked source hashes unchanged in each run.
-All 12 ordinary and four robustness tasks completed usefully, all ten injected
-faults had their declared outcome, and all 16 distinct forbidden-destination
-combinations were blocked. The 26 bundles passed 52 unchanged Python/CLI
-inspections. Provider calls and spend stayed zero.
+**S3.2b is accepted in [PR #89](https://github.com/0xsl0th/recon-cockpit/pull/89),
+merged as `c068a9d` on 14 October. S3.2 is closed.** Fresh code/evidence review
+found no blockers; 110 root and 289 reviewer focused checks passed. All five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38628904862)
+passed 24,643 portable tests each. All five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38635058569)
+also passed. Reviewed head `409580f` and the merge share
+tree `573ac69f78b67fd208a2518844897a699ef6ed99`. Retain
+`.secure-agent/stock-apache-20261014/pr89-merge-review.json` and the original
+`.secure-agent/stock-nginx-native-20261014/` evidence, including failed attempts.
 
-A later portability review corrected Linux-only assumptions in the portable
-owner test fixtures and added one descriptor-enumeration case. The current
-portable suite contains **24,643 tests**; production code and native test cases
-remain identical to the frozen native validation. Check the latest PR checks
-and `.secure-agent/stock-nginx-native-20261014/portable-final-03/` before merging.
+The accepted [nginx diagnostic](stock-nginx-native.md) retains 60 native checks,
+15 accepted-workflow regressions, 16 useful corpus completions, ten correct
+negatives, 16 distinct destination denials and 52 unchanged inspections.
+Production code/native cases remain identical to frozen `d0bbdf2`; later
+portable fixture corrections and their original failures remain recorded.
+No diagnostic result grants production HTTP support or adds a catalog profile.
 
-Regression validation also found a missing public fixture dependency on merged
-main. Adding that exact read-only module restored the existing four-action
-HTTP/SSH workflow; no scope, policy, action or resource limit changed. Retain the
-baseline failures and final receipts under
-`.secure-agent/stock-nginx-native-20261014/`.
+**Current: S3.3a Apache preparation and the separate
+[production HTTP contract](stage3-http-production.md).** The fixed Apache
+configuration/runtime inspector remains read-only; native startup, confinement
+and production support remain unverified. Its UID, dynamic-module and listener
+requirements justify splitting S3.3 into preparation and **S3.3b native
+integration**. Stage 3 is re-estimated from 6–8 to **nine PRs total**, with three
+accepted and six remaining. No native case or safety bound is removed.
 
-S3.2 and Stage 3 stay open until their respective acceptance gates close.
-**Next after S3.2b acceptance: S3.3 production HTTP integration and Apache
-compatibility**, following the [Stage 3 contract](stage3-compatibility-routing.md).
-This diagnostic adds no production catalog capability; coverage remains
-52 accepted profiles / 17 external programs. The permitted split remains within
-the 6–8 PR estimate, and completed milestones stay closed.
+After S3.3a review/acceptance, implement S3.3b and run all 26 corpus rows on each
+server through the new production mode, plus authority, denial, budget, cleanup
+and unchanged-inspection gates. Then continue S3.4–S3.7 in order. Stage 3 stays
+open. Coverage remains **52 accepted profiles / 17 external programs**;
+completed milestones stay closed.
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
 closed. Model credentials, paid calls, live-model evaluation, deeper workflows,
@@ -177,22 +180,25 @@ and 195/195 boundary fields. Thirteen new and 120 accepted bundles replayed
 unchanged. This is finite fixture evidence, not a repository-exposure or general
 vulnerability-detection claim. See the [C17 runbook](nuclei-git-tools.md).
 
-## Proposed professional-v1 sequence: 40–60 further PRs
+## Professional-v1 forecast: 43–61 PRs from the PR #72 baseline
 
-These ranges are additive. They remain estimates from the accepted PR #72 baseline,
-excluding the documentation-only PR #73 forecast and already completed work. Stages
-describe deliverables; they do not lift the current offline-only restrictions.
+These ranges are additive totals from the accepted PR #72 baseline, excluding
+the documentation-only PR #73 forecast. They include work completed since that
+baseline; they are not a fresh remaining count. The original forecast was 40–60.
+On 14 October, Stage 3 changes from 6–8 to nine increments after the Apache
+startup/confinement findings, updating the total to 43–61. Other stage estimates
+remain unchanged. Stages do not lift the current offline-only restrictions.
 
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
-| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md) has accepted S3.2a preparation and a validated S3.2b diagnostic awaiting review/acceptance, then HTTP integration, OpenSSH compatibility, disconnected multi-host routing, explicit name/redirect/referral handling and acceptance. Add endpoint exclusions and shared request/rate budgets; demonstrate useful execution and denied out-of-scope traffic. Attached lab/engagement networks require separate authorization. None of this is accepted merely by the contract. | 6–8 |
+| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md) has accepted S3.2a/S3.2b nginx preparation and diagnostic, then S3.3a Apache preparation/contract and S3.3b HTTP integration, OpenSSH compatibility, disconnected multi-host routing, explicit name/redirect/referral handling and acceptance. Add endpoint exclusions and shared request/rate budgets; demonstrate useful execution and denied out-of-scope traffic. Attached lab/engagement networks require separate authorization. None of this is accepted merely by the contract. Three increments are accepted and six remain. | 9 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |
 | 7. Professional-v1 release gate | Installation and dependency diagnostics, pinned runtime maintenance, data migration/export/retention, recovery, representative service compatibility, adversarial review, operator acceptance and documented support limits. Publish only after the separate release decision. | 7–13 |
-| **Professional-v1 total** | **Operator-assisted Linux release for its declared engagement subset. Live models and the full 40-program breadth are not prerequisites.** | **40–60** |
+| **Professional-v1 total** | **Operator-assisted Linux release for its declared engagement subset. Live models and the full 40-program breadth are not prerequisites.** | **43–61** |
 
 ### Finite coverage gate before deeper workflows
 
@@ -219,8 +225,10 @@ comparative benchmarking remain deferred despite completion of the coverage gate
 
 ## Broader product: 40–70 PRs beyond professional v1
 
-These are additional to the 40–60 above, giving **80–130 total further PRs from
-the PR #72 accepted baseline**. They are not another 80–130 on top of v1.
+These remain **40–70 additional PRs beyond professional v1**. With the revised
+43–61 v1 forecast, the combined total is **83–131 PRs from the PR #72 accepted
+baseline**, including work completed since that baseline. This replaces the
+original 80–130 estimate; it is not an additional remaining-work count.
 
 | Expansion | Deliverable and boundary | Additional PRs |
 | --- | --- | ---: |
@@ -229,7 +237,7 @@ the PR #72 accepted baseline**. They are not another 80–130 on top of v1.
 | Late bounded live-model integration and evaluation | Reuse the existing disabled integration. Approve data release, provider/model, credential source and spending ceiling, then run a small Nmap → HTTP → evidence pilot and adversarial variants. Compare against deterministic and appropriate operator/tool baselines before expanding autonomy. Offline operation remains a fallback. | 3–5 |
 | Scale and advanced operations | Larger engagement/resource scheduling, long-run recovery, performance/reliability work and expanded security/operator acceptance within the supported Linux product. | 3–5 |
 | **Additional expansion** | **Broader professional lifecycle and evaluated model assistance, subject to its separate approvals.** | **40–70** |
-| **Total from PR #72** | **Professional v1 plus broader expansion.** | **80–130** |
+| **Total from PR #72** | **Professional v1 plus broader expansion.** | **83–131** |
 
 Against the dated 16-program forecast baseline, the literal 40-program target
 left **24 programs**. Accepted T02/T03 reused existing implementations and T04

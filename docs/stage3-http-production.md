@@ -1,0 +1,165 @@
+# S3.3: finite HTTP compatibility contract
+
+PR #89 accepted the stock-nginx diagnostic at `c068a9d`. Its 26 native corpus
+rows, authority tests and immutable evidence close S3.2; they do not establish
+production HTTP integration. This document defines the next finite contract.
+The implementation and acceptance gates below remain open.
+
+S3.3a prepares the exact Apache runtime/configuration and this contract.
+S3.3b must implement and validate the secure production path on **both nginx and
+Apache**. Apache's listener, dynamically loaded modules and nonzero user mapping
+need a separate review from nginx's private Unix socket and namespace UID zero.
+This finding adds one reviewable increment: Stage 3 now forecasts **nine PRs**,
+three accepted and six remaining, rather than the original 6–8. No required
+corpus row, bound or later routing/name/TLS gate is removed to fit an estimate.
+
+## Selection and authority
+
+The proposed production launch profile is `stock_http_compatibility_v1`. It is
+not registered by S3.3a. Accepted `configurable_owned_lab` and
+`stock_nginx_diagnostic_v1` contracts remain unchanged, including the former's
+ordered four-action workflow. A new request must bind:
+
+| Input | Finite permitted value and meaning |
+| --- | --- |
+| Contract identity | Schema version 1 and the separate production launch profile. |
+| Implementation | Exactly `nginx` or `apache`; each has an independent, revalidated runtime manifest. |
+| Configuration | A or B, with the exact numeric HTTP target, port and path below. |
+| Operation | One existing configurable header-reader action or one existing configurable Nmap service action. No action sequence or automatic follow-up. |
+| Owner configuration | One generated, content-pinned server configuration/public body from the declared corpus. Test transport faults are explicit owner-fixture inputs, never hidden in an ordinary production result. |
+| Runtime and policy | Full daemon/module/client runtime and generated-file digests, selection-specific policy digest, exact action digest, limits, fresh session and owner identity. |
+
+| Configuration | Sole client TCP destination | Header GET path |
+| --- | --- | --- |
+| A | `10.77.0.10:8080` | `/harbordesk/portal.html` |
+| B | `172.23.0.10:18080` | `/portal/index.html` |
+
+The header request is exactly `GET <path> HTTP/1.1` with the numeric
+`Host: <address>:<port>` and `Connection: close`. Nmap retains its separate
+18-byte `GET / HTTP/1.0\r\n\r\n`, pinned NULL/HTTP probe data, one numeric
+port, no DNS, zero retries and existing version-intensity-one invocation.
+Neither action grants arbitrary URL, path, Host, argv, environment, method,
+body, credential, cookie, upgrade, redirect or response-directed access.
+An exclusion takes precedence over an allow entry.
+
+The authority must persist intent and independently verify its audit witness,
+verify and consume fresh exact-action approval when required, then admit/redeem
+the one-use action before starting any owner or client. Audit records attest to
+execution intent; they grant no authority. Both isolated witness services remain
+mandatory, including when an explicit owned-test policy does not require a human
+approval. Implementation/case/runtime changes invalidate the binding even when
+the nominal client request is identical. Missing, stale, mismatched, replayed,
+cancelled or exhausted inputs must fail closed before execution.
+
+The default policy requires approval. Scripted approval mechanism tests must
+remain distinguishable from personal owner acceptance. The new mode requires
+coordinated admission, launcher, worker, backend, parser, result and inspection
+validation; a host-side wrapper around the diagnostic is not integration.
+
+## Reuse and remaining native design gate
+
+Reuse the existing exact requests, client runtime, networkless parsing,
+request-accounting state machine, supervisor, audit/approval services and
+private evidence conventions. Preserve the accepted nginx diagnostic unchanged.
+Shared helpers are appropriate only with regression evidence for that boundary.
+Do not duplicate or weaken authority checks to accommodate a second server.
+
+Apache preparation proposes a fixed prefork `-X` configuration, a nonzero
+namespace-local user/group, four pinned modules and a private loopback listener.
+This is **not a verified native startup design**. Before S3.3b execution, freeze
+the concrete descriptor/namespace handoff and verify:
+
+- The Apache socket exists only inside a fresh disconnected daemon namespace.
+  The recorder has a bounded, independently accounted route to it; the client
+  has neither that namespace nor any private-listener descriptor or route.
+- A single mapped nonzero UID/GID supports startup without host privileges,
+  supplementary groups, host account files or privilege-changing fallback.
+- The selected `-X`/prefork/module set works with enforced process/thread,
+  socket-family, filesystem, deadline and resource bounds. If it cannot, retain
+  the failure and review the design; do not enable general fork/thread access.
+- The server consumes only sealed exact runtime/modules and generated public
+  data. No host Apache configuration, wildcard includes, module directory,
+  external resolver, TLS/provider configuration or package-manager side effect
+  enters the runtime.
+
+The Apache `127.0.0.1:19080` candidate is a future private daemon endpoint,
+**never an authorization to contact that address on the host**. Apache needs a
+different private transport from nginx; no transparent proxy may bypass the
+recorder's exact-request admission, counters or deadline. The final topology
+must be reviewed and tested before the new production backend is enabled.
+
+## Bounds retained from the diagnostic
+
+| Limit | Headers | Nmap |
+| --- | --- | --- |
+| Session and action count | 60 seconds, one action | 60 seconds, one action |
+| Action deadline | 1 second | 5 seconds; native host timeout remains 3 seconds |
+| Client output | 2,048 bytes | 8,192 stdout/stderr bytes combined |
+| Connections / application requests | One connection, one exact GET | At most three connections, at most one exact root GET |
+| Admission concurrency/rate | One active connection; four per second, burst one | Same; at least 250 ms between admissions |
+| Forwarded request bound | Exact compiled request, at most 256 bytes | Exactly 18 bytes or zero for an empty exchange |
+| Recorder response bound | 2,049 bytes including overflow witness | 4,096 bytes across the action |
+
+Owner startup remains inside the session deadline and is measured separately.
+Client readiness starts one shared absolute action deadline for client and
+recorder. A bounded reporting allowance grants no further network forwarding.
+Preserve the declared daemon ceiling of two processes (including any reaper),
+256 MiB per process, 64 descriptors per process and 1 MiB total scratch/logs;
+the recorder remains one process with no children, 256 MiB, 64 descriptors and
+1 MiB aggregate scratch/log/trace storage. Enforce aggregate storage with the
+kernel rather than per-file limits alone. Any needed change requires a recorded
+contract revision and fresh boundary evidence, not a silent compatibility fix.
+
+## Required S3.3b acceptance corpus
+
+Execute both configurations and **all thirteen cases on each implementation**:
+52 native corpus rows total. Keep server-specific raw bytes and observations;
+equivalent outcomes do not require identical Date, Server or redirect body bytes.
+
+| Cases per server | Required result |
+| --- | --- |
+| O1/O2 × A/B | Complete 200 response with present/absent optional security headers respectively. Absence is useful observation, not an execution failure. |
+| O3/O4 × A/B | Complete 404 and 302 responses; report their status and headers. Record Location without following it. |
+| O5/O6 × A/B | Useful Nmap HTTP service identification with server version advertised and suppressed. No invented version when suppressed. |
+| R1/R2 × A/B | Hostile body remains untrusted data; four timed writes preserve all daemon bytes and complete usefully. This does not evaluate a live model. |
+| N1–N5 × A/B | Retain a valid original daemon response, then separately record truncation, reset, withholding, capture overflow or conflicting Content-Length. Inconclusive, timeout and output-limit outcomes must match the declared fault. |
+
+Across both servers require **24 ordinary and eight robustness useful
+completions, zero unnecessary refusals, 20 correct negatives, and 32 distinct
+blocked destination combinations** (two servers × two configurations × two
+action families × four forbidden endpoints). Report request/connection attempts,
+admissions, deliveries and extra/budget-denied activity separately. Blocking all
+actions fails this gate. Repeated witnesses do not inflate distinct-denial counts.
+
+In addition, both implementations require authority/audit/required-approval
+negatives and positive controls, private-listener bypass denial, second-request
+and connection-budget exhaustion, prelaunch/inflight cancellation, failed-startup
+cleanup, runtime/owner/selection tampering and unchanged Python/CLI inspection.
+Retain response bytes, parsed facts, runtime identity, intent/witnesses,
+transport ledger, namespace/resource/cleanup receipts and source pins. Reopening
+saved evidence must not restore approvals, deadlines or budgets.
+
+Record owner/client startup, action, cleanup and total latency, along with
+legitimate completion, unnecessary refusals and zero provider usage/cost.
+Comparative benchmarking remains deferred; mediated timing is not a baseline
+overhead result. Native nginx success from S3.2 cannot replace this new
+production-mode corpus. Run the accepted configurable workflow and diagnostic
+regressions before closure, plus portable checks and independent review.
+
+## Completion and subsequent work
+
+S3.3a closes preparation only after strict portable validation, all 26 actual
+installed-runtime inspections, immutable receipts, independent review and checks.
+It starts no server or tool and adds no secure catalog entry. The
+[Apache preparation record](stock-apache-feasibility.md) distinguishes source
+findings, metadata inspection and unresolved native behavior.
+
+S3.3 closes only after S3.3b meets every native row and boundary above through the
+new production path. Then S3.4 adds stock OpenSSH compatibility; S3.5 handles
+disconnected multi-host routing and aggregate budgets; S3.6 handles explicit
+DNS/TLS name/trust binding; S3.7 performs combined acceptance. Completed offline
+R5/local R6, B/C/T coverage and initial GUI milestones remain closed.
+
+Network attachment, real credentials, paid/live models, deeper workflows,
+comparative benchmarks, proposal submission and release publication retain
+their separate later authorization gates. This contract grants none of them.

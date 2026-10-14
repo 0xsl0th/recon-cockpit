@@ -196,5 +196,5 @@ The final `portable.xml`, log and `verification.json` remain beside the earlier
 attempt. Fresh review and all five final/post-merge CI checks passed before
 acceptance. No production change or test exclusion worked around the restriction.
 The later [S3.2b diagnostic](stock-nginx-native.md) now records the complete native
-gate, portable and accepted-profile regressions, with PR acceptance pending.
+gate, portable and accepted-profile regressions, accepted in PR #89 at `c068a9d`.
 Those execution results are separate from this accepted preparation-only record.

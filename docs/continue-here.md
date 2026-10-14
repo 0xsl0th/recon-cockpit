@@ -41,39 +41,37 @@ passed; reviewed head `1009be6` and the merge share tree
 `748fdb336a61d4d12fda5e4ad846641e061664a8`. Its full portable validation passed
 24,263 tests. Retain `.secure-agent/stock-nginx-native-20261014/pr88-merge-review.json`.
 
-**S3.2b is implemented and validated in [PR #89](https://github.com/0xsl0th/recon-cockpit/pull/89);
-PR review and acceptance remain pending.**
-The [stock-nginx diagnostic](stock-nginx-native.md) passed **60 native checks,
-15 accepted-workflow/authority regressions and 24,642 portable tests** at frozen
-source `d0bbdf2`, with all 874 tracked source hashes unchanged in each run.
-All 12 ordinary and four robustness tasks completed usefully, all ten injected
-faults had their declared outcome, and all 16 distinct forbidden-destination
-combinations were blocked. The 26 bundles passed 52 unchanged Python/CLI
-inspections. Provider calls and spend stayed zero.
+**S3.2b is accepted in [PR #89](https://github.com/0xsl0th/recon-cockpit/pull/89),
+merged as `c068a9d` on 14 October. S3.2 is closed.** Fresh code/evidence review
+found no blockers; 110 root and 289 reviewer focused checks passed. All five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38628904862)
+passed 24,643 portable tests each. All five
+[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38635058569)
+also passed. Reviewed head `409580f` and the merge share
+tree `573ac69f78b67fd208a2518844897a699ef6ed99`. Retain
+`.secure-agent/stock-apache-20261014/pr89-merge-review.json` and the original
+`.secure-agent/stock-nginx-native-20261014/` evidence, including failed attempts.
 
-A later portability review corrected Linux-only assumptions in the portable
-owner test fixtures and added one descriptor-enumeration case. The current
-portable suite contains **24,643 tests**; production code and native test cases
-remain identical to the frozen native validation. Check the latest PR checks
-and `.secure-agent/stock-nginx-native-20261014/portable-final-03/` before merging.
-Hosted macOS CI also exposed three argv-only tests reading Linux namespace paths
-and one test assuming immediate TCP response availability. The portable fixtures
-now bind explicit namespace metadata and read the exact bounded response through
-EOF; production code, native cases and enforcement assertions are unchanged.
-The failed job log is retained as `pr89-macos-3b7c1d3.log` in the same evidence root.
+The accepted [nginx diagnostic](stock-nginx-native.md) retains 60 native checks,
+15 accepted-workflow regressions, 16 useful corpus completions, ten correct
+negatives, 16 distinct destination denials and 52 unchanged inspections.
+Production code/native cases remain identical to frozen `d0bbdf2`; later
+portable fixture corrections and their original failures remain recorded.
+No diagnostic result grants production HTTP support or adds a catalog profile.
 
-Regression validation also found a missing public fixture dependency on merged
-main. Adding that exact read-only module restored the existing four-action
-HTTP/SSH workflow; no scope, policy, action or resource limit changed. Retain the
-baseline failures and final receipts under
-`.secure-agent/stock-nginx-native-20261014/`.
+**Current: S3.3a Apache preparation and the separate
+[production HTTP contract](stage3-http-production.md).** The fixed Apache
+configuration/runtime inspector remains read-only; native startup, confinement
+and production support remain unverified. Its UID, dynamic-module and listener
+requirements justify splitting S3.3 into preparation and **S3.3b native
+integration**. Stage 3 is re-estimated from 6–8 to **nine PRs total**, with three
+accepted and six remaining. No native case or safety bound is removed.
 
-S3.2 and Stage 3 stay open until their respective acceptance gates close.
-**Next after S3.2b acceptance: S3.3 production HTTP integration and Apache
-compatibility**, following the [Stage 3 contract](stage3-compatibility-routing.md).
-This diagnostic adds no production catalog capability; coverage remains
-52 accepted profiles / 17 external programs. The permitted split remains within
-the 6–8 PR estimate, and completed milestones stay closed.
+After S3.3a review/acceptance, implement S3.3b and run all 26 corpus rows on each
+server through the new production mode, plus authority, denial, budget, cleanup
+and unchanged-inspection gates. Then continue S3.4–S3.7 in order. Stage 3 stays
+open. Coverage remains **52 accepted profiles / 17 external programs**;
+completed milestones stay closed.
 
 S3.2a frozen source `8e130df` passed **26/26 actual installed-runtime inspections**
 and **100 focused boundary tests**. Every selection binds nine native files and
@@ -89,11 +87,11 @@ passes and 17 sandbox-denied existing socket-pair tests (`EPERM`). The same
 source then passed **24,263 portable tests**, with 1,399 integration tests
 deselected and no failures, errors or skips. Both attempts remain recorded;
 no source change or test exclusion worked around the sandbox restriction.
-S3.2a is closed. Current implementation branch is `feature/stage3-nginx-native`
-in `/tmp/recon-stage3-nginx-native`. The complete declared corpus is now recorded
-in the diagnostic runbook; preserve all earlier failures and await PR acceptance
-before closing S3.2b. Review the latest revision and all required checks before
-merging, then begin S3.3 without reopening accepted milestones.
+S3.2a and S3.2b are closed. Current implementation branch is
+`feature/stage3-apache-preflight` in `/tmp/recon-stage3-apache-preflight`. Preserve
+the accepted nginx corpus and earlier failures. Review S3.3a before starting
+S3.3b native integration; no accepted walkthrough or corpus needs repeating
+solely to update documentation.
 
 S3.1 catalog reconciliation passed **554 focused portable checks**, with no
 failures, errors or skips. An independent before/after comparison of all 52
@@ -350,8 +348,10 @@ to **42 bounded secure profiles backed by 16 external programs**. C17's G1–G6 
 
 The [consolidated product roadmap](product-roadmap.md) separates today's verified
 capabilities from the professional-v1 release and the longer-term 40+ program
-product. Its planning estimates are **40–60 further PRs for an operator-assisted
-professional v1**, and **80–130 total further PRs for the broader product**.
+product. The historical PR #73 forecast was **40–60 PRs for an operator-assisted
+professional v1** and **80–130 total for the broader product**, from the PR #72
+baseline. The 14 October Stage 3 revision changes those baseline totals to
+**43–61** and **83–131** respectively; completed work is included, not charged again.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that every catalog profile is available through the GUI.
 [PR #73](https://github.com/0xsl0th/recon-cockpit/pull/73) accepted the forecast at
@@ -2259,10 +2259,11 @@ Planning uses synthetic responses.
    zero candidates and 17 programs; Stage 2 remains closed. S3.1's
    [finite compatibility/routing contract](stage3-compatibility-routing.md) is accepted
    in PR #87 at `48c0bce`, with all final/post-merge checks passed. S3.2a's pinned
-   source/runtime preflight is accepted in PR #88 at `5686dc8`. S3.2b's separate
-   authorized diagnostic and full native corpus are validated in PR #89; review
-   its latest revision and checks before acceptance, then begin S3.3's production
-   HTTP integration and Apache compatibility. S3.2 stays open pending acceptance.
+   source/runtime preflight is accepted in PR #88 at `5686dc8`; PR #89 at
+   `c068a9d` closes S3.2b and S3.2. Current S3.3a prepares the fixed Apache
+   runtime/configuration and separate production contract. Review and accept it
+   before S3.3b integrates both implementations and proves the complete corpus.
+   Stage 3 now estimates nine increments; no required native gate is removed.
    Network attachment still requires separate authorization; do not substitute
    optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI closed.
