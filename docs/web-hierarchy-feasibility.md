@@ -16,6 +16,18 @@ durable audit, consumed permits and both evidence inspectors before T04 G1–G6
 acceptance. The catalog stays at 48 accepted profiles, zero candidates and
 16 programs; T05/T06 remain required after T04.
 
+## Production observation — 14 October 2026
+
+The source-review table below records the original proposal. Native diagnostic
+and product captures disprove its proposed no-retry/total-twelve guarantee on
+errors: pinned ffuf retries an errored input once. The stalled corpus retained
+ten incomplete attempts over five compiled paths and stayed inconclusive.
+The [production candidate](web-hierarchy-tools.md) therefore distinguishes the
+twelve-request useful-completion corpus from the owner’s sixteen-connection/
+recorded-attempt bound. Its configured input rate is not a strict retry-inclusive
+wire rate. Scope remains fixed; no returned path or redirect is followed. No
+historical receipt or accepted eight-path ffuf contract is rewritten.
+
 ## Engine review
 
 The existing interactive precedent emits an inert `feroxbuster -u URL`

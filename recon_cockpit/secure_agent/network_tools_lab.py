@@ -8,6 +8,7 @@ from .isolation import IsolationUnavailable
 from .session_limits import SessionLimits
 from .network_tools_lab_contract import identity, validate_context, decode_owner_response
 from .network_tools_tls_posture_spec import CASES as TLS_POSTURE_CASES
+from .network_tools_web_hierarchy_spec import CASES as WEB_HIERARCHY_CASES
 
 
 class NetworkToolsLab(OwnedLab):
@@ -25,6 +26,9 @@ class NetworkToolsLab(OwnedLab):
         return validate_context(value, expected)
 
     def _read_message(self):
+        if self._identity["scenario"] in WEB_HIERARCHY_CASES:
+            from .network_tools_web_hierarchy_lab import read_message
+            return read_message(self)
         if self._identity["scenario"] in TLS_POSTURE_CASES:
             from .network_tools_tls_posture_lab import read_message
             return read_message(self)
@@ -52,6 +56,10 @@ class NetworkToolsLab(OwnedLab):
         return super().start(control)
 
     def snapshot(self, control, *, minimum_connections=None, minimum_requests=None):
+        if self._identity["scenario"] in WEB_HIERARCHY_CASES:
+            from .network_tools_web_hierarchy_lab import snapshot
+            return snapshot(self, control, minimum_connections=minimum_connections,
+                            minimum_requests=minimum_requests)
         if self._identity["scenario"] in TLS_POSTURE_CASES:
             from .network_tools_tls_posture_lab import snapshot
             return snapshot(self, control, minimum_connections=minimum_connections,
@@ -124,4 +132,12 @@ class NetworkToolsLab(OwnedLab):
             index = argv.index("--remount-ro")
             argv[index:index] = additional
             argv[-1] = "/app/network_tools_tls_posture_owner.py"
+        if self._identity["scenario"] in WEB_HIERARCHY_CASES:
+            additional = []
+            for name in ("network_tools_web_hierarchy_owner.py", "network_tools_web_hierarchy_spec.py",
+                         "web_hierarchy_owner.py", "web_hierarchy_spec.py", "web_hierarchy_fixture.py"):
+                additional += ["--ro-bind", str(directory / name), "/app/" + name]
+            index = argv.index("--remount-ro")
+            argv[index:index] = additional
+            argv[-1] = "/app/network_tools_web_hierarchy_owner.py"
         return argv

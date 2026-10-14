@@ -1,28 +1,34 @@
 # Product roadmap and remaining PR estimate
 
-Current continuation (9 October 2026):
+Current continuation (14 October 2026):
 [T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) merged as
 `f2e7b785dbea5c8c9f86526f9b3c4deede544125`, followed by
 [T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) as
 `b90a365ef01fb6a6841b367fe52b4597aa6a219f`, after review and all five final checks.
 **T02 and T03 meet G1–G6 and are closed: 48 accepted profiles / 16 programs.**
 T02 retains 65 native and 21,593 portable passes; T03 retains 52 native and
-21,898 portable passes. The compiled catalog now reports **48 accepted profiles,
-zero candidates and 16 programs**, matching those merges. This metadata
-reconciliation changes no accepted contract, execution control or runtime limit.
+21,898 portable passes. After those merges, PR #82 reconciled the catalog to **48 accepted profiles,
+zero candidates and 16 programs** without changing accepted contracts,
+execution controls or runtime limits. The current T04 candidate is separate.
 
 [PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82) accepted the catalog
 reconciliation and [T04 source review](web-hierarchy-feasibility.md) at `945ba2b`;
 the merged tree matches reviewed head `fb19b606`. All five final and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37872575949)
 passed. That source-only batch stays closed.
 
-The [T04 native diagnostic](web-hierarchy-native.md) now executes real ffuf
-against the twelve compiled paths in a disconnected owned fixture. All eight
-native tests and **22,113 portable tests** passed on frozen source `1b03814`,
-with no failures, errors or skips; all 707 source hashes remained unchanged.
-This diagnostic grants no product authority and adds no registered or accepted
-profile. Next integrate a separate production profile with policy, approval,
-audit, consumed permits and both evidence inspectors, then complete G1–G6.
+[PR #83](https://github.com/0xsl0th/recon-cockpit/pull/83) merged the
+[T04 native diagnostic](web-hierarchy-native.md) as `69406cd` after review and
+all five final checks; its post-merge checks also passed. Its eight native and
+22,113 portable passes remain historical diagnostic evidence.
+
+The separate [T04 secure hierarchy candidate](web-hierarchy-tools.md) now adds
+`ffuf_web_hierarchy_v1` through policy, audit, required approval, consumed permits,
+confined native execution and both evidence inspectors. Current catalog:
+**48 accepted profiles, one T04 candidate, 16 programs**. Production validation
+and review are in progress; T04 G6 remains open and no T04 acceptance is claimed.
+Keep the twelve-path completion requirement distinct from the owner’s sixteen-
+connection bound: native error retries remain recorded and inconclusive, and the
+configured input rate is not a strict retry-inclusive wire-rate guarantee.
 T05/T06 remain required after T04. Earlier milestones stay closed. Proposal PR #31's
 section 3 architecture correction merged as `e23f561` after review, Mermaid
 validation and five passing final checks. All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37870742628)
@@ -147,7 +153,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted. T04 has a [real ffuf native diagnostic](web-hierarchy-native.md), with eight native and 22,113 portable tests passed; separate production integration and G1–G6 remain open. T05/T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. One additional program remains plausible after T03 reused C14 and T04 selected ffuf; the historical 4–6 assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | C18/T01 DNS MX, four T02 TLS posture profiles and T03 SSH policy assessment are accepted. T04 has accepted [native feasibility evidence](web-hierarchy-native.md) and a separate [secure production candidate](web-hierarchy-tools.md); validation and G6 review remain open. T05/T06 remain required. Reuse integrations and add only programs that contribute distinct coverage. Each required row passes actual useful execution, structured results, evidence, enforcement and review. One additional program remains plausible after T03 reused C14 and T04 selected ffuf; the historical 4–6 assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |

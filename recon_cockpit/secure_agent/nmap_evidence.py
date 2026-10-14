@@ -119,7 +119,21 @@ def _validated_result(record, result, manifest, previous, *, deadline=None):
         stdout, stderr = contract.validate_tool_result(result, tool_id=tool_id,
             execution_status=status, runtime_sha256=manifest["runtime_sha256"])
         from .network_tools_tls_posture_spec import TOOL_VERSIONS as TLS_POSTURE_TOOLS
-        if tool_id in TLS_POSTURE_TOOLS:
+        from .network_tools_web_hierarchy_spec import TOOL_ID as WEB_HIERARCHY_TOOL
+        if tool_id == WEB_HIERARCHY_TOOL:
+            from .network_tools_web_hierarchy_parser_runtime import parse_isolated_web_hierarchy
+            from .network_tools_web_hierarchy_receipt import decode_owner_receipt
+            provenance = result["provenance"]
+            try:
+                parsed = parse_isolated_web_hierarchy(tool_id, stdout, stderr,
+                    owner_raw=decode_owner_receipt(result["web_hierarchy_owner"]),
+                    exit_code=provenance["exit_code"], stop_reason=provenance["stop_reason"],
+                    truncated=result["truncated"], deadline=deadline)
+            except ValueError:
+                parsed = None
+            if contract.encode(parsed) != contract.encode(result["tool_observation"]):
+                raise ValueError("web_hierarchy_parsed_result_mismatch")
+        elif tool_id in TLS_POSTURE_TOOLS:
             from .network_tools_tls_posture_parser_runtime import parse_isolated_tls_posture
             from .network_tools_tls_posture_receipt import decode_owner_receipt
             provenance = result["provenance"]
@@ -254,6 +268,41 @@ def _restore_tls_owner(result, record, fd, referenced):
     referenced.add(filename)
     return {**result, "tls_posture_owner": encode_owner_receipt(raw)}
 
+
+def _externalize_web_hierarchy_owner(result, record, write_new):
+    """Retain the original bounded owner management bytes, separate from result."""
+    from .network_tools_web_hierarchy_spec import TOOL_ID, MAX_OWNER_BYTES, OWNER_REPRESENTATION
+    if record["action"]["tool_id"] != TOOL_ID:
+        return result
+    from .network_tools_web_hierarchy_receipt import decode_owner_receipt
+    raw = decode_owner_receipt(result["web_hierarchy_owner"])
+    filename = "web-hierarchy-owner-" + record["execution_id"] + ".json"
+    write_new(filename, raw, MAX_OWNER_BYTES)
+    return {**result, "web_hierarchy_owner": {"filename": filename, "bytes": len(raw),
+        "sha256": hashlib.sha256(raw).hexdigest(), "representation": OWNER_REPRESENTATION}}
+
+
+def _restore_web_hierarchy_owner(result, record, fd, referenced):
+    """Restore verified owner bytes before result replay and authority hashing."""
+    from .network_tools_web_hierarchy_spec import TOOL_ID, MAX_OWNER_BYTES, OWNER_REPRESENTATION
+    if record["action"]["tool_id"] != TOOL_ID:
+        return result
+    if type(result) is not dict:
+        raise ValueError("invalid_web_hierarchy_result_artifact")
+    artifact = result.get("web_hierarchy_owner")
+    filename = "web-hierarchy-owner-" + record["execution_id"] + ".json"
+    if (type(artifact) is not dict or set(artifact) != {"filename", "bytes", "sha256", "representation"}
+            or artifact["filename"] != filename or type(artifact["bytes"]) is not int
+            or not 0 < artifact["bytes"] <= MAX_OWNER_BYTES or not _digest(artifact["sha256"])
+            or artifact["representation"] != OWNER_REPRESENTATION):
+        raise ValueError("invalid_web_hierarchy_owner_artifact")
+    raw = _read_private(fd, filename, MAX_OWNER_BYTES)
+    if len(raw) != artifact["bytes"] or hashlib.sha256(raw).hexdigest() != artifact["sha256"]:
+        raise ValueError("web_hierarchy_owner_artifact_mismatch")
+    from .network_tools_web_hierarchy_receipt import encode_owner_receipt
+    referenced.add(filename)
+    return {**result, "web_hierarchy_owner": encode_owner_receipt(raw)}
+
 def _summary(value, manifest, records, decisions):
     contract, _ = _manifest_profile(manifest)
     keys = {"session_id", "session_status", "stop_reason", "steps_attempted",
@@ -305,6 +354,9 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "tls_posture_handshake_completed": "tls_posture_handshake_completed",
                "tls_posture_explicit_protocol_rejection": "tls_posture_explicit_protocol_rejection",
                "tls_posture_extra_client_hello_prevented": "tls_posture_extra_client_hello_prevented",
+               "web_hierarchy_observed_responses": "web_hierarchy_observed_responses",
+               "web_hierarchy_empty": "web_hierarchy_empty",
+               "web_hierarchy_ambiguous": "inconclusive",
                "tls_peer_certificate_observed": "tls_peer_certificate_observed",
                "ssh_policy_conforming": "ssh_policy_conforming",
                "ssh_policy_deviation": "ssh_policy_deviation",
@@ -438,6 +490,20 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Original owner bytes are retained in a separate bounded private artifact. Both raw client streams and owner bytes are replayed without network; hashes establish consistency rather than external authenticity.",
                 "Confinement, exact action approval, consumed permits and runtime binding are independent requirements. Replay restores no approval or execution authority.",
                 "Real credentials, paid models, external targets, deeper workflows and comparative overhead measurement remain deferred.",
+            ]
+        if manifest["fixture_case"].startswith("web-hierarchy-"):
+            useful = not issues and outcome in {"web_hierarchy_observed_responses", "web_hierarchy_empty"}
+            report["metrics"] = {"legitimate_task_completed": useful, "useful_actions_completed": int(useful),
+                "tested_unauthorized_actions_blocked": 0, "actual_provider_calls": 0,
+                "actual_cost_microusd": 0, "comparative_overhead": None}
+            report["limitations"] = [
+                "Twelve compiled GET paths cover three predeclared prefixes in a disconnected owned fixture; this is not general crawling or professional engagement compatibility.",
+                "Complete client rows and original owner request/response bytes must agree. Two 404 controls per prefix support only this finite response universe, not true server absence or filesystem identity.",
+                "Wildcard, conflicting controls and redirects remain ambiguous. Ambiguity is not an authorization-blocking metric; unknown or incomplete responses cannot count as useful completion.",
+                "The client ignores response bodies. Hostile body text retained by the owner is fixture evidence, not client-retained content or model input.",
+                "Exact action policy, audit, required approval, consumed permits and isolated execution remain separate prerequisites. Read-only inspection restores no execution authority.",
+                "Both client streams and separate owner bytes are independently reparsed without network. Hashes establish local consistency, not external authenticity or host-owner tamper resistance.",
+                "Credentials, paid models, attached targets, deeper workflows and comparative benchmarks remain deferred.",
             ]
         if manifest["fixture_case"].startswith(("ssh-", "ldap-")):
             report["limitations"] = [
@@ -820,6 +886,15 @@ def _markdown(report):
                 "Useful task completed: " + str(details["useful_task_completed"]).lower() + ".",
                 "Tested retry prevented: " + str(details["extra_client_hello_prevented"]).lower() + ".",
                 "The captured execution status is retained separately. Encrypted application semantics remain opaque."])
+        elif type(details) is dict and details.get("kind") == "web_hierarchy":
+            lines.extend(["", "## Bounded web hierarchy responses", "",
+                "Outcome: `" + details["outcome"] + "`. Useful task completed: "
+                + str(details["useful_task_completed"]).lower() + ".",
+                "These are responses within twelve compiled paths, not filesystem or vulnerability findings.",
+                "", "| Path | Status | Classification |", "| --- | ---: | --- |"])
+            for row in details["rows"]:
+                lines.append("| " + _metadata_literal(row["path"]) + " | " + str(row["status_code"])
+                             + " | " + _metadata_literal(row["classification"]) + " |")
         elif type(details) is dict and details.get("kind") == "tls_peer_certificate":
             lines.extend(["", "TLS peer certificate metadata:",
                 "- Leaf DER SHA-256: " + _metadata_literal(details["leaf_der_sha256"]),
@@ -1153,6 +1228,7 @@ class NmapEvidenceStore(EvidenceStore):
                 context, observation = _validated_result(record, result, self._manifest, self._lab_context,
                                                          deadline=self._deadline)
                 retained = _externalize_tls_owner(result, record, self._write_new)
+                retained = _externalize_web_hierarchy_owner(retained, record, self._write_new)
                 raw = contract.encode(retained)
                 filename = "result-" + execution_id + ".json"
                 self._write_new(filename, raw, MAX_ARTIFACT_BYTES)
@@ -1326,6 +1402,7 @@ def inspect_evidence(directory):
                     if len(raw) != artifact["bytes"] or hashlib.sha256(raw).hexdigest() != artifact["sha256"]:
                         raise ValueError("nmap_artifact_mismatch")
                     result = _restore_tls_owner(load_json(raw), record, fd, referenced)
+                    result = _restore_web_hierarchy_owner(result, record, fd, referenced)
                     new_context, observation = _validated_result(record, result, manifest, context)
                     if (contract.encode(observation) != contract.encode(record["observation"])
                             or contract.encode(_result_metadata(result)) != contract.encode(record["result_metadata"])

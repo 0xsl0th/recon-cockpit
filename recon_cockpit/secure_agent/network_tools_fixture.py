@@ -36,6 +36,7 @@ def tool_for_case(case):
     if case in TLS_POSTURE_CASE_TO_TOOL:
         return TLS_POSTURE_CASE_TO_TOOL[case]
     for prefix, tool in (("nuclei-git-", "nuclei_git_head_v1"), ("nuclei-", "nuclei_directory_listing_v1"), ("tls-cert-", "openssl_peer_certificate_v1"),
+                         ("web-hierarchy-", "ffuf_web_hierarchy_v1"),
                          ("ssh-algos-", "ssh_transport_algorithms_v1"),
                          ("ssh-policy-", "ssh_transport_policy_v1"),
                          ("ftp-tls-", "ftp_starttls_handshake_v1"),
@@ -1298,6 +1299,13 @@ SSH_POLICY_CASES = tuple("ssh-policy-" + suffix for suffix in (
     "malformed-list", "bad-padding", "nonzero-reserved", "truncated", "stalled", "oversized",
     "summary-pressure"))
 CASES += SSH_POLICY_CASES
+VARIANTS = CASES
+
+# Pure routing for the legacy standalone fixture closure; production ownership
+# is implemented separately and binds this list to its reviewed specification.
+WEB_HIERARCHY_CASES = tuple("web-hierarchy-" + suffix for suffix in (
+    "nested", "empty", "wildcard", "mixed-controls", "redirect", "hostile", "stalled"))
+CASES += WEB_HIERARCHY_CASES
 VARIANTS = CASES
 
 

@@ -108,6 +108,11 @@ class FFufParameters:
 
 
 @dataclass(frozen=True, slots=True)
+class FFufHierarchyParameters(FFufParameters):
+    """Distinct syntax type; product admission fixes the twelve-path profile."""
+
+
+@dataclass(frozen=True, slots=True)
 class TCPParameters:
     """One bounded connection attempt; no payload, banner read, or port list."""
 

@@ -11,6 +11,7 @@ from .network_tools_fixture import (CASES, CA_PEM, FIXTURE_MARKER, QUERY_NAME, T
     SERVER_CERT_SHA256, UNTRUSTED_SERVER_CERT_SHA256, TLS_MALFORMED_BYTES,
     dns_query, dns_response, tool_for_case)
 from .network_tools_tls_posture_spec import CASES as TLS_POSTURE_CASES
+from .network_tools_web_hierarchy_spec import CASES as WEB_HIERARCHY_CASES
 
 LAB_ID = "harbordesk-owned-network-tools-lab"
 LAB_VERSION = "1"
@@ -50,6 +51,9 @@ def _encode(value):
 
 
 def spec(case):
+    if case in WEB_HIERARCHY_CASES:
+        from .network_tools_web_hierarchy_identity import spec as hierarchy_spec
+        return hierarchy_spec(case)
     if type(case) is str and case.startswith("ssh-policy-"):
         from . import network_tools_ssh_policy_spec as policy
         if case not in policy.CASES:
@@ -767,6 +771,9 @@ def validate_identity(value, *, case=None):
 
 def _validate_counter_context(value, expected):
     expected = validate_identity(expected)
+    if expected["scenario"] in WEB_HIERARCHY_CASES:
+        from .network_tools_web_hierarchy_identity import validate_counter_context
+        return validate_counter_context(value, expected)
     if expected["scenario"] in TLS_POSTURE_CASES:
         from .network_tools_tls_posture_identity import validate_counter_context
         return validate_counter_context(value, expected)
@@ -785,6 +792,9 @@ def _validate_counter_context(value, expected):
 
 def validate_context(value, expected):
     expected = validate_identity(expected)
+    if expected["scenario"] in WEB_HIERARCHY_CASES:
+        from .network_tools_web_hierarchy_identity import validate_context as hierarchy_context
+        return hierarchy_context(value, expected)
     if expected["scenario"] in TLS_POSTURE_CASES:
         from .network_tools_tls_posture_identity import validate_context as tls_context
         return tls_context(value, expected)
@@ -810,7 +820,7 @@ def validate_closure(value, expected, *, previous=None):
     if previous is not None:
         before = validate_context(before, expected)
         before = {key: item for key, item in before.items()
-                  if key not in {"owner_response", "tls_posture_owner_sha256"}}
+                  if key not in {"owner_response", "tls_posture_owner_sha256", "web_hierarchy_owner_sha256"}}
     if context != _validate_counter_context(before, expected):
         raise ValueError("network_tools_lab_closure_mismatch")
     return copy.deepcopy(value)

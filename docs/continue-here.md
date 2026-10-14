@@ -1,4 +1,4 @@
-# Continue here — 9 October 2026
+# Continue here — 14 October 2026
 
 ## Read this first
 
@@ -34,8 +34,8 @@ The initial six historical-selector CI failures remain recorded; predecessor
 hashes stay intact. Model calls/cost remain zero. No professional-service or
 general hardening compliance is claimed.
 
-The compiled catalog now reports **48 accepted profiles, zero candidates and
-16 programs**, matching the reviewed merges above. PR #82 reconciled only
+After those merges the compiled catalog reported **48 accepted profiles, zero
+candidates and 16 programs**. The current T04 candidate is recorded below. PR #82 reconciled only
 acceptance metadata and its documentation; T02/T03 G1–G6 stayed closed and
 execution controls stayed fixed.
 [PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82) merged this reconciliation
@@ -58,14 +58,27 @@ no failures/errors/skips and all 707 source hashes unchanged. Private evidence:
 `.secure-agent/web-hierarchy-native-20261009/`, including `portable/summary.json`.
 The combined `verification.json` SHA-256 is
 `9fc4db38dbdada5088ce50247030ccef58838508e2ef318f20fdffdc597f40f4`.
-Branch `feature/t04-web-hierarchy-native` is ready for PR review; the private
-handoff records its eventual PR link, exact head and check state.
-The diagnostic adds no registered profile and does not validate product
-authorization, audit or human-approval gates. Accepted coverage stays **48 profiles,
-zero candidates and 16 programs**. Next integrate the separate production
-profile with policy, approval, audit, consumed permits and both evidence
-inspectors before completing T04 G1–G6. T05 SNMP interface page and T06 AAAA/PTR
-remain required after T04.
+[PR #83](https://github.com/0xsl0th/recon-cockpit/pull/83) merged at
+`69406cd6d883b81d088564b7406715c423288f5a`; reviewed head `7d11e48` and the merged
+commit have the same tree. All five final and post-merge checks passed. Do not
+repeat its merge. The diagnostic itself grants no product authority.
+
+The separate [T04 production candidate](web-hierarchy-tools.md) on
+`feature/t04-web-hierarchy-secure` integrates exact policy, audit, consumed
+required approval, admission, confined ffuf execution, independent owner evidence
+and both inspectors. The catalog now reports **48 accepted profiles, one T04
+candidate and 16 programs**. Production validation is in progress and G6 remains
+open. Native retries of timed-out inputs remain explicit inconclusive evidence;
+twelve unique requests define useful completion, while the owner retains up to
+sixteen attempted requests/connections. The configured input rate is not a strict
+retry-inclusive wire rate. Existing accepted contracts and closed milestones
+remain unchanged.
+
+Private development and frozen validation records belong under
+`.secure-agent/web-hierarchy-secure-20261009/`; preserve the initial failures.
+Finish and review this candidate before T05 SNMP interface-page work, then T06
+AAAA/PTR. Do not start deeper workflows, comparative benchmarking, credentials,
+paid calls or live-model work.
 
 Catalog reconciliation passed **300 focused tests** with no failures, errors or
 skips, including CLI non-execution guards and frozen T02/T03 contract hashes.
