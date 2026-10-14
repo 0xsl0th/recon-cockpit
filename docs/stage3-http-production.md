@@ -302,6 +302,34 @@ focused tests normally and 29 with all ten relevant Linux-only APIs absent,
 without skips. Final review and required checks on PR #91's latest revision
 still precede merge.
 
+### Portable socket-readiness correction
+
+A later documentation revision, `e984c08`, passed all 25,312 portable tests on
+each of four Ubuntu jobs. macOS passed 25,310 and failed two evidence-replay
+fixtures: diagnostic B/O4 and production nginx B/O2. Both exhausted the shared
+test harness's 1,000-iteration wait for request delivery. Preserve the complete
+matrix and logs in `independent-final-ci-e984c08-failed.json`; this run is failed,
+not an accepted final check.
+
+The helper combined real sockets with a simulated clock, advancing that clock
+by 1 ms after every zero-timeout poll. This can spend the entire simulated
+one-second action budget before the OS reports readiness. The trace does not
+record the terminal ledger, so that precise failure sequence remains an
+inference. The helper now allows a bounded 1 ms readiness wait per step,
+retaining the simulated clock, iteration cap, action deadlines and every
+existing rate, expiry, response and enforcement assertion. Two deterministic
+delayed-readiness cases check exact delivery within the original deadline.
+Both cases fail with the old zero-poll helper injected and pass with the
+corrected helper. The shared recorder suite and both diagnostic/production
+evidence suites passed **356 focused tests**, without failures, errors or skips;
+retain the `recorder-poll-fixture/` receipts and source hashes. This is a
+controlled reproduction of the helper defect, not proof of the exact original
+macOS terminal state. No production source or native test changes.
+The corrected revision must pass
+the latest [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/91/checks)
+before acceptance; earlier native and portable results retain their own source
+identities.
+
 ## Completion and subsequent work
 
 S3.3a closed preparation in PR #90 after strict portable validation, all 26

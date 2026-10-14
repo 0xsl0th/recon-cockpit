@@ -87,7 +87,9 @@ class Harness:
         return client
 
     def step(self, seconds=.001):
-        self.service.tick(0)
+        # Real socket readiness needs a bounded scheduling opportunity before
+        # spending a synthetic tick; a busy loop can exhaust the fake deadline.
+        self.service.tick(.001)
         self.clock += seconds
 
     def until(self, condition, maximum=1000):
@@ -137,6 +139,38 @@ def harness(monkeypatch):
     yield make
     for instance in instances:
         instance.close()
+
+
+@pytest.mark.parametrize("case", ("O2", "O4"))
+def test_harness_delayed_readiness_keeps_exact_delivery_and_action_deadline(harness, monkeypatch, case):
+    h = harness(configuration="B", case=case)
+    h.arm()
+    deadline = h.service.action_deadline
+    client = h.client(spec.request_bytes("B", case))
+    original_select = recorder.select.select
+    poll_credit = 0.0
+
+    def delayed_readiness(reads, writes, errors, timeout):
+        nonlocal poll_credit
+        # Model a scheduler that needs a small positive wait allowance before
+        # reporting readiness. Zero-timeout spinning cannot release this gate.
+        poll_credit += timeout
+        if poll_credit < .025:
+            return [], [], []
+        return original_select(reads, writes, errors, timeout)
+
+    monkeypatch.setattr(recorder.select, "select", delayed_readiness)
+    raw = response(status=302 if case == "O4" else 200)
+    h.reply(raw)
+    h.until(lambda: h.service.active is None)
+    h.expect_response(client, raw)
+    saved = h.service.snapshot()
+    assert saved["requests_validated"] == saved["requests_delivered"] == 1
+    assert saved["request_bytes_delivered"] == len(spec.request_bytes("B", case))
+    assert saved["connections_attempted"] == saved["connections_admitted"] == 1
+    assert saved["connections_denied"] == 0 and saved["terminal_reason"] == "running"
+    assert h.service.action_deadline == deadline == 101.0
+    assert 100.025 <= h.clock < deadline
 
 
 def test_unarmed_connections_are_counted_and_refused_without_private_connection(harness):

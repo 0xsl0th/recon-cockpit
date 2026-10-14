@@ -81,6 +81,9 @@ original smoke, native and macOS failures under
 `.secure-agent/stock-http-production-20261014/`; the original Apache budget-test
 failure's cause remains unconfirmed. Stage 3 stays **nine PRs total, four accepted
 and five remaining until PR #91 merges**. No required corpus row or bound was removed.
+A later macOS check exposed a shared portable socket-readiness fixture issue;
+the [test-only correction and failed run](stage3-http-production.md#portable-socket-readiness-correction)
+are recorded separately. Require the corrected latest revision to pass its checks.
 
 S3.3a validation at `274140b` passed **26 installed-runtime inspections** and
 **24,761 portable tests**, with all **882 tracked source hashes unchanged**.
