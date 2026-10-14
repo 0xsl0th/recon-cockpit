@@ -6,9 +6,13 @@ import errno
 import fcntl
 import io
 import os
+from pathlib import Path
+import shutil
 import socket
 import stat
 import struct
+import subprocess
+import sys
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -21,6 +25,19 @@ from recon_cockpit.secure_agent import stock_http_production_transport as transp
 from recon_cockpit.secure_agent import stock_apache_runtime as apache_runtime
 from recon_cockpit.secure_agent.session_limits import SessionLimits
 from test_stock_apache_runtime import fake_runtime as fake_apache_runtime, control
+
+
+def test_owner_actual_mount_closure_imports_without_repository_fallback(tmp_path):
+    package = tmp_path / "recon_cockpit" / "secure_agent"
+    package.mkdir(parents=True)
+    (package.parent / "__init__.py").write_text("")
+    (package / "__init__.py").write_text("")
+    for name in lab.MODULES:
+        shutil.copyfile(Path(lab.__file__).with_name(name + ".py"), package / (name + ".py"))
+    script = "import sys; sys.path.insert(0,sys.argv[1]); from recon_cockpit.secure_agent import stock_http_production_owner_worker"
+    result = subprocess.run([sys.executable, "-I", "-S", "-c", script, str(tmp_path)],
+                            capture_output=True, timeout=10)
+    assert result.returncode == 0, result.stderr
 
 
 HOST = {name: name + ":[100]" for name in ("user", "net", "mnt", "pid")}

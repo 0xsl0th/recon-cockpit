@@ -28,7 +28,8 @@ BOUNDARY_NAMES = ("other_configuration_blocked", "forbidden_ip_blocked", "forbid
 MODULES = tuple(dict.fromkeys((*existing.MODULES, "stock_http_spec", "stock_http_runtime",
     "stock_http_contract", "stock_http_execution", "stock_http_client_worker", "stock_http_client_runtime")))
 PRODUCTION_MODULES = ("stock_apache_spec", "stock_apache_runtime",
-    "stock_http_production_contract", "stock_http_production_execution")
+    "stock_http_production_contract", "stock_http_production_execution",
+    "stock_http_production_nmap_spec", "stock_http_production_nmap_runtime")
 PRODUCTION_BOUNDARY_NAMES = (*BOUNDARY_NAMES, "private_tcp_listener_blocked")
 
 
@@ -45,6 +46,14 @@ def selected_contract(selection):
 def boundary_names(selection):
     selected_contract(selection)
     return PRODUCTION_BOUNDARY_NAMES if "implementation" in selection else BOUNDARY_NAMES
+
+
+def client_runtime_module(selection):
+    selected_contract(selection).validate_selection(selection)
+    if "implementation" in selection:
+        from . import stock_http_production_nmap_runtime
+        return stock_http_production_nmap_runtime
+    return native
 
 
 STARTUP_SECONDS = 10
@@ -117,23 +126,30 @@ def validate_client_runtime(value, selection):
         if value is not None:
             raise ValueError("stock_header_runtime_must_be_null")
         return None
-    return native.validate_manifest(value, tool_id=native.NMAP_SERVICE)
+    return client_runtime_module(selected).validate_manifest(value, tool_id=native.NMAP_SERVICE)
 
 
 def inspect_client_runtime(selection, control):
     selected = selected_contract(selection).validate_selection(selection)
-    return (None if spec.action_kind(selected["case"]) == "headers"
-            else native.inspect_tool_runtime(native.NMAP_SERVICE, control))
+    if spec.action_kind(selected["case"]) == "headers":
+        return None
+    runtime = client_runtime_module(selected)
+    return (native.inspect_tool_runtime(native.NMAP_SERVICE, control) if runtime is native
+            else runtime.inspect_runtime(control))
 
 
 def runtime_source_mounts(value, selection):
     manifest = validate_client_runtime(value, selection)
-    return [] if manifest is None else native.runtime_source_mounts(manifest)
+    return [] if manifest is None else client_runtime_module(selection).runtime_source_mounts(manifest)
 
 
 def _command(lab, bootstrap, manifest, descriptors, nonce, commitment):
     stdlib, files = bootstrap
-    selected_files = [] if manifest is None else native.runtime_files(manifest)
+    production = getattr(lab, "identity", {}).get("profile") == "stock_http_compatibility_v1"
+    runtime = native
+    if production:
+        from . import stock_http_production_nmap_runtime as runtime
+    selected_files = [] if manifest is None else runtime.runtime_files(manifest)
     selected_paths = {row["destination"] for row in selected_files}
     argv = [_trusted_program("bwrap"), "--unshare-user", "--unshare-pid", "--unshare-ipc",
         "--unshare-uts", "--unshare-cgroup", "--uid", "0", "--gid", "0", "--cap-drop", "ALL",
@@ -145,7 +161,6 @@ def _command(lab, bootstrap, manifest, descriptors, nonce, commitment):
         if destination not in selected_paths and Path(destination).name not in forbidden:
             argv += ["--ro-bind", source, destination]
     directory = Path(__file__).parent
-    production = getattr(lab, "identity", {}).get("profile") == "stock_http_compatibility_v1"
     for name in (*MODULES, *(PRODUCTION_MODULES if production else ())):
         argv += ["--ro-bind", str(directory / (name + ".py")), "/app/recon_cockpit/secure_agent/" + name + ".py"]
     for destination in ("/app/recon_cockpit/__init__.py", "/app/recon_cockpit/secure_agent/__init__.py"):
@@ -172,6 +187,7 @@ def run_stock_http_tool_owned(*, lab, launch, control, closure=None, manifest=No
     if launch["mode"] != contract.PROFILE or launch["launch"]["mode"] != contract.PROFILE:
         raise IsolationUnavailable("Stock HTTP client launch profile changed")
     selected = contract.validate_selection(launch["selection"])
+    runtime = client_runtime_module(selected)
     manifest = validate_client_runtime(manifest, selected)
     if closure is not None:
         pinned = validate_client_runtime(closure["stock_http_runtime"]["client"], selected)
@@ -188,7 +204,10 @@ def run_stock_http_tool_owned(*, lab, launch, control, closure=None, manifest=No
         raise IsolationUnavailable("Stock diagnostic launch packet exceeded limit")
     commitment = hashlib.sha256(raw).hexdigest()
     prefix = READY_PREFIX + commitment.encode("ascii") + b"\n"
-    descriptors = [] if manifest is None else native._snapshot(manifest, control)
+    descriptors = []
+    if manifest is not None:
+        descriptors = (native._snapshot(manifest, control) if runtime is native
+                       else runtime.snapshot(manifest, control))
     supervisor = _Supervisor(min(STARTUP_SECONDS, control.remaining()), 8192 + len(prefix), control=control)
     started = time.monotonic()
     action_started = None
@@ -244,6 +263,6 @@ def run_stock_http_tool_owned(*, lab, launch, control, closure=None, manifest=No
         "boundary_checks": dict.fromkeys(boundary_names(selected), True), "timing": timing,
         "raw_output_base64": base64.b64encode(stdout).decode("ascii"),
         "raw_stderr_base64": base64.b64encode(stderr).decode("ascii"),
-        "provenance": {"runtime_sha256": native.manifest_digest(manifest), "runtime_manifest": manifest,
+        "provenance": {"runtime_sha256": runtime.manifest_digest(manifest), "runtime_manifest": manifest,
             "output_sha256": hashlib.sha256(stdout).hexdigest(), "stderr_sha256": hashlib.sha256(stderr).hexdigest(),
             "parser_version": parser_version(tool_id), "exit_code": code, "stop_reason": reason}}

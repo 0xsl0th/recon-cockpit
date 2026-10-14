@@ -8,6 +8,7 @@ from uuid import UUID
 
 from . import stock_http_spec as spec
 from . import stock_apache_spec as apache_spec
+from . import stock_http_production_nmap_spec as nmap_spec
 from .models import Action, parse_policy
 
 PROFILE = "stock_http_compatibility_v1"
@@ -41,6 +42,8 @@ def selection(implementation, configuration, case):
                   "owner_group_policy": {"maximum": MAX_INHERITED_GROUPS, "overflow_gid": OVERFLOW_GID,
                                          "setgroups": "deny", "mutation_denied": True},
                   "launcher_mapping": "single-id-to-positive-launcher-uid-gid-before-daemon-input",
+                  "client_recognition": {"profile": nmap_spec.PROFILE,
+                                         "probes_sha256": hashlib.sha256(nmap_spec.PROBES).hexdigest()},
                   "preparation_selection_sha256": preparation.selection_digest(configuration, case)}
     return {"implementation": implementation, "configuration": configuration, "case": case,
             "selection_sha256": hashlib.sha256(spec.encode(commitment)).hexdigest()}
@@ -126,11 +129,11 @@ def validate_runtime(value, selected):
     daemon = implementation_runtime(selected["implementation"]).validate_manifest(value["daemon"])
     if any(daemon[key] != item for key, item in preparation_selection(selected).items()):
         raise ValueError("stock_http_daemon_selection_changed")
-    return {"daemon": daemon, "client": validate_client_runtime(value["client"], client_selection(selected))}
+    return {"daemon": daemon, "client": validate_client_runtime(value["client"], selected)}
 
 
 def runtime_digests(value, selected):
-    from .network_tools_runtime import manifest_digest as client_digest
+    from .stock_http_production_nmap_runtime import manifest_digest as client_digest
 
     value = validate_runtime(value, selected)
     return {"daemon_runtime_sha256": implementation_runtime(selected["implementation"]).manifest_digest(value["daemon"]),
@@ -138,7 +141,7 @@ def runtime_digests(value, selected):
 
 
 def runtime_source_mounts(value, selected):
-    from .network_tools_runtime import runtime_source_mounts as client_mounts
+    from .stock_http_production_nmap_runtime import runtime_source_mounts as client_mounts
     value = validate_runtime(value, selected)
     paths = {(row["source"], row["source"]) for row in value["daemon"]["files"]
              if not row["source"].startswith("compiled:")}

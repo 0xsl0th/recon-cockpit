@@ -79,3 +79,49 @@ def test_production_client_mounts_no_daemon_or_private_namespace_capability(monk
     selected = contract.selection(implementation, "A", "O1")
     assert set(client.boundary_names(selected)) == set(client.BOUNDARY_NAMES) | {"private_tcp_listener_blocked"}
     assert client.validate_client_runtime(None, selected) is None
+
+
+@pytest.mark.parametrize("implementation", ["nginx", "apache"])
+@pytest.mark.parametrize("configuration,case", [("A", "O5"), ("A", "O6"), ("B", "O5"), ("B", "O6")])
+def test_production_recognition_keeps_exact_native_argv_and_sealed_mounts(monkeypatch, implementation, configuration, case):
+    from recon_cockpit.secure_agent import network_tools_runtime as native
+    from recon_cockpit.secure_agent import stock_http_production_nmap_runtime as runtime
+    from recon_cockpit.secure_agent.stock_http_client_worker import argv_for
+    monkeypatch.setattr(client, "_trusted_program", lambda name: "/usr/bin/" + name)
+    value = envelope(implementation=implementation, config=configuration, case=case)
+    raw = spec.encode(value)
+    request, _, _, digest = production.consume_launch(raw, value["launch"]["nonce"], hashlib.sha256(raw).hexdigest(), now=100)
+    manifest = value["runtime"]["client"]
+    assert digest == runtime.manifest_digest(manifest)
+    expected = list(native.FIXED_ARGV[native.NMAP_SERVICE])
+    expected[expected.index("-p") + 1] = str(request["parameters"]["port"])
+    expected[expected.index("--version-intensity") + 1] = "1"
+    expected[-1] = request["target"]
+    assert argv_for(request) == tuple(expected)
+    entries = runtime.runtime_files(manifest)
+    descriptors = list(range(40, 40 + len(entries)))
+    lab = SimpleNamespace(identity=value["identity"], _namespace_fds=(30, 31))
+    command = client._command(lab, ("/stdlib", []), manifest, descriptors, "a" * 64, "b" * 64)
+    assert [command[i+1:i+3] for i, argument in enumerate(command) if argument == "--ro-bind-data"] == [
+        [str(fd), row["destination"]] for fd, row in zip(descriptors, entries, strict=True)]
+    assert command[command.index(client._CLOSE_EXCEPT) + 1] == ",".join(map(str, descriptors))
+    with pytest.raises(ValueError):
+        native.validate_manifest(manifest)
+
+
+def test_runtime_dispatch_requires_complete_selection_and_rejects_cross_profile_manifests():
+    from recon_cockpit.secure_agent import stock_http_contract as old_contract
+    from recon_cockpit.secure_agent import stock_http_production_nmap_runtime as runtime
+    from recon_cockpit.secure_agent import network_tools_runtime as native
+    from test_secure_network_tools_runtime import manifest
+    old_selected = old_contract.selection("A", "O5")
+    selected = contract.selection("apache", "A", "O5")
+    old_manifest = manifest(native.NMAP_SERVICE)
+    current = runtime.from_native_manifest(old_manifest)
+    assert client.validate_client_runtime(old_manifest, old_selected) == old_manifest
+    assert client.validate_client_runtime(current, selected) == current
+    for value, selection in ((old_manifest, selected), (current, old_selected)):
+        with pytest.raises(ValueError):
+            client.validate_client_runtime(value, selection)
+    with pytest.raises(ValueError):
+        client.client_runtime_module({**old_selected, "implementation": "apache"})

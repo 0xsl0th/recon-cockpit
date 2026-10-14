@@ -38,7 +38,7 @@ from recon_cockpit.secure_agent.configurable_parser import HEADERS
 from recon_cockpit.secure_agent.models import load_json
 from recon_cockpit.secure_agent.network_tools_worker import verify_files, _limits, landlock
 from recon_cockpit.secure_agent.owned_lab_executor import assert_lab_namespaces
-from recon_cockpit.secure_agent.stock_http_client_runtime import READY_PREFIX
+from recon_cockpit.secure_agent.stock_http_client_runtime import READY_PREFIX, client_runtime_module
 
 
 def validate_go(raw, nonce, session_deadline, case, *, now=None):
@@ -153,14 +153,18 @@ def main():
         request, session_deadline, namespaces, digest = consume_launch(raw, sys.argv[1], sys.argv[2])
         manifest = load_json(raw)["runtime"]["client"]
         selected = request["selection"]
+        runtime = client_runtime_module(selected)
         assert_lab_namespaces(request["host_namespaces"], namespaces)
         if request["verify_boundary"] is not True:
             raise ValueError("stock_client_witnesses_required")
         if request["tool_id"] != HEADERS:
-            native.validate_manifest(manifest, tool_id=native.NMAP_SERVICE)
-            if native.manifest_digest(manifest) != digest:
+            runtime.validate_manifest(manifest, tool_id=native.NMAP_SERVICE)
+            if runtime.manifest_digest(manifest) != digest:
                 raise ValueError("stock_client_runtime_changed")
-            verify_files(manifest)
+            if production:
+                runtime.verify_files(manifest)
+            else:
+                verify_files(manifest)
             argv = argv_for(request)
         elif manifest is not None or digest is not None:
             raise ValueError("stock_header_has_native_runtime")
@@ -173,7 +177,10 @@ def main():
         if request["tool_id"] == HEADERS:
             common.apply_landlock({"/dev/null": 6, "/proc/self/status": 4})
         else:
-            landlock(manifest)
+            if production:
+                runtime.landlock(manifest)
+            else:
+                landlock(manifest)
         checks.update({"landlock_applied": True, "python_unreadable": True})
         if time.monotonic() >= session_deadline:
             raise TimeoutError("stock_client_session_expired")

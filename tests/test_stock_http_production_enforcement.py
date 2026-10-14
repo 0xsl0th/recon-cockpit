@@ -338,7 +338,7 @@ def _native_service(tmp_path, implementation, case, cancelled):
     preflight = ExecutionControl(time.monotonic() + 60)
     inspect = inspect_nginx_runtime if implementation == "nginx" else inspect_apache_runtime
     runtimes = {"daemon": inspect("A", case, preflight),
-                "client": inspect_client_runtime(contract.client_selection(selected), preflight)}
+                "client": inspect_client_runtime(selected, preflight)}
     session = str(uuid4())
     limits = SessionLimits(**contract.limits(selected))
     policy = contract.policy_for_selection(selected, require_approval=False)

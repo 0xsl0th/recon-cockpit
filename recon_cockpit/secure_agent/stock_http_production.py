@@ -37,7 +37,7 @@ def run_trial(directory, *, implementation, configuration, case, execute=False, 
     inspect_daemon = inspect_nginx_runtime if implementation == "nginx" else inspect_apache_runtime
     preflight.check()
     runtime = {"daemon": inspect_daemon(configuration, case, preflight),
-               "client": inspect_client_runtime(contract.client_selection(selected), preflight)}
+               "client": inspect_client_runtime(selected, preflight)}
     session_id = str(uuid4())
     limits = SessionLimits(**contract.limits(selected))
     policy = contract.policy_for_selection(selected, require_approval=not unattended_owned_lab_test)

@@ -19,7 +19,26 @@ from recon_cockpit.secure_agent.stock_http_production_lab import StockHttpProduc
 from test_secure_fixture_launcher_linux import instrument
 
 
-from test_stock_http_budget_linux import _probe_source
+from test_stock_http_budget_linux import _probe_source as _diagnostic_probe_source
+
+
+def _probe_source(source, case):
+    candidate = _diagnostic_probe_source(source, case)
+    if case == "O1":
+        # A denied socket can reset during connect as well as send/recv. Keep
+        # the accepted diagnostic's test bytes unchanged. The first native
+        # production failure was not reproduced and its cause is unconfirmed;
+        # this closes an independently identified instrumentation gap only.
+        before = '''                extra.connect((request["target"], request["parameters"]["port"]))
+                try:
+'''
+        after = '''                try:
+                    extra.connect((request["target"], request["parameters"]["port"]))
+'''
+        assert candidate.count(before) == 1
+        candidate = candidate.replace(before, after)
+        compile(candidate, "instrumented-production-budget-client.py", "exec")
+    return candidate
 
 
 @pytest.mark.integration

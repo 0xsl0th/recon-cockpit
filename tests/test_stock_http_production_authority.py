@@ -18,6 +18,9 @@ from test_secure_stock_http_authority import HOST, NONCE, SESSION, base_runtime
 
 def runtime(implementation='apache', configuration='A', case='O1'):
     result = nginx_runtime(configuration, case)
+    if result['client'] is not None:
+        from recon_cockpit.secure_agent.stock_http_production_nmap_runtime import from_native_manifest
+        result['client'] = from_native_manifest(result['client'])
     if implementation == 'nginx':
         return result
     module = stock_apache_runtime

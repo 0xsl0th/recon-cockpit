@@ -57,7 +57,7 @@ remain distinguishable from personal owner acceptance. The new mode requires
 coordinated admission, launcher, worker, backend, parser, result and inspection
 validation; a host-side wrapper around the diagnostic is not integration.
 
-## Reuse and remaining native design gate
+## Preparation findings and native design requirements
 
 Reuse the existing exact requests, client runtime, networkless parsing,
 request-accounting state machine, supervisor, audit/approval services and
@@ -65,10 +65,10 @@ private evidence conventions. Preserve the accepted nginx diagnostic unchanged.
 Shared helpers are appropriate only with regression evidence for that boundary.
 Do not duplicate or weaken authority checks to accommodate a second server.
 
-Apache preparation proposes a fixed prefork `-X` configuration, a nonzero
+Apache preparation specified a fixed prefork `-X` configuration, a nonzero
 namespace-local user/group, four pinned modules and a private loopback listener.
-This is **not a verified native startup design**. Before S3.3b execution, freeze
-the concrete descriptor/namespace handoff and verify:
+S3.3a did **not verify native startup**. S3.3b must freeze the concrete
+descriptor/namespace handoff and verify:
 
 - The Apache socket exists only inside a fresh disconnected daemon namespace.
   The recorder has a bounded, independently accounted route to it; the client
@@ -83,7 +83,7 @@ the concrete descriptor/namespace handoff and verify:
   external resolver, TLS/provider configuration or package-manager side effect
   enters the runtime.
 
-The Apache `127.0.0.1:19080` candidate is a future private daemon endpoint,
+The Apache `127.0.0.1:19080` endpoint belongs only to the private daemon namespace,
 **never an authorization to contact that address on the host**. Apache needs a
 different private transport from nginx; no transparent proxy may bypass the
 recorder's exact-request admission, counters or deadline. The final topology
@@ -153,6 +153,34 @@ network, process/thread, storage and deadline bounds are unchanged. No privilege
 helper, extra capability, broad host mount or host account database is added.
 This revision requires fresh native tests and independent review; its earlier
 failed attempts remain separate evidence.
+
+### Apache version recognition correction
+
+The first complete native run at `a481b87` retained **103 passes and three
+failures**, with all 899 source hashes unchanged. Apache O5 in configurations
+A and B delivered valid responses, but Nmap reported generic HTTP rather than
+the advertised product/version. Its original fixed matcher expected `Server`
+immediately after the status line and a bare version; stock Apache sends a
+`Date` header first and a parenthesized distribution suffix. Those two results
+remain inconclusive, not useful completions. A separate Apache O1 adversarial
+budget probe also failed and remains recorded in `native-final-01/`.
+An instrumented replay completed the first request and recorded the second
+request's denial; it did not reproduce the failure, whose cause remains
+unconfirmed. The production test now handles a reset during the denied
+connection's connect step as well as send/receive. Twenty deterministic tests
+check that handling; unexpected errors and any returned byte still fail. No
+production exception handling, recorder rule or execution limit is relaxed.
+
+The correction gives production Nmap its own pinned runtime and recognition
+payload. Only the Apache recognition expression changes: it permits one bounded
+Date header and an optional bounded parenthesized suffix. It does not accept a
+body banner as a header or invent a suppressed version. The exact NULL/GET
+probes, arguments, timers, requests and budgets stay fixed. The existing
+diagnostic and configurable modes retain their original runtime and probe bytes.
+Production selection, policy and runtime commitments bind the new payload;
+the old runtime is refused in the new mode and vice versa. Required useful-work
+criteria and raw-response grading are unchanged. Fresh native validation must
+establish the corrected result; the original failed run is not relabeled.
 
 ## Bounds retained from the diagnostic
 

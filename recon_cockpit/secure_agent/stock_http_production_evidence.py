@@ -152,7 +152,7 @@ def validate_result(result, manifest, *, deadline=None):
     from .configurable_parser_runtime import parse_isolated_tool_output
     from .configurable_parser import HEADERS, parser_version
     from .stock_http_client_runtime import boundary_names
-    from .network_tools_runtime import manifest_digest
+    from .stock_http_production_nmap_runtime import manifest_digest
 
     if type(result) is not dict or result.get("status") not in {"succeeded", "failed", "timeout", "output_limit", "blocked", "cancelled"}:
         raise ValueError("invalid_stock_evidence_result")

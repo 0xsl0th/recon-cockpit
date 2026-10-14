@@ -29,6 +29,7 @@ MODULES = ("worker", "tool_worker_common", "stock_http_spec", "stock_http_runtim
            "stock_http_owner_worker", "stock_http_recorder", "configurable_contract",
            "configurable_scope", "models", "tool_parameters", "tool_adapters", "isolation", "execution",
            "stock_http_contract", "stock_http_production_contract", "stock_apache_spec", "stock_apache_runtime",
+           "stock_http_production_nmap_spec",
            "stock_http_production_transport", "stock_http_production_owner_worker")
 
 

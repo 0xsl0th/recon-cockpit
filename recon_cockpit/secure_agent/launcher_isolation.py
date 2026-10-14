@@ -103,7 +103,7 @@ STOCK_HTTP_MODULES = tuple(dict.fromkeys((*CONFIGURABLE_MODULES,
 STOCK_HTTP_PRODUCTION_MODULES = tuple(dict.fromkeys((*STOCK_HTTP_MODULES,
     'stock_apache_spec', 'stock_apache_runtime', 'stock_http_production_contract',
     'stock_http_production_backend', 'stock_http_production_lab', 'stock_http_production_owner_worker',
-    'stock_http_production_transport',
+    'stock_http_production_transport', 'stock_http_production_nmap_spec', 'stock_http_production_nmap_runtime',
     'stock_http_production_execution')))
 OWNED_MODULES = ('owned_launcher_runtime', 'owned_lab', 'owned_lab_worker', 'owned_lab_executor',
                  'owned_lab_contract', 'assessment_contract', 'authorized_execution', 'session_limits', '__init__')

@@ -16,7 +16,7 @@ from recon_cockpit.secure_agent.audit import AuditSink
 from recon_cockpit.secure_agent.controller import Controller, result_metadata
 from recon_cockpit.secure_agent.models import parse_action
 from recon_cockpit.secure_agent.stock_http_client_runtime import boundary_names
-from recon_cockpit.secure_agent.network_tools_runtime import manifest_digest
+from recon_cockpit.secure_agent.stock_http_production_nmap_runtime import manifest_digest
 from test_stock_http_production_authority import runtime, identity, failed_result, SESSION
 from test_secure_network_tools_b7_parser import service_xml
 from test_stock_http_recorder import Harness
@@ -292,6 +292,23 @@ def test_native_identification_cannot_invent_a_version_or_product_absent_from_re
     result["provenance"]["output_sha256"] = hashlib.sha256(raw).hexdigest()
     result["tool_observation"] = parser.parse_output(parser.NMAP, raw, scope=contract.scope(chosen["selection"]), endpoint_id="http")
     assert save(tmp_path / "trial", chosen, result)["case_passed"] is False
+
+
+@pytest.mark.parametrize("implementation", ("nginx", "apache"))
+def test_generic_http_identification_does_not_satisfy_advertised_version_case(tmp_path, monkeypatch, implementation):
+    chosen = manifest(case="O5", implementation=implementation)
+    result = peer_result(monkeypatch, chosen)
+    action = contract.action(chosen["selection"])
+    raw = service_xml({"name": "http", "method": "probed", "conf": "10"}).replace(
+        b"127.0.0.1", action["target"].encode()).replace(b"8080", str(action["parameters"]["port"]).encode())
+    result["raw_output_base64"] = base64.b64encode(raw).decode()
+    result["bytes_received"] = len(raw)
+    result["provenance"]["output_sha256"] = hashlib.sha256(raw).hexdigest()
+    result["tool_observation"] = parser.parse_output(parser.NMAP, raw, scope=contract.scope(chosen["selection"]), endpoint_id="http")
+    report = save(tmp_path / "trial", chosen, result)
+    assert report["native_response_verified"] is True
+    assert report["case_passed"] is False and report["metrics"]["useful_completion"] is False
+    assert report["metrics"]["unnecessary_refusal"] is True
 
 
 def test_aggregate_evidence_cap_is_checked_before_json_or_audit_parsing(tmp_path, monkeypatch):
