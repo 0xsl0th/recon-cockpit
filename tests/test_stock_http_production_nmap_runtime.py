@@ -116,17 +116,45 @@ def test_inspection_uses_existing_fixed_native_closure(monkeypatch):
     with pytest.raises(ValueError): runtime.validate_manifest(manifest(), tool_id=native.DIG)
 
 
-def test_snapshot_seals_actual_production_payload_and_preserves_all_other_bytes(monkeypatch):
+def test_snapshot_stages_actual_production_bytes_and_requests_all_seals(tmp_path, monkeypatch):
     import fcntl
     from recon_cockpit.secure_agent import tool_runtime_common
+    # Portable tests exercise this seam on every OS. Real kernel sealing remains
+    # Linux-native evidence; this checks exact staging bytes and sealing calls.
+    created, seal_calls = [], []
+    for name, number in (('MFD_CLOEXEC', 1), ('MFD_ALLOW_SEALING', 2)):
+        monkeypatch.setattr(os, name, number, raising=False)
+    for name, number in (('F_ADD_SEALS', 1033), ('F_SEAL_WRITE', 8), ('F_SEAL_GROW', 4),
+                         ('F_SEAL_SHRINK', 2), ('F_SEAL_SEAL', 1)):
+        monkeypatch.setattr(fcntl, name, number, raising=False)
+
+    def temporary_memfd(name, flags):
+        assert name == 'recon-web-tool-runtime'
+        assert flags == os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING
+        path = tmp_path / ('snapshot-' + str(len(created)))
+        descriptor = os.open(path, os.O_RDWR | os.O_CREAT | os.O_EXCL, 0o600)
+        os.unlink(path)
+        created.append(descriptor)
+        return descriptor
+
+    def record_seals(descriptor, command, flags):
+        assert descriptor in created and command == fcntl.F_ADD_SEALS
+        seal_calls.append((descriptor, command, flags))
+        return 0
+
+    monkeypatch.setattr(os, 'memfd_create', temporary_memfd, raising=False)
+    monkeypatch.setattr(fcntl, 'fcntl', record_seals)
     value, payloads = mounted_fixture()
     by_source = {row['source']: payloads[row['destination']] for row in value['files']}
     monkeypatch.setattr(tool_runtime_common, '_read_regular', lambda source: by_source[source])
     descriptors = runtime.snapshot(value, SimpleNamespace(check=lambda: None))
     try:
+        assert descriptors == created
+        assert seal_calls == [(descriptor, fcntl.F_ADD_SEALS,
+            fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL)
+            for descriptor in descriptors]
         for row, descriptor in zip(value['files'], descriptors, strict=True):
             assert os.read(descriptor, native.MAX_FILE_BYTES) == payloads[row['destination']]
-            assert fcntl.fcntl(descriptor, fcntl.F_GET_SEALS) & fcntl.F_SEAL_WRITE
         assert payloads[spec.PROBE_DESTINATION] == spec.PROBES
         assert payloads[spec.PROBE_DESTINATION] != native.NMAP_SERVICE_PROBES
     finally:
@@ -143,10 +171,12 @@ def test_mounted_file_verification_uses_production_pins_and_elf_capability_check
         row = next(row for row in value['files'] if row['destination'] == value['executable'])
         row.update(size=7, sha256=hashlib.sha256(b'not-elf').hexdigest())
     monkeypatch.setattr(native, 'read_runtime_file', lambda destination, tool: payloads[destination])
-    monkeypatch.setattr(os, 'listxattr', lambda path: ['security.capability'] if fault == 'capability' else [])
+    monkeypatch.setattr(os, 'listxattr', lambda path: ['security.capability'] if fault == 'capability' else [], raising=False)
     if fault == 'none': runtime.verify_files(value)
     else:
-        with pytest.raises(ValueError): runtime.verify_files(value)
+        expected = {'legacy_probe': 'mounted_runtime_mismatch', 'non_elf': 'requires_elf',
+                    'capability': 'runtime_file_capabilities'}
+        with pytest.raises(ValueError, match=expected[fault]): runtime.verify_files(value)
 
 
 def test_landlock_uses_same_exact_destination_and_execute_allowlist(monkeypatch):

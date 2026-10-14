@@ -3,8 +3,10 @@
 PR #89 accepted the stock-nginx diagnostic at `c068a9d`. Its 26 native corpus
 rows, authority tests and immutable evidence close S3.2; they do not establish
 production HTTP integration. This document defines the next finite contract.
-S3.3a preparation is accepted in PR #90 at `d30a2f1`; S3.3b implementation
-and native acceptance remain open.
+S3.3a preparation is accepted in PR #90 at `d30a2f1`.
+[S3.3b PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91) implements the
+production path and has completed native validation. It remains open for final
+portable checks and review; S3.3b acceptance is not yet claimed.
 
 S3.3a prepared the exact Apache runtime/configuration and this contract.
 S3.3b must implement and validate the secure production path on **both nginx and
@@ -89,7 +91,7 @@ different private transport from nginx; no transparent proxy may bypass the
 recorder's exact-request admission, counters or deadline. The final topology
 must be reviewed and tested before the new production backend is enabled.
 
-## S3.3b implementation under validation
+## S3.3b implementation awaiting review
 
 The candidate registers `stock_http_compatibility_v1` separately from the accepted
 nginx diagnostic. The controller, both isolated witness services, one-use
@@ -239,6 +241,51 @@ Comparative benchmarking remains deferred; mediated timing is not a baseline
 overhead result. Native nginx success from S3.2 cannot replace this new
 production-mode corpus. Run the accepted configurable workflow and diagnostic
 regressions before closure, plus portable checks and independent review.
+
+## Recorded S3.3b validation
+
+Frozen production source `1cfa59a` passed **106 native checks**: all 52 corpus
+rows and 54 authority, cancellation, cleanup and budget cases. All **904 tracked
+source hashes stayed unchanged**. This includes 24 ordinary and eight robustness
+useful completions, zero unnecessary refusals, 20 correct negative outcomes and
+32 distinct forbidden-destination combinations. No provider call or spend occurred.
+
+Independent inspection regraded all 52 bundles through Python and the CLI
+without modifying them: **104 unchanged inspections**, with all source,
+generated-file and 29 installed-native-file pins verified. The receipt is
+`.secure-agent/stock-http-production-20261014/independent-native-final-02.json`,
+SHA-256 `14dd726b6704bddcf64b1046526a2bc396c88c2fc2bf7c3cfb01d77144da74e7`.
+These hashes establish consistency of saved evidence, not tamper resistance
+against a compromised host owner.
+
+The accepted nginx diagnostic, its owner/enforcement/budget cases and the
+configurable command-line/background-service workflows passed **68 native
+regression checks** in `regressions-final-01/` and
+`remaining-regressions-final-01/`. Three separately launched repetitions of the
+Apache extra-request test also passed in `budget-final-02/`; an earlier
+pytest-deduplicated invocation ran one passing case in `budget-final-01/`.
+All use the same frozen source. These successful runs do not establish the
+cause of the original, unreproduced budget-test failure.
+
+| Observed median across 26 cases per implementation | nginx | Apache |
+| --- | ---: | ---: |
+| Owner startup | 779.5 ms | 808 ms |
+| Client startup | 1,217 ms | 1,224 ms |
+| Action | 106.5 ms | 116 ms |
+| Owner cleanup | 3 ms | 3 ms |
+| Whole trial | 4,256 ms | 4,395.5 ms |
+
+These are validation timings including the declared negative cases, not a
+comparative benchmark or measured mediation overhead. Raw timings remain in
+each report.
+
+The first hosted run passed all 25,312 portable tests on its four Linux jobs;
+macOS passed 25,307 and failed five new fixtures that assumed Linux-only
+`memfd_create`/`listxattr` APIs. The test-only correction stages real bytes in
+temporary descriptors, records the exact requested sealing flags, and explicitly
+supplies the capability-query mock. No production behavior, native test or
+required assertion is removed. Retain `ci-macos-1cfa59a.log` and its summary.
+Final local portable validation and the corrected hosted matrix remain pending.
 
 ## Completion and subsequent work
 
