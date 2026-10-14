@@ -112,7 +112,8 @@ Stage 3 now has **ten increments: five accepted and five remaining**, counting
 S3.4a/S3.4b separately. S3.5–S3.7 follow in order; no required gate is removed.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
-S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
+[S3.4a PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92) is ready for
+review; check its latest revision and CI before acceptance. Validation at `2a26154` passed **20 installed-runtime inspections** and
 **25,483 portable tests**, with **911 source hashes unchanged**. Independent
 spec/docs and runtime/CLI reviews passed; all 169 focused tests passed. Each
 inspection pins 25 native and eleven generated files; no daemon, authentication,

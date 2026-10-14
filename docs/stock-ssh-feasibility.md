@@ -1,7 +1,7 @@
 # S3.4a: finite OpenSSH inputs and installed-runtime preparation
 
 S3.3 is closed by [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91) at
-`061c057`. This next batch prepares **S3.4a** on the
+`061c057`. [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92) prepares **S3.4a** on the
 [Stage 3 roadmap](stage3-compatibility-routing.md). It compiles fixed OpenSSH
 inputs and inspects installed executable/library bytes. It starts no SSH
 service, executes no tool action, issues no authority and establishes no native compatibility.
