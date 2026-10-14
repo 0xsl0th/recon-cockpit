@@ -99,9 +99,9 @@ _ENTRIES = MappingProxyType({
         "Repository-owned Ruby adapter collects one bounded SSH identification and KEXINIT advertisement, after half-closing writes; no authentication or session.",
         "Lists preserve untrusted peer preference order and direction; no selected algorithm, verified security, identity or vulnerability is claimed."),
     adapters.DIG_AAAA_TOOL_ID: _network("dig", "dig-aaaa-ok", "dns-aaaa", "dns-address-tools",
-        "T06 candidate: one fixed nonrecursive TCP AAAA question with at most four typed answers; no returned-data follow-up."),
+        "One fixed nonrecursive TCP AAAA question with at most four typed answers; no returned-data follow-up."),
     adapters.DIG_PTR_TOOL_ID: _network("dig", "dig-ptr-ok", "dns-ptr", "dns-address-tools",
-        "T06 candidate: one fixed nonrecursive TCP PTR question with at most four typed answers; no returned-data follow-up."),
+        "One fixed nonrecursive TCP PTR question with at most four typed answers; no returned-data follow-up."),
     adapters.SNMP_PAGE_TOOL_ID: _network("snmpbulkget", "snmp-page-ok", "snmp-page", "snmp-page-tools",
         "One fixed TCP SNMPv2c GETBULK requests at most four ifDescr bindings; no paging or walk."),
     adapters.SNMP_NEXT_TOOL_ID: _network("snmpgetnext", "snmp-next-ok", "snmp-next", "snmp-next-tools",
@@ -216,17 +216,15 @@ def _summary(tool_id, entry):
     return {"tool_id": tool_id, "effect": adapter.effect,
             "implementation": "native" if entry.program is None else "external_program",
             "external_program": entry.program, "execution_profile": adapter.execution_profile,
-            "parser_version": adapter.parser_version,
-            **({"acceptance_status": "candidate", "milestone": "T06"}
-               if tool_id in (adapters.DIG_AAAA_TOOL_ID, adapters.DIG_PTR_TOOL_ID) else {})}
+            "parser_version": adapter.parser_version}
 
 
 def list_tools():
     """List reviewed capabilities, without claiming their prerequisites exist."""
     tools = [_summary(tool_id, _entry(tool_id)) for tool_id in sorted(adapters.ADAPTERS)]
     return {**_common(), "capability_count": len(tools),
-            "accepted_capability_count": len(tools) - 2,
-            "candidate_capability_count": 2,
+            "accepted_capability_count": len(tools),
+            "candidate_capability_count": 0,
             "external_program_count": len({row["external_program"] for row in tools
                                            if row["external_program"] is not None}),
             "tools": tools}

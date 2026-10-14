@@ -14,10 +14,13 @@ This acceptance brought the baseline to 49 accepted profiles across 16 programs.
 The separate [T05 SNMP page](snmp-page-tools.md) is now accepted in
 [PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85) at `8ca3887`, closing
 G1–G6 at 50 accepted profiles and 17 programs. Its 51 native and 23,170 portable
-passes remain intact. Current [T06 AAAA/PTR candidates](dns-address-tools.md) bring
-registration to 52 profiles in open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86).
-T06 passed 83 native and 24,163 portable tests; latest required CI checks and
-acceptance remain pending. Complete T06 before Stage 3 compatibility/routing work. No deeper workflows start here.
+passes remain intact. The [T06 AAAA/PTR profiles](dns-address-tools.md) are now
+accepted in [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) at `f0542a8`,
+bringing accepted coverage to 52 profiles and closing Stage 2. T06 retains
+83 native and 24,163 portable passes; fresh review, all five final checks and
+all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38597857953)
+passed. Current work is the [S3.1 compatibility/routing contract](stage3-compatibility-routing.md).
+No deeper workflows start here.
 
 ## Scope and execution
 

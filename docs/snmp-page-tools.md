@@ -7,10 +7,12 @@ passes and five final checks closed T05 G1–G6; all five post-merge checks pass
 It reuses the existing Net-SNMP confinement, authority and evidence paths with the
 separately pinned `snmpbulkget` executable. Accepted C1 GET, C13 GETNEXT and T04
 profiles stay closed. T05 brings accepted coverage to 50 profiles across
-17 programs. The separate [T06 AAAA/PTR candidates](dns-address-tools.md) bring
-registration to 52 profiles in open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86).
-T06 passed 83 native and 24,163 portable tests; latest required CI checks and
-acceptance remain pending.
+17 programs. The separate [T06 AAAA/PTR profiles](dns-address-tools.md) are now
+accepted in [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) at `f0542a8`,
+bringing accepted coverage to 52 profiles and closing Stage 2. T06 retains
+83 native and 24,163 portable passes; fresh review, all five final checks and
+all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38597857953)
+passed. Current work is the [S3.1 compatibility/routing contract](stage3-compatibility-routing.md).
 There is no interactive or GUI integration for this operation.
 
 ## Exact operation
@@ -128,8 +130,9 @@ and merge `8ca3887744a20b32779c6cc2562b45a911f79709`; their trees match
 [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38585709909)
 and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38588119548)
 passed. The merge receipt is `.secure-agent/dns-address-20261014/pr85-merge-review.json`.
-Complete the separate T06 AAAA/PTR candidates before moving to Stage 3; do not
-repeat T05 acceptance or reopen earlier milestones.
+T06 is also accepted in PR #86, closing the finite Stage 2 tranche. Continue
+with the [S3.1 contract](stage3-compatibility-routing.md); do not repeat T05
+acceptance or reopen earlier milestones.
 
 ## Describe and inspect
 

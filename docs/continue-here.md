@@ -5,53 +5,57 @@
 This development checkpoint never resumes an assessment or restores approvals.
 
 Current continuation (14 October 2026):
-**T01–T05 meet G1–G6 and remain accepted and closed: 50 profiles across 17 programs.**
-[T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85) merged as `8ca3887`
-after review of `5cad354`, two independent reviews without blockers, 357 fresh
-focused test passes and five passing [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38585709909).
-All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38588119548) also passed.
-The reviewed and merged trees match `c30c127733005efbff62a8816cfcf353f93f078d`.
-The [accepted SNMP page runbook](snmp-page-tools.md) retains 51 native and 23,170
-portable passes, all source pins and its client-output evidence limitations.
-Its 37 saved reports passed 74 unchanged CLI/Python inspection checks. Preserve
-`.secure-agent/dns-address-20261014/pr85-merge-review.json` and the original
-`.secure-agent/snmp-page-20261014/` receipts. Do not repeat completed merges or
-reopen earlier milestones.
+**T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
+52 accepted profiles, zero candidates and 17 external programs.**
+[T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) merged as `f0542a8`
+after fresh authority/evidence review and all five
+[final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38595455084).
+Reviewed head `28f1a18` and the merge have identical tree
+`c475c0cb3648938fcbe0d66a3bb9a9168ed424d3`.
+All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38597857953)
+also passed. Preserve `.secure-agent/stage3-20261014/pr86-merge-review.json`
+and `pr86-postmerge-ci.json` beside it.
+Do not repeat completed merges or reopen accepted milestones.
 
-**Current work is T06: separate fixed AAAA and PTR metadata profiles.**
-The [T06 candidates](dns-address-tools.md), `dig_dns_aaaa_v1` and `dig_dns_ptr_v1`,
-are open in [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86).
-They reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
-The catalog records **52 registered profiles: 50 accepted and two T06 candidates,
-across the same 17 programs**. Returned IPv6 addresses and PTR names are data,
-not network scope or follow-up authority. **83 frozen native tests passed** on
-`58e4ad2`, with all 747 recorded source files unchanged: all 11 ordinary tasks
-completed without unnecessary refusals, four robustness tasks completed and
-23 negative cases stayed inconclusive. Four out-of-scope proposals were blocked;
-57 saved reports passed 114 unchanged CLI/Python inspection checks. Full portable
-validation passed **24,163 tests**, with 1,399 integration tests deselected and
-all 747 recorded source files unchanged. Verify the latest required PR checks
-before merge; **T06 G6 stays open**.
-The native pin is `58e4ad2781d9a276c2cb799dadf937209dc5e7fd`; its 83 tests comprise
-38 corpus cases, 20 enforcement checks and 25 accepted regressions. The passing
-portable revision is `ce8dec2bf5651469cad3372ce568811760ccb8b1`; only four portable
-test files differ from the native pin, leaving implementation, policies and
-native tests unchanged. Keep the initial portable failures and passing rerun
-under `.secure-agent/dns-address-20261014/`. Combined `verification.json` SHA-256:
-`07887552aebf5d8680b222f219c852a856c4f73b71ab172a34cbf47bbb27d5fe`.
+The [accepted T06 runbook](dns-address-tools.md) retains 83 native and 24,163
+portable passes, all 747 frozen source pins, 57 saved reports and 114 unchanged
+inspection checks. All 11 ordinary and four robustness cases completed usefully;
+23 negative cases stayed inconclusive and four out-of-scope proposals were
+blocked. Returned IPv6 addresses and PTR names remain untrusted metadata, with
+no added scope or follow-up authority. Private original evidence remains under
+`.secure-agent/dns-address-20261014/`.
 
-Finish T06 review, latest required checks and authorized merge
-before closing the finite Stage 2 tranche. Stage 3 follows with a concrete owned
-service-compatibility and controlled target-routing contract under the existing
-offline boundary. Any attached-network work requires separate authorization.
-Do not replace required outcomes with optional signatures or program quotas.
+**Current work is S3.1: the finite Stage 3 compatibility and routing contract.**
+It is open for review in [PR #87](https://github.com/0xsl0th/recon-cockpit/pull/87)
+on `docs/stage3-compatibility-contract`; review its latest revision and required
+checks before merge. This checkpoint does not mark S3.1 or Stage 3 accepted.
+The [new contract](stage3-compatibility-routing.md) defines the service matrix,
+exact action and target bindings, exclusions, budgets, evidence and acceptance
+criteria. This slice reconciles catalog acceptance metadata and prepares the
+next implementation; it adds no executor, service launch or routing permission.
+**Next is S3.2: stock-nginx source/runtime review and a bounded disconnected
+owned-daemon diagnostic.** Reuse the existing authority and isolation services;
+keep diagnostic evidence distinct from integrated product support. The current
+scripted HTTP/SSH endpoints do not establish real-daemon compatibility or a
+shared multi-host topology. Stage 3 remains open.
 
-PRs #80/#81 (T02/T03), #82 (catalog/source review), #83/#84 (T04) and proposal
-PR #31 remain closed. Proposal submission and its broader refresh remain deferred
-to November. Model credentials, paid calls, live-model evaluation, attached/external
-targets, deeper workflows and comparative benchmarking remain deferred. The dated
-baseline and candidate wording below preserve historical snapshots; this
-continuation supersedes their pre-merge status.
+S3.1 catalog reconciliation passed **554 focused portable checks**, with no
+failures, errors or skips. An independent before/after comparison of all 52
+catalog descriptions confirms only acceptance counts, the two temporary T06
+status/milestone fields and their candidate description text changed. Actions,
+adapter descriptors, parameters, policies, recipes and limits are identical.
+Frozen historical contract hashes remain intact. Private validation is in
+`.secure-agent/stage3-20261014/catalog-verification.json`, SHA-256
+`6303299da82c6167a31b40b15bba4b6f4893aa3a903550764ef7ddd9009b192d`,
+with the snapshots and test XML beside it. This slice ran no new native service;
+Stage 3 compatibility is still planned, not verified.
+
+Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
+closed. Model credentials, paid calls, live-model evaluation, deeper workflows,
+comparative benchmarking and attached/external targets remain deferred.
+Network attachment requires separate ownership/scope/routing authorization.
+Proposal refresh and submission remain a separate November decision. Historical
+snapshots below retain their original counts; this continuation supersedes them.
 
 ## Accepted history and retained evidence
 
@@ -144,8 +148,9 @@ Review corrected one evidence claim: the planner-view digest does not commit to
 the full result. Inspectors verify artifact/journal consistency and independently
 recompute observations; coordinated host-owner rewriting is outside that guarantee.
 T04 and T05 remain accepted. PR #85 closed T05 at `8ca3887`, preserving its
-51 native and 23,170 portable passes. Complete the [T06 AAAA/PTR candidates](dns-address-tools.md)
-through validation and G6 before moving to the Stage 3 compatibility/routing contract. Do not start
+51 native and 23,170 portable passes. [T06 AAAA/PTR](dns-address-tools.md) is
+accepted in PR #86 at `f0542a8`, closing Stage 2. Continue with the
+[Stage 3 compatibility/routing contract](stage3-compatibility-routing.md). Do not start
 deeper workflows, comparative benchmarking, credentials, paid calls or live-model work.
 
 Catalog reconciliation passed **300 focused tests** with no failures, errors or
@@ -2191,15 +2196,15 @@ Planning uses synthetic responses.
    Preserve accepted [T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85)
    at `8ca3887`; G1–G6 are closed after review, 357 fresh focused passes and five
    passing final checks. Keep its 51 native and 23,170 portable passes and
-   immutable receipts. The current catalog is 52 registered profiles: 50 accepted
-   plus two T06 candidates across 17 programs. [T06 AAAA/PTR](dns-address-tools.md)
-   has 83 native and 24,163 portable passes plus 114 unchanged inspection checks.
-   Review open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86), verify its
-   latest required checks and complete the authorized merge if they pass before
-   closing Stage 2. Stage 3 then defines finite owned service compatibility and
-   controlled target routing; network attachment still requires separate approval.
-   Do not substitute optional signatures or program quotas.
-5. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
+   immutable receipts. Preserve accepted [T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86)
+   at `f0542a8`: 83 native and 24,163 portable passes, 114 unchanged inspection
+   checks and reviewed G1–G6 closure. The catalog now has 52 accepted profiles,
+   zero candidates and 17 programs; Stage 2 remains closed. Review S3.1's
+   [finite compatibility/routing contract](stage3-compatibility-routing.md), then
+   implement S3.2's stock-nginx source/runtime review and disconnected diagnostic.
+   Network attachment still requires separate authorization; do not substitute
+   optional signatures or program quotas.
+5. Keep offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI closed.
    No accepted milestone or personal walkthrough needs to be repeated.
 6. Credentials, paid/live models, attached/external networks, deeper workflows
    and comparative benchmarks remain deferred.
