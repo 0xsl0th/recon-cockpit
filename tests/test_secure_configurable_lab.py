@@ -3,7 +3,9 @@
 import copy
 import io
 from pathlib import Path
+import shutil
 import subprocess
+import sys
 import time
 from types import SimpleNamespace
 from uuid import UUID
@@ -161,3 +163,42 @@ def test_owner_command_adds_only_fixed_owner_fixture_modules(monkeypatch):
     assert "--unshare-net" in argv and "CAP_NET_ADMIN" in argv
     assert "/app/network_tools_ssh_fixture.py" in argv
     assert all("/Downloads/" not in part and "--bind" != part for part in argv)
+
+
+@pytest.mark.parametrize("omit_mx", (False, True))
+def test_actual_owner_module_mounts_cold_import_without_repository_fallback(tmp_path, monkeypatch, omit_mx):
+    """Exercise the standalone import path that the real namespace owner uses."""
+    monkeypatch.setattr("recon_cockpit.secure_agent.isolation._trusted_program", lambda name: "/usr/bin/" + name)
+    selected = ConfigurableEndpointLab(SCOPE, "http", SESSION, LIMITS)
+    argv = selected._owner_command("/usr/lib/python3.13", [], 8)
+    staged = tmp_path / "app"
+    staged.mkdir()
+    for index, value in enumerate(argv):
+        if value != "--ro-bind":
+            continue
+        source, destination = argv[index + 1:index + 3]
+        target = Path(destination)
+        if target.parent == Path("/app") and target.suffix == ".py":
+            if omit_mx and target.name == "network_tools_dns_mx_fixture.py":
+                continue
+            shutil.copyfile(source, staged / target.name)
+    code = """import pathlib,runpy,sys
+root=pathlib.Path(sys.argv[1])
+loaded={path.name:runpy.run_path(str(path),run_name='closed_owner_module')
+        for path in sorted(root.glob('*.py'))}
+owner=loaded['configurable_lab_worker.py']
+assert pathlib.Path(owner['network']._mx_fixture.__file__).parent==root
+assert pathlib.Path(owner['scope_contract'].__file__).parent==root
+assert owner['header_request']({'target':'10.9.0.10','port':8088,'path':'/training/portal'}).startswith(b'GET /training/portal HTTP/1.1\\r\\n')
+assert owner['header_response']().startswith(b'HTTP/1.1 ')
+print('closed-owner-imports-ok')
+"""
+    result = subprocess.run([sys.executable, "-I", "-S", "-c", code, str(staged)],
+                            cwd=tmp_path, env={"LC_ALL": "C"}, capture_output=True,
+                            timeout=10, check=False)
+    if omit_mx:
+        assert result.returncode != 0 and result.stdout == b""
+        assert b"FileNotFoundError" in result.stderr and b"network_tools_dns_mx_fixture.py" in result.stderr
+    else:
+        assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
+        assert result.stdout == b"closed-owner-imports-ok\n" and result.stderr == b""
