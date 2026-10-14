@@ -33,6 +33,10 @@ those revisions, leaving production code, policies and native tests identical.
 Private proof belongs under `.secure-agent/snmp-page-20261014/`.
 The combined `verification.json` SHA-256 is
 `c6248dfa79bfa2acad427ea8efa2f3c7871e1aa173cc5c3d068234e677a8f7ff`.
+A separate `all-inspectors-replay.json` records 74 CLI/direct-Python checks
+across all 37 saved reports with unchanged bytes, modes and mtimes; SHA-256
+`332dc106b2b67d25d521b79f12b7aaf7d4156826ce3088720dc5536e63449dc7`.
+Both entry points share the same replay implementation.
 **G6 review and merge remain open; T05 is not accepted.** Review PR #85 and its
 latest required checks before T06's separate fixed AAAA/PTR profiles;
 do not replace either required outcome with optional signatures or tool quotas.

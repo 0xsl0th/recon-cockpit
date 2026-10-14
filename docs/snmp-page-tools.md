@@ -65,8 +65,9 @@ discarded wire bytes cannot be independently checked. A capped page or boundary
 does not establish full inventory, verified absence, identity or exploitability.
 Hostile descriptions stay escaped untrusted metadata and select no action.
 
-Both inspectors independently reparse raw capture and compare it with retained
-observations, metadata and artifact hashes without writes or tool execution.
+The CLI and Python inspection entry points share one implementation. It
+independently reparses raw capture and compares it with retained observations,
+metadata and artifact hashes without writes or native tool execution.
 These are local consistency checks; they do not authenticate a bundle against a
 host owner who rewrites all matching records. The separate planner-view digest
 does not commit to the full result. Replay restores no authority or approval.
@@ -86,7 +87,12 @@ with all 735 recorded source files unchanged. All six ordinary and both robustne
 tasks completed; ordinary unnecessary refusals were zero. All twelve negative
 cases stayed inconclusive after a validated request. Nine T05 enforcement tests
 and accepted GETNEXT/GET/T04 regressions passed. Both inspectors replayed all
-37 saved reports without writes. Ordinary end-to-end assessment latency ranged
+37 saved reports without writes in a separate 74-entry-point verification on
+`dfa4fc2`, recorded in `all-inspectors-replay.json` (SHA-256
+`332dc106b2b67d25d521b79f12b7aaf7d4156826ce3088720dc5536e63449dc7`).
+The original native corpus directly checked both entry points for 21 reports
+and CLI inspection for the other 16; the additional replay closes that evidence
+claim without changing the original receipts. Ordinary assessment latency ranged
 from 3,141 to 3,368 ms; provider calls and cost were zero. These are local timings,
 not comparative overhead measurements. Approval test answers are synthetic and
 make no personal-acceptance claim.
