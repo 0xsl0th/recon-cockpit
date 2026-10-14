@@ -1,13 +1,14 @@
 # Discover accepted secure tools
 
-The compiled catalog contains **50 registered profiles: 49 accepted, one T05
-candidate and 17 external programs**. T01–T04 are accepted; PR #84 closed T04 at
-`435a271`. The separate [T05 SNMP page candidate](snmp-page-tools.md) is open as
-[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), with 51 native and
-23,170 portable passes. G6 review and merge remain open. Acceptance applies
-to the documented disconnected owned-lab profiles; it grants no execution
-authority or general engagement readiness. The slices below retain their
-historical counts.
+The compiled catalog contains **52 registered profiles: 50 accepted, two T06
+candidates and 17 external programs**. T01–T05 are accepted; [PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85)
+closed the [SNMP page profile](snmp-page-tools.md) at `8ca3887` after review and
+required checks, preserving its 51 native and 23,170 portable passes. The separate
+[T06 AAAA/PTR candidates](dns-address-tools.md), open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86),
+reuse dig and passed 83 native and 24,163 portable tests. Latest required CI
+checks and G6 remain pending. Acceptance applies to the documented
+disconnected owned-lab profiles; it grants no execution authority or general
+engagement readiness. The slices below retain their historical counts.
 
 The read-only CLI catalog makes the accepted B0–B8 profiles discoverable without
 starting an assessment. The accepted B0–B8 baseline contains 20 capabilities backed by 11 external
@@ -385,8 +386,9 @@ The fixed TCP query retains at most four preference/exchange rows, distinguishes
 null-MX/NODATA/NXDOMAIN, and authorizes no name resolution or mail-server follow-up.
 
 The [finite coverage contract](professional-v1-coverage.md) maps all accepted
-profiles to six required operator outcomes: T01–T04 are accepted; T05 is the
-current candidate and T06 remains required afterward.
+profiles to six required operator outcomes: T01–T05 are accepted; T06's separate
+AAAA/PTR profiles are the current candidates. Stage 3 compatibility/routing work
+follows their acceptance, under the retained offline boundary.
 [T02 source feasibility](tls-posture-feasibility.md) is complete: stock sslscan
 cannot preserve the received rejection evidence required by this task. The
 [OpenSSL native diagnostic](tls-posture-native.md), accepted in PR #76,
@@ -448,15 +450,28 @@ independent owner evidence and both inspectors. Twelve unique compiled requests
 are required for useful completion; native error retries and partial results
 remain inconclusive. T04 adds no program and changes no accepted ffuf recipe.
 
-## T05 SNMP interface-page candidate
+## T05 accepted SNMP interface page
 
 `snmp_interface_page_v1` registers the separate snmpbulkget program and uses one
 fixed-seed TCP GETBULK with zero non-repeaters and four maximum repetitions.
-Its catalog entry is explicitly `candidate`, milestone `T05`. The
-[runbook](snmp-page-tools.md) defines the supported typed page and terminal
-boundaries, finite cases, exact approval and confinement. No supplied community,
-walk, continuation, SET or UDP is available. All 51 frozen native tests on
-`f6e515f` and 23,170 portable tests on `ae7e1b8` passed. G6 review and merge of
-PR #85 remain open.
-T06 AAAA/PTR follows T05 acceptance. Credentials, paid calls, live evaluation,
-deeper workflows and comparative benchmarking remain deferred.
+[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85) accepted it at `8ca3887`,
+closing G1–G6. The [runbook](snmp-page-tools.md) retains its typed page and terminal
+boundaries, exact approval and confinement, 51 native and 23,170 portable passes.
+No supplied community, walk, continuation, SET or UDP is available.
+
+## T06 AAAA/PTR candidates
+
+`dig_dns_aaaa_v1` and `dig_dns_ptr_v1` are separate `candidate` entries, milestone
+`T06`, using the existing dig program. Each fixed nonrecursive question uses
+IPv4 TCP and accepts at most four typed records; returned addresses and names
+create no authority. Open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86)
+passed 83 native tests: 11 ordinary tasks completed with zero unnecessary refusals,
+four robustness tasks completed and 23 negatives stayed inconclusive. All
+57 saved reports passed 114 unchanged inspection checks. The [runbook](dns-address-tools.md)
+retains source pins and limits. Full portable validation passed 24,163 tests;
+review, latest required CI checks and merge remain pending. Both operations are available through
+the secure CLI/catalog; no new interactive or GUI support is claimed.
+
+Complete T06 acceptance before Stage 3's finite service-compatibility and routing
+contract. Credentials, paid calls, live evaluation, attached networks, deeper
+workflows and comparative benchmarking remain deferred.

@@ -191,6 +191,18 @@ def test_fresh_identity_pins_fixed_protocol_bytes_and_tls_material(case):
         assert all(definition[key] is False for key in (
             "udp", "recursion", "retries", "search_suffixes", "target_resolution", "target_connections",
             "credentials", "service_identity_claim", "vulnerability_claim"))
+    elif case in fixture.DNS_ADDRESS_CASES:
+        from recon_cockpit.secure_agent import network_tools_dns_address_spec as address
+        selected = address.tool_for_case(case)
+        query = fixture.dns_address_query(selected)
+        response = fixture.dns_address_response(case, query)
+        assert definition["query"] == {"name": address.QUERY_NAMES[selected], "type": address.QUERY_TYPES[selected], "class": "IN", "recursion": False}
+        assert definition["query_sha256"] == hashlib.sha256(query).hexdigest()
+        assert definition["response_sha256"] == (None if response is None else hashlib.sha256(response).hexdigest())
+        assert definition["max_connections"] == definition["max_requests"] == 1
+        assert definition["max_query_bytes"] == 512 and definition["max_response_bytes"] == 4096
+        assert definition["max_records"] == 4
+        assert definition["request_count_means"] == "validated_fixed_dns_address_questions"
     elif case.startswith("dig-"):
         assert definition["response_sha256"] == hashlib.sha256(fixture.dns_response(case, fixture.dns_query())).hexdigest()
         assert definition["request_count_means"] == "validated_dns_questions"

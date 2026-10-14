@@ -87,11 +87,11 @@ def test_partial_or_malformed_peer_cannot_be_promoted_to_useful_page(case):
 
 def test_previous_49_capabilities_and_355_case_contracts_remain_identical():
     catalog = tool_catalog.list_tools()
-    catalog['tools'] = [row for row in catalog['tools'] if row['tool_id'] != fixture.SNMP_PAGE_TOOL_ID]
+    catalog['tools'] = [row for row in catalog['tools'] if row['tool_id'] not in (fixture.SNMP_PAGE_TOOL_ID, *fixture.DNS_ADDRESS_TOOL_IDS)]
     catalog.update(capability_count=49, accepted_capability_count=49,
                    candidate_capability_count=0, external_program_count=16)
     tools = [row['tool_id'] for row in catalog['tools']]
-    cases = [case for case in contract.CASES if case not in fixture.SNMP_PAGE_CASES]
+    cases = [case for case in contract.CASES if case not in fixture.SNMP_PAGE_CASES + fixture.DNS_ADDRESS_CASES]
     assert len(tools) == 49 and len(cases) == 355
     value = {'catalog': catalog,
         'descriptions': {tool: tool_catalog.describe_tool(tool) for tool in tools},
@@ -107,7 +107,7 @@ def test_previous_36_runtime_invocations_and_environment_remain_identical():
     value = {tool: [runtime.EXECUTABLES[tool], runtime.FIXED_ARGV[tool],
         runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool in runtime.EXECUTABLES if tool != fixture.SNMP_PAGE_TOOL_ID}
+        for tool in runtime.EXECUTABLES if tool not in (fixture.SNMP_PAGE_TOOL_ID, *fixture.DNS_ADDRESS_TOOL_IDS)}
     assert len(value) == 36
     raw = json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode()
     assert hashlib.sha256(raw).hexdigest() == 'be7476bfdce3b9f36cd30d9b0c6465fa58360f3aa16a9e904fe9ce7e98908ceb'

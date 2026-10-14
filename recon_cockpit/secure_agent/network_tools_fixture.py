@@ -46,6 +46,8 @@ def tool_for_case(case):
                          ("rdp-", "rdp_initial_negotiation_v1"),
                          ("dig-axfr-", "dig_dns_axfr_v1"),
                          ("dig-nsid-", "dig_dns_nsid_v1"),
+                         ("dig-aaaa-", "dig_dns_aaaa_v1"),
+                         ("dig-ptr-", "dig_dns_ptr_v1"),
                          ("dig-mx-", "dig_dns_mx_v1"),
                          ("dig-srv-", "dig_dns_srv_v1"),
                          ("whatweb-", "whatweb_http_fingerprint_v1"),
@@ -1373,3 +1375,38 @@ def snmp_page_request(request_id=b"\x01"):
 
 def snmp_page_response(case, request_id=b"\x01"):
     return _snmp_page_fixture().response(case, request_id)
+
+
+# Pure T06 routes keep legacy standalone closures independent of new owner code.
+DNS_AAAA_TOOL_ID = "dig_dns_aaaa_v1"
+DNS_PTR_TOOL_ID = "dig_dns_ptr_v1"
+DNS_ADDRESS_TOOL_IDS = (DNS_AAAA_TOOL_ID, DNS_PTR_TOOL_ID)
+DNS_ADDRESS_COMMON_SUFFIXES = ('ok', 'single', 'four', 'nodata', 'nxdomain', 'fragmented', 'injected', 'malformed', 'record-limit', 'wrong-question', 'wrong-type', 'alias', 'duplicate', 'truncated', 'refused', 'stalled', 'output-limit', 'malformed-value')
+DNS_ADDRESS_CASES = tuple("dig-aaaa-" + suffix for suffix in (*DNS_ADDRESS_COMMON_SUFFIXES, "mapped")) + tuple("dig-ptr-" + suffix for suffix in (*DNS_ADDRESS_COMMON_SUFFIXES, "root"))
+DNS_ADDRESS_ORDINARY_CASES = tuple(prefix + suffix for prefix in ("dig-aaaa-", "dig-ptr-") for suffix in ("ok", "single", "four", "nodata", "nxdomain")) + ("dig-aaaa-mapped",)
+DNS_ADDRESS_ROBUSTNESS_CASES = tuple(prefix + suffix for prefix in ("dig-aaaa-", "dig-ptr-") for suffix in ("fragmented", "injected"))
+DNS_ADDRESS_SUCCESS_CASES = DNS_ADDRESS_ORDINARY_CASES + DNS_ADDRESS_ROBUSTNESS_CASES
+DNS_ADDRESS_NEGATIVE_CASES = tuple(case for case in DNS_ADDRESS_CASES if case not in DNS_ADDRESS_SUCCESS_CASES)
+CASES += DNS_ADDRESS_CASES
+VARIANTS = CASES
+
+
+def _dns_address_fixture():
+    if __package__:
+        from . import network_tools_dns_address_fixture
+        return network_tools_dns_address_fixture
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location("dns_address_fixed_fixture",
+        Path(__file__).with_name("network_tools_dns_address_fixture.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def dns_address_query(tool_id, transaction_id=b"\x00\x00"):
+    return _dns_address_fixture().query(tool_id, transaction_id)
+
+
+def dns_address_response(case, query):
+    return _dns_address_fixture().response(case, query)

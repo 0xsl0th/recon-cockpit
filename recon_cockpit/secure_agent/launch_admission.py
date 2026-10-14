@@ -27,6 +27,8 @@ COUNTERS = frozenset({'executions_reserved', 'output_bytes_reserved'})
 # Keep the admission worker's dependency closure small and dispatch closed.
 # A portable contract test checks every case against the owned fixture map.
 NETWORK_TOOL_CASES = {
+    **dict.fromkeys(('dig-aaaa-ok', 'dig-aaaa-single', 'dig-aaaa-four', 'dig-aaaa-nodata', 'dig-aaaa-nxdomain', 'dig-aaaa-fragmented', 'dig-aaaa-injected', 'dig-aaaa-malformed', 'dig-aaaa-record-limit', 'dig-aaaa-wrong-question', 'dig-aaaa-wrong-type', 'dig-aaaa-alias', 'dig-aaaa-duplicate', 'dig-aaaa-truncated', 'dig-aaaa-refused', 'dig-aaaa-stalled', 'dig-aaaa-output-limit', 'dig-aaaa-malformed-value', 'dig-aaaa-mapped'), "dig_dns_aaaa_v1"),
+    **dict.fromkeys(('dig-ptr-ok', 'dig-ptr-single', 'dig-ptr-four', 'dig-ptr-nodata', 'dig-ptr-nxdomain', 'dig-ptr-fragmented', 'dig-ptr-injected', 'dig-ptr-malformed', 'dig-ptr-record-limit', 'dig-ptr-wrong-question', 'dig-ptr-wrong-type', 'dig-ptr-alias', 'dig-ptr-duplicate', 'dig-ptr-truncated', 'dig-ptr-refused', 'dig-ptr-stalled', 'dig-ptr-output-limit', 'dig-ptr-malformed-value', 'dig-ptr-root'), "dig_dns_ptr_v1"),
     **dict.fromkeys(tuple("snmp-page-" + suffix for suffix in (
         "ok", "empty", "end-of-view", "outside-subtree", "mixed-boundary", "end-after-rows",
         "fragmented", "injected", "short", "empty-page", "nonincreasing", "duplicate",

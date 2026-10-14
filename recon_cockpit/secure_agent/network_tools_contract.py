@@ -47,6 +47,8 @@ T03_CASES = ssh_policy.CASES
 from . import network_tools_web_hierarchy_spec as web_hierarchy
 T04_CASES = web_hierarchy.CASES
 T05_CASES = SNMP_PAGE_CASES
+from . import network_tools_dns_address_spec as dns_address
+T06_CASES = dns_address.CASES
 SSH_POLICY_TOOL_ID = ssh_policy.TOOL_ID
 
 
@@ -110,6 +112,8 @@ C10_CASES = DNS_NSID_CASES
 C11_CASES = DNS_AXFR_CASES
 C12_CASES = HTTP_OPTIONS_CASES
 C18_CASES = DNS_MX_CASES
+PARAMETERS.update({tool: dict(dns_address.PARAMETERS) for tool in dns_address.TOOL_IDS})
+PARSER_VERSIONS.update(dns_address.PARSER_VERSIONS)
 PARAMETERS[DIG_MX_TOOL_ID] = dict(DIG_MX_PARAMETERS)
 PARSER_VERSIONS[DIG_MX_TOOL_ID] = "dig-dns-mx-text-v1"
 C17_CASES = NUCLEI_GIT_CASES
@@ -168,7 +172,7 @@ def profile_allows(value, case):
 
 
 def capability_descriptor(case=None):
-    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES + C15_CASES + C16_CASES + C17_CASES + C18_CASES + T02_CASES + T03_CASES + T04_CASES + T05_CASES):
+    if case is not None and (type(case) is not str or case not in B1_CASES + B2_CASES + B3_CASES + B4_CASES + B5_CASES + B6_CASES + B7_CASES + B8_CASES + C1_CASES + C2_CASES + C3_CASES + C4_CASES + C5_CASES + C6_CASES + C7_CASES + C8_CASES + C9_CASES + C10_CASES + C11_CASES + C12_CASES + C13_CASES + C14_CASES + C15_CASES + C16_CASES + C17_CASES + C18_CASES + T02_CASES + T03_CASES + T04_CASES + T05_CASES + T06_CASES):
         raise ValueError("invalid_network_tools_case")
     if case in T04_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
@@ -268,6 +272,20 @@ def capability_descriptor(case=None):
                 "retries": False, "response_directed_followup": False, "service_identity_verified": False},
             "result_semantics": "untrusted_ssh_algorithm_advertisements",
             "parser_versions": {SSH_ALGORITHMS_TOOL_ID: PARSER_VERSIONS[SSH_ALGORITHMS_TOOL_ID]}}
+    if case in T06_CASES:
+        tool = dns_address.tool_for_case(case)
+        return {"schema_version": "1", "workflow_id": WORKFLOW,
+            "capabilities": [get_adapter(tool).to_dict()],
+            "scope": {"target": "127.0.0.1", "port": 8080, "owned_lab_only": True},
+            "limits": dict(LIMITS), "live_calls_enabled": False, "planning": "deterministic_offline",
+            "dns_question": {"name": dns_address.QUERY_NAMES[tool], "type": dns_address.QUERY_TYPES[tool],
+                "transport": "tcp", "nameserver_family": "ipv4", "recursion": False,
+                "max_connections": 1, "max_questions": 1, "max_records": 4,
+                "search": False, "zone_transfer": False, "retries": False,
+                "advertised_target_resolution": False, "advertised_endpoint_followup": False,
+                "address_fallback": False, "reverse_verification": False, "verified_service_identity": False},
+            "result_semantics": "untrusted_dns_ipv6_metadata" if tool == dns_address.AAAA else "untrusted_dns_reverse_metadata",
+            "parser_versions": {tool: PARSER_VERSIONS[tool]}}
     if case in T05_CASES:
         return {"schema_version": "1", "workflow_id": WORKFLOW,
             "capabilities": [get_adapter(SNMP_PAGE_TOOL_ID).to_dict()],
@@ -611,6 +629,8 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
                 and (connections != 1 or expected["scenario"] not in ssh_policy.SUCCESS_CASES))
             or (expected["scenario"] in C14_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in SSH_ALGORITHMS_SUCCESS_CASES))
+            or (expected["scenario"] in T06_CASES and result.get("tool_observation") is not None
+                and (connections != 1 or expected["scenario"] not in dns_address.SUCCESS_CASES))
             or (expected["scenario"] in T05_CASES and result.get("tool_observation") is not None
                 and (connections != 1 or expected["scenario"] not in SNMP_PAGE_SUCCESS_CASES))
             or (expected["scenario"] in C13_CASES and result.get("tool_observation") is not None
@@ -803,6 +823,10 @@ def classify_tool(tool_id, normalized):
         reason = {"selection": "rdp_protocol_selected", "legacy": "rdp_legacy_confirmation",
                   "failure": "rdp_negotiation_failure"}[normalized["response_type"]]
         return _observation(tool_id, reason, reason, normalized)
+    if tool_id in dns_address.TOOL_IDS:
+        prefix = "dns_aaaa_" if tool_id == dns_address.AAAA else "dns_ptr_"
+        suffix = "name_not_found" if normalized["status"] == "NXDOMAIN" else "no_data" if not normalized["records"] else "observed"
+        return _observation(tool_id, prefix + suffix, prefix + suffix, normalized)
     if tool_id == DIG_MX_TOOL_ID:
         reason = ("dns_mx_name_not_found" if normalized["status"] == "NXDOMAIN"
             else "dns_mx_no_data" if not normalized["records"]

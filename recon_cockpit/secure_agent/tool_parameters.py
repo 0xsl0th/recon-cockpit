@@ -157,6 +157,16 @@ class DigDNSParameters(TCPParameters):
 
 
 @dataclass(frozen=True, slots=True)
+class DigAAAAParameters(TCPParameters):
+    """One fixed AAAA question; returned addresses confer no network scope."""
+
+
+@dataclass(frozen=True, slots=True)
+class DigPTRParameters(TCPParameters):
+    """One fixed reverse-name question; no forward lookup or returned-host action."""
+
+
+@dataclass(frozen=True, slots=True)
 class DigMXParameters(TCPParameters):
     """Bounds for one fixed owned MX question; exchange names remain inert."""
 

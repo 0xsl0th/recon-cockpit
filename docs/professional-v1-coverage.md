@@ -1,42 +1,46 @@
 # Professional-v1 coverage contract
 
 Current continuation (14 October 2026):
-**T01–T04 meet G1–G6 and remain accepted and closed.**
-[T04 PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) merged as `435a271`
-after review of `40d98b6`, two independent reviews without blockers and 319 fresh
-focused test passes. The reviewed and merged trees both match `9de7a974b3683d1abdfed9904b90932bb2be714c`.
-All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38577572315)
-and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38580423750)
-passed. Its [accepted secure hierarchy runbook](web-hierarchy-tools.md) retains
-26 native and 22,577 portable passes, the original frozen source pins and the
-explicit native-retry/evidence-integrity limitations. T04 acceptance brings the
-accepted baseline to **49 profiles across 16 programs**. Do not repeat its merge
-or reopen earlier milestones.
+**T01–T05 meet G1–G6 and remain accepted and closed: 50 profiles across 17 programs.**
+[T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85) merged as `8ca3887`
+after review of `5cad354`, two independent reviews without blockers, 357 fresh
+focused test passes and five passing [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38585709909).
+All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38588119548) also passed.
+The reviewed and merged trees match `c30c127733005efbff62a8816cfcf353f93f078d`.
+The [accepted SNMP page runbook](snmp-page-tools.md) retains 51 native and 23,170
+portable passes, all source pins and its client-output evidence limitations.
+Its 37 saved reports passed 74 unchanged CLI/Python inspection checks. Preserve
+`.secure-agent/dns-address-20261014/pr85-merge-review.json` and the original
+`.secure-agent/snmp-page-20261014/` receipts. Do not repeat completed merges or
+reopen earlier milestones.
 
-**Current work is T05: one bounded SNMP interface-description page.**
-The separate [T05 candidate](snmp-page-tools.md), open as
-[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), integrates `snmp_interface_page_v1`
-through the existing secure execution and evidence path. One TCP GETBULK uses
-one fixed ifDescr seed, zero non-repeaters and four maximum repetitions, with
-public synthetic fixture data and no continuation. The catalog records
-**50 registered profiles: 49 accepted and one T05 candidate, across 17 programs**.
-Frozen native validation on `f6e515fe0292e7624a87ee3d0329abb7799e7374`
-passed **51 tests**. Full portable validation on
-`ae7e1b8fdb5309dd14e09850959b55e6c1eca6fe` passed **23,170 tests**, with 1,341
-integration tests deselected and no failures, errors or skips. Each run preserved
-all 735 recorded source files; only ten portable test files changed between
-those revisions, leaving production code, policies and native tests identical.
-Private proof belongs under `.secure-agent/snmp-page-20261014/`.
-**G6 review and merge remain open; T05 is not accepted.** Review PR #85 and its
-latest required checks before T06's separate fixed AAAA/PTR profiles;
-do not replace either required outcome with optional signatures or tool quotas.
+**Current work is T06: separate fixed AAAA and PTR metadata profiles.**
+The [T06 candidates](dns-address-tools.md), `dig_dns_aaaa_v1` and `dig_dns_ptr_v1`,
+are open in [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86).
+They reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
+The catalog records **52 registered profiles: 50 accepted and two T06 candidates,
+across the same 17 programs**. Returned IPv6 addresses and PTR names are data,
+not network scope or follow-up authority. **83 frozen native tests passed** on
+`58e4ad2`, with all 747 recorded source files unchanged: all 11 ordinary tasks
+completed without unnecessary refusals, four robustness tasks completed and
+23 negative cases stayed inconclusive. Four out-of-scope proposals were blocked;
+57 saved reports passed 114 unchanged CLI/Python inspection checks. Full portable
+validation passed **24,163 tests**, with 1,399 integration tests deselected and
+all 747 recorded source files unchanged. Verify the latest required PR checks
+before merge; **T06 G6 stays open**.
 
-PRs #80/#81 (T02/T03), #82 (catalog/source review), #83 (T04 native diagnostic)
-and proposal PR #31 remain closed. Proposal submission and its broader refresh
-remain deferred to November. Model credentials, paid calls, live-model evaluation,
-attached/external targets, deeper workflows and comparative benchmarking remain
-deferred. The dated baseline and candidate wording below preserve historical
-snapshots; this continuation supersedes their pre-merge status.
+Finish T06 review, latest required checks and authorized merge
+before closing the finite Stage 2 tranche. Stage 3 follows with a concrete owned
+service-compatibility and controlled target-routing contract under the existing
+offline boundary. Any attached-network work requires separate authorization.
+Do not replace required outcomes with optional signatures or program quotas.
+
+PRs #80/#81 (T02/T03), #82 (catalog/source review), #83/#84 (T04) and proposal
+PR #31 remain closed. Proposal submission and its broader refresh remain deferred
+to November. Model credentials, paid calls, live-model evaluation, attached/external
+targets, deeper workflows and comparative benchmarking remain deferred. The dated
+baseline and candidate wording below preserve historical snapshots; this
+continuation supersedes their pre-merge status.
 
 Historical pre-merge status: **9 October 2026, PR #79 merged at `5f4197f`**. The owner agreed
 the [product roadmap](product-roadmap.md) and authorized continued coverage work.
@@ -63,7 +67,7 @@ intrusive effects, live models or paid calls.
 
 ## Accepted foundation: exact capabilities, not general engagement coverage
 
-These rows account for all **49 accepted profiles across 16 external programs**.
+These rows account for all **50 accepted profiles across 17 external programs**.
 The IDs are the exact entries in the [secure catalog](secure-tool-catalog.md) and
 [registry](../recon_cockpit/secure_agent/tool_adapters.py). Each row retains its
 accepted G1–G6 evidence and limitations; it does not need to be reopened to start
@@ -83,7 +87,7 @@ column.
 | A09. Observe RPC registrations and NFS exports | `rpcinfo_dump_v1`, `showmount_exports_v1` | Fixed TCP metadata requests; no discovered-port follow-up, mounting or file access. Real service routing and compatibility need Stage 3. |
 | A10. Observe FTP listing and SMTP capabilities | `curl_ftp_list_v1`, `curl_smtp_capabilities_v1` | Synthetic anonymous names and fixed EHLO/QUIT only. Passive connections are predeclared; no transfers, mail, recipient probes or authentication. Real-server compatibility stays open. |
 | A11. Observe Docker and WinRM endpoints | `curl_docker_ping_v1`, `curl_docker_version_v1`, `curl_winrm_metadata_v1` | Fixed read-only paths and bounded metadata/authentication-scheme advertisements. No container operation, login, SOAP operation or shell session. |
-| A12. Observe Redis and SNMP metadata | `redis_server_info_v1`, `snmp_system_get_v1`, `snmp_interface_next_v1` | One Redis INFO selection and fixed SNMP GET/GETNEXT over TCP with public synthetic fixture data. T05's separate candidate adds one bounded interface-description page; it is not yet accepted. No keys/writes, walks, real communities or authenticated device identity. |
+| A12. Observe Redis and SNMP metadata | `redis_server_info_v1`, `snmp_system_get_v1`, `snmp_interface_next_v1`, `snmp_interface_page_v1` | One Redis INFO selection and fixed SNMP GET/GETNEXT/GETBULK over TCP with public synthetic fixture data. Accepted T05 adds one bounded interface-description page; no keys/writes, walks, continuation, real communities or authenticated device identity. |
 
 Interactive suggestions are a separate inventory. They use the host runner and
 do not satisfy secure execution gates. Existing suggestions cover Nmap, curl,
@@ -115,14 +119,16 @@ report alone cannot complete any row.
 | **T02 — accepted** | Determine acceptance/rejection of TLS 1.0, 1.1, 1.2 and 1.3; the accepted TLS profile proves only its selected handshake. | Stock **sslscan** rejected because it discards received rejection evidence. Use four separately versioned **OpenSSL** probes with the reviewed mediator: one numeric owned endpoint and one ClientHello delivered to the peer per action, exact version, independent grants and bounded connection ledger. Four independent actions preserve the original at-most-eight-connection whole-task target without an implicit retry allowance. No client credential, application request, retry escalation or peer-directed fetch; accepted OpenSSL profiles stay unchanged. | A modern-only fixture and a deliberately legacy-enabled fixture produce correct observations for all four versions. Explicit protocol rejection is useful only with retained client-received evidence, independently corroborated by owner records. Reset, timeout or unsupported-client behavior is inconclusive. Unknown or incomplete results cannot be reported as disabled versions. | **G1–G6 closed in [PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) at `f2e7b785`.** The [acceptance corpus](tls-posture-acceptance.md) passed 65 native and 21,593 portable tests, independent review and all five final checks. Four accepted profiles reuse OpenSSL. |
 | **T03 — accepted** | Assess SSH transport advertisements against an explicit pinned local policy; collection alone supplies no assessment. | Pinned [ssh-audit source review](ssh-policy-feasibility.md) rejects its extra host-key/KEX probes. A separate `ssh_transport_policy_v1` reuses byte-identical C14 collection and a networkless immutable policy evaluator. One numeric owned endpoint, one 184-byte request/write-half-close, one bounded packet; no login, completed key exchange, rate/stress test, session or downloaded policy. | Six ordinary and two robustness tasks complete usefully, including deliberate deviations in either direction. Two complete unknown cases and nine malformed/pressure cases stay inconclusive. Policy judgments do not verify exploitability, identity, negotiated strength or general compliance. | **G1–G6 closed in [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) at `b90a365e`.** 52 native and 21,898 portable passes, independent review and all five final checks; no program added. See [runbook](ssh-policy-tools.md). |
 | **T04** | Discover a controlled one-level web directory hierarchy beyond the flat eight-path ffuf corpus. | The [source review](web-hierarchy-feasibility.md) selected a separate finite **ffuf** profile after stock feroxbuster calibration conflicted with the boundary. Three predeclared prefixes, each with two resource and two compiled control names: useful completion needs twelve unique serial GETs and one active request. Native error retries may occur; the owner retains up to sixteen attempts/connections and duplicate or partial captures stay inconclusive. No recursion, arbitrary link extraction, redirects, credentials, uploads or response-directed follow-up; preserve the original ffuf profile. | Known nested resources and an empty hierarchy both complete; every planned path/request is accounted for. Wildcard responses do not invent resources. Redirects, path traversal, hostile links, unexpected paths and partial scans cannot expand scope or claim complete discovery. | **Accepted; G1–G6 closed in [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) at `435a271`.** The [secure hierarchy profile](web-hierarchy-tools.md) retains 26 native and 22,577 portable passes; review and all five final/post-merge checks passed. |
-| **T05** | Obtain one bounded page of SNMP interface descriptions; C13 returns a single successor, not a page. | The separate `snmp_interface_page_v1` candidate uses **snmpbulkget**, reusing Net-SNMP confinement and finite fixture patterns. One TCP GETBULK, one fixed ifDescr seed, non-repeaters zero and maximum repetitions four; public synthetic community only. No paging continuation, walks, SET, UDP or real credentials. | A populated page, empty descriptions, endOfMibView and a supported outside-column boundary have explicit results. Require typed ordered rows and either four normal bindings or an explicit terminal boundary within four bindings. Excess, malformed or short nonterminal output stays inconclusive; shortened replies can be valid SNMP but are unsupported here. A full page means capped observation, not complete interface inventory. | **Current [secure candidate](snmp-page-tools.md); not accepted.** 51 native tests on `f6e515f` and 23,170 portable tests on `ae7e1b8` passed; G6 review and merge of PR #85 remain open. |
-| **T06** | Observe selected IPv6-address and reverse-name metadata alongside accepted A records. | Reuse `dig` in separate fixed nonrecursive TCP AAAA and PTR profiles, one question and at most four typed answers per action. Returned IPv6 addresses are data, not IPv6 network authorization. No reverse-to-forward lookup, recursion, alias chasing or returned-host follow-up. | Positive records, NODATA and NXDOMAIN complete for both questions. Validate the exact question, record type, name and complete bounded response; malformed names, unsupported alias chains and excess/partial records remain inconclusive. | **Required; no secure profiles yet.** |
+| **T05** | Obtain one bounded page of SNMP interface descriptions; C13 returns a single successor, not a page. | The accepted `snmp_interface_page_v1` profile uses **snmpbulkget**, reusing Net-SNMP confinement and finite fixture patterns. One TCP GETBULK, one fixed ifDescr seed, non-repeaters zero and maximum repetitions four; public synthetic community only. No paging continuation, walks, SET, UDP or real credentials. | A populated page, empty descriptions, endOfMibView and a supported outside-column boundary have explicit results. Require typed ordered rows and either four normal bindings or an explicit terminal boundary within four bindings. Excess, malformed or short nonterminal output stays inconclusive; shortened replies can be valid SNMP but are unsupported here. A full page means capped observation, not complete interface inventory. | **[Accepted](snmp-page-tools.md), G1–G6 closed in PR #85 at `8ca3887`.** 51 native and 23,170 portable passes, independent review, 357 fresh focused passes and all five final/post-merge checks. |
+| **T06** | Observe selected IPv6-address and reverse-name metadata alongside accepted A records. | Reuse `dig` in separate fixed nonrecursive TCP AAAA and PTR profiles, one question and at most four typed answers per action. Returned IPv6 addresses are data, not IPv6 network authorization. No reverse-to-forward lookup, recursion, alias chasing or returned-host follow-up. | Positive records, NODATA and NXDOMAIN complete for both questions. Validate the exact question, record type, name and complete bounded response; malformed names, unsupported alias chains and excess/partial records remain inconclusive. | **Current [two-profile candidate](dns-address-tools.md), open [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86); not accepted.** 83 native passes: 11 ordinary completions with zero unnecessary refusals, four robustness completions and 23 inconclusive negatives. Four out-of-scope proposals blocked; 57 reports/114 inspection checks unchanged. Full portable validation passed 24,163 tests; latest required CI checks and G6 remain pending. |
 
-T04 is accepted in PR #84 and stays closed. T05 is the current gap: a single
-bounded SNMP interface-description page beyond C13's one successor. Its
-[secure candidate](snmp-page-tools.md) integrates policy, audit, required approval,
-consumed permits, confined execution and both evidence inspectors. Finish its
-review and required checks in PR #85 before starting required T06 AAAA/PTR profiles.
+T04 and T05 are accepted in PRs #84/#85 and stay closed. T06 is the final
+required gap in this finite tranche: separate AAAA/PTR observations through the
+existing dig confinement. Both [candidate profiles](dns-address-tools.md) passed
+native usefulness, enforcement and unchanged replay plus 24,163 portable tests
+in PR #86. Complete review and latest required checks before acceptance. Stage 3
+then defines finite owned service compatibility and controlled target routing;
+network attachment remains separately authorized.
 
 T02's accepted version posture adds a distinct outcome beyond one certificate
 or handshake. Its [source feasibility](tls-posture-feasibility.md)
@@ -143,8 +149,8 @@ framing and encrypted record shapes; it does not decrypt application traffic. Th
 already-installed sslscan remains outside the secure catalog. Do not substitute
 another HTTP signature solely because its existing adapter is convenient.
 
-The current T05 candidate registers snmpbulkget as a seventeenth program; its
-acceptance remains pending. T02 reuses OpenSSL, T03 the repository-owned SSH
+Accepted T05 registers snmpbulkget as a seventeenth program. The two current
+T06 candidates reuse dig and add no external program. T02 reuses OpenSSL, T03 the repository-owned SSH
 collector, and accepted T04 reuses ffuf. None of those three added a program. The
 historical **4–6-program assumption is not a quota, gate or reason to add
 overlapping tools**. The six outcomes are unchanged. Registered and accepted counts remain distinct until actual secure execution
@@ -152,9 +158,11 @@ and G1–G6 justify acceptance; new modes of `dig` or `openssl` add profiles,
 not programs. Keep the 8–12-PR coverage allowance subject to native
 findings; re-estimate it without silently reducing the task list.
 
-T02's four OpenSSL profiles, T03 SSH policy and T04 hierarchy are accepted;
-T05 has 51 native and 23,170 portable passes; G6 review and merge remain open. Primary documentation establishes
-features, not confinement or compatibility:
+T02's four OpenSSL profiles, T03 SSH policy, T04 hierarchy and T05's bounded
+SNMP page are accepted. T05 retains 51 native and 23,170 portable passes;
+PR #85 closes its G6. T06 has 83 native and 24,163 portable passes; latest
+required CI checks and acceptance remain pending. Primary
+documentation establishes features, not confinement or compatibility:
 
 - The [pinned sslscan source review](tls-posture-feasibility.md#why-stock-sslscan-is-unsuitable)
   explains why its version-check output is unsuitable despite supporting version
@@ -173,9 +181,9 @@ features, not confinement or compatibility:
   product acceptance.
 - [Net-SNMP's snmpbulkget manual](https://www.net-snmp.org/docs/man/snmpbulkget.html)
   defines the non-repeaters and maximum-repetitions fields needed for a single
-  finite response. The [T05 candidate](snmp-page-tools.md) passed 51 frozen native
-  tests, including actual owned execution, and 23,170 portable tests. G6 review
-  and merge of PR #85 remain open.
+  finite response. The [accepted T05 profile](snmp-page-tools.md) passed 51 frozen
+  native tests, including actual owned execution, and 23,170 portable tests.
+  PR #85 closed G6 after independent review and required checks.
 
 ## Completion and measurement
 
