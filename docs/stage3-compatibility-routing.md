@@ -22,7 +22,7 @@ comparative benchmarking and proposal submission remain deferred.
 | Evidence level | Current status and meaning |
 | --- | --- |
 | Accepted synthetic execution | Existing profiles have their own accepted finite owned-fixture evidence. The [configurable HTTP/SSH assessment](configurable-owned-lab.md) uses one disconnected namespace per endpoint, scripted responses, exact RFC1918 address/port/path binding and live denied-destination witnesses. It is not a shared multi-host topology or a stock-service compatibility result. |
-| Stock-daemon diagnostic | Planned S3.2 runs an actual pinned nginx binary with generated public lab content and configuration inside a disposable owner. A diagnostic records native behavior and boundary failures; it grants no production capability and closes no existing compatibility claim by itself. |
+| Stock-daemon diagnostic | S3.2b's validated diagnostic runs an actual pinned nginx binary with generated public lab content and configuration inside a disposable owner. A diagnostic records native behavior and boundary failures; it grants no production capability and closes no existing compatibility claim by itself. |
 | Production integration | Later slices must connect supported stock-service observations to action authority, isolated parsing, evidence and inspection, with their finite acceptance corpus. Any new mode or changed contract is separately versioned; accepted v1 behavior remains intact. |
 | Network attachment | Remains unauthorized. A later concrete attachment plan needs owner-approved target ownership, scope, effects, exclusions and routing before any execution. Passing disconnected tests is not that permission. |
 
@@ -44,13 +44,13 @@ The installed daemon and separate single-action authority boundary need their
 own reviewed closure; the older diagnostic bypass cannot satisfy this contract.
 This split retains every native case and bound. Native findings can require
 re-estimation; do not remove a required row or silently raise a bound to fit the
-estimate. S3.1 and S3.2a (PR #88 at `5686dc8`) are accepted. S3.2b is current; its native execution and complete acceptance corpus remain to be verified.
+estimate. S3.1 and S3.2a (PR #88 at `5686dc8`) are accepted. S3.2b's complete native corpus, enforcement, replay and portable validation now pass; its PR review and acceptance remain pending. See the [recorded results](stock-nginx-native.md).
 
 | Slice | Required outcome | Completion evidence |
 | --- | --- | --- |
 | **S3.1 — accepted contract** | Reconcile T06 acceptance, distinguish synthetic and real-service support, freeze the first diagnostic corpus and keep later gates visible. | PR #87 at `48c0bce`; fresh review, 554 focused checks and five final/post-merge checks passed. This closes planning only. |
 | **S3.2a — accepted: source/runtime preflight** | Review pinned nginx source/distribution changes, compile the finite A/B case/configuration identity and inspect the fixed installed ELF/dependency bytes without starting a service. | [Source review](stock-nginx-feasibility.md), strict manifest/configuration validation and real local inspection receipts. No authority, native execution or service compatibility is established. |
-| **S3.2b — current: stock nginx diagnostic** | Exercise the two fixed HTTP endpoint configurations and exact actions below against a pinned nginx process in a disconnected owner, through a separate one-action authorization contract. Reuse existing Nmap probes, header reader, namespace lifecycle and evidence patterns. | Independent traffic accounting, the complete useful/negative corpus, authority and required approval checks, resource/cleanup receipts and explicit unsupported behavior. S3.2 stays open until these pass. No new workflow, generic endpoint option or production support claim. |
+| **S3.2b — validated; awaiting review/acceptance** | Exercise the two fixed HTTP endpoint configurations and exact actions below against a pinned nginx process in a disconnected owner, through a separate one-action authorization contract. Reuse existing Nmap probes, header reader, namespace lifecycle and evidence patterns. | Independent traffic accounting, the complete useful/negative corpus, authority and required approval checks, resource/cleanup receipts and explicit unsupported behavior. All declared native cases now pass; S3.2 stays open until PR review and acceptance close. No new workflow, generic endpoint option or production support claim. |
 | **S3.3 — HTTP production compatibility** | Integrate the reviewed HTTP subset through the secure path and validate a second stock implementation, initially Apache, with the same observable outcomes. | Separate production contract, complete HTTP corpus on both pinned implementations, exact action/endpoint enforcement and unchanged inspection. A substitute server needs a documented feasibility finding and reviewed contract change. |
 | **S3.4 — SSH production compatibility** | Use stock OpenSSH with public synthetic host keys for bounded service identification and host-key collection. Test two explicit server configurations, with independent observations rather than a new discovery workflow. | Exact endpoint/key facts, received bytes, connection limits and refusal/cleanup corpus; no authentication, account probing, completed user session or verified host identity. Pin the concrete server configurations before implementation. |
 | **S3.5 — disconnected multi-host routing** | Put the supported services in distinct owned network namespaces connected by controlled owned links, with exact action-specific destination binding, explicit exclusions and aggregate request/connection/rate budgets across hosts and actions. | At least two service hosts with distinct recorded network namespace identities, routed links and an excluded listening endpoint; loopback address aliases alone do not qualify. Demonstrate useful selected-target execution, denied other-service/excluded traffic, and attempted budget bypass by splitting actions or restarting workers. No host network namespace, physical interface, default external route or host firewall modification. |
@@ -295,7 +295,9 @@ result. Comparative baseline overhead remains unmeasured/deferred. Blocking all
 actions or refusing supported normal responses fails usefulness even if no
 unauthorized traffic occurs.
 
-After S3.2a's pinned source/runtime preparation, proceed with the separately
-authorized S3.2b disconnected diagnostic and the complete corpus above. Do not repeat accepted milestones, add optional
-signatures, set up model credentials or request network attachment merely to
-make the first stock-service trial possible.
+The separately authorized S3.2b diagnostic now has complete native, enforcement,
+cleanup and unchanged-replay evidence, plus portable and accepted-profile
+regressions. Review its latest revision and required checks before acceptance.
+Then proceed to S3.3's separate production HTTP contract and Apache comparison.
+Do not repeat accepted milestones, add optional signatures, set up model
+credentials or request network attachment for this disconnected stage.

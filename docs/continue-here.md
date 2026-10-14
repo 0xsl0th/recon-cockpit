@@ -41,14 +41,27 @@ passed; reviewed head `1009be6` and the merge share tree
 `748fdb336a61d4d12fda5e4ad846641e061664a8`. Its full portable validation passed
 24,263 tests. Retain `.secure-agent/stock-nginx-native-20261014/pr88-merge-review.json`.
 
-**Current work is S3.2b: the separately authorized stock-nginx diagnostic and
-full native corpus.** The [diagnostic runbook](stock-nginx-native.md) follows the
-[Stage 3 contract](stage3-compatibility-routing.md). Reuse the accepted readers,
-isolation, audit and approval services while keeping the one-action diagnostic
-separate from the accepted four-action workflow. S3.2 and Stage 3 remain open
-until the complete native, enforcement, cleanup and unchanged-replay gates pass.
-The split stays within the 6–8 PR estimate; preparation does not replace native
-validation. HTTP production compatibility (S3.3) follows acceptance of this slice.
+**S3.2b is implemented and validated; PR review and acceptance remain pending.**
+The [stock-nginx diagnostic](stock-nginx-native.md) passed **60 native checks,
+15 accepted-workflow/authority regressions and 24,642 portable tests** at frozen
+source `d0bbdf2`, with all 874 tracked source hashes unchanged in each run.
+All 12 ordinary and four robustness tasks completed usefully, all ten injected
+faults had their declared outcome, and all 16 distinct forbidden-destination
+combinations were blocked. The 26 bundles passed 52 unchanged Python/CLI
+inspections. Provider calls and spend stayed zero.
+
+Regression validation also found a missing public fixture dependency on merged
+main. Adding that exact read-only module restored the existing four-action
+HTTP/SSH workflow; no scope, policy, action or resource limit changed. Retain the
+baseline failures and final receipts under
+`.secure-agent/stock-nginx-native-20261014/`.
+
+S3.2 and Stage 3 stay open until their respective acceptance gates close.
+**Next after S3.2b acceptance: S3.3 production HTTP integration and Apache
+compatibility**, following the [Stage 3 contract](stage3-compatibility-routing.md).
+This diagnostic adds no production catalog capability; coverage remains
+52 accepted profiles / 17 external programs. The permitted split remains within
+the 6–8 PR estimate, and completed milestones stay closed.
 
 S3.2a frozen source `8e130df` passed **26/26 actual installed-runtime inspections**
 and **100 focused boundary tests**. Every selection binds nine native files and
@@ -65,8 +78,10 @@ source then passed **24,263 portable tests**, with 1,399 integration tests
 deselected and no failures, errors or skips. Both attempts remain recorded;
 no source change or test exclusion worked around the sandbox restriction.
 S3.2a is closed. Current implementation branch is `feature/stage3-nginx-native`
-in `/tmp/recon-stage3-nginx-native`; preserve all native failures and require the
-complete declared corpus before claiming S3.2b complete.
+in `/tmp/recon-stage3-nginx-native`. The complete declared corpus is now recorded
+in the diagnostic runbook; preserve all earlier failures and await PR acceptance
+before closing S3.2b. Review the latest revision and all required checks before
+merging, then begin S3.3 without reopening accepted milestones.
 
 S3.1 catalog reconciliation passed **554 focused portable checks**, with no
 failures, errors or skips. An independent before/after comparison of all 52
@@ -76,8 +91,9 @@ adapter descriptors, parameters, policies, recipes and limits are identical.
 Frozen historical contract hashes remain intact. Private validation is in
 `.secure-agent/stage3-20261014/catalog-verification.json`, SHA-256
 `6303299da82c6167a31b40b15bba4b6f4893aa3a903550764ef7ddd9009b192d`,
-with the snapshots and test XML beside it. This slice ran no new native service;
-Stage 3 compatibility is still planned, not verified.
+with the snapshots and test XML beside it. This S3.1 preparation ran no native
+service and established no native compatibility; the later diagnostic
+results are recorded above and do not establish production HTTP support.
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
 closed. Model credentials, paid calls, live-model evaluation, deeper workflows,

@@ -28,11 +28,14 @@ T05 remains accepted at `8ca3887`, with its 51 native and 23,170 portable passes
 
 **S3.1 is accepted in PR #87 at `48c0bce`; S3.2a's
 [pinned source/runtime preparation](stock-nginx-feasibility.md) is accepted in
-PR #88 at `5686dc8`.** Current S3.2b implements the separate authorized one-action stock-nginx diagnostic and full
-native corpus in the [Stage 3 contract](stage3-compatibility-routing.md). This
-permitted split fits the existing 6–8 PR estimate and removes no required case.
-Preflight inspection establishes no service execution or compatibility. S3.2 and
-Stage 3 remain open; attached networks and deeper composition stay deferred.
+PR #88 at `5686dc8`.** S3.2b's separate one-action [stock-nginx diagnostic](stock-nginx-native.md)
+has passed 60 native checks, 15 accepted-workflow/authority regressions and
+24,642 portable tests. The complete A/B corpus records 16 useful completions,
+ten correct negatives and 16 distinct destination denials; review and acceptance
+remain pending. The diagnostic adds no catalog profile or production HTTP claim.
+S3.3 production HTTP integration and Apache compatibility follow acceptance.
+This permitted split fits the 6–8 PR estimate. S3.2 and Stage 3 remain open;
+attached networks and deeper composition stay deferred.
 
 PRs #80/#81 (T02/T03), #82 (catalog/source review), #83/#84 (T04), #85/#86
 (T05/T06) and proposal PR #31 remain closed. Proposal submission and its broader
@@ -233,7 +236,7 @@ composition, attached networks or comparative benchmarking.
 
 | Later roadmap gate | Required work that remains visible |
 | --- | --- |
-| Stage 3 — realistic services and target handling | Accepted [S3.1 contract](stage3-compatibility-routing.md); current S3.2a source/runtime preflight, then S3.2b authorized native nginx diagnostic. A finite supported host/port/service matrix; representative actual services and fragmentation/denial behavior; configurable target/SNI/name bindings; exclusions; global rate/network budgets; explicit redirect/referral/DNS decisions; out-of-scope traffic witnesses. Owned synthetic fixtures alone cannot satisfy this gate. Network attachment requires separate authorization. |
+| Stage 3 — realistic services and target handling | Accepted [S3.1 contract](stage3-compatibility-routing.md); accepted S3.2a preparation and validated S3.2b native nginx diagnostic awaiting review/acceptance; S3.3 production HTTP/Apache follows. A finite supported host/port/service matrix; representative actual services and fragmentation/denial behavior; configurable target/SNI/name bindings; exclusions; global rate/network budgets; explicit redirect/referral/DNS decisions; out-of-scope traffic witnesses. Owned synthetic fixtures alone cannot satisfy this gate. Network attachment requires separate authorization. |
 | Stage 4 — engagement and session custody | Rules of engagement, persistent limits, expiry/revocation, secret custody and a finite selected authenticated-operation contract. Develop with synthetic credentials; real credentials and intrusive effects remain separately authorized. No existing profile grants these operations. |
 | Stage 5 — workflows, findings, reports and retests | Evidence-linked multi-asset coordination, reviewed findings/severity, deduplication, remediation, client deliverables and retest history. Deeper composition and comparative benchmarks remain deferred during Stage 3. |
 | Stages 6/7 — GUI and release | Expose accepted operations through the existing authority services, engagement/report usability, installation/upgrade/recovery, supported-platform and operator acceptance. The current GUI's completed local milestone remains closed; broader professional release does not follow from profile counts. |

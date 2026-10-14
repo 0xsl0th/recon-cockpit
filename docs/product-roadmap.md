@@ -37,14 +37,27 @@ passed; reviewed head `1009be6` and the merge share tree
 `748fdb336a61d4d12fda5e4ad846641e061664a8`. Its full portable validation passed
 24,263 tests. Retain `.secure-agent/stock-nginx-native-20261014/pr88-merge-review.json`.
 
-**Current work is S3.2b: the separately authorized stock-nginx diagnostic and
-full native corpus.** The [diagnostic runbook](stock-nginx-native.md) follows the
-[Stage 3 contract](stage3-compatibility-routing.md). Reuse the accepted readers,
-isolation, audit and approval services while keeping the one-action diagnostic
-separate from the accepted four-action workflow. S3.2 and Stage 3 remain open
-until the complete native, enforcement, cleanup and unchanged-replay gates pass.
-The split stays within the 6–8 PR estimate; preparation does not replace native
-validation. HTTP production compatibility (S3.3) follows acceptance of this slice.
+**S3.2b is implemented and validated; PR review and acceptance remain pending.**
+The [stock-nginx diagnostic](stock-nginx-native.md) passed **60 native checks,
+15 accepted-workflow/authority regressions and 24,642 portable tests** at frozen
+source `d0bbdf2`, with all 874 tracked source hashes unchanged in each run.
+All 12 ordinary and four robustness tasks completed usefully, all ten injected
+faults had their declared outcome, and all 16 distinct forbidden-destination
+combinations were blocked. The 26 bundles passed 52 unchanged Python/CLI
+inspections. Provider calls and spend stayed zero.
+
+Regression validation also found a missing public fixture dependency on merged
+main. Adding that exact read-only module restored the existing four-action
+HTTP/SSH workflow; no scope, policy, action or resource limit changed. Retain the
+baseline failures and final receipts under
+`.secure-agent/stock-nginx-native-20261014/`.
+
+S3.2 and Stage 3 stay open until their respective acceptance gates close.
+**Next after S3.2b acceptance: S3.3 production HTTP integration and Apache
+compatibility**, following the [Stage 3 contract](stage3-compatibility-routing.md).
+This diagnostic adds no production catalog capability; coverage remains
+52 accepted profiles / 17 external programs. The permitted split remains within
+the 6–8 PR estimate, and completed milestones stay closed.
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
 closed. Model credentials, paid calls, live-model evaluation, deeper workflows,
@@ -167,7 +180,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
-| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md) now proceeds to S3.2a source/runtime preflight and S3.2b authorized native diagnostic, then HTTP integration, OpenSSH compatibility, disconnected multi-host routing, explicit name/redirect/referral handling and acceptance. Add endpoint exclusions and shared request/rate budgets; demonstrate useful execution and denied out-of-scope traffic. Attached lab/engagement networks require separate authorization. None of this is accepted merely by the contract. | 6–8 |
+| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md) has accepted S3.2a preparation and a validated S3.2b diagnostic awaiting review/acceptance, then HTTP integration, OpenSSH compatibility, disconnected multi-host routing, explicit name/redirect/referral handling and acceptance. Add endpoint exclusions and shared request/rate budgets; demonstrate useful execution and denied out-of-scope traffic. Attached lab/engagement networks require separate authorization. None of this is accepted merely by the contract. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |

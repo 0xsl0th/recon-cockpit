@@ -37,14 +37,27 @@ passed; reviewed head `1009be6` and the merge share tree
 `748fdb336a61d4d12fda5e4ad846641e061664a8`. Its full portable validation passed
 24,263 tests. Retain `.secure-agent/stock-nginx-native-20261014/pr88-merge-review.json`.
 
-**Current work is S3.2b: the separately authorized stock-nginx diagnostic and
-full native corpus.** The [diagnostic runbook](stock-nginx-native.md) follows the
-[Stage 3 contract](stage3-compatibility-routing.md). Reuse the accepted readers,
-isolation, audit and approval services while keeping the one-action diagnostic
-separate from the accepted four-action workflow. S3.2 and Stage 3 remain open
-until the complete native, enforcement, cleanup and unchanged-replay gates pass.
-The split stays within the 6–8 PR estimate; preparation does not replace native
-validation. HTTP production compatibility (S3.3) follows acceptance of this slice.
+**S3.2b is implemented and validated; PR review and acceptance remain pending.**
+The [stock-nginx diagnostic](stock-nginx-native.md) passed **60 native checks,
+15 accepted-workflow/authority regressions and 24,642 portable tests** at frozen
+source `d0bbdf2`, with all 874 tracked source hashes unchanged in each run.
+All 12 ordinary and four robustness tasks completed usefully, all ten injected
+faults had their declared outcome, and all 16 distinct forbidden-destination
+combinations were blocked. The 26 bundles passed 52 unchanged Python/CLI
+inspections. Provider calls and spend stayed zero.
+
+Regression validation also found a missing public fixture dependency on merged
+main. Adding that exact read-only module restored the existing four-action
+HTTP/SSH workflow; no scope, policy, action or resource limit changed. Retain the
+baseline failures and final receipts under
+`.secure-agent/stock-nginx-native-20261014/`.
+
+S3.2 and Stage 3 stay open until their respective acceptance gates close.
+**Next after S3.2b acceptance: S3.3 production HTTP integration and Apache
+compatibility**, following the [Stage 3 contract](stage3-compatibility-routing.md).
+This diagnostic adds no production catalog capability; coverage remains
+52 accepted profiles / 17 external programs. The permitted split remains within
+the 6–8 PR estimate, and completed milestones stay closed.
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
 closed. Model credentials, paid calls, live-model evaluation, deeper workflows,
@@ -88,7 +101,7 @@ claim that today's bounded fixtures support professional engagements.
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
 | 3 — accepted, finite coverage tranche | T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | PRs #74/#80/#81/#84/#85/#86 close all required G1–G6 gates: 52 accepted profiles across 17 programs. T06 retains 83 native and 24,163 portable passes. Existing exact recipes, limits and evidence contracts stay closed; this is not general engagement compatibility. |
-| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87. S3.2a is accepted in PR #88; current S3.2b implements the authorized stock-nginx diagnostic in a disconnected owned namespace; HTTP/OpenSSH compatibility, multi-host routing and name/redirect/referral boundaries follow. No attached network or new execution support is granted by planning. |
+| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87. S3.2a is accepted in PR #88; S3.2b's authorized stock-nginx diagnostic has passed native/portable validation and awaits review/acceptance; HTTP/OpenSSH compatibility, multi-host routing and name/redirect/referral boundaries follow. No attached network or new execution support is granted by planning. |
 | 5 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`

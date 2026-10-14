@@ -195,4 +195,6 @@ tests**, with 1,399 integration tests deselected and no failures, errors or skip
 The final `portable.xml`, log and `verification.json` remain beside the earlier
 attempt. Fresh review and all five final/post-merge CI checks passed before
 acceptance. No production change or test exclusion worked around the restriction.
-The [S3.2b diagnostic](stock-nginx-native.md) retains the full native gate.
+The later [S3.2b diagnostic](stock-nginx-native.md) now records the complete native
+gate, portable and accepted-profile regressions, with PR acceptance pending.
+Those execution results are separate from this accepted preparation-only record.
