@@ -55,16 +55,17 @@ def test_owner_commands_use_separate_private_storage_and_fixed_runtime(fake_runt
     bootstrap = ("/usr/lib/python3.13", [("/usr/bin/python3", "/usr/bin/python3"),
                  ("/usr/sbin/nft", "/usr/sbin/nft"), ("/usr/bin/nsenter", "/usr/bin/nsenter")])
     recorder = lab_module.recorder_command(bootstrap, 20)
-    assert recorder.count("--tmpfs") == 2
-    assert recorder.count(str(worker.SCRATCH_BYTES)) == 2
+    assert recorder.count("--tmpfs") == 1
+    assert recorder.count(str(worker.SCRATCH_BYTES)) == 1
+    assert ["--ro-bind", "/stock-peer", "/peer"] in [recorder[index:index + 3] for index in range(len(recorder))]
     assert "/peer" in recorder and "/scratch" in recorder
     assert "/usr/bin/nsenter" not in recorder
     assert recorder[-1] == "recorder"
     assert "--as-pid-1" in recorder
     manifest = runtime.inspect_runtime("A", "O1", control())
     descriptors = list(range(40, 40 + len(manifest["files"])))
-    daemon = lab_module.daemon_command(bootstrap, manifest, descriptors, 32)
-    assert daemon[daemon.index("--bind-fd") + 1:daemon.index("--bind-fd") + 3] == ["32", "/scratch"]
+    daemon = lab_module.daemon_command(bootstrap, manifest, descriptors)
+    assert daemon[daemon.index("--bind") + 1:daemon.index("--bind") + 3] == ["/stock-peer", "/scratch"]
     assert "--tmpfs" not in daemon and "/usr/sbin/nft" not in daemon
     assert daemon.count("--ro-bind-data") == len(manifest["files"])
     assert daemon[-1] == "daemon"
@@ -72,7 +73,7 @@ def test_owner_commands_use_separate_private_storage_and_fixed_runtime(fake_runt
     for name, value in runtime.spec.NGINX_ENVIRONMENT.items():
         assert any(daemon[index:index + 3] == ["--setenv", name, value] for index in range(len(daemon)))
     with pytest.raises(ValueError, match="snapshot_count"):
-        lab_module.daemon_command(bootstrap, manifest, descriptors[:-1], 32)
+        lab_module.daemon_command(bootstrap, manifest, descriptors[:-1])
 
 
 @pytest.mark.parametrize("configuration", ("A", "B"))
@@ -144,7 +145,7 @@ def test_seccomp_unknown_syscall_refuses_and_releases(monkeypatch):
     assert released == [1]
 
 
-@pytest.mark.parametrize("failure", ("fstatvfs", "unexpected_ancillary", "truncated"))
+@pytest.mark.parametrize("failure", ("unexpected_descriptor", "unexpected_ancillary", "truncated"))
 def test_received_directory_is_closed_on_every_failure(tmp_path, monkeypatch, failure):
     descriptor = os.open(tmp_path, os.O_PATH | os.O_CLOEXEC)
     ancillary = [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array("i", [descriptor]).tobytes())]
@@ -153,12 +154,8 @@ def test_received_directory_is_closed_on_every_failure(tmp_path, monkeypatch, fa
     selected._channel = SimpleNamespace(recvmsg=lambda *args: (b'{"ready":true}', ancillary,
         socket.MSG_CTRUNC if failure == "truncated" else 0, None))
     selected._supervisor = SimpleNamespace(wait_for=lambda predicate: None, fds=set())
-    if failure == "fstatvfs":
-        def fail(fd):
-            raise OSError(errno.EIO, "test")
-        monkeypatch.setattr(lab_module.os, "fstatvfs", fail)
     with pytest.raises((OSError, ValueError)):
-        selected._receive(directory=True)
+        selected._receive()
     with pytest.raises(OSError) as error:
         os.fstat(descriptor)
     assert error.value.errno == errno.EBADF
@@ -184,6 +181,19 @@ def test_owner_rejects_inherited_descriptors_before_loading_native_libraries(tmp
             pass_fds=(inherited.fileno(),), capture_output=True, timeout=5, check=False)
     assert refused.returncode == 78 and refused.stdout == b""
     assert refused.stderr == b"stock_http_owner_refused\n"
+
+
+@pytest.mark.parametrize("readonly,error", ((True, errno.EROFS), (False, errno.EROFS), (True, errno.EACCES)))
+def test_recorder_peer_requires_actual_read_only_mount_and_write_denial(monkeypatch, readonly, error):
+    monkeypatch.setattr(worker.os, "statvfs", lambda path: SimpleNamespace(f_flag=os.ST_RDONLY if readonly else 0))
+    def denied(*args):
+        raise OSError(error, "test")
+    monkeypatch.setattr(worker.os, "open", denied)
+    if readonly and error == errno.EROFS:
+        worker.verify_peer_read_only()
+    else:
+        with pytest.raises((ValueError, OSError)):
+            worker.verify_peer_read_only()
 
 
 @pytest.mark.parametrize("size,mode", ((1048576, 0o700), (786432, 0o777), (1048577, 0o700)))

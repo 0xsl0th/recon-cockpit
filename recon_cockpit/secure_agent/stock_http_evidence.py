@@ -152,7 +152,8 @@ def validate_result(result, manifest, *, deadline=None):
         raise ValueError("invalid_stock_result_shape")
     contract.validate_result_context(result, manifest["identity"], tool_id=tool, execution_status=result["status"])
     timing = result["timing"]
-    if (type(timing) is not dict or set(timing) != {"client_startup_ms", "action_elapsed_ms"}
+    if (type(timing) is not dict or set(timing) != {
+            "owner_startup_ms", "client_startup_ms", "action_elapsed_ms", "owner_teardown_ms"}
             or any(type(item) is not int or not 0 <= item <= 60000 for item in timing.values())):
         raise ValueError("invalid_stock_timing")
     if tool == HEADERS:

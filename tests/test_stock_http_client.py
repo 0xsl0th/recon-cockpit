@@ -91,7 +91,7 @@ def test_command_retains_only_selected_snapshots_and_no_private_owner_mount(monk
     mounted = [argv[i + 1:i + 3] for i, value in enumerate(argv) if value == "--ro-bind"]
     forbidden = {"nmap", "ssh-keyscan", "nsenter", "nft", "ip", "nginx", "bwrap"}
     assert all(Path(source).name not in forbidden for source, _ in mounted)
-    assert all(destination not in {"/peer", "/scratch"} for _, destination in mounted)
+    assert all(destination not in {"/peer", "/scratch", "/stock-peer"} for _, destination in mounted)
     assert "--bind" not in argv and "--bind-fd" not in argv and "--tmpfs" not in argv
     data = [argv[i + 1:i + 3] for i, value in enumerate(argv) if value == "--ro-bind-data"]
     assert data == [[str(fd), row["destination"]] for fd, row in zip(descriptors, entries, strict=True)]

@@ -1,8 +1,8 @@
 """Private stock HTTP recorder and nginx bootstrap; no host service access.
 
-The recorder creates the disconnected TCP namespace and transfers one O_PATH
-directory descriptor to its supervisor. A separately launched daemon sandbox
-binds that directory as its sole writable scratch. It is never a recorder child.
+The recorder creates the disconnected TCP namespace. A private bounded tmpfs
+created by the isolated launcher is mounted read-only for the recorder and as
+the separate daemon's sole writable scratch. It is never a recorder child.
 """
 
 import errno
@@ -112,6 +112,21 @@ def scratch_bound(path):
             or usage.f_blocks * usage.f_frsize != SCRATCH_BYTES):
         raise ValueError("stock_owner_scratch_not_bounded")
     return info.st_dev
+
+
+def verify_peer_read_only():
+    """The recorder can reach nginx's socket but cannot alter its files."""
+    if not os.statvfs(PEER_DIRECTORY).f_flag & os.ST_RDONLY:
+        raise ValueError("stock_owner_peer_not_read_only")
+    try:
+        descriptor = os.open(PEER_DIRECTORY + "/.write-witness",
+                             os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    except OSError as error:
+        if error.errno == errno.EROFS:
+            return
+        raise
+    os.close(descriptor)
+    raise ValueError("stock_owner_peer_write_allowed")
 
 
 def limits(deadline):
@@ -237,10 +252,9 @@ def firewall_rules(configuration):
 '''
 
 
-def send(channel, value, descriptor=None):
-    ancillary = [] if descriptor is None else [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array("i", [descriptor]))]
+def send(channel, value):
     raw = encode(value)
-    if channel.sendmsg([raw], ancillary) != len(raw):
+    if channel.send(raw) != len(raw):
         raise ValueError("stock_owner_send_truncated")
 
 
@@ -270,6 +284,7 @@ def recorder_main():
         worker._set_limits(worker._remaining(value["deadline"], 60))
         if scratch_bound("/scratch") == scratch_bound(PEER_DIRECTORY):
             raise ValueError("stock_owner_scratch_not_separate")
+        verify_peer_read_only()
         prepare_addresses(value["configuration"])
         selected = spec.action(value["configuration"], value["case"])
         for address in ((selected["target"], selected["parameters"]["port"]), *spec.witness_endpoints(value["configuration"])):
@@ -289,18 +304,14 @@ def recorder_main():
             timeout=worker._remaining(value["deadline"], 3), env={"LC_ALL": "C"})
         service = Service(value["configuration"], value["case"], listeners[0],
                           daemon_path=PEER_SOCKET, deadline=value["deadline"])
-        descriptor = os.open(PEER_DIRECTORY, os.O_PATH | os.O_NOFOLLOW | os.O_CLOEXEC)
         worker.drop_privileges()
         limits(value["deadline"])
         socket_filter(daemon=False)
         confinement_witnesses()
         common.apply_landlock({"/dev/null": 6, "/proc/self/status": 4, "/scratch": (1 << 15) - 2,
                                PEER_DIRECTORY: 8})
-        try:
-            send(channel, {"ready": True, "namespaces": namespaces(), "witness_baselines": True,
-                           "bounds": BOUNDS, "runtime_digest": value["runtime_digest"]}, descriptor)
-        finally:
-            os.close(descriptor)
+        send(channel, {"ready": True, "namespaces": namespaces(), "witness_baselines": True,
+                       "bounds": BOUNDS, "runtime_digest": value["runtime_digest"]})
         sequence = 0
         while True:
             worker._remaining(value["deadline"], 60)

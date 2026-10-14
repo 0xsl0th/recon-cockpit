@@ -69,7 +69,9 @@ class AuthorizedStockHttpBackend(AuthorizedFixtureBackend):
             if self._closure is None or contract.validate_runtime(self._closure["stock_http_runtime"], self.selection) != runtime:
                 raise IsolationUnavailable("Stock HTTP runtime commitment changed")
             self._sequence, self._output = 1, action.parameters.max_output_bytes
+            owner_started = time.monotonic()
             self.lab.start(control)
+            owner_startup_ms = round((time.monotonic() - owner_started) * 1000)
             launch = {"schema_version": "1", "mode": contract.PROFILE, "execute": True,
                 "session_id": self._session_id, "nonce": secrets.token_hex(32), "sequence": 1,
                 "action": action.to_dict(), "action_digest": action.digest,
@@ -97,7 +99,10 @@ class AuthorizedStockHttpBackend(AuthorizedFixtureBackend):
             result["owned_lab"] = {"identity": self._lab_identity,
                 "connection_count": owner["connection_count"], "request_count": owner["request_count"],
                 "owner_receipt_sha256": hashlib.sha256(contract.spec.encode(owner)).hexdigest()}
+            owner_stopping = time.monotonic()
             result["stock_http_closure"] = self.lab.close()
+            result["timing"].update(owner_startup_ms=owner_startup_ms,
+                owner_teardown_ms=round((time.monotonic() - owner_stopping) * 1000))
             contract.validate_result_context(result, self._lab_identity, tool_id=action.tool_id,
                                              execution_status=result["status"])
             control.check()

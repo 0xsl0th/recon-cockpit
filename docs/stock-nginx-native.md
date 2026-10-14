@@ -27,10 +27,19 @@ policy is labeled as such; automated test execution is not personal approval.
 The recorder owns the disconnected TCP namespace and independently accounts
 for attempts, admitted connections, validated requests, daemon delivery and
 response delivery. Only a complete exact request reaches nginx. The separately
-confined stock daemon listens on a private Unix socket. Its directory descriptor
-passes only between trusted owner setup processes; the client receives neither
-that descriptor nor its mount. Client AF_UNIX access is also blocked. The daemon
-and recorder have independent process trees, namespaces and resource bounds.
+confined stock daemon listens on a private Unix socket. The isolated launcher
+creates its kernel-bounded private directory; the recorder mounts it read-only
+and nginx mounts it writable. The client receives none of these mounts or owner
+management descriptors, and client AF_UNIX access is blocked. The daemon and
+recorder have independent process trees, namespaces and resource bounds.
+
+The initial directory-FD handoff failed closed: Bubblewrap 0.11.2 resolves a
+`--bind-fd` source to a pathname, which could not be found outside the recorder's
+private mount namespace. Its [upstream implementation](https://github.com/containers/bubblewrap/blob/v0.11.2/bubblewrap.c)
+explicitly documents this cross-user-namespace restriction. The revised layout
+needs no extra namespace-entry privilege or service process. Creating the empty
+private mount during launcher bootstrap does not start nginx or client traffic;
+those still require authorization and both applicable launch witnesses.
 
 The client verifies its confined namespace, destination denials and resource
 boundary before signaling readiness. Only then does the authority arm the
@@ -41,7 +50,9 @@ does not permit further forwarding. The session remains bounded to 60 seconds.
 
 Each owner's 1 MiB aggregate storage allowance is partitioned into 768 KiB
 kernel-bounded private scratch and at most 256 KiB retained logs/control evidence.
-Both retain the 256 MiB address-space and 64-descriptor limits. Child creation is
+The stock launcher's ordinary `/tmp` is reduced to 256 KiB alongside that
+768 KiB directory, preserving its aggregate 1 MiB scratch ceiling. Both service
+owners retain the 256 MiB address-space and 64-descriptor limits. Child creation is
 denied after setup. No package installation, host service, host route or external
 network is used.
 
@@ -81,7 +92,8 @@ packet boundaries.
 Missing, stale, replayed or mismatched required approval; audit failure; changed
 authority/runtime/owner; expired/cancelled sessions; extra requests/connections;
 private-listener bypass; cleanup and unchanged CLI/Python replay remain required.
-Record actual startup/action/total latency and zero provider calls/spend.
+Record client startup, action, owner startup/teardown and whole-trial latency
+including read-only preflight, with zero provider calls/spend.
 Comparative benchmarking and broader workflow composition stay deferred.
 
 After S3.2b acceptance, S3.3 adds the separately reviewed production HTTP subset

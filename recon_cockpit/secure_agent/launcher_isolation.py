@@ -243,11 +243,17 @@ class LinuxFixtureLauncher:
 
     def _command(self, closure, files, commitment):
         host = _namespaces()
+        stock_http = self._config['profile'] == 'stock_nginx_diagnostic_v1'
         argv = [_trusted_program('bwrap'), '--unshare-user', '--unshare-net', '--unshare-pid',
             '--unshare-ipc', '--unshare-uts', '--unshare-cgroup', '--uid', str(os.getuid()),
             '--gid', str(os.getgid()), '--cap-drop', 'ALL', '--die-with-parent', '--new-session',
             '--clearenv', '--setenv', 'LC_ALL', 'C', '--chdir', '/', '--proc', '/proc', '--dev', '/dev',
-            '--size', '1048576', '--tmpfs', '/tmp', '--ro-bind', closure['stdlib'], closure['stdlib']]
+            '--size', '262144' if stock_http else '1048576', '--tmpfs', '/tmp',
+            '--ro-bind', closure['stdlib'], closure['stdlib']]
+        if stock_http:
+            # One kernel-bounded parent mount is shared by the two service
+            # owners, never the client. Together with /tmp it stays at 1 MiB.
+            argv += ['--perms', '0700', '--size', '786432', '--tmpfs', '/stock-peer']
         for source, destination in files:
             argv += ['--ro-bind', source, destination]
         for name in (*MODULES,

@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import threading
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -35,7 +36,7 @@ def portable_services(monkeypatch, fake_runtime):
         def finish(self, *args, **kwargs):
             calls.append(("evidence_finished",))
         def finalize(self, outcome, **kwargs):
-            calls.append(("finalized",))
+            calls.append(("finalized", kwargs))
             return deepcopy(outcome)
     class Audit:
         def __init__(self, path, **options):
@@ -108,6 +109,28 @@ def test_explicit_test_policy_keeps_exact_action_and_all_service_witnesses(porta
     assert next(index for index, row in enumerate(portable_services) if row[0] == "run") > next(
         index for index, row in enumerate(portable_services)
         if row[0] == "event" and row[1]["event_type"] == "execution_started")
+
+
+def test_wall_time_includes_preflight_without_shortening_execution_session(portable_services, monkeypatch, tmp_path):
+    began = diagnostic.time.monotonic()
+    now = [began]
+    daemon_inspection, client_inspection = diagnostic.inspect_runtime, diagnostic.inspect_client_runtime
+    def inspect_daemon(configuration, case, control):
+        assert control.deadline == began + 60
+        now[0] += 5
+        return daemon_inspection(configuration, case, control)
+    def inspect_client(selected, control):
+        assert control.deadline == began + 60
+        now[0] += 2
+        return client_inspection(selected, control)
+    monkeypatch.setattr(diagnostic, "time", SimpleNamespace(monotonic=lambda: now[0]))
+    monkeypatch.setattr(diagnostic, "inspect_runtime", inspect_daemon)
+    monkeypatch.setattr(diagnostic, "inspect_client_runtime", inspect_client)
+    diagnostic.run_trial(tmp_path / "trial", configuration="A", case="O1", execute=True,
+                         unattended_owned_lab_test=True)
+    run = next(row for row in portable_services if row[0] == "run")
+    assert run[3]["control"].deadline == began + 7 + 60
+    assert next(row for row in portable_services if row[0] == "finalized")[1] == {"elapsed_ms": 7000}
 
 
 @pytest.mark.parametrize("options", [

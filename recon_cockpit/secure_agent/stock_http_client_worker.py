@@ -107,7 +107,7 @@ def verify_network_boundary(configuration):
     else:
         descriptor.close()
         raise RuntimeError("stock_client_private_socket_allowed")
-    for path in ("/scratch", "/peer"):
+    for path in ("/scratch", "/peer", "/stock-peer"):
         try:
             os.stat(path)
         except FileNotFoundError:

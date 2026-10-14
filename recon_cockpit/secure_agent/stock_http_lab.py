@@ -46,7 +46,7 @@ def _base_command(bootstrap, *, recorder, info_fd=None):
     if recorder:
         argv += ["--cap-add", "CAP_NET_ADMIN", "--info-fd", str(info_fd),
                  "--perms", "0700", "--size", str(SCRATCH_BYTES), "--tmpfs", "/scratch",
-                 "--perms", "0700", "--size", str(SCRATCH_BYTES), "--tmpfs", "/peer"]
+                 "--ro-bind", "/stock-peer", "/peer"]
     for source, destination in files:
         if Path(destination).name not in {"bwrap", "nsenter", "ip", "nginx"} and (recorder or Path(destination).name != "nft"):
             argv += ["--ro-bind", source, destination]
@@ -60,7 +60,7 @@ def recorder_command(bootstrap, info_fd):
         "/usr/bin/python3", "-I", "-S", "/app/recon_cockpit/secure_agent/stock_http_owner_worker.py", "recorder"]
 
 
-def daemon_command(bootstrap, manifest, descriptors, peer_fd):
+def daemon_command(bootstrap, manifest, descriptors):
     runtime.validate_manifest(manifest)
     if len(descriptors) != len(manifest["files"]):
         raise ValueError("stock_daemon_snapshot_count_changed")
@@ -68,7 +68,7 @@ def daemon_command(bootstrap, manifest, descriptors, peer_fd):
     for item, descriptor in zip(manifest["files"], descriptors, strict=True):
         mode = "0555" if item["destination"] in (manifest["executable"], manifest["interpreter"]) else "0444"
         argv += ["--perms", mode, "--ro-bind-data", str(descriptor), item["destination"]]
-    argv += ["--bind-fd", str(peer_fd), "/scratch"]
+    argv += ["--bind", "/stock-peer", "/scratch"]
     for name, value in spec.NGINX_ENVIRONMENT.items():
         argv += ["--setenv", name, value]
     return argv + ["--remount-ro", "/proc", "--remount-ro", "/dev", "--remount-ro", "/",
@@ -92,7 +92,6 @@ class StockHttpLab:
         self._closure = closure
         self._control = self._supervisor = self._channel = None
         self._namespace_fds, self._lab_namespaces = (), {}
-        self._peer_fd = None
         self._started = self._closed = False
         self._sequence = 0
         self._owner = self._last_snapshot = self._receipt = None
@@ -161,7 +160,7 @@ class StockHttpLab:
                     raise IsolationUnavailable("Stock HTTP control send truncated")
                 return
 
-    def _receive(self, *, directory=False):
+    def _receive(self):
         self._supervisor.wait_for(lambda: bool(select.select([self._channel], [], [], 0)[0]))
         raw, ancillary, flags, _ = self._channel.recvmsg(MAX_PACKET + 1, socket.CMSG_SPACE(8 * 4), socket.MSG_CMSG_CLOEXEC)
         descriptors = []
@@ -177,19 +176,9 @@ class StockHttpLab:
                 items.frombytes(data[:len(data) - len(data) % items.itemsize])
                 descriptors += items.tolist()
             if (invalid_ancillary or flags & (socket.MSG_TRUNC | socket.MSG_CTRUNC)
-                    or len(descriptors) != int(directory)):
+                    or descriptors):
                 raise ValueError("stock_owner_invalid_descriptor_count")
-            value = decode(raw)
-            if directory:
-                descriptor = descriptors[0]
-                info, usage = os.fstat(descriptor), os.fstatvfs(descriptor)
-                if (not stat.S_ISDIR(info.st_mode) or stat.S_IMODE(info.st_mode) != 0o700
-                        or usage.f_blocks * usage.f_frsize != SCRATCH_BYTES):
-                    raise ValueError("stock_owner_invalid_shared_scratch")
-                self._peer_fd = descriptor
-                self._supervisor.fds.add(descriptor)
-                descriptors.pop()
-            return value
+            return decode(raw)
         finally:
             for descriptor in descriptors:
                 os.close(descriptor)
@@ -233,7 +222,7 @@ class StockHttpLab:
                     "deadline": control.deadline, "host_namespaces": host,
                     "runtime_digest": self._identity["daemon_runtime_sha256"]}
                 self._send(initial)
-                ready = self._receive(directory=True)
+                ready = self._receive()
                 if (set(ready) != {"ready", "namespaces", "witness_baselines", "bounds", "runtime_digest"}
                         or ready["ready"] is not True or ready["witness_baselines"] is not True
                         or ready["bounds"] != BOUNDS or ready["runtime_digest"] != initial["runtime_digest"]):
@@ -251,15 +240,13 @@ class StockHttpLab:
                                  spec.compiled_files(self.selection["configuration"], self.selection["case"]))
                 descriptors = sealed_snapshots(manifest, None, None, control, additional_compiled=compiled)
                 try:
-                    daemon = self._supervisor.launch("daemon", daemon_command(bootstrap, manifest, descriptors, self._peer_fd),
-                        pass_fds=(*descriptors, self._peer_fd), stdin=subprocess.PIPE)
+                    daemon = self._supervisor.launch("daemon", daemon_command(bootstrap, manifest, descriptors),
+                        pass_fds=descriptors, stdin=subprocess.PIPE)
                     daemon.stdin.write(encode({**initial, "manifest": manifest}))
                     daemon.stdin.close()
                 finally:
                     for descriptor in descriptors:
                         os.close(descriptor)
-                self._supervisor.close_fd(self._peer_fd)
-                self._peer_fd = None
                 self._supervisor.wait_for(lambda: b"\n" in self._supervisor.buffers["daemon_out"])
                 line = bytes(self._supervisor.buffers["daemon_out"]).split(b"\n", 1)[0]
                 if not line.startswith(DAEMON_READY):
@@ -321,7 +308,6 @@ class StockHttpLab:
                 if any(process.poll() is None for process in self._supervisor.processes.values()):
                     raise IsolationUnavailable("Stock HTTP owner cleanup incomplete")
             self._namespace_fds = ()
-            self._peer_fd = None
             snapshot = self._last_snapshot or {"connection_count": 0, "request_count": 0, "recorder": None}
             self._receipt = {"identity": self.identity, "status": "closed", "started": self._started,
                 "connection_count": snapshot["connection_count"], "request_count": snapshot["request_count"],

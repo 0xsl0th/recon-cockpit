@@ -20,6 +20,29 @@ NONCE = 'a' * 64
 HOST = {name: name + ':[100]' for name in ('user', 'net', 'mnt', 'pid')}
 
 
+@pytest.mark.parametrize('profile', (contract.PROFILE, 'configurable_owned_lab', 'fixture'))
+def test_parent_private_peer_mount_is_stock_only_and_keeps_aggregate_tmpfs_bound(monkeypatch, profile):
+    from recon_cockpit.secure_agent import launcher_isolation
+    monkeypatch.setattr(launcher_isolation, '_trusted_program', lambda name: '/usr/bin/' + name)
+    selected = launcher_isolation.LinuxFixtureLauncher.__new__(launcher_isolation.LinuxFixtureLauncher)
+    selected._config = {'profile': profile}
+    selected._witness_source = selected._approval_source = None
+    argv = selected._command({'stdlib': '/stdlib'}, [], 'a' * 64)
+    mounts = {}
+    for index, item in enumerate(argv):
+        if item == '--tmpfs':
+            assert argv[index - 2] == '--size'
+            mounts[argv[index + 1]] = int(argv[index - 1])
+    assert sum(mounts.values()) == 1048576
+    if profile == contract.PROFILE:
+        assert mounts == {'/tmp': 262144, '/stock-peer': 786432}
+        peer = argv.index('/stock-peer')
+        assert argv[peer - 5:peer + 1] == ['--perms', '0700', '--size', '786432', '--tmpfs', '/stock-peer']
+    else:
+        assert mounts == {'/tmp': 1048576}
+        assert '/stock-peer' not in argv
+
+
 def runtime(configuration='A', case='O1'):
     rows = [(daemon_runtime.EXECUTABLE, daemon_runtime.DESTINATION, b'native')]
     rows += [(daemon_runtime.LIBRARY_ROOT + 'ld-linux-x86-64.so.2' if dst == daemon_runtime.INTERPRETER else dst,

@@ -71,7 +71,8 @@ def peer_result(monkeypatch, selected_manifest, *, original=None):
     action = contract.action(selected)
     status = {"N2": "failed", "N3": "timeout", "N4": "output_limit"}.get(case, "succeeded")
     result = {"status": status, "results": [], "truncated": status == "output_limit",
-        "boundary_checks": dict.fromkeys(BOUNDARY_NAMES, True), "timing": {"client_startup_ms": 20, "action_elapsed_ms": 50},
+        "boundary_checks": dict.fromkeys(BOUNDARY_NAMES, True), "timing": {
+            "owner_startup_ms": 10, "client_startup_ms": 20, "action_elapsed_ms": 50, "owner_teardown_ms": 5},
         "tool_observation": None, "backend": contract.BACKEND}
     owner = {"connection_count": ledger["connections_admitted"], "request_count": ledger["requests_delivered"], "recorder": ledger,
         "owner": {"recorder_namespaces": {name: name + ":[200]" for name in ("user", "net", "mnt", "pid")},
@@ -154,6 +155,19 @@ def test_each_declared_case_replays_with_exact_useful_or_fault_result(tmp_path, 
     assert before == after
     assert directory.stat().st_mode & 0o777 == 0o700
     assert all(p.stat().st_mode & 0o777 == 0o600 for p in directory.iterdir())
+
+
+@pytest.mark.parametrize("field", ["owner_startup_ms", "client_startup_ms", "action_elapsed_ms", "owner_teardown_ms"])
+@pytest.mark.parametrize("invalid", [None, True, -1, 60001])
+def test_all_phase_timings_are_required_bounded_milliseconds(monkeypatch, field, invalid):
+    chosen = manifest()
+    result = peer_result(monkeypatch, chosen)
+    if invalid is None:
+        del result["timing"][field]
+    else:
+        result["timing"][field] = invalid
+    with pytest.raises(ValueError, match="invalid_stock_timing"):
+        evidence.validate_result(result, chosen)
 
 
 @pytest.mark.parametrize("approval,execute,status", [(False, False, "dry_run"), (True, False, "dry_run"), (True, True, "blocked")])

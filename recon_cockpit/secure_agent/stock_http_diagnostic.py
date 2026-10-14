@@ -31,7 +31,8 @@ def run_trial(directory, *, configuration, case, execute=False, unattended_owned
     if cancelled is not None and not isinstance(cancelled, threading.Event):
         raise ValueError("invalid_stock_diagnostic_cancellation")
     selected = contract.selection(configuration, case)
-    preflight = ExecutionControl(time.monotonic() + 60, cancelled=cancelled)
+    trial_started = time.monotonic()
+    preflight = ExecutionControl(trial_started + 60, cancelled=cancelled)
     runtime = {"daemon": inspect_runtime(configuration, case, preflight),
                "client": inspect_client_runtime(selected, preflight)}
     session_id = str(uuid4())
@@ -42,8 +43,9 @@ def run_trial(directory, *, configuration, case, execute=False, unattended_owned
     manifest = {"schema_version": "1", "assessment_id": str(uuid4()), "session_id": session_id,
         "selection": selected, "policy": policy.to_dict(), "limits": contract.limits(selected),
         "runtime": runtime, "identity": lab.identity}
-    started = time.monotonic()
-    control = ExecutionControl(started + limits.max_runtime_seconds, cancelled=cancelled)
+    # Read-only preflight contributes to wall time, not the execution session.
+    session_started = time.monotonic()
+    control = ExecutionControl(session_started + limits.max_runtime_seconds, cancelled=cancelled)
     with StockHttpEvidenceStore(directory, manifest, deadline=control.deadline) as evidence:
         with LinuxAuditSink(Path(directory) / "audit.jsonl", launch_witness=True) as audit:
             with LinuxApprovalService(policy, session_id, launch_witness=True) as approvals:
@@ -51,4 +53,4 @@ def run_trial(directory, *, configuration, case, execute=False, unattended_owned
                     controller = Controller(policy, audit, backend, approvals, session_id=session_id, evidence=evidence)
                     outcome = controller.submit(contract.action(selected), execute=execute,
                         execution_control=control, session_step=1)
-        return evidence.finalize(outcome, elapsed_ms=round((time.monotonic() - started) * 1000))
+        return evidence.finalize(outcome, elapsed_ms=round((time.monotonic() - trial_started) * 1000))
