@@ -63,7 +63,8 @@ The combined `verification.json` SHA-256 is
 commit have the same tree. All five final and post-merge checks passed. Do not
 repeat its merge. The diagnostic itself grants no product authority.
 
-The separate [T04 production candidate](web-hierarchy-tools.md) on
+The separate [T04 production candidate](web-hierarchy-tools.md), opened as
+[PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) on
 `feature/t04-web-hierarchy-secure` integrates exact policy, audit, consumed
 required approval, admission, confined ffuf execution, independent owner evidence
 and both inspectors. The catalog now reports **48 accepted profiles, one T04

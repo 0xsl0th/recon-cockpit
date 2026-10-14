@@ -1,7 +1,8 @@
 # T04 — bounded owned web hierarchy candidate
 
 This separately versioned `ffuf_web_hierarchy_v1` candidate uses real ffuf in the
-existing secure network-tool path. T04 stays open until its review and acceptance
+existing secure network-tool path in [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84).
+T04 stays open until its review and acceptance
 gates close. The accepted eight-path `ffuf_content_discovery_v1` contract stays
 unchanged. The catalog has 48 accepted profiles and one candidate across 16
 programs. T05 and T06 follow T04; no deeper workflow work starts here.
