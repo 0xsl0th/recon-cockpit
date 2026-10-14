@@ -74,7 +74,7 @@ the concrete descriptor/namespace handoff and verify:
   The recorder has a bounded, independently accounted route to it; the client
   has neither that namespace nor any private-listener descriptor or route.
 - A single mapped nonzero UID/GID supports startup without host privileges,
-  supplementary groups, host account files or privilege-changing fallback.
+  additional mapped group authority, host account files or privilege-changing fallback.
 - The selected `-X`/prefork/module set works with enforced process/thread,
   socket-family, filesystem, deadline and resource bounds. If it cannot, retain
   the failure and review the design; do not enable general fork/thread access.
@@ -98,8 +98,10 @@ bind the implementation and its preparation/runtime digests. The default policy
 requires approval. Explicit unattended owned-lab test policy is mechanism evidence,
 not personal owner acceptance.
 
-Apache's bootstrap runs as the single mapped namespace UID/GID 65534, with no
-supplementary groups. It creates one unconnected IPv4 stream socket in its fresh
+Apache's bootstrap runs as the single mapped namespace UID/GID 65534. The
+launcher independently verifies that identity maps only to its own unprivileged
+UID/GID before releasing the daemon bootstrap. It creates one unconnected IPv4
+stream socket in its fresh
 disconnected network namespace. A private control channel transfers that socket
 through the launcher to the recorder; each receiver checks domain, type, TCP
 protocol, inode, namespace cookie, nonblocking state and unconnected zero address.
@@ -120,6 +122,37 @@ from its own namespace. Immutable evidence retains the server identity, real
 response bytes, separate injected-fault bytes, transfer custody, namespace identity,
 startup/action/cleanup latency, useful completion and denial results. The accepted
 diagnostic retains its original selection schema and default Unix-socket connector.
+
+### Recorded identity-boundary revision before native completion
+
+The first frozen smoke (`3c7f51b`) failed closed on both servers; neither result
+counts as useful work. Native receipts under
+`.secure-agent/stock-http-production-20261014/smoke-01/` and private diagnostic
+captures show that ordinary-user Bubblewrap retains supplementary group IDs.
+nginx observed its primary group and overflow IDs; Apache's nonzero remapping
+reported overflow/primary IDs and an intermediate parent-namespace UID zero.
+That intermediate zero is not proof of host-root privilege or an acceptable
+substitute for checking the complete mapping from the launcher.
+
+The original promise of an empty supplementary-group list was therefore
+incorrect for this launch mechanism. Linux requires unprivileged group-map
+setup to disable `setgroups`, and that disablement is inherited; see
+[user namespace rules](https://man7.org/linux/man-pages/man7/user_namespaces.7.html)
+and [Bubblewrap's group-map setup](https://github.com/containers/bubblewrap/blob/v0.11.2/bubblewrap.c).
+The candidate explicitly revises its new production selection commitment:
+record at most 64 inherited group IDs, permit only the namespace primary GID and
+the kernel overflow ID 65534, require `setgroups=deny`, and witness refusal of a
+group-change attempt. It does not claim inherited groups were removed.
+
+Before sending the daemon's startup packet, the launcher pins its process/user/net
+namespace descriptors and reads UID/GID maps from the launcher's namespace. Each
+must contain exactly one mapping from the expected namespace ID to the launcher's
+own positive UID/GID. The daemon separately checks its inner mapping and actual
+identity. Runtime files remain sealed and read-only; Landlock, capabilities,
+network, process/thread, storage and deadline bounds are unchanged. No privileged
+helper, extra capability, broad host mount or host account database is added.
+This revision requires fresh native tests and independent review; its earlier
+failed attempts remain separate evidence.
 
 ## Bounds retained from the diagnostic
 

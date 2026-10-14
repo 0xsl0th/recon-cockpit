@@ -58,7 +58,8 @@ No diagnostic result grants production HTTP support or adds a catalog profile.
 **S3.3a is accepted in [PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90),
 merged as `d30a2f1` on 14 October.** Fresh independent code/evidence review and
 118 focused tests passed; all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38639047704)
-passed. The fixed Apache inspector remains preparation only; this acceptance
+passed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38643623264)
+also passed. The fixed Apache inspector remains preparation only; this acceptance
 establishes no native startup, confinement or production compatibility.
 Retain `.secure-agent/stock-http-production-20261014/pr90-merge-review.json`.
 

@@ -176,7 +176,10 @@ def failed_result(implementation='apache'):
     owner = value['stock_http_owner']['owner']
     owner['implementation'] = implementation
     uid = 0 if implementation == 'nginx' else 65534
-    owner['daemon_namespace_identity'] = {'uid': uid, 'gid': uid, 'supplementary_groups': []}
+    owner['daemon_namespace_identity'] = {'uid': uid, 'gid': uid, 'supplementary_groups': [65534] * 16 + [uid],
+        'setgroups_policy': 'deny', 'group_mutation_denied': True}
+    owner['launcher_mapping'] = {'uid_map': [[uid, 1000, 1]], 'gid_map': [[uid, 1000, 1]],
+        'launcher_uid': 1000, 'launcher_gid': 1000}
     owner['private_transport'] = {'kind': 'unix_socket', 'listener_verified': True, 'descriptor': None}
     if implementation == 'apache':
         owner['private_transport'] = {'kind': 'namespace_tcp_descriptor', 'listener_verified': True,
@@ -357,3 +360,60 @@ print('closed-launcher-ok')
         capture_output=True, timeout=10, env={'LC_ALL': 'C'}, check=False)
     assert result.returncode == 0, result.stderr.decode('utf-8', 'replace')
     assert result.stdout == b'closed-launcher-ok\n'
+
+
+def test_prior_boundary_selection_and_approval_policy_cannot_authorize_revision():
+    selected = contract.selection('apache', 'A', 'O1')
+    original = {'profile': contract.PROFILE, 'implementation': 'apache',
+        'preparation_selection_sha256': stock_apache_spec.selection_digest('A', 'O1')}
+    previous = {**selected, 'selection_sha256': hashlib.sha256(spec.encode(original)).hexdigest()}
+    assert previous['selection_sha256'] != selected['selection_sha256']
+    with pytest.raises(ValueError): contract.validate_selection(previous)
+    value = envelope()
+    value['selection'] = previous
+    value['identity']['selection_sha256'] = previous['selection_sha256']
+    with pytest.raises(ValueError): verify(value)
+
+
+@pytest.mark.parametrize('implementation', ('nginx', 'apache'))
+@pytest.mark.parametrize('groups', ([], [65534], [65534] * 64))
+def test_recorded_inherited_groups_stay_visible_and_bounded(implementation, groups):
+    value = failed_result(implementation)['stock_http_owner']['owner']['daemon_namespace_identity']
+    value['supplementary_groups'] = groups
+    validated = contract.validate_daemon_identity(value, implementation)
+    assert validated == value and validated is not value
+    validated['supplementary_groups'].append(123)
+    assert value['supplementary_groups'] == groups
+
+
+@pytest.mark.parametrize('fault', ('groups_expanded', 'groups_bool', 'groups_tuple', 'groups_count',
+    'setgroups_allowed', 'setgroups_missing', 'mutation_allowed', 'mutation_integer',
+    'mapping_missing', 'mapping_outer_root', 'mapping_unmapped', 'mapping_wrong_inner',
+    'mapping_wrong_outer', 'mapping_range', 'mapping_second', 'mapping_bool', 'mapping_tuple',
+    'mapping_outer_bool', 'mapping_unknown'))
+def test_rehashed_group_or_launcher_mapping_proof_cannot_weaken_boundary(fault):
+    value = failed_result()
+    owner = value['stock_http_owner']['owner']
+    identity_value, mapping = owner['daemon_namespace_identity'], owner['launcher_mapping']
+    if fault == 'groups_expanded': identity_value['supplementary_groups'] = [123]
+    elif fault == 'groups_bool': identity_value['supplementary_groups'] = [False]
+    elif fault == 'groups_tuple': identity_value['supplementary_groups'] = (65534,)
+    elif fault == 'groups_count': identity_value['supplementary_groups'] = [65534] * 65
+    elif fault == 'setgroups_allowed': identity_value['setgroups_policy'] = 'allow'
+    elif fault == 'setgroups_missing': del identity_value['setgroups_policy']
+    elif fault == 'mutation_allowed': identity_value['group_mutation_denied'] = False
+    elif fault == 'mutation_integer': identity_value['group_mutation_denied'] = 1
+    elif fault == 'mapping_missing': del owner['launcher_mapping']
+    elif fault == 'mapping_outer_root': mapping.update(launcher_uid=0, uid_map=[[65534, 0, 1]])
+    elif fault == 'mapping_unmapped': mapping.update(launcher_uid=2**32 - 1, uid_map=[[65534, 2**32 - 1, 1]])
+    elif fault == 'mapping_wrong_inner': mapping['gid_map'][0][0] = 0
+    elif fault == 'mapping_wrong_outer': mapping['uid_map'][0][1] = 123
+    elif fault == 'mapping_range': mapping['uid_map'][0][2] = 2
+    elif fault == 'mapping_second': mapping['uid_map'].append([0, 0, 1])
+    elif fault == 'mapping_bool': mapping['gid_map'][0][2] = True
+    elif fault == 'mapping_tuple': mapping['uid_map'][0] = tuple(mapping['uid_map'][0])
+    elif fault == 'mapping_outer_bool': mapping.update(launcher_gid=True, gid_map=[[65534, True, 1]])
+    else: mapping['extra'] = True
+    value['owned_lab']['owner_receipt_sha256'] = hashlib.sha256(spec.encode(value['stock_http_owner'])).hexdigest()
+    with pytest.raises(ValueError):
+        contract.validate_result_context(value, identity(), tool_id='configurable_http_headers_v1', execution_status='failed')

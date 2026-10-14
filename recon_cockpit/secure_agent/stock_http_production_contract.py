@@ -12,6 +12,9 @@ from .models import Action, parse_policy
 
 PROFILE = "stock_http_compatibility_v1"
 BACKEND = "linux-authorized-stock-http-compatibility-v1"
+BOUNDARY_REVISION = "mapped-owner-groups-v2"
+MAX_INHERITED_GROUPS = 64
+OVERFLOW_GID = 65534
 _HASH = re.compile(r"[a-f0-9]{64}\Z")
 
 
@@ -34,6 +37,10 @@ def selection(implementation, configuration, case):
     preparation = implementation_spec(implementation)
     preparation.validate_selection(configuration, case)
     commitment = {"profile": PROFILE, "implementation": implementation,
+                  "boundary_revision": BOUNDARY_REVISION,
+                  "owner_group_policy": {"maximum": MAX_INHERITED_GROUPS, "overflow_gid": OVERFLOW_GID,
+                                         "setgroups": "deny", "mutation_denied": True},
+                  "launcher_mapping": "single-id-to-positive-launcher-uid-gid-before-daemon-input",
                   "preparation_selection_sha256": preparation.selection_digest(configuration, case)}
     return {"implementation": implementation, "configuration": configuration, "case": case,
             "selection_sha256": hashlib.sha256(spec.encode(commitment)).hexdigest()}
@@ -203,6 +210,38 @@ def validate_result_context(result, expected, *, previous=None, tool_id, executi
     return context
 
 
+def validate_daemon_identity(value, implementation):
+    implementation_spec(implementation)
+    uid = 0 if implementation == "nginx" else apache_spec.NAMESPACE_UID
+    fields = {"uid", "gid", "supplementary_groups", "setgroups_policy", "group_mutation_denied"}
+    if (type(value) is not dict or set(value) != fields
+            or type(value["uid"]) is not int or value["uid"] != uid
+            or type(value["gid"]) is not int or value["gid"] != uid
+            or type(value["supplementary_groups"]) is not list
+            or len(value["supplementary_groups"]) > MAX_INHERITED_GROUPS
+            or any(type(group) is not int or group not in {uid, OVERFLOW_GID}
+                   for group in value["supplementary_groups"])
+            or value["setgroups_policy"] != "deny" or value["group_mutation_denied"] is not True):
+        raise ValueError("stock_http_owner_identity_changed")
+    return deepcopy(value)
+
+
+def validate_launcher_mapping(value, implementation):
+    implementation_spec(implementation)
+    uid = 0 if implementation == "nginx" else apache_spec.NAMESPACE_UID
+    if (type(value) is not dict or set(value) != {"uid_map", "gid_map", "launcher_uid", "launcher_gid"}
+            or any(type(value[key]) is not int or not 0 < value[key] < 2**32 - 1
+                   for key in ("launcher_uid", "launcher_gid"))):
+        raise ValueError("stock_http_owner_mapping_changed")
+    for key, outer in (("uid_map", "launcher_uid"), ("gid_map", "launcher_gid")):
+        rows = value[key]
+        if (type(rows) is not list or len(rows) != 1 or type(rows[0]) is not list
+                or len(rows[0]) != 3 or any(type(item) is not int for item in rows[0])
+                or rows[0] != [uid, value[outer], 1]):
+            raise ValueError("stock_http_owner_mapping_changed")
+    return deepcopy(value)
+
+
 def validate_owner_snapshot(value, expected):
     from .stock_http_recorder import validate_snapshot
     expected = validate_identity(expected)
@@ -215,19 +254,14 @@ def validate_owner_snapshot(value, expected):
         raise ValueError("stock_http_owner_accounting_changed")
     owner = value["owner"]
     fields = {"recorder_namespaces", "daemon_namespaces", "witness_baselines", "recorder_bounds", "daemon_bounds",
-              "private_socket_unmounted_from_client", "daemon_ready", "implementation", "private_transport", "daemon_namespace_identity"}
+              "private_socket_unmounted_from_client", "daemon_ready", "implementation", "private_transport", "daemon_namespace_identity", "launcher_mapping"}
     if (type(owner) is not dict or set(owner) != fields or any(owner[key] is not True for key in
             ("witness_baselines", "private_socket_unmounted_from_client", "daemon_ready"))):
         raise ValueError("invalid_stock_http_owner_boundary")
     if owner["implementation"] != expected["implementation"]:
         raise ValueError("stock_http_owner_implementation_changed")
-    identity = owner["daemon_namespace_identity"]
-    uid = 0 if expected["implementation"] == "nginx" else apache_spec.NAMESPACE_UID
-    if (type(identity) is not dict or set(identity) != {"uid", "gid", "supplementary_groups"}
-            or type(identity["uid"]) is not int or identity["uid"] != uid
-            or type(identity["gid"]) is not int or identity["gid"] != uid
-            or type(identity["supplementary_groups"]) is not list or identity["supplementary_groups"]):
-        raise ValueError("stock_http_owner_identity_changed")
+    validate_daemon_identity(owner["daemon_namespace_identity"], expected["implementation"])
+    validate_launcher_mapping(owner["launcher_mapping"], expected["implementation"])
     transport = owner["private_transport"]
     if (type(transport) is not dict or set(transport) != {"kind", "listener_verified", "descriptor"}
             or transport["listener_verified"] is not True):

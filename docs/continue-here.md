@@ -62,7 +62,8 @@ No diagnostic result grants production HTTP support or adds a catalog profile.
 **S3.3a is accepted in [PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90),
 merged as `d30a2f1` on 14 October.** Fresh independent code/evidence review and
 118 focused tests passed; all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38639047704)
-passed. The fixed Apache inspector remains preparation only; this acceptance
+passed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38643623264)
+also passed. The fixed Apache inspector remains preparation only; this acceptance
 establishes no native startup, confinement or production compatibility.
 Retain `.secure-agent/stock-http-production-20261014/pr90-merge-review.json`.
 
@@ -2270,9 +2271,9 @@ Planning uses synthetic responses.
    [finite compatibility/routing contract](stage3-compatibility-routing.md) is accepted
    in PR #87 at `48c0bce`, with all final/post-merge checks passed. S3.2a's pinned
    source/runtime preflight is accepted in PR #88 at `5686dc8`; PR #89 at
-   `c068a9d` closes S3.2b and S3.2. Current S3.3a prepares the fixed Apache
-   runtime/configuration and separate production contract. Review and accept it
-   before S3.3b integrates both implementations and proves the complete corpus.
+   `c068a9d` closes S3.2b and S3.2. S3.3a is accepted in PR #90 at `d30a2f1`,
+   with all final/post-merge checks passed. Current S3.3b integrates both
+   implementations and must prove the complete native corpus and enforcement.
    Stage 3 now estimates nine increments; no required native gate is removed.
    Network attachment still requires separate authorization; do not substitute
    optional signatures or program quotas.

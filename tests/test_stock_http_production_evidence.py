@@ -15,10 +15,9 @@ from recon_cockpit.secure_agent import stock_http_recorder as recorder
 from recon_cockpit.secure_agent.audit import AuditSink
 from recon_cockpit.secure_agent.controller import Controller, result_metadata
 from recon_cockpit.secure_agent.models import parse_action
-from recon_cockpit.secure_agent.stock_http_owner_worker import BOUNDS
 from recon_cockpit.secure_agent.stock_http_client_runtime import boundary_names
 from recon_cockpit.secure_agent.network_tools_runtime import manifest_digest
-from test_stock_http_production_authority import runtime, identity, SESSION
+from test_stock_http_production_authority import runtime, identity, failed_result, SESSION
 from test_secure_network_tools_b7_parser import service_xml
 from test_stock_http_recorder import Harness
 
@@ -74,20 +73,12 @@ def peer_result(monkeypatch, selected_manifest, *, original=None):
         "boundary_checks": dict.fromkeys(boundary_names(selected), True), "timing": {
             "owner_startup_ms": 10, "client_startup_ms": 20, "action_elapsed_ms": 50, "owner_teardown_ms": 5},
         "tool_observation": None, "backend": contract.BACKEND}
-    owner = {"connection_count": ledger["connections_admitted"], "request_count": ledger["requests_delivered"], "recorder": ledger,
-        "owner": {"recorder_namespaces": {name: name + ":[200]" for name in ("user", "net", "mnt", "pid")},
-            "daemon_namespaces": {name: name + ":[300]" for name in ("user", "net", "mnt", "pid")},
-            "witness_baselines": True, "recorder_bounds": dict(BOUNDS), "daemon_bounds": dict(BOUNDS),
-            "private_socket_unmounted_from_client": True, "daemon_ready": True}}
     implementation = selected["implementation"]
-    owner["owner"].update(implementation=implementation,
-        daemon_namespace_identity={"uid": 0 if implementation == "nginx" else 65534,
-                                   "gid": 0 if implementation == "nginx" else 65534, "supplementary_groups": []},
-        private_transport=({"kind": "unix_socket", "listener_verified": True, "descriptor": None}
-            if implementation == "nginx" else {"kind": "namespace_tcp_descriptor", "listener_verified": True,
-            "descriptor": {"daemon_netns_cookie": 100, "recorder_netns_cookie": 200, "inode": 300,
-                           "unconnected_at_transfer": True, "transferred_once": True,
-                           "daemon_duplicate_closed": True, "connect_denied_in_daemon": True}}))
+    # Keep the portable boundary double in one place with the production
+    # contract fixture; retained native receipts must satisfy the same schema.
+    owner = {"connection_count": ledger["connections_admitted"],
+        "request_count": ledger["requests_delivered"], "recorder": ledger,
+        "owner": deepcopy(failed_result(implementation)["stock_http_owner"]["owner"])}
     result["stock_http_owner"] = owner
     result["owned_lab"] = {"identity": selected_manifest["identity"], "connection_count": owner["connection_count"],
         "request_count": owner["request_count"], "owner_receipt_sha256": hashlib.sha256(spec.encode(owner)).hexdigest()}
@@ -348,7 +339,8 @@ def test_wrong_original_status_never_passes_even_when_fault_matches(tmp_path, mo
     lambda owner: owner["daemon_namespace_identity"].update(uid=0),
     lambda owner: owner["daemon_namespace_identity"].update(supplementary_groups=[0]),
     lambda owner: owner["private_transport"].update(listener_verified=False),
-    lambda owner: owner["private_transport"]["descriptor"].update(daemon_netns_cookie=200),
+    lambda owner: owner["private_transport"]["descriptor"].update(
+        daemon_netns_cookie=owner["private_transport"]["descriptor"]["recorder_netns_cookie"]),
     lambda owner: owner["private_transport"]["descriptor"].update(unconnected_at_transfer=False),
     lambda owner: owner["private_transport"]["descriptor"].update(daemon_duplicate_closed=False),
     lambda owner: owner["private_transport"]["descriptor"].update(connect_denied_in_daemon=False),
@@ -392,3 +384,31 @@ def test_hostile_body_stays_retained_data_without_additional_request(tmp_path, m
     assert report["case_passed"] and report["metrics"]["requests_delivered"] == 1
     assert report["metrics"]["actual_provider_calls"] == report["metrics"]["actual_cost_microusd"] == 0
     assert evidence.inspect_trial(tmp_path / "trial") == report
+
+
+@pytest.mark.parametrize("implementation", ("nginx", "apache"))
+@pytest.mark.parametrize("change", [
+    lambda owner: owner["daemon_namespace_identity"].pop("setgroups_policy"),
+    lambda owner: owner["daemon_namespace_identity"].update(setgroups_policy="allow"),
+    lambda owner: owner["daemon_namespace_identity"].update(group_mutation_denied=False),
+    lambda owner: owner["daemon_namespace_identity"].update(group_mutation_denied=1),
+    lambda owner: owner["daemon_namespace_identity"].update(supplementary_groups=[1234]),
+    lambda owner: owner["daemon_namespace_identity"].update(supplementary_groups=[True]),
+    lambda owner: owner["daemon_namespace_identity"].update(supplementary_groups=[65534] * 65),
+    lambda owner: owner.pop("launcher_mapping"),
+    lambda owner: owner["launcher_mapping"].update(launcher_uid=0),
+    lambda owner: owner["launcher_mapping"].update(launcher_gid=0),
+    lambda owner: owner["launcher_mapping"]["uid_map"].append([0, 0, 1]),
+    lambda owner: owner["launcher_mapping"]["gid_map"].append([0, 0, 1]),
+    lambda owner: owner["launcher_mapping"].update(uid_map=[[1, 1000, 1]]),
+    lambda owner: owner["launcher_mapping"].update(gid_map=[[1, 1000, 1]]),
+    lambda owner: owner["launcher_mapping"]["uid_map"][0].__setitem__(2, 2),
+    lambda owner: owner["launcher_mapping"]["gid_map"][0].__setitem__(1, 999),
+])
+def test_rehashed_evidence_cannot_erase_group_or_launcher_mapping_proof(monkeypatch, implementation, change):
+    chosen = manifest(implementation=implementation)
+    result = peer_result(monkeypatch, chosen)
+    change(result["stock_http_owner"]["owner"])
+    rebind(result)
+    with pytest.raises(ValueError):
+        evidence.validate_result(result, chosen)

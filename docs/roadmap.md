@@ -58,7 +58,8 @@ No diagnostic result grants production HTTP support or adds a catalog profile.
 **S3.3a is accepted in [PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90),
 merged as `d30a2f1` on 14 October.** Fresh independent code/evidence review and
 118 focused tests passed; all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38639047704)
-passed. The fixed Apache inspector remains preparation only; this acceptance
+passed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38643623264)
+also passed. The fixed Apache inspector remains preparation only; this acceptance
 establishes no native startup, confinement or production compatibility.
 Retain `.secure-agent/stock-http-production-20261014/pr90-merge-review.json`.
 
@@ -121,7 +122,7 @@ claim that today's bounded fixtures support professional engagements.
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
 | 3 — accepted, finite coverage tranche | T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | PRs #74/#80/#81/#84/#85/#86 close all required G1–G6 gates: 52 accepted profiles across 17 programs. T06 retains 83 native and 24,163 portable passes. Existing exact recipes, limits and evidence contracts stay closed; this is not general engagement compatibility. |
-| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87. S3.2a/S3.2b are accepted in PRs #88/#89; S3.3a prepares Apache and the production contract, then S3.3b integrates HTTP compatibility; OpenSSH compatibility, multi-host routing and name/redirect/referral boundaries follow. No attached network or new execution support is granted by planning. |
+| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87. S3.2a/S3.2b are accepted in PRs #88/#89; S3.3a Apache preparation is accepted in PR #90; current S3.3b integrates HTTP compatibility; OpenSSH compatibility, multi-host routing and name/redirect/referral boundaries follow. No attached network or new execution support is granted by planning. |
 | 5 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`

@@ -223,9 +223,10 @@ def test_nonzero_daemon_identity_requires_private_namespace_and_single_maps(monk
     monkeypatch.setattr(worker.os, "getuid", lambda: 65534)
     monkeypatch.setattr(worker.os, "getgid", lambda: 65534)
     monkeypatch.setattr(worker.os, "getgroups", lambda: [])
-    monkeypatch.setattr("builtins.open", lambda *args, **kwargs: io.StringIO("65534 1000 1\n"))
-    assert worker.namespace_identity(HOST, "apache") == {"uid": 65534, "gid": 65534, "supplementary_groups": []}
-    for mapping in ("0 1000 1\n", "65534 0 1\n", "65534 1000 2\n", "65534 1000 1\n0 2 1\n"):
+    monkeypatch.setattr("builtins.open", lambda path, **kwargs: io.StringIO("deny\n" if path.endswith("setgroups") else "65534 1000 1\n"))
+    assert worker.namespace_identity(HOST, "apache") == {"uid": 65534, "gid": 65534, "supplementary_groups": [],
+        "setgroups_policy": "deny", "group_mutation_denied": False}
+    for mapping in ("0 1000 1\n", "65534 -1 1\n", "65534 1000 2\n", "65534 1000 1\n0 2 1\n"):
         monkeypatch.setattr("builtins.open", lambda *args, **kwargs: io.StringIO(mapping))
         with pytest.raises(ValueError): worker.namespace_identity(HOST, "apache")
 
@@ -236,8 +237,8 @@ def test_nonzero_identity_rejects_wrong_owner(monkeypatch, fault):
     monkeypatch.setattr(worker.socket, "if_nameindex", lambda: [(1, "lo")] + ([(2, "eth0")] if fault == "extra_interface" else []))
     monkeypatch.setattr(worker.os, "getuid", lambda: 0 if fault == "uid" else 65534)
     monkeypatch.setattr(worker.os, "getgid", lambda: 0 if fault == "gid" else 65534)
-    monkeypatch.setattr(worker.os, "getgroups", lambda: [65534] if fault == "groups" else [])
-    monkeypatch.setattr("builtins.open", lambda *args, **kwargs: io.StringIO("65534 1000 1\n"))
+    monkeypatch.setattr(worker.os, "getgroups", lambda: [7] if fault == "groups" else [])
+    monkeypatch.setattr("builtins.open", lambda path, **kwargs: io.StringIO("deny\n" if path.endswith("setgroups") else "65534 1000 1\n"))
     with pytest.raises(ValueError): worker.namespace_identity(HOST, "apache")
 
 
@@ -273,3 +274,83 @@ def test_listener_readiness_uses_only_bounded_pinned_proc_table(monkeypatch, fau
         assert closed == [77]
     else:
         assert opened == closed == []
+
+
+@pytest.mark.parametrize("groups", ([], [65534], [65534] * 17))
+def test_unprivileged_inherited_groups_are_observed_and_immutable(monkeypatch, groups):
+    monkeypatch.setattr(worker, "namespaces", lambda: PRIVATE)
+    monkeypatch.setattr(worker.socket, "if_nameindex", lambda: [(1, "lo")])
+    monkeypatch.setattr(worker.os, "getuid", lambda: 65534)
+    monkeypatch.setattr(worker.os, "getgid", lambda: 65534)
+    monkeypatch.setattr(worker.os, "getgroups", lambda: list(groups))
+    monkeypatch.setattr("builtins.open", lambda path, **kwargs: io.StringIO("deny\n" if path.endswith("setgroups") else "65534 0 1\n"))
+    def denied(value):
+        assert value == groups
+        raise PermissionError(errno.EPERM, "disabled")
+    monkeypatch.setattr(worker.os, "setgroups", denied)
+    identity = worker.namespace_identity(HOST, "apache")
+    assert identity["group_mutation_denied"] is False
+    assert worker.seal_group_identity(identity) == {"uid": 65534, "gid": 65534,
+        "supplementary_groups": groups, "setgroups_policy": "deny", "group_mutation_denied": True}
+
+
+@pytest.mark.parametrize("fault", ("policy", "overlong", "other_group", "changed", "mutation", "wrong_error"))
+def test_inherited_group_revision_cannot_allow_additional_authority(monkeypatch, fault):
+    monkeypatch.setattr(worker, "namespaces", lambda: PRIVATE)
+    monkeypatch.setattr(worker.socket, "if_nameindex", lambda: [(1, "lo")])
+    monkeypatch.setattr(worker.os, "getuid", lambda: 65534)
+    monkeypatch.setattr(worker.os, "getgid", lambda: 65534)
+    groups = [65534] * (65 if fault == "overlong" else 2)
+    if fault == "other_group": groups[0] = 7
+    monkeypatch.setattr(worker.os, "getgroups", lambda: groups)
+    monkeypatch.setattr("builtins.open", lambda path, **kwargs: io.StringIO(
+        ("allow\n" if fault == "policy" else "deny\n") if path.endswith("setgroups") else "65534 0 1\n"))
+    if fault in ("policy", "overlong", "other_group"):
+        with pytest.raises(ValueError): worker.namespace_identity(HOST, "apache")
+        return
+    identity = worker.namespace_identity(HOST, "apache")
+    if fault == "changed": monkeypatch.setattr(worker.os, "getgroups", lambda: [])
+    def mutate(value):
+        if fault == "wrong_error": raise OSError(errno.EINVAL, "not a denial witness")
+    monkeypatch.setattr(worker.os, "setgroups", mutate)
+    with pytest.raises((ValueError, OSError)): worker.seal_group_identity(identity)
+    assert identity["group_mutation_denied"] is False
+
+
+@pytest.mark.parametrize("implementation", ("nginx", "apache"))
+@pytest.mark.parametrize("fault", (None, "host_root", "wrong_outer_uid", "wrong_outer_gid", "extra_map", "inner_root", "range", "oversize", "pin"))
+def test_launcher_independently_proves_unprivileged_mapping_before_bootstrap(monkeypatch, implementation, fault):
+    uid = 65534 if implementation == "apache" else 0
+    opened, closed = [], []
+    monkeypatch.setattr(lab.os, "getuid", lambda: 0 if fault == "host_root" else 1000)
+    monkeypatch.setattr(lab.os, "getgid", lambda: 1001)
+    def readlink(path, **kwargs):
+        if path == "/proc/self/fd/21": return "user:[999]" if fault == "pin" else PRIVATE["user"]
+        if path == "/proc/self/fd/22": return PRIVATE["net"]
+        return PRIVATE[path[3:]]
+    monkeypatch.setattr(lab.os, "readlink", readlink)
+    def open_mapping(path, flags, **kwargs):
+        opened.append(path)
+        assert kwargs == {"dir_fd": 20}
+        return 77 if path == "uid_map" else 78
+    monkeypatch.setattr(lab.os, "open", open_mapping)
+    monkeypatch.setattr(lab.os, "close", closed.append)
+    def read_mapping(descriptor, size):
+        assert size == 1025
+        outer = 1000 if descriptor == 77 else 1001
+        if fault == "wrong_outer_uid" and descriptor == 77: outer = 0
+        if fault == "wrong_outer_gid" and descriptor == 78: outer = 0
+        inner = 1 if fault == "inner_root" and uid == 0 else 0 if fault == "inner_root" else uid
+        raw = f"{inner} {outer} {2 if fault == 'range' else 1}\n".encode()
+        if fault == "extra_map": raw += b"1 2000 1\n"
+        if fault == "oversize": raw = b"x" * 1025
+        return raw
+    monkeypatch.setattr(lab.os, "read", read_mapping)
+    if fault is None:
+        assert lab.launcher_mapping(20, PRIVATE, (21, 22), implementation) == {
+            "launcher_uid": 1000, "launcher_gid": 1001,
+            "uid_map": [[uid, 1000, 1]], "gid_map": [[uid, 1001, 1]]}
+        assert opened == ["uid_map", "gid_map"] and closed == [77, 78]
+    else:
+        with pytest.raises(ValueError): lab.launcher_mapping(20, PRIVATE, (21, 22), implementation)
+        assert len(opened) == len(closed)

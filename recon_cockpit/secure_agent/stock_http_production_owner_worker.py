@@ -107,13 +107,40 @@ def namespace_identity(host, implementation):
             if len(raw) > 1024:
                 raise ValueError("stock_production_mapping_limit")
             rows = [tuple(map(int, line.split())) for line in raw.splitlines()]
-            if len(rows) != 1 or len(rows[0]) != 3 or rows[0][0] != uid or rows[0][1] == 0 or rows[0][2] != 1:
+            # Bubblewrap's devpts setup uses an intermediate namespace whose
+            # local root is the ordinary launcher user. The launcher verifies
+            # the complete mapping from its own namespace before sending this
+            # bootstrap request; the immediate parent can therefore be zero.
+            if (len(rows) != 1 or len(rows[0]) != 3 or rows[0][0] != uid
+                    or not 0 <= rows[0][1] < 2**32 or rows[0][2] != 1):
                 raise ValueError("stock_production_daemon_mapping_invalid")
     else:
         raise ValueError("stock_production_unknown_daemon")
-    if os.getuid() != uid or os.getgid() != gid or os.getgroups() != []:
+    groups = os.getgroups()
+    if (os.getuid() != uid or os.getgid() != gid or len(groups) > 64
+            or any(type(group) is not int or group not in {gid, 65534} for group in groups)):
         raise ValueError("stock_production_daemon_groups_invalid")
-    return {"uid": uid, "gid": gid, "supplementary_groups": []}
+    with open("/proc/self/setgroups", encoding="ascii") as source:
+        group_policy = source.read(16)
+    if group_policy != "deny\n":
+        raise ValueError("stock_production_group_policy_invalid")
+    return {"uid": uid, "gid": gid, "supplementary_groups": groups,
+            "setgroups_policy": "deny", "group_mutation_denied": False}
+
+
+def seal_group_identity(identity):
+    """Observe immutable inherited groups without claiming they were erased."""
+    if os.getgroups() != identity["supplementary_groups"]:
+        raise ValueError("stock_production_daemon_groups_changed")
+    try:
+        os.setgroups(identity["supplementary_groups"])
+    except OSError as error:
+        if error.errno != errno.EPERM:
+            raise
+    else:
+        raise ValueError("stock_production_group_mutation_allowed")
+    identity["group_mutation_denied"] = True
+    return identity
 
 
 def apache_socket_filter():
@@ -280,6 +307,9 @@ def daemon_main():
     try:
         if channel.family != socket.AF_UNIX or channel.type != socket.SOCK_SEQPACKET:
             raise ValueError("stock_production_daemon_requires_control_socket")
+        # The supervisor must see this final post-Bubblewrap namespace before
+        # pinning it: --info-fd can precede Bubblewrap's devpts userns remap.
+        send_packet(channel, {"bootstrap_waiting": True, "namespaces": namespaces()})
         value, _ = receive_packet(channel, descriptor_required=False)
         value = request(value, daemon=True)
         selected, manifest = value["selection"], value["manifest"]
@@ -300,6 +330,7 @@ def daemon_main():
             private_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
             private_socket.setblocking(False)
         worker.drop_privileges()
+        identity = seal_group_identity(identity)
         limits(value["deadline"])
         if private_socket is not None:
             apache_socket_filter()

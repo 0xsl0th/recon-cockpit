@@ -116,6 +116,38 @@ def listener_ready(process_directory, expected_namespaces, namespace_fds):
     return True
 
 
+def launcher_mapping(process_directory, expected_namespaces, namespace_fds, implementation):
+    """Verify the daemon's mapping from the unprivileged launcher's namespace.
+
+    This check runs while the owner is blocked awaiting its initial manifest,
+    before daemon startup. Reading our own view avoids mistaking Bubblewrap's
+    intermediate namespace-local root for host root.
+    """
+    contract.implementation_spec(implementation)
+    expected = 65534 if implementation == "apache" else 0
+    launcher_uid, launcher_gid = os.getuid(), os.getgid()
+    if not 0 < launcher_uid < 2**32 or not 0 < launcher_gid < 2**32 or len(namespace_fds) != 2:
+        raise ValueError("stock_production_privileged_launcher_mapping")
+    result = {"launcher_uid": launcher_uid, "launcher_gid": launcher_gid}
+    for namespace, descriptor in zip(("user", "net"), namespace_fds, strict=True):
+        if (os.readlink("/proc/self/fd/" + str(descriptor)) != expected_namespaces[namespace]
+                or os.readlink("ns/" + namespace, dir_fd=process_directory) != expected_namespaces[namespace]):
+            raise ValueError("stock_production_mapping_namespace_changed")
+    for name, parent in (("uid", launcher_uid), ("gid", launcher_gid)):
+        descriptor = os.open(name + "_map", os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=process_directory)
+        try:
+            raw = os.read(descriptor, 1025)
+        finally:
+            os.close(descriptor)
+        if len(raw) > 1024:
+            raise ValueError("stock_production_launcher_mapping_limit")
+        rows = [list(map(int, line.split())) for line in raw.decode("ascii").splitlines()]
+        if rows != [[expected, parent, 1]]:
+            raise ValueError("stock_production_launcher_mapping_invalid")
+        result[name + "_map"] = rows
+    return contract.validate_launcher_mapping(result, implementation)
+
+
 class StockHttpProductionLab:
     """One-use metadata until the independently authorized backend calls start."""
 
@@ -282,6 +314,15 @@ class StockHttpProductionLab:
                     self._supervisor.close_fd(daemon_info_write)
                     for descriptor in descriptors:
                         os.close(descriptor)
+                self._supervisor.wait_for(lambda: bool(select.select([daemon_channel], [], [], 0)[0]))
+                waiting, _ = receive_packet(daemon_channel, descriptor_required=False)
+                if type(waiting) is not dict or set(waiting) != {"bootstrap_waiting", "namespaces"} or waiting["bootstrap_waiting"] is not True:
+                    raise IsolationUnavailable("Stock HTTP production owner bootstrap gate invalid")
+                daemon_pins, daemon_directory, daemon_namespaces = self._owner_info("daemon_info", host)
+                if waiting["namespaces"] != daemon_namespaces:
+                    raise IsolationUnavailable("Stock HTTP production owner bootstrap namespace changed")
+                mapping = launcher_mapping(daemon_directory, daemon_namespaces, daemon_pins,
+                                           self.selection["implementation"])
                 self._supervisor.wait_for(lambda: bool(select.select([], [daemon_channel], [], 0)[1]))
                 send_packet(daemon_channel, {**initial, "manifest": manifest})
                 self._supervisor.wait_for(lambda: bool(select.select([daemon_channel], [], [], 0)[0]))
@@ -289,10 +330,9 @@ class StockHttpProductionLab:
                     descriptor_required=self.selection["implementation"] == "apache")
                 if transferred is not None:
                     private_socket = owned_socket(transferred)
-                expected_uid = 65534 if private_socket is not None else 0
+                contract.validate_daemon_identity(daemon_ready.get("namespace_identity"), self.selection["implementation"])
                 if (set(daemon_ready) != {"namespaces", "bounds", "runtime_digest", "namespace_identity", "descriptor"}
                         or daemon_ready["bounds"] != BOUNDS or daemon_ready["runtime_digest"] != initial["runtime_digest"]
-                        or daemon_ready["namespace_identity"] != {"uid": expected_uid, "gid": expected_uid, "supplementary_groups": []}
                         or (daemon_ready["descriptor"] != (None if private_socket is None else socket_identity(private_socket)))):
                     raise IsolationUnavailable("Stock HTTP production daemon boundary invalid")
                 self._supervisor.wait_for(lambda: b"\n" in self._supervisor.buffers["daemon_out"])
@@ -301,7 +341,6 @@ class StockHttpProductionLab:
                     raise IsolationUnavailable("Stock HTTP production daemon descriptor cleanup unverified")
                 daemon_channel.close()
                 daemon_channel = None
-                daemon_pins, daemon_directory, daemon_namespaces = self._owner_info("daemon_info", host)
                 if daemon_ready["namespaces"] != daemon_namespaces:
                     raise IsolationUnavailable("Stock HTTP production daemon namespaces changed")
                 if private_socket is not None:
@@ -355,7 +394,7 @@ class StockHttpProductionLab:
                     "witness_baselines": True, "recorder_bounds": dict(BOUNDS), "daemon_bounds": dict(BOUNDS),
                     "private_socket_unmounted_from_client": True, "daemon_ready": True,
                     "implementation": self.selection["implementation"], "private_transport": transport,
-                    "daemon_namespace_identity": daemon_ready["namespace_identity"]}
+                    "daemon_namespace_identity": daemon_ready["namespace_identity"], "launcher_mapping": mapping}
                 self._started = True
                 self._verify_pins()
                 self._last_snapshot = self._snapshot(self._command("ready"))
