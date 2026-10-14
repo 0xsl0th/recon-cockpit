@@ -2287,9 +2287,12 @@ Planning uses synthetic responses.
    in PR #87 at `48c0bce`, with all final/post-merge checks passed. S3.2a's pinned
    source/runtime preflight is accepted in PR #88 at `5686dc8`; PR #89 at
    `c068a9d` closes S3.2b and S3.2. S3.3a is accepted in PR #90 at `d30a2f1`,
-   with all final/post-merge checks passed. Current S3.3b integrates both
-   implementations and must prove the complete native corpus and enforcement.
-   Stage 3 now estimates nine increments; no required native gate is removed.
+   with all final/post-merge checks passed. S3.3b in PR #91 integrates both
+   implementations and has passed the complete native corpus, enforcement and
+   portable validation. Review its latest revision and required checks, merge
+   only if they pass, then begin S3.4 stock OpenSSH compatibility. Stage 3 stays
+   at nine increments, four accepted and five remaining until PR #91 merges;
+   no required native gate is removed.
    Network attachment still requires separate authorization; do not substitute
    optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI closed.
