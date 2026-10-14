@@ -1,9 +1,9 @@
 # Stock nginx: authorized disconnected diagnostic
 
 S3.2a is accepted in [PR #88](https://github.com/0xsl0th/recon-cockpit/pull/88)
-at `5686dc8`. **S3.2b is implemented and validated in
-[PR #89](https://github.com/0xsl0th/recon-cockpit/pull/89); PR review and acceptance
-remain pending.** This implements S3.2's complete diagnostic contract within the
+at `5686dc8`. **S3.2b is accepted in
+[PR #89](https://github.com/0xsl0th/recon-cockpit/pull/89), merged at `c068a9d`;
+S3.2 is closed.** This implements S3.2's complete diagnostic contract within the
 [Stage 3 plan](stage3-compatibility-routing.md)
 using the [pinned source/runtime preparation](stock-nginx-feasibility.md).
 It is a diagnostic, not a new catalog capability or production integration.
@@ -83,7 +83,7 @@ not resistance to a compromised host changing all retained records.
 
 ## Frozen validation
 
-Frozen source `d0bbdf208420e9d03fa35de6f8e3a67ac2777964` passed **60 native checks**, **15 accepted-profile native regressions** and **24,642 portable tests**, with no failures, errors or skips. All **874 tracked source hashes** remained unchanged in each run. Independent review, latest required checks and authorized merge remain acceptance gates.
+Frozen source `d0bbdf208420e9d03fa35de6f8e3a67ac2777964` passed **60 native checks**, **15 accepted-profile native regressions** and **24,642 portable tests**, with no failures, errors or skips. All **874 tracked source hashes** remained unchanged in each run. Fresh independent review, all five final CI jobs and authorized merge completed acceptance on 14 October.
 
 The 60 stock-profile native checks comprise 26 fresh daemon trials, 29 authority/approval checks, three cancellation/startup-cleanup checks and two privately instrumented request/connection-budget probes.
 
@@ -148,8 +148,8 @@ Linux flag, directory-FD cleanup uses portable read-only descriptors, and the
 unchanged early bootstrap is exercised with both real descriptor-directory
 mappings. An additional portable case brings the current suite to **24,643**.
 Production code and the native test cases remain byte-identical to `d0bbdf2`.
-The final portable follow-up is retained in `portable-final-03/`; latest PR CI
-must pass before acceptance. No native guard or enforcement assertion was weakened.
+The final portable follow-up is retained in `portable-final-03/`; all five final
+CI jobs passed 24,643 tests each at `409580f` before acceptance. No native guard or enforcement assertion was weakened.
 The first hosted macOS follow-up found three argv-only fixtures reading real
 Linux namespace paths and one immediate nonblocking TCP read assumption. Those
 fixtures now supply explicit namespace metadata, verify its bootstrap binding,
@@ -176,7 +176,8 @@ Record client startup, action, owner startup/teardown and whole-trial latency
 including read-only preflight, with zero provider calls/spend.
 Comparative benchmarking and broader workflow composition stay deferred.
 
-After S3.2b acceptance, S3.3 adds the separately reviewed production HTTP subset
-and Apache comparison. SSH, disconnected multi-host routing, DNS/TLS name
+S3.2b acceptance is complete. [S3.3a](stage3-http-production.md) prepares Apache
+and the production contract; S3.3b must prove the separate production HTTP subset
+on both servers. SSH, disconnected multi-host routing, DNS/TLS name
 binding and combined acceptance follow in roadmap order. Network attachment,
 credentials, paid/live models and proposal submission require their later gates.
