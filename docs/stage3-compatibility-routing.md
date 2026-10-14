@@ -1,7 +1,8 @@
 # Stage 3: owned service compatibility and controlled target routing
 
-**S3.1 contract for review, 14 October 2026. No new daemon execution or
-compatibility result is claimed.** [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86)
+**S3.1 accepted in [PR #87](https://github.com/0xsl0th/recon-cockpit/pull/87) at
+`48c0bce`, 14 October 2026. No new daemon execution or compatibility result is
+claimed.** [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86)
 accepted T06 at `f0542a8`; T01–T06 and the finite Stage 2 coverage tranche are
 closed. The baseline is **52 accepted secure profiles across 17 external
 programs**, with the repository-native profiles included in that profile count.
@@ -35,15 +36,20 @@ no package download or service-manager launch is part of this contract slice.
 
 ## Finite sequence and completion boundaries
 
-Seven slices fit the roadmap's **6–8 PR estimate, including this contract**.
-Small adjacent slices may combine, or one difficult slice may split within that
-range. Native findings can require re-estimation; do not remove a required row
-or silently raise a bound to fit the estimate. All rows after S3.1 are planned.
+The seven logical slices use the roadmap's **6–8 PR estimate, including this
+contract**. S3.2 now uses the permitted split: **S3.2a source/runtime preparation**
+and **S3.2b authorized native execution**, giving eight reviewable increments.
+The installed daemon and separate single-action authority boundary need their
+own reviewed closure; the older diagnostic bypass cannot satisfy this contract.
+This split retains every native case and bound. Native findings can require
+re-estimation; do not remove a required row or silently raise a bound to fit the
+estimate. S3.1 is accepted, S3.2a is current, and native execution remains planned.
 
 | Slice | Required outcome | Completion evidence |
 | --- | --- | --- |
-| **S3.1 — current contract** | Reconcile T06 acceptance, distinguish synthetic and real-service support, freeze the first diagnostic corpus and keep later gates visible. | Reviewable documentation/catalog metadata, focused non-executing validation and passing review/checks. This closes planning only. |
-| **S3.2 — next: stock nginx diagnostic** | Exercise the two fixed HTTP endpoint configurations and exact actions below against a pinned nginx process in a disconnected owner. Reuse the existing Nmap probe, header reader, namespace lifecycle and evidence patterns. | Source/runtime review, independent traffic accounting, useful and negative corpus, resource/cleanup receipts and explicit unsupported behavior. No new workflow, generic endpoint option or production support claim. |
+| **S3.1 — accepted contract** | Reconcile T06 acceptance, distinguish synthetic and real-service support, freeze the first diagnostic corpus and keep later gates visible. | PR #87 at `48c0bce`; fresh review, 554 focused checks and five final/post-merge checks passed. This closes planning only. |
+| **S3.2a — current: source/runtime preflight** | Review pinned nginx source/distribution changes, compile the finite A/B case/configuration identity and inspect the fixed installed ELF/dependency bytes without starting a service. | [Source review](stock-nginx-feasibility.md), strict manifest/configuration validation and real local inspection receipts. No authority, native execution or service compatibility is established. |
+| **S3.2b — next: stock nginx diagnostic** | Exercise the two fixed HTTP endpoint configurations and exact actions below against a pinned nginx process in a disconnected owner, through a separate one-action authorization contract. Reuse existing Nmap probes, header reader, namespace lifecycle and evidence patterns. | Independent traffic accounting, the complete useful/negative corpus, authority and required approval checks, resource/cleanup receipts and explicit unsupported behavior. S3.2 stays open until these pass. No new workflow, generic endpoint option or production support claim. |
 | **S3.3 — HTTP production compatibility** | Integrate the reviewed HTTP subset through the secure path and validate a second stock implementation, initially Apache, with the same observable outcomes. | Separate production contract, complete HTTP corpus on both pinned implementations, exact action/endpoint enforcement and unchanged inspection. A substitute server needs a documented feasibility finding and reviewed contract change. |
 | **S3.4 — SSH production compatibility** | Use stock OpenSSH with public synthetic host keys for bounded service identification and host-key collection. Test two explicit server configurations, with independent observations rather than a new discovery workflow. | Exact endpoint/key facts, received bytes, connection limits and refusal/cleanup corpus; no authentication, account probing, completed user session or verified host identity. Pin the concrete server configurations before implementation. |
 | **S3.5 — disconnected multi-host routing** | Put the supported services in distinct owned network namespaces connected by controlled owned links, with exact action-specific destination binding, explicit exclusions and aggregate request/connection/rate budgets across hosts and actions. | At least two service hosts with distinct recorded network namespace identities, routed links and an excluded listening endpoint; loopback address aliases alone do not qualify. Demonstrate useful selected-target execution, denied other-service/excluded traffic, and attempted budget bypass by splitting actions or restarting workers. No host network namespace, physical interface, default external route or host firewall modification. |
@@ -235,7 +241,10 @@ applying the fault; startup refusal or an unissued request cannot satisfy a row.
 Retain the original bounded daemon response separately from the transformed
 client stream and record the exact truncation, reset, withholding, overflow or
 duplicate-field operation. Results must remain explicitly inconclusive, timeout
-or output-limited. These are owner transport-fault cases, not claims that stock
+or output-limited: N1/N2/N5 require an inconclusive observation of the declared
+fault, N3 requires timeout and N4 requires the output-limit outcome. A timeout
+cannot substitute for exercising duplicate-field or overflow handling.
+These are owner transport-fault cases, not claims that stock
 nginx normally emits malformed responses. Do not alter the ordinary daemon
 response bytes. Cancellation before launch and during a response must
 also close the owner and all descendants without preserving reusable authority.
@@ -285,7 +294,7 @@ result. Comparative baseline overhead remains unmeasured/deferred. Blocking all
 actions or refusing supported normal responses fails usefulness even if no
 unauthorized traffic occurs.
 
-After this contract is reviewed, proceed with S3.2's short source/runtime review
-and disconnected diagnostic. Do not repeat accepted milestones, add optional
+After S3.2a's pinned source/runtime preparation, proceed with the separately
+authorized S3.2b disconnected diagnostic and the complete corpus above. Do not repeat accepted milestones, add optional
 signatures, set up model credentials or request network attachment merely to
 make the first stock-service trial possible.

@@ -19,7 +19,8 @@ accepted in [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) at `f0542
 bringing accepted coverage to 52 profiles and closing Stage 2. T06 retains
 83 native and 24,163 portable passes; fresh review, all five final checks and
 all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38597857953)
-passed. Current work is the [S3.1 compatibility/routing contract](stage3-compatibility-routing.md).
+passed. S3.1 is accepted in PR #87; current work is
+[S3.2a source/runtime preparation](stock-nginx-feasibility.md) before the authorized native diagnostic.
 No deeper workflows start here.
 
 ## Scope and execution

@@ -26,12 +26,13 @@ T05 remains accepted at `8ca3887`, with its 51 native and 23,170 portable passes
 `.secure-agent/dns-address-20261014/pr85-merge-review.json` and the original
 `.secure-agent/snmp-page-20261014/` receipts. No accepted milestone is reopened.
 
-**Current work is S3.1: the finite [service-compatibility and controlled-routing
-contract](stage3-compatibility-routing.md).** It defines the next actual-service
-corpus under the existing disconnected owned-lab boundary. S3.2 then diagnoses
-actual nginx compatibility before HTTP/OpenSSH production slices. This planning
-step adds no executable profile or verified service capability. Any attached-network
-work requires separate authorization; no deeper composition begins here.
+**S3.1 is accepted in PR #87 at `48c0bce`; current work is S3.2a's
+[pinned source/runtime preparation](stock-nginx-feasibility.md).** The next S3.2b
+implements the separate authorized one-action stock-nginx diagnostic and full
+native corpus in the [Stage 3 contract](stage3-compatibility-routing.md). This
+permitted split fits the existing 6–8 PR estimate and removes no required case.
+Preflight inspection establishes no service execution or compatibility. S3.2 and
+Stage 3 remain open; attached networks and deeper composition stay deferred.
 
 PRs #80/#81 (T02/T03), #82 (catalog/source review), #83/#84 (T04), #85/#86
 (T05/T06) and proposal PR #31 remain closed. Proposal submission and its broader
@@ -122,9 +123,9 @@ report alone cannot complete any row.
 
 T01–T06 are accepted and stay closed. PR #86 closes the final required task in
 this finite tranche: separate AAAA/PTR observations through existing dig
-confinement. The next [S3.1 contract](stage3-compatibility-routing.md) defines
-finite actual-service compatibility and controlled target routing; S3.2 starts
-with a disconnected actual nginx diagnostic. This is new compatibility work,
+confinement. The accepted [S3.1 contract](stage3-compatibility-routing.md) defines
+finite actual-service compatibility and controlled target routing; S3.2a pins
+source/runtime preparation before S3.2b's authorized disconnected diagnostic. This is new compatibility work,
 not a new claim for the accepted synthetic profiles. Network attachment remains
 separately authorized.
 
@@ -232,7 +233,7 @@ composition, attached networks or comparative benchmarking.
 
 | Later roadmap gate | Required work that remains visible |
 | --- | --- |
-| Stage 3 — realistic services and target handling | Current [S3.1 contract](stage3-compatibility-routing.md), then S3.2 actual nginx diagnostic. A finite supported host/port/service matrix; representative actual services and fragmentation/denial behavior; configurable target/SNI/name bindings; exclusions; global rate/network budgets; explicit redirect/referral/DNS decisions; out-of-scope traffic witnesses. Owned synthetic fixtures alone cannot satisfy this gate. Network attachment requires separate authorization. |
+| Stage 3 — realistic services and target handling | Accepted [S3.1 contract](stage3-compatibility-routing.md); current S3.2a source/runtime preflight, then S3.2b authorized native nginx diagnostic. A finite supported host/port/service matrix; representative actual services and fragmentation/denial behavior; configurable target/SNI/name bindings; exclusions; global rate/network budgets; explicit redirect/referral/DNS decisions; out-of-scope traffic witnesses. Owned synthetic fixtures alone cannot satisfy this gate. Network attachment requires separate authorization. |
 | Stage 4 — engagement and session custody | Rules of engagement, persistent limits, expiry/revocation, secret custody and a finite selected authenticated-operation contract. Develop with synthetic credentials; real credentials and intrusive effects remain separately authorized. No existing profile grants these operations. |
 | Stage 5 — workflows, findings, reports and retests | Evidence-linked multi-asset coordination, reviewed findings/severity, deduplication, remediation, client deliverables and retest history. Deeper composition and comparative benchmarks remain deferred during Stage 3. |
 | Stages 6/7 — GUI and release | Expose accepted operations through the existing authority services, engagement/report usability, installation/upgrade/recovery, supported-platform and operator acceptance. The current GUI's completed local milestone remains closed; broader professional release does not follow from profile counts. |
