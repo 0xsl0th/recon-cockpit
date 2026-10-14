@@ -37,7 +37,7 @@ def _network(program, case, policy, runbook, *limitations):
 
 _ENTRIES = MappingProxyType({
     adapters.FFUF_HIERARCHY_TOOL_ID: _network("ffuf", "web-hierarchy-nested", "web-hierarchy", "web-hierarchy-tools",
-        "T04 candidate pending acceptance review; twelve compiled paths across three fixed prefixes, with two negative controls per prefix.",
+        "Twelve compiled paths across three fixed prefixes, with two negative controls per prefix; accepted in PR #84.",
         "Serial bounded discovery requires independent owner/client agreement; wildcard, redirect and partial results cannot establish useful completion.",
         "No arbitrary URL, dictionary, recursive crawling, credentials, exploitability or response-directed follow-up."),
     **{tool: _network("openssl", f"tls-posture-{version}-modern", "tls-posture", "tls-posture-tools",
@@ -98,6 +98,8 @@ _ENTRIES = MappingProxyType({
     adapters.SSH_ALGORITHMS_TOOL_ID: _network(None, "ssh-algos-ok", "ssh-algorithms", "ssh-algorithms-tools",
         "Repository-owned Ruby adapter collects one bounded SSH identification and KEXINIT advertisement, after half-closing writes; no authentication or session.",
         "Lists preserve untrusted peer preference order and direction; no selected algorithm, verified security, identity or vulnerability is claimed."),
+    adapters.SNMP_PAGE_TOOL_ID: _network("snmpbulkget", "snmp-page-ok", "snmp-page", "snmp-page-tools",
+        "T05 candidate: one fixed TCP SNMPv2c GETBULK requests at most four ifDescr bindings; no paging or walk."),
     adapters.SNMP_NEXT_TOOL_ID: _network("snmpgetnext", "snmp-next-ok", "snmp-next", "snmp-next-tools",
         "One fixed TCP SNMPv2c GETNEXT observes a single ifDescr successor or typed boundary; only a public synthetic community is available.",
         "Untrusted metadata only; no interface walk, inventory completeness, UDP, SET, real credentials or returned-OID follow-up."),
@@ -211,8 +213,8 @@ def _summary(tool_id, entry):
             "implementation": "native" if entry.program is None else "external_program",
             "external_program": entry.program, "execution_profile": adapter.execution_profile,
             "parser_version": adapter.parser_version,
-            **({"acceptance_status": "candidate", "milestone": "T04"}
-               if tool_id == adapters.FFUF_HIERARCHY_TOOL_ID else {})}
+            **({"acceptance_status": "candidate", "milestone": "T05"}
+               if tool_id == adapters.SNMP_PAGE_TOOL_ID else {})}
 
 
 def list_tools():

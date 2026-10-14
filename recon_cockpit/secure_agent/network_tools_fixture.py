@@ -57,6 +57,7 @@ def tool_for_case(case):
                          ("docker-version-", "curl_docker_version_v1"),
                          ("http-options-", "curl_http_options_v1"),
                          ("snmp-next-", "snmp_interface_next_v1"),
+                         ("snmp-page-", "snmp_interface_page_v1"),
                          ("winrm-", "curl_winrm_metadata_v1")):
         if case.startswith(prefix):
             return tool
@@ -1335,3 +1336,40 @@ def ssh_policy_response(case):
     if len(raw) > SSH_ALGORITHMS_MAX_RESPONSE_BYTES:
         raise ValueError("ssh_policy_fixture_response_limit")
     return raw
+
+
+# Pure T05 routes preserve the legacy standalone fixture closure. New owner
+# implementation is loaded only when constructing this separate profile.
+SNMP_PAGE_TOOL_ID = "snmp_interface_page_v1"
+SNMP_PAGE_SEED_OID = ".1.3.6.1.2.1.2.2.1.2"
+SNMP_PAGE_MAX_REQUEST_BYTES = 2048
+SNMP_PAGE_MAX_RESPONSE_BYTES = 16384
+SNMP_PAGE_CASES = tuple("snmp-page-" + suffix for suffix in (
+    "ok", "empty", "end-of-view", "outside-subtree", "mixed-boundary", "end-after-rows",
+    "fragmented", "injected", "short", "empty-page", "nonincreasing", "duplicate",
+    "wrong-type", "extra-varbind", "after-end", "malformed", "truncated", "denied",
+    "stalled", "output-limit"))
+SNMP_PAGE_SUCCESS_CASES = SNMP_PAGE_CASES[:8]
+CASES += SNMP_PAGE_CASES
+VARIANTS = CASES
+
+
+def _snmp_page_fixture():
+    if __package__:
+        from . import network_tools_snmp_page_fixture
+        return network_tools_snmp_page_fixture
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location("snmp_page_fixed_fixture",
+        Path(__file__).with_name("network_tools_snmp_page_fixture.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def snmp_page_request(request_id=b"\x01"):
+    return _snmp_page_fixture().request(request_id)
+
+
+def snmp_page_response(case, request_id=b"\x01"):
+    return _snmp_page_fixture().response(case, request_id)

@@ -4,7 +4,53 @@
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-**Current status: T02 and T03 are accepted and closed, including G6.**
+Current continuation (14 October 2026):
+**T01–T04 meet G1–G6 and remain accepted and closed.**
+[T04 PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) merged as `435a271`
+after review of `40d98b6`, two independent reviews without blockers and 319 fresh
+focused test passes. The reviewed and merged trees both match `9de7a974b3683d1abdfed9904b90932bb2be714c`.
+All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38577572315)
+and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38580423750)
+passed. Its [accepted secure hierarchy runbook](web-hierarchy-tools.md) retains
+26 native and 22,577 portable passes, the original frozen source pins and the
+explicit native-retry/evidence-integrity limitations. T04 acceptance brings the
+accepted baseline to **49 profiles across 16 programs**. Do not repeat its merge
+or reopen earlier milestones.
+
+**Current work is T05: one bounded SNMP interface-description page.**
+The separate [T05 candidate](snmp-page-tools.md), open as
+[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), integrates `snmp_interface_page_v1`
+through the existing secure execution and evidence path. One TCP GETBULK uses
+one fixed ifDescr seed, zero non-repeaters and four maximum repetitions, with
+public synthetic fixture data and no continuation. The catalog records
+**50 registered profiles: 49 accepted and one T05 candidate, across 17 programs**.
+Frozen native validation on `f6e515fe0292e7624a87ee3d0329abb7799e7374`
+passed **51 tests**. Full portable validation on
+`ae7e1b8fdb5309dd14e09850959b55e6c1eca6fe` passed **23,170 tests**, with 1,341
+integration tests deselected and no failures, errors or skips. Each run preserved
+all 735 recorded source files; only ten portable test files changed between
+those revisions, leaving production code, policies and native tests identical.
+Private proof belongs under `.secure-agent/snmp-page-20261014/`.
+The combined `verification.json` SHA-256 is
+`c6248dfa79bfa2acad427ea8efa2f3c7871e1aa173cc5c3d068234e677a8f7ff`.
+A separate `all-inspectors-replay.json` records 74 CLI/direct-Python checks
+across all 37 saved reports with unchanged bytes, modes and mtimes; SHA-256
+`332dc106b2b67d25d521b79f12b7aaf7d4156826ce3088720dc5536e63449dc7`.
+Both entry points share the same replay implementation.
+**G6 review and merge remain open; T05 is not accepted.** Review PR #85 and its
+latest required checks before T06's separate fixed AAAA/PTR profiles;
+do not replace either required outcome with optional signatures or tool quotas.
+
+PRs #80/#81 (T02/T03), #82 (catalog/source review), #83 (T04 native diagnostic)
+and proposal PR #31 remain closed. Proposal submission and its broader refresh
+remain deferred to November. Model credentials, paid calls, live-model evaluation,
+attached/external targets, deeper workflows and comparative benchmarking remain
+deferred. The dated baseline and candidate wording below preserve historical
+snapshots; this continuation supersedes their pre-merge status.
+
+## Accepted history and retained evidence
+
+**T02 and T03 accepted history; both remain closed, including G6.**
 [T02 PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) merged as
 `f2e7b785dbea5c8c9f86526f9b3c4deede544125` after review and five passing final
 checks; all five post-merge checks also passed.
@@ -12,7 +58,7 @@ checks; all five post-merge checks also passed.
 `b90a365ef01fb6a6841b367fe52b4597aa6a219f` after review and all five final checks
 on `988179d`. Its reviewed and merged trees match
 `1705797e9020f72ba65e6490eb0daf42444fcc11`.
-**Accepted coverage is now 48 profiles / 16 programs.** T01/C18 and earlier
+**Those merges brought accepted coverage to 48 profiles / 16 programs.** T01/C18 and earlier
 milestones remain closed; do not repeat these reviews or merges.
 
 T02 retains **65 native and 21,593 portable passes**, including 20 useful
@@ -35,7 +81,7 @@ hashes stay intact. Model calls/cost remain zero. No professional-service or
 general hardening compliance is claimed.
 
 After those merges the compiled catalog reported **48 accepted profiles, zero
-candidates and 16 programs**. The current T04 candidate is recorded below. PR #82 reconciled only
+candidates and 16 programs**. T04 acceptance is recorded below. PR #82 reconciled only
 acceptance metadata and its documentation; T02/T03 G1–G6 stayed closed and
 execution controls stayed fixed.
 [PR #82](https://github.com/0xsl0th/recon-cockpit/pull/82) merged this reconciliation
@@ -63,12 +109,12 @@ The combined `verification.json` SHA-256 is
 commit have the same tree. All five final and post-merge checks passed. Do not
 repeat its merge. The diagnostic itself grants no product authority.
 
-The separate [T04 production candidate](web-hierarchy-tools.md), opened as
+The separate [T04 production profile](web-hierarchy-tools.md), opened as
 [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) on
 `feature/t04-web-hierarchy-secure` integrates exact policy, audit, consumed
 required approval, admission, confined ffuf execution, independent owner evidence
-and both inspectors. The catalog now reports **48 accepted profiles, one T04
-candidate and 16 programs**. Production validation passed **26 native and 22,577
+and both inspectors. It is accepted by merge `435a271`, closing T04 G1–G6
+at **49 accepted profiles and 16 programs**. Production validation passed **26 native and 22,577
 portable tests**, with no failures, errors or skips. Native source `6a8d00a` and
 portable source `005c948` share identical production code, policies and native
 tests; only four portable tests changed. Both runs preserved all 724 recorded
@@ -77,7 +123,8 @@ writes. The two ordinary tasks completed without unnecessary refusals; hostile
 output completed separately, while wildcard, mixed controls, redirect and
 stalled cases stayed non-useful. Two out-of-scope proposals were blocked before
 execution; approval, audit, replay and active-client cancellation tests passed.
-Independent review found no remaining blocker. G6 review and merge remain open.
+Independent review found no remaining blocker. Review of `40d98b6`, 319 fresh
+focused test passes and all five final/post-merge checks closed G6 in PR #84.
 Native retries of timed-out inputs remain explicit inconclusive evidence;
 twelve unique requests define useful completion, while the owner retains up to
 sixteen attempted requests/connections. The configured input rate is not a strict
@@ -91,9 +138,10 @@ Private development and frozen validation records belong under
 Review corrected one evidence claim: the planner-view digest does not commit to
 the full result. Inspectors verify artifact/journal consistency and independently
 recompute observations; coordinated host-owner rewriting is outside that guarantee.
-Finish and review this candidate before T05 SNMP interface-page work, then T06
-AAAA/PTR. Do not start deeper workflows, comparative benchmarking, credentials,
-paid calls or live-model work.
+T04 remains accepted. Finish the [T05 SNMP interface-page candidate](snmp-page-tools.md)
+by reviewing PR #85 and its required checks, then implement T06 AAAA/PTR. Its
+51 native and 23,170 portable passes are complete. Do not start
+deeper workflows, comparative benchmarking, credentials, paid calls or live-model work.
 
 Catalog reconciliation passed **300 focused tests** with no failures, errors or
 skips, including CLI non-execution guards and frozen T02/T03 contract hashes.
@@ -2133,13 +2181,15 @@ Planning uses synthetic responses.
 3. Preserve accepted PR #82 (`945ba2b`) and PR #83 (`69406cd`) with their five
    passing final/post-merge checks. The [T04 native diagnostic](web-hierarchy-native.md)
    passed eight native and 22,113 portable tests; this completed batch stays closed.
-4. Review the separately registered [T04 secure hierarchy candidate](web-hierarchy-tools.md)
-   on `feature/t04-web-hierarchy-secure`, including its frozen production evidence,
-   exact head and required checks. The catalog is 48 accepted plus one candidate
-   across 16 programs; the accepted eight-path ffuf recipe stays unchanged.
-   Complete required review/checks and authorized merge before closing T04 G6.
-   T05 SNMP interface page and T06 AAAA/PTR remain required afterward; do not
-   substitute optional signatures or program quotas.
+4. Preserve accepted [T04 PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84)
+   at `435a271`; all five final/post-merge checks passed and G1–G6 are closed.
+   Review the exact latest head of [T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85)
+   and its required checks. Preserve the [candidate's](snmp-page-tools.md) completed
+   51 native and 23,170 portable passes; rerun only after a new change, failure
+   or unresolved concern. The current catalog is 49 accepted plus one T05 candidate
+   across 17 registered programs; T05 is not yet accepted.
+   Complete its review/checks and authorized merge, then implement required T06
+   AAAA/PTR. Do not substitute optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
    No accepted milestone or personal walkthrough needs to be repeated.
 6. Credentials, paid/live models, attached/external networks, deeper workflows

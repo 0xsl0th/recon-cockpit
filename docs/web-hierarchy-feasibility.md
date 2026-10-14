@@ -11,11 +11,16 @@ against the twelve compiled paths in the disconnected owned fixture. Eight nativ
 tests and 22,113 portable tests passed on frozen source `1b03814`, with no
 failures, errors or skips and all 707 source hashes unchanged.
 Detailed results belong to that runbook, separate from this source-review record. The diagnostic grants no product authority.
-That diagnostic is now merged in PR #83. A distinct [production candidate](web-hierarchy-tools.md)
-now integrates policy, exact approval,
-durable audit, consumed permits and both evidence inspectors before T04 G1–G6
-acceptance. The catalog now has 48 accepted profiles, one T04 candidate and
-16 programs; T05/T06 remain required after T04.
+That diagnostic merged in PR #83. The distinct [production profile](web-hierarchy-tools.md)
+then integrated policy, exact approval, durable audit, consumed permits and both
+evidence inspectors. [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84)
+accepted it at `435a271`, closing T04 G1–G6 after review and all five final and
+post-merge checks. Accepted coverage became 49 profiles across 16 programs.
+The separate [T05 SNMP page candidate](snmp-page-tools.md) now adds a registered
+profile/program in [PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85).
+Its 51 native and 23,170 portable tests passed; G6 review and merge remain open.
+Required T06 follows T05 acceptance.
+This source-review record stays closed and preserves its original findings.
 
 ## Production observation — 14 October 2026
 
@@ -23,7 +28,7 @@ The source-review table below records the original proposal. Native diagnostic
 and product captures disprove its proposed no-retry/total-twelve guarantee on
 errors: pinned ffuf retries an errored input once. The stalled corpus retained
 ten incomplete attempts over five compiled paths and stayed inconclusive.
-The [production candidate](web-hierarchy-tools.md) therefore distinguishes the
+The [accepted production profile](web-hierarchy-tools.md) therefore distinguishes the
 twelve-request useful-completion corpus from the owner’s sixteen-connection/
 recorded-attempt bound. Its configured input rate is not a strict retry-inclusive
 wire rate. Scope remains fixed; no returned path or redirect is followed. No
@@ -137,7 +142,8 @@ Before registration, the real secure executable must demonstrate:
 Only native evidence can establish actual request/concurrency behavior and
 usefulness; source review supplies no timing, acceptance or execution claim.
 Record latency and zero provider calls/cost without presenting a comparative
-benchmark. T04 remains open until its G1–G6 gates are satisfied. Attached targets,
+benchmark. Those product gates subsequently closed in PR #84; the source-review
+acceptance alone did not satisfy them. Attached targets,
 model credentials, paid/live calls, deeper workflows and comparative benchmarks
 remain deferred; no installation or assessment traffic was performed for this
 source review.

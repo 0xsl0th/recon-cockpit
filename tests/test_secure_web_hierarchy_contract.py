@@ -1,4 +1,4 @@
-"""T04 candidate is fixed, independently authorized and preserves accepted APIs."""
+"""Accepted T04 remains fixed, independently authorized and preserves older APIs."""
 import copy
 import hashlib
 import json
@@ -47,23 +47,25 @@ def test_no_scope_or_old_profile_substitution(field,value):
     assert not admission.profile_allows(selected,{'profile':contract.PROFILE,'case':case})
 
 
-def test_candidate_catalog_is_separate_and_new_program_count_unchanged():
+def test_accepted_hierarchy_catalog_stays_separate_from_the_t05_candidate():
     result=catalog.list_tools()
-    assert (result['capability_count'],result['accepted_capability_count'],result['candidate_capability_count'],result['external_program_count']) == (49,48,1,16)
+    assert (result['capability_count'],result['accepted_capability_count'],result['candidate_capability_count'],result['external_program_count']) == (50,49,1,17)
     row=catalog.describe_tool(spec.TOOL_ID)
-    assert row['acceptance_status']=='candidate' and row['milestone']=='T04'
+    assert 'acceptance_status' not in row and 'milestone' not in row
     assert row['run']['case']=='web-hierarchy-nested'
     assert row['run']['session_limits']==dict(spec.LIMITS)
+    candidate=catalog.describe_tool('snmp_interface_page_v1')
+    assert candidate['acceptance_status']=='candidate' and candidate['milestone']=='T05'
 
 
 def test_all_48_previous_catalog_apis_348_network_cases_and_old_web_workflow_are_unchanged():
     from recon_cockpit.secure_agent import web_tools_contract as web
     from recon_cockpit.secure_agent import web_tools_workflow as web_workflow
     listed=catalog.list_tools()
-    listed['tools']=[row for row in listed['tools'] if row['tool_id']!=spec.TOOL_ID]
-    listed.update(capability_count=48,accepted_capability_count=48,candidate_capability_count=0)
+    listed['tools']=[row for row in listed['tools'] if row['tool_id'] not in (spec.TOOL_ID, 'snmp_interface_page_v1')]
+    listed.update(capability_count=48,accepted_capability_count=48,candidate_capability_count=0,external_program_count=16)
     value={'catalog':listed,'descriptions':{row['tool_id']:catalog.describe_tool(row['tool_id']) for row in listed['tools']},
-        'network':{case:{'descriptor':contract.capability_descriptor(case),'card':workflow.card_identity(case),'action':contract.action(case)} for case in contract.CASES if case not in spec.CASES},
+        'network':{case:{'descriptor':contract.capability_descriptor(case),'card':workflow.card_identity(case),'action':contract.action(case)} for case in contract.CASES if case not in spec.CASES + contract.T05_CASES},
         'web_descriptor':web.capability_descriptor(),'web_card':web_workflow.card_identity()}
     assert len(value['network'])==348
     assert hashlib.sha256(json.dumps(value,sort_keys=True).encode()).hexdigest()=='d03d7ba4894f44e7b61e0aec145cdf6d0c0d1553648a58cc1e63a1337b42b5e1'

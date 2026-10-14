@@ -31,6 +31,7 @@ KERBRUTE_TOOL_ID = "kerbrute_userenum_v1"
 REDIS_TOOL_ID = "redis_server_info_v1"
 SNMP_TOOL_ID = "snmp_system_get_v1"
 SNMP_NEXT_TOOL_ID = "snmp_interface_next_v1"
+SNMP_PAGE_TOOL_ID = "snmp_interface_page_v1"
 POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
 MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
 WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
@@ -59,6 +60,7 @@ PARSER_VERSIONS = {"ffuf_web_hierarchy_v1": "ffuf-web-hierarchy-owner-json-v1", 
     NMAP_SERVICE_TOOL_ID: "nmap-service-xml-v1", KERBRUTE_TOOL_ID: "kerbrute-userenum-text-v1",
     REDIS_TOOL_ID: "redis-info-server-v1", SNMP_TOOL_ID: "snmp-system-text-v1",
     SNMP_NEXT_TOOL_ID: "snmp-interface-next-text-v1",
+    SNMP_PAGE_TOOL_ID: "snmp-interface-page-text-v1",
     POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
     WHATWEB_TOOL_ID: "whatweb-json-v1", DNS_MX_TOOL_ID: "dig-dns-mx-text-v1", DNS_SRV_TOOL_ID: "dig-dns-srv-text-v1",
     DNS_NSID_TOOL_ID: "dig-dns-nsid-text-v1",
@@ -185,6 +187,8 @@ def validate_result(tool_id, value):
         return _dns_axfr_parser().validate_result(value)
     if tool_id == HTTP_OPTIONS_TOOL_ID:
         return _http_options_parser().validate_result(value)
+    if tool_id == SNMP_PAGE_TOOL_ID:
+        return _snmp_page_parser().validate_result(value)
     if tool_id == SNMP_NEXT_TOOL_ID:
         return _snmp_next_parser().validate_result(value)
     if tool_id == SSH_POLICY_TOOL_ID:
@@ -830,6 +834,18 @@ def _parse_snmp(output, stderr):
     return _redis_snmp_parser().parse_snmp_output(output, stderr)
 
 
+def _snmp_page_parser():
+    if __package__:
+        from . import network_tools_snmp_page_parser
+    else:
+        import network_tools_snmp_page_parser
+    return network_tools_snmp_page_parser
+
+
+def _parse_snmp_page(output, stderr):
+    return _snmp_page_parser().parse_output(output, stderr)
+
+
 def _snmp_next_parser():
     if __package__:
         from . import network_tools_snmp_next_parser
@@ -1002,7 +1018,7 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             DOCKER_VERSION_TOOL_ID: _parse_docker_version, WINRM_TOOL_ID: _parse_winrm_metadata,
             NMAP_SERVICE_TOOL_ID: _parse_nmap_service, KERBRUTE_TOOL_ID: _parse_kerbrute,
             REDIS_TOOL_ID: _parse_redis, SNMP_TOOL_ID: _parse_snmp,
-            SNMP_NEXT_TOOL_ID: _parse_snmp_next,
+            SNMP_NEXT_TOOL_ID: _parse_snmp_next, SNMP_PAGE_TOOL_ID: _parse_snmp_page,
             SSH_ALGORITHMS_TOOL_ID: _parse_ssh_algorithms,
             SSH_POLICY_TOOL_ID: _parse_ssh_policy,
             TLS_CERTIFICATE_TOOL_ID: _parse_tls_certificate,

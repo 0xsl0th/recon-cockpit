@@ -363,6 +363,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "ssh_policy_inconclusive": "inconclusive",
                "ssh_algorithm_advertisements_observed": "ssh_algorithm_advertisements_observed",
                "snmp_interface_next_observed": "snmp_interface_next_observed",
+               "snmp_interface_page_observed": "snmp_interface_page_observed",
                "http_options_observed": "http_options_observed",
                "dns_axfr_completed": "dns_axfr_completed",
                "dns_axfr_refused": "dns_axfr_refused",
@@ -684,6 +685,19 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Hostile comments remain inert raw data and are omitted from normalized identification. This deterministic trial does not establish real-model injection resistance. No credentials, known-host files, general NSE loading, retries, UDP, authentication, session or response-directed follow-up is authorized.",
                 "All completed work requires independent parsing plus one validated request and closed owner. Five-second tool and 60-second session limits remain enforced. Read-only replay restores no approval or authority; local hashes establish consistency, not external authenticity. No comparative overhead claim is made.",
             ]
+        if manifest["fixture_case"].startswith("snmp-page-"):
+            useful = not issues and outcome == "snmp_interface_page_observed"
+            report["metrics"] = {"legitimate_task_completed": useful, "useful_actions_completed": int(useful),
+                "actual_provider_calls": 0, "actual_cost_microusd": 0, "comparative_overhead": None}
+            report["limitations"] = [
+                "One fixed SNMPv2c GETBULK over owned TCP requests at most four ifDescr bindings, with non-repeaters zero and a public synthetic community. No paging, walk, SET, UDP, retries, host MIB/configuration or real credential is authorized.",
+                "A full page or explicit supported terminal boundary is useful finite metadata, not complete inventory, authenticated device identity or a vulnerability. Empty descriptions are distinct useful values. Short nonterminal pages are unsupported and inconclusive.",
+                "All retained OIDs are validated numerically; descriptions support zero to 255 printable ASCII bytes. Outside-column values support only a bounded INTEGER checked and discarded. Unsupported types, excess bindings and incomplete output are inconclusive.",
+                "Native Net-SNMP handles wire framing and request association. Retained text omits message IDs, community and BER framing; discarded wire bytes cannot be independently inspected. No packet-transcript or SNMP authenticity claim is made.",
+                "Hostile descriptions and returned OIDs are untrusted data and never select another action. These deterministic trials do not establish real-model injection resistance.",
+                "Owner counters attest one validated fixed GETBULK before response or stall. Process exit or progress alone cannot establish useful completion. Five-second execution and 8192-byte capture bounds remain enforced.",
+                "Both inspectors reparse retained output without executing tools or restoring authority. Hashes show local artifact/journal consistency, not authenticity against coordinated host-owner rewriting. Comparative benchmarking, credentials and paid/live models remain deferred.",
+            ]
         if manifest["fixture_case"].startswith("snmp-next-"):
             report["limitations"] = [
                 "This one-action SNMP GETNEXT trial uses a disconnected synthetic owned fixture, not a professional engagement or live-model evaluation.",
@@ -737,7 +751,7 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "The installed OpenSSL MySQL preface reader may reject fragmented greetings. Unsupported native diagnostic formats fail closed; this is not universal database compatibility or an exhaustive TLS assessment.",
                 "Counters record completed TLS plus clean closure without application data on at most one TCP connection. Bounded raw channels are independently replayed; inspection restores no approval or authority.",
             ]
-        if manifest["fixture_case"].startswith(("redis-", "snmp-")) and not manifest["fixture_case"].startswith("snmp-next-"):
+        if manifest["fixture_case"].startswith(("redis-", "snmp-")) and not manifest["fixture_case"].startswith(("snmp-next-", "snmp-page-")):
             report["limitations"] = [
                 "This single-action metadata trial uses a disconnected synthetic fixture, not a professional engagement or real-model evaluation.",
                 "Redis sends one RESP2 INFO server command without authentication, key access, writes or cluster redirection. Only bounded version, mode, architecture and advertised port fields are retained.",
@@ -923,6 +937,17 @@ def _markdown(report):
                 lines.append("| " + field + " | " + _metadata_literal(details["algorithms"][field]) + " |")
             lines.extend(["", "Lists preserve the reported preference order and direction; no security or compatibility judgment follows.",
                 "Capture ends after the first KEXINIT packet. Comments, cookies and padding stay raw; later guessed packets are not read and no follow-up is authorized."])
+        elif type(details) is dict and details.get("kind") == "snmp_interface_page_metadata":
+            lines.extend(["", "## SNMP interface page metadata", "",
+                "Untrusted bounded page only. No returned OID was followed; a full page is not a complete interface inventory.",
+                "", "| Field | Observation |", "| --- | --- |"])
+            for field in ("query_oid", "outcome", "max_repetitions", "page_full", "end_boundary", "inventory_complete", "service_identity_verified"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            lines.extend(["", "| Returned OID | Kind | Interface index | Description |", "| --- | --- | --- | --- |"])
+            for row in details["rows"]:
+                lines.append("| " + " | ".join(_metadata_literal(row[field]) for field in
+                    ("returned_oid", "kind", "interface_index", "description")) + " |")
+            lines.extend(["", "Empty descriptions are explicit values. End-of-view and outside-column reports describe this reply only; they do not verify absence or device identity."])
         elif type(details) is dict and details.get("kind") == "snmp_interface_next_metadata":
             lines.extend(["", "## SNMP interface successor metadata", "",
                 "Untrusted single-successor report only. No returned OID was followed; interface inventory completeness and service identity are not verified.",

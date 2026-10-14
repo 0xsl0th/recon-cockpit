@@ -16,6 +16,7 @@ from recon_cockpit.secure_agent.tool_adapters import ADAPTERS
 # Capability names and program families are the accepted coverage inventory,
 # independently of how the catalog happens to assemble its rows.
 PROGRAMS = {
+    "snmp_interface_page_v1": "snmpbulkget",
     "ffuf_web_hierarchy_v1": "ffuf",
     "openssl_tls10_posture_v1": "openssl", "openssl_tls11_posture_v1": "openssl",
     "openssl_tls12_posture_v1": "openssl", "openssl_tls13_posture_v1": "openssl",
@@ -50,6 +51,7 @@ PROGRAMS = {
     "configurable_ssh_host_keys_v1": "ssh-keyscan",
 }
 NORMAL_NETWORK_CASES = {
+    "snmp_interface_page_v1": ("snmp-page-ok", "snmp-page"),
     "ffuf_web_hierarchy_v1": ("web-hierarchy-nested", "web-hierarchy"),
     "openssl_tls10_posture_v1": ("tls-posture-tls1-modern", "tls-posture"),
     "openssl_tls11_posture_v1": ("tls-posture-tls1_1-modern", "tls-posture"),
@@ -145,14 +147,14 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
     assert result["runtime_availability"] == "not_checked"
     ids = [row["tool_id"] for row in result["tools"]]
     assert ids == sorted(PROGRAMS) == sorted(ADAPTERS)
-    assert result["capability_count"] == len(ids) == 49
-    assert result["accepted_capability_count"] == 48
+    assert result["capability_count"] == len(ids) == 50
+    assert result["accepted_capability_count"] == 49
     assert result["candidate_capability_count"] == 1
     families = {row["external_program"] for row in result["tools"] if row["external_program"] is not None}
     assert families == set(PROGRAMS.values()) - {None}
-    assert result["external_program_count"] == len(families) == 16
+    assert result["external_program_count"] == len(families) == 17
     for row in result["tools"]:
-        assert row.get("acceptance_status") == ("candidate" if row["tool_id"] == "ffuf_web_hierarchy_v1" else None)
+        assert row.get("acceptance_status") == ("candidate" if row["tool_id"] == "snmp_interface_page_v1" else None)
         tool = row["tool_id"]
         adapter = ADAPTERS[tool]
         assert row["external_program"] == PROGRAMS[tool]
@@ -164,7 +166,7 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
 @pytest.mark.parametrize("tool", sorted(PROGRAMS))
 def test_owned_actions_parameters_and_session_budgets_match_the_existing_contract(tool):
     result = catalog.describe_tool(tool)
-    assert result.get("acceptance_status") == ("candidate" if tool == "ffuf_web_hierarchy_v1" else None)
+    assert result.get("acceptance_status") == ("candidate" if tool == "snmp_interface_page_v1" else None)
     selector, case, policy_name, workflow, actions, limits = accepted_recipe(tool)
     assert result["read_only"] is True and result["live_calls_enabled"] is False
     assert result["adapter"] == ADAPTERS[tool].to_dict()
