@@ -418,7 +418,9 @@ profile still needs its own exact approval and
 consumed permit, within one 30-second owned session. Explicit protocol rejection
 can be useful evidence while retaining failed execution/exit 1; retry blocking
 alone does not count as task completion. Both inspectors verify separate bounded
-owner artifacts and restore the full committed authority result before replay.
+owner artifacts and load the full recorded tool result for local journal
+consistency checks and replay. The planner-view digest does not commit to the
+full result; replay restores no approval or execution authority.
 
 PR #80 accepted the T02 hostile-usefulness, ambiguity/pressure and regression
 corpus with 65 native and 21,593 portable tests, independent review and all five
