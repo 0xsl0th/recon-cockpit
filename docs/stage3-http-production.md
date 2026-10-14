@@ -4,18 +4,19 @@ PR #89 accepted the stock-nginx diagnostic at `c068a9d`. Its 26 native corpus
 rows, authority tests and immutable evidence close S3.2; they do not establish
 production HTTP integration. This document defines the separate finite production contract.
 S3.3a preparation is accepted in PR #90 at `d30a2f1`.
-[S3.3b PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91) implements the
-production path and has completed native and portable validation. It awaits
-final review and required checks on the latest revision, then merge; S3.3b
-acceptance is not yet claimed.
+[S3.3b PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91) is accepted at
+`061c057` after fresh independent security/evidence review, 605 focused passes
+and all five final CI jobs passing 25,314 tests each at `77aeb7b`. Reviewed and
+merged trees match. S3.3 is closed; retained evidence is unchanged.
 
 S3.3a prepared the exact Apache runtime/configuration and this contract.
 The S3.3b candidate implements and validates the secure production path on
 **both nginx and Apache**. Apache's listener, dynamically loaded modules and
 nonzero user mapping required separate review from nginx's private Unix socket
 and namespace UID zero.
-This finding adds one reviewable increment: Stage 3 now forecasts **nine PRs**,
-four accepted and five remaining, rather than the original 6–8. No required
+The HTTP split added one reviewable increment. The subsequent OpenSSH fork/exec
+finding splits S3.4a/S3.4b too: Stage 3 now forecasts **ten PRs**, five accepted
+and five remaining, rather than the original 6–8. No required
 corpus row, bound or later routing/name/TLS gate is removed to fit an estimate.
 
 ## Selection and authority
@@ -94,7 +95,7 @@ recorder's exact-request admission, counters or deadline. The reviewed topology
 and its finite native validation are recorded below; they grant no host or
 attached-network access.
 
-## S3.3b implementation awaiting review
+## Accepted S3.3b implementation
 
 The candidate registers `stock_http_compatibility_v1` separately from the accepted
 nginx diagnostic. The controller, both isolated witness services, one-use
@@ -299,8 +300,7 @@ also passed at `d19eef3`. Production and native-test bytes are identical to
 `1cfa59a`; only portable fixtures and validation documentation changed between
 those two validation sources. The fixture correction separately passed 29
 focused tests normally and 29 with all ten relevant Linux-only APIs absent,
-without skips. Final review and required checks on PR #91's latest revision
-still precede merge.
+without skips. The subsequent final review and checks are recorded below.
 
 ### Portable socket-readiness correction
 
@@ -325,10 +325,11 @@ evidence suites passed **356 focused tests**, without failures, errors or skips;
 retain the `recorder-poll-fixture/` receipts and source hashes. This is a
 controlled reproduction of the helper defect, not proof of the exact original
 macOS terminal state. No production source or native test changes.
-The corrected revision must pass
-the latest [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/91/checks)
-before acceptance; earlier native and portable results retain their own source
-identities.
+The corrected `77aeb7b` revision passed all five [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38652472772),
+25,314 tests each, before merge `061c057`. Fresh review reverified all 904 source
+pins, 312 corpus files, 29 runtime files and the native/regression receipts;
+605 focused checks passed. Preserve `.secure-agent/pr91-review-20261014/`.
+Earlier native and portable results retain their own source identities.
 
 ## Completion and subsequent work
 
@@ -338,12 +339,12 @@ and checks. Its inspector starts no server or tool and adds no secure catalog
 entry. The [Apache preparation record](stock-apache-feasibility.md) remains
 preparation evidence; the native results above belong to the separate S3.3b path.
 
-S3.3b remains a validated candidate until final review, required checks and
-merge of PR #91. Stage 3 retains four accepted and five remaining increments out
-of nine until that merge, and the catalog remains 52 accepted profiles across
-17 external programs. After acceptance, S3.4 first pins the finite OpenSSH
-server configurations, public synthetic keys, requests and confinement contract,
-then validates service identification and host-key collection. S3.5 handles
+S3.3b is accepted in PR #91 and remains closed. Stage 3 has five accepted and
+five remaining increments out of ten; the catalog remains 52 accepted profiles
+across 17 external programs. Current [S3.4a preparation](stock-ssh-feasibility.md)
+pins the finite OpenSSH configuration/key/request and runtime contract; S3.4b
+must separately enforce its mandatory fork/exec boundary and validate native
+service identification and host-key collection. S3.5 handles
 disconnected multi-host routing and aggregate budgets; S3.6 handles explicit
 DNS/TLS name/trust binding; S3.7 performs combined acceptance. Completed offline
 R5/local R6, B/C/T coverage and initial GUI milestones remain closed.

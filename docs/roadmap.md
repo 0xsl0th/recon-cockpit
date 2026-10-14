@@ -63,8 +63,8 @@ also passed. The fixed Apache inspector remains preparation only; this acceptanc
 establishes no native startup, confinement or production compatibility.
 Retain `.secure-agent/stock-http-production-20261014/pr90-merge-review.json`.
 
-**Current: S3.3b is implemented and validated in [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91),
-awaiting final review and merge.** The separate [production HTTP path](stage3-http-production.md)
+**S3.3b is accepted in [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91),
+merged as `061c057` on 14 October. S3.3 is closed.** The separate [production HTTP path](stage3-http-production.md)
 passed **106 native checks at `1cfa59a`**: 52 nginx/Apache corpus rows and 54
 boundary checks, with all **904 source hashes unchanged**. It records **32 useful
 completions, zero unnecessary refusals, 20 correct negatives and 32 distinct
@@ -79,11 +79,14 @@ also passed at `d19eef3`. Production code and native cases match `1cfa59a`; the
 later change corrected portable fixtures and recorded validation. Preserve the
 original smoke, native and macOS failures under
 `.secure-agent/stock-http-production-20261014/`; the original Apache budget-test
-failure's cause remains unconfirmed. Stage 3 stays **nine PRs total, four accepted
-and five remaining until PR #91 merges**. No required corpus row or bound was removed.
+failure's cause remains unconfirmed. No required corpus row or bound was removed.
 A later macOS check exposed a shared portable socket-readiness fixture issue;
 the [test-only correction and failed run](stage3-http-production.md#portable-socket-readiness-correction)
-are recorded separately. Require the corrected latest revision to pass its checks.
+are recorded separately. Fresh independent security/evidence review and **605
+focused tests** passed at final head `77aeb7b`; all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38652472772)
+passed **25,314 tests each**, with no skips, failures or errors. The reviewed and
+merged trees match. Retain `.secure-agent/pr91-review-20261014/` and the original
+production evidence; the merge does not require repeating accepted native runs.
 
 S3.3a validation at `274140b` passed **26 installed-runtime inspections** and
 **24,761 portable tests**, with all **882 tracked source hashes unchanged**.
@@ -91,12 +94,18 @@ No service, tool action or authority was created; provider calls/spend remain ze
 See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
-Next, review PR #91's latest revision and required checks, and merge only if
-they pass. After that acceptance, begin **S3.4 stock OpenSSH compatibility**:
-first pin two finite server configurations and the public synthetic host-key,
-request and confinement contract; then validate bounded service identification
-and host-key collection. S3.5–S3.7 follow in order. Stage 3 stays open, and coverage
-remains **52 accepted profiles / 17 external programs**. Completed milestones stay closed.
+**Current: S3.4a [OpenSSH source/runtime preparation](stock-ssh-feasibility.md).**
+Compile two finite server configurations and the existing deliberately public
+fixture key, pin the three OpenSSH executables and their linked libraries, and
+inspect the actual installed files without starting a daemon. OpenSSH key
+collection requires a preauthentication fork and executable transitions, so the
+HTTP no-fork boundary cannot be reused unchanged. **S3.4b** must separately
+implement and prove the native process/transport boundary, useful service and
+key observations, refusals and immutable evidence. Preparation grants no launch.
+Stage 3 now has **ten increments: five accepted and five remaining**, counting
+S3.4a/S3.4b separately. S3.5–S3.7 follow in order; no required gate is removed.
+Coverage stays **52 accepted profiles / 17 external programs**. Completed
+milestones stay closed.
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
 closed. Model credentials, paid calls, live-model evaluation, deeper workflows,
@@ -105,7 +114,7 @@ Network attachment requires separate ownership/scope/routing authorization.
 Proposal refresh and submission remain a separate November decision. Historical
 snapshots below retain their original counts; this continuation supersedes them.
 
-**Product forecast revised 14 October 2026: Stage 3 is nine increments; professional-v1 baseline forecast is 43–61.** See the [consolidated roadmap and PR estimate](product-roadmap.md).
+**Product forecast revised 14 October 2026: Stage 3 is ten increments; professional-v1 baseline forecast is 44–62.** See the [consolidated roadmap and PR estimate](product-roadmap.md).
 The historical planning baseline below began on 15 September 2026. This is a development plan, not a list
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
@@ -140,7 +149,7 @@ claim that today's bounded fixtures support professional engagements.
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
 | 3 — accepted, finite coverage tranche | T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | PRs #74/#80/#81/#84/#85/#86 close all required G1–G6 gates: 52 accepted profiles across 17 programs. T06 retains 83 native and 24,163 portable passes. Existing exact recipes, limits and evidence contracts stay closed; this is not general engagement compatibility. |
-| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87, S3.2a/S3.2b in PRs #88/#89 and S3.3a Apache preparation in PR #90. PR #91's HTTP production candidate is validated and awaits final review/merge. S3.4 OpenSSH compatibility follows that acceptance, then multi-host routing and name/redirect/referral boundaries. Planning grants no attached-network access or execution authority. |
+| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87, S3.2a/S3.2b in PRs #88/#89 and S3.3a Apache preparation in PR #90. S3.3b HTTP production is accepted in PR #91. S3.4a OpenSSH source/runtime preparation is current, followed by S3.4b native compatibility, then multi-host routing and name/redirect/referral boundaries. Planning grants no attached-network access or execution authority. |
 | 5 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
@@ -369,7 +378,7 @@ capabilities from the professional-v1 release and the longer-term 40+ program
 product. The historical PR #73 forecast was **40–60 PRs for an operator-assisted
 professional v1** and **80–130 total for the broader product**, from the PR #72
 baseline. The 14 October Stage 3 revision changes those baseline totals to
-**43–61** and **83–131** respectively; completed work is included, not charged again.
+**44–62** and **84–132** respectively; completed work is included, not charged again.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that every catalog profile is available through the GUI.
 [PR #73](https://github.com/0xsl0th/recon-cockpit/pull/73) accepted the forecast at

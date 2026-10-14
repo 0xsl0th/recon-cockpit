@@ -67,8 +67,8 @@ also passed. The fixed Apache inspector remains preparation only; this acceptanc
 establishes no native startup, confinement or production compatibility.
 Retain `.secure-agent/stock-http-production-20261014/pr90-merge-review.json`.
 
-**Current: S3.3b is implemented and validated in [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91),
-awaiting final review and merge.** The separate [production HTTP path](stage3-http-production.md)
+**S3.3b is accepted in [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91),
+merged as `061c057` on 14 October. S3.3 is closed.** The separate [production HTTP path](stage3-http-production.md)
 passed **106 native checks at `1cfa59a`**: 52 nginx/Apache corpus rows and 54
 boundary checks, with all **904 source hashes unchanged**. It records **32 useful
 completions, zero unnecessary refusals, 20 correct negatives and 32 distinct
@@ -83,11 +83,14 @@ also passed at `d19eef3`. Production code and native cases match `1cfa59a`; the
 later change corrected portable fixtures and recorded validation. Preserve the
 original smoke, native and macOS failures under
 `.secure-agent/stock-http-production-20261014/`; the original Apache budget-test
-failure's cause remains unconfirmed. Stage 3 stays **nine PRs total, four accepted
-and five remaining until PR #91 merges**. No required corpus row or bound was removed.
+failure's cause remains unconfirmed. No required corpus row or bound was removed.
 A later macOS check exposed a shared portable socket-readiness fixture issue;
 the [test-only correction and failed run](stage3-http-production.md#portable-socket-readiness-correction)
-are recorded separately. Require the corrected latest revision to pass its checks.
+are recorded separately. Fresh independent security/evidence review and **605
+focused tests** passed at final head `77aeb7b`; all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38652472772)
+passed **25,314 tests each**, with no skips, failures or errors. The reviewed and
+merged trees match. Retain `.secure-agent/pr91-review-20261014/` and the original
+production evidence; the merge does not require repeating accepted native runs.
 
 S3.3a validation at `274140b` passed **26 installed-runtime inspections** and
 **24,761 portable tests**, with all **882 tracked source hashes unchanged**.
@@ -95,12 +98,18 @@ No service, tool action or authority was created; provider calls/spend remain ze
 See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
-Next, review PR #91's latest revision and required checks, and merge only if
-they pass. After that acceptance, begin **S3.4 stock OpenSSH compatibility**:
-first pin two finite server configurations and the public synthetic host-key,
-request and confinement contract; then validate bounded service identification
-and host-key collection. S3.5–S3.7 follow in order. Stage 3 stays open, and coverage
-remains **52 accepted profiles / 17 external programs**. Completed milestones stay closed.
+**Current: S3.4a [OpenSSH source/runtime preparation](stock-ssh-feasibility.md).**
+Compile two finite server configurations and the existing deliberately public
+fixture key, pin the three OpenSSH executables and their linked libraries, and
+inspect the actual installed files without starting a daemon. OpenSSH key
+collection requires a preauthentication fork and executable transitions, so the
+HTTP no-fork boundary cannot be reused unchanged. **S3.4b** must separately
+implement and prove the native process/transport boundary, useful service and
+key observations, refusals and immutable evidence. Preparation grants no launch.
+Stage 3 now has **ten increments: five accepted and five remaining**, counting
+S3.4a/S3.4b separately. S3.5–S3.7 follow in order; no required gate is removed.
+Coverage stays **52 accepted profiles / 17 external programs**. Completed
+milestones stay closed.
 
 S3.2a frozen source `8e130df` passed **26/26 actual installed-runtime inspections**
 and **100 focused boundary tests**. Every selection binds nine native files and
@@ -117,9 +126,9 @@ source then passed **24,263 portable tests**, with 1,399 integration tests
 deselected and no failures, errors or skips. Both attempts remain recorded;
 no source change or test exclusion worked around the sandbox restriction.
 S3.2a and S3.2b are closed. Current implementation branch is
-`feature/stage3-http-production` in `/tmp/recon-stage3-http-production`. Preserve
-the accepted nginx corpus and earlier failures. S3.3a is closed; S3.3b is
-validated and awaits final PR #91 review/checks/merge. No accepted walkthrough
+`feature/stage3-ssh-preflight` in `/tmp/recon-stage3-ssh-preflight`. Preserve
+the accepted HTTP corpus and earlier failures. S3.3a/S3.3b are closed; S3.4a
+is preparation only and S3.4b native compatibility remains required. No accepted walkthrough
 or corpus needs repeating solely to update documentation.
 
 S3.1 catalog reconciliation passed **554 focused portable checks**, with no
@@ -380,7 +389,7 @@ capabilities from the professional-v1 release and the longer-term 40+ program
 product. The historical PR #73 forecast was **40–60 PRs for an operator-assisted
 professional v1** and **80–130 total for the broader product**, from the PR #72
 baseline. The 14 October Stage 3 revision changes those baseline totals to
-**43–61** and **83–131** respectively; completed work is included, not charged again.
+**44–62** and **84–132** respectively; completed work is included, not charged again.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that every catalog profile is available through the GUI.
 [PR #73](https://github.com/0xsl0th/recon-cockpit/pull/73) accepted the forecast at
@@ -2290,12 +2299,11 @@ Planning uses synthetic responses.
    in PR #87 at `48c0bce`, with all final/post-merge checks passed. S3.2a's pinned
    source/runtime preflight is accepted in PR #88 at `5686dc8`; PR #89 at
    `c068a9d` closes S3.2b and S3.2. S3.3a is accepted in PR #90 at `d30a2f1`,
-   with all final/post-merge checks passed. S3.3b in PR #91 integrates both
-   implementations and has passed the complete native corpus, enforcement and
-   portable validation. Review its latest revision and required checks, merge
-   only if they pass, then begin S3.4 stock OpenSSH compatibility. Stage 3 stays
-   at nine increments, four accepted and five remaining until PR #91 merges;
-   no required native gate is removed.
+   with all final/post-merge checks passed. PR #91 merged as `061c057` after
+   fresh review, 605 focused passes and five final CI jobs with 25,314 passes
+   each. S3.3 is closed. Continue S3.4a's finite OpenSSH preparation, then
+   S3.4b's native process/transport and compatibility gates. Stage 3 now has
+   ten increments, five accepted and five remaining; no native gate is removed.
    Network attachment still requires separate authorization; do not substitute
    optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI closed.
