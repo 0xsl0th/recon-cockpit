@@ -260,3 +260,36 @@ def test_symlinked_private_artifacts_refused(tmp_path, monkeypatch, name):
     path.symlink_to(outside)
     with pytest.raises((ValueError, OSError)):
         evidence.inspect_trial(directory)
+
+
+@pytest.mark.parametrize("case", ["O5", "O6"])
+def test_native_identification_cannot_invent_a_version_or_product_absent_from_response(tmp_path, monkeypatch, case):
+    chosen = manifest(case=case)
+    result = peer_result(monkeypatch, chosen)
+    raw = base64.b64decode(result["raw_output_base64"])
+    if case == "O5":
+        raw = raw.replace(b'version="1.28.0"', b'version="9.99.0"')
+    else:
+        raw = raw.replace(b'<service name="http"', b'<service product="Apache httpd" version="2.4.0" name="http"')
+    result["raw_output_base64"] = base64.b64encode(raw).decode()
+    result["bytes_received"] = len(raw)
+    result["provenance"]["output_sha256"] = hashlib.sha256(raw).hexdigest()
+    result["tool_observation"] = parser.parse_output(parser.NMAP, raw, scope=contract.scope(chosen["selection"]), endpoint_id="http")
+    assert save(tmp_path / "trial", chosen, result)["case_passed"] is False
+
+
+def test_aggregate_evidence_cap_is_checked_before_json_or_audit_parsing(tmp_path, monkeypatch):
+    chosen = manifest()
+    directory = tmp_path / "trial"
+    save(directory, chosen, peer_result(monkeypatch, chosen))
+    (directory / "audit.jsonl").write_bytes(b"x" * evidence.MAX_BYTES)
+    with pytest.raises(ValueError, match="aggregate_limit"):
+        evidence.inspect_trial(directory)
+
+
+def test_json_artifact_write_cannot_exceed_replay_parser_limit(tmp_path):
+    chosen = manifest()
+    with evidence.StockHttpEvidenceStore(tmp_path / "trial", chosen) as store:
+        with pytest.raises(evidence.EvidenceUnavailable, match="evidence_limit"):
+            store._write_new("intent.json", b"x" * (evidence.MAX_JSON_BYTES + 1), evidence.MAX_BYTES)
+    assert not (tmp_path / "trial" / "intent.json").exists()

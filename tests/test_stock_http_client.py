@@ -1,10 +1,14 @@
 """Closed client imports, READY/GO deadlines and selected mount/FD custody."""
 
 import hashlib
+import os
+import signal
 from pathlib import Path
 import shutil
 import subprocess
 import sys
+import threading
+import time
 from types import SimpleNamespace
 
 import pytest
@@ -136,3 +140,122 @@ def test_private_descriptor_check_refuses_live_extra_fds_but_tolerates_closed_li
         raise OSError("descriptor closed while listing")
     monkeypatch.setattr(worker.os, "fstat", disappeared)
     worker.private_descriptors()
+
+
+def test_control_pipe_handles_partial_writes_without_losing_packet_bytes(monkeypatch):
+    from recon_cockpit.secure_agent.routed import _Supervisor
+    read_fd, write_fd = os.pipe()
+    original_write = os.write
+    monkeypatch.setattr(runtime.os, "write", lambda fd, data: original_write(fd, data[:3]))
+    supervisor = _Supervisor(1, 8192)
+    try:
+        with os.fdopen(write_fd, "wb", buffering=0) as target:
+            proc = SimpleNamespace(stdin=target, poll=lambda: None)
+            runtime._write_control(proc, b"one complete private packet\n", supervisor)
+        assert os.read(read_fd, 1024) == b"one complete private packet\n"
+    finally:
+        os.close(read_fd)
+        supervisor.close()
+
+
+def test_control_pipe_backpressure_cannot_outlive_supervisor_deadline():
+    from recon_cockpit.secure_agent.routed import _Supervisor, _BudgetExceeded
+    read_fd, write_fd = os.pipe()
+    supervisor = _Supervisor(.02, 8192)
+    began = time.monotonic()
+    try:
+        os.set_blocking(write_fd, False)
+        for _ in range(256):
+            try:
+                os.write(write_fd, b"x" * 4096)
+            except BlockingIOError:
+                break
+        else:
+            pytest.fail("test pipe capacity exceeded bounded fill")
+        with os.fdopen(write_fd, "wb", buffering=0) as target:
+            proc = SimpleNamespace(stdin=target, poll=lambda: None)
+            with pytest.raises(_BudgetExceeded, match="timeout"):
+                runtime._write_control(proc, b"x" * 32769, supervisor)
+        assert time.monotonic() - began < 1
+    finally:
+        os.close(read_fd)
+        supervisor.close()
+
+
+def test_go_write_respects_action_deadline_even_with_result_drain_time_remaining():
+    from recon_cockpit.secure_agent.routed import _Supervisor, _BudgetExceeded
+    read_fd, write_fd = os.pipe()
+    supervisor = _Supervisor(1, 8192)
+    try:
+        with os.fdopen(write_fd, "wb", buffering=0) as target:
+            proc = SimpleNamespace(stdin=target, poll=lambda: None)
+            with pytest.raises(_BudgetExceeded, match="timeout"):
+                runtime._write_control(proc, b"go\n", supervisor, deadline=time.monotonic() - 1)
+        assert os.read(read_fd, 1024) == b""
+    finally:
+        os.close(read_fd)
+        supervisor.close()
+
+
+def test_cancelled_control_pipe_never_writes_release_bytes():
+    from recon_cockpit.secure_agent.routed import _Supervisor
+    from recon_cockpit.secure_agent.execution import ExecutionControl, ExecutionStopped
+    read_fd, write_fd = os.pipe()
+    cancelled = threading.Event()
+    cancelled.set()
+    supervisor = _Supervisor(1, 8192, control=ExecutionControl(time.monotonic() + 1, cancelled=cancelled))
+    try:
+        with os.fdopen(write_fd, "wb", buffering=0) as target:
+            proc = SimpleNamespace(stdin=target, poll=lambda: None)
+            with pytest.raises(ExecutionStopped, match="session_cancelled"):
+                runtime._write_control(proc, b"go\n", supervisor)
+        assert os.read(read_fd, 1024) == b""
+    finally:
+        os.close(read_fd)
+        supervisor.close()
+
+
+@pytest.mark.parametrize("code,now,reason,expected", [(-signal.SIGALRM, 105, None, "timeout"),
+    (128 + signal.SIGALRM, 105, None, "timeout"), (-signal.SIGALRM, 104.99, None, None),
+    (1, 105, None, None), (0, 105, None, None), (-signal.SIGALRM, 105, "output_limit", "output_limit")])
+def test_native_timer_exit_is_timeout_only_at_the_actual_deadline(code, now, reason, expected):
+    assert runtime._native_stop_reason(code, reason, 105, now=now) == expected
+
+
+@pytest.mark.parametrize("status,count,now,expected", [("failed", 0, 101, "timeout"),
+    ("failed", 0, 100.99, "failed"), ("failed", 1, 101, "failed"),
+    ("succeeded", 20, 101, "succeeded"), ("timeout", 0, 101, "timeout")])
+def test_empty_eof_at_shared_deadline_is_distinct_from_early_failure(monkeypatch, status, count, now, expected):
+    monkeypatch.setattr(worker, "probe_headers", lambda request, deadline: {"status": status, "bytes_received": count})
+    monkeypatch.setattr(worker.time, "monotonic", lambda: now)
+    assert worker.probe_headers_at_deadline({}, 101)["status"] == expected
+
+
+def header_reply():
+    import base64
+    raw = b"x" * 2048
+    return {"status": "output_limit", "bytes_received": 2048, "truncated": True,
+        "boundary_checks": dict.fromkeys(runtime.BOUNDARY_NAMES, True),
+        "results": [{"target": "10.77.0.10", "port": 8080, "bytes_received": 2048, "truncated": True,
+            "raw_response": base64.b64encode(raw).decode(), "response_sha256": hashlib.sha256(raw).hexdigest()}]}
+
+
+def test_header_protocol_cap_accounts_for_base64_expansion_without_reducing_raw_capture():
+    value = header_reply()
+    raw = spec.encode(value)
+    assert 2048 < len(raw) < 8192
+    assert runtime._header_reply(raw, contract.selection("A", "O1")) == value
+
+
+@pytest.mark.parametrize("change", [lambda value: value.update(bytes_received=True),
+    lambda value: value.update(truncated=False), lambda value: value.update(status="succeeded"),
+    lambda value: value["boundary_checks"].update(private_socket_blocked=1),
+    lambda value: value["results"][0].update(port=8081),
+    lambda value: value["results"][0].update(bytes_received=2047),
+    lambda value: value["results"][0].update(response_sha256="0" * 64),
+    lambda value: value["results"][0].update(raw_response="")])
+def test_header_worker_protocol_cannot_report_inconsistent_capture_or_boundaries(change):
+    value = header_reply()
+    change(value)
+    with pytest.raises(ValueError):
+        runtime._header_reply(spec.encode(value), contract.selection("A", "O1"))

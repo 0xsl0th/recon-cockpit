@@ -4,6 +4,8 @@ import base64
 import hashlib
 import os
 from pathlib import Path
+import select
+import signal
 import subprocess
 import sys
 import time
@@ -27,6 +29,66 @@ MODULES = tuple(dict.fromkeys((*existing.MODULES, "stock_http_spec", "stock_http
     "stock_http_contract", "stock_http_execution", "stock_http_client_worker", "stock_http_client_runtime")))
 STARTUP_SECONDS = 10
 MARSHALLING_SECONDS = 0.25
+
+
+def _write_control(proc, raw, supervisor, *, deadline=None):
+    """Bound pipe backpressure by the same supervisor/session deadlines."""
+    from .routed import _BudgetExceeded
+    if type(raw) is not bytes or not raw or len(raw) > 32769:
+        raise IsolationUnavailable("Stock diagnostic control packet invalid")
+    descriptor = proc.stdin.fileno()
+    os.set_blocking(descriptor, False)
+    offset = 0
+    def writable():
+        if deadline is not None and time.monotonic() >= deadline:
+            raise _BudgetExceeded("timeout")
+        if proc.poll() is not None:
+            raise IsolationUnavailable("Stock diagnostic client exited before release")
+        return bool(select.select([], [descriptor], [], 0)[1])
+    while offset < len(raw):
+        supervisor.check()
+        supervisor.wait_for(writable, worker_may_exit=True)
+        try:
+            count = os.write(descriptor, raw[offset:])
+        except BlockingIOError:
+            continue
+        except BrokenPipeError:
+            raise IsolationUnavailable("Stock diagnostic control pipe closed") from None
+        if count <= 0:
+            raise IsolationUnavailable("Stock diagnostic control write incomplete")
+        offset += count
+    supervisor.check()
+
+
+def _native_stop_reason(code, reason, action_deadline, *, now=None):
+    now = time.monotonic() if now is None else now
+    if (reason is None and code in (-signal.SIGALRM, 128 + signal.SIGALRM)
+            and now >= action_deadline):
+        return "timeout"
+    return reason
+
+
+def _header_reply(stdout, selected):
+    result = load_json(stdout)
+    action = spec.action(selected["configuration"], selected["case"])
+    if (type(result) is not dict or set(result) != {"status", "results", "bytes_received", "truncated", "boundary_checks"}
+            or type(result["status"]) is not str or result["status"] not in {"succeeded", "failed", "timeout", "output_limit"}
+            or type(result["bytes_received"]) is not int or not 0 <= result["bytes_received"] <= 2048
+            or type(result["truncated"]) is not bool or result["truncated"] != (result["status"] == "output_limit")
+            or type(result["boundary_checks"]) is not dict or set(result["boundary_checks"]) != set(BOUNDARY_NAMES)
+            or any(value is not True for value in result["boundary_checks"].values())
+            or type(result["results"]) is not list or len(result["results"]) != 1):
+        raise ValueError("invalid_stock_header_result")
+    row = result["results"][0]
+    if (type(row) is not dict or set(row) != {"target", "port", "bytes_received", "truncated", "raw_response", "response_sha256"}
+            or row["target"] != action["target"] or type(row["port"]) is not int or row["port"] != action["parameters"]["port"]
+            or type(row["bytes_received"]) is not int or row["bytes_received"] != result["bytes_received"]
+            or row["truncated"] is not result["truncated"] or type(row["raw_response"]) is not str):
+        raise ValueError("invalid_stock_header_result")
+    raw = base64.b64decode(row["raw_response"], validate=True)
+    if len(raw) != result["bytes_received"] or row["response_sha256"] != hashlib.sha256(raw).hexdigest():
+        raise ValueError("invalid_stock_header_result")
+    return result
 
 
 def validate_client_runtime(value, selection):
@@ -113,7 +175,7 @@ def run_stock_http_tool_owned(*, lab, launch, control, closure=None, manifest=No
     try:
         proc = supervisor.launch("worker", _command(lab, bootstrap, manifest, descriptors,
             launch["launch"]["nonce"], commitment), pass_fds=(*lab._namespace_fds, *descriptors), stdin=subprocess.PIPE)
-        proc.stdin.write(raw + b"\n")
+        _write_control(proc, raw + b"\n", supervisor)
         supervisor.wait_for(lambda: b"\n" in supervisor.buffers["worker_err"], worker_may_exit=True)
         if bytes(supervisor.buffers["worker_err"]) != prefix or supervisor.buffers["worker_out"]:
             raise IsolationUnavailable("Stock diagnostic confinement not verified")
@@ -122,7 +184,7 @@ def run_stock_http_tool_owned(*, lab, launch, control, closure=None, manifest=No
         lab.arm(control, action_deadline)
         supervisor.deadline = min(control.deadline, action_deadline + MARSHALLING_SECONDS)
         go = native.encode({"nonce": launch["launch"]["nonce"], "deadline": action_deadline}) + b"\n"
-        proc.stdin.write(go)
+        _write_control(proc, go, supervisor, deadline=action_deadline)
         proc.stdin.close()
         supervisor.wait_for(lambda: proc.poll() is not None and {"worker_out", "worker_err"} <= supervisor.eof,
                             worker_may_exit=True)
@@ -148,14 +210,11 @@ def run_stock_http_tool_owned(*, lab, launch, control, closure=None, manifest=No
         if code != 0 or reason is not None or stderr:
             raise IsolationUnavailable("Stock diagnostic header worker failed")
         try:
-            result = load_json(stdout)
-            if (type(result) is not dict or set(result) != {"status", "results", "bytes_received", "truncated", "boundary_checks"}
-                    or result["status"] not in {"succeeded", "failed", "timeout", "output_limit"}
-                    or result["boundary_checks"] != dict.fromkeys(BOUNDARY_NAMES, True)):
-                raise ValueError("invalid_stock_header_result")
+            result = _header_reply(stdout, selected)
         except (ValueError, TypeError, RecursionError):
             raise IsolationUnavailable("Stock diagnostic header reply invalid") from None
         return {**result, "timing": timing}
+    reason = _native_stop_reason(code, reason, action_deadline)
     if len(stdout) + len(stderr) > 8192:
         reason = "output_limit"
         stdout, stderr = stdout[:8192], stderr[:max(0, 8192 - len(stdout))]

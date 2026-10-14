@@ -5,13 +5,40 @@ directory descriptor to its supervisor. A separately launched daemon sandbox
 binds that directory as its sole writable scratch. It is never a recorder child.
 """
 
+import errno
+import os
+import sys
+
+
+def private_descriptors():
+    for name in os.listdir("/proc/self/fd"):
+        if int(name) > 2:
+            try:
+                os.fstat(int(name))
+            except OSError as error:
+                if error.errno == errno.EBADF:
+                    continue
+                raise
+            raise ValueError("stock_owner_inherited_descriptor")
+
+
+ENTRY_DESCRIPTORS_VERIFIED = False
+if __name__ == "__main__":
+    try:
+        # Verify inherited capabilities before ctypes/libffi can open a
+        # descriptor belonging to its own runtime, as in the launcher.
+        private_descriptors()
+        ENTRY_DESCRIPTORS_VERIFIED = True
+    except Exception:
+        sys.stderr.write("stock_http_owner_refused\n")
+        raise SystemExit(78) from None
+    sys.path.insert(0, "/app")
+
 import array
 import ctypes
-import errno
 import hashlib
 import json
 import math
-import os
 import resource
 import select
 import signal
@@ -19,11 +46,7 @@ import socket
 import stat
 import struct
 import subprocess
-import sys
 import time
-
-if __name__ == "__main__":
-    sys.path.insert(0, "/app")
 
 from recon_cockpit.secure_agent import stock_http_spec as spec, stock_http_runtime as runtime
 from recon_cockpit.secure_agent import worker, tool_worker_common as common
@@ -81,18 +104,6 @@ def request(value, *, daemon=False, now=None):
 
 def namespaces():
     return {name: os.readlink("/proc/self/ns/" + name) for name in ("user", "net", "mnt", "pid")}
-
-
-def private_descriptors():
-    for name in os.listdir("/proc/self/fd"):
-        if int(name) > 2:
-            try:
-                os.fstat(int(name))
-            except OSError as error:
-                if error.errno == errno.EBADF:
-                    continue
-                raise
-            raise ValueError("stock_owner_inherited_descriptor")
 
 
 def scratch_bound(path):
@@ -384,7 +395,8 @@ def main():
     try:
         if len(sys.argv) != 2 or sys.argv[1] not in ("recorder", "daemon"):
             raise ValueError("stock_owner_invalid_mode")
-        private_descriptors()
+        if not ENTRY_DESCRIPTORS_VERIFIED:
+            raise ValueError("stock_owner_entry_not_verified")
         return recorder_main() if sys.argv[1] == "recorder" else daemon_main()
     except Exception:
         sys.stderr.write("stock_http_owner_refused\n")

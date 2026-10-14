@@ -54,6 +54,17 @@ def validate_go(raw, nonce, session_deadline, case, *, now=None):
     return value["deadline"]
 
 
+def probe_headers_at_deadline(request, deadline):
+    result = probe_headers(request, deadline)
+    # Owner closure and the reader alarm share one absolute deadline. If EOF
+    # wins their race with no response bytes, the exhausted action still timed
+    # out; an earlier connection failure remains a failure. Evidence separately
+    # requires N3's complete daemon reply and withheld-response owner record.
+    if result["status"] == "failed" and result["bytes_received"] == 0 and time.monotonic() >= deadline:
+        result["status"] = "timeout"
+    return result
+
+
 def verify_network_boundary(configuration):
     checks = {}
     names = ("other_configuration_blocked", "forbidden_ip_blocked", "forbidden_port_blocked", "excluded_destination_blocked")
@@ -171,7 +182,7 @@ def main():
         else:
             os.set_inheritable(0, True)
         if request["tool_id"] == HEADERS:
-            result = probe_headers(request, deadline)
+            result = probe_headers_at_deadline(request, deadline)
             result["boundary_checks"] = checks
             print(json.dumps(result, separators=(",", ":")), flush=True)
             return 0

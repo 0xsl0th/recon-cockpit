@@ -6,6 +6,13 @@ import errno
 import os
 import socket
 import stat
+import subprocess
+import sys
+import threading
+import time
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -164,9 +171,138 @@ def test_storage_partition_is_aggregate_not_per_file():
     assert worker.BOUNDS["scratch_bytes"] < worker.BOUNDS["aggregate_storage_bytes"]
 
 
+def test_owner_rejects_inherited_descriptors_before_loading_native_libraries(tmp_path):
+    source = Path(worker.__file__).read_text()
+    bootstrap = tmp_path / "owner_entry.py"
+    bootstrap.write_text(source[:source.index("\nimport array\n")] +
+        '\nassert ENTRY_DESCRIPTORS_VERIFIED\nassert "ctypes" not in sys.modules\nprint("verified")\n')
+    clean = subprocess.run([sys.executable, "-I", "-S", str(bootstrap)],
+        capture_output=True, timeout=5, check=False)
+    assert clean.returncode == 0 and clean.stdout == b"verified\n" and clean.stderr == b""
+    with bootstrap.open("rb") as inherited:
+        refused = subprocess.run([sys.executable, "-I", "-S", str(bootstrap)],
+            pass_fds=(inherited.fileno(),), capture_output=True, timeout=5, check=False)
+    assert refused.returncode == 78 and refused.stdout == b""
+    assert refused.stderr == b"stock_http_owner_refused\n"
+
+
 @pytest.mark.parametrize("size,mode", ((1048576, 0o700), (786432, 0o777), (1048577, 0o700)))
 def test_unbounded_or_public_scratch_refused(monkeypatch, size, mode):
     monkeypatch.setattr(worker.os, "stat", lambda path: SimpleNamespace(st_mode=stat.S_IFDIR | mode, st_dev=1))
     monkeypatch.setattr(worker.os, "statvfs", lambda path: SimpleNamespace(f_blocks=size, f_frsize=1))
     with pytest.raises(ValueError, match="scratch_not_bounded"):
         worker.scratch_bound("/scratch")
+
+
+def _native_gate():
+    if os.environ.get("RECON_LINUX_INTEGRATION") != "1":
+        pytest.skip("set RECON_LINUX_INTEGRATION=1 for owned stock HTTP cleanup")
+    assert sys.platform == "linux" and os.geteuid() != 0
+
+
+@contextmanager
+def _native_service(tmp_path, case, cancelled):
+    from recon_cockpit.secure_agent.audit_isolation import LinuxAuditSink
+    from recon_cockpit.secure_agent.approval_isolation import LinuxApprovalService
+    from recon_cockpit.secure_agent.launcher_isolation import LinuxFixtureLauncher
+    from recon_cockpit.secure_agent.stock_http_backend import AuthorizedStockHttpBackend
+    from recon_cockpit.secure_agent.stock_http_client_runtime import inspect_client_runtime
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+    selected = contract.selection("A", case)
+    preflight = ExecutionControl(time.monotonic() + 60)
+    runtimes = {"daemon": runtime.inspect_runtime("A", case, preflight),
+                "client": inspect_client_runtime(selected, preflight)}
+    session = str(uuid4())
+    limits = SessionLimits(**contract.limits(selected))
+    policy = contract.policy_for_selection(selected, require_approval=False)
+    owner = lab_module.StockHttpLab(selected, session, limits, execute=True, runtime=runtimes)
+    original = AuthorizedStockHttpBackend(policy, session, limits, owner, execute=True)
+    selected_control = ExecutionControl(time.monotonic() + 60, cancelled)
+    with LinuxAuditSink(tmp_path / "audit.jsonl", launch_witness=True) as audit:
+        with LinuxApprovalService(policy, session, launch_witness=True) as approvals:
+            with LinuxFixtureLauncher(original, audit=audit, approvals=approvals) as launcher:
+                yield selected, session, policy, selected_control, audit, approvals, launcher
+
+
+@pytest.mark.integration
+def test_native_cancellation_before_launch_creates_no_owner(tmp_path):
+    _native_gate()
+    from recon_cockpit.secure_agent.controller import Controller
+    from recon_cockpit.secure_agent.execution import ExecutionStopped
+    cancelled = threading.Event()
+    with _native_service(tmp_path, "O1", cancelled) as (selected, session, policy, control, audit, approvals, launcher):
+        cancelled.set()
+        controller = Controller(policy, audit, launcher, approvals, session_id=session)
+        with pytest.raises(ExecutionStopped, match="session_cancelled"):
+            controller.submit(contract.action(selected), execute=True, execution_control=control, session_step=1)
+        assert not hasattr(launcher, "_process")
+        assert launcher.snapshot["executions_reserved"] == 0
+        launcher.close()
+        assert launcher._closed
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("stage", ("response", "startup"))
+def test_native_cancel_during_response_and_failed_start_reap_all_descendants(tmp_path, monkeypatch, record_property, stage):
+    """Private test-copy markers never alter the ordinary compatibility corpus.
+
+    The response marker follows complete response validation in N3 and adds no
+    wait. The startup marker inserts a bounded250ms failure window before exec.
+    Host observation uses process names only, never a peer/control descriptor.
+    """
+    _native_gate()
+    from recon_cockpit.secure_agent.controller import Controller
+    from test_secure_fixture_launcher_linux import instrument, descendants
+    from test_secure_owned_launcher_linux import assert_reaped
+    marker = "stock-response" if stage == "response" else "stock-startup"
+    if stage == "response":
+        def transform(source):
+            source = source.replace("import time\n", "import time\nimport ctypes\n", 1)
+            anchor = '        self.ledger["transformed_response_hex"] = b"".join(chunks).hex()'
+            assert source.count(anchor) == 1
+            return source.replace(anchor, anchor + '\n        ctypes.CDLL(None).prctl(15, b"stock-response", 0, 0, 0)')
+        instrument(tmp_path, monkeypatch, transform, "stock_http_recorder")
+    else:
+        def transform(source):
+            anchor = '    os.execve("/tool/nginx",'
+            assert source.count(anchor) == 1
+            return source.replace(anchor, '    ctypes.CDLL(None).prctl(15, b"stock-startup", 0, 0, 0)\n'
+                '    time.sleep(0.25)\n    raise ValueError("instrumented_startup_failure")\n' + anchor)
+        instrument(tmp_path, monkeypatch, transform, "stock_http_owner_worker")
+    cancelled = threading.Event()
+    observed = set()
+    with _native_service(tmp_path, "N3" if stage == "response" else "O1", cancelled) as (
+            selected, session, policy, control, audit, approvals, launcher):
+        controller = Controller(policy, audit, launcher, approvals, session_id=session)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            pending = pool.submit(controller.submit, contract.action(selected), execute=True,
+                                  execution_control=control, session_step=1)
+            try:
+                found = False
+                expiry = min(control.deadline, time.monotonic() + 25)
+                while time.monotonic() < expiry and not pending.done():
+                    process = getattr(launcher, "_process", None)
+                    if process is not None:
+                        observed.add(process.pid)
+                        observed.update(descendants(process.pid))
+                    for pid in tuple(observed):
+                        try:
+                            found |= Path(f"/proc/{pid}/comm").read_text().strip() == marker
+                        except (FileNotFoundError, ProcessLookupError):
+                            continue
+                    if found:
+                        break
+                    time.sleep(0.005)
+                assert found and not pending.done(), "owned instrumented stage was never reached"
+                if stage == "response":
+                    cancelled.set()
+                result = pending.result(timeout=8)
+            finally:
+                cancelled.set()
+            assert result["execution_status"] == ("cancelled" if stage == "response" else "blocked"), result
+            assert launcher._closed and launcher._process.poll() is not None
+            assert launcher.snapshot["executions_reserved"] == 0  # No result was acknowledged.
+        assert_reaped(observed)
+    record_property("instrumented_cleanup_stage", stage)
+    record_property("all_observed_descendants_reaped", True)
+    record_property("native_response_stage_observed", stage == "response")
