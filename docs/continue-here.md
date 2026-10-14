@@ -56,6 +56,11 @@ owner test fixtures and added one descriptor-enumeration case. The current
 portable suite contains **24,643 tests**; production code and native test cases
 remain identical to the frozen native validation. Check the latest PR checks
 and `.secure-agent/stock-nginx-native-20261014/portable-final-03/` before merging.
+Hosted macOS CI also exposed three argv-only tests reading Linux namespace paths
+and one test assuming immediate TCP response availability. The portable fixtures
+now bind explicit namespace metadata and read the exact bounded response through
+EOF; production code, native cases and enforcement assertions are unchanged.
+The failed job log is retained as `pr89-macos-3b7c1d3.log` in the same evidence root.
 
 Regression validation also found a missing public fixture dependency on merged
 main. Adding that exact read-only module restored the existing four-action
@@ -2253,9 +2258,11 @@ Planning uses synthetic responses.
    checks and reviewed G1–G6 closure. The catalog now has 52 accepted profiles,
    zero candidates and 17 programs; Stage 2 remains closed. S3.1's
    [finite compatibility/routing contract](stage3-compatibility-routing.md) is accepted
-   in PR #87 at `48c0bce`, with all final/post-merge checks passed. Review S3.2a's
-   pinned source/runtime preflight, then implement S3.2b's separate authorized
-   diagnostic and full native corpus. S3.2 is not complete until that corpus passes.
+   in PR #87 at `48c0bce`, with all final/post-merge checks passed. S3.2a's pinned
+   source/runtime preflight is accepted in PR #88 at `5686dc8`. S3.2b's separate
+   authorized diagnostic and full native corpus are validated in PR #89; review
+   its latest revision and checks before acceptance, then begin S3.3's production
+   HTTP integration and Apache compatibility. S3.2 stays open pending acceptance.
    Network attachment still requires separate authorization; do not substitute
    optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI closed.

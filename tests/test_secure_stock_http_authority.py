@@ -24,10 +24,16 @@ HOST = {name: name + ':[100]' for name in ('user', 'net', 'mnt', 'pid')}
 def test_parent_private_peer_mount_is_stock_only_and_keeps_aggregate_tmpfs_bound(monkeypatch, profile):
     from recon_cockpit.secure_agent import launcher_isolation
     monkeypatch.setattr(launcher_isolation, '_trusted_program', lambda name: '/usr/bin/' + name)
+    # This constructs argv only; real namespace discovery belongs to native
+    # integration tests. Keep the bootstrap binding observable on any POSIX host.
+    monkeypatch.setattr(launcher_isolation, '_namespaces', lambda: dict(HOST))
     selected = launcher_isolation.LinuxFixtureLauncher.__new__(launcher_isolation.LinuxFixtureLauncher)
     selected._config = {'profile': profile}
     selected._witness_source = selected._approval_source = None
     argv = selected._command({'stdlib': '/stdlib'}, [], 'a' * 64)
+    assert argv[-9:] == [
+        '/usr/bin/python3', '-I', '-S', '/app/recon_cockpit/secure_agent/launcher_worker.py',
+        'a' * 64, *(HOST[name] for name in ('user', 'net', 'mnt', 'pid'))]
     mounts = {}
     for index, item in enumerate(argv):
         if item == '--tmpfs':

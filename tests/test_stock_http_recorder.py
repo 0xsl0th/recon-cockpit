@@ -104,6 +104,23 @@ class Harness:
         peer.sendall(response() if raw is None else raw)
         peer.shutdown(socket.SHUT_WR)
 
+    def expect_response(self, client, expected):
+        # A completed send/close is not a promise that loopback TCP bytes are
+        # already readable, or arrive in one recv. Bound the peer-side wait and
+        # require the entire exact stream plus EOF without advancing fake time.
+        client.settimeout(1)
+        received = bytearray()
+        try:
+            while True:
+                part = client.recv(len(expected) + 1 - len(received))
+                if not part:
+                    break
+                received.extend(part)
+                assert len(received) <= len(expected)
+            assert bytes(received) == expected
+        finally:
+            client.setblocking(False)
+
     def close(self):
         self.service.close()
         for channel in self.peers + self.clients:
@@ -156,7 +173,7 @@ def test_partial_request_is_not_forwarded_before_exact_completion(harness):
     client.sendall(raw[1:])
     h.reply()
     h.until(lambda: h.service.ledger["client_response_bytes"] == len(response()))
-    assert client.recv(4096) == response()
+    h.expect_response(client, response())
     saved = h.service.snapshot()
     assert saved["requests_validated"] == saved["requests_delivered"] == saved["daemon_connections"] == 1
     assert saved["request_bytes_received"] == saved["request_bytes_delivered"] == len(raw)
@@ -202,7 +219,7 @@ def test_nmap_empty_scan_and_null_exchanges_then_exact_get_obey_rate_and_cap(har
     third = h.client(spec.request_bytes("A", "O5"))
     h.reply()
     h.until(lambda: h.service.active is None)
-    assert third.recv(4096) == response()
+    h.expect_response(third, response())
     saved = h.service.snapshot()
     assert saved["connections_attempted"] == saved["connections_admitted"] == 3
     assert saved["requests_delivered"] == 1

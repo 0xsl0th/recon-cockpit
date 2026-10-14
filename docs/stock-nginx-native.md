@@ -150,6 +150,12 @@ mappings. An additional portable case brings the current suite to **24,643**.
 Production code and the native test cases remain byte-identical to `d0bbdf2`.
 The final portable follow-up is retained in `portable-final-03/`; latest PR CI
 must pass before acceptance. No native guard or enforcement assertion was weakened.
+The first hosted macOS follow-up found three argv-only fixtures reading real
+Linux namespace paths and one immediate nonblocking TCP read assumption. Those
+fixtures now supply explicit namespace metadata, verify its bootstrap binding,
+and wait for the exact complete response plus EOF with a bounded read. The
+original failed job log remains in `pr89-macos-3b7c1d3.log`; these further
+test-only corrections leave production code and native cases unchanged.
 
 ## Completion gate
 
