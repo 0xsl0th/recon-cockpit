@@ -121,3 +121,19 @@ destinations, actual model calls/cost and descriptive wall-clock latency. Model
 calls and cost must be zero; comparative overhead remains unmeasured. Offline
 validation and G6 review are pending, so this runbook does not yet claim passing
 counts or accepted T06 capability.
+
+## Describe and inspect
+
+```sh
+python -m recon_cockpit.secure_agent --describe-tool dig_dns_aaaa_v1
+python -m recon_cockpit.secure_agent --describe-tool dig_dns_ptr_v1
+```
+
+Each catalog entry supplies its dry-run recipe and separate approval-required
+policy: `examples/secure-agent-dns-aaaa-policy.json` or
+`examples/secure-agent-dns-ptr-policy.json`. The assessment selectors are
+`--network-tool-assessment dig-aaaa-ok` and
+`--network-tool-assessment dig-ptr-ok`. Use fresh private audit and evidence paths
+for each new action. Descriptions and saved evidence grant no execution authority.
+Inspect a saved bundle with `--inspect-assessment PATH`; inspection neither
+launches dig nor restores approval.

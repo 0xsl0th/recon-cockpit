@@ -122,7 +122,7 @@ def test_go_runtime_allowances_do_not_expand_accepted_other_tools(monkeypatch, t
     monkeypatch.setattr(worker.resource, "setrlimit", lambda kind, value: limits.update({kind: value}))
     worker.syscall_filter(tool_id)
     worker._limits(tool_id)
-    threaded = tool_id in (runtime.DIG_AXFR, runtime.DIG_NSID, runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SSH_ALGORITHMS)
+    threaded = tool_id in (runtime.DIG_AAAA, runtime.DIG_PTR, runtime.DIG_AXFR, runtime.DIG_NSID, runtime.DIG, runtime.DIG_SRV, runtime.KERBRUTE, runtime.WHATWEB, runtime.RDP, runtime.SMB2, runtime.SSH_ALGORITHMS)
     assert calls == [{"allow_threads": threaded}]
     assert limits == {
         worker.resource.RLIMIT_AS: ((2048 if tool_id == runtime.KERBRUTE else 256) * 1024 * 1024,) * 2,
