@@ -44,6 +44,22 @@ substitute for that path. The two-part implementation uses the contract's allowe
 split within the 6–8 PR estimate. S3.2 and Stage 3 remain open; no service,
 external target, workflow or model is enabled by preflight inspection.
 
+S3.2a frozen source `8e130df` passed **26/26 actual installed-runtime inspections**
+and **100 focused boundary tests**. Every selection binds nine native files and
+five generated files; all 754 tracked source pins stayed unchanged. Independent
+authority, source, evidence and roadmap reviews found no blockers within this
+preparation-only scope. Private receipts remain under
+`.secure-agent/stock-nginx-20261014/`, with source provenance in `source-review/`
+and per-selection manifests in `preflight/`. The latter's `verification.json`
+has SHA-256 `1ba5c62e65a2c983a6f69fd92b2cd07b035f31f40db64e3114201ae1ec42d20f`.
+These inspections created no service, action, grant, provider call or spend.
+The first full portable attempt retained in `portable-sandbox.*` has 24,246
+passes and 17 sandbox-denied existing socket-pair tests (`EPERM`). The normal-user
+rerun and final CI are acceptance gates, recorded in the PR and private
+`portable.xml` / `verification.json`; do not mistake the initial attempt for a
+passing full run. Review branch `feature/stage3-nginx-diagnostic` before proceeding
+to S3.2b; its native corpus remains entirely open.
+
 S3.1 catalog reconciliation passed **554 focused portable checks**, with no
 failures, errors or skips. An independent before/after comparison of all 52
 catalog descriptions confirms only acceptance counts, the two temporary T06

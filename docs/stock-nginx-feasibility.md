@@ -150,3 +150,48 @@ checks**, plus every declared authority, budget and cleanup test. None has been
 run by this preparation step. Ordinary blocking cannot count as usefulness.
 Native compatibility, enforced limits and production support remain unverified;
 zero provider calls/spend and deferred comparative overhead remain mandatory.
+
+## Read-only preflight and retained validation
+
+Run the bounded inspector from the repository with the existing environment:
+
+```sh
+.venv/bin/python scripts/inspect_stock_http_runtime.py \
+  --configuration A --case O1 \
+  --output /absolute/private-directory/new-receipt.json
+```
+
+The output parent must already be owned by the caller with mode 0700. Each
+receipt is created exclusively with mode 0600; existing paths and symlinks are
+refused. Only the two configurations and thirteen declared cases are accepted.
+There is no execute flag, arbitrary target, executable or command argument.
+The sole metadata probe is fixed `ldd /usr/sbin/nginx`, with cleared environment
+and a bounded deadline/output. The inspector rereads the pinned regular files
+and checks their identity, bytes and canonical paths before recording success.
+The manifest explicitly leaves runtime closure and daemon execution unverified.
+
+Frozen source `8e130df` passed **26/26 actual installed-runtime inspections**,
+covering both configurations and every declared case. Each manifest contains
+the same nine native files and five case-bound generated files; all **754 tracked
+source files remained unchanged**. Inspection latency was 144–177 ms, median
+151.5 ms. This measures metadata preparation only, not action latency or
+comparative execution overhead. No daemon, tool action, authority grant,
+provider call or spend occurred.
+
+Private receipts are under `.secure-agent/stock-nginx-20261014/preflight/`.
+`verification.json` has SHA-256
+`1ba5c62e65a2c983a6f69fd92b2cd07b035f31f40db64e3114201ae1ec42d20f`
+and retains the source pins, 26 receipt hashes and native file identities.
+The separate `source-review/source-review-receipt.json` has SHA-256
+`8a7c77e50bdc9afec771792d684eee11d418096dddbb2318ee9487da87b00515`.
+Independent runtime/CLI and source/spec reviews found no blockers within this
+preparation-only scope. The focused boundary suite passed **100 tests**.
+
+The first full portable attempt ran inside the coding sandbox: **24,246 passed
+and 17 existing TLS socket-pair tests failed** because `sendall` was denied with
+`EPERM`. Keep `portable-sandbox.xml` and `portable-sandbox.log`; that attempt is
+not a passing full run. The same frozen source is being validated outside the
+coding sandbox with native integration excluded. Its final `portable.xml`, log
+and `verification.json` are retained beside the earlier attempt; review those
+receipts and the PR's final CI before acceptance. No production change or test
+exclusion is used to work around the sandbox restriction.

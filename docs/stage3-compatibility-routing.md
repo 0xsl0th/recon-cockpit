@@ -32,7 +32,8 @@ Read-only local package inventory on 14 October found nginx `1.28.0-6`, Apache
 not additional secure-tool integrations. Installed packages do not establish
 compatible startup, confinement or useful execution. S3.2 must inspect and pin
 the actual bytes, dependencies and compiled configuration before running them;
-no package download or service-manager launch is part of this contract slice.
+no package installation or service-manager launch is part of this contract slice.
+S3.2a separately retains downloaded source/package archives as comparison data.
 
 ## Finite sequence and completion boundaries
 
