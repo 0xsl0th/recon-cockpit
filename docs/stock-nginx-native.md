@@ -1,7 +1,8 @@
 # Stock nginx: authorized disconnected diagnostic
 
 S3.2a is accepted in [PR #88](https://github.com/0xsl0th/recon-cockpit/pull/88)
-at `5686dc8`. **S3.2b is implemented and validated; PR review and acceptance
+at `5686dc8`. **S3.2b is implemented and validated in
+[PR #89](https://github.com/0xsl0th/recon-cockpit/pull/89); PR review and acceptance
 remain pending.** This implements S3.2's complete diagnostic contract within the
 [Stage 3 plan](stage3-compatibility-routing.md)
 using the [pinned source/runtime preparation](stock-nginx-feasibility.md).

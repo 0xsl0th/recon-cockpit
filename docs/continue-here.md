@@ -41,7 +41,8 @@ passed; reviewed head `1009be6` and the merge share tree
 `748fdb336a61d4d12fda5e4ad846641e061664a8`. Its full portable validation passed
 24,263 tests. Retain `.secure-agent/stock-nginx-native-20261014/pr88-merge-review.json`.
 
-**S3.2b is implemented and validated; PR review and acceptance remain pending.**
+**S3.2b is implemented and validated in [PR #89](https://github.com/0xsl0th/recon-cockpit/pull/89);
+PR review and acceptance remain pending.**
 The [stock-nginx diagnostic](stock-nginx-native.md) passed **60 native checks,
 15 accepted-workflow/authority regressions and 24,642 portable tests** at frozen
 source `d0bbdf2`, with all 874 tracked source hashes unchanged in each run.
