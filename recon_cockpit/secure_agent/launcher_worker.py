@@ -84,7 +84,7 @@ class _NestedAdmission(LinuxLaunchAdmission):
 
 def boundary(host, *, nmap_runtime=False, web_tools_runtime=False, network_tools_runtime=False, smb_runtime=False,
              kerberos_runtime=False, hierarchy_runtime=False, service_web_runtime=False, configurable_runtime=False, whatweb_runtime=False,
-             nuclei_runtime=False):
+             nuclei_runtime=False, stock_http_runtime=False):
     if (not ENTRY_DESCRIPTORS_VERIFIED or sys.platform != 'linux' or os.getuid() <= 0 or os.getgid() <= 0
             or any(os.readlink('/proc/self/ns/' + name) == identity for name, identity in host.items())):
         raise ValueError('invalid_launcher_namespaces')
@@ -107,7 +107,7 @@ def boundary(host, *, nmap_runtime=False, web_tools_runtime=False, network_tools
     address_space = (2048 if web_tools_runtime or kerberos_runtime or hierarchy_runtime or service_web_runtime or nuclei_runtime else 256) * 1024 * 1024
     for kind, cap in ((resource.RLIMIT_AS, address_space), (resource.RLIMIT_CPU, 30),
                       (resource.RLIMIT_NOFILE, 256 if smb_runtime or whatweb_runtime else 128), (resource.RLIMIT_CORE, 0),
-                      (resource.RLIMIT_FSIZE, 160*1048576 if nuclei_runtime else 40*1048576 if smb_runtime else 16*1048576 if nmap_runtime or web_tools_runtime or network_tools_runtime or kerberos_runtime or hierarchy_runtime or service_web_runtime or configurable_runtime or whatweb_runtime else 1048576), (resource.RLIMIT_NPROC, 64)):
+                      (resource.RLIMIT_FSIZE, 160*1048576 if nuclei_runtime else 40*1048576 if smb_runtime else 16*1048576 if nmap_runtime or web_tools_runtime or network_tools_runtime or kerberos_runtime or hierarchy_runtime or service_web_runtime or configurable_runtime or stock_http_runtime or whatweb_runtime else 1048576), (resource.RLIMIT_NPROC, 64)):
         resource.setrlimit(kind, (cap, cap))
     # Unlike the admission worker, this trusted process must create children and
     # nested namespaces. It has no host network or filesystem to delegate.
@@ -162,10 +162,10 @@ def main():
     witness_reader = None
     approval_reader = None
     try:
-        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions'}):
+        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions', 'stock-http-launch-preconditions'}):
             raise ValueError('invalid_launcher_bootstrap')
         witnessed = len(sys.argv) == 7
-        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions'}
+        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions', 'stock-http-launch-preconditions'}
         nmap_runtime = witnessed and sys.argv[6] in {'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions'}
         web_tools_runtime = witnessed and sys.argv[6] == 'web-tools-launch-preconditions'
         network_tools_runtime = witnessed and sys.argv[6] == 'network-tools-launch-preconditions'
@@ -175,9 +175,11 @@ def main():
         kerberos_runtime = witnessed and sys.argv[6] == 'kerberos-tools-launch-preconditions'
         hierarchy_runtime = witnessed and sys.argv[6] == 'web-hierarchy-launch-preconditions'
         service_web_runtime = witnessed and sys.argv[6] == 'service-web-launch-preconditions'
+        stock_http_runtime = witnessed and sys.argv[6] == 'stock-http-launch-preconditions'
         configurable_runtime = witnessed and sys.argv[6] == 'configurable-launch-preconditions'
         _, host = bootstrap._arguments(['three_step', *sys.argv[2:6]])
-        checks = (boundary(host, nuclei_runtime=True) if nuclei_runtime else
+        checks = (boundary(host, stock_http_runtime=True) if stock_http_runtime else
+                  boundary(host, nuclei_runtime=True) if nuclei_runtime else
                   boundary(host, configurable_runtime=True) if configurable_runtime else
                   boundary(host, service_web_runtime=True) if service_web_runtime else
                   boundary(host, hierarchy_runtime=True) if hierarchy_runtime else
@@ -245,6 +247,9 @@ def main():
         elif config['profile'] == 'configurable_owned_lab':
             from recon_cockpit.secure_agent.configurable_backend import ConfinedConfigurableBackend
             owned = ConfinedConfigurableBackend(config, init['runtime'])
+        elif config['profile'] == 'stock_nginx_diagnostic_v1':
+            from recon_cockpit.secure_agent.stock_http_backend import ConfinedStockHttpBackend
+            owned = ConfinedStockHttpBackend(config, init['runtime'])
         with _NestedAdmission(config, init['runtime']) as gate, (owned.lab if owned is not None else nullcontext()):
             print(protocol.encode({'version': '1', 'ready': True, 'bootstrap_digest': sys.argv[1], 'checks': checks}).decode(), flush=True)
             sequence = 1

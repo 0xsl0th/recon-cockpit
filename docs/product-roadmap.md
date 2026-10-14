@@ -29,16 +29,22 @@ passed. Reviewed head `0377fd4` and the merge share tree
 `2fb54bff607f8e8a64a09eea12654f145327e570`. Preserve the private merge receipt
 under `.secure-agent/stock-nginx-20261014/`; do not repeat this merge.
 
-**Current work is S3.2a: pinned stock-nginx source/runtime preparation.**
-The [source review](stock-nginx-feasibility.md) and read-only preflight define the
-finite configuration and inspect the installed daemon/dependency bytes. This is
-the first part of S3.2, not a native compatibility result. **Next is S3.2b: the
-separate authorized one-action diagnostic, bounded recorder and full native
-corpus** in the [Stage 3 contract](stage3-compatibility-routing.md). Existing
-four-action assessment contracts and older authority-free diagnostics cannot
-substitute for that path. The two-part implementation uses the contract's allowed
-split within the 6–8 PR estimate. S3.2 and Stage 3 remain open; no service,
-external target, workflow or model is enabled by preflight inspection.
+**S3.2a is accepted in [PR #88](https://github.com/0xsl0th/recon-cockpit/pull/88),
+merged as `5686dc8`.** Fresh review and 100 focused tests passed. All five
+[final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38607042272)
+and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38609552148)
+passed; reviewed head `1009be6` and the merge share tree
+`748fdb336a61d4d12fda5e4ad846641e061664a8`. Its full portable validation passed
+24,263 tests. Retain `.secure-agent/stock-nginx-native-20261014/pr88-merge-review.json`.
+
+**Current work is S3.2b: the separately authorized stock-nginx diagnostic and
+full native corpus.** The [diagnostic runbook](stock-nginx-native.md) follows the
+[Stage 3 contract](stage3-compatibility-routing.md). Reuse the accepted readers,
+isolation, audit and approval services while keeping the one-action diagnostic
+separate from the accepted four-action workflow. S3.2 and Stage 3 remain open
+until the complete native, enforcement, cleanup and unchanged-replay gates pass.
+The split stays within the 6–8 PR estimate; preparation does not replace native
+validation. HTTP production compatibility (S3.3) follows acceptance of this slice.
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
 closed. Model credentials, paid calls, live-model evaluation, deeper workflows,

@@ -1,6 +1,6 @@
 # Stock nginx: source review and non-executing runtime preparation
 
-**S3.2a, 14 October 2026.** This is the bounded first part of the
+**S3.2a accepted in [PR #88](https://github.com/0xsl0th/recon-cockpit/pull/88) at `5686dc8`, 14 October 2026.** This is the bounded first part of the
 [Stage 3 nginx diagnostic](stage3-compatibility-routing.md), following accepted
 S3.1 in [PR #87](https://github.com/0xsl0th/recon-cockpit/pull/87) at `48c0bce`.
 It reviews actual upstream/distribution source and prepares immutable inputs
@@ -190,9 +190,9 @@ preparation-only scope. The focused boundary suite passed **100 tests**.
 The first full portable attempt ran inside the coding sandbox: **24,246 passed
 and 17 existing TLS socket-pair tests failed** because `sendall` was denied with
 `EPERM`. Keep `portable-sandbox.xml` and `portable-sandbox.log`; that attempt is
-not a passing full run. The same frozen source must also pass full portable
-validation outside the coding sandbox with native integration excluded. Its
-final `portable.xml`, log and `verification.json` belong beside the earlier
-attempt; review those receipts and the PR's final CI before acceptance.
-No production change or test
-exclusion is used to work around the sandbox restriction.
+not a passing full run. The same frozen source then passed **24,263 portable
+tests**, with 1,399 integration tests deselected and no failures, errors or skips.
+The final `portable.xml`, log and `verification.json` remain beside the earlier
+attempt. Fresh review and all five final/post-merge CI checks passed before
+acceptance. No production change or test exclusion worked around the restriction.
+The [S3.2b diagnostic](stock-nginx-native.md) retains the full native gate.

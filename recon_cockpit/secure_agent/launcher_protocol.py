@@ -18,13 +18,15 @@ PROFILES = {'fixture': 'linux-authorized-fixture-executor-v1',
             'owned_web_tools_lab': 'linux-authorized-owned-web-tools-executor-v1',
             'owned_network_tools_lab': 'linux-authorized-owned-network-tools-executor-v1',
             'owned_service_web_lab': 'linux-authorized-owned-service-web-executor-v1',
-            'configurable_owned_lab': 'linux-authorized-configurable-owned-executor-v1'}
+            'configurable_owned_lab': 'linux-authorized-configurable-owned-executor-v1',
+            'stock_nginx_diagnostic_v1': 'linux-authorized-stock-nginx-diagnostic-v1'}
 RUNTIME_TAGS = {'owned_nmap_lab': 'nmap-launch-preconditions', 'owned_web_lab': 'web-launch-preconditions',
     'owned_http_headers_lab': 'http-headers-launch-preconditions',
     'owned_web_tools_lab': 'web-tools-launch-preconditions',
     'owned_network_tools_lab': 'network-tools-launch-preconditions',
     'owned_service_web_lab': 'service-web-launch-preconditions',
-    'configurable_owned_lab': 'configurable-launch-preconditions'}
+    'configurable_owned_lab': 'configurable-launch-preconditions',
+    'stock_nginx_diagnostic_v1': 'stock-http-launch-preconditions'}
 
 
 def runtime_tag(config, closure):
@@ -75,7 +77,7 @@ def decode(raw):
 
 
 def configuration(value):
-    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'}:
+    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1'}:
         from .owned_lab_contract import validate_identity
         if value['profile'] == 'owned_web_lab':
             from .web_lab_contract import validate_identity
@@ -88,6 +90,10 @@ def configuration(value):
         elif value['profile'] == 'owned_service_web_lab':
             from .service_web_lab_contract import validate_identity
         base = admission.configuration({key: item for key, item in value.items() if key != 'owned_lab'})
+        if value['profile'] == 'stock_nginx_diagnostic_v1':
+            from .stock_http_contract import validate_identity as validate_stock_identity
+            return {**base, 'owned_lab': validate_stock_identity(value.get('owned_lab'),
+                selection=base['case'], session_id=base['session_id'])}
         if value['profile'] == 'configurable_owned_lab':
             from .configurable_lab_contract import validate_assessment_identity
             return {**base, 'owned_lab': validate_assessment_identity(value.get('owned_lab'), scope=base['case'])}
@@ -99,12 +105,13 @@ def configuration(value):
 
 
 def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tools=False, service_web=False,
-            configurable=False):
+            configurable=False, stock_http=False):
     fields = ({'stdlib', 'files'} | ({'nmap_runtime'} if nmap else set()) |
               ({'web_tools_runtime'} if web_tools else set()) | ({'network_tools_runtime'} if network_tools else set()) |
               ({'service_web_runtime'} if service_web else set()) |
-              ({'configurable_runtime'} if configurable else set()))
-    if type(value) is not dict or set(value) != fields or (sum((nmap, web_tools, network_tools, service_web, configurable)) > 1):
+              ({'configurable_runtime'} if configurable else set()) |
+              ({'stock_http_runtime'} if stock_http else set()))
+    if type(value) is not dict or set(value) != fields or (sum((nmap, web_tools, network_tools, service_web, configurable, stock_http)) > 1):
         raise ValueError('invalid_launcher_runtime')
     if nmap:
         from .nmap_runtime import validate_manifest
@@ -121,6 +128,10 @@ def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tool
     if configurable:
         from .configurable_runtime import validate_manifests
         validate_manifests(value['configurable_runtime'])
+    if stock_http:
+        from .stock_http_contract import validate_runtime, selection
+        daemon = value['stock_http_runtime'].get('daemon', {}) if type(value['stock_http_runtime']) is dict else {}
+        validate_runtime(value['stock_http_runtime'], selection(daemon.get('configuration'), daemon.get('case')))
     if type(value['stdlib']) is not str or not re.fullmatch(r'/usr/lib/python3\.\d+', value['stdlib']):
         raise ValueError('invalid_launcher_stdlib')
     paths = value['files']
@@ -148,11 +159,18 @@ def initial(value, now):
         manifest(value['approval_witness'])
     config = configuration(value['configuration'])
     admission.initial({'configuration': {k: v for k, v in config.items() if k != 'owned_lab'}, 'deadline': value['deadline']}, now)
-    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab'},
+    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1'},
             nmap=config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'},
             web_tools=config['profile'] == 'owned_web_tools_lab', network_tools=config['profile'] == 'owned_network_tools_lab',
             service_web=config['profile'] == 'owned_service_web_lab',
-            configurable=config['profile'] == 'configurable_owned_lab')
+            configurable=config['profile'] == 'configurable_owned_lab',
+            stock_http=config['profile'] == 'stock_nginx_diagnostic_v1')
+    if config['profile'] == 'stock_nginx_diagnostic_v1':
+        from .stock_http_contract import validate_identity as validate_stock_identity
+        if 'audit_witness' not in value or 'approval_witness' not in value:
+            raise ValueError('stock_http_requires_independent_launch_witnesses')
+        validate_stock_identity(config['owned_lab'], selection=config['case'], session_id=config['session_id'],
+                                runtime=value['runtime']['stock_http_runtime'])
     if config['profile'] == 'owned_web_tools_lab':
         from .web_tools_contract import action
         if value['runtime']['web_tools_runtime']['tool_id'] != action(config['case'], 1)['tool_id']:

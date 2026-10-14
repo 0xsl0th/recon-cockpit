@@ -33,16 +33,22 @@ passed. Reviewed head `0377fd4` and the merge share tree
 `2fb54bff607f8e8a64a09eea12654f145327e570`. Preserve the private merge receipt
 under `.secure-agent/stock-nginx-20261014/`; do not repeat this merge.
 
-**Current work is S3.2a: pinned stock-nginx source/runtime preparation.**
-The [source review](stock-nginx-feasibility.md) and read-only preflight define the
-finite configuration and inspect the installed daemon/dependency bytes. This is
-the first part of S3.2, not a native compatibility result. **Next is S3.2b: the
-separate authorized one-action diagnostic, bounded recorder and full native
-corpus** in the [Stage 3 contract](stage3-compatibility-routing.md). Existing
-four-action assessment contracts and older authority-free diagnostics cannot
-substitute for that path. The two-part implementation uses the contract's allowed
-split within the 6–8 PR estimate. S3.2 and Stage 3 remain open; no service,
-external target, workflow or model is enabled by preflight inspection.
+**S3.2a is accepted in [PR #88](https://github.com/0xsl0th/recon-cockpit/pull/88),
+merged as `5686dc8`.** Fresh review and 100 focused tests passed. All five
+[final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38607042272)
+and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38609552148)
+passed; reviewed head `1009be6` and the merge share tree
+`748fdb336a61d4d12fda5e4ad846641e061664a8`. Its full portable validation passed
+24,263 tests. Retain `.secure-agent/stock-nginx-native-20261014/pr88-merge-review.json`.
+
+**Current work is S3.2b: the separately authorized stock-nginx diagnostic and
+full native corpus.** The [diagnostic runbook](stock-nginx-native.md) follows the
+[Stage 3 contract](stage3-compatibility-routing.md). Reuse the accepted readers,
+isolation, audit and approval services while keeping the one-action diagnostic
+separate from the accepted four-action workflow. S3.2 and Stage 3 remain open
+until the complete native, enforcement, cleanup and unchanged-replay gates pass.
+The split stays within the 6–8 PR estimate; preparation does not replace native
+validation. HTTP production compatibility (S3.3) follows acceptance of this slice.
 
 S3.2a frozen source `8e130df` passed **26/26 actual installed-runtime inspections**
 and **100 focused boundary tests**. Every selection binds nine native files and
@@ -54,11 +60,13 @@ and per-selection manifests in `preflight/`. The latter's `verification.json`
 has SHA-256 `1ba5c62e65a2c983a6f69fd92b2cd07b035f31f40db64e3114201ae1ec42d20f`.
 These inspections created no service, action, grant, provider call or spend.
 The first full portable attempt retained in `portable-sandbox.*` has 24,246
-passes and 17 sandbox-denied existing socket-pair tests (`EPERM`). The normal-user
-rerun and final CI are acceptance gates, recorded in the PR and private
-`portable.xml` / `verification.json`; do not mistake the initial attempt for a
-passing full run. Review branch `feature/stage3-nginx-diagnostic` before proceeding
-to S3.2b; its native corpus remains entirely open.
+passes and 17 sandbox-denied existing socket-pair tests (`EPERM`). The same
+source then passed **24,263 portable tests**, with 1,399 integration tests
+deselected and no failures, errors or skips. Both attempts remain recorded;
+no source change or test exclusion worked around the sandbox restriction.
+S3.2a is closed. Current implementation branch is `feature/stage3-nginx-native`
+in `/tmp/recon-stage3-nginx-native`; preserve all native failures and require the
+complete declared corpus before claiming S3.2b complete.
 
 S3.1 catalog reconciliation passed **554 focused portable checks**, with no
 failures, errors or skips. An independent before/after comparison of all 52

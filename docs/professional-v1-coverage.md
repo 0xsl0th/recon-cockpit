@@ -26,9 +26,9 @@ T05 remains accepted at `8ca3887`, with its 51 native and 23,170 portable passes
 `.secure-agent/dns-address-20261014/pr85-merge-review.json` and the original
 `.secure-agent/snmp-page-20261014/` receipts. No accepted milestone is reopened.
 
-**S3.1 is accepted in PR #87 at `48c0bce`; current work is S3.2a's
-[pinned source/runtime preparation](stock-nginx-feasibility.md).** The next S3.2b
-implements the separate authorized one-action stock-nginx diagnostic and full
+**S3.1 is accepted in PR #87 at `48c0bce`; S3.2a's
+[pinned source/runtime preparation](stock-nginx-feasibility.md) is accepted in
+PR #88 at `5686dc8`.** Current S3.2b implements the separate authorized one-action stock-nginx diagnostic and full
 native corpus in the [Stage 3 contract](stage3-compatibility-routing.md). This
 permitted split fits the existing 6–8 PR estimate and removes no required case.
 Preflight inspection establishes no service execution or compatibility. S3.2 and
