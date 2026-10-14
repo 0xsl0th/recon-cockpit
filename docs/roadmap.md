@@ -55,25 +55,48 @@ Production code/native cases remain identical to frozen `d0bbdf2`; later
 portable fixture corrections and their original failures remain recorded.
 No diagnostic result grants production HTTP support or adds a catalog profile.
 
-**Current: [S3.3a PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90), Apache preparation and the separate
-[production HTTP contract](stage3-http-production.md), is open for review.** The fixed Apache
-configuration/runtime inspector remains read-only; native startup, confinement
-and production support remain unverified. Its UID, dynamic-module and listener
-requirements justify splitting S3.3 into preparation and **S3.3b native
-integration**. Stage 3 is re-estimated from 6–8 to **nine PRs total**, with three
-accepted and six remaining. No native case or safety bound is removed.
+**S3.3a is accepted in [PR #90](https://github.com/0xsl0th/recon-cockpit/pull/90),
+merged as `d30a2f1` on 14 October.** Fresh independent code/evidence review and
+118 focused tests passed; all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38639047704)
+passed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38643623264)
+also passed. The fixed Apache inspector remains preparation only; this acceptance
+establishes no native startup, confinement or production compatibility.
+Retain `.secure-agent/stock-http-production-20261014/pr90-merge-review.json`.
+
+**Current: S3.3b is implemented and validated in [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91),
+awaiting final review and merge.** The separate [production HTTP path](stage3-http-production.md)
+passed **106 native checks at `1cfa59a`**: 52 nginx/Apache corpus rows and 54
+boundary checks, with all **904 source hashes unchanged**. It records **32 useful
+completions, zero unnecessary refusals, 20 correct negatives and 32 distinct
+destination denials**. All 52 bundles passed **104 unchanged Python/CLI inspections**;
+**68 distinct accepted-profile native regressions** and **three separately launched
+Apache extra-request repetitions** passed. These repetitions are not additional
+unique acceptance cases.
+
+Full local portable validation at `d19eef3` passed **25,312 tests**, with
+all **904 source hashes unchanged** during that run. All five [hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38649179063)
+also passed at `d19eef3`. Production code and native cases match `1cfa59a`; the
+later change corrected portable fixtures and recorded validation. Preserve the
+original smoke, native and macOS failures under
+`.secure-agent/stock-http-production-20261014/`; the original Apache budget-test
+failure's cause remains unconfirmed. Stage 3 stays **nine PRs total, four accepted
+and five remaining until PR #91 merges**. No required corpus row or bound was removed.
+A later macOS check exposed a shared portable socket-readiness fixture issue;
+the [test-only correction and failed run](stage3-http-production.md#portable-socket-readiness-correction)
+are recorded separately. Require the corrected latest revision to pass its checks.
 
 S3.3a validation at `274140b` passed **26 installed-runtime inspections** and
 **24,761 portable tests**, with all **882 tracked source hashes unchanged**.
 No service, tool action or authority was created; provider calls/spend remain zero.
-See the [preparation evidence](stock-apache-feasibility.md). PR review and
-acceptance remain pending; the read-only preparation is not production support.
+See the accepted [preparation evidence](stock-apache-feasibility.md);
+read-only preparation is not production support.
 
-After S3.3a review/acceptance, implement S3.3b and run all 26 corpus rows on each
-server through the new production mode, plus authority, denial, budget, cleanup
-and unchanged-inspection gates. Then continue S3.4–S3.7 in order. Stage 3 stays
-open. Coverage remains **52 accepted profiles / 17 external programs**;
-completed milestones stay closed.
+Next, review PR #91's latest revision and required checks, and merge only if
+they pass. After that acceptance, begin **S3.4 stock OpenSSH compatibility**:
+first pin two finite server configurations and the public synthetic host-key,
+request and confinement contract; then validate bounded service identification
+and host-key collection. S3.5–S3.7 follow in order. Stage 3 stays open, and coverage
+remains **52 accepted profiles / 17 external programs**. Completed milestones stay closed.
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
 closed. Model credentials, paid calls, live-model evaluation, deeper workflows,
@@ -117,7 +140,7 @@ claim that today's bounded fixtures support professional engagements.
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
 | 3 — accepted, finite coverage tranche | T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | PRs #74/#80/#81/#84/#85/#86 close all required G1–G6 gates: 52 accepted profiles across 17 programs. T06 retains 83 native and 24,163 portable passes. Existing exact recipes, limits and evidence contracts stay closed; this is not general engagement compatibility. |
-| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87. S3.2a/S3.2b are accepted in PRs #88/#89; S3.3a prepares Apache and the production contract, then S3.3b integrates HTTP compatibility; OpenSSH compatibility, multi-host routing and name/redirect/referral boundaries follow. No attached network or new execution support is granted by planning. |
+| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87, S3.2a/S3.2b in PRs #88/#89 and S3.3a Apache preparation in PR #90. PR #91's HTTP production candidate is validated and awaits final review/merge. S3.4 OpenSSH compatibility follows that acceptance, then multi-host routing and name/redirect/referral boundaries. Planning grants no attached-network access or execution authority. |
 | 5 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`

@@ -2,21 +2,26 @@
 
 PR #89 accepted the stock-nginx diagnostic at `c068a9d`. Its 26 native corpus
 rows, authority tests and immutable evidence close S3.2; they do not establish
-production HTTP integration. This document defines the next finite contract.
-The implementation and acceptance gates below remain open.
+production HTTP integration. This document defines the separate finite production contract.
+S3.3a preparation is accepted in PR #90 at `d30a2f1`.
+[S3.3b PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91) implements the
+production path and has completed native and portable validation. It awaits
+final review and required checks on the latest revision, then merge; S3.3b
+acceptance is not yet claimed.
 
-S3.3a prepares the exact Apache runtime/configuration and this contract.
-S3.3b must implement and validate the secure production path on **both nginx and
-Apache**. Apache's listener, dynamically loaded modules and nonzero user mapping
-need a separate review from nginx's private Unix socket and namespace UID zero.
+S3.3a prepared the exact Apache runtime/configuration and this contract.
+The S3.3b candidate implements and validates the secure production path on
+**both nginx and Apache**. Apache's listener, dynamically loaded modules and
+nonzero user mapping required separate review from nginx's private Unix socket
+and namespace UID zero.
 This finding adds one reviewable increment: Stage 3 now forecasts **nine PRs**,
-three accepted and six remaining, rather than the original 6–8. No required
+four accepted and five remaining, rather than the original 6–8. No required
 corpus row, bound or later routing/name/TLS gate is removed to fit an estimate.
 
 ## Selection and authority
 
-The proposed production launch profile is `stock_http_compatibility_v1`. It is
-not registered by S3.3a. Accepted `configurable_owned_lab` and
+The candidate production launch profile is `stock_http_compatibility_v1`.
+S3.3a did not register it; PR #91 adds the separate production path. Accepted `configurable_owned_lab` and
 `stock_nginx_diagnostic_v1` contracts remain unchanged, including the former's
 ordered four-action workflow. A new request must bind:
 
@@ -56,7 +61,7 @@ remain distinguishable from personal owner acceptance. The new mode requires
 coordinated admission, launcher, worker, backend, parser, result and inspection
 validation; a host-side wrapper around the diagnostic is not integration.
 
-## Reuse and remaining native design gate
+## Preparation findings and native design requirements
 
 Reuse the existing exact requests, client runtime, networkless parsing,
 request-accounting state machine, supervisor, audit/approval services and
@@ -64,16 +69,16 @@ private evidence conventions. Preserve the accepted nginx diagnostic unchanged.
 Shared helpers are appropriate only with regression evidence for that boundary.
 Do not duplicate or weaken authority checks to accommodate a second server.
 
-Apache preparation proposes a fixed prefork `-X` configuration, a nonzero
+Apache preparation specified a fixed prefork `-X` configuration, a nonzero
 namespace-local user/group, four pinned modules and a private loopback listener.
-This is **not a verified native startup design**. Before S3.3b execution, freeze
-the concrete descriptor/namespace handoff and verify:
+S3.3a did **not verify native startup**. The separately reviewed S3.3b
+handoff and native validation below retain these requirements:
 
 - The Apache socket exists only inside a fresh disconnected daemon namespace.
   The recorder has a bounded, independently accounted route to it; the client
   has neither that namespace nor any private-listener descriptor or route.
 - A single mapped nonzero UID/GID supports startup without host privileges,
-  supplementary groups, host account files or privilege-changing fallback.
+  additional mapped group authority, host account files or privilege-changing fallback.
 - The selected `-X`/prefork/module set works with enforced process/thread,
   socket-family, filesystem, deadline and resource bounds. If it cannot, retain
   the failure and review the design; do not enable general fork/thread access.
@@ -82,11 +87,106 @@ the concrete descriptor/namespace handoff and verify:
   external resolver, TLS/provider configuration or package-manager side effect
   enters the runtime.
 
-The Apache `127.0.0.1:19080` candidate is a future private daemon endpoint,
+The Apache `127.0.0.1:19080` endpoint belongs only to the private daemon namespace,
 **never an authorization to contact that address on the host**. Apache needs a
 different private transport from nginx; no transparent proxy may bypass the
-recorder's exact-request admission, counters or deadline. The final topology
-must be reviewed and tested before the new production backend is enabled.
+recorder's exact-request admission, counters or deadline. The reviewed topology
+and its finite native validation are recorded below; they grant no host or
+attached-network access.
+
+## S3.3b implementation awaiting review
+
+The candidate registers `stock_http_compatibility_v1` separately from the accepted
+nginx diagnostic. The controller, both isolated witness services, one-use
+admission, launcher, backend, confined client, parser and evidence validators all
+bind the implementation and its preparation/runtime digests. The default policy
+requires approval. Explicit unattended owned-lab test policy is mechanism evidence,
+not personal owner acceptance.
+
+Apache's bootstrap runs as the single mapped namespace UID/GID 65534. The
+launcher independently verifies that identity maps only to its own unprivileged
+UID/GID before releasing the daemon bootstrap. It creates one unconnected IPv4
+stream socket in its fresh
+disconnected network namespace. A private control channel transfers that socket
+through the launcher to the recorder; each receiver checks domain, type, TCP
+protocol, inode, namespace cookie, nonblocking state and unconnected zero address.
+Malformed transfers close their received descriptors. The daemon and launcher
+close their copies before client readiness. The client receives neither the
+private socket nor the daemon namespace descriptors.
+
+Only after the recorder validates the exact allowed request does it connect the
+one-use socket to the fixed private endpoint. The recorder cannot create TCP
+sockets, and Apache cannot call connect or create children/threads. Pinned process
+and namespace descriptors let the launcher inspect the bounded private TCP table
+for the sole expected listener without sending a readiness request. All forwarding
+uses the existing request ledger, shared action deadline and byte/connection/rate
+limits. The native corpus and boundary results below validate this finite
+configuration; final PR review and acceptance remain separate gates.
+
+The production client checks that the private loopback listener is unreachable
+from its own namespace. Immutable evidence retains the server identity, real
+response bytes, separate injected-fault bytes, transfer custody, namespace identity,
+startup/action/cleanup latency, useful completion and denial results. The accepted
+diagnostic retains its original selection schema and default Unix-socket connector.
+
+### Recorded identity-boundary revision before native completion
+
+The first frozen smoke (`3c7f51b`) failed closed on both servers; neither result
+counts as useful work. Native receipts under
+`.secure-agent/stock-http-production-20261014/smoke-01/` and private diagnostic
+captures show that ordinary-user Bubblewrap retains supplementary group IDs.
+nginx observed its primary group and overflow IDs; Apache's nonzero remapping
+reported overflow/primary IDs and an intermediate parent-namespace UID zero.
+That intermediate zero is not proof of host-root privilege or an acceptable
+substitute for checking the complete mapping from the launcher.
+
+The original promise of an empty supplementary-group list was therefore
+incorrect for this launch mechanism. Linux requires unprivileged group-map
+setup to disable `setgroups`, and that disablement is inherited; see
+[user namespace rules](https://man7.org/linux/man-pages/man7/user_namespaces.7.html)
+and [Bubblewrap's group-map setup](https://github.com/containers/bubblewrap/blob/v0.11.2/bubblewrap.c).
+The candidate explicitly revises its new production selection commitment:
+record at most 64 inherited group IDs, permit only the namespace primary GID and
+the kernel overflow ID 65534, require `setgroups=deny`, and witness refusal of a
+group-change attempt. It does not claim inherited groups were removed.
+
+Before sending the daemon's startup packet, the launcher pins its process/user/net
+namespace descriptors and reads UID/GID maps from the launcher's namespace. Each
+must contain exactly one mapping from the expected namespace ID to the launcher's
+own positive UID/GID. The daemon separately checks its inner mapping and actual
+identity. Runtime files remain sealed and read-only; Landlock, capabilities,
+network, process/thread, storage and deadline bounds are unchanged. No privileged
+helper, extra capability, broad host mount or host account database is added.
+The fresh native results below cover this reviewed revision; its earlier
+failed attempts remain separate evidence, and final PR acceptance is pending.
+
+### Apache version recognition correction
+
+The first complete native run at `a481b87` retained **103 passes and three
+failures**, with all 899 source hashes unchanged. Apache O5 in configurations
+A and B delivered valid responses, but Nmap reported generic HTTP rather than
+the advertised product/version. Its original fixed matcher expected `Server`
+immediately after the status line and a bare version; stock Apache sends a
+`Date` header first and a parenthesized distribution suffix. Those two results
+remain inconclusive, not useful completions. A separate Apache O1 adversarial
+budget probe also failed and remains recorded in `native-final-01/`.
+An instrumented replay completed the first request and recorded the second
+request's denial; it did not reproduce the failure, whose cause remains
+unconfirmed. The production test now handles a reset during the denied
+connection's connect step as well as send/receive. Twenty deterministic tests
+check that handling; unexpected errors and any returned byte still fail. No
+production exception handling, recorder rule or execution limit is relaxed.
+
+The correction gives production Nmap its own pinned runtime and recognition
+payload. Only the Apache recognition expression changes: it permits one bounded
+Date header and an optional bounded parenthesized suffix. It does not accept a
+body banner as a header or invent a suppressed version. The exact NULL/GET
+probes, arguments, timers, requests and budgets stay fixed. The existing
+diagnostic and configurable modes retain their original runtime and probe bytes.
+Production selection, policy and runtime commitments bind the new payload;
+the old runtime is refused in the new mode and vice versa. Required useful-work
+criteria and raw-response grading are unchanged. The corrected native result
+is recorded below; the original failed run is not relabeled.
 
 ## Bounds retained from the diagnostic
 
@@ -146,16 +246,104 @@ overhead result. Native nginx success from S3.2 cannot replace this new
 production-mode corpus. Run the accepted configurable workflow and diagnostic
 regressions before closure, plus portable checks and independent review.
 
+## Recorded S3.3b validation
+
+Frozen production source `1cfa59a` passed **106 native checks**: all 52 corpus
+rows and 54 authority, cancellation, cleanup and budget cases. All **904 tracked
+source hashes stayed unchanged**. This includes 24 ordinary and eight robustness
+useful completions, zero unnecessary refusals, 20 correct negative outcomes and
+32 distinct forbidden-destination combinations. No provider call or spend occurred.
+
+Independent inspection regraded all 52 bundles through Python and the CLI
+without modifying them: **104 unchanged inspections**, with all source,
+generated-file and 29 installed-native-file pins verified. The receipt is
+`.secure-agent/stock-http-production-20261014/independent-native-final-02.json`,
+SHA-256 `14dd726b6704bddcf64b1046526a2bc396c88c2fc2bf7c3cfb01d77144da74e7`.
+These hashes establish consistency of saved evidence, not tamper resistance
+against a compromised host owner.
+
+The accepted nginx diagnostic, its owner/enforcement/budget cases and the
+configurable command-line/background-service workflows passed **68 distinct native
+regression checks** in `regressions-final-01/` and
+`remaining-regressions-final-01/`. Three separately launched repetitions of the
+Apache extra-request test also passed in `budget-final-02/`; an earlier
+pytest-deduplicated invocation ran one passing case in `budget-final-01/`.
+All use the same frozen source. These successful runs do not establish the
+cause of the original, unreproduced budget-test failure.
+
+| Observed median across 26 cases per implementation | nginx | Apache |
+| --- | ---: | ---: |
+| Owner startup | 779.5 ms | 808 ms |
+| Client startup | 1,217 ms | 1,224 ms |
+| Action | 106.5 ms | 116 ms |
+| Owner cleanup | 3 ms | 3 ms |
+| Whole trial | 4,256 ms | 4,395.5 ms |
+
+These are validation timings including the declared negative cases, not a
+comparative benchmark or measured mediation overhead. Raw timings remain in
+each report.
+
+The first hosted run passed all 25,312 portable tests on its four Linux jobs;
+macOS passed 25,307 and failed five new fixtures that assumed Linux-only
+`memfd_create`/`listxattr` APIs. The test-only correction stages real bytes in
+temporary descriptors, records the exact requested sealing flags, and explicitly
+supplies the capability-query mock. No production behavior, native test or
+required assertion is removed. Retain `ci-macos-1cfa59a.log` and its summary.
+The corrected full local portable run at `d19eef3` passed **25,312 tests**,
+with all **904 tracked source hashes unchanged** during that run. There were
+1,565 integration tests deselected and zero failures, errors or skips; retain
+`portable-final-01/verification.json`, its source maps, log and test XML under
+`.secure-agent/stock-http-production-20261014/`. All five
+[corrected hosted jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38649179063)
+also passed at `d19eef3`. Production and native-test bytes are identical to
+`1cfa59a`; only portable fixtures and validation documentation changed between
+those two validation sources. The fixture correction separately passed 29
+focused tests normally and 29 with all ten relevant Linux-only APIs absent,
+without skips. Final review and required checks on PR #91's latest revision
+still precede merge.
+
+### Portable socket-readiness correction
+
+A later documentation revision, `e984c08`, passed all 25,312 portable tests on
+each of four Ubuntu jobs. macOS passed 25,310 and failed two evidence-replay
+fixtures: diagnostic B/O4 and production nginx B/O2. Both exhausted the shared
+test harness's 1,000-iteration wait for request delivery. Preserve the complete
+matrix and logs in `independent-final-ci-e984c08-failed.json`; this run is failed,
+not an accepted final check.
+
+The helper combined real sockets with a simulated clock, advancing that clock
+by 1 ms after every zero-timeout poll. This can spend the entire simulated
+one-second action budget before the OS reports readiness. The trace does not
+record the terminal ledger, so that precise failure sequence remains an
+inference. The helper now allows a bounded 1 ms readiness wait per step,
+retaining the simulated clock, iteration cap, action deadlines and every
+existing rate, expiry, response and enforcement assertion. Two deterministic
+delayed-readiness cases check exact delivery within the original deadline.
+Both cases fail with the old zero-poll helper injected and pass with the
+corrected helper. The shared recorder suite and both diagnostic/production
+evidence suites passed **356 focused tests**, without failures, errors or skips;
+retain the `recorder-poll-fixture/` receipts and source hashes. This is a
+controlled reproduction of the helper defect, not proof of the exact original
+macOS terminal state. No production source or native test changes.
+The corrected revision must pass
+the latest [PR checks](https://github.com/0xsl0th/recon-cockpit/pull/91/checks)
+before acceptance; earlier native and portable results retain their own source
+identities.
+
 ## Completion and subsequent work
 
-S3.3a closes preparation only after strict portable validation, all 26 actual
-installed-runtime inspections, immutable receipts, independent review and checks.
-It starts no server or tool and adds no secure catalog entry. The
-[Apache preparation record](stock-apache-feasibility.md) distinguishes source
-findings, metadata inspection and unresolved native behavior.
+S3.3a closed preparation in PR #90 after strict portable validation, all 26
+actual installed-runtime inspections, immutable receipts, independent review
+and checks. Its inspector starts no server or tool and adds no secure catalog
+entry. The [Apache preparation record](stock-apache-feasibility.md) remains
+preparation evidence; the native results above belong to the separate S3.3b path.
 
-S3.3 closes only after S3.3b meets every native row and boundary above through the
-new production path. Then S3.4 adds stock OpenSSH compatibility; S3.5 handles
+S3.3b remains a validated candidate until final review, required checks and
+merge of PR #91. Stage 3 retains four accepted and five remaining increments out
+of nine until that merge, and the catalog remains 52 accepted profiles across
+17 external programs. After acceptance, S3.4 first pins the finite OpenSSH
+server configurations, public synthetic keys, requests and confinement contract,
+then validates service identification and host-key collection. S3.5 handles
 disconnected multi-host routing and aggregate budgets; S3.6 handles explicit
 DNS/TLS name/trust binding; S3.7 performs combined acceptance. Completed offline
 R5/local R6, B/C/T coverage and initial GUI milestones remain closed.

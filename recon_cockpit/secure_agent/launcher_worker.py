@@ -162,10 +162,10 @@ def main():
     witness_reader = None
     approval_reader = None
     try:
-        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions', 'stock-http-launch-preconditions'}):
+        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions', 'stock-http-launch-preconditions', 'stock-http-production-launch-preconditions'}):
             raise ValueError('invalid_launcher_bootstrap')
         witnessed = len(sys.argv) == 7
-        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions', 'stock-http-launch-preconditions'}
+        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions', 'stock-http-launch-preconditions', 'stock-http-production-launch-preconditions'}
         nmap_runtime = witnessed and sys.argv[6] in {'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions'}
         web_tools_runtime = witnessed and sys.argv[6] == 'web-tools-launch-preconditions'
         network_tools_runtime = witnessed and sys.argv[6] == 'network-tools-launch-preconditions'
@@ -175,7 +175,7 @@ def main():
         kerberos_runtime = witnessed and sys.argv[6] == 'kerberos-tools-launch-preconditions'
         hierarchy_runtime = witnessed and sys.argv[6] == 'web-hierarchy-launch-preconditions'
         service_web_runtime = witnessed and sys.argv[6] == 'service-web-launch-preconditions'
-        stock_http_runtime = witnessed and sys.argv[6] == 'stock-http-launch-preconditions'
+        stock_http_runtime = witnessed and sys.argv[6] in {'stock-http-launch-preconditions', 'stock-http-production-launch-preconditions'}
         configurable_runtime = witnessed and sys.argv[6] == 'configurable-launch-preconditions'
         _, host = bootstrap._arguments(['three_step', *sys.argv[2:6]])
         checks = (boundary(host, stock_http_runtime=True) if stock_http_runtime else
@@ -250,6 +250,9 @@ def main():
         elif config['profile'] == 'stock_nginx_diagnostic_v1':
             from recon_cockpit.secure_agent.stock_http_backend import ConfinedStockHttpBackend
             owned = ConfinedStockHttpBackend(config, init['runtime'])
+        elif config['profile'] == 'stock_http_compatibility_v1':
+            from recon_cockpit.secure_agent.stock_http_production_backend import ConfinedStockHttpProductionBackend
+            owned = ConfinedStockHttpProductionBackend(config, init['runtime'])
         with _NestedAdmission(config, init['runtime']) as gate, (owned.lab if owned is not None else nullcontext()):
             print(protocol.encode({'version': '1', 'ready': True, 'bootstrap_digest': sys.argv[1], 'checks': checks}).decode(), flush=True)
             sequence = 1
