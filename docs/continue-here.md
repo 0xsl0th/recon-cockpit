@@ -5,48 +5,41 @@
 This development checkpoint never resumes an assessment or restores approvals.
 
 Current continuation (14 October 2026):
-**T01–T04 meet G1–G6 and remain accepted and closed.**
-[T04 PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) merged as `435a271`
-after review of `40d98b6`, two independent reviews without blockers and 319 fresh
-focused test passes. The reviewed and merged trees both match `9de7a974b3683d1abdfed9904b90932bb2be714c`.
-All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38577572315)
-and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38580423750)
-passed. Its [accepted secure hierarchy runbook](web-hierarchy-tools.md) retains
-26 native and 22,577 portable passes, the original frozen source pins and the
-explicit native-retry/evidence-integrity limitations. T04 acceptance brings the
-accepted baseline to **49 profiles across 16 programs**. Do not repeat its merge
-or reopen earlier milestones.
+**T01–T05 meet G1–G6 and remain accepted and closed: 50 profiles across 17 programs.**
+[T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85) merged as `8ca3887`
+after review of `5cad354`, two independent reviews without blockers, 357 fresh
+focused test passes and five passing [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38585709909).
+All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38588119548) also passed.
+The reviewed and merged trees match `c30c127733005efbff62a8816cfcf353f93f078d`.
+The [accepted SNMP page runbook](snmp-page-tools.md) retains 51 native and 23,170
+portable passes, all source pins and its client-output evidence limitations.
+Its 37 saved reports passed 74 unchanged CLI/Python inspection checks. Preserve
+`.secure-agent/dns-address-20261014/pr85-merge-review.json` and the original
+`.secure-agent/snmp-page-20261014/` receipts. Do not repeat completed merges or
+reopen earlier milestones.
 
-**Current work is T05: one bounded SNMP interface-description page.**
-The separate [T05 candidate](snmp-page-tools.md), open as
-[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), integrates `snmp_interface_page_v1`
-through the existing secure execution and evidence path. One TCP GETBULK uses
-one fixed ifDescr seed, zero non-repeaters and four maximum repetitions, with
-public synthetic fixture data and no continuation. The catalog records
-**50 registered profiles: 49 accepted and one T05 candidate, across 17 programs**.
-Frozen native validation on `f6e515fe0292e7624a87ee3d0329abb7799e7374`
-passed **51 tests**. Full portable validation on
-`ae7e1b8fdb5309dd14e09850959b55e6c1eca6fe` passed **23,170 tests**, with 1,341
-integration tests deselected and no failures, errors or skips. Each run preserved
-all 735 recorded source files; only ten portable test files changed between
-those revisions, leaving production code, policies and native tests identical.
-Private proof belongs under `.secure-agent/snmp-page-20261014/`.
-The combined `verification.json` SHA-256 is
-`c6248dfa79bfa2acad427ea8efa2f3c7871e1aa173cc5c3d068234e677a8f7ff`.
-A separate `all-inspectors-replay.json` records 74 CLI/direct-Python checks
-across all 37 saved reports with unchanged bytes, modes and mtimes; SHA-256
-`332dc106b2b67d25d521b79f12b7aaf7d4156826ce3088720dc5536e63449dc7`.
-Both entry points share the same replay implementation.
-**G6 review and merge remain open; T05 is not accepted.** Review PR #85 and its
-latest required checks before T06's separate fixed AAAA/PTR profiles;
-do not replace either required outcome with optional signatures or tool quotas.
+**Current work is T06: separate fixed AAAA and PTR metadata profiles.**
+The [T06 candidates](dns-address-tools.md), `dig_dns_aaaa_v1` and `dig_dns_ptr_v1`,
+reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
+The catalog records **52 registered profiles: 50 accepted and two T06 candidates,
+across the same 17 programs**. Returned IPv6 addresses and PTR names are data,
+not network scope or follow-up authority. The predeclared corpus requires
+11 ordinary and four separate robustness completions, with 23 inconclusive
+negative cases. Native and final portable validation remain pending; neither
+T06 profile is accepted merely because it is registered.
 
-PRs #80/#81 (T02/T03), #82 (catalog/source review), #83 (T04 native diagnostic)
-and proposal PR #31 remain closed. Proposal submission and its broader refresh
-remain deferred to November. Model credentials, paid calls, live-model evaluation,
-attached/external targets, deeper workflows and comparative benchmarking remain
-deferred. The dated baseline and candidate wording below preserve historical
-snapshots; this continuation supersedes their pre-merge status.
+Finish T06 validation, independent review, required checks and authorized merge
+before closing the finite Stage 2 tranche. Stage 3 follows with a concrete owned
+service-compatibility and controlled target-routing contract under the existing
+offline boundary. Any attached-network work requires separate authorization.
+Do not replace required outcomes with optional signatures or program quotas.
+
+PRs #80/#81 (T02/T03), #82 (catalog/source review), #83/#84 (T04) and proposal
+PR #31 remain closed. Proposal submission and its broader refresh remain deferred
+to November. Model credentials, paid calls, live-model evaluation, attached/external
+targets, deeper workflows and comparative benchmarking remain deferred. The dated
+baseline and candidate wording below preserve historical snapshots; this
+continuation supersedes their pre-merge status.
 
 ## Accepted history and retained evidence
 
@@ -138,9 +131,9 @@ Private development and frozen validation records belong under
 Review corrected one evidence claim: the planner-view digest does not commit to
 the full result. Inspectors verify artifact/journal consistency and independently
 recompute observations; coordinated host-owner rewriting is outside that guarantee.
-T04 remains accepted. Finish the [T05 SNMP interface-page candidate](snmp-page-tools.md)
-by reviewing PR #85 and its required checks, then implement T06 AAAA/PTR. Its
-51 native and 23,170 portable passes are complete. Do not start
+T04 and T05 remain accepted. PR #85 closed T05 at `8ca3887`, preserving its
+51 native and 23,170 portable passes. Complete the [T06 AAAA/PTR candidates](dns-address-tools.md)
+through validation and G6 before moving to the Stage 3 compatibility/routing contract. Do not start
 deeper workflows, comparative benchmarking, credentials, paid calls or live-model work.
 
 Catalog reconciliation passed **300 focused tests** with no failures, errors or
@@ -2183,13 +2176,15 @@ Planning uses synthetic responses.
    passed eight native and 22,113 portable tests; this completed batch stays closed.
 4. Preserve accepted [T04 PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84)
    at `435a271`; all five final/post-merge checks passed and G1–G6 are closed.
-   Review the exact latest head of [T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85)
-   and its required checks. Preserve the [candidate's](snmp-page-tools.md) completed
-   51 native and 23,170 portable passes; rerun only after a new change, failure
-   or unresolved concern. The current catalog is 49 accepted plus one T05 candidate
-   across 17 registered programs; T05 is not yet accepted.
-   Complete its review/checks and authorized merge, then implement required T06
-   AAAA/PTR. Do not substitute optional signatures or program quotas.
+   Preserve accepted [T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85)
+   at `8ca3887`; G1–G6 are closed after review, 357 fresh focused passes and five
+   passing final checks. Keep its 51 native and 23,170 portable passes and
+   immutable receipts. The current catalog is 52 registered profiles: 50 accepted
+   plus two T06 candidates across 17 programs. Complete [T06 AAAA/PTR](dns-address-tools.md)
+   native/portable validation, review, required checks and authorized merge before
+   closing Stage 2. Stage 3 then defines finite owned service compatibility and
+   controlled target routing; network attachment still requires separate approval.
+   Do not substitute optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18 and the initial GUI closed.
    No accepted milestone or personal walkthrough needs to be repeated.
 6. Credentials, paid/live models, attached/external networks, deeper workflows

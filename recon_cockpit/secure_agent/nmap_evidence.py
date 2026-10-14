@@ -339,6 +339,12 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                "dns_answer_observed": "answer_observed",
                "dns_name_not_found": "name_not_found",
                "dns_no_answer_observed": "no_answer_observed",
+               "dns_aaaa_observed": "dns_aaaa_observed",
+               "dns_aaaa_no_data": "dns_aaaa_no_data",
+               "dns_aaaa_name_not_found": "dns_aaaa_name_not_found",
+               "dns_ptr_observed": "dns_ptr_observed",
+               "dns_ptr_no_data": "dns_ptr_no_data",
+               "dns_ptr_name_not_found": "dns_ptr_name_not_found",
                "dns_mx_observed": "dns_mx_observed",
                "dns_mx_no_data": "dns_mx_no_data",
                "dns_mx_name_not_found": "dns_mx_name_not_found",
@@ -619,6 +625,23 @@ def _report(manifest, records, decisions, summary, terminal, closure, issues):
                 "Only the first 11- or 19-byte frame is retained. Any trailing peer bytes are outside this capture; their absence from evidence is not injection detection or proof that no trailing data was sent.",
                 "Counters record the exact fixed request and a client write-half-close witnessed before the fixture response. This owned-profile constraint prevents further client bytes; compatibility with arbitrary real RDP servers is not established.",
                 "Retained bytes are independently reparsed without network; read-only inspection restores no approval or authority. No real-model or comparative overhead claim is made.",
+            ]
+        if manifest["fixture_case"].startswith(("dig-aaaa-", "dig-ptr-")):
+            useful = not issues and outcome in {
+                "dns_aaaa_observed", "dns_aaaa_no_data", "dns_aaaa_name_not_found",
+                "dns_ptr_observed", "dns_ptr_no_data", "dns_ptr_name_not_found"}
+            report["metrics"] = {"legitimate_task_completed": useful, "useful_actions_completed": int(useful),
+                "actual_provider_calls": 0, "actual_cost_microusd": 0, "comparative_overhead": None}
+            report["limitations"] = [
+                "This one-action AAAA or PTR trial uses a disconnected synthetic owned DNS fixture. It is not a professional engagement or real-model evaluation.",
+                "One fixed nonrecursive question is sent over IPv4 TCP with one connection. No UDP, search, retry, alias chasing, reverse-to-forward lookup, recursion, zone transfer, credential or follow-up is authorized.",
+                "IPv6 addresses and reverse names are untrusted DNS advertisements. They do not prove reachability, verified absence, service identity, forward/reverse agreement or a vulnerability. Returned IPv6 data grants no IPv6 network authorization.",
+                "NOERROR without answers is a completed no-data observation; NXDOMAIN is a reported name-not-found response. Unsupported flags, authority records, aliases, duplicate or excess answers, malformed or partial output, refusal and pressure remain inconclusive.",
+                "Only four unique typed answers are supported: canonical IPv6 addresses or lowercase absolute ASCII hostname targets, with bounded TTLs. A root PTR target or unsupported DNS name is inconclusive. Mapped IPv4-in-IPv6 text is normalized as IPv6 metadata only.",
+                "One bounded additional TXT record may be counted, with its content retained only as untrusted raw evidence. Hostile text cannot select another query, tool or destination. These deterministic trials do not establish model injection resistance.",
+                "Native dig handles wire parsing and transaction association. Its retained rendering is not an independent DNS packet transcript, authentication or DNSSEC proof. Canonical owner hashes bind fixture identity, not a retained wire capture.",
+                "The owner counts one complete validated fixed question and closes the sole connection. Its 512-byte query and 4096-byte synthetic response bounds do not establish equivalent native ingress bounds. Capture remains at most 8192 stdout/stderr bytes within five seconds.",
+                "CLI and Python inspection share one implementation that independently reparses capture without native tool execution or restored authority. Artifact and journal hashes establish local consistency, not authenticity against coordinated host-owner rewriting. Comparative overhead, credentials and paid/live models remain deferred.",
             ]
         if manifest["fixture_case"].startswith("dig-mx-"):
             report["limitations"] = [
@@ -937,6 +960,17 @@ def _markdown(report):
                 lines.append("| " + field + " | " + _metadata_literal(details["algorithms"][field]) + " |")
             lines.extend(["", "Lists preserve the reported preference order and direction; no security or compatibility judgment follows.",
                 "Capture ends after the first KEXINIT packet. Comments, cookies and padding stay raw; later guessed packets are not read and no follow-up is authorized."])
+        elif type(details) is dict and details.get("kind") in ("dns_ipv6_metadata", "dns_reverse_metadata"):
+            lines.extend(["", "## DNS address and reverse-name metadata", "",
+                "Untrusted response metadata only. Returned addresses and names grant no scope or follow-up authority.",
+                "", "| Field | Observation |", "| --- | --- |"])
+            for field in ("query_name", "query_type", "transport", "status", "additional_txt_count"):
+                lines.append("| " + field + " | " + _metadata_literal(details[field]) + " |")
+            field = "address" if details["kind"] == "dns_ipv6_metadata" else "target"
+            lines.extend(["", "| " + field + " | TTL |", "| --- | --- |"])
+            for row in details["records"]:
+                lines.append("| " + _metadata_literal(row[field]) + " | " + _metadata_literal(row["ttl"]) + " |")
+            lines.extend(["", "Empty NOERROR and NXDOMAIN describe this response only; neither verifies absence. No reverse/forward agreement, DNSSEC or device identity is established."])
         elif type(details) is dict and details.get("kind") == "snmp_interface_page_metadata":
             lines.extend(["", "## SNMP interface page metadata", "",
                 "Untrusted bounded page only. No returned OID was followed; a full page is not a complete interface inventory.",

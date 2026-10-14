@@ -22,15 +22,15 @@ def test_all_47_previous_adapters_329_cases_and_34_runtime_contracts_are_unchang
     # This preserves T02 candidates; it does not claim their acceptance.
     value = {
         "adapters": {key: item.to_dict() for key, item in adapters.ADAPTERS.items()
-                     if key not in (policy.TOOL_ID, "ffuf_web_hierarchy_v1", "snmp_interface_page_v1")},
+                     if key not in (policy.TOOL_ID, "ffuf_web_hierarchy_v1", "snmp_interface_page_v1", "dig_dns_aaaa_v1", "dig_dns_ptr_v1")},
         "cases": {case: {"action": contract.action(case), "card": workflow.card(case),
                           "descriptor": contract.capability_descriptor(case), "spec": lab.spec(case)}
-                  for case in contract.CASES if case not in policy.CASES + contract.T04_CASES + contract.T05_CASES},
+                  for case in contract.CASES if case not in policy.CASES + contract.T04_CASES + contract.T05_CASES + contract.T06_CASES},
         "runtime": {key: [runtime.EXECUTABLES[key], runtime.FIXED_ARGV[key],
                           runtime.execution_environment(key),
                           [(source, destination, raw.hex())
                            for source, destination, raw in runtime.compiled_files(key)]]
-                    for key in runtime.EXECUTABLES if key not in (policy.TOOL_ID, "ffuf_web_hierarchy_v1", "snmp_interface_page_v1")},
+                    for key in runtime.EXECUTABLES if key not in (policy.TOOL_ID, "ffuf_web_hierarchy_v1", "snmp_interface_page_v1", "dig_dns_aaaa_v1", "dig_dns_ptr_v1")},
     }
     assert tuple(len(value[key]) for key in ("adapters", "cases", "runtime")) == (47, 329, 34)
     assert digest(value) == "efc4e218ef361bea7b307f98623af96753d6c60868a17a26c9fc7c83cfb5779e"

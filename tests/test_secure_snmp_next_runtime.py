@@ -23,7 +23,7 @@ from test_secure_network_tools_runtime import envelope, manifest, recommit, veri
 def test_all_28_accepted_runtime_invocations_remain_byte_identical():
     selected = {tool: [exe, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, exe in runtime.EXECUTABLES.items() if tool not in ("ssh_transport_policy_v1", "ffuf_web_hierarchy_v1", "snmp_interface_page_v1") and tool not in (runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
+        for tool, exe in runtime.EXECUTABLES.items() if tool not in ("ssh_transport_policy_v1", "ffuf_web_hierarchy_v1", "snmp_interface_page_v1", "dig_dns_aaaa_v1", "dig_dns_ptr_v1") and tool not in (runtime.SNMP_NEXT, runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
     assert len(selected) == 28
     # Captured from accepted PR66 main before C13 changes.
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == (

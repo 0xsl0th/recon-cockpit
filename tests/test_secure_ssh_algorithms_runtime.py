@@ -34,7 +34,7 @@ def manifest():
 def test_all_twenty_nine_accepted_runtime_contracts_remain_byte_identical():
     values = {tool: [executable, runtime.FIXED_ARGV[tool], runtime.execution_environment(tool),
         [(source, destination, raw.hex()) for source, destination, raw in runtime.compiled_files(tool)]]
-        for tool, executable in runtime.EXECUTABLES.items() if tool not in ("ssh_transport_policy_v1", "ffuf_web_hierarchy_v1", "snmp_interface_page_v1") and tool not in (runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
+        for tool, executable in runtime.EXECUTABLES.items() if tool not in ("ssh_transport_policy_v1", "ffuf_web_hierarchy_v1", "snmp_interface_page_v1", "dig_dns_aaaa_v1", "dig_dns_ptr_v1") and tool not in (runtime.SSH_ALGORITHMS, runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
     assert len(values) == 29
     # Captured from accepted main 7cc6645 before any C14 runtime edits.
     assert hashlib.sha256(runtime.encode(values)).hexdigest() == (

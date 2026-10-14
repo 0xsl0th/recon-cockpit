@@ -1,42 +1,41 @@
 # Product roadmap and remaining PR estimate
 
 Current continuation (14 October 2026):
-**T01–T04 meet G1–G6 and remain accepted and closed.**
-[T04 PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) merged as `435a271`
-after review of `40d98b6`, two independent reviews without blockers and 319 fresh
-focused test passes. The reviewed and merged trees both match `9de7a974b3683d1abdfed9904b90932bb2be714c`.
-All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38577572315)
-and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38580423750)
-passed. Its [accepted secure hierarchy runbook](web-hierarchy-tools.md) retains
-26 native and 22,577 portable passes, the original frozen source pins and the
-explicit native-retry/evidence-integrity limitations. T04 acceptance brings the
-accepted baseline to **49 profiles across 16 programs**. Do not repeat its merge
-or reopen earlier milestones.
+**T01–T05 meet G1–G6 and remain accepted and closed: 50 profiles across 17 programs.**
+[T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85) merged as `8ca3887`
+after review of `5cad354`, two independent reviews without blockers, 357 fresh
+focused test passes and five passing [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38585709909).
+All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38588119548) also passed.
+The reviewed and merged trees match `c30c127733005efbff62a8816cfcf353f93f078d`.
+The [accepted SNMP page runbook](snmp-page-tools.md) retains 51 native and 23,170
+portable passes, all source pins and its client-output evidence limitations.
+Its 37 saved reports passed 74 unchanged CLI/Python inspection checks. Preserve
+`.secure-agent/dns-address-20261014/pr85-merge-review.json` and the original
+`.secure-agent/snmp-page-20261014/` receipts. Do not repeat completed merges or
+reopen earlier milestones.
 
-**Current work is T05: one bounded SNMP interface-description page.**
-The separate [T05 candidate](snmp-page-tools.md), open as
-[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), integrates `snmp_interface_page_v1`
-through the existing secure execution and evidence path. One TCP GETBULK uses
-one fixed ifDescr seed, zero non-repeaters and four maximum repetitions, with
-public synthetic fixture data and no continuation. The catalog records
-**50 registered profiles: 49 accepted and one T05 candidate, across 17 programs**.
-Frozen native validation on `f6e515fe0292e7624a87ee3d0329abb7799e7374`
-passed **51 tests**. Full portable validation on
-`ae7e1b8fdb5309dd14e09850959b55e6c1eca6fe` passed **23,170 tests**, with 1,341
-integration tests deselected and no failures, errors or skips. Each run preserved
-all 735 recorded source files; only ten portable test files changed between
-those revisions, leaving production code, policies and native tests identical.
-Private proof belongs under `.secure-agent/snmp-page-20261014/`.
-**G6 review and merge remain open; T05 is not accepted.** Review PR #85 and its
-latest required checks before T06's separate fixed AAAA/PTR profiles;
-do not replace either required outcome with optional signatures or tool quotas.
+**Current work is T06: separate fixed AAAA and PTR metadata profiles.**
+The [T06 candidates](dns-address-tools.md), `dig_dns_aaaa_v1` and `dig_dns_ptr_v1`,
+reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
+The catalog records **52 registered profiles: 50 accepted and two T06 candidates,
+across the same 17 programs**. Returned IPv6 addresses and PTR names are data,
+not network scope or follow-up authority. The predeclared corpus requires
+11 ordinary and four separate robustness completions, with 23 inconclusive
+negative cases. Native and final portable validation remain pending; neither
+T06 profile is accepted merely because it is registered.
 
-PRs #80/#81 (T02/T03), #82 (catalog/source review), #83 (T04 native diagnostic)
-and proposal PR #31 remain closed. Proposal submission and its broader refresh
-remain deferred to November. Model credentials, paid calls, live-model evaluation,
-attached/external targets, deeper workflows and comparative benchmarking remain
-deferred. The dated baseline and candidate wording below preserve historical
-snapshots; this continuation supersedes their pre-merge status.
+Finish T06 validation, independent review, required checks and authorized merge
+before closing the finite Stage 2 tranche. Stage 3 follows with a concrete owned
+service-compatibility and controlled target-routing contract under the existing
+offline boundary. Any attached-network work requires separate authorization.
+Do not replace required outcomes with optional signatures or program quotas.
+
+PRs #80/#81 (T02/T03), #82 (catalog/source review), #83/#84 (T04) and proposal
+PR #31 remain closed. Proposal submission and its broader refresh remain deferred
+to November. Model credentials, paid calls, live-model evaluation, attached/external
+targets, deeper workflows and comparative benchmarking remain deferred. The dated
+baseline and candidate wording below preserve historical snapshots; this
+continuation supersedes their pre-merge status.
 
 Historical pre-merge snapshot: **9 October 2026, after PR #79**, accepted main `5f4197f`.
 The PR-count forecasts retain their explicitly dated PR #72 baseline below.
@@ -108,17 +107,17 @@ release criteria still need their later concrete contracts before completion.
 | Area | Implemented and accepted | Remaining product gap |
 | --- | --- | --- |
 | Execution authority | Typed actions, policy/scope checks, isolated approval/audit/admission services, consumed grants, confined launch, bounds and cleanup. | Revalidate these guarantees for broader target configurations, credentials, sessions and intrusive effects. Local consistency hashes do not establish protection from a malicious host owner. |
-| Secure tools | **48 bounded profiles backed by 16 external programs**, plus repository-native capabilities represented in that profile count. Actual owned-lab execution and structured evidence exist for accepted operations. | Most profiles have fixed targets/requests and finite response grammars. They do not expose each program's full feature set or establish general real-server compatibility. |
+| Secure tools | **50 bounded profiles backed by 17 external programs**, plus repository-native capabilities represented in that profile count. Actual owned-lab execution and structured evidence exist for accepted operations. | Most profiles have fixed targets/requests and finite response grammars. They do not expose each program's full feature set or establish general real-server compatibility. |
 | GUI | Accepted local Tk desktop, light/dark Swiss Industrial themes, scope import/export, separate dry run and owned execution, isolated exact-action review, cancellation and evidence inspection. | Execution currently exposes one four-action disconnected HTTP/SSH workflow. Broader tool selection, engagement/assets/findings/report views and operational usability are future work. Extend this GUI; its initial milestone is already closed. |
 | Workflows | Accepted bounded discovery/HTTP/SSH and service/web workflows, with predecessor evidence, stops and saved decisions. | General multi-asset planning, durable engagement coordination and wider evidence-driven composition remain deferred. |
 | Evidence and reporting | Private bounded raw artifacts, structured observations, action/policy/runtime bindings, reports and read-only replay. | Engagement-wide asset/finding models, deduplication, reviewed severity, remediation, client deliverables and retest history. |
 | Model infrastructure | Prepared provider isolation, cost controls and model-capable integration validated with mocks/owned fixtures. | No live-model usefulness, cost or safety result is established. Credential setup, paid calls and live evaluation remain deferred until much later. |
 | Packaging and support | Accepted local offline candidate and documented reproducible local execution. Portable CI spans Linux Python versions and macOS. | Professional installation, upgrade/migration, recovery and support acceptance. Portable macOS tests do not establish native macOS confinement or execution support. |
 
-The 16 catalog programs are `curl`, `dig`, `ffuf`, `kerbrute`, `ldapsearch`,
+The 17 catalog programs are `curl`, `dig`, `ffuf`, `kerbrute`, `ldapsearch`,
 `nmap`, `nuclei`, `openssl`, `redis-cli`, `rpcinfo`, `showmount`, `smbclient`,
-`snmpget`, `snmpgetnext`, `ssh-keyscan` and `whatweb`. This uses the repository's
-program-count convention: `snmpget` and `snmpgetnext` count separately. Grouping
+`snmpget`, `snmpgetnext`, `snmpbulkget`, `ssh-keyscan` and `whatweb`. This uses the
+repository's program-count convention: the three Net-SNMP executables count separately. Grouping
 them as one tool suite would produce a different total. Interactive host-runner
 suggestions, supporting interpreters and installed binaries are not additional
 accepted secure integrations.
@@ -151,7 +150,7 @@ describe deliverables; they do not lift the current offline-only restrictions.
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
-| 2. Complete a practical coverage tranche | T01–T04 are accepted with G1–G6 closed, most recently T04 in PR #84. The [T05 SNMP interface-page candidate](snmp-page-tools.md) is integrated in PR #85 with 51 native and 23,170 portable passes; G6 review and merge remain open. Required T06 AAAA/PTR follows T05 acceptance. Reuse integrations and add only programs that contribute distinct coverage. Each row requires useful execution, structured results, evidence, enforcement and review. T05 registers snmpbulkget as a seventeenth program pending acceptance; the historical 4–6-program assumption was never a quota. | 8–12 |
+| 2. Complete a practical coverage tranche | T01–T05 are accepted with G1–G6 closed, most recently T05 in PR #85 at `8ca3887`. The separate [T06 AAAA/PTR candidates](dns-address-tools.md) reuse dig; native and final portable validation, review and merge remain pending. Current counts are 52 registered / 50 accepted / two candidates across 17 programs. Each row requires useful execution, structured results, evidence, enforcement and review. After T06 acceptance, Stage 3 defines finite service compatibility and target-routing support under the retained offline boundary. The historical 4–6-program assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing | Exercise varied real services in an owned isolated multi-host lab; add explicit target binding, DNS/redirect/referral handling, exclusions, network/rate budgets and compatibility cases. Separately approve any attached lab or engagement network. Demonstrate useful execution and denied out-of-scope traffic under the new boundary. | 6–8 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
@@ -165,8 +164,9 @@ The [finite checklist](professional-v1-coverage.md#six-required-tasks-in-priorit
 fixes six required operator outcomes: **T01 MX, T02 TLS version posture,
 T03 SSH policy assessment, T04 controlled web hierarchy discovery, T05 one SNMP
 interface-description page and T06 AAAA/PTR metadata**. T01 is accepted in
-PR #74; T02/T03 are accepted in PRs #80/#81 and T04 in PR #84. T05 is the
-current candidate and T06 remains required. It maps all 49 accepted profiles separately and
+PR #74; T02/T03 are accepted in PRs #80/#81, T04 in PR #84 and T05 in PR #85.
+T06's two profiles are current candidates pending validation and acceptance.
+The contract maps all 50 accepted profiles separately and
 records supported limits, meaningful positive/absent and
 negative cases, evidence and G1–G6 for each new task. Candidate engines remain
 subject to short feasibility reviews; engine selection cannot silently remove or
@@ -194,11 +194,11 @@ the PR #72 accepted baseline**. They are not another 80–130 on top of v1.
 | **Additional expansion** | **Broader professional lifecycle and evaluated model assistance, subject to its separate approvals.** | **40–70** |
 | **Total from PR #72** | **Professional v1 plus broader expansion.** | **80–130** |
 
-Against the accepted 16-program baseline, the literal 40-program target leaves
-**24 programs**. Accepted T02/T03 reuse existing implementations, and accepted
-T04 reuses ffuf. The catalog already registers a separate seventeenth program. If
-T05's snmpbulkget candidate is accepted, Stage 2 adds one program and **23 programs**
-remain for expansion. The historical 4–6-program assumption was not a quota. The expansion's 24–40-PR allowance covers
+Against the dated 16-program forecast baseline, the literal 40-program target
+left **24 programs**. Accepted T02/T03 reused existing implementations and T04
+reused ffuf. Accepted T05 adds snmpbulkget as a seventeenth program, leaving
+**23 programs** for that broader expansion. T06 reuses dig and adds no program.
+The historical 4–6-program assumption was not a quota. The expansion's 24–40-PR allowance covers
 the remaining gap rather than charging for all 24 twice; retain the Stage 2
 8–12-PR estimate subject to native feasibility findings. This assumes many additions
 can reuse a reviewed runtime and be delivered in one or two cohesive PRs. A new

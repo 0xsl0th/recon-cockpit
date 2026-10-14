@@ -35,6 +35,8 @@ SNMP_PAGE_TOOL_ID = "snmp_interface_page_v1"
 POSTGRESQL_TLS_TOOL_ID = "postgresql_tls_handshake_v1"
 MYSQL_TLS_TOOL_ID = "mysql_tls_handshake_v1"
 WHATWEB_TOOL_ID = "whatweb_http_fingerprint_v1"
+DNS_AAAA_TOOL_ID = "dig_dns_aaaa_v1"
+DNS_PTR_TOOL_ID = "dig_dns_ptr_v1"
 DNS_MX_TOOL_ID = "dig_dns_mx_v1"
 DNS_SRV_TOOL_ID = "dig_dns_srv_v1"
 DNS_NSID_TOOL_ID = "dig_dns_nsid_v1"
@@ -62,6 +64,7 @@ PARSER_VERSIONS = {"ffuf_web_hierarchy_v1": "ffuf-web-hierarchy-owner-json-v1", 
     SNMP_NEXT_TOOL_ID: "snmp-interface-next-text-v1",
     SNMP_PAGE_TOOL_ID: "snmp-interface-page-text-v1",
     POSTGRESQL_TLS_TOOL_ID: "postgresql-tls-brief-v1", MYSQL_TLS_TOOL_ID: "mysql-tls-brief-v1",
+    DNS_AAAA_TOOL_ID: "dig-dns-aaaa-text-v1", DNS_PTR_TOOL_ID: "dig-dns-ptr-text-v1",
     WHATWEB_TOOL_ID: "whatweb-json-v1", DNS_MX_TOOL_ID: "dig-dns-mx-text-v1", DNS_SRV_TOOL_ID: "dig-dns-srv-text-v1",
     DNS_NSID_TOOL_ID: "dig-dns-nsid-text-v1",
     DNS_AXFR_TOOL_ID: "dig-dns-axfr-text-v1",
@@ -177,6 +180,8 @@ def validate_result(tool_id, value):
         return _rdp_parser().validate_result(value)
     if tool_id == SMB2_TOOL_ID:
         return _smb2_parser().validate_result(value)
+    if tool_id in (DNS_AAAA_TOOL_ID, DNS_PTR_TOOL_ID):
+        return _dns_address_parser().validate_result(value, tool_id)
     if tool_id == DNS_MX_TOOL_ID:
         return _dns_mx_parser().validate_result(value)
     if tool_id == DNS_SRV_TOOL_ID:
@@ -926,6 +931,22 @@ def _parse_smb2(output, stderr):
     return _smb2_parser().parse_output(output, stderr)
 
 
+def _dns_address_parser():
+    if __package__:
+        from . import network_tools_dns_address_parser
+    else:
+        import network_tools_dns_address_parser
+    return network_tools_dns_address_parser
+
+
+def _parse_dns_aaaa(output, stderr):
+    return _dns_address_parser().parse_output(DNS_AAAA_TOOL_ID, output, stderr)
+
+
+def _parse_dns_ptr(output, stderr):
+    return _dns_address_parser().parse_output(DNS_PTR_TOOL_ID, output, stderr)
+
+
 def _dns_mx_parser():
     if __package__:
         from . import network_tools_dns_mx_parser
@@ -1022,6 +1043,7 @@ def parse_tool_output(tool_id, output: bytes, stderr: bytes = b"", *, truncated=
             SSH_ALGORITHMS_TOOL_ID: _parse_ssh_algorithms,
             SSH_POLICY_TOOL_ID: _parse_ssh_policy,
             TLS_CERTIFICATE_TOOL_ID: _parse_tls_certificate,
+            DNS_AAAA_TOOL_ID: _parse_dns_aaaa, DNS_PTR_TOOL_ID: _parse_dns_ptr,
             WHATWEB_TOOL_ID: _parse_whatweb, DNS_MX_TOOL_ID: _parse_dns_mx, DNS_SRV_TOOL_ID: _parse_dns_srv,
             DNS_NSID_TOOL_ID: _parse_dns_nsid,
             DNS_AXFR_TOOL_ID: _parse_dns_axfr,

@@ -1,11 +1,14 @@
 # T05 — bounded owned SNMP interface page
 
-`snmp_interface_page_v1` is the separate T05 candidate in
-[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), after T04 acceptance in
-[PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84). It reuses the existing
-Net-SNMP confinement, authority and evidence paths with the separately pinned
-`snmpbulkget` executable. Accepted C1 GET, C13 GETNEXT and T04 profiles stay closed.
-The catalog contains 49 accepted profiles and one T05 candidate across 17 programs.
+`snmp_interface_page_v1` is accepted in
+[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), merged as `8ca3887`.
+Review of `5cad354`, two independent reviews without blockers, 357 fresh focused
+passes and five final checks closed T05 G1–G6; all five post-merge checks passed.
+It reuses the existing Net-SNMP confinement, authority and evidence paths with the
+separately pinned `snmpbulkget` executable. Accepted C1 GET, C13 GETNEXT and T04
+profiles stay closed. T05 brings accepted coverage to 50 profiles across
+17 programs. The separate [T06 AAAA/PTR candidates](dns-address-tools.md) bring
+registration to 52 profiles while validation and acceptance remain pending.
 There is no interactive or GUI integration for this operation.
 
 ## Exact operation
@@ -117,8 +120,14 @@ Private successful and failed records belong under `.secure-agent/snmp-page-2026
 `354d2fff78ae7bf0a02c861a636b73ca3262fd731c747b41363d4495a646dee1`.
 Combined `verification.json` SHA-256 is
 `c6248dfa79bfa2acad427ea8efa2f3c7871e1aa173cc5c3d068234e677a8f7ff`.
-T05 G6 stays open until final PR checks, review and authorized merge;
-T06 AAAA/PTR follows it.
+T05 G6 is closed by reviewed head `5cad354f73b9d5665f0ccbcc86dfaecbb8f40e6b`
+and merge `8ca3887744a20b32779c6cc2562b45a911f79709`; their trees match
+`c30c127733005efbff62a8816cfcf353f93f078d`. All five
+[final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38585709909)
+and [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38588119548)
+passed. The merge receipt is `.secure-agent/dns-address-20261014/pr85-merge-review.json`.
+Complete the separate T06 AAAA/PTR candidates before moving to Stage 3; do not
+repeat T05 acceptance or reopen earlier milestones.
 
 ## Describe and inspect
 

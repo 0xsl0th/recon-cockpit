@@ -73,8 +73,9 @@ def policy_for_case(case):
     from recon_cockpit.secure_agent.network_tools_tls_posture_spec import CASES as TLS_CASES
     from recon_cockpit.secure_agent.network_tools_web_hierarchy_spec import CASES as HIERARCHY_CASES
     from recon_cockpit.secure_agent.network_tools_snmp_page_spec import CASES as PAGE_CASES
+    from recon_cockpit.secure_agent.network_tools_dns_address_spec import CASES as ADDRESS_CASES
     original = policy()
-    if case not in (*TLS_CASES, *HIERARCHY_CASES, *PAGE_CASES):
+    if case not in (*TLS_CASES, *HIERARCHY_CASES, *PAGE_CASES, *ADDRESS_CASES):
         return original
     return parse_policy({**original.to_dict(), "allowed_tools": [action(case)["tool_id"]]})
 

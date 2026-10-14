@@ -10,11 +10,13 @@ and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/action
 passed. **T04 G1–G6 are closed.** The accepted eight-path
 `ffuf_content_discovery_v1` contract is unchanged.
 
-This acceptance brings the baseline to 49 accepted profiles across 16 programs.
-The separate [T05 SNMP page candidate](snmp-page-tools.md) now brings registration
-to 50 profiles across 17 programs. [PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85)
-retains 51 native and 23,170 portable passes; G6 review and merge remain open. Required T06 AAAA/PTR follows T05 acceptance. No deeper
-workflow work starts here.
+This acceptance brought the baseline to 49 accepted profiles across 16 programs.
+The separate [T05 SNMP page](snmp-page-tools.md) is now accepted in
+[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85) at `8ca3887`, closing
+G1–G6 at 50 accepted profiles and 17 programs. Its 51 native and 23,170 portable
+passes remain intact. Current [T06 AAAA/PTR candidates](dns-address-tools.md) bring
+registration to 52 profiles; validation and acceptance remain pending. Complete
+T06 before Stage 3 compatibility/routing work. No deeper workflows start here.
 
 ## Scope and execution
 

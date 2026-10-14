@@ -1,42 +1,41 @@
 # Secure-tool coverage milestone
 
 Current continuation (14 October 2026):
-**T01–T04 meet G1–G6 and remain accepted and closed.**
-[T04 PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) merged as `435a271`
-after review of `40d98b6`, two independent reviews without blockers and 319 fresh
-focused test passes. The reviewed and merged trees both match `9de7a974b3683d1abdfed9904b90932bb2be714c`.
-All five [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38577572315)
-and all five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38580423750)
-passed. Its [accepted secure hierarchy runbook](web-hierarchy-tools.md) retains
-26 native and 22,577 portable passes, the original frozen source pins and the
-explicit native-retry/evidence-integrity limitations. T04 acceptance brings the
-accepted baseline to **49 profiles across 16 programs**. Do not repeat its merge
-or reopen earlier milestones.
+**T01–T05 meet G1–G6 and remain accepted and closed: 50 profiles across 17 programs.**
+[T05 PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85) merged as `8ca3887`
+after review of `5cad354`, two independent reviews without blockers, 357 fresh
+focused test passes and five passing [final PR checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38585709909).
+All five [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38588119548) also passed.
+The reviewed and merged trees match `c30c127733005efbff62a8816cfcf353f93f078d`.
+The [accepted SNMP page runbook](snmp-page-tools.md) retains 51 native and 23,170
+portable passes, all source pins and its client-output evidence limitations.
+Its 37 saved reports passed 74 unchanged CLI/Python inspection checks. Preserve
+`.secure-agent/dns-address-20261014/pr85-merge-review.json` and the original
+`.secure-agent/snmp-page-20261014/` receipts. Do not repeat completed merges or
+reopen earlier milestones.
 
-**Current work is T05: one bounded SNMP interface-description page.**
-The separate [T05 candidate](snmp-page-tools.md), open as
-[PR #85](https://github.com/0xsl0th/recon-cockpit/pull/85), integrates `snmp_interface_page_v1`
-through the existing secure execution and evidence path. One TCP GETBULK uses
-one fixed ifDescr seed, zero non-repeaters and four maximum repetitions, with
-public synthetic fixture data and no continuation. The catalog records
-**50 registered profiles: 49 accepted and one T05 candidate, across 17 programs**.
-Frozen native validation on `f6e515fe0292e7624a87ee3d0329abb7799e7374`
-passed **51 tests**. Full portable validation on
-`ae7e1b8fdb5309dd14e09850959b55e6c1eca6fe` passed **23,170 tests**, with 1,341
-integration tests deselected and no failures, errors or skips. Each run preserved
-all 735 recorded source files; only ten portable test files changed between
-those revisions, leaving production code, policies and native tests identical.
-Private proof belongs under `.secure-agent/snmp-page-20261014/`.
-**G6 review and merge remain open; T05 is not accepted.** Review PR #85 and its
-latest required checks before T06's separate fixed AAAA/PTR profiles;
-do not replace either required outcome with optional signatures or tool quotas.
+**Current work is T06: separate fixed AAAA and PTR metadata profiles.**
+The [T06 candidates](dns-address-tools.md), `dig_dns_aaaa_v1` and `dig_dns_ptr_v1`,
+reuse the accepted dig runtime for one nonrecursive IPv4 TCP question each.
+The catalog records **52 registered profiles: 50 accepted and two T06 candidates,
+across the same 17 programs**. Returned IPv6 addresses and PTR names are data,
+not network scope or follow-up authority. The predeclared corpus requires
+11 ordinary and four separate robustness completions, with 23 inconclusive
+negative cases. Native and final portable validation remain pending; neither
+T06 profile is accepted merely because it is registered.
 
-PRs #80/#81 (T02/T03), #82 (catalog/source review), #83 (T04 native diagnostic)
-and proposal PR #31 remain closed. Proposal submission and its broader refresh
-remain deferred to November. Model credentials, paid calls, live-model evaluation,
-attached/external targets, deeper workflows and comparative benchmarking remain
-deferred. The dated baseline and candidate wording below preserve historical
-snapshots; this continuation supersedes their pre-merge status.
+Finish T06 validation, independent review, required checks and authorized merge
+before closing the finite Stage 2 tranche. Stage 3 follows with a concrete owned
+service-compatibility and controlled target-routing contract under the existing
+offline boundary. Any attached-network work requires separate authorization.
+Do not replace required outcomes with optional signatures or program quotas.
+
+PRs #80/#81 (T02/T03), #82 (catalog/source review), #83/#84 (T04) and proposal
+PR #31 remain closed. Proposal submission and its broader refresh remain deferred
+to November. Model credentials, paid calls, live-model evaluation, attached/external
+targets, deeper workflows and comparative benchmarking remain deferred. The dated
+baseline and candidate wording below preserve historical snapshots; this
+continuation supersedes their pre-merge status.
 
 **Closed on 6 October 2026:** all required rows B0–B8 are accepted on main,
 with 20 bounded secure capabilities backed by 11 external programs. The operator's
@@ -180,8 +179,9 @@ passes, review and required checks; PR #81 accepted T03 after 52 native and
 21,898 portable passes, review and required checks. G1–G6 are closed for both,
 bringing the catalog at that point to 48 accepted profiles and 16 programs.
 PR #84 then accepted T04, closing G1–G6 at 49 profiles across 16 programs.
-The current T05 candidate is separate; every new operation must satisfy G1–G6
-independently. The
+PR #85 then accepted T05 at `8ca3887`, closing G1–G6 at 50 profiles across
+17 programs. The two current T06 candidates are separate; every new operation
+must satisfy G1–G6 independently. The
 [finite professional-v1 contract](professional-v1-coverage.md) now fixes six
 required task outcomes under the accepted [product roadmap](product-roadmap.md),
 without changing the scope or closure of the accepted core milestone.
@@ -211,8 +211,8 @@ without changing the scope or closure of the accepted core milestone.
 | T02 — accepted | Finite TLS 1.0/1.1/1.2/1.3 posture through four separately versioned OpenSSL profiles | One delivered ClientHello per action, independent approval and consumed permit, complete-record mediation and corroborated owner/client evidence. Explicit rejection can be useful; retry refusal alone is safety evidence. No cipher sweep, credentials or encrypted application-data prevention claim. | [x] G1–G6 closed in [PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) at `f2e7b785`: 65 native / 21,593 portable passes, 20 useful observations, 20 inconclusive negatives, separate HRR/extra-stream refusals and unchanged replay. Fresh review and five final checks passed. The original 0/1 diagnostic failure remains historical evidence. See [acceptance corpus](tls-posture-acceptance.md). |
 | T03 — accepted | Pinned local advertisement policy in both transport directions | Reuse byte-identical C14 collector; one request/write EOF/first packet, no login or extra probe. Known deviations useful, unknowns inconclusive. | [x] G1–G6 closed in [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) at `b90a365e`: 52 native / 21,898 portable passes, six ordinary and two robustness completions, two unknown and nine malformed/pressure inconclusive cases. Fresh review and five final checks passed; no new program. See [runbook](ssh-policy-tools.md). |
 | T04 — accepted | Controlled one-level web hierarchy | Twelve unique compiled GETs, independent owner/native reconciliation, empty and populated completion, explicit ambiguity, authority and replay. Native retries remain negative evidence. | [x] G1–G6 closed in [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) at `435a271`; 26 native and 22,577 portable passes retained, two independent reviews, 319 fresh focused tests and five final/post-merge checks passed. See [accepted runbook](web-hierarchy-tools.md). |
-| T05 — current candidate | One bounded SNMP interface-description page | One fixed-seed TCP GETBULK, zero non-repeaters, four maximum repetitions, typed ordered rows or an explicit terminal boundary, authority, evidence and G1–G6. | [ ] [Secure candidate](snmp-page-tools.md) integrated in PR #85; 51 native tests on `f6e515f` and 23,170 portable tests on `ae7e1b8` passed. G6 review and merge remain open. No walks, continuation, UDP or real communities. |
-| T06 — required next | Fixed AAAA/PTR metadata | Positive, NODATA and NXDOMAIN outcomes, bounded typed responses, secure execution, evidence and G1–G6 for each profile. | [ ] No secure profiles yet. Begin after T05 review and acceptance. |
+| T05 — accepted | One bounded SNMP interface-description page | One fixed-seed TCP GETBULK, zero non-repeaters, four maximum repetitions, typed ordered rows or an explicit terminal boundary, authority, evidence and G1–G6. | [x] [Accepted profile](snmp-page-tools.md) in PR #85 at `8ca3887`; 51 native and 23,170 portable tests passed, followed by independent review, 357 fresh focused passes and five final checks. No walks, continuation, UDP or real communities. |
+| T06 — current candidates | Fixed AAAA/PTR metadata | Positive, NODATA and NXDOMAIN outcomes, bounded typed responses, secure execution, evidence and G1–G6 for each separate profile. | [ ] [Two secure candidates](dns-address-tools.md), reusing dig. Native and final portable validation remain pending. Required corpus: 11 ordinary and four robustness completions, 23 inconclusive negatives, enforcement and unchanged replay; G6 remains open. Stage 3 follows acceptance. |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 
