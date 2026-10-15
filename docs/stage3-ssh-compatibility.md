@@ -1,10 +1,11 @@
 # S3.4b: bounded stock OpenSSH compatibility
 
-This is the native implementation candidate in
+This native implementation is accepted in
 [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93), following accepted S3.4a
 [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92), merged at `bfe6680`.
-Native validation and independent reviews are complete. S3.4b remains open until
-final PR review, required checks and authorized merge. It adds no accepted catalog entry: the inventory remains
+PR #93 merged as `a7f46b1` on 15 October after fresh independent reviews and all
+five final checks passed at `321ff9c`. The reviewed and merged trees match;
+S3.4b is closed. It adds no accepted catalog entry: the inventory remains
 **52 secure profiles / 17 external programs**. Stock OpenSSH is a fixture server,
 not another integrated pentest program.
 
@@ -222,7 +223,7 @@ change and is not acceptance evidence. Initial hosted CI exposed Linux-only
 socket assumptions in portable fixtures and a stale preparation-only assertion;
 the corrections affect tests only, with production and native cases unchanged.
 
-After S3.4b acceptance, continue **S3.5 disconnected multi-host routing** from
+Continue **S3.5 disconnected multi-host routing** from
 the [roadmap](stage3-compatibility-routing.md). Credentials, paid/live models,
 deeper workflows, comparative benchmarking, attached targets and proposal
 submission remain deferred. Any network attachment needs a concrete ownership,

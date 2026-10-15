@@ -138,9 +138,11 @@ passing hosted checks at `d19eef3` and preserved failures, including the
 unconfirmed cause of the original budget-test failure.
 
 PR #91 merged as `061c057`, closing S3.3 after fresh independent review,
-605 focused passes and five final CI jobs with 25,314 passes each. Stage 3 now
-has ten increments, five accepted and five remaining; the catalog stays 52/17.
-[S3.4a](stock-ssh-feasibility.md) prepares the finite OpenSSH inputs/runtime;
-S3.4b must separately prove its native process/transport and compatibility gates.
+605 focused passes and five final CI jobs with 25,314 passes each. At that
+14 October acceptance, Stage 3 had ten increments, five accepted/five remaining.
+The later PRs #92/#93 separately accepted [S3.4a](stock-ssh-feasibility.md)
+preparation and S3.4b native compatibility. The [current roadmap](product-roadmap.md)
+records seven accepted/three open increments, an 11–13 PR Stage 3 estimate and
+the unchanged 52/17 catalog.
 Preparation alone closes neither S3.3 nor Stage 3, and no substitute server
 replaced Apache in the required comparison.

@@ -15,9 +15,12 @@ The S3.3b candidate implements and validates the secure production path on
 nonzero user mapping required separate review from nginx's private Unix socket
 and namespace UID zero.
 The HTTP split added one reviewable increment. The subsequent OpenSSH fork/exec
-finding splits S3.4a/S3.4b too: Stage 3 now forecasts **ten PRs**, five accepted
-and five remaining, rather than the original 6–8. No required
-corpus row, bound or later routing/name/TLS gate is removed to fit an estimate.
+finding split S3.4a/S3.4b too. At PR #91's 14 October acceptance, the forecast
+was ten PRs with five accepted/five remaining, rather than the original 6–8.
+The [current roadmap](product-roadmap.md) retains ten logical increments,
+seven accepted/three open, and estimates 11–13 PRs after the S3.5 routing split.
+No required corpus row, bound or later routing/name/TLS gate is removed to fit
+an estimate.
 
 ## Selection and authority
 
@@ -339,13 +342,13 @@ and checks. Its inspector starts no server or tool and adds no secure catalog
 entry. The [Apache preparation record](stock-apache-feasibility.md) remains
 preparation evidence; the native results above belong to the separate S3.3b path.
 
-S3.3b is accepted in PR #91 and remains closed. Stage 3 has five accepted and
-five remaining increments out of ten; the catalog remains 52 accepted profiles
-across 17 external programs. Current [S3.4a preparation](stock-ssh-feasibility.md)
-pins the finite OpenSSH configuration/key/request and runtime contract; S3.4b
-must separately enforce its mandatory fork/exec boundary and validate native
-service identification and host-key collection. S3.5 handles
-disconnected multi-host routing and aggregate budgets; S3.6 handles explicit
+S3.3b is accepted in PR #91 and remains closed. PRs #92/#93 separately accepted
+[S3.4a preparation](stock-ssh-feasibility.md) and S3.4b native SSH compatibility;
+S3.4 is closed. Stage 3 has ten logical increments, seven accepted and three open;
+the catalog remains 52 accepted profiles across 17 external programs. PR #94
+presents the first fixed-A S3.5 disconnected routing candidate with aggregate
+budgets. Routed Apache/B and the full hostile/negative matrix remain open.
+S3.6 handles explicit
 DNS/TLS name/trust binding; S3.7 performs combined acceptance. Completed offline
 R5/local R6, B/C/T coverage and initial GUI milestones remain closed.
 

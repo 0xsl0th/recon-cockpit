@@ -420,8 +420,10 @@ to **42 bounded secure profiles backed by 16 external programs**. C17's G1–G6 
 
 The [consolidated product roadmap](product-roadmap.md) separates today's verified
 capabilities from the professional-v1 release and the longer-term 40+ program
-product. Its planning estimates are **40–60 further PRs for an operator-assisted
-professional v1**, and **80–130 total further PRs for the broader product**.
+product. The original PR #73 forecast was **40–60 PRs for an operator-assisted
+professional v1**, and **80–130 total PRs for the broader product**, measured from
+the accepted PR #72 baseline. These are historical estimates; use the linked
+roadmap for current totals, which include work completed since that baseline.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that every catalog profile is available through the GUI.
 [PR #73](https://github.com/0xsl0th/recon-cockpit/pull/73) accepted the forecast at

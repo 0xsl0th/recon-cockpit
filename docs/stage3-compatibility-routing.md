@@ -37,7 +37,7 @@ comparative benchmarking and proposal submission remain deferred.
 | --- | --- |
 | Accepted synthetic execution | Existing profiles have their own accepted finite owned-fixture evidence. The [configurable HTTP/SSH assessment](configurable-owned-lab.md) uses one disconnected namespace per endpoint, scripted responses, exact RFC1918 address/port/path binding and live denied-destination witnesses. It is not a shared multi-host topology or a stock-service compatibility result. |
 | Stock-daemon diagnostic | S3.2b's validated diagnostic runs an actual pinned nginx binary with generated public lab content and configuration inside a disposable owner. A diagnostic records native behavior and boundary failures; it grants no production capability and closes no existing compatibility claim by itself. |
-| Production integration | PR #91's accepted HTTP path connects supported nginx/Apache observations to action authority, isolated parsing, evidence and inspection; its finite native corpus, review and checks passed. Accepted v1 behavior remains intact. PR #93's finite SSH candidate has native/replay/regression evidence and awaits final review/merge; shared routing and name/TLS binding follow. |
+| Production integration | PR #91's accepted HTTP path connects supported nginx/Apache observations to action authority, isolated parsing, evidence and inspection; its finite native corpus, review and checks passed. Accepted v1 behavior remains intact. PR #93 accepts finite SSH compatibility at `a7f46b1`; current S3.5 adds disconnected routing and aggregate enforcement, then name/TLS binding follows. |
 | Network attachment | Remains unauthorized. A later concrete attachment plan needs owner-approved target ownership, scope, effects, exclusions and routing before any execution. Passing disconnected tests is not that permission. |
 
 Read-only local package inventory on 14 October found nginx `1.28.0-6`, Apache
@@ -57,11 +57,17 @@ nginx and Apache source/runtime preparation from native work brought the estimat
 to nine. OpenSSH host-key collection requires three pinned executable images and
 a mandatory preauthentication fork. This cannot inherit HTTP's no-fork boundary:
 **S3.4a source/runtime preparation** precedes **S3.4b native compatibility**.
-Stage 3 now has **ten increments: six accepted, four remaining**. This adds one
-reviewable boundary, removes no required corpus row and grants no launch authority.
-PRs #87–#92 accept S3.1, S3.2a/b, S3.3a/b and S3.4a; S3.2 and S3.3 are closed.
+Stage 3 has **ten logical increments: seven accepted, three remaining**.
+PR #94 implements only the first S3.5 slice, so the current [product forecast](product-roadmap.md)
+is **11–13 PRs** across those increments. This preserves the separate review
+boundaries, removes no required corpus row and grants no launch authority.
+PRs #87–#93 accept S3.1, S3.2a/b, S3.3a/b and S3.4a/b; S3.2–S3.4 are closed.
 Preserve the [HTTP evidence](stage3-http-production.md) and accepted
-[OpenSSH preparation](stock-ssh-feasibility.md). S3.4b is current.
+[OpenSSH compatibility](stage3-ssh-compatibility.md). S3.5 is current; its
+[first implementation contract](stage3-disconnected-routing.md) pinned topology
+and aggregate limits before code. PR #94's fixed-A nginx/OpenSSH review candidate
+passed 25 native checks at `659c053` with all 981 source pins unchanged. Routed
+Apache/B and the full hostile/negative matrix remain required before S3.5 closes.
 
 | Slice | Required outcome | Completion evidence |
 | --- | --- | --- |
@@ -71,8 +77,8 @@ Preserve the [HTTP evidence](stage3-http-production.md) and accepted
 | **S3.3a — accepted in PR #90: Apache preparation and production contract** | Compile the fixed Apache configurations, pin its executable/modules and exact ELF dependencies, and define the separately versioned production HTTP boundary. | [Apache preflight](stock-apache-feasibility.md), strict portable validation and 26 actual read-only runtime inspections. No server/tool launch, compatibility claim or catalog addition. |
 | **S3.3b — accepted in PR #91** | Integrate the reviewed HTTP subset through the secure path and validate both nginx and Apache with the same observable outcomes. | [Production evidence](stage3-http-production.md): all 52 corpus rows and 54 boundary checks passed, with reviewed Apache UID/listener custody, exact action/endpoint enforcement, authority/approval/audit, budget/cleanup, 104 unchanged inspections and 68 distinct accepted-profile native regressions. Fresh final review, 605 focused tests and five passing final CI jobs preceded merge `061c057`. |
 | **S3.4a — accepted in PR #92: OpenSSH source/runtime preparation** | Compile two fixed configurations and the existing public test key, freeze the finite useful/negative corpus, inspect three pinned OpenSSH executables and their exact linked libraries. | [Preparation contract](stock-ssh-feasibility.md), portable validation and actual read-only installed-runtime receipts. No daemon, launcher registration, authentication or native-compatibility claim. |
-| **S3.4b — current PR #93: native SSH compatibility** | Execute independently authorized NULL/banner identification and RSA host-key collection against the two stock OpenSSH configurations. Enforce the separately reviewed fork/exec and packet/connection boundary. | [Native candidate and validation](stage3-ssh-compatibility.md): complete declared ordinary/robustness/negative corpus plus authority, required approval, audit, destination, process/exec, request/byte, cancellation, cleanup, tamper and immutable-evidence gates. No user authentication, account probe, completed encrypted user session or verified host identity. |
-| **S3.5 — disconnected multi-host routing** | Put the supported services in distinct owned network namespaces connected by controlled owned links, with exact action-specific destination binding, explicit exclusions and aggregate request/connection/rate budgets across hosts and actions. | At least two service hosts with distinct recorded network namespace identities, routed links and an excluded listening endpoint; loopback address aliases alone do not qualify. Demonstrate useful selected-target execution, denied other-service/excluded traffic, and attempted budget bypass by splitting actions or restarting workers. No host network namespace, physical interface, default external route or host firewall modification. |
+| **S3.4b — accepted in PR #93: native SSH compatibility** | Execute independently authorized NULL/banner identification and RSA host-key collection against the two stock OpenSSH configurations. Enforce the separately reviewed fork/exec and packet/connection boundary. | [Accepted native validation](stage3-ssh-compatibility.md), merge `a7f46b1`: complete declared ordinary/robustness/negative corpus plus authority, required approval, audit, destination, process/exec, request/byte, cancellation, cleanup, tamper and immutable-evidence gates. No user authentication, account probe, completed encrypted user session or verified host identity. |
+| **S3.5 — current: disconnected multi-host routing** | Put the supported services in distinct owned network namespaces connected by controlled owned links, with exact action-specific destination binding, explicit exclusions and aggregate request/connection/rate budgets across hosts and actions. | At least two service hosts with distinct recorded network namespace identities, routed links and an excluded listening endpoint; loopback address aliases alone do not qualify. Demonstrate useful selected-target execution, denied other-service/excluded traffic, and attempted budget bypass by splitting actions or restarting workers. No host network namespace, physical interface, default external route or host firewall modification. PR #94 validates the first fixed-A nginx/OpenSSH candidate; routed Apache/B and the full hostile/negative matrix remain open. |
 | **S3.6 — names, TLS binding, redirects and referrals** | Add a bounded owned-resolver case with a declared name mapped to an explicit IPv4 endpoint set; bind the observed answer, exact HTTP Host, TLS SNI, expected certificate name and pinned trust material to a separately authorized action. Include one selected bounded TLS mode. Reject rebinding, excluded/ambiguous answers, undeclared names and name/trust mismatches. Record redirects and referral advertisements without following them. | A pinned stock resolver and exact query/answer plus TLS name/trust corpus; useful allowed-name execution and denied changed/excluded answers, Host/SNI/certificate-name mismatches and untrusted certificates. No recursive external lookup, search suffix, alias chasing, IPv6 transport, peer-selected trust or automatic follow-up. Freeze the resolver and selected TLS runtime contract before implementation; returned data never enlarges scope. |
 | **S3.7 — combined acceptance** | Verify the finite HTTP/SSH/DNS routing and TLS name/trust subset together, preserve all accepted profiles and document remaining compatibility gaps. | Complete ordinary, hostile, negative and enforcement matrix; cleanup, unchanged replay, supported Linux prerequisites, independent review and required checks. Stage 3 closes only after S3.2–S3.6 are accepted, with no required case pending. |
 
@@ -320,9 +326,10 @@ cleanup and unchanged-replay evidence, plus portable and accepted-profile
 regressions. PR #89 at `c068a9d` completed review/checks/merge; S3.2 stays closed.
 S3.3a is accepted in PR #90 at `d30a2f1`. S3.3b's production integration on
 both servers is accepted in PR #91 at `061c057`. S3.4a's finite OpenSSH
-configuration, public-key and runtime contract is accepted in PR #92. S3.4b's
-[native candidate](stage3-ssh-compatibility.md) has passed its validation gates
-and awaits final PR #93 review/checks/merge. Then continue S3.5; S3.4b remains
-open until that acceptance.
+configuration, public-key and runtime contract is accepted in PR #92. S3.4b is accepted in PR #93 at `a7f46b1`. Continue the
+[S3.5 routing implementation](stage3-disconnected-routing.md): review PR #94's
+validated fixed-A candidate, then complete routed Apache/B and the full hostile/
+negative matrix under the same usefulness, enforcement, evidence and review
+gates. S3.4 stays closed.
 Do not repeat accepted milestones, add optional signatures, set up model
 credentials or request network attachment for this disconnected stage.

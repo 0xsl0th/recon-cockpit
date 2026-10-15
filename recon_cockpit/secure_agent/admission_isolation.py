@@ -59,7 +59,12 @@ class LinuxLaunchAdmission:
                        if self._config['profile'] == 'stock_http_compatibility_v1' else ()),
                      *(('stock_ssh_contract', 'stock_ssh_spec', 'stock_ssh_process', 'stock_ssh_nmap_spec',
                         'network_tools_ssh_fixture', 'stock_http_spec', 'configurable_scope', 'configurable_contract')
-                       if self._config['profile'] == 'stock_ssh_compatibility_v1' else ())):
+                       if self._config['profile'] == 'stock_ssh_compatibility_v1' else ()),
+                     *(('routing_contract', 'routing_topology_spec', 'stock_http_contract', 'stock_http_production_contract',
+                        'stock_http_spec', 'stock_apache_spec', 'stock_http_production_nmap_spec',
+                        'stock_ssh_contract', 'stock_ssh_spec', 'stock_ssh_process', 'stock_ssh_nmap_spec',
+                        'network_tools_ssh_fixture', 'configurable_scope', 'configurable_contract')
+                       if self._config['profile'] == 'disconnected_routing_v1' else ())):
             argv.extend(('--ro-bind', str(Path(__file__).with_name(name + '.py').resolve()),
                          '/app/admission_runtime/' + name + '.py'))
         argv.extend(('--remount-ro', '/proc', '--remount-ro', '/dev', '--remount-ro', '/',

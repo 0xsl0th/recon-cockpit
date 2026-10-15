@@ -96,20 +96,28 @@ No service, tool action or authority was created; provider calls/spend remain ze
 See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
-**S3.4a is accepted in [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92)
-at `bfe6680`. Current: S3.4b native SSH compatibility.** The accepted
-[preparation](stock-ssh-feasibility.md) pins two finite configurations, the
-existing public test key, three OpenSSH executables and their exact linked
-libraries. Preparation alone grants no native compatibility claim. The
-[native candidate in PR #93](stage3-ssh-compatibility.md) now passes 94 native
-SSH checks, 71 accepted-profile regressions and 26,141 local portable tests.
-Its eight ordinary/robustness completions, twelve expected negatives and
-unchanged evidence replay have independent review. Original intermittent
-regression failures remain recorded with unconfirmed cause; the complete
-follow-up gate passed without changing production bounds. PR #93 awaits final
-review and merge; it does not add authenticated SSH or trusted host identity.
-Stage 3 has **ten increments: six accepted and four remaining**. S3.4b remains
-open until its complete corpus, review and checks pass; S3.5–S3.7 follow in order.
+**S3.4b is accepted in [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93)
+at `a7f46b1`; S3.4 is closed. Current: S3.5 disconnected multi-host routing.**
+The [SSH evidence](stage3-ssh-compatibility.md) records 94 native checks,
+71 accepted-profile regressions, 26,141 local portable tests, eight useful
+completions, twelve expected negatives and zero unnecessary refusals. Fresh
+independent reviews found no blockers and all five latest CI jobs passed at
+`321ff9c`; the merge tree matches. Original intermittent regression failures
+remain recorded with unconfirmed cause despite the complete passing follow-up.
+SSH authentication and trusted host identity are not supported.
+
+The [S3.5 implementation contract](stage3-disconnected-routing.md) pins a first
+fixed A routing slice: separate owned HTTP/SSH hosts, routed links, a listening
+excluded endpoint and one aggregate ledger across four explicit actions.
+[PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94) is the first fixed-A
+nginx/OpenSSH routing review candidate: 25 native checks, 76 accepted-profile
+regressions and 26,599 portable tests passed at `659c053`, with 981 unchanged
+source pins. Twelve ordinary selected actions completed without unnecessary
+refusals; three aggregate-budget negatives preserved useful work and blocked
+the excess. The runbook retains an earlier unexplained Apache regression refusal.
+S3.5 remains open for routed Apache/B and the full hostile/negative matrix.
+Stage 3 has **ten increments: seven accepted and three remaining**. S3.5–S3.7
+follow in order; a logical increment may need more than one implementation PR.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
 
@@ -119,8 +127,8 @@ S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
 each. The reviewed and merged trees match, and the
 [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38657342980)
 passed. Preserve `.secure-agent/stock-ssh-preflight-20261014/` and the PR #92 review
-receipts. Preliminary native SSH work is recorded in the [checkpoint](continue-here.md);
-it does not reopen accepted preparation or close remaining native gates.
+receipts. Accepted native SSH work is recorded in the [checkpoint](continue-here.md);
+S3.5 does not reopen accepted preparation or compatibility milestones.
 
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
@@ -234,25 +242,31 @@ and 195/195 boundary fields. Thirteen new and 120 accepted bundles replayed
 unchanged. This is finite fixture evidence, not a repository-exposure or general
 vulnerability-detection claim. See the [C17 runbook](nuclei-git-tools.md).
 
-## Professional-v1 forecast: 44–62 PRs from the PR #72 baseline
+## Professional-v1 forecast: 45–65 PRs from the PR #72 baseline
 
 These ranges are additive totals from the accepted PR #72 baseline, excluding
 the documentation-only PR #73 forecast. They include work completed since that
 baseline; they are not a fresh remaining count. The original forecast was 40–60.
-On 14 October, Stage 3 changes from 6–8 to ten increments after the HTTP
-startup/confinement and OpenSSH fork/exec findings, updating the total to 44–62. Other stage estimates
-remain unchanged. Stages do not lift the current offline-only restrictions.
+The 14 October revision expanded Stage 3 from 6–8 PRs to ten logical increments
+after the HTTP startup/confinement and OpenSSH fork/exec findings, producing a
+44–62 total forecast. On 15 October, PR #94 covers only the first S3.5 routing
+slice. Stage 3 therefore needs an estimated **11–13 PRs** while retaining **ten
+logical increments, seven accepted and three open**: seven accepted PRs, PR #94,
+at least one remaining S3.5 batch, S3.6 and S3.7. The upper estimate allows
+separate remaining routing and name/TLS preparation batches. The total becomes
+**45–65**; other stage estimates remain unchanged. These totals include completed
+work and do not lift the current offline-only restrictions.
 
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
-| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. S3.4a OpenSSH preparation is accepted in PR #92; current S3.4b implements native SSH compatibility, then disconnected multi-host routing with exclusions and aggregate budgets, explicit name/redirect/referral handling and combined acceptance. Attached lab/engagement networks require separate authorization. Six increments are accepted and four remain, including the separate S3.4a/S3.4b gates. | 10 |
+| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 presents the first fixed-A S3.5 routing review candidate. Routed Apache/B and the full hostile/negative matrix remain open, followed by explicit name/TLS binding, redirect/referral handling and combined acceptance. Attached lab/engagement networks require separate authorization. Seven logical increments are accepted and three remain; S3.5 requires multiple PRs. | 11–13 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |
 | 7. Professional-v1 release gate | Installation and dependency diagnostics, pinned runtime maintenance, data migration/export/retention, recovery, representative service compatibility, adversarial review, operator acceptance and documented support limits. Publish only after the separate release decision. | 7–13 |
-| **Professional-v1 total** | **Operator-assisted Linux release for its declared engagement subset. Live models and the full 40-program breadth are not prerequisites.** | **44–62** |
+| **Professional-v1 total** | **Operator-assisted Linux release for its declared engagement subset. Live models and the full 40-program breadth are not prerequisites.** | **45–65** |
 
 ### Finite coverage gate before deeper workflows
 
@@ -280,9 +294,10 @@ comparative benchmarking remain deferred despite completion of the coverage gate
 ## Broader product: 40–70 PRs beyond professional v1
 
 These remain **40–70 additional PRs beyond professional v1**. With the revised
-44–62 v1 forecast, the combined total is **84–132 PRs from the PR #72 accepted
-baseline**, including work completed since that baseline. This replaces the
-original 80–130 estimate; it is not an additional remaining-work count.
+45–65 v1 forecast, the combined total is **85–135 PRs from the PR #72 accepted
+baseline**, including work completed since that baseline. This supersedes the
+14 October 84–132 forecast and original 80–130 estimate; it is not an additional
+remaining-work count.
 
 | Expansion | Deliverable and boundary | Additional PRs |
 | --- | --- | ---: |
@@ -291,7 +306,7 @@ original 80–130 estimate; it is not an additional remaining-work count.
 | Late bounded live-model integration and evaluation | Reuse the existing disabled integration. Approve data release, provider/model, credential source and spending ceiling, then run a small Nmap → HTTP → evidence pilot and adversarial variants. Compare against deterministic and appropriate operator/tool baselines before expanding autonomy. Offline operation remains a fallback. | 3–5 |
 | Scale and advanced operations | Larger engagement/resource scheduling, long-run recovery, performance/reliability work and expanded security/operator acceptance within the supported Linux product. | 3–5 |
 | **Additional expansion** | **Broader professional lifecycle and evaluated model assistance, subject to its separate approvals.** | **40–70** |
-| **Total from PR #72** | **Professional v1 plus broader expansion.** | **84–132** |
+| **Total from PR #72** | **Professional v1 plus broader expansion.** | **85–135** |
 
 Against the dated 16-program forecast baseline, the literal 40-program target
 left **24 programs**. Accepted T02/T03 reused existing implementations and T04
