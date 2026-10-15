@@ -15,9 +15,12 @@ The S3.3b candidate implements and validates the secure production path on
 nonzero user mapping required separate review from nginx's private Unix socket
 and namespace UID zero.
 The HTTP split added one reviewable increment. The subsequent OpenSSH fork/exec
-finding splits S3.4a/S3.4b too: Stage 3 now forecasts **ten PRs**, five accepted
-and five remaining, rather than the original 6–8. No required
-corpus row, bound or later routing/name/TLS gate is removed to fit an estimate.
+finding split S3.4a/S3.4b too. At PR #91's 14 October acceptance, the forecast
+was ten PRs with five accepted/five remaining, rather than the original 6–8.
+The [current roadmap](product-roadmap.md) retains ten logical increments,
+seven accepted/three open, and estimates 11–13 PRs after the S3.5 routing split.
+No required corpus row, bound or later routing/name/TLS gate is removed to fit
+an estimate.
 
 ## Selection and authority
 

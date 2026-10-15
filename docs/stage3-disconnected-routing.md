@@ -1,8 +1,9 @@
 # S3.5: disconnected routing implementation contract
 
-Current implementation batch after accepted S3.4b, merged in
-[PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93) as `a7f46b1`.
-This contract is pinned before implementation. It grants no execution authority
+First fixed-A routing review candidate in
+[PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94), following accepted
+S3.4b in [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93) at `a7f46b1`.
+This contract was pinned before implementation. It grants no execution authority
 and does not close S3.5. The governing [roadmap](stage3-compatibility-routing.md)
 still requires native execution, enforcement, evidence, regression and review gates.
 
@@ -143,12 +144,61 @@ expected budget refusals, retained output and timing. Closure records physical
 launcher cleanup and last acknowledged counters; it does not invent a graceful
 final owner snapshot.
 
-Implementation is in progress on `feature/stage3-disconnected-routing` in
-`/tmp/recon-stage3-routing`. Native acceptance is **not yet established**.
-Private development receipts are under
-`.secure-agent/stage3-routing-20261015/`: attempt `topology-feasibility-01`
-refused before worker startup because its private wrapper lacked `/tmp`; attempts
-`02` and `03` created and checked the routed links/filters but refused an extra
-pre-export descriptor. All three owners were reaped and source pins remained
-unchanged during each attempt. These failures remain evidence, not successful
-coverage. No catalog profile or milestone has been accepted by this branch.
+PR #94 is a review candidate on `feature/stage3-disconnected-routing` in
+`/tmp/recon-stage3-routing`. Frozen `659c053` passed **25 native checks, 76
+accepted-profile native regressions and 26,599 portable tests**, with all
+**981 source pins unchanged** in each passing run and no skips, errors or failures.
+The later checkpoint/runbook update changes documentation only. Fresh independent
+code and saved-evidence reviews found no blockers within this finite slice.
+Review the latest PR revision and checks before merge; this is not S3.5 closure.
+
+The 25 native checks comprise four individual actions, two complete explicit
+orders, three aggregate-budget negatives, one required-approval refusal, two
+cancellation/launcher-death cases, four independent audit/approval denials, eight
+descriptor/transport cases and one bootstrap descriptor-cleanup case. Ten trial
+bundles and eighteen result snapshots passed both Python and CLI inspection
+without changing bytes, modes or timestamps. Lifecycle failures retain separate
+partial evidence; no missing final snapshot is invented.
+
+| Measurement | Verified first-slice result |
+| --- | --- |
+| Ordinary usefulness | Six trials, 12/12 selected actions complete, zero unnecessary refusals. Both four-action orders complete 4/4. |
+| Complete-order wall time | 21,913 ms and 22,053 ms, including trial overhead; no comparative baseline is claimed. |
+| Complete-order aggregate use | Each reserves four actions, six connections, two HTTP requests, one SSH key exchange and 26,624 output bytes; actual request/response bytes are 1,501/1,679. Reservations and delivered bytes are separate measures. |
+| Budget negatives | All three preserve the first useful header observation and refuse the later excess connection, HTTP request or key exchange. These are expected refusals, not complete legitimate assessments. |
+| Network custody | Five distinct network namespaces, eight veth endpoints and live listening baselines. Eight denied role/destination checks per topology; useful native actions reach only their selected service. |
+| Lifecycle and authority | Cancellation and launcher death prevent a second action launch and reap the tracked process tree. Audit/approval failures prevent native action launch. Default unattended execution has zero launches or reservations. |
+| Provider calls and actual cost | Zero; no credentials or live models. |
+
+Private source manifests, JUnit, command/log hashes and reviews remain under
+`.secure-agent/stage3-routing-20261015/`. Passing gates are `native-final-02`,
+`regressions-final-02` and `portable-final-01`; each has its own `verification.json`.
+The native receipt SHA-256 is
+`1b7838e4f3ab3f6622bb75678bb58402decc1e07344f2b98d888856f2de72251`.
+No private artifact is committed to Git.
+
+Retain the failed attempts as well. `topology-feasibility-01` refused before
+worker startup because its private wrapper lacked `/tmp`; `02` and `03` refused
+an extra pre-export descriptor after checking routed links/filters. Owners were
+reaped; `04` subsequently passed. `native-development-01` passed 15/16 checks:
+launcher death closed the audit channel and raised an exception where the test
+expected a returned block. `native-final-01` passed 24/25: the retry assertion
+expected `audit_closed` instead of the controller's `audit_previously_failed`
+latch. Production code stayed unchanged while lifecycle expectations were
+corrected; cleanup and no-second-launch requirements remained in the passing
+25-case gate. A failed assertion does not prove later assertions ran.
+
+`regressions-final-01` passed 75/76. Apache B/O1 recorded a blocked
+`isolation_unavailable` outcome without sufficient inner-stage diagnostics to
+identify the cause or establish how far execution reached. The relevant accepted
+Apache implementation is unchanged from PR #93. Separate instrumented diagnostic
+repetitions and the complete uninstrumented 76-case follow-up passed; neither
+establishes a fix or erases the original unexplained refusal. No deadline,
+security bound or required case was relaxed. Diagnostic repetitions do not add
+unique acceptance cases.
+
+**Next required work:** routed Apache and configuration B, then the complete
+hostile/negative routing corpus under the pinned aggregate caps. S3.5 remains
+open, Stage 3 remains seven accepted/three open, and the catalog remains 52
+accepted profiles across 17 external programs. This branch accepts no new
+catalog profile or completed milestone.
