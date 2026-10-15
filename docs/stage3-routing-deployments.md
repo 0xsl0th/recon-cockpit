@@ -307,11 +307,15 @@ also passed 26,878 tests each and the completeness guard. This accepts the deplo
 This batch extends only the current ordinary operation mapping. The complete
 ordinary-variation, hostile-response, negative and enforcement matrix remains
 a separate required S3.5 batch. Its [finite v3 contract](stage3-routing-matrix.md)
-was pinned at `f68e212` before implementation.
-In particular, standalone HTTP N4 delivers a 2,049th overflow witness, while
-routing caps header delivery at 2,048 bytes. Define truthful routed overflow
-semantics under the existing cap; do not silently increase it or relabel a
-budget refusal as the standalone N4 outcome.
+was pinned at `f68e212` before implementation. Frozen matrix implementation
+`0e09f82` passes 248 native routing checks, 76 accepted-profile/witness
+regressions and 120 unchanged inspections of 60 original v1/v2 bundles; final
+portable CI and review remain separate acceptance gates.
+Standalone HTTP N4 delivers a 2,049th overflow witness, while routing caps
+header delivery at 2,048 bytes. The v3 matrix explicitly records the owner
+refusing a deterministic 2,049-byte response proposal before delivery, with zero
+response credit. This preserves the cap and records a routed response-budget
+refusal, without claiming the standalone overflow outcome.
 
 S3.5 closes only after the full required matrix and review gates pass. S3.6
 name/TLS binding and S3.7 combined acceptance follow in order. Stage 3 remains

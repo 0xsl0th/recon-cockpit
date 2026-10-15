@@ -229,6 +229,64 @@ Final runs must have matching collected and completed manifests, frozen source,
 zero failures/errors/skips and complete independent evidence review.
 
 Private receipts and failed attempts remain under
-`.secure-agent/stage3-routing-matrix-20261015/`. Final native, retained regression,
-legacy replay, full portable and hosted CI gates are pending. This checkpoint
-closes neither S3.5 nor Stage 3 and grants no new catalog profile or target scope.
+`.secure-agent/stage3-routing-matrix-20261015/`. This development checkpoint does
+not replace the frozen results below.
+
+## Frozen native and immutable replay results
+
+Implementation `0e09f8240a166e38f936a079e9ca48fb65be5038` passed the complete
+**248-test routing gate**: 132 matrix trials, 88 retained/witness checks, 26
+owner/channel probes and two direct witnessed-launcher negative-stop checks.
+The separate **76 accepted HTTP/SSH/witness regressions** also passed. Every
+group completed with zero skips, failures or errors; all 996 source pins stayed
+unchanged, and independently compared collected/completed native node IDs match.
+The four added review tests preserve all 244 originally pinned cases.
+
+The matrix contains 92 single-action corpus trials, eight action-order trials,
+twelve lowered-budget trials, four default approval refusals and sixteen mixed
+action trials. Owner probes include a real 60,069 ms lifetime, retained failed
+write credits and replacement BudgetChannel worker processes. Replacement
+workers are not a claim of restarting the entire frontend. Owner/channel probes
+do not count as daemon executions or useful observations. The two direct tests
+independently exercise real native HTTP N1 and SSH N1 outcomes, then verify that
+a second Controller call is refused before client or service startup.
+
+The original **60 saved v1/v2 bundles** passed **120 Python/CLI inspections**;
+all 516 original artifact files retain their bytes, modes and modification times.
+The replay receipt `accepted-v1-v2-replay-final-01.json` has SHA-256
+`d96ec1c247de53efcf44c3ca5d253e3d7371910a1efc5e940b4d2abd82c2c520`.
+The combined native audit `combined-native-final-verification.json` has SHA-256
+`8ff71bef68926dc81928093aa0cec4a64529641817dda392888a55c3115cfe85`.
+Its `native_passed` status deliberately leaves portable CI pending; it is not
+whole-batch acceptance. Independent raw-artifact and source reviews are retained
+beside these receipts, with reviewer authorship disclosed.
+
+## Portable fixture correction and final review gate
+
+The full local portable attempt at `0e09f82` completed **27,273 passes and one
+failure**, with 1,907 integration tests deselected and no skips or errors. The
+failed `test_real_bounded_immutable_control_is_required[invalid3]` constructed
+its absolute deadline during collection. By its late execution, the intended
+overlong control had expired and correctly raised `session_timeout` instead
+of the fixture's expected `provider_invalid_control`. Deterministic aging checks
+also showed the old fixture could become valid after 900 seconds. The failed
+run and its source hashes remain unchanged in `portable-final-01/`.
+
+The correction changes only this test's parameter factories: it constructs the
+same four invalid values immediately before execution, preserving their IDs,
+assertions and test count. All **94 broker tests** pass after correction, and
+the four corrected cases pass both 900- and 1,001-second collection-aging
+reproductions. No production clock, validation or deadline policy changed.
+Subsequent source changes are limited to this portable fixture and documentation;
+production and native test bytes remain identical to frozen `0e09f82`.
+
+Final portable acceptance requires all five existing Linux/Python 3.11–3.14
+and macOS/Python 3.14 CI jobs at the final PR head to pass **27,274 tests each**,
+with zero skips, failures or errors and the completeness guard. CI metadata,
+logs, exact source head and independent review receipts are recorded in the
+private checkpoint and PR checks. The earlier local failure is not represented
+as a passing portable gate. The existing fifteen-minute hosted job limit leaves
+all native deadlines and resource caps unchanged.
+
+Only review and acceptance of the complete batch closes S3.5. S3.6 name/TLS
+binding and S3.7 combined acceptance remain next in order; Stage 3 stays open.

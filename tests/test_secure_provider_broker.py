@@ -336,10 +336,15 @@ def test_later_failed_reservation_cannot_report_previous_success_receipt(factory
     assert h.broker.snapshot["calls_reserved"] == 2 and len(h.state.calls) == 1
 
 
-@pytest.mark.parametrize("invalid", [None, object(), ExecutionControl(time.monotonic() + 30, clock=lambda: 0),
-                                     ExecutionControl(time.monotonic() + 1000)])
-def test_real_bounded_immutable_control_is_required(factory, invalid):
+@pytest.mark.parametrize("make_invalid", [
+    lambda: None, object,
+    lambda: ExecutionControl(time.monotonic() + 30, clock=lambda: 0),
+    lambda: ExecutionControl(time.monotonic() + 1000),
+], ids=("None", "invalid1", "invalid2", "invalid3"))
+def test_real_bounded_immutable_control_is_required(factory, make_invalid):
     h = factory()
+    # Collection may precede execution by longer than an absolute deadline.
+    invalid = make_invalid()
     with pytest.raises(ProviderError, match="provider_invalid_control"):
         h.broker.exchange(OBSERVATION, build_request(OBSERVATION), control=invalid)
     assert not h.state.calls and not any(h.broker.snapshot.values())

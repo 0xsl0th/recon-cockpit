@@ -121,9 +121,13 @@ nginx/Apache × A/B deployments retain unchanged caps, with 80 routing, 76
 accepted-profile/witness and 32 recorder native passes and five final CI jobs
 passing 26,878 tests each. S3.5 remains open for the
 [full routed case and enforcement matrix](stage3-routing-matrix.md), pinned at
-`f68e212` and now in implementation. Its 164 new and 80 retained native routing
-checks plus four review-driven negative-stop checks (248 total), accepted
-regressions, immutable replay and review gates remain required.
+`f68e212`. Frozen implementation `0e09f82` passed all 248 native routing checks
+(168 new and 80 retained), 76 accepted-profile/witness regressions and 120
+unchanged inspections of 60 original v1/v2 bundles. The local portable run's one
+collection-aged deadline fixture failure and its test-only correction are
+retained. Acceptance requires independent review and all five final-head CI
+jobs passing 27,274 tests each with the completeness guard; the matrix remains
+a review candidate until that PR is accepted.
 Stage 3 has **ten increments: seven accepted and three remaining**. S3.5–S3.7
 follow in order; a logical increment may need more than one implementation PR.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed

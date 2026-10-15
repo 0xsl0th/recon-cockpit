@@ -37,14 +37,20 @@ execution caps, and requires 164 new native corpus/enforcement checks alongside
 the retained 80 routing checks and 76 accepted-profile/witness regressions.
 Pre-native review adds four explicit negative-stop owner/direct-launch tests,
 bringing the required routing gate to 248 without removing an original case.
-Development smoke passes five native cases, 26 owner probes and two direct
-witnessed-launcher checks; all 996 source pins remain unchanged. The original
-wrapper collection audit failure is retained and corrected. Full frozen
-acceptance gates are next; no S3.5 acceptance is claimed. The private checkpoint is
-`.secure-agent/stage3-routing-matrix-20261015/current-progress.json`.
-Freeze source before final validation, retain all failed attempts, and complete
-immutable inspection, full portable checks and independent review before
-publishing the next review PR. S3.5 remains open until this full batch is accepted;
+Frozen implementation `0e09f82` passed all **248 native routing checks**
+(132 matrix, 88 retained/witness, 26 owner probes and two direct-launcher checks)
+and **76 accepted-profile/witness regressions**, with all **996 source pins
+unchanged**. All 60 original v1/v2 bundles passed 120 unchanged Python/CLI
+inspections. The original development collection audit failure remains recorded.
+The local full portable run passed 27,273 tests and failed one deadline fixture
+that aged between collection and execution. Its test-only correction constructs
+the same invalid controls at execution time; all 94 broker tests pass. Production
+and native test bytes remain identical to `0e09f82`.
+The final portable gate is all five required CI jobs at the final PR head,
+**27,274 tests per job**, with no skips, failures or errors and the completeness
+guard. Record their actual status and independent review receipts in
+`.secure-agent/stage3-routing-matrix-20261015/current-progress.json` and the PR
+checks; the failed local run is not a portable pass. S3.5 remains open until this full batch is accepted;
 S3.6 name/TLS binding and S3.7 combined acceptance follow in order.
 
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:

@@ -70,7 +70,10 @@ and aggregate limits before code. PR #94's fixed-A nginx/OpenSSH slice, accepted
 passed 25 native checks at `659c053` with all 981 source pins unchanged. PR #95 accepts routed
 Apache/B in the [deployment extension](stage3-routing-deployments.md) at `d0586f5`.
 The [full routed case and enforcement matrix](stage3-routing-matrix.md), pinned
-at `f68e212`, is now in implementation and remains required before S3.5 closes.
+at `f68e212`, passed 248 native routing checks and 76 regressions at `0e09f82`,
+plus 120 unchanged inspections of 60 original v1/v2 bundles. It remains a review
+candidate: independent review, five complete final-head portable CI jobs and
+PR acceptance are required before S3.5 closes.
 
 | Slice | Required outcome | Completion evidence |
 | --- | --- | --- |
