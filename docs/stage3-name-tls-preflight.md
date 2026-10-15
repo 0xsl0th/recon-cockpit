@@ -228,6 +228,37 @@ file inspection and reverification. The CLI never executes the proposed DNS,
 HTTP, TLS or daemon inputs.
 
 The new portable preparation suite has **327 tests**: 122 spec/compiler,
-184 runtime and 21 CLI tests. Initial focused runs pass; frozen 46-selection
-inspection, independent final review and all five final-head portable CI jobs
-remain separate gates recorded in the private checkpoint and PR checks.
+184 runtime and 21 CLI tests. Initial focused runs pass. All five final-head portable CI jobs and final
+review remain separate gates recorded in the private checkpoint and PR checks.
+
+## Frozen read-only inspection results
+
+Frozen implementation `df093a46862f642cdb123a9a9d6c00eb73dc91e4` passed all
+**46 real installed-runtime inspections** in `inspections-final-02`. Collected,
+completed and successful selection identities match exactly; all **1,003 tracked
+source hashes** stayed unchanged. Every receipt binds the exact 52 native and
+ten compiled-file rows, and all 46 native pin sets match. The complete run took
+28.679 seconds; individual CLI inspection times were 369–427 ms. Services,
+tool actions, bindings, authority, generated keys, provider calls and spend
+remain zero. Configuration parsing, runtime-loaded provider/module closure and
+native compatibility remain unverified.
+
+The verification receipt has SHA-256
+`356054c37e4b3d81f758e10f1c4c0e0b96baf4ca6e431f5cf887b64451e9f85b`
+and is retained below `.secure-agent/stage3-name-tls-20261015/`. The preceding
+`inspections-final-01` remains a failed attempt: the coding sandbox's user
+namespace exposed root-owned system files as UID 65534, so every selection
+correctly refused at the root-ownership check. The successful run used the same
+frozen source outside that sandbox under the normal user; no ownership check,
+deadline or runtime limit was relaxed. Read-only inspection still grants no
+native execution authority.
+
+The same branch also corrects the existing portable SSH evidence peer-lifetime
+fixture and adds two A/B regressions, as recorded in the
+[routing matrix runbook](stage3-routing-matrix.md#post-merge-portable-ssh-peer-lifetime-correction).
+The preparation implementation is unchanged from the frozen inspection head.
+Final acceptance requires all five Linux/Python 3.11–3.14 and macOS/Python 3.14
+jobs to complete **27,603 portable tests each**, with 1,907 integration tests
+deselected, no skips/failures/errors and the completeness guard. Original failed
+attempts remain recorded separately. This branch is a preparation review
+candidate until its final review/checks and merge; S3.6b and S3.7 remain required.

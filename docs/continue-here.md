@@ -45,16 +45,21 @@ and portable deadline-fixture failures remain preserved. Retain
 [Post-merge CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/38807082801)
 is tracked separately in the private PR96 review directory. Its first macOS
 run recorded 27,273 passes and one routing SSH N6 replay failure; the retained
-log is `postmerge-macos-failed.log`. Investigation remains open; this is not
-represented as a passing post-merge gate.
+log is `postmerge-macos-failed.log`. Four Linux jobs passed 27,274 tests each.
+A matching premature peer-close race was reproduced in the portable SSH helper;
+the failed CI log lacks recorder state, so its exact ordering remains unconfirmed.
+The test-only correction and review are recorded separately from that failed run.
 
 **Current: S3.6a static owned DNS/TLS preparation.** The active worktree is
 `/tmp/recon-stage3-name-tls-preflight`, branch `feature/stage3-name-tls-preflight`,
 based on `6f60ae0`. The [preparation contract](stage3-name-tls-preflight.md) was
 pinned at `2f29145`, with the explicit TTL-one expiry clarification at `1b99fc5`,
 before implementation. It retains 23 cases across A/B, 46 required read-only
-runtime inspections and all later native binding/enforcement gates. Current
-work compiles fixed inputs and inspects four fixed ELF images; it creates no
+runtime inspections and all later native binding/enforcement gates. Frozen
+`df093a4` passed all 46 inspections with 1,003 unchanged source pins; 327 new
+focused preparation tests pass. The first sandbox ownership-refusal attempt
+remains retained. Current work compiles fixed inputs and inspects four fixed
+ELF images; it creates no
 service, action, binding or authority. S3.6b must pin and validate the complete
 native boundary afterward; S3.7 combined acceptance follows in order.
 The private checkpoint is `.secure-agent/stage3-name-tls-20261015/current-progress.json`;

@@ -309,3 +309,32 @@ S3.5 is closed. [S3.6a static DNS/TLS preparation](stage3-name-tls-preflight.md)
 is current, followed by separately pinned S3.6b native name/trust binding and
 S3.7 combined acceptance. Stage 3 has ten logical increments, eight accepted
 and two remaining; static preparation alone closes neither remaining increment.
+
+## Post-merge portable SSH peer-lifetime correction
+
+The first [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/38807082801)
+passed all four Linux jobs (27,274 tests and the completeness guard each), but
+macOS recorded 27,273 passes and one failure in the portable nginx-A SSH N6
+replay. The retained log has only `case_passed=false`, so its exact recorder
+state and syscall ordering cannot be recovered from that log.
+
+A deterministic real-loopback reproduction identified a matching race in the
+portable SSH evidence helper. It closed the client after the recorder parsed
+KEX while 224 transformed bytes were still queued. Delaying close-readiness
+notification made the real write fail: only the 24-byte banner was delivered,
+and the unchanged recorder/evidence logic correctly rejected `io_failure`.
+Keeping the peer open until bounded service completion delivered all 248 bytes
+and the expected negative result. The correction at `9644da8` changes only portable
+fixture sequencing; it does not alter production/native code, grading, budgets
+or deadlines. Preserve both reproduction outputs and the original macOS log in
+the private PR96/name-TLS review directories. New-branch final checks must pass
+separately; they do not relabel the original post-merge failure as a pass.
+
+Two A/B regressions require queued transformed bytes at the exchange boundary,
+complete recorder delivery and actual loopback bytes through EOF before client
+teardown. Both fail deterministically when only the old close ordering is
+restored. The complete affected portable gates and final five-job CI results
+are recorded in `.secure-agent/stage3-name-tls-20261015/` and the next PR checks.
+The first combined focused attempt inside the coding sandbox retained 500 passes
+and 181 failures, all `PermissionError` at socket creation; its outside-sandbox
+follow-up is separate evidence, with no fixture or policy relaxation.
