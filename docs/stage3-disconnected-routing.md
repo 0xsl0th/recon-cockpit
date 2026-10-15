@@ -7,7 +7,8 @@ This contract was pinned before implementation. It grants no execution authority
 and does not close S3.5. The governing [roadmap](stage3-compatibility-routing.md)
 still requires native execution, enforcement, evidence, regression and review gates.
 
-The next [fixed deployment extension](stage3-routing-deployments.md) is in progress.
+The [fixed deployment extension](stage3-routing-deployments.md) is implemented
+as a review candidate with corrected native gates complete.
 It preserves this original contract and saved evidence while adding explicit
 nginx/Apache × A/B selections. This document retains the first slice’s evidence.
 
@@ -203,8 +204,9 @@ establishes a fix or erases the original unexplained refusal. No deadline,
 security bound or required case was relaxed. Diagnostic repetitions do not add
 unique acceptance cases.
 
-**Next required work:** routed Apache and configuration B, then the complete
-hostile/negative routing corpus under the pinned aggregate caps. S3.5 remains
+**Next required work:** review the implemented [Apache/A/B deployment candidate](stage3-routing-deployments.md),
+then pin and complete the full ordinary-variation/hostile/negative routing matrix
+under the unchanged aggregate caps. S3.5 remains
 open, Stage 3 remains seven accepted/three open, and the catalog remains 52
 accepted profiles across 17 external programs. This branch accepts no new
 catalog profile or completed milestone.

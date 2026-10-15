@@ -116,8 +116,10 @@ source pins. Twelve ordinary selected actions completed without unnecessary
 refusals; three aggregate-budget negatives preserved useful work and blocked
 the excess. The runbook retains an earlier unexplained Apache regression refusal.
 The current [fixed deployment extension](stage3-routing-deployments.md) adds
-nginx/Apache × A/B under unchanged caps. It is not accepted yet. S3.5 remains
-open for that extension and the full ordinary-variation/hostile/negative matrix.
+nginx/Apache × A/B under unchanged caps. Corrected routing, accepted-profile
+and shared-recorder native gates pass; this remains a review candidate. S3.5
+closes only after this extension and the full ordinary-variation/hostile/negative
+matrix are accepted. The matrix is the next implementation batch.
 Stage 3 has **ten increments: seven accepted and three remaining**. S3.5–S3.7
 follow in order; a logical increment may need more than one implementation PR.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed

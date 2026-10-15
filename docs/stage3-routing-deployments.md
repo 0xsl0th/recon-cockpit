@@ -1,7 +1,9 @@
 # S3.5: fixed routing deployment extension
 
-This contract precedes implementation of the next routing batch. The first
-fixed-A slice is accepted in [PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94),
+This contract was pinned before implementation of the current deployment
+candidate. Its corrected native validation is recorded below; review and merge
+remain separate. The first fixed-A slice is accepted in
+[PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94),
 merged as `46f9b73`. Its native results and retained failures remain in the
 [routing runbook](stage3-disconnected-routing.md). S3.5 remains open. This plan
 grants no launch authority and changes no accepted catalog profile.
@@ -220,10 +222,54 @@ unchanged. Tampered timestamps and full-event-ledger cases still refuse.
 
 This localizes the captured Apache A/N4 failure. Earlier generic refusals remain
 individually unlocalized; do not claim their causes were proved retrospectively.
-The initial passing deployment and portable runs above precede this shared
-recorder correction. Fresh affected native, regression and full portable checks
-are required before the candidate is ready; current-source results will be
-recorded here when complete.
+The initial passing deployment and local portable runs above precede this
+shared recorder correction. Their original results remain separate from the
+corrected-source gates below.
+
+## Corrected-source validation
+
+Production and tests were frozen at `b7f308e`. Each complete gate below retained
+all **986 source pins unchanged**, with zero failures, errors or skips:
+
+| Gate | Result | Elapsed seconds |
+| --- | --- | ---: |
+| `regressions-final-03` | 76 accepted-profile and real witness checks pass; 72 HTTP/SSH bundles replay unchanged, with 40 useful completions, 32 expected negatives and zero unnecessary refusals. | 436.839 |
+| `native-final-02` | All 80 required routing cases pass in one invocation; 50 bundles and 90 result snapshots independently verify unchanged. | 943.978 |
+| `recorder-final-01` | All 32 shared-recorder checks pass: 26 legacy nginx corpus rows and six instrumented request/connection budget probes. The probes are enforcement evidence, not ordinary compatibility completions. | 171.663 |
+
+The corrected routing gate confirms **24 ordinary deployment trials and 48
+useful selected actions, with zero unnecessary refusals**, twelve aggregate-budget
+negatives preserving prior useful work, and four default required-approval
+refusals without result or reservations. Independent evidence review confirms
+the twenty Apache custody receipts (eighteen consumed after reservation, two
+closed unconsumed), seven isolated custody cases, four post-useful cleanup cases
+and two live unconsumed-handoff cleanup cases. The latter still claim no routed
+client execution or unacknowledged final owner snapshot.
+
+Fresh complete-order measurements are below. Each order reserves four actions,
+six connections, two HTTP requests, one SSH exchange and 26,624 output bytes.
+Elapsed time includes setup/trial overhead; it is not a comparative benchmark.
+
+| Deployment | Forward / reverse order time (ms) | Actual request / response bytes in each order |
+| --- | ---: | ---: |
+| nginx-A | 20,062 / 23,617 | 1,501 / 1,679 |
+| nginx-B | 19,996 / 23,775 | 1,498 / 1,703 |
+| apache-A | 22,400 / 24,412 | 1,501 / 1,887 |
+| apache-B | 24,485 / 24,381 | 1,498 / 1,911 |
+
+Five deterministic timestamp/tamper/event-limit tests pass after the correction;
+the clock-boundary regression failed before it. Independent static review found
+no concrete blocker and recorded authorship overlap and companion review.
+The current-source full portable gate is the existing five-job Linux/Python
+3.11–3.14 and macOS/Python 3.14 CI matrix, including its zero-skip guard. All five
+jobs must pass on the final review revision before merge; the earlier local
+26,873-test result is not represented as post-correction validation.
+
+The private checkpoint records the final PR/CI references and review receipts.
+Subsequent documentation reconciliation changes no production or test bytes.
+All failed attempts remain retained. No case, deadline or execution bound was
+removed; provider calls and actual cost remain zero. This candidate does not
+close S3.5 or add an accepted catalog profile.
 
 ## Remaining required work
 

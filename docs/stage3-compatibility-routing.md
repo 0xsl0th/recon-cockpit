@@ -68,7 +68,9 @@ Preserve the [HTTP evidence](stage3-http-production.md) and accepted
 [first implementation contract](stage3-disconnected-routing.md) pinned topology
 and aggregate limits before code. PR #94's fixed-A nginx/OpenSSH slice, accepted at `46f9b73`,
 passed 25 native checks at `659c053` with all 981 source pins unchanged. Routed
-Apache/B and the full hostile/negative matrix remain required before S3.5 closes.
+Apache/B is now an implemented [deployment candidate](stage3-routing-deployments.md)
+with corrected native gates complete. Its review/acceptance and the full
+ordinary-variation/hostile/negative matrix remain required before S3.5 closes.
 
 | Slice | Required outcome | Completion evidence |
 | --- | --- | --- |

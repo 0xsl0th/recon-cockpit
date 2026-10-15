@@ -22,12 +22,21 @@ actions and the same aggregate limits. Initial validation found a shared HTTP
 recorder defect: admission counters and events sampled the clock separately and
 could disagree across a millisecond boundary. The correction reuses one
 admission instant while preserving strict validation and every execution cap.
-Post-correction gates remain pending; do not claim the deployments accepted.
+At corrected source `b7f308e`, the complete native gates pass: **80 routing,
+76 accepted-profile/witness and 32 shared-recorder checks**, each with 986
+unchanged source pins and no failures, errors or skips. Independent routing
+evidence review verifies 50 bundles and 90 results; all four deployments complete
+48 useful selected actions with zero unnecessary refusals in ordinary trials.
+The five new timestamp/tamper/event-limit checks also pass. The prior 26,873-test
+local portable run precedes the correction; use the full five-job portable CI
+matrix on the final PR revision for current-source validation before merge.
+The extension remains a review candidate, not an accepted milestone.
 Preserve all failed attempts and diagnostics in
 `.secure-agent/stage3-routing-deployments-20261015/`; its `current-progress.json`
-records the active gate. S3.5 remains open:
-finish this deployment batch, then the required ordinary-variation/hostile/negative
-matrix, followed by S3.6 and S3.7 in order. S3.4 stays closed; do not repeat PR #94.
+records current PR/CI status and review receipts. S3.5 remains open:
+review this deployment batch, then pin and complete the required
+ordinary-variation/hostile/negative matrix, followed by S3.6 and S3.7 in order.
+S3.4 stays closed; do not repeat PR #94.
 
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
@@ -2384,10 +2393,11 @@ Planning uses synthetic responses.
    fresh review, 605 focused passes and five final CI jobs with 25,314 passes
    each. S3.3 is closed. PRs #92/#93 separately accepted OpenSSH preparation and
    native compatibility; S3.4 is closed. PR #94's first fixed-A S3.5 slice is
-   accepted at `46f9b73`. Finish and review the current fixed nginx/Apache A/B
-   deployment extension, including the shared recorder timestamp correction and
-   fresh gates. Then pin and complete the full ordinary-variation/hostile/negative
-   matrix before S3.6 name/TLS binding. Stage 3 has ten increments, seven accepted
+   accepted at `46f9b73`. Review the current fixed nginx/Apache A/B deployment
+   candidate, its shared recorder timestamp correction, completed corrected
+   native gates and latest full portable CI. Then pin and complete the full
+   ordinary-variation/hostile/negative matrix before S3.6 name/TLS binding.
+   Stage 3 has ten increments, seven accepted
    and three remaining; no native gate is removed.
    Network attachment still requires separate authorization; do not substitute
    optional signatures or program quotas.
