@@ -18,8 +18,14 @@ passing follow-up. Private original evidence stays in `.secure-agent/stage3-rout
 The active worktree is `/tmp/recon-stage3-routing-deployments`, branch
 `feature/stage3-routing-deployments`. Its [pinned extension contract](stage3-routing-deployments.md)
 adds only closed nginx/Apache × A/B deployments, the same four independent
-actions and the same aggregate limits. Implementation and validation are in
-progress; do not claim the new deployments accepted yet. S3.5 remains open:
+actions and the same aggregate limits. Initial validation found a shared HTTP
+recorder defect: admission counters and events sampled the clock separately and
+could disagree across a millisecond boundary. The correction reuses one
+admission instant while preserving strict validation and every execution cap.
+Post-correction gates remain pending; do not claim the deployments accepted.
+Preserve all failed attempts and diagnostics in
+`.secure-agent/stage3-routing-deployments-20261015/`; its `current-progress.json`
+records the active gate. S3.5 remains open:
 finish this deployment batch, then the required ordinary-variation/hostile/negative
 matrix, followed by S3.6 and S3.7 in order. S3.4 stays closed; do not repeat PR #94.
 
@@ -2377,8 +2383,10 @@ Planning uses synthetic responses.
    with all final/post-merge checks passed. PR #91 merged as `061c057` after
    fresh review, 605 focused passes and five final CI jobs with 25,314 passes
    each. S3.3 is closed. PRs #92/#93 separately accepted OpenSSH preparation and
-   native compatibility; S3.4 is closed. Review PR #94's first fixed-A S3.5
-   routing candidate, then complete routed Apache/B and the full hostile/negative
+   native compatibility; S3.4 is closed. PR #94's first fixed-A S3.5 slice is
+   accepted at `46f9b73`. Finish and review the current fixed nginx/Apache A/B
+   deployment extension, including the shared recorder timestamp correction and
+   fresh gates. Then pin and complete the full ordinary-variation/hostile/negative
    matrix before S3.6 name/TLS binding. Stage 3 has ten increments, seven accepted
    and three remaining; no native gate is removed.
    Network attachment still requires separate authorization; do not substitute

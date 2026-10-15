@@ -141,6 +141,117 @@ def harness(monkeypatch):
         instance.close()
 
 
+@pytest.fixture
+def admission_recorder(monkeypatch, request):
+    class SocketDouble:
+        type = socket.SOCK_STREAM
+
+        def __init__(self):
+            self.pending = []
+            self.closed = False
+
+        def setblocking(self, _blocking):
+            pass
+
+        def accept(self):
+            if not self.pending:
+                raise BlockingIOError
+            return self.pending.pop(0), None
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(recorder.socket, "socket", SocketDouble)
+    monkeypatch.setattr(recorder.time, "monotonic", lambda: 100.0)
+    listener = SocketDouble()
+    service = recorder.Service("A", getattr(request, "param", "N4"), listener, deadline=160.0)
+    yield service, listener, SocketDouble
+    service.close()
+
+
+def test_admission_timestamp_stays_consistent_across_millisecond_boundary(admission_recorder, monkeypatch):
+    service, listener, channel = admission_recorder
+    service.arm(101.0)
+    listener.pending.append(channel())
+    service._accept()
+    readings = []
+
+    def crossing_clock():
+        now = (100.0019, 100.0021, 100.0031)[min(len(readings), 2)]
+        readings.append(now)
+        return now
+
+    monkeypatch.setattr(recorder.time, "monotonic", crossing_clock)
+    service._admit()
+    saved = service.snapshot()
+    assert readings == [100.0019]
+    assert service.last_admission == readings[0]
+    assert saved["admissions_elapsed_ms"] == [1]
+    assert [row["elapsed_ms"] for row in saved["events"] if row["kind"] == "admit"] == [1]
+
+
+@pytest.mark.parametrize("representation", ("counter", "event"))
+def test_changed_admission_timestamp_still_refuses(admission_recorder, representation):
+    service, listener, channel = admission_recorder
+    service.arm(101.0)
+    listener.pending.append(channel())
+    service._accept()
+    service._admit()
+    saved = service.snapshot()
+    if representation == "counter":
+        saved["admissions_elapsed_ms"][0] += 1
+    else:
+        next(row for row in saved["events"] if row["kind"] == "admit")["elapsed_ms"] += 1
+    with pytest.raises(ValueError, match="stock_recorder_admission_event_mismatch"):
+        recorder.validate_snapshot(saved)
+
+
+def test_admission_in_final_event_slot_preserves_event_limit(admission_recorder):
+    service, listener, channel = admission_recorder
+    for _ in range(31):
+        rejected = channel()
+        listener.pending.append(rejected)
+        service._accept()
+        assert rejected.closed
+    service.arm(101.0)
+    admitted = channel()
+    listener.pending.append(admitted)
+    service._accept()
+    assert len(service.ledger["events"]) == recorder.MAX_EVENTS - 1
+    service._admit()
+    saved = service.snapshot()
+    assert len(saved["events"]) == recorder.MAX_EVENTS
+    assert saved["connections_admitted"] == saved["active_connections"] == 1
+    assert not service._event("empty", 32)
+    saved = service.snapshot()
+    assert saved["terminal_reason"] == "event_limit"
+    assert len(saved["events"]) == recorder.MAX_EVENTS
+    assert saved["active_connections"] == saved["pending_connections"] == 0
+    assert admitted.closed and listener.closed
+
+
+@pytest.mark.parametrize("admission_recorder", ["O5"], indirect=True)
+def test_admission_at_full_event_limit_closes_active_and_pending(admission_recorder):
+    service, listener, channel = admission_recorder
+    for _ in range(31):
+        listener.pending.append(channel())
+        service._accept()
+    service.arm(101.0)
+    clients = [channel(), channel()]
+    for client in clients:
+        listener.pending.append(client)
+        service._accept()
+    assert len(service.ledger["events"]) == recorder.MAX_EVENTS
+    assert len(service.pending) == 2
+    service._admit()
+    saved = service.snapshot()
+    assert saved["terminal_reason"] == "event_limit"
+    assert saved["connections_admitted"] == 1
+    assert not any(row["kind"] == "admit" for row in saved["events"])
+    assert saved["active_connections"] == saved["pending_connections"] == 0
+    assert all(client.closed for client in clients) and listener.closed
+
+
 @pytest.mark.parametrize("case", ("O2", "O4"))
 def test_harness_delayed_readiness_keeps_exact_delivery_and_action_deadline(harness, monkeypatch, case):
     h = harness(configuration="B", case=case)

@@ -141,8 +141,89 @@ Inspect saved evidence with
 `python scripts/disconnected_routing.py inspect DIRECTORY`. Inspection restores
 no authority and must leave bundle bytes, permissions and timestamps unchanged.
 
-Implementation and validation are in progress. Native results, retained failures
-and final review evidence will be recorded here before the follow-up PR is ready.
+## Initial validation and retained failures
+
+Initial production source was frozen at `e955549`; `6a08a0e` changed only the two new
+native test harnesses. The 986 candidate source pins were unchanged during each recorded
+candidate gate (accepted-main diagnostics have 981 pins). The native evidence covers **80 distinct cases** across two runs, not one
+all-passing invocation:
+
+- `native-final-01`: 71 passes and nine retained test-harness failures. All 50
+  trial bundles and 90 result snapshots were complete and independently verified.
+- `custody-final-01`: all nine corrected custody/handoff cases pass. Production
+  and the sources of the other 71 passing cases are byte-identical to the first
+  run. No production bound, authority condition or required case changed.
+
+The seven custody failures occurred during isolated helper imports: the helper
+mounted the frontend closure while also importing launcher-side services. It now
+mounts the existing routing launcher's source closure. Both live-handoff tests
+reached the real descriptor checkpoint but misclassified a bwrap source-mount
+argument as an executing client. The corrected predicate checks the executable
+as well as the script. Preserve the original failures; they are not successful
+custody or cleanup evidence.
+
+| Measurement | Verified deployment result |
+| --- | --- |
+| Useful ordinary work | 24 trials: four individual actions and two complete orders on each deployment. All 48 selected actions complete; zero unnecessary refusals. |
+| Aggregate negatives | Twelve trials preserve the first useful observation and refuse excess connections, HTTP requests or SSH key exchanges. These are not complete legitimate assessments. |
+| Required approval | Each of four deployment defaults refuses unattended launch with no result or reservations. Independent missing/nondurable audit and missing/replayed approval checks also refuse before admission on the Apache path. |
+| Apache custody | Twenty saved HTTP custody receipts: eighteen descriptors consumed after reservation and two closed unconsumed after budget denial. Seven isolated kernel-descriptor cases verify successful transfer and wrong/connected/duplicated/stale/reused/leaked refusal. |
+| Lifecycle | Four post-useful cancellation/death cases retain the one completed action and reap ten tracked processes each. Two additional instrumented Apache-B tests observe the sole unconsumed socket at the frontend, stop before any routed client, and reap all twelve tracked processes and descriptor owners. |
+| Evidence | All 50 new-run bundles pass Python/CLI inspection without changing bytes, modes or timestamps. Ten original PR #94 bundles also pass both production inspection paths unchanged. Saved evidence restores no authority. |
+| Topology and caps | Five distinct namespaces, four veth pairs, eighteen topology exports and eight denied role/destination witnesses per created topology; all existing limits remain unchanged. |
+| Provider use and cost | Zero provider calls and zero actual cost. No comparative baseline or benchmark claim. |
+
+Complete-order measurements include setup and trial overhead. Every order
+reserves four actions, six connections, two HTTP requests, one SSH exchange and
+26,624 output bytes. Reserved capacity and delivered bytes remain separate.
+
+| Deployment | Forward / reverse order time (ms) | Actual request / response bytes in each order |
+| --- | ---: | ---: |
+| nginx-A | 23,247 / 23,195 | 1,501 / 1,679 |
+| nginx-B | 22,844 / 22,657 | 1,498 / 1,703 |
+| apache-A | 23,639 / 23,610 | 1,501 / 1,887 |
+| apache-B | 23,569 / 23,483 | 1,498 / 1,911 |
+
+Private receipts, source manifests, raw evidence, JUnit and reviews remain in
+`.secure-agent/stage3-routing-deployments-20261015/`; none is committed to Git.
+The initial v1 replay attempt was refused by sandbox parser isolation before
+processing any bundle. The authorized follow-up replay passed all ten original
+bundles, with original bytes/modes/timestamps and production source unchanged.
+
+The full local portable gate at `6a08a0e` passed **26,873 tests**, with no
+failures, errors or skips, and all 986 candidate source hashes unchanged.
+
+Accepted-profile regression runs remain separately recorded:
+`regressions-final-01` passed 74/76 with nginx A/O2 and Apache A/O6 blocked;
+`regressions-final-02` passed 75/76 with nginx A/O1 blocked. All three reports
+contain only generic `isolation_unavailable`, with no usable final observation.
+They are unnecessary refusals and neither run meets the regression gate.
+Six initial instrumented repetitions on the candidate and six on accepted main
+passed without establishing the original failures' cause. The later exact-sequence diagnostic below localized a separate reproduced failure. No deadline, output bound, policy or required case was relaxed.
+
+### Shared recorder timestamp correction
+
+The HTTP-only diagnostic completed all 52 cases. A diagnostic run preserving the
+exact SSH20 → HTTP52 → authority4 pytest order, including inspection/replay,
+stopped at test 44: Apache A/N4. The first 43 tests passed; 32 were not executed.
+The retained inner exception is `stock_recorder_admission_event_mismatch` in
+`Service.snapshot()` validation, propagated through recorder exit 78 to the
+outer generic isolation refusal. This was not a session-time or output-budget
+exhaustion. The failed numeric timestamps themselves were not retained.
+
+Frozen source sampled the clock separately for the admission counter and event,
+while requiring exact equality between them. A deterministic millisecond-boundary
+test reproduces that defect. The correction uses the original admission instant
+for rate enforcement and both recorded timestamps. Exact snapshot validation,
+250 ms spacing, event limits, cleanup, schemas and all execution caps remain
+unchanged. Tampered timestamps and full-event-ledger cases still refuse.
+
+This localizes the captured Apache A/N4 failure. Earlier generic refusals remain
+individually unlocalized; do not claim their causes were proved retrospectively.
+The initial passing deployment and portable runs above precede this shared
+recorder correction. Fresh affected native, regression and full portable checks
+are required before the candidate is ready; current-source results will be
+recorded here when complete.
 
 ## Remaining required work
 
