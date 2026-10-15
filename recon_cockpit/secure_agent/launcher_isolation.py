@@ -25,6 +25,7 @@ from .configurable_backend import AuthorizedConfigurableBackend
 from .stock_http_backend import AuthorizedStockHttpBackend
 from .stock_http_production_backend import AuthorizedStockHttpProductionBackend
 from .stock_ssh_backend import AuthorizedStockSshBackend
+from .routing_backend import AuthorizedRoutingBackend
 from .owned_lab_contract import validate_result_context, validate_closure
 from .execution import ExecutionControl, ExecutionStopped
 from .isolation import (IsolationUnavailable, LinuxFixtureBackend, _namespaces,
@@ -112,15 +113,20 @@ STOCK_SSH_MODULES = tuple(dict.fromkeys((*STOCK_HTTP_PRODUCTION_MODULES,
     'stock_ssh_owner_worker', 'stock_ssh_recorder', 'stock_ssh_packets',
     'stock_ssh_nmap_spec', 'stock_ssh_nmap_runtime', 'stock_ssh_client_runtime',
     'stock_ssh_client_worker', 'stock_ssh_parser', 'stock_ssh_parser_runtime', 'stock_ssh_parser_worker')))
+ROUTING_MODULES = tuple(dict.fromkeys((*STOCK_SSH_MODULES,
+    'routing_contract', 'routing_ledger', 'routing_transport', 'routing_context',
+    'routing_lab', 'routing_backend', 'routing_topology', 'routing_topology_spec', 'routing_topology_worker',
+    'routing_services', 'routing_frontend_worker', 'routing_client_runtime',
+    'routing_client_worker', 'routing_execution', 'routing_service_contract')))
 OWNED_MODULES = ('owned_launcher_runtime', 'owned_lab', 'owned_lab_worker', 'owned_lab_executor',
                  'owned_lab_contract', 'assessment_contract', 'authorized_execution', 'session_limits', '__init__')
 
 
 class LinuxFixtureLauncher:
     def __init__(self, backend, *, audit=None, approvals=None):
-        if type(backend) not in {AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend, AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend, AuthorizedWebLabBackend, AuthorizedHTTPHeadersBackend, AuthorizedWebToolsBackend, AuthorizedNetworkToolsBackend, AuthorizedServiceWebBackend, AuthorizedConfigurableBackend, AuthorizedStockHttpBackend, AuthorizedStockHttpProductionBackend, AuthorizedStockSshBackend}:
+        if type(backend) not in {AuthorizedFixtureBackend, AuthorizedDiscoveryFixtureBackend, AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend, AuthorizedWebLabBackend, AuthorizedHTTPHeadersBackend, AuthorizedWebToolsBackend, AuthorizedNetworkToolsBackend, AuthorizedServiceWebBackend, AuthorizedConfigurableBackend, AuthorizedStockHttpBackend, AuthorizedStockHttpProductionBackend, AuthorizedStockSshBackend, AuthorizedRoutingBackend}:
             raise ValueError('unsupported_launcher_backend')
-        if type(backend) in {AuthorizedStockHttpBackend, AuthorizedStockHttpProductionBackend, AuthorizedStockSshBackend} and (audit is None or approvals is None):
+        if type(backend) in {AuthorizedStockHttpBackend, AuthorizedStockHttpProductionBackend, AuthorizedStockSshBackend, AuthorizedRoutingBackend} and (audit is None or approvals is None):
             raise ValueError('stock_http_requires_isolated_audit_and_approval')
         self.name = backend.name
         self._nmap_manifest = getattr(backend, "_nmap_manifest", None)
@@ -130,12 +136,13 @@ class LinuxFixtureLauncher:
         self._configurable_manifests = getattr(backend, "_configurable_manifests", None)
         self._stock_http_runtime = getattr(backend, "_stock_http_runtime", None)
         self._stock_ssh_runtime = getattr(backend, "_stock_ssh_runtime", None)
-        owned = type(backend) in {AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend, AuthorizedWebLabBackend, AuthorizedHTTPHeadersBackend, AuthorizedWebToolsBackend, AuthorizedNetworkToolsBackend, AuthorizedServiceWebBackend, AuthorizedConfigurableBackend, AuthorizedStockHttpBackend, AuthorizedStockHttpProductionBackend, AuthorizedStockSshBackend}
+        self._routing_runtime = getattr(backend, "_routing_runtime", None)
+        owned = type(backend) in {AuthorizedOwnedLabBackend, AuthorizedNmapOwnedBackend, AuthorizedWebLabBackend, AuthorizedHTTPHeadersBackend, AuthorizedWebToolsBackend, AuthorizedNetworkToolsBackend, AuthorizedServiceWebBackend, AuthorizedConfigurableBackend, AuthorizedStockHttpBackend, AuthorizedStockHttpProductionBackend, AuthorizedStockSshBackend, AuthorizedRoutingBackend}
         self._config = protocol.configuration({'version': '1', 'service_id': str(uuid4()),
             'session_id': backend._session_id, 'policy': backend._policy.to_dict(),
             'limits': asdict(backend._limits), 'execute': backend._execute,
             'profile': 'owned_lab' if type(backend) is AuthorizedOwnedLabBackend else backend.launch_mode,
-            'case': (backend.selection if type(backend) in {AuthorizedStockHttpBackend, AuthorizedStockHttpProductionBackend, AuthorizedStockSshBackend}
+            'case': (backend.selection if type(backend) in {AuthorizedStockHttpBackend, AuthorizedStockHttpProductionBackend, AuthorizedStockSshBackend, AuthorizedRoutingBackend}
                      else backend.scope if type(backend) is AuthorizedConfigurableBackend
                      else backend._lab_identity['scenario'] if owned else None),
             **({'owned_lab': backend._lab_identity} if owned else {})})
@@ -171,10 +178,12 @@ class LinuxFixtureLauncher:
 
     @property
     def identity(self):
-        if self._config['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1'}:
+        if self._config['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
             raise ValueError('launcher_has_no_persistent_lab')
-        if self._config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1'}:
-            if self._config['profile'] == 'stock_ssh_compatibility_v1':
+        if self._config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
+            if self._config['profile'] == 'disconnected_routing_v1':
+                from .routing_contract import validate_identity as validate_stock_identity
+            elif self._config['profile'] == 'stock_ssh_compatibility_v1':
                 from .stock_ssh_contract import validate_identity as validate_stock_identity
             elif self._config['profile'] == 'stock_http_compatibility_v1':
                 from .stock_http_production_contract import validate_identity as validate_stock_identity
@@ -206,7 +215,7 @@ class LinuxFixtureLauncher:
     def _runtime(self, control):
         stdlib, files = _runtime_files('/usr/bin/python3', _trusted_program('nft'), control=control)
         programs = [_trusted_program('bwrap')]
-        if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1'}:
+        if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
             programs.append(_trusted_program('nsenter'))
         listing = _runtime_probe([_trusted_program('ldd'), *programs], 5, 65536, control).decode('ascii')
         if 'not found' in listing:
@@ -266,12 +275,17 @@ class LinuxFixtureLauncher:
             from .stock_ssh_contract import validate_runtime, runtime_source_mounts
             closure['stock_ssh_runtime'] = validate_runtime(self._stock_ssh_runtime, self._config['case'])
             files += runtime_source_mounts(closure['stock_ssh_runtime'], self._config['case'])
-        protocol.runtime(closure, owned_lab=self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1'}, nmap=nmap, web_tools=web_tools, network_tools=network_tools, service_web=service_web, configurable=configurable, stock_http=stock_http, stock_http_production=stock_http_production, stock_ssh=stock_ssh)
+        routing = self._config['profile'] == 'disconnected_routing_v1'
+        if routing:
+            from .routing_contract import validate_runtime, runtime_source_mounts
+            closure['routing_runtime'] = validate_runtime(self._routing_runtime, self._config['case'])
+            files += runtime_source_mounts(closure['routing_runtime'], self._config['case'])
+        protocol.runtime(closure, owned_lab=self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}, nmap=nmap, web_tools=web_tools, network_tools=network_tools, service_web=service_web, configurable=configurable, stock_http=stock_http, stock_http_production=stock_http_production, stock_ssh=stock_ssh, routing=routing)
         return closure, files
 
     def _command(self, closure, files, commitment):
         host = _namespaces()
-        stock_http = self._config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1'}
+        stock_http = self._config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'disconnected_routing_v1'}
         argv = [_trusted_program('bwrap'), '--unshare-user', '--unshare-net', '--unshare-pid',
             '--unshare-ipc', '--unshare-uts', '--unshare-cgroup', '--uid', str(os.getuid()),
             '--gid', str(os.getgid()), '--cap-drop', 'ALL', '--die-with-parent', '--new-session',
@@ -298,7 +312,8 @@ class LinuxFixtureLauncher:
                      *(STOCK_HTTP_MODULES if self._config['profile'] == 'stock_nginx_diagnostic_v1' else ()),
                      *(STOCK_HTTP_PRODUCTION_MODULES if self._config['profile'] == 'stock_http_compatibility_v1' else ()),
                      *(STOCK_SSH_MODULES if self._config['profile'] == 'stock_ssh_compatibility_v1' else ()),
-                     *(NMAP_MODULES if self._config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'} else ()), *(OWNED_MODULES if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1'} else ()),
+                     *(ROUTING_MODULES if self._config['profile'] == 'disconnected_routing_v1' else ()),
+                     *(NMAP_MODULES if self._config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'} else ()), *(OWNED_MODULES if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'} else ()),
                      *(('audit_witness', 'audit_protocol') if self._witness_source is not None else ()),
                      *(('approval_witness', 'approval_protocol') if self._approval_source is not None else ())):
             argv += ['--ro-bind', str(Path(__file__).with_name(name+'.py').resolve()),
@@ -329,7 +344,10 @@ class LinuxFixtureLauncher:
         if self._approval_source is not None:
             initial['approval_witness'] = self._approval_source
         protocol.initial(initial, time.monotonic())
-        commitment = admission.digest(initial)
+        codec = admission
+        if self._config['profile'] == 'disconnected_routing_v1':
+            from . import routing_transport as codec
+        commitment = codec.digest(initial)
         self._supervisor = _Supervisor(10, protocol.MAX_REPLY*16+4096, control=control)
         self._channel, child = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
         self._channel.setblocking(False)
@@ -339,13 +357,13 @@ class LinuxFixtureLauncher:
             for stream in (self._process.stdout, self._process.stderr):
                 os.set_blocking(stream.fileno(), False)
             if self._witness_reader is None:
-                self._send(admission.encode(initial))
+                self._send(codec.encode(initial))
             else:
                 try:
                     if self._approval_reader is None:
-                        self._send(admission.encode(initial), fd=self._witness_reader.fileno())
+                        self._send(codec.encode(initial), fd=self._witness_reader.fileno())
                     else:
-                        self._send(admission.encode(initial), fd=self._witness_reader.fileno(),
+                        self._send(codec.encode(initial), fd=self._witness_reader.fileno(),
                                    approval_fd=self._approval_reader.fileno())
                 finally:
                     self._witness_reader.close()
@@ -440,8 +458,10 @@ class LinuxFixtureLauncher:
                 from .stock_http_production_contract import validate_result_context as context_validator
             elif self._config['profile'] == 'stock_ssh_compatibility_v1':
                 from .stock_ssh_contract import validate_result_context as context_validator
+            elif self._config['profile'] == 'disconnected_routing_v1':
+                from .routing_context import validate_result_context as context_validator
             lab_context = (context_validator(result, self.identity, previous=self._lab_context,
-                tool_id=action.tool_id, execution_status=result['status']) if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1'} else None)
+                tool_id=action.tool_id, execution_status=result['status']) if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'} else None)
             expected = {'executions_reserved': self._snapshot['executions_reserved']+1,
                         'output_bytes_reserved': self._snapshot['output_bytes_reserved']+action.parameters.max_output_bytes}
             if (expected['output_bytes_reserved'] > self._config['limits']['max_output_bytes']
@@ -484,10 +504,21 @@ class LinuxFixtureLauncher:
         with self._lock:
             if not self._closed:
                 self._cleanup()
-            if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1'}:
+            if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
                 if not self._cleanup_verified:
                     raise IsolationUnavailable('Lab cleanup was not verified')
                 if self._lab_receipt is None:
+                    if self._config['profile'] == 'disconnected_routing_v1':
+                        from .routing_context import validate_closure as routing_closure
+                        # The supervisor physically reaps the launcher and its
+                        # descendant namespaces. Counts describe only the last
+                        # acknowledged result, never an invented final snapshot.
+                        context = self._lab_context or {'connection_count': 0, 'request_count': 0}
+                        self._lab_receipt = routing_closure({'identity': self.identity, 'status': 'closed',
+                            'connection_count': context['connection_count'], 'request_count': context['request_count'],
+                            'launcher_cleanup_verified': True, 'counters_source': 'last_acknowledged_result'},
+                            self.identity, previous=self._lab_context)
+                        return dict(self._lab_receipt)
                     if self._config['profile'] == 'configurable_owned_lab':
                         from .configurable_lab_contract import validate_assessment_closure
                         previous = None if self._lab_context is None else self._lab_context['endpoints']
@@ -519,8 +550,10 @@ class LinuxFixtureLauncher:
                                        if key != 'tls_posture_owner_sha256'}
                     elif self._config['profile'] == 'owned_service_web_lab':
                         from .service_web_lab_contract import validate_closure as closure_validator
-                    elif self._config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1'}:
-                        if self._config['profile'] == 'stock_ssh_compatibility_v1':
+                    elif self._config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
+                        if self._config['profile'] == 'disconnected_routing_v1':
+                            from .routing_context import validate_closure as closure_validator
+                        elif self._config['profile'] == 'stock_ssh_compatibility_v1':
                             from .stock_ssh_contract import validate_closure as closure_validator
                         elif self._config['profile'] == 'stock_http_compatibility_v1':
                             from .stock_http_production_contract import validate_closure as closure_validator

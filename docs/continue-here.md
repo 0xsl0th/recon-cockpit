@@ -5,6 +5,14 @@
 This development checkpoint never resumes an assessment or restores approvals.
 
 Current continuation (15 October 2026):
+S3.4 is merged in PR #93 (`a7f46b1`); all five post-merge checks passed.
+The active worktree is `/tmp/recon-stage3-routing`, branch
+`feature/stage3-disconnected-routing`, for the first fixed-A S3.5 slice.
+The [routing contract](stage3-disconnected-routing.md) records budgets, current
+validation and remaining gaps. Native acceptance is still pending; retain
+`.secure-agent/stage3-routing-20261015/`, including refused topology attempts.
+Do not repeat PR #93 or treat this in-progress branch as accepted routing support.
+
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
 [T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) merged as `f0542a8`

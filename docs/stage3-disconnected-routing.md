@@ -35,8 +35,8 @@ Setup may run exactly six fixed, sequential nftables helpers: one temporary
 SSH frontend ruleset before the four private TCP handshakes, then one final
 ruleset per routed namespace, with at most one helper alive at a time. The
 temporary rules allow only the four prebound tuples; the final SSH rules require
-established connections on those exact tuples and the temporary listener closes. The sealed topology/ledger
-owner has no children. No additional setup program or arbitrary command is allowed.
+established connections on those exact tuples and the temporary listener closes.
+The sealed topology/ledger owner has no children. No additional setup program or arbitrary command is allowed.
 Setup also creates four finite private SSH TCP pairs (three banner connections
 and one keyscan connection) inside the SSH frontend namespace. Close the private
 listener, retain only exact established tuples, verify and drain the fixed setup
@@ -117,3 +117,38 @@ for those gaps before closing the milestone. Existing accepted HTTP/SSH profiles
 remain closed and retain their original support claims. S3.6 names/TLS binding
 and S3.7 combined acceptance follow S3.5; credentials, paid/live models, deeper
 workflows, benchmarking and attached targets remain deferred.
+
+## Operator entry point and current validation
+
+The fixed entry point is `scripts/disconnected_routing.py`. Select actions
+explicitly; the order below is a list of independent requests, not a workflow
+that grants authority from returned service data:
+
+```sh
+.venv/bin/python scripts/disconnected_routing.py run \
+  --action http_nmap --action http_headers --action ssh_nmap --action ssh_keys \
+  --directory .secure-agent/routing-example
+```
+
+The default is a dry run. Execution additionally needs `--execute`; the default
+approval policy blocks unattended launch. Only the already-authorized fixed
+disconnected test corpus uses `--unattended-owned-lab-test`. That flag records an
+explicit test policy, never a personal approval. `--budget-case` accepts only the
+four pinned presets. No address, shell command, credentials or external network
+can be supplied through this entry point.
+
+Read-only inspection is `scripts/disconnected_routing.py inspect DIRECTORY`.
+Reports distinguish reserved capacity, actual delivered bytes, useful completion,
+expected budget refusals, retained output and timing. Closure records physical
+launcher cleanup and last acknowledged counters; it does not invent a graceful
+final owner snapshot.
+
+Implementation is in progress on `feature/stage3-disconnected-routing` in
+`/tmp/recon-stage3-routing`. Native acceptance is **not yet established**.
+Private development receipts are under
+`.secure-agent/stage3-routing-20261015/`: attempt `topology-feasibility-01`
+refused before worker startup because its private wrapper lacked `/tmp`; attempts
+`02` and `03` created and checked the routed links/filters but refused an extra
+pre-export descriptor. All three owners were reaped and source pins remained
+unchanged during each attempt. These failures remain evidence, not successful
+coverage. No catalog profile or milestone has been accepted by this branch.
