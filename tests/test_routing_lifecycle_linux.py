@@ -207,7 +207,7 @@ def test_native_stop_after_useful_work_cannot_launch_second_action_or_reset_budg
                         execution_control=ExecutionControl(time.monotonic() + 5), session_step=2)
                 except AuditUnavailable as exc:
                     assert stop == "launcher_death"
-                    expected = "audit_closed" if "second_submission_failure" in state else "audit_unavailable"
+                    expected = "audit_previously_failed" if "second_submission_failure" in state else "audit_unavailable"
                     assert str(exc) == expected and audit._failed and audit._closed
                     state["retry_submission_failure"] = {
                         "exception_type": type(exc).__name__, "reason": str(exc)}
