@@ -72,6 +72,13 @@ replays, changed identities, concurrent admissions, split-action replenishment
 and lost continuity stop execution. Summing independent counters afterward is
 not enforcement. Worker restart cannot replace the ledger or reset its budget.
 
+Native enforcement tests may select only three additional fixed budget presets:
+`connection_one` lowers the aggregate connection ceiling to one; `http_one`
+lowers aggregate HTTP requests to one; `ssh_zero` lowers key exchanges to zero.
+All other ceilings and the four otherwise authorized actions remain unchanged.
+These explicit negative cases must report expected budget refusal, not useful
+completion. No arbitrary budget values or target inputs are accepted.
+
 ## Completion criteria and remaining coverage
 
 Before this batch is reviewable, prove actual rootless namespace/link custody,
