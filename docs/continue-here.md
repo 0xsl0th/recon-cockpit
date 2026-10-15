@@ -116,10 +116,15 @@ all **950 source pins stayed unchanged**. Independent boundary and integration
 reviews found no remaining findings. The [candidate runbook](stage3-ssh-compatibility.md)
 records the finite supported environment and limitations.
 
-Existing-profile regression validation at the same source passed 67 of 71
-checks; four HTTP startup refusals are under investigation. Keep PR #93 in draft
-until those failures, full portable validation and saved-evidence review are
-resolved. Preserve successful and failed attempts under
+Independent saved-evidence review is complete: all 20 corpus bundles and the
+required-approval row replayed unchanged. Existing-profile regression validation
+first passed 67 of 71 checks, with four HTTP startup refusals. A second run at
+`e06503d` passed 69 of 71: the original four passed, but an HTTP CLI-inspection
+timeout and an early configurable background-workflow stop occurred. Their cause
+remains under investigation; successful diagnostic repetitions do not erase
+them. Four Linux hosted jobs pass; one macOS portable socket-fixture correction
+and full local portable validation remain. Keep PR #93 in draft until the
+regression and check gates are resolved. Preserve all attempts under
 `.secure-agent/stock-ssh-native-20261015/`. No live-model or paid call is enabled.
 
 Accepted preparation:

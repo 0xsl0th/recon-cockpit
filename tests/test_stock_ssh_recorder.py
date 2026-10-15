@@ -1,6 +1,7 @@
 """Plaintext protocol doubles exercise enforcement; they are not stock evidence."""
 
 from copy import deepcopy
+import select
 import socket
 import struct
 
@@ -404,7 +405,20 @@ def test_expiration_before_admission_never_calls_factory(harness, reason):
 
 
 def test_raw_daemon_overflow_retains_only_one_witness_byte_and_delivers_nothing(harness):
-    h = harness(); h.connect(); h.peers[0].sendall(b"x" * 16384)
+    h = harness(); h.connect()
+    peer, daemon = h.peers[0], h.service.active["daemon"]
+    # Darwin's default Unix socket buffer cannot hold this whole stimulus.
+    # Queue it before ticking: consuming fragments early would instead test
+    # malformed identification, rather than the aggregate overflow boundary.
+    peer.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 32768)
+    daemon.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 32768)
+    peer.settimeout(1)
+    try:
+        peer.sendall(b"x" * 16384)
+    finally:
+        peer.setblocking(False)
+    assert select.select([daemon], [], [], 1)[0] == [daemon]
+    assert daemon.recv(8193, socket.MSG_PEEK) == b"x" * 8193
     h.until(lambda: h.service.ledger["finalized"])
     saved = h.service.snapshot()
     assert saved["terminal_reason"] == "response_limit"

@@ -195,6 +195,11 @@ The first 71-case regression run passed 67 cases; four HTTP startup refusals
 remain unexplained. Thirty-two private diagnostic repetitions passed under the
 same bounds, but instrumentation can affect timing and does not replace the
 failed original cases. Keep their original reports and diagnostic logs.
+A second uninstrumented run at `e06503d` passed 69 of 71 checks: the original
+four passed, but a saved HTTP CLI inspection timed out and a configurable
+background workflow stopped after two actions. These are separate retained
+failures, not evidence of a resolved cause. The saved SSH evidence review passed
+independently; neither regression run closes the complete regression gate.
 
 The initial private TCP transport failure and artifact-size failure are retained
 beside their fixes. The development corpus also ran across a selection-commitment
