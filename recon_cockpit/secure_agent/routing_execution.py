@@ -25,7 +25,7 @@ def consume_launch(raw, nonce, context_digest, *, now=None):
     selected = contract.validate_selection(value["selection"])
     selector = contract.validate_selector(value["selector"])
     underlying = contract.underlying_contract(selector)
-    chosen = contract.underlying_selection(selector)
+    chosen = contract.underlying_selection(selector, selected)
     runtime = underlying.validate_runtime(value["runtime"], chosen)
     launch = value["launch"]
     if (type(launch) is not dict or set(launch) != LAUNCH_FIELDS or launch["schema_version"] != "1"
@@ -65,5 +65,5 @@ def consume_launch(raw, nonce, context_digest, *, now=None):
         raise ValueError("routing_client_namespace_not_private")
     return {"target": action.target, "parameters": action.parameters.to_dict(), "tool_id": action.tool_id,
             "scope": underlying.scope(chosen), "endpoint_id": "http" if selector.startswith("http_") else "ssh",
-            "host_namespaces": host, "configuration": "A", "case": chosen["case"],
+            "host_namespaces": host, "configuration": selected["configuration"], "case": chosen["case"],
             "selection": selected, "selector": selector, "verify_boundary": True}, deadline, routed, identity["runtimes"][selector]["client_runtime_sha256"]

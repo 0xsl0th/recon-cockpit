@@ -18,7 +18,7 @@ The HTTP split added one reviewable increment. The subsequent OpenSSH fork/exec
 finding split S3.4a/S3.4b too. At PR #91's 14 October acceptance, the forecast
 was ten PRs with five accepted/five remaining, rather than the original 6–8.
 The [current roadmap](product-roadmap.md) retains ten logical increments,
-seven accepted/three open, and estimates 11–13 PRs after the S3.5 routing split.
+seven accepted/three open, and estimates 12–13 PRs after the S3.5 routing split.
 No required corpus row, bound or later routing/name/TLS gate is removed to fit
 an estimate.
 

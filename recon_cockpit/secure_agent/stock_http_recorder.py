@@ -257,14 +257,15 @@ class Service:
         self.action_deadline = action_deadline
         self.ledger["armed"] = True
 
-    def _ms(self):
-        return max(0, min(60000, int((time.monotonic() - self.started) * 1000)))
+    def _ms(self, *, now=None):
+        now = time.monotonic() if now is None else now
+        return max(0, min(60000, int((now - self.started) * 1000)))
 
-    def _event(self, kind, connection=0, size=0, reason=""):
+    def _event(self, kind, connection=0, size=0, reason="", *, now=None):
         if len(self.ledger["events"]) >= MAX_EVENTS:
             self.close("event_limit")
             return False
-        self.ledger["events"].append({"kind": kind, "elapsed_ms": self._ms(), "connection": connection, "bytes": size, "reason": reason})
+        self.ledger["events"].append({"kind": kind, "elapsed_ms": self._ms(now=now), "connection": connection, "bytes": size, "reason": reason})
         return True
 
     def _bytes_event(self, active, kind, size):
@@ -351,8 +352,9 @@ class Service:
                        "chunk_index": 0, "next_write": 0, "delay": 0, "disposition": ""}
         self.last_admission = now
         self.ledger["connections_admitted"] += 1
-        self.ledger["admissions_elapsed_ms"].append(self._ms())
-        self._event("admit", number)
+        # The rate state and both serialized admission records describe one instant.
+        self.ledger["admissions_elapsed_ms"].append(self._ms(now=now))
+        self._event("admit", number, now=now)
 
     def _read_client(self):
         active = self.active

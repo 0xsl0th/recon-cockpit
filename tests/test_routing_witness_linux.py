@@ -47,12 +47,13 @@ def owned_only(monkeypatch):
     monkeypatch.setattr(AuthorizedRoutingBackend, "run", lambda *_a, **_kw: pytest.fail("host tool fallback"))
 
 
-@pytest.fixture(scope="module")
-def native_runtime():
+@pytest.fixture(scope="module", params=(None, "apache-B"), ids=("legacy", "apache-B"))
+def native_runtime(request):
     _owned_linux_only()
     # Inspect actual immutable clients and daemons, outside the timed proof
     # exchange. The production launcher independently checks these again.
-    return contract.inspect_runtime(contract.selection(), ExecutionControl(time.monotonic() + 60))
+    selected = contract.selection(deployment=request.param)
+    return selected, contract.inspect_runtime(selected, ExecutionControl(time.monotonic() + 60))
 
 
 def _observe_denial_before_admission(source):
@@ -77,10 +78,11 @@ def _observe_denial_before_admission(source):
 
 @contextmanager
 def boundary(tmp_path, native_runtime, *, require_approval):
-    selected, session = contract.selection(), str(uuid4())
+    selected, runtime = native_runtime
+    session = str(uuid4())
     policy = contract.policy_for_selection(selected, require_approval=require_approval)
     limits = SessionLimits(**contract.limits(selected))
-    lab = RoutingLab(selected, session, limits, runtime=native_runtime)
+    lab = RoutingLab(selected, session, limits, runtime=runtime)
     backend = AuthorizedRoutingBackend(policy, session, limits, lab, execute=True)
     with LinuxAuditSink(tmp_path / "audit.jsonl", launch_witness=True) as audit, \
             LinuxApprovalService(policy, session, launch_witness=True) as approvals:
@@ -127,7 +129,7 @@ def test_routing_missing_or_nondurable_audit_never_reaches_admission(
             return source.replace("os.fsync(fd)", "raise OSError('OWNED-ROUTING-FSYNC-FAILURE')")
         instrument_writer(tmp_path, monkeypatch, fail_fsync)
     control = ExecutionControl(time.monotonic() + 40)
-    action = parse_action(contract.action(contract.selection(), "http_headers"))
+    action = parse_action(contract.action(native_runtime[0], "http_headers"))
     with boundary(tmp_path, native_runtime, require_approval=False) as (audit, _, launcher, policy, session):
         _start_exact_routing_launcher(launcher, control)
         if fault == "fsync_failure":
@@ -157,7 +159,8 @@ def test_routing_durable_intent_cannot_replace_missing_or_replayed_required_appr
                 "                        raise ValueError('routing_test_replay_short_write')\n" + original)
         instrument_worker(tmp_path, monkeypatch, duplicate_real_proof)
     control = ExecutionControl(time.monotonic() + 40)
-    action = parse_action(contract.action(contract.selection(), "ssh_keys"))
+    selector = "http_headers" if contract.http_implementation(native_runtime[0]) == "apache" else "ssh_keys"
+    action = parse_action(contract.action(native_runtime[0], selector))
     with boundary(tmp_path, native_runtime, require_approval=True) as (audit, approvals, launcher, policy, session):
         reference = None
         if fault == "replayed_consumed_proof":

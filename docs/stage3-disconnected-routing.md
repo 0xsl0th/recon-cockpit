@@ -1,11 +1,16 @@
 # S3.5: disconnected routing implementation contract
 
-First fixed-A routing review candidate in
-[PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94), following accepted
+First fixed-A routing slice accepted in
+[PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94), merged as `46f9b73`, following accepted
 S3.4b in [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93) at `a7f46b1`.
 This contract was pinned before implementation. It grants no execution authority
 and does not close S3.5. The governing [roadmap](stage3-compatibility-routing.md)
 still requires native execution, enforcement, evidence, regression and review gates.
+
+The [fixed deployment extension](stage3-routing-deployments.md) is implemented
+as a review candidate with corrected native gates complete.
+It preserves this original contract and saved evidence while adding explicit
+nginx/Apache × A/B selections. This document retains the first slice’s evidence.
 
 ## Finite first routing slice
 
@@ -144,13 +149,15 @@ expected budget refusals, retained output and timing. Closure records physical
 launcher cleanup and last acknowledged counters; it does not invent a graceful
 final owner snapshot.
 
-PR #94 is a review candidate on `feature/stage3-disconnected-routing` in
+PR #94 was reviewed on `feature/stage3-disconnected-routing` in
 `/tmp/recon-stage3-routing`. Frozen `659c053` passed **25 native checks, 76
 accepted-profile native regressions and 26,599 portable tests**, with all
 **981 source pins unchanged** in each passing run and no skips, errors or failures.
 The later checkpoint/runbook update changes documentation only. Fresh independent
 code and saved-evidence reviews found no blockers within this finite slice.
-Review the latest PR revision and checks before merge; this is not S3.5 closure.
+Fresh review at `58c78e0`, 457 focused checks and all five final CI jobs passed;
+PR #94 merged as `46f9b73` with an identical tree. All five post-merge checks
+passed too. This accepts the first slice and does not close S3.5.
 
 The 25 native checks comprise four individual actions, two complete explicit
 orders, three aggregate-budget negatives, one required-approval refusal, two
@@ -197,8 +204,9 @@ establishes a fix or erases the original unexplained refusal. No deadline,
 security bound or required case was relaxed. Diagnostic repetitions do not add
 unique acceptance cases.
 
-**Next required work:** routed Apache and configuration B, then the complete
-hostile/negative routing corpus under the pinned aggregate caps. S3.5 remains
+**Next required work:** review the implemented [Apache/A/B deployment candidate](stage3-routing-deployments.md),
+then pin and complete the full ordinary-variation/hostile/negative routing matrix
+under the unchanged aggregate caps. S3.5 remains
 open, Stage 3 remains seven accepted/three open, and the catalog remains 52
 accepted profiles across 17 external programs. This branch accepts no new
 catalog profile or completed milestone.

@@ -15,7 +15,7 @@ import socket
 import struct
 import time
 
-from .routing_topology_spec import (PROFILE, ROLES, EXPORTS, ENDPOINTS, CLIENTS, LINKS, BOUNDS, MAX_PACKET,
+from .routing_topology_spec import (PROFILE, ROLES, EXPORTS, ENDPOINTS, CLIENTS, LINKS, BOUNDS, MAX_PACKET, endpoints,
     NS_GET_USERNS, NS_GET_NSTYPE, encode, decode, spec, digest, routes, firewall_rules, validate_pair,
     validate_metadata, validate_closure, validate_network_state)
 
@@ -129,8 +129,9 @@ def socket_identity(descriptor, *, listener):
 
 
 
-def validate_exports(value, descriptors, *, parent_namespaces):
-    value = validate_metadata(value)
+def validate_exports(value, descriptors, *, parent_namespaces, configuration="A"):
+    value = validate_metadata(value, configuration=configuration)
+    selected_endpoints = endpoints(configuration)
     if len(descriptors) != len(EXPORTS) or len(set(descriptors)) != len(EXPORTS):
         raise ValueError("routing_topology_ready_changed")
     if type(value["networks"]) is not dict or set(value["networks"]) != set(ROLES):
@@ -153,11 +154,11 @@ def validate_exports(value, descriptors, *, parent_namespaces):
         network_names.append(name)
     if len(set(network_names)) != 5:
         raise ValueError("routing_topology_networks_not_distinct")
-    if type(value["listeners"]) is not dict or set(value["listeners"]) != set(ENDPOINTS):
+    if type(value["listeners"]) is not dict or set(value["listeners"]) != set(selected_endpoints):
         raise ValueError("routing_topology_listeners_changed")
     for index, service in enumerate(("http", "ssh"), 6):
         actual = socket_identity(descriptors[index], listener=True)
-        if actual != value["listeners"][service] or actual["local"] != list(ENDPOINTS[service]):
+        if actual != value["listeners"][service] or actual["local"] != list(selected_endpoints[service]):
             raise ValueError("routing_topology_listener_changed")
     if len({item["netns_cookie"] for item in value["listeners"].values()}) != 3:
         raise ValueError("routing_topology_listener_networks_changed")
@@ -181,11 +182,11 @@ def validate_exports(value, descriptors, *, parent_namespaces):
                 raise ValueError("routing_topology_private_pair_changed")
             seen.add(actual["inode"])
     expected = [{"client": client, "endpoint": endpoint, "connected": True}
-                for client in ("http", "ssh") for endpoint in ENDPOINTS]
+                for client in ("http", "ssh") for endpoint in selected_endpoints]
     if value["baselines"] != expected:
         raise ValueError("routing_topology_baseline_changed")
     expected = [{"client": client, "endpoint": endpoint, "connected": endpoint == client}
-                for client in ("http", "ssh") for endpoint in ENDPOINTS]
+                for client in ("http", "ssh") for endpoint in selected_endpoints]
     if value["filtered"] != expected:
         raise ValueError("routing_topology_filtered_changed")
     return deepcopy(value)
@@ -231,7 +232,11 @@ class Topology:
         self.bootstrap, self.control = bootstrap, control
         if (selection is None) != (identity is None):
             raise ValueError("routing_topology_partial_ledger_identity")
+        if selection is not None:
+            from .routing_contract import validate_selection
+            selection = validate_selection(selection)
         self.selection, self.assessment_identity = deepcopy(selection), deepcopy(identity)
+        self.configuration = "A" if selection is None else selection["configuration"]
         self._launcher_sequence = 0
         self._last_action_sequence = 0
         self._last_action_digest = None
@@ -280,14 +285,15 @@ class Topology:
             child.close()
             self._supervisor.wait_for(lambda: bool(select.select([], [self._channel], [], 0)[1]))
             initial = {"operation": "setup", "deadline": self.control.deadline,
-                "host_namespaces": parent, "topology_sha256": digest()}
+                "host_namespaces": parent, "topology_sha256": digest(configuration=self.configuration)}
             if self.selection is not None:
                 initial.update(selection=self.selection, identity=self.assessment_identity)
             send_packet(self._channel, initial)
             self._supervisor.wait_for(lambda: bool(select.select([self._channel], [], [], 0)[0]))
             ready, descriptors = receive_packet(self._channel, expected_descriptors=len(EXPORTS))
             self._descriptors = dict(zip(EXPORTS, descriptors, strict=True))
-            self._ready = validate_exports(ready, descriptors, parent_namespaces=parent)
+            self._ready = validate_exports(ready, descriptors, parent_namespaces=parent,
+                                           configuration=self.configuration)
             # Verify the setup user's complete mapping from the positive launcher.
             # Namespace FD ownership is independently tied to this launcher's UID.
             owner_uid = array.array("I", [0])
@@ -379,5 +385,5 @@ class Topology:
         self._receipt = {"status": "closed", "owner_exited": exited,
             "descriptors_closed": not self._descriptors,
             "namespaces": None if self._ready is None else deepcopy(self._ready["networks"]),
-            "topology_sha256": digest()}
+            "topology_sha256": digest(configuration=self.configuration)}
         return deepcopy(self._receipt)

@@ -30,18 +30,18 @@ def client_adapter(selector):
     return http if contract.selector_role(selector) == "http_frontend" else ssh
 
 
-def client_runtime_module(selector):
-    return client_adapter(selector).client_runtime_module(contract.underlying_selection(selector))
+def client_runtime_module(selector, selected=None):
+    return client_adapter(selector).client_runtime_module(contract.underlying_selection(selector, selected))
 
 
-def validate_client_runtime(value, selector):
-    return client_adapter(selector).validate_client_runtime(value, contract.underlying_selection(selector))
+def validate_client_runtime(value, selector, selected=None):
+    return client_adapter(selector).validate_client_runtime(value, contract.underlying_selection(selector, selected))
 
 
-def parser_version(selector):
+def parser_version(selector, selected=None):
     from .configurable_parser import parser_version as http_version
     from .stock_ssh_parser import parser_version as ssh_version
-    action = contract.underlying_contract(selector).action(contract.underlying_selection(selector))
+    action = contract.underlying_contract(selector).action(contract.underlying_selection(selector, selected))
     return (http_version if selector.startswith("http_") else ssh_version)(action["tool_id"])
 
 
@@ -52,8 +52,9 @@ def boundary_names(selector):
 
 def command(service, bootstrap, manifest, descriptors, nonce, commitment):
     selector = contract.validate_selector(service.selector)
-    manifest = validate_client_runtime(manifest, selector)
-    selected_files = [] if manifest is None else client_runtime_module(selector).runtime_files(manifest)
+    selected = contract.validate_selection(service.selection)
+    manifest = validate_client_runtime(manifest, selector, selected)
+    selected_files = [] if manifest is None else client_runtime_module(selector, selected).runtime_files(manifest)
     if len(descriptors) != len(selected_files):
         raise ValueError("routing_client_snapshot_count_changed")
     paths = {row["destination"] for row in selected_files}
@@ -83,7 +84,7 @@ def command(service, bootstrap, manifest, descriptors, nonce, commitment):
         ",".join(map(str, descriptors)) if descriptors else "0,1,2", *argv]
 
 
-def header_reply(raw, selector):
+def header_reply(raw, selector, selected=None):
     if selector != "http_headers":
         raise ValueError("routing_not_headers")
     value = load_json(raw)
@@ -92,7 +93,7 @@ def header_reply(raw, selector):
             or any(flag is not True for flag in value["boundary_checks"].values())):
         raise ValueError("routing_header_boundary_changed")
     # Preserve the accepted header shape/limits; only its topology witnesses differ.
-    selected = contract.underlying_selection(selector)
+    selected = contract.underlying_selection(selector, selected)
     original = value["boundary_checks"]
     value["boundary_checks"] = dict.fromkeys(http.boundary_names(selected), True)
     checked = http._header_reply(native.encode(value), selected)
@@ -111,7 +112,8 @@ def run_routed_tool_owned(*, service, launch, control, closure, manifest):
             or launch["selector"] != selector or launch["selection"] != service.selection
             or launch["identity"] != service.identity or launch["namespaces"] != service.namespaces):
         raise IsolationUnavailable("Routed client owner binding changed")
-    manifest = validate_client_runtime(manifest, selector)
+    selected = contract.validate_selection(service.selection)
+    manifest = validate_client_runtime(manifest, selector, selected)
     if launch["runtime"]["client"] != manifest or closure["routing_runtime"][selector]["client"] != manifest:
         raise IsolationUnavailable("Routed client runtime changed")
     raw = native.encode(launch)
@@ -119,7 +121,7 @@ def run_routed_tool_owned(*, service, launch, control, closure, manifest):
         raise IsolationUnavailable("Routed client launch packet limit")
     commitment = hashlib.sha256(raw).hexdigest()
     prefix = READY_PREFIX + commitment.encode("ascii") + b"\n"
-    runtime = client_runtime_module(selector)
+    runtime = client_runtime_module(selector, selected)
     descriptors = [] if manifest is None else (native._snapshot(manifest, control) if runtime is native else runtime.snapshot(manifest, control))
     maximum = contract.action_bounds(selector)["output_bytes"]
     # Header JSON carries base64 for 2048 raw bytes plus bounded metadata.
@@ -163,7 +165,7 @@ def run_routed_tool_owned(*, service, launch, control, closure, manifest):
     if selector == "http_headers":
         if code != 0 or reason is not None or stderr:
             raise IsolationUnavailable("Routed header worker failed")
-        return {**header_reply(stdout, selector), "timing": timing}
+        return {**header_reply(stdout, selector, selected), "timing": timing}
     reason = ssh._native_stop_reason(code, reason, action_deadline)
     if len(stdout) + len(stderr) > maximum:
         reason = "output_limit"
@@ -174,4 +176,4 @@ def run_routed_tool_owned(*, service, launch, control, closure, manifest):
         "raw_output_base64": base64.b64encode(stdout).decode("ascii"), "raw_stderr_base64": base64.b64encode(stderr).decode("ascii"),
         "provenance": {"runtime_sha256": runtime.manifest_digest(manifest), "runtime_manifest": manifest,
             "output_sha256": hashlib.sha256(stdout).hexdigest(), "stderr_sha256": hashlib.sha256(stderr).hexdigest(),
-            "parser_version": parser_version(selector), "exit_code": code, "stop_reason": reason}}
+            "parser_version": parser_version(selector, selected), "exit_code": code, "stop_reason": reason}}

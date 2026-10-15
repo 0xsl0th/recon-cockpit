@@ -302,7 +302,7 @@ def _listener(endpoint):
         raise
 
 
-def _private_pairs(deadline):
+def _private_pairs(deadline, *, configuration="A"):
     result = []
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.bind(("127.0.0.1", 0))
@@ -318,7 +318,8 @@ def _private_pairs(deadline):
                       for frontend, _ in result]
             # Register conntrack hooks BEFORE the initial handshake. Existing
             # connections cannot be retroactively claimed as tracked flows.
-            _nft(topology.firewall_rules("ssh_frontend", private_routes=routes, setup=True), deadline)
+            _nft(topology.firewall_rules("ssh_frontend", private_routes=routes, setup=True,
+                                         configuration=configuration), deadline)
             for index, (frontend, _) in enumerate(result):
                 frontend.connect(listener.getsockname())
                 daemon, _ = listener.accept()
@@ -380,18 +381,19 @@ def _assert_descriptors(expected, count):
                          + ":observed=" + repr(sorted(observed)))
 
 
-def _witnesses(networks, listeners, *, filtered, deadline):
+def _witnesses(networks, listeners, *, filtered, deadline, configuration="A"):
+    selected_endpoints = topology.endpoints(configuration)
     result = []
     for client in ("http", "ssh"):
         _enter(networks[client + "_client"])
-        for endpoint in topology.ENDPOINTS:
+        for endpoint in selected_endpoints:
             if time.monotonic() >= deadline:
                 raise ValueError("routing_topology_witness_deadline")
             connected = False
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connection:
                 connection.settimeout(min(.15 if filtered else .5, deadline - time.monotonic()))
                 try:
-                    connection.connect(topology.ENDPOINTS[endpoint])
+                    connection.connect(selected_endpoints[endpoint])
                     connected = True
                 except (TimeoutError, ConnectionRefusedError, OSError) as error:
                     if not isinstance(error, TimeoutError) and getattr(error, "errno", None) not in (
@@ -462,9 +464,10 @@ def _seal():
         raise ValueError("routing_topology_socket_creation_allowed")
 
 
-def setup(initial):
+def setup(initial, *, configuration="A"):
+    selected_endpoints = topology.endpoints(configuration)
     if (type(initial) is not dict or set(initial) != {"operation", "deadline", "host_namespaces", "topology_sha256"}
-            or initial["operation"] != "setup" or initial["topology_sha256"] != topology.digest()
+            or initial["operation"] != "setup" or initial["topology_sha256"] != topology.digest(configuration=configuration)
             or type(initial["deadline"]) not in (int, float) or not math.isfinite(initial["deadline"])):
         raise ValueError("routing_topology_initial_changed")
     worker.assert_private_namespaces(initial["host_namespaces"])
@@ -497,7 +500,7 @@ def setup(initial):
                     for _, interface, local, _ in topology.LINKS:
                         netlink.up(interface)
                         netlink.address(interface, local, 30)
-                    netlink.address("lo", topology.ENDPOINTS["excluded"][0], 32)
+                    netlink.address("lo", selected_endpoints["excluded"][0], 32)
                     with open("/proc/sys/net/ipv4/ip_forward", "w", encoding="ascii") as stream:
                         stream.write("1\n")
                 else:
@@ -505,14 +508,14 @@ def setup(initial):
                     netlink.up("eth0")
                     netlink.address("eth0", remote, 30)
                     if role.endswith("frontend"):
-                        netlink.address("eth0", topology.ENDPOINTS[role.split("_")[0]][0], 32)
-                for destination, gateway, interface in topology.routes(role):
+                        netlink.address("eth0", selected_endpoints[role.split("_")[0]][0], 32)
+                for destination, gateway, interface in topology.routes(role, configuration=configuration):
                     netlink.route(destination, gateway, interface)
             finally:
                 netlink.close()
             for key in ({"router": ("excluded",), "http_frontend": ("http", "http_wrong"),
                          "ssh_frontend": ("ssh", "ssh_wrong")}.get(role, ())):
-                listeners[key] = _listener(topology.ENDPOINTS[key])
+                listeners[key] = _listener(selected_endpoints[key])
         observed = {}
         for role in topology.ROLES:
             _enter(networks[role])
@@ -521,22 +524,23 @@ def setup(initial):
                 observed[role] = netlink.observe()
             finally:
                 netlink.close()
-        topology.validate_network_state(observed)
-        baseline = _witnesses(networks, listeners, filtered=False, deadline=deadline)
+        topology.validate_network_state(observed, configuration=configuration)
+        baseline = _witnesses(networks, listeners, filtered=False, deadline=deadline, configuration=configuration)
         _enter(networks["ssh_frontend"])
-        pairs = _private_pairs(deadline)
+        pairs = _private_pairs(deadline, configuration=configuration)
         _assert_private_listener_closed(pairs)
         _drain_pairs(pairs)
         private_identities = [{side: topology.socket_identity(channel.fileno(), listener=False)
                                for side, channel in zip(("frontend", "daemon"), pair, strict=True)} for pair in pairs]
         for role in topology.ROLES:
             _enter(networks[role])
-            final_rules = topology.firewall_rules(role, private_identities if role == "ssh_frontend" else ())
+            final_rules = topology.firewall_rules(role, private_identities if role == "ssh_frontend" else (),
+                                                  configuration=configuration)
             if role == "ssh_frontend":
                 final_rules = "delete table inet recon_routing\n" + final_rules
             _nft(final_rules, deadline)
         _drain_pairs(pairs)
-        filtered = _witnesses(networks, listeners, filtered=True, deadline=deadline)
+        filtered = _witnesses(networks, listeners, filtered=True, deadline=deadline, configuration=configuration)
         for service in ("http", "ssh"):
             owner, frontend = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
             owner.setblocking(False)
@@ -544,7 +548,7 @@ def setup(initial):
             ledger_channels[service + "_frontend"] = owner
             exports.append(frontend.detach())
         names = {role: topology.namespace_name(networks[role], "net") for role in topology.ROLES}
-        ready = {"ready": True, "profile": topology.PROFILE, "topology_sha256": topology.digest(),
+        ready = {"ready": True, "profile": topology.PROFILE, "topology_sha256": topology.digest(configuration=configuration),
             "user": topology.namespace_name(user, "user"), "networks": names,
             "listeners": {key: topology.socket_identity(value.fileno(), listener=True) for key, value in listeners.items()},
             "baselines": baseline, "filtered": filtered, "bounds": dict(topology.BOUNDS),
@@ -560,7 +564,7 @@ def setup(initial):
             *(item.fileno() for item in listeners.values()),
             *(item.fileno() for item in ledger_channels.values()),
             *(item.fileno() for pair in pairs for item in pair)}, 26)
-        topology.validate_metadata(ready)
+        topology.validate_metadata(ready, configuration=configuration)
         _seal()
         return ready, descriptors, networks, listeners, exports, ledger_channels, pairs
     except BaseException:
@@ -584,11 +588,15 @@ def main():
         _close_import_descriptor()
         initial, _ = topology.receive_packet(channel)
         base = dict(initial)
+        configuration = "A"
         if "selection" in base or "identity" in base:
             from recon_cockpit.secure_agent.routing_ledger import Ledger
+            from recon_cockpit.secure_agent.routing_contract import validate_selection
             selected, identity = base.pop("selection"), base.pop("identity")
+            selected = validate_selection(selected)
+            configuration = selected["configuration"]
             ledger = Ledger(selected, identity, started_at=base["deadline"] - 60)
-        owned = setup(base)
+        owned = setup(base, configuration=configuration)
         ready, descriptors, networks, listeners, exports, ledger_channels, pairs = owned
         topology.send_packet(channel, ready, descriptors)
         # Exported listener copies are exclusively held by the trusted launcher.
@@ -628,7 +636,8 @@ def main():
                 if ledger is None:
                     if role != "launcher" or message != {"operation": "close"}:
                         raise ValueError("routing_topology_unknown_operation")
-                    topology.send_packet(incoming, {"closed": True, "topology_sha256": topology.digest()})
+                    topology.send_packet(incoming, {"closed": True,
+                        "topology_sha256": topology.digest(configuration=configuration)})
                     return 0
                 if role == "launcher" and message == {"operation": "TOPOLOGY_SNAPSHOT"}:
                     snapshots += 1

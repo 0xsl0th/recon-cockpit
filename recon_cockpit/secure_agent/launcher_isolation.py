@@ -280,7 +280,8 @@ class LinuxFixtureLauncher:
             from .routing_contract import validate_runtime, runtime_source_mounts
             closure['routing_runtime'] = validate_runtime(self._routing_runtime, self._config['case'])
             files += runtime_source_mounts(closure['routing_runtime'], self._config['case'])
-        protocol.runtime(closure, owned_lab=self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}, nmap=nmap, web_tools=web_tools, network_tools=network_tools, service_web=service_web, configurable=configurable, stock_http=stock_http, stock_http_production=stock_http_production, stock_ssh=stock_ssh, routing=routing)
+        protocol.runtime(closure, owned_lab=self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}, nmap=nmap, web_tools=web_tools, network_tools=network_tools, service_web=service_web, configurable=configurable, stock_http=stock_http, stock_http_production=stock_http_production, stock_ssh=stock_ssh, routing=routing,
+            routing_selection=self._config['case'] if routing else None)
         return closure, files
 
     def _command(self, closure, files, commitment):

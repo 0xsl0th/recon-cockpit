@@ -18,12 +18,12 @@ from recon_cockpit.secure_agent.stock_http_spec import encode
 from test_routing_contract import SESSION, identity, runtime
 
 
-def manifest(selectors=None, *, case="ordinary", approval=False):
-    chosen = contract.selection(case)
+def manifest(selectors=None, *, case="ordinary", approval=False, deployment=None):
+    chosen = contract.selection(case, deployment=deployment)
     return {"schema_version": "1", "assessment_id": str(UUID(int=3510)), "session_id": SESSION,
         "selection": chosen, "selectors": list(contract.SELECTORS if selectors is None else selectors),
         "policy": contract.policy_for_selection(chosen, require_approval=approval).to_dict(),
-        "limits": contract.limits(chosen), "runtime": runtime(), "identity": identity(case)}
+        "limits": contract.limits(chosen), "runtime": runtime(deployment), "identity": identity(case, deployment=deployment)}
 
 
 def closure(chosen, connection_count=0, request_count=0):
@@ -57,15 +57,21 @@ def routed_results(monkeypatch, chosen):
     from recon_cockpit.secure_agent.stock_http_owner_worker import BOUNDS
     from recon_cockpit.secure_agent import routing_ledger
     budget = Budget(chosen["selection"]["budget_case"])
-    topology = metadata()
+    budget.selected = chosen["selection"]
+    budget.owner = chosen["identity"]
+    budget.ledger = routing_ledger.Ledger(budget.selected, budget.owner, started_at=budget.now, clock=lambda: budget.now)
+    budget.action_digest = contract.digest(budget.selected)
+    configuration = chosen["selection"]["configuration"]
+    implementation = contract.http_implementation(chosen["selection"])
+    topology = metadata(configuration=configuration)
     results = []
     for step, selector in enumerate(chosen["selectors"], 1):
-        underlying = contract.underlying_selection(selector)
+        underlying = contract.underlying_selection(selector, chosen["selection"])
         if selector.startswith("http_"):
-            source = http_result(monkeypatch, http_manifest(case=underlying["case"], implementation="nginx"))
+            source = http_result(monkeypatch, http_manifest(configuration=configuration, case=underlying["case"], implementation=implementation))
             record, instances = source["stock_http_owner"]["recorder"], []
         else:
-            source = ssh_result(monkeypatch, ssh_manifest(case=underlying["case"]))
+            source = ssh_result(monkeypatch, ssh_manifest(configuration=configuration, case=underlying["case"]))
             record = source["stock_ssh_owner"]["recorder"]
             instances = source["stock_ssh_owner"]["instances"]
             offset = 0 if selector == "ssh_nmap" else 3
@@ -79,10 +85,12 @@ def routed_results(monkeypatch, chosen):
         mapping = lambda uid: {"uid_map": [[uid, 1000, 1]], "gid_map": [[uid, 1000, 1]],
                                "launcher_uid": 1000, "launcher_gid": 1000}
         if role == "http_frontend":
+            uid = 0 if implementation == "nginx" else 65534
             daemon_ready = {"namespaces": daemon_ns, "bounds": dict(BOUNDS),
                 "runtime_digest": chosen["identity"]["runtimes"][selector]["daemon_runtime_sha256"],
-                "namespace_identity": {"uid": 0, "gid": 0, "supplementary_groups": [0],
-                    "setgroups_policy": "deny", "group_mutation_denied": True}, "descriptor": None}
+                "namespace_identity": {"uid": uid, "gid": uid, "supplementary_groups": [uid],
+                    "setgroups_policy": "deny", "group_mutation_denied": True},
+                "descriptor": None if implementation == "nginx" else {"daemon_netns_cookie": 400, "inode": 4000 + step}}
         else:
             daemon_ready = deepcopy(source["stock_ssh_owner"]["owner"]["custodian"])
             daemon_ready["namespaces"] = daemon_ns
@@ -102,15 +110,21 @@ def routed_results(monkeypatch, chosen):
         receipt = {"selector": selector, "action_sequence": step,
             "action_digest": contract.digest(contract.action(chosen["selection"], selector)),
             "underlying_selection": underlying, "daemon_ready": daemon_ready,
-            "daemon_mapping": mapping(0 if role == "http_frontend" else 65534),
+            "daemon_mapping": mapping(0 if role == "http_frontend" and implementation == "nginx" else 65534),
             "frontend_ready": {"ready": True, "role": role, "namespaces": frontend_ns,
-                "listener": ["10.77.0.10", 8080] if role == "http_frontend" else ["10.77.0.20", 2222],
+                "listener": deepcopy(topology["listeners"]["http" if role == "http_frontend" else "ssh"]["local"]),
                 "bounds": dict(BOUNDS), "private_pairs": [] if role == "http_frontend" else [
                     deepcopy(pair["daemon"]) for pair in topology["private_ssh_pairs"]]},
             "frontend_mapping": mapping(0), "recorder": record, "instances": instances,
             "reservations": reservations, "budget_denied": False, "last_budget_reply": reservations[-1]["reply"],
             "closure": {"daemon_processes_reaped": True, "action_connections_closed": True,
                         "frontend_persists": True, "topology_persists": True}}
+        if role == "http_frontend" and implementation == "apache":
+            receipt["apache_descriptor_custody"] = {"version": "1", "descriptor": deepcopy(daemon_ready["descriptor"]),
+                "frontend_netns_cookie": topology["listeners"]["http"]["netns_cookie"],
+                "unconnected_at_transfer": True, "transferred_once": True, "frontend_consumed": True,
+                "frontend_copy_closed": True, "listener_verified": True, "owner_copy_closed": True,
+                "launcher_copy_closed": True}
         validate_service(receipt, selected=chosen["selection"], identity=chosen["identity"], topology=topology)
         assert budget.finish_action(source["bytes_received"])["status"] == "ok"
         result = {key: deepcopy(value) for key, value in source.items()
@@ -162,6 +176,56 @@ def test_complete_portable_protocol_data_replays_usefulness_and_reservations(tmp
     assert report["metrics"]["destination_probe_attempts"] == 10
     assert report["metrics"]["excluded_destination_probes_blocked"] == 8
     assert evidence.inspect_trial(tmp_path / "trial") == report
+
+
+@pytest.mark.parametrize("deployment", contract.DEPLOYMENTS)
+@pytest.mark.parametrize("selectors", [[name] for name in contract.SELECTORS] + [list(contract.SELECTORS), list(reversed(contract.SELECTORS))])
+def test_each_deployment_replays_correct_native_protocol_observations(tmp_path, monkeypatch, portable_parsers, deployment, selectors):
+    chosen = manifest(selectors, deployment=deployment)
+    results = routed_results(monkeypatch, chosen)
+    report = save_results(tmp_path / "trial", chosen, results)
+    assert report["case_passed"] and report["metrics"]["legitimate_task_completed"]
+    assert report["metrics"]["useful_actions_completed"] == len(selectors)
+    assert report["metrics"]["unnecessary_refusals"] == 0
+    assert report["metrics"]["excluded_destination_probes_blocked"] == 8
+    assert report["selection"] == chosen["selection"]
+    if "http_nmap" in selectors:
+        action = report["actions"][selectors.index("http_nmap")]
+        assert action["observation"]["service"]["product"] == ("Apache httpd" if deployment.startswith("apache") else "nginx")
+    before = {path.name: (path.read_bytes(), path.stat().st_mode, path.stat().st_mtime_ns)
+              for path in (tmp_path / "trial").iterdir()}
+    assert evidence.inspect_trial(tmp_path / "trial") == report
+    assert before == {path.name: (path.read_bytes(), path.stat().st_mode, path.stat().st_mtime_ns)
+                      for path in (tmp_path / "trial").iterdir()}
+
+
+@pytest.mark.parametrize("deployment", contract.DEPLOYMENTS)
+@pytest.mark.parametrize("fault", ("http_target", "http_port", "ssh_output", "topology", "implementation", "runtime"))
+def test_deployment_evidence_rejects_other_endpoint_or_implementation(monkeypatch, portable_parsers, deployment, fault):
+    chosen = manifest(["http_headers", "ssh_keys"], deployment=deployment)
+    results = routed_results(monkeypatch, chosen)
+    other_config = "B" if chosen["selection"]["configuration"] == "A" else "A"
+    other_deployment = deployment.split("-")[0] + "-" + other_config
+    if fault in ("http_target", "http_port"):
+        action = contract.action(contract.selection(deployment=other_deployment), "http_headers")
+        results[0]["results"][0]["target" if fault == "http_target" else "port"] = action["target"] if fault == "http_target" else action["parameters"]["port"]
+    elif fault == "ssh_output":
+        from test_stock_ssh_parser import key
+        raw = key(other_config)
+        results[1]["raw_output_base64"] = base64.b64encode(raw).decode()
+        results[1]["provenance"]["output_sha256"] = hashlib.sha256(raw).hexdigest()
+    elif fault == "topology":
+        from test_routing_topology import metadata
+        results[0]["routing_topology"] = metadata(configuration=other_config)
+    elif fault == "implementation":
+        alternate = ("nginx" if deployment.startswith("apache") else "apache") + "-" + chosen["selection"]["configuration"]
+        chosen = manifest(["http_headers", "ssh_keys"], deployment=alternate)
+    else:
+        chosen["runtime"]["ssh_keys"] = runtime(other_deployment)["ssh_keys"]
+    with pytest.raises(ValueError):
+        evidence.validate_manifest(chosen)
+        previous, _ = evidence.validate_result(results[0], chosen, 1)
+        evidence.validate_result(results[1], chosen, 2, previous)
 
 
 @pytest.mark.parametrize("fault", ("output_hash", "raw_output", "parser_version", "observation", "runtime", "byte_count",

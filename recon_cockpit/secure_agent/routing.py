@@ -17,7 +17,7 @@ from .routing_evidence import RoutingEvidenceStore
 from .routing_lab import RoutingLab
 
 
-def run_trial(directory, *, selectors, budget_case="ordinary", execute=False,
+def run_trial(directory, *, selectors, budget_case="ordinary", deployment=None, execute=False,
               unattended_owned_lab_test=False, cancelled=None):
     if type(execute) is not bool or type(unattended_owned_lab_test) is not bool:
         raise ValueError("invalid_routing_mode")
@@ -27,7 +27,7 @@ def run_trial(directory, *, selectors, budget_case="ordinary", execute=False,
             or any(type(value) is not str or value not in contract.SELECTORS for value in selectors)
             or len(set(selectors)) != len(selectors)):
         raise ValueError("invalid_routing_selectors")
-    selected = contract.selection(budget_case)
+    selected = contract.selection(budget_case, deployment=deployment)
     trial_started = time.monotonic()
     preflight = ExecutionControl(trial_started + 60, cancelled=cancelled)
     runtime = contract.inspect_runtime(selected, preflight)

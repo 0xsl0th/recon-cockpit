@@ -28,50 +28,60 @@ def names(number):
     return {name: name + ":[" + str(number) + "]" for name in ("user", "net", "mnt", "pid")}
 
 
-def topology():
+def topology(configuration="A"):
     return {"owner_namespaces": names(200), "networks": {"http_client": "net:[201]", "ssh_client": "net:[202]",
         "router": "net:[203]", "http_frontend": "net:[204]", "ssh_frontend": "net:[205]"},
-        "private_ssh_pairs": [{"daemon": pair_identity(index)} for index in range(4)]}
+        "private_ssh_pairs": [{"daemon": pair_identity(index)} for index in range(4)],
+        "listeners": {"http": {"netns_cookie": 789}}}
 
 
 def mapping(uid):
     return {"uid_map": [[uid, 1000, 1]], "gid_map": [[uid, 1000, 1]], "launcher_uid": 1000, "launcher_gid": 1000}
 
 
-def receipt(selector="http_headers"):
-    owner = identity(); chosen = contract.underlying_selection(selector); is_ssh = selector.startswith("ssh_")
-    uid = 65534 if is_ssh else 0
+def receipt(selector="http_headers", deployment=None):
+    selected = contract.selection(deployment=deployment)
+    owner = identity(deployment=deployment); chosen = contract.underlying_selection(selector, selected); is_ssh = selector.startswith("ssh_")
+    apache = not is_ssh and contract.http_implementation(selected) == "apache"
+    configuration = selected["configuration"]
+    uid = 65534 if is_ssh or apache else 0
     daemon = {"namespaces": names(400), "namespace_identity": {"uid": uid, "gid": uid,
         "supplementary_groups": [uid], "setgroups_policy": "deny", "group_mutation_denied": True},
         "bounds": deepcopy(process.BOUNDS if is_ssh else BOUNDS),
         "runtime_digest": owner["runtimes"][selector]["daemon_runtime_sha256"]}
-    daemon.update({"ready": True} if is_ssh else {"descriptor": None})
+    daemon.update({"ready": True} if is_ssh else {"descriptor": {"daemon_netns_cookie": 123, "inode": 456} if apache else None})
     # No daemon is launched: accepted pure snapshot replay validates an armed,
     # empty, physically finalized local protocol instance.
     if is_ssh:
         from test_stock_ssh_recorder import PortableListener
         listener = PortableListener(); listener.bind(("127.0.0.1", 0)); listener.listen()
-        old = ssh.CONFIGURATIONS["A"]; ssh.CONFIGURATIONS["A"] = listener.getsockname()
+        old = ssh.CONFIGURATIONS[configuration]; ssh.CONFIGURATIONS[configuration] = listener.getsockname()
         try:
-            service = ssh.Service("A", chosen["case"], listener, deadline=time.monotonic() + 60,
+            service = ssh.Service(configuration, chosen["case"], listener, deadline=time.monotonic() + 60,
                 connection_factory=lambda *args: None, connection_finalizer=lambda *args: None)
         finally:
-            ssh.CONFIGURATIONS["A"] = old
+            ssh.CONFIGURATIONS[configuration] = old
     else:
         listener = socket.socket(); listener.bind(("127.0.0.1", 0)); listener.listen()
-        service = http.Service("A", chosen["case"], listener, deadline=time.monotonic() + 60)
+        service = http.Service(configuration, chosen["case"], listener, deadline=time.monotonic() + 60)
     service.arm(time.monotonic() + contract.action_bounds(selector)["timeout_seconds"])
     service.close()
     role = contract.selector_role(selector)
-    return {"selector": selector, "action_sequence": 1,
-        "action_digest": contract.digest(contract.action(contract.selection(), selector)), "underlying_selection": chosen,
+    value = {"selector": selector, "action_sequence": 1,
+        "action_digest": contract.digest(contract.action(selected, selector)), "underlying_selection": chosen,
         "daemon_ready": daemon, "daemon_mapping": mapping(uid),
         "frontend_ready": {"ready": True, "role": role, "namespaces": {**names(300), "net": topology()["networks"][role]},
-            "listener": ["10.77.0.20", 2222] if is_ssh else ["10.77.0.10", 8080], "bounds": deepcopy(BOUNDS),
+            "listener": list(services.endpoints(configuration)["ssh" if is_ssh else "http"]), "bounds": deepcopy(BOUNDS),
             "private_pairs": [pair_identity(index) for index in range(4)] if is_ssh else []},
         "frontend_mapping": mapping(0), "recorder": service.snapshot(), "instances": [], "reservations": [],
         "budget_denied": False, "last_budget_reply": None,
         "closure": {"daemon_processes_reaped": True, "action_connections_closed": True, "frontend_persists": True, "topology_persists": True}}
+    if apache:
+        value["apache_descriptor_custody"] = {"version": "1", "descriptor": deepcopy(daemon["descriptor"]),
+            "frontend_netns_cookie": 789, "unconnected_at_transfer": True, "transferred_once": True,
+            "frontend_consumed": False, "frontend_copy_closed": True, "listener_verified": True,
+            "owner_copy_closed": True, "launcher_copy_closed": True}
+    return value
 
 
 def validate(value, selected=None, owner=None):
@@ -204,3 +214,64 @@ assert routing_frontend_worker.contract.underlying_selection('ssh_keys')['case']
 """
     result = subprocess.run([sys.executable, "-I", "-S", "-c", code, str(tmp_path)], capture_output=True, timeout=10)
     assert result.returncode == 0, result.stderr.decode()
+
+
+@pytest.mark.parametrize("deployment", contract.DEPLOYMENTS)
+@pytest.mark.parametrize("selector", contract.SELECTORS)
+def test_deployment_service_receipts_bind_configuration_implementation_and_transport(deployment, selector):
+    selected = contract.selection(deployment=deployment)
+    owner = identity(deployment=deployment)
+    value = receipt(selector, deployment)
+    assert validate(value, selected, owner) == value
+    assert ("apache_descriptor_custody" in value) == (deployment.startswith("apache") and selector.startswith("http_"))
+    other = "nginx-A" if deployment != "nginx-A" else "nginx-B"
+    with pytest.raises(ValueError):
+        validate(value, contract.selection(deployment=other), identity(deployment=other))
+
+
+@pytest.mark.parametrize("fault", ("identity", "same_cookie", "wrong_frontend", "connected", "reused", "owner_open", "launcher_open", "frontend_open", "unverified_listener", "unreserved_consumption", "consumed_bool", "missing", "extra", "root_uid"))
+def test_apache_custody_receipt_refuses_changed_identity_or_invented_cleanup(fault):
+    selected = contract.selection(deployment="apache-B")
+    owner = identity(deployment="apache-B")
+    value = receipt("http_headers", "apache-B")
+    custody = value["apache_descriptor_custody"]
+    if fault == "identity": custody["descriptor"]["inode"] += 1
+    elif fault == "same_cookie": custody["frontend_netns_cookie"] = custody["descriptor"]["daemon_netns_cookie"]
+    elif fault == "wrong_frontend": custody["frontend_netns_cookie"] += 1
+    elif fault == "connected": custody["unconnected_at_transfer"] = False
+    elif fault == "reused": custody["transferred_once"] = False
+    elif fault == "owner_open": custody["owner_copy_closed"] = False
+    elif fault == "launcher_open": custody["launcher_copy_closed"] = False
+    elif fault == "frontend_open": custody["frontend_copy_closed"] = False
+    elif fault == "unverified_listener": custody["listener_verified"] = False
+    elif fault == "unreserved_consumption": custody["frontend_consumed"] = True
+    elif fault == "consumed_bool": custody["frontend_consumed"] = 0
+    elif fault == "missing": del value["apache_descriptor_custody"]
+    elif fault == "extra": custody["extra"] = True
+    else: value["daemon_ready"]["namespace_identity"]["uid"] = 0
+    with pytest.raises(ValueError): validate(value, selected, owner)
+
+
+@pytest.mark.parametrize("deployment", contract.DEPLOYMENTS)
+def test_frontend_mounts_peer_only_for_selected_nginx(monkeypatch, deployment):
+    monkeypatch.setattr(services, "_trusted_program", lambda name: "/usr/bin/" + name)
+    selected = contract.selection(deployment=deployment)
+    command = services.frontend_command(("/stdlib", []), "http_frontend", (31, 32), 33, selected)
+    assert ("/peer" in command) == deployment.startswith("nginx")
+    assert ("/stock-peer" in command) == deployment.startswith("nginx")
+    assert command[command.index("--uid") + 1] == "0"
+    assert "CAP_NET_ADMIN" not in command and "CAP_SYS_ADMIN" not in command
+
+
+@pytest.mark.parametrize("deployment", ("apache-A", "apache-B"))
+@pytest.mark.parametrize("selector", ("http_nmap", "http_headers"))
+def test_apache_daemon_command_keeps_accepted_nonzero_mapping_and_per_action_scratch(monkeypatch, deployment, selector):
+    monkeypatch.setattr(services.http_lab, "_trusted_program", lambda name: "/usr/bin/" + name)
+    selected = contract.selection(deployment=deployment)
+    manifest = runtime(deployment)[selector]["daemon"]
+    descriptors = tuple(range(40, 40 + len(manifest["files"])))
+    command = services.daemon_command(("/stdlib", []), manifest, descriptors, selector, 30, selected)
+    assert command[command.index("--uid") + 1] == command[command.index("--gid") + 1] == "65534"
+    index = command.index("--bind")
+    assert command[index + 1:index + 3] == ["/stock-peer/" + selector, "/scratch"]
+    assert "/peer" not in command and "--as-pid-1" in command

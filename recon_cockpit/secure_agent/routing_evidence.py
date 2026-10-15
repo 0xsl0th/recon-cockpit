@@ -181,7 +181,8 @@ def validate_result(result, manifest, step, previous=None, *, deadline=None):
     else:
         from .stock_ssh_parser import parser_version
         from .stock_ssh_parser_runtime import parse_isolated_tool_output
-        parse = lambda raw, stderr: parse_isolated_tool_output(tool, raw, stderr, configuration="A", deadline=deadline)
+        parse = lambda raw, stderr: parse_isolated_tool_output(tool, raw, stderr,
+            configuration=manifest["selection"]["configuration"], deadline=deadline)
     if native:
         raw, stderr = (_base64(result[key], maximum) for key in ("raw_output_base64", "raw_stderr_base64"))
         provenance = result["provenance"]
@@ -202,7 +203,8 @@ def validate_result(result, manifest, step, previous=None, *, deadline=None):
             raise ValueError("invalid_routing_header_rows")
         row = result["results"][0]
         if (type(row) is not dict or set(row) != {"target", "port", "bytes_received", "truncated", "raw_response", "response_sha256"}
-                or row["target"] != action["target"] or type(row["port"]) is not int or row["port"] != 8080
+                or row["target"] != action["target"] or type(row["port"]) is not int
+                or row["port"] != action["parameters"]["port"]
                 or type(row["bytes_received"]) is not int or row["bytes_received"] != result["bytes_received"]
                 or row["truncated"] is not result["truncated"]):
             raise ValueError("routing_header_custody_changed")
@@ -226,10 +228,10 @@ def validate_result(result, manifest, step, previous=None, *, deadline=None):
     return context, parsed
 
 
-def _native_and_useful(selector, result, observation):
+def _native_and_useful(selector, result, observation, selected=None):
     if result is None or "routing_service" not in result or result["routing_service"]["budget_denied"]:
         return False, False
-    selected = contract.underlying_selection(selector)
+    selected = contract.underlying_selection(selector, selected)
     service = result["routing_service"]
     if selector.startswith("http_"):
         from .stock_http_production_evidence import _native_case_verified, _identified_service_matches
@@ -277,7 +279,7 @@ def report_for(manifest, results, outcomes, closure, elapsed_ms, *, deadline=Non
         observation = None
         if result is not None:
             previous, observation = validate_result(result, manifest, step, previous, deadline=deadline)
-        native, useful = _native_and_useful(selector, result, observation)
+        native, useful = _native_and_useful(selector, result, observation, manifest["selection"])
         if result is not None and "routing_ledger" in result:
             final_ledger = result["routing_ledger"]
             recorder = result["routing_service"]["recorder"]
@@ -320,7 +322,9 @@ def report_for(manifest, results, outcomes, closure, elapsed_ms, *, deadline=Non
             "actual_provider_calls": 0, "actual_cost_microusd": 0, "elapsed_ms": elapsed_ms,
             "comparison_baseline": None, "cleanup_verified": True},
         "closure": deepcopy(closure), "limitations": [
-            "Fixed configuration A with nginx and OpenSSH only; routed Apache, configuration B and broader hostile corpus remain future work.",
+            ("Fixed configuration A with nginx and OpenSSH only; routed Apache, configuration B and broader hostile corpus remain future work."
+             if "selection_version" not in manifest["selection"] else
+             "Four fixed nginx/Apache A/B deployments with ordinary independent actions only; the full hostile/negative routing corpus remains future work."),
             "Actions are explicitly chosen independently; no response-directed workflow or attached target support.",
             "Reservations are charged before delivery and may exceed actual wire bytes after a failed or partial write.",
             "Public SSH host keys remain unverified observations; no authentication or encrypted user session is attempted.",

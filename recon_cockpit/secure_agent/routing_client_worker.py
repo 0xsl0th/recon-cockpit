@@ -57,15 +57,18 @@ def assert_routed_namespaces(host, routed):
         raise ValueError("routing_client_setup_capability_retained")
 
 
-def witness_endpoints(selector):
-    contract.validate_selector(selector)
-    return (("10.77.0.20", 2222), ("10.77.0.99", 8080), ("10.77.0.10", 8081)) if selector.startswith("http_") else (
-        ("10.77.0.10", 8080), ("10.77.0.99", 8080), ("10.77.0.20", 2223))
+def witness_endpoints(selector, selected=None):
+    from recon_cockpit.secure_agent.routing_topology_spec import endpoints
+    chosen = contract.underlying_selection(selector, selected)
+    targets = endpoints(chosen["configuration"])
+    names = ("ssh", "excluded", "http_wrong") if selector.startswith("http_") else ("http", "excluded", "ssh_wrong")
+    return tuple(targets[name] for name in names)
 
 
-def verify_network_boundary(selector):
+def verify_network_boundary(selector, selected=None):
     checks = {}
-    for name, endpoint in zip(("other_service_blocked", "excluded_destination_blocked", "wrong_port_blocked"), witness_endpoints(selector), strict=True):
+    for name, endpoint in zip(("other_service_blocked", "excluded_destination_blocked", "wrong_port_blocked"),
+                              witness_endpoints(selector, selected), strict=True):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connection:
             connection.settimeout(.15)
             try:
@@ -104,7 +107,7 @@ def verify_network_boundary(selector):
     else:
         channel.close()
         raise RuntimeError("routing_client_private_socket_allowed")
-    for path in ("/scratch", "/peer", "/stock-peer", "/stock-ssh-peer", "/tool/sshd", "/tool/nginx", "/usr/lib/openssh"):
+    for path in ("/scratch", "/peer", "/stock-peer", "/stock-ssh-peer", "/tool/sshd", "/tool/nginx", "/tool/apache2", "/usr/lib/openssh"):
         try:
             os.stat(path)
         except FileNotFoundError:
@@ -146,8 +149,8 @@ def argv_for(request):
         raise ValueError("routing_client_action_changed")
     from recon_cockpit.secure_agent import stock_ssh_spec
     from recon_cockpit.secure_agent.configurable_worker import argv_for as http_argv
-    chosen = contract.underlying_selection(selector)
-    return http_argv(request) if selector.startswith("http_") else stock_ssh_spec.client_argv("A", chosen["case"])
+    chosen = contract.underlying_selection(selector, request["selection"])
+    return http_argv(request) if selector.startswith("http_") else stock_ssh_spec.client_argv(chosen["configuration"], chosen["case"])
 
 
 def main():
@@ -161,10 +164,11 @@ def main():
         raw = raw[:-1]
         request, session_deadline, namespaces, digest = consume_launch(raw, sys.argv[1], sys.argv[2])
         selector = request["selector"]
+        selected = request["selection"]
         manifest = load_json(raw)["runtime"]["client"]
-        runtime = client_runtime_module(selector)
+        runtime = client_runtime_module(selector, selected)
         assert_routed_namespaces(request["host_namespaces"], namespaces)
-        validate_client_runtime(manifest, selector)
+        validate_client_runtime(manifest, selector, selected)
         if selector != "http_headers":
             if runtime.manifest_digest(manifest) != digest:
                 raise ValueError("routing_client_runtime_changed")
@@ -177,7 +181,7 @@ def main():
         common.syscall_filter(allow_threads=False)
         if selector == "http_headers":
             worker.install_syscall_filter()
-        checks = verify_network_boundary(selector)
+        checks = verify_network_boundary(selector, selected)
         if selector == "http_headers":
             common.apply_landlock({"/dev/null": 6, "/proc/self/status": 4})
         else:

@@ -15,7 +15,7 @@ import pytest
 from recon_cockpit.secure_agent import routing_topology_spec as spec
 
 
-def network_state():
+def network_state(configuration="A"):
     result = {}
     for role in spec.ROLES:
         links = [{"interface": "lo", "index": 1, "peer_index": None, "kind": "loopback", "up": True}]
@@ -25,10 +25,10 @@ def network_state():
         else:
             peer = 10 + next(index for index, row in enumerate(spec.LINKS) if row[0] == role)
             links.append({"interface": "eth0", "index": 2, "peer_index": peer, "kind": "veth", "up": True})
-        addresses = spec.expected_addresses(role)
+        addresses = spec.expected_addresses(role, configuration=configuration)
         routes = [{"table": 254, "destination": destination, "prefix": 32, "gateway": gateway,
                    "interface": interface, "protocol": 4, "scope": 0, "type": 1}
-                  for destination, gateway, interface in spec.routes(role)]
+                  for destination, gateway, interface in spec.routes(role, configuration=configuration)]
         for address in addresses:
             if address["prefix"] != 30:
                 continue
@@ -39,16 +39,16 @@ def network_state():
     return result
 
 
-def metadata():
-    value = {"ready": True, "profile": spec.PROFILE, "topology_sha256": spec.digest(),
+def metadata(configuration="A"):
+    value = {"ready": True, "profile": spec.PROFILE, "topology_sha256": spec.digest(configuration=configuration),
         "user": "user:[20]", "networks": {role: f"net:[{30 + index}]" for index, role in enumerate(spec.ROLES)},
         "owner_namespaces": {"user": "user:[20]", "net": "net:[32]", "mnt": "mnt:[40]", "pid": "pid:[50]"},
         "listeners": {}, "baselines": [], "filtered": [], "bounds": deepcopy(spec.BOUNDS),
         "setup_helpers": 6, "capabilities_dropped": True, "setup_disabled": True,
         "exports": list(spec.EXPORTS), "private_ssh_pairs": [], "private_pairs_drained": True,
-        "private_listener_closed": True, "network_state": network_state(),
+        "private_listener_closed": True, "network_state": network_state(configuration),
         "descriptor_custody": {"before_export": 26, "steady": 14}}
-    for index, (name, endpoint) in enumerate(spec.ENDPOINTS.items()):
+    for index, (name, endpoint) in enumerate(spec.endpoints(configuration).items()):
         cookie = 100 if name.startswith("http") else 200 if name.startswith("ssh") else 300
         value["listeners"][name] = {"inode": 1000 + index, "local": list(endpoint), "netns_cookie": cookie}
     for index in range(4):
@@ -57,7 +57,7 @@ def metadata():
             "frontend": {"inode": 2000 + index * 2, "local": front, "peer": daemon, "netns_cookie": 200},
             "daemon": {"inode": 2001 + index * 2, "local": daemon, "peer": front, "netns_cookie": 200}})
     for client in ("http", "ssh"):
-        for endpoint in spec.ENDPOINTS:
+        for endpoint in spec.endpoints(configuration):
             value["baselines"].append({"client": client, "endpoint": endpoint, "connected": True})
             value["filtered"].append({"client": client, "endpoint": endpoint, "connected": client == endpoint})
     return value
@@ -69,6 +69,91 @@ def test_saved_metadata_is_detached_and_does_not_restore_descriptors():
     validated["networks"]["router"] = "net:[999]"
     assert original["networks"]["router"] == "net:[32]"
     assert all(type(value) is not int for value in original["networks"].values())
+
+
+def test_legacy_topology_commitment_remains_pinned_and_selection_has_no_global_state():
+    expected = "c9ef1fb71272e6c757701a6670170b1ca1eb97406268346b394997f27a19513e"
+    original = deepcopy(spec.ENDPOINTS)
+    assert spec.digest() == spec.digest(configuration="A") == expected
+    assert spec.spec() == spec.spec(configuration="A")
+    assert spec.digest(configuration="B") != expected
+    selected = spec.endpoints("B")
+    selected["http"] = ("192.168.1.1", 80)
+    assert spec.endpoints("B")["http"] == ("172.23.0.10", 18080)
+    assert spec.ENDPOINTS == spec.endpoints() == original
+    assert spec.digest() == expected
+
+
+@pytest.mark.parametrize("configuration", ("A", "B"))
+def test_each_topology_keeps_transit_exports_bounds_and_exact_service_routes(configuration):
+    value = spec.spec(configuration=configuration)
+    targets = spec.endpoints(configuration)
+    assert len(value["roles"]) == 5 and len(value["links"]) == 4 and len(spec.EXPORTS) == 18
+    assert value["links"] == spec.spec()["links"] and value["bounds"] == spec.BOUNDS
+    assert value["bounds"]["setup_helpers_total"] == 6
+    assert targets["excluded"] == ("10.77.0.99", 8080)
+    expected = (("10.77.0.10", 8080, 8081), ("10.77.0.20", 2222, 2223)) if configuration == "A" else (
+        ("172.23.0.10", 18080, 18081), ("172.23.0.20", 12222, 12223))
+    for service, (address, port, wrong) in zip(("http", "ssh"), expected, strict=True):
+        assert targets[service] == (address, port) and targets[service + "_wrong"] == (address, wrong)
+        rules = value["firewalls"][service + "_client"]
+        assert f"ip daddr {address} tcp dport {port} " in rules
+        assert f"tcp dport {wrong} " not in rules
+        assert "10.77.0.99" not in rules
+        assert all(row[0] != "0.0.0.0" for row in value["routes"][service + "_client"])
+    assert sum(row["connected"] is False for row in metadata(configuration)["filtered"]) == 8
+
+
+@pytest.mark.parametrize("configuration", (None, True, 1, "C", "a", "A ", {}, []))
+def test_configuration_is_closed_before_topology_derivation(configuration):
+    for derive in (lambda: spec.endpoints(configuration), lambda: spec.spec(configuration=configuration),
+                   lambda: spec.digest(configuration=configuration),
+                   lambda: spec.routes("router", configuration=configuration),
+                   lambda: spec.firewall_rules("http_client", configuration=configuration),
+                   lambda: spec.expected_addresses("http_frontend", configuration=configuration)):
+        with pytest.raises(ValueError, match="configuration"):
+            derive()
+
+
+@pytest.mark.parametrize("configuration,other", (("A", "B"), ("B", "A")))
+def test_saved_topology_and_closure_cannot_cross_configuration(configuration, other):
+    value = metadata(configuration)
+    receipt = {"status": "closed", "owner_exited": True, "descriptors_closed": True,
+               "namespaces": value["networks"], "topology_sha256": spec.digest(configuration=configuration)}
+    assert spec.validate_metadata(value, configuration=configuration) == value
+    assert spec.validate_closure(receipt, metadata=value, configuration=configuration) == receipt
+    with pytest.raises(ValueError):
+        spec.validate_metadata(value, configuration=other)
+    with pytest.raises(ValueError):
+        spec.validate_network_state(value["network_state"], configuration=other)
+    with pytest.raises(ValueError):
+        spec.validate_closure(receipt, metadata=value, configuration=other)
+    changed = deepcopy(value)
+    changed["topology_sha256"] = spec.digest(configuration=other)
+    with pytest.raises(ValueError):
+        spec.validate_metadata(changed, configuration=other)
+
+
+@pytest.mark.parametrize("field", ("listeners", "network_state"))
+def test_recommitted_b_topology_rejects_a_listener_or_route_evidence(field):
+    value = metadata("B")
+    value[field] = metadata("A")[field]
+    with pytest.raises(ValueError):
+        spec.validate_metadata(value, configuration="B")
+
+
+@pytest.mark.parametrize("deployment", (None, "nginx-A", "nginx-B", "apache-A", "apache-B"))
+def test_owner_configuration_and_cleanup_commitment_derive_from_validated_selection(deployment):
+    from recon_cockpit.secure_agent.routing_topology import Topology
+    from recon_cockpit.secure_agent.routing_contract import selection
+    selected = selection(deployment=deployment)
+    instance = Topology(None, None, selection=selected, identity={})
+    assert instance.configuration == selected["configuration"]
+    receipt = instance.close()
+    assert spec.validate_closure(receipt, configuration=selected["configuration"]) == receipt
+    selected["configuration"] = "A" if selected["configuration"] == "B" else "B"
+    with pytest.raises(ValueError):
+        Topology(None, None, selection=selected, identity={})
 
 
 @pytest.mark.parametrize("mutate", [
