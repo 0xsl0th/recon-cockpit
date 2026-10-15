@@ -100,7 +100,9 @@ stock-daemon result separate; a refusal is never counted as useful execution.
 Case driver kinds are explicit: O1–O5, R1, N2/N3, N5, N11–N13 and N16 use
 compiled stock-daemon configurations; R2 and N6–N8 use independently recorded
 bounded wire transformations; N1, N4, N9/N10 and N14/N15 are authority/owner
-probes. The latter retain baseline daemon bytes and cannot claim the daemon
+probes. They retain baseline records, addresses and service behavior; N14 alone
+changes the generated DNS TTL from 60 to 1 for its real-expiry fixture. Other
+authority probes retain baseline daemon bytes and cannot claim the daemon
 emitted a refused operation. N1 includes a second bounded observation; N14 uses
 real monotonic expiry. A digest binds the driver kind and every exact transform
 or probe expectation, even when native/generated file bytes are otherwise equal.
@@ -150,7 +152,7 @@ and HTTP compares the exact `$http_host` including its port. P-256 is fixed
 on the server as well. The N16 TLS1.2-only negative applies at the default TLS
 server/protocol context before SNI selection. Negative certificate/version scenarios use
 closed public fixtures. Proposed recorder/authority-only cases explicitly
-retain baseline daemon bytes rather than pretending the daemon generated a
+retain baseline daemon bytes (apart from N14's explicit TTL 1) rather than pretending the daemon generated a
 transformed or refused operation.
 
 Reuse the deliberately public C15 P-256 fixture key, CA and certificate variants;
