@@ -49,12 +49,12 @@ unconfirmed cause of the earlier Apache budget-test failure.
 
 Fresh final review passed 605 focused tests; all five final CI jobs at
 `77aeb7b` passed 25,314 tests each. The merged tree matches that reviewed head.
-Stage 3 now has **ten increments, five accepted and five remaining**. Current
-[S3.4a preparation](stock-ssh-feasibility.md) pins the finite OpenSSH inputs and
-installed runtime; S3.4b must separately prove the native fork/exec, transport
-and compatibility boundary. This split removes no required case. Accepted
+Stage 3 now has **ten increments, six accepted and four remaining**.
+[S3.4a preparation](stock-ssh-feasibility.md) is accepted in PR #92 at `bfe6680`.
+Current [S3.4b native SSH](stage3-ssh-compatibility.md) must separately prove the
+fork/exec, transport and compatibility boundary. This split removes no required case. Accepted
 coverage stays **52 profiles / 17 programs**; Stage 3 remains open and adds no
-catalog entry merely for running nginx or Apache.
+catalog entry merely for running a fixture server.
 
 PRs #80/#81 (T02/T03), #82 (catalog/source review), #83/#84 (T04), #85/#86
 (T05/T06) and proposal PR #31 remain closed. Proposal submission and its broader

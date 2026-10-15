@@ -96,26 +96,27 @@ No service, tool action or authority was created; provider calls/spend remain ze
 See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
-**Current: S3.4a [OpenSSH source/runtime preparation](stock-ssh-feasibility.md).**
-Compile two finite server configurations and the existing deliberately public
-fixture key, pin the three OpenSSH executables and their linked libraries, and
-inspect the actual installed files without starting a daemon. OpenSSH key
-collection requires a preauthentication fork and executable transitions, so the
-HTTP no-fork boundary cannot be reused unchanged. **S3.4b** must separately
-implement and prove the native process/transport boundary, useful service and
-key observations, refusals and immutable evidence. Preparation grants no launch.
-Stage 3 now has **ten increments: five accepted and five remaining**, counting
-S3.4a/S3.4b separately. S3.5–S3.7 follow in order; no required gate is removed.
+**S3.4a is accepted in [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92)
+at `bfe6680`. Current: S3.4b native SSH compatibility.** The accepted
+[preparation](stock-ssh-feasibility.md) pins two finite configurations, the
+existing public test key, three OpenSSH executables and their exact linked
+libraries. It grants no native compatibility claim. The next implementation
+must prove the independent authority/audit/required-approval path, bounded
+fork/exec and packet/connection custody, useful identification and unverified
+key observations, all declared negatives, cleanup and unchanged evidence replay.
+Stage 3 has **ten increments: six accepted and four remaining**. S3.4b remains
+open until its complete corpus, review and checks pass; S3.5–S3.7 follow in order.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
-[S3.4a PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92) is ready for
-review; check its latest revision and CI before acceptance. Validation at `2a26154` passed **20 installed-runtime inspections** and
-**25,483 portable tests**, with **911 source hashes unchanged**. Independent
-spec/docs and runtime/CLI reviews passed; all 169 focused tests passed. Each
-inspection pins 25 native and eleven generated files; no daemon, authentication,
-action, grant, provider call or spend occurred. Preserve
-`.secure-agent/stock-ssh-preflight-20261014/`. Preparation awaits PR review and
-acceptance; the next implementation after that merge is S3.4b native SSH.
+
+S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
+**25,483 portable tests**, with **911 source hashes unchanged**. Fresh review at
+`6ac1066` passed 169 focused tests; all five final CI jobs passed 25,483 tests
+each. The reviewed and merged trees match, and the
+[post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38657342980)
+passed. Preserve `.secure-agent/stock-ssh-preflight-20261014/` and the PR #92 review
+receipts. Preliminary native SSH work is recorded in the [checkpoint](continue-here.md);
+it does not reopen accepted preparation or close remaining native gates.
 
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
@@ -242,7 +243,7 @@ remain unchanged. Stages do not lift the current offline-only restrictions.
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
-| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. Current S3.4a prepares the OpenSSH source/runtime contract before S3.4b native compatibility, then disconnected multi-host routing with exclusions and aggregate budgets, explicit name/redirect/referral handling and combined acceptance. Attached lab/engagement networks require separate authorization. Five increments are accepted and five remain, including the separate S3.4a/S3.4b gates. | 10 |
+| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. S3.4a OpenSSH preparation is accepted in PR #92; current S3.4b implements native SSH compatibility, then disconnected multi-host routing with exclusions and aggregate budgets, explicit name/redirect/referral handling and combined acceptance. Attached lab/engagement networks require separate authorization. Six increments are accepted and four remain, including the separate S3.4a/S3.4b gates. | 10 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |

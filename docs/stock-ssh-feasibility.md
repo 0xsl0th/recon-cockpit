@@ -1,7 +1,7 @@
 # S3.4a: finite OpenSSH inputs and installed-runtime preparation
 
 S3.3 is closed by [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91) at
-`061c057`. [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92) prepares **S3.4a** on the
+`061c057`. [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92) accepted **S3.4a** at `bfe6680` after preparation on the
 [Stage 3 roadmap](stage3-compatibility-routing.md). It compiles fixed OpenSSH
 inputs and inspects installed executable/library bytes. It starts no SSH
 service, executes no tool action, issues no authority and establishes no native compatibility.
@@ -182,9 +182,11 @@ metadata smoke predates the final generated policy inputs and is not final
 acceptance evidence. A development spec assertion initially used `bits` instead
 of the existing parser's `key_bits`; the contract/test naming was corrected
 before the frozen validation above. No native test was substituted or skipped.
-S3.4a remains a reviewed preparation candidate until its PR checks and merge.
+S3.4a is accepted in PR #92 at `bfe6680`, after fresh review, 169 focused passes
+and five passing final CI jobs. The reviewed `6ac1066` and merge trees match;
+all five post-merge checks also passed. Preparation acceptance closes no native gate.
 
-After S3.4a review/checks/merge, implement S3.4b's separate admission and native
+Continue S3.4b's separate admission and native
 owner. Require exact action authorization, independently verified durable audit
 and required single-use approval before launch. Audit is evidence, not authority.
 Prove the finite executable transitions and hard process count, exact descriptor
