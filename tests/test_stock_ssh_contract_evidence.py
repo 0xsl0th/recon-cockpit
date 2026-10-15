@@ -62,8 +62,8 @@ def peer_result(monkeypatch, chosen):
                 harness.until(lambda:harness.service.active is None)
         elif case == "N6":
             client=harness.exchange_to_server_kex()
-            client.close()
             harness.until(lambda:harness.service.active is None)
+            client.close()
         else:
             harness.exchange_to_reply()
         harness.service.close()
@@ -129,6 +129,43 @@ def test_all_twenty_finite_cases_replay_original_bytes_transformations_and_usefu
     before={p.name:(p.read_bytes(),p.stat().st_mtime_ns) for p in (tmp_path/"trial").iterdir()}
     assert evidence.inspect_trial(tmp_path/"trial")==report
     assert before=={p.name:(p.read_bytes(),p.stat().st_mtime_ns) for p in (tmp_path/"trial").iterdir()}
+
+
+@pytest.mark.parametrize("configuration", spec.CONFIGURATIONS)
+def test_n6_peer_waits_for_queued_transformation_before_client_teardown(monkeypatch, configuration):
+    exchange = Harness.exchange_to_server_kex
+    deliveries = []
+
+    def exchange_with_pending_write(harness):
+        client = exchange(harness)
+        active = harness.service.active
+        assert active is not None and active["finish_after_write"]
+        assert sum(len(chunk) for chunk in active["chunks"]) > active["chunk_offset"]
+        assert [row["stage"] for row in active["row"]["server_messages"]] == ["identification", "kexinit"]
+
+        class ClientTeardown:
+            def close(self):
+                row = harness.service.snapshot()["connections"][0]
+                assert harness.service.active is None and row["reason"] == "complete"
+                proposed = bytes.fromhex(row["proposed_response_hex"])
+                assert bytes.fromhex(row["delivered_response_hex"]) == proposed
+                # Observe the actual loopback bytes and EOF before peer close,
+                # not only the recorder's successful send accounting.
+                deliveries.append(harness.read_closed(client, proposed))
+                client.close()
+
+        return ClientTeardown()
+
+    monkeypatch.setattr(Harness, "exchange_to_server_kex", exchange_with_pending_write)
+    chosen = manifest(configuration, "N6")
+    result = peer_result(monkeypatch, chosen)
+    record = result["stock_ssh_owner"]["recorder"]
+    row = record["connections"][0]
+    assert deliveries == [bytes.fromhex(row["proposed_response_hex"])]
+    assert record["terminal_reason"] == "closed" and row["reason"] == "complete"
+    assert bytes.fromhex(row["original_daemon_hex"]) != deliveries[0]
+    assert row["transforms"][-1]["disposition"] == "unsupported_host_key_algorithm"
+    assert evidence._native_case_verified(chosen["selection"], result)
 
 
 @pytest.mark.parametrize("fault",("fork_count","missing_exit","wrong_image","peer_cookie","peer_inode","peer_endpoint",
