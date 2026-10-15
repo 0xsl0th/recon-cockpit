@@ -49,12 +49,14 @@ unconfirmed cause of the earlier Apache budget-test failure.
 
 Fresh final review passed 605 focused tests; all five final CI jobs at
 `77aeb7b` passed 25,314 tests each. The merged tree matches that reviewed head.
-Stage 3 now has **ten increments, six accepted and four remaining**.
+Stage 3 now has **ten increments, seven accepted and three remaining**.
 [S3.4a preparation](stock-ssh-feasibility.md) is accepted in PR #92 at `bfe6680`.
-Current [S3.4b native SSH](stage3-ssh-compatibility.md), in PR #93, has passed
-its finite native, regression, replay and portable gates and awaits final PR
-review/merge. Its separate fork/exec and transport boundary removes no required
-case; original intermittent failures remain recorded. Accepted
+[S3.4b native SSH](stage3-ssh-compatibility.md) is accepted in PR #93 at
+`a7f46b1` after fresh review and five passing latest checks. Its finite native,
+regression, replay and portable gates passed; original intermittent failures
+remain recorded. Current [S3.5 routing](stage3-disconnected-routing.md) begins
+with fixed A services, distinct owned hosts and aggregate enforcement. It grants
+no routed support claim until native validation and review. Accepted
 coverage stays **52 profiles / 17 programs**; Stage 3 remains open and adds no
 catalog entry merely for running a fixture server.
 

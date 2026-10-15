@@ -96,20 +96,22 @@ No service, tool action or authority was created; provider calls/spend remain ze
 See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
-**S3.4a is accepted in [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92)
-at `bfe6680`. Current: S3.4b native SSH compatibility.** The accepted
-[preparation](stock-ssh-feasibility.md) pins two finite configurations, the
-existing public test key, three OpenSSH executables and their exact linked
-libraries. Preparation alone grants no native compatibility claim. The
-[native candidate in PR #93](stage3-ssh-compatibility.md) now passes 94 native
-SSH checks, 71 accepted-profile regressions and 26,141 local portable tests.
-Its eight ordinary/robustness completions, twelve expected negatives and
-unchanged evidence replay have independent review. Original intermittent
-regression failures remain recorded with unconfirmed cause; the complete
-follow-up gate passed without changing production bounds. PR #93 awaits final
-review and merge; it does not add authenticated SSH or trusted host identity.
-Stage 3 has **ten increments: six accepted and four remaining**. S3.4b remains
-open until its complete corpus, review and checks pass; S3.5–S3.7 follow in order.
+**S3.4b is accepted in [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93)
+at `a7f46b1`; S3.4 is closed. Current: S3.5 disconnected multi-host routing.**
+The [SSH evidence](stage3-ssh-compatibility.md) records 94 native checks,
+71 accepted-profile regressions, 26,141 local portable tests, eight useful
+completions, twelve expected negatives and zero unnecessary refusals. Fresh
+independent reviews found no blockers and all five latest CI jobs passed at
+`321ff9c`; the merge tree matches. Original intermittent regression failures
+remain recorded with unconfirmed cause despite the complete passing follow-up.
+SSH authentication and trusted host identity are not supported.
+
+The [S3.5 implementation contract](stage3-disconnected-routing.md) pins a first
+fixed A routing slice: separate owned HTTP/SSH hosts, routed links, a listening
+excluded endpoint and one aggregate ledger across four explicit actions.
+Implementation and native validation remain in progress; this grants no routed
+compatibility claim yet. Stage 3 has **ten increments: seven accepted and three
+remaining**. S3.5–S3.7 follow in order.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
 
@@ -119,8 +121,8 @@ S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
 each. The reviewed and merged trees match, and the
 [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38657342980)
 passed. Preserve `.secure-agent/stock-ssh-preflight-20261014/` and the PR #92 review
-receipts. Preliminary native SSH work is recorded in the [checkpoint](continue-here.md);
-it does not reopen accepted preparation or close remaining native gates.
+receipts. Accepted native SSH work is recorded in the [checkpoint](continue-here.md);
+S3.5 does not reopen accepted preparation or compatibility milestones.
 
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay

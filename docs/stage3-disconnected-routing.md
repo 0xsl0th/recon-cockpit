@@ -31,6 +31,16 @@ Temporary setup capabilities are removed before action execution. HTTP and SSH
 clients use separate static destination filters; actions cannot reconfigure routes
 or choose another namespace. No host network namespace, physical interface,
 external default route, slirp transport or host firewall mutation is permitted.
+Setup may run exactly five fixed, sequential nftables helpers, one per routed
+namespace, with at most one helper alive at a time. The sealed topology/ledger
+owner has no children. No additional setup program or arbitrary command is allowed.
+Setup also creates four finite private SSH TCP pairs (three banner connections
+and one keyscan connection) inside the SSH frontend namespace. Close the private
+listener, retain only exact established tuples, verify and drain the fixed setup
+witness, then export the eight socket descriptors only to the trusted frontend
+and custodian. The full export is eighteen descriptors: one user namespace,
+five network namespaces, two service listeners, two role-bound ledger channels
+and eight private SSH sockets. No such descriptor reaches a native client.
 
 The owned router also hosts a listening excluded endpoint at
 `10.77.0.99:8080`. Establish and record live listening baselines, including

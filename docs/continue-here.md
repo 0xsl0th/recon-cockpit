@@ -108,41 +108,45 @@ checks and all five final CI jobs passing 25,483 tests each. The reviewed
 also passed. Retain `.secure-agent/pr92-review-20261014/` and
 `.secure-agent/pr92-review-20261015/merge-postmerge-ci.json`; do not repeat this merge.
 
-**Current: S3.4b native SSH compatibility is ready for PR review**, in
-[PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93), branch
-`feature/stage3-ssh-native` at `/tmp/recon-stage3-ssh-native`.
-Frozen implementation `d183dee` passed **94 native tests**, including all 20
-A/B corpus rows: **eight useful completions, twelve expected negatives and zero
-unnecessary refusals**. Independent boundary, integration, native-test and
-saved-evidence reviews passed. The 20 corpus bundles and the separate scripted
-required-approval row replayed unchanged; scripted tests are not personal acceptance.
+**S3.4b is accepted in [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93),
+merged as `a7f46b1` on 15 October; S3.4 stays closed.** Frozen implementation
+`d183dee` passed 94 native SSH checks: all 20 A/B rows, eight useful completions,
+twelve expected negatives and zero unnecessary refusals. At `f6ee4d6`, the complete
+accepted-profile gate passed 71 native checks and 26,141 portable tests, with
+950 source hashes unchanged. The final `321ff9c` revision passed all five hosted
+checks and fresh independent reviews; focused checks passed 228 and 742 tests
+(the selections overlap and are not a unique combined count). The reviewed and
+merged trees match. Preserve `.secure-agent/pr93-review-20261015/` and
+`.secure-agent/stock-ssh-native-20261015/`; do not repeat this merge.
 
-At `f6ee4d6`, the complete accepted-profile regression gate passed **71 tests**
-(52 HTTP, eight configurable workflow and eleven audit/approval checks), and
-full local portable validation passed **26,141 tests**, with no failures, errors
-or skips. All **950 source hashes stayed unchanged** during each run. All five
-[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38734496589)
-also passed. Later corrections affect portable fixtures/documentation only;
-production and native acceptance files still match `d183dee`.
+The [SSH runbook](stage3-ssh-compatibility.md) retains four initial HTTP startup
+refusals and two later regression failures. Their cause remains unconfirmed;
+passing follow-up runs do not erase them. Scripted approval tests are not personal
+acceptance. The finite SSH result grants no authentication or trusted host identity.
 
-The [candidate runbook](stage3-ssh-compatibility.md) retains the original failed
-attempts, including four initial HTTP startup refusals and two later regression
-failures. Diagnostic comparisons with accepted main did not reproduce them;
-their cause remains unconfirmed despite the complete passing follow-up run.
-Preserve `.secure-agent/stock-ssh-native-20261015/`, including review receipts,
-source pins and failed attempts. Before merging PR #93, review its latest head
-and required checks. S3.4b is not yet accepted; S3.5 multi-host routing follows
-its acceptance. No live-model or paid call is enabled.
+**Current: S3.5 disconnected multi-host routing**, branch
+`feature/stage3-disconnected-routing` at `/tmp/recon-stage3-routing`.
+The [implementation contract](stage3-disconnected-routing.md) was pinned before
+code: fixed A nginx/SSH, four independently selected actions, five owned routed
+network namespaces, a listening excluded endpoint and a persistent aggregate
+ledger. Caps include eight connections, two HTTP GETs, one SSH key exchange,
+one active connection, 250 ms global admission spacing and a 60-second lifetime.
+Three fixed lowered-budget negative cases preserve otherwise valid authority.
+First prove native namespace/link custody; then validate useful real-service
+execution, exact destinations, aggregate enforcement, cleanup and unchanged
+inspection. No routed support or S3.5 acceptance is claimed while this is in
+progress. Apache/B and the complete hostile/negative matrix must remain explicit
+in the acceptance accounting. S3.6 and S3.7 follow; no paid/live model is enabled.
 
 Accepted preparation compiled two finite server configurations and the existing
 deliberately public fixture key, pinned the three OpenSSH executables and their
 linked libraries, and inspected the actual installed files without starting a daemon. OpenSSH key
 collection requires a preauthentication fork and executable transitions, so the
-HTTP no-fork boundary cannot be reused unchanged. The separate **S3.4b** candidate
-above implements and validates the native process/transport boundary, useful
+HTTP no-fork boundary cannot be reused unchanged. The accepted **S3.4b** implementation
+above validates the native process/transport boundary, useful
 service and key observations, refusals and immutable evidence. Preparation itself
 grants no launch.
-Stage 3 now has **ten increments: six accepted and four remaining**, counting
+Stage 3 now has **ten increments: seven accepted and three remaining**, counting
 S3.4a/S3.4b separately. S3.5–S3.7 follow in order; no required gate is removed.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
@@ -152,7 +156,7 @@ spec/docs and runtime/CLI reviews passed; all 169 focused tests passed. Each
 inspection pins 25 native and eleven generated files; no daemon, authentication,
 action, grant, provider call or spend occurred. Preserve
 `.secure-agent/stock-ssh-preflight-20261014/`. This accepted preparation grants
-no native compatibility claim; S3.4b remains open.
+no native compatibility claim by itself; S3.4b is accepted separately above.
 
 
 S3.2a frozen source `8e130df` passed **26/26 actual installed-runtime inspections**
