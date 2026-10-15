@@ -107,14 +107,19 @@ checks and all five final CI jobs passing 25,483 tests each. The reviewed
 `6ac1066` and merge trees match. The [post-merge workflow](https://github.com/0xsl0th/recon-cockpit/actions/runs/38657342980)
 also passed. Retain `.secure-agent/pr92-review-20261014/`; do not repeat this merge.
 
-**Current: S3.4b native SSH compatibility**, on `feature/stage3-ssh-native` in
-`/tmp/recon-stage3-ssh-native`. Work resumed after a usage-limit interruption.
-The native process custodian, bounded recorder and separately versioned client
-parser are being integrated with the witnessed launcher. Preliminary native
-checks establish stock identification and public fixture-key exchange with the
-finite fork/exec graph and descendant cleanup. They do **not** close S3.4b:
-complete secure-path corpus, enforcement, replay, regression checks and review
-remain required. Preserve all successful and failed preliminary attempts under
+**Current: S3.4b native SSH compatibility**, in draft
+[PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93), branch
+`feature/stage3-ssh-native` at `/tmp/recon-stage3-ssh-native`.
+Frozen implementation `d183dee` passed **94 native tests**, including all 20
+A/B corpus rows and required-approval, audit, packet/process and cleanup gates;
+all **950 source pins stayed unchanged**. Independent boundary and integration
+reviews found no remaining findings. The [candidate runbook](stage3-ssh-compatibility.md)
+records the finite supported environment and limitations.
+
+Existing-profile regression validation at the same source passed 67 of 71
+checks; four HTTP startup refusals are under investigation. Keep PR #93 in draft
+until those failures, full portable validation and saved-evidence review are
+resolved. Preserve successful and failed attempts under
 `.secure-agent/stock-ssh-native-20261015/`. No live-model or paid call is enabled.
 
 Accepted preparation:

@@ -20,6 +20,27 @@ def banner(configuration="A", case="O2"):
 CLIENT_IDENTIFICATION = b"SSH-2.0-OpenSSH_10.2p1 test-collector\r\n"
 
 
+class PortableListener(socket.socket):
+    """Real TCP traffic; emulate only the nonportable SO_ACCEPTCONN query.
+
+    The flag changes only after the real listen syscall succeeds. Production
+    Linux socket checks remain unchanged and have separate native coverage.
+    """
+
+    def __init__(self):
+        super().__init__(socket.AF_INET, socket.SOCK_STREAM)
+        self._listening = False
+
+    def listen(self, backlog=0):
+        super().listen(backlog)
+        self._listening = True
+
+    def getsockopt(self, level, option, *args):
+        if self.fileno() >= 0 and (level, option) == (socket.SOL_SOCKET, socket.SO_ACCEPTCONN) and not args:
+            return int(self._listening)
+        return super().getsockopt(level, option, *args)
+
+
 def kex(configuration="A", *, server=False):
     names = [b"diffie-hellman-group14-sha256", b"rsa-sha2-256" if configuration == "A" else b"rsa-sha2-512",
              b"aes128-ctr", b"aes128-ctr", b"hmac-sha2-256", b"hmac-sha2-256", b"none", b"none", b"", b""]
@@ -42,11 +63,11 @@ class Harness:
     def __init__(self, monkeypatch, configuration="A", case="O2"):
         self.clock, self.configuration, self.case = 100.0, configuration, case
         monkeypatch.setattr(recorder.time, "monotonic", lambda: self.clock)
-        self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.listener = PortableListener()
         self.listener.bind(("127.0.0.1", 0)); self.listener.listen(8)
         self.address = self.listener.getsockname()
-        # Portable tests change only the compiled endpoint table; production
-        # constructor still requires exact getsockname equality and AF_INET.
+        # Bind real loopback traffic to the test endpoint; the constructor
+        # still requires exact getsockname equality and AF_INET.
         monkeypatch.setitem(recorder.CONFIGURATIONS, configuration, self.address)
         self.peers, self.clients, self.finalized, self.factories = [], [], [], []
         def factory(number, deadline):
@@ -307,14 +328,14 @@ def test_snapshot_replay_refuses_counter_stream_provenance_and_authority_forgery
 
 @pytest.mark.parametrize("kind", ["wrong_family", "wrong_endpoint", "not_listener", "missing_finalizer", "expired"])
 def test_constructor_refuses_unbound_endpoint_or_missing_custody(monkeypatch, kind):
-    channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    channel = PortableListener()
     channel.bind(("127.0.0.1", 0)); channel.listen(1)
     monkeypatch.setitem(recorder.CONFIGURATIONS, "A", channel.getsockname())
     if kind == "wrong_family":
         channel.close(); channel, peer = socket.socketpair(); peer.close()
     elif kind == "wrong_endpoint": monkeypatch.setitem(recorder.CONFIGURATIONS, "A", ("10.77.0.20", 2222))
     elif kind == "not_listener":
-        channel.close(); channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        channel.close(); channel = PortableListener()
         channel.bind(("127.0.0.1", 0)); monkeypatch.setitem(recorder.CONFIGURATIONS, "A", channel.getsockname())
     try:
         with pytest.raises(ValueError):

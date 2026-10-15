@@ -176,7 +176,11 @@ def test_private_pairs_are_real_connected_tcp_and_listener_is_closed():
 
 
 def test_descriptor_packet_transfers_exactly_one_owned_cloexec_fd():
-    sender, receiver = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+    # Darwin does not provide Unix SOCK_SEQPACKET. Datagram socketpairs keep
+    # message boundaries and SCM_RIGHTS for this codec test; the production
+    # control-channel type and Linux CLOEXEC checks are not changed.
+    kind = socket.SOCK_SEQPACKET if sys.platform == "linux" else socket.SOCK_DGRAM
+    sender, receiver = socket.socketpair(socket.AF_UNIX, kind)
     descriptor = os.open("/dev/null", os.O_RDONLY | os.O_CLOEXEC)
     received = None
     try:

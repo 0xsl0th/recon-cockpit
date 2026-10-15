@@ -1,6 +1,7 @@
 # S3.4b: bounded stock OpenSSH compatibility
 
-This is the native implementation candidate following accepted S3.4a
+This is the native implementation candidate in
+[PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93), following accepted S3.4a
 [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92), merged at `bfe6680`.
 S3.4b remains open until the complete validation below, independent review and
 required PR checks pass. It adds no accepted catalog entry: the inventory remains
@@ -11,6 +12,12 @@ The purpose is useful, bounded service identification and public host-key
 observation against an actual installed OpenSSH server. This does not establish
 authentication, a trusted host identity, a completed encrypted user session,
 general SSH interoperability or professional engagement readiness.
+
+The validated environment is Linux x86_64 with the reviewed OpenSSH
+`1:10.2p1-2` executable/dependency layout. It requires the recorded namespace,
+seccomp, Landlock, ptrace and nftables facilities plus the pinned client/runtime
+tools. This is not a portability claim for other architectures, OpenSSH packages
+or host configurations; failed prerequisites stop execution.
 
 ## Exact action and authority
 
@@ -38,10 +45,24 @@ do not authorize an action. Constructing the host backend or lab is metadata
 only. A changed selection, action, policy, session, runtime or budget cannot reuse
 the launch.
 
-Default CLI execution requires approval and stops without a personal review.
+The diagnostic CLI has no personal-approval UI. `--execute` with its default
+approval-required policy stops as `noninteractive_approval_required`.
 The explicitly named unattended owned-lab test mode uses a separate policy for
 this finite disconnected corpus. Scripted PTY approval tests exercise the real
 approval service but do not count as personal owner acceptance.
+
+For an explicitly selected disconnected test, use a new private directory:
+
+```sh
+.venv/bin/python scripts/stock_ssh_compatibility.py run \
+  --configuration A --case O2 --directory .secure-agent/ssh-A-O2 \
+  --execute --unattended-owned-lab-test
+.venv/bin/python scripts/stock_ssh_compatibility.py inspect .secure-agent/ssh-A-O2
+```
+
+Omit `--execute` for a dry run. The CLI returns zero only for a passed case;
+dry runs and blocked executions return one. Inspection may create only the
+isolated networkless parser, never a server, client action or approval.
 
 ## Server custody and transport
 
@@ -141,10 +162,45 @@ counts and cleanup. Native output is reparsed in a networkless worker. Inspectio
 does not start a daemon, restore a session or issue an approval. Hashes establish
 consistency of saved artifacts, not protection against a compromised host owner.
 
-Final source pins, complete corpus/enforcement counts, unchanged replay and
-accepted-profile regression results will be recorded here after validation.
-The initial transport failure and artifact-size failure remain retained rather
-than replaced by successful repetitions.
+Saved artifacts have a separate committed limit: at most six `0600` files in a
+private `0700` directory, 1 MiB aggregate, 256 KiB per JSON object and nesting
+depth 64. These limits do not enlarge the 8,192-byte tool output bound or the
+accepted HTTP evidence limits.
+
+Frozen implementation `d183dee` passed **94 native checks**: all 20 corpus rows,
+31 authority/approval/audit checks, 24 process-custody checks, six isolated-parser
+checks and 13 packet/connection-budget checks. All **950 source hashes remained
+unchanged**. Independent review verified eight useful completions, twelve
+expected negatives, zero unnecessary refusals and 24 fully reaped corpus server
+instances. The 100 per-trial destination checks cover **nine distinct denied
+endpoints**; repetitions are not additional distinct endpoints.
+
+The 20 corpus bundles passed 40 unchanged Python/CLI inspections during native
+validation. An independent pass then inspected those 20 bundles and the separate
+required-approval completion, preserving bytes, modes and modification times.
+The approval row uses a scripted test PTY, not personal owner acceptance.
+The independent evidence receipt is
+`independent-final-evidence-review-d183dee.json`, SHA256
+`1126476711fd520465e34916ae2a887b45c8216d05c68b9563a4bb14fbffc4a8`, under the
+private directory above. Separate boundary, integration and native-test review
+receipts bind the reviewed files to the same frozen code.
+
+Measured action latency was **136 / 238 / 2,105 ms** (minimum/median/maximum),
+and whole-trial wall time was **4,535 / 5,377.5 / 6,650 ms**. These observations
+include the deliberately delayed case; they are not comparative overhead results.
+All provider calls and actual spending were zero.
+
+Existing-profile regression and full portable validation remain separate gates.
+The first 71-case regression run passed 67 cases; four HTTP startup refusals
+remain unexplained. Thirty-two private diagnostic repetitions passed under the
+same bounds, but instrumentation can affect timing and does not replace the
+failed original cases. Keep their original reports and diagnostic logs.
+
+The initial private TCP transport failure and artifact-size failure are retained
+beside their fixes. The development corpus also ran across a selection-commitment
+change and is not acceptance evidence. Initial hosted CI exposed Linux-only
+socket assumptions in portable fixtures and a stale preparation-only assertion;
+the corrections affect tests only, with production and native cases unchanged.
 
 After S3.4b acceptance, continue **S3.5 disconnected multi-host routing** from
 the [roadmap](stage3-compatibility-routing.md). Credentials, paid/live models,

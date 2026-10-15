@@ -274,15 +274,20 @@ def test_fault_provenance_and_hostile_data_do_not_claim_authority_injection_or_d
 
 
 def test_preparation_cannot_be_used_as_a_registered_launcher_contract():
+    from recon_cockpit.secure_agent import stock_ssh_contract as production
     scope = spec._scope("A")
     config = {"version": "1", "service_id": "00000000-0000-0000-0000-000000000001",
         "session_id": "00000000-0000-0000-0000-000000000002", "execute": True,
         "policy": configurable_contract.policy_for_scope(scope).to_dict(),
         "limits": dict(configurable_contract.LIMITS), "profile": configurable_contract.PROFILE, "case": scope}
-    for profile in (spec.PROFILE, spec.PLANNED_CONTRACT):
-        assert profile not in launcher_protocol.PROFILES
+    assert spec.PROFILE not in launcher_protocol.PROFILES
+    assert spec.PLANNED_CONTRACT == production.PROFILE
+    assert launcher_protocol.PROFILES[production.PROFILE] == production.BACKEND
+    for profile in (spec.PROFILE, production.PROFILE):
         with pytest.raises(ValueError):
             launch_admission.configuration({**config, "profile": profile, "case": spec.selection("A", "O2")})
+    with pytest.raises(ValueError, match="invalid_stock_ssh_selection"):
+        production.validate_selection(spec.selection("A", "O2"))
     request = {"version": "1", "service_id": config["service_id"], "session_id": config["session_id"],
         "sequence": 1, "operation": "execute", "action": spec.action("A", "O2"),
         "policy_digest": launch_admission.digest(config["policy"])}

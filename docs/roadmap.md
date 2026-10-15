@@ -1,6 +1,6 @@
 # Roadmap — secure AI pentesting workflows
 
-Current continuation (14 October 2026):
+Current continuation (15 October 2026):
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
 [T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) merged as `f0542a8`
