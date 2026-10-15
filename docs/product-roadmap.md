@@ -100,10 +100,14 @@ read-only preparation is not production support.
 at `bfe6680`. Current: S3.4b native SSH compatibility.** The accepted
 [preparation](stock-ssh-feasibility.md) pins two finite configurations, the
 existing public test key, three OpenSSH executables and their exact linked
-libraries. It grants no native compatibility claim. The next implementation
-must prove the independent authority/audit/required-approval path, bounded
-fork/exec and packet/connection custody, useful identification and unverified
-key observations, all declared negatives, cleanup and unchanged evidence replay.
+libraries. Preparation alone grants no native compatibility claim. The
+[native candidate in PR #93](stage3-ssh-compatibility.md) now passes 94 native
+SSH checks, 71 accepted-profile regressions and 26,141 local portable tests.
+Its eight ordinary/robustness completions, twelve expected negatives and
+unchanged evidence replay have independent review. Original intermittent
+regression failures remain recorded with unconfirmed cause; the complete
+follow-up gate passed without changing production bounds. PR #93 awaits final
+review and merge; it does not add authenticated SSH or trusted host identity.
 Stage 3 has **ten increments: six accepted and four remaining**. S3.4b remains
 open until its complete corpus, review and checks pass; S3.5–S3.7 follow in order.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed

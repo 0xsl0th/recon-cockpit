@@ -51,8 +51,10 @@ Fresh final review passed 605 focused tests; all five final CI jobs at
 `77aeb7b` passed 25,314 tests each. The merged tree matches that reviewed head.
 Stage 3 now has **ten increments, six accepted and four remaining**.
 [S3.4a preparation](stock-ssh-feasibility.md) is accepted in PR #92 at `bfe6680`.
-Current [S3.4b native SSH](stage3-ssh-compatibility.md) must separately prove the
-fork/exec, transport and compatibility boundary. This split removes no required case. Accepted
+Current [S3.4b native SSH](stage3-ssh-compatibility.md), in PR #93, has passed
+its finite native, regression, replay and portable gates and awaits final PR
+review/merge. Its separate fork/exec and transport boundary removes no required
+case; original intermittent failures remain recorded. Accepted
 coverage stays **52 profiles / 17 programs**; Stage 3 remains open and adds no
 catalog entry merely for running a fixture server.
 

@@ -105,36 +105,43 @@ in [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92), merged as `bfe668
 on 14 October.** Fresh independent code/evidence reviews passed, with 169 focused
 checks and all five final CI jobs passing 25,483 tests each. The reviewed
 `6ac1066` and merge trees match. The [post-merge workflow](https://github.com/0xsl0th/recon-cockpit/actions/runs/38657342980)
-also passed. Retain `.secure-agent/pr92-review-20261014/`; do not repeat this merge.
+also passed. Retain `.secure-agent/pr92-review-20261014/` and
+`.secure-agent/pr92-review-20261015/merge-postmerge-ci.json`; do not repeat this merge.
 
-**Current: S3.4b native SSH compatibility**, in draft
+**Current: S3.4b native SSH compatibility is ready for PR review**, in
 [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93), branch
 `feature/stage3-ssh-native` at `/tmp/recon-stage3-ssh-native`.
 Frozen implementation `d183dee` passed **94 native tests**, including all 20
-A/B corpus rows and required-approval, audit, packet/process and cleanup gates;
-all **950 source pins stayed unchanged**. Independent boundary and integration
-reviews found no remaining findings. The [candidate runbook](stage3-ssh-compatibility.md)
-records the finite supported environment and limitations.
+A/B corpus rows: **eight useful completions, twelve expected negatives and zero
+unnecessary refusals**. Independent boundary, integration, native-test and
+saved-evidence reviews passed. The 20 corpus bundles and the separate scripted
+required-approval row replayed unchanged; scripted tests are not personal acceptance.
 
-Independent saved-evidence review is complete: all 20 corpus bundles and the
-required-approval row replayed unchanged. Existing-profile regression validation
-first passed 67 of 71 checks, with four HTTP startup refusals. A second run at
-`e06503d` passed 69 of 71: the original four passed, but an HTTP CLI-inspection
-timeout and an early configurable background-workflow stop occurred. Their cause
-remains under investigation; successful diagnostic repetitions do not erase
-them. Four Linux hosted jobs pass; one macOS portable socket-fixture correction
-and full local portable validation remain. Keep PR #93 in draft until the
-regression and check gates are resolved. Preserve all attempts under
-`.secure-agent/stock-ssh-native-20261015/`. No live-model or paid call is enabled.
+At `f6ee4d6`, the complete accepted-profile regression gate passed **71 tests**
+(52 HTTP, eight configurable workflow and eleven audit/approval checks), and
+full local portable validation passed **26,141 tests**, with no failures, errors
+or skips. All **950 source hashes stayed unchanged** during each run. All five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38734496589)
+also passed. Later corrections affect portable fixtures/documentation only;
+production and native acceptance files still match `d183dee`.
 
-Accepted preparation:
-Compile two finite server configurations and the existing deliberately public
-fixture key, pin the three OpenSSH executables and their linked libraries, and
-inspect the actual installed files without starting a daemon. OpenSSH key
+The [candidate runbook](stage3-ssh-compatibility.md) retains the original failed
+attempts, including four initial HTTP startup refusals and two later regression
+failures. Diagnostic comparisons with accepted main did not reproduce them;
+their cause remains unconfirmed despite the complete passing follow-up run.
+Preserve `.secure-agent/stock-ssh-native-20261015/`, including review receipts,
+source pins and failed attempts. Before merging PR #93, review its latest head
+and required checks. S3.4b is not yet accepted; S3.5 multi-host routing follows
+its acceptance. No live-model or paid call is enabled.
+
+Accepted preparation compiled two finite server configurations and the existing
+deliberately public fixture key, pinned the three OpenSSH executables and their
+linked libraries, and inspected the actual installed files without starting a daemon. OpenSSH key
 collection requires a preauthentication fork and executable transitions, so the
-HTTP no-fork boundary cannot be reused unchanged. **S3.4b** must separately
-implement and prove the native process/transport boundary, useful service and
-key observations, refusals and immutable evidence. Preparation grants no launch.
+HTTP no-fork boundary cannot be reused unchanged. The separate **S3.4b** candidate
+above implements and validates the native process/transport boundary, useful
+service and key observations, refusals and immutable evidence. Preparation itself
+grants no launch.
 Stage 3 now has **ten increments: six accepted and four remaining**, counting
 S3.4a/S3.4b separately. S3.5–S3.7 follow in order; no required gate is removed.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed

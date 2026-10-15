@@ -3,8 +3,8 @@
 This is the native implementation candidate in
 [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93), following accepted S3.4a
 [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92), merged at `bfe6680`.
-S3.4b remains open until the complete validation below, independent review and
-required PR checks pass. It adds no accepted catalog entry: the inventory remains
+Native validation and independent reviews are complete. S3.4b remains open until
+final PR review, required checks and authorized merge. It adds no accepted catalog entry: the inventory remains
 **52 secure profiles / 17 external programs**. Stock OpenSSH is a fixture server,
 not another integrated pentest program.
 
@@ -190,7 +190,18 @@ and whole-trial wall time was **4,535 / 5,377.5 / 6,650 ms**. These observations
 include the deliberately delayed case; they are not comparative overhead results.
 All provider calls and actual spending were zero.
 
-Existing-profile regression and full portable validation remain separate gates.
+At `f6ee4d6`, complete validation passed **71 accepted-profile native regressions**
+(52 HTTP corpus rows, eight configurable workflow checks and eleven audit/approval
+checks) and **26,141 local portable tests**, without failures, errors or skips.
+All 950 source hashes stayed unchanged during each run. Independent review
+verified the regression receipts and saved evidence; retain
+`independent-final-regression-review-f6ee4d6.json`, SHA256
+`8bacd1bc9177a9bbf8d87dc624a3dc6176ddcda86afa1e38df9f37b92b7dec2f`.
+All five [hosted jobs at that revision](https://github.com/0xsl0th/recon-cockpit/actions/runs/38734496589)
+also passed. Production code and native test files match `d183dee`; subsequent
+changes correct portable fixtures and document results. Review the latest PR
+head and checks before merge.
+
 The first 71-case regression run passed 67 cases; four HTTP startup refusals
 remain unexplained. Thirty-two private diagnostic repetitions passed under the
 same bounds, but instrumentation can affect timing and does not replace the
@@ -199,7 +210,11 @@ A second uninstrumented run at `e06503d` passed 69 of 71 checks: the original
 four passed, but a saved HTTP CLI inspection timed out and a configurable
 background workflow stopped after two actions. These are separate retained
 failures, not evidence of a resolved cause. The saved SSH evidence review passed
-independently; neither regression run closes the complete regression gate.
+independently. Neither earlier regression run closed the gate; the complete
+71-case follow-up did. Candidate and accepted-main comparisons each completed
+six configurable workflows and eight exact saved-evidence CLI inspections.
+Those repetitions found no reproducible cause and do not count as additional
+unique regression cases. No production deadline or security bound was relaxed.
 
 The initial private TCP transport failure and artifact-size failure are retained
 beside their fixes. The development corpus also ran across a selection-commitment
