@@ -267,9 +267,29 @@ jobs must pass on the final review revision before merge; the earlier local
 
 The private checkpoint records the final PR/CI references and review receipts.
 Subsequent documentation reconciliation changes no production or test bytes.
-All failed attempts remain retained. No case, deadline or execution bound was
+All failed attempts remain retained. No case, native deadline or execution bound was
 removed; provider calls and actual cost remain zero. This candidate does not
 close S3.5 or add an accepted catalog profile.
+
+## CI recovery after terminal interruption
+
+[PR #95](https://github.com/0xsl0th/recon-cockpit/pull/95) was published at
+`e14dadc` before the terminal interruption. Its first
+[five-job run](https://github.com/0xsl0th/recon-cockpit/actions/runs/38786196200)
+passed Linux/Python 3.12 and 3.14 and macOS/Python 3.14, each with **26,878 tests**
+and the required zero-skip completeness guard. Linux/Python 3.11 and 3.13 also
+logged **26,878 passing tests**, taking 594.40 and 598.51 seconds respectively,
+but GitHub cancelled both jobs at their ten-minute limit before the final guard.
+The GitHub annotations explicitly record the time limit. These cancellations
+are incomplete CI gates even though pytest reported no failures.
+
+The workflow job limit increases to fifteen minutes to accommodate the complete
+suite, setup and final verification. The five-job matrix, full test selection,
+zero-skip guard, dependency checks and all native execution limits are unchanged.
+No production or test source changes are needed. Preserve the first attempt's
+logs and annotations under the private `pr95-ci-e14dadc/` directory; record the
+new final-revision CI receipt in `current-progress.json`. All five jobs must pass
+before acceptance. Leave this PR open for review after verification.
 
 ## Remaining required work
 

@@ -28,8 +28,15 @@ unchanged source pins and no failures, errors or skips. Independent routing
 evidence review verifies 50 bundles and 90 results; all four deployments complete
 48 useful selected actions with zero unnecessary refusals in ordinary trials.
 The five new timestamp/tamper/event-limit checks also pass. The prior 26,873-test
-local portable run precedes the correction; use the full five-job portable CI
-matrix on the final PR revision for current-source validation before merge.
+local portable run precedes the correction. [PR #95](https://github.com/0xsl0th/recon-cockpit/pull/95)
+is open. Its first [CI run](https://github.com/0xsl0th/recon-cockpit/actions/runs/38786196200)
+at `e14dadc` passed three jobs; Python 3.11 and 3.13 each logged 26,878 passing
+tests but exceeded the ten-minute job limit before the required completeness
+guard. Those two jobs remain cancelled, not accepted CI passes. The CI job limit
+is now fifteen minutes to include setup and final verification; all test
+selection, the zero-skip guard and native execution limits remain unchanged.
+Verify all five jobs on the final PR revision, record their results in the
+private checkpoint, and leave PR #95 open for review.
 The extension remains a review candidate, not an accepted milestone.
 Preserve all failed attempts and diagnostics in
 `.secure-agent/stage3-routing-deployments-20261015/`; its `current-progress.json`
