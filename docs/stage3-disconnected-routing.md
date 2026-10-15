@@ -31,8 +31,11 @@ Temporary setup capabilities are removed before action execution. HTTP and SSH
 clients use separate static destination filters; actions cannot reconfigure routes
 or choose another namespace. No host network namespace, physical interface,
 external default route, slirp transport or host firewall mutation is permitted.
-Setup may run exactly five fixed, sequential nftables helpers, one per routed
-namespace, with at most one helper alive at a time. The sealed topology/ledger
+Setup may run exactly six fixed, sequential nftables helpers: one temporary
+SSH frontend ruleset before the four private TCP handshakes, then one final
+ruleset per routed namespace, with at most one helper alive at a time. The
+temporary rules allow only the four prebound tuples; the final SSH rules require
+established connections on those exact tuples and the temporary listener closes. The sealed topology/ledger
 owner has no children. No additional setup program or arbitrary command is allowed.
 Setup also creates four finite private SSH TCP pairs (three banner connections
 and one keyscan connection) inside the SSH frontend namespace. Close the private
@@ -88,6 +91,12 @@ lowers aggregate HTTP requests to one; `ssh_zero` lowers key exchanges to zero.
 All other ceilings and the four otherwise authorized actions remain unchanged.
 These explicit negative cases must report expected budget refusal, not useful
 completion. No arbitrary budget values or target inputs are accepted.
+
+The routing bootstrap alone has a separately bounded 128 KiB frame for the four
+exact runtime manifests. Other profiles retain their existing frame limits;
+each native client receives only its selected runtime. Saved evidence is bounded
+separately to fifteen private files, 2 MiB aggregate, 512 KiB per JSON object and
+depth 64. These artifact limits enlarge neither execution nor wire budgets.
 
 ## Completion criteria and remaining coverage
 
