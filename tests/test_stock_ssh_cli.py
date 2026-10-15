@@ -27,5 +27,3 @@ def test_cli_refuses_missing_or_unbounded_selector_before_output(tmp_path, extra
     result = subprocess.run([sys.executable, str(SCRIPT), "run", "--directory", str(directory), *extra],
                             capture_output=True, timeout=10)
     assert result.returncode == 2 and not directory.exists()
-
-

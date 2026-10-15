@@ -178,4 +178,3 @@ def test_landlock_uses_same_exact_destination_and_execute_allowlist(monkeypatch)
     monkeypatch.setattr(worker.common, 'apply_landlock', seen.append)
     runtime.landlock(manifest())
     assert seen == [worker._landlock_permissions(native_manifest(native.NMAP_SERVICE))]
-
