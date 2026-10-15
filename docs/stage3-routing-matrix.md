@@ -290,3 +290,22 @@ all native deadlines and resource caps unchanged.
 
 Only review and acceptance of the complete batch closes S3.5. S3.6 name/TLS
 binding and S3.7 combined acceptance remain next in order; Stage 3 stays open.
+
+## Accepted merge and next required work
+
+[PR #96](https://github.com/0xsl0th/recon-cockpit/pull/96) merged as `6f60ae0`
+after fresh independent source/evidence review and all five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38800952361)
+passed **27,274 tests each**, with 1,907 integration tests deselected, zero
+skips/failures/errors and the completeness guard. Reviewed head `104c45d`, CI
+merge and actual merge share tree `3a015d929900d07fb2fd62dfc1c516a065788d80`.
+The 248 native routing checks, 76 regressions, 996 unchanged source pins and
+120 immutable inspections above remain the accepted native/replay evidence.
+The original failed attempts remain retained; merge does not erase them.
+Private fresh-review and merge receipts are in `.secure-agent/pr96-review-20261015/`.
+Post-merge CI is recorded separately from the final PR acceptance gate.
+
+S3.5 is closed. [S3.6a static DNS/TLS preparation](stage3-name-tls-preflight.md)
+is current, followed by separately pinned S3.6b native name/trust binding and
+S3.7 combined acceptance. Stage 3 has ten logical increments, eight accepted
+and two remaining; static preparation alone closes neither remaining increment.

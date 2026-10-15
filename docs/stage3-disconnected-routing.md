@@ -204,9 +204,10 @@ establishes a fix or erases the original unexplained refusal. No deadline,
 security bound or required case was relaxed. Diagnostic repetitions do not add
 unique acceptance cases.
 
-**Next required work:** review the implemented [Apache/A/B deployment candidate](stage3-routing-deployments.md),
-then pin and complete the full ordinary-variation/hostile/negative routing matrix
-under the unchanged aggregate caps. S3.5 remains
-open, Stage 3 remains seven accepted/three open, and the catalog remains 52
-accepted profiles across 17 external programs. This branch accepts no new
-catalog profile or completed milestone.
+**Accepted continuation:** PR #95 accepted the
+[Apache/A/B deployment extension](stage3-routing-deployments.md), and PR #96
+accepted the [full routing matrix](stage3-routing-matrix.md) at `6f60ae0` under
+the unchanged aggregate caps. S3.5 is closed; Stage 3 has eight logical
+increments accepted and two open. Continue [S3.6a static DNS/TLS preparation](stage3-name-tls-preflight.md),
+then S3.6b native binding and S3.7 combined acceptance. The catalog remains
+52 accepted profiles across 17 external programs.

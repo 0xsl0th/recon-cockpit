@@ -305,22 +305,24 @@ also passed 26,878 tests each and the completeness guard. This accepts the deplo
 ## Remaining required work
 
 This batch extends only the current ordinary operation mapping. The complete
-ordinary-variation, hostile-response, negative and enforcement matrix remains
-a separate required S3.5 batch. Its [finite v3 contract](stage3-routing-matrix.md)
+ordinary-variation, hostile-response, negative and enforcement matrix was
+accepted separately in PR #96 at `6f60ae0`. Its [finite v3 contract](stage3-routing-matrix.md)
 was pinned at `f68e212` before implementation. Frozen matrix implementation
 `0e09f82` passes 248 native routing checks, 76 accepted-profile/witness
-regressions and 120 unchanged inspections of 60 original v1/v2 bundles; final
-portable CI and review remain separate acceptance gates.
+regressions and 120 unchanged inspections of 60 original v1/v2 bundles. Fresh
+independent review and all five final CI jobs (27,274 passes each) closed its
+remaining acceptance gates.
 Standalone HTTP N4 delivers a 2,049th overflow witness, while routing caps
 header delivery at 2,048 bytes. The v3 matrix explicitly records the owner
 refusing a deterministic 2,049-byte response proposal before delivery, with zero
 response credit. This preserves the cap and records a routed response-budget
 refusal, without claiming the standalone overflow outcome.
 
-S3.5 closes only after the full required matrix and review gates pass. S3.6
-name/TLS binding and S3.7 combined acceptance follow in order. Stage 3 remains
-ten logical increments, seven accepted and three open; the current estimate is
-12–13 PRs because routing needs multiple batches. The catalog remains 52 accepted
+S3.5 is closed. [S3.6a static preparation](stage3-name-tls-preflight.md), S3.6b
+native name/TLS binding and S3.7 combined acceptance follow in order. Stage 3
+remains ten logical increments, eight accepted and two open; selecting the
+separate preparation batch makes the current estimate 13 PRs within the
+previous 12–13 range. The catalog remains 52 accepted
 profiles / 17 external programs. Completed milestones stay closed. Credentials,
 paid/live models, deeper workflows, comparative benchmarking, attached networks
 and proposal submission remain deferred.

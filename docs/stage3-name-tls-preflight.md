@@ -199,3 +199,35 @@ Primary references: [dnsmasq manual](https://thekelleys.org.uk/dnsmasq/docs/dnsm
 Installed manual pages and package metadata are retained in the private source
 review. These references inform proposed settings; only the separate native
 gate can establish that they work inside the reviewed execution boundary.
+
+## Implementation and inspection entry point
+
+The pure compiler and read-only inspector implement the pinned contract at
+`2f29145` with the N14 TTL clarification at `1b99fc5`. Each selection binds ten
+compiled public fixture/configuration files. The installed dependency inventory
+contains 52 native ELF files (four executables and 48 unique interpreter/library
+files), making 62 manifest rows per selection. The native files total
+33,724,240 bytes in the inspected installation; actual hashes identify it.
+These linked dependencies do not establish runtime-loaded module/provider
+closure or successful configuration parsing.
+
+The CLI accepts only closed selectors and a new receipt below an existing
+owner-only directory, for example:
+
+```sh
+mkdir -m 700 /tmp/name-tls-inspection
+.venv/bin/python scripts/inspect_name_tls_runtime.py \
+  --configuration A --case O1 --output /tmp/name-tls-inspection/A-O1.json
+```
+
+An existing output, symlink parent/file or non-private parent is refused.
+Successful `runtime_inspected` receipts keep native execution, configuration
+validation, complete runtime closure and authority explicitly unverified.
+The four trusted `ldd` probes share the same real fifteen-second control as
+file inspection and reverification. The CLI never executes the proposed DNS,
+HTTP, TLS or daemon inputs.
+
+The new portable preparation suite has **327 tests**: 122 spec/compiler,
+184 runtime and 21 CLI tests. Initial focused runs pass; frozen 46-selection
+inspection, independent final review and all five final-head portable CI jobs
+remain separate gates recorded in the private checkpoint and PR checks.

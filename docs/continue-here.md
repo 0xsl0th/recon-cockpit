@@ -29,29 +29,38 @@ Preserve `.secure-agent/pr95-review-20261015/merge-review-receipt.json` and
 `.secure-agent/stage3-routing-deployments-20261015/`. All five [post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38790187807)
 also passed 26,878 tests each, with the completeness guard. Do not repeat this merge or reopen S3.4.
 
-The active worktree is `/tmp/recon-stage3-routing-matrix`, branch
-`feature/stage3-routing-matrix`, based on `d0586f5`. The
-[full matrix contract](stage3-routing-matrix.md) was pinned at `f68e212` before
-implementation. It defines twenty closed v3 profiles, preserves v1/v2 and all
-execution caps, and requires 164 new native corpus/enforcement checks alongside
-the retained 80 routing checks and 76 accepted-profile/witness regressions.
-Pre-native review adds four explicit negative-stop owner/direct-launch tests,
-bringing the required routing gate to 248 without removing an original case.
-Frozen implementation `0e09f82` passed all **248 native routing checks**
-(132 matrix, 88 retained/witness, 26 owner probes and two direct-launcher checks)
-and **76 accepted-profile/witness regressions**, with all **996 source pins
-unchanged**. All 60 original v1/v2 bundles passed 120 unchanged Python/CLI
-inspections. The original development collection audit failure remains recorded.
-The local full portable run passed 27,273 tests and failed one deadline fixture
-that aged between collection and execution. Its test-only correction constructs
-the same invalid controls at execution time; all 94 broker tests pass. Production
-and native test bytes remain identical to `0e09f82`.
-The final portable gate is all five required CI jobs at the final PR head,
-**27,274 tests per job**, with no skips, failures or errors and the completeness
-guard. Record their actual status and independent review receipts in
-`.secure-agent/stage3-routing-matrix-20261015/current-progress.json` and the PR
-checks; the failed local run is not a portable pass. S3.5 remains open until this full batch is accepted;
-S3.6 name/TLS binding and S3.7 combined acceptance follow in order.
+**S3.5 is accepted in [PR #96](https://github.com/0xsl0th/recon-cockpit/pull/96),
+merged as `6f60ae0`.** Fresh independent authority and evidence reviews found no
+blockers. Reviewed head `104c45d`, the CI checkout and actual merge share tree
+`3a015d929900d07fb2fd62dfc1c516a065788d80`. All five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38800952361)
+passed **27,274 tests each**, with zero skips, failures or errors and the
+completeness guard. The [full matrix](stage3-routing-matrix.md) retains **248
+native routing checks**, **76 accepted-profile/witness regressions**, 996
+unchanged source pins and 120 unchanged inspections of 60 original v1/v2 bundles.
+Independent review of all 132 matrix reports confirmed 108 useful actions and
+60 native negatives, with all 1,148 artifact files unchanged. Original collection
+and portable deadline-fixture failures remain preserved. Retain
+`.secure-agent/pr96-review-20261015/merge-review-receipt.json` and
+`.secure-agent/stage3-routing-matrix-20261015/`; do not repeat this merge.
+[Post-merge CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/38807082801)
+is tracked separately in the private PR96 review directory. Its first macOS
+run recorded 27,273 passes and one routing SSH N6 replay failure; the retained
+log is `postmerge-macos-failed.log`. Investigation remains open; this is not
+represented as a passing post-merge gate.
+
+**Current: S3.6a static owned DNS/TLS preparation.** The active worktree is
+`/tmp/recon-stage3-name-tls-preflight`, branch `feature/stage3-name-tls-preflight`,
+based on `6f60ae0`. The [preparation contract](stage3-name-tls-preflight.md) was
+pinned at `2f29145`, with the explicit TTL-one expiry clarification at `1b99fc5`,
+before implementation. It retains 23 cases across A/B, 46 required read-only
+runtime inspections and all later native binding/enforcement gates. Current
+work compiles fixed inputs and inspects four fixed ELF images; it creates no
+service, action, binding or authority. S3.6b must pin and validate the complete
+native boundary afterward; S3.7 combined acceptance follows in order.
+The private checkpoint is `.secure-agent/stage3-name-tls-20261015/current-progress.json`;
+`.secure-agent/continue-here.json` is the repository-level recovery pointer.
+Stage 3 has ten logical increments, eight accepted and two remaining. The
+current thirteen-PR estimate includes separate S3.6 preparation and native PRs.
 
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
@@ -172,10 +181,9 @@ refusals and two later regression failures. Their cause remains unconfirmed;
 passing follow-up runs do not erase them. Scripted approval tests are not personal
 acceptance. The finite SSH result grants no authentication or trusted host identity.
 
-**Current: S3.5 disconnected multi-host routing.** The first fixed-A slice below
-is accepted in PR #94; PR #95 accepts the four deployments. Continue in
-`feature/stage3-routing-matrix` at `/tmp/recon-stage3-routing-matrix` using
-the [full matrix contract](stage3-routing-matrix.md).
+**S3.5 accepted history.** PR #94 accepts the fixed-A slice, PR #95 the four
+deployments, and PR #96 the [full matrix](stage3-routing-matrix.md). Current
+work follows the [S3.6a preparation contract](stage3-name-tls-preflight.md).
 The [implementation contract](stage3-disconnected-routing.md) was pinned before
 code: fixed A nginx/SSH, four independently selected actions, five owned routed
 network namespaces, a listening excluded endpoint and a persistent aggregate
@@ -190,8 +198,9 @@ the excess work; required-approval refusal, lifecycle cleanup and immutable
 Python/CLI inspection passed separately. The original 75/76 regression run's
 Apache B/O1 refusal remains unexplained and retained; passing diagnostics and
 the complete follow-up do not establish a fix. Fresh code/evidence reviews found
-no blockers in this finite slice, merged at `46f9b73`. PR #95 subsequently accepts routed Apache/B; S3.5 remains open for
-the complete hostile/negative and enforcement matrix. S3.6 and S3.7 follow in order.
+no blockers in this finite slice, merged at `46f9b73`. PR #95 subsequently
+accepts routed Apache/B and PR #96 accepts the complete matrix, closing S3.5.
+S3.6 and S3.7 follow in order.
 
 Accepted preparation compiled two finite server configurations and the existing
 deliberately public fixture key, pinned the three OpenSSH executables and their
@@ -201,8 +210,8 @@ HTTP no-fork boundary cannot be reused unchanged. The accepted **S3.4b** impleme
 above validates the native process/transport boundary, useful
 service and key observations, refusals and immutable evidence. Preparation itself
 grants no launch.
-Stage 3 now has **ten increments: seven accepted and three remaining**, counting
-S3.4a/S3.4b separately. S3.5–S3.7 follow in order; no required gate is removed.
+Stage 3 now has **ten increments: eight accepted and two remaining**, counting
+S3.4a/S3.4b separately. S3.6–S3.7 follow in order; no required gate is removed.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
 S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
@@ -492,10 +501,12 @@ capabilities from the professional-v1 release and the longer-term 40+ program
 product. The historical PR #73 forecast was **40–60 PRs for an operator-assisted
 professional v1** and **80–130 total for the broader product**, from the PR #72
 baseline. The 14 October Stage 3 revision changed those baseline totals to
-**44–62** and **84–132**. The 15 October routing plan now separates the fixed deployment extension
-from the full hostile/negative matrix and revises them to **46–65**
+**44–62** and **84–132**. The earlier 15 October routing plan separated the fixed deployment extension
+from the full hostile/negative matrix and revised them to **46–65**
 and **86–135**, with Stage 3 estimated at 12–13 PRs across ten logical increments.
-Completed work is included, not charged again.
+Selecting separate S3.6a preparation and S3.6b native batches now selects
+13 PRs within that range, narrowing current totals to **47–65** and **87–135**
+without adding an outcome. Completed work is included, not charged again.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that every catalog profile is available through the GUI.
 [PR #73](https://github.com/0xsl0th/recon-cockpit/pull/73) accepted the forecast at
@@ -2410,11 +2421,12 @@ Planning uses synthetic responses.
    each. S3.3 is closed. PRs #92/#93 separately accepted OpenSSH preparation and
    native compatibility; S3.4 is closed. PR #94's first fixed-A S3.5 slice is
    accepted at `46f9b73`; PR #95 accepts fixed nginx/Apache A/B deployments at
-   `d0586f5`. Complete the pinned [full routed matrix](stage3-routing-matrix.md),
-   including native owner enforcement, retained regressions, immutable replay,
-   full portable validation and independent review before S3.6 name/TLS binding.
-   Stage 3 has ten increments, seven accepted
-   and three remaining; no native gate is removed.
+   `d0586f5`. PR #96 accepts the [full routed matrix](stage3-routing-matrix.md)
+   at `6f60ae0`, closing S3.5 with its complete native/replay, review and final
+   portable CI gates. Continue [S3.6a static DNS/TLS preparation](stage3-name-tls-preflight.md),
+   followed by separately pinned S3.6b native binding and S3.7 combined acceptance.
+   Stage 3 has ten increments, eight accepted
+   and two remaining; no native gate is removed.
    Network attachment still requires separate authorization; do not substitute
    optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI closed.
