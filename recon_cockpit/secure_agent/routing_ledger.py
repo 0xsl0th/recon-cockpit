@@ -220,6 +220,13 @@ class Ledger:
             _require(_integer(message["output_bytes"], 0, active["counters"]["output_bytes"]), "output_bytes_limit")
             active.update(status="finished", output_bytes_retained=message["output_bytes"], finished_us=elapsed)
             self._active = None
+            # The committed negative ends this owner's sequence even when its
+            # native client exits successfully. Derive the stop here instead
+            # of relying on a caller's runner or saved-evidence classification.
+            # _stop preserves an earlier budget/deadline refusal during cleanup.
+            if (self.selection.get("selection_version") == "3"
+                    and contract.case_is_negative(active["selector"], self.selection)):
+                self._stop("declared_negative_completed")
             return None, 0
         if operation == "RESERVE_CONNECTION":
             active = self._bound_action(message, role, frontend=True)

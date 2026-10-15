@@ -289,13 +289,25 @@ zero-skip guard, dependency checks and all native execution limits are unchanged
 No production or test source changes are needed. Preserve the first attempt's
 logs and annotations under the private `pr95-ci-e14dadc/` directory; record the
 new final-revision CI receipt in `current-progress.json`. All five jobs must pass
-before acceptance. Leave this PR open for review after verification.
+before acceptance. This original review condition was subsequently satisfied below.
+
+## Acceptance
+
+[PR #95](https://github.com/0xsl0th/recon-cockpit/pull/95) merged as `d0586f5`
+after fresh independent code/evidence review. All five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38788051369)
+at `0edf046` passed 26,878 tests each, with zero skips, failures or errors and
+the required completeness guard. Reviewed head, synthetic CI merge and actual
+merge share tree `c337adc80862f488e0c631b67112f1d72703745d`. Production/native
+sources are unchanged from the frozen passing gates above. Preserve
+`.secure-agent/pr95-review-20261015/merge-review-receipt.json`; all five [post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38790187807)
+also passed 26,878 tests each and the completeness guard. This accepts the deployment extension only.
 
 ## Remaining required work
 
 This batch extends only the current ordinary operation mapping. The complete
 ordinary-variation, hostile-response, negative and enforcement matrix remains
-a separate required S3.5 batch. Pin its finite case selectors before code.
+a separate required S3.5 batch. Its [finite v3 contract](stage3-routing-matrix.md)
+was pinned at `f68e212` before implementation.
 In particular, standalone HTTP N4 delivers a 2,049th overflow witness, while
 routing caps header delivery at 2,048 bytes. Define truthful routed overflow
 semantics under the existing cap; do not silently increase it or relabel a

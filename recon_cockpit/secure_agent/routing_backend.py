@@ -53,6 +53,9 @@ class AuthorizedRoutingBackend(AuthorizedFixtureBackend):
             control.check()
             action, policy = parse_action(action.to_dict()), parse_policy(policy.to_dict())
             selector = contract.action_selector(action, self.selection)
+            if (self.selection.get("selection_version") == "3"
+                    and any(contract.case_is_negative(name, self.selection) for name in self._used)):
+                raise IsolationUnavailable("Routing declared negative already attempted")
             if (selector in self._used or self._sequence >= 4
                     or self._output + action.parameters.max_output_bytes > self._limits.max_output_bytes
                     or policy.digest != self._policy_digest or self._policy.digest != self._policy_digest

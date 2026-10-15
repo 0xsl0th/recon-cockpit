@@ -60,6 +60,18 @@ physical cleanup remain distinct evidence: never invent a graceful final
 owner receipt when shutdown is abrupt. This stop is determined by the committed
 case, not by hostile returned text or an automatic follow-up decision.
 
+Pre-native authority review found that runner stopping alone would leave a direct
+witnessed caller able to request another slot. The owner must therefore become
+terminal when a v3 declared-negative action settles, with
+`declared_negative_completed` unless an earlier terminal refusal already applies.
+This is independent of client status and preserves the real result. Two additional
+native owner probes (HTTP N1 and SSH N1 commitments) must demonstrate that a later
+ARM cannot reopen the owner or change its counters. A matching backend gate must
+reject a subsequent direct witnessed submission before starting its service or
+client. Two further native tests exercise that direct route without the trial
+runner. These four checks extend the original pinned gate; no originally required
+test is removed.
+
 ## Outcome and evidence contract
 
 Ordinary and robustness cases must complete usefully with corroborated original
@@ -129,6 +141,9 @@ v2 deployment forty; audit/approval witnesses eight; post-useful lifecycle four;
 live unconsumed Apache handoff cleanup two; Apache descriptor custody seven;
 topology transport eight; malformed bootstrap cleanup one. The combined routing
 gate therefore contains **244 tests**, before any explicitly documented additions.
+The two owner-enforced negative-stop probes and two direct witnessed-launcher
+checks above bring the current required routing gate to **248 tests** (168 new
+and 80 retained).
 Also retain the **76 accepted-profile/witness regressions**, real saved v1/v2
 bundle replay, full portable validation, independent review and required CI.
 Native counts must come from the collected test manifest and completed receipts,
@@ -193,3 +208,27 @@ S3.6 name/TLS binding and S3.7 combined acceptance follow in order. Coverage
 remains 52 accepted profiles across 17 external programs. Credentials, paid/live
 models, attached targets, automatic workflows, comparative benchmarking and
 proposal submission remain deferred.
+
+## Development validation checkpoint
+
+Before the final acceptance runs, the unchanged 996-file development source
+passed five representative native case trials, all 26 owner/channel probes and
+two direct witnessed-launcher negative-stop trials. The case smoke covers HTTP
+O3 and adapted N4 plus SSH R1, N3 and N1. These are development checks, not the
+complete 248-test gate. Portable reviews retain 234 initial evidence checks,
+22 affected evidence checks after the owner fix, 131 existing/new ledger checks
+and 28 backend checks; overlapping focused selections are not added together.
+
+The initial private validation wrapper accidentally combined repository `-q`
+with another `-q` during collection, producing per-file counts rather than node
+IDs. All three native pytest runs passed without errors or skips, but their
+wrapper completeness audits failed with zero captured IDs. Those original
+receipts remain unchanged. The corrected collector explicitly clears configured
+quiet options and independently records all 248 required native node IDs.
+Final runs must have matching collected and completed manifests, frozen source,
+zero failures/errors/skips and complete independent evidence review.
+
+Private receipts and failed attempts remain under
+`.secure-agent/stage3-routing-matrix-20261015/`. Final native, retained regression,
+legacy replay, full portable and hosted CI gates are pending. This checkpoint
+closes neither S3.5 nor Stage 3 and grants no new catalog profile or target scope.

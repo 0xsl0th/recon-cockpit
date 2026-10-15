@@ -47,12 +47,17 @@ def owned_only(monkeypatch):
     monkeypatch.setattr(AuthorizedRoutingBackend, "run", lambda *_a, **_kw: pytest.fail("host tool fallback"))
 
 
-@pytest.fixture(scope="module", params=(None, "apache-B"), ids=("legacy", "apache-B"))
+@pytest.fixture(scope="module", params=(
+    pytest.param(None, id="legacy"), pytest.param("apache-B", id="apache-B"),
+    pytest.param(("nginx-A", "baseline"), id="matrix-nginx-A"),
+    pytest.param(("apache-B", "baseline"), id="matrix-apache-B"),
+))
 def native_runtime(request):
     _owned_linux_only()
     # Inspect actual immutable clients and daemons, outside the timed proof
     # exchange. The production launcher independently checks these again.
-    selected = contract.selection(deployment=request.param)
+    selected = (contract.selection(deployment=request.param[0], case_profile=request.param[1])
+                if isinstance(request.param, tuple) else contract.selection(deployment=request.param))
     return selected, contract.inspect_runtime(selected, ExecutionControl(time.monotonic() + 60))
 
 

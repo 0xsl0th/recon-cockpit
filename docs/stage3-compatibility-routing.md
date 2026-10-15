@@ -67,10 +67,10 @@ Preserve the [HTTP evidence](stage3-http-production.md) and accepted
 [OpenSSH compatibility](stage3-ssh-compatibility.md). S3.5 is current; its
 [first implementation contract](stage3-disconnected-routing.md) pinned topology
 and aggregate limits before code. PR #94's fixed-A nginx/OpenSSH slice, accepted at `46f9b73`,
-passed 25 native checks at `659c053` with all 981 source pins unchanged. Routed
-Apache/B is now an implemented [deployment candidate](stage3-routing-deployments.md)
-with corrected native gates complete. Its review/acceptance and the full
-ordinary-variation/hostile/negative matrix remain required before S3.5 closes.
+passed 25 native checks at `659c053` with all 981 source pins unchanged. PR #95 accepts routed
+Apache/B in the [deployment extension](stage3-routing-deployments.md) at `d0586f5`.
+The [full routed case and enforcement matrix](stage3-routing-matrix.md), pinned
+at `f68e212`, is now in implementation and remains required before S3.5 closes.
 
 | Slice | Required outcome | Completion evidence |
 | --- | --- | --- |
@@ -81,7 +81,7 @@ ordinary-variation/hostile/negative matrix remain required before S3.5 closes.
 | **S3.3b — accepted in PR #91** | Integrate the reviewed HTTP subset through the secure path and validate both nginx and Apache with the same observable outcomes. | [Production evidence](stage3-http-production.md): all 52 corpus rows and 54 boundary checks passed, with reviewed Apache UID/listener custody, exact action/endpoint enforcement, authority/approval/audit, budget/cleanup, 104 unchanged inspections and 68 distinct accepted-profile native regressions. Fresh final review, 605 focused tests and five passing final CI jobs preceded merge `061c057`. |
 | **S3.4a — accepted in PR #92: OpenSSH source/runtime preparation** | Compile two fixed configurations and the existing public test key, freeze the finite useful/negative corpus, inspect three pinned OpenSSH executables and their exact linked libraries. | [Preparation contract](stock-ssh-feasibility.md), portable validation and actual read-only installed-runtime receipts. No daemon, launcher registration, authentication or native-compatibility claim. |
 | **S3.4b — accepted in PR #93: native SSH compatibility** | Execute independently authorized NULL/banner identification and RSA host-key collection against the two stock OpenSSH configurations. Enforce the separately reviewed fork/exec and packet/connection boundary. | [Accepted native validation](stage3-ssh-compatibility.md), merge `a7f46b1`: complete declared ordinary/robustness/negative corpus plus authority, required approval, audit, destination, process/exec, request/byte, cancellation, cleanup, tamper and immutable-evidence gates. No user authentication, account probe, completed encrypted user session or verified host identity. |
-| **S3.5 — current: disconnected multi-host routing** | Put the supported services in distinct owned network namespaces connected by controlled owned links, with exact action-specific destination binding, explicit exclusions and aggregate request/connection/rate budgets across hosts and actions. | At least two service hosts with distinct recorded network namespace identities, routed links and an excluded listening endpoint; loopback address aliases alone do not qualify. Demonstrate useful selected-target execution, denied other-service/excluded traffic, and attempted budget bypass by splitting actions or restarting workers. No host network namespace, physical interface, default external route or host firewall modification. PR #94 accepts the first fixed-A nginx/OpenSSH slice; routed Apache/B and the full hostile/negative matrix remain open. |
+| **S3.5 — current: disconnected multi-host routing** | Put the supported services in distinct owned network namespaces connected by controlled owned links, with exact action-specific destination binding, explicit exclusions and aggregate request/connection/rate budgets across hosts and actions. | At least two service hosts with distinct recorded network namespace identities, routed links and an excluded listening endpoint; loopback address aliases alone do not qualify. Demonstrate useful selected-target execution, denied other-service/excluded traffic, and attempted budget bypass by splitting actions or restarting workers. No host network namespace, physical interface, default external route or host firewall modification. PR #94 accepts the first fixed-A nginx/OpenSSH slice; PR #95 accepts routed Apache/B; the full hostile/negative and enforcement matrix remains open. |
 | **S3.6 — names, TLS binding, redirects and referrals** | Add a bounded owned-resolver case with a declared name mapped to an explicit IPv4 endpoint set; bind the observed answer, exact HTTP Host, TLS SNI, expected certificate name and pinned trust material to a separately authorized action. Include one selected bounded TLS mode. Reject rebinding, excluded/ambiguous answers, undeclared names and name/trust mismatches. Record redirects and referral advertisements without following them. | A pinned stock resolver and exact query/answer plus TLS name/trust corpus; useful allowed-name execution and denied changed/excluded answers, Host/SNI/certificate-name mismatches and untrusted certificates. No recursive external lookup, search suffix, alias chasing, IPv6 transport, peer-selected trust or automatic follow-up. Freeze the resolver and selected TLS runtime contract before implementation; returned data never enlarges scope. |
 | **S3.7 — combined acceptance** | Verify the finite HTTP/SSH/DNS routing and TLS name/trust subset together, preserve all accepted profiles and document remaining compatibility gaps. | Complete ordinary, hostile, negative and enforcement matrix; cleanup, unchanged replay, supported Linux prerequisites, independent review and required checks. Stage 3 closes only after S3.2–S3.6 are accepted, with no required case pending. |
 
@@ -331,8 +331,8 @@ S3.3a is accepted in PR #90 at `d30a2f1`. S3.3b's production integration on
 both servers is accepted in PR #91 at `061c057`. S3.4a's finite OpenSSH
 configuration, public-key and runtime contract is accepted in PR #92. S3.4b is accepted in PR #93 at `a7f46b1`. Continue the
 [S3.5 routing implementation](stage3-disconnected-routing.md): PR #94 is accepted.
-Complete the [fixed deployment extension](stage3-routing-deployments.md), then
-the full ordinary-variation/hostile/negative matrix under the same usefulness, enforcement, evidence and review
-gates. S3.4 stays closed.
+PR #95 accepts the [fixed deployment extension](stage3-routing-deployments.md).
+Complete the pinned [full matrix](stage3-routing-matrix.md) under the same
+usefulness, enforcement, evidence and review gates. S3.4 stays closed.
 Do not repeat accepted milestones, add optional signatures, set up model
 credentials or request network attachment for this disconnected stage.
