@@ -17,7 +17,7 @@ from .routing_evidence import RoutingEvidenceStore
 from .routing_lab import RoutingLab
 
 
-def run_trial(directory, *, selectors, budget_case="ordinary", deployment=None, execute=False,
+def run_trial(directory, *, selectors, budget_case="ordinary", deployment=None, case_profile=None, execute=False,
               unattended_owned_lab_test=False, cancelled=None):
     if type(execute) is not bool or type(unattended_owned_lab_test) is not bool:
         raise ValueError("invalid_routing_mode")
@@ -27,7 +27,7 @@ def run_trial(directory, *, selectors, budget_case="ordinary", deployment=None, 
             or any(type(value) is not str or value not in contract.SELECTORS for value in selectors)
             or len(set(selectors)) != len(selectors)):
         raise ValueError("invalid_routing_selectors")
-    selected = contract.selection(budget_case, deployment=deployment)
+    selected = contract.selection(budget_case, deployment=deployment, case_profile=case_profile)
     trial_started = time.monotonic()
     preflight = ExecutionControl(trial_started + 60, cancelled=cancelled)
     runtime = contract.inspect_runtime(selected, preflight)
@@ -52,8 +52,11 @@ def run_trial(directory, *, selectors, budget_case="ordinary", deployment=None, 
                             execution_control=control, session_step=step)
                         outcomes.append(outcome)
                         result = outcome.get("untrusted_result") or {}
+                        negative_attempt = (selected.get("selection_version") == "3" and execute
+                            and "execution_id" in outcome and contract.case_is_negative(selector, selected))
                         if (outcome.get("execution_status") not in {"succeeded", "not_started"}
-                                or result.get("routing_ledger", {}).get("terminal")):
+                                or result.get("routing_ledger", {}).get("terminal")
+                                or negative_attempt):
                             break
                 closure = backend.close()
         return evidence.finalize(outcomes, closure=closure,

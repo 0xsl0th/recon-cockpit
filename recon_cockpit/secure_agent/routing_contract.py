@@ -8,6 +8,7 @@ from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from . import stock_http_production_contract as http
 from . import stock_http_spec
+from . import stock_ssh_spec
 from . import stock_ssh_contract as ssh
 from . import routing_topology_spec as topology
 from .models import Action, parse_policy
@@ -16,11 +17,22 @@ PROFILE = "disconnected_routing_v1"
 BACKEND = "linux-authorized-disconnected-routing-v1"
 BOUNDARY_REVISION = "five-namespaces-single-lifetime-ledger-v1"
 DEPLOYMENT_BOUNDARY_REVISION = "five-namespaces-single-lifetime-ledger-apache-one-use-handoff-v2"
+MATRIX_BOUNDARY_REVISION = "five-namespaces-fixed-case-matrix-owner-enforcement-v3"
 DEPLOYMENTS = ("nginx-A", "nginx-B", "apache-A", "apache-B")
 SELECTORS = ("http_nmap", "http_headers", "ssh_nmap", "ssh_keys")
 BUDGET_CASES = ("ordinary", "connection_one", "http_one", "ssh_zero")
 SELECTION_FIELDS = ("configuration", "budget_case", "selection_sha256")
 DEPLOYMENT_SELECTION_FIELDS = ("selection_version", "implementation", *SELECTION_FIELDS)
+MATRIX_SELECTION_FIELDS = (*DEPLOYMENT_SELECTION_FIELDS, "case_profile")
+_BASELINE_CASES = {"http_nmap": "O5", "http_headers": "O1", "ssh_nmap": "O1", "ssh_keys": "O2"}
+_SELECTOR_CASES = {
+    "http_nmap": ("O5", "O6"),
+    "http_headers": ("O1", "O2", "O3", "O4", "R1", "R2", "N1", "N2", "N3", "N4", "N5"),
+    "ssh_nmap": ("O1", "N1"),
+    "ssh_keys": ("O2", "R1", "R2", "N2", "N3", "N4", "N5", "N6"),
+}
+CASE_PROFILES = ("baseline", *(name + "_" + case for name in SELECTORS
+                              for case in _SELECTOR_CASES[name] if case != _BASELINE_CASES[name]))
 BOOTSTRAP_MAX_BYTES = 131072
 EVIDENCE_BOUNDS = {"max_files": 15, "max_total_bytes": 2097152,
                    "max_json_bytes": 524288, "max_json_depth": 64}
@@ -53,18 +65,75 @@ def selector_role(selector):
     return "http_frontend" if validate_selector(selector).startswith("http_") else "ssh_frontend"
 
 
-def _underlying_selection(selector, implementation, configuration):
+def _case_map(profile):
+    cases = dict(_BASELINE_CASES)
+    if profile is None:
+        return cases
+    if type(profile) is not str or profile not in CASE_PROFILES:
+        raise ValueError("invalid_routing_case_profile")
+    if profile != "baseline":
+        selector, case = profile.rsplit("_", 1)
+        cases[selector] = case
+    return cases
+
+
+def _underlying_selection(selector, implementation, configuration, profile=None):
     selector = validate_selector(selector)
+    case = _case_map(profile)[selector]
     if selector.startswith("http_"):
-        return http.selection(implementation, configuration, "O5" if selector == "http_nmap" else "O1")
-    return ssh.selection(configuration, "O1" if selector == "ssh_nmap" else "O2")
+        return http.selection(implementation, configuration, case)
+    return ssh.selection(configuration, case)
 
 
 def underlying_selection(selector, selected=None):
     if selected is None:
         return _underlying_selection(selector, "nginx", "A")
     chosen = validate_selection(selected)
-    return _underlying_selection(selector, chosen.get("implementation", "nginx"), chosen["configuration"])
+    return _underlying_selection(selector, chosen.get("implementation", "nginx"), chosen["configuration"],
+                                 chosen.get("case_profile"))
+
+
+def case_profile(selected):
+    return validate_selection(selected).get("case_profile")
+
+
+def selected_case(selector, selected=None):
+    return underlying_selection(selector, selected)["case"]
+
+
+def case_is_negative(selector, selected):
+    chosen = underlying_selection(selector, selected)
+    spec = stock_http_spec if selector.startswith("http_") else stock_ssh_spec
+    return chosen["case"] in spec.NEGATIVE_CASES
+
+
+def _case_expectation(selector, case, *, matrix):
+    spec = stock_http_spec if selector.startswith("http_") else stock_ssh_spec
+    native = spec.expectation(case)
+    negative = case in spec.NEGATIVE_CASES
+    value = {"category": native["category"], "expected_negative": negative,
+             "allowed_classifications": list(native.get("allowed_outcomes", ["useful"])),
+             "classification_basis": None, "native_expectation": native, "requirements": {}}
+    if selector == "http_headers" and case == "N4" and matrix:
+        value.update(allowed_classifications=["expected_response_budget_refusal"],
+            classification_basis="routing_owner_response_budget_before_delivery",
+            requirements={"proposed_response_bytes": 2049, "delivered_response_bytes": 0,
+                "accepted_response_reservation_bytes": 0, "delivered_validated_requests": 1,
+                "terminal_reason": "action_response_bytes_limit"})
+    elif selector == "ssh_keys" and case == "N3":
+        value.update(classification_basis="withheld_response_and_native_two_second_timeout",
+            requirements={"minimum_action_elapsed_ms": 1900, "allowed_native_statuses": ["failed", "timeout"],
+                "delivered_response_bytes": 0})
+    elif selector == "ssh_keys" and case == "N4":
+        value["classification_basis"] = "independent_recorder_wire_cap"
+    return value
+
+
+def case_expectation(selector, selected):
+    selected = validate_selection(selected)
+    selector = validate_selector(selector)
+    return _case_expectation(selector, _case_map(selected.get("case_profile"))[selector],
+                             matrix=selected.get("selection_version") == "3")
 
 
 def http_implementation(selected):
@@ -86,14 +155,17 @@ def _budgets(budget_case):
             "request_bytes": 8466, "response_bytes": 14591, "output_bytes": 26624}
 
 
-def selection(budget_case="ordinary", *, deployment=None):
+def selection(budget_case="ordinary", *, deployment=None, case_profile=None):
     caps = _budgets(budget_case)
+    cases = _case_map(case_profile)
+    if case_profile is not None and (deployment is None or case_profile != "baseline" and budget_case != "ordinary"):
+        raise ValueError("invalid_routing_case_profile_combination")
     if deployment is not None and (type(deployment) is not str or deployment not in DEPLOYMENTS):
         raise ValueError("invalid_routing_deployment")
     implementation, configuration = ("nginx", "A") if deployment is None else deployment.split("-")
     commitment = {"profile": PROFILE, "boundary_revision": BOUNDARY_REVISION,
         "configuration": configuration, "budget_case": budget_case, "budgets": caps,
-        "actions": {name: _underlying_selection(name, implementation, configuration) for name in SELECTORS},
+        "actions": {name: _underlying_selection(name, implementation, configuration, case_profile) for name in SELECTORS},
         "per_action_bounds": ACTION_BOUNDS, "owner_bounds": OWNER_BOUNDS,
         "bootstrap_max_bytes": BOOTSTRAP_MAX_BYTES, "evidence_bounds": EVIDENCE_BOUNDS,
         "topology_sha256": topology.digest() if deployment is None else topology.digest(configuration=configuration),
@@ -106,8 +178,14 @@ def selection(budget_case="ordinary", *, deployment=None):
         boundary_revision=DEPLOYMENT_BOUNDARY_REVISION,
         http_private_transport="unix-socket" if implementation == "nginx" else "one-use-unconnected-tcp-descriptor",
         apache_handoff="daemon-to-launcher-to-frontend-exact-custody-before-reserved-delivery")
-    return {"selection_version": "2", "implementation": implementation,
-            "configuration": configuration, "budget_case": budget_case, "selection_sha256": digest(commitment)}
+    if case_profile is not None:
+        commitment.update(selection_version="3", boundary_revision=MATRIX_BOUNDARY_REVISION,
+            case_profile=case_profile, case_map=cases,
+            expected={name: _case_expectation(name, cases[name], matrix=True) for name in SELECTORS},
+            declared_negative_stops_sequence="after-attempt-even-if-native-status-succeeded")
+    return {"selection_version": "2" if case_profile is None else "3", "implementation": implementation,
+            "configuration": configuration, "budget_case": budget_case, "selection_sha256": digest(commitment),
+            **({} if case_profile is None else {"case_profile": case_profile})}
 
 
 def validate_selection(value):
@@ -118,6 +196,11 @@ def validate_selection(value):
     elif (set(value) == set(DEPLOYMENT_SELECTION_FIELDS) and value["selection_version"] == "2"
             and type(value["implementation"]) is str and type(value["configuration"]) is str):
         expected = selection(value["budget_case"], deployment=value["implementation"] + "-" + value["configuration"])
+    elif (set(value) == set(MATRIX_SELECTION_FIELDS) and value["selection_version"] == "3"
+            and type(value["implementation"]) is str and type(value["configuration"]) is str
+            and type(value["case_profile"]) is str):
+        expected = selection(value["budget_case"], deployment=value["implementation"] + "-" + value["configuration"],
+                             case_profile=value["case_profile"])
     else:
         raise ValueError("invalid_routing_selection")
     if stock_http_spec.encode(value) != stock_http_spec.encode(expected):
@@ -128,8 +211,10 @@ def validate_selection(value):
 def selection_from_identity(value):
     if type(value) is not dict:
         raise ValueError("invalid_routing_identity_selection")
-    fields = DEPLOYMENT_SELECTION_FIELDS if "selection_version" in value else SELECTION_FIELDS
-    if any(key not in value for key in fields) or fields == SELECTION_FIELDS and "implementation" in value:
+    fields = (MATRIX_SELECTION_FIELDS if value.get("selection_version") == "3"
+              else DEPLOYMENT_SELECTION_FIELDS if "selection_version" in value else SELECTION_FIELDS)
+    if (any(key not in value for key in fields) or fields == SELECTION_FIELDS and "implementation" in value
+            or fields != MATRIX_SELECTION_FIELDS and "case_profile" in value):
         raise ValueError("invalid_routing_identity_selection")
     return validate_selection({key: value[key] for key in fields})
 
@@ -145,7 +230,8 @@ def action_bounds(selector):
 def action(selected, selector):
     selected = validate_selection(selected)
     selector = validate_selector(selector)
-    chosen = _underlying_selection(selector, selected.get("implementation", "nginx"), selected["configuration"])
+    chosen = _underlying_selection(selector, selected.get("implementation", "nginx"), selected["configuration"],
+                                   selected.get("case_profile"))
     value = underlying_contract(selector).action(chosen)
     value["action_id"] = str(uuid5(NAMESPACE_URL, PROFILE + ":" + selected["selection_sha256"] + ":" + selector))
     return value
@@ -220,14 +306,17 @@ def validate_runtime(value, selected):
         raise ValueError("invalid_routing_runtime")
     # Case commitments differ even if the native daemon files happen to match.
     return {name: underlying_contract(name).validate_runtime(value[name],
-                _underlying_selection(name, selected.get("implementation", "nginx"), selected["configuration"]))
+                _underlying_selection(name, selected.get("implementation", "nginx"), selected["configuration"],
+                                      selected.get("case_profile")))
             for name in SELECTORS}
 
 
 def runtime_digests(value, selected):
+    selected = validate_selection(selected)
     value = validate_runtime(value, selected)
     per_action = {name: underlying_contract(name).runtime_digests(value[name],
-                    _underlying_selection(name, selected.get("implementation", "nginx"), selected["configuration"]))
+                    _underlying_selection(name, selected.get("implementation", "nginx"), selected["configuration"],
+                                          selected.get("case_profile")))
                   for name in SELECTORS}
     return {"runtime_sha256": digest(value), "runtimes": per_action}
 
@@ -248,10 +337,12 @@ def validate_runtime_digests(value):
 
 
 def runtime_source_mounts(value, selected):
+    selected = validate_selection(selected)
     value = validate_runtime(value, selected)
     mounts = set()
     for name in SELECTORS:
-        chosen = _underlying_selection(name, selected.get("implementation", "nginx"), selected["configuration"])
+        chosen = _underlying_selection(name, selected.get("implementation", "nginx"), selected["configuration"],
+                                       selected.get("case_profile"))
         mounts.update(underlying_contract(name).runtime_source_mounts(value[name], chosen))
     destinations = {}
     for source, destination in mounts:

@@ -15,35 +15,43 @@ The [routing runbook](stage3-disconnected-routing.md) retains the original faile
 attempts, including the unexplained Apache regression refusal before the complete
 passing follow-up. Private original evidence stays in `.secure-agent/stage3-routing-20261015/`.
 
-The active worktree is `/tmp/recon-stage3-routing-deployments`, branch
-`feature/stage3-routing-deployments`. Its [pinned extension contract](stage3-routing-deployments.md)
-adds only closed nginx/Apache × A/B deployments, the same four independent
-actions and the same aggregate limits. Initial validation found a shared HTTP
-recorder defect: admission counters and events sampled the clock separately and
-could disagree across a millisecond boundary. The correction reuses one
-admission instant while preserving strict validation and every execution cap.
-At corrected source `b7f308e`, the complete native gates pass: **80 routing,
-76 accepted-profile/witness and 32 shared-recorder checks**, each with 986
-unchanged source pins and no failures, errors or skips. Independent routing
-evidence review verifies 50 bundles and 90 results; all four deployments complete
-48 useful selected actions with zero unnecessary refusals in ordinary trials.
-The five new timestamp/tamper/event-limit checks also pass. The prior 26,873-test
-local portable run precedes the correction. [PR #95](https://github.com/0xsl0th/recon-cockpit/pull/95)
-is open. Its first [CI run](https://github.com/0xsl0th/recon-cockpit/actions/runs/38786196200)
-at `e14dadc` passed three jobs; Python 3.11 and 3.13 each logged 26,878 passing
-tests but exceeded the ten-minute job limit before the required completeness
-guard. Those two jobs remain cancelled, not accepted CI passes. The CI job limit
-is now fifteen minutes to include setup and final verification; all test
-selection, the zero-skip guard and native execution limits remain unchanged.
-Verify all five jobs on the final PR revision, record their results in the
-private checkpoint, and leave PR #95 open for review.
-The extension remains a review candidate, not an accepted milestone.
-Preserve all failed attempts and diagnostics in
-`.secure-agent/stage3-routing-deployments-20261015/`; its `current-progress.json`
-records current PR/CI status and review receipts. S3.5 remains open:
-review this deployment batch, then pin and complete the required
-ordinary-variation/hostile/negative matrix, followed by S3.6 and S3.7 in order.
-S3.4 stays closed; do not repeat PR #94.
+[PR #95](https://github.com/0xsl0th/recon-cockpit/pull/95) is accepted, merged as
+`d0586f5` after fresh independent code/evidence review. Its reviewed head
+`0edf046`, synthetic CI merge and actual merge share tree
+`c337adc80862f488e0c631b67112f1d72703745d`. All five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38788051369)
+passed **26,878 portable tests each** and the completeness guard. The
+[deployment evidence](stage3-routing-deployments.md) retains **80 routing,
+76 accepted-profile/witness and 32 shared-recorder native passes** at `b7f308e`,
+with 986 unchanged source pins. Its initial failures and cancelled ten-minute
+CI jobs remain recorded; the fifteen-minute CI job limit changes no native cap.
+Preserve `.secure-agent/pr95-review-20261015/merge-review-receipt.json` and
+`.secure-agent/stage3-routing-deployments-20261015/`. All five [post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38790187807)
+also passed 26,878 tests each, with the completeness guard. Do not repeat this merge or reopen S3.4.
+
+The active worktree is `/tmp/recon-stage3-routing-matrix`, branch
+`feature/stage3-routing-matrix`, based on `d0586f5`. The
+[full matrix contract](stage3-routing-matrix.md) was pinned at `f68e212` before
+implementation. It defines twenty closed v3 profiles, preserves v1/v2 and all
+execution caps, and requires 164 new native corpus/enforcement checks alongside
+the retained 80 routing checks and 76 accepted-profile/witness regressions.
+Pre-native review adds four explicit negative-stop owner/direct-launch tests,
+bringing the required routing gate to 248 without removing an original case.
+Frozen implementation `0e09f82` passed all **248 native routing checks**
+(132 matrix, 88 retained/witness, 26 owner probes and two direct-launcher checks)
+and **76 accepted-profile/witness regressions**, with all **996 source pins
+unchanged**. All 60 original v1/v2 bundles passed 120 unchanged Python/CLI
+inspections. The original development collection audit failure remains recorded.
+The local full portable run passed 27,273 tests and failed one deadline fixture
+that aged between collection and execution. Its test-only correction constructs
+the same invalid controls at execution time; all 94 broker tests pass. Production
+and native test bytes remain identical to `0e09f82`.
+The final portable gate is all five required CI jobs at the final PR head,
+**27,274 tests per job**, with no skips, failures or errors and the completeness
+guard. Record their actual status and independent review receipts in
+`.secure-agent/stage3-routing-matrix-20261015/current-progress.json` and the PR
+checks; the failed local run is not a portable pass. S3.5 remains open until this full batch is accepted;
+S3.6 name/TLS binding and S3.7 combined acceptance follow in order.
 
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
@@ -165,8 +173,9 @@ passing follow-up runs do not erase them. Scripted approval tests are not person
 acceptance. The finite SSH result grants no authentication or trusted host identity.
 
 **Current: S3.5 disconnected multi-host routing.** The first fixed-A slice below
-is accepted in PR #94. Continue in `feature/stage3-routing-deployments` at
-`/tmp/recon-stage3-routing-deployments` using the [extension contract](stage3-routing-deployments.md).
+is accepted in PR #94; PR #95 accepts the four deployments. Continue in
+`feature/stage3-routing-matrix` at `/tmp/recon-stage3-routing-matrix` using
+the [full matrix contract](stage3-routing-matrix.md).
 The [implementation contract](stage3-disconnected-routing.md) was pinned before
 code: fixed A nginx/SSH, four independently selected actions, five owned routed
 network namespaces, a listening excluded endpoint and a persistent aggregate
@@ -181,8 +190,8 @@ the excess work; required-approval refusal, lifecycle cleanup and immutable
 Python/CLI inspection passed separately. The original 75/76 regression run's
 Apache B/O1 refusal remains unexplained and retained; passing diagnostics and
 the complete follow-up do not establish a fix. Fresh code/evidence reviews found
-no blockers in this finite slice, merged at `46f9b73`. S3.5 remains open for routed Apache/B and
-the complete hostile/negative matrix. S3.6 and S3.7 follow in order.
+no blockers in this finite slice, merged at `46f9b73`. PR #95 subsequently accepts routed Apache/B; S3.5 remains open for
+the complete hostile/negative and enforcement matrix. S3.6 and S3.7 follow in order.
 
 Accepted preparation compiled two finite server configurations and the existing
 deliberately public fixture key, pinned the three OpenSSH executables and their
@@ -2400,10 +2409,10 @@ Planning uses synthetic responses.
    fresh review, 605 focused passes and five final CI jobs with 25,314 passes
    each. S3.3 is closed. PRs #92/#93 separately accepted OpenSSH preparation and
    native compatibility; S3.4 is closed. PR #94's first fixed-A S3.5 slice is
-   accepted at `46f9b73`. Review the current fixed nginx/Apache A/B deployment
-   candidate, its shared recorder timestamp correction, completed corrected
-   native gates and latest full portable CI. Then pin and complete the full
-   ordinary-variation/hostile/negative matrix before S3.6 name/TLS binding.
+   accepted at `46f9b73`; PR #95 accepts fixed nginx/Apache A/B deployments at
+   `d0586f5`. Complete the pinned [full routed matrix](stage3-routing-matrix.md),
+   including native owner enforcement, retained regressions, immutable replay,
+   full portable validation and independent review before S3.6 name/TLS binding.
    Stage 3 has ten increments, seven accepted
    and three remaining; no native gate is removed.
    Network attachment still requires separate authorization; do not substitute

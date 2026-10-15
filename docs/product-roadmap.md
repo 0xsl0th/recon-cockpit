@@ -115,11 +115,19 @@ regressions and 26,599 portable tests passed at `659c053`, with 981 unchanged
 source pins. Twelve ordinary selected actions completed without unnecessary
 refusals; three aggregate-budget negatives preserved useful work and blocked
 the excess. The runbook retains an earlier unexplained Apache regression refusal.
-The current [fixed deployment extension](stage3-routing-deployments.md) adds
-nginx/Apache × A/B under unchanged caps. Corrected routing, accepted-profile
-and shared-recorder native gates pass; this remains a review candidate. S3.5
-closes only after this extension and the full ordinary-variation/hostile/negative
-matrix are accepted. The matrix is the next implementation batch.
+The [fixed deployment extension](stage3-routing-deployments.md) is accepted in
+[PR #95](https://github.com/0xsl0th/recon-cockpit/pull/95) at `d0586f5`: all four
+nginx/Apache × A/B deployments retain unchanged caps, with 80 routing, 76
+accepted-profile/witness and 32 recorder native passes and five final CI jobs
+passing 26,878 tests each. S3.5 remains open for the
+[full routed case and enforcement matrix](stage3-routing-matrix.md), pinned at
+`f68e212`. Frozen implementation `0e09f82` passed all 248 native routing checks
+(168 new and 80 retained), 76 accepted-profile/witness regressions and 120
+unchanged inspections of 60 original v1/v2 bundles. The local portable run's one
+collection-aged deadline fixture failure and its test-only correction are
+retained. Acceptance requires independent review and all five final-head CI
+jobs passing 27,274 tests each with the completeness guard; the matrix remains
+a review candidate until that PR is accepted.
 Stage 3 has **ten increments: seven accepted and three remaining**. S3.5–S3.7
 follow in order; a logical increment may need more than one implementation PR.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
@@ -265,7 +273,7 @@ work and do not lift the current offline-only restrictions.
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
-| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`. Routed Apache/B and the full hostile/negative matrix remain open, followed by explicit name/TLS binding, redirect/referral handling and combined acceptance. Attached lab/engagement networks require separate authorization. Seven logical increments are accepted and three remain; S3.5 requires multiple PRs. | 12–13 |
+| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`. PR #95 accepts routed Apache/B at `d0586f5`. The full hostile/negative and enforcement matrix is current, followed by explicit name/TLS binding, redirect/referral handling and combined acceptance. Attached lab/engagement networks require separate authorization. Seven logical increments are accepted and three remain; S3.5 requires multiple PRs. | 12–13 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |

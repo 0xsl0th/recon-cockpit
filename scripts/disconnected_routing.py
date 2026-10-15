@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from recon_cockpit.secure_agent.routing_contract import SELECTORS, BUDGET_CASES, DEPLOYMENTS
+from recon_cockpit.secure_agent.routing_contract import SELECTORS, BUDGET_CASES, DEPLOYMENTS, CASE_PROFILES, selection
 
 
 def main():
@@ -19,6 +19,8 @@ def main():
     run.add_argument("--budget-case", choices=BUDGET_CASES, default="ordinary")
     run.add_argument("--deployment", choices=DEPLOYMENTS,
                      help="Select one fixed owned deployment for this assessment; omitted uses the original fixed-A contract.")
+    run.add_argument("--case-profile", choices=CASE_PROFILES,
+                     help="Select one fixed case matrix; requires --deployment, and nonbaseline profiles require the ordinary budget.")
     run.add_argument("--directory", type=Path, required=True)
     run.add_argument("--execute", action="store_true")
     run.add_argument("--unattended-owned-lab-test", action="store_true",
@@ -30,9 +32,13 @@ def main():
         from recon_cockpit.secure_agent.routing_evidence import inspect_trial
         report = inspect_trial(args.directory)
     else:
+        try:
+            selection(args.budget_case, deployment=args.deployment, case_profile=args.case_profile)
+        except ValueError as error:
+            parser.error(str(error))
         from recon_cockpit.secure_agent.routing import run_trial
         report = run_trial(args.directory, selectors=args.selectors, budget_case=args.budget_case,
-            deployment=args.deployment,
+            deployment=args.deployment, case_profile=args.case_profile,
             execute=args.execute, unattended_owned_lab_test=args.unattended_owned_lab_test)
     print(json.dumps(report, sort_keys=True, ensure_ascii=True))
     return 0 if report["case_passed"] else 1
