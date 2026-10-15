@@ -147,6 +147,7 @@ def _linux_only():
 def test_real_linux_apache_descriptor_transfer_and_refusal(fault, tmp_path):
     _linux_only()
     from recon_cockpit.secure_agent.isolation import _runtime_files
+    from recon_cockpit.secure_agent.launcher_isolation import MODULES, ROUTING_MODULES, OWNED_MODULES
     stdlib, files = _runtime_files("/usr/bin/python3", None)
     source = tmp_path / "descriptor_custody.py"
     source.write_text("""import fcntl, os, re, socket, struct, sys
@@ -169,7 +170,9 @@ worker.drop_privileges()
     for original, destination in files:
         argv += ["--ro-bind", original, destination]
     directory = Path(services.__file__).parent
-    for name in services.MODULES:
+    # This helper imports launcher-side Services as well as the frontend.
+    # The frontend's smaller closure intentionally omits the lab adapters.
+    for name in dict.fromkeys((*MODULES, *ROUTING_MODULES, *OWNED_MODULES)):
         argv += ["--ro-bind", str(directory / (name + ".py")), "/app/recon_cockpit/secure_agent/" + name + ".py"]
     for destination in ("/app/recon_cockpit/__init__.py", "/app/recon_cockpit/secure_agent/__init__.py"):
         argv += ["--ro-bind", str(directory / "__init__.py"), destination]

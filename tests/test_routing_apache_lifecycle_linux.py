@@ -104,7 +104,8 @@ def _pin_handoff_tree(process, checkpoint_pid, inode):
         daemons = [pid for pid, argv in commands.items() if argv[0] == b"/tool/apache2"]
         assert len(frontends) == len(daemons) == 1
         assert not any(argv[0] in (b"/tool/nmap", b"/tool/ssh-keyscan")
-            or b"/app/recon_cockpit/secure_agent/routing_client_worker.py" in argv for argv in commands.values())
+            or argv[0] == b"/usr/bin/python3" and b"/app/recon_cockpit/secure_agent/routing_client_worker.py" in argv
+            for argv in commands.values())
         # Metadata reads only; no socket or namespace descriptor is imported.
         # The checkpoint remains paused while every owned FD table is inspected.
         for pid in pins:
