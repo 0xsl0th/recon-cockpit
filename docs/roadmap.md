@@ -97,7 +97,7 @@ See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
 **S3.4b is accepted in [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93)
-at `a7f46b1`; S3.4 is closed. Current: S3.5 disconnected multi-host routing.**
+at `a7f46b1`; S3.4 is closed. S3.5 is accepted below; current work is S3.6 name/TLS binding.**
 The [SSH evidence](stage3-ssh-compatibility.md) records 94 native checks,
 71 accepted-profile regressions, 26,141 local portable tests, eight useful
 completions, twelve expected negatives and zero unnecessary refusals. Fresh
@@ -115,12 +115,17 @@ regressions and 26,599 portable tests passed at `659c053`, with 981 unchanged
 source pins. Twelve ordinary selected actions completed without unnecessary
 refusals; three aggregate-budget negatives preserved useful work and blocked
 the excess. The runbook retains an earlier unexplained Apache regression refusal.
-The current [fixed deployment extension](stage3-routing-deployments.md) adds
-nginx/Apache × A/B under unchanged caps. Corrected routing, accepted-profile
-and shared-recorder native gates pass; this remains a review candidate. S3.5
-closes only after this extension and the full ordinary-variation/hostile/negative
-matrix are accepted. The matrix is the next implementation batch.
-Stage 3 has **ten increments: seven accepted and three remaining**. S3.5–S3.7
+[PR #95](https://github.com/0xsl0th/recon-cockpit/pull/95) accepts the
+[fixed deployment extension](stage3-routing-deployments.md) at `d0586f5`.
+[PR #96](https://github.com/0xsl0th/recon-cockpit/pull/96) accepts the
+[full routing matrix](stage3-routing-matrix.md) at `6f60ae0`, closing S3.5:
+248 native routing checks, 76 accepted regressions, 120 unchanged inspections
+of 60 original bundles and five final CI jobs with 27,274 passes each.
+Original failed attempts remain recorded. Current
+[S3.6a preparation](stage3-name-tls-preflight.md) pins 23 cases across two fixed
+configurations before S3.6b native name/trust binding; S3.7 combined acceptance
+follows. Static preparation grants no execution or native compatibility claim.
+Stage 3 has **ten increments: eight accepted and two remaining**. S3.6–S3.7
 follow in order; a logical increment may need more than one implementation PR.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
@@ -142,7 +147,7 @@ Network attachment requires separate ownership/scope/routing authorization.
 Proposal refresh and submission remain a separate November decision. Historical
 snapshots below retain their original counts; this continuation supersedes them.
 
-**Product forecast revised 15 October 2026: Stage 3 retains ten logical increments across an estimated 12–13 PRs; professional-v1 baseline forecast is 46–65.** See the [consolidated roadmap and PR estimate](product-roadmap.md).
+**Product forecast revised 15 October 2026: Stage 3 retains ten logical increments across an estimated 13 PRs; professional-v1 baseline forecast is 47–65.** See the [consolidated roadmap and PR estimate](product-roadmap.md).
 The historical planning baseline below began on 15 September 2026. This is a development plan, not a list
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
@@ -177,7 +182,7 @@ claim that today's bounded fixtures support professional engagements.
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
 | 3 — accepted, finite coverage tranche | T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | PRs #74/#80/#81/#84/#85/#86 close all required G1–G6 gates: 52 accepted profiles across 17 programs. T06 retains 83 native and 24,163 portable passes. Existing exact recipes, limits and evidence contracts stay closed; this is not general engagement compatibility. |
-| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87, S3.2a/S3.2b in PRs #88/#89 and S3.3a Apache preparation in PR #90. S3.3b HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`; routed Apache/B and the full hostile/negative matrix remain before name/TLS binding. Planning grants no attached-network access or execution authority. |
+| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87, S3.2a/S3.2b in PRs #88/#89 and S3.3a Apache preparation in PR #90. S3.3b HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`; PR #95 accepts routed Apache/B and PR #96 accepts the full matrix at `6f60ae0`, closing S3.5. Current S3.6a static name/TLS preparation precedes S3.6b native binding and S3.7 combined acceptance. Planning grants no attached-network access or execution authority. |
 | 5 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
@@ -406,10 +411,13 @@ capabilities from the professional-v1 release and the longer-term 40+ program
 product. The historical PR #73 forecast was **40–60 PRs for an operator-assisted
 professional v1** and **80–130 total for the broader product**, from the PR #72
 baseline. The 14 October Stage 3 revision changed those baseline totals to
-**44–62** and **84–132**. The 15 October routing plan now separates the fixed deployment extension
-from the full hostile/negative matrix and revises them to **46–65**
+**44–62** and **84–132**. The earlier 15 October routing plan separated the fixed deployment extension
+from the full hostile/negative matrix and revised them to **46–65**
 and **86–135**, with Stage 3 estimated at 12–13 PRs across ten logical increments.
-Completed work is included, not charged again.
+Selecting the separate S3.6a preparation and S3.6b native batches now selects
+13 PRs within that range, narrowing the current totals to **47–65** and
+**87–135** without adding an outcome. Eight logical increments are accepted;
+S3.6 and S3.7 remain. Completed work is included, not charged again.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that every catalog profile is available through the GUI.
 [PR #73](https://github.com/0xsl0th/recon-cockpit/pull/73) accepted the forecast at
