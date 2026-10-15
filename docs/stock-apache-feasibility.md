@@ -142,7 +142,7 @@ PR #91 merged as `061c057`, closing S3.3 after fresh independent review,
 14 October acceptance, Stage 3 had ten increments, five accepted/five remaining.
 The later PRs #92/#93 separately accepted [S3.4a](stock-ssh-feasibility.md)
 preparation and S3.4b native compatibility. The [current roadmap](product-roadmap.md)
-records seven accepted/three open increments, an 11–13 PR Stage 3 estimate and
+records seven accepted/three open increments, an 12–13 PR Stage 3 estimate and
 the unchanged 52/17 catalog.
 Preparation alone closes neither S3.3 nor Stage 3, and no substitute server
 replaced Apache in the required comparison.

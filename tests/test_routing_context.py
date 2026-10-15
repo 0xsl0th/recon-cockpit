@@ -156,3 +156,19 @@ def test_lowered_budget_also_bounds_saved_prefix():
             "frontends": {"ssh_frontend": "a" * 64}}}
     with pytest.raises(ValueError, match="previous"):
         context.validate_closure(closure(chosen, 1, 3), chosen["identity"], previous=previous)
+
+
+@pytest.mark.parametrize("deployment", contract.DEPLOYMENTS)
+def test_extended_owner_keeps_exact_selection_and_prefix_through_all_actions(monkeypatch, deployment):
+    chosen = manifest(deployment=deployment)
+    results = routed_results(monkeypatch, chosen)
+    previous = None
+    for sequence, result in enumerate(results, 1):
+        previous = context.validate_result_context(result, chosen["identity"], previous=previous)
+        assert previous["identity"]["selection_version"] == "2"
+        assert previous["routing_state"]["sequence"] == sequence
+    assert context.validate_closure(closure(chosen, 4, 3), chosen["identity"], previous=previous)
+    alternate = ("nginx" if deployment.startswith("apache") else "apache") + "-" + chosen["selection"]["configuration"]
+    other = manifest(deployment=alternate)
+    with pytest.raises(ValueError): context.validate_result_context(results[0], other["identity"])
+    with pytest.raises(ValueError): context.validate_closure(closure(other, 4, 3), other["identity"], previous=previous)

@@ -36,6 +36,8 @@ import time
 
 from recon_cockpit.secure_agent import routing_contract as contract, routing_ledger as ledger
 from recon_cockpit.secure_agent import stock_http_recorder as http, stock_ssh_recorder as ssh
+from recon_cockpit.secure_agent import stock_http_production_transport as apache_transport
+from recon_cockpit.secure_agent.routing_topology_spec import endpoints
 from recon_cockpit.secure_agent import stock_http_owner_worker as existing, stock_ssh_owner_worker as ssh_owner
 from recon_cockpit.secure_agent import worker, tool_worker_common as common
 from recon_cockpit.secure_agent.stock_ssh_owner_worker import send_packet, receive_packet, encode, decode
@@ -134,15 +136,8 @@ class BudgetChannel:
                 self.call("FINISH_CONNECTION", lease=lease)
 
 
-class HttpService(http.Service):
-    def __init__(self, selector, listener, *, deadline, budget):
-        if selector not in ("http_nmap", "http_headers"):
-            raise ValueError("routing_frontend_http_selector_changed")
-        if (listener.family != socket.AF_INET or listener.getsockname() != ("10.77.0.10", 8080)
-                or not listener.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN)):
-            raise ValueError("routing_frontend_http_listener_changed")
-        self.budget, self.selector = budget, selector
-        super().__init__("A", contract.underlying_selection(selector)["case"], listener, deadline=deadline)
+class BudgetHttpService:
+    """Reserve every routed unit before the accepted recorder delivers it."""
 
     def _admit(self):
         now = time.monotonic()
@@ -154,19 +149,6 @@ class HttpService(http.Service):
                 super()._admit()
         except BudgetRefused:
             self.close("io_failure")
-
-    def _connect_daemon(self):
-        self.budget.request("http")
-        channel = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        channel.setblocking(False)
-        try:
-            result = channel.connect_ex("/peer/" + self.selector + "/nginx.sock")
-            if result not in (0, errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EALREADY):
-                raise OSError(result, "routing_private_nginx_unavailable")
-            return channel
-        except BaseException:
-            channel.close()
-            raise
 
     def _write_daemon(self):
         active = self.active
@@ -189,12 +171,115 @@ class HttpService(http.Service):
             self.budget.finish()
 
 
+class HttpService(BudgetHttpService, http.Service):
+    def __init__(self, selector, listener, *, deadline, budget, selected=None):
+        selected = contract.selection() if selected is None else contract.validate_selection(selected)
+        if selector not in ("http_nmap", "http_headers") or contract.http_implementation(selected) != "nginx":
+            raise ValueError("routing_frontend_http_selector_changed")
+        validate_http_listener(listener, selected)
+        self.budget, self.selector = budget, selector
+        super().__init__(selected["configuration"], contract.underlying_selection(selector, selected)["case"],
+                         listener, deadline=deadline)
+
+    def _connect_daemon(self):
+        self.budget.request("http")
+        channel = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        channel.setblocking(False)
+        try:
+            result = channel.connect_ex("/peer/" + self.selector + "/nginx.sock")
+            if result not in (0, errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EALREADY):
+                raise OSError(result, "routing_private_nginx_unavailable")
+            return channel
+        except BaseException:
+            channel.close()
+            raise
+
+
+class ApacheService(BudgetHttpService, apache_transport.DescriptorService):
+    """One accepted Apache socket; a denied request never consumes its connect."""
+
+    def __init__(self, selector, listener, *, deadline, budget, selected, private_socket, identity):
+        self.budget, self.selector = budget, selector
+        self._custody_socket = private_socket
+        self._descriptor_consumed = False
+        try:
+            selected = contract.validate_selection(selected)
+            if selector not in ("http_nmap", "http_headers") or contract.http_implementation(selected) != "apache":
+                raise ValueError("routing_frontend_apache_selector_changed")
+            validate_http_listener(listener, selected)
+            super().__init__(selected["configuration"], contract.underlying_selection(selector, selected)["case"],
+                listener, deadline=deadline, private_socket=private_socket, identity=identity)
+        except BaseException:
+            private_socket.close()
+            listener.close()
+            raise
+
+    def _connect_daemon(self):
+        # Reserve before DescriptorService removes or connects the capability.
+        self.budget.request("http")
+        if self._descriptor_consumed:
+            raise ValueError("routing_frontend_apache_descriptor_reused")
+        self._descriptor_consumed = True
+        return super()._connect_daemon()
+
+    def descriptor_custody(self):
+        closed = self._custody_socket.fileno() == -1
+        assert_descriptor_copies(self._private_identity, () if closed else (self._custody_socket.fileno(),))
+        return {"version": "1", "descriptor": dict(self._private_identity),
+            "frontend_netns_cookie": self.recorder_cookie, "unconnected_at_transfer": True,
+            "transferred_once": True, "frontend_consumed": self._descriptor_consumed,
+            "frontend_copy_closed": closed}
+
+
+def validate_http_listener(listener, selected):
+    if (listener.family != socket.AF_INET or listener.type != socket.SOCK_STREAM
+            or listener.getsockname() != endpoints(selected["configuration"])["http"]
+            or not listener.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN)):
+        raise ValueError("routing_frontend_http_listener_changed")
+
+
+def receive_apache_socket(channel, expected, seen):
+    """Receive exactly one fresh, unconnected capability and own every failure."""
+    expected = apache_transport.validate_descriptor_identity(expected)
+    message, descriptor = apache_transport.receive_packet(channel, descriptor_required=True)
+    private = apache_transport.owned_socket(descriptor)
+    try:
+        key = (expected["daemon_netns_cookie"], expected["inode"])
+        if (message != {"operation": "apache_descriptor", "descriptor": expected}
+                or apache_transport.socket_identity(private) != expected or key in seen):
+            raise ValueError("routing_frontend_apache_descriptor_changed_or_reused")
+        assert_descriptor_copies(expected, (private.fileno(),))
+        seen.add(key)
+        return private
+    except BaseException:
+        private.close()
+        raise
+
+
+def assert_descriptor_copies(identity, expected):
+    """The bounded frontend FD table must contain only its declared socket copy."""
+    identity = apache_transport.validate_descriptor_identity(identity)
+    observed = set()
+    for descriptor in range(3, existing.BOUNDS["file_descriptors"]):
+        try:
+            info = os.fstat(descriptor)
+        except OSError as error:
+            if error.errno != errno.EBADF:
+                raise
+            continue
+        if stat.S_ISSOCK(info.st_mode) and info.st_ino == identity["inode"]:
+            observed.add(descriptor)
+    if observed != set(expected):
+        raise ValueError("routing_frontend_apache_descriptor_copy_leaked")
+
+
 class SshService(ssh.Service):
-    def __init__(self, selector, listener, *, deadline, budget, connection_factory, connection_finalizer):
+    def __init__(self, selector, listener, *, deadline, budget, connection_factory, connection_finalizer, selected=None):
+        selected = contract.selection() if selected is None else contract.validate_selection(selected)
         if selector not in ("ssh_nmap", "ssh_keys"):
             raise ValueError("routing_frontend_ssh_selector_changed")
         self.budget = budget
-        super().__init__("A", contract.underlying_selection(selector)["case"], listener, deadline=deadline,
+        super().__init__(selected["configuration"], contract.underlying_selection(selector, selected)["case"], listener, deadline=deadline,
                          connection_factory=connection_factory, connection_finalizer=connection_finalizer)
 
     def _admit(self):
@@ -261,6 +346,8 @@ def main():
         selected = contract.validate_selection(initial["selection"])
         identity = contract.validate_identity(initial["identity"], selection=selected)
         role, deadline = initial["role"], initial["deadline"]
+        apache = role == "http_frontend" and contract.http_implementation(selected) == "apache"
+        nginx = role == "http_frontend" and not apache
         if (role not in ("http_frontend", "ssh_frontend") or type(deadline) not in (float, int)
                 or not math.isfinite(deadline) or not 0 < deadline - time.monotonic() <= 60):
             raise ValueError("routing_frontend_invalid_lifetime")
@@ -268,7 +355,7 @@ def main():
         assert_routed_namespaces(initial["host_namespaces"], initial["namespaces"])
         listener = socket.socket(fileno=_receive_fd(channel, "listener"))
         if (listener.family != socket.AF_INET or listener.type != socket.SOCK_STREAM
-                or listener.getsockname() != (("10.77.0.10", 8080) if role == "http_frontend" else ("10.77.0.20", 2222))
+                or listener.getsockname() != endpoints(selected["configuration"])["http" if role == "http_frontend" else "ssh"]
                 or not listener.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN)):
             raise ValueError("routing_frontend_listener_changed")
         budget_socket = ssh_owner._control_channel(_receive_fd(channel, "ledger"))
@@ -290,18 +377,19 @@ def main():
             pairs.append((client, server, actual))
         worker._set_limits(worker._remaining(deadline, 60))
         existing.scratch_bound("/scratch")
-        if role == "http_frontend":
+        if nginx:
             existing.verify_peer_read_only()
         worker.drop_privileges(); existing.limits(deadline)
         existing.socket_filter(daemon=False); existing.confinement_witnesses()
         permissions = {"/dev/null": 6, "/proc/self/status": 4, "/scratch": (1 << 15) - 2}
-        if role == "http_frontend":
+        if nginx:
             permissions["/peer"] = 8
         common.apply_landlock(permissions)
         send_packet(channel, {"ready": True, "role": role, "namespaces": existing.namespaces(),
             "listener": list(listener.getsockname()), "bounds": existing.BOUNDS, "private_pairs": identities})
         command_sequence = 0
         seen = set()
+        seen_descriptors = set()
         while True:
             worker._remaining(deadline, 60)
             if select.select([channel], [], [], .01)[0]:
@@ -314,6 +402,8 @@ def main():
                     raise ValueError("routing_frontend_command_changed")
                 operation = command["operation"]
                 expected = {"sequence", "operation"} | ({"selector", "action_sequence", "action_digest"} if operation == "start" else {"deadline"} if operation == "arm" else set())
+                if operation == "start" and apache:
+                    expected |= {"apache_descriptor"}
                 if set(command) != expected:
                     raise ValueError("routing_frontend_command_fields")
                 if operation == "start":
@@ -334,9 +424,17 @@ def main():
                             pairs[index] = None
                         channels = ssh_owner.InstanceChannels(custody, chosen, deadline)
                         service = SshService(selector, listener.dup(), deadline=deadline, budget=budget,
-                            connection_factory=channels.connect, connection_finalizer=channels.finalize)
+                            connection_factory=channels.connect, connection_finalizer=channels.finalize, selected=selected)
+                    elif apache:
+                        private = receive_apache_socket(channel, command["apache_descriptor"], seen_descriptors)
+                        try:
+                            service = ApacheService(selector, listener.dup(), deadline=deadline, budget=budget,
+                                selected=selected, private_socket=private, identity=command["apache_descriptor"])
+                        except BaseException:
+                            private.close()
+                            raise
                     else:
-                        service = HttpService(selector, listener.dup(), deadline=deadline, budget=budget)
+                        service = HttpService(selector, listener.dup(), deadline=deadline, budget=budget, selected=selected)
                 elif operation == "arm":
                     if service is None:
                         raise ValueError("routing_frontend_missing_action")
@@ -348,10 +446,11 @@ def main():
                         channels.close()
                     require_idle_listener(listener)
                 snapshot = None if service is None else service.snapshot()
+                extra = {"apache_descriptor_custody": None if service is None else service.descriptor_custody()} if apache else {}
                 send_packet(channel, {"sequence": command_sequence, "operation": operation,
                     "recorder": snapshot, "instances": [] if channels is None else deepcopy(channels.receipts),
                     "reservations": deepcopy(budget.reservations), "budget_denied": budget.failed,
-                    "last_budget_reply": deepcopy(budget.last_reply)})
+                    "last_budget_reply": deepcopy(budget.last_reply), **extra})
                 if operation == "close":
                     return 0
                 if operation == "finish":

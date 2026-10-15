@@ -120,6 +120,30 @@ diagnostics and a complete passing follow-up. Instrumented diagnostics are
 separate evidence and cannot substitute for uninstrumented acceptance cases.
 Do not relax deadlines or bounds to make the next run pass.
 
+## Entry point
+
+The CLI accepts only the four named deployments. Omitting `--deployment` keeps
+the original v1 selection. For example, select four independent actions with:
+
+```sh
+python scripts/disconnected_routing.py run --deployment apache-B \
+  --action http_nmap --action http_headers --action ssh_nmap --action ssh_keys \
+  --directory .secure-agent/routing-apache-b
+```
+
+This invocation does not execute tools. Native owned-lab validation adds both
+`--execute` and the explicit `--unattended-owned-lab-test` test policy. Without
+that test policy, required personal approval remains unavailable through this
+entry point and execution is refused. The test policy records no personal
+approval. No target, command or budget override is accepted.
+
+Inspect saved evidence with
+`python scripts/disconnected_routing.py inspect DIRECTORY`. Inspection restores
+no authority and must leave bundle bytes, permissions and timestamps unchanged.
+
+Implementation and validation are in progress. Native results, retained failures
+and final review evidence will be recorded here before the follow-up PR is ready.
+
 ## Remaining required work
 
 This batch extends only the current ordinary operation mapping. The complete
@@ -133,7 +157,7 @@ budget refusal as the standalone N4 outcome.
 S3.5 closes only after the full required matrix and review gates pass. S3.6
 name/TLS binding and S3.7 combined acceptance follow in order. Stage 3 remains
 ten logical increments, seven accepted and three open; the current estimate is
-11–13 PRs because routing needs multiple batches. The catalog remains 52 accepted
+12–13 PRs because routing needs multiple batches. The catalog remains 52 accepted
 profiles / 17 external programs. Completed milestones stay closed. Credentials,
 paid/live models, deeper workflows, comparative benchmarking, attached networks
 and proposal submission remain deferred.

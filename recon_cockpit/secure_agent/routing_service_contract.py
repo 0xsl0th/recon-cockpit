@@ -7,6 +7,8 @@ from . import stock_http_production_contract as http_contract, stock_ssh_contrac
 from . import stock_http_recorder as http, stock_ssh_recorder as ssh, stock_ssh_process as process
 from .stock_http_owner_worker import BOUNDS
 from .stock_ssh_owner_worker import validate_connected_identity
+from .stock_http_production_transport import validate_descriptor_identity
+from .routing_topology_spec import endpoints
 
 
 FIELDS = {"selector", "action_sequence", "action_digest", "underlying_selection", "daemon_ready",
@@ -17,11 +19,15 @@ FIELDS = {"selector", "action_sequence", "action_digest", "underlying_selection"
 def validate_service(value, *, selected, identity, topology):
     selected = contract.validate_selection(selected)
     identity = contract.validate_identity(identity, selection=selected)
-    if type(value) is not dict or set(value) != FIELDS:
+    if type(value) is not dict:
         raise ValueError("routing_service_receipt_fields")
-    selector = contract.validate_selector(value["selector"])
+    selector = contract.validate_selector(value.get("selector"))
+    implementation = contract.http_implementation(selected)
+    apache = selector.startswith("http_") and implementation == "apache"
+    if set(value) != FIELDS | ({"apache_descriptor_custody"} if apache else set()):
+        raise ValueError("routing_service_receipt_fields")
     role = contract.selector_role(selector)
-    chosen = contract.underlying_selection(selector)
+    chosen = contract.underlying_selection(selector, selected)
     if (type(value["action_sequence"]) is not int or not 1 <= value["action_sequence"] <= 4
             or value["action_digest"] != contract.digest(contract.action(selected, selector))
             or contract.digest(value["underlying_selection"]) != contract.digest(chosen)
@@ -31,7 +37,7 @@ def validate_service(value, *, selected, identity, topology):
     if (type(front) is not dict or set(front) != {"ready", "role", "namespaces", "listener", "bounds", "private_pairs"}
             or front["ready"] is not True or front["role"] != role
             or contract.digest(front["bounds"]) != contract.digest(BOUNDS)
-            or front["listener"] != (["10.77.0.10", 8080] if role == "http_frontend" else ["10.77.0.20", 2222])):
+            or front["listener"] != list(endpoints(selected["configuration"])["http" if role == "http_frontend" else "ssh"])):
         raise ValueError("routing_service_frontend_changed")
     namespaces = ssh_contract.validate_namespaces(front["namespaces"])
     owner_namespaces = ssh_contract.validate_namespaces(topology["owner_namespaces"])
@@ -48,10 +54,12 @@ def validate_service(value, *, selected, identity, topology):
     if role == "http_frontend":
         if (type(daemon) is not dict or set(daemon) != {"namespaces", "bounds", "runtime_digest", "namespace_identity", "descriptor"}
                 or contract.digest(daemon["bounds"]) != contract.digest(BOUNDS)
-                or daemon["runtime_digest"] != daemon_digest or daemon["descriptor"] is not None
+                or daemon["runtime_digest"] != daemon_digest or not apache and daemon["descriptor"] is not None
                 or front["private_pairs"] != [] or value["instances"] != []):
             raise ValueError("routing_service_nginx_changed")
-        http_contract.validate_daemon_identity(daemon["namespace_identity"], "nginx")
+        http_contract.validate_daemon_identity(daemon["namespace_identity"], implementation)
+        if apache:
+            validate_apache_custody(value["apache_descriptor_custody"], daemon["descriptor"], topology, closed=True, final=True)
     else:
         ssh_contract.validate_custodian_ready(daemon, runtime_digest=daemon_digest, namespaces=daemon_namespaces)
         expected_pairs = [row["daemon"] for row in topology["private_ssh_pairs"]]
@@ -62,10 +70,10 @@ def validate_service(value, *, selected, identity, topology):
         if len({pair["inode"] for pair in expected_pairs}) != 4:
             raise ValueError("routing_service_private_pair_reused")
     front_mapping = http_contract.validate_launcher_mapping(value["frontend_mapping"], "nginx")
-    daemon_mapping = http_contract.validate_launcher_mapping(value["daemon_mapping"], "nginx" if role == "http_frontend" else "apache")
+    daemon_mapping = http_contract.validate_launcher_mapping(value["daemon_mapping"], implementation if role == "http_frontend" else "apache")
     if any(front_mapping[key] != daemon_mapping[key] for key in ("launcher_uid", "launcher_gid")):
         raise ValueError("routing_service_launcher_changed")
-    record = (http if role == "http_frontend" else ssh).validate_snapshot(value["recorder"], configuration="A", case=chosen["case"])
+    record = (http if role == "http_frontend" else ssh).validate_snapshot(value["recorder"], configuration=selected["configuration"], case=chosen["case"])
     if (record["armed"] is not True or record["finalized"] is not True
             or record["active_connections"] or record["pending_connections"]):
         raise ValueError("routing_service_connections_not_closed")
@@ -86,6 +94,33 @@ def validate_service(value, *, selected, identity, topology):
     if type(value["closure"]) is not dict or contract.digest(value["closure"]) != contract.digest(closure):
         raise ValueError("routing_service_cleanup_changed")
     _reservations(value, record, role)
+    if apache:
+        admitted_requests = sum(row["message"]["operation"] == "RESERVE_REQUEST" and row["reply"]["status"] == "ok"
+                                for row in value["reservations"])
+        if (value["apache_descriptor_custody"]["frontend_consumed"] != bool(admitted_requests)
+                or record["daemon_connections"] > int(value["apache_descriptor_custody"]["frontend_consumed"])):
+            raise ValueError("routing_apache_unreserved_descriptor_consumption")
+    return deepcopy(value)
+
+
+def validate_apache_custody(value, descriptor, topology, *, closed, final=False):
+    """Validate saved custody claims without constructing a socket or authority."""
+    descriptor = validate_descriptor_identity(descriptor)
+    flags = {"unconnected_at_transfer", "transferred_once"}
+    if final:
+        flags |= {"listener_verified", "owner_copy_closed", "launcher_copy_closed"}
+    fields = {"version", "descriptor", "frontend_netns_cookie", "frontend_consumed", "frontend_copy_closed"} | flags
+    if (type(value) is not dict or set(value) != fields or value["version"] != "1"
+            or contract.digest(value["descriptor"]) != contract.digest(descriptor)
+            or type(value["frontend_netns_cookie"]) is not int
+            or not 0 < value["frontend_netns_cookie"] < 2**64
+            or value["frontend_netns_cookie"] != topology["listeners"]["http"]["netns_cookie"]
+            or value["frontend_netns_cookie"] == descriptor["daemon_netns_cookie"]
+            or any(value[key] is not True for key in flags)
+            or type(value["frontend_consumed"]) is not bool
+            or value["frontend_copy_closed"] is not closed
+            or not closed and value["frontend_consumed"]):
+        raise ValueError("routing_apache_descriptor_custody_changed")
     return deepcopy(value)
 
 

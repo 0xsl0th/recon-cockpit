@@ -99,9 +99,10 @@ def _assert_pinned_tree_reaped(pins):
 
 
 @pytest.mark.parametrize("stop", ("cancel", "launcher_death"))
+@pytest.mark.parametrize("deployment", (None, "apache-B"), ids=("legacy", "apache-B"))
 def test_native_stop_after_useful_work_cannot_launch_second_action_or_reset_budget(
-        tmp_path, monkeypatch, record_property, stop):
-    selected = contract.selection()
+        tmp_path, monkeypatch, record_property, stop, deployment):
+    selected = contract.selection(deployment=deployment)
     session_id = str(uuid4())
     cancelled = threading.Event()
     preflight = ExecutionControl(time.monotonic() + 60, cancelled)
@@ -113,7 +114,7 @@ def test_native_stop_after_useful_work_cannot_launch_second_action_or_reset_budg
     control = ExecutionControl(time.monotonic() + 60, cancelled)
     audit_path = tmp_path / "audit.jsonl"
     pins, sends, starts = {}, [], []
-    state = {"test_kind": "owned_routing_lifecycle", "stop": stop, "test_passed": False,
+    state = {"test_kind": "owned_routing_lifecycle", "selection": selected, "stop": stop, "test_passed": False,
         "planned_actions": ["http_headers", "ssh_keys"], "second_action_launched": None,
         "completed_workflow": False, "personal_approval_claimed": False,
         "actual_provider_calls": 0, "actual_cost_microusd": 0}

@@ -12,9 +12,24 @@ ROLES = ("http_client", "ssh_client", "router", "http_frontend", "ssh_frontend")
 EXPORTS = ("user", *(role + "_net" for role in ROLES), "http_listener", "ssh_listener",
            "http_ledger_channel", "ssh_ledger_channel",
            *(f"ssh_pair_{number}_{side}" for number in range(4) for side in ("frontend", "daemon")))
-ENDPOINTS = {"http": ("10.77.0.10", 8080), "ssh": ("10.77.0.20", 2222),
-             "excluded": ("10.77.0.99", 8080), "http_wrong": ("10.77.0.10", 8081),
-             "ssh_wrong": ("10.77.0.20", 2223)}
+_ENDPOINTS = {
+    "A": {"http": ("10.77.0.10", 8080), "ssh": ("10.77.0.20", 2222),
+          "excluded": ("10.77.0.99", 8080), "http_wrong": ("10.77.0.10", 8081),
+          "ssh_wrong": ("10.77.0.20", 2223)},
+    "B": {"http": ("172.23.0.10", 18080), "ssh": ("172.23.0.20", 12222),
+          "excluded": ("10.77.0.99", 8080), "http_wrong": ("172.23.0.10", 18081),
+          "ssh_wrong": ("172.23.0.20", 12223)},
+}
+# Retain the original fixed-A alias without using mutable global selection.
+ENDPOINTS = dict(_ENDPOINTS["A"])
+
+
+def endpoints(configuration="A"):
+    if type(configuration) is not str or configuration not in _ENDPOINTS:
+        raise ValueError("routing_topology_configuration")
+    return dict(_ENDPOINTS[configuration])
+
+
 CLIENTS = {"http": "10.78.0.2", "ssh": "10.78.0.6"}
 LINKS = (
     ("http_client", "ch", "10.78.0.1", "10.78.0.2"),
@@ -63,32 +78,34 @@ def decode(raw):
         elif type(item) is list:
             pending.extend((child, depth + 1) for child in item)
     return value
-def spec():
+def spec(*, configuration="A"):
     return {"profile": PROFILE, "roles": list(ROLES), "links": [list(row) for row in LINKS],
-            "endpoints": {key: list(value) for key, value in ENDPOINTS.items()},
+            "endpoints": {key: list(value) for key, value in endpoints(configuration).items()},
             "clients": dict(CLIENTS), "bounds": dict(BOUNDS), "external_egress": False,
             "private_ssh_pairs": 4, "private_ssh_listener_retained": False,
             "transport": {"logical_bytes": MAX_PACKET, "frame_bytes": 32768, "seconds": 2},
-            "routes": {role: routes(role) for role in ROLES},
-            "firewalls": {role: firewall_rules(role) for role in ROLES}}
-def digest():
-    return hashlib.sha256(encode(spec())).hexdigest()
-def routes(role):
+            "routes": {role: routes(role, configuration=configuration) for role in ROLES},
+            "firewalls": {role: firewall_rules(role, configuration=configuration) for role in ROLES}}
+def digest(*, configuration="A"):
+    return hashlib.sha256(encode(spec(configuration=configuration))).hexdigest()
+def routes(role, *, configuration="A"):
+    selected_endpoints = endpoints(configuration)
     if role not in ROLES:
         raise ValueError("routing_topology_role")
     if role == "router":
-        return [[ENDPOINTS[service][0], remote, interface] for service, (_, interface, _, remote)
+        return [[selected_endpoints[service][0], remote, interface] for service, (_, interface, _, remote)
                 in zip(("http", "ssh"), LINKS[2:], strict=True)]
     _, _, gateway, _ = next(row for row in LINKS if row[0] == role)
-    destinations = ([ENDPOINTS[key][0] for key in ("http", "ssh", "excluded")]
+    destinations = ([selected_endpoints[key][0] for key in ("http", "ssh", "excluded")]
                     if role.endswith("client") else list(CLIENTS.values()))
     return [[destination, gateway, "eth0"] for destination in destinations]
-def firewall_rules(role, private_pairs=(), *, private_routes=(), setup=False):
+def firewall_rules(role, private_pairs=(), *, private_routes=(), setup=False, configuration="A"):
+    selected_endpoints = endpoints(configuration)
     if role not in ROLES:
         raise ValueError("routing_topology_role")
     rules = {"input": [], "output": [], "forward": []}
     for service, client_interface, frontend_interface in (("http", "ch", "fh"), ("ssh", "cs", "fs")):
-        target, port = ENDPOINTS[service]
+        target, port = selected_endpoints[service]
         client = CLIENTS[service]
         request = f"ip saddr {client} ip daddr {target} tcp dport {port} ct direction original"
         reply = f"ip saddr {target} ip daddr {client} tcp sport {port} ct direction reply ct state established"
@@ -151,24 +168,26 @@ def validate_pair(value):
     return deepcopy(value)
 
 
-def expected_addresses(role):
+def expected_addresses(role, *, configuration="A"):
+    selected_endpoints = endpoints(configuration)
     if role not in ROLES:
         raise ValueError("routing_topology_role")
     rows = [{"interface": "lo", "address": "127.0.0.1", "prefix": 8}]
     if role == "router":
         rows += [{"interface": interface, "address": local, "prefix": 30}
                  for _, interface, local, _ in LINKS]
-        rows.append({"interface": "lo", "address": ENDPOINTS["excluded"][0], "prefix": 32})
+        rows.append({"interface": "lo", "address": selected_endpoints["excluded"][0], "prefix": 32})
     else:
         remote = next(row[3] for row in LINKS if row[0] == role)
         rows.append({"interface": "eth0", "address": remote, "prefix": 30})
         if role.endswith("frontend"):
-            rows.append({"interface": "eth0", "address": ENDPOINTS[role.split("_")[0]][0], "prefix": 32})
+            rows.append({"interface": "eth0", "address": selected_endpoints[role.split("_")[0]][0], "prefix": 32})
     return sorted(rows, key=encode)
 
 
-def validate_network_state(value):
+def validate_network_state(value, *, configuration="A"):
     """Replay observed kernel links, addresses and all IPv4 route tables."""
+    endpoints(configuration)
     if type(value) is not dict or set(value) != set(ROLES):
         raise ValueError("routing_topology_network_state_roles")
     links_by_role = {}
@@ -195,11 +214,11 @@ def validate_network_state(value):
         if set(observed) != names or len({row["index"] for row in observed.values()}) != len(names):
             raise ValueError("routing_topology_link_inventory")
         links_by_role[role] = observed
-        addresses = expected_addresses(role)
+        addresses = expected_addresses(role, configuration=configuration)
         if type(state["addresses"]) is not list or encode(sorted(state["addresses"], key=encode)) != encode(addresses):
             raise ValueError("routing_topology_address_inventory")
         required, optional = set(), set()
-        for destination, gateway, interface in routes(role):
+        for destination, gateway, interface in routes(role, configuration=configuration):
             required.add((254, destination, 32, gateway, interface, 4, 0, 1))
         for address in addresses:
             network = ipaddress.IPv4Network(address["address"] + "/" + str(address["prefix"]), strict=False)
@@ -251,20 +270,21 @@ def validate_network_state(value):
     return deepcopy(value)
 
 
-def validate_metadata(value):
+def validate_metadata(value, *, configuration="A"):
+    selected_endpoints = endpoints(configuration)
     fields = {"ready", "profile", "topology_sha256", "user", "networks", "listeners", "baselines",
               "filtered", "bounds", "setup_helpers", "capabilities_dropped", "setup_disabled", "exports",
               "private_ssh_pairs", "private_pairs_drained", "owner_namespaces", "network_state",
               "private_listener_closed", "descriptor_custody"}
     if (type(value) is not dict or set(value) != fields or value["ready"] is not True
-            or value["profile"] != PROFILE or value["topology_sha256"] != digest()
+            or value["profile"] != PROFILE or value["topology_sha256"] != digest(configuration=configuration)
             or value["exports"] != list(EXPORTS) or encode(value["bounds"]) != encode(BOUNDS)
             or type(value["setup_helpers"]) is not int or value["setup_helpers"] != BOUNDS["setup_helpers_total"]
             or value["capabilities_dropped"] is not True or value["setup_disabled"] is not True
             or value["private_pairs_drained"] is not True or value["private_listener_closed"] is not True
             or encode(value["descriptor_custody"]) != encode({"before_export": 26, "steady": 14})):
         raise ValueError("routing_topology_metadata_changed")
-    validate_network_state(value["network_state"])
+    validate_network_state(value["network_state"], configuration=configuration)
     if type(value["user"]) is not str or not re.fullmatch(r"user:\[\d+\]", value["user"]):
         raise ValueError("routing_topology_user_identity")
     networks, owner = value["networks"], value["owner_namespaces"]
@@ -275,12 +295,12 @@ def validate_metadata(value):
             or owner["user"] != value["user"] or owner["net"] != networks["router"]):
         raise ValueError("routing_topology_network_identity")
     listeners = value["listeners"]
-    if type(listeners) is not dict or set(listeners) != set(ENDPOINTS):
+    if type(listeners) is not dict or set(listeners) != set(selected_endpoints):
         raise ValueError("routing_topology_listener_metadata")
     for name, item in listeners.items():
         if (type(item) is not dict or set(item) != {"inode", "local", "netns_cookie"}
                 or any(type(item[key]) is not int or not 0 < item[key] < 2**64 for key in ("inode", "netns_cookie"))
-                or encode(item["local"]) != encode(list(ENDPOINTS[name]))):
+                or encode(item["local"]) != encode(list(selected_endpoints[name]))):
             raise ValueError("routing_topology_listener_metadata")
     if (len({item["inode"] for item in listeners.values()}) != 5
             or len({item["netns_cookie"] for item in listeners.values()}) != 3
@@ -303,19 +323,19 @@ def validate_metadata(value):
     for phase in ("baselines", "filtered"):
         expected = [{"client": client, "endpoint": endpoint,
                      "connected": True if phase == "baselines" else endpoint == client}
-                    for client in ("http", "ssh") for endpoint in ENDPOINTS]
+                    for client in ("http", "ssh") for endpoint in selected_endpoints]
         if encode(value[phase]) != encode(expected):
             raise ValueError("routing_topology_witness_metadata")
     return deepcopy(value)
 
 
-def validate_closure(value, *, metadata=None):
+def validate_closure(value, *, metadata=None, configuration="A"):
     fields = {"status", "owner_exited", "descriptors_closed", "namespaces", "topology_sha256"}
     if (type(value) is not dict or set(value) != fields or value["status"] != "closed"
             or value["owner_exited"] is not True or value["descriptors_closed"] is not True
-            or value["topology_sha256"] != digest()):
+            or value["topology_sha256"] != digest(configuration=configuration)):
         raise ValueError("routing_topology_cleanup_changed")
-    expected = None if metadata is None else validate_metadata(metadata)["networks"]
+    expected = None if metadata is None else validate_metadata(metadata, configuration=configuration)["networks"]
     if value["namespaces"] != expected:
         raise ValueError("routing_topology_cleanup_namespaces_changed")
     return deepcopy(value)

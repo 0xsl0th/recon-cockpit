@@ -15,7 +15,7 @@ def _validate_previous(value, identity):
     if (type(value) is not dict or set(value) != _FIELDS | {"routing_state"}
             or type(value["identity"]) is not dict or value["identity"] != identity):
         raise ValueError("routing_result_previous_changed")
-    selected = {key: identity[key] for key in contract.SELECTION_FIELDS}
+    selected = contract.selection_from_identity(identity)
     caps = contract.budgets(selected)
     state = value["routing_state"]
     if (type(state) is not dict or set(state) != _STATE_FIELDS
@@ -38,12 +38,12 @@ def _validate_previous(value, identity):
 
 def validate_result_context(result, identity, *, previous=None, tool_id=None, execution_status=None):
     identity = contract.validate_identity(identity)
-    selected = {key: identity[key] for key in contract.SELECTION_FIELDS}
+    selected = contract.selection_from_identity(identity)
     if type(result) is not dict:
         raise ValueError("invalid_routing_result")
     if previous is not None:
         previous = _validate_previous(previous, identity)
-    topology = validate_metadata(result.get("routing_topology"))
+    topology = validate_metadata(result.get("routing_topology"), configuration=selected["configuration"])
     service = validate_service(result.get("routing_service"), selected=selected, identity=identity, topology=topology)
     state = ledger.validate_snapshot(result.get("routing_ledger"), selected=selected, identity=identity)
     selector, sequence = service["selector"], service["action_sequence"]

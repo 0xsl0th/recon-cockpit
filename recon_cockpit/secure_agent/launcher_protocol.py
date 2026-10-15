@@ -118,7 +118,10 @@ def configuration(value):
 
 
 def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tools=False, service_web=False,
-            configurable=False, stock_http=False, stock_http_production=False, stock_ssh=False, routing=False):
+            configurable=False, stock_http=False, stock_http_production=False, stock_ssh=False, routing=False,
+            routing_selection=None):
+    if routing_selection is not None and not routing:
+        raise ValueError('routing_selection_without_runtime')
     fields = ({'stdlib', 'files'} | ({'nmap_runtime'} if nmap else set()) |
               ({'web_tools_runtime'} if web_tools else set()) | ({'network_tools_runtime'} if network_tools else set()) |
               ({'service_web_runtime'} if service_web else set()) |
@@ -159,7 +162,7 @@ def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tool
         validate_runtime(value['stock_ssh_runtime'], selection(daemon.get('configuration'), daemon.get('case')))
     if routing:
         from .routing_contract import validate_runtime, selection
-        validate_runtime(value['routing_runtime'], selection())
+        validate_runtime(value['routing_runtime'], selection() if routing_selection is None else routing_selection)
     if type(value['stdlib']) is not str or not re.fullmatch(r'/usr/lib/python3\.\d+', value['stdlib']):
         raise ValueError('invalid_launcher_stdlib')
     paths = value['files']
@@ -195,7 +198,8 @@ def initial(value, now):
             stock_http=config['profile'] == 'stock_nginx_diagnostic_v1',
             stock_http_production=config['profile'] == 'stock_http_compatibility_v1',
             stock_ssh=config['profile'] == 'stock_ssh_compatibility_v1',
-            routing=config['profile'] == 'disconnected_routing_v1')
+            routing=config['profile'] == 'disconnected_routing_v1',
+            routing_selection=config['case'] if config['profile'] == 'disconnected_routing_v1' else None)
     if config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
         if config['profile'] == 'disconnected_routing_v1':
             from .routing_contract import validate_identity as validate_stock_identity

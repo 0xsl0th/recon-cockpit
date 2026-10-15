@@ -34,7 +34,7 @@ def diagnostics(monkeypatch, tmp_path):
     return tmp_path / "launcher-diagnostics.json"
 
 
-def trial(tmp_path, monkeypatch, diagnostics, selectors, budget_case="ordinary", require_approval=False):
+def trial(tmp_path, monkeypatch, diagnostics, selectors, budget_case="ordinary", require_approval=False, deployment=None):
     from recon_cockpit.secure_agent.routing_lab import RoutingLab
     from recon_cockpit.secure_agent.routing_backend import AuthorizedRoutingBackend
     from recon_cockpit.secure_agent.routing_evidence import inspect_trial
@@ -43,6 +43,7 @@ def trial(tmp_path, monkeypatch, diagnostics, selectors, budget_case="ordinary",
     directory = tmp_path / "trial"
     try:
         report = diagnostic.run_trial(directory, selectors=selectors, budget_case=budget_case,
+            deployment=deployment,
             execute=True, unattended_owned_lab_test=not require_approval)
     except Exception:
         if diagnostics.exists(): print(diagnostics.read_text())

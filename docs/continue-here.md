@@ -5,17 +5,23 @@
 This development checkpoint never resumes an assessment or restores approvals.
 
 Current continuation (15 October 2026):
-S3.4 is merged in PR #93 (`a7f46b1`); all five post-merge checks passed.
-The active worktree is `/tmp/recon-stage3-routing`, branch
-`feature/stage3-disconnected-routing`, for the first fixed-A S3.5 slice.
-[PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94) presents the first
-fixed-A routing review candidate: 25 native, 76 accepted-profile regression and
-26,599 portable checks passed at `659c053`, with all 981 source pins unchanged.
+[PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94) is merged as `46f9b73`.
+Fresh independent authority/evidence reviews and 457 focused portable checks
+passed at `58c78e0`; all five final and [post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38767707515) passed. Reviewed and merged trees
+match. Preserve `.secure-agent/pr94-review-20261015/merge-review-receipt.json`.
+The accepted first fixed-A routing slice retains 25 native, 76 accepted-profile
+regression and 26,599 portable passes at `659c053`, with 981 unchanged source pins.
 The [routing runbook](stage3-disconnected-routing.md) retains the original failed
-attempts, including one unexplained Apache regression refusal before the complete
-passing follow-up. Private evidence is in `.secure-agent/stage3-routing-20261015/`.
-Review the latest PR revision/checks before merge. S3.5 remains open for routed
-Apache/B and the full hostile/negative matrix; do not repeat PR #93.
+attempts, including the unexplained Apache regression refusal before the complete
+passing follow-up. Private original evidence stays in `.secure-agent/stage3-routing-20261015/`.
+
+The active worktree is `/tmp/recon-stage3-routing-deployments`, branch
+`feature/stage3-routing-deployments`. Its [pinned extension contract](stage3-routing-deployments.md)
+adds only closed nginx/Apache × A/B deployments, the same four independent
+actions and the same aggregate limits. Implementation and validation are in
+progress; do not claim the new deployments accepted yet. S3.5 remains open:
+finish this deployment batch, then the required ordinary-variation/hostile/negative
+matrix, followed by S3.6 and S3.7 in order. S3.4 stays closed; do not repeat PR #94.
 
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
@@ -136,15 +142,16 @@ refusals and two later regression failures. Their cause remains unconfirmed;
 passing follow-up runs do not erase them. Scripted approval tests are not personal
 acceptance. The finite SSH result grants no authentication or trusted host identity.
 
-**Current: S3.5 disconnected multi-host routing**, branch
-`feature/stage3-disconnected-routing` at `/tmp/recon-stage3-routing`.
+**Current: S3.5 disconnected multi-host routing.** The first fixed-A slice below
+is accepted in PR #94. Continue in `feature/stage3-routing-deployments` at
+`/tmp/recon-stage3-routing-deployments` using the [extension contract](stage3-routing-deployments.md).
 The [implementation contract](stage3-disconnected-routing.md) was pinned before
 code: fixed A nginx/SSH, four independently selected actions, five owned routed
 network namespaces, a listening excluded endpoint and a persistent aggregate
 ledger. Caps include eight connections, two HTTP GETs, one SSH key exchange,
 one active connection, 250 ms global admission spacing and a 60-second lifetime.
 Three fixed lowered-budget negative cases preserve otherwise valid authority.
-PR #94's first fixed-A review candidate passed 25 native checks, 76 accepted-profile
+PR #94's accepted first fixed-A slice passed 25 native checks, 76 accepted-profile
 regressions and 26,599 portable tests at `659c053`, with 981 unchanged source
 pins. Six ordinary trials completed all 12 selected actions without unnecessary
 refusals. Three budget negatives preserved the first useful action and refused
@@ -152,7 +159,7 @@ the excess work; required-approval refusal, lifecycle cleanup and immutable
 Python/CLI inspection passed separately. The original 75/76 regression run's
 Apache B/O1 refusal remains unexplained and retained; passing diagnostics and
 the complete follow-up do not establish a fix. Fresh code/evidence reviews found
-no blockers in this finite candidate. S3.5 remains open for routed Apache/B and
+no blockers in this finite slice, merged at `46f9b73`. S3.5 remains open for routed Apache/B and
 the complete hostile/negative matrix. S3.6 and S3.7 follow in order.
 
 Accepted preparation compiled two finite server configurations and the existing
@@ -454,8 +461,9 @@ capabilities from the professional-v1 release and the longer-term 40+ program
 product. The historical PR #73 forecast was **40–60 PRs for an operator-assisted
 professional v1** and **80–130 total for the broader product**, from the PR #72
 baseline. The 14 October Stage 3 revision changed those baseline totals to
-**44–62** and **84–132**. The 15 October routing split revises them to **45–65**
-and **85–135**, with Stage 3 estimated at 11–13 PRs across ten logical increments.
+**44–62** and **84–132**. The 15 October routing plan now separates the fixed deployment extension
+from the full hostile/negative matrix and revises them to **46–65**
+and **86–135**, with Stage 3 estimated at 12–13 PRs across ten logical increments.
 Completed work is included, not charged again.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that every catalog profile is available through the GUI.

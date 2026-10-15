@@ -17,13 +17,13 @@ from test_routing_contract import SESSION, identity, runtime as runtime_bundle
 from test_stock_ssh_client import HOST, NONCE
 
 
-def envelope(selector="ssh_keys"):
-    selected = contract.selection()
-    bundle = runtime_bundle()
+def envelope(selector="ssh_keys", *, deployment=None):
+    selected = contract.selection(deployment=deployment)
+    bundle = runtime_bundle(deployment)
     action = parse_action(contract.action(selected, selector))
     policy, limits = contract.policy_for_selection(selected), contract.limits(selected)
     return {"mode": contract.PROFILE, "selection": selected, "selector": selector,
-        "identity": identity(), "runtime": bundle[selector],
+        "identity": identity(deployment=deployment), "runtime": bundle[selector],
         "namespaces": {name: name + ":[200]" for name in HOST},
         "launch": {"schema_version": "1", "mode": contract.PROFILE, "execute": True, "session_id": SESSION,
             "nonce": NONCE, "sequence": 1, "action": action.to_dict(), "action_digest": action.digest,
@@ -39,13 +39,15 @@ def consume(value):
 
 
 @pytest.mark.parametrize("selector", contract.SELECTORS)
-def test_four_exact_envelopes_fit_bound_and_keep_selected_runtime(selector):
-    value = envelope(selector)
+@pytest.mark.parametrize("deployment", (None, *contract.DEPLOYMENTS))
+def test_four_exact_envelopes_fit_bound_and_keep_selected_runtime(selector, deployment):
+    value = envelope(selector, deployment=deployment)
     assert len(encode(value)) < 32768
     request, deadline, namespaces, runtime_digest = consume(value)
     assert request["selector"] == selector and request["selection"] == value["selection"]
     assert request["target"] == value["launch"]["action"]["target"]
     assert request["parameters"] == value["launch"]["action"]["parameters"]
+    assert request["configuration"] == value["selection"]["configuration"]
     assert deadline == 150 and namespaces == value["namespaces"]
     assert runtime_digest == value["identity"]["runtimes"][selector]["client_runtime_sha256"]
     if selector == "http_headers":
@@ -55,6 +57,12 @@ def test_four_exact_envelopes_fit_bound_and_keep_selected_runtime(selector):
         assert request["target"] in argv
         assert all(word not in argv for word in ("--script", "-A", "-sS", "--script-args"))
         assert argv[0] == ("/tool/ssh-keyscan" if selector == "ssh_keys" else "/tool/nmap")
+        chosen = contract.underlying_selection(selector, value["selection"])
+        if selector.startswith("ssh_"):
+            from recon_cockpit.secure_agent.stock_ssh_spec import client_argv
+            assert argv == client_argv(chosen["configuration"], chosen["case"])
+        else:
+            assert argv[argv.index("-p") + 1] == str(request["parameters"]["port"])
 
 
 @pytest.mark.parametrize("field,bad", (("nonce", "b" * 64), ("sequence", True), ("sequence", 5),
@@ -77,6 +85,32 @@ def test_other_action_or_other_context_cannot_reuse_envelope(field):
     with pytest.raises(ValueError): consume(value)
 
 
+@pytest.mark.parametrize("selector", contract.SELECTORS)
+@pytest.mark.parametrize("field", ("selection", "runtime", "identity", "action", "policy"))
+def test_other_deployment_cannot_reuse_a_client_envelope(selector, field):
+    value = envelope(selector, deployment="apache-B")
+    other = envelope(selector, deployment="nginx-A")
+    if field in ("action", "policy"):
+        value["launch"][field] = other["launch"][field]
+        value["launch"][field + "_digest"] = other["launch"][field + "_digest"]
+    else:
+        value[field] = other[field]
+    with pytest.raises(ValueError):
+        consume(value)
+
+
+@pytest.mark.parametrize("selector", contract.SELECTORS)
+def test_same_configuration_different_implementation_or_version_cannot_reuse_authority(selector):
+    value = envelope(selector, deployment="apache-A")
+    value["selection"] = contract.selection(deployment="nginx-A")
+    with pytest.raises(ValueError):
+        consume(value)
+    value = envelope(selector, deployment="nginx-A")
+    value["selection"] = contract.selection()
+    with pytest.raises(ValueError):
+        consume(value)
+
+
 def test_commitment_unknown_fields_and_duplicate_json_are_rejected():
     value = envelope(); raw = encode(value)
     with pytest.raises(ValueError): execution.consume_launch(raw, NONCE, "0" * 64, now=100)
@@ -96,11 +130,13 @@ def test_go_is_nonce_bound_and_uses_short_action_clock(selector):
 
 
 @pytest.mark.parametrize("selector", contract.SELECTORS)
-def test_client_command_joins_only_selected_namespace_and_has_no_private_mount(monkeypatch, selector):
+@pytest.mark.parametrize("deployment", (None, *contract.DEPLOYMENTS))
+def test_client_command_joins_only_selected_namespace_and_has_no_private_mount(monkeypatch, selector, deployment):
     monkeypatch.setattr(runtime, "_trusted_program", lambda name: "/usr/bin/" + name)
-    manifest = runtime_bundle()[selector]["client"]
-    files = [] if manifest is None else runtime.client_runtime_module(selector).runtime_files(manifest)
-    service = SimpleNamespace(selector=selector, namespace_fds=(31, 32))
+    selected = contract.selection(deployment=deployment)
+    manifest = runtime_bundle(deployment)[selector]["client"]
+    files = [] if manifest is None else runtime.client_runtime_module(selector, selected).runtime_files(manifest)
+    service = SimpleNamespace(selector=selector, selection=selected, namespace_fds=(31, 32))
     command = runtime.command(service, ("/usr/lib/python3.13", [
         ("/usr/bin/nft", "/usr/bin/nft"), ("/usr/bin/ip", "/usr/bin/ip"),
         ("/usr/bin/python3", "/usr/bin/python3")]), manifest, tuple(range(40, 40 + len(files))), NONCE, "c" * 64)
@@ -108,18 +144,24 @@ def test_client_command_joins_only_selected_namespace_and_has_no_private_mount(m
     assert "--unshare-net" not in command and "--as-pid-1" not in command
     assert command[command.index("--cap-add") + 1] == "CAP_SETPCAP"
     assert "CAP_NET_ADMIN" not in command and "CAP_SYS_ADMIN" not in command
-    assert not any(path in command for path in ("/peer", "/stock-peer", "/scratch", "/usr/bin/nft", "/usr/bin/ip"))
+    assert not any(path in command for path in ("/peer", "/stock-peer", "/scratch", "/usr/bin/nft", "/usr/bin/ip", "/tool/apache2"))
     assert "routing_topology_spec" in runtime.MODULES
 
 
 @pytest.mark.parametrize("selector", contract.SELECTORS)
-def test_witness_targets_are_fixed_other_service_excluded_and_wrong_port(selector):
-    endpoints = worker.witness_endpoints(selector)
+@pytest.mark.parametrize("deployment", (None, *contract.DEPLOYMENTS))
+def test_witness_targets_are_fixed_other_service_excluded_and_wrong_port(selector, deployment):
+    selected = contract.selection(deployment=deployment)
+    endpoints = worker.witness_endpoints(selector, selected)
     assert len(endpoints) == len(set(endpoints)) == 3
     assert ("10.77.0.99", 8080) in endpoints
-    action = contract.action(contract.selection(), selector)
+    action = contract.action(selected, selector)
     assert (action["target"], action["parameters"]["port"]) not in endpoints
-    assert all(address.startswith("10.77.0.") for address, _ in endpoints)
+    if selected["configuration"] == "B":
+        assert endpoints == ((("172.23.0.20", 12222), ("10.77.0.99", 8080), ("172.23.0.10", 18081))
+            if selector.startswith("http_") else (("172.23.0.10", 18080), ("10.77.0.99", 8080), ("172.23.0.20", 12223)))
+    else:
+        assert all(address.startswith("10.77.0.") for address, _ in endpoints)
 
 
 @pytest.mark.parametrize("flag", (1, False, "true", None))
@@ -132,12 +174,27 @@ def test_header_result_requires_observed_routed_flags_with_exact_boolean_types(f
     with pytest.raises(ValueError): runtime.header_reply(encode(value), "http_headers")
 
 
+@pytest.mark.parametrize("deployment", contract.DEPLOYMENTS)
+def test_header_response_is_bound_to_selected_numeric_endpoint(deployment):
+    from test_stock_http_client import header_reply
+    selected = contract.selection(deployment=deployment)
+    action = contract.action(selected, "http_headers")
+    value = header_reply()
+    value["boundary_checks"] = dict.fromkeys(runtime.BOUNDARY_NAMES, True)
+    value["results"][0].update(target=action["target"], port=action["parameters"]["port"])
+    assert runtime.header_reply(encode(value), "http_headers", selected) == value
+    other = contract.selection(deployment="apache-A" if selected["configuration"] == "B" else "apache-B")
+    with pytest.raises(ValueError):
+        runtime.header_reply(encode(value), "http_headers", other)
+
+
 @pytest.mark.parametrize("selector", contract.SELECTORS)
-def test_actual_client_module_mounts_import_and_verify_without_repository(tmp_path, monkeypatch, selector):
+@pytest.mark.parametrize("deployment", (None, *contract.DEPLOYMENTS))
+def test_actual_client_module_mounts_import_and_verify_without_repository(tmp_path, monkeypatch, selector, deployment):
     monkeypatch.setattr(runtime, "_trusted_program", lambda name: "/usr/bin/" + name)
-    value = envelope(selector); manifest = value["runtime"]["client"]
-    files = [] if manifest is None else runtime.client_runtime_module(selector).runtime_files(manifest)
-    command = runtime.command(SimpleNamespace(selector=selector, namespace_fds=(31, 32)), ("/stdlib", []),
+    value = envelope(selector, deployment=deployment); manifest = value["runtime"]["client"]
+    files = [] if manifest is None else runtime.client_runtime_module(selector, value["selection"]).runtime_files(manifest)
+    command = runtime.command(SimpleNamespace(selector=selector, selection=value["selection"], namespace_fds=(31, 32)), ("/stdlib", []),
         manifest, tuple(range(40, 40 + len(files))), NONCE, "c" * 64)
     for index, flag in enumerate(command):
         if flag == "--ro-bind" and command[index + 2].startswith("/app/"):
