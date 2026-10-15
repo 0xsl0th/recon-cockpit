@@ -1,6 +1,6 @@
 # Roadmap — secure AI pentesting workflows
 
-Current continuation (14 October 2026):
+Current continuation (15 October 2026):
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
 [T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) merged as `f0542a8`
@@ -96,26 +96,31 @@ No service, tool action or authority was created; provider calls/spend remain ze
 See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
-**Current: S3.4a [OpenSSH source/runtime preparation](stock-ssh-feasibility.md).**
-Compile two finite server configurations and the existing deliberately public
-fixture key, pin the three OpenSSH executables and their linked libraries, and
-inspect the actual installed files without starting a daemon. OpenSSH key
-collection requires a preauthentication fork and executable transitions, so the
-HTTP no-fork boundary cannot be reused unchanged. **S3.4b** must separately
-implement and prove the native process/transport boundary, useful service and
-key observations, refusals and immutable evidence. Preparation grants no launch.
-Stage 3 now has **ten increments: five accepted and five remaining**, counting
-S3.4a/S3.4b separately. S3.5–S3.7 follow in order; no required gate is removed.
+**S3.4a is accepted in [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92)
+at `bfe6680`. Current: S3.4b native SSH compatibility.** The accepted
+[preparation](stock-ssh-feasibility.md) pins two finite configurations, the
+existing public test key, three OpenSSH executables and their exact linked
+libraries. Preparation alone grants no native compatibility claim. The
+[native candidate in PR #93](stage3-ssh-compatibility.md) now passes 94 native
+SSH checks, 71 accepted-profile regressions and 26,141 local portable tests.
+Its eight ordinary/robustness completions, twelve expected negatives and
+unchanged evidence replay have independent review. Original intermittent
+regression failures remain recorded with unconfirmed cause; the complete
+follow-up gate passed without changing production bounds. PR #93 awaits final
+review and merge; it does not add authenticated SSH or trusted host identity.
+Stage 3 has **ten increments: six accepted and four remaining**. S3.4b remains
+open until its complete corpus, review and checks pass; S3.5–S3.7 follow in order.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
-[S3.4a PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92) is ready for
-review; check its latest revision and CI before acceptance. Validation at `2a26154` passed **20 installed-runtime inspections** and
-**25,483 portable tests**, with **911 source hashes unchanged**. Independent
-spec/docs and runtime/CLI reviews passed; all 169 focused tests passed. Each
-inspection pins 25 native and eleven generated files; no daemon, authentication,
-action, grant, provider call or spend occurred. Preserve
-`.secure-agent/stock-ssh-preflight-20261014/`. Preparation awaits PR review and
-acceptance; the next implementation after that merge is S3.4b native SSH.
+
+S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
+**25,483 portable tests**, with **911 source hashes unchanged**. Fresh review at
+`6ac1066` passed 169 focused tests; all five final CI jobs passed 25,483 tests
+each. The reviewed and merged trees match, and the
+[post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38657342980)
+passed. Preserve `.secure-agent/stock-ssh-preflight-20261014/` and the PR #92 review
+receipts. Preliminary native SSH work is recorded in the [checkpoint](continue-here.md);
+it does not reopen accepted preparation or close remaining native gates.
 
 
 Offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI stay
@@ -160,7 +165,7 @@ claim that today's bounded fixtures support professional engagements.
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
 | 3 — accepted, finite coverage tranche | T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | PRs #74/#80/#81/#84/#85/#86 close all required G1–G6 gates: 52 accepted profiles across 17 programs. T06 retains 83 native and 24,163 portable passes. Existing exact recipes, limits and evidence contracts stay closed; this is not general engagement compatibility. |
-| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87, S3.2a/S3.2b in PRs #88/#89 and S3.3a Apache preparation in PR #90. S3.3b HTTP production is accepted in PR #91. S3.4a OpenSSH source/runtime preparation is current, followed by S3.4b native compatibility, then multi-host routing and name/redirect/referral boundaries. Planning grants no attached-network access or execution authority. |
+| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87, S3.2a/S3.2b in PRs #88/#89 and S3.3a Apache preparation in PR #90. S3.3b HTTP production is accepted in PR #91. S3.4a OpenSSH preparation is accepted in PR #92; S3.4b native compatibility is current, then multi-host routing and name/redirect/referral boundaries. Planning grants no attached-network access or execution authority. |
 | 5 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`

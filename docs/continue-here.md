@@ -1,10 +1,10 @@
-# Continue here — 14 October 2026
+# Continue here — 15 October 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-Current continuation (14 October 2026):
+Current continuation (15 October 2026):
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
 [T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) merged as `f0542a8`
@@ -100,26 +100,59 @@ No service, tool action or authority was created; provider calls/spend remain ze
 See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
-**Current: S3.4a [OpenSSH source/runtime preparation](stock-ssh-feasibility.md).**
-Compile two finite server configurations and the existing deliberately public
-fixture key, pin the three OpenSSH executables and their linked libraries, and
-inspect the actual installed files without starting a daemon. OpenSSH key
+**S3.4a [OpenSSH source/runtime preparation](stock-ssh-feasibility.md) is accepted
+in [PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92), merged as `bfe6680`
+on 14 October.** Fresh independent code/evidence reviews passed, with 169 focused
+checks and all five final CI jobs passing 25,483 tests each. The reviewed
+`6ac1066` and merge trees match. The [post-merge workflow](https://github.com/0xsl0th/recon-cockpit/actions/runs/38657342980)
+also passed. Retain `.secure-agent/pr92-review-20261014/` and
+`.secure-agent/pr92-review-20261015/merge-postmerge-ci.json`; do not repeat this merge.
+
+**Current: S3.4b native SSH compatibility is ready for PR review**, in
+[PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93), branch
+`feature/stage3-ssh-native` at `/tmp/recon-stage3-ssh-native`.
+Frozen implementation `d183dee` passed **94 native tests**, including all 20
+A/B corpus rows: **eight useful completions, twelve expected negatives and zero
+unnecessary refusals**. Independent boundary, integration, native-test and
+saved-evidence reviews passed. The 20 corpus bundles and the separate scripted
+required-approval row replayed unchanged; scripted tests are not personal acceptance.
+
+At `f6ee4d6`, the complete accepted-profile regression gate passed **71 tests**
+(52 HTTP, eight configurable workflow and eleven audit/approval checks), and
+full local portable validation passed **26,141 tests**, with no failures, errors
+or skips. All **950 source hashes stayed unchanged** during each run. All five
+[hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38734496589)
+also passed. Later corrections affect portable fixtures/documentation only;
+production and native acceptance files still match `d183dee`.
+
+The [candidate runbook](stage3-ssh-compatibility.md) retains the original failed
+attempts, including four initial HTTP startup refusals and two later regression
+failures. Diagnostic comparisons with accepted main did not reproduce them;
+their cause remains unconfirmed despite the complete passing follow-up run.
+Preserve `.secure-agent/stock-ssh-native-20261015/`, including review receipts,
+source pins and failed attempts. Before merging PR #93, review its latest head
+and required checks. S3.4b is not yet accepted; S3.5 multi-host routing follows
+its acceptance. No live-model or paid call is enabled.
+
+Accepted preparation compiled two finite server configurations and the existing
+deliberately public fixture key, pinned the three OpenSSH executables and their
+linked libraries, and inspected the actual installed files without starting a daemon. OpenSSH key
 collection requires a preauthentication fork and executable transitions, so the
-HTTP no-fork boundary cannot be reused unchanged. **S3.4b** must separately
-implement and prove the native process/transport boundary, useful service and
-key observations, refusals and immutable evidence. Preparation grants no launch.
-Stage 3 now has **ten increments: five accepted and five remaining**, counting
+HTTP no-fork boundary cannot be reused unchanged. The separate **S3.4b** candidate
+above implements and validates the native process/transport boundary, useful
+service and key observations, refusals and immutable evidence. Preparation itself
+grants no launch.
+Stage 3 now has **ten increments: six accepted and four remaining**, counting
 S3.4a/S3.4b separately. S3.5–S3.7 follow in order; no required gate is removed.
 Coverage stays **52 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
-[S3.4a PR #92](https://github.com/0xsl0th/recon-cockpit/pull/92) is ready for
-review; check its latest revision and CI before acceptance. Validation at `2a26154` passed **20 installed-runtime inspections** and
+S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
 **25,483 portable tests**, with **911 source hashes unchanged**. Independent
 spec/docs and runtime/CLI reviews passed; all 169 focused tests passed. Each
 inspection pins 25 native and eleven generated files; no daemon, authentication,
 action, grant, provider call or spend occurred. Preserve
-`.secure-agent/stock-ssh-preflight-20261014/`. Preparation awaits PR review and
-acceptance; the next implementation after that merge is S3.4b native SSH.
+`.secure-agent/stock-ssh-preflight-20261014/`. This accepted preparation grants
+no native compatibility claim; S3.4b remains open.
 
 
 S3.2a frozen source `8e130df` passed **26/26 actual installed-runtime inspections**
@@ -136,9 +169,8 @@ passes and 17 sandbox-denied existing socket-pair tests (`EPERM`). The same
 source then passed **24,263 portable tests**, with 1,399 integration tests
 deselected and no failures, errors or skips. Both attempts remain recorded;
 no source change or test exclusion worked around the sandbox restriction.
-S3.2a and S3.2b are closed. Current implementation branch is
-`feature/stage3-ssh-preflight` in `/tmp/recon-stage3-ssh-preflight`. Preserve
-the accepted HTTP corpus and earlier failures. S3.3a/S3.3b are closed; S3.4a
+S3.2a and S3.2b are closed. Preserve
+the accepted HTTP corpus and earlier failures. S3.3a/S3.3b are closed; accepted S3.4a
 is preparation only and S3.4b native compatibility remains required. No accepted walkthrough
 or corpus needs repeating solely to update documentation.
 
