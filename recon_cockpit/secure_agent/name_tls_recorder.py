@@ -38,6 +38,7 @@ class Service:
         self.client, self.active, self.done, self.reason = None, None, False, None
         self.reserved = self.validated = self.connect_started = self.connected = False
         self.client_eof = self.daemon_eof = self.response_complete = False
+        self.daemon_write_closed = False
         self.client_pending, self.server_pending = bytearray(), bytearray()
         self.to_daemon, self.to_client = bytearray(), bytearray()
         self.raw = {key: bytearray() for key in ("request", "delivered_request", "original_response",
@@ -234,17 +235,26 @@ class Service:
             else:
                 raise ValueError("additional_server_handshake")
 
-    def _complete_dns(self):
+    def _complete_dns(self, *, eof=False):
         raw = bytes(self.server_pending)
         if len(raw) < 2:
+            if eof:
+                raise ValueError("incomplete_dns_response")
             return
         length = 2 + int.from_bytes(raw[:2], "big")
         if length > self.response_cap:
             raise ValueError("response_limit")
         if len(raw) < length:
+            if eof:
+                raise ValueError("incomplete_dns_response")
             return
         request = bytes(self.raw["request"])
         wire.parse_dns_response(raw, request)
+        # A second frame can arrive in a later TCP read. The sole query is
+        # half-closed below; require the daemon's EOF before releasing any
+        # response bytes or making an owner observation.
+        if not eof:
+            return
         response = wire.transformed_dns_response(self.configuration, self.case, request, raw,
                                                 second_observation=self.second_observation)
         self.server_pending.clear()
@@ -267,8 +277,8 @@ class Service:
                 self.server_pending.clear()
                 self._queue_response(raw)
                 self.response_complete = True
-            elif self.operation == "dns" and not self.response_complete:
-                raise ValueError("incomplete_dns_response")
+            elif self.operation == "dns":
+                self._complete_dns(eof=True)
             elif self.operation == "tls":
                 if self.server_pending or not self.server_hello_validated:
                     raise ValueError("incomplete_tls_response")
@@ -312,7 +322,7 @@ class Service:
             if self.chunks and not self.to_client and self.clock() >= self.next_chunk_at:
                 self._queue_response(self.chunks.pop(0))
             readers = ([self.client] if not self.client_eof else [])
-            if self.connected and not self.daemon_eof and not (self.operation == "dns" and self.response_complete):
+            if self.connected and not self.daemon_eof:
                 readers.append(self.daemon)
             writers = ([self.daemon] if self.connect_started and (not self.connected or self.to_daemon) else [])
             if self.to_client:
@@ -331,11 +341,14 @@ class Service:
                 self._read_daemon()
             if self.client in writable:
                 self._write(self.client, self.to_client, "response", "delivered_response")
-            if self.client_eof and self.connected and not self.to_daemon:
+            if (self.connected and not self.daemon_write_closed and not self.to_daemon
+                    and (self.client_eof or self.operation == "dns" and self.validated)):
                 try:
                     self.daemon.shutdown(socket.SHUT_WR)
                 except OSError:
-                    pass
+                    if self.operation == "dns":
+                        raise
+                self.daemon_write_closed = True
             if self.response_complete and not self.to_client and not self.chunks and not self.to_daemon:
                 if self.operation == "dns" and self.case != "N8":
                     request, original, delivered = (bytes(self.raw[k]) for k in ("request", "original_response", "delivered_response"))

@@ -27,6 +27,25 @@ MODULES = ("name_tls_frontend_worker", "name_tls_recorder", "name_tls_contract",
     "tls_posture_hello", "http_headers_parser", "name_tls_worker_common", *sources.PACKAGE_FILES)
 
 
+def completed_recorder(finished):
+    observed = finished["recorder"]
+    return (observed["done"] is True and observed["reason"] == "complete"
+            and observed["delivery_unknown"] is False and finished["budget_denied"] is False)
+
+
+def _parse_completed_recording(raw, finished, **options):
+    if not completed_recorder(finished):
+        return None, None, "invalid_native_observation"
+    from .name_tls_parser_runtime import parse_isolated_operation
+    try:
+        parsed, receipt = parse_isolated_operation(raw, **options, return_receipt=True)
+        return parsed, receipt, None
+    except IsolationUnavailable:
+        return None, None, "parser_isolation_unavailable"
+    except ValueError:
+        return None, None, "invalid_native_observation"
+
+
 def frontend_command(bootstrap, namespace_fds, info_fd, *, source_descriptors):
     stdlib, files = bootstrap
     argv = [_trusted_program("bwrap"), "--unshare-user", "--unshare-pid", "--unshare-ipc",
@@ -310,26 +329,20 @@ class Services:
             finished = self._command(frontend, "finish")
             self._close_daemon()
             from .name_tls_parser import encode_input
-            from .name_tls_parser_runtime import parse_isolated_operation
             streams = {key: base64.b64decode(raw, validate=True) for key, raw in finished["raw_streams"].items()}
             raw = encode_input(operation, configuration=self.selection["configuration"], case=self.selection["case"],
                 **streams, stdout=base64.b64decode(result["raw_output_base64"], validate=True),
                 stderr=base64.b64decode(result["raw_stderr_base64"], validate=True),
                 exit_code=result["provenance"]["exit_code"], stop_reason=result["provenance"]["stop_reason"],
                 truncated=result["truncated"])
-            parsed, parser_receipt, parser_error = None, None, None
-            try:
-                parsed, parser_receipt = parse_isolated_operation(raw, deadline=active["deadline"],
-                    control=self.control, closure=self.closure, bundle=self.runtime, return_receipt=True)
-            except IsolationUnavailable:
-                parser_error = "parser_isolation_unavailable"
-            except ValueError:
-                parser_error = "invalid_native_observation"
+            recorder_complete = completed_recorder(finished)
+            parsed, parser_receipt, parser_error = _parse_completed_recording(raw, finished,
+                deadline=active["deadline"], control=self.control, closure=self.closure, bundle=self.runtime)
             if time.monotonic() >= active["deadline"]:
                 raise IsolationUnavailable("Name/TLS whole action deadline exceeded")
             if parser_error is not None and result["status"] == "succeeded":
                 result["status"] = "failed"
-            native_success = parsed is not None and (parsed["useful_task_completed"] or parsed["expected_negative"])
+            native_success = recorder_complete and parsed is not None and (parsed["useful_task_completed"] or parsed["expected_negative"])
             finish = self.topology.ledger_request({"operation": "FINISH_ACTION", "action_sequence": active["sequence"],
                 "action_digest": action.digest, "owner_identity_sha256": self.identity["owner_identity_sha256"],
                 "output_bytes": result["bytes_received"], "native_success": native_success,

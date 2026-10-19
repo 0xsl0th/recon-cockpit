@@ -175,9 +175,22 @@ class BudgetChannel:
             raise ValueError("name_tls_frontend_delivery_changed")
         if self.lease is not None:
             lease, self.lease = self.lease, None
-            if not self.continuity_lost:
-                self.call("FINISH_CONNECTION", lease=lease, delivered_request_bytes=request_bytes,
-                          delivered_response_bytes=response_bytes, transcript_sha256=transcript_sha256)
+            if self.continuity_lost:
+                raise BudgetRefused("name_tls_frontend_delivery_unacknowledged")
+            self.call("FINISH_CONNECTION", lease=lease, delivered_request_bytes=request_bytes,
+                      delivered_response_bytes=response_bytes, transcript_sha256=transcript_sha256)
+
+
+def settle_service(service, *, clock=time.monotonic, sleep=time.sleep):
+    """Drain the already armed exchange within its original native deadline."""
+    while not service.done:
+        service.tick()
+        if not service.done:
+            remaining = service.deadline - clock()
+            if remaining <= 0:
+                service.close("timeout")
+                break
+            sleep(min(.001, remaining))
 
 
 def _control_channel(descriptor):
@@ -397,7 +410,12 @@ def main():
                     armed = True
                 else:
                     if service is not None:
-                        service.close()
+                        if op == "finish":
+                            if not armed:
+                                raise ValueError("name_tls_frontend_finish_unarmed")
+                            settle_service(service)
+                        else:
+                            service.close()
                     require_idle_listener(listener)
                 closed = private is None or private.fileno() == -1
                 if descriptor_identity is not None:

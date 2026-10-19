@@ -67,7 +67,7 @@ def listener():
     return stream
 
 
-def run_exchange(operation, configuration, case, request, response, *, refuse=None, second=False):
+def run_exchange(operation, configuration, case, request, response, *, refuse=None, second=False, response_chunk=7):
     front, server = listener(), listener()
     client, private = socket.socket(), socket.socket()
     budget = Budget(refuse)
@@ -96,9 +96,9 @@ def run_exchange(operation, configuration, case, request, response, *, refuse=No
                     received.extend(peer.recv(8192))
                 except BlockingIOError:
                     pass
-                if len(received) >= len(request) and response_offset < len(response):
+                if len(received) >= len(request) and response_offset < len(response) and not service.done:
                     try:
-                        response_offset += peer.send(response[response_offset:response_offset + 7])
+                        response_offset += peer.send(response[response_offset:response_offset + response_chunk])
                     except BlockingIOError:
                         pass
                 if response_offset == len(response):
@@ -186,3 +186,25 @@ def test_second_or_malformed_question_never_connects_daemon(mutation):
     service, received, delivered, _, private = run_exchange("dns", "A", "O1", mutation(request), response)
     assert service.reason != "complete"
     assert not private.connections and received == delivered == b""
+
+
+@pytest.mark.parametrize("tail", ("second_frame", "trailing_byte"))
+@pytest.mark.parametrize("coalesced", (False, True))
+def test_dns_later_read_cannot_append_to_an_already_forwarded_answer(tail, coalesced):
+    request, original = dns_exchange()
+    response = original + (original if tail == "second_frame" else b"\0")
+    service, received, delivered, budget, _ = run_exchange("dns", "A", "O1", request, response,
+        response_chunk=len(response) if coalesced else len(original))
+    assert service.reason not in ("complete", "timeout", "cancelled")
+    assert received == request and delivered == b"" and not budget.observations
+    assert service.daemon_write_closed
+    assert not service.raw_streams()["delivered_response"]
+
+
+@pytest.mark.parametrize("case", ("O1", "N8"))
+def test_dns_query_half_close_precedes_response_completion(case):
+    request, response = dns_exchange()
+    service, received, delivered, budget, _ = run_exchange("dns", "A", case, request, response)
+    assert service.reason == "complete" and service.daemon_eof and service.daemon_write_closed
+    assert received == request and delivered
+    assert bool(budget.observations) == (case != "N8")

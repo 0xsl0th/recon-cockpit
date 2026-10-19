@@ -136,10 +136,12 @@ def seal():
 
 def malformed(configuration, case):
     operation, request, response, target = wire_case(configuration, case)
-    return exchange(configuration, operation, request, response, target=target)
+    return exchange(configuration, operation, request, response, target=target,
+                    split_response=case == "dns/second_tcp_frame")
 
 
-def exchange(configuration, operation, request, response=b"", *, target="request", refuse=False, second=False):
+def exchange(configuration, operation, request, response=b"", *, target="request", refuse=False, second=False,
+             split_response=False):
     row = wire.ROWS[configuration]
     endpoint = (row[0], row[1]) if operation == "dns" else (row[2], row[3] if operation == "http" else row[5])
     public = listener(("127.0.0.1", 0))
@@ -164,6 +166,7 @@ def exchange(configuration, operation, request, response=b"", *, target="request
         else:
             peer.sendall(request)
         accepted, sent, peer_bytes = None, False, bytearray()
+        request_seen, tail, tail_at, first_buffered = False, None, None, False
         peer.setblocking(False)
         stop = time.monotonic() + 2
         while not service.done and time.monotonic() < stop:
@@ -171,15 +174,32 @@ def exchange(configuration, operation, request, response=b"", *, target="request
             if accepted is None and select.select([daemon_listener], [], [], 0)[0]:
                 accepted, _ = daemon_listener.accept()
                 accepted.setblocking(False)
-            if accepted is not None and not sent:
+            if accepted is not None and not request_seen:
                 try: received = accepted.recv(8192)
                 except BlockingIOError: received = b""
                 if received:
                     assert received == request
-                    if response:
+                    request_seen = True
+                    if split_response:
+                        first = 2 + int.from_bytes(response[:2], "big")
+                        accepted.sendall(response[:first])
+                        tail = response[first:]
+                        assert tail
+                    elif response:
                         accepted.sendall(response)
+                    if not split_response:
+                        accepted.shutdown(socket.SHUT_WR)
+                        sent = True
+            if tail is not None:
+                if tail_at is None and len(service.raw["original_response"]) == first:
+                    assert not service.done and not service.to_client and not peer_bytes
+                    first_buffered = True
+                    tail_at = time.monotonic() + .01
+                if tail_at is not None and time.monotonic() >= tail_at:
+                    assert not service.done and not service.to_client and not peer_bytes
+                    accepted.sendall(tail)
                     accepted.shutdown(socket.SHUT_WR)
-                    sent = True
+                    tail, sent = None, True
             try: peer_bytes.extend(peer.recv(8192))
             except (BlockingIOError, ConnectionResetError): pass
             time.sleep(.001)
@@ -194,9 +214,11 @@ def exchange(configuration, operation, request, response=b"", *, target="request
             assert snapshot["response_bytes_delivered"] == 0
             assert accepted is not None and sent
         assert not peer_bytes
+        assert not split_response or first_buffered and sent
         transport.assert_descriptor_copies(private_identity, [])
         return {"recorder": snapshot, "fixture_budget_events": budget.events,
                 "daemon_capability_closed": True, "delivered_to_peer": 0,
+                "split_response": split_response, "first_frame_buffered_before_tail": first_buffered,
                 "injected_request_sha256": hashlib.sha256(request).hexdigest(),
                 "injected_response_sha256": hashlib.sha256(response).hexdigest()}
     finally:

@@ -3,6 +3,7 @@
 from copy import deepcopy
 import subprocess
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -103,6 +104,65 @@ def test_channel_failure_preserves_continuity_loss_and_cannot_start_another_acti
     assert budget.failed and budget.continuity_lost
     with pytest.raises(ValueError, match="binding_changed"):
         budget.bind(3, "a" * 64)
+
+
+def test_lost_owner_reply_cannot_settle_as_known_delivery_or_refund(monkeypatch):
+    from recon_cockpit.secure_agent import name_tls_recorder as recorder
+    h, budget = budget_channel(monkeypatch)
+    receive = transport.receive_packet
+    def lost_reply(*args, **kwargs):
+        receive(*args, **kwargs)
+        raise OSError("lost acknowledged reservation reply")
+    monkeypatch.setattr(transport, "receive_packet", lost_reply)
+    with pytest.raises(OSError):
+        budget.before_write({}, "request", 100)
+    before = h.ledger.snapshot()
+    assert before["actions"][1]["counters"]["request_bytes"] == 100
+    service = SimpleNamespace(done=False, reason=None, client=None, daemon=None, active={}, reserved=True,
+        delivery_unknown=False, budget=budget, raw={"delivered_request": b"", "delivered_response": b""},
+        snapshot=lambda: {"transcript_sha256": "f" * 64})
+    recorder.Service.close(service, "complete")
+    assert service.delivery_unknown and service.reason == "owner_channel_lost"
+    assert budget.lease is None and budget.failed and budget.continuity_lost
+    assert h.ledger.snapshot() == before
+
+
+@pytest.mark.parametrize("completes", (True, False))
+def test_finish_drains_recorder_with_sleep_and_original_deadline(completes):
+    now, sleeps = [0.0], []
+    class Service:
+        done, ticks, reason, deadline = False, 0, None, .0025
+        def tick(self):
+            self.ticks += 1
+            if completes and self.ticks == 3:
+                self.close("complete")
+        def close(self, reason):
+            self.done, self.reason = True, reason
+    service = Service()
+    def sleep(delay):
+        sleeps.append(delay)
+        now[0] += delay
+    frontend.settle_service(service, clock=lambda: now[0], sleep=sleep)
+    assert service.done and service.reason == ("complete" if completes else "timeout")
+    assert sleeps and all(0 < delay <= .001 for delay in sleeps)
+    assert now[0] <= service.deadline and service.ticks <= 4
+
+
+@pytest.mark.parametrize("field,value", (("done", False), ("reason", "cancelled"),
+                                        ("delivery_unknown", True), ("budget_denied", True)))
+def test_unsettled_recorder_discards_useful_native_parser_result(monkeypatch, field, value):
+    from recon_cockpit.secure_agent import name_tls_services as services, name_tls_parser_runtime as parser
+    finished = {"recorder": {"done": True, "reason": "complete", "delivery_unknown": False}, "budget_denied": False}
+    calls = []
+    def parse(raw, **options):
+        calls.append(raw)
+        return {"useful_task_completed": True}, {"ready": True}
+    monkeypatch.setattr(parser, "parse_isolated_operation", parse)
+    assert services._parse_completed_recording(b"valid", finished)[0]["useful_task_completed"]
+    target = finished if field == "budget_denied" else finished["recorder"]
+    target[field] = value
+    assert services._parse_completed_recording(b"valid", finished) == (None, None, "invalid_native_observation")
+    assert calls == [b"valid"]
 
 
 def ready_value():
