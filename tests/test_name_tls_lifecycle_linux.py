@@ -22,7 +22,7 @@ from recon_cockpit.secure_agent import name_tls_contract as contract
 from recon_cockpit.secure_agent.execution import ExecutionControl, ExecutionStopped
 from recon_cockpit.secure_agent.isolation import IsolationUnavailable
 from recon_cockpit.secure_agent.models import parse_action
-from test_name_tls_linux import NativeSession
+from test_name_tls_linux import NativeSession, diagnostics
 from test_secure_fixture_launcher_linux import descendants
 from test_secure_owned_launcher_linux import assert_reaped
 from name_tls_native_instrument import variant as _variant
@@ -171,7 +171,7 @@ def _reaped(pins):
 
 @pytest.mark.parametrize("configuration", ("A", "B"))
 @pytest.mark.parametrize("case", CASES)
-def test_native_lifetime_and_physical_cleanup(tmp_path, monkeypatch, record_property, configuration, case):
+def test_native_lifetime_and_physical_cleanup(tmp_path, monkeypatch, record_property, configuration, case, diagnostics):
     cancelled = threading.Event()
     during = "during_action" in case
     operation = case.split("/")[0] if "/" in case else "dns"
@@ -197,6 +197,11 @@ def test_native_lifetime_and_physical_cleanup(tmp_path, monkeypatch, record_prop
                     dns = session.submit("dns_1")
                     assert dns["execution_status"] == "succeeded", dns
                     assert dns["untrusted_result"]["name_tls_ledger"]["binding"] is not None
+                    if operation == "tls":
+                        # O4's fixed default plan requires HTTP before TLS.
+                        http = session.submit("http")
+                        assert http["execution_status"] == "succeeded", http
+                        assert http["untrusted_result"]["name_tls_ledger"]["binding"] is not None
                 before = deepcopy(session.backend._lab_context)
                 with ThreadPoolExecutor(max_workers=1) as pool:
                     pending = pool.submit(session.submit, "dns_1" if operation == "dns" else operation)

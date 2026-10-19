@@ -1,9 +1,11 @@
 """Nested data mounts must preserve finite bytes and close every staging FD."""
 
+import errno
 import fcntl
 import os
 from pathlib import Path
 import time
+import tempfile
 
 import pytest
 
@@ -13,7 +15,50 @@ from recon_cockpit.secure_agent.execution import ExecutionControl
 from recon_cockpit.secure_agent.session_limits import SessionLimits
 
 
-def test_name_tls_nested_admission_stages_exact_sealed_closure():
+def sealed_source_api(monkeypatch, tmp_path):
+    """Simulate memfd/seal syscalls; native tests prove kernel enforcement."""
+    seals_by_fd = {}
+    original_write, original_close, original_fcntl = os.write, os.close, fcntl.fcntl
+    for name, value in {'F_SEAL_SEAL': 1, 'F_SEAL_SHRINK': 2, 'F_SEAL_GROW': 4,
+                        'F_SEAL_WRITE': 8, 'F_ADD_SEALS': 1033, 'F_GET_SEALS': 1034}.items():
+        monkeypatch.setattr(fcntl, name, value, raising=False)
+    monkeypatch.setattr(os, 'MFD_CLOEXEC', 1, raising=False)
+    monkeypatch.setattr(os, 'MFD_ALLOW_SEALING', 2, raising=False)
+    def create(name, flags):
+        assert name == 'recon-name-tls-admission'
+        assert flags == os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING
+        descriptor, path = tempfile.mkstemp(dir=tmp_path)
+        os.unlink(path)
+        seals_by_fd[descriptor] = 0
+        return descriptor
+    def seal(descriptor, operation, value=0):
+        if descriptor not in seals_by_fd:
+            return original_fcntl(descriptor, operation, value)
+        if operation == fcntl.F_ADD_SEALS:
+            assert seals_by_fd[descriptor] == 0
+            assert value == fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
+            seals_by_fd[descriptor] = value
+            return 0
+        assert operation == fcntl.F_GET_SEALS
+        return seals_by_fd[descriptor]
+    def write(descriptor, raw):
+        if seals_by_fd.get(descriptor, 0) & fcntl.F_SEAL_WRITE:
+            raise OSError(errno.EPERM, 'simulated sealed descriptor')
+        return original_write(descriptor, raw)
+    def close(descriptor):
+        seals_by_fd.pop(descriptor, None)
+        return original_close(descriptor)
+    monkeypatch.setattr(os, 'memfd_create', create, raising=False)
+    monkeypatch.setattr(fcntl, 'fcntl', seal)
+    monkeypatch.setattr(os, 'write', write)
+    monkeypatch.setattr(os, 'close', close)
+
+
+def test_name_tls_nested_admission_stages_exact_sealed_closure(monkeypatch, tmp_path):
+    sealed_source_api(monkeypatch, tmp_path)
+    monkeypatch.setattr(admission, '_trusted_program', lambda name: '/usr/bin/' + name)
+    monkeypatch.setattr(admission, '_namespaces', lambda: {
+        name: name + ':[100]' for name in ('user', 'net', 'mnt', 'pid')})
     copies = admission._name_tls_source_copies(ExecutionControl(time.monotonic() + 5))
     try:
         selected = contract.selection("A", "O1")
@@ -38,7 +83,8 @@ def test_name_tls_nested_admission_stages_exact_sealed_closure():
             os.close(descriptor)
 
 
-def test_partial_admission_staging_closes_already_created_descriptors(monkeypatch):
+def test_partial_admission_staging_closes_already_created_descriptors(monkeypatch, tmp_path):
+    sealed_source_api(monkeypatch, tmp_path)
     descriptors = []
     original = os.memfd_create
     def create(*args):

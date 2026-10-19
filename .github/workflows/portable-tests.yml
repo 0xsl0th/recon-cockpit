@@ -17,8 +17,9 @@ jobs:
   portable:
     name: Portable (${{ matrix.os }}, Python ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
-    # The full suite can take ten minutes before setup and the completeness guard.
-    timeout-minutes: 15
+    # The expanded portable suite can exceed fifteen minutes on slower runners.
+    # Keep time for setup and the completeness guard; native limits are separate.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:

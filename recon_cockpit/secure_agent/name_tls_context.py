@@ -107,6 +107,47 @@ def _topology_parent(value, topology):
     return public.digest(value)
 
 
+def _validate_owner_recording(current, recorder, streams, parsed, messages, *, operation, case):
+    """Cross-check replayed owner acknowledgments against retained observations."""
+    admitted = recorder.get("admitted_connections")
+    connection = current["connection"]
+    if (type(admitted) is not int or admitted != current["counters"]["connections"]
+            or current["connections_finished"] != admitted
+            or (connection is None) != (admitted == 0)):
+        raise ValueError("name_tls_owner_recorder_connections")
+    for direction in ("request", "response"):
+        delivered = len(streams["delivered_" + direction])
+        if (recorder[direction + "_bytes_delivered"] != delivered
+                or (delivered != 0 if connection is None else
+                    connection["delivered_" + direction + "_bytes"] != delivered)):
+            raise ValueError("name_tls_owner_recorder_delivery")
+    if connection is not None and connection["transcript_sha256"] != recorder["transcript_sha256"]:
+        raise ValueError("name_tls_owner_recorder_transcript")
+    observation = current["observation"]
+    if observation is not None:
+        if operation != "dns" or case == "N8":
+            raise ValueError("name_tls_owner_dns_observation")
+        for field, stream in (("request_sha256", "request"), ("original_answer_sha256", "original_response"),
+                              ("delivered_answer_sha256", "delivered_response")):
+            if observation[field] != hashlib.sha256(streams[stream]).hexdigest():
+                raise ValueError("name_tls_owner_dns_wire_commitment")
+        from .name_tls_wire import parse_dns_response
+        semantic = parse_dns_response(streams["delivered_response"], streams["request"])
+        if (observation["response_bytes"] != len(streams["delivered_response"])
+                or public.encode(observation["semantic"]) != public.encode(semantic)
+                or observation["observation_sha256"] != public.digest(semantic)):
+            raise ValueError("name_tls_owner_dns_wire_observation")
+    elif operation == "dns" and case != "N8" and recorder["reason"] == "complete":
+        raise ValueError("name_tls_owner_dns_observation_missing")
+    finishes = [row["message"] for row in messages if row["role"] == "launcher"
+                and row["message"]["operation"] == "FINISH_ACTION"
+                and row["message"]["action_sequence"] == current["sequence"]
+                and row["reply"]["status"] == "ok"]
+    expected = parsed["observation"] if parsed is not None and operation == "dns" and case != "N8" else None
+    if len(finishes) != 1 or public.encode(finishes[0]["observation"]) != public.encode(expected):
+        raise ValueError("name_tls_owner_parser_observation")
+
+
 def validate_result_context(result, identity, *, previous=None, tool_id=None, execution_status=None, runtime=None):
     from .name_tls_native_runtime import validate_runtime
     runtime = validate_runtime(runtime)
@@ -216,6 +257,8 @@ def validate_result_context(result, identity, *, previous=None, tool_id=None, ex
     elif (result["tool_observation"] is not None or service["parser_receipt"] is not None
           or service.get("parser_error") not in ("invalid_native_observation", "parser_isolation_unavailable")):
         raise ValueError("name_tls_failed_parser_receipt")
+    _validate_owner_recording(current, recorder, streams, parsed, result["name_tls_messages"],
+                              operation=operation, case=selected["case"])
     native = {key: deepcopy(result[key]) for key in ("status", "results", "tool_observation", "bytes_received", "truncated",
               "boundary_checks", "timing", "raw_output_base64", "raw_stderr_base64", "provenance", "client_observation")}
     native["tool_observation"] = None

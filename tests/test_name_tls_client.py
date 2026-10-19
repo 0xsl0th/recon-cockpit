@@ -112,7 +112,9 @@ def test_read_only_command_requires_sealed_exact_source_inventory(monkeypatch):
     assert set(sources.PACKAGE_FILES) <= set(client.MODULES)
 
 
-def test_nested_admission_mounts_typed_name_contract_without_owner_material(monkeypatch):
+def test_nested_admission_mounts_typed_name_contract_without_owner_material(monkeypatch, tmp_path):
+    from test_name_tls_admission import sealed_source_api
+    sealed_source_api(monkeypatch, tmp_path)
     from recon_cockpit.secure_agent import admission_isolation
     from recon_cockpit.secure_agent.session_limits import SessionLimits
     selected = contract.selection("A", "O1")
@@ -149,6 +151,8 @@ def startup_run(monkeypatch, *, stall=None, slot='dns_1', owner_deadline=160,
     from recon_cockpit.secure_agent import routed, routing_services, name_tls_daemon, stock_ssh_client_runtime
     from recon_cockpit.secure_agent.execution import ExecutionControl
     from test_name_tls_native_runtime import bundle
+    from recon_cockpit.secure_agent import isolation
+    monkeypatch.setattr(isolation, '_namespaces', lambda: dict(HOST))
     value = envelope(slot)
     clock = StartupClock()
     monkeypatch.setattr(client.time, 'monotonic', clock)

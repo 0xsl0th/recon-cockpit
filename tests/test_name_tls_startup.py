@@ -260,6 +260,8 @@ def test_completion_rpc_stall_cannot_outlive_whole_action_or_publish_result(monk
 
 def simulated_backend(monkeypatch, *, case='O4'):
     from recon_cockpit.secure_agent import name_tls_backend as backend
+    monkeypatch.setattr(backend, '_namespaces', lambda: {
+        name: name + ':[100]' for name in ('user', 'net', 'mnt', 'pid')})
     from recon_cockpit.secure_agent.name_tls_lab import NameTLSLab
     from recon_cockpit.secure_agent.session_limits import SessionLimits
     value, _, clock = owner(monkeypatch, case=case)

@@ -4,6 +4,7 @@ import os
 import hashlib
 from pathlib import Path
 import selectors
+import select
 import re
 import signal
 import subprocess
@@ -96,6 +97,81 @@ def _readiness(raw):
     return value
 
 
+def _payload_state(descriptor):
+    """A held pidfd distinguishes live, exited, and fully reaped payloads."""
+    poller = select.poll()
+    poller.register(descriptor, select.POLLIN)
+    events = poller.poll(0)
+    if not events:
+        return 0
+    if (len(events) != 1 or events[0][0] != descriptor
+            or not events[0][1] & select.POLLIN
+            or events[0][1] & ~(select.POLLIN | select.POLLHUP)):
+        raise ValueError("name_tls_parser_pidfd_state")
+    return events[0][1]
+
+
+def _cleanup(process, payload_fd, payload_verified):
+    """Reap the pinned payload and its wrapper within one two-second budget."""
+    deadline = time.monotonic() + 2
+    failed = False
+    try:
+        if payload_verified:
+            try:
+                if not _payload_state(payload_fd):
+                    signal.pidfd_send_signal(payload_fd, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except (OSError, ValueError, AttributeError):
+                failed = True
+            # Let the living wrapper reap its child before any wrapper kill.
+            # Reserve the remaining half of this same budget for fallback.
+            if not failed and process.poll() is None:
+                try:
+                    process.wait(timeout=min(1, max(0, deadline - time.monotonic())))
+                except subprocess.TimeoutExpired:
+                    pass
+                except OSError:
+                    failed = True
+        if process.poll() is None:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except OSError:
+                failed = True
+        try:
+            process.wait(timeout=max(0, deadline - time.monotonic()))
+        except (OSError, subprocess.TimeoutExpired):
+            failed = True
+        if payload_fd is not None:
+            try:
+                while not _payload_state(payload_fd) & select.POLLHUP:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        failed = True
+                        break
+                    time.sleep(min(.01, remaining))
+            except (OSError, ValueError, AttributeError):
+                failed = True
+        if time.monotonic() > deadline:
+            failed = True
+    finally:
+        if payload_fd is not None:
+            try:
+                os.close(payload_fd)
+            except OSError:
+                failed = True
+        for stream in (process.stdin, process.stdout, process.stderr):
+            try:
+                if not stream.closed:
+                    stream.close()
+            except OSError:
+                failed = True
+    if failed:
+        raise IsolationUnavailable("Name TLS parser cleanup failed")
+
+
 def _capture(argv, request, control, descriptors, info_read, info_write):
     """Inspect the actual waiting parser before releasing any untrusted bytes."""
     started = time.monotonic()
@@ -106,8 +182,13 @@ def _capture(argv, request, control, descriptors, info_read, info_write):
     finally:
         os.close(info_write)
     ready, observed, info, pending = None, None, bytearray(), bytearray()
+    payload_fd, payload_verified = None, False
     stdout, stderr, offset = bytearray(), bytearray(), 0
     try:
+        if (not callable(getattr(os, "pidfd_open", None))
+                or not callable(getattr(signal, "pidfd_send_signal", None))
+                or not callable(getattr(select, "poll", None))):
+            raise IsolationUnavailable("Name TLS parser process pin unavailable")
         with selectors.DefaultSelector() as selector:
             for stream, tag in ((process.stdout, "stdout"), (process.stderr, "stderr"), (info_read, "info")):
                 descriptor = stream if type(stream) is int else stream.fileno()
@@ -156,27 +237,29 @@ def _capture(argv, request, control, descriptors, info_read, info_write):
                         if len(info) >= 4096:
                             raise
                     else:
-                        observed = _observe_process(value.get("child-pid"), ready)
+                        pid = value.get("child-pid")
+                        if type(pid) is not int or pid <= 0:
+                            raise ValueError("name_tls_parser_process_identity")
+                        payload_fd = os.pidfd_open(pid)
+                        if _payload_state(payload_fd):
+                            raise ValueError("name_tls_parser_payload_exited")
+                        observation = _observe_process(pid, ready)
+                        if _payload_state(payload_fd):
+                            raise ValueError("name_tls_parser_payload_exited")
+                        observed, payload_verified = observation, True
                         os.set_blocking(process.stdin.fileno(), False)
                         selector.register(process.stdin, selectors.EVENT_WRITE, "stdin")
             control.check()
             process.wait(timeout=control.remaining())
         if ready is None or observed is None or offset != len(request) or process.returncode != 0 or stderr:
             raise ValueError("name_tls_parser_execution_incomplete")
-        return bytes(stdout), {"readiness": ready, "parent_observation": observed,
-            "wrapper_pid": process.pid, "exit_code": process.returncode, "input_sha256": hashlib.sha256(request).hexdigest(),
-            "reply_sha256": hashlib.sha256(stdout).hexdigest(), "elapsed_ms": round((time.monotonic() - started) * 1000),
-            "process_reaped": True}
     finally:
-        if process.poll() is None:
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-        process.wait(timeout=2)
-        for stream in (process.stdin, process.stdout, process.stderr):
-            if not stream.closed:
-                stream.close()
+        _cleanup(process, payload_fd, payload_verified)
+    control.check()
+    return bytes(stdout), {"readiness": ready, "parent_observation": observed,
+        "wrapper_pid": process.pid, "exit_code": process.returncode, "input_sha256": hashlib.sha256(request).hexdigest(),
+        "reply_sha256": hashlib.sha256(stdout).hexdigest(), "elapsed_ms": round((time.monotonic() - started) * 1000),
+        "process_reaped": True}
 
 
 def parse_isolated_operation(raw, *, deadline=None, control=None, closure=None, bundle=None, return_receipt=False):
@@ -224,6 +307,9 @@ def parse_isolated_operation(raw, *, deadline=None, control=None, closure=None, 
                 os.close(descriptor)
             except OSError:
                 pass
+    # Termination/reaping has its own bounded emergency allowance. It cannot
+    # extend any original parser, owner, or caller bound for a useful result.
+    bounded.check()
     try:
         value = parser.load_json(stdout)
         if (set(value) != {"parser_version", "boundary_checks", "identity", "namespaces", "runtime_absence_verified", "status", "result"}
@@ -239,6 +325,7 @@ def parse_isolated_operation(raw, *, deadline=None, control=None, closure=None, 
             if result["input_sha256"] != hashlib.sha256(raw).hexdigest():
                 raise ValueError("name_tls_parser_input_commitment")
             receipt["python_sources_sha256"] = sources.source_digest(bundle["python_sources"])
+            bounded.check()
             return (result, receipt) if return_receipt else result
         if value["result"] is not None:
             raise ValueError("name_tls_parser_invalid_reply")

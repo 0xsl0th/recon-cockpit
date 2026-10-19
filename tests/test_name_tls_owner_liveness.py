@@ -20,14 +20,18 @@ def fixtures(monkeypatch):
     def open_pid(pid):
         state['opened'].append(pid)
         return 77
-    monkeypatch.setattr(observed.os, 'pidfd_open', open_pid)
+    monkeypatch.setattr(observed.os, 'pidfd_open', open_pid, raising=False)
     monkeypatch.setattr(observed.os, 'close', state['closed'].append)
     class Poll:
         def register(self, descriptor, flags):
             assert descriptor == 77 and flags == observed.select.POLLIN
         def poll(self, timeout):
             return [(77, observed.select.POLLIN | observed.select.POLLHUP)] if state['ready'] else []
-    monkeypatch.setattr(observed.select, 'poll', Poll)
+    monkeypatch.setattr(observed.select, 'POLLIN', 1, raising=False)
+    monkeypatch.setattr(observed.select, 'POLLHUP', 16, raising=False)
+    monkeypatch.setattr(observed.select, 'poll', Poll, raising=False)
+    host = {name: name + ':[100]' for name in ('user', 'net', 'mnt', 'pid')}
+    monkeypatch.setattr(observed.os, 'readlink', lambda path: host[str(path).split('/')[-1]])
     return state
 
 

@@ -22,7 +22,7 @@ from recon_cockpit.secure_agent.execution import ExecutionControl
 from recon_cockpit.secure_agent.isolation import _namespaces
 from recon_cockpit.secure_agent.launcher_isolation import LinuxFixtureLauncher
 from recon_cockpit.secure_agent.models import parse_action
-from test_name_tls_linux import NativeSession, _n15_composite, _scripted_review, _acknowledged_state, terminal
+from test_name_tls_linux import NativeSession, _n15_composite, _scripted_review, _acknowledged_state, terminal, diagnostics
 
 pytestmark = pytest.mark.integration
 GATES = json.loads((Path(__file__).parents[1] / "docs/stage3-name-tls-native-gates.json").read_text())["owner"]
@@ -47,7 +47,7 @@ def owner_runtime():
         order = "tls_first" if case == "O4" and gate["operation"] == "tls" else "default"
         if (case, order) not in cached:
             selected = contract.selection("A", case, order)
-            control = ExecutionControl(time.monotonic() + 20)
+            control = ExecutionControl(time.monotonic() + 15)
             bundle = native.inspect_runtime("A", case, control)
             launcher = LinuxFixtureLauncher.__new__(LinuxFixtureLauncher)
             launcher._config = {"profile": contract.PROFILE, "case": selected}
@@ -149,7 +149,7 @@ def test_private_owner_channel_gate(tmp_path, record_property, owner_runtime, ga
 
 
 @pytest.mark.parametrize("gate_id", ("owner/A/B15", "owner/A/B16"))
-def test_actual_owner_or_foreign_grant(tmp_path, terminal, record_property, gate_id):
+def test_actual_owner_or_foreign_grant(tmp_path, terminal, record_property, gate_id, diagnostics):
     report = _n15_composite(tmp_path, "A", terminal)
     assert report["case_passed"] is True
     composite = json.loads((tmp_path / "n15-composite.json").read_bytes())
@@ -161,7 +161,7 @@ def test_actual_owner_or_foreign_grant(tmp_path, terminal, record_property, gate
 
 
 @pytest.mark.parametrize("gate_id,step,source", (("owner/A/B18", 2, "owner_arm"), ("owner/A/B19", 3, "owner_terminal")))
-def test_actual_expired_binding(tmp_path, record_property, gate_id, step, source):
+def test_actual_expired_binding(tmp_path, record_property, gate_id, step, source, diagnostics):
     directory = tmp_path / "trial"
     report = diagnostic.run_trial(directory, configuration="A", case="N14", execute=True, unattended_owned_lab_test=True)
     assert report["case_passed"] and report["expected_negative"] and evidence.inspect_trial(directory) == report
@@ -175,7 +175,7 @@ def test_actual_expired_binding(tmp_path, record_property, gate_id, step, source
 
 
 @pytest.mark.parametrize("slot,gate_id", (("http", "owner/A/B20"), ("tls", "owner/A/B21")))
-def test_actual_second_dns_invalidates_reviewed_service(tmp_path, monkeypatch, terminal, record_property, slot, gate_id):
+def test_actual_second_dns_invalidates_reviewed_service(tmp_path, monkeypatch, terminal, record_property, slot, gate_id, diagnostics):
     import base64
     from name_tls_binding_witness import install as install_binding_witness, validate as validate_binding_witness
     instrumentation = install_binding_witness(tmp_path, monkeypatch, slot)

@@ -136,13 +136,16 @@ class Service:
         self.validated, self.operation_count = True, 1
         self.to_daemon.extend(raw)
         del self.client_pending[:len(raw)]
+        # Reject complete malformed records already received with the initial
+        # request before consuming the private connection capability. A later
+        # separate record is checked before its own bytes can be forwarded.
+        if self.client_pending:
+            self._client_records()
         self.connect_started, self.daemon_connects = True, 1
         error = self.daemon.connect_ex(self.endpoint)
         if error not in (0, errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EALREADY):
             raise OSError(error, "private_connect_failed")
         self.connected = error == 0
-        if self.client_pending:
-            self._client_records()
 
     @staticmethod
     def _record(buffer):

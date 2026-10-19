@@ -19,7 +19,7 @@ from recon_cockpit.secure_agent import name_tls_contract as contract
 from recon_cockpit.secure_agent.isolation import IsolationUnavailable
 from recon_cockpit.secure_agent.models import parse_action
 from recon_cockpit.secure_agent.name_tls_lab import NameTLSLab
-from test_name_tls_linux import NativeSession, _scripted_review, terminal
+from test_name_tls_linux import NativeSession, _scripted_review, terminal, diagnostics
 from test_secure_approval_linux import instrument_worker
 from test_secure_audit_witness import intent
 from name_tls_native_instrument import variant
@@ -70,7 +70,8 @@ def _instrument_launcher(tmp_path, monkeypatch, operation, mutation):
                 "                    os.write(2, b'EXPECTED-NAME-TLS-ADMISSION:' + str(redemption['reason']).encode('ascii'))\n"
                 "                    raise ValueError('launcher_admission_denied')")
         if mutation == "changed_runtime/binding_launch_commitment":
-            original = "                result = (owned.run(action, policy, control=control) if owned is not None else"
+            original = ("                result = (owned.run(action, policy, control=control) if owned is not None else\n"
+                        "                          execute(action, config, init['runtime'], control, gate.snapshot))")
             assert source.count(original) == 1
             field = "runtime_identity_sha256" if operation == "dns" else "binding_sha256"
             source = source.replace(original,
@@ -79,7 +80,11 @@ def _instrument_launcher(tmp_path, monkeypatch, operation, mutation):
                 "                    changed = action.parameters.to_dict()\n"
                 f"                    changed[{field!r}] = '0' * 64\n"
                 "                    action = nc.parse_action(nc._action(config['case'], owned.lab.identity, changed['operation_slot'], changed))\n"
-                "                    os.write(2, b'EXPECTED-NAME-TLS-COMMITMENT-ATTEMPT')\n" + original)
+                "                try:\n" + "\n".join("    " + line for line in original.split("\n")) + "\n"
+                "                except Exception as error:\n"
+                f"                    if action.tool_id == {target!r}:\n"
+                "                        os.write(2, b'EXPECTED-NAME-TLS-COMMITMENT-ATTEMPT:' + str(error).encode('ascii', 'backslashreplace')[:512])\n"
+                "                    raise")
         compiled = compile(source, "owned-name-tls-witness-launcher", "exec")
         assert compiled is not None
         return source
@@ -169,7 +174,7 @@ def _terminal_then_later(tmp_path, operation, terminal):
 
 @pytest.mark.parametrize("operation", ("dns", "http", "tls"))
 @pytest.mark.parametrize("mutation", MUTATIONS)
-def test_native_authority_witness(tmp_path, monkeypatch, terminal, record_property, operation, mutation):
+def test_native_authority_witness(tmp_path, monkeypatch, terminal, record_property, operation, mutation, diagnostics):
     gate_id = f"authority/A/{operation}/{mutation}"
     if mutation == "direct_witnessed_negative_then_later_action":
         receipt = _terminal_then_later(tmp_path, operation, terminal)

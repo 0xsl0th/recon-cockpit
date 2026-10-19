@@ -76,18 +76,36 @@ def _native_checks(result, manifest, operation):
     return native
 
 
+def _other_operation_witness(result, operation, configuration):
+    """Select the distinct observed HTTP-to-TLS or TLS-to-HTTP denial."""
+    endpoint = {"http": "tls", "tls": "http"}[operation]
+    value = topology.validate_metadata(result["name_tls_topology"], configuration=configuration)
+    baseline, filtered = (next(row for row in value[phase]
+        if row["client"] == operation and row["endpoint"] == endpoint)
+        for phase in ("baselines", "filtered"))
+    assert baseline["connected"] is True and filtered["connected"] is False
+    return {"operation": operation, "endpoint": endpoint, "source": "topology_connection_witness",
+        "topology_sha256": value["topology_sha256"], "user_namespace": value["user"],
+        "client_namespace": value["networks"][operation + "_client"],
+        "listener_namespace": value["networks"][topology.frontend_role(endpoint)],
+        "listener": value["listeners"][endpoint], "baseline": baseline, "filtered": filtered}
+
+
 @pytest.mark.parametrize("gate", CASES, ids=[row["id"] for row in CASES])
 def test_actual_name_tls_boundary_witness(gate, witnessed_trials, tmp_path, record_property):
     directory, manifest, results, report, commitments = witnessed_trials(gate["configuration"])
     case = gate["case"]
     if gate["group"] == "transport_denial":
         operation, denial = case.split("/")
-        field = {"wrong_port": "wrong_port_blocked", "other_operation_endpoint": "other_service_blocked",
-                 "resolver_as_service": "other_service_blocked", "excluded_endpoint": "excluded_blocked",
-                 "udp": "udp_blocked", "ipv6": "ipv6_blocked"}[denial]
-        assert results[operation]["boundary_checks"][field] is True
         assert results[operation]["name_tls_service"]["recorder"]["admitted_connections"] == 1
-        witness = {"operation": operation, "boundary": field}
+        if denial == "other_operation_endpoint" and operation in ("http", "tls"):
+            witness = _other_operation_witness(results[operation], operation, gate["configuration"])
+        else:
+            field = {"wrong_port": "wrong_port_blocked", "other_operation_endpoint": "other_service_blocked",
+                     "resolver_as_service": "other_service_blocked", "excluded_endpoint": "excluded_blocked",
+                     "udp": "udp_blocked", "ipv6": "ipv6_blocked"}[denial]
+            assert results[operation]["boundary_checks"][field] is True
+            witness = {"operation": operation, "boundary": field}
     elif case == "exact_six_networks_routes_firewalls_and_live_denied_listeners":
         value = results["dns"]["name_tls_topology"]
         topology.validate_metadata(value, configuration=gate["configuration"])

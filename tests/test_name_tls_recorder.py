@@ -343,3 +343,51 @@ def test_dns_query_half_close_precedes_response_completion(case):
     assert service.reason == "complete" and service.daemon_eof and service.daemon_write_closed
     assert received == request and delivered
     assert bool(budget.observations) == (case != "N8")
+
+
+@pytest.mark.parametrize("configuration", ("A", "B"))
+@pytest.mark.parametrize("tail", (client_hello(), b"\x16\3\3\0\4\x18\0\0\0"),
+                         ids=("second_client_hello", "extra_handshake"))
+def test_buffered_invalid_tls_tail_never_consumes_private_connection(configuration, tail):
+    request = client_hello() + tail
+    service, received, delivered, budget, private = run_exchange("tls", configuration, "O3", request, b"")
+    assert service.reason == "additional_tls_handshake"
+    assert private.connections == [] and service.daemon_connects == 0
+    assert not service.connect_started and not service.connected
+    assert received == delivered == b""
+    assert service.raw_streams()["request"] == request
+    assert service.raw_streams()["delivered_request"] == b""
+    assert [call for call in budget.calls if call[0] == "operation"] == [("operation", "tls")]
+    assert not [call for call in budget.calls if call[0] in ("reserve", "delivered")]
+    assert budget.calls[-1][1]["request_bytes"] == budget.calls[-1][1]["response_bytes"] == 0
+
+
+@pytest.mark.parametrize("configuration", ("A", "B"))
+def test_buffered_valid_tls_ccs_preserves_one_reserved_exchange(configuration):
+    request = client_hello() + b"\x14\3\3\0\1\1"
+    response = server_hello() + b"\x17\3\3\0\x11" + b"x" * 17
+    service, received, delivered, budget, private = run_exchange("tls", configuration, "O3", request, response)
+    assert service.reason == "complete"
+    assert len(private.connections) == service.daemon_connects == 1
+    assert received == request and delivered == response
+    assert service.client_records == 2 and service.ccs_client == 1
+    assert [call for call in budget.calls if call[0] == "operation"] == [("operation", "tls")]
+    assert ("reserve", "request", len(request)) in budget.calls
+    assert sum(call[2] for call in budget.calls if call[:2] == ("delivered", "request")) == len(request)
+
+
+@pytest.mark.parametrize("tail", (client_hello(), b"\x16\3\3\0\4\x18\0\0\0"),
+                         ids=("second_client_hello", "extra_handshake"))
+def test_later_segmented_invalid_tls_tail_never_forwards_its_bytes(tail):
+    with tls_dialogue("O3") as (service, budget, client, peer, request, response, pump):
+        assert service.daemon_connects == 1 and bytes(request) == client_hello()
+        client.sendall(tail[:4])
+        pump(lambda: len(service.raw["request"]) == len(client_hello()) + 4)
+        assert not service.done and bytes(service.client_pending) == tail[:4]
+        assert service.raw_streams()["delivered_request"] == client_hello()
+        client.sendall(tail[4:])
+        pump(lambda: service.done)
+        assert service.reason == "additional_tls_handshake" and service.daemon_connects == 1
+        assert service.raw_streams()["delivered_request"] == bytes(request) == client_hello()
+        assert not response
+        assert sum(call[2] for call in budget.calls if call[:2] == ("delivered", "request")) == len(client_hello())
