@@ -194,6 +194,11 @@ def main():
         channel = socket.socket(fileno=0)
         if channel.family != socket.AF_UNIX or channel.type != socket.SOCK_SEQPACKET:
             raise ValueError("name_tls_daemon_control_channel")
+        # Establish the final network before the parent pins this PID's actual
+        # namespaces. Its owner must be this user namespace, not bwrap's
+        # intermediate setup namespace; all setup capabilities are later lost.
+        if setup.LIBC.unshare(setup.CLONE_NEWNET) != 0:
+            raise OSError(ctypes.get_errno(), "name_tls_daemon_create_network")
         send_packet(channel, {"bootstrap_waiting": True, "namespaces": namespaces()})
         value, _ = receive_packet(channel, descriptor_required=False)
         value = request(value)

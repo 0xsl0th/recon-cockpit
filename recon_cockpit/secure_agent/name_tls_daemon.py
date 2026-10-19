@@ -45,7 +45,8 @@ def daemon_command(bootstrap, manifest, descriptors, selected, operation, info_f
     stdlib, files = bootstrap
     argv = [_trusted_program("bwrap"), "--unshare-user", "--unshare-net", "--unshare-pid", "--unshare-ipc",
         "--unshare-uts", "--unshare-cgroup", "--uid", "65534", "--gid", "65534", "--cap-drop", "ALL",
-        "--cap-add", "CAP_SETPCAP", "--cap-add", "CAP_NET_ADMIN", "--die-with-parent", "--new-session", "--as-pid-1",
+        "--cap-add", "CAP_SETPCAP", "--cap-add", "CAP_NET_ADMIN", "--cap-add", "CAP_SYS_ADMIN",
+        "--die-with-parent", "--new-session", "--as-pid-1",
         "--info-fd", str(info_fd), "--clearenv", "--chdir", "/", "--proc", "/proc", "--dev", "/dev",
         "--ro-bind", stdlib, stdlib, "--perms", "0700", "--size", str(SCRATCH_BYTES), "--tmpfs", "/scratch"]
     forbidden = {"bwrap", "nsenter", "ip", "nginx", "dnsmasq", "dig", "openssl"}

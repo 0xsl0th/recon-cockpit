@@ -439,6 +439,11 @@ def setup(initial, *, configuration="A"):
     signal.setitimer(signal.ITIMER_REAL, max(.001, setup_deadline - time.monotonic()))
     networks, listeners, exports, ledger_channels = {}, {}, [], {}
     try:
+        # Bubblewrap's initial network can belong to its intermediate user
+        # namespace. Create the router in this payload user namespace so every
+        # later setns target has the same independently exported user owner.
+        if LIBC.unshare(CLONE_NEWNET) != 0:
+            raise OSError(ctypes.get_errno(), "name_tls_topology_create_router")
         networks["router"] = os.open("/proc/self/ns/net", os.O_RDONLY | os.O_CLOEXEC)
         user = os.open("/proc/self/ns/user", os.O_RDONLY | os.O_CLOEXEC)
         exports.append(user)
