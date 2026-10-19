@@ -106,6 +106,7 @@ class AuthorizedNameTLSBackend(AuthorizedFixtureBackend):
                         **refusal, "before": before_evidence},
                     "name_tls_ledger": evidence["ledger"], "name_tls_messages": evidence["messages"],
                     "name_tls_topology": self.lab.topology.identity, "owned_lab": {"identity": self._lab_identity},
+                    "name_tls_topology_parent_observation": self.lab.topology.parent_observation,
                     "timing": {"owner_and_action_elapsed_ms": round((time.monotonic() - started) * 1000)}}
             launch = {"schema_version": "1", "mode": self.launch_mode, "execute": True,
                 "session_id": self._session_id, "nonce": secrets.token_hex(32),
@@ -120,6 +121,7 @@ class AuthorizedNameTLSBackend(AuthorizedFixtureBackend):
             result["name_tls_ledger"] = evidence["ledger"]
             result["name_tls_messages"] = evidence["messages"]
             result["name_tls_topology"] = self.lab.topology.identity
+            result["name_tls_topology_parent_observation"] = self.lab.topology.parent_observation
             result["owned_lab"] = {"identity": self._lab_identity}
             result["timing"]["owner_and_action_elapsed_ms"] = round((time.monotonic() - started) * 1000)
             control.check()

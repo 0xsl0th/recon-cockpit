@@ -170,14 +170,17 @@ def validate_exports(value, descriptors, *, parent_namespaces, configuration="A"
     return deepcopy(value)
 
 
-def owner_command(bootstrap, *, source_descriptors):
+def owner_command(bootstrap, *, source_descriptors, info_fd):
     """Only called from the independently witnessed, disconnected launcher."""
     from .isolation import _trusted_program
+    if type(info_fd) is not int or info_fd < 3 or info_fd in source_descriptors.values():
+        raise ValueError("name_tls_topology_info_descriptor")
     stdlib, files = bootstrap
     argv = [_trusted_program("bwrap"), "--unshare-user", "--unshare-net", "--unshare-pid",
         "--unshare-ipc", "--unshare-uts", "--unshare-cgroup", "--uid", "65534", "--gid", "65534",
         "--cap-drop", "ALL", "--cap-add", "CAP_SYS_ADMIN", "--cap-add", "CAP_NET_ADMIN",
         "--cap-add", "CAP_SETPCAP", "--die-with-parent", "--new-session", "--as-pid-1",
+        "--info-fd", str(info_fd),
         "--clearenv", "--setenv", "LC_ALL", "C", "--chdir", "/", "--proc", "/proc", "--dev", "/dev",
         "--ro-bind", stdlib, stdlib]
     for source, destination in files:
@@ -219,6 +222,8 @@ class Topology:
         self._closed = False
         self._cleanup_failed = False
         self._last_ledger_evidence = None
+        self._launcher_mapping = None
+        self._parent_observation = None
 
     @staticmethod
     def _assert_launcher():
@@ -240,6 +245,12 @@ class Topology:
             raise ValueError("name_tls_topology_not_ready")
         return deepcopy(self._ready)
 
+    @property
+    def parent_observation(self):
+        if self._parent_observation is None:
+            raise ValueError("name_tls_topology_parent_observation_unavailable")
+        return deepcopy(self._parent_observation)
+
     def start(self):
         from .routed import _Supervisor
         from .isolation import _namespaces
@@ -257,9 +268,12 @@ class Topology:
         try:
             from .name_tls_python_runtime import snapshot_sources
             source_descriptors = snapshot_sources(self.runtime, MODULES, self.control)
+            read_fd, info_fd = self._supervisor.pipe()
+            self._supervisor.watch(read_fd, "info")
             self._process = self._supervisor.launch("topology",
-                owner_command(self.bootstrap, source_descriptors=source_descriptors),
-                pass_fds=tuple(source_descriptors.values()), stdin=child)
+                owner_command(self.bootstrap, source_descriptors=source_descriptors, info_fd=info_fd),
+                pass_fds=(*source_descriptors.values(), info_fd), stdin=child)
+            self._supervisor.close_fd(info_fd)
             for descriptor in source_descriptors.values():
                 os.close(descriptor)
             source_descriptors.clear()
@@ -275,6 +289,14 @@ class Topology:
             self._descriptors = dict(zip(EXPORTS, descriptors, strict=True))
             self._ready = validate_exports(ready, descriptors, parent_namespaces=parent,
                                            configuration=self.configuration)
+            from .routing_services import _owner_info
+            from .name_tls_daemon import launcher_mapping
+            pins, directory, observed = _owner_info(self._supervisor, "info", parent)
+            if observed != self._ready["owner_namespaces"]:
+                raise ValueError("name_tls_topology_parent_namespace_observation")
+            self._launcher_mapping = launcher_mapping(directory, observed, pins)
+            self._parent_observation = {"namespaces": observed, "mapping": self._launcher_mapping,
+                "payload_pid": decode(bytes(self._supervisor.buffers["info"]))["child-pid"]}
             # Verify the setup user's complete mapping from the positive launcher.
             # Namespace FD ownership is independently tied to this launcher's UID.
             owner_uid = array.array("I", [0])

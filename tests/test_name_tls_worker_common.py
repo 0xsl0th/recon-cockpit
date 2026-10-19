@@ -25,7 +25,7 @@ def test_private_check_accepts_only_exact_nonroot_mapping(private):
     assert common.assert_private_namespaces(host) == identity
 
 
-@pytest.mark.parametrize("change", ("host_net", "host_user", "attached", "writable", "uid_root_parent", "gid_root_parent", "extra_namespace"))
+@pytest.mark.parametrize("change", ("host_net", "host_user", "attached", "writable", "extra_namespace"))
 def test_host_or_attached_namespace_refused_before_setup(monkeypatch, private, change):
     host, identity = private
     if change.startswith("host_"):
@@ -35,11 +35,24 @@ def test_host_or_attached_namespace_refused_before_setup(monkeypatch, private, c
         monkeypatch.setattr(common.socket, "if_nameindex", lambda: [(1, "lo"), (2, "eth0")])
     elif change == "writable":
         monkeypatch.setattr(common.os, "statvfs", lambda _: SimpleNamespace(f_flag=0))
-    elif change == "uid_root_parent": identity["uid_map"][0][1] = 0
-    elif change == "gid_root_parent": identity["gid_map"][0][1] = 0
     else: host["uts"] = "uts:[10]"
     with pytest.raises(ValueError):
         common.assert_private_namespaces(host)
+
+
+def test_self_mapping_keeps_bubblewrap_intermediary_distinct_from_host_identity(private):
+    host, identity = private
+    identity["uid_map"][0][1] = identity["gid_map"][0][1] = 0
+    identity["groups"] = [65534] * 17
+    assert common.assert_private_namespaces(host) == identity
+
+
+@pytest.mark.parametrize("groups", ([65534] * 65, [0], [65534, 1000], [True]))
+def test_supplementary_groups_remain_bounded_unprivileged_and_exact(groups):
+    from recon_cockpit.secure_agent.name_tls_topology_spec import validate_namespace_identity
+    value = {"uid": 65534, "gid": 65534, "uid_map": [[65534, 0, 1]], "gid_map": [[65534, 0, 1]], "groups": groups}
+    with pytest.raises(ValueError):
+        validate_namespace_identity(value)
 
 
 def test_group_mutation_must_be_physically_refused(monkeypatch, private):

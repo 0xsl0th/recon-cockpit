@@ -11,11 +11,11 @@ from .name_tls_topology_spec import validate_metadata, validate_namespace_identi
 
 RESULT_FIELDS = {"status", "results", "tool_observation", "bytes_received", "truncated", "boundary_checks", "timing",
                  "raw_output_base64", "raw_stderr_base64", "provenance", "name_tls_service", "backend",
-                 "name_tls_ledger", "name_tls_messages", "name_tls_topology", "owned_lab", "client_observation"}
+                 "name_tls_ledger", "name_tls_messages", "name_tls_topology", "name_tls_topology_parent_observation", "owned_lab", "client_observation"}
 SERVICE_FIELDS = {"slot", "action_sequence", "action_digest", "action", "daemon_ready", "daemon_mapping", "native_ready",
                   "frontend_ready", "frontend_mapping", "recorder", "reservations", "descriptor_custody", "budget_denied",
                   "last_budget_reply", "parser_input_base64", "parsed", "parser_receipt", "binding", "closure", "parser_error"}
-CONTEXT_FIELDS = {"identity", "sequence", "connection_count", "request_count", "binding", "topology_sha256",
+CONTEXT_FIELDS = {"identity", "sequence", "connection_count", "request_count", "binding", "topology_sha256", "topology_parent_sha256",
                   "event_count", "events_sha256", "actions_sha256", "message_count", "messages_sha256", "frontends"}
 
 
@@ -36,7 +36,7 @@ def _previous(value, identity):
             or any(type(value[k]) is not int or not 0 <= value[k] <= cap for k, cap in
                    (("sequence", 3), ("connection_count", 3), ("request_count", 3), ("event_count", 1024), ("message_count", 1024)))
             or value["sequence"] < 1 or any(not contract._hash(value[k]) for k in
-                   ("topology_sha256", "events_sha256", "actions_sha256", "messages_sha256"))
+                   ("topology_sha256", "topology_parent_sha256", "events_sha256", "actions_sha256", "messages_sha256"))
             or type(value["frontends"]) is not dict or any(k not in ledger.ROLES[1:] or not contract._hash(v)
                                                          for k, v in value["frontends"].items())):
         raise ValueError("name_tls_previous_context_changed")
@@ -86,6 +86,15 @@ def validate_parser_receipt(value, parsed, raw):
     return deepcopy(value)
 
 
+def _topology_parent(value, topology):
+    if (type(value) is not dict or set(value) != {"namespaces", "mapping", "payload_pid"}
+            or value["namespaces"] != topology["owner_namespaces"]
+            or type(value["payload_pid"]) is not int or value["payload_pid"] <= 0):
+        raise ValueError("name_tls_topology_parent_observation")
+    _mapping(value["mapping"])
+    return public.digest(value)
+
+
 def validate_result_context(result, identity, *, previous=None, tool_id=None, execution_status=None, runtime=None):
     from .name_tls_native_runtime import validate_runtime
     runtime = validate_runtime(runtime)
@@ -118,6 +127,9 @@ def validate_result_context(result, identity, *, previous=None, tool_id=None, ex
             or any(type(n) is not int or not 0 <= n <= 60000 for n in result["timing"].values())):
         raise ValueError("name_tls_result_boundary")
     topology = validate_metadata(result["name_tls_topology"], configuration=selected["configuration"])
+    topology_parent_sha256 = _topology_parent(result["name_tls_topology_parent_observation"], topology)
+    if previous is not None and topology_parent_sha256 != previous["topology_parent_sha256"]:
+        raise ValueError("name_tls_topology_parent_changed")
     client_observation = result["client_observation"]
     if (type(client_observation) is not dict or set(client_observation) != {"namespaces", "mapping", "native_ready"}
             or type(client_observation["namespaces"]) is not dict or set(client_observation["namespaces"]) != {"user", "net", "mnt", "pid"}
@@ -223,7 +235,8 @@ def validate_result_context(result, identity, *, previous=None, tool_id=None, ex
     return {"identity": identity, "sequence": sequence, "binding": deepcopy(state["binding"]),
             "connection_count": state["counters"]["connections"],
             "request_count": sum(state["counters"][k] for k in ("dns_queries", "http_requests", "tls_handshakes")),
-            "topology_sha256": public.digest(topology), "event_count": len(state["events"]),
+            "topology_sha256": public.digest(topology), "topology_parent_sha256": topology_parent_sha256,
+            "event_count": len(state["events"]),
             "events_sha256": public.digest(state["events"]), "actions_sha256": public.digest(state["actions"]),
             "message_count": len(result["name_tls_messages"]), "messages_sha256": public.digest(result["name_tls_messages"]),
             "frontends": frontends}
@@ -263,7 +276,7 @@ def _validate_service_boundary(service, runtime, topology, selected, operation):
 
 def _validate_refusal(result, identity, previous, tool_id, execution_status):
     fields = {"status", "backend", "results", "tool_observation", "bytes_received", "truncated", "name_tls_refusal",
-              "name_tls_ledger", "name_tls_messages", "name_tls_topology", "owned_lab", "timing"}
+              "name_tls_ledger", "name_tls_messages", "name_tls_topology", "name_tls_topology_parent_observation", "owned_lab", "timing"}
     selected = identity["selection"]
     if (previous is None or selected["case"] != "N14" or set(result) != fields or result["status"] != "blocked"
             or execution_status is not None and execution_status != "blocked" or result["backend"] != contract.BACKEND
@@ -288,6 +301,8 @@ def _validate_refusal(result, identity, previous, tool_id, execution_status):
     before_state = ledger.validate_snapshot(before["ledger"], selected=selected, identity=identity, messages=before["messages"])
     state = ledger.validate_snapshot(result["name_tls_ledger"], selected=selected, identity=identity, messages=result["name_tls_messages"])
     topology = validate_metadata(result["name_tls_topology"], configuration=selected["configuration"])
+    if _topology_parent(result["name_tls_topology_parent_observation"], topology) != previous["topology_parent_sha256"]:
+        raise ValueError("name_tls_topology_parent_changed")
     if (public.digest(topology) != previous["topology_sha256"] or public.digest(before_state["events"]) != previous["events_sha256"]
             or public.digest(before_state["actions"]) != previous["actions_sha256"] or public.digest(before["messages"]) != previous["messages_sha256"]
             or state["actions"] != before_state["actions"] or state["counters"] != before_state["counters"]

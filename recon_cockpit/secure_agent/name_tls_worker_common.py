@@ -104,8 +104,10 @@ def assert_private_namespaces(host):
     if [name for _, name in socket.if_nameindex()] != ["lo"] or not os.statvfs("/").f_flag & os.ST_RDONLY:
         raise ValueError("name_tls_worker_attached_or_writable_namespace")
     identity = namespace_identity()
-    if identity["uid_map"][0][1] == 0 or identity["gid_map"][0][1] == 0:
-        raise ValueError("name_tls_worker_privileged_mapping")
+    # Bubblewrap may insert an intermediate user namespace whose sole identity
+    # is 0. Self-view map rows refer to that namespace, not initial-host root.
+    # The trusted launcher separately reads this payload's maps and proves the
+    # actual translation to its nonzero UID/GID before accepting readiness.
     return identity
 
 

@@ -293,7 +293,8 @@ def validate_namespace_identity(value):
     if (type(value) is not dict or set(value) != {"uid", "gid", "uid_map", "gid_map", "groups"}
             or type(value["uid"]) is not int or value["uid"] != 65534
             or type(value["gid"]) is not int or value["gid"] != 65534
-            or type(value["groups"]) is not list or value["groups"] not in ([], [65534])):
+            or type(value["groups"]) is not list or len(value["groups"]) > 64
+            or any(type(group) is not int or group != 65534 for group in value["groups"])):
         raise ValueError("name_tls_topology_payload_identity")
     for name in ("uid_map", "gid_map"):
         rows = value[name]
