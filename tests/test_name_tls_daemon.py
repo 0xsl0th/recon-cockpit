@@ -57,7 +57,7 @@ class Function:
 def test_socket_policy_does_not_accidentally_allow_other_families_or_processes(monkeypatch, operation):
     names, rules = {}, []
     def resolve(name):
-        names.setdefault(name, len(names) + 1)
+        names.setdefault(name, -10060 if name == b"socketcall" else len(names) + 1)
         return names[name]
     def rule(context, action, number, count, args):
         assert context == 1 and action == 0x00050000 | 1

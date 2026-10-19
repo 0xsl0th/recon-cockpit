@@ -204,3 +204,60 @@ def test_probe_audit_cannot_be_omitted_from_saved_evidence(tmp_path):
     (directory / "audit.jsonl").write_bytes(b"")
     with pytest.raises(ValueError, match="audit_count"):
         evidence.inspect_trial(directory)
+
+
+@pytest.mark.parametrize("field", ("user", "net", "mnt", "pid"))
+@pytest.mark.parametrize("invalid", (None, True, "other:[123]", "net:[0]", "net:[01]", "net:[123]\n", "net:[" + "1" * 21 + "]"))
+def test_retained_namespace_identifiers_reject_malformed_data(field, invalid):
+    from recon_cockpit.secure_agent import name_tls_context as context, name_tls_parser_runtime as runtime
+    values = {name: name + ":[123]" for name in ("user", "net", "mnt", "pid")}
+    context._namespace_vector(values)
+    ready = {"parser_version": runtime.parser.PARSER_VERSION, "boundary_checks": dict.fromkeys(runtime.BOUNDARY_NAMES, True),
+             "namespaces": values, "runtime_absence_verified": True,
+             "identity": {"uid": 65534, "gid": 65534, "groups": [65534] * 17,
+                          "uid_map": [[65534, 0, 1]], "gid_map": [[65534, 0, 1]]}}
+    assert runtime._readiness(evidence._encode(ready)) == ready
+    values[field] = invalid
+    with pytest.raises(ValueError):
+        context._namespace_vector(values)
+    with pytest.raises(ValueError):
+        runtime._readiness(evidence._encode(ready))
+
+
+@pytest.mark.parametrize("kind", ("uid", "gid"))
+@pytest.mark.parametrize("changed", ([], [[65534, 1000, True]], [[65534, True, 1]], [[False, 1000, 1]],
+    [(65534, 1000, 1)], ((65534, 1000, 1),), [[65534, 1000]], [[65534, 1000, 1, 2]],
+    [[65534, 1001, 1]], [[65534, 0, 1]], [[65534, 1000, 1], [1, 1, 1]]))
+def test_parent_maps_require_exact_integer_rows(kind, changed):
+    from recon_cockpit.secure_agent import name_tls_context as context
+    value = {"launcher_uid": 1000, "launcher_gid": 1000, "uid_map": [[65534, 1000, 1]], "gid_map": [[65534, 1000, 1]]}
+    context._mapping(value)
+    value[kind + "_map"] = changed
+    with pytest.raises(ValueError):
+        context._mapping(value)
+
+
+@pytest.mark.parametrize("change", ("namespaces", "malformed", "pid_bool", "pid_root", "root_parent", "map_bool", "map_target"))
+def test_topology_parent_observation_cannot_change_identity_or_mapping(change):
+    from recon_cockpit.secure_agent import name_tls_context as context
+    topology = {"owner_namespaces": {name: name + ":[123]" for name in ("user", "net", "mnt", "pid")}}
+    value = {"namespaces": deepcopy(topology["owner_namespaces"]), "payload_pid": 1234,
+        "mapping": {"launcher_uid": 1000, "launcher_gid": 1000, "uid_map": [[65534, 1000, 1]], "gid_map": [[65534, 1000, 1]]}}
+    assert context._topology_parent(value, topology) == contract.public.digest(value)
+    if change == "namespaces":
+        value["namespaces"]["user"] = "user:[456]"
+    elif change == "malformed":
+        value["namespaces"]["pid"] = topology["owner_namespaces"]["pid"] = "invalid"
+    elif change == "pid_bool":
+        value["payload_pid"] = True
+    elif change == "pid_root":
+        value["payload_pid"] = 0
+    elif change == "root_parent":
+        value["mapping"]["launcher_uid"] = 0
+        value["mapping"]["uid_map"] = [[65534, 0, 1]]
+    elif change == "map_bool":
+        value["mapping"]["uid_map"][0][2] = True
+    else:
+        value["mapping"]["gid_map"][0][1] = 1001
+    with pytest.raises(ValueError):
+        context._topology_parent(value, topology)

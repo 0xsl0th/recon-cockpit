@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import subprocess
 import time
 
 import pytest
@@ -72,7 +73,7 @@ def test_isolated_name_tls_wire_and_descriptor_gate(gate, socket_runtime, tmp_pa
     helper_fd = _helper_snapshot(helper)
     host_net = os.readlink("/proc/self/ns/net")
     argv = [_trusted_program("bwrap"), "--unshare-all", "--uid", "65534", "--gid", "65534",
-        "--cap-drop", "ALL", "--cap-add", "CAP_NET_ADMIN", "--cap-add", "CAP_SETPCAP",
+        "--cap-drop", "ALL", "--cap-add", "CAP_NET_ADMIN", "--cap-add", "CAP_SETPCAP", "--cap-add", "CAP_SYS_ADMIN",
         "--die-with-parent", "--new-session", "--as-pid-1", "--clearenv", "--setenv", "LC_ALL", "C",
         "--proc", "/proc", "--dev", "/dev", "--ro-bind", stdlib, stdlib]
     for source, destination in files:
@@ -91,7 +92,11 @@ def test_isolated_name_tls_wire_and_descriptor_gate(gate, socket_runtime, tmp_pa
             supervisor = _Supervisor(8, maximum, control=control)
             process = None
             try:
-                process = supervisor.launch("worker", argv, pass_fds=(*descriptors.values(), helper_fd))
+                process = supervisor.launch("worker", argv, pass_fds=(*descriptors.values(), helper_fd), stdin=subprocess.PIPE)
+                supervisor.wait_for(lambda: b"\n" in supervisor.buffers["worker_out"])
+                assert bytes(supervisor.buffers["worker_out"]) == b"INJECTED_NAME_TLS_OUTPUT\n"
+                process.stdin.write(b"1")
+                process.stdin.close()
                 with pytest.raises(_BudgetExceeded) as denied:
                     supervisor.wait_for(lambda: process.poll() is not None, worker_may_exit=True)
                 assert denied.value.status == "output_limit"

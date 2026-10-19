@@ -26,7 +26,7 @@ from recon_cockpit.secure_agent import name_tls_transport as transport
 from recon_cockpit.secure_agent import name_tls_topology as topology
 from recon_cockpit.secure_agent import name_tls_wire as wire
 from recon_cockpit.secure_agent import worker
-from recon_cockpit.secure_agent.name_tls_topology_worker import Netlink
+from recon_cockpit.secure_agent.name_tls_topology_worker import Netlink, LIBC, CLONE_NEWNET
 
 
 def dns_exchange(configuration):
@@ -106,6 +106,7 @@ class FixtureBudget:
 def network(configuration):
     assert os.getuid() == os.getgid() == 65534
     assert [name for _, name in socket.if_nameindex()] == ["lo"]
+    assert LIBC.unshare(CLONE_NEWNET) == 0
     channel = Netlink()
     try:
         channel.up("lo")
@@ -290,6 +291,7 @@ def unknown_runtime():
 def overflow():
     seal()
     os.write(1, b"INJECTED_NAME_TLS_OUTPUT\n")
+    assert os.read(0, 1) == b"1" and os.read(0, 1) == b""
     for _ in range(128):
         os.write(1, b"o" * 1024)
         os.write(2, b"e" * 1024)

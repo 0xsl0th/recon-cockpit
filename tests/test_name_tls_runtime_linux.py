@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+from dataclasses import asdict
 from pathlib import Path
 import sys
 import time
@@ -16,7 +17,6 @@ from recon_cockpit.secure_agent import name_tls_python_runtime as sources
 from recon_cockpit.secure_agent.execution import ExecutionControl
 from recon_cockpit.secure_agent.isolation import _capture_bounded
 from recon_cockpit.secure_agent.launcher_isolation import LinuxFixtureLauncher
-from recon_cockpit.secure_agent.name_tls_backend import AuthorizedNameTLSBackend
 from recon_cockpit.secure_agent.name_tls_lab import NameTLSLab
 from recon_cockpit.secure_agent.session_limits import SessionLimits
 from test_name_tls_socket_linux import _helper_snapshot, _save
@@ -51,8 +51,15 @@ def test_live_name_tls_runtime_observation_refuses_injected_claim(gate, inspecte
     limits = SessionLimits(**contract.limits(selected))
     policy = contract.policy_for_selection(selected, require_approval=False)
     metadata = NameTLSLab(selected, session_id, limits, execute=True, runtime=runtime)
-    original = AuthorizedNameTLSBackend(policy, session_id, limits, metadata, execute=True)
-    launcher = LinuxFixtureLauncher(original)
+    # Only reuse the fixed namespace/mount command builder. This explicitly
+    # instrumented helper does not impersonate audit or approval services and
+    # never invokes production launcher admission/start methods.
+    launcher = LinuxFixtureLauncher.__new__(LinuxFixtureLauncher)
+    launcher._config = {"version": "1", "service_id": str(uuid4()), "profile": contract.PROFILE,
+        "case": selected, "session_id": session_id, "policy": policy.to_dict(), "limits": asdict(limits),
+        "execute": True, "owned_lab": metadata.identity}
+    launcher._name_tls_runtime = runtime
+    launcher._witness_source = launcher._approval_source = None
     control = ExecutionControl(time.monotonic() + 75)
     closure, files = launcher._runtime(control)
     descriptors = sources.snapshot_sources(runtime, tuple(sources.DESTINATIONS), control)

@@ -4,6 +4,7 @@ import base64
 from copy import deepcopy
 import hashlib
 import json
+import re
 
 from . import name_tls_contract as contract, name_tls_ledger as ledger
 from . import name_tls_parser as parser, name_tls_public as public
@@ -50,8 +51,18 @@ def _mapping(value):
         raise ValueError("name_tls_context_mapping")
     for name in ("uid", "gid"):
         number = value["launcher_" + name]
-        if type(number) is not int or number <= 0 or value[name + "_map"] != [[65534, number, 1]]:
+        rows = value[name + "_map"]
+        if (type(number) is not int or not 0 < number < 2**32
+                or type(rows) is not list or len(rows) != 1 or type(rows[0]) is not list or len(rows[0]) != 3
+                or any(type(item) is not int for item in rows[0]) or rows != [[65534, number, 1]]):
             raise ValueError("name_tls_context_mapping")
+
+
+def _namespace_vector(value):
+    if (type(value) is not dict or set(value) != {"user", "net", "mnt", "pid"}
+            or any(type(item) is not str or re.fullmatch(name + r":\[[1-9][0-9]{0,19}\]", item) is None
+                   for name, item in value.items())):
+        raise ValueError("name_tls_namespace_vector")
 
 
 def validate_parser_receipt(value, parsed, raw):
@@ -92,6 +103,7 @@ def _topology_parent(value, topology):
             or type(value["payload_pid"]) is not int or value["payload_pid"] <= 0):
         raise ValueError("name_tls_topology_parent_observation")
     _mapping(value["mapping"])
+    _namespace_vector(value["namespaces"])
     return public.digest(value)
 
 
@@ -138,6 +150,7 @@ def validate_result_context(result, identity, *, previous=None, tool_id=None, ex
             or (operation == "http") != (client_observation["native_ready"] is None)):
         raise ValueError("name_tls_client_parent_observation")
     _mapping(client_observation["mapping"])
+    _namespace_vector(client_observation["namespaces"])
     state = ledger.validate_snapshot(result["name_tls_ledger"], selected=selected, identity=identity,
                                      messages=result["name_tls_messages"])
     if len(state["actions"]) != sequence or state["active_action_sequence"] is not None or state["active_connection"] is not None:
@@ -257,6 +270,7 @@ def _validate_service_boundary(service, runtime, topology, selected, operation):
             or any(ready["namespaces"][key] == topology["owner_namespaces"][key] for key in ("user", "mnt", "pid"))):
         raise ValueError("name_tls_daemon_ready_changed")
     validate_namespace_identity(ready["namespace_identity"])
+    _namespace_vector(ready["namespaces"])
     descriptor = validate_descriptor_identity(ready["descriptor"])
     daemon.validate_daemon_ready(service["native_ready"], manifest, ready["namespaces"], service["daemon_mapping"], operation)
     frontend = service["frontend_ready"]

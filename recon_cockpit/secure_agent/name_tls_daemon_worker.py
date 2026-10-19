@@ -124,8 +124,13 @@ def socket_filter(operation):
         def deny(name, comparisons=()):
             number = library.seccomp_syscall_resolve_name(name.encode("ascii"))
             args = (Argument * len(comparisons))(*comparisons)
-            if number < 0 or library.seccomp_rule_add_array(context, 0x00050000 | errno.EPERM, number, len(comparisons), args):
-                raise ValueError("name_tls_daemon_seccomp_rule")
+            # libseccomp represents socketcall and other known compatibility
+            # syscalls with negative pseudo numbers; only -1 means unresolved.
+            if number == -1:
+                raise ValueError("name_tls_daemon_seccomp_missing_syscall:" + name)
+            result = library.seccomp_rule_add_array(context, 0x00050000 | errno.EPERM, number, len(comparisons), args)
+            if result:
+                raise ValueError("name_tls_daemon_seccomp_rule:" + name + ":" + str(result))
         for name in ("connect", "execveat", "fork", "vfork", "clone", "clone3", "unshare", "setns", "mount", "umount2",
                 "pivot_root", "chroot", "ptrace", "process_vm_readv", "process_vm_writev", "pidfd_open", "pidfd_getfd",
                 "pidfd_send_signal", "bpf", "keyctl", "add_key", "request_key", "perf_event_open", "userfaultfd",

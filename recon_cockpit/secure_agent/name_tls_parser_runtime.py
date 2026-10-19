@@ -4,6 +4,7 @@ import os
 import hashlib
 from pathlib import Path
 import selectors
+import re
 import signal
 import subprocess
 import sys
@@ -89,6 +90,9 @@ def _readiness(raw):
             or type(value["namespaces"]) is not dict or set(value["namespaces"]) != {"user", "net", "mnt", "pid"}):
         raise ValueError("name_tls_parser_readiness")
     validate_namespace_identity(value["identity"])
+    if any(type(item) is not str or re.fullmatch(name + r":\[[1-9][0-9]{0,19}\]", item) is None
+           for name, item in value["namespaces"].items()):
+        raise ValueError("name_tls_parser_namespace_identity")
     return value
 
 
