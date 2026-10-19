@@ -291,6 +291,20 @@ produce identical canonical semantic digests. A binding requires the sole
 selected IN A answer, TTL 60 (N14: 1), no authority/additional records and
 QR|AA flags with optional RA. Other finite negative replies remain data.
 
+DNS native stderr must be empty or exactly the single observed line
+`net.c:136:try_proto(): socket(): Operation not permitted (1)` followed by one
+newline. No normalization, repeated line, trailing bytes or other diagnostic
+is accepted. The pinned BIND client probes IPv4 and IPv6 stream availability
+during initialization; the installed library's IPv6 probe reaches this warning
+under the existing socket denial. IPv6 remains denied. The complete stderr
+and its hash remain in the same output and evidence bounds. The normalized
+native field `stderr_diagnostic` is null for empty stderr or
+`socket_probe_denied_text` for this exact text; that marker describes parsed
+text and is not a syscall trace or permission receipt. A useful DNS claim
+still requires exit zero and every existing independent wire/native agreement
+check. HTTP and TLS grammars are unchanged. The earlier strict-parser failure
+remains retained as failed diagnostic evidence.
+
 Saved raw artifacts, native exit/output, independent recorder transcript,
 owner ledger, authority/audit trail, namespace/descriptor custody and physical
 cleanup must all agree. A missing or contradictory component fails grading.

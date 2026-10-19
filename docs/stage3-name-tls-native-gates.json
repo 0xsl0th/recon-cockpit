@@ -2136,7 +2136,7 @@
   ],
   "parser_evidence": [
     {
-      "assertion": "Run the real isolated parser with a valid captured DNS exchange and a different otherwise-valid dig answer/TTL/transaction ID; require disagreement and no binding candidate.",
+      "assertion": "Run the real isolated parser with a valid captured DNS exchange and a different otherwise-valid dig answer/TTL/transaction ID; require disagreement and no binding candidate. DNS stderr accepts only empty bytes or the exact single observed BIND socket-probe denial line plus newline; retain raw/hash and the explicit text-only marker, without granting socket access or weakening exit/wire agreement. Repeated, changed or extra stderr remains invalid.",
       "case": "dns_native_wire_disagreement",
       "configuration": "A",
       "driver": "isolated_production_parser",
@@ -2200,7 +2200,7 @@
       "useful_daemon_claim": false
     },
     {
-      "assertion": "Run the real isolated parser with a valid captured DNS exchange and a different otherwise-valid dig answer/TTL/transaction ID; require disagreement and no binding candidate.",
+      "assertion": "Run the real isolated parser with a valid captured DNS exchange and a different otherwise-valid dig answer/TTL/transaction ID; require disagreement and no binding candidate. DNS stderr accepts only empty bytes or the exact single observed BIND socket-probe denial line plus newline; retain raw/hash and the explicit text-only marker, without granting socket access or weakening exit/wire agreement. Repeated, changed or extra stderr remains invalid.",
       "case": "dns_native_wire_disagreement",
       "configuration": "B",
       "driver": "isolated_production_parser",
