@@ -40,6 +40,7 @@ from recon_cockpit.secure_agent.name_tls_evidence import NameTLSEvidenceStore, i
 from recon_cockpit.secure_agent.name_tls_lab import NameTLSLab
 from recon_cockpit.secure_agent.session_limits import SessionLimits
 from name_tls_owner_liveness import acknowledged_owner
+from name_tls_approval_failure import ClosedApprovalFailure
 
 pytestmark = pytest.mark.integration
 
@@ -147,6 +148,7 @@ class NativeSession:
             # protocol and cannot supply a grant, receipt or approval result.
             original_send, original_reply = self.approvals._send, self.approvals._reply
             pending_request = []
+            self.approval_pending = pending_request
             def observed_send(raw, **kwargs):
                 original_send(raw, **kwargs)
                 assert pending_request == []
@@ -224,7 +226,7 @@ def _owner_record(session, service_review):
             "audit_events": [json.loads(line) for line in (session.directory / "audit.jsonl").read_bytes().splitlines()],
             "approval_messages": deepcopy(session.approval_messages),
             "approval_worker": {"broker_id": session.approvals._identity, "pid": worker.pid,
-                                "checks": session.approvals.boundary_checks},
+                                "checks": deepcopy(session.approval_messages[0]["reply"]["checks"])},
             "dns_review": deepcopy(session.reviews[0]), "service_review": deepcopy(service_review)}
 
 
@@ -256,18 +258,18 @@ def _n15_composite(tmp_path, configuration, terminal):
         assert dns["execution_status"] == "succeeded", dns
         action = primary.action("http")
         review = _scripted_review(primary.approvals, action, primary.policy, terminal, primary.control)
+        failure_observer = ClosedApprovalFailure(primary)
         before = _acknowledged_state(primary)
         primary.close_owner()
         assert primary.backend._process.poll() is not None
-        outcome = primary.controller.submit(action, execute=True, interactive=True,
-            approval_reference=review["reference"], execution_control=primary.control, session_step=2)
-        assert outcome["execution_status"] == "blocked" and outcome["reasons"] == ["isolation_unavailable"]
-        assert outcome["approval_reference"] == review["reference"] and "untrusted_result" not in outcome
+        after_owner_close = _acknowledged_state(primary)
+        assert not after_owner_close["launcher_alive"] and after_owner_close["approval_worker_alive"]
+        failure = failure_observer.submit(action, review["reference"])
         after = _acknowledged_state(primary)
-        assert not after["launcher_alive"] and after["approval_worker_alive"]
+        assert not after["launcher_alive"] and not after["approval_worker_alive"]
         attempts.append({"kind": "closed_owner", "owner_index": 0, "proposal": action,
-            "proposal_sha256": contract.digest(action), "outcome": outcome,
-            "before": before, "after": after, "closure": primary.closure})
+            "proposal_sha256": contract.digest(action), "approval_failure": failure,
+            "before": before, "after_owner_close": after_owner_close, "after": after, "closure": primary.closure})
         owners.append(_owner_record(primary, review))
 
     opposite = "B" if configuration == "A" else "A"

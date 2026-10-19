@@ -338,7 +338,8 @@ def _validate_n15_composite(value, *, manifest, results, outcomes):
             raise ValueError("name_tls_n15_dns_outcome_changed")
         context.validate_closure(owner["closure"], chosen["identity"], previous=current)
         service = contract.service_action(chosen["selection"], chosen["identity"], "http", current["binding"])
-        _validate_n15_approvals(owner, raw, service, need_service=index < 2)
+        _validate_n15_approvals(owner, raw, service, need_service=index < 2,
+                                pending_service_consume=index == 0)
         contexts.append(current)
         dns_actions.append(raw)
         service_actions.append(service)
@@ -348,19 +349,23 @@ def _validate_n15_composite(value, *, manifest, results, outcomes):
             or results != [owners[0]["dns_outcome"]["untrusted_result"]] or outcomes != [safe_outcomes[0]]):
         raise ValueError("name_tls_n15_owner_independence")
     closed, transplant = value["attempts"]
-    closed_fields = {"kind", "owner_index", "proposal", "proposal_sha256", "outcome", "before", "after", "closure"}
+    closed_fields = {"kind", "owner_index", "proposal", "proposal_sha256", "approval_failure",
+                     "before", "after_owner_close", "after", "closure"}
     if (type(closed) is not dict or set(closed) != closed_fields or closed["kind"] != "closed_owner"
             or type(closed["owner_index"]) is not int or closed["owner_index"] != 0
             or closed["proposal"] != service_actions[0] or closed["proposal_sha256"] != contract.digest(service_actions[0])
             or closed["closure"] != owners[0]["closure"]):
         raise ValueError("name_tls_n15_closed_attempt")
-    validate_outcome(closed["outcome"], owners[0]["manifest"], 2, None, service_actions[0])
-    if (closed["outcome"]["execution_status"] != "blocked" or closed["outcome"]["reasons"] != ["isolation_unavailable"]
-            or closed["outcome"]["approval_reference"] != owners[0]["service_review"]["reference"]):
-        raise ValueError("name_tls_n15_closed_guard")
     _validate_n15_ack(closed["before"], owners[0], contexts[0], alive=True)
-    _validate_n15_ack(closed["after"], owners[0], contexts[0], alive=False)
-    _validate_n15_owner_transition(closed["before"], closed["after"], closed=True)
+    _validate_n15_ack(closed["after_owner_close"], owners[0], contexts[0], alive=False)
+    _validate_n15_ack(closed["after"], owners[0], contexts[0], alive=False, approval_alive=False)
+    _validate_n15_owner_transition(closed["before"], closed["after_owner_close"], closed=True)
+    expected_after = deepcopy(closed["after_owner_close"])
+    expected_after["approval_worker_alive"] = False
+    if _encode(expected_after) != _encode(closed["after"]):
+        raise ValueError("name_tls_n15_approval_exit_transition")
+    _validate_n15_approval_failure(closed["approval_failure"], owners[0], service_actions[0],
+                                  closed["before"]["topology_owner"])
     transplanted_fields = {"kind", "donor_index", "recipient_index", "proposal", "proposal_sha256", "outcome",
         "donor_monotonic_remaining_us", "donor_binding_remaining_us", "donor_before", "donor_after", "recipient_before", "recipient_after"}
     if (type(transplant) is not dict or set(transplant) != transplanted_fields
@@ -386,11 +391,23 @@ def _validate_n15_composite(value, *, manifest, results, outcomes):
         transplant["donor_before"]["topology_owner"], transplant["recipient_before"]["topology_owner"])
     for index, owner in enumerate(owners):
         rows, native_results, actions = [safe_outcomes[index]], [owner["dns_outcome"]["untrusted_result"]], [dns_actions[index]]
-        if index in (0, 2):
-            attempt = closed if index == 0 else transplant
-            rows.append(attempt["outcome"])
+        if index == 0:
+            # Derive only the policy-decision event expected before the failed
+            # consume. There was no returned Controller outcome to invent.
+            raw = closed["proposal"]
+            action = parse_action(raw)
+            policy = contract.validate_policy(owner["manifest"]["policy"], owner["manifest"]["selection"])
+            rows.append({"action_id": action.action_id, "action_digest": action.digest,
+                "policy_version": policy.policy_version, "policy_digest": policy.digest,
+                "session_id": owner["manifest"]["session_id"], "session_step": 2,
+                "tool_id": action.tool_id, "target": action.target, "decision": "approval_required",
+                "approval_reference": None, "execution_status": "not_started"})
             native_results.append(None)
-            actions.append(attempt["proposal"])
+            actions.append(raw)
+        elif index == 2:
+            rows.append(transplant["outcome"])
+            native_results.append(None)
+            actions.append(transplant["proposal"])
         _validate_audit(owner["audit_events"], owner["manifest"], rows, native_results, actions)
     return True
 
@@ -429,7 +446,7 @@ def _validate_n15_owner_independence(closed, donor, recipient):
         raise ValueError("name_tls_n15_owner_process_independence")
 
 
-def _validate_n15_ack(value, owner, previous, *, alive):
+def _validate_n15_ack(value, owner, previous, *, alive, approval_alive=True):
     fields = {"owner_state_source", "ledger", "messages", "backend_snapshot", "backend_context", "launcher_pid", "launcher_alive",
               "approval_worker_pid", "approval_worker_alive", "topology_owner"}
     result = owner["dns_outcome"]["untrusted_result"]
@@ -437,7 +454,7 @@ def _validate_n15_ack(value, owner, previous, *, alive):
             or _encode(value["ledger"]) != _encode(result["name_tls_ledger"])
             or _encode(value["messages"]) != _encode(result["name_tls_messages"])
             or _encode(value["backend_context"]) != _encode(previous) or value["launcher_alive"] is not alive
-            or value["approval_worker_alive"] is not True or type(value["launcher_pid"]) is not int or value["launcher_pid"] <= 0
+            or value["approval_worker_alive"] is not approval_alive or type(value["launcher_pid"]) is not int or value["launcher_pid"] <= 0
             or type(value["approval_worker_pid"]) is not int or value["approval_worker_pid"] != owner["approval_worker"]["pid"]
             or public.encode(value["backend_snapshot"]) != public.encode({"executions_reserved": 1,
                 "output_bytes_reserved": contract.action_bounds("dns_1")["output_bytes"]})):
@@ -445,7 +462,47 @@ def _validate_n15_ack(value, owner, previous, *, alive):
     _validate_n15_owner_process(value["topology_owner"], result["name_tls_topology"]["owner_namespaces"], alive=alive)
 
 
-def _validate_n15_approvals(owner, dns, service, *, need_service):
+def _validate_n15_approval_failure(value, owner, service, topology_owner):
+    from . import approval_protocol as protocol
+    fields = {"stage", "exception_type", "exception_code", "pending_request", "reply",
+              "worker_stdout_base64", "worker_stderr_base64", "supervised_pid", "supervised_returncode",
+              "capture_source", "capture_limit_bytes", "capture_complete", "process_before", "process_after"}
+    if (type(value) is not dict or set(value) != fields
+            or value["stage"] != "approval_consume_after_owner_close"
+            or value["exception_type"] != "ApprovalUnavailable" or value["exception_code"] != "approval_unavailable"
+            or value["reply"] is not None or value["capture_source"] != "existing_supervisor_pipes"
+            or type(value["capture_limit_bytes"]) is not int or value["capture_limit_bytes"] != 4096
+            or value["capture_complete"] is not True
+            or type(value["supervised_pid"]) is not int or value["supervised_pid"] != owner["approval_worker"]["pid"]
+            or type(value["supervised_returncode"]) is not int or value["supervised_returncode"] != 78
+            or context._base64(value["worker_stdout_base64"], 4096) != b""
+            or context._base64(value["worker_stderr_base64"], 4096) != b"approval_worker_refused\n"):
+        raise ValueError("name_tls_n15_approval_failure")
+    chosen, worker = owner["manifest"], owner["approval_worker"]
+    policy = contract.validate_policy(chosen["policy"], chosen["selection"])
+    request = value["pending_request"]
+    if type(request) is not dict:
+        raise ValueError("name_tls_n15_failed_consume_changed")
+    protocol.request(request, worker["broker_id"], chosen["session_id"], 4)
+    expected = {"version": "1", "broker_id": worker["broker_id"], "session_id": chosen["session_id"],
+        "sequence": 4, "operation": "consume", "action": service, "policy_digest": policy.digest,
+        "reference": owner["service_review"]["reference"]}
+    if _encode(request) != _encode(expected):
+        raise ValueError("name_tls_n15_failed_consume_changed")
+    before, after = value["process_before"], value["process_after"]
+    if type(before) is not dict or "namespaces" not in before:
+        raise ValueError("name_tls_n15_approval_process")
+    _validate_n15_owner_process(before, before["namespaces"], alive=True)
+    _validate_n15_owner_process(after, before["namespaces"], alive=False)
+    expected_after = {**before, "pidfd_readable": True, "proc_absent": True, "identity_source": "retained_pin"}
+    if (_encode(after) != _encode(expected_after) or before["pid"] == topology_owner["pid"]
+            or before["pid"] == value["supervised_pid"]
+            or any(before["namespaces"][name] == topology_owner["namespaces"][name]
+                   for name in ("user", "net", "mnt", "pid"))):
+        raise ValueError("name_tls_n15_approval_process")
+
+
+def _validate_n15_approvals(owner, dns, service, *, need_service, pending_service_consume=False):
     import re
     from . import approval_protocol as protocol
     chosen = owner["manifest"]
@@ -453,18 +510,19 @@ def _validate_n15_approvals(owner, dns, service, *, need_service):
     worker = owner["approval_worker"]
     if (type(worker) is not dict or set(worker) != {"broker_id", "pid", "checks"}
             or not _uuid(worker["broker_id"]) or type(worker["pid"]) is not int or worker["pid"] <= 0
-            or worker["checks"] != dict.fromkeys(protocol.CHECKS, True)):
+            or _encode(worker["checks"]) != _encode(dict.fromkeys(protocol.CHECKS, True))):
         raise ValueError("name_tls_n15_approval_worker")
     messages = owner["approval_messages"]
-    if (type(messages) is not list or len(messages) != (5 if need_service else 3)
+    if (pending_service_consume and not need_service or type(messages) is not list
+            or len(messages) != (4 if pending_service_consume else 5 if need_service else 3)
             or any(type(row) is not dict or set(row) != {"request", "reply"} for row in messages)):
         raise ValueError("name_tls_n15_approval_transcript")
     initial = messages[0]["request"]
     protocol.initial(initial, initial["deadline"] - 1)
     if (initial["broker_id"] != worker["broker_id"] or initial["session_id"] != chosen["session_id"]
             or initial["policy"] != chosen["policy"] or "witness" not in initial
-            or messages[0]["reply"] != {"version": "1", "bootstrap_digest": protocol.digest(initial),
-                "ready": True, "checks": dict.fromkeys(protocol.CHECKS, True)}):
+            or _encode(messages[0]["reply"]) != _encode({"version": "1", "bootstrap_digest": protocol.digest(initial),
+                "ready": True, "checks": dict.fromkeys(protocol.CHECKS, True)})):
         raise ValueError("name_tls_n15_approval_bootstrap")
     pairs = [(dns, owner["dns_review"])]
     if need_service:
@@ -487,6 +545,8 @@ def _validate_n15_approvals(owner, dns, service, *, need_service):
                 + rb" [0-9a-f]{32}' to approve once \(blank denies\): ", prompt[len(prefix):]) is None):
             raise ValueError("name_tls_n15_review_prompt")
         for offset, operation in enumerate(("review", "consume"), 1):
+            if index == 1 and operation == "consume" and pending_service_consume:
+                continue
             sequence = index * 2 + offset
             row = messages[sequence]
             request = row["request"]
@@ -496,7 +556,7 @@ def _validate_n15_approvals(owner, dns, service, *, need_service):
             if operation == "consume":
                 expected["reference"] = review["reference"]
             result = review["reference"] if operation == "review" else None
-            if request != expected or row["reply"] != protocol.receipt(request, result):
+            if _encode(request) != _encode(expected) or _encode(row["reply"]) != _encode(protocol.receipt(request, result)):
                 raise ValueError("name_tls_n15_real_grant_changed")
 
 

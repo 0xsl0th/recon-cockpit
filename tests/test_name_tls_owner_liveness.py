@@ -81,3 +81,29 @@ def test_identity_change_during_pidfd_pin_closes_the_candidate_descriptor(monkey
     with pytest.raises(AssertionError):
         observed.OwnerPin(100, IDENTITY['namespaces'])
     assert state['opened'] == [501] and state['closed'] == [77]
+
+
+def test_approval_pin_selects_actual_fixed_python_payload_and_rechecks_it(monkeypatch):
+    state = fixtures(monkeypatch)
+    scripts = []
+    def worker_identity(pid, script):
+        scripts.append(script)
+        return deepcopy(state['identity'])
+    monkeypatch.setattr(observed, '_worker_identity', worker_identity)
+    pin = observed.ApprovalPin(100)
+    assert pin.observe(alive=True)['pid'] == 501
+    assert scripts == [b'/app/approval_runtime/approval_worker.py'] * 3
+    state['identity']['start_time_ticks'] += 1
+    with pytest.raises(AssertionError, match='identity changed'):
+        pin.observe(alive=True)
+    pin.close()
+    assert state['closed'] == [77]
+
+
+def test_approval_pin_refuses_host_namespace_identity(monkeypatch):
+    state = fixtures(monkeypatch)
+    monkeypatch.setattr(observed, '_worker_identity', lambda *_: deepcopy(state['identity']))
+    monkeypatch.setattr(observed.os, 'readlink', lambda path: state['identity']['namespaces'][str(path).split('/')[-1]])
+    with pytest.raises(AssertionError, match='not unique/live'):
+        observed.ApprovalPin(100)
+    assert state['opened'] == state['closed'] == []

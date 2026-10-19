@@ -34,11 +34,11 @@ def _descendants(pid):
     return seen - {pid}
 
 
-def _identity(pid):
+def _worker_identity(pid, script):
     root = Path(f'/proc/{pid}')
     command = _read(root / 'cmdline').split(b'\0')
     assert command[0] == b'/usr/bin/python3'
-    assert b'/app/recon_cockpit/secure_agent/name_tls_topology_worker.py' in command
+    assert script in command
     raw = _read(root / 'stat')
     # comm may contain spaces or parentheses; the kernel appends the fixed
     # numeric fields only after its final closing parenthesis.
@@ -50,21 +50,31 @@ def _identity(pid):
     return {'pid': pid, 'start_time_ticks': started, 'namespaces': namespaces}
 
 
+def _identity(pid):
+    return _worker_identity(pid, b'/app/recon_cockpit/secure_agent/name_tls_topology_worker.py')
+
+
 class OwnerPin:
+    def _identity(self, pid):
+        return _identity(pid)
+
+    def _matches(self, identity, namespaces):
+        return identity['namespaces'] == namespaces
+
     def __init__(self, launcher_pid, namespaces):
         self.descriptor = None
         candidates = []
         try:
             for pid in sorted(_descendants(launcher_pid)):
                 try:
-                    identity = _identity(pid)
+                    identity = self._identity(pid)
                 except (FileNotFoundError, ProcessLookupError, AssertionError, ValueError):
                     continue
-                if identity['namespaces'] != namespaces:
+                if not self._matches(identity, namespaces):
                     continue
                 descriptor = os.pidfd_open(pid)
                 try:
-                    assert _identity(pid) == identity
+                    assert self._identity(pid) == identity
                     poller = select.poll()
                     poller.register(descriptor, select.POLLIN)
                     assert not poller.poll(0), 'actual topology owner already exited'
@@ -87,7 +97,7 @@ class OwnerPin:
                    for _, flags in ready), 'unexpected owner pidfd state'
         if alive:
             assert not ready, 'actual topology owner exited while launcher survived'
-            assert _identity(self.identity['pid']) == self.identity, 'actual topology owner identity changed'
+            assert self._identity(self.identity['pid']) == self.identity, 'actual topology owner identity changed'
             assert not poller.poll(0), 'actual topology owner exited during observation'
             return {**deepcopy(self.identity), 'pidfd_readable': False, 'proc_absent': False,
                     'identity_source': 'current_proc'}
@@ -106,6 +116,20 @@ class OwnerPin:
         if self.descriptor is not None:
             os.close(self.descriptor)
             self.descriptor = None
+
+
+class ApprovalPin(OwnerPin):
+    """Pin the actual approval Python payload, separately from its bwrap PID."""
+
+    def _identity(self, pid):
+        return _worker_identity(pid, b'/app/approval_runtime/approval_worker.py')
+
+    def _matches(self, identity, namespaces):
+        return all(value != os.readlink('/proc/self/ns/' + name)
+                   for name, value in identity['namespaces'].items())
+
+    def __init__(self, supervised_pid):
+        super().__init__(supervised_pid, None)
 
 
 def acknowledged_owner(session, *, alive):
