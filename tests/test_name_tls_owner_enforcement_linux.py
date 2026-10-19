@@ -65,8 +65,7 @@ def save(path, raw):
         stream.write(raw)
 
 
-@pytest.mark.parametrize("gate", INSTRUMENTED, ids=[row["id"] for row in INSTRUMENTED])
-def test_private_owner_channel_gate(tmp_path, record_property, owner_runtime, gate):
+def _private_owner_trial(tmp_path, owner_runtime, gate, variant=None):
     launcher, selected, bundle, closure, files = owner_runtime(gate)
     identity = contract.identity(selected, str(uuid4()), bundle)
     helper = Path(__file__).with_name("name_tls_owner_probe.py")
@@ -84,7 +83,7 @@ def test_private_owner_channel_gate(tmp_path, record_property, owner_runtime, ga
         entry = command.index("/app/recon_cockpit/secure_agent/launcher_worker.py", command.index("--remount-ro"))
         command[entry:] = ["/name_tls_owner_probe.py", gate["id"]]
         initial = {"selection": selected, "identity": identity, "runtime": closure,
-                   "host_namespaces": _namespaces(), "gate": gate}
+                   "host_namespaces": _namespaces(), "gate": gate, "probe_variant": variant}
         raw = json.dumps(initial, sort_keys=True, allow_nan=False).encode("ascii")
         assert len(raw) <= 262144
         save(tmp_path / "probe-input.json", raw)
@@ -107,6 +106,7 @@ def test_private_owner_channel_gate(tmp_path, record_property, owner_runtime, ga
     assert len(stdout) <= 1048576
     receipt = json.loads(stdout)
     assert receipt["gate_id"] == gate["id"] and receipt["test_passed"] is True
+    assert receipt["probe_variant"] == variant
     assert receipt["selection"] == selected and receipt["identity"] == identity
     assert receipt["instrumented_owner_probe"] is True and receipt["daemon_or_native_client_executed"] is False
     assert receipt["claimed_daemon_payload_bytes"] == receipt["actual_provider_calls"] == 0
@@ -114,8 +114,36 @@ def test_private_owner_channel_gate(tmp_path, record_property, owner_runtime, ga
     assert len(set(receipt["topology"]["networks"].values())) == 6
     for snapshot in receipt["snapshots"]:
         ledger.validate_snapshot(snapshot["ledger"], messages=snapshot["messages"], selected=selected, identity=identity)
+    return receipt, hashlib.sha256(helper_bytes).hexdigest()
+
+
+@pytest.mark.parametrize("gate", INSTRUMENTED, ids=[row["id"] for row in INSTRUMENTED])
+def test_private_owner_channel_gate(tmp_path, record_property, owner_runtime, gate):
+    if gate["name"] == "overlap_concurrency":
+        receipts, helper_digests = [], []
+        for variant, role, reason in (("same_role", "dns_frontend", "concurrent_connection_limit"),
+                                      ("cross_role", "http_frontend", "action_role_changed")):
+            directory = tmp_path / variant
+            directory.mkdir(mode=0o700)
+            receipt, helper_digest = _private_owner_trial(directory, owner_runtime, gate, variant)
+            exchange = receipt["observations"]["last_exchange"]
+            before, after = [row["ledger"] for row in receipt["snapshots"][-2:]]
+            assert exchange["role"] == role
+            assert exchange["message"]["operation"] == "RESERVE_CONNECTION"
+            assert exchange["reply"]["status"] == "denied" and exchange["reply"]["reason"] == reason
+            assert after["terminal_reason"] == reason and after["counters"] == before["counters"]
+            assert before["counters"]["connections"] == 1
+            assert before["counters"]["request_bytes"] == before["counters"]["response_bytes"] == 0
+            receipts.append(receipt)
+            helper_digests.append(helper_digest)
+        assert receipts[0]["identity"]["owner_identity_sha256"] != receipts[1]["identity"]["owner_identity_sha256"]
+        assert helper_digests[0] == helper_digests[1]
+        helper_digest = helper_digests[0]
+        record_property("private_owner_trials", 2)
+    else:
+        _, helper_digest = _private_owner_trial(tmp_path, owner_runtime, gate)
     record_property("gate_id", gate["id"])
-    record_property("helper_sha256", hashlib.sha256(helper_bytes).hexdigest())
+    record_property("helper_sha256", helper_digest)
     record_property("case_passed", True)
     record_property("useful_daemon_claim", False)
 
@@ -147,8 +175,14 @@ def test_actual_expired_binding(tmp_path, record_property, gate_id, step, source
 
 
 @pytest.mark.parametrize("slot,gate_id", (("http", "owner/A/B20"), ("tls", "owner/A/B21")))
-def test_actual_second_dns_invalidates_reviewed_service(tmp_path, terminal, record_property, slot, gate_id):
+def test_actual_second_dns_invalidates_reviewed_service(tmp_path, monkeypatch, terminal, record_property, slot, gate_id):
+    import base64
+    from name_tls_binding_witness import install as install_binding_witness, validate as validate_binding_witness
+    instrumentation = install_binding_witness(tmp_path, monkeypatch, slot)
     with NativeSession(tmp_path / "session", "A", "N1", evidence=False) as session:
+        sources_by_module = {row["module"]: row["sha256"] for row in session.manifest["runtime"]["python_sources"]["files"]}
+        assert all(sources_by_module[row["module"]] == row["instrumented_sha256"]
+                   for row in instrumentation["source_variants"])
         first = session.submit("dns_1", terminal=terminal)
         assert first["execution_status"] == "succeeded"
         original_binding = deepcopy(first["untrusted_result"]["name_tls_ledger"]["binding"])
@@ -161,6 +195,8 @@ def test_actual_second_dns_invalidates_reviewed_service(tmp_path, terminal, reco
         ledger.validate_snapshot(state, messages=result["name_tls_messages"])
         assert state["binding"] is None and state["observation_generation"] == 2
         assert state["terminal"] and state["terminal_reason"] == "declared_negative_completed"
+        assert len(instrumentation["frames"]) == 1
+        witness = validate_binding_witness(instrumentation["frames"][0], stale, result)
         before = _acknowledged_state(session)
         attempt = session.controller.submit(stale, execute=True, interactive=True, approval_reference=review["reference"],
                                             execution_control=session.control, session_step=3)
@@ -177,7 +213,11 @@ def test_actual_second_dns_invalidates_reviewed_service(tmp_path, terminal, reco
             "manifest": session.manifest, "dns_outcomes": session.outcomes, "stale_proposal": stale,
             "review": review, "attempt": attempt, "before": before, "after": after, "closure": closure,
             "approval_messages": session.approval_messages, "audit_events": events,
-            "guard": "static_profile_after_owner_generation_invalidation", "service_native_launches": 0}
+            "guard": "static_profile_after_owner_generation_invalidation", "service_native_launches": 0,
+            "owner_guard_witness": witness,
+            "instrumentation": {key: value for key, value in instrumentation.items() if key != "frames"},
+            "witness_frame_base64": base64.b64encode(instrumentation["frames"][0]).decode("ascii"),
+            "previously_executable_n1_service_claim": False, "approval_store_revocation_claim": False}
         raw = json.dumps(receipt, sort_keys=True, allow_nan=False).encode("ascii")
         assert len(raw) <= 1048576
         save(tmp_path / "native-stale-grant.json", raw)

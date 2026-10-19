@@ -1,6 +1,8 @@
 """Native daemon recipes and seccomp socket selection stay finite."""
 from copy import deepcopy
+import os
 import socket
+import stat
 from types import SimpleNamespace
 
 import pytest
@@ -25,6 +27,56 @@ def test_fixed_daemon_argv_matches_preparation_without_generating_keys():
     assert daemon.ENVIRONMENT == dict(preparation.ENVIRONMENT)
     assert daemon.BOUNDS["processes"] == daemon.BOUNDS["threads"] == 1
     assert daemon.BOUNDS["file_descriptors"] == 64
+
+
+@pytest.mark.parametrize("directory,path", ((None, "/dev/urandom"), (42, "root/dev/urandom")))
+def test_entropy_node_verified_without_reading_and_descriptor_closed(monkeypatch, directory, path):
+    opened, closed = [], []
+    monkeypatch.setattr(os, "O_PATH", 0x200000, raising=False)
+    def open_node(name, flags, *, dir_fd):
+        opened.append((name, flags, dir_fd))
+        return 73
+    with monkeypatch.context() as patch:
+        patch.setattr(daemon.os, "open", open_node)
+        patch.setattr(daemon.os, "fstat", lambda fd: SimpleNamespace(st_mode=stat.S_IFCHR | 0o666, st_rdev=os.makedev(1, 9)))
+        patch.setattr(daemon.os, "close", closed.append)
+        patch.setattr(daemon.os, "read", lambda *_: pytest.fail("entropy must not be read into evidence"))
+        actual = daemon.observe_entropy_device("dns", process_directory=directory)
+    assert actual == {"path": "/dev/urandom", "type": "character", "major": 1, "minor": 9, "access": "read"}
+    assert opened == [(path, os.O_PATH | os.O_NOFOLLOW | os.O_CLOEXEC, directory)]
+    assert closed == [73]
+
+
+@pytest.mark.parametrize("mode,major,minor", ((stat.S_IFREG, 1, 9), (stat.S_IFLNK, 1, 9),
+                                            (stat.S_IFCHR, 1, 8), (stat.S_IFCHR, 2, 9)))
+def test_entropy_verification_refuses_other_device_and_closes_fd(monkeypatch, mode, major, minor):
+    closed = []
+    monkeypatch.setattr(os, "O_PATH", 0x200000, raising=False)
+    with monkeypatch.context() as patch:
+        patch.setattr(daemon.os, "open", lambda *a, **k: 73)
+        patch.setattr(daemon.os, "fstat", lambda fd: SimpleNamespace(st_mode=mode, st_rdev=os.makedev(major, minor)))
+        patch.setattr(daemon.os, "close", closed.append)
+        with pytest.raises(ValueError, match="entropy_device_changed"):
+            daemon.observe_entropy_device("dns")
+    assert closed == [73]
+
+
+@pytest.mark.parametrize("operation", ("http", "tls"))
+def test_web_role_never_opens_entropy_device(monkeypatch, operation):
+    with monkeypatch.context() as patch:
+        patch.setattr(daemon.os, "open", lambda *a, **k: pytest.fail("web entropy permission is not declared"))
+        assert daemon.observe_entropy_device(operation) is None
+    assert daemon.validate_entropy_device(None, operation) is None
+    with pytest.raises(ValueError, match="unexpected_entropy"):
+        daemon.validate_entropy_device(dict(daemon.ENTROPY_DEVICE), operation)
+
+
+@pytest.mark.parametrize("replacement", (None, {}, {**daemon.ENTROPY_DEVICE, "major": True},
+    {**daemon.ENTROPY_DEVICE, "minor": 8}, {**daemon.ENTROPY_DEVICE, "path": "/dev/random"},
+    {**daemon.ENTROPY_DEVICE, "access": "read_write"}))
+def test_entropy_receipt_does_not_authorize_other_node_or_access(replacement):
+    with pytest.raises(ValueError, match="entropy_device_changed"):
+        daemon.validate_entropy_device(replacement, "dns")
 
 
 @pytest.mark.parametrize("configuration", ("A", "B"))

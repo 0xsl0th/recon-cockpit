@@ -38,8 +38,8 @@ def test_source_inventory_is_exact_and_cannot_name_arbitrary_files(change):
 
 def test_pin_includes_all_reviewed_source_and_two_inert_package_initializers():
     value = manifest()
-    assert len(value["files"]) == 42
-    assert len({row["destination"] for row in value["files"]}) == 42
+    assert len(value["files"]) == 43
+    assert len({row["destination"] for row in value["files"]}) == 43
     assert source.source_path("recon_cockpit.__init__") == source.source_path("recon_cockpit.secure_agent.__init__")
     assert "from .models" not in source._read(source.source_path("recon_cockpit.__init__")).decode()
     copied = source.validate_sources(value)

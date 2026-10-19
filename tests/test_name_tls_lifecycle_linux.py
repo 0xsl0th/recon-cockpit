@@ -7,7 +7,6 @@ No production hook, extra descriptor, target, grant or replacement clock exists.
 
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -20,13 +19,13 @@ import time
 import pytest
 
 from recon_cockpit.secure_agent import name_tls_contract as contract
-from recon_cockpit.secure_agent import name_tls_python_runtime as sources
 from recon_cockpit.secure_agent.execution import ExecutionControl, ExecutionStopped
 from recon_cockpit.secure_agent.isolation import IsolationUnavailable
 from recon_cockpit.secure_agent.models import parse_action
 from test_name_tls_linux import NativeSession
-from test_secure_fixture_launcher_linux import descendants, instrument
+from test_secure_fixture_launcher_linux import descendants
 from test_secure_owned_launcher_linux import assert_reaped
+from name_tls_native_instrument import variant as _variant
 
 pytestmark = pytest.mark.integration
 CASES = ("cancel_before_topology", "cancel_during_topology", "cancel_after_valid_dns_binding",
@@ -41,18 +40,6 @@ def owned_only():
     if os.environ.get("RECON_LINUX_INTEGRATION") != "1":
         pytest.skip("set RECON_LINUX_INTEGRATION=1 for owned name/TLS lifetime gates")
     assert sys.platform == "linux" and os.geteuid() != 0
-
-
-def _variant(tmp_path, monkeypatch, module, transform):
-    original_path = sources.source_path
-    original = original_path(module)
-    candidate = tmp_path / (module + ".py")
-    raw = transform(original.read_text())
-    compile(raw, str(candidate), "exec")
-    candidate.write_text(raw)
-    monkeypatch.setattr(sources, "source_path", lambda name: candidate if name == module else original_path(name))
-    return {"module": module, "original_sha256": hashlib.sha256(original.read_bytes()).hexdigest(),
-            "instrumented_sha256": hashlib.sha256(candidate.read_bytes()).hexdigest()}
 
 
 def _pause_topology(tmp_path, monkeypatch):
@@ -88,9 +75,7 @@ def _pause_action(tmp_path, monkeypatch, operation):
             "                time.sleep(2)\n"
             "            return result\n"
             "        Services._command = paused_command\n" + original)
-    instrument(tmp_path, monkeypatch, launcher)
-    variants.append({"module": "launcher_worker", "instrumented_sha256":
-                     hashlib.sha256((tmp_path / "launcher_worker.py").read_bytes()).hexdigest()})
+    variants.append(_variant(tmp_path, monkeypatch, "launcher_worker", launcher))
     return variants
 
 

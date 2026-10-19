@@ -24,7 +24,7 @@ MODULES = (
     "name_tls_recorder", "name_tls_role_spec", "name_tls_runtime", "name_tls_services", "name_tls_spec",
     "name_tls_topology", "name_tls_topology_spec", "name_tls_topology_worker", "name_tls_transport",
     "name_tls_wire", "name_tls_worker_common", "worker", "tool_worker_common", "models", "tool_parameters",
-    "tool_adapters", "session_limits", "tls_posture_hello", "planner_worker", "http_headers_parser",
+    "tool_adapters", "session_limits", "tls_posture_hello", "planner_worker", "http_headers_parser", "launcher_worker",
 )
 PACKAGE_FILES = {"recon_cockpit.__init__": "/app/recon_cockpit/__init__.py",
                  "recon_cockpit.secure_agent.__init__": "/app/recon_cockpit/secure_agent/__init__.py"}

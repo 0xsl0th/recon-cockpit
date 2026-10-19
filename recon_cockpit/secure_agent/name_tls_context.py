@@ -262,7 +262,7 @@ def _validate_service_boundary(service, runtime, topology, selected, operation):
     from .name_tls_transport import validate_descriptor_identity
     ready = service["daemon_ready"]
     manifest = runtime["roles"][daemon.selected_role(operation)]
-    if (type(ready) is not dict or set(ready) != {"namespaces", "namespace_identity", "bounds", "runtime_digest", "operation", "descriptor"}
+    if (type(ready) is not dict or set(ready) != {"namespaces", "namespace_identity", "bounds", "runtime_digest", "operation", "descriptor", "entropy_device"}
             or ready["operation"] != operation or public.encode(ready["bounds"]) != public.encode(daemon.BOUNDS)
             or ready["runtime_digest"] != roles.manifest_digest(manifest)
             or type(ready["namespaces"]) is not dict or set(ready["namespaces"]) != {"user", "net", "mnt", "pid"}
@@ -273,6 +273,9 @@ def _validate_service_boundary(service, runtime, topology, selected, operation):
     _namespace_vector(ready["namespaces"])
     descriptor = validate_descriptor_identity(ready["descriptor"])
     daemon.validate_daemon_ready(service["native_ready"], manifest, ready["namespaces"], service["daemon_mapping"], operation)
+    daemon.validate_entropy_device(ready["entropy_device"], operation)
+    if ready["entropy_device"] != service["native_ready"]["entropy_device"]:
+        raise ValueError("name_tls_daemon_entropy_observation_changed")
     frontend = service["frontend_ready"]
     if (type(frontend) is not dict or type(frontend.get("namespaces")) is not dict
             or frontend["namespaces"].get("net") != topology["networks"][frontend_role(operation)]

@@ -225,6 +225,7 @@ def main():
             finally:
                 os.close(descriptor)
         prepare_network(manifest["configuration"], operation, value["deadline"])
+        entropy_device = daemon.observe_entropy_device(operation)
         private_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
         private_socket.setblocking(False)
         worker.drop_privileges()
@@ -242,7 +243,8 @@ def main():
         private_identity = socket_identity(private_socket)
         assert_descriptor_copies(private_identity, (private_socket.fileno(),))
         ready = {"namespaces": namespaces(), "namespace_identity": identity, "bounds": dict(daemon.BOUNDS),
-            "runtime_digest": value["runtime_digest"], "operation": operation, "descriptor": private_identity}
+            "runtime_digest": value["runtime_digest"], "operation": operation, "descriptor": private_identity,
+            "entropy_device": entropy_device}
         send_packet(channel, ready, private_socket.fileno())
         private_socket.close()
         private_socket = None
@@ -264,6 +266,8 @@ def main():
         permissions = {row["destination"]: 5 if row["destination"] in (manifest["executable"], manifest["interpreter"]) else 4
                        for row in manifest["files"]}
         permissions.update({"/dev/null": 6, "/scratch": (1 << 15) - 2, "/proc/self/status": 4})
+        if entropy_device is not None:
+            permissions[entropy_device["path"]] = 4
         common.apply_landlock(permissions)
         signal.setitimer(signal.ITIMER_REAL, max(.001, value["deadline"] - time.monotonic()))
         os.write(1, daemon.DAEMON_READY + roles.encode(ready) + b"\n")

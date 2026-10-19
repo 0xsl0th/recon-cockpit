@@ -22,7 +22,7 @@ from recon_cockpit.secure_agent.name_tls_lab import NameTLSLab
 from test_name_tls_linux import NativeSession, _scripted_review, terminal
 from test_secure_approval_linux import instrument_worker
 from test_secure_audit_witness import intent
-from test_secure_fixture_launcher_linux import instrument
+from name_tls_native_instrument import variant
 
 pytestmark = pytest.mark.integration
 MUTATIONS = ("missing_audit", "changed_action_audit", "missing_approval", "changed_action_approval",
@@ -83,7 +83,7 @@ def _instrument_launcher(tmp_path, monkeypatch, operation, mutation):
         compiled = compile(source, "owned-name-tls-witness-launcher", "exec")
         assert compiled is not None
         return source
-    instrument(tmp_path, monkeypatch, transform)
+    variant(tmp_path, monkeypatch, "launcher_worker", transform)
 
 
 def _instrument_approval(tmp_path, monkeypatch, operation, mutation):

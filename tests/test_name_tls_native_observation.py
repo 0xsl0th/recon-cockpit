@@ -64,11 +64,16 @@ def test_daemon_native_receipt_exact_listener_inventory(operation):
     value.update(tcp_listeners=[{"endpoint": list(endpoints[name]), "inode": 10 + index}
                                for index, name in enumerate(selected)],
                  udp_listeners=[{"endpoint": list(endpoints["dns"]), "inode": 30}] if operation == "dns" else [],
-                 observed_route_discovery_sockets=2 if operation == "dns" else 0)
+                 observed_route_discovery_sockets=2 if operation == "dns" else 0,
+                 entropy_device=dict(daemon.ENTROPY_DEVICE) if operation == "dns" else None)
     assert daemon.validate_daemon_ready(value, manifest, namespaces, mapping, operation) == value
     altered = deepcopy(value)
     altered["tcp_listeners"][0]["endpoint"][1] += 1
     with pytest.raises(ValueError, match="listeners"):
+        daemon.validate_daemon_ready(altered, manifest, namespaces, mapping, operation)
+    altered = deepcopy(value)
+    altered["entropy_device"] = None if operation == "dns" else dict(daemon.ENTROPY_DEVICE)
+    with pytest.raises(ValueError, match="entropy_device"):
         daemon.validate_daemon_ready(altered, manifest, namespaces, mapping, operation)
 
 

@@ -206,8 +206,9 @@ class Probe:
         return closed
 
 
-def run(probe, gate):
+def run(probe, gate, variant=None):
     name, op = gate["name"], gate["operation"]
+    assert variant is None or name == "overlap_concurrency" and variant in ("same_role", "cross_role")
     if name in ("wrong_channel_role", "message_sequence_replay", "message_sequence_gap", "action_sequence_changed", "action_digest_changed", "owner_identity_changed"):
         probe.arm("dns_1")
         if name == "message_sequence_replay":
@@ -237,7 +238,11 @@ def run(probe, gate):
         if name == "finished_lease_replay": probe.finish_connection()
         before = probe.snapshot()
         if name == "overlap_concurrency":
-            reply, reason = probe.send("RESERVE_CONNECTION", probe.role, local_id=2), "concurrent_connection_limit"
+            role = "http_frontend" if variant == "cross_role" else probe.role
+            reason = "action_role_changed" if variant == "cross_role" else "concurrent_connection_limit"
+            assert before["counters"]["connections"] == 1
+            assert before["counters"]["request_bytes"] == before["counters"]["response_bytes"] == 0
+            reply = probe.send("RESERVE_CONNECTION", role, local_id=2)
         elif name == "operation_replay":
             reply, reason = probe.send("RESERVE_OPERATION", probe.role, lease=lease, kind="dns"), "operation_replayed"
         else:
@@ -431,7 +436,7 @@ def main():
     raw = sys.stdin.buffer.read(262145)
     assert len(raw) <= 262144
     value = json.loads(raw)
-    assert set(value) == {"selection", "identity", "runtime", "host_namespaces", "gate"}
+    assert set(value) == {"selection", "identity", "runtime", "host_namespaces", "gate", "probe_variant"}
     assert all(os.readlink("/proc/self/ns/" + name) != identity for name, identity in value["host_namespaces"].items())
     topology.Topology._assert_launcher()
     from recon_cockpit.secure_agent import planner_worker as bootstrap
@@ -442,8 +447,9 @@ def main():
     probe = Probe(value)
     try:
         probe.start()
-        run(probe, value["gate"])
+        run(probe, value["gate"], value["probe_variant"])
         receipt = {"schema_version": "1", "gate_id": value["gate"]["id"], "selection": probe.selected,
+            "probe_variant": value["probe_variant"],
             "identity": probe.identity, "topology": probe.topology.identity, "owner_pid": probe.owner_pid,
             "snapshots": probe.snapshots, "observations": probe.observations,
             "instrumented_owner_probe": True, "daemon_or_native_client_executed": False,

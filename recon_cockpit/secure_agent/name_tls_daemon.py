@@ -19,12 +19,41 @@ MODULES = ("name_tls_daemon", "name_tls_daemon_worker", "name_tls_role_spec", "n
            "name_tls_python_runtime", "name_tls_worker_common")
 SOURCE_MODULES = (*MODULES, "recon_cockpit.__init__", "recon_cockpit.secure_agent.__init__")
 ENVIRONMENT = {"LC_ALL": "C", "MALLOC_ARENA_MAX": "1", "OPENSSL_CONF": roles.DATA + "openssl.cnf", "TZ": "UTC0"}
+ENTROPY_DEVICE = {"path": "/dev/urandom", "type": "character", "major": 1, "minor": 9, "access": "read"}
 
 
 def selected_role(operation):
     if type(operation) is not str or operation not in ("dns", "http", "tls"):
         raise ValueError("name_tls_daemon_operation")
     return "dns_daemon" if operation == "dns" else "web_daemon"
+
+
+def validate_entropy_device(value, operation):
+    selected_role(operation)
+    if operation != "dns":
+        if value is not None:
+            raise ValueError("name_tls_daemon_unexpected_entropy_device")
+    elif (type(value) is not dict or value != ENTROPY_DEVICE
+            or any(type(value[key]) is not int for key in ("major", "minor"))):
+        raise ValueError("name_tls_daemon_entropy_device_changed")
+    return value
+
+
+def observe_entropy_device(operation, *, process_directory=None):
+    """Verify the exact device without reading or retaining entropy bytes."""
+    selected_role(operation)
+    if operation != "dns":
+        return None
+    path = "/dev/urandom" if process_directory is None else "root/dev/urandom"
+    descriptor = os.open(path, os.O_PATH | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=process_directory)
+    try:
+        node = os.fstat(descriptor)
+        if (not stat.S_ISCHR(node.st_mode)
+                or (os.major(node.st_rdev), os.minor(node.st_rdev)) != (1, 9)):
+            raise ValueError("name_tls_daemon_entropy_device_changed")
+    finally:
+        os.close(descriptor)
+    return dict(ENTROPY_DEVICE)
 
 
 def argv_for(operation):
@@ -277,11 +306,12 @@ def _validate_image_receipt(value, manifest, namespaces, mapping, *, tasks, file
 def validate_daemon_ready(value, manifest, namespaces, mapping, operation):
     """Validate an observed daemon receipt against its sealed native partition."""
     manifest = roles.validate_manifest(manifest, role=selected_role(operation))
-    extras = {"tcp_listeners", "udp_listeners", "observed_route_discovery_sockets"}
+    extras = {"tcp_listeners", "udp_listeners", "observed_route_discovery_sockets", "entropy_device"}
     if type(value) is not dict or not extras <= set(value):
         raise ValueError("name_tls_daemon_receipt_shape")
     _validate_image_receipt({key: item for key, item in value.items() if key not in extras},
                            manifest, namespaces, mapping, tasks=1, file_bytes=8192)
+    validate_entropy_device(value["entropy_device"], operation)
     expected = endpoints(manifest["configuration"])
     expected_tcp = [list(expected["dns"])] if operation == "dns" else [list(expected[op]) for op in ("http", "tls")]
     expected_udp = [list(expected["dns"])] if operation == "dns" else []
@@ -309,6 +339,7 @@ def listener_ready(process_directory, expected_namespaces, namespace_fds, manife
     """
     manifest = roles.validate_manifest(manifest, role=selected_role(operation))
     _check_namespace_pins(process_directory, expected_namespaces, namespace_fds)
+    entropy_device = observe_entropy_device(operation, process_directory=process_directory)
     expected = endpoints(manifest["configuration"])
     tcp = _socket_rows(_read(process_directory, "net/tcp", 8192), protocol="tcp")
     udp = _socket_rows(_read(process_directory, "net/udp", 8192), protocol="udp")
@@ -382,4 +413,5 @@ def listener_ready(process_directory, expected_namespaces, namespace_fds, manife
     return {"ready": True, "native_executable": manifest["executable"], "native_sha256": image["sha256"],
             "mapped_images": sorted(mapped), "tcp_listeners": tcp, "udp_listeners": udp,
             "observed_route_discovery_sockets": len(netlink),
+            "entropy_device": entropy_device,
             "runtime_digest": roles.manifest_digest(manifest), "namespaces": dict(expected_namespaces), **boundary}

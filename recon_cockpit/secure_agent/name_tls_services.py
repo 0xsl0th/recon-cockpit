@@ -243,11 +243,12 @@ class Services:
             row["private_socket"] = transport.owned_socket(descriptor)
             from .name_tls_daemon_worker import validate_namespace_identity
             validate_namespace_identity(ready.get("namespace_identity"))
-            if (set(ready) != {"namespaces", "namespace_identity", "bounds", "runtime_digest", "descriptor", "operation"}
+            if (set(ready) != {"namespaces", "namespace_identity", "bounds", "runtime_digest", "descriptor", "operation", "entropy_device"}
                     or ready["namespaces"] != observed or ready["bounds"] != daemon.BOUNDS
                     or ready["runtime_digest"] != role_digest or ready["operation"] != operation
                     or ready["descriptor"] != transport.socket_identity(row["private_socket"])):
                 raise ValueError("name_tls_daemon_ready_changed")
+            daemon.validate_entropy_device(ready["entropy_device"], operation)
             supervisor.wait_for(lambda: b"\n" in supervisor.buffers["daemon_out"])
             if bytes(supervisor.buffers["daemon_out"]).split(b"\n", 1)[0] != daemon.DAEMON_READY + public.encode(ready):
                 raise ValueError("name_tls_daemon_descriptor_cleanup_unverified")
@@ -258,6 +259,8 @@ class Services:
                     observation.append(found)
                 return bool(found)
             supervisor.wait_for(ready_socket)
+            if observation[0]["entropy_device"] != ready["entropy_device"]:
+                raise ValueError("name_tls_daemon_entropy_observation_changed")
             parent.close()
             row.update(channel=None, ready=ready, mapping=mapping, native_ready=observation[0])
             supervisor.deadline = self.active["deadline"]
