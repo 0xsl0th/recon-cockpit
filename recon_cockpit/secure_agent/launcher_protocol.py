@@ -263,8 +263,16 @@ def receipt(value, result, snapshot):
 
 
 def result(value, config):
+    statuses = {'succeeded', 'failed', 'timeout', 'output_limit'}
+    # N14 returns owner expiry refusals through the ordinary result channel.
+    # This admits only the envelope; the caller must still validate its bound
+    # owner transcript and continuity with name_tls_context before accepting it.
+    if (config['profile'] == 'owned_name_tls_v1' and type(config.get('case')) is dict
+            and config['case'].get('case') == 'N14' and type(value) is dict
+            and type(value.get('name_tls_refusal')) is dict):
+        statuses.add('blocked')
     if (type(value) is not dict or type(value.get('status')) is not str
-            or value['status'] not in {'succeeded', 'failed', 'timeout', 'output_limit'}
+            or value['status'] not in statuses
             or value.get('backend') != PROFILES[config['profile']]
             or type(value.get('results')) is not list):
         raise ValueError('invalid_launcher_result')
