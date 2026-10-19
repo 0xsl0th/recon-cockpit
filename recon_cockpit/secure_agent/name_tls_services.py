@@ -213,20 +213,34 @@ class Services:
         finally:
             supervisor.deadline = old_deadline
 
+    def _topology_rpc(self, callback, deadline):
+        supervisor = self.topology._supervisor
+        previous = supervisor.deadline
+        supervisor.deadline = min(previous, deadline, self.control.deadline)
+        try:
+            supervisor.check()
+            result = callback()
+            supervisor.check()
+            return result
+        finally:
+            supervisor.deadline = previous
+
     def arm_action(self, action, sequence):
         self._check()
         if not self._started or self.active is not None:
             raise ValueError("name_tls_service_action_overlap")
         slot = contract.action_selector(action, self.selection)
         started = time.monotonic()
-        reply = self.topology.ledger_request({"operation": "ARM", "action_sequence": sequence,
-            "action_digest": action.digest, "owner_identity_sha256": self.identity["owner_identity_sha256"],
-            "slot": slot, "action": action.to_dict()})
+        deadline = min(self.control.deadline, started + contract.action_bounds(slot)["hard_action_seconds"])
+        startup_deadline = min(started + 2, deadline)
+        reply = self._topology_rpc(lambda: self.topology.ledger_request({
+            "operation": "ARM", "action_sequence": sequence, "action_digest": action.digest,
+            "owner_identity_sha256": self.identity["owner_identity_sha256"],
+            "slot": slot, "action": action.to_dict()}), startup_deadline)
         if reply["status"] != "ok":
             return reply
-        deadline = min(self.control.deadline, started + contract.action_bounds(slot)["hard_action_seconds"])
         self.active = {"slot": slot, "sequence": sequence, "action_digest": action.digest,
-            "started": started, "deadline": deadline, "startup_deadline": min(started + 2, deadline)}
+            "started": started, "deadline": deadline, "startup_deadline": startup_deadline}
         return reply
 
     def _daemon(self, operation):
@@ -327,7 +341,7 @@ class Services:
             self._command(frontend, "prepare", slot=slot, action_sequence=active["sequence"],
                 action=action.to_dict(), daemon_descriptor=owned["ready"]["descriptor"], private_socket=private_socket)
             view = _ActionView(self, frontend)
-            binding = self.topology.ledger_snapshot()["binding"]
+            binding = self._topology_rpc(self.topology.ledger_snapshot, active["startup_deadline"])["binding"]
             manifest = None if operation == "http" else self.runtime["roles"][operation + "_client"]
             envelope = {"mode": contract.PROFILE, "selection": self.selection, "identity": self.identity,
                 "binding": binding, "namespaces": view.namespaces, "runtime": manifest, "launch": launch}
@@ -349,11 +363,12 @@ class Services:
             if parser_error is not None and result["status"] == "succeeded":
                 result["status"] = "failed"
             native_success = recorder_complete and parsed is not None and (parsed["useful_task_completed"] or parsed["expected_negative"])
-            finish = self.topology.ledger_request({"operation": "FINISH_ACTION", "action_sequence": active["sequence"],
+            finish = self._topology_rpc(lambda: self.topology.ledger_request({
+                "operation": "FINISH_ACTION", "action_sequence": active["sequence"],
                 "action_digest": action.digest, "owner_identity_sha256": self.identity["owner_identity_sha256"],
                 "output_bytes": result["bytes_received"], "native_success": native_success,
                 "observation": parsed["observation"] if parsed is not None and operation == "dns" and self.selection["case"] != "N8" else None,
-                "parsed_result_sha256": public.digest(parsed), "native_result_sha256": public.digest(result)})
+                "parsed_result_sha256": public.digest(parsed), "native_result_sha256": public.digest(result)}), active["deadline"])
             if finish["status"] != "ok":
                 raise IsolationUnavailable("Name/TLS owner refused native result: " + finish["reason"])
             receipt = {"slot": slot, "action_sequence": active["sequence"], "action_digest": action.digest,
@@ -364,7 +379,7 @@ class Services:
                 "budget_denied": finished["budget_denied"], "last_budget_reply": finished["last_budget_reply"],
                 "parser_input_base64": base64.b64encode(raw).decode("ascii"), "parsed": parsed,
                 "parser_receipt": parser_receipt, "parser_error": parser_error,
-                "binding": self.topology.ledger_snapshot()["binding"],
+                "binding": self._topology_rpc(self.topology.ledger_snapshot, active["deadline"])["binding"],
                 "closure": {"daemon_processes_reaped": True, "action_connections_closed": True,
                             "frontend_persists": True, "topology_persists": True}}
             self.completed.append(deepcopy(receipt))

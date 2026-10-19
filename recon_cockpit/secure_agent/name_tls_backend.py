@@ -115,9 +115,10 @@ class AuthorizedNameTLSBackend(AuthorizedFixtureBackend):
                 "limits": asdict(self._limits), "limits_digest": self._limits_digest,
                 "deadline": control.deadline, "output_reserved_before": before,
                 "output_reserved_after": self._output, "host_namespaces": _namespaces()}
+            action_deadline = self.lab.services.active["deadline"]
             result = self.lab.services.run_action(action, launch)
             result["backend"] = self.name
-            evidence = self.lab.evidence()
+            evidence = self.lab.evidence(deadline=action_deadline)
             result["name_tls_ledger"] = evidence["ledger"]
             result["name_tls_messages"] = evidence["messages"]
             result["name_tls_topology"] = self.lab.topology.identity

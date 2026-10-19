@@ -91,8 +91,9 @@ class NameTLSLab:
         self._last_ledger = self.topology.ledger_snapshot()
         return deepcopy(self._last_ledger)
 
-    def evidence(self):
-        value = self.topology.ledger_evidence()
+    def evidence(self, *, deadline=None):
+        value = (self.topology.ledger_evidence() if deadline is None else
+                 self.services._topology_rpc(self.topology.ledger_evidence, deadline))
         self._last_ledger = value["ledger"]
         return value
 
