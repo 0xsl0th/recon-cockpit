@@ -121,8 +121,16 @@ def test_nested_admission_mounts_typed_name_contract_without_owner_material(monk
         execute=True, profile=contract.PROFILE, case=selected)
     monkeypatch.setattr(admission_isolation, "_namespaces", lambda: HOST)
     monkeypatch.setattr(admission_isolation, "_trusted_program", lambda name: "/usr/bin/" + name)
-    argv = gate._command("/usr/lib/python3.13", [], "a" * 64)
-    destinations = {argv[index + 2] for index, value in enumerate(argv) if value == "--ro-bind"}
+    import os
+    import time
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+    descriptors = admission_isolation._name_tls_source_copies(ExecutionControl(time.monotonic() + 5))
+    try:
+        argv = gate._command("/usr/lib/python3.13", [], "a" * 64, descriptors)
+    finally:
+        for descriptor in descriptors.values():
+            os.close(descriptor)
+    destinations = {argv[index + 2] for index, value in enumerate(argv) if value == "--ro-bind-data"}
     assert {"/app/admission_runtime/" + name + ".py" for name in
             ("name_tls_contract", "name_tls_public", "session_limits")} <= destinations
     assert not any("name_tls_spec" in path or "server.key" in path for path in destinations)

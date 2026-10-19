@@ -86,7 +86,11 @@ def namespace_identity():
     with open("/proc/self/setgroups", encoding="ascii") as stream:
         if stream.read(6) != "deny\n":
             raise ValueError("name_tls_worker_mutable_group_mapping")
-    return validate_namespace_identity(result)
+    try:
+        return validate_namespace_identity(result)
+    except ValueError as error:
+        diagnostic = {**result, "groups": result["groups"][:16], "group_count": len(result["groups"])}
+        raise ValueError("name_tls_worker_payload_identity_observed:" + repr(diagnostic)[:2048]) from error
 
 
 def assert_private_namespaces(host):
