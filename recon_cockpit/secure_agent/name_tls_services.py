@@ -56,6 +56,27 @@ def _receive(supervisor, channel, *, descriptor_required=False):
     return transport.receive_packet(channel, descriptor_required=descriptor_required)
 
 
+def _failure_diagnostic(supervisor, name):
+    """Retain bounded unread pipe bytes when exit precedes the next poll."""
+    process = supervisor.processes.get(name)
+    code = None if process is None else process.poll()
+    if process is not None:
+        for stream, suffix in ((process.stderr, "err"), (process.stdout, "out")):
+            os.set_blocking(stream.fileno(), False)
+            while supervisor.total < supervisor.limit:
+                try:
+                    raw = os.read(stream.fileno(), min(2048, supervisor.limit - supervisor.total))
+                except BlockingIOError:
+                    break
+                if not raw:
+                    break
+                supervisor.total += len(raw)
+                supervisor.buffers[name + "_" + suffix].extend(raw)
+    stderr = bytes(supervisor.buffers.get(name + "_err", b""))[-1536:].decode("utf-8", "replace")
+    stdout = bytes(supervisor.buffers.get(name + "_out", b""))[-512:].decode("utf-8", "replace")
+    return "exit=" + str(code) + "; stderr=" + stderr + "; stdout=" + stdout
+
+
 class Services:
     def __init__(self, topology, *, selection, identity, runtime, closure, control):
         self.selection = contract.validate_selection(selection)
@@ -135,7 +156,7 @@ class Services:
             supervisor.deadline = self.control.deadline
             return row
         except BaseException as error:
-            diagnostic = bytes(supervisor.buffers.get("frontend_err", b"")).decode("utf-8", "replace")[-2048:]
+            diagnostic = _failure_diagnostic(supervisor, "frontend")
             parent.close()
             supervisor.close()
             raise IsolationUnavailable("Name/TLS frontend: " + str(error)[:256] + ": " + diagnostic) from error
@@ -242,7 +263,7 @@ class Services:
             supervisor.deadline = self.active["deadline"]
             return row
         except BaseException as error:
-            diagnostic = bytes(supervisor.buffers.get("daemon_err", b"")).decode("utf-8", "replace")[-2048:]
+            diagnostic = _failure_diagnostic(supervisor, "daemon")
             self._close_daemon()
             raise IsolationUnavailable("Name/TLS daemon: " + str(error)[:256] + ": " + diagnostic) from error
         finally:
