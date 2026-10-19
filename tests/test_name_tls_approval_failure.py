@@ -54,7 +54,7 @@ def approval_rows(*, pending=True):
                 pending_request = request
                 continue
             messages.append({'request': request, 'reply': protocol.receipt(request, reference if operation == 'review' else None)})
-    owner = {'manifest': chosen, 'approval_worker': {'broker_id': broker, 'pid': 1500, 'checks': checks},
+    owner = {'manifest': chosen, 'approval_worker': {'broker_id': broker, 'pid': 1500, 'start_time_ticks': 9000, 'checks': checks},
              'approval_messages': messages, 'dns_review': reviews[0], 'service_review': reviews[1]}
     failure = {'stage': 'approval_consume_after_owner_close', 'exception_type': 'ApprovalUnavailable',
                'exception_code': 'approval_unavailable', 'pending_request': pending_request if pending else messages[-1]['request'],
@@ -63,6 +63,14 @@ def approval_rows(*, pending=True):
                'supervised_pid': 1500, 'supervised_returncode': 78, 'capture_source': 'existing_supervisor_pipes',
                'capture_limit_bytes': 4096, 'capture_complete': True,
                'process_before': n15_process(3), 'process_after': n15_process(3, alive=False)}
+    host = {name: name + ':[100]' for name in ('user', 'net', 'mnt', 'pid')}
+    failure['process_binding'] = {'bootstrap_sha256': protocol.digest(initial),
+        'argv': ['/usr/bin/python3', '-I', '-S', '/app/approval_runtime/approval_worker.py',
+                 protocol.digest(initial), *(host[name] for name in ('user', 'net', 'mnt', 'pid')), 'launch-witness'],
+        'host_namespaces': host, 'observer_pid': 500,
+        'ancestry': [{'pid': 1203, 'parent_pid': 1400, 'start_time_ticks': 10003},
+                     {'pid': 1400, 'parent_pid': 1500, 'start_time_ticks': 9500},
+                     {'pid': 1500, 'parent_pid': 500, 'start_time_ticks': 9000}]}
     return owner, dns, service, failure
 
 
@@ -147,6 +155,59 @@ def test_failed_consume_evidence_cannot_be_substituted_or_promoted(changed):
     else:
         failure['grant_burned'] = True
     with pytest.raises((ValueError, KeyError)):
+        evidence._validate_n15_approval_failure(failure, owner, service, n15_process())
+
+
+@pytest.mark.parametrize('changed', ('bootstrap', 'argv_commitment', 'argv_isolation', 'argv_witness',
+    'host_namespace', 'coherent_payload', 'first_pid', 'first_start', 'last_pid', 'last_start',
+    'parent_link', 'cycle', 'start_order', 'bool_pid', 'bool_start', 'empty', 'too_long', 'observer', 'extra'))
+def test_approval_process_pin_requires_its_recorded_broker_and_supervised_ancestry(changed):
+    owner, _, service, failure = approval_rows()
+    failure = deepcopy(failure)
+    binding = failure['process_binding']
+    rows = binding['ancestry']
+    if changed == 'bootstrap':
+        binding['bootstrap_sha256'] = 'f' * 64
+    elif changed == 'argv_commitment':
+        binding['argv'][4] = 'f' * 64
+    elif changed == 'argv_isolation':
+        binding['argv'].remove('-I')
+    elif changed == 'argv_witness':
+        binding['argv'].pop()
+    elif changed == 'host_namespace':
+        binding['host_namespaces']['net'] = failure['process_before']['namespaces']['net']
+        binding['argv'][6] = binding['host_namespaces']['net']
+    elif changed == 'coherent_payload':
+        for field in ('process_before', 'process_after'):
+            failure[field]['pid'] += 30
+            failure[field]['start_time_ticks'] += 30
+            failure[field]['namespaces'] = {name: name + ':[999]' for name in ('user', 'net', 'mnt', 'pid')}
+    elif changed == 'first_pid':
+        rows[0]['pid'] += 1
+    elif changed == 'first_start':
+        rows[0]['start_time_ticks'] += 1
+    elif changed == 'last_pid':
+        rows[-1]['pid'] += 1
+        rows[-2]['parent_pid'] = rows[-1]['pid']
+    elif changed == 'last_start':
+        rows[-1]['start_time_ticks'] -= 1
+    elif changed == 'parent_link':
+        rows[0]['parent_pid'] += 1
+    elif changed == 'cycle':
+        rows[1]['pid'] = rows[0]['parent_pid'] = rows[0]['pid']
+    elif changed == 'start_order':
+        rows[1]['start_time_ticks'] = rows[0]['start_time_ticks'] + 1
+    elif changed in ('bool_pid', 'bool_start'):
+        rows[0]['pid' if changed == 'bool_pid' else 'start_time_ticks'] = True
+    elif changed == 'empty':
+        binding['ancestry'] = []
+    elif changed == 'too_long':
+        binding['ancestry'] = rows * 6
+    elif changed == 'observer':
+        binding['observer_pid'] += 1
+    else:
+        binding['not_a_trace'] = True
+    with pytest.raises(ValueError):
         evidence._validate_n15_approval_failure(failure, owner, service, n15_process())
 
 

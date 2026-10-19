@@ -39,7 +39,7 @@ from recon_cockpit.secure_agent.name_tls_backend import AuthorizedNameTLSBackend
 from recon_cockpit.secure_agent.name_tls_evidence import NameTLSEvidenceStore, inspect_trial
 from recon_cockpit.secure_agent.name_tls_lab import NameTLSLab
 from recon_cockpit.secure_agent.session_limits import SessionLimits
-from name_tls_owner_liveness import acknowledged_owner
+from name_tls_owner_liveness import acknowledged_owner, _ancestry_row
 from name_tls_approval_failure import ClosedApprovalFailure
 
 pytestmark = pytest.mark.integration
@@ -156,6 +156,8 @@ class NativeSession:
             def observed_reply():
                 reply = original_reply()
                 assert len(pending_request) == 1
+                if not self.approval_messages:
+                    self.approval_supervised_start_time_ticks = _ancestry_row(self.approvals._process.pid)["start_time_ticks"]
                 self.approval_messages.append({"request": pending_request.pop(), "reply": deepcopy(reply)})
                 return reply
             self.approvals._send, self.approvals._reply = observed_send, observed_reply
@@ -226,6 +228,7 @@ def _owner_record(session, service_review):
             "audit_events": [json.loads(line) for line in (session.directory / "audit.jsonl").read_bytes().splitlines()],
             "approval_messages": deepcopy(session.approval_messages),
             "approval_worker": {"broker_id": session.approvals._identity, "pid": worker.pid,
+                                "start_time_ticks": session.approval_supervised_start_time_ticks,
                                 "checks": deepcopy(session.approval_messages[0]["reply"]["checks"])},
             "dns_review": deepcopy(session.reviews[0]), "service_review": deepcopy(service_review)}
 

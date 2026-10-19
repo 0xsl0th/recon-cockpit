@@ -466,7 +466,7 @@ def _validate_n15_approval_failure(value, owner, service, topology_owner):
     from . import approval_protocol as protocol
     fields = {"stage", "exception_type", "exception_code", "pending_request", "reply",
               "worker_stdout_base64", "worker_stderr_base64", "supervised_pid", "supervised_returncode",
-              "capture_source", "capture_limit_bytes", "capture_complete", "process_before", "process_after"}
+              "capture_source", "capture_limit_bytes", "capture_complete", "process_before", "process_after", "process_binding"}
     if (type(value) is not dict or set(value) != fields
             or value["stage"] != "approval_consume_after_owner_close"
             or value["exception_type"] != "ApprovalUnavailable" or value["exception_code"] != "approval_unavailable"
@@ -500,6 +500,40 @@ def _validate_n15_approval_failure(value, owner, service, topology_owner):
             or any(before["namespaces"][name] == topology_owner["namespaces"][name]
                    for name in ("user", "net", "mnt", "pid"))):
         raise ValueError("name_tls_n15_approval_process")
+    _validate_n15_approval_process_binding(value["process_binding"], owner["approval_messages"][0]["request"],
+                                         before, owner["approval_worker"])
+
+
+def _validate_n15_approval_process_binding(value, initial, process, supervised):
+    from . import approval_protocol as protocol
+    fields = {"bootstrap_sha256", "argv", "host_namespaces", "observer_pid", "ancestry"}
+    if (type(value) is not dict or set(value) != fields
+            or value["bootstrap_sha256"] != protocol.digest(initial)
+            or type(value["observer_pid"]) is not int or not 0 < value["observer_pid"] < 2**31
+            or type(value["ancestry"]) is not list or not 2 <= len(value["ancestry"]) <= 16):
+        raise ValueError("name_tls_n15_approval_process_binding")
+    host = value["host_namespaces"]
+    context._namespace_vector(host)
+    expected_argv = ["/usr/bin/python3", "-I", "-S", "/app/approval_runtime/approval_worker.py",
+                     protocol.digest(initial), *(host[name] for name in ("user", "net", "mnt", "pid")), "launch-witness"]
+    if (_encode(value["argv"]) != _encode(expected_argv)
+            or any(host[name] == process["namespaces"][name] for name in ("user", "net", "mnt", "pid"))):
+        raise ValueError("name_tls_n15_approval_bootstrap_process")
+    seen = set()
+    for index, row in enumerate(value["ancestry"]):
+        if (type(row) is not dict or set(row) != {"pid", "parent_pid", "start_time_ticks"}
+                or any(type(row[key]) is not int or not 0 < row[key] < 2**31 for key in ("pid", "parent_pid"))
+                or type(row["start_time_ticks"]) is not int or not 0 < row["start_time_ticks"] < 2**63
+                or row["pid"] in seen or row["pid"] == value["observer_pid"]
+                or index and (value["ancestry"][index - 1]["parent_pid"] != row["pid"]
+                    or row["start_time_ticks"] > value["ancestry"][index - 1]["start_time_ticks"])):
+            raise ValueError("name_tls_n15_approval_ancestry")
+        seen.add(row["pid"])
+    first, last = value["ancestry"][0], value["ancestry"][-1]
+    if (first["pid"] != process["pid"] or first["start_time_ticks"] != process["start_time_ticks"]
+            or last["pid"] != supervised["pid"] or last["start_time_ticks"] != supervised["start_time_ticks"]
+            or last["parent_pid"] != value["observer_pid"]):
+        raise ValueError("name_tls_n15_approval_ancestry")
 
 
 def _validate_n15_approvals(owner, dns, service, *, need_service, pending_service_consume=False):
@@ -508,8 +542,9 @@ def _validate_n15_approvals(owner, dns, service, *, need_service, pending_servic
     chosen = owner["manifest"]
     policy = contract.validate_policy(chosen["policy"], chosen["selection"])
     worker = owner["approval_worker"]
-    if (type(worker) is not dict or set(worker) != {"broker_id", "pid", "checks"}
+    if (type(worker) is not dict or set(worker) != {"broker_id", "pid", "start_time_ticks", "checks"}
             or not _uuid(worker["broker_id"]) or type(worker["pid"]) is not int or worker["pid"] <= 0
+            or type(worker["start_time_ticks"]) is not int or not 0 < worker["start_time_ticks"] < 2**63
             or _encode(worker["checks"]) != _encode(dict.fromkeys(protocol.CHECKS, True))):
         raise ValueError("name_tls_n15_approval_worker")
     messages = owner["approval_messages"]

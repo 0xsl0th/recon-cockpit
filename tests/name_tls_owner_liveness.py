@@ -50,6 +50,14 @@ def _worker_identity(pid, script):
     return {'pid': pid, 'start_time_ticks': started, 'namespaces': namespaces}
 
 
+def _ancestry_row(pid):
+    raw = _read(Path(f'/proc/{pid}/stat'))
+    suffix = raw[raw.rindex(b')') + 2:].split()
+    parent, started = int(suffix[1]), int(suffix[19])
+    assert parent > 0 and started > 0
+    return {'pid': pid, 'parent_pid': parent, 'start_time_ticks': started}
+
+
 def _identity(pid):
     return _worker_identity(pid, b'/app/recon_cockpit/secure_agent/name_tls_topology_worker.py')
 
@@ -129,7 +137,42 @@ class ApprovalPin(OwnerPin):
                    for name, value in identity['namespaces'].items())
 
     def __init__(self, supervised_pid):
+        self.supervised_pid = supervised_pid
         super().__init__(supervised_pid, None)
+
+    def binding(self, initial, control, supervised_start_time_ticks):
+        """Retain the observed broker bootstrap and current supervised ancestry."""
+        from recon_cockpit.secure_agent import approval_protocol
+        control.check()
+        before = self.observe(alive=True)
+        host = {name: os.readlink('/proc/self/ns/' + name) for name in ('user', 'net', 'mnt', 'pid')}
+        commitment = approval_protocol.digest(initial)
+        expected = ['/usr/bin/python3', '-I', '-S', '/app/approval_runtime/approval_worker.py',
+                    commitment, *(host[name] for name in ('user', 'net', 'mnt', 'pid')), 'launch-witness']
+        command_path = Path(f"/proc/{before['pid']}/cmdline")
+        command = _read(command_path)
+        assert command == b'\0'.join(value.encode('ascii') for value in expected) + b'\0', 'approval bootstrap argv changed'
+        rows, current = [], before['pid']
+        while len(rows) < 16:
+            control.check()
+            assert current not in {row['pid'] for row in rows}, 'approval ancestry cycle'
+            row = _ancestry_row(current)
+            rows.append(row)
+            if current == self.supervised_pid:
+                break
+            current = row['parent_pid']
+        assert rows[-1]['pid'] == self.supervised_pid and rows[-1]['parent_pid'] == os.getpid(), 'approval supervised ancestry changed'
+        assert rows[-1]['start_time_ticks'] == supervised_start_time_ticks, 'approval supervised process changed'
+        assert rows[0]['start_time_ticks'] == before['start_time_ticks']
+        assert all(parent['start_time_ticks'] <= child['start_time_ticks']
+                   for child, parent in zip(rows, rows[1:])), 'approval ancestry start order changed'
+        for row in rows:
+            control.check()
+            assert _ancestry_row(row['pid']) == row, 'approval ancestry changed during observation'
+        assert _read(command_path) == command and self.observe(alive=True) == before
+        control.check()
+        return {'bootstrap_sha256': commitment, 'argv': expected, 'host_namespaces': host,
+                'observer_pid': os.getpid(), 'ancestry': rows}
 
 
 def acknowledged_owner(session, *, alive):

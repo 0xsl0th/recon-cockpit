@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -107,3 +108,42 @@ def test_approval_pin_refuses_host_namespace_identity(monkeypatch):
     with pytest.raises(AssertionError, match='not unique/live'):
         observed.ApprovalPin(100)
     assert state['opened'] == state['closed'] == []
+
+
+@pytest.mark.parametrize('change', (None, 'bootstrap', 'ancestry_race', 'supervisor_reuse'))
+def test_approval_binding_observes_exact_bootstrap_and_rereads_live_chain(monkeypatch, change):
+    from recon_cockpit.secure_agent import approval_protocol
+    state = fixtures(monkeypatch)
+    monkeypatch.setattr(observed, '_worker_identity', lambda *_: deepcopy(state['identity']))
+    host = {name: name + ':[100]' for name in ('user', 'net', 'mnt', 'pid')}
+    monkeypatch.setattr(observed.os, 'readlink', lambda path: host[str(path).split('/')[-1]])
+    monkeypatch.setattr(observed.os, 'getpid', lambda: 50)
+    initial = {'test_synthetic_bootstrap': True}
+    argv = ['/usr/bin/python3', '-I', '-S', '/app/approval_runtime/approval_worker.py',
+            approval_protocol.digest(initial), *(host[name] for name in ('user', 'net', 'mnt', 'pid')), 'launch-witness']
+    if change == 'bootstrap':
+        argv[4] = 'f' * 64
+    raw = b'\0'.join(value.encode() for value in argv) + b'\0'
+    monkeypatch.setattr(observed, '_read', lambda path: raw)
+    calls = []
+    def ancestry(pid):
+        calls.append(pid)
+        row = {'pid': pid, 'parent_pid': 100 if pid == 501 else 50,
+               'start_time_ticks': IDENTITY['start_time_ticks'] if pid == 501 else 10000}
+        if change == 'ancestry_race' and len(calls) > 2:
+            row['start_time_ticks'] += 1
+        return row
+    monkeypatch.setattr(observed, '_ancestry_row', ancestry)
+    pin = observed.ApprovalPin(100)
+    try:
+        if change:
+            with pytest.raises(AssertionError):
+                pin.binding(initial, SimpleNamespace(check=lambda: None), 9999 if change == 'supervisor_reuse' else 10000)
+        else:
+            value = pin.binding(initial, SimpleNamespace(check=lambda: None), 10000)
+            assert value['bootstrap_sha256'] == approval_protocol.digest(initial)
+            assert value['argv'] == argv and value['observer_pid'] == 50
+            assert calls == [501, 100, 501, 100]
+    finally:
+        pin.close()
+    assert state['closed'] == [77]

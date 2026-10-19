@@ -64,6 +64,8 @@ class ClosedApprovalFailure:
         approvals = session.approvals
         assert session.backend._closed and session.backend._process.poll() is not None
         process_before = self.pin.observe(alive=True)
+        process_binding = self.pin.binding(session.approval_messages[0]['request'], session.control,
+                                          session.approval_supervised_start_time_ticks)
         original_cleanup = approvals._cleanup
         captured = []
         def observed_cleanup():
@@ -87,4 +89,4 @@ class ClosedApprovalFailure:
         return {'stage': 'approval_consume_after_owner_close', 'exception_type': 'ApprovalUnavailable',
                 'exception_code': 'approval_unavailable', 'pending_request': deepcopy(session.approval_pending[0]),
                 'reply': None, **captured[0], 'process_before': process_before,
-                'process_after': self.pin.observe(alive=False)}
+                'process_after': self.pin.observe(alive=False), 'process_binding': process_binding}
