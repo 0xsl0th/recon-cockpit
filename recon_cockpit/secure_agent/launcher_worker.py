@@ -32,7 +32,7 @@ if __name__ == '__main__':
             raise ValueError('launcher_terminal_accessible')
         ENTRY_DESCRIPTORS_VERIFIED = True
     except Exception as error:
-        if locals().get('name_tls_runtime') is True:
+        if len(sys.argv) == 7 and sys.argv[6] == 'name-tls-launch-preconditions':
             sys.stderr.write('name_tls_launcher_refused:' + type(error).__name__ + ':' + str(error)[:2048] + '\n')
         else:
             sys.stderr.write('fixture_launcher_refused\n')
@@ -306,8 +306,11 @@ def main():
                 control.check()
                 print(protocol.encode(protocol.receipt(value, result, gate.snapshot)).decode(), flush=True)
         return 0
-    except Exception:
-        sys.stderr.write('fixture_launcher_refused\n')
+    except Exception as error:
+        if locals().get('name_tls_runtime') is True:
+            sys.stderr.write('name_tls_launcher_refused:' + type(error).__name__ + ':' + str(error)[:2048] + '\n')
+        else:
+            sys.stderr.write('fixture_launcher_refused\n')
         return 78
     finally:
         if approval_reader is not None:
