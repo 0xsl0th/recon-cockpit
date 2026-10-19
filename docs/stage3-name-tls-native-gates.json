@@ -334,6 +334,7 @@
       "id": "architecture/A/native_process_runtime_and_mount/parser_network_filesystem_and_process_witnesses"
     },
     {
+      "assertion": "Role partitions and actual readiness images match. DNS daemon alone may READ_FILE exact /dev/urandom after O_NOFOLLOW/fstat character-device major1/minor9 validation; launcher independently fstats through the pinned actual daemon root and matches native_ready.entropy_device to daemon_ready.entropy_device (DNS exact identity/read receipt, web null). Both verifier descriptors close. No write, /dev/random, general-device or additional-role entropy access; no entropy bytes retained.",
       "case": "daemon_sealed_runtime_and_observed_readiness_images_match_partition",
       "configuration": "A",
       "group": "native_process_runtime_and_mount",
@@ -820,6 +821,7 @@
       "id": "architecture/B/native_process_runtime_and_mount/parser_network_filesystem_and_process_witnesses"
     },
     {
+      "assertion": "Role partitions and actual readiness images match. DNS daemon alone may READ_FILE exact /dev/urandom after O_NOFOLLOW/fstat character-device major1/minor9 validation; launcher independently fstats through the pinned actual daemon root and matches native_ready.entropy_device to daemon_ready.entropy_device (DNS exact identity/read receipt, web null). Both verifier descriptors close. No write, /dev/random, general-device or additional-role entropy access; no entropy bytes retained.",
       "case": "daemon_sealed_runtime_and_observed_readiness_images_match_partition",
       "configuration": "B",
       "group": "native_process_runtime_and_mount",
@@ -1838,7 +1840,7 @@
       "operation": null
     },
     {
-      "assertion": "Second role connection denied while any lease active.",
+      "assertion": "Two fresh private owners: second same-role connection reaches concurrent_connection_limit; second-role connection while first lease active reaches action_role_changed. Retain both actual inherited-channel transcripts, unchanged connection/byte charges and cleanup.",
       "configuration": "A",
       "id": "owner/A/L18",
       "name": "overlap_concurrency",
@@ -2118,14 +2120,14 @@
       "operation": null
     },
     {
-      "assertion": "Second authorized changed DNS observation invalidates earlier HTTP binding/grant.",
+      "assertion": "Composite: real HTTP approval after first native N1 DNS; sealed test witness on the same owner proves second authorized DNS ARM immediately clears binding/increments generation, unchanged binding guard refuses binding_missing, and direct stale-commitment connection guard refuses action_binding_changed without state changes. Retain actual changed DNS2 and separately label later static-profile refusal. No claim that N1 previously admitted HTTP or revoked the approval-store grant.",
       "configuration": "A",
       "id": "owner/A/B20",
       "name": "second_dns_invalidates_http",
       "operation": null
     },
     {
-      "assertion": "Second authorized changed DNS observation invalidates earlier TLS binding/grant.",
+      "assertion": "Composite: real TLS approval after first native N1 DNS; sealed test witness on the same owner proves second authorized DNS ARM immediately clears binding/increments generation, unchanged binding guard refuses binding_missing, and direct stale-commitment connection guard refuses action_binding_changed without state changes. Retain actual changed DNS2 and separately label later static-profile refusal. No claim that N1 previously admitted TLS or revoked the approval-store grant.",
       "configuration": "A",
       "id": "owner/A/B21",
       "name": "second_dns_invalidates_tls",

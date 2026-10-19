@@ -215,6 +215,25 @@ linked closure, empty resolver/OpenSSL config and fixed identity files.
 OpenSSL gets its linked closure, the public CA and the same empty/fixed files.
 Python HTTP, recorder and parser roles get only their needed bootstrap/source
 closure. Nothing mounts the full preparation union into a client or parser.
+The DNS daemon additionally receives Landlock READ_FILE permission for exactly
+`/dev/urandom`. Before granting it, open that path with O_NOFOLLOW and verify by
+fstat that it is character device major 1, minor 9; retain the device identity
+receipt and close the verification descriptor before native execution. This
+receipt is exactly `{"path":"/dev/urandom","type":"character","major":1,
+"minor":9,"access":"read"}` for DNS and null for the web daemon. The trusted
+launcher independently opens the path with O_NOFOLLOW through the actual
+pinned daemon process's root and verifies the device with fstat. Its observed
+`native_ready.entropy_device` must equal the worker's
+`daemon_ready.entropy_device`; close this independent verification descriptor
+as well. This
+exception grants no write access, `/dev/random` access or general `/dev` access,
+and does not add entropy access to another role. It is separate from the
+regular-file manifest; entropy bytes are never retained. The installed
+dnsmasq-base 2.91-1 executable (496,824 bytes, SHA256
+`b6168c4506008dac9244e2f011b9743af552f81b3298f7966b5dec98d8fcee33`)
+opens that device read-only for its startup seed. Its observed failure without
+this permission remains a failed diagnostic, and the exception makes no claim
+to count all entropy reads or bytes.
 Native acceptance verifies that these strict allowlists suffice; it does not
 claim a complete open-syscall trace. An unknown required file/provider/module
 fails closed and requires an explicit reviewed contract revision.
@@ -295,6 +314,32 @@ and is counted once. All other apparent overlaps exercise different boundaries
 (for example ledger reservations versus actual wire delivery) and remain
 separately identified. Authority witnesses cover twelve mutation classes for
 each of the three operations on configuration A; the corpus covers both A/B.
+
+Owner gates B20/B21 are composite proofs. Each retains two actual authorized
+N1 DNS executions and a real HTTP or TLS approval reviewed after the first DNS
+execution. A fixed sealed test variant observes the surviving owner's second
+DNS ARM: the first binding and exact reviewed action validate immediately
+before ARM; immediately afterward the binding is absent and generation is two.
+At that same recorded owner time, the unchanged binding guard must refuse with
+`binding_missing`. The unchanged connection reservation guard, called directly
+on the same live owner with the stale action commitment, must refuse with
+`action_binding_changed` and leave the entire post-ARM state unchanged. These
+direct guard calls are explicit test instrumentation, not inherited-channel
+messages or service delivery. Retain their exact source hashes, action digests,
+before/after states and refusal reasons; match the action digest to the actual
+reviewed grant. The second native DNS observation and the later Controller
+attempt remain separately recorded. That later attempt reaches the static N1
+profile guard, which is not evidence of owner-side grant revocation. N1 never
+admits HTTP or TLS service execution; these gates do not claim the reviewed
+service grant was previously executable under N1 or was removed from the
+approval store. The production case plan and authority protocol remain fixed.
+
+Owner gate L18 uses two fresh private owners. On one, a second connection on
+the same inherited role channel must reach `concurrent_connection_limit`; on
+the other, a second role's connection attempt while the first lease is active
+must reach the earlier `action_role_changed` guard. Both retain the actual
+role-channel transcripts, unchanged connection/byte charges and physical
+cleanup. The two observations are subchecks of the single L18 gate.
 
 Retain all 248 accepted S3.5 routing checks, the 76 distinct accepted HTTP/SSH
 and witness regressions, and the 60 legacy v1/v2 bundles inspected through both
