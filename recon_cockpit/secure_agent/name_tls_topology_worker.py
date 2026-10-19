@@ -542,6 +542,10 @@ def main():
         base = dict(initial)
         configuration = "A"
         if "selection" in base or "identity" in base:
+            # Ledger DNS agreement runs after filesystem confinement. Import
+            # its pure semantic dependency while the reviewed sources remain
+            # readable, so no post-seal module open is needed.
+            from recon_cockpit.secure_agent import name_tls_wire
             from recon_cockpit.secure_agent.name_tls_ledger import Ledger
             from recon_cockpit.secure_agent.name_tls_contract import validate_selection
             selected, identity = base.pop("selection"), base.pop("identity")

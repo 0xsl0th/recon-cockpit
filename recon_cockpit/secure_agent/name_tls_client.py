@@ -80,7 +80,9 @@ def run(*, service, launch, control, closure, manifest):
     prefix = READY_PREFIX + commitment.encode("ascii") + b"\n"
     descriptors, source_descriptors = [], {}
     maximum = contract.action_bounds(service.slot)["output_bytes"]
-    supervisor = _Supervisor(max(.001, service.deadline - time.monotonic()), maximum + len(prefix), control=control)
+    # Bubblewrap's separate PID receipt has its own 4 KiB setup bound. Remove
+    # those observed setup bytes before enforcing the native output budget.
+    supervisor = _Supervisor(max(.001, service.deadline - time.monotonic()), maximum + len(prefix) + 4096, control=control)
     started, action_started, reason, proc = time.monotonic(), None, None, None
     try:
         descriptors = [] if manifest is None else sealed_snapshots(manifest, None, None, control,
@@ -101,6 +103,8 @@ def run(*, service, launch, control, closure, manifest):
         from .name_tls_daemon import launcher_mapping, client_ready
         from .isolation import _namespaces
         pins, directory, observed = _owner_info(supervisor, "info", _namespaces())
+        supervisor.total -= len(supervisor.buffers["info"])
+        supervisor.limit = maximum + len(prefix)
         if observed["net"] != service.namespaces["net"]:
             raise IsolationUnavailable("Name/TLS client network observation changed")
         mapping = launcher_mapping(directory, observed, pins)

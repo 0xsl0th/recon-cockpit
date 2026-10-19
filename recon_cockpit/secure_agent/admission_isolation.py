@@ -1,10 +1,12 @@
 """Lazy host client for isolated, fixed-session launch admission."""
 
 from dataclasses import asdict
+import fcntl
 import os
 from pathlib import Path
 import select
 import socket
+import stat
 import threading
 import time
 from types import MappingProxyType
@@ -15,6 +17,59 @@ from .execution import ExecutionControl, ExecutionStopped
 from .isolation import IsolationUnavailable, _namespaces, _runtime_files, _trusted_program
 from .planner_isolation import LinuxIsolatedMockProvider
 from .routed import _Supervisor
+
+
+NAME_TLS_SOURCE_MODULES = ('admission_worker', 'launch_admission', 'models', 'tool_parameters',
+                         'tool_adapters', 'name_tls_contract', 'name_tls_public', 'session_limits')
+
+
+def _name_tls_source_copies(control):
+    """Seal exact nested source bytes, including parent Bubblewrap data mounts."""
+    descriptors = {}
+    seals = fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
+    paths = {'/app/planner_worker.py': Path(__file__).with_name('planner_worker.py'),
+             **{'/app/admission_runtime/' + name + '.py': Path(__file__).with_name(name + '.py')
+                for name in NAME_TLS_SOURCE_MODULES}}
+    total = 0
+    try:
+        for destination, path in sorted(paths.items()):
+            control.check()
+            source = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+            try:
+                before = os.fstat(source)
+                if not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= 131072:
+                    raise ValueError('name_tls_admission_source_type')
+                raw = bytearray()
+                while len(raw) <= 131072:
+                    part = os.read(source, min(65536, 131073 - len(raw)))
+                    if not part:
+                        break
+                    raw.extend(part)
+                after = os.fstat(source)
+                stamp = lambda info: (info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+                if stamp(before) != stamp(after) or len(raw) != before.st_size:
+                    raise ValueError('name_tls_admission_source_changed')
+            finally:
+                os.close(source)
+            total += len(raw)
+            if total > 1048576:
+                raise ValueError('name_tls_admission_source_limit')
+            descriptor = os.memfd_create('recon-name-tls-admission', os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
+            descriptors[destination] = descriptor
+            offset = 0
+            while offset < len(raw):
+                count = os.write(descriptor, raw[offset:])
+                if count <= 0:
+                    raise ValueError('name_tls_admission_source_short_write')
+                offset += count
+            os.lseek(descriptor, 0, os.SEEK_SET)
+            fcntl.fcntl(descriptor, fcntl.F_ADD_SEALS, seals)
+        control.check()
+        return descriptors
+    except BaseException:
+        for descriptor in descriptors.values():
+            os.close(descriptor)
+        raise
 
 
 class LinuxLaunchAdmission:
@@ -39,7 +94,7 @@ class LinuxLaunchAdmission:
     def boundary_checks(self):
         return None if self._checks is None else dict(self._checks)
 
-    def _command(self, stdlib, files, bootstrap_digest):
+    def _command(self, stdlib, files, bootstrap_digest, source_descriptors=None):
         host = _namespaces()
         argv = [_trusted_program('bwrap'), '--unshare-user', '--unshare-net', '--unshare-pid',
                 '--unshare-ipc', '--unshare-uts', '--unshare-cgroup', '--uid', '0', '--gid', '0',
@@ -48,8 +103,22 @@ class LinuxLaunchAdmission:
                 '--ro-bind', stdlib, stdlib]
         for source, destination in files:
             argv.extend(('--ro-bind', source, destination))
-        argv.extend(('--ro-bind', str(Path(__file__).with_name('planner_worker.py').resolve()),
-                     '/app/planner_worker.py'))
+        if self._config['profile'] == 'owned_name_tls_v1':
+            expected = {'/app/planner_worker.py', *('/app/admission_runtime/' + name + '.py' for name in NAME_TLS_SOURCE_MODULES)}
+            if (type(source_descriptors) is not dict or set(source_descriptors) != expected
+                    or any(type(fd) is not int or fd < 3 for fd in source_descriptors.values())
+                    or len(set(source_descriptors.values())) != len(expected)):
+                raise ValueError('name_tls_admission_source_inventory')
+            seals = fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
+            for destination, descriptor in sorted(source_descriptors.items()):
+                if fcntl.fcntl(descriptor, fcntl.F_GET_SEALS) & seals != seals:
+                    raise ValueError('name_tls_admission_source_unsealed')
+                argv.extend(('--perms', '0444', '--ro-bind-data', str(descriptor), destination))
+        else:
+            if source_descriptors is not None:
+                raise ValueError('unexpected_admission_sources')
+            argv.extend(('--ro-bind', str(Path(__file__).with_name('planner_worker.py').resolve()),
+                         '/app/planner_worker.py'))
         for name in ('admission_worker', 'launch_admission', 'models', 'tool_parameters', 'tool_adapters',
                      *(('name_tls_contract', 'name_tls_public', 'session_limits')
                        if self._config['profile'] == 'owned_name_tls_v1' else ()),
@@ -67,8 +136,9 @@ class LinuxLaunchAdmission:
                         'stock_ssh_contract', 'stock_ssh_spec', 'stock_ssh_process', 'stock_ssh_nmap_spec',
                         'network_tools_ssh_fixture', 'configurable_scope', 'configurable_contract')
                        if self._config['profile'] == 'disconnected_routing_v1' else ())):
-            argv.extend(('--ro-bind', str(Path(__file__).with_name(name + '.py').resolve()),
-                         '/app/admission_runtime/' + name + '.py'))
+            if source_descriptors is None:
+                argv.extend(('--ro-bind', str(Path(__file__).with_name(name + '.py').resolve()),
+                             '/app/admission_runtime/' + name + '.py'))
         argv.extend(('--remount-ro', '/proc', '--remount-ro', '/dev', '--remount-ro', '/',
                      '/usr/bin/python3', '-I', '-S', '/app/admission_runtime/admission_worker.py',
                      bootstrap_digest, *(host[name] for name in ('user', 'net', 'mnt', 'pid'))))
@@ -90,9 +160,15 @@ class LinuxLaunchAdmission:
         self._supervisor = _Supervisor(10, 65536, control=control)
         self._channel, child = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
         self._channel.setblocking(False)
+        source_descriptors = None
         try:
             commitment = protocol.digest(initial)
-            self._process = self._supervisor.launch('worker', self._command(stdlib, files, commitment), stdin=child)
+            if self._config['profile'] == 'owned_name_tls_v1':
+                source_descriptors = _name_tls_source_copies(control)
+            argv = (self._command(stdlib, files, commitment) if source_descriptors is None else
+                    self._command(stdlib, files, commitment, source_descriptors))
+            self._process = self._supervisor.launch('worker', argv, stdin=child,
+                pass_fds=tuple((source_descriptors or {}).values()))
             child.close()
             for stream in (self._process.stdout, self._process.stderr):
                 os.set_blocking(stream.fileno(), False)
@@ -103,6 +179,8 @@ class LinuxLaunchAdmission:
                 raise IsolationUnavailable('Invalid launch admission bootstrap receipt')
             self._checks = expected['checks']
         finally:
+            for descriptor in (source_descriptors or {}).values():
+                os.close(descriptor)
             child.close()
 
     def _send(self, raw):

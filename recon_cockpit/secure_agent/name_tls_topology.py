@@ -25,7 +25,7 @@ FRAME_HEADER = struct.Struct("!4sII")
 TRANSFER_SECONDS = 2
 MODULES = ("name_tls_topology", "name_tls_topology_spec", "name_tls_topology_worker", "worker", "tool_worker_common",
            "models", "tool_parameters", "tool_adapters", "name_tls_contract", "name_tls_ledger", "name_tls_public",
-           "session_limits", "name_tls_python_runtime", "name_tls_worker_common",
+           "session_limits", "name_tls_python_runtime", "name_tls_worker_common", "name_tls_wire", "tls_posture_hello",
            "recon_cockpit.__init__", "recon_cockpit.secure_agent.__init__")
 
 

@@ -288,6 +288,182 @@ def validate_probe_evidence(value, *, manifest, results, outcomes):
     return True
 
 
+
+def _validate_n15_composite(value, *, manifest, results, outcomes):
+    fields = {"schema_version", "selection_sha256", "owner_identity_sha256", "case", "instrumented", "attempts",
+              "waited_us", "status", "test_authority", "owners", "elapsed_ms"}
+    if (set(value) != fields or value["schema_version"] != "1" or value["case"] != "N15"
+            or value["selection_sha256"] != manifest["selection"]["selection_sha256"]
+            or value["owner_identity_sha256"] != manifest["identity"]["owner_identity_sha256"]
+            or value["instrumented"] is not True or value["status"] != "attempted"
+            or value["test_authority"] != "scripted_owned_pty" or type(value["waited_us"]) is not int or value["waited_us"] != 0
+            or type(value["elapsed_ms"]) is not int or not 0 <= value["elapsed_ms"] <= 200000
+            or type(value["owners"]) is not list or len(value["owners"]) != 3
+            or type(value["attempts"]) is not list or len(value["attempts"]) != 2):
+        raise ValueError("name_tls_n15_composite_shape")
+    owners = value["owners"]
+    owner_fields = {"manifest", "dns_outcome", "closure", "audit_events", "approval_messages", "approval_worker", "dns_review", "service_review"}
+    contexts, dns_actions, service_actions, safe_outcomes = [], [], [], []
+    configurations = [manifest["selection"]["configuration"], "B" if manifest["selection"]["configuration"] == "A" else "A",
+                      manifest["selection"]["configuration"]]
+    for index, owner in enumerate(owners):
+        if type(owner) is not dict or set(owner) != owner_fields:
+            raise ValueError("name_tls_n15_owner_shape")
+        chosen = validate_manifest(owner["manifest"])
+        if (chosen["selection"]["case"] != "N15" or chosen["selection"]["configuration"] != configurations[index]
+                or chosen["execute"] is not True or chosen["unattended_owned_lab_test"] is not False
+                or index == 0 and chosen != manifest):
+            raise ValueError("name_tls_n15_owner_selection")
+        full = owner["dns_outcome"]
+        if type(full) is not dict or "untrusted_result" not in full:
+            raise ValueError("name_tls_n15_native_outcome")
+        result = full["untrusted_result"]
+        raw = contract.dns_action(chosen["selection"], chosen["identity"])
+        if result.get("status") != "succeeded":
+            raise ValueError("name_tls_n15_native_status")
+        current, _ = validate_result(result, chosen, 1, replay=True)
+        parsed = result["tool_observation"]
+        if not parsed or not parsed["useful_task_completed"] or parsed["operation"] != "dns" or current["binding"] is None:
+            raise ValueError("name_tls_n15_native_prerequisite")
+        from .controller import result_metadata
+        policy = contract.validate_policy(chosen["policy"], chosen["selection"])
+        action = parse_action(raw)
+        required = {"action_id": action.action_id, "action_digest": action.digest, "policy_version": policy.policy_version,
+                    "policy_digest": policy.digest, "session_id": chosen["session_id"], "session_step": 1,
+                    "tool_id": action.tool_id, "target": action.target, "decision": "approval_required",
+                    "reasons": list(policy.evaluate(action).reasons), "execution_status": "succeeded",
+                    "approval_reference": owner["dns_review"]["reference"], "result_metadata": result_metadata(result)}
+        safe = {key: item for key, item in full.items() if key != "untrusted_result"}
+        if _encode(safe) != _encode(required):
+            raise ValueError("name_tls_n15_dns_outcome_changed")
+        context.validate_closure(owner["closure"], chosen["identity"], previous=current)
+        service = contract.service_action(chosen["selection"], chosen["identity"], "http", current["binding"])
+        _validate_n15_approvals(owner, raw, service, need_service=index < 2)
+        contexts.append(current)
+        dns_actions.append(raw)
+        service_actions.append(service)
+        safe_outcomes.append(safe)
+    if (len({row["manifest"]["identity"]["owner_id"] for row in owners}) != 3
+            or len({row["manifest"]["session_id"] for row in owners}) != 3
+            or results != [owners[0]["dns_outcome"]["untrusted_result"]] or outcomes != [safe_outcomes[0]]):
+        raise ValueError("name_tls_n15_owner_independence")
+    closed, transplant = value["attempts"]
+    closed_fields = {"kind", "owner_index", "proposal", "proposal_sha256", "outcome", "before", "after", "closure"}
+    if (type(closed) is not dict or set(closed) != closed_fields or closed["kind"] != "closed_owner"
+            or type(closed["owner_index"]) is not int or closed["owner_index"] != 0
+            or closed["proposal"] != service_actions[0] or closed["proposal_sha256"] != contract.digest(service_actions[0])
+            or closed["closure"] != owners[0]["closure"]):
+        raise ValueError("name_tls_n15_closed_attempt")
+    validate_outcome(closed["outcome"], owners[0]["manifest"], 2, None, service_actions[0])
+    if (closed["outcome"]["execution_status"] != "blocked" or closed["outcome"]["reasons"] != ["isolation_unavailable"]
+            or closed["outcome"]["approval_reference"] != owners[0]["service_review"]["reference"]):
+        raise ValueError("name_tls_n15_closed_guard")
+    _validate_n15_ack(closed["before"], owners[0], contexts[0], alive=True)
+    _validate_n15_ack(closed["after"], owners[0], contexts[0], alive=False)
+    if {**closed["before"], "launcher_alive": False} != closed["after"]:
+        raise ValueError("name_tls_n15_closed_transition")
+    transplanted_fields = {"kind", "donor_index", "recipient_index", "proposal", "proposal_sha256", "outcome",
+        "donor_monotonic_remaining_us", "donor_binding_remaining_us", "donor_before", "donor_after", "recipient_before", "recipient_after"}
+    if (type(transplant) is not dict or set(transplant) != transplanted_fields
+            or transplant["kind"] != "cross_configuration_live_donor"
+            or type(transplant["donor_index"]) is not int or transplant["donor_index"] != 1
+            or type(transplant["recipient_index"]) is not int or transplant["recipient_index"] != 2
+            or transplant["proposal"] != service_actions[1] or transplant["proposal_sha256"] != contract.digest(service_actions[1])
+            or any(type(transplant[key]) is not int or not 0 < transplant[key] <= 60000000
+                   for key in ("donor_monotonic_remaining_us", "donor_binding_remaining_us"))):
+        raise ValueError("name_tls_n15_transplant")
+    policy = contract.validate_policy(owners[2]["manifest"]["policy"], owners[2]["manifest"]["selection"])
+    decision = policy.evaluate(parse_action(service_actions[1]))
+    validate_outcome(transplant["outcome"], owners[2]["manifest"], 2, None, service_actions[1])
+    if (decision.decision != "deny" or transplant["outcome"]["execution_status"] != "blocked"
+            or transplant["outcome"]["reasons"] != list(decision.reasons)
+            or transplant["outcome"]["approval_reference"] is not None):
+        raise ValueError("name_tls_n15_transplant_guard")
+    for prefix, index in (("donor", 1), ("recipient", 2)):
+        for suffix in ("before", "after"):
+            _validate_n15_ack(transplant[prefix + "_" + suffix], owners[index], contexts[index], alive=True)
+        if transplant[prefix + "_before"] != transplant[prefix + "_after"]:
+            raise ValueError("name_tls_n15_transplant_state_changed")
+    for index, owner in enumerate(owners):
+        rows, native_results, actions = [safe_outcomes[index]], [owner["dns_outcome"]["untrusted_result"]], [dns_actions[index]]
+        if index in (0, 2):
+            attempt = closed if index == 0 else transplant
+            rows.append(attempt["outcome"])
+            native_results.append(None)
+            actions.append(attempt["proposal"])
+        _validate_audit(owner["audit_events"], owner["manifest"], rows, native_results, actions)
+    return True
+
+
+def _validate_n15_ack(value, owner, previous, *, alive):
+    fields = {"owner_state_source", "ledger", "messages", "backend_snapshot", "backend_context", "launcher_pid", "launcher_alive",
+              "approval_worker_pid", "approval_worker_alive"}
+    result = owner["dns_outcome"]["untrusted_result"]
+    if (type(value) is not dict or set(value) != fields or value["owner_state_source"] != "last_acknowledged_result"
+            or value["ledger"] != result["name_tls_ledger"] or value["messages"] != result["name_tls_messages"]
+            or value["backend_context"] != previous or value["launcher_alive"] is not alive
+            or value["approval_worker_alive"] is not True or type(value["launcher_pid"]) is not int or value["launcher_pid"] <= 0
+            or type(value["approval_worker_pid"]) is not int or value["approval_worker_pid"] != owner["approval_worker"]["pid"]
+            or public.encode(value["backend_snapshot"]) != public.encode({"executions_reserved": 1,
+                "output_bytes_reserved": contract.action_bounds("dns_1")["output_bytes"]})):
+        raise ValueError("name_tls_n15_acknowledged_state")
+
+
+def _validate_n15_approvals(owner, dns, service, *, need_service):
+    import re
+    from . import approval_protocol as protocol
+    chosen = owner["manifest"]
+    policy = contract.validate_policy(chosen["policy"], chosen["selection"])
+    worker = owner["approval_worker"]
+    if (type(worker) is not dict or set(worker) != {"broker_id", "pid", "checks"}
+            or not _uuid(worker["broker_id"]) or type(worker["pid"]) is not int or worker["pid"] <= 0
+            or worker["checks"] != dict.fromkeys(protocol.CHECKS, True)):
+        raise ValueError("name_tls_n15_approval_worker")
+    messages = owner["approval_messages"]
+    if (type(messages) is not list or len(messages) != (5 if need_service else 3)
+            or any(type(row) is not dict or set(row) != {"request", "reply"} for row in messages)):
+        raise ValueError("name_tls_n15_approval_transcript")
+    initial = messages[0]["request"]
+    protocol.initial(initial, initial["deadline"] - 1)
+    if (initial["broker_id"] != worker["broker_id"] or initial["session_id"] != chosen["session_id"]
+            or initial["policy"] != chosen["policy"] or "witness" not in initial
+            or messages[0]["reply"] != {"version": "1", "bootstrap_digest": protocol.digest(initial),
+                "ready": True, "checks": dict.fromkeys(protocol.CHECKS, True)}):
+        raise ValueError("name_tls_n15_approval_bootstrap")
+    pairs = [(dns, owner["dns_review"])]
+    if need_service:
+        pairs.append((service, owner["service_review"]))
+    elif owner["service_review"] is not None:
+        raise ValueError("name_tls_n15_unexpected_review")
+    for index, (raw, review) in enumerate(pairs):
+        if type(review) is not dict or set(review) != {"reference", "prompt_base64"} or review["reference"] is None:
+            raise ValueError("name_tls_n15_review")
+        protocol.reference(review["reference"])
+        action = parse_action(raw)
+        prompt = context._base64(review["prompt_base64"], 16384).replace(b"\r\n", b"\n")
+        canonical = action.to_dict()
+        canonical.pop("rationale")
+        details = {"review_exact_action": canonical, "action_digest": action.digest, "policy_digest": policy.digest,
+                   "policy_version": policy.policy_version, "session_id": chosen["session_id"],
+                   "name_binding_summary": public.approval_summary(action.tool_id, canonical["parameters"])}
+        prefix = protocol.encode(details) + b"\n"
+        if (not prompt.startswith(prefix) or re.fullmatch(rb"Type 'approve " + action.digest[:16].encode("ascii")
+                + rb" [0-9a-f]{32}' to approve once \(blank denies\): ", prompt[len(prefix):]) is None):
+            raise ValueError("name_tls_n15_review_prompt")
+        for offset, operation in enumerate(("review", "consume"), 1):
+            sequence = index * 2 + offset
+            row = messages[sequence]
+            request = row["request"]
+            protocol.request(request, worker["broker_id"], chosen["session_id"], sequence)
+            expected = {"version": "1", "broker_id": worker["broker_id"], "session_id": chosen["session_id"],
+                        "sequence": sequence, "operation": operation, "action": raw, "policy_digest": policy.digest}
+            if operation == "consume":
+                expected["reference"] = review["reference"]
+            result = review["reference"] if operation == "review" else None
+            if request != expected or row["reply"] != protocol.receipt(request, result):
+                raise ValueError("name_tls_n15_real_grant_changed")
+
+
 def report_for(manifest, results, outcomes, closure, elapsed_ms, *, probes=None, replay=False, deadline=None):
     manifest = validate_manifest(manifest)
     if (type(outcomes) is not list or len(outcomes) > len(manifest["slots"]) or type(results) is not list
@@ -434,7 +610,8 @@ def _validate_audit(events, manifest, outcomes, results, actions, *, probes=None
             initial["approval_reference"] = outcome["approval_reference"]
             expected.append({**initial, "event_type": "approval_consumed"})
         if result is not None:
-            expected.extend(({**initial, "event_type": "execution_started", "execution_status": "started", "execution_id": outcome["execution_id"], "backend": contract.BACKEND},
+            execution = {"execution_id": outcome["execution_id"]} if "execution_id" in outcome else {}
+            expected.extend(({**initial, "event_type": "execution_started", "execution_status": "started", **execution, "backend": contract.BACKEND},
                              {**outcome, "event_type": "execution_finished", "backend": contract.BACKEND}))
         elif outcome["execution_status"] == "blocked":
             kind = "approval_rejected" if outcome["reasons"] in (["noninteractive_approval_required"], ["approval_missing"], ["approval_unknown_or_replayed"], ["approval_expired"], ["approval_action_changed"], ["approval_policy_changed"]) else "execution_blocked"

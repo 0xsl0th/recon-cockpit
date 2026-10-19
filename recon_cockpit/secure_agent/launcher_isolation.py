@@ -516,6 +516,10 @@ class LinuxFixtureLauncher:
             self._cleanup()
             if isinstance(exc, (ExecutionStopped, KeyboardInterrupt, SystemExit)):
                 raise
+            if self._config['profile'] == 'owned_name_tls_v1':
+                raise IsolationUnavailable('Name/TLS fixture launcher unavailable: '
+                                           + type(exc).__name__ + ': ' + str(exc)[:512]
+                                           + '; no fallback') from None
             raise IsolationUnavailable('Fixture launcher unavailable; no fallback') from None
         finally:
             self._lock.release()
