@@ -49,7 +49,9 @@ def test_no_scope_or_old_profile_substitution(field,value):
 
 def test_hierarchy_and_completed_t05_t06_profiles_remain_accepted():
     result=catalog.list_tools()
-    assert (result['capability_count'],result['accepted_capability_count'],result['candidate_capability_count'],result['external_program_count']) == (52,52,0,17)
+    assert (result['capability_count'],result['accepted_capability_count'],result['candidate_capability_count'],result['external_program_count']) == (55,52,3,17)
+    assert {row['tool_id'] for row in result['tools'] if row.get('acceptance_status') == 'candidate'} == {
+        'owned_name_dns_v1', 'owned_name_http_v1', 'owned_name_tls_v1'}
     row=catalog.describe_tool(spec.TOOL_ID)
     assert 'acceptance_status' not in row and 'milestone' not in row
     assert row['run']['case']=='web-hierarchy-nested'
@@ -65,7 +67,8 @@ def test_all_48_previous_catalog_apis_348_network_cases_and_old_web_workflow_are
     from recon_cockpit.secure_agent import web_tools_contract as web
     from recon_cockpit.secure_agent import web_tools_workflow as web_workflow
     listed=catalog.list_tools()
-    listed['tools']=[row for row in listed['tools'] if row['tool_id'] not in (spec.TOOL_ID, 'snmp_interface_page_v1', 'dig_dns_aaaa_v1', 'dig_dns_ptr_v1')]
+    listed['tools']=[row for row in listed['tools'] if row['tool_id'] not in (spec.TOOL_ID, 'snmp_interface_page_v1', 'dig_dns_aaaa_v1', 'dig_dns_ptr_v1',
+        'owned_name_dns_v1', 'owned_name_http_v1', 'owned_name_tls_v1')]
     listed.update(capability_count=48,accepted_capability_count=48,candidate_capability_count=0,external_program_count=16)
     value={'catalog':listed,'descriptions':{row['tool_id']:catalog.describe_tool(row['tool_id']) for row in listed['tools']},
         'network':{case:{'descriptor':contract.capability_descriptor(case),'card':workflow.card_identity(case),'action':contract.action(case)} for case in contract.CASES if case not in spec.CASES + contract.T05_CASES + contract.T06_CASES},

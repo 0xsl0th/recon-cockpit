@@ -80,7 +80,7 @@ def test_failed_peer_scenario_cannot_be_upgraded_to_useful_metadata(case):
 
 def test_all_accepted_contracts_remain_unchanged_from_pr67():
     old_cases = [case for case in contract.CASES if case not in contract.C14_CASES + contract.C15_CASES + contract.C16_CASES + contract.C17_CASES + contract.C18_CASES + contract.T02_CASES + contract.T03_CASES + contract.T04_CASES + contract.T05_CASES + contract.T06_CASES]
-    old_tools = set(tool_adapters.ADAPTERS) - (set(contract.tls_posture.TOOL_VERSIONS) | {contract.SSH_POLICY_TOOL_ID, contract.web_hierarchy.TOOL_ID, contract.SNMP_PAGE_TOOL_ID, "dig_dns_aaaa_v1", "dig_dns_ptr_v1"}) - {contract.SSH_ALGORITHMS_TOOL_ID, contract.TLS_CERTIFICATE_TOOL_ID, contract.NUCLEI_TOOL_ID, contract.NUCLEI_GIT_TOOL_ID, contract.DIG_MX_TOOL_ID}
+    old_tools = set(tool_adapters.ADAPTERS) - (set(contract.tls_posture.TOOL_VERSIONS) | {contract.SSH_POLICY_TOOL_ID, contract.web_hierarchy.TOOL_ID, contract.SNMP_PAGE_TOOL_ID, "dig_dns_aaaa_v1", "dig_dns_ptr_v1", "owned_name_dns_v1", "owned_name_http_v1", "owned_name_tls_v1"}) - {contract.SSH_ALGORITHMS_TOOL_ID, contract.TLS_CERTIFICATE_TOOL_ID, contract.NUCLEI_TOOL_ID, contract.NUCLEI_GIT_TOOL_ID, contract.DIG_MX_TOOL_ID}
     old_runtime = set(runtime.EXECUTABLES) - {contract.SSH_POLICY_TOOL_ID, contract.web_hierarchy.TOOL_ID, contract.SNMP_PAGE_TOOL_ID, "dig_dns_aaaa_v1", "dig_dns_ptr_v1"} - {contract.SSH_ALGORITHMS_TOOL_ID, contract.TLS_CERTIFICATE_TOOL_ID, contract.NUCLEI_TOOL_ID, contract.NUCLEI_GIT_TOOL_ID, contract.DIG_MX_TOOL_ID}
     value = {'cases': {case: {'action': contract.action(case), 'descriptor': contract.capability_descriptor(case),
         'card': workflow.card(case), 'spec': lab.spec(case)} for case in old_cases},

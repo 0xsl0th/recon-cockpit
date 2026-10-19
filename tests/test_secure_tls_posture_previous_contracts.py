@@ -15,7 +15,8 @@ def test_all_43_accepted_adapters_316_cases_and_34_runtime_contracts_are_unchang
     # Captured from merged PR78 efdb133 before adding production profiles.
     value = {
         "adapters": {key: item.to_dict() for key, item in adapters.ADAPTERS.items()
-                     if key not in tls.TOOL_VERSIONS and key not in (contract.SSH_POLICY_TOOL_ID, "ffuf_web_hierarchy_v1", "snmp_interface_page_v1", "dig_dns_aaaa_v1", "dig_dns_ptr_v1")},
+                     if key not in ("owned_name_dns_v1", "owned_name_http_v1", "owned_name_tls_v1")
+                     and key not in tls.TOOL_VERSIONS and key not in (contract.SSH_POLICY_TOOL_ID, "ffuf_web_hierarchy_v1", "snmp_interface_page_v1", "dig_dns_aaaa_v1", "dig_dns_ptr_v1")},
         "cases": {case: {"action": contract.action(case), "card": workflow.card(case),
                           "descriptor": contract.capability_descriptor(case), "spec": lab.spec(case)}
                   for case in contract.CASES if case not in tls.CASES + contract.T03_CASES + contract.T04_CASES + contract.T05_CASES + contract.T06_CASES},

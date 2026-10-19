@@ -50,7 +50,8 @@ def test_compiled_client_pins_the_public_negotiation_request():
 
 def test_all_38_accepted_adapters_remain_byte_identical():
     values = {tool: adapter.to_dict() for tool, adapter in adapters.ADAPTERS.items()
-              if "_posture_" not in tool and tool not in (adapters.SSH_POLICY_TOOL_ID, adapters.FFUF_HIERARCHY_TOOL_ID, adapters.SNMP_PAGE_TOOL_ID, adapters.DIG_AAAA_TOOL_ID, adapters.DIG_PTR_TOOL_ID) and tool not in (adapters.SSH_ALGORITHMS_TOOL_ID, adapters.TLS_CERTIFICATE_TOOL_ID, adapters.NUCLEI_TOOL_ID, adapters.NUCLEI_GIT_TOOL_ID, adapters.DIG_MX_TOOL_ID)}
+              if tool not in ("owned_name_dns_v1", "owned_name_http_v1", "owned_name_tls_v1")
+                and "_posture_" not in tool and tool not in (adapters.SSH_POLICY_TOOL_ID, adapters.FFUF_HIERARCHY_TOOL_ID, adapters.SNMP_PAGE_TOOL_ID, adapters.DIG_AAAA_TOOL_ID, adapters.DIG_PTR_TOOL_ID) and tool not in (adapters.SSH_ALGORITHMS_TOOL_ID, adapters.TLS_CERTIFICATE_TOOL_ID, adapters.NUCLEI_TOOL_ID, adapters.NUCLEI_GIT_TOOL_ID, adapters.DIG_MX_TOOL_ID)}
     assert len(values) == 38
     assert hashlib.sha256(runtime.encode(values)).hexdigest() == (
         "01fdd622d95c321c96dd941b6edc0f4e8086c8012453d12d03e1fbb03148e0dc")

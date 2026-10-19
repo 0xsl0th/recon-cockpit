@@ -83,7 +83,8 @@ def test_malformed_or_unsupported_metadata_cannot_be_promoted_to_useful_result(c
 
 def test_previous_50_capabilities_and_375_cases_remain_identical():
     catalog = tool_catalog.list_tools()
-    catalog['tools'] = [row for row in catalog['tools'] if row['tool_id'] not in spec.TOOL_IDS]
+    catalog['tools'] = [row for row in catalog['tools'] if row['tool_id'] not in (*spec.TOOL_IDS,
+        'owned_name_dns_v1', 'owned_name_http_v1', 'owned_name_tls_v1')]
     catalog.update(capability_count=50, accepted_capability_count=50,
                    candidate_capability_count=0, external_program_count=17)
     tools = [row['tool_id'] for row in catalog['tools']]

@@ -1,10 +1,10 @@
-# Continue here — 15 October 2026
+# Continue here — 19 October 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-Current continuation (15 October 2026):
+Current continuation (19 October 2026):
 [PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94) is merged as `46f9b73`.
 Fresh independent authority/evidence reviews and 457 focused portable checks
 passed at `58c78e0`; all five final and [post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38767707515) passed. Reviewed and merged trees
@@ -50,19 +50,30 @@ A matching premature peer-close race was reproduced in the portable SSH helper;
 the failed CI log lacks recorder state, so its exact ordering remains unconfirmed.
 The test-only correction and review are recorded separately from that failed run.
 
-**Current: S3.6a static owned DNS/TLS preparation.** The active worktree is
-`/tmp/recon-stage3-name-tls-preflight`, branch `feature/stage3-name-tls-preflight`,
-based on `6f60ae0`. The [preparation contract](stage3-name-tls-preflight.md) was
+**S3.6a static owned DNS/TLS preparation is accepted in
+[PR #97](https://github.com/0xsl0th/recon-cockpit/pull/97), merged as `8b086d5`.**
+The [preparation contract](stage3-name-tls-preflight.md) was
 pinned at `2f29145`, with the explicit TTL-one expiry clarification at `1b99fc5`,
 before implementation. It retains 23 cases across A/B, 46 required read-only
 runtime inspections and all later native binding/enforcement gates. Frozen
 `df093a4` passed all 46 inspections with 1,003 unchanged source pins; 327 new
 focused preparation tests pass. The first sandbox ownership-refusal attempt
-remains retained. Current work compiles fixed inputs and inspects four fixed
+remains retained. That preparation compiles fixed inputs and inspects four fixed
 ELF images; it creates no
-service, action, binding or authority. S3.6b must pin and validate the complete
-native boundary afterward; S3.7 combined acceptance follows in order.
-The private checkpoint is `.secure-agent/stage3-name-tls-20261015/current-progress.json`;
+service, action, binding or authority. All five final and
+[post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38813219611)
+passed 27,603 portable tests each. Preserve
+`.secure-agent/pr97-review-20261015/merge-review-receipt.json`; do not repeat this merge.
+
+**Current: S3.6b native owned DNS/TLS binding.** The active worktree is
+`/tmp/recon-stage3-name-tls-native`, branch `feature/stage3-name-tls-native`,
+based on `8b086d5`. The [native contract](stage3-name-tls-native.md) and
+[exact gate inventory](stage3-name-tls-native-gates.json) require 327 new native
+checks, 324 retained native checks, 120 unchanged legacy inspections, the full
+portable matrix and independent review. Validation is in progress; the three
+new catalog profiles remain candidates alongside 52 accepted profiles and 17
+external programs. S3.7 combined acceptance follows in order.
+The private checkpoint is `.secure-agent/stage3-name-tls-native-20261015/current-progress.json`;
 `.secure-agent/continue-here.json` is the repository-level recovery pointer.
 Stage 3 has ten logical increments, eight accepted and two remaining. The
 current thirteen-PR estimate includes separate S3.6 preparation and native PRs.
@@ -2415,8 +2426,8 @@ Planning uses synthetic responses.
    passing final checks. Keep its 51 native and 23,170 portable passes and
    immutable receipts. Preserve accepted [T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86)
    at `f0542a8`: 83 native and 24,163 portable passes, 114 unchanged inspection
-   checks and reviewed G1–G6 closure. The catalog now has 52 accepted profiles,
-   zero candidates and 17 programs; Stage 2 remains closed. S3.1's
+   checks and reviewed G1–G6 closure. Stage 2 remains closed at 52 accepted profiles
+   and 17 programs; S3.6b adds three candidates pending validation. S3.1's
    [finite compatibility/routing contract](stage3-compatibility-routing.md) is accepted
    in PR #87 at `48c0bce`, with all final/post-merge checks passed. S3.2a's pinned
    source/runtime preflight is accepted in PR #88 at `5686dc8`; PR #89 at
@@ -2428,8 +2439,9 @@ Planning uses synthetic responses.
    accepted at `46f9b73`; PR #95 accepts fixed nginx/Apache A/B deployments at
    `d0586f5`. PR #96 accepts the [full routed matrix](stage3-routing-matrix.md)
    at `6f60ae0`, closing S3.5 with its complete native/replay, review and final
-   portable CI gates. Continue [S3.6a static DNS/TLS preparation](stage3-name-tls-preflight.md),
-   followed by separately pinned S3.6b native binding and S3.7 combined acceptance.
+   portable CI gates. PR #97 accepts [S3.6a static DNS/TLS preparation](stage3-name-tls-preflight.md)
+   at `8b086d5`. Continue [S3.6b native binding](stage3-name-tls-native.md),
+   followed by S3.7 combined acceptance.
    Stage 3 has ten increments, eight accepted
    and two remaining; no native gate is removed.
    Network attachment still requires separate authorization; do not substitute
