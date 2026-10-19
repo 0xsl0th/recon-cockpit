@@ -372,12 +372,37 @@ def validate_tls_server_hello(raw, client_hello):
     return _server_hello(raw, hello["session_id_hex"])
 
 
+def tls_verification_alert(case):
+    """The observed terminal client record for each fixed certificate refusal."""
+    description = {"N11": 42, "N12": 48, "N13": 45}.get(case)
+    return None if description is None else b"\x15\3\3\0\2\2" + bytes((description,))
+
+
+def _tls_remaining(records, *, terminal_alert=None):
+    ccs, encrypted, alerted = False, False, False
+    for kind, body, raw in records:
+        if alerted:
+            raise ValueError("name_tls_record_after_alert")
+        if kind == 20 and body == b"\1" and not ccs and not encrypted:
+            ccs = True
+        elif terminal_alert is not None and raw == terminal_alert and not encrypted:
+            alerted = True
+        elif kind == 23 and len(body) >= 17 and terminal_alert is None:
+            encrypted = True
+        else:
+            raise ValueError("name_tls_extra_handshake_or_record")
+    if terminal_alert is not None and not alerted:
+        raise ValueError("name_tls_verification_alert_missing")
+    return encrypted
+
+
 def parse_tls_wire(client_bytes, server_bytes, *, configuration, case):
     selection(configuration, case)
     client = _tls_records(client_bytes, 8192)
     hello = validate_tls_client_hello(client[0][2])
     server = _tls_records(server_bytes, 16384)
     if case == "N16" and len(server) == 1 and server[0][0] == 21 and server[0][1] == b"\2F":
+        _tls_remaining(client[1:])
         return {"client_hello": hello, "server_hello": None, "protocol_rejection": True,
                 "client_records": len(client), "server_records": 1, "encrypted_contents_verified": False}
     plaintext, position = bytearray(), 0
@@ -387,14 +412,12 @@ def parse_tls_wire(client_bytes, server_bytes, *, configuration, case):
         if len(plaintext) >= 4 and len(plaintext) >= 4 + int.from_bytes(plaintext[1:4], "big"):
             break
     chosen = _server_hello(bytes(plaintext), hello["session_id_hex"])
-    for remaining in (client[1:], server[position:]):
-        ccs, encrypted = 0, False
-        for kind, body, _ in remaining:
-            if kind == 20 and body == b"\1" and not ccs and not encrypted:
-                ccs += 1
-            elif kind != 23 or len(body) < 17:
-                raise ValueError("name_tls_extra_handshake_or_record")
-            else:
-                encrypted = True
+    server_encrypted = _tls_remaining(server[position:])
+    alert = tls_verification_alert(case)
+    if alert is not None and not server_encrypted:
+        raise ValueError("name_tls_verification_server_flight_missing")
+    # Separate directional streams establish record order within each stream.
+    # The live recorder additionally proves delivery before the client's alert.
+    _tls_remaining(client[1:], terminal_alert=alert)
     return {"client_hello": hello, "server_hello": chosen, "protocol_rejection": False,
             "client_records": len(client), "server_records": len(server), "encrypted_contents_verified": False}

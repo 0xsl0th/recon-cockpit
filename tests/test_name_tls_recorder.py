@@ -2,6 +2,7 @@
 
 import socket
 import time
+from contextlib import contextmanager
 
 import pytest
 
@@ -167,6 +168,140 @@ def test_tls_plaintext_negotiation_before_forward(configuration):
     assert received == request and delivered == response
     assert service.snapshot()["client_records"] == 1
     assert service.snapshot()["daemon_records"] == 2
+
+
+@contextmanager
+def tls_dialogue(case):
+    """A live local exchange with independently timed reads, writes and EOFs."""
+    front, server = listener(), listener()
+    client, private = socket.socket(), socket.socket()
+    budget = Budget()
+    translated = TranslatedSocket(private, (wire.ROWS["A"][2], wire.ROWS["A"][5]), server.getsockname())
+    service = recorder.Service("tls", front, translated, configuration="A", case=case,
+                               deadline=time.monotonic() + 2, budget=budget)
+    peer, request, response = None, bytearray(), bytearray()
+
+    def pump(until):
+        nonlocal peer
+        deadline = time.monotonic() + 1
+        while not until():
+            service.tick()
+            if peer is None:
+                try:
+                    peer, _ = server.accept()
+                    peer.setblocking(False)
+                except BlockingIOError:
+                    pass
+            for stream, output in ((peer, request), (client, response)):
+                if stream is not None:
+                    try:
+                        output.extend(stream.recv(16384))
+                    except (BlockingIOError, ConnectionResetError):
+                        pass
+            assert time.monotonic() < deadline, service.snapshot()
+            time.sleep(.0002)
+
+    try:
+        client.connect(front.getsockname())
+        client.sendall(client_hello())
+        client.setblocking(False)
+        pump(lambda: bytes(request) == client_hello())
+        yield service, budget, client, peer, request, response, pump
+    finally:
+        service.close()
+        for stream in (front, server, client, private, peer):
+            if stream is not None:
+                stream.close()
+
+
+@pytest.mark.parametrize("case", ("N11", "N12", "N13"))
+@pytest.mark.parametrize("first_eof", ("client", "daemon"))
+def test_terminal_client_alert_is_charged_delivered_and_waits_for_both_eofs(case, first_eof):
+    flight = server_hello() + b"\x17\3\3\0\x11" + b"x" * 17
+    alert = wire.tls_verification_alert(case)
+    with tls_dialogue(case) as (service, budget, client, peer, request, response, pump):
+        peer.sendall(flight)
+        pump(lambda: bytes(response) == flight)
+        client.sendall(alert)
+        pump(lambda: bytes(request) == client_hello() + alert)
+        first, second = (client, peer) if first_eof == "client" else (peer, client)
+        first.shutdown(socket.SHUT_WR)
+        pump(lambda: getattr(service, first_eof + "_eof"))
+        assert not service.done
+        assert not getattr(service, ("daemon" if first_eof == "client" else "client") + "_eof")
+        for _ in range(3):
+            service.tick()
+        assert not service.done
+        second.shutdown(socket.SHUT_WR)
+        pump(lambda: service.done)
+        assert service.reason == "complete" and service.client_eof and service.daemon_eof
+        assert service.raw_streams()["request"] == service.raw_streams()["delivered_request"] == bytes(request)
+        assert service.raw_streams()["original_response"] == service.raw_streams()["delivered_response"] == flight
+        assert ("reserve", "request", len(alert)) in budget.calls
+        assert ("delivered", "request", len(alert)) in budget.calls
+        assert budget.calls[-1][0] == "finish"
+        assert budget.calls[-1][1]["request_bytes"] == len(request)
+
+
+@pytest.mark.parametrize("coalesced", (False, True))
+@pytest.mark.parametrize("tail", (b"x", b"\x15\3\3\0\2\2*", client_hello()))
+def test_no_client_byte_after_terminal_alert_even_after_daemon_eof(coalesced, tail):
+    flight = server_hello() + b"\x17\3\3\0\x11" + b"x" * 17
+    alert = wire.tls_verification_alert("N11")
+    with tls_dialogue("N11") as (service, budget, client, peer, request, response, pump):
+        peer.sendall(flight)
+        pump(lambda: bytes(response) == flight)
+        client.sendall(alert + (tail if coalesced else b""))
+        if not coalesced:
+            pump(lambda: bytes(request) == client_hello() + alert)
+            peer.shutdown(socket.SHUT_WR)
+            pump(lambda: service.daemon_eof)
+            assert not service.done
+            client.sendall(tail)
+        pump(lambda: service.done)
+        assert service.reason == "additional_tls_handshake"
+        assert service.raw_streams()["delivered_request"] in (client_hello(), client_hello() + alert)
+        assert budget.calls[-1][1]["reason"] == "additional_tls_handshake"
+
+
+@pytest.mark.parametrize("delivered", (0, "all_but_one"))
+def test_alert_requires_actual_complete_server_record_delivery(delivered):
+    class LimitedWrite:
+        def __init__(self, stream, remaining):
+            self.stream, self.remaining = stream, remaining
+
+        def send(self, raw):
+            if not self.remaining:
+                raise BlockingIOError()
+            count = self.stream.send(raw[:self.remaining])
+            self.remaining -= count
+            return count
+
+        def __getattr__(self, name):
+            return getattr(self.stream, name)
+
+    flight = server_hello() + b"\x17\3\3\0\x11" + b"x" * 17
+    amount = 0 if delivered == 0 else len(flight) - 1
+    with tls_dialogue("N11") as (service, budget, client, peer, request, response, pump):
+        service.client = LimitedWrite(service.client, amount)
+        peer.sendall(flight)
+        pump(lambda: service.server_encrypted and len(service.raw["delivered_response"]) == amount)
+        client.sendall(wire.tls_verification_alert("N11"))
+        pump(lambda: service.done)
+        assert service.reason == "additional_tls_handshake"
+        assert service.raw_streams()["delivered_request"] == client_hello()
+        assert service.raw_streams()["original_response"] == flight
+
+
+def test_verification_case_cannot_complete_without_client_alert():
+    with tls_dialogue("N12") as (service, budget, client, peer, request, response, pump):
+        peer.sendall(server_hello() + b"\x17\3\3\0\x11" + b"x" * 17)
+        peer.shutdown(socket.SHUT_WR)
+        pump(lambda: service.daemon_eof)
+        assert not service.done
+        client.shutdown(socket.SHUT_WR)
+        pump(lambda: service.done)
+        assert service.reason == "incomplete_verification_alert"
 
 
 @pytest.mark.parametrize("refuse,request_delivered,response_delivered", (("connection", False, False), ("operation", False, False),

@@ -47,6 +47,8 @@ class Service:
         self.server_hello_validated = False
         self.client_records = self.daemon_records = self.ccs_client = self.ccs_server = 0
         self.client_encrypted = self.server_encrypted = False
+        self.client_terminal_alert = False
+        self.server_encrypted_delivery_end = None
         self.accepted_connections = self.operation_count = self.daemon_connects = 0
         self.delivery_unknown = False
         self.chunks, self.next_chunk_at = [], 0.0
@@ -161,6 +163,8 @@ class Service:
                 raise ValueError("additional_request")
             return
         while True:
+            if self.client_terminal_alert and self.client_pending:
+                raise ValueError("additional_tls_handshake")
             record = self._record(self.client_pending)
             if record is None:
                 return
@@ -170,7 +174,11 @@ class Service:
                 raise ValueError("tls_record_count")
             if kind == 20 and body == b"\1" and not self.ccs_client and not self.client_encrypted:
                 self.ccs_client = 1
-            elif kind == 23 and len(body) >= 17:
+            elif (raw == wire.tls_verification_alert(self.case) and not self.client_encrypted
+                    and self.server_hello_validated and self.server_encrypted_delivery_end is not None
+                    and len(self.raw["delivered_response"]) >= self.server_encrypted_delivery_end):
+                self.client_terminal_alert = True
+            elif kind == 23 and len(body) >= 17 and wire.tls_verification_alert(self.case) is None:
                 self.client_encrypted = True
             else:
                 raise ValueError("additional_tls_handshake")
@@ -182,6 +190,9 @@ class Service:
             self.client_eof = True
             if self.client_pending or not self.validated:
                 raise ValueError("incomplete_request")
+            if (self.operation == "tls" and wire.tls_verification_alert(self.case) is not None
+                    and not self.client_terminal_alert):
+                raise ValueError("incomplete_verification_alert")
             return
         if len(self.raw["request"]) + len(chunk) > self.request_cap:
             raise ValueError("request_limit")
@@ -231,6 +242,8 @@ class Service:
                 self._queue_response(raw)
             elif kind == 23 and len(body) >= 17 and self.case != "N16":
                 self.server_encrypted = True
+                if self.server_encrypted_delivery_end is None:
+                    self.server_encrypted_delivery_end = len(self.raw["proposed_response"]) + len(raw)
                 self._queue_response(raw)
             else:
                 raise ValueError("additional_server_handshake")
@@ -349,7 +362,10 @@ class Service:
                     if self.operation == "dns":
                         raise
                 self.daemon_write_closed = True
-            if self.response_complete and not self.to_client and not self.chunks and not self.to_daemon:
+            verification_complete = (self.operation != "tls" or wire.tls_verification_alert(self.case) is None
+                                     or self.client_terminal_alert and self.client_eof and self.daemon_eof)
+            if (self.response_complete and not self.to_client and not self.chunks and not self.to_daemon
+                    and verification_complete):
                 if self.operation == "dns" and self.case != "N8":
                     request, original, delivered = (bytes(self.raw[k]) for k in ("request", "original_response", "delivered_response"))
                     self.budget.observe_dns(wire.parse_dns_response(delivered, request),

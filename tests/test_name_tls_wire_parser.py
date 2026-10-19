@@ -5,6 +5,7 @@ import hashlib
 import ipaddress
 import json
 import struct
+from pathlib import Path
 
 import pytest
 
@@ -357,6 +358,65 @@ def test_tls_hrr_and_second_server_handshake_refused():
     hrr = raw[:11] + bytes.fromhex("cf21ad74e59a6111be1d8c021e65b891c2a211167abb8c5e079e09e2c8a8339c") + raw[43:]
     with pytest.raises(ValueError):
         wire.parse_tls_wire(client_hello(), hrr, configuration="A", case="O3")
+
+
+@pytest.mark.parametrize("case,alert", (("N11", "1503030002022a"), ("N12", "15030300020230"),
+                                       ("N13", "1503030002022d")))
+def test_recorded_native_verification_alerts_require_complete_delivery(case, alert):
+    capture = json.loads(Path(__file__).with_name("fixtures").joinpath("name_tls_terminal_alerts.json").read_bytes())["cases"][case]
+    request, response = bytes.fromhex(capture["request_hex"]), bytes.fromhex(capture["response_hex"])
+    assert request[-7:] == bytes.fromhex(alert) == wire.tls_verification_alert(case)
+    values = dict(case=case, request=request, delivered_request=request, original_response=response,
+                  proposed_response=response, delivered_response=response, stdout=b"",
+                  stderr=capture["stderr"].encode("ascii"), exit_code=1)
+    # The captured failed recorder did not deliver the alert. This full-delivery
+    # vector is synthetic; its protocol bytes and native text are unchanged.
+    parsed = parser.parse_input(frame("tls", **values))
+    assert parsed["expected_negative"] and not parsed["useful_task_completed"]
+    assert parsed["observation"]["client_records"] == 2
+    assert parsed["streams"]["request"]["sha256"] == hashlib.sha256(request).hexdigest()
+    with pytest.raises(ValueError, match="delivery_incomplete"):
+        parser.parse_input(frame("tls", **{**values, "delivered_request": request[:-7]}))
+    with pytest.raises(ValueError, match="expected_native_tls_refusal"):
+        parser.parse_input(frame("tls", **{**values, "exit_code": 0}))
+
+
+@pytest.mark.parametrize("case", ("N11", "N12", "N13"))
+@pytest.mark.parametrize("mutation", ("missing", "version", "level", "code", "length", "duplicate",
+                                      "ccs_after", "encrypted_before", "encrypted_after", "second_hello", "byte_after"))
+def test_terminal_verification_alert_exact_and_final(case, mutation):
+    alert = wire.tls_verification_alert(case)
+    encrypted = b"\x17\3\3\0\x11" + b"x" * 17
+    ccs = b"\x14\3\3\0\1\1"
+    changes = {"missing": b"", "version": alert[:2] + b"\1" + alert[3:],
+               "level": alert[:5] + b"\1" + alert[6:], "code": alert[:-1] + b"\0",
+               "length": alert[:4] + b"\3" + alert[5:] + b"x", "duplicate": alert * 2,
+               "ccs_after": alert + ccs, "encrypted_before": encrypted + alert,
+               "encrypted_after": alert + encrypted, "second_hello": alert + client_hello(), "byte_after": alert + b"x"}
+    with pytest.raises(ValueError):
+        wire.parse_tls_wire(client_hello() + changes[mutation], server_hello() + encrypted,
+                            configuration="A", case=case)
+
+
+@pytest.mark.parametrize("case", ("N11", "N12", "N13"))
+def test_verification_alert_requires_server_encrypted_flight_and_case(case):
+    alert = wire.tls_verification_alert(case)
+    with pytest.raises(ValueError, match="server_flight_missing"):
+        wire.parse_tls_wire(client_hello() + alert, server_hello(), configuration="A", case=case)
+    encrypted = b"\x17\3\3\0\x11" + b"x" * 17
+    ccs = b"\x14\3\3\0\1\1"
+    assert wire.parse_tls_wire(client_hello() + ccs + alert, server_hello() + encrypted,
+                               configuration="A", case=case)["client_records"] == 3
+    for wrong_case in ("O3", "N16", {"N11": "N12", "N12": "N13", "N13": "N11"}[case]):
+        with pytest.raises(ValueError):
+            wire.parse_tls_wire(client_hello() + alert, server_hello() + encrypted,
+                                configuration="A", case=wrong_case)
+
+
+@pytest.mark.parametrize("tail", (client_hello(), b"\x15\3\3\0\2\2*", b"\x14\3\3\0\1\1" * 2))
+def test_protocol_version_rejection_does_not_skip_client_record_validation(tail):
+    with pytest.raises(ValueError):
+        wire.parse_tls_wire(client_hello() + tail, b"\x15\3\3\0\2\2F", configuration="A", case="N16")
 
 
 @pytest.mark.parametrize("changed", (b"\x13\x01", b"\x13\x03"))
