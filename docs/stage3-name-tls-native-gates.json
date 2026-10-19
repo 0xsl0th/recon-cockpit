@@ -1282,31 +1282,53 @@
         "dns_1",
         "tls"
       ],
-      "terminal": "certificate-name negative TLS settlement; valid DNS nonterminal"
+      "terminal": "certificate-name negative TLS settlement; valid DNS nonterminal",
+      "terminal_client_alert": {
+        "native_exit_code": 1,
+        "native_verification_error": 62,
+        "payload_hex": "022a",
+        "record_header_hex": "1503030002",
+        "requirement": "One final client fatal alert only after validated ServerHello and complete server encrypted record delivery, before client encrypted records; optional single compatibility CCS; no following client bytes; both EOFs; retain actual bytes/accounting. Detached parser proves per-direction sequence, not cross-direction timing."
+      }
     },
     "N12": {
       "execute": [
         "dns_1",
         "tls"
       ],
-      "terminal": "issuer negative TLS settlement; valid DNS nonterminal"
+      "terminal": "issuer negative TLS settlement; valid DNS nonterminal",
+      "terminal_client_alert": {
+        "native_exit_code": 1,
+        "native_verification_error": 20,
+        "payload_hex": "0230",
+        "record_header_hex": "1503030002",
+        "requirement": "One final client fatal alert only after validated ServerHello and complete server encrypted record delivery, before client encrypted records; optional single compatibility CCS; no following client bytes; both EOFs; retain actual bytes/accounting. Detached parser proves per-direction sequence, not cross-direction timing."
+      }
     },
     "N13": {
       "execute": [
         "dns_1",
         "tls"
       ],
-      "terminal": "certificate-expiry negative TLS settlement; valid DNS nonterminal"
+      "terminal": "certificate-expiry negative TLS settlement; valid DNS nonterminal",
+      "terminal_client_alert": {
+        "native_exit_code": 1,
+        "native_verification_error": 10,
+        "payload_hex": "022d",
+        "record_header_hex": "1503030002",
+        "requirement": "One final client fatal alert only after validated ServerHello and complete server encrypted record delivery, before client encrypted records; optional single compatibility CCS; no following client bytes; both EOFs; retain actual bytes/accounting. Detached parser proves per-direction sequence, not cross-direction timing."
+      }
     },
     "N14": {
       "execute": [
         "dns_1"
       ],
+      "refusal_envelope": "blocked accepted only for this profile and N14 with refusal object, followed by unchanged strict owner context/expiry/terminal/zero-byte validation",
       "terminal": "real TTL1 expiry invalidates binding; first expired service refusal terminal; second is post-terminal check"
     },
     "N15": {
       "composite_subtrials": [
-        "selected-config donor DNS + review service; finish owner; replay must fail",
+        "selected-config owner DNS + real unused service review; finish/reap owner, observe approval worker still live, then first consume through Controller must fail at approval_consume_after_owner_close; retain exact pending request/no reply/ApprovalUnavailable/bounded exact stderr/natural exit78 and actual process pins; no fabricated action outcome or owner admission claim",
         "fresh opposite-config donor DNS + review live service; fresh selected-config recipient rejects donor grant before startup"
       ],
       "maximum_owner_instances": 3,
@@ -2152,7 +2174,7 @@
       "useful_daemon_claim": false
     },
     {
-      "assertion": "Run the real isolated parser with bounded successful native brief output but mismatched captured ServerHello negotiation; require no verified/useful result. New-profile ClientHello grammar retains actual bytes/hash and permits optional extension27 only with exactbody0400010003; duplicate/changed/other new extensions are invalid. This advertisement grants no resumption or recorder certificate-verification claim.",
+      "assertion": "Run the real isolated parser with bounded successful native brief output but mismatched captured ServerHello negotiation; require no verified/useful result. New-profile ClientHello grammar retains actual bytes/hash and permits optional extension27 only with exactbody0400010003; duplicate/changed/other new extensions are invalid. This advertisement grants no resumption or recorder certificate-verification claim. Certificate negatives require the exact case-specific terminal alert and native verification failure; all other cases reject it. N16 validates the entire client stream before accepting its server protocol-version alert.",
       "case": "tls_native_wire_disagreement",
       "configuration": "A",
       "driver": "isolated_production_parser",
@@ -2216,7 +2238,7 @@
       "useful_daemon_claim": false
     },
     {
-      "assertion": "Run the real isolated parser with bounded successful native brief output but mismatched captured ServerHello negotiation; require no verified/useful result. New-profile ClientHello grammar retains actual bytes/hash and permits optional extension27 only with exactbody0400010003; duplicate/changed/other new extensions are invalid. This advertisement grants no resumption or recorder certificate-verification claim.",
+      "assertion": "Run the real isolated parser with bounded successful native brief output but mismatched captured ServerHello negotiation; require no verified/useful result. New-profile ClientHello grammar retains actual bytes/hash and permits optional extension27 only with exactbody0400010003; duplicate/changed/other new extensions are invalid. This advertisement grants no resumption or recorder certificate-verification claim. Certificate negatives require the exact case-specific terminal alert and native verification failure; all other cases reject it. N16 validates the entire client stream before accepting its server protocol-version alert.",
       "case": "tls_native_wire_disagreement",
       "configuration": "B",
       "driver": "isolated_production_parser",

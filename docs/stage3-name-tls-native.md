@@ -44,6 +44,10 @@ connection or byte, and the second observes that terminal refusal. No daemon
 or client starts for either probe. A proposal-level refusal alone cannot prove
 owner-side TTL enforcement. Repeated send attempts always make fresh positive
 byte reservations; earlier short or unwritten reservations remain charged.
+The launcher envelope permits a `blocked` result only for this profile's N14
+refusal object. Its existing strict context validator must still prove the
+exact expiry/terminal transcript, prior owner continuity, unchanged counters
+and zero service bytes before the refusal is retained.
 
 An independently recorded, complete DNS response must agree with native dig
 output before the owner can publish a usable binding. The owner records the
@@ -77,6 +81,19 @@ replay, and a grant from a still-live opposite-configuration donor replayed into
 a fresh selected-configuration owner. The latter must not pass merely because
 the donor was already expired or closed. N15 permits at most three distinct
 owners, each with its own unchanged 60-second lifetime and counters.
+The finished-owner subcheck retains a real, unused service review made while
+the owner is live, then physically closes and reaps that owner and launcher.
+An intermediate observation must show the approval worker still alive before
+the original reference is first submitted through Controller. Retain the
+exact attempted consume request, absent reply, `ApprovalUnavailable`, exact
+bounded `approval_worker_refused` stderr and natural worker exit 78. Actual
+approval Python and topology-owner process pins must independently prove
+their liveness and subsequent closure. This is an observed
+`approval_consume_after_owner_close` failure; a closed witness-channel write
+is inferred from the fixed worker code and sole-reader closure, not traced.
+Do not synthesize an action outcome, successful consume, grant-store mutation,
+owner admission decision or formerly executable N15 HTTP authority. The live
+foreign-donor subcheck remains separate and unchanged.
 
 ## Owned topology and descriptor custody
 
@@ -269,6 +286,20 @@ grammar and fixed preparation/client argv remain unchanged. Retain the actual
 complete ClientHello hash and extension inventory; do not rewrite it for
 validation. Advertising compression is not evidence that a compressed
 certificate was sent, decoded or verified by the recorder.
+For certificate negatives N11, N12 and N13 only, require one terminal client
+plaintext fatal alert with record header `15 03 03 00 02` and exact respective
+payloads `02 2a`, `02 30` and `02 2d`, as observed from the pinned native client.
+The recorder permits it only after a validated ServerHello and at least one
+complete server encrypted record have been delivered, and before any client
+encrypted record. One ordinary compatibility CCS may precede the alert.
+Reject any following client bytes or records, require client and daemon EOF,
+and retain actual wire bytes and irreversible delivery accounting. The detached
+parser requires the same per-direction grammar and server-flight evidence;
+it does not infer cross-direction timing from concatenated streams. Native
+exit 1 and the exact case-specific verification error remain separately
+required. These are expected negative observations, never useful TLS. Other
+cases do not permit this client alert, and N16's server protocol-version
+rejection must still validate the entire client stream.
 The sole native
 OpenSSL process receives EOF on stdin and no application input. Useful TLS
 requires its successful exit and exact verified-name/verification output,
