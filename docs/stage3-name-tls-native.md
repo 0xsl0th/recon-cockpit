@@ -36,6 +36,15 @@ trial. A successful DNS observation creates data, never a grant, a queued
 service operation or an automatic approval. Each selected service action must
 return through the controller's ordinary witnessed authority path.
 
+The N14 expiry probe has two additional typed *attempt* slots, HTTP and TLS,
+which may pass static proposal admission and the ordinary witnessed checks.
+They are committed separately from the owner's DNS-only execution plan. The
+surviving owner rejects the first expired attempt before admitting an action,
+connection or byte, and the second observes that terminal refusal. No daemon
+or client starts for either probe. A proposal-level refusal alone cannot prove
+owner-side TTL enforcement. Repeated send attempts always make fresh positive
+byte reservations; earlier short or unwritten reservations remain charged.
+
 An independently recorded, complete DNS response must agree with native dig
 output before the owner can publish a usable binding. The owner records the
 observation time using its own monotonic clock. Expiry is the smaller of the
