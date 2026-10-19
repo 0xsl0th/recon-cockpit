@@ -1,6 +1,7 @@
 """Retained native observations are bound to sealed partitions and real limits."""
 
 from copy import deepcopy
+import os
 
 import pytest
 
@@ -87,3 +88,44 @@ def test_native_limits_are_observed_from_bounded_proc_records(monkeypatch):
     assert daemon._limits(3, tasks=16, file_bytes=0)["Max processes"] == [16, 16]
     with pytest.raises(ValueError, match="limit_changed"):
         daemon._limits(3, tasks=1, file_bytes=0)
+
+
+@pytest.mark.parametrize("parts,maximum,expected", (([b"abc", b"d", b"ef", b""], 6, b"abcdef"),
+                                                    ([b"",], 6, b"")))
+def test_bounded_proc_read_continues_after_short_page_and_closes_fd(monkeypatch, parts, maximum, expected):
+    remaining, opened, closed, reads = list(parts), [], [], []
+    def open_file(path, flags, *, dir_fd):
+        opened.append((path, flags, dir_fd))
+        return 73
+    def read_file(fd, count):
+        reads.append((fd, count))
+        part = remaining.pop(0)
+        assert len(part) <= count
+        return part
+    with monkeypatch.context() as patch:
+        patch.setattr(daemon.os, "open", open_file)
+        patch.setattr(daemon.os, "read", read_file)
+        patch.setattr(daemon.os, "close", closed.append)
+        assert daemon._read(42, "maps", maximum) == expected
+    assert not remaining and closed == [73]
+    assert opened == [("maps", os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC, 42)]
+    assert all(fd == 73 and 0 < count <= maximum + 1 for fd, count in reads)
+
+
+@pytest.mark.parametrize("failure", ("overflow", "read_error"))
+def test_bounded_proc_read_refuses_overflow_or_error_and_closes_fd(monkeypatch, failure):
+    remaining, closed = [b"abc", b"def", b"g"], []
+    def read_file(fd, count):
+        if failure == "read_error":
+            raise OSError("injected proc read failure")
+        part = remaining.pop(0)
+        assert len(part) <= count
+        return part
+    with monkeypatch.context() as patch:
+        patch.setattr(daemon.os, "open", lambda *a, **k: 73)
+        patch.setattr(daemon.os, "read", read_file)
+        patch.setattr(daemon.os, "close", closed.append)
+        error = ValueError if failure == "overflow" else OSError
+        with pytest.raises(error):
+            daemon._read(42, "maps", 6)
+    assert closed == [73]

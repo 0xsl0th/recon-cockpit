@@ -99,10 +99,15 @@ def daemon_command(bootstrap, manifest, descriptors, selected, operation, info_f
 def _read(process_directory, path, maximum):
     descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=process_directory)
     try:
-        raw = os.read(descriptor, maximum + 1)
-        if len(raw) > maximum:
-            raise ValueError("name_tls_daemon_observation_limit")
-        return raw
+        # proc seqfiles can return a short page before EOF. In particular, the
+        # loader's mappings can appear after the first page of a native image.
+        raw = bytearray()
+        while len(raw) <= maximum:
+            part = os.read(descriptor, min(65536, maximum + 1 - len(raw)))
+            if not part:
+                return bytes(raw)
+            raw.extend(part)
+        raise ValueError("name_tls_daemon_observation_limit")
     finally:
         os.close(descriptor)
 
@@ -384,8 +389,9 @@ def listener_ready(process_directory, expected_namespaces, namespace_fds, manife
         if destination is None:
             raise ValueError("name_tls_daemon_unreviewed_mapped_image")
         mapped.add(destination)
-    if {manifest["executable"], manifest["interpreter"]} - mapped:
-        raise ValueError("name_tls_daemon_native_mapping_missing")
+    missing = {manifest["executable"], manifest["interpreter"]} - mapped
+    if missing:
+        raise ValueError("name_tls_daemon_native_mapping_missing:" + ",".join(sorted(missing)))
     fd_directory = os.open("fd", os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC, dir_fd=process_directory)
     try:
         names = os.listdir(fd_directory)
