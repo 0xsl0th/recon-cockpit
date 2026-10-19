@@ -141,7 +141,7 @@ def validate_result(result, manifest, step, previous=None, *, replay=False, dead
     if set(result) == {"status"} and result["status"] != "succeeded":
         return previous, None
     current = context.validate_result_context(result, manifest["identity"], previous=previous,
-                                               tool_id=action["tool_id"], execution_status=result["status"])
+                                               tool_id=action["tool_id"], execution_status=result["status"], runtime=manifest["runtime"])
     if "name_tls_refusal" in result:
         if result["name_tls_refusal"]["action"] != action:
             raise ValueError("name_tls_evidence_refusal_intent")
@@ -170,8 +170,10 @@ def _case_facts(manifest, rows):
     ordinary = case.startswith("O") or case.startswith("R")
     if ordinary:
         useful = len(rows) == len(manifest["slots"]) and all(row["useful_task_completed"] for row in rows)
-        if useful and parsed["operation"] == "http":
-            observed = parsed["observation"]
+        for row in rows:
+            if not useful or row["observation"]["operation"] != "http":
+                continue
+            observed = row["observation"]["observation"]
             if case == "O5":
                 endpoint = public.endpoints(configuration)
                 location = f"http://{endpoint['excluded_address']}:{endpoint['http']['port']}/private".encode("ascii")
@@ -198,6 +200,94 @@ def _case_facts(manifest, rows):
     return False, expected
 
 
+def validate_probe_evidence(value, *, manifest, results, outcomes):
+    """Reconstruct finite proposals and require their actual earliest guard."""
+    from .name_tls_probes import proposals
+    from .models import ValidationError
+    selected, identity = manifest["selection"], manifest["identity"]
+    case = selected["case"]
+    fields = {"schema_version", "selection_sha256", "owner_identity_sha256", "case", "instrumented", "attempts", "waited_us", "status"}
+    if case == "N15" and type(value) is dict and value.get("test_authority") == "scripted_owned_pty":
+        return _validate_n15_composite(value, manifest=manifest, results=results, outcomes=outcomes)
+    if (type(value) is not dict or set(value) not in (fields, fields | {"reason"})
+            or value["schema_version"] != "1" or value["selection_sha256"] != selected["selection_sha256"]
+            or value["owner_identity_sha256"] != identity["owner_identity_sha256"] or value["case"] != case
+            or value["instrumented"] is not True or type(value["attempts"]) is not list
+            or type(value["waited_us"]) is not int or not 0 <= value["waited_us"] <= 60000000
+            or case != "N14" and value["waited_us"] != 0):
+        raise ValueError("name_tls_probe_identity")
+    status = value["status"]
+    if case not in contract.PROBE_CASES:
+        if status != "not_required" or value["attempts"] or "reason" in value:
+            raise ValueError("name_tls_probe_not_required")
+        return False
+    if status == "incomplete":
+        expected = "requires_owned_scripted_real_grant_composite" if case == "N15" else "required_native_binding_missing"
+        if value.get("reason") != expected or value["attempts"]:
+            raise ValueError("name_tls_probe_incomplete")
+        return False
+    if status not in ("attempted", "dry_run") or "reason" in value or status != ("attempted" if manifest["execute"] else "dry_run"):
+        raise ValueError("name_tls_probe_status")
+    prerequisite_count = 1 if case == "N14" else len(outcomes)
+    joined = [{**row, "untrusted_result": result} for row, result in zip(outcomes[:prerequisite_count], results[:prerequisite_count], strict=True)]
+    expected = proposals(selected, identity, joined)
+    if not expected or len(value["attempts"]) != len(expected):
+        raise ValueError("name_tls_probe_attempt_count")
+    passed = status == "attempted"
+    for step, (attempt, (slot, raw, guard)) in enumerate(zip(value["attempts"], expected, strict=True), prerequisite_count + 1):
+        if (type(attempt) is not dict or set(attempt) != {"slot", "proposal", "proposal_sha256", "expected_guard", "outcome"}
+                or attempt["slot"] != slot or public.encode(attempt["proposal"]) != public.encode(raw)
+                or attempt["proposal_sha256"] != contract.digest(raw) or attempt["expected_guard"] != guard):
+            raise ValueError("name_tls_probe_proposal_changed")
+        outcome = attempt["outcome"]
+        if guard == "typed_validation":
+            try:
+                parse_action(raw)
+            except ValidationError as error:
+                reason = error.code
+            else:
+                raise ValueError("name_tls_probe_expected_invalid_action")
+            policy = contract.validate_policy(manifest["policy"], selected)
+            required = {"action_id": None, "action_digest": None, "policy_version": policy.policy_version,
+                "policy_digest": policy.digest, "approval_reference": None, "session_id": manifest["session_id"],
+                "session_step": step, "decision": "deny", "reasons": [reason], "execution_status": "rejected"}
+            if type(outcome) is not dict or _encode(outcome) != _encode(required):
+                raise ValueError("name_tls_probe_typed_guard_changed")
+        elif guard == "static_profile":
+            validate_outcome(outcome, manifest, step, None, raw)
+            passed &= outcome["execution_status"] == "blocked" and outcome["reasons"] == ["isolation_unavailable"]
+        else:
+            if step > len(outcomes) or step > len(results):
+                raise ValueError("name_tls_probe_expiry_result_missing")
+            safe = {key: item for key, item in outcome.items() if key != "untrusted_result"}
+            if safe != outcomes[step - 1] or outcome.get("untrusted_result") != results[step - 1]:
+                raise ValueError("name_tls_probe_expiry_result_changed")
+            refused = results[step - 1]
+            passed &= (type(refused) is dict and refused.get("name_tls_refusal", {}).get("source")
+                       == ("owner_arm" if guard == "owner_expiry" else "owner_terminal"))
+    if not passed:
+        return False
+    if case == "N4":
+        return outcomes == [] and results == []
+    if len(results) != (3 if case == "N14" else 2 if case == "N1" else 1):
+        return False
+    previous, observed = None, []
+    for step, result in enumerate(results, 1):
+        if result is None:
+            return False
+        previous, parsed = validate_result(result, manifest, step, previous)
+        observed.append(parsed)
+    if not observed[0] or observed[0]["operation"] != "dns" or not observed[0]["useful_task_completed"]:
+        return False
+    if case == "N1":
+        second = observed[1]
+        expected_address = public.endpoints(selected["configuration"])["excluded_address"]
+        return bool(second and second["expected_negative"] and previous["binding"] is None
+                    and second["observation"]["records"] == [{"section": "answer", "name": "harbordesk.test.",
+                        "type": 1, "class": 1, "ttl": 60, "data": expected_address}])
+    return True
+
+
 def report_for(manifest, results, outcomes, closure, elapsed_ms, *, probes=None, replay=False, deadline=None):
     manifest = validate_manifest(manifest)
     if (type(outcomes) is not list or len(outcomes) > len(manifest["slots"]) or type(results) is not list
@@ -217,8 +307,9 @@ def report_for(manifest, results, outcomes, closure, elapsed_ms, *, probes=None,
     context.validate_closure(closure, manifest["identity"], previous=previous)
     useful, negative = _case_facts(manifest, rows)
     if probes is not None:
-        from .name_tls_probes import validate_probe_evidence
-        negative = validate_probe_evidence(probes, manifest=manifest, results=results, outcomes=outcomes) is True
+        proven = validate_probe_evidence(probes, manifest=manifest, results=results, outcomes=outcomes)
+        if manifest["selection"]["case"] in contract.PROBE_CASES:
+            negative = proven is True
     refusal = bool(manifest["execute"] and not manifest["unattended_owned_lab_test"] and outcomes
                    and outcomes[-1]["execution_status"] == "blocked" and outcomes[-1]["reasons"] == ["noninteractive_approval_required"]
                    and results[-1] is None and all(row["useful_task_completed"] for row in rows[:-1]))
@@ -321,14 +412,24 @@ class NameTLSEvidenceStore(EvidenceStore):
             return report
 
 
-def _validate_audit(events, manifest, outcomes, results, actions):
+def _validate_audit(events, manifest, outcomes, results, actions, *, probes=None):
     policy = contract.validate_policy(manifest["policy"], manifest["selection"])
     expected = []
-    for outcome, result, raw_action in zip(outcomes, results, actions, strict=True):
-        action = parse_action(raw_action)
+    rows = list(zip(outcomes, results, actions, strict=True))
+    if probes is not None and manifest["selection"]["case"] != "N14":
+        rows.extend((attempt["outcome"], None, attempt["proposal"]) for attempt in probes["attempts"])
+    for outcome, result, raw_action in rows:
+        from .models import ValidationError
+        try:
+            action = parse_action(raw_action)
+        except ValidationError:
+            expected.append({**outcome, "event_type": "validation_rejected"})
+            continue
         initial = {key: outcome[key] for key in ("action_id", "action_digest", "policy_version", "policy_digest", "session_id", "session_step", "tool_id", "target", "decision")}
         initial.update(approval_reference=None, reasons=list(policy.evaluate(action).reasons), execution_status="not_started")
         expected.append({**initial, "event_type": "policy_decision", "untrusted_agent_context": {"rationale": "[REDACTED]", "rationale_length": len(action.rationale)}})
+        if initial["decision"] == "deny":
+            continue
         if policy.require_approval and outcome["approval_reference"] is not None:
             initial["approval_reference"] = outcome["approval_reference"]
             expected.append({**initial, "event_type": "approval_consumed"})
@@ -386,7 +487,9 @@ def inspect_trial(directory, *, deadline=None):
         audit = _read_private(fd, "audit.jsonl", MAX_JSON_BYTES)
         if audit and not audit.endswith(b"\n") or len(audit.splitlines()) > 24:
             raise ValueError("name_tls_evidence_audit_shape")
-        _validate_audit([_decode(line) for line in audit.splitlines()], manifest, outcomes, results, actions)
+        if probes is not None:
+            validate_probe_evidence(probes, manifest=manifest, results=results, outcomes=outcomes)
+        _validate_audit([_decode(line) for line in audit.splitlines()], manifest, outcomes, results, actions, probes=probes)
         report = report_for(manifest, results, outcomes, read("closure.json"), saved["elapsed_ms"], probes=probes, replay=True, deadline=deadline)
         if _encode(report) != _encode(read("report.json")):
             raise ValueError("name_tls_evidence_report_changed")

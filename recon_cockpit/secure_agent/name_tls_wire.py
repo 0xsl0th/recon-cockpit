@@ -215,7 +215,7 @@ def parse_dns_exchange(request, original, delivered, *, configuration, case):
     query = parse_dns_query(request)
     original_semantic = parse_dns_response(original, request)
     delivered_semantic = parse_dns_response(delivered, request)
-    if original != delivered:
+    if original != delivered or case in ("N6", "N7"):
         expected = transformed_dns_response(configuration, case, request, original,
                                             second_observation=case == "N1")
         if delivered != expected:

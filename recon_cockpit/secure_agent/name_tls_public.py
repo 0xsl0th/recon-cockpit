@@ -19,6 +19,24 @@ UNDECLARED_NAME = "other.harbordesk.test"
 CA_PATH = "/tool/data/name-tls/ca.pem"
 PUBLIC_CA_SHA256 = "617015dc0014927cacb2c334ed861b091ea4846b2461540aa4aac3fa2138b84d"
 OPENSSL_CONFIG_PATH = "/tool/data/name-tls/openssl.cnf"
+
+
+def approval_summary(tool_id, parameters):
+    """An additional literal summary; full canonical action remains visible."""
+    if tool_id not in ("owned_name_dns_v1", "owned_name_http_v1", "owned_name_tls_v1"):
+        return None
+    names = ["configuration", "case", "operation_slot", "session_id", "owner_id",
+             "owner_identity_sha256", "selection_sha256", "runtime_identity_sha256"]
+    if tool_id == "owned_name_dns_v1":
+        names += ["question_name", "question_class", "question_type"]
+    else:
+        names += ["canonical_name", "binding_sha256", "observation_sha256", "observed_answer_sha256",
+                  "observation_generation", "observed_ttl_seconds", "observed_at_us", "expires_at_us"]
+        names += (["host"] if tool_id == "owned_name_http_v1" else
+                  ["sni", "expected_certificate_name", "public_ca_sha256"])
+    return {name: parameters[name] for name in names}
+
+
 ENVIRONMENT = MappingProxyType({"LC_ALL": "C", "MALLOC_ARENA_MAX": "1",
                                "OPENSSL_CONF": OPENSSL_CONFIG_PATH, "TZ": "UTC0"})
 ROWS = MappingProxyType({

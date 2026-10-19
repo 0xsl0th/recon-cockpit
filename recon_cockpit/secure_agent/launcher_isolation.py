@@ -500,7 +500,8 @@ class LinuxFixtureLauncher:
             elif self._config['profile'] == 'owned_name_tls_v1':
                 from .name_tls_context import validate_result_context as context_validator
             lab_context = (context_validator(result, self.identity, previous=self._lab_context,
-                tool_id=action.tool_id, execution_status=result['status']) if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1', 'owned_name_tls_v1'} else None)
+                tool_id=action.tool_id, execution_status=result['status'],
+                **({'runtime': self._name_tls_runtime} if self._config['profile'] == 'owned_name_tls_v1' else {})) if self._config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1', 'owned_name_tls_v1'} else None)
             expected = {'executions_reserved': self._snapshot['executions_reserved']+1,
                         'output_bytes_reserved': self._snapshot['output_bytes_reserved']+action.parameters.max_output_bytes}
             if (expected['output_bytes_reserved'] > self._config['limits']['max_output_bytes']

@@ -295,6 +295,8 @@ class Service:
         self.raw[raw_key].extend(pending[:count])
         del pending[:count]
         self.budget.after_write(self.active, direction, count)
+        if direction == "response" and not pending and self.chunks:
+            self.next_chunk_at = self.clock() + .005
 
     def tick(self):
         if self.done:
@@ -309,7 +311,6 @@ class Service:
                 return
             if self.chunks and not self.to_client and self.clock() >= self.next_chunk_at:
                 self._queue_response(self.chunks.pop(0))
-                self.next_chunk_at = self.clock() + .005
             readers = ([self.client] if not self.client_eof else [])
             if self.connected and not self.daemon_eof and not (self.operation == "dns" and self.response_complete):
                 readers.append(self.daemon)

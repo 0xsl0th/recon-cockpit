@@ -51,6 +51,8 @@ class LinuxLaunchAdmission:
         argv.extend(('--ro-bind', str(Path(__file__).with_name('planner_worker.py').resolve()),
                      '/app/planner_worker.py'))
         for name in ('admission_worker', 'launch_admission', 'models', 'tool_parameters', 'tool_adapters',
+                     *(('name_tls_contract', 'name_tls_public', 'session_limits')
+                       if self._config['profile'] == 'owned_name_tls_v1' else ()),
                      *(('configurable_scope', 'configurable_contract')
                        if self._config['profile'] == 'configurable_owned_lab' else ()),
                      *(('stock_http_contract', 'stock_http_spec', 'configurable_scope', 'configurable_contract')

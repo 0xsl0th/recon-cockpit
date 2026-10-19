@@ -86,8 +86,10 @@ def validate_parser_receipt(value, parsed, raw):
     return deepcopy(value)
 
 
-def validate_result_context(result, identity, *, previous=None, tool_id=None, execution_status=None):
-    identity = contract.validate_identity(identity)
+def validate_result_context(result, identity, *, previous=None, tool_id=None, execution_status=None, runtime=None):
+    from .name_tls_native_runtime import validate_runtime
+    runtime = validate_runtime(runtime)
+    identity = contract.validate_identity(identity, runtime=runtime)
     selected = identity["selection"]
     previous = None if previous is None else _previous(previous, identity)
     if type(result) is dict and "name_tls_refusal" in result:
@@ -158,6 +160,12 @@ def validate_result_context(result, identity, *, previous=None, tool_id=None, ex
             raise ValueError("name_tls_http_runtime_identity")
     elif roles.manifest_digest(roles.validate_manifest(provenance["runtime_manifest"], role=operation + "_client")) != provenance["runtime_sha256"]:
         raise ValueError("name_tls_client_runtime_identity")
+    if operation != "http":
+        from .name_tls_daemon import validate_client_ready
+        if provenance["runtime_manifest"] != runtime["roles"][operation + "_client"]:
+            raise ValueError("name_tls_client_runtime_changed")
+        validate_client_ready(client_observation["native_ready"], provenance["runtime_manifest"],
+                              client_observation["namespaces"], client_observation["mapping"])
     recorder = service["recorder"]
     if (type(recorder) is not dict or not contract._hash(recorder.get("transcript_sha256"))
             or recorder["transcript_sha256"] != public.digest({k: v for k, v in recorder.items() if k != "transcript_sha256"})
@@ -192,8 +200,11 @@ def validate_result_context(result, identity, *, previous=None, tool_id=None, ex
         raise ValueError("name_tls_final_result_digest")
     _mapping(service["daemon_mapping"])
     _mapping(service["frontend_mapping"])
-    validate_namespace_identity(service["daemon_ready"]["namespace_identity"])
-    validate_namespace_identity(service["frontend_ready"]["payload_identity"])
+    _validate_service_boundary(service, runtime, topology, selected, operation)
+    if parsed is not None:
+        from .name_tls_python_runtime import source_digest
+        if service["parser_receipt"]["python_sources_sha256"] != source_digest(runtime["python_sources"]):
+            raise ValueError("name_tls_parser_runtime_changed")
     if (service["closure"] != {"daemon_processes_reaped": True, "action_connections_closed": True,
                               "frontend_persists": True, "topology_persists": True}):
         raise ValueError("name_tls_action_cleanup")
@@ -216,6 +227,38 @@ def validate_result_context(result, identity, *, previous=None, tool_id=None, ex
             "events_sha256": public.digest(state["events"]), "actions_sha256": public.digest(state["actions"]),
             "message_count": len(result["name_tls_messages"]), "messages_sha256": public.digest(result["name_tls_messages"]),
             "frontends": frontends}
+
+
+def _validate_service_boundary(service, runtime, topology, selected, operation):
+    from . import name_tls_daemon as daemon, name_tls_role_spec as roles
+    from .name_tls_frontend_worker import validate_ready
+    from .name_tls_topology_spec import frontend_role
+    from .name_tls_transport import validate_descriptor_identity
+    ready = service["daemon_ready"]
+    manifest = runtime["roles"][daemon.selected_role(operation)]
+    if (type(ready) is not dict or set(ready) != {"namespaces", "namespace_identity", "bounds", "runtime_digest", "operation", "descriptor"}
+            or ready["operation"] != operation or public.encode(ready["bounds"]) != public.encode(daemon.BOUNDS)
+            or ready["runtime_digest"] != roles.manifest_digest(manifest)
+            or type(ready["namespaces"]) is not dict or set(ready["namespaces"]) != {"user", "net", "mnt", "pid"}
+            or ready["namespaces"]["net"] in topology["networks"].values()
+            or any(ready["namespaces"][key] == topology["owner_namespaces"][key] for key in ("user", "mnt", "pid"))):
+        raise ValueError("name_tls_daemon_ready_changed")
+    validate_namespace_identity(ready["namespace_identity"])
+    descriptor = validate_descriptor_identity(ready["descriptor"])
+    daemon.validate_daemon_ready(service["native_ready"], manifest, ready["namespaces"], service["daemon_mapping"], operation)
+    frontend = service["frontend_ready"]
+    if (type(frontend) is not dict or type(frontend.get("namespaces")) is not dict
+            or frontend["namespaces"].get("net") != topology["networks"][frontend_role(operation)]
+            or any(frontend["namespaces"].get(key) == topology["owner_namespaces"][key] for key in ("user", "mnt", "pid"))):
+        raise ValueError("name_tls_frontend_namespace_changed")
+    validate_ready(frontend, role=operation + "_frontend", selected=selected, namespaces=frontend["namespaces"])
+    custody = service["descriptor_custody"]
+    expected = {"descriptor": descriptor, "frontend_netns_cookie": frontend["listener_identity"]["netns_cookie"],
+                "unconnected_at_transfer": True, "transferred_once": True,
+                "frontend_consumed": service["recorder"]["daemon_connects"] == 1, "frontend_copy_closed": True}
+    if (type(custody) is not dict or public.encode(custody) != public.encode(expected)
+            or descriptor["daemon_netns_cookie"] == expected["frontend_netns_cookie"]):
+        raise ValueError("name_tls_descriptor_custody_changed")
 
 
 def _validate_refusal(result, identity, previous, tool_id, execution_status):

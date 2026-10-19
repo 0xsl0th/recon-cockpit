@@ -282,8 +282,13 @@ class Topology:
             if owner_uid[0] != os.getuid():
                 raise ValueError("name_tls_topology_namespace_owner_uid")
             return self.identity
-        except BaseException:
+        except BaseException as error:
+            diagnostic = b"" if self._supervisor is None else bytes(self._supervisor.buffers.get("topology_err", b""))[:4096]
             self.close()
+            if diagnostic and isinstance(error, Exception):
+                from .isolation import IsolationUnavailable
+                raise IsolationUnavailable("Name/TLS topology startup failed: "
+                    + diagnostic.decode("utf-8", "replace")) from error
             raise
         finally:
             child.close()

@@ -110,3 +110,19 @@ def test_read_only_command_requires_sealed_exact_source_inventory(monkeypatch):
         client.command(service, ("/usr/lib/python3.13", []), None, [], NONCE, "b" * 64,
                        source_descriptors={}, info_fd=5)
     assert set(sources.PACKAGE_FILES) <= set(client.MODULES)
+
+
+def test_nested_admission_mounts_typed_name_contract_without_owner_material(monkeypatch):
+    from recon_cockpit.secure_agent import admission_isolation
+    from recon_cockpit.secure_agent.session_limits import SessionLimits
+    selected = contract.selection("A", "O1")
+    gate = admission_isolation.LinuxLaunchAdmission(contract.policy_for_selection(selected),
+        "00000000-0000-0000-0000-000000000001", SessionLimits(**contract.limits(selected)),
+        execute=True, profile=contract.PROFILE, case=selected)
+    monkeypatch.setattr(admission_isolation, "_namespaces", lambda: HOST)
+    monkeypatch.setattr(admission_isolation, "_trusted_program", lambda name: "/usr/bin/" + name)
+    argv = gate._command("/usr/lib/python3.13", [], "a" * 64)
+    destinations = {argv[index + 2] for index, value in enumerate(argv) if value == "--ro-bind"}
+    assert {"/app/admission_runtime/" + name + ".py" for name in
+            ("name_tls_contract", "name_tls_public", "session_limits")} <= destinations
+    assert not any("name_tls_spec" in path or "server.key" in path for path in destinations)
