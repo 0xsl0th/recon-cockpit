@@ -39,6 +39,7 @@ from recon_cockpit.secure_agent.name_tls_backend import AuthorizedNameTLSBackend
 from recon_cockpit.secure_agent.name_tls_evidence import NameTLSEvidenceStore, inspect_trial
 from recon_cockpit.secure_agent.name_tls_lab import NameTLSLab
 from recon_cockpit.secure_agent.session_limits import SessionLimits
+from name_tls_owner_liveness import acknowledged_owner
 
 pytestmark = pytest.mark.integration
 
@@ -206,11 +207,13 @@ def _acknowledged_state(session):
     process = session.backend._process
     approval_process = session.approvals._process
     assert process is not None and approval_process is not None
+    launcher_alive = process.poll() is None
     return {"owner_state_source": "last_acknowledged_result",
             "ledger": deepcopy(result["name_tls_ledger"]), "messages": deepcopy(result["name_tls_messages"]),
             "backend_snapshot": dict(session.backend.snapshot), "backend_context": deepcopy(session.backend._lab_context),
-            "launcher_pid": process.pid, "launcher_alive": process.poll() is None,
-            "approval_worker_pid": approval_process.pid, "approval_worker_alive": approval_process.poll() is None}
+            "launcher_pid": process.pid, "launcher_alive": launcher_alive,
+            "approval_worker_pid": approval_process.pid, "approval_worker_alive": approval_process.poll() is None,
+            "topology_owner": acknowledged_owner(session, alive=launcher_alive)}
 
 
 def _owner_record(session, service_review):

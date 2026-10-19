@@ -261,3 +261,94 @@ def test_topology_parent_observation_cannot_change_identity_or_mapping(change):
         value["mapping"]["gid_map"][0][1] = 1001
     with pytest.raises(ValueError):
         context._topology_parent(value, topology)
+
+
+def n15_process(index=0, *, alive=True):
+    return {"pid": 1200 + index, "start_time_ticks": 10000 + index,
+        "namespaces": {name: name + ":[" + str(300 + index) + "]" for name in ("user", "net", "mnt", "pid")},
+        "pidfd_readable": not alive, "proc_absent": not alive,
+        "identity_source": "current_proc" if alive else "retained_pin"}
+
+
+@pytest.mark.parametrize("alive", (True, False))
+def test_n15_process_receipt_distinguishes_live_readback_from_retained_reaped_identity(alive):
+    value = n15_process(alive=alive)
+    evidence._validate_n15_owner_process(value, value["namespaces"], alive=alive)
+
+
+@pytest.mark.parametrize("alive", (True, False))
+@pytest.mark.parametrize("field,changed", (("pid", True), ("pid", 0), ("pid", 2**31),
+    ("start_time_ticks", True), ("start_time_ticks", 0), ("start_time_ticks", 2**63),
+    ("pidfd_readable", 1), ("proc_absent", 0), ("identity_source", None)))
+def test_n15_process_receipt_rejects_type_confusion_and_unbounded_identity(alive, field, changed):
+    value = n15_process(alive=alive)
+    namespaces = deepcopy(value["namespaces"])
+    value[field] = changed
+    with pytest.raises(ValueError, match="name_tls_n15_owner_process"):
+        evidence._validate_n15_owner_process(value, namespaces, alive=alive)
+
+
+@pytest.mark.parametrize("change", ("exited", "proc_missing", "cached", "namespace", "malformed", "extra", "missing"))
+def test_n15_live_owner_cannot_be_replaced_by_launcher_or_cached_state(change):
+    value = n15_process()
+    namespaces = deepcopy(value["namespaces"])
+    if change == "exited":
+        value["pidfd_readable"] = True
+    elif change == "proc_missing":
+        value["proc_absent"] = True
+    elif change == "cached":
+        value["identity_source"] = "retained_pin"
+    elif change == "namespace":
+        value["namespaces"]["pid"] = "pid:[999]"
+    elif change == "malformed":
+        value["namespaces"]["user"] = "user:[0]"
+    elif change == "extra":
+        value["launcher_alive"] = True
+    else:
+        value.pop("pidfd_readable")
+    with pytest.raises(ValueError):
+        evidence._validate_n15_owner_process(value, namespaces, alive=True)
+
+
+@pytest.mark.parametrize("closed", (True, False))
+@pytest.mark.parametrize("change", (None, "pid", "start_time_ticks", "namespaces", "launcher_alive", "cached_alive", "ledger"))
+def test_n15_transition_preserves_pinned_identity_and_acknowledged_state(closed, change):
+    before = {"launcher_alive": True, "topology_owner": n15_process(), "ledger": {"actions": 1}}
+    after = deepcopy(before)
+    if closed:
+        after["launcher_alive"] = False
+        after["topology_owner"].update(pidfd_readable=True, proc_absent=True, identity_source="retained_pin")
+    if change is None:
+        evidence._validate_n15_owner_transition(before, after, closed=closed)
+        return
+    if change in ("pid", "start_time_ticks"):
+        after["topology_owner"][change] += 1
+    elif change == "namespaces":
+        after["topology_owner"]["namespaces"]["pid"] = "pid:[999]"
+    elif change == "launcher_alive":
+        after["launcher_alive"] = not after["launcher_alive"]
+    elif change == "cached_alive":
+        after["topology_owner"]["identity_source"] = "current_proc" if closed else "retained_pin"
+    else:
+        after["ledger"]["actions"] = True
+    with pytest.raises(ValueError, match="name_tls_n15_owner_transition"):
+        evidence._validate_n15_owner_transition(before, after, closed=closed)
+
+
+def test_n15_closed_owner_pid_reuse_is_distinguished_by_start_ticks_and_namespaces():
+    closed, donor, recipient = (n15_process(index) for index in range(3))
+    donor["pid"] = closed["pid"]
+    evidence._validate_n15_owner_independence(closed, donor, recipient)
+
+
+@pytest.mark.parametrize("change", ("same_identity", "same_live_pid", "user", "net", "mnt", "pid"))
+def test_n15_three_owners_require_distinct_processes_and_live_namespace_identities(change):
+    closed, donor, recipient = (n15_process(index) for index in range(3))
+    if change == "same_identity":
+        donor = deepcopy(closed)
+    elif change == "same_live_pid":
+        recipient["pid"] = donor["pid"]
+    else:
+        recipient["namespaces"][change] = donor["namespaces"][change]
+    with pytest.raises(ValueError, match="name_tls_n15_owner_process_independence"):
+        evidence._validate_n15_owner_independence(closed, donor, recipient)

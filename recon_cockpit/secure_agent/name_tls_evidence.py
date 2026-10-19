@@ -360,8 +360,7 @@ def _validate_n15_composite(value, *, manifest, results, outcomes):
         raise ValueError("name_tls_n15_closed_guard")
     _validate_n15_ack(closed["before"], owners[0], contexts[0], alive=True)
     _validate_n15_ack(closed["after"], owners[0], contexts[0], alive=False)
-    if {**closed["before"], "launcher_alive": False} != closed["after"]:
-        raise ValueError("name_tls_n15_closed_transition")
+    _validate_n15_owner_transition(closed["before"], closed["after"], closed=True)
     transplanted_fields = {"kind", "donor_index", "recipient_index", "proposal", "proposal_sha256", "outcome",
         "donor_monotonic_remaining_us", "donor_binding_remaining_us", "donor_before", "donor_after", "recipient_before", "recipient_after"}
     if (type(transplant) is not dict or set(transplant) != transplanted_fields
@@ -382,8 +381,9 @@ def _validate_n15_composite(value, *, manifest, results, outcomes):
     for prefix, index in (("donor", 1), ("recipient", 2)):
         for suffix in ("before", "after"):
             _validate_n15_ack(transplant[prefix + "_" + suffix], owners[index], contexts[index], alive=True)
-        if transplant[prefix + "_before"] != transplant[prefix + "_after"]:
-            raise ValueError("name_tls_n15_transplant_state_changed")
+        _validate_n15_owner_transition(transplant[prefix + "_before"], transplant[prefix + "_after"])
+    _validate_n15_owner_independence(closed["before"]["topology_owner"],
+        transplant["donor_before"]["topology_owner"], transplant["recipient_before"]["topology_owner"])
     for index, owner in enumerate(owners):
         rows, native_results, actions = [safe_outcomes[index]], [owner["dns_outcome"]["untrusted_result"]], [dns_actions[index]]
         if index in (0, 2):
@@ -395,18 +395,54 @@ def _validate_n15_composite(value, *, manifest, results, outcomes):
     return True
 
 
+def _validate_n15_owner_process(value, namespaces, *, alive):
+    fields = {"pid", "start_time_ticks", "namespaces", "pidfd_readable", "proc_absent", "identity_source"}
+    if (type(value) is not dict or set(value) != fields
+            or type(value["pid"]) is not int or not 0 < value["pid"] < 2**31
+            or type(value["start_time_ticks"]) is not int or not 0 < value["start_time_ticks"] < 2**63
+            or value["pidfd_readable"] is not (not alive) or value["proc_absent"] is not (not alive)
+            or type(value["identity_source"]) is not str
+            or value["identity_source"] != ("current_proc" if alive else "retained_pin")):
+        raise ValueError("name_tls_n15_owner_process")
+    context._namespace_vector(value["namespaces"])
+    context._namespace_vector(namespaces)
+    if _encode(value["namespaces"]) != _encode(namespaces):
+        raise ValueError("name_tls_n15_owner_process_namespaces")
+
+
+def _validate_n15_owner_transition(before, after, *, closed=False):
+    expected = deepcopy(before)
+    if closed:
+        expected["launcher_alive"] = False
+        expected["topology_owner"].update(pidfd_readable=True, proc_absent=True, identity_source="retained_pin")
+    if _encode(expected) != _encode(after):
+        raise ValueError("name_tls_n15_owner_transition")
+
+
+def _validate_n15_owner_independence(closed, donor, recipient):
+    def identity(value):
+        return (value["pid"], value["start_time_ticks"],
+                tuple(value["namespaces"][key] for key in ("user", "net", "mnt", "pid")))
+    if (len({identity(value) for value in (closed, donor, recipient)}) != 3
+            or donor["pid"] == recipient["pid"]
+            or any(donor["namespaces"][key] == recipient["namespaces"][key] for key in ("user", "net", "mnt", "pid"))):
+        raise ValueError("name_tls_n15_owner_process_independence")
+
+
 def _validate_n15_ack(value, owner, previous, *, alive):
     fields = {"owner_state_source", "ledger", "messages", "backend_snapshot", "backend_context", "launcher_pid", "launcher_alive",
-              "approval_worker_pid", "approval_worker_alive"}
+              "approval_worker_pid", "approval_worker_alive", "topology_owner"}
     result = owner["dns_outcome"]["untrusted_result"]
     if (type(value) is not dict or set(value) != fields or value["owner_state_source"] != "last_acknowledged_result"
-            or value["ledger"] != result["name_tls_ledger"] or value["messages"] != result["name_tls_messages"]
-            or value["backend_context"] != previous or value["launcher_alive"] is not alive
+            or _encode(value["ledger"]) != _encode(result["name_tls_ledger"])
+            or _encode(value["messages"]) != _encode(result["name_tls_messages"])
+            or _encode(value["backend_context"]) != _encode(previous) or value["launcher_alive"] is not alive
             or value["approval_worker_alive"] is not True or type(value["launcher_pid"]) is not int or value["launcher_pid"] <= 0
             or type(value["approval_worker_pid"]) is not int or value["approval_worker_pid"] != owner["approval_worker"]["pid"]
             or public.encode(value["backend_snapshot"]) != public.encode({"executions_reserved": 1,
                 "output_bytes_reserved": contract.action_bounds("dns_1")["output_bytes"]})):
         raise ValueError("name_tls_n15_acknowledged_state")
+    _validate_n15_owner_process(value["topology_owner"], result["name_tls_topology"]["owner_namespaces"], alive=alive)
 
 
 def _validate_n15_approvals(owner, dns, service, *, need_service):
