@@ -24,6 +24,7 @@ from .tool_parameters import (
     NmapTCPParameters, TCPParameters, ValidationError,
     MAX_TIMEOUT_SECONDS, MAX_OUTPUT_BYTES, SUPPORTED_METHODS,
     _fields, _integer, _reject, _string,
+    OwnedNameDNSParameters, OwnedNameHTTPParameters, OwnedNameTLSParameters,
 )
 from .tool_adapters import (CONFIGURABLE_NMAP_TOOL_ID, CONFIGURABLE_HEADERS_TOOL_ID,
     NUCLEI_GIT_TOOL_ID, NUCLEI_TOOL_ID, CURL_TOOL_ID, FFUF_TOOL_ID, HTTP_HEADERS_TOOL_ID, HTTP_OPTIONS_TOOL_ID, NMAP_TOOL_ID,
@@ -118,7 +119,7 @@ class Action:
     action_id: str
     tool_id: str
     target: str
-    parameters: HTTPParameters | HTTPHeadersParameters | HTTPOptionsParameters | CurlHTTPSParameters | FFufParameters | FFufHierarchyParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | TLSCertificateParameters | SSHHostKeysParameters | SSHAlgorithmsParameters | SSHPolicyParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlWinRMMetadataParameters | NmapServiceParameters | KerbruteUserenumParameters | RedisServerInfoParameters | SNMPSystemGetParameters | SNMPInterfaceNextParameters | SNMPInterfacePageParameters | PostgreSQLTLSParameters | MySQLTLSParameters | WhatWebParameters | DigAAAAParameters | DigPTRParameters | DigMXParameters | DigSRVParameters | DigNSIDParameters | DigAXFRParameters
+    parameters: HTTPParameters | HTTPHeadersParameters | HTTPOptionsParameters | CurlHTTPSParameters | FFufParameters | FFufHierarchyParameters | TCPParameters | NmapTCPParameters | DigDNSParameters | OpenSSLTLSParameters | TLSCertificateParameters | SSHHostKeysParameters | SSHAlgorithmsParameters | SSHPolicyParameters | LDAPRootDSEParameters | SMBShareListParameters | RPCInfoDumpParameters | ShowmountExportsParameters | CurlFTPListParameters | CurlSMTPCapabilitiesParameters | CurlDockerPingParameters | CurlWinRMMetadataParameters | NmapServiceParameters | KerbruteUserenumParameters | RedisServerInfoParameters | SNMPSystemGetParameters | SNMPInterfaceNextParameters | SNMPInterfacePageParameters | PostgreSQLTLSParameters | MySQLTLSParameters | WhatWebParameters | DigAAAAParameters | DigPTRParameters | DigMXParameters | DigSRVParameters | DigNSIDParameters | DigAXFRParameters | OwnedNameDNSParameters | OwnedNameHTTPParameters | OwnedNameTLSParameters
     rationale: str
 
     def __post_init__(self) -> None:

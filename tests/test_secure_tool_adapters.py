@@ -52,7 +52,8 @@ def test_existing_wire_digests_and_default_request_bytes_stay_unchanged():
 
 
 def test_registry_is_explicit_immutable_and_returns_detached_metadata():
-    assert tuple(ADAPTERS) == ("ffuf_web_hierarchy_v1", "openssl_tls10_posture_v1", "openssl_tls11_posture_v1",
+    assert tuple(ADAPTERS) == ("owned_name_dns_v1", "owned_name_http_v1", "owned_name_tls_v1",
+                              "ffuf_web_hierarchy_v1", "openssl_tls10_posture_v1", "openssl_tls11_posture_v1",
                               "openssl_tls12_posture_v1", "openssl_tls13_posture_v1",
                               "http_probe", "tcp_connect", NMAP_TOOL_ID, "http_headers_v1",
                               "curl_https_get_v1", "curl_http_options_v1", "ffuf_content_discovery_v1",

@@ -10,7 +10,7 @@ import pytest
 
 from recon_cockpit.secure_agent import tool_catalog as catalog
 from recon_cockpit.secure_agent.models import parse_action, parse_policy
-from recon_cockpit.secure_agent.tool_adapters import ADAPTERS
+from recon_cockpit.secure_agent.tool_adapters import ADAPTERS, NAME_TLS_CANDIDATES
 
 
 # Capability names and program families are the accepted coverage inventory,
@@ -150,14 +150,17 @@ def test_inventory_contains_each_accepted_capability_once_without_counting_curl_
     assert result["read_only"] is True and result["live_calls_enabled"] is False
     assert result["runtime_availability"] == "not_checked"
     ids = [row["tool_id"] for row in result["tools"]]
-    assert ids == sorted(PROGRAMS) == sorted(ADAPTERS)
-    assert result["capability_count"] == len(ids) == 52
+    assert ids == sorted((*PROGRAMS, *NAME_TLS_CANDIDATES)) == sorted(ADAPTERS)
+    assert result["capability_count"] == len(ids) == 55
     assert result["accepted_capability_count"] == 52
-    assert result["candidate_capability_count"] == 0
+    assert result["candidate_capability_count"] == 3
     families = {row["external_program"] for row in result["tools"] if row["external_program"] is not None}
     assert families == set(PROGRAMS.values()) - {None}
     assert result["external_program_count"] == len(families) == 17
     for row in result["tools"]:
+        if row["tool_id"] in NAME_TLS_CANDIDATES:
+            assert row["acceptance_status"] == "candidate" and row["milestone"] == "S3.6b"
+            continue
         assert "acceptance_status" not in row and "milestone" not in row
         tool = row["tool_id"]
         adapter = ADAPTERS[tool]
@@ -322,4 +325,13 @@ print(json.dumps({"list":listing,"details":details},sort_keys=True,ensure_ascii=
     assert not completed.stderr and not list(tmp_path.iterdir())
     result = json.loads(completed.stdout)
     assert result["list"] == catalog.list_tools()
-    assert result["details"] == [catalog.describe_tool(tool) for tool in sorted(PROGRAMS)]
+    assert result["details"] == [catalog.describe_tool(tool) for tool in sorted(ADAPTERS)]
+
+
+@pytest.mark.parametrize("tool", NAME_TLS_CANDIDATES)
+def test_unaccepted_name_profiles_do_not_invent_a_live_binding_or_runnable_recipe(tool):
+    value = catalog.describe_tool(tool)
+    assert value["acceptance_status"] == "candidate" and value["milestone"] == "S3.6b"
+    assert value["run"] is None and value["fixed_parameters"] == []
+    assert value["live_calls_enabled"] is False
+    assert "live owner" in " ".join(value["limitations"])

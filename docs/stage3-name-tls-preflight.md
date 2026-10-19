@@ -260,5 +260,8 @@ The preparation implementation is unchanged from the frozen inspection head.
 Final acceptance requires all five Linux/Python 3.11–3.14 and macOS/Python 3.14
 jobs to complete **27,603 portable tests each**, with 1,907 integration tests
 deselected, no skips/failures/errors and the completeness guard. Original failed
-attempts remain recorded separately. This branch is a preparation review
-candidate until its final review/checks and merge; S3.6b and S3.7 remain required.
+attempts remain recorded separately. [PR #97](https://github.com/0xsl0th/recon-cockpit/pull/97)
+merged the reviewed head `057567d` at `8b086d5`; the reviewed and merged trees
+match. All five final and post-merge CI jobs passed the complete counts above.
+S3.6a is accepted. [S3.6b native binding](stage3-name-tls-native.md) and S3.7
+remain required.

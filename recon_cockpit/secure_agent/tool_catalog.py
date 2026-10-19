@@ -36,6 +36,13 @@ def _network(program, case, policy, runbook, *limitations):
 
 
 _ENTRIES = MappingProxyType({
+    **{tool: _Entry(program, "candidate-only", "O4", "", "docs/stage3-name-tls-native.md",
+        ("Candidate profile; native acceptance remains incomplete.",
+         "An owned DNS observation grants no authority. Each service operation requires fresh exact approval and a live owner binding.",
+         "No saved binding, catalog recipe or description can create live authority."))
+       for tool, program in ((adapters.OWNED_NAME_DNS_TOOL_ID, "dig"),
+                             (adapters.OWNED_NAME_HTTP_TOOL_ID, None),
+                             (adapters.OWNED_NAME_TLS_TOOL_ID, "openssl"))},
     adapters.FFUF_HIERARCHY_TOOL_ID: _network("ffuf", "web-hierarchy-nested", "web-hierarchy", "web-hierarchy-tools",
         "Twelve compiled paths across three fixed prefixes, with two negative controls per prefix; accepted in PR #84.",
         "Serial bounded discovery requires independent owner/client agreement; wildcard, redirect and partial results cannot establish useful completion.",
@@ -214,6 +221,8 @@ def _entry(tool_id):
 def _summary(tool_id, entry):
     adapter = adapters.ADAPTERS[tool_id]
     return {"tool_id": tool_id, "effect": adapter.effect,
+            **({"acceptance_status": "candidate", "milestone": "S3.6b"}
+               if tool_id in adapters.NAME_TLS_CANDIDATES else {}),
             "implementation": "native" if entry.program is None else "external_program",
             "external_program": entry.program, "execution_profile": adapter.execution_profile,
             "parser_version": adapter.parser_version}
@@ -223,8 +232,8 @@ def list_tools():
     """List reviewed capabilities, without claiming their prerequisites exist."""
     tools = [_summary(tool_id, _entry(tool_id)) for tool_id in sorted(adapters.ADAPTERS)]
     return {**_common(), "capability_count": len(tools),
-            "accepted_capability_count": len(tools),
-            "candidate_capability_count": 0,
+            "accepted_capability_count": len(tools) - len(adapters.NAME_TLS_CANDIDATES),
+            "candidate_capability_count": len(adapters.NAME_TLS_CANDIDATES),
             "external_program_count": len({row["external_program"] for row in tools
                                            if row["external_program"] is not None}),
             "tools": tools}
@@ -267,6 +276,12 @@ def _recipe_actions(entry):
 def describe_tool(tool_id: str):
     """Describe one fixed example and every action its existing selector uses."""
     entry = _entry(tool_id)
+    if tool_id in adapters.NAME_TLS_CANDIDATES:
+        return {**_common(), **_summary(tool_id, entry),
+                "adapter": adapters.ADAPTERS[tool_id].to_dict(),
+                "parameter_schema_role": "syntax_only; live owner state and separately reviewed authority are required",
+                "fixed_parameters": [], "run": None, "runbook": entry.runbook,
+                "limitations": list(entry.limitations)}
     workflow_id, limits, raw_actions = _recipe_actions(entry)
     actions = [{"step": step, "tool_id": action["tool_id"], "target": action["target"],
                 "parameters": dict(action["parameters"])}

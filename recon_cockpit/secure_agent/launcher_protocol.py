@@ -22,7 +22,8 @@ PROFILES = {'fixture': 'linux-authorized-fixture-executor-v1',
             'stock_nginx_diagnostic_v1': 'linux-authorized-stock-nginx-diagnostic-v1',
             'stock_http_compatibility_v1': 'linux-authorized-stock-http-compatibility-v1',
             'stock_ssh_compatibility_v1': 'linux-authorized-stock-ssh-compatibility-v1',
-            'disconnected_routing_v1': 'linux-authorized-disconnected-routing-v1'}
+            'disconnected_routing_v1': 'linux-authorized-disconnected-routing-v1',
+            'owned_name_tls_v1': 'linux-authorized-owned-name-tls-v1'}
 RUNTIME_TAGS = {'owned_nmap_lab': 'nmap-launch-preconditions', 'owned_web_lab': 'web-launch-preconditions',
     'owned_http_headers_lab': 'http-headers-launch-preconditions',
     'owned_web_tools_lab': 'web-tools-launch-preconditions',
@@ -32,7 +33,8 @@ RUNTIME_TAGS = {'owned_nmap_lab': 'nmap-launch-preconditions', 'owned_web_lab': 
     'stock_nginx_diagnostic_v1': 'stock-http-launch-preconditions',
     'stock_http_compatibility_v1': 'stock-http-production-launch-preconditions',
     'stock_ssh_compatibility_v1': 'stock-ssh-launch-preconditions',
-    'disconnected_routing_v1': 'routing-launch-preconditions'}
+    'disconnected_routing_v1': 'routing-launch-preconditions',
+    'owned_name_tls_v1': 'name-tls-launch-preconditions'}
 
 
 def runtime_tag(config, closure):
@@ -83,7 +85,7 @@ def decode(raw):
 
 
 def configuration(value):
-    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
+    if type(value) is dict and value.get('profile') in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1', 'owned_name_tls_v1'}:
         from .owned_lab_contract import validate_identity
         if value['profile'] == 'owned_web_lab':
             from .web_lab_contract import validate_identity
@@ -96,8 +98,10 @@ def configuration(value):
         elif value['profile'] == 'owned_service_web_lab':
             from .service_web_lab_contract import validate_identity
         base = admission.configuration({key: item for key, item in value.items() if key != 'owned_lab'})
-        if value['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
-            if value['profile'] == 'disconnected_routing_v1':
+        if value['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1', 'owned_name_tls_v1'}:
+            if value['profile'] == 'owned_name_tls_v1':
+                from .name_tls_contract import validate_identity as validate_stock_identity
+            elif value['profile'] == 'disconnected_routing_v1':
                 from .routing_contract import validate_identity as validate_stock_identity
             elif value['profile'] == 'stock_ssh_compatibility_v1':
                 from .stock_ssh_contract import validate_identity as validate_stock_identity
@@ -119,7 +123,7 @@ def configuration(value):
 
 def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tools=False, service_web=False,
             configurable=False, stock_http=False, stock_http_production=False, stock_ssh=False, routing=False,
-            routing_selection=None):
+            routing_selection=None, name_tls=False):
     if routing_selection is not None and not routing:
         raise ValueError('routing_selection_without_runtime')
     fields = ({'stdlib', 'files'} | ({'nmap_runtime'} if nmap else set()) |
@@ -128,8 +132,8 @@ def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tool
               ({'configurable_runtime'} if configurable else set()) |
               ({'stock_http_runtime'} if stock_http or stock_http_production else set()) |
               ({'stock_ssh_runtime'} if stock_ssh else set()) |
-              ({'routing_runtime'} if routing else set()))
-    if type(value) is not dict or set(value) != fields or (sum((nmap, web_tools, network_tools, service_web, configurable, stock_http, stock_http_production, stock_ssh, routing)) > 1):
+              ({'routing_runtime'} if routing else set()) | ({'name_tls_runtime'} if name_tls else set()))
+    if type(value) is not dict or set(value) != fields or (sum((nmap, web_tools, network_tools, service_web, configurable, stock_http, stock_http_production, stock_ssh, routing, name_tls)) > 1):
         raise ValueError('invalid_launcher_runtime')
     if nmap:
         from .nmap_runtime import validate_manifest
@@ -163,6 +167,9 @@ def runtime(value, *, owned_lab=False, nmap=False, web_tools=False, network_tool
     if routing:
         from .routing_contract import validate_runtime, selection
         validate_runtime(value['routing_runtime'], selection() if routing_selection is None else routing_selection)
+    if name_tls:
+        from .name_tls_native_runtime import validate_runtime
+        validate_runtime(value['name_tls_runtime'])
     if type(value['stdlib']) is not str or not re.fullmatch(r'/usr/lib/python3\.\d+', value['stdlib']):
         raise ValueError('invalid_launcher_stdlib')
     paths = value['files']
@@ -190,7 +197,7 @@ def initial(value, now):
         manifest(value['approval_witness'])
     config = configuration(value['configuration'])
     admission.initial({'configuration': {k: v for k, v in config.items() if k != 'owned_lab'}, 'deadline': value['deadline']}, now)
-    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'},
+    runtime(value['runtime'], owned_lab=config['profile'] in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1', 'owned_name_tls_v1'},
             nmap=config['profile'] in {'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab'},
             web_tools=config['profile'] == 'owned_web_tools_lab', network_tools=config['profile'] == 'owned_network_tools_lab',
             service_web=config['profile'] == 'owned_service_web_lab',
@@ -199,9 +206,12 @@ def initial(value, now):
             stock_http_production=config['profile'] == 'stock_http_compatibility_v1',
             stock_ssh=config['profile'] == 'stock_ssh_compatibility_v1',
             routing=config['profile'] == 'disconnected_routing_v1',
+            name_tls=config['profile'] == 'owned_name_tls_v1',
             routing_selection=config['case'] if config['profile'] == 'disconnected_routing_v1' else None)
-    if config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
-        if config['profile'] == 'disconnected_routing_v1':
+    if config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1', 'owned_name_tls_v1'}:
+        if config['profile'] == 'owned_name_tls_v1':
+            from .name_tls_contract import validate_identity as validate_stock_identity
+        elif config['profile'] == 'disconnected_routing_v1':
             from .routing_contract import validate_identity as validate_stock_identity
         elif config['profile'] == 'stock_ssh_compatibility_v1':
             from .stock_ssh_contract import validate_identity as validate_stock_identity
@@ -212,7 +222,7 @@ def initial(value, now):
         if 'audit_witness' not in value or 'approval_witness' not in value:
             raise ValueError('stock_http_requires_independent_launch_witnesses')
         validate_stock_identity(config['owned_lab'], selection=config['case'], session_id=config['session_id'],
-                                runtime=value['runtime']['routing_runtime' if config['profile'] == 'disconnected_routing_v1' else
+                                runtime=value['runtime']['name_tls_runtime' if config['profile'] == 'owned_name_tls_v1' else 'routing_runtime' if config['profile'] == 'disconnected_routing_v1' else
                                     'stock_ssh_runtime' if config['profile'] == 'stock_ssh_compatibility_v1' else 'stock_http_runtime'])
     if config['profile'] == 'owned_web_tools_lab':
         from .web_tools_contract import action
