@@ -177,6 +177,11 @@ class LinuxLaunchAdmission:
                 self._cleanup()
                 if isinstance(exc, (ExecutionStopped, KeyboardInterrupt, SystemExit)):
                     raise
+                if self._config['profile'] == 'owned_name_tls_v1':
+                    detail = (bytes(self._supervisor.buffers.get('worker_err', b''))[:4096]
+                              .decode('utf-8', 'replace') if self._supervisor is not None else '')
+                    raise IsolationUnavailable('Launch admission unavailable: ' + type(exc).__name__ + ': '
+                                               + str(exc)[:256] + ': ' + detail + '; no fallback') from None
                 raise IsolationUnavailable('Launch admission unavailable; no fallback') from None
 
     def admit(self, action, policy, *, control):
