@@ -1,5 +1,7 @@
 """Native daemon recipes and seccomp socket selection stay finite."""
 from copy import deepcopy
+import ctypes
+import errno
 import os
 import socket
 import stat
@@ -109,7 +111,7 @@ class Function:
 def test_socket_policy_does_not_accidentally_allow_other_families_or_processes(monkeypatch, operation):
     names, rules = {}, []
     def resolve(name):
-        names.setdefault(name, -10060 if name == b"socketcall" else len(names) + 1)
+        names.setdefault(name, {b"socketcall": -10060, b"send": -109}.get(name, len(names) + 1))
         return names[name]
     def rule(context, action, number, count, args):
         assert context == 1 and action == 0x00050000 | 1
@@ -130,6 +132,18 @@ def test_socket_policy_does_not_accidentally_allow_other_families_or_processes(m
         return any(number == names[name] and all(matches(item) for item in comparisons) for number, comparisons in rules)
     for name in (b"connect", b"fork", b"vfork", b"clone", b"clone3", b"setns", b"unshare", b"execveat"):
         assert denied(name, [0] * 6)
+    for name, flag_index in ((b"send", 3), (b"sendto", 3), (b"sendmsg", 2), (b"sendmmsg", 3)):
+        for ordinary_flags in (0, 0x40, 0x4000, 0x8000, 0xC040):
+            arguments = [0] * 6
+            arguments[flag_index] = ordinary_flags
+            assert not denied(name, arguments)  # Replies and SCM_RIGHTS remain possible.
+            arguments[flag_index] |= 0x20000000
+            assert denied(name, arguments)
+        for other_index in set(range(6)) - {flag_index}:
+            arguments = [0] * 6
+            arguments[other_index] = 0x20000000
+            assert not denied(name, arguments)
+    assert denied(b"socketcall", [0] * 6)
     assert b"execve" not in names
     for family in range(48):
         for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM, socket.SOCK_RAW):
@@ -142,6 +156,55 @@ def test_socket_policy_does_not_accidentally_allow_other_families_or_processes(m
     assert denied(b"socket", [socket.AF_INET, socket.SOCK_STREAM, 255])
     if operation == "dns":
         assert denied(b"socket", [socket.AF_NETLINK, socket.SOCK_RAW, 12])
+
+
+@pytest.mark.parametrize("failure", (None, "sendto", "sendmsg", "sendmmsg", "connected"))
+@pytest.mark.parametrize("wrong_errno", (errno.EINPROGRESS, errno.ECONNREFUSED, errno.EFAULT, None))
+def test_fastopen_witness_requires_each_actual_eperm_and_unconnected_socket(monkeypatch, failure, wrong_errno):
+    events = []
+    endpoint = ("10.77.0.53", 5353)
+    def probe(name):
+        events.append(name)
+        if failure == name:
+            if wrong_errno is None:
+                return 1
+            raise OSError(wrong_errno, "injected syscall result")
+        raise PermissionError(errno.EPERM, "denied")
+    class Stream:
+        def sendto(self, raw, flags, destination):
+            assert raw == b"x" and flags == 0x20000000 and destination == endpoint
+            return probe("sendto")
+        def sendmsg(self, buffers, ancillary, flags, destination):
+            assert buffers == [b"x"] and ancillary == [] and flags == 0x20000000 and destination == endpoint
+            return probe("sendmsg")
+        def getpeername(self):
+            events.append("peer")
+            if failure == "connected":
+                return endpoint
+            raise OSError(errno.ENOTCONN, "unconnected")
+    monkeypatch.setattr(worker, "_sendmmsg_fastopen", lambda stream, destination: probe("sendmmsg"))
+    if failure is None:
+        worker.fastopen_witnesses(Stream(), endpoint)
+        assert events == ["sendto", "sendmsg", "sendmmsg", "peer"]
+    else:
+        with pytest.raises(ValueError, match="fastopen"):
+            worker.fastopen_witnesses(Stream(), endpoint)
+
+
+def test_sendmmsg_witness_has_real_single_payload_and_exact_sockaddr(monkeypatch):
+    def call(fd, pointer, count, flags):
+        row = pointer._obj
+        assert fd == 37 and count == 1 and flags == 0x20000000
+        assert row.message.name_length == 16 and row.message.iov_length == 1
+        address = ctypes.string_at(row.message.name, row.message.name_length)
+        assert address[2:4] == (5353).to_bytes(2, "big") and address[4:8] == socket.inet_aton("10.77.0.53")
+        assert ctypes.string_at(row.message.iov[0].base, row.message.iov[0].length) == b"x"
+        assert not row.message.control and not row.message.control_length and not row.message.flags
+        ctypes.set_errno(errno.EPERM)
+        return -1
+    monkeypatch.setattr(worker.ctypes, "CDLL", lambda *a, **k: SimpleNamespace(sendmmsg=Function(call)))
+    with pytest.raises(PermissionError):
+        worker._sendmmsg_fastopen(SimpleNamespace(fileno=lambda: 37), ("10.77.0.53", 5353))
 
 
 @pytest.mark.parametrize("protocol", ("tcp", "udp"))

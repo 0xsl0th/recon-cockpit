@@ -32,6 +32,8 @@ from recon_cockpit.secure_agent.name_tls_topology_spec import endpoints, validat
 from recon_cockpit.secure_agent.name_tls_transport import (
     receive_packet, send_packet, socket_identity, assert_descriptor_copies)
 
+MSG_FASTOPEN = 0x20000000  # Linux UAPI: send flags can initiate a TCP connection.
+
 
 def namespaces():
     return {name: os.readlink("/proc/self/ns/" + name) for name in ("user", "net", "mnt", "pid")}
@@ -136,6 +138,12 @@ def socket_filter(operation):
                 "pidfd_send_signal", "bpf", "keyctl", "add_key", "request_key", "perf_event_open", "userfaultfd",
                 "io_uring_setup", "socketpair", "socketcall", "memfd_create", "open_by_handle_at"):
             deny(name)
+        # Denying connect alone does not forbid TCP initiation: these send
+        # entrypoints can perform an implicit connect with MSG_FASTOPEN. Mask
+        # the bit so extra flags cannot bypass the denial. Ordinary replies and
+        # the existing control-channel SCM_RIGHTS send remain permitted.
+        for name, index in (("send", 3), ("sendto", 3), ("sendmsg", 2), ("sendmmsg", 3)):
+            deny(name, (Argument(index, 7, MSG_FASTOPEN, MSG_FASTOPEN),))
         families = [socket.AF_INET] + ([socket.AF_NETLINK] if operation == "dns" else [])
         for family in range(max(families) + 1):
             if family not in families:
@@ -163,7 +171,53 @@ def socket_filter(operation):
         library.seccomp_release(context)
 
 
-def confinement_witnesses(private_socket):
+def _sendmmsg_fastopen(stream, endpoint):
+    class Iovec(ctypes.Structure):
+        _fields_ = [("base", ctypes.c_void_p), ("length", ctypes.c_size_t)]
+    class Message(ctypes.Structure):
+        _fields_ = [("name", ctypes.c_void_p), ("name_length", ctypes.c_uint),
+                    ("iov", ctypes.POINTER(Iovec)), ("iov_length", ctypes.c_size_t),
+                    ("control", ctypes.c_void_p), ("control_length", ctypes.c_size_t), ("flags", ctypes.c_int)]
+    class MultiMessage(ctypes.Structure):
+        _fields_ = [("message", Message), ("length", ctypes.c_uint)]
+    # Linux sockaddr_in: native family, network-order port/address, eight zeros.
+    address = ctypes.create_string_buffer(int(socket.AF_INET).to_bytes(2, sys.byteorder)
+        + endpoint[1].to_bytes(2, "big") + socket.inet_aton(endpoint[0]) + bytes(8))
+    payload = ctypes.create_string_buffer(b"x")
+    vector = Iovec(ctypes.cast(payload, ctypes.c_void_p), 1)
+    message = MultiMessage(Message(ctypes.cast(address, ctypes.c_void_p), 16, ctypes.pointer(vector), 1, None, 0, 0), 0)
+    library = ctypes.CDLL(None, use_errno=True)
+    library.sendmmsg.argtypes = [ctypes.c_int, ctypes.POINTER(MultiMessage), ctypes.c_uint, ctypes.c_int]
+    library.sendmmsg.restype = ctypes.c_int
+    ctypes.set_errno(0)
+    result = library.sendmmsg(stream.fileno(), ctypes.byref(message), 1, MSG_FASTOPEN)
+    if result == -1:
+        error = ctypes.get_errno()
+        raise OSError(error, os.strerror(error))
+    return result
+
+
+def fastopen_witnesses(private_socket, endpoint):
+    """Pre-exec syscall denials; these are not traces of the native daemon."""
+    probes = (("sendto", lambda: private_socket.sendto(b"x", MSG_FASTOPEN, endpoint)),
+              ("sendmsg", lambda: private_socket.sendmsg([b"x"], [], MSG_FASTOPEN, endpoint)),
+              ("sendmmsg", lambda: _sendmmsg_fastopen(private_socket, endpoint)))
+    for name, probe in probes:
+        try:
+            probe()
+        except OSError as error:
+            if error.errno == errno.EPERM:
+                continue
+        raise ValueError("name_tls_daemon_fastopen_not_denied:" + name)
+    try:
+        private_socket.getpeername()
+    except OSError as error:
+        if error.errno == errno.ENOTCONN:
+            return
+    raise ValueError("name_tls_daemon_fastopen_socket_connected")
+
+
+def confinement_witnesses(private_socket, endpoint):
     status = worker._status()
     if status["NoNewPrivs"] != "1" or any(int(status[key], 16) for key in ("CapInh", "CapPrm", "CapEff", "CapBnd", "CapAmb")):
         raise ValueError("name_tls_daemon_privileges_retained")
@@ -178,6 +232,7 @@ def confinement_witnesses(private_socket):
         raise ValueError("name_tls_daemon_socket_family_allowed")
     if private_socket.connect_ex(("127.0.0.1", 1)) != errno.EPERM:
         raise ValueError("name_tls_daemon_outgoing_connect_allowed")
+    fastopen_witnesses(private_socket, endpoint)
     try:
         pid = os.fork()
     except PermissionError:
@@ -231,7 +286,7 @@ def main():
         worker.drop_privileges()
         resource.setrlimit(resource.RLIMIT_NPROC, (1, 1))
         socket_filter(operation)
-        confinement_witnesses(private_socket)
+        confinement_witnesses(private_socket, endpoints(manifest["configuration"])[operation])
         if setup._payload_identity() != identity:
             raise ValueError("name_tls_daemon_identity_changed")
         try:

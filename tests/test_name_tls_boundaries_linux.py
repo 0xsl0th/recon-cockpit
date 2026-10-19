@@ -116,6 +116,15 @@ def test_actual_name_tls_boundary_witness(gate, witnessed_trials, tmp_path, reco
         assert 1 <= witness["observed_tasks"] <= (16 if operation == "dns" else 1)
     elif case == "daemon_sealed_runtime_and_observed_readiness_images_match_partition":
         witness = {operation: _native_checks(result, manifest, operation) for operation, result in results.items()}
+        source = next(row for row in manifest["runtime"]["python_sources"]["files"]
+                      if row["destination"].endswith("/name_tls_daemon_worker.py"))
+        # Ready is emitted only after these actual EPERM probes have completed
+        # on the handed socket under the filter inherited by the native image.
+        # This identifies pre-exec wrapper checks, not native syscall tracing.
+        witness["mandatory_pre_exec_connection_denials"] = {
+            "checks": ["connect", "sendto_MSG_FASTOPEN", "sendmsg_MSG_FASTOPEN", "sendmmsg_MSG_FASTOPEN"],
+            "expected_errno": "EPERM", "socket_still_unconnected": True,
+            "source_sha256": source["sha256"], "observation_scope": "sealed_pre_exec_wrapper"}
     else:
         operation = "http" if case.startswith("nginx_") else "dns"
         witness = _native_checks(results[operation], manifest, operation)
