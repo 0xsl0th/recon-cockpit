@@ -11,6 +11,24 @@ import pytest
 from recon_cockpit.secure_agent import name_tls_parser as parser, name_tls_wire as wire
 from recon_cockpit.secure_agent import name_tls_spec as preparation
 
+PROBE_DENIED_TEXT = b"net.c:136:try_proto(): socket(): Operation not permitted (1)\n"
+
+
+def recorded_dig_frame(stderr=PROBE_DENIED_TEXT):
+    # Exact O1 bytes retained by failed native diagnostic 8542293; no replayed
+    # fixture execution or syscall claim is made by these portable vectors.
+    request = bytes.fromhex("0021ac83000000010000000000000a686172626f726465736b04746573740000010001")
+    response = bytes.fromhex("0031ac83848000010001000000000a686172626f726465736b04746573740000010001c00c000100010000003c00040a4d000a")
+    stdout = (b";; Got answer:\n;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 44163\n"
+              b";; flags: qr aa ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0\n\n"
+              b";; QUESTION SECTION:\n;harbordesk.test.\t\tIN\tA\n\n;; ANSWER SECTION:\n"
+              b"harbordesk.test.\t60\tIN\tA\t10.77.0.10\n\n;; Query time: 24 msec\n"
+              b";; SERVER: 10.77.0.53#5353(10.77.0.53) (TCP)\n"
+              b";; WHEN: Mon Oct 19 19:16:41 UTC 2026\n;; MSG SIZE  rcvd: 49\n\n")
+    return parser.encode_input("dns", configuration="A", case="O1", request=request, delivered_request=request,
+        original_response=response, proposed_response=response, delivered_response=response,
+        stdout=stdout, stderr=stderr, exit_code=0, stop_reason=None)
+
 
 def dns_exchange(configuration="A", *, ttl=60, address=None):
     query = struct.pack("!6H", 419, 0, 1, 0, 0, 0) + wire.QUESTION
@@ -98,6 +116,52 @@ def test_dns_native_wire_semantics_agree_without_grant(configuration, case):
     assert not {"owner", "grant", "observed_us", "expires_us"} & result.keys()
 
 
+@pytest.mark.parametrize("stderr,marker", ((b"", None), (PROBE_DENIED_TEXT, "socket_probe_denied_text")))
+def test_recorded_dig_stderr_exact_grammar_preserves_wire_agreement(stderr, marker):
+    raw = recorded_dig_frame(stderr)
+    if stderr:
+        assert hashlib.sha256(raw).hexdigest() == "0adda09a3d783fcca07f7e325b0c1cd3c864844695aee54e8eec8e2bb6bce996"
+    result = parser.parse_input(raw)
+    assert result["native"]["stderr_diagnostic"] == marker
+    assert result["native"]["semantic"] == result["observation"]
+    assert result["useful_task_completed"] and result["binding_candidate"]
+    assert result["streams"]["stderr"] == {"bytes": len(stderr), "sha256": hashlib.sha256(stderr).hexdigest()}
+    assert parser.validate_result(result) == result
+
+
+@pytest.mark.parametrize("stderr", (PROBE_DENIED_TEXT * 2, b" " + PROBE_DENIED_TEXT,
+    PROBE_DENIED_TEXT + b" ", PROBE_DENIED_TEXT + b"\n", PROBE_DENIED_TEXT + b"other warning\n",
+    PROBE_DENIED_TEXT[:-1], PROBE_DENIED_TEXT[:-1] + b"\r\n",
+    PROBE_DENIED_TEXT.replace(b":136:", b":137:"), PROBE_DENIED_TEXT.replace(b"(1)", b"(13)"),
+    PROBE_DENIED_TEXT.replace(b"not permitted", b"not supported"), PROBE_DENIED_TEXT + b"\0"))
+def test_recorded_dig_stderr_repetition_mutation_and_trailing_bytes_refused(stderr):
+    with pytest.raises(ValueError, match="^name_tls_dig_stderr$"):
+        parser.parse_input(recorded_dig_frame(stderr))
+
+
+@pytest.mark.parametrize("field,value", (("marker", None), ("marker", True), ("marker", "socket_probe_allowed"),
+                                        ("sha256", "f" * 64), ("bytes", 60)))
+def test_dig_diagnostic_marker_is_bound_to_exact_stderr_commitment(field, value):
+    result = parser.parse_input(recorded_dig_frame())
+    if field == "marker":
+        result["native"]["stderr_diagnostic"] = value
+    else:
+        result["streams"]["stderr"][field] = value
+    with pytest.raises(ValueError):
+        parser.validate_result(result)
+
+
+@pytest.mark.parametrize("change", ("native_failure", "answer_changed"))
+def test_exact_dig_diagnostic_cannot_replace_success_or_independent_wire_agreement(change):
+    header, streams = parser.decode_input(recorded_dig_frame())
+    if change == "answer_changed":
+        streams["stdout"] = streams["stdout"].replace(b"10.77.0.10", b"10.77.0.99")
+    raw = parser.encode_input("dns", configuration="A", case="O1", exit_code=1 if change == "native_failure" else 0,
+                              stop_reason=None, **streams)
+    with pytest.raises(ValueError, match="^name_tls_(dig_execution_failed|dns_native_wire_disagreement)$"):
+        parser.parse_input(raw)
+
+
 @pytest.mark.parametrize("configuration", ("A", "B"))
 @pytest.mark.parametrize("case", ("N6", "N7"))
 def test_transformed_negative_retains_independent_original(configuration, case):
@@ -114,11 +178,14 @@ def test_exact_truncated_frame_is_negative_only_with_native_failure(configuratio
     request, original = dns_exchange(configuration)
     response = wire.transformed_dns_response(configuration, "N8", request, original)
     raw = frame(configuration=configuration, case="N8", proposed_response=response, delivered_response=response,
-                exit_code=9, stdout=b"", stderr=b"bounded native EOF failure\n")
+                exit_code=9, stdout=b"", stderr=PROBE_DENIED_TEXT)
     assert parser.parse_input(raw)["expected_negative"]
     with pytest.raises(ValueError):
         parser.parse_input(frame(configuration=configuration, case="N8", proposed_response=response,
                                 delivered_response=response, stdout=b""))
+    with pytest.raises(ValueError, match="^name_tls_dig_stderr$"):
+        parser.parse_input(frame(configuration=configuration, case="N8", proposed_response=response,
+                                delivered_response=response, exit_code=9, stdout=b"", stderr=b"other warning\n"))
 
 
 @pytest.mark.parametrize("mutation", (lambda r: r[:-1], lambda r: r + b"x", lambda r: r + r,
@@ -183,6 +250,20 @@ def test_tls_hello_and_native_verification_are_separate(configuration):
     assert result["useful_task_completed"]
     assert result["native"]["verification"] == "verified"
     assert result["observation"]["encrypted_contents_verified"] is False
+
+
+@pytest.mark.parametrize("operation", ("http", "tls"))
+def test_dns_diagnostic_rule_does_not_relax_other_native_grammars(operation):
+    if operation == "http":
+        request, response = wire.http_request("A", "O1"), b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\ndata"
+        stdout, stderr = response, PROBE_DENIED_TEXT
+    else:
+        request, response = client_hello(), server_hello() + b"\x17\3\3\0\x11" + b"x" * 17
+        stdout, stderr = b"", brief() + PROBE_DENIED_TEXT
+    raw = frame(operation, case="O1", request=request, delivered_request=request, original_response=response,
+                proposed_response=response, delivered_response=response, stdout=stdout, stderr=stderr)
+    with pytest.raises(ValueError):
+        parser.parse_input(raw)
 
 
 @pytest.mark.parametrize("mutation", (lambda r: r + client_hello(), lambda r: r.replace(b"harbordesk.test", b"otherdesk.test"),

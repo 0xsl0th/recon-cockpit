@@ -15,6 +15,8 @@ STREAMS = ("request", "delivered_request", "original_response", "proposed_respon
            "delivered_response", "stdout", "stderr")
 BOUNDS = {"dns": (512, 4096, 8192), "http": (256, 2048, 2048), "tls": (8192, 16384, 8192)}
 _HEX = re.compile(r"[0-9a-f]{64}")
+_DIG_PROBE_DENIED_TEXT = b"net.c:136:try_proto(): socket(): Operation not permitted (1)\n"
+_DIG_STDERR_MARKER = "socket_probe_denied_text"
 
 
 def _unique(pairs):
@@ -113,10 +115,15 @@ def _lines(raw):
     return [line for line in lines if line]
 
 
+def _dig_stderr(stderr):
+    if type(stderr) is not bytes or stderr not in (b"", _DIG_PROBE_DENIED_TEXT):
+        raise ValueError("name_tls_dig_stderr")
+    return _DIG_STDERR_MARKER if stderr else None
+
+
 def parse_dig_output(stdout, stderr, *, configuration, case):
     row = wire.selection(configuration, case)
-    if stderr:
-        raise ValueError("name_tls_dig_stderr")
+    diagnostic = _dig_stderr(stderr)
     lines = _lines(stdout)
     if len(lines) < 8 or lines.pop(0) != ";; Got answer:":
         raise ValueError("name_tls_dig_header")
@@ -162,7 +169,7 @@ def parse_dig_output(stdout, stderr, *, configuration, case):
     semantic = {"schema_version": "1", "question": {"name": wire.NAME, "class": 1, "type": 1},
                 "transaction_id": int(header[1]), "flags": flag_value, "records": records}
     return {"semantic": semantic, "response_message_bytes": int(size[1]), "transport": "tcp",
-            "resolver_address": row[0], "resolver_port": row[1]}
+            "resolver_address": row[0], "resolver_port": row[1], "stderr_diagnostic": diagnostic}
 
 
 def _http(raw):
@@ -240,6 +247,7 @@ def parse_input(raw):
         raise ValueError("name_tls_wire_delivery_incomplete")
     useful, expected_negative = False, False
     if operation == "dns":
+        _dig_stderr(streams["stderr"])
         if case == "N8":
             expected = wire.transformed_dns_response(configuration, case, request, original)
             if response != expected or header["exit_code"] == 0:
@@ -306,6 +314,11 @@ def validate_result(value):
     observation, native, case = value["observation"], value["native"], value["case"]
     expected_negative = False
     if value["operation"] == "dns":
+        stderr = value["streams"]["stderr"]
+        stderr_variants = [{"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+                           for raw in (b"", _DIG_PROBE_DENIED_TEXT)]
+        if stderr not in stderr_variants:
+            raise ValueError("name_tls_parser_dns_stderr")
         if case == "N8":
             if (set(observation) != {"kind", "declared_message_bytes", "delivered_message_bytes"}
                     or observation["kind"] != "truncated_dns_frame" or native is not None or value["exit_code"] == 0
@@ -318,10 +331,11 @@ def validate_result(value):
         else:
             wire.validate_dns_semantic(observation)
             row = wire.selection(value["configuration"], case)
-            if (type(native) is not dict or set(native) != {"semantic", "response_message_bytes", "transport", "resolver_address", "resolver_port"}
+            if (type(native) is not dict or set(native) != {"semantic", "response_message_bytes", "transport", "resolver_address", "resolver_port", "stderr_diagnostic"}
                     or native["semantic"] != observation or native["transport"] != "tcp"
                     or native["resolver_address"] != row[0] or type(native["resolver_port"]) is not int or native["resolver_port"] != row[1]
                     or type(native["response_message_bytes"]) is not int or native["response_message_bytes"] != value["streams"]["delivered_response"]["bytes"] - 2
+                    or native["stderr_diagnostic"] != (None if stderr == stderr_variants[0] else _DIG_STDERR_MARKER)
                     or value["exit_code"] != 0 or value["stop_reason"] is not None):
                 raise ValueError("name_tls_parser_dns_result")
             useful = wire.binding_candidate(observation, value["configuration"], case)
