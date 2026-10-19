@@ -197,7 +197,8 @@ def _tls_native(stdout, stderr, configuration, case, exit_code):
     if case in ("N11", "N12", "N13", "N16"):
         expected = {"N11": (62, "hostname mismatch"), "N12": (20, "unable to get local issuer certificate"),
                     "N13": (10, "certificate has expired")}
-        if exit_code == 0 or any("Verification: OK" in line or "Verified peername:" in line for line in lines):
+        if (exit_code == 0 or case in expected and exit_code != 1
+                or any("Verification: OK" in line or "Verified peername:" in line for line in lines)):
             raise ValueError("name_tls_expected_native_tls_refusal")
         if case == "N16":
             if not any("tlsv1 alert protocol version" in line for line in lines):
@@ -379,7 +380,8 @@ def validate_result(value):
         else:
             failure = {"N11": "certificate_name", "N12": "certificate_issuer", "N13": "certificate_expired", "N16": "protocol_version"}.get(case)
             if (failure is None or native != {"verification": "failed", "failure": failure, "protocol": None, "cipher": None, "peer_name": None}
-                    or value["exit_code"] == 0 or value["stop_reason"] is not None or (case == "N16") != observation["protocol_rejection"]
+                    or value["exit_code"] == 0 or case in ("N11", "N12", "N13") and value["exit_code"] != 1
+                    or value["stop_reason"] is not None or (case == "N16") != observation["protocol_rejection"]
                     or (case == "N16") != (chosen is None)):
                 raise ValueError("name_tls_parser_tls_refusal_result")
             expected_negative = True

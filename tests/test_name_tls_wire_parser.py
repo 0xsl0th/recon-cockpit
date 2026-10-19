@@ -377,8 +377,11 @@ def test_recorded_native_verification_alerts_require_complete_delivery(case, ale
     assert parsed["streams"]["request"]["sha256"] == hashlib.sha256(request).hexdigest()
     with pytest.raises(ValueError, match="delivery_incomplete"):
         parser.parse_input(frame("tls", **{**values, "delivered_request": request[:-7]}))
-    with pytest.raises(ValueError, match="expected_native_tls_refusal"):
-        parser.parse_input(frame("tls", **{**values, "exit_code": 0}))
+    for changed_exit in (0, 2, 78, 255, -9, -15):
+        with pytest.raises(ValueError, match="expected_native_tls_refusal"):
+            parser.parse_input(frame("tls", **{**values, "exit_code": changed_exit}))
+        with pytest.raises(ValueError, match="tls_refusal_result"):
+            parser.validate_result({**parsed, "exit_code": changed_exit})
 
 
 @pytest.mark.parametrize("case", ("N11", "N12", "N13"))
