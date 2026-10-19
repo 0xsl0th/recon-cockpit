@@ -134,3 +134,138 @@ def test_nested_admission_mounts_typed_name_contract_without_owner_material(monk
     assert {"/app/admission_runtime/" + name + ".py" for name in
             ("name_tls_contract", "name_tls_public", "session_limits")} <= destinations
     assert not any("name_tls_spec" in path or "server.key" in path for path in destinations)
+
+
+class StartupClock:
+    def __init__(self):
+        self.value = 100.5
+    def __call__(self):
+        return self.value
+
+
+def startup_run(monkeypatch, *, stall=None, slot='dns_1', owner_deadline=160,
+                action_deadline=110, startup_deadline=102):
+    """Drive trusted orchestration with simulated subprocesses and a fixed clock."""
+    from recon_cockpit.secure_agent import routed, routing_services, name_tls_daemon, stock_ssh_client_runtime
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+    from test_name_tls_native_runtime import bundle
+    value = envelope(slot)
+    clock = StartupClock()
+    monkeypatch.setattr(client.time, 'monotonic', clock)
+    control = ExecutionControl(owner_deadline, clock=clock)
+    runtime = bundle(prepared('A', 'O4'))
+    value['runtime'] = None if slot == 'http' else runtime['roles'][contract.operation(slot) + '_client']
+    records = {'staging_controls': [], 'launches': [], 'writes': [], 'releases': [], 'supervisors': []}
+    prefix = worker.READY_PREFIX + hashlib.sha256(public.encode(value)).hexdigest().encode('ascii') + b'\n'
+    process = SimpleNamespace(stdin=SimpleNamespace(close=lambda: None), returncode=0, poll=lambda: 0)
+
+    class Supervisor(routed._Supervisor):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            records['supervisors'].append(self)
+            self.waits = 0
+            self.closed = False
+        def pipe(self):
+            return 70, 71
+        def watch(self, descriptor, name):
+            self.buffers[name] = bytearray()
+        def close_fd(self, descriptor):
+            pass
+        def launch(self, name, argv, **kwargs):
+            self.check()
+            records['launches'].append((self.control, self.deadline))
+            self.buffers.update(worker_out=bytearray(), worker_err=bytearray())
+            return process
+        def wait_for(self, predicate, **kwargs):
+            self.waits += 1
+            if self.waits == 1:
+                clock.value = 102 if stall == 'readiness' else 101
+                self.buffers['worker_err'].extend(prefix)
+            elif self.waits == 2 and slot != 'http':
+                clock.value = 102 if stall == 'native_image' else 101.1
+            self.check()
+            assert predicate()
+            self.check()
+        def close(self):
+            self.closed = True
+            self.selector.close()
+
+    def staging(kind, supplied):
+        records['staging_controls'].append(supplied)
+        if stall == kind:
+            clock.value = 102
+        supplied.check()
+    def native_stage(manifest, unused1, unused2, supplied, **kwargs):
+        staging('native_staging', supplied)
+        return []
+    def source_stage(runtime, modules, supplied):
+        staging('source_staging', supplied)
+        return {}
+    def write_control(proc, raw, supervisor, **kwargs):
+        supervisor.check()
+        records['writes'].append((raw, supervisor.deadline, supervisor.control))
+    def release(supplied, native_deadline):
+        assert supplied is control
+        records['releases'].append((supplied, native_deadline))
+        if stall == 'release':
+            clock.value = 102
+        else:
+            records['supervisors'][0].eof.update(('worker_out', 'worker_err'))
+    service = SimpleNamespace(slot=slot, selection=value['selection'], identity=value['identity'], runtime=runtime,
+        namespaces=value['namespaces'], namespace_fds=(13, 14), deadline=action_deadline,
+        startup_deadline=startup_deadline, check=lambda supplied: supplied.check(), release=release)
+    monkeypatch.setattr(routed, '_Supervisor', Supervisor)
+    monkeypatch.setattr(client, 'sealed_snapshots', native_stage)
+    monkeypatch.setattr(client.sources, 'snapshot_sources', source_stage)
+    monkeypatch.setattr(client, 'command', lambda *args, **kwargs: ['simulated-client'])
+    monkeypatch.setattr(stock_ssh_client_runtime, '_write_control', write_control)
+    monkeypatch.setattr(routing_services, '_owner_info', lambda *args: ((13, 14), 15, value['namespaces']))
+    monkeypatch.setattr(name_tls_daemon, 'launcher_mapping', lambda *args: {})
+    monkeypatch.setattr(name_tls_daemon, 'client_ready', lambda *args, **kwargs: {'ready': True})
+    original_stat = client.os.stat
+    def stat(path, *args, **kwargs):
+        if path == 'exe' and kwargs.get('dir_fd') == 15:
+            return SimpleNamespace(st_dev=1, st_ino=2)
+        return original_stat(path, *args, **kwargs)
+    monkeypatch.setattr(client.os, 'stat', stat)
+    return lambda: client.run(service=service, launch=value, control=control,
+        closure={'name_tls_runtime': runtime, 'stdlib': '/simulated-stdlib', 'files': []}, manifest=value['runtime']), records, control
+
+
+@pytest.mark.parametrize('stall', ('native_staging', 'source_staging', 'readiness', 'native_image', 'release'))
+def test_shared_startup_expiry_reaps_client_before_any_success(monkeypatch, stall):
+    from recon_cockpit.secure_agent.isolation import IsolationUnavailable
+    run, records, control = startup_run(monkeypatch, stall=stall)
+    with pytest.raises(IsolationUnavailable, match='startup exceeded action bound'):
+        run()
+    assert control.remaining() > 0
+    assert records['supervisors'][0].closed
+    assert all(item.deadline == 102 and item is not control and item.clock is control.clock
+               for item in records['staging_controls'])
+    if stall.endswith('staging'):
+        assert records['launches'] == records['writes'] == records['releases'] == []
+    elif stall in ('readiness', 'native_image'):
+        assert records['releases'] == []
+
+
+@pytest.mark.parametrize('slot', ('dns_1', 'http', 'tls'))
+def test_client_consumes_remaining_shared_startup_and_preserves_owner_control(monkeypatch, slot):
+    run, records, control = startup_run(monkeypatch, slot=slot)
+    result = run()
+    assert result['status'] == 'succeeded'
+    assert records['launches'] == [(control, 102)]
+    assert all(deadline == 102 and supplied is control for _, deadline, supplied in records['writes'])
+    assert records['releases'] == [(control, 101 + contract.action_bounds(slot)['timeout_seconds'])]
+    assert records['supervisors'][0].deadline == records['releases'][0][1]
+    assert records['supervisors'][0].control is control and control.deadline == 160
+    assert records['supervisors'][0].closed
+
+
+@pytest.mark.parametrize('owner_deadline,action_deadline,expected', ((101.5, 110, 101.5), (160, 101.5, 101.5)))
+def test_startup_never_outlives_owner_or_whole_action(monkeypatch, owner_deadline, action_deadline, expected):
+    run, records, control = startup_run(monkeypatch, owner_deadline=owner_deadline, action_deadline=action_deadline)
+    result = run()
+    assert result['status'] == 'succeeded'
+    assert all(item.deadline == expected for item in records['staging_controls'])
+    assert records['launches'] == [(control, expected)]
+    assert records['releases'] == [(control, expected)]

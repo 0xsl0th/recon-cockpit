@@ -191,7 +191,8 @@ class Services:
         supervisor, channel = frontend["supervisor"], frontend["channel"]
         old_deadline = supervisor.deadline
         if self.active is not None:
-            supervisor.deadline = min(old_deadline, self.active["deadline"])
+            phase_deadline = self.active["startup_deadline"] if operation in ("prepare", "arm") else self.active["deadline"]
+            supervisor.deadline = min(old_deadline, phase_deadline)
         try:
             _send(supervisor, channel, {"sequence": sequence, "operation": operation, **fields})
             if private_socket is not None:
@@ -223,24 +224,29 @@ class Services:
             "slot": slot, "action": action.to_dict()})
         if reply["status"] != "ok":
             return reply
+        deadline = min(self.control.deadline, started + contract.action_bounds(slot)["hard_action_seconds"])
         self.active = {"slot": slot, "sequence": sequence, "action_digest": action.digest,
-            "started": started, "deadline": min(self.control.deadline,
-                started + contract.action_bounds(slot)["hard_action_seconds"])}
+            "started": started, "deadline": deadline, "startup_deadline": min(started + 2, deadline)}
         return reply
 
     def _daemon(self, operation):
         self._check()
         manifest = self.runtime["roles"][daemon.selected_role(operation)]
-        supervisor = _Supervisor(min(2, self.active["deadline"] - time.monotonic()), 16384, control=self.control)
+        startup = ExecutionControl(self.active["startup_deadline"], self.control.cancelled, self.control.clock)
+        if time.monotonic() >= startup.deadline:
+            raise IsolationUnavailable("Name/TLS daemon startup exceeded action bound")
+        supervisor = _Supervisor(max(.001, startup.deadline - time.monotonic()), 16384, control=self.control)
+        supervisor.deadline = startup.deadline
         parent, child = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
         parent.setblocking(False)
         row = {"supervisor": supervisor, "channel": parent, "private_socket": None}
         self.current_daemon = row
         descriptors, source_descriptors = (), {}
         try:
-            descriptors = sealed_snapshots(manifest, None, None, self.control,
+            descriptors = sealed_snapshots(manifest, None, None, startup,
                 additional_compiled=native.compiled_snapshots(manifest))
-            source_descriptors = sources.snapshot_sources(self.runtime, (*daemon.MODULES, *sources.PACKAGE_FILES), self.control)
+            source_descriptors = sources.snapshot_sources(self.runtime, (*daemon.MODULES, *sources.PACKAGE_FILES), startup)
+            startup.check()
             read_fd, info_fd = supervisor.pipe()
             supervisor.watch(read_fd, "info")
             supervisor.launch("daemon", daemon.daemon_command(self._bootstrap(), manifest, descriptors,
@@ -394,6 +400,7 @@ class _ActionView:
     def __init__(self, services, frontend):
         self.services, self.frontend = services, frontend
         self.slot, self.deadline = services.active["slot"], services.active["deadline"]
+        self.startup_deadline = services.active["startup_deadline"]
         self.selection, self.identity, self.runtime = services.selection, services.identity, services.runtime
         role = contract.operation(self.slot) + "_client"
         self.namespace_fds = services.topology.namespace_fds(role)

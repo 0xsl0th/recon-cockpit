@@ -11,7 +11,7 @@ from . import name_tls_contract as contract, name_tls_public as public
 from . import name_tls_role_spec as roles, name_tls_native_runtime as native
 from . import name_tls_python_runtime as sources
 from .name_tls_client_worker import READY_PREFIX, BOUNDARY_NAMES
-from .execution import ExecutionControl
+from .execution import ExecutionControl, ExecutionStopped
 from .isolation import IsolationUnavailable, _trusted_program
 from .tool_runtime_common import sealed_snapshots, _CLOSE_EXCEPT
 
@@ -82,12 +82,18 @@ def run(*, service, launch, control, closure, manifest):
     maximum = contract.action_bounds(service.slot)["output_bytes"]
     # Bubblewrap's separate PID receipt has its own 4 KiB setup bound. Remove
     # those observed setup bytes before enforcing the native output budget.
-    supervisor = _Supervisor(max(.001, service.deadline - time.monotonic()), maximum + len(prefix) + 4096, control=control)
-    started, action_started, reason, proc = time.monotonic(), None, None, None
+    started = time.monotonic()
+    startup = ExecutionControl(min(service.startup_deadline, service.deadline, control.deadline),
+                               control.cancelled, control.clock)
+    supervisor = _Supervisor(max(.001, startup.deadline - started), maximum + len(prefix) + 4096, control=control)
+    supervisor.deadline = startup.deadline
+    action_started, reason, proc, released = None, None, None, False
     try:
-        descriptors = [] if manifest is None else sealed_snapshots(manifest, None, None, control,
+        startup.check()
+        descriptors = [] if manifest is None else sealed_snapshots(manifest, None, None, startup,
             additional_compiled=native.compiled_snapshots(manifest))
-        source_descriptors = sources.snapshot_sources(service.runtime, MODULES, control)
+        source_descriptors = sources.snapshot_sources(service.runtime, MODULES, startup)
+        startup.check()
         bootstrap = (closure["stdlib"], [(path, path) for path in closure["files"]])
         read_fd, info_fd = supervisor.pipe()
         supervisor.watch(read_fd, "info")
@@ -113,7 +119,6 @@ def run(*, service, launch, control, closure, manifest):
         action_started = time.monotonic()
         action_deadline = min(service.deadline, control.deadline,
             action_started + contract.action_bounds(service.slot)["timeout_seconds"])
-        supervisor.deadline = action_deadline
         _write_control(proc, public.encode({"nonce": launch["launch"]["nonce"], "deadline": action_deadline}) + b"\n",
                        supervisor, deadline=action_deadline)
         proc.stdin.close()
@@ -128,12 +133,20 @@ def run(*, service, launch, control, closure, manifest):
             supervisor.wait_for(native_ready)
             native_observation = observations[0]
         service.release(control, action_deadline)
+        startup.check()
+        released = True
+        supervisor.deadline = action_deadline
         supervisor.wait_for(lambda: proc.poll() is not None and {"worker_out", "worker_err"} <= supervisor.eof,
                             worker_may_exit=True)
     except _BudgetExceeded as error:
-        if action_started is None:
+        if not released:
             raise IsolationUnavailable("Name/TLS client startup exceeded action bound") from error
         reason = error.status
+    except ExecutionStopped as error:
+        if not released and error.reason == "session_timeout":
+            control.check()
+            raise IsolationUnavailable("Name/TLS client startup exceeded action bound") from error
+        raise
     finally:
         try:
             supervisor.close()
