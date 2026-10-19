@@ -147,7 +147,7 @@ def command(stdlib, files, bootstrap_digest, *, display, socket_path,
                  '--ro-bind-data', str(font_config_fd), FONTCONFIG_PATH,
                  '--ro-bind', str(Path(__file__).with_name('planner_worker.py').resolve()), '/app/planner_worker.py'))
     for name in ('graphical_approval_worker', 'graphical_approval_view', 'graphical_approval_protocol',
-                 'approval_protocol', 'approvals', 'models', 'tool_parameters', 'tool_adapters',
+                 'approval_protocol', 'approvals', 'models', 'tool_parameters', 'tool_adapters', 'name_tls_public',
                  *(('approval_witness', 'audit_witness', 'audit_protocol') if launch_witness else ())):
         argv.extend(('--ro-bind', str(Path(__file__).with_name(name + '.py').resolve()),
                      '/app/approval_runtime/' + name + '.py'))

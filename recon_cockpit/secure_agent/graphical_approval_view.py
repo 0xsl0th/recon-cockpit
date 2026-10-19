@@ -12,6 +12,8 @@ import secrets
 import select
 import time
 
+from . import name_tls_public
+
 
 def review_text(action, policy, session_id):
     """Render validated bindings literally; never display planner rationale."""
@@ -25,6 +27,10 @@ def review_text(action, policy, session_id):
     ]
     if "method" in parameters:
         lines.append("Request       " + literal(parameters["method"]) + " " + literal(parameters["path"]))
+    summary = name_tls_public.approval_summary(canonical["tool_id"], parameters)
+    if summary is not None:
+        lines.extend(("", "Name binding (times are microseconds since owner start):",
+                      json.dumps(summary, sort_keys=True, ensure_ascii=True, indent=2), ""))
     lines += [
         "Timeout       " + str(parameters["timeout_seconds"]) + " seconds",
         "Output limit  " + str(parameters["max_output_bytes"]) + " bytes",

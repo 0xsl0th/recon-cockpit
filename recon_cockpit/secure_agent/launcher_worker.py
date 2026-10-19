@@ -31,8 +31,11 @@ if __name__ == '__main__':
             os.close(terminal)
             raise ValueError('launcher_terminal_accessible')
         ENTRY_DESCRIPTORS_VERIFIED = True
-    except Exception:
-        sys.stderr.write('fixture_launcher_refused\n')
+    except Exception as error:
+        if len(sys.argv) == 7 and sys.argv[6] == 'name-tls-launch-preconditions':
+            sys.stderr.write('name_tls_launcher_refused:' + type(error).__name__ + ':' + str(error)[:2048] + '\n')
+        else:
+            sys.stderr.write('fixture_launcher_refused\n')
         raise SystemExit(78) from None
 
 if not __package__:
@@ -162,10 +165,10 @@ def main():
     witness_reader = None
     approval_reader = None
     try:
-        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions', 'stock-http-launch-preconditions', 'stock-http-production-launch-preconditions', 'stock-ssh-launch-preconditions', 'routing-launch-preconditions'}):
+        if len(sys.argv) not in (6, 7) or (len(sys.argv) == 7 and sys.argv[6] not in {'launch-witness', 'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions', 'stock-http-launch-preconditions', 'stock-http-production-launch-preconditions', 'stock-ssh-launch-preconditions', 'routing-launch-preconditions', 'name-tls-launch-preconditions'}):
             raise ValueError('invalid_launcher_bootstrap')
         witnessed = len(sys.argv) == 7
-        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions', 'stock-http-launch-preconditions', 'stock-http-production-launch-preconditions', 'stock-ssh-launch-preconditions', 'routing-launch-preconditions'}
+        approval_required = witnessed and sys.argv[6] in {'launch-preconditions', 'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions', 'web-tools-launch-preconditions', 'network-tools-launch-preconditions', 'smb-tools-launch-preconditions', 'kerberos-tools-launch-preconditions', 'service-web-launch-preconditions', 'configurable-launch-preconditions', 'whatweb-tools-launch-preconditions', 'nuclei-tools-launch-preconditions', 'web-hierarchy-launch-preconditions', 'stock-http-launch-preconditions', 'stock-http-production-launch-preconditions', 'stock-ssh-launch-preconditions', 'routing-launch-preconditions', 'name-tls-launch-preconditions'}
         nmap_runtime = witnessed and sys.argv[6] in {'nmap-launch-preconditions', 'web-launch-preconditions', 'http-headers-launch-preconditions'}
         web_tools_runtime = witnessed and sys.argv[6] == 'web-tools-launch-preconditions'
         network_tools_runtime = witnessed and sys.argv[6] == 'network-tools-launch-preconditions'
@@ -178,9 +181,10 @@ def main():
         stock_http_runtime = witnessed and sys.argv[6] in {'stock-http-launch-preconditions', 'stock-http-production-launch-preconditions'}
         stock_ssh_runtime = witnessed and sys.argv[6] == 'stock-ssh-launch-preconditions'
         routing_runtime = witnessed and sys.argv[6] == 'routing-launch-preconditions'
+        name_tls_runtime = witnessed and sys.argv[6] == 'name-tls-launch-preconditions'
         configurable_runtime = witnessed and sys.argv[6] == 'configurable-launch-preconditions'
         _, host = bootstrap._arguments(['three_step', *sys.argv[2:6]])
-        checks = (boundary(host, routing_runtime=True) if routing_runtime else
+        checks = (boundary(host, routing_runtime=True) if routing_runtime or name_tls_runtime else
                   boundary(host, stock_ssh_runtime=True) if stock_ssh_runtime else
                   boundary(host, stock_http_runtime=True) if stock_http_runtime else
                   boundary(host, nuclei_runtime=True) if nuclei_runtime else
@@ -200,14 +204,17 @@ def main():
         descriptors = []
         if witnessed:
             from recon_cockpit.secure_agent import audit_witness
-            if routing_runtime:
-                from recon_cockpit.secure_agent import routing_transport
+            if routing_runtime or name_tls_runtime:
+                if name_tls_runtime:
+                    from recon_cockpit.secure_agent import name_tls_transport as routing_transport
+                else:
+                    from recon_cockpit.secure_agent import routing_transport
                 init, descriptors = routing_transport.receive_bootstrap(channel)
             else:
                 init, descriptors = audit_witness.receive(channel, 2 if approval_required else 1)
         else:
             init = packet(channel)
-        bootstrap_digest = routing_transport.digest(init) if routing_runtime else admission.digest(init)
+        bootstrap_digest = routing_transport.digest(init) if routing_runtime or name_tls_runtime else admission.digest(init)
         if bootstrap_digest != sys.argv[1]:
             for fd in descriptors:
                 os.close(fd)
@@ -268,6 +275,9 @@ def main():
         elif config['profile'] == 'disconnected_routing_v1':
             from recon_cockpit.secure_agent.routing_backend import ConfinedRoutingBackend
             owned = ConfinedRoutingBackend(config, init['runtime'])
+        elif config['profile'] == 'owned_name_tls_v1':
+            from recon_cockpit.secure_agent.name_tls_backend import ConfinedNameTLSBackend
+            owned = ConfinedNameTLSBackend(config, init['runtime'])
         with _NestedAdmission(config, init['runtime']) as gate, (owned.lab if owned is not None else nullcontext()):
             print(protocol.encode({'version': '1', 'ready': True, 'bootstrap_digest': sys.argv[1], 'checks': checks}).decode(), flush=True)
             sequence = 1
@@ -296,8 +306,11 @@ def main():
                 control.check()
                 print(protocol.encode(protocol.receipt(value, result, gate.snapshot)).decode(), flush=True)
         return 0
-    except Exception:
-        sys.stderr.write('fixture_launcher_refused\n')
+    except Exception as error:
+        if locals().get('name_tls_runtime') is True:
+            sys.stderr.write('name_tls_launcher_refused:' + type(error).__name__ + ':' + str(error)[:2048] + '\n')
+        else:
+            sys.stderr.write('fixture_launcher_refused\n')
         return 78
     finally:
         if approval_reader is not None:

@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import re
 from typing import Any
+from uuid import UUID
 
 
 MAX_TIMEOUT_SECONDS = 30
@@ -189,6 +190,131 @@ class DigNSIDParameters(TCPParameters):
 @dataclass(frozen=True, slots=True)
 class OpenSSLTLSParameters(TCPParameters):
     """Bounds for the fixed verified TLS handshake; no caller TLS options."""
+
+
+@dataclass(frozen=True, slots=True)
+class _OwnedNameParameters:
+    port: int
+    timeout_seconds: int
+    max_output_bytes: int
+    configuration: str
+    case: str
+    selection_sha256: str
+    runtime_identity_sha256: str
+    owner_id: str
+    owner_identity_sha256: str
+    session_id: str
+    operation_slot: str
+
+    def __post_init__(self):
+        from . import name_tls_public as public
+        for name, field in self.__dataclass_fields__.items():
+            if field.type == "str" and type(getattr(self, name)) is not str:
+                _reject("invalid_name_tls_string")
+        try:
+            public.validate_selection(self.configuration, self.case)
+        except ValueError as error:
+            raise ValidationError("invalid_name_tls_selection") from error
+        for key in ("selection_sha256", "runtime_identity_sha256", "owner_identity_sha256"):
+            if type(getattr(self, key)) is not str or not re.fullmatch("[a-f0-9]{64}", getattr(self, key)):
+                _reject("invalid_name_tls_digest")
+        for key in ("owner_id", "session_id"):
+            value = getattr(self, key)
+            try:
+                if type(value) is not str or str(UUID(value)) != value:
+                    _reject("invalid_name_tls_identity")
+            except (ValueError, AttributeError) as error:
+                raise ValidationError("invalid_name_tls_identity") from error
+        slots = {OwnedNameDNSParameters: ("dns_1", "dns_2"),
+                 OwnedNameHTTPParameters: ("http",), OwnedNameTLSParameters: ("tls",)}
+        if type(self) not in slots or type(self.operation_slot) is not str or self.operation_slot not in slots[type(self)]:
+            _reject("invalid_name_tls_slot")
+        if self.operation_slot == "dns_2" and self.case != "N1":
+            _reject("invalid_name_tls_slot")
+        operation = "dns" if self.operation_slot.startswith("dns_") else self.operation_slot
+        endpoint = public.endpoints(self.configuration)["resolver" if operation == "dns" else operation]
+        expected = {"dns": (3, 8192), "http": (1, 2048), "tls": (5, 8192)}[operation]
+        for value, wanted, name in ((self.port, endpoint["port"], "port"),
+                                    (self.timeout_seconds, expected[0], "timeout_seconds"),
+                                    (self.max_output_bytes, expected[1], "max_output_bytes")):
+            if type(value) is not int or value != wanted:
+                _reject("invalid_name_tls_" + name)
+
+    def to_dict(self):
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class OwnedNameDNSParameters(_OwnedNameParameters):
+    question_name: str
+    question_class: str
+    question_type: str
+
+    def __post_init__(self):
+        _OwnedNameParameters.__post_init__(self)
+        if (self.question_name, self.question_class, self.question_type) != ("harbordesk.test.", "IN", "A"):
+            _reject("invalid_name_tls_question")
+
+
+@dataclass(frozen=True, slots=True)
+class _OwnedNameBindingParameters(_OwnedNameParameters):
+    binding_sha256: str
+    observation_sha256: str
+    observed_answer_sha256: str
+    observation_generation: int
+    observed_ttl_seconds: int
+    observed_at_us: int
+    expires_at_us: int
+    canonical_name: str
+
+    def __post_init__(self):
+        _OwnedNameParameters.__post_init__(self)
+        for key in ("binding_sha256", "observation_sha256", "observed_answer_sha256"):
+            if type(getattr(self, key)) is not str or not re.fullmatch("[a-f0-9]{64}", getattr(self, key)):
+                _reject("invalid_name_tls_binding_digest")
+        _integer(self.observation_generation, "name_tls_generation", 1, 2)
+        expected_ttl = 1 if self.case == "N14" else 60
+        if type(self.observed_ttl_seconds) is not int or self.observed_ttl_seconds != expected_ttl:
+            _reject("invalid_name_tls_ttl")
+        _integer(self.observed_at_us, "name_tls_observed_time", 0, 59999999)
+        _integer(self.expires_at_us, "name_tls_expiry", self.observed_at_us + 1, 60000000)
+        if self.expires_at_us != min(60000000, self.observed_at_us + expected_ttl * 1000000):
+            _reject("invalid_name_tls_expiry")
+        if type(self.canonical_name) is not str or self.canonical_name != "harbordesk.test":
+            _reject("invalid_name_tls_name")
+
+
+@dataclass(frozen=True, slots=True)
+class OwnedNameHTTPParameters(_OwnedNameBindingParameters):
+    method: str
+    path: str
+    host: str
+
+    def __post_init__(self):
+        from .name_tls_public import endpoints, LOGICAL_NAME
+        _OwnedNameBindingParameters.__post_init__(self)
+        endpoint = endpoints(self.configuration)["http"]
+        if (self.method != "GET" or self.path != endpoint["path"]
+                or self.host != f"{LOGICAL_NAME}:{endpoint['port']}"):
+            _reject("invalid_name_tls_http_request")
+
+
+@dataclass(frozen=True, slots=True)
+class OwnedNameTLSParameters(_OwnedNameBindingParameters):
+    sni: str
+    expected_certificate_name: str
+    public_ca_sha256: str
+    tls_version: str
+    cipher_suite: str
+    group: str
+
+    def __post_init__(self):
+        from .name_tls_public import PUBLIC_CA_SHA256, LOGICAL_NAME
+        _OwnedNameBindingParameters.__post_init__(self)
+        if (self.sni != LOGICAL_NAME or self.expected_certificate_name != LOGICAL_NAME
+                or self.public_ca_sha256 != PUBLIC_CA_SHA256 or self.tls_version != "TLSv1.3"
+                or self.cipher_suite != "TLS_AES_256_GCM_SHA384" or self.group != "P-256"):
+            _reject("invalid_name_tls_tls_commitment")
 
 
 @dataclass(frozen=True, slots=True)

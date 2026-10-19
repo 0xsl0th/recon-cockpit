@@ -32,7 +32,8 @@ def test_all_30_accepted_runtime_profiles_remain_byte_identical():
 
 def test_all_39_accepted_adapters_remain_byte_identical():
     selected = {tool: adapter.to_dict() for tool, adapter in adapters.ADAPTERS.items()
-                if "_posture_" not in tool and tool not in ("ssh_transport_policy_v1", "ffuf_web_hierarchy_v1", "snmp_interface_page_v1", "dig_dns_aaaa_v1", "dig_dns_ptr_v1") and tool not in (runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
+                if tool not in ("owned_name_dns_v1", "owned_name_http_v1", "owned_name_tls_v1")
+                and "_posture_" not in tool and tool not in ("ssh_transport_policy_v1", "ffuf_web_hierarchy_v1", "snmp_interface_page_v1", "dig_dns_aaaa_v1", "dig_dns_ptr_v1") and tool not in (runtime.TLS_CERTIFICATE, runtime.NUCLEI, runtime.NUCLEI_GIT, runtime.DIG_MX)}
     assert len(selected) == 39
     assert hashlib.sha256(runtime.encode(selected)).hexdigest() == (
         '97301638f860f2d81fe9f01c69ed8a45bacf4a9010bb2f325161a86fa66975b5')

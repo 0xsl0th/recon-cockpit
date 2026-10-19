@@ -1,0 +1,2624 @@
+{
+  "action_parameter_fields": {
+    "common": [
+      "port",
+      "timeout_seconds",
+      "max_output_bytes",
+      "configuration",
+      "case",
+      "selection_sha256",
+      "runtime_identity_sha256",
+      "owner_id",
+      "owner_identity_sha256",
+      "operation_slot",
+      "session_id"
+    ],
+    "dns_additional": [
+      "question_name",
+      "question_class",
+      "question_type"
+    ],
+    "http_additional": [
+      "binding_sha256",
+      "observation_sha256",
+      "observed_answer_sha256",
+      "observation_generation",
+      "observed_ttl_seconds",
+      "observed_at_us",
+      "expires_at_us",
+      "canonical_name",
+      "method",
+      "path",
+      "host"
+    ],
+    "human_review": "Show complete literal canonical action parameters through existing terminal/graphical approval, add new-profile summary of binding/name/Host/SNI/certname/CA/expiry, never replace full canonical JSON. Action digest binds every visible commitment through audit, approval, admission, ARM and fresh client.",
+    "tls_additional": [
+      "binding_sha256",
+      "observation_sha256",
+      "observed_answer_sha256",
+      "observation_generation",
+      "observed_ttl_seconds",
+      "observed_at_us",
+      "expires_at_us",
+      "canonical_name",
+      "sni",
+      "expected_certificate_name",
+      "public_ca_sha256",
+      "tls_version",
+      "cipher_suite",
+      "group"
+    ],
+    "validation": "Three frozen immutable strict parameter classes; exact closed fields/types, finite case/config/slot/name/endpoint and TLS values, bounded canonical hashes/integers. Existing Action target remains singleton literalIPv4. Schema branches only for new IDs; rationale never an authority field."
+  },
+  "architecture": [
+    {
+      "case": "exact_six_networks_routes_firewalls_and_live_denied_listeners",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/exact_six_networks_routes_firewalls_and_live_denied_listeners"
+    },
+    {
+      "case": "host_or_other_owner_namespace_rejected",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/host_or_other_owner_namespace_rejected"
+    },
+    {
+      "case": "changed_namespace_uid_mapping_rejected",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/changed_namespace_uid_mapping_rejected"
+    },
+    {
+      "case": "listener_endpoint_or_cookie_change_rejected",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/listener_endpoint_or_cookie_change_rejected"
+    },
+    {
+      "case": "unexpected_export_descriptor_rejected",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/unexpected_export_descriptor_rejected"
+    },
+    {
+      "case": "duplicate_scm_rights_handoff_rejected",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/duplicate_scm_rights_handoff_rejected"
+    },
+    {
+      "case": "daemon_socket_must_be_unconnected_at_transfer",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/daemon_socket_must_be_unconnected_at_transfer"
+    },
+    {
+      "case": "daemon_socket_namespace_swap_rejected",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/daemon_socket_namespace_swap_rejected"
+    },
+    {
+      "case": "consume_before_request_reservation_rejected",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/consume_before_request_reservation_rejected"
+    },
+    {
+      "case": "daemon_descriptor_second_consumption_rejected",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/daemon_descriptor_second_consumption_rejected"
+    },
+    {
+      "case": "sender_or_launcher_copy_leak_rejected",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/sender_or_launcher_copy_leak_rejected"
+    },
+    {
+      "case": "all_descriptor_copies_closed_after_denial",
+      "configuration": "A",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/A/topology_and_descriptor_custody/all_descriptor_copies_closed_after_denial"
+    },
+    {
+      "case": "dns/wrong_port",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/dns/wrong_port"
+    },
+    {
+      "case": "dns/other_operation_endpoint",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/dns/other_operation_endpoint"
+    },
+    {
+      "case": "dns/excluded_endpoint",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/dns/excluded_endpoint"
+    },
+    {
+      "case": "dns/udp",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/dns/udp"
+    },
+    {
+      "case": "dns/ipv6",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/dns/ipv6"
+    },
+    {
+      "case": "dns/second_connection",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/dns/second_connection"
+    },
+    {
+      "case": "http/wrong_port",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/http/wrong_port"
+    },
+    {
+      "case": "http/other_operation_endpoint",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/http/other_operation_endpoint"
+    },
+    {
+      "case": "http/excluded_endpoint",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/http/excluded_endpoint"
+    },
+    {
+      "case": "http/udp",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/http/udp"
+    },
+    {
+      "case": "http/ipv6",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/http/ipv6"
+    },
+    {
+      "case": "http/second_connection",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/http/second_connection"
+    },
+    {
+      "case": "tls/wrong_port",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/tls/wrong_port"
+    },
+    {
+      "case": "tls/other_operation_endpoint",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/tls/other_operation_endpoint"
+    },
+    {
+      "case": "tls/excluded_endpoint",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/tls/excluded_endpoint"
+    },
+    {
+      "case": "tls/udp",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/tls/udp"
+    },
+    {
+      "case": "tls/ipv6",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/tls/ipv6"
+    },
+    {
+      "case": "tls/second_connection",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/tls/second_connection"
+    },
+    {
+      "case": "http/resolver_as_service",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/http/resolver_as_service"
+    },
+    {
+      "case": "tls/resolver_as_service",
+      "configuration": "A",
+      "group": "transport_denial",
+      "id": "architecture/A/transport_denial/tls/resolver_as_service"
+    },
+    {
+      "case": "dnsmasq_single_process_pre_dropped_uid_no_tcp_fork",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/dnsmasq_single_process_pre_dropped_uid_no_tcp_fork"
+    },
+    {
+      "case": "dnsmasq_unused_udp_listener_cannot_receive_client_traffic",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/dnsmasq_unused_udp_listener_cannot_receive_client_traffic"
+    },
+    {
+      "case": "nginx_single_process_exact_two_listeners",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/nginx_single_process_exact_two_listeners"
+    },
+    {
+      "case": "dig_threads_bounded_to_16_and_process_fork_denied",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/dig_threads_bounded_to_16_and_process_fork_denied"
+    },
+    {
+      "case": "openssl_one_thread_and_no_process_fork",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/openssl_one_thread_and_no_process_fork"
+    },
+    {
+      "case": "dns_client/server_key_and_daemon_runtime_absent",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/dns_client/server_key_and_daemon_runtime_absent"
+    },
+    {
+      "case": "http_client/server_key_and_daemon_runtime_absent",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/http_client/server_key_and_daemon_runtime_absent"
+    },
+    {
+      "case": "tls_client/server_key_and_daemon_runtime_absent",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/tls_client/server_key_and_daemon_runtime_absent"
+    },
+    {
+      "case": "parser/server_key_and_daemon_runtime_absent",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/parser/server_key_and_daemon_runtime_absent"
+    },
+    {
+      "case": "dnsmasq/runtime_inode_or_hash_drift_rejected",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/dnsmasq/runtime_inode_or_hash_drift_rejected"
+    },
+    {
+      "case": "nginx/runtime_inode_or_hash_drift_rejected",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/nginx/runtime_inode_or_hash_drift_rejected"
+    },
+    {
+      "case": "dig/runtime_inode_or_hash_drift_rejected",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/dig/runtime_inode_or_hash_drift_rejected"
+    },
+    {
+      "case": "openssl/runtime_inode_or_hash_drift_rejected",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/openssl/runtime_inode_or_hash_drift_rejected"
+    },
+    {
+      "case": "frontend_new_socket_exec_and_process_creation_denied",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/frontend_new_socket_exec_and_process_creation_denied"
+    },
+    {
+      "case": "parser_network_filesystem_and_process_witnesses",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/parser_network_filesystem_and_process_witnesses"
+    },
+    {
+      "assertion": "Role partitions and actual readiness images match. DNS daemon alone may READ_FILE exact /dev/urandom after O_NOFOLLOW/fstat character-device major1/minor9 validation; launcher independently fstats through the pinned actual daemon root and matches native_ready.entropy_device to daemon_ready.entropy_device (DNS exact identity/read receipt, web null). Both verifier descriptors close. No write, /dev/random, general-device or additional-role entropy access; no entropy bytes retained.",
+      "case": "daemon_sealed_runtime_and_observed_readiness_images_match_partition",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/daemon_sealed_runtime_and_observed_readiness_images_match_partition"
+    },
+    {
+      "case": "unknown_runtime_provider_or_helper_refused",
+      "configuration": "A",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/A/native_process_runtime_and_mount/unknown_runtime_provider_or_helper_refused"
+    },
+    {
+      "case": "cancel_before_topology",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/cancel_before_topology"
+    },
+    {
+      "case": "cancel_during_topology",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/cancel_during_topology"
+    },
+    {
+      "case": "cancel_after_valid_dns_binding",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/cancel_after_valid_dns_binding"
+    },
+    {
+      "case": "dns/cancel_during_action_and_reap",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/dns/cancel_during_action_and_reap"
+    },
+    {
+      "case": "http/cancel_during_action_and_reap",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/http/cancel_during_action_and_reap"
+    },
+    {
+      "case": "tls/cancel_during_action_and_reap",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/tls/cancel_during_action_and_reap"
+    },
+    {
+      "case": "owner_death_during_action",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/owner_death_during_action"
+    },
+    {
+      "case": "launcher_death_during_action",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/launcher_death_during_action"
+    },
+    {
+      "case": "recorder_channel_death_during_action",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/recorder_channel_death_during_action"
+    },
+    {
+      "case": "daemon_death_during_action",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/daemon_death_during_action"
+    },
+    {
+      "case": "client_death_during_action",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/client_death_during_action"
+    },
+    {
+      "case": "real_owner_60_second_deadline",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/real_owner_60_second_deadline"
+    },
+    {
+      "case": "abrupt_close_last_ack_distinct_from_graceful_final_snapshot",
+      "configuration": "A",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/A/lifetime_and_physical_cleanup/abrupt_close_last_ack_distinct_from_graceful_final_snapshot"
+    },
+    {
+      "case": "dns/wrong_transaction_id",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/dns/wrong_transaction_id"
+    },
+    {
+      "case": "dns/changed_question",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/dns/changed_question"
+    },
+    {
+      "case": "dns/compression_pointer_loop",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/dns/compression_pointer_loop"
+    },
+    {
+      "case": "dns/oversized_tcp_frame",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/dns/oversized_tcp_frame"
+    },
+    {
+      "case": "dns/second_tcp_frame",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/dns/second_tcp_frame"
+    },
+    {
+      "case": "dns/extra_question",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/dns/extra_question"
+    },
+    {
+      "case": "dns/unexpected_edns_or_trailing_bytes",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/dns/unexpected_edns_or_trailing_bytes"
+    },
+    {
+      "case": "dns/excess_records_or_invalid_ttl",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/dns/excess_records_or_invalid_ttl"
+    },
+    {
+      "case": "tls/malformed_or_oversized_record",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/tls/malformed_or_oversized_record"
+    },
+    {
+      "case": "tls/changed_clienthello_sni",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/tls/changed_clienthello_sni"
+    },
+    {
+      "case": "tls/unexpected_version_cipher_or_keyshare",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/tls/unexpected_version_cipher_or_keyshare"
+    },
+    {
+      "case": "tls/second_clienthello_or_psk_resumption",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/tls/second_clienthello_or_psk_resumption"
+    },
+    {
+      "case": "tls/unexpected_extra_records",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/tls/unexpected_extra_records"
+    },
+    {
+      "case": "http/changed_get_path_or_raw_host",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/http/changed_get_path_or_raw_host"
+    },
+    {
+      "case": "http/second_request_or_body",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/http/second_request_or_body"
+    },
+    {
+      "case": "http/oversized_response",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/http/oversized_response"
+    },
+    {
+      "case": "dns/native_stdout_stderr_overflow",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/dns/native_stdout_stderr_overflow"
+    },
+    {
+      "case": "http/native_stdout_stderr_overflow",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/http/native_stdout_stderr_overflow"
+    },
+    {
+      "case": "tls/native_stdout_stderr_overflow",
+      "configuration": "A",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/A/malformed_and_bounded_wire/tls/native_stdout_stderr_overflow"
+    },
+    {
+      "case": "exact_six_networks_routes_firewalls_and_live_denied_listeners",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/exact_six_networks_routes_firewalls_and_live_denied_listeners"
+    },
+    {
+      "case": "host_or_other_owner_namespace_rejected",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/host_or_other_owner_namespace_rejected"
+    },
+    {
+      "case": "changed_namespace_uid_mapping_rejected",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/changed_namespace_uid_mapping_rejected"
+    },
+    {
+      "case": "listener_endpoint_or_cookie_change_rejected",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/listener_endpoint_or_cookie_change_rejected"
+    },
+    {
+      "case": "unexpected_export_descriptor_rejected",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/unexpected_export_descriptor_rejected"
+    },
+    {
+      "case": "duplicate_scm_rights_handoff_rejected",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/duplicate_scm_rights_handoff_rejected"
+    },
+    {
+      "case": "daemon_socket_must_be_unconnected_at_transfer",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/daemon_socket_must_be_unconnected_at_transfer"
+    },
+    {
+      "case": "daemon_socket_namespace_swap_rejected",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/daemon_socket_namespace_swap_rejected"
+    },
+    {
+      "case": "consume_before_request_reservation_rejected",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/consume_before_request_reservation_rejected"
+    },
+    {
+      "case": "daemon_descriptor_second_consumption_rejected",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/daemon_descriptor_second_consumption_rejected"
+    },
+    {
+      "case": "sender_or_launcher_copy_leak_rejected",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/sender_or_launcher_copy_leak_rejected"
+    },
+    {
+      "case": "all_descriptor_copies_closed_after_denial",
+      "configuration": "B",
+      "group": "topology_and_descriptor_custody",
+      "id": "architecture/B/topology_and_descriptor_custody/all_descriptor_copies_closed_after_denial"
+    },
+    {
+      "case": "dns/wrong_port",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/dns/wrong_port"
+    },
+    {
+      "case": "dns/other_operation_endpoint",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/dns/other_operation_endpoint"
+    },
+    {
+      "case": "dns/excluded_endpoint",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/dns/excluded_endpoint"
+    },
+    {
+      "case": "dns/udp",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/dns/udp"
+    },
+    {
+      "case": "dns/ipv6",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/dns/ipv6"
+    },
+    {
+      "case": "dns/second_connection",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/dns/second_connection"
+    },
+    {
+      "case": "http/wrong_port",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/http/wrong_port"
+    },
+    {
+      "case": "http/other_operation_endpoint",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/http/other_operation_endpoint"
+    },
+    {
+      "case": "http/excluded_endpoint",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/http/excluded_endpoint"
+    },
+    {
+      "case": "http/udp",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/http/udp"
+    },
+    {
+      "case": "http/ipv6",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/http/ipv6"
+    },
+    {
+      "case": "http/second_connection",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/http/second_connection"
+    },
+    {
+      "case": "tls/wrong_port",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/tls/wrong_port"
+    },
+    {
+      "case": "tls/other_operation_endpoint",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/tls/other_operation_endpoint"
+    },
+    {
+      "case": "tls/excluded_endpoint",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/tls/excluded_endpoint"
+    },
+    {
+      "case": "tls/udp",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/tls/udp"
+    },
+    {
+      "case": "tls/ipv6",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/tls/ipv6"
+    },
+    {
+      "case": "tls/second_connection",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/tls/second_connection"
+    },
+    {
+      "case": "http/resolver_as_service",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/http/resolver_as_service"
+    },
+    {
+      "case": "tls/resolver_as_service",
+      "configuration": "B",
+      "group": "transport_denial",
+      "id": "architecture/B/transport_denial/tls/resolver_as_service"
+    },
+    {
+      "case": "dnsmasq_single_process_pre_dropped_uid_no_tcp_fork",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/dnsmasq_single_process_pre_dropped_uid_no_tcp_fork"
+    },
+    {
+      "case": "dnsmasq_unused_udp_listener_cannot_receive_client_traffic",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/dnsmasq_unused_udp_listener_cannot_receive_client_traffic"
+    },
+    {
+      "case": "nginx_single_process_exact_two_listeners",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/nginx_single_process_exact_two_listeners"
+    },
+    {
+      "case": "dig_threads_bounded_to_16_and_process_fork_denied",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/dig_threads_bounded_to_16_and_process_fork_denied"
+    },
+    {
+      "case": "openssl_one_thread_and_no_process_fork",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/openssl_one_thread_and_no_process_fork"
+    },
+    {
+      "case": "dns_client/server_key_and_daemon_runtime_absent",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/dns_client/server_key_and_daemon_runtime_absent"
+    },
+    {
+      "case": "http_client/server_key_and_daemon_runtime_absent",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/http_client/server_key_and_daemon_runtime_absent"
+    },
+    {
+      "case": "tls_client/server_key_and_daemon_runtime_absent",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/tls_client/server_key_and_daemon_runtime_absent"
+    },
+    {
+      "case": "parser/server_key_and_daemon_runtime_absent",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/parser/server_key_and_daemon_runtime_absent"
+    },
+    {
+      "case": "dnsmasq/runtime_inode_or_hash_drift_rejected",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/dnsmasq/runtime_inode_or_hash_drift_rejected"
+    },
+    {
+      "case": "nginx/runtime_inode_or_hash_drift_rejected",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/nginx/runtime_inode_or_hash_drift_rejected"
+    },
+    {
+      "case": "dig/runtime_inode_or_hash_drift_rejected",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/dig/runtime_inode_or_hash_drift_rejected"
+    },
+    {
+      "case": "openssl/runtime_inode_or_hash_drift_rejected",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/openssl/runtime_inode_or_hash_drift_rejected"
+    },
+    {
+      "case": "frontend_new_socket_exec_and_process_creation_denied",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/frontend_new_socket_exec_and_process_creation_denied"
+    },
+    {
+      "case": "parser_network_filesystem_and_process_witnesses",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/parser_network_filesystem_and_process_witnesses"
+    },
+    {
+      "assertion": "Role partitions and actual readiness images match. DNS daemon alone may READ_FILE exact /dev/urandom after O_NOFOLLOW/fstat character-device major1/minor9 validation; launcher independently fstats through the pinned actual daemon root and matches native_ready.entropy_device to daemon_ready.entropy_device (DNS exact identity/read receipt, web null). Both verifier descriptors close. No write, /dev/random, general-device or additional-role entropy access; no entropy bytes retained.",
+      "case": "daemon_sealed_runtime_and_observed_readiness_images_match_partition",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/daemon_sealed_runtime_and_observed_readiness_images_match_partition"
+    },
+    {
+      "case": "unknown_runtime_provider_or_helper_refused",
+      "configuration": "B",
+      "group": "native_process_runtime_and_mount",
+      "id": "architecture/B/native_process_runtime_and_mount/unknown_runtime_provider_or_helper_refused"
+    },
+    {
+      "case": "cancel_before_topology",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/cancel_before_topology"
+    },
+    {
+      "case": "cancel_during_topology",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/cancel_during_topology"
+    },
+    {
+      "case": "cancel_after_valid_dns_binding",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/cancel_after_valid_dns_binding"
+    },
+    {
+      "case": "dns/cancel_during_action_and_reap",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/dns/cancel_during_action_and_reap"
+    },
+    {
+      "case": "http/cancel_during_action_and_reap",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/http/cancel_during_action_and_reap"
+    },
+    {
+      "case": "tls/cancel_during_action_and_reap",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/tls/cancel_during_action_and_reap"
+    },
+    {
+      "case": "owner_death_during_action",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/owner_death_during_action"
+    },
+    {
+      "case": "launcher_death_during_action",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/launcher_death_during_action"
+    },
+    {
+      "case": "recorder_channel_death_during_action",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/recorder_channel_death_during_action"
+    },
+    {
+      "case": "daemon_death_during_action",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/daemon_death_during_action"
+    },
+    {
+      "case": "client_death_during_action",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/client_death_during_action"
+    },
+    {
+      "case": "real_owner_60_second_deadline",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/real_owner_60_second_deadline"
+    },
+    {
+      "case": "abrupt_close_last_ack_distinct_from_graceful_final_snapshot",
+      "configuration": "B",
+      "group": "lifetime_and_physical_cleanup",
+      "id": "architecture/B/lifetime_and_physical_cleanup/abrupt_close_last_ack_distinct_from_graceful_final_snapshot"
+    },
+    {
+      "case": "dns/wrong_transaction_id",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/dns/wrong_transaction_id"
+    },
+    {
+      "case": "dns/changed_question",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/dns/changed_question"
+    },
+    {
+      "case": "dns/compression_pointer_loop",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/dns/compression_pointer_loop"
+    },
+    {
+      "case": "dns/oversized_tcp_frame",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/dns/oversized_tcp_frame"
+    },
+    {
+      "case": "dns/second_tcp_frame",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/dns/second_tcp_frame"
+    },
+    {
+      "case": "dns/extra_question",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/dns/extra_question"
+    },
+    {
+      "case": "dns/unexpected_edns_or_trailing_bytes",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/dns/unexpected_edns_or_trailing_bytes"
+    },
+    {
+      "case": "dns/excess_records_or_invalid_ttl",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/dns/excess_records_or_invalid_ttl"
+    },
+    {
+      "case": "tls/malformed_or_oversized_record",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/tls/malformed_or_oversized_record"
+    },
+    {
+      "case": "tls/changed_clienthello_sni",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/tls/changed_clienthello_sni"
+    },
+    {
+      "case": "tls/unexpected_version_cipher_or_keyshare",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/tls/unexpected_version_cipher_or_keyshare"
+    },
+    {
+      "case": "tls/second_clienthello_or_psk_resumption",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/tls/second_clienthello_or_psk_resumption"
+    },
+    {
+      "case": "tls/unexpected_extra_records",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/tls/unexpected_extra_records"
+    },
+    {
+      "case": "http/changed_get_path_or_raw_host",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/http/changed_get_path_or_raw_host"
+    },
+    {
+      "case": "http/second_request_or_body",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/http/second_request_or_body"
+    },
+    {
+      "case": "http/oversized_response",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/http/oversized_response"
+    },
+    {
+      "case": "dns/native_stdout_stderr_overflow",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/dns/native_stdout_stderr_overflow"
+    },
+    {
+      "case": "http/native_stdout_stderr_overflow",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/http/native_stdout_stderr_overflow"
+    },
+    {
+      "case": "tls/native_stdout_stderr_overflow",
+      "configuration": "B",
+      "group": "malformed_and_bounded_wire",
+      "id": "architecture/B/malformed_and_bounded_wire/tls/native_stdout_stderr_overflow"
+    }
+  ],
+  "authority": [
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/missing_audit",
+      "mutation": "missing audit",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/changed_action_audit",
+      "mutation": "changed action audit",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/missing_approval",
+      "mutation": "missing approval",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/changed_action_approval",
+      "mutation": "changed action approval",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/changed_policy",
+      "mutation": "changed policy",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/changed_session",
+      "mutation": "changed session",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/expired_approval",
+      "mutation": "expired approval",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/consumed_approval_replay",
+      "mutation": "consumed approval replay",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/missing_admission",
+      "mutation": "missing admission",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/changed_runtime/binding_launch_commitment",
+      "mutation": "changed runtime/binding launch commitment",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/direct_backend_bypass",
+      "mutation": "direct backend bypass",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/dns/direct_witnessed_negative_then_later_action",
+      "mutation": "direct witnessed negative then later action",
+      "operation": "dns"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/missing_audit",
+      "mutation": "missing audit",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/changed_action_audit",
+      "mutation": "changed action audit",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/missing_approval",
+      "mutation": "missing approval",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/changed_action_approval",
+      "mutation": "changed action approval",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/changed_policy",
+      "mutation": "changed policy",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/changed_session",
+      "mutation": "changed session",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/expired_approval",
+      "mutation": "expired approval",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/consumed_approval_replay",
+      "mutation": "consumed approval replay",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/missing_admission",
+      "mutation": "missing admission",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/changed_runtime/binding_launch_commitment",
+      "mutation": "changed runtime/binding launch commitment",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/direct_backend_bypass",
+      "mutation": "direct backend bypass",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/http/direct_witnessed_negative_then_later_action",
+      "mutation": "direct witnessed negative then later action",
+      "operation": "http"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/missing_audit",
+      "mutation": "missing audit",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/changed_action_audit",
+      "mutation": "changed action audit",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/missing_approval",
+      "mutation": "missing approval",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/changed_action_approval",
+      "mutation": "changed action approval",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/changed_policy",
+      "mutation": "changed policy",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/changed_session",
+      "mutation": "changed session",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/expired_approval",
+      "mutation": "expired approval",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/consumed_approval_replay",
+      "mutation": "consumed approval replay",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/missing_admission",
+      "mutation": "missing admission",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/changed_runtime/binding_launch_commitment",
+      "mutation": "changed runtime/binding launch commitment",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/direct_backend_bypass",
+      "mutation": "direct backend bypass",
+      "operation": "tls"
+    },
+    {
+      "configuration": "A",
+      "id": "authority/A/tls/direct_witnessed_negative_then_later_action",
+      "mutation": "direct witnessed negative then later action",
+      "operation": "tls"
+    }
+  ],
+  "binding_fields": [
+    "version",
+    "owner_id",
+    "owner_identity_sha256",
+    "session_id",
+    "configuration",
+    "case",
+    "selection_sha256",
+    "runtime_identity_sha256",
+    "observation_generation",
+    "observation_sha256",
+    "canonical_question",
+    "original_answer_sha256",
+    "delivered_answer_sha256",
+    "singleton_allowed_ipv4",
+    "observed_ttl_seconds",
+    "observed_at_us",
+    "expires_at_us"
+  ],
+  "case_plans": {
+    "N1": {
+      "execute": [
+        "dns_1",
+        "dns_2"
+      ],
+      "terminal": "changed second observation invalidates previous binding; stale HTTP proposal refused"
+    },
+    "N10": {
+      "execute": [
+        "dns_1"
+      ],
+      "terminal": "mismatched SNI service proposal refused before handshake"
+    },
+    "N11": {
+      "execute": [
+        "dns_1",
+        "tls"
+      ],
+      "terminal": "certificate-name negative TLS settlement; valid DNS nonterminal",
+      "terminal_client_alert": {
+        "native_exit_code": 1,
+        "native_verification_error": 62,
+        "payload_hex": "022a",
+        "record_header_hex": "1503030002",
+        "requirement": "One final client fatal alert only after validated ServerHello and complete server encrypted record delivery, before client encrypted records; optional single compatibility CCS; no following client bytes; both EOFs; retain actual bytes/accounting. Detached parser proves per-direction sequence, not cross-direction timing."
+      }
+    },
+    "N12": {
+      "execute": [
+        "dns_1",
+        "tls"
+      ],
+      "terminal": "issuer negative TLS settlement; valid DNS nonterminal",
+      "terminal_client_alert": {
+        "native_exit_code": 1,
+        "native_verification_error": 20,
+        "payload_hex": "0230",
+        "record_header_hex": "1503030002",
+        "requirement": "One final client fatal alert only after validated ServerHello and complete server encrypted record delivery, before client encrypted records; optional single compatibility CCS; no following client bytes; both EOFs; retain actual bytes/accounting. Detached parser proves per-direction sequence, not cross-direction timing."
+      }
+    },
+    "N13": {
+      "execute": [
+        "dns_1",
+        "tls"
+      ],
+      "terminal": "certificate-expiry negative TLS settlement; valid DNS nonterminal",
+      "terminal_client_alert": {
+        "native_exit_code": 1,
+        "native_verification_error": 10,
+        "payload_hex": "022d",
+        "record_header_hex": "1503030002",
+        "requirement": "One final client fatal alert only after validated ServerHello and complete server encrypted record delivery, before client encrypted records; optional single compatibility CCS; no following client bytes; both EOFs; retain actual bytes/accounting. Detached parser proves per-direction sequence, not cross-direction timing."
+      }
+    },
+    "N14": {
+      "execute": [
+        "dns_1"
+      ],
+      "refusal_envelope": "blocked accepted only for this profile and N14 with refusal object, followed by unchanged strict owner context/expiry/terminal/zero-byte validation",
+      "terminal": "real TTL1 expiry invalidates binding; first expired service refusal terminal; second is post-terminal check"
+    },
+    "N15": {
+      "composite_subtrials": [
+        "selected-config owner DNS + real unused service review; finish/reap owner, observe approval worker still live, then first consume through Controller must fail at approval_consume_after_owner_close; retain exact pending request/no reply/ApprovalUnavailable/bounded exact stderr/natural exit78 and actual process pins; no fabricated action outcome or owner admission claim",
+        "fresh opposite-config donor DNS + review live service; fresh selected-config recipient rejects donor grant before startup"
+      ],
+      "maximum_owner_instances": 3,
+      "requirement": "Cross-config donor grant is otherwise live/unexpired; do not merely retest finished-owner/expiry. Both subassertions in each A/B logical row."
+    },
+    "N16": {
+      "execute": [
+        "dns_1",
+        "tls"
+      ],
+      "terminal": "TLS-version mismatch TLS settlement; valid DNS nonterminal"
+    },
+    "N2": {
+      "execute": [
+        "dns_1"
+      ],
+      "terminal": "excluded answer DNS-negative settlement"
+    },
+    "N3": {
+      "execute": [
+        "dns_1"
+      ],
+      "terminal": "ambiguous answer DNS-negative settlement"
+    },
+    "N4": {
+      "execute": [],
+      "terminal": "undeclared DNS proposal refused; HTTP/TLS checks are additional post-terminal no-delivery probes"
+    },
+    "N5": {
+      "execute": [
+        "dns_1"
+      ],
+      "terminal": "CNAME DNS-negative settlement, no chase"
+    },
+    "N6": {
+      "execute": [
+        "dns_1"
+      ],
+      "terminal": "referral DNS-negative settlement, no advertised query"
+    },
+    "N7": {
+      "execute": [
+        "dns_1"
+      ],
+      "terminal": "AAAA DNS-negative settlement, no IPv6"
+    },
+    "N8": {
+      "execute": [
+        "dns_1"
+      ],
+      "terminal": "truncated DNS-negative settlement or preserved earlier native/owner timeout, no retry"
+    },
+    "N9": {
+      "execute": [
+        "dns_1"
+      ],
+      "terminal": "mismatched Host service proposal refused before delivery"
+    },
+    "O1": {
+      "execute": [
+        "dns_1"
+      ],
+      "terminal": "completed after dns_1"
+    },
+    "O2": {
+      "execute": [
+        "dns_1",
+        "http"
+      ],
+      "terminal": "completed after http"
+    },
+    "O3": {
+      "execute": [
+        "dns_1",
+        "tls"
+      ],
+      "terminal": "completed after tls"
+    },
+    "O4": {
+      "alternate_order": [
+        "dns_1",
+        "tls",
+        "http"
+      ],
+      "execute": [
+        "dns_1",
+        "http",
+        "tls"
+      ],
+      "terminal": "completed after last declared service"
+    },
+    "O5": {
+      "execute": [
+        "dns_1",
+        "http"
+      ],
+      "terminal": "completed after HTTP302 metadata, zero follow"
+    },
+    "R1": {
+      "execute": [
+        "dns_1",
+        "http"
+      ],
+      "terminal": "completed, hostile text remains data"
+    },
+    "R2": {
+      "execute": [
+        "dns_1"
+      ],
+      "terminal": "completed, segmented DNS bytes equal original"
+    }
+  },
+  "core": [
+    {
+      "case": "O1",
+      "configuration": "A",
+      "id": "case/A/O1"
+    },
+    {
+      "case": "O2",
+      "configuration": "A",
+      "id": "case/A/O2"
+    },
+    {
+      "case": "O3",
+      "configuration": "A",
+      "id": "case/A/O3"
+    },
+    {
+      "case": "O4",
+      "configuration": "A",
+      "id": "case/A/O4"
+    },
+    {
+      "case": "O5",
+      "configuration": "A",
+      "id": "case/A/O5"
+    },
+    {
+      "case": "R1",
+      "configuration": "A",
+      "id": "case/A/R1"
+    },
+    {
+      "case": "R2",
+      "configuration": "A",
+      "id": "case/A/R2"
+    },
+    {
+      "case": "N1",
+      "configuration": "A",
+      "id": "case/A/N1"
+    },
+    {
+      "case": "N2",
+      "configuration": "A",
+      "id": "case/A/N2"
+    },
+    {
+      "case": "N3",
+      "configuration": "A",
+      "id": "case/A/N3"
+    },
+    {
+      "case": "N4",
+      "configuration": "A",
+      "id": "case/A/N4"
+    },
+    {
+      "case": "N5",
+      "configuration": "A",
+      "id": "case/A/N5"
+    },
+    {
+      "case": "N6",
+      "configuration": "A",
+      "id": "case/A/N6"
+    },
+    {
+      "case": "N7",
+      "configuration": "A",
+      "id": "case/A/N7"
+    },
+    {
+      "case": "N8",
+      "configuration": "A",
+      "id": "case/A/N8"
+    },
+    {
+      "case": "N9",
+      "configuration": "A",
+      "id": "case/A/N9"
+    },
+    {
+      "case": "N10",
+      "configuration": "A",
+      "id": "case/A/N10"
+    },
+    {
+      "case": "N11",
+      "configuration": "A",
+      "id": "case/A/N11"
+    },
+    {
+      "case": "N12",
+      "configuration": "A",
+      "id": "case/A/N12"
+    },
+    {
+      "case": "N13",
+      "configuration": "A",
+      "id": "case/A/N13"
+    },
+    {
+      "case": "N14",
+      "configuration": "A",
+      "id": "case/A/N14"
+    },
+    {
+      "case": "N15",
+      "configuration": "A",
+      "id": "case/A/N15"
+    },
+    {
+      "case": "N16",
+      "configuration": "A",
+      "id": "case/A/N16"
+    },
+    {
+      "case": "O1",
+      "configuration": "B",
+      "id": "case/B/O1"
+    },
+    {
+      "case": "O2",
+      "configuration": "B",
+      "id": "case/B/O2"
+    },
+    {
+      "case": "O3",
+      "configuration": "B",
+      "id": "case/B/O3"
+    },
+    {
+      "case": "O4",
+      "configuration": "B",
+      "id": "case/B/O4"
+    },
+    {
+      "case": "O5",
+      "configuration": "B",
+      "id": "case/B/O5"
+    },
+    {
+      "case": "R1",
+      "configuration": "B",
+      "id": "case/B/R1"
+    },
+    {
+      "case": "R2",
+      "configuration": "B",
+      "id": "case/B/R2"
+    },
+    {
+      "case": "N1",
+      "configuration": "B",
+      "id": "case/B/N1"
+    },
+    {
+      "case": "N2",
+      "configuration": "B",
+      "id": "case/B/N2"
+    },
+    {
+      "case": "N3",
+      "configuration": "B",
+      "id": "case/B/N3"
+    },
+    {
+      "case": "N4",
+      "configuration": "B",
+      "id": "case/B/N4"
+    },
+    {
+      "case": "N5",
+      "configuration": "B",
+      "id": "case/B/N5"
+    },
+    {
+      "case": "N6",
+      "configuration": "B",
+      "id": "case/B/N6"
+    },
+    {
+      "case": "N7",
+      "configuration": "B",
+      "id": "case/B/N7"
+    },
+    {
+      "case": "N8",
+      "configuration": "B",
+      "id": "case/B/N8"
+    },
+    {
+      "case": "N9",
+      "configuration": "B",
+      "id": "case/B/N9"
+    },
+    {
+      "case": "N10",
+      "configuration": "B",
+      "id": "case/B/N10"
+    },
+    {
+      "case": "N11",
+      "configuration": "B",
+      "id": "case/B/N11"
+    },
+    {
+      "case": "N12",
+      "configuration": "B",
+      "id": "case/B/N12"
+    },
+    {
+      "case": "N13",
+      "configuration": "B",
+      "id": "case/B/N13"
+    },
+    {
+      "case": "N14",
+      "configuration": "B",
+      "id": "case/B/N14"
+    },
+    {
+      "case": "N15",
+      "configuration": "B",
+      "id": "case/B/N15"
+    },
+    {
+      "case": "N16",
+      "configuration": "B",
+      "id": "case/B/N16"
+    },
+    {
+      "case": "O4",
+      "configuration": "A",
+      "id": "order/A/O4_dns_tls_http",
+      "plan": [
+        "dns_1",
+        "tls",
+        "http"
+      ]
+    },
+    {
+      "configuration": "A",
+      "id": "default_refusal/A/dns",
+      "operation": "dns",
+      "prerequisite": "none; no topology/native launch"
+    },
+    {
+      "configuration": "A",
+      "id": "default_refusal/A/http",
+      "operation": "http",
+      "prerequisite": "one explicitly approved DNS query; selected service remains unapproved and unlaunched"
+    },
+    {
+      "configuration": "A",
+      "id": "default_refusal/A/tls",
+      "operation": "tls",
+      "prerequisite": "one explicitly approved DNS query; selected service remains unapproved and unlaunched"
+    },
+    {
+      "case": "O4",
+      "configuration": "B",
+      "id": "order/B/O4_dns_tls_http",
+      "plan": [
+        "dns_1",
+        "tls",
+        "http"
+      ]
+    },
+    {
+      "configuration": "B",
+      "id": "default_refusal/B/dns",
+      "operation": "dns",
+      "prerequisite": "none; no topology/native launch"
+    },
+    {
+      "configuration": "B",
+      "id": "default_refusal/B/http",
+      "operation": "http",
+      "prerequisite": "one explicitly approved DNS query; selected service remains unapproved and unlaunched"
+    },
+    {
+      "configuration": "B",
+      "id": "default_refusal/B/tls",
+      "operation": "tls",
+      "prerequisite": "one explicitly approved DNS query; selected service remains unapproved and unlaunched"
+    }
+  ],
+  "counts": {
+    "architecture": 162,
+    "authority": 36,
+    "core": 54,
+    "full_native_union": 651,
+    "legacy_bundles": 60,
+    "legacy_python_cli_inspections": 120,
+    "new_native_total": 327,
+    "owner_additional": 59,
+    "parser_evidence": 16,
+    "retained_native": 324
+  },
+  "owner": [
+    {
+      "assertion": "Role derives from inherited private descriptor; reject before counters/delivery.",
+      "configuration": "A",
+      "id": "owner/A/L01",
+      "name": "wrong_channel_role",
+      "operation": null
+    },
+    {
+      "assertion": "Repeated acknowledged sequence cannot repeat reservation.",
+      "configuration": "A",
+      "id": "owner/A/L02",
+      "name": "message_sequence_replay",
+      "operation": null
+    },
+    {
+      "assertion": "Skipped sequence refuses without resetting continuity.",
+      "configuration": "A",
+      "id": "owner/A/L03",
+      "name": "message_sequence_gap",
+      "operation": null
+    },
+    {
+      "assertion": "Wrong active action sequence cannot reserve or settle.",
+      "configuration": "A",
+      "id": "owner/A/L04",
+      "name": "action_sequence_changed",
+      "operation": null
+    },
+    {
+      "assertion": "Changed action digest cannot arm/reserve.",
+      "configuration": "A",
+      "id": "owner/A/L05",
+      "name": "action_digest_changed",
+      "operation": null
+    },
+    {
+      "assertion": "Changed configuration/case/plan commitment cannot arm.",
+      "configuration": "A",
+      "id": "owner/A/L06",
+      "name": "selection_changed",
+      "operation": null
+    },
+    {
+      "assertion": "Changed current runtime digest cannot arm.",
+      "configuration": "A",
+      "id": "owner/A/L07",
+      "name": "runtime_changed",
+      "operation": null
+    },
+    {
+      "assertion": "Foreign owner/session cannot arm/reserve.",
+      "configuration": "A",
+      "id": "owner/A/L08",
+      "name": "owner_identity_changed",
+      "operation": null
+    },
+    {
+      "assertion": "Settled connection lease cannot reserve bytes.",
+      "configuration": "A",
+      "id": "owner/A/L09",
+      "name": "finished_lease_replay",
+      "operation": null
+    },
+    {
+      "assertion": "Loss of required role channel terminates owner and later work.",
+      "configuration": "A",
+      "id": "owner/A/L10",
+      "name": "channel_continuity_loss",
+      "operation": null
+    },
+    {
+      "assertion": "Actual replacement isolated role worker cannot restart sequence after prior reservations.",
+      "configuration": "A",
+      "id": "owner/A/L11",
+      "name": "worker_replacement_sequence_reset",
+      "operation": null
+    },
+    {
+      "assertion": "Fresh action UUID cannot repeat consumed slot.",
+      "configuration": "A",
+      "id": "owner/A/L12",
+      "name": "settled_slot_replay",
+      "operation": null
+    },
+    {
+      "assertion": "Later ARM denied with unchanged counters.",
+      "configuration": "A",
+      "id": "owner/A/L13",
+      "name": "post_terminal_arm",
+      "operation": null
+    },
+    {
+      "assertion": "Later byte/operation reservation denied with unchanged counters.",
+      "configuration": "A",
+      "id": "owner/A/L14",
+      "name": "post_terminal_reservation",
+      "operation": null
+    },
+    {
+      "assertion": "Bytes denied until complete query/request/handshake reservation.",
+      "configuration": "A",
+      "id": "owner/A/L15",
+      "name": "bytes_before_operation",
+      "operation": null
+    },
+    {
+      "assertion": "Second operation in same lease denied before delivery.",
+      "configuration": "A",
+      "id": "owner/A/L16",
+      "name": "operation_replay",
+      "operation": null
+    },
+    {
+      "assertion": "Actual role channels preserve global250ms admission spacing.",
+      "configuration": "A",
+      "id": "owner/A/L17",
+      "name": "cross_role_spacing",
+      "operation": null
+    },
+    {
+      "assertion": "Two fresh private owners: second same-role connection reaches concurrent_connection_limit; second-role connection while first lease active reaches action_role_changed. Retain both actual inherited-channel transcripts, unchanged connection/byte charges and cleanup.",
+      "configuration": "A",
+      "id": "owner/A/L18",
+      "name": "overlap_concurrency",
+      "operation": null
+    },
+    {
+      "assertion": "Reserve legal request cap then plus1; exact per-action refusal and retained charge.",
+      "configuration": "A",
+      "id": "owner/A/L19_dns",
+      "name": "per_action_request_bytes",
+      "operation": "dns"
+    },
+    {
+      "assertion": "Reserve legal request cap then plus1; exact per-action refusal and retained charge.",
+      "configuration": "A",
+      "id": "owner/A/L19_http",
+      "name": "per_action_request_bytes",
+      "operation": "http"
+    },
+    {
+      "assertion": "Reserve legal request cap then plus1; exact per-action refusal and retained charge.",
+      "configuration": "A",
+      "id": "owner/A/L19_tls",
+      "name": "per_action_request_bytes",
+      "operation": "tls"
+    },
+    {
+      "assertion": "Reserve legal response cap then plus1; exact per-action refusal and retained charge.",
+      "configuration": "A",
+      "id": "owner/A/L20_dns",
+      "name": "per_action_response_bytes",
+      "operation": "dns"
+    },
+    {
+      "assertion": "Reserve legal response cap then plus1; exact per-action refusal and retained charge.",
+      "configuration": "A",
+      "id": "owner/A/L20_http",
+      "name": "per_action_response_bytes",
+      "operation": "http"
+    },
+    {
+      "assertion": "Reserve legal response cap then plus1; exact per-action refusal and retained charge.",
+      "configuration": "A",
+      "id": "owner/A/L20_tls",
+      "name": "per_action_response_bytes",
+      "operation": "tls"
+    },
+    {
+      "assertion": "O4 legal preceding slots fill request caps then TLS fills aggregate remaining plus1; aggregate check precedes equal per-action check.",
+      "configuration": "A",
+      "id": "owner/A/L21",
+      "name": "aggregate_request_bytes",
+      "operation": null
+    },
+    {
+      "assertion": "O4 legal preceding slots fill response caps then TLS fills aggregate remaining plus1; aggregate check precedes equal per-action check.",
+      "configuration": "A",
+      "id": "owner/A/L22",
+      "name": "aggregate_response_bytes",
+      "operation": null
+    },
+    {
+      "assertion": "O4 reserves18432 output across3 slots; fourth action refused at actual earliest sequence/plan/slot guard without refund.",
+      "configuration": "A",
+      "id": "owner/A/L23",
+      "name": "maximum_output_and_fourth_action",
+      "operation": null
+    },
+    {
+      "assertion": "FINISH_ACTION reporting reserved output plus1 refuses.",
+      "configuration": "A",
+      "id": "owner/A/L24",
+      "name": "retained_output_over_reservation",
+      "operation": null
+    },
+    {
+      "assertion": "Real owner monotonic hard action deadline terminates active slot without fake clock.",
+      "configuration": "A",
+      "id": "owner/A/L25_dns",
+      "name": "real_action_deadline",
+      "operation": "dns"
+    },
+    {
+      "assertion": "Real owner monotonic hard action deadline terminates active slot without fake clock.",
+      "configuration": "A",
+      "id": "owner/A/L25_http",
+      "name": "real_action_deadline",
+      "operation": "http"
+    },
+    {
+      "assertion": "Real owner monotonic hard action deadline terminates active slot without fake clock.",
+      "configuration": "A",
+      "id": "owner/A/L25_tls",
+      "name": "real_action_deadline",
+      "operation": "tls"
+    },
+    {
+      "assertion": "Unwritten reserved bytes remain charged across later role/action.",
+      "configuration": "A",
+      "id": "owner/A/L27",
+      "name": "unwritten_reservation_no_refund",
+      "operation": null
+    },
+    {
+      "assertion": "Actual peer-write failure after reservation does not refund owner counters.",
+      "configuration": "A",
+      "id": "owner/A/L28",
+      "name": "failed_write_reservation_no_refund",
+      "operation": null
+    },
+    {
+      "assertion": "DNS-negative terminal settlement blocks later service arm with same counters.",
+      "configuration": "A",
+      "id": "owner/A/L29",
+      "name": "negative_dns_terminal",
+      "operation": null
+    },
+    {
+      "assertion": "Host-mismatch refusal ends sequence; later TLS arm denied.",
+      "configuration": "A",
+      "id": "owner/A/L30",
+      "name": "negative_http_terminal",
+      "operation": null
+    },
+    {
+      "assertion": "Certificate-negative TLS settlement ends sequence; later service arm denied.",
+      "configuration": "A",
+      "id": "owner/A/L31",
+      "name": "negative_tls_terminal",
+      "operation": null
+    },
+    {
+      "assertion": "N11 valid DNS settles and binds without terminal stop, allowing its intended TLS terminal step.",
+      "configuration": "A",
+      "id": "owner/A/L32",
+      "name": "negative_profile_dns_prerequisite_active",
+      "operation": null
+    },
+    {
+      "assertion": "Three legal O4 connections consume cap; extra refused at true first slot/action/connection guard without rollback.",
+      "configuration": "A",
+      "id": "owner/A/L33",
+      "name": "maximum_connections_and_extra_refusal",
+      "operation": null
+    },
+    {
+      "assertion": "No HTTP/TLS arm without live eligible binding.",
+      "configuration": "A",
+      "id": "owner/A/B01",
+      "name": "missing_binding",
+      "operation": null
+    },
+    {
+      "assertion": "Caller cannot mint binding from plausible fields.",
+      "configuration": "A",
+      "id": "owner/A/B02",
+      "name": "forged_binding_digest",
+      "operation": null
+    },
+    {
+      "assertion": "Old observation generation refused.",
+      "configuration": "A",
+      "id": "owner/A/B03",
+      "name": "changed_generation",
+      "operation": null
+    },
+    {
+      "assertion": "Changed delivered answer digest refused.",
+      "configuration": "A",
+      "id": "owner/A/B04",
+      "name": "changed_answer_digest",
+      "operation": null
+    },
+    {
+      "assertion": "Caller TTL cannot replace reviewed owner commitment.",
+      "configuration": "A",
+      "id": "owner/A/B05",
+      "name": "changed_ttl",
+      "operation": null
+    },
+    {
+      "assertion": "Caller cannot replace owner monotonic observation time.",
+      "configuration": "A",
+      "id": "owner/A/B06",
+      "name": "changed_observed_time",
+      "operation": null
+    },
+    {
+      "assertion": "Caller expiry extension refused.",
+      "configuration": "A",
+      "id": "owner/A/B07",
+      "name": "extended_expiry",
+      "operation": null
+    },
+    {
+      "assertion": "Same logical name cannot authorize different numeric target.",
+      "configuration": "A",
+      "id": "owner/A/B08",
+      "name": "changed_numeric_endpoint",
+      "operation": null
+    },
+    {
+      "assertion": "Undeclared canonical/question name refused.",
+      "configuration": "A",
+      "id": "owner/A/B09",
+      "name": "changed_canonical_name",
+      "operation": null
+    },
+    {
+      "assertion": "Exact raw Host including port required before delivery.",
+      "configuration": "A",
+      "id": "owner/A/B10",
+      "name": "changed_http_host",
+      "operation": null
+    },
+    {
+      "assertion": "Exact SNI required before handshake delivery.",
+      "configuration": "A",
+      "id": "owner/A/B11",
+      "name": "changed_tls_sni",
+      "operation": null
+    },
+    {
+      "assertion": "Expected certificate name must match reviewed commitment.",
+      "configuration": "A",
+      "id": "owner/A/B12",
+      "name": "changed_certificate_name",
+      "operation": null
+    },
+    {
+      "assertion": "Alternate CA bytes/digest refused with no fallback.",
+      "configuration": "A",
+      "id": "owner/A/B13",
+      "name": "changed_ca_digest",
+      "operation": null
+    },
+    {
+      "assertion": "Parser/saved report cannot create or restore live binding.",
+      "configuration": "A",
+      "id": "owner/A/B14",
+      "name": "parser_report_only_binding",
+      "operation": null
+    },
+    {
+      "assertion": "Finished owner binding/grant cannot restore service work.",
+      "configuration": "A",
+      "id": "owner/A/B15",
+      "name": "finished_owner_binding",
+      "operation": null
+    },
+    {
+      "assertion": "Otherwise live opposite-config grant rejected before service startup.",
+      "configuration": "A",
+      "id": "owner/A/B16",
+      "name": "cross_configuration_live_grant",
+      "operation": null
+    },
+    {
+      "assertion": "Binding minted under different runtime identity refused.",
+      "configuration": "A",
+      "id": "owner/A/B17",
+      "name": "binding_runtime_changed",
+      "operation": null
+    },
+    {
+      "assertion": "Real TTL1 expiry blocks HTTP delivery.",
+      "configuration": "A",
+      "id": "owner/A/B18",
+      "name": "real_expired_binding_http",
+      "operation": null
+    },
+    {
+      "assertion": "Real TTL1 expiry blocks TLS handshake.",
+      "configuration": "A",
+      "id": "owner/A/B19",
+      "name": "real_expired_binding_tls",
+      "operation": null
+    },
+    {
+      "assertion": "Composite: real HTTP approval after first native N1 DNS; sealed test witness on the same owner proves second authorized DNS ARM immediately clears binding/increments generation, unchanged binding guard refuses binding_missing, and direct stale-commitment connection guard refuses action_binding_changed without state changes. Retain actual changed DNS2 and separately label later static-profile refusal. No claim that N1 previously admitted HTTP or revoked the approval-store grant.",
+      "configuration": "A",
+      "id": "owner/A/B20",
+      "name": "second_dns_invalidates_http",
+      "operation": null
+    },
+    {
+      "assertion": "Composite: real TLS approval after first native N1 DNS; sealed test witness on the same owner proves second authorized DNS ARM immediately clears binding/increments generation, unchanged binding guard refuses binding_missing, and direct stale-commitment connection guard refuses action_binding_changed without state changes. Retain actual changed DNS2 and separately label later static-profile refusal. No claim that N1 previously admitted TLS or revoked the approval-store grant.",
+      "configuration": "A",
+      "id": "owner/A/B21",
+      "name": "second_dns_invalidates_tls",
+      "operation": null
+    }
+  ],
+  "parser_evidence": [
+    {
+      "assertion": "Run the real isolated parser with a valid captured DNS exchange and a different otherwise-valid dig answer/TTL/transaction ID; require disagreement and no binding candidate. DNS stderr accepts only empty bytes or the exact single observed BIND socket-probe denial line plus newline; retain raw/hash and the explicit text-only marker, without granting socket access or weakening exit/wire agreement. Repeated, changed or extra stderr remains invalid.",
+      "case": "dns_native_wire_disagreement",
+      "configuration": "A",
+      "driver": "isolated_production_parser",
+      "id": "parser_evidence/A/dns_native_wire_disagreement",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Run the real isolated parser with captured original/delivered HTTP response and differing client response; require rejection even if each response separately parses.",
+      "case": "http_native_wire_disagreement",
+      "configuration": "A",
+      "driver": "isolated_production_parser",
+      "id": "parser_evidence/A/http_native_wire_disagreement",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Run the real isolated parser with bounded successful native brief output but mismatched captured ServerHello negotiation; require no verified/useful result. New-profile ClientHello grammar retains actual bytes/hash and permits optional extension27 only with exactbody0400010003; duplicate/changed/other new extensions are invalid. This advertisement grants no resumption or recorder certificate-verification claim. Certificate negatives require the exact case-specific terminal alert and native verification failure; all other cases reject it. N16 validates the entire client stream before accepting its server protocol-version alert.",
+      "case": "tls_native_wire_disagreement",
+      "configuration": "A",
+      "driver": "isolated_production_parser",
+      "id": "parser_evidence/A/tls_native_wire_disagreement",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Supply exactly maximum+1 framed bytes to the isolated parser entry point; prove refusal before interpreting input, no host fallback, and no authority/service activity.",
+      "case": "parser_input_cap",
+      "configuration": "A",
+      "driver": "production_entrypoint_with_launch_spy",
+      "id": "parser_evidence/A/parser_input_cap",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Run a sealed test-only parser fault worker in the identical production sandbox/capture path which emits maximum+1 reply bytes; require output_limit refusal and physical child cleanup.",
+      "case": "parser_output_cap",
+      "configuration": "A",
+      "driver": "declared_test_only_fault_worker",
+      "id": "parser_evidence/A/parser_output_cap",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Run a sealed test-only parser fault worker in the identical production sandbox/capture path which makes no progress; require real one-second deadline refusal and physical child cleanup.",
+      "case": "parser_wall_deadline",
+      "configuration": "A",
+      "driver": "declared_test_only_fault_worker",
+      "id": "parser_evidence/A/parser_wall_deadline",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Retain a complete real successful case bundle; change one raw-byte artifact without matching original commitment, and require Python and CLI inspection refusal with all original artifacts preserved.",
+      "case": "saved_raw_artifact_tamper",
+      "configuration": "A",
+      "driver": "read_only_saved_native_evidence",
+      "id": "parser_evidence/A/saved_raw_artifact_tamper",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Reinspect one complete three-action O4 native bundle via Python and CLI; reports byte-equivalent, exact real statuses/counts retained, all directory/content hashes unchanged, no authority recreated.",
+      "case": "python_cli_read_only_replay",
+      "configuration": "A",
+      "driver": "read_only_saved_native_evidence",
+      "id": "parser_evidence/A/python_cli_read_only_replay",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Run the real isolated parser with a valid captured DNS exchange and a different otherwise-valid dig answer/TTL/transaction ID; require disagreement and no binding candidate. DNS stderr accepts only empty bytes or the exact single observed BIND socket-probe denial line plus newline; retain raw/hash and the explicit text-only marker, without granting socket access or weakening exit/wire agreement. Repeated, changed or extra stderr remains invalid.",
+      "case": "dns_native_wire_disagreement",
+      "configuration": "B",
+      "driver": "isolated_production_parser",
+      "id": "parser_evidence/B/dns_native_wire_disagreement",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Run the real isolated parser with captured original/delivered HTTP response and differing client response; require rejection even if each response separately parses.",
+      "case": "http_native_wire_disagreement",
+      "configuration": "B",
+      "driver": "isolated_production_parser",
+      "id": "parser_evidence/B/http_native_wire_disagreement",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Run the real isolated parser with bounded successful native brief output but mismatched captured ServerHello negotiation; require no verified/useful result. New-profile ClientHello grammar retains actual bytes/hash and permits optional extension27 only with exactbody0400010003; duplicate/changed/other new extensions are invalid. This advertisement grants no resumption or recorder certificate-verification claim. Certificate negatives require the exact case-specific terminal alert and native verification failure; all other cases reject it. N16 validates the entire client stream before accepting its server protocol-version alert.",
+      "case": "tls_native_wire_disagreement",
+      "configuration": "B",
+      "driver": "isolated_production_parser",
+      "id": "parser_evidence/B/tls_native_wire_disagreement",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Supply exactly maximum+1 framed bytes to the isolated parser entry point; prove refusal before interpreting input, no host fallback, and no authority/service activity.",
+      "case": "parser_input_cap",
+      "configuration": "B",
+      "driver": "production_entrypoint_with_launch_spy",
+      "id": "parser_evidence/B/parser_input_cap",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Run a sealed test-only parser fault worker in the identical production sandbox/capture path which emits maximum+1 reply bytes; require output_limit refusal and physical child cleanup.",
+      "case": "parser_output_cap",
+      "configuration": "B",
+      "driver": "declared_test_only_fault_worker",
+      "id": "parser_evidence/B/parser_output_cap",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Run a sealed test-only parser fault worker in the identical production sandbox/capture path which makes no progress; require real one-second deadline refusal and physical child cleanup.",
+      "case": "parser_wall_deadline",
+      "configuration": "B",
+      "driver": "declared_test_only_fault_worker",
+      "id": "parser_evidence/B/parser_wall_deadline",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Retain a complete real successful case bundle; change one raw-byte artifact without matching original commitment, and require Python and CLI inspection refusal with all original artifacts preserved.",
+      "case": "saved_raw_artifact_tamper",
+      "configuration": "B",
+      "driver": "read_only_saved_native_evidence",
+      "id": "parser_evidence/B/saved_raw_artifact_tamper",
+      "useful_daemon_claim": false
+    },
+    {
+      "assertion": "Reinspect one complete three-action O4 native bundle via Python and CLI; reports byte-equivalent, exact real statuses/counts retained, all directory/content hashes unchanged, no authority recreated.",
+      "case": "python_cli_read_only_replay",
+      "configuration": "B",
+      "driver": "read_only_saved_native_evidence",
+      "id": "parser_evidence/B/python_cli_read_only_replay",
+      "useful_daemon_claim": false
+    }
+  ],
+  "profile": "owned_name_tls_v1",
+  "retained_native_nodeids": [
+    "tests/test_routing_apache_custody.py::test_real_linux_apache_descriptor_transfer_and_refusal[connected]",
+    "tests/test_routing_apache_custody.py::test_real_linux_apache_descriptor_transfer_and_refusal[duplicated]",
+    "tests/test_routing_apache_custody.py::test_real_linux_apache_descriptor_transfer_and_refusal[leaked]",
+    "tests/test_routing_apache_custody.py::test_real_linux_apache_descriptor_transfer_and_refusal[none]",
+    "tests/test_routing_apache_custody.py::test_real_linux_apache_descriptor_transfer_and_refusal[reused]",
+    "tests/test_routing_apache_custody.py::test_real_linux_apache_descriptor_transfer_and_refusal[stale]",
+    "tests/test_routing_apache_custody.py::test_real_linux_apache_descriptor_transfer_and_refusal[wrong]",
+    "tests/test_routing_apache_lifecycle_linux.py::test_native_stop_reaps_live_unconsumed_apache_handoff[cancel]",
+    "tests/test_routing_apache_lifecycle_linux.py::test_native_stop_reaps_live_unconsumed_apache_handoff[launcher_death]",
+    "tests/test_routing_authority.py::test_bootstrap_closes_received_descriptors_on_malformed_message",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[four-explicit-actions-apache-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[four-explicit-actions-apache-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[four-explicit-actions-nginx-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[four-explicit-actions-nginx-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[http_headers-apache-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[http_headers-apache-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[http_headers-nginx-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[http_headers-nginx-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[http_nmap-apache-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[http_nmap-apache-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[http_nmap-nginx-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[http_nmap-nginx-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[reverse-explicit-order-apache-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[reverse-explicit-order-apache-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[reverse-explicit-order-nginx-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[reverse-explicit-order-nginx-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[ssh_keys-apache-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[ssh_keys-apache-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[ssh_keys-nginx-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[ssh_keys-nginx-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[ssh_nmap-apache-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[ssh_nmap-apache-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[ssh_nmap-nginx-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_completes_selected_work[ssh_nmap-nginx-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[connection_one-selectors0-connections-apache-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[connection_one-selectors0-connections-apache-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[connection_one-selectors0-connections-nginx-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[connection_one-selectors0-connections-nginx-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[http_one-selectors1-http_requests-apache-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[http_one-selectors1-http_requests-apache-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[http_one-selectors1-http_requests-nginx-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[http_one-selectors1-http_requests-nginx-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[ssh_zero-selectors2-kex_exchanges-apache-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[ssh_zero-selectors2-kex_exchanges-apache-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[ssh_zero-selectors2-kex_exchanges-nginx-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_denies_excess_without_losing_useful_work[ssh_zero-selectors2-kex_exchanges-nginx-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_requires_approval_by_default[apache-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_requires_approval_by_default[apache-B]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_requires_approval_by_default[nginx-A]",
+    "tests/test_routing_deployments_linux.py::test_native_deployment_requires_approval_by_default[nginx-B]",
+    "tests/test_routing_lifecycle_linux.py::test_native_stop_after_useful_work_cannot_launch_second_action_or_reset_budget[apache-B-cancel]",
+    "tests/test_routing_lifecycle_linux.py::test_native_stop_after_useful_work_cannot_launch_second_action_or_reset_budget[apache-B-launcher_death]",
+    "tests/test_routing_lifecycle_linux.py::test_native_stop_after_useful_work_cannot_launch_second_action_or_reset_budget[legacy-cancel]",
+    "tests/test_routing_lifecycle_linux.py::test_native_stop_after_useful_work_cannot_launch_second_action_or_reset_budget[legacy-launcher_death]",
+    "tests/test_routing_linux.py::test_native_aggregate_denial_preserves_completed_work[connection_one-selectors0-connections]",
+    "tests/test_routing_linux.py::test_native_aggregate_denial_preserves_completed_work[http_one-selectors1-http_requests]",
+    "tests/test_routing_linux.py::test_native_aggregate_denial_preserves_completed_work[ssh_zero-selectors2-kex_exchanges]",
+    "tests/test_routing_linux.py::test_native_default_approval_policy_cannot_launch_unattended",
+    "tests/test_routing_linux.py::test_native_independent_actions_share_one_routed_budget[four-explicit-actions]",
+    "tests/test_routing_linux.py::test_native_independent_actions_share_one_routed_budget[http_headers]",
+    "tests/test_routing_linux.py::test_native_independent_actions_share_one_routed_budget[http_nmap]",
+    "tests/test_routing_linux.py::test_native_independent_actions_share_one_routed_budget[reverse-explicit-order]",
+    "tests/test_routing_linux.py::test_native_independent_actions_share_one_routed_budget[ssh_keys]",
+    "tests/test_routing_linux.py::test_native_independent_actions_share_one_routed_budget[ssh_nmap]",
+    "tests/test_routing_matrix_direct_linux.py::test_native_successful_negative_blocks_direct_witnessed_continuation[apache-B-http_headers_N1-http_headers-ssh_keys]",
+    "tests/test_routing_matrix_direct_linux.py::test_native_successful_negative_blocks_direct_witnessed_continuation[nginx-A-ssh_nmap_N1-ssh_nmap-http_headers]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_baseline_orders[forward-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_baseline_orders[forward-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_baseline_orders[forward-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_baseline_orders[forward-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_baseline_orders[reverse-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_baseline_orders[reverse-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_baseline_orders[reverse-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_baseline_orders[reverse-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N1-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N1-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N1-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N1-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N2-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N2-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N2-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N2-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N3-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N3-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N3-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N3-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N4-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N4-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N4-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N4-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N5-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N5-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N5-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-N5-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O1-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O1-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O1-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O1-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O2-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O2-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O2-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O2-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O3-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O3-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O3-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O3-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O4-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O4-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O4-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-O4-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-R1-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-R1-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-R1-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-R1-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-R2-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-R2-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-R2-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_headers-R2-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_nmap-O5-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_nmap-O5-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_nmap-O5-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_nmap-O5-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_nmap-O6-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_nmap-O6-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_nmap-O6-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[http_nmap-O6-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N2-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N2-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N2-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N2-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N3-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N3-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N3-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N3-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N4-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N4-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N4-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N4-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N5-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N5-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N5-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N5-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N6-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N6-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N6-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-N6-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-O2-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-O2-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-O2-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-O2-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-R1-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-R1-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-R1-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-R1-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-R2-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-R2-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-R2-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_keys-R2-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_nmap-N1-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_nmap-N1-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_nmap-N1-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_nmap-N1-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_nmap-O1-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_nmap-O1-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_nmap-O1-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_complete_stock_case_matrix[ssh_nmap-O1-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[connection_one-selectors0-connections-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[connection_one-selectors0-connections-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[connection_one-selectors0-connections-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[connection_one-selectors0-connections-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[http_one-selectors1-http_requests-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[http_one-selectors1-http_requests-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[http_one-selectors1-http_requests-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[http_one-selectors1-http_requests-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[ssh_zero-selectors2-kex_exchanges-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[ssh_zero-selectors2-kex_exchanges-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[ssh_zero-selectors2-kex_exchanges-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_lowered_budget_retains_prior_work[ssh_zero-selectors2-kex_exchanges-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[http_headers-N1-selectors0-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[http_headers-N1-selectors0-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[http_headers-N1-selectors0-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[http_headers-N1-selectors0-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[http_headers-N4-selectors1-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[http_headers-N4-selectors1-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[http_headers-N4-selectors1-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[http_headers-N4-selectors1-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[ssh_keys-N3-selectors3-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[ssh_keys-N3-selectors3-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[ssh_keys-N3-selectors3-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[ssh_keys-N3-selectors3-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[ssh_nmap-N1-selectors2-apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[ssh_nmap-N1-selectors2-apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[ssh_nmap-N1-selectors2-nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_negative_stops_later_slot_after_useful_work[ssh_nmap-N1-selectors2-nginx-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_requires_approval_by_default[apache-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_requires_approval_by_default[apache-B]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_requires_approval_by_default[nginx-A]",
+    "tests/test_routing_matrix_linux.py::test_native_v3_requires_approval_by_default[nginx-B]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[action_deadline]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[action_request_bytes]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[action_response_bytes]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[aggregate_request_bytes]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[aggregate_response_bytes]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[bytes_before_kex]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[changed_action_digest]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[changed_action_sequence]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[changed_runtime]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[changed_selection]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[channel_continuity_loss]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[cross_role_spacing]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[declared_http_negative_stops_owner]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[declared_ssh_negative_stops_owner]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[failed_write_no_refund]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[finished_lease_replay]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[maximum_output_and_fifth_action]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[message_sequence_replay]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[overlap_concurrency]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[owner_lifetime]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[post_terminal_reservation]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[request_replay]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[retained_output_excess]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[settled_selector_replay]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[worker_replacement_sequence]",
+    "tests/test_routing_owner_enforcement_linux.py::test_native_owner_channel_enforcement[wrong_channel_role]",
+    "tests/test_routing_topology.py::test_descriptor_inventory_detects_unexpected_inherited_open_file",
+    "tests/test_routing_topology.py::test_fragment_metadata_rejects_overflow_reordering_or_short_nonfinal_frame[oversize]",
+    "tests/test_routing_topology.py::test_fragment_metadata_rejects_overflow_reordering_or_short_nonfinal_frame[short-frame]",
+    "tests/test_routing_topology.py::test_fragment_metadata_rejects_overflow_reordering_or_short_nonfinal_frame[unneeded-fragment]",
+    "tests/test_routing_topology.py::test_fragment_metadata_rejects_overflow_reordering_or_short_nonfinal_frame[wrong-offset]",
+    "tests/test_routing_topology.py::test_fragment_replay_and_midstream_descriptor_import_rejected_without_fd_leak",
+    "tests/test_routing_topology.py::test_fragment_transfer_has_one_absolute_deadline",
+    "tests/test_routing_topology.py::test_fragmented_snapshot_exact_limit_and_single_fd_custody",
+    "tests/test_routing_witness_linux.py::test_routing_durable_intent_cannot_replace_missing_or_replayed_required_approval[apache-B-missing_consumed_proof]",
+    "tests/test_routing_witness_linux.py::test_routing_durable_intent_cannot_replace_missing_or_replayed_required_approval[apache-B-replayed_consumed_proof]",
+    "tests/test_routing_witness_linux.py::test_routing_durable_intent_cannot_replace_missing_or_replayed_required_approval[legacy-missing_consumed_proof]",
+    "tests/test_routing_witness_linux.py::test_routing_durable_intent_cannot_replace_missing_or_replayed_required_approval[legacy-replayed_consumed_proof]",
+    "tests/test_routing_witness_linux.py::test_routing_durable_intent_cannot_replace_missing_or_replayed_required_approval[matrix-apache-B-missing_consumed_proof]",
+    "tests/test_routing_witness_linux.py::test_routing_durable_intent_cannot_replace_missing_or_replayed_required_approval[matrix-apache-B-replayed_consumed_proof]",
+    "tests/test_routing_witness_linux.py::test_routing_durable_intent_cannot_replace_missing_or_replayed_required_approval[matrix-nginx-A-missing_consumed_proof]",
+    "tests/test_routing_witness_linux.py::test_routing_durable_intent_cannot_replace_missing_or_replayed_required_approval[matrix-nginx-A-replayed_consumed_proof]",
+    "tests/test_routing_witness_linux.py::test_routing_missing_or_nondurable_audit_never_reaches_admission[apache-B-fsync_failure]",
+    "tests/test_routing_witness_linux.py::test_routing_missing_or_nondurable_audit_never_reaches_admission[apache-B-missing]",
+    "tests/test_routing_witness_linux.py::test_routing_missing_or_nondurable_audit_never_reaches_admission[legacy-fsync_failure]",
+    "tests/test_routing_witness_linux.py::test_routing_missing_or_nondurable_audit_never_reaches_admission[legacy-missing]",
+    "tests/test_routing_witness_linux.py::test_routing_missing_or_nondurable_audit_never_reaches_admission[matrix-apache-B-fsync_failure]",
+    "tests/test_routing_witness_linux.py::test_routing_missing_or_nondurable_audit_never_reaches_admission[matrix-apache-B-missing]",
+    "tests/test_routing_witness_linux.py::test_routing_missing_or_nondurable_audit_never_reaches_admission[matrix-nginx-A-fsync_failure]",
+    "tests/test_routing_witness_linux.py::test_routing_missing_or_nondurable_audit_never_reaches_admission[matrix-nginx-A-missing]",
+    "tests/test_secure_approval_witness_linux.py::test_actual_consumed_grant_direct_channel_and_exclusive_custody",
+    "tests/test_secure_approval_witness_linux.py::test_consumed_proof_cannot_authorize_a_second_launch",
+    "tests/test_secure_audit_witness_linux.py::test_audit_failures_cannot_turn_into_launch_permission[fsync]",
+    "tests/test_secure_audit_witness_linux.py::test_real_durable_witness_and_exclusive_endpoint_custody",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-N1-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-N1-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-N2-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-N2-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-N3-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-N3-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-N4-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-N4-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-N5-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-N5-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O1-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O1-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O2-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O2-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O3-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O3-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O4-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O4-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O5-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O5-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O6-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-O6-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-R1-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-R1-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-R2-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[A-R2-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-N1-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-N1-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-N2-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-N2-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-N3-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-N3-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-N4-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-N4-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-N5-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-N5-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O1-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O1-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O2-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O2-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O3-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O3-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O4-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O4-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O5-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O5-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O6-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-O6-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-R1-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-R1-nginx]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-R2-apache]",
+    "tests/test_stock_http_production.py::test_authoritative_production_http_corpus_and_unchanged_inspection[B-R2-nginx]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[A-N1]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[A-N2]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[A-N3]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[A-N4]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[A-N5]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[A-N6]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[A-O1]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[A-O2]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[A-R1]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[A-R2]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[B-N1]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[B-N2]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[B-N3]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[B-N4]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[B-N5]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[B-N6]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[B-O1]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[B-O2]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[B-R1]",
+    "tests/test_stock_ssh.py::test_authoritative_stock_ssh_corpus_and_unchanged_inspection[B-R2]"
+  ],
+  "schema_version": "1",
+  "shared_obligations": [
+    {
+      "covered_by": "architecture/A/lifetime_and_physical_cleanup/real_owner_60_second_deadline",
+      "obligation": "owner/A/L26"
+    }
+  ],
+  "status": "required_not_executed"
+}

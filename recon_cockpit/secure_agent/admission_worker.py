@@ -120,8 +120,12 @@ def main():
                 raise ValueError('admission_session_expired')
             print(protocol.encode(protocol.receipt(value, outcome)).decode('ascii'), flush=True)
         return 0
-    except Exception:
-        sys.stderr.write('launch_admission_refused\n')
+    except Exception as exc:
+        if (isinstance(locals().get('initial'), dict)
+                and initial.get('configuration', {}).get('profile') == 'owned_name_tls_v1'):
+            sys.stderr.write('launch_admission_refused:' + type(exc).__name__ + ':' + str(exc)[:512] + '\n')
+        else:
+            sys.stderr.write('launch_admission_refused\n')
         return 78
 
 

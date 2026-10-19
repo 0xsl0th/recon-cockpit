@@ -87,7 +87,9 @@ def test_partial_or_malformed_peer_cannot_be_promoted_to_useful_page(case):
 
 def test_previous_49_capabilities_and_355_case_contracts_remain_identical():
     catalog = tool_catalog.list_tools()
-    catalog['tools'] = [row for row in catalog['tools'] if row['tool_id'] not in (fixture.SNMP_PAGE_TOOL_ID, *fixture.DNS_ADDRESS_TOOL_IDS)]
+    catalog['tools'] = [row for row in catalog['tools'] if row['tool_id'] not in (
+        fixture.SNMP_PAGE_TOOL_ID, *fixture.DNS_ADDRESS_TOOL_IDS,
+        'owned_name_dns_v1', 'owned_name_http_v1', 'owned_name_tls_v1')]
     catalog.update(capability_count=49, accepted_capability_count=49,
                    candidate_capability_count=0, external_program_count=16)
     tools = [row['tool_id'] for row in catalog['tools']]

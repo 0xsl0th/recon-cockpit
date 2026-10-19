@@ -194,6 +194,15 @@ def test_preparation_performs_no_file_access_networking_or_process_execution(mon
 def test_all_52_catalog_profiles_and_existing_configurable_contracts_are_unchanged():
     # Captured from accepted PR #87 main 48c0bce before S3.2 preparation.
     catalog = tool_catalog.list_tools()
+    assert tuple(catalog[key] for key in ('capability_count', 'accepted_capability_count',
+        'candidate_capability_count', 'external_program_count')) == (55, 52, 3, 17)
+    assert {row['tool_id'] for row in catalog['tools'] if row.get('acceptance_status') == 'candidate'} == {
+        'owned_name_dns_v1', 'owned_name_http_v1', 'owned_name_tls_v1'}
+    catalog['tools'] = [row for row in catalog['tools'] if row['tool_id'] not in (
+        'owned_name_dns_v1', 'owned_name_http_v1', 'owned_name_tls_v1')]
+    catalog.update(capability_count=52, accepted_capability_count=52,
+                   candidate_capability_count=0, external_program_count=17)
+    assert len(catalog['tools']) == 52
     value = {"catalog": catalog,
         "descriptions": {row["tool_id"]: tool_catalog.describe_tool(row["tool_id"]) for row in catalog["tools"]},
         "configurable": [{"descriptor": configurable_contract.capability_descriptor(scope),

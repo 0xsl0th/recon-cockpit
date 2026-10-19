@@ -22,7 +22,8 @@ def test_all_47_previous_adapters_329_cases_and_34_runtime_contracts_are_unchang
     # This preserves T02 candidates; it does not claim their acceptance.
     value = {
         "adapters": {key: item.to_dict() for key, item in adapters.ADAPTERS.items()
-                     if key not in (policy.TOOL_ID, "ffuf_web_hierarchy_v1", "snmp_interface_page_v1", "dig_dns_aaaa_v1", "dig_dns_ptr_v1")},
+                     if key not in ("owned_name_dns_v1", "owned_name_http_v1", "owned_name_tls_v1")
+                     and key not in (policy.TOOL_ID, "ffuf_web_hierarchy_v1", "snmp_interface_page_v1", "dig_dns_aaaa_v1", "dig_dns_ptr_v1")},
         "cases": {case: {"action": contract.action(case), "card": workflow.card(case),
                           "descriptor": contract.capability_descriptor(case), "spec": lab.spec(case)}
                   for case in contract.CASES if case not in policy.CASES + contract.T04_CASES + contract.T05_CASES + contract.T06_CASES},

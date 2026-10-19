@@ -48,11 +48,11 @@ import time
 
 if not __package__:
     sys.path.insert(0, '/app')
-    from approval_runtime import approval_protocol as protocol
+    from approval_runtime import approval_protocol as protocol, name_tls_public
     from approval_runtime.approvals import ApprovalStore
     import planner_worker as bootstrap
 else:
-    from . import approval_protocol as protocol, planner_worker as bootstrap
+    from . import approval_protocol as protocol, planner_worker as bootstrap, name_tls_public
     from .approvals import ApprovalStore
 
 
@@ -148,9 +148,13 @@ def review(fd, action, policy, session_id, deadline):
     canonical = action.to_dict()
     canonical.pop('rationale')
     challenge = 'approve ' + action.digest[:16] + ' ' + secrets.token_hex(16)
-    prompt = protocol.encode({'review_exact_action': canonical, 'action_digest': action.digest,
-                              'policy_digest': policy.digest, 'policy_version': policy.policy_version,
-                              'session_id': session_id}) + (
+    details = {'review_exact_action': canonical, 'action_digest': action.digest,
+               'policy_digest': policy.digest, 'policy_version': policy.policy_version,
+               'session_id': session_id}
+    summary = name_tls_public.approval_summary(canonical['tool_id'], canonical['parameters'])
+    if summary is not None:
+        details['name_binding_summary'] = summary
+    prompt = protocol.encode(details) + (
         "\nType '" + challenge + "' to approve once (blank denies): ").encode('ascii')
     # Pretyped input cannot approve a newly displayed action; the independent
     # nonce also defeats old answers buffered elsewhere in the terminal stack.

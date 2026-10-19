@@ -8,7 +8,7 @@ imports modules named by a proposal.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from types import MappingProxyType
 
 from .tool_parameters import (
@@ -19,10 +19,15 @@ from .tool_parameters import (
     KerbruteUserenumParameters, RedisServerInfoParameters, SNMPSystemGetParameters, SNMPInterfaceNextParameters, SNMPInterfacePageParameters,
     PostgreSQLTLSParameters, MySQLTLSParameters, WhatWebParameters, DigAAAAParameters, DigPTRParameters, DigMXParameters, DigSRVParameters, DigNSIDParameters, DigAXFRParameters, RDPInitialParameters, SMB2NegotiateParameters, SMTPStartTLSParameters, LDAPStartTLSParameters, FTPStartTLSParameters,
     NmapTCPParameters, TCPParameters, TLSPostureParameters, _fields, _reject,
+    OwnedNameDNSParameters, OwnedNameHTTPParameters, OwnedNameTLSParameters,
 )
 
 
 ADAPTER_API_VERSION = "1"
+OWNED_NAME_DNS_TOOL_ID = "owned_name_dns_v1"
+OWNED_NAME_HTTP_TOOL_ID = "owned_name_http_v1"
+OWNED_NAME_TLS_TOOL_ID = "owned_name_tls_v1"
+NAME_TLS_CANDIDATES = (OWNED_NAME_DNS_TOOL_ID, OWNED_NAME_HTTP_TOOL_ID, OWNED_NAME_TLS_TOOL_ID)
 NMAP_TOOL_ID = "nmap_tcp_connect_v1"
 NMAP_EXECUTION_PROFILE = "owned-nmap-tcp-connect-v1"
 NMAP_TARGET = "127.0.0.1"
@@ -154,6 +159,17 @@ class ToolAdapter:
     def parameter_schema(self):
         # Keep property/required order identical to the original codec. The
         # schema describes syntax; operator policy and runtime remain stricter.
+        if self.tool_id in NAME_TLS_CANDIDATES:
+            integer_fields = {"port", "timeout_seconds", "max_output_bytes", "observation_generation",
+                              "observed_ttl_seconds", "observed_at_us", "expires_at_us"}
+            properties = {key: {"type": "integer", "minimum": 0, "maximum": 60000000}
+                          if key in integer_fields else {"type": "string", "minLength": 1, "maxLength": 256}
+                          for key in self.parameter_fields}
+            for key in properties:
+                if key.endswith("sha256"):
+                    properties[key] = {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+            return {"type": "object", "properties": properties, "required": list(properties),
+                    "additionalProperties": False}
         properties = {
             "port": {"type": "integer", "minimum": 1, "maximum": 65535},
             "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 30},
@@ -180,6 +196,16 @@ class ToolAdapter:
 
 
 ADAPTERS = MappingProxyType({
+    **{tool: ToolAdapter(tool, parameter_type, tuple(field.name for field in fields(parameter_type)),
+        "observe_owned_name_" + operation, "owned_name_tls_v1",
+        "bounded-owned-name-" + operation + "-result-v1", "owned-name-" + operation + "-wire-v1",
+        ("private_namespaces", "scoped_network_filter", "pinned_tool_runtime",
+         "independent_owner_evidence", "explicit_name_binding_approval", "owner_binding_freshness",
+         "single_use_operation_slot", "no_response_directed_followup"))
+       for tool, parameter_type, operation in (
+           (OWNED_NAME_DNS_TOOL_ID, OwnedNameDNSParameters, "dns"),
+           (OWNED_NAME_HTTP_TOOL_ID, OwnedNameHTTPParameters, "http"),
+           (OWNED_NAME_TLS_TOOL_ID, OwnedNameTLSParameters, "tls"))},
     FFUF_HIERARCHY_TOOL_ID: ToolAdapter(
         FFUF_HIERARCHY_TOOL_ID, FFufHierarchyParameters, ("port", "timeout_seconds", "max_output_bytes"),
         "observe_owned_http_hierarchy", "owned-ffuf-web-hierarchy-v1",

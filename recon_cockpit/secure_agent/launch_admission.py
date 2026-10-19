@@ -198,7 +198,7 @@ def configuration(value):
     if (type(value) is not dict
             or set(value) != {'version', 'service_id', 'session_id', 'policy', 'limits', 'execute', 'profile', 'case'}
             or value['version'] != '1' or type(value['execute']) is not bool
-            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}
+            or type(value['profile']) is not str or value['profile'] not in {'fixture', 'discovery_fixture', 'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1', 'owned_name_tls_v1'}
             or (value['profile'] in {'owned_lab', 'owned_nmap_lab'} and (type(value['case']) is not str or value['case'] not in 'abcdef'
                                                      or len(value['case']) != 1))
             or (value['profile'] in {'owned_web_lab', 'owned_http_headers_lab', 'owned_service_web_lab'} and (type(value['case']) is not str
@@ -208,7 +208,7 @@ def configuration(value):
                     'curl-malformed', 'ffuf-normal', 'ffuf-wildcard', 'ffuf-injected', 'ffuf-stalled')))
             or (value['profile'] == 'owned_network_tools_lab' and (type(value['case']) is not str
                 or value['case'] not in NETWORK_TOOL_CASES))
-            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'} and value['case'] is not None)):
+            or (value['profile'] not in {'owned_lab', 'owned_nmap_lab', 'owned_web_lab', 'owned_http_headers_lab', 'owned_web_tools_lab', 'owned_network_tools_lab', 'owned_service_web_lab', 'configurable_owned_lab', 'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1', 'owned_name_tls_v1'} and value['case'] is not None)):
         raise ValueError('invalid_admission_configuration')
     identity(value['service_id'])
     identity(value['session_id'])
@@ -235,8 +235,10 @@ def configuration(value):
         validate_scope(value['case'])
         if any(value['limits'][key] > maximum for key, maximum in configurable_contract.LIMITS.items()):
             raise ValueError('invalid_configurable_admission_limits')
-    if value['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
-        if value['profile'] == 'disconnected_routing_v1':
+    if value['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1', 'owned_name_tls_v1'}:
+        if value['profile'] == 'owned_name_tls_v1':
+            from .name_tls_contract import validate_selection, validate_limits, validate_policy
+        elif value['profile'] == 'disconnected_routing_v1':
             from .routing_contract import validate_selection, validate_limits, validate_policy
         elif value['profile'] == 'stock_ssh_compatibility_v1':
             from .stock_ssh_contract import validate_selection, validate_limits, validate_policy
@@ -302,8 +304,11 @@ def receipt(value, outcome):
 
 
 def profile_allows(action, config):
-    if config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1'}:
-        if config['profile'] == 'disconnected_routing_v1':
+    if config['profile'] in {'stock_nginx_diagnostic_v1', 'stock_http_compatibility_v1', 'stock_ssh_compatibility_v1', 'disconnected_routing_v1', 'owned_name_tls_v1'}:
+        if config['profile'] == 'owned_name_tls_v1':
+            from .name_tls_contract import profile_allows as name_allows
+            return name_allows(action, config['case'], session_id=config['session_id'])
+        elif config['profile'] == 'disconnected_routing_v1':
             from .routing_contract import profile_allows as stock_allows
         elif config['profile'] == 'stock_ssh_compatibility_v1':
             from .stock_ssh_contract import profile_allows as stock_allows
