@@ -273,6 +273,83 @@ def test_tls_hello_is_complete_and_exact(mutation):
         wire.validate_tls_client_hello(mutation(client_hello()))
 
 
+CAPTURED_CLIENT_HELLO = bytes.fromhex(
+    "160301010c010001080303dd9e36e5d85a107447cb977d702aed031d84ba7ab3bfe4c5501386aee60b8d55"
+    "20f45fd77fd77500ad0c882e93c2c1b6c75a4a44f378e3127ad6340e4534a4385700021302010000bd0000"
+    "0014001200000f686172626f726465736b2e74657374000b00020100000a0004000200170016000000170000"
+    "000d002a002809050906090404030503060308070808081a081b081c0809080a080b080408050806040105010601"
+    "002b0003020304002d000201010033004700450017004104e948b7adf57ae191746544873c2b04be8bed59dc92"
+    "eedfe735404fddebe63a367eeed4d39f77d4c781ce7a1038b54bc40f434083452134338d639264d29f4559001b"
+    "00050400010003")
+
+
+def changed_hello_extensions(transform):
+    reader = wire._Reader(CAPTURED_CLIENT_HELLO[9:])
+    reader.take(34)
+    reader.vector(1)
+    reader.vector(2)
+    reader.vector(1)
+    prefix = reader.raw[:reader.position]
+    extensions = wire._Reader(reader.vector(2))
+    rows = []
+    while extensions.position < len(extensions.raw):
+        rows.append((int.from_bytes(extensions.take(2), "big"), extensions.vector(2)))
+    encoded = b"".join(kind.to_bytes(2, "big") + len(value).to_bytes(2, "big") + value
+                       for kind, value in transform(rows))
+    body = prefix + len(encoded).to_bytes(2, "big") + encoded
+    handshake = b"\1" + len(body).to_bytes(3, "big") + body
+    return CAPTURED_CLIENT_HELLO[:3] + len(handshake).to_bytes(2, "big") + handshake
+
+
+def test_captured_native_hello_has_profile_only_exact_compression_advertisement():
+    from recon_cockpit.secure_agent.tls_posture_hello import validate_client_hello
+    # Original public wire bytes retained from diagnostic 9f52c37, without
+    # normalizing extension inventory or replacing its random/session/key data.
+    assert len(CAPTURED_CLIENT_HELLO) == 273
+    digest = "a4a4fe66f13c567aa08226b0f2057921bea1dc1f91bf240326c2763c6d715f59"
+    result = wire.validate_tls_client_hello(CAPTURED_CLIENT_HELLO)
+    assert result["sha256"] == hashlib.sha256(CAPTURED_CLIENT_HELLO).hexdigest() == digest
+    assert result["extension_types"] == [0, 10, 11, 13, 22, 23, 27, 43, 45, 51]
+    assert (result["version"], result["cipher"], result["group"], result["sni"]) == (
+        "tls1_3", 0x1302, 23, "harbordesk.test")
+    with pytest.raises(ValueError, match="tls_posture_client_hello_extension"):
+        validate_client_hello(CAPTURED_CLIENT_HELLO, "tls1_3")
+    without = changed_hello_extensions(lambda rows: [row for row in rows if row[0] != 27])
+    old = validate_client_hello(without, "tls1_3")
+    assert wire.validate_tls_client_hello(without) == {**old, "sni": "harbordesk.test", "group": 23}
+
+
+@pytest.mark.parametrize("payload", (b"", b"\0", b"\2\0\1", b"\2\0\3", b"\4\0\3\0\1",
+    b"\4\0\1\0\1", b"\4\0\1\0\2", b"\4\0\1\0\xff", b"\3\0\1\0\3", b"\4\0\1\0\3\0"))
+def test_certificate_compression_advertisement_is_one_exact_finite_vector(payload):
+    raw = changed_hello_extensions(lambda rows: [(kind, payload if kind == 27 else value) for kind, value in rows])
+    with pytest.raises(ValueError, match="certificate_compression"):
+        wire.validate_tls_client_hello(raw)
+
+
+@pytest.mark.parametrize("kind,value", ((27, b"\4\0\1\0\3"), (35, b""), (41, b""), (42, b""),
+                                       (44, b"\0\1x"), (0x1234, b"")))
+def test_duplicate_compression_cookie_ticket_psk_early_data_and_unknown_extensions_refused(kind, value):
+    raw = changed_hello_extensions(lambda rows: [*rows, (kind, value)])
+    with pytest.raises(ValueError):
+        wire.validate_tls_client_hello(raw)
+
+
+@pytest.mark.parametrize("kind,value", ((11, b"\2\0\0"), (13, b"\0\1\4"), (22, b"x"), (23, b"x"),
+                                       (43, b"\2\3\3"), (45, b"\1\0"), (51, b"\0\4\0\x18\0\0")))
+def test_profile_specialization_retains_existing_extension_checks(kind, value):
+    raw = changed_hello_extensions(lambda rows: [(k, value if k == kind else v) for k, v in rows])
+    with pytest.raises(ValueError):
+        wire.validate_tls_client_hello(raw)
+
+
+@pytest.mark.parametrize("kind", (0, 10, 13, 43, 51))
+def test_profile_specialization_requires_every_original_mandatory_extension(kind):
+    raw = changed_hello_extensions(lambda rows: [row for row in rows if row[0] != kind])
+    with pytest.raises(ValueError):
+        wire.validate_tls_client_hello(raw)
+
+
 def test_tls_hrr_and_second_server_handshake_refused():
     raw = server_hello()
     with pytest.raises(ValueError):

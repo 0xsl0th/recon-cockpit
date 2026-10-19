@@ -10,7 +10,7 @@ import json
 import re
 import struct
 
-from .tls_posture_hello import validate_client_hello
+from .tls_posture_hello import _Reader
 
 NAME = "harbordesk.test."
 CASES = ("O1", "O2", "O3", "O4", "O5", "R1", "R2", *(f"N{i}" for i in range(1, 17)))
@@ -244,9 +244,79 @@ def tls_client_hello_length(prefix):
 
 
 def validate_tls_client_hello(raw):
-    if tls_client_hello_length(raw) != len(raw):
+    """Validate this profile's complete TLS1.3 hello without rewriting bytes.
+
+    The accepted shared posture grammar remains unchanged. This specialization
+    additionally permits only the pinned certificate-compression advertisement.
+    """
+    if (tls_client_hello_length(raw) != len(raw) or raw[5] != 1
+            or int.from_bytes(raw[6:9], "big") != len(raw) - 9):
         raise ValueError("name_tls_client_hello_record")
-    return {**validate_client_hello(raw, "tls1_3"), "sni": "harbordesk.test", "group": 23}
+    reader = _Reader(raw[9:])
+    if reader.take(2) != b"\3\3":
+        raise ValueError("name_tls_client_hello_version")
+    random = reader.take(32)
+    session = reader.vector(1)
+    if len(session) > 32:
+        raise ValueError("name_tls_client_hello_session")
+    suites = reader.vector(2)
+    if not suites or len(suites) % 2:
+        raise ValueError("name_tls_client_hello_ciphers")
+    ciphers = [int.from_bytes(suites[i:i + 2], "big") for i in range(0, len(suites), 2)]
+    if len(ciphers) != len(set(ciphers)) or 0x1302 not in ciphers or not set(ciphers) <= {0x1302, 0x00FF}:
+        raise ValueError("name_tls_client_hello_ciphers")
+    if reader.vector(1) != b"\0":
+        raise ValueError("name_tls_client_hello_compression")
+    extension_reader = _Reader(reader.vector(2))
+    reader.done()
+    extensions = {}
+    while extension_reader.position < len(extension_reader.raw):
+        kind = int.from_bytes(extension_reader.take(2), "big")
+        value = extension_reader.vector(2)
+        if kind in extensions or kind not in {0, 10, 11, 13, 22, 23, 27, 43, 44, 45, 51, 0xFF01}:
+            raise ValueError("name_tls_client_hello_extension")
+        extensions[kind] = value
+    name = b"harbordesk.test"
+    sni = (len(name) + 3).to_bytes(2, "big") + b"\0" + len(name).to_bytes(2, "big") + name
+    if extensions.get(0) != sni or extensions.get(10) != b"\0\2\0\x17":
+        raise ValueError("name_tls_client_hello_name_group")
+    for kind in (22, 23):
+        if kind in extensions and extensions[kind] != b"":
+            raise ValueError("name_tls_client_hello_empty_extension")
+    if 0xFF01 in extensions and extensions[0xFF01] != b"\0":
+        raise ValueError("name_tls_client_hello_renegotiation")
+    if 11 in extensions:
+        formats = _Reader(extensions[11])
+        points = formats.vector(1)
+        formats.done()
+        if not points or points[0] != 0 or len(points) != len(set(points)) or not set(points) <= {0, 1, 2}:
+            raise ValueError("name_tls_client_hello_point_formats")
+    if 13 in extensions:
+        signatures = _Reader(extensions[13])
+        algorithms = signatures.vector(2)
+        signatures.done()
+        if not algorithms or len(algorithms) % 2:
+            raise ValueError("name_tls_client_hello_signatures")
+    if extensions.get(43) != b"\2\3\4" or 51 not in extensions or 13 not in extensions:
+        raise ValueError("name_tls_client_hello_supported_version")
+    shares = _Reader(extensions[51])
+    entries = _Reader(shares.vector(2))
+    shares.done()
+    if entries.take(2) != b"\0\x17":
+        raise ValueError("name_tls_client_hello_key_share")
+    key = entries.vector(2)
+    entries.done()
+    if len(key) != 65 or key[0] != 4:
+        raise ValueError("name_tls_client_hello_key_share")
+    if 44 in extensions:
+        raise ValueError("name_tls_client_hello_cookie")
+    if 45 in extensions and extensions[45] != b"\1\1":
+        raise ValueError("name_tls_client_hello_psk_modes")
+    if 27 in extensions and extensions[27] != b"\4\0\1\0\3":
+        raise ValueError("name_tls_client_hello_certificate_compression")
+    return {"version": "tls1_3", "session_id_hex": session.hex(), "cipher": 0x1302,
+            "random_hex": random.hex(), "extension_types": sorted(extensions),
+            "sha256": hashlib.sha256(raw).hexdigest(), "sni": "harbordesk.test", "group": 23}
 
 
 def _tls_records(raw, maximum):
