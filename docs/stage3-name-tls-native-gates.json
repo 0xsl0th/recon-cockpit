@@ -2152,7 +2152,7 @@
       "useful_daemon_claim": false
     },
     {
-      "assertion": "Run the real isolated parser with bounded successful native brief output but mismatched captured ServerHello negotiation; require no verified/useful result.",
+      "assertion": "Run the real isolated parser with bounded successful native brief output but mismatched captured ServerHello negotiation; require no verified/useful result. New-profile ClientHello grammar retains actual bytes/hash and permits optional extension27 only with exactbody0400010003; duplicate/changed/other new extensions are invalid. This advertisement grants no resumption or recorder certificate-verification claim.",
       "case": "tls_native_wire_disagreement",
       "configuration": "A",
       "driver": "isolated_production_parser",
@@ -2216,7 +2216,7 @@
       "useful_daemon_claim": false
     },
     {
-      "assertion": "Run the real isolated parser with bounded successful native brief output but mismatched captured ServerHello negotiation; require no verified/useful result.",
+      "assertion": "Run the real isolated parser with bounded successful native brief output but mismatched captured ServerHello negotiation; require no verified/useful result. New-profile ClientHello grammar retains actual bytes/hash and permits optional extension27 only with exactbody0400010003; duplicate/changed/other new extensions are invalid. This advertisement grants no resumption or recorder certificate-verification claim.",
       "case": "tls_native_wire_disagreement",
       "configuration": "B",
       "driver": "isolated_production_parser",

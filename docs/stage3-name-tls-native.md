@@ -259,7 +259,17 @@ before service delivery.
 
 TLS validates a complete ClientHello, including exact SNI, P-256, TLS1.3 and
 TLS_AES_256_GCM_SHA384, before forwarding it. A second ClientHello, HRR,
-resumption, early data or another selected version is refused. The sole native
+resumption, early data or another selected version is refused. The native
+ClientHello grammar also permits the observed optional certificate-compression
+extension 27 only with the exact five-byte body `04 00 01 00 03`, advertising
+zlib and zstd as defined in [RFC 8879](https://www.rfc-editor.org/rfc/rfc8879.html#section-3).
+Duplicates, another algorithm/order/length or any other new extension are
+refused. This is specific to the new profile: the accepted shared ClientHello
+grammar and fixed preparation/client argv remain unchanged. Retain the actual
+complete ClientHello hash and extension inventory; do not rewrite it for
+validation. Advertising compression is not evidence that a compressed
+certificate was sent, decoded or verified by the recorder.
+The sole native
 OpenSSL process receives EOF on stdin and no application input. Useful TLS
 requires its successful exit and exact verified-name/verification output,
 matching owned certificate/CA/runtime commitments, and independently recorded
