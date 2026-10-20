@@ -159,7 +159,59 @@ or call `name_tls_composite_evidence.inspect_composite(path)` from Python.
 Neither entrypoint has an execution or approval mode. Ordinary name/TLS and
 routing bundles keep their existing inspection commands and report schemas.
 
-The combined replay, final portable checks and independent review are pending.
-Historical results above are inputs to this slice; they do not by themselves
-accept S3.7 or close Stage 3. Durable progress and receipts are under
-`.secure-agent/stage3-combined-acceptance-20261019/`.
+The combined validation at `931e693` passed **472 fresh inspections**:
+236 exact current outcomes through Python and CLI. All source/runtime pins and
+all 296 current/legacy input snapshots remained unchanged. The separately
+retained legacy proof remains 120 inspections of 60 original bundles and 516
+files; it is not added to the fresh 472 count. No native client, fixture daemon,
+assessment owner, approval grant or provider was started by this replay.
+
+Current outcomes are **102 completed, 92 expected negatives, 27 budget refusals
+and 15 intentional approval refusals**. The 363 standard action rows contain
+235 useful actions; the six embedded N15 DNS prerequisites are recorded
+separately, without adding canonical cases. The nine routing approval-refusal
+CLI calls correctly return 1 and reproduce their original false/incomplete
+reports. Every other CLI call returns 0; each Python call returns its exact
+expected report. Every inspection stayed within 45 seconds with at most two
+workers, and no automatic retry occurred.
+
+The measured native whole-case times below come from the selected original
+evidence. They are not fresh replay timings, configured deadlines or comparative
+benchmarks. The durable packet also retains per-case/action startup, teardown,
+wire/reservation/refusal metrics and 193 separate cohort/outcome/field
+distributions. Missing fields and explicit nulls remain missing/null. In
+particular, all 52 standard name/TLS reports omit the `unnecessary_refusals`
+metric, while 36 routing budget/default-refusal reports explicitly record null;
+none is converted to zero. Nearest-rank percentiles are used.
+
+| Cohort / outcome | Cases | Native whole-case ms (min–max) | p50 ms | p95 ms |
+| --- | ---: | ---: | ---: | ---: |
+| Name/TLS / completed | 16 | 9183–15499 | 12516 | 15499 |
+| Name/TLS / expected negative | 30 | 843–13145 | 10502 | 13070 |
+| Name/TLS / approval refusal | 6 | 808–10819 | 10722 | 10819 |
+| N15 composite / expected negative | 2 | 31909–32270 | 31909 | 32270 |
+| Routing v3 / completed | 56 | 9557–31084 | 11988 | 28855 |
+| Routing v3 / expected negative | 60 | 10178–16646 | 11797 | 15436 |
+| Routing v3 / budget refusal | 12 | 14327–18562 | 14980 | 18562 |
+| Routing v3 / approval refusal | 4 | 1589–1717 | 1602 | 1717 |
+| Current routing v1/v2 / completed | 30 | 10096–25773 | 11274 | 25685 |
+| Current routing v1/v2 / budget refusal | 15 | 12826–15044 | 13381 | 15044 |
+| Current routing v1/v2 / approval refusal | 5 | 1588–1675 | 1653 | 1675 |
+
+N15 retains its separate original 200,000 ms whole-composite cap. No ordinary
+case cap was raised. Original failures and diagnostics remain separately pinned
+as required above; these selected outcomes do not relabel the failed attempts.
+
+The replay receipt is
+`.secure-agent/stage3-combined-acceptance-20261019/combined-replay-01/verification.json`,
+SHA-256 `a06ae8bca63ef16b2cb52a6a5b936df6dd4989f6d3e3a4e02de3f1a6e016f28c`. Its `outcomes-and-metrics.json` and
+per-entrypoint receipts retain exact reports, exit status, source/runtime/input
+continuity and parser-process cleanup observations. Independent review checks
+these against the original inputs rather than accepting aggregate counts alone.
+
+The final reviewed head must also pass the complete **28,777-test portable
+suite** locally and in all five Linux/macOS CI jobs, with no errors, failures or
+skips. Those final-head receipts and reviews are retained in the same private
+directory and linked from the PR. S3.7 and Stage 3 remain open pending acceptance
+of the complete evidence and required checks; this validation does not begin
+Stage 4 or establish professional-v1 release readiness.
