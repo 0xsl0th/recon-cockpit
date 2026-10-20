@@ -76,25 +76,41 @@ also passed the same complete suite. The accepted
 evidence retains 327 name/TLS native gates, 248 routing gates, 76 regressions,
 120 unchanged legacy inspections and 28,723 local portable passes. Both original
 unexplained failures remain recorded beside the complete passing follow-ups.
-S3.6 is closed. Current work is [S3.7 combined acceptance](stage3-combined-acceptance.md).
-Stage 3 has **ten increments: nine accepted and one remaining**, across the
-unchanged thirteen-PR estimate (twelve accepted PRs #87–#98 and S3.7).
-Coverage is **55 accepted profiles, zero candidates and 17 external programs**.
-S3.7 and Stage 3 remain open until the combined evidence, review and required
-checks are accepted. Completed milestones stay closed.
+S3.6 is closed.
 
-**Current: S3.7 combined acceptance.** The active worktree is
-`/tmp/recon-stage3-combined-acceptance`, branch `feature/stage3-combined-acceptance`,
-based on accepted merge `c71b599`. The [combined contract](stage3-combined-acceptance.md)
-pins exact reuse of all 651 native identities, 472 fresh inspections of 236
-current outcomes and the separately retained 120 legacy inspections. The
-catalog reconciliation and saved N15 composite inspector add no execution
-authority or broader topology. Follow the validation status and exact inventory;
-S3.7 acceptance and Stage 3 closure must not be inferred from preparation.
-The private checkpoint is `.secure-agent/stage3-combined-acceptance-20261019/current-progress.json`;
+**[PR #99](https://github.com/0xsl0th/recon-cockpit/pull/99) accepted
+[S3.7 combined acceptance](stage3-combined-acceptance.md), merged as `4ef9b98`.
+Stage 3 is closed: all ten logical increments are accepted across thirteen
+PRs, #87–#99.** Fresh authority/evidence reviews found no blockers. Reviewed
+head `96c4408`, its CI checkout and the actual merge share tree
+`321f50c2f53f3ecda88242f703ce32a46404d878`. The final local suite and all five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39490545078)
+passed **28,777 portable tests**, with no skips, errors or failures. The combined
+acceptance retains 651 exact native identities, 472 fresh saved-evidence
+inspections and the separate 120 legacy inspections. Original failed attempts
+remain preserved. The [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39502316329)
+is tracked separately under `.secure-agent/pr99-review-20261020/` beside
+`merge-review-receipt.json`.
+Coverage remains **55 accepted profiles, zero candidates and 17 external programs**.
+Current work is the [S4.1 engagement/custody contract](stage4-engagement-custody.md),
+the first of four logical Stage 4 increments within its unchanged **4–6 PR**
+estimate. This first increment defines requirements and gates only. Completed
+milestones stay closed; professional-v1 release remains later work.
+
+**Current: S4.1 contract only.** The active worktree is
+`/tmp/recon-stage4-custody-contract`, branch `docs/stage4-custody-contract`,
+based on accepted merge `4ef9b98`. Review the [Stage 4 contract](stage4-engagement-custody.md)
+and [finite gate inventory](stage4-engagement-custody-gates.json) before any
+implementation. The sequence is durable engagement/session enforcement,
+synthetic custody and one bounded authenticated read, then separately authorized
+real-credential validation and combined acceptance. This slice starts no native
+operation or credential handling. Later real-credential gates stay required if
+authorization is deferred. The private checkpoint is
+`.secure-agent/stage4-custody-contract-20261020/current-progress.json`;
 `.secure-agent/continue-here.json` is the repository-level recovery pointer.
-Preserve `.secure-agent/pr98-review-20261019/merge-review-receipt.json` and all
-original `.secure-agent/stage3-name-tls-native-20261015/` artifacts. Do not repeat PR #98's merge.
+Preserve the PR #98/#99 review directories and all original name/TLS and combined
+acceptance evidence, including failures. Do not repeat completed merges or edit
+the byte-pinned historical `stage3-name-tls-native.md` contract for status updates.
 
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
@@ -234,7 +250,7 @@ Apache B/O1 refusal remains unexplained and retained; passing diagnostics and
 the complete follow-up do not establish a fix. Fresh code/evidence reviews found
 no blockers in this finite slice, merged at `46f9b73`. PR #95 subsequently
 accepts routed Apache/B and PR #96 accepts the complete matrix, closing S3.5.
-PR #98 closes S3.6; S3.7 combined acceptance is current.
+PR #98 closes S3.6; PR #99 closes S3.7 and Stage 3.
 
 Accepted preparation compiled two finite server configurations and the existing
 deliberately public fixture key, pinned the three OpenSSH executables and their
@@ -244,8 +260,8 @@ HTTP no-fork boundary cannot be reused unchanged. The accepted **S3.4b** impleme
 above validates the native process/transport boundary, useful
 service and key observations, refusals and immutable evidence. Preparation itself
 grants no launch.
-Stage 3 now has **ten increments: nine accepted and one remaining**, counting
-S3.4a/S3.4b separately. S3.7 remains; no required gate is removed.
+Stage 3 has **ten accepted increments**, counting S3.4a/S3.4b separately.
+PR #99 closes the final S3.7 gate; no required outcome was removed.
 Current coverage is **55 accepted profiles / 17 external programs**. Completed
 milestones stay closed.
 S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
@@ -388,9 +404,11 @@ the full result. Inspectors verify artifact/journal consistency and independentl
 recompute observations; coordinated host-owner rewriting is outside that guarantee.
 T04 and T05 remain accepted. PR #85 closed T05 at `8ca3887`, preserving its
 51 native and 23,170 portable passes. [T06 AAAA/PTR](dns-address-tools.md) is
-accepted in PR #86 at `f0542a8`, closing Stage 2. Continue with the
-[Stage 3 compatibility/routing contract](stage3-compatibility-routing.md). Do not start
-deeper workflows, comparative benchmarking, credentials, paid calls or live-model work.
+accepted in PR #86 at `f0542a8`, closing Stage 2. The subsequent
+[Stage 3 compatibility/routing contract](stage3-compatibility-routing.md) is closed
+through PR #99. Continue with the [Stage 4 contract](stage4-engagement-custody.md).
+Deeper workflows, comparative benchmarking, real credentials, paid calls and
+live-model work remain deferred.
 
 Catalog reconciliation passed **300 focused tests** with no failures, errors or
 skips, including CLI non-execution guards and frozen T02/T03 contract hashes.
@@ -2459,15 +2477,17 @@ Planning uses synthetic responses.
    at `6f60ae0`, closing S3.5 with its complete native/replay, review and final
    portable CI gates. PR #97 accepts [S3.6a static DNS/TLS preparation](stage3-name-tls-preflight.md)
    at `8b086d5`. PR #98 accepts [S3.6b native binding](stage3-name-tls-native.md)
-   at `c71b599`, closing S3.6. Continue [S3.7 combined acceptance](stage3-combined-acceptance.md).
-   Stage 3 has ten increments, nine accepted
-   and one remaining; no native gate is removed.
+   at `c71b599`, closing S3.6. PR #99 accepts
+   [S3.7 combined acceptance](stage3-combined-acceptance.md) at `4ef9b98`, closing
+   all ten Stage 3 increments across thirteen PRs. Continue with the
+   [S4.1 engagement/custody contract](stage4-engagement-custody.md).
    Network attachment still requires separate authorization; do not substitute
    optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI closed.
    No accepted milestone or personal walkthrough needs to be repeated.
-6. Credentials, paid/live models, attached/external networks, deeper workflows
-   and comparative benchmarks remain deferred.
+6. Real credentials, paid/live models, attached/external networks, deeper workflows
+   and comparative benchmarks remain deferred. Stage 4 defines synthetic-first
+   custody and retains separately authorized real-credential validation as a later gate.
 
 ## Recovery and verification
 

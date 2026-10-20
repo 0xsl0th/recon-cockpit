@@ -1,0 +1,1529 @@
+{
+  "authority_invariants": [
+    "opaque references and digests are data, never grants",
+    "current ROE plus profile/policy plus exact fresh approval plus admission are all required",
+    "revoke and dispatch admission serialize durably; dispatch winner is possibly sent and cannot be retroactively called unsent",
+    "original budgets/deadlines remain; restart never resets allowance or restores grants",
+    "no automatic continuation/resend/session restoration after crash",
+    "secret values, credential-bearing raw bytes and secret-derived hashes are absent from released evidence",
+    "legacy case.py/cli.py credentials are outside boundary; no automatic import",
+    "real-use gate remains required and pending when authorization is deferred"
+  ],
+  "candidate_operation": {
+    "automatic_retries": 0,
+    "connection_attempts": 1,
+    "cookies_token_refresh_or_session_resume": false,
+    "credential_read_or_execution_authorized": false,
+    "credential_scheme": "Bearer",
+    "development_credential_kind": "synthetic_only",
+    "exact_engine_selected": false,
+    "http_requests": 1,
+    "method": "GET",
+    "name": "authenticated_service_status_read",
+    "native_runtime_request_byte_and_resource_pin_required_before_execution": true,
+    "path": "/api/status",
+    "public_secret_bearing_wire_transcript": false,
+    "real_use_requires_separate_explicit_authorization": true,
+    "redirect_referral_alias_followups": 0,
+    "registered_or_accepted_profile": false,
+    "status_values": [
+      "ready",
+      "degraded"
+    ],
+    "success_fields": [
+      "public_service_identifier",
+      "status"
+    ],
+    "tls_handshakes": 1,
+    "transport": "HTTPS"
+  },
+  "canonical_case_obligations": 55,
+  "cases": [
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Every required outcome has named evidence; no orphan, silent deferral or duplicate canonical count.",
+      "gate_ids": [
+        "S4-G1"
+      ],
+      "id": "S4-C01",
+      "increment": "S4.1",
+      "required_proof": "Independent contract/inventory review; all outcomes initially pending.",
+      "requirement_ids": [
+        "S4-01",
+        "S4-02",
+        "S4-03",
+        "S4-04",
+        "S4-05",
+        "S4-06",
+        "S4-07",
+        "S4-08",
+        "S4-09",
+        "S4-10",
+        "S4-11",
+        "S4-12"
+      ],
+      "status": "pending",
+      "stimulus": "Review requirement-to-case-to-increment map and all gate prerequisites."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Only two new contract documents and the eight exact existing status-only paths in first_pr change.",
+      "gate_ids": [
+        "S4-G1"
+      ],
+      "id": "S4-C02",
+      "increment": "S4.1",
+      "required_proof": "Closed path inventory, unchanged executable/test/closure and byte-pinned historical contracts.",
+      "requirement_ids": [
+        "S4-11",
+        "S4-12"
+      ],
+      "status": "pending",
+      "stimulus": "Compare first-PR paths and historical authority/runtime/report pins."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Native execution and real-credential use remain unauthorized; required later gate remains pending.",
+      "gate_ids": [
+        "S4-G1"
+      ],
+      "id": "S4-C03",
+      "increment": "S4.1",
+      "required_proof": "Explicit prerequisite records with no fabricated operator permission or execution result.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-09",
+        "S4-12"
+      ],
+      "status": "pending",
+      "stimulus": "Inspect real-use and native prerequisites while authorization/runtime pins are absent."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Legacy path stays outside secure custody; no import/credential lookup bridge.",
+      "gate_ids": [
+        "S4-G1"
+      ],
+      "id": "S4-C04",
+      "increment": "S4.1",
+      "required_proof": "Source references and explicit data-flow exclusion; no real file/secret read.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-11"
+      ],
+      "status": "pending",
+      "stimulus": "Review legacy case JSON/notes and CLI stored-secret path statically."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Stable engagement identity, canonical immutable revision and explicit rules remain unchanged.",
+      "gate_ids": [
+        "S4-G2"
+      ],
+      "id": "S4-E01",
+      "increment": "S4.2",
+      "required_proof": "Exact schema/cap pin, detached canonical bytes and durable reopen observation.",
+      "requirement_ids": [
+        "S4-01",
+        "S4-02"
+      ],
+      "status": "pending",
+      "stimulus": "Create and reopen a valid bounded non-secret engagement/ROE record."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Reject before mutation or authority creation.",
+      "gate_ids": [
+        "S4-G2"
+      ],
+      "id": "S4-E02",
+      "increment": "S4.2",
+      "required_proof": "Exact negative variants frozen by implementation inventory; unchanged store and closed error codes.",
+      "requirement_ids": [
+        "S4-01",
+        "S4-02"
+      ],
+      "status": "pending",
+      "stimulus": "Submit duplicate/unknown fields, wrong types, oversized counts/strings and invalid scope forms."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No grant, admission, credential release or request for the foreign identity.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-E03",
+      "increment": "S4.2",
+      "required_proof": "Actual live-boundary denial plus unchanged accounting except documented denied attempt.",
+      "requirement_ids": [
+        "S4-01",
+        "S4-03"
+      ],
+      "status": "pending",
+      "stimulus": "Use an engagement/revision/session handle from another engagement."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Useful declared operation can proceed; no unnecessary refusal.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-E04",
+      "increment": "S4.2",
+      "required_proof": "Real allowed dispatch and useful result through existing authority chain, with current engagement binding.",
+      "requirement_ids": [
+        "S4-02",
+        "S4-03"
+      ],
+      "status": "pending",
+      "stimulus": "Exercise a currently allowed exact action under current rules and fresh approval."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Refuse before dispatch; enclosing engagement scope cannot enlarge the action profile.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-E05",
+      "increment": "S4.2",
+      "required_proof": "Physical denied-target/effect witnesses for every pinned variant and zero unauthorized requests.",
+      "requirement_ids": [
+        "S4-02",
+        "S4-03"
+      ],
+      "status": "pending",
+      "stimulus": "Request an excluded/undeclared endpoint, method or effect."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Old revision/grant cannot authorize the changed action; new work requires new review.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-E06",
+      "increment": "S4.2",
+      "required_proof": "Both reviewer displays bind non-secret revision/effect fields; real changed-revision admission denial.",
+      "requirement_ids": [
+        "S4-01",
+        "S4-03",
+        "S4-05"
+      ],
+      "status": "pending",
+      "stimulus": "Revise ROE after exact approval but before admission."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Consumed allowance is retained; at most the bounded winner of concurrent reservation may dispatch; no extra dispatch or implicit replenishment.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-E07",
+      "increment": "S4.2",
+      "mandatory_variants": [
+        "split actions after budget exhaustion",
+        "reopen workers after budget exhaustion",
+        "concurrent distinct approved actions competing for the last shared allowance"
+      ],
+      "required_proof": "Durable counters before/after restart, actual denied next request, and real concurrent transaction/dispatch witnesses for the last-allowance race.",
+      "requirement_ids": [
+        "S4-02",
+        "S4-06"
+      ],
+      "status": "pending",
+      "stimulus": "Split work across actions or reopen workers after exhausting persistent allowance."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "References alone supply no authority; consumed/stale references cannot execute again; concurrent duplicate consumption permits at most one committed admission/dispatch.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-E08",
+      "increment": "S4.2",
+      "mandatory_variants": [
+        "copied foreign/stale opaque reference or saved evidence",
+        "sequential consumed-grant replay",
+        "simultaneous consumption of the same grant/dispatch identity by concurrent callers"
+      ],
+      "required_proof": "Actual replay refusal and concurrent duplicate-admission/dispatch witnesses at the live boundary; saved bytes unchanged.",
+      "requirement_ids": [
+        "S4-03",
+        "S4-10"
+      ],
+      "status": "pending",
+      "stimulus": "Replay copied opaque credential/session/grant/admission references or saved evidence."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Refuse as not yet active, without request or credential release.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-W01",
+      "increment": "S4.2",
+      "required_proof": "Frozen boundary-clock values plus actual launch/release denial.",
+      "requirement_ids": [
+        "S4-04"
+      ],
+      "status": "pending",
+      "stimulus": "Attempt admission immediately before the approved UTC start."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Useful operation succeeds under original caps.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-W02",
+      "increment": "S4.2",
+      "required_proof": "Controlled clock proof and permitted physical operation; no reset deadline.",
+      "requirement_ids": [
+        "S4-04"
+      ],
+      "status": "pending",
+      "stimulus": "Attempt valid work at the inclusive start with sufficient bounded remaining time."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No later dispatch; existing operation is cancelled and reaped when applicable.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-W03",
+      "increment": "S4.2",
+      "required_proof": "Expiry checked at actual authority/release point plus process/socket closure.",
+      "requirement_ids": [
+        "S4-04",
+        "S4-08"
+      ],
+      "status": "pending",
+      "stimulus": "Reach exact exclusive end after approval or durable audit and before dispatch."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Rollback never extends original monotonic deadline; forward expiry/unknown time blocks new work.",
+      "gate_ids": [
+        "S4-G2"
+      ],
+      "id": "S4-W04",
+      "increment": "S4.2",
+      "required_proof": "Pinned clock conversion and failure semantics, exact state/counter assertions.",
+      "requirement_ids": [
+        "S4-04",
+        "S4-06"
+      ],
+      "status": "pending",
+      "stimulus": "Simulate wall-clock rollback, forward expiry and unavailable/untrusted clock."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No success after original deadline; bounded emergency termination still completes.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-W05",
+      "increment": "S4.2",
+      "required_proof": "Real held process cleanup plus exact final status; no fresh work-clock allowance.",
+      "requirement_ids": [
+        "S4-04",
+        "S4-08"
+      ],
+      "status": "pending",
+      "stimulus": "Expire original session/action deadline during review, execution or successful-result cleanup."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No new admission/credential release/request.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-R01",
+      "increment": "S4.2",
+      "required_proof": "Persisted generation and real pre-dispatch refusal, not only a model transition.",
+      "requirement_ids": [
+        "S4-03",
+        "S4-05"
+      ],
+      "status": "pending",
+      "stimulus": "Revoke engagement before review or before admission with a previously issued grant."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Dispatch loses and no request/secret is released.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-R02",
+      "increment": "S4.2",
+      "required_proof": "Independent durable ordering, concurrent callers and zero external effect witness.",
+      "requirement_ids": [
+        "S4-05",
+        "S4-06"
+      ],
+      "status": "pending",
+      "stimulus": "Race revoke versus dispatch; force revoke transaction to commit first."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Record in-flight/possibly-sent honestly; stop future work and cancel/reap without claiming bytes were retracted.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-R03",
+      "increment": "S4.2",
+      "required_proof": "Actual admitted progress and bounded cleanup, retained uncertainty where delivery is unobserved.",
+      "requirement_ids": [
+        "S4-05",
+        "S4-08"
+      ],
+      "status": "pending",
+      "stimulus": "Race dispatch versus revoke; force dispatch admission to commit first."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Revocation persists and old generation cannot execute.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-R04",
+      "increment": "S4.2",
+      "required_proof": "Cross-process durable state plus actual refusal after reopen.",
+      "requirement_ids": [
+        "S4-05",
+        "S4-06"
+      ],
+      "status": "pending",
+      "stimulus": "Reopen after durable revocation; try stale generation from a second process."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No send claim exists; reopening supplies no automatic grant or request.",
+      "gate_ids": [
+        "S4-G2"
+      ],
+      "id": "S4-D01",
+      "increment": "S4.2",
+      "required_proof": "Transaction fault injection at pinned precommit point and durable-state inspection.",
+      "requirement_ids": [
+        "S4-06"
+      ],
+      "status": "pending",
+      "stimulus": "Crash before durable dispatch admission commits."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Allowance remains consumed; outcome is unresolved/possibly-sent, never auto-retried.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-D02",
+      "increment": "S4.2",
+      "required_proof": "Durable commit evidence, killed process/cleanup and fresh-owner replay refusal.",
+      "requirement_ids": [
+        "S4-02",
+        "S4-06"
+      ],
+      "status": "pending",
+      "stimulus": "Crash after admission commits but before send progress is observed."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Retain irreversible usage and known partial progress; unknown remainder stays unknown.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-D03",
+      "increment": "S4.2",
+      "required_proof": "Actual partial transport witness, termination/reaping and unchanged budget on recovery.",
+      "requirement_ids": [
+        "S4-02",
+        "S4-06",
+        "S4-08"
+      ],
+      "status": "pending",
+      "stimulus": "Kill a worker during partial request/response delivery."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Recovery does not invent durable success or resend; requires reconciliation.",
+      "gate_ids": [
+        "S4-G2"
+      ],
+      "id": "S4-D04",
+      "increment": "S4.2",
+      "required_proof": "Pinned write/commit failure point and exact durable evidence before/after reopen.",
+      "requirement_ids": [
+        "S4-06",
+        "S4-10"
+      ],
+      "status": "pending",
+      "stimulus": "Interrupt completion persistence after operation observation."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Stop later authority; do not reinterpret previously sent work as unsent.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-D05",
+      "increment": "S4.2",
+      "required_proof": "Storage fault injection, no unauthorized dispatch and explicit poisoned/unavailable state.",
+      "requirement_ids": [
+        "S4-06"
+      ],
+      "status": "pending",
+      "stimulus": "Fail durable state or audit write/fsync at admission/release."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "One serial order; stale compare-and-update fails with no lost revocation.",
+      "gate_ids": [
+        "S4-G2"
+      ],
+      "id": "S4-D06",
+      "increment": "S4.2",
+      "required_proof": "Real concurrent storage transactions and exact committed event/generation sequence.",
+      "requirement_ids": [
+        "S4-01",
+        "S4-05",
+        "S4-06"
+      ],
+      "status": "pending",
+      "stimulus": "Concurrent writers revise/revoke the same expected generation."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No authority/session restoration; fresh owner and fresh review required for any new action.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-D07",
+      "increment": "S4.2",
+      "required_proof": "Actual stale-reference/closed-descriptor rejection and retained consumed allowance.",
+      "requirement_ids": [
+        "S4-03",
+        "S4-06",
+        "S4-08"
+      ],
+      "status": "pending",
+      "stimulus": "Recover interrupted session and try saved grant, owner descriptor or session reference."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "One useful authenticated status observation; secret stays inside custody boundary.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-K01",
+      "increment": "S4.3",
+      "required_proof": "Native accepted authentication, exact descriptor/mount/argv/env inventory and non-secret result.",
+      "requirement_ids": [
+        "S4-03",
+        "S4-07",
+        "S4-09"
+      ],
+      "status": "pending",
+      "stimulus": "Supply one valid synthetic bearer through the reviewed private descriptor path for its exact action."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Refuse before secret read/release or request.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-K02",
+      "increment": "S4.3",
+      "required_proof": "Actual custody-boundary denial and no ambient credential source access.",
+      "requirement_ids": [
+        "S4-03",
+        "S4-07"
+      ],
+      "status": "pending",
+      "stimulus": "Use another engagement/service/action credential reference or an arbitrary file/env/legacy lookup."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Fresh authority check denies release; a handle alone is insufficient.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-K03",
+      "increment": "S4.3",
+      "required_proof": "Pinned race point and observed custody-channel refusal with no request.",
+      "requirement_ids": [
+        "S4-04",
+        "S4-05",
+        "S4-07"
+      ],
+      "status": "pending",
+      "stimulus": "Expire/revoke credential lease or engagement between preparation and release."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No raw secret or secret-derived digest escapes permitted worker boundary.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-K04",
+      "increment": "S4.3",
+      "required_proof": "Physical process/descriptor witnesses plus complete retained-output sentinel checks; limits stated.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-08"
+      ],
+      "status": "pending",
+      "stimulus": "Inspect child arguments, environment, unrelated mounts/FDs and planner/audit/approval outputs using synthetic sentinels."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Reject unsupported content without releasing raw fragments or secret-bearing hashes.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-K05",
+      "increment": "S4.3",
+      "required_proof": "Each finite mutation named; real response progress, closed result grammar and all artifacts checked.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-09"
+      ],
+      "status": "pending",
+      "stimulus": "Reflect synthetic secret literally, JSON-escaped, base64-looking or in an unexpected field/header/error."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No secret appears in diagnostics/artifacts; descriptors/processes close; uncertain dispatched work is not retried.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-K06",
+      "increment": "S4.3",
+      "required_proof": "Actual death/cleanup witnesses and complete non-secret outputs.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-08"
+      ],
+      "status": "pending",
+      "stimulus": "Crash/kill custody worker before release and during exchange."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Only the pinned deliberately public fixture values/source are admissible; reject every other input without reading a real credential or switching mode.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-K07",
+      "increment": "S4.3",
+      "required_proof": "Exact finite synthetic fixture allowlist and source pin, denied path access and no appearance-based classification or fallback. Negative inputs are synthetic stand-ins; unauthorized sources are refused before opening/reading.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-11"
+      ],
+      "status": "pending",
+      "stimulus": "Offer an unlisted credential value, arbitrary source or legacy case path to synthetic-only mode."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "One useful ready observation; exactly one bounded connection/handshake/GET.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-A01",
+      "increment": "S4.3",
+      "required_proof": "Actual stock/selected reviewed service authentication and independently validated public response/counters.",
+      "requirement_ids": [
+        "S4-02",
+        "S4-03",
+        "S4-07",
+        "S4-09"
+      ],
+      "status": "pending",
+      "stimulus": "Read the pinned owned /api/status with valid synthetic credential and ready response."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Useful degraded observation rather than failure or invented readiness.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-A02",
+      "increment": "S4.3",
+      "required_proof": "Real permitted response and exact typed classification with one operation.",
+      "requirement_ids": [
+        "S4-09"
+      ],
+      "status": "pending",
+      "stimulus": "Read supported degraded status with valid synthetic credential."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Correct authentication refusal after the real request; no retry, credential search or useful-success claim.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-A03",
+      "increment": "S4.3",
+      "required_proof": "Native request progress and public status classification without secret/error-body release.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-09"
+      ],
+      "status": "pending",
+      "stimulus": "Service returns 401 for deliberately invalid synthetic credential."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Correct authorization refusal; no alternate account/path or escalation.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-A04",
+      "increment": "S4.3",
+      "required_proof": "Native request progress and bounded refusal result.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-09"
+      ],
+      "status": "pending",
+      "stimulus": "Service returns 403 for a deliberately restricted synthetic credential."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No follow-up or session creation; classify only the pinned supported response/negative.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-A05",
+      "increment": "S4.3",
+      "required_proof": "Live denied follow-up endpoint and exact request/connection counts.",
+      "requirement_ids": [
+        "S4-02",
+        "S4-09"
+      ],
+      "status": "pending",
+      "stimulus": "Return redirect/referral, cookie, token-refresh or second-request instruction."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Refuse before credential release to an unbound/untrusted service.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-A06",
+      "increment": "S4.3",
+      "required_proof": "Real endpoint/trust/name mismatch and no secret/request delivered to excluded endpoint.",
+      "requirement_ids": [
+        "S4-02",
+        "S4-09"
+      ],
+      "status": "pending",
+      "stimulus": "Change numeric endpoint, Host/SNI/certificate name or pinned trust."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Explicit invalid/unsupported/incomplete result without arbitrary output or success.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-A07",
+      "increment": "S4.3",
+      "required_proof": "Exact parser/wire variants and native progress; all closed caps unchanged.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-09"
+      ],
+      "status": "pending",
+      "stimulus": "Supply malformed/unknown schema, duplicate fields, oversize, incomplete framing or unsupported encoding."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Bounded stop and physical cleanup; no implicit retry or additional secret release.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-A08",
+      "increment": "S4.3",
+      "required_proof": "Actual cap/cancel witnesses with irreversible reservations and no successful late result.",
+      "requirement_ids": [
+        "S4-02",
+        "S4-08",
+        "S4-09"
+      ],
+      "status": "pending",
+      "stimulus": "Exhaust time/byte/connection/process/output cap or cancel during authenticated operation."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Exact stable results; original bytes/mode/mtime unchanged; no authority/session created.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G4"
+      ],
+      "id": "S4-V01",
+      "increment": "S4.2",
+      "required_proof": "Before/after snapshots, bounded data-only inspector proof and exact reports.",
+      "requirement_ids": [
+        "S4-06",
+        "S4-10"
+      ],
+      "status": "pending",
+      "stimulus": "Inspect saved non-secret engagement/state records through Python and CLI."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Same permitted observations and recorded consistency; no secret reconstruction/contact/grant.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G4"
+      ],
+      "id": "S4-V02",
+      "increment": "S4.3",
+      "required_proof": "Exact paired immutable replay inventory and explicit secret-bearing transcript limitation.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-09",
+        "S4-10"
+      ],
+      "status": "pending",
+      "stimulus": "Inspect every new synthetic-operation bundle through Python and CLI."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Refuse inconsistent evidence; no fallback to authority from the saved bundle.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G4"
+      ],
+      "id": "S4-V03",
+      "increment": "S4.3",
+      "required_proof": "Finite cross-field mutation inventory and preserved originals.",
+      "requirement_ids": [
+        "S4-03",
+        "S4-06",
+        "S4-10"
+      ],
+      "status": "pending",
+      "stimulus": "Tamper engagement/revision/action/lease/result/generation/accounting or mismatch recorded ordering."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Bounded refusal with no raw echo; custody snapshots remain meaningful.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G4"
+      ],
+      "id": "S4-V04",
+      "increment": "S4.3",
+      "required_proof": "Descriptor/path identity and before/after byte/mode/mtime checks with closed errors.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-10"
+      ],
+      "status": "pending",
+      "stimulus": "Pass symlinked, oversized, replaced or changing evidence and inject secret-bearing unknown fields."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Unchanged semantics remain unchanged; each shared-code change gets an affected-gate plan.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G6"
+      ],
+      "id": "S4-P01",
+      "increment": "S4.2",
+      "required_proof": "Exact source/evidence inventory and relevant portable/physical regressions; no count-only reuse.",
+      "requirement_ids": [
+        "S4-11"
+      ],
+      "status": "pending",
+      "stimulus": "Compare accepted55 schemas/recipes, historical contracts and affected runtime/test closure to baseline."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No automatic import, discovery, legacy command execution or secret release.",
+      "gate_ids": [
+        "S4-G2",
+        "S4-G3"
+      ],
+      "id": "S4-P02",
+      "increment": "S4.3",
+      "required_proof": "Boundary tests with synthetic legacy data; existing legacy behavior remains separate.",
+      "requirement_ids": [
+        "S4-07",
+        "S4-11"
+      ],
+      "status": "pending",
+      "stimulus": "Invoke secure entrypoints while legacy case/CLI credential data exists as synthetic sentinel fixtures."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No credential read or network activity; real-use gate remains pending.",
+      "gate_ids": [
+        "S4-G5"
+      ],
+      "id": "S4-L01",
+      "increment": "S4.4",
+      "required_proof": "Actual explicit authorization record required for later L02/L03; no inferred permission.",
+      "requirement_ids": [
+        "S4-03",
+        "S4-07",
+        "S4-12"
+      ],
+      "status": "pending",
+      "stimulus": "Review missing/incomplete real-credential, target ownership, effects/window/trust/routing authorization."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "One useful authorized read-only observation; no secret leak or broadened operation.",
+      "gate_ids": [
+        "S4-G3",
+        "S4-G5"
+      ],
+      "id": "S4-L02",
+      "increment": "S4.4",
+      "required_proof": "Named private authorization reference, exact source/runtime/request caps, non-secret receipt and observed cleanup.",
+      "requirement_ids": [
+        "S4-03",
+        "S4-07",
+        "S4-09",
+        "S4-12"
+      ],
+      "status": "pending",
+      "stimulus": "After separate explicit authorization, perform the already pinned one-shot status read with operator-selected real credential."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "No next release/dispatch after revocation/expiry; close actual custody/session resources.",
+      "gate_ids": [
+        "S4-G3",
+        "S4-G5"
+      ],
+      "id": "S4-L03",
+      "increment": "S4.4",
+      "required_proof": "Reviewed finite real-use plan, actual denial/cleanup and no unsafe brute-force/account-lockout test.",
+      "requirement_ids": [
+        "S4-04",
+        "S4-05",
+        "S4-07",
+        "S4-08",
+        "S4-12"
+      ],
+      "status": "pending",
+      "stimulus": "Within that separate authorization, validate a selected revoke/expiry case before a next real-credential operation."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Exact unchanged consistency report with explicit limits; no authentication replay or authority restoration.",
+      "gate_ids": [
+        "S4-G4",
+        "S4-G5"
+      ],
+      "id": "S4-L04",
+      "increment": "S4.4",
+      "required_proof": "Private original snapshots and bounded read-only paired inspection.",
+      "requirement_ids": [
+        "S4-10",
+        "S4-12"
+      ],
+      "status": "pending",
+      "stimulus": "Inspect the real-use non-secret bundle through Python and CLI without credential access."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Every required gate complete or Stage4 remains open; originals/diagnostics are never relabeled.",
+      "gate_ids": [
+        "S4-G6"
+      ],
+      "id": "S4-F01",
+      "increment": "S4.4",
+      "required_proof": "Complete distinct identity union, requirement map, retained failures and no unexplained count aggregation.",
+      "requirement_ids": [
+        "S4-01",
+        "S4-02",
+        "S4-03",
+        "S4-04",
+        "S4-05",
+        "S4-06",
+        "S4-07",
+        "S4-08",
+        "S4-09",
+        "S4-10",
+        "S4-11",
+        "S4-12"
+      ],
+      "status": "pending",
+      "stimulus": "Audit all exact case IDs, implementation/native pins, useful/refusal/unknown denominators and failures."
+    },
+    {
+      "execution_authorized_by_this_contract": false,
+      "expected_outcome": "Accepted only after independent review, required checks and authorized merge.",
+      "gate_ids": [
+        "S4-G6"
+      ],
+      "id": "S4-F02",
+      "increment": "S4.4",
+      "required_proof": "Exact final source/merge/tree evidence; no skipped/unexecuted required row; explicit acceptance decision.",
+      "requirement_ids": [
+        "S4-11",
+        "S4-12"
+      ],
+      "status": "pending",
+      "stimulus": "Review final implementation/source and finish required local portable/CI/affected-native checks at exact final head."
+    }
+  ],
+  "contract": "docs/stage4-engagement-custody.md",
+  "counting_rules": [
+    "These are finite obligations, not executed test/node/native counts.",
+    "One case can support several requirements without being counted multiple times.",
+    "Later implementation inventories map every applicable case to exact nodes and retained evidence before execution.",
+    "Positive, supported-degraded, authentication-refusal, authority-refusal, malformed/unsupported and crash-unknown outcomes remain separate.",
+    "Diagnostics, failed attempts, old regressions and replay calls are never extra useful or native outcomes.",
+    "A requirement increments list is exactly the union of the owning increments of its case_ids, including final combined acceptance."
+  ],
+  "first_pr": {
+    "existing_status_only_files": [
+      "docs/product-roadmap.md",
+      "docs/roadmap.md",
+      "docs/continue-here.md",
+      "docs/secure-tool-catalog.md",
+      "docs/secure-tool-coverage.md",
+      "docs/stage3-combined-acceptance.md",
+      "docs/stage3-compatibility-routing.md",
+      "docs/stage3-name-tls-preflight.md"
+    ],
+    "historical_byte_pinned_document_changes": false,
+    "new_files": [
+      "docs/stage4-engagement-custody.md",
+      "docs/stage4-engagement-custody-gates.json"
+    ],
+    "production_test_runtime_changes": false,
+    "runtime_or_native_execution_authorized": false
+  },
+  "gates": [
+    {
+      "id": "S4-G1",
+      "meaning": "Documentation-only first PR; no execution/custody claim.",
+      "status": "pending",
+      "title": "Contract and prerequisite review"
+    },
+    {
+      "id": "S4-G2",
+      "meaning": "Strict bounded data and actual transaction fault/concurrency checks.",
+      "status": "pending",
+      "title": "Portable state/schema/fault validation"
+    },
+    {
+      "id": "S4-G3",
+      "meaning": "Actual supported isolated runtime and useful/denied/cleanup behavior, after separately pinned implementation contracts and authorization.",
+      "status": "pending",
+      "title": "Physical authority/custody/operation validation"
+    },
+    {
+      "id": "S4-G4",
+      "meaning": "Exact Python/CLI results, custody and tamper refusal; no secret/contact/authority recreation.",
+      "status": "pending",
+      "title": "Immutable non-secret evidence replay"
+    },
+    {
+      "id": "S4-G5",
+      "meaning": "Explicit operator permission plus finite real-use proof; mandatory pending if permission absent.",
+      "status": "pending",
+      "title": "Separately authorized real-credential validation"
+    },
+    {
+      "id": "S4-G6",
+      "meaning": "Exact identity map, metrics, preserved failures, independent review and final required checks/merge.",
+      "status": "pending",
+      "title": "Combined evidence, review and checks"
+    }
+  ],
+  "increments": [
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-C02",
+        "S4-C03",
+        "S4-C04"
+      ],
+      "id": "S4.1",
+      "status": "pending"
+    },
+    {
+      "case_ids": [
+        "S4-E01",
+        "S4-E02",
+        "S4-E03",
+        "S4-E04",
+        "S4-E05",
+        "S4-E06",
+        "S4-E07",
+        "S4-E08",
+        "S4-W01",
+        "S4-W02",
+        "S4-W03",
+        "S4-W04",
+        "S4-W05",
+        "S4-R01",
+        "S4-R02",
+        "S4-R03",
+        "S4-R04",
+        "S4-D01",
+        "S4-D02",
+        "S4-D03",
+        "S4-D04",
+        "S4-D05",
+        "S4-D06",
+        "S4-D07",
+        "S4-V01",
+        "S4-P01"
+      ],
+      "id": "S4.2",
+      "status": "pending"
+    },
+    {
+      "case_ids": [
+        "S4-K01",
+        "S4-K02",
+        "S4-K03",
+        "S4-K04",
+        "S4-K05",
+        "S4-K06",
+        "S4-K07",
+        "S4-A01",
+        "S4-A02",
+        "S4-A03",
+        "S4-A04",
+        "S4-A05",
+        "S4-A06",
+        "S4-A07",
+        "S4-A08",
+        "S4-V02",
+        "S4-V03",
+        "S4-V04",
+        "S4-P02"
+      ],
+      "id": "S4.3",
+      "status": "pending"
+    },
+    {
+      "case_ids": [
+        "S4-L01",
+        "S4-L02",
+        "S4-L03",
+        "S4-L04",
+        "S4-F01",
+        "S4-F02"
+      ],
+      "id": "S4.4",
+      "status": "pending"
+    }
+  ],
+  "mandatory_later_pins": {
+    "S4.2": [
+      "closed engagement/ROE/scope/event schemas and exact size/count limits",
+      "durable storage/journal/version model and trust assumptions",
+      "window/clock conversion and uncertainty limits",
+      "revision/revocation/dispatch/reservation state transitions and linearization points",
+      "session/action/approval/audit/admission binding and cancellation protocol",
+      "exact supported action path and affected source/native gate plan",
+      "exact test identities and evidence formats for every applicable case"
+    ],
+    "S4.3": [
+      "fixed client/server/parser/runtime/source/dependency hashes and platform",
+      "UID/GID/capabilities/namespaces/mounts/files/devices/syscalls/process/thread/exec/FD limits",
+      "numeric endpoint/Host/SNI/name/trust and owned routing",
+      "exact request/framing/TLS/credential encoding and length/byte/time/output/storage/parser caps",
+      "credential input/lease/release/custody process protocol and readiness proof",
+      "finite response schema and native progress predicates",
+      "exact synthetic fixture case variants/test identities and secret-free evidence/replay limitations",
+      "finite deliberately public synthetic credential values and source allowlist; no appearance-based credential classification"
+    ],
+    "S4.4": [
+      "explicit operator-approved credential provenance/reference and exact service ownership/scope/effects/window/trust/routing",
+      "exact finite real-use cases and source/runtime/request caps unchanged or reviewed before use",
+      "private authorization/cleanup/revocation/evidence handling plan without secret value disclosure"
+    ]
+  },
+  "new_execution_in_this_draft": false,
+  "non_goals": [
+    "live models/providers or paid calls",
+    "attached or external target access by virtue of this contract",
+    "real credential discovery/reading during development",
+    "intrusive/post-access/state-changing operations",
+    "generic authentication/session/secret-vault support",
+    "arbitrary URLs/shell/plugins or follow-ups",
+    "perfect memory zeroization or malicious-host-resistant authentication",
+    "Stage5 workflows, Stage6 GUI expansion or Stage7 release acceptance"
+  ],
+  "predecessor": {
+    "aggregate_audit": {
+      "path": "stage3-combined-acceptance-20261019/final-validation-96c4408.json",
+      "sha256": "e8feeecc3299d22c279cc220a6456c80448a0288ecdbde80518d68cc0d641f29"
+    },
+    "independent_aggregate_review": {
+      "path": "stage3-combined-acceptance-20261019/final-validation-96c4408-independent-review.json",
+      "sha256": "c5f3d58f7233885493d805d60ac85ca4b7dc4aad180c7ba2b4920ed9c9560ca0"
+    },
+    "merged_head": "4ef9b9827d887df827eab3d52991ec3b35a0ea12",
+    "merged_pr": 99,
+    "merged_tree": "321f50c2f53f3ecda88242f703ce32a46404d878",
+    "portable_passes_per_local_or_ci_job": 28777,
+    "premerge_ci_jobs": 5,
+    "premerge_ci_run": 39490545078,
+    "reviewed_head": "96c44085b806731d6b54cb484e5fb9438d99a4c4",
+    "scope": "Accepted Stage3 finite evidence only; supplies no Stage4 custody/real-use authorization."
+  },
+  "requirements": [
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-E01",
+        "S4-E02",
+        "S4-E03",
+        "S4-E06",
+        "S4-D06",
+        "S4-F01"
+      ],
+      "id": "S4-01",
+      "increments": [
+        "S4.1",
+        "S4.2",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Engagement identity and immutable ROE revisions"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-E01",
+        "S4-E02",
+        "S4-E04",
+        "S4-E05",
+        "S4-E07",
+        "S4-D02",
+        "S4-D03",
+        "S4-A01",
+        "S4-A05",
+        "S4-A06",
+        "S4-A08",
+        "S4-F01"
+      ],
+      "id": "S4-02",
+      "increments": [
+        "S4.1",
+        "S4.2",
+        "S4.3",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Explicit scope/effects and persistent aggregate limits"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-E03",
+        "S4-E04",
+        "S4-E05",
+        "S4-E06",
+        "S4-E08",
+        "S4-R01",
+        "S4-D07",
+        "S4-K01",
+        "S4-K02",
+        "S4-A01",
+        "S4-V03",
+        "S4-L01",
+        "S4-L02",
+        "S4-F01"
+      ],
+      "id": "S4-03",
+      "increments": [
+        "S4.1",
+        "S4.2",
+        "S4.3",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Fresh exact-action authority and live custody binding"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-W01",
+        "S4-W02",
+        "S4-W03",
+        "S4-W04",
+        "S4-W05",
+        "S4-K03",
+        "S4-L03",
+        "S4-F01"
+      ],
+      "id": "S4-04",
+      "increments": [
+        "S4.1",
+        "S4.2",
+        "S4.3",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Approved windows and original monotonic deadlines"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-E06",
+        "S4-R01",
+        "S4-R02",
+        "S4-R03",
+        "S4-R04",
+        "S4-D06",
+        "S4-K03",
+        "S4-L03",
+        "S4-F01"
+      ],
+      "id": "S4-05",
+      "increments": [
+        "S4.1",
+        "S4.2",
+        "S4.3",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Durably ordered revocation and dispatch admission"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-E07",
+        "S4-W04",
+        "S4-R02",
+        "S4-R04",
+        "S4-D01",
+        "S4-D02",
+        "S4-D03",
+        "S4-D04",
+        "S4-D05",
+        "S4-D06",
+        "S4-D07",
+        "S4-V01",
+        "S4-V03",
+        "S4-F01"
+      ],
+      "id": "S4-06",
+      "increments": [
+        "S4.1",
+        "S4.2",
+        "S4.3",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Crash-safe state and no authority restoration"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-C03",
+        "S4-C04",
+        "S4-K01",
+        "S4-K02",
+        "S4-K03",
+        "S4-K04",
+        "S4-K05",
+        "S4-K06",
+        "S4-K07",
+        "S4-A01",
+        "S4-A03",
+        "S4-A04",
+        "S4-A07",
+        "S4-V02",
+        "S4-V04",
+        "S4-P02",
+        "S4-L01",
+        "S4-L02",
+        "S4-L03",
+        "S4-F01"
+      ],
+      "id": "S4-07",
+      "increments": [
+        "S4.1",
+        "S4.3",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Synthetic-first secret custody and non-secret release"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-W03",
+        "S4-W05",
+        "S4-R03",
+        "S4-D03",
+        "S4-D07",
+        "S4-K04",
+        "S4-K06",
+        "S4-A08",
+        "S4-L03",
+        "S4-F01"
+      ],
+      "id": "S4-08",
+      "increments": [
+        "S4.1",
+        "S4.2",
+        "S4.3",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Bounded process/descriptor/session lifetime"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-C03",
+        "S4-K01",
+        "S4-K05",
+        "S4-A01",
+        "S4-A02",
+        "S4-A03",
+        "S4-A04",
+        "S4-A05",
+        "S4-A06",
+        "S4-A07",
+        "S4-A08",
+        "S4-V02",
+        "S4-L02",
+        "S4-F01"
+      ],
+      "id": "S4-09",
+      "increments": [
+        "S4.1",
+        "S4.3",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Finite useful authenticated read-only outcome"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-E08",
+        "S4-D04",
+        "S4-V01",
+        "S4-V02",
+        "S4-V03",
+        "S4-V04",
+        "S4-L04",
+        "S4-F01"
+      ],
+      "id": "S4-10",
+      "increments": [
+        "S4.1",
+        "S4.2",
+        "S4.3",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Immutable non-secret evidence and honest replay limits"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-C02",
+        "S4-C04",
+        "S4-K07",
+        "S4-P01",
+        "S4-P02",
+        "S4-F01",
+        "S4-F02"
+      ],
+      "id": "S4-11",
+      "increments": [
+        "S4.1",
+        "S4.2",
+        "S4.3",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Preservation, legacy separation and failure provenance"
+    },
+    {
+      "case_ids": [
+        "S4-C01",
+        "S4-C02",
+        "S4-C03",
+        "S4-L01",
+        "S4-L02",
+        "S4-L03",
+        "S4-L04",
+        "S4-F01",
+        "S4-F02"
+      ],
+      "id": "S4-12",
+      "increments": [
+        "S4.1",
+        "S4.4"
+      ],
+      "status": "pending",
+      "title": "Explicit real-use authorization and combined acceptance"
+    }
+  ],
+  "roadmap": {
+    "deferred_real_authorization_means_stage_incomplete": true,
+    "estimated_prs": {
+      "maximum": 6,
+      "minimum": 4
+    },
+    "logical_increments": 4,
+    "permitted_split_points": [
+      "S4.2 durable record preparation versus authority integration",
+      "S4.3 custody preparation versus finite operation integration"
+    ],
+    "real_credential_gate_mandatory": true,
+    "stage": 4,
+    "title": "Engagement, credential and session custody"
+  },
+  "schema_version": "1",
+  "stage3_accepted": true,
+  "stage4_acceptance": false,
+  "status": "s4_1_contract_only_pending_review",
+  "storage_trust_limits": [
+    "Operator-owned host, filesystem and storage durability are trusted.",
+    "Monotone generations within the live store do not detect coherent malicious-host database/clock/evidence rollback.",
+    "Importing an older saved snapshot never restores authority.",
+    "No claim of perfect memory zeroization or hostile-host-resistant authentication."
+  ]
+}

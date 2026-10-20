@@ -98,7 +98,7 @@ See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
 **S3.4b is accepted in [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93)
-at `a7f46b1`; S3.4 is closed. S3.5 is accepted below; current work is S3.7 combined acceptance.**
+at `a7f46b1`; S3.4 is closed. S3.5–S3.7 are accepted below; Stage 3 is closed.**
 The [SSH evidence](stage3-ssh-compatibility.md) records 94 native checks,
 71 accepted-profile regressions, 26,141 local portable tests, eight useful
 completions, twelve expected negatives and zero unnecessary refusals. Fresh
@@ -144,12 +144,26 @@ also passed the same complete suite. The accepted
 evidence retains 327 name/TLS native gates, 248 routing gates, 76 regressions,
 120 unchanged legacy inspections and 28,723 local portable passes. Both original
 unexplained failures remain recorded beside the complete passing follow-ups.
-S3.6 is closed. Current work is [S3.7 combined acceptance](stage3-combined-acceptance.md).
-Stage 3 has **ten increments: nine accepted and one remaining**, across the
-unchanged thirteen-PR estimate (twelve accepted PRs #87–#98 and S3.7).
-Coverage is **55 accepted profiles, zero candidates and 17 external programs**.
-S3.7 and Stage 3 remain open until the combined evidence, review and required
-checks are accepted. Completed milestones stay closed.
+S3.6 is closed.
+
+**[PR #99](https://github.com/0xsl0th/recon-cockpit/pull/99) accepted
+[S3.7 combined acceptance](stage3-combined-acceptance.md), merged as `4ef9b98`.
+Stage 3 is closed: all ten logical increments are accepted across thirteen
+PRs, #87–#99.** Fresh authority/evidence reviews found no blockers. Reviewed
+head `96c4408`, its CI checkout and the actual merge share tree
+`321f50c2f53f3ecda88242f703ce32a46404d878`. The final local suite and all five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39490545078)
+passed **28,777 portable tests**, with no skips, errors or failures. The combined
+acceptance retains 651 exact native identities, 472 fresh saved-evidence
+inspections and the separate 120 legacy inspections. Original failed attempts
+remain preserved. The [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39502316329)
+is tracked separately under `.secure-agent/pr99-review-20261020/` beside
+`merge-review-receipt.json`.
+Coverage remains **55 accepted profiles, zero candidates and 17 external programs**.
+Current work is the [S4.1 engagement/custody contract](stage4-engagement-custody.md),
+the first of four logical Stage 4 increments within its unchanged **4–6 PR**
+estimate. This first increment defines requirements and gates only. Completed
+milestones stay closed; professional-v1 release remains later work.
 
 S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
 **25,483 portable tests**, with **911 source hashes unchanged**. Fresh review at
@@ -282,19 +296,19 @@ after the HTTP startup/confinement and OpenSSH fork/exec findings, producing a
 44–62 total forecast. The 15 October routing split produced the previous
 46–65 total and a 12–13-PR Stage 3 range. PRs #94–#96 now accept all S3.5 work.
 Selecting the already-allowed separate name/TLS preparation batch makes the
-current Stage 3 estimate **13 PRs**: twelve accepted PRs #87–#98 and
-S3.7 combined acceptance. The logical count is
-**ten increments, nine accepted and one open**. This narrows the baseline
-forecast to **47–65**, without adding a required outcome or changing the other
-stage estimates. Any additional necessary split must be recorded explicitly.
+Stage 3 total **13 accepted PRs, #87–#99**, closing **all ten logical
+increments**. This selected the **47–65** baseline forecast without adding a
+required outcome. Stage 4 retains its **4–6 PR** estimate: four logical increments
+with optional engagement/storage and synthetic custody/operation splits.
+Any additional necessary split must be recorded explicitly.
 These totals include completed work and do not lift offline-only restrictions.
 
 | Stage | Deliverable and completion condition | Estimated PRs |
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
-| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`. PR #95 accepts routed Apache/B at `d0586f5`. PR #96 accepts the full matrix at `6f60ae0`, closing S3.5. PR #97 accepts S3.6a static DNS/TLS preparation. PR #98 accepts S3.6b native name/trust binding and redirect/referral handling at `c71b599`, closing S3.6. Current S3.7 must complete combined acceptance. Attached lab/engagement networks require separate authorization. Nine logical increments are accepted and one remains. | 13 |
-| 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
+| 3. Realistic lab and controlled target routing — closed | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`. PR #95 accepts routed Apache/B at `d0586f5`. PR #96 accepts the full matrix at `6f60ae0`, closing S3.5. PR #97 accepts S3.6a static DNS/TLS preparation. PR #98 accepts S3.6b native name/trust binding and redirect/referral handling at `c71b599`, closing S3.6. PR #99 accepts S3.7 combined evidence at `4ef9b98`, closing all ten logical increments. Attached lab/engagement networks require separate authorization. | 13 |
+| 4. Engagement, credential and session custody — current | [S4.1 contract and finite gates](stage4-engagement-custody.md) precede implementation. Four logical increments with two possible splits retain this estimate. Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |
 | 7. Professional-v1 release gate | Installation and dependency diagnostics, pinned runtime maintenance, data migration/export/retention, recovery, representative service compatibility, adversarial review, operator acceptance and documented support limits. Publish only after the separate release decision. | 7–13 |
@@ -316,10 +330,11 @@ weaken the required outcome. B0–B8 and C1–C18 remain closed.
 
 Stage 2 is closed: all six tasks are accepted, no required row is blocked or
 review-pending, normal tasks complete without unnecessary refusals, unauthorized
-test actions do not execute, and evidence replay/cleanup passed. The next
-[Stage 3 contract](stage3-compatibility-routing.md) retains real-service compatibility
-and controlled routing as separate open work; the coverage checklist is not
-professional release acceptance. Record any required scope change for the owner
+test actions do not execute, and evidence replay/cleanup passed. The subsequent
+[Stage 3 contract](stage3-compatibility-routing.md) is now closed through PR #99
+for its finite real-service compatibility and routing subset. The current
+[Stage 4 contract](stage4-engagement-custody.md) retains engagement and custody
+requirements; the coverage checklist is not professional release acceptance. Record any required scope change for the owner
 instead of moving a difficult row to optional work. Deeper composition and
 comparative benchmarking remain deferred despite completion of the coverage gate.
 

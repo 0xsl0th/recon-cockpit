@@ -4,7 +4,9 @@ This contract is pinned before new implementation. S3.5 is accepted in
 [PR #96](https://github.com/0xsl0th/recon-cockpit/pull/96), merged as `6f60ae0`;
 its full native matrix and portable evidence remain closed. This preparation
 was accepted in PR #97; PR #98 subsequently accepted the separate S3.6b native
-slice, closing S3.6. S3.7 combined acceptance remains open. The batch described
+slice, closing S3.6. [PR #99](https://github.com/0xsl0th/recon-cockpit/pull/99)
+accepted [S3.7 combined acceptance](stage3-combined-acceptance.md) at `4ef9b98`,
+closing Stage 3. The batch described
 below is static preparation only. It creates no action,
 approval, authority, socket, namespace, daemon or client execution.
 
@@ -18,12 +20,15 @@ startup, confinement, useful observations or name/trust enforcement. S3.7
 combined acceptance follows accepted S3.6; it cannot be skipped.
 
 The original preparation checkpoint had eight accepted increments and two
-remaining. After PR #98, Stage 3 has nine accepted increments and one remaining.
-Splitting S3.6 into preparation and native work yields thirteen PRs overall,
-within the preceding 12–13 estimate. The 52 accepted profiles and 17 external
-programs retain their existing semantics; these fixture server binaries add no
-secure-tool integration. Credentials, models, attached networks, general
-workflows and benchmarking remain deferred.
+remaining. After PR #98, Stage 3 had nine accepted increments and one remaining.
+PR #99 closed all ten logical increments in thirteen PRs, #87–#99, within the
+preceding 12–13 estimate. At this preparation checkpoint, the 52 accepted profiles
+and 17 external programs retained their existing semantics; these fixture server
+binaries added no secure-tool integration. The current catalog has 55 accepted
+profiles, zero candidates and the same 17 programs. Current work is the
+contract-only [Stage 4 engagement, credential and session custody plan](stage4-engagement-custody.md)
+and its [gate inventory](stage4-engagement-custody-gates.json). Credential use,
+models, attached networks, general workflows and benchmarking remain deferred.
 
 ## Closed endpoints, names and operations
 
@@ -268,5 +273,8 @@ merged the reviewed head `057567d` at `8b086d5`; the reviewed and merged trees
 match. All five final and post-merge CI jobs passed the complete counts above.
 S3.6a is accepted. PR #98 subsequently accepted the separately validated
 [S3.6b native binding](stage3-name-tls-native.md) at `c71b599`, closing S3.6.
-[S3.7 combined acceptance](stage3-combined-acceptance.md) remains required;
-the preparation-only limitations above describe this batch, not the later native evidence.
+[S3.7 combined acceptance](stage3-combined-acceptance.md) was accepted in PR #99
+at `4ef9b98`, closing Stage 3. Its reviewed and merged trees match;
+[post-merge CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/39502316329)
+is tracked separately under `.secure-agent/pr99-review-20261020/`. Continue with the contract-only [Stage 4 custody plan](stage4-engagement-custody.md).
+The preparation-only limitations above describe this batch, not the later native evidence.
