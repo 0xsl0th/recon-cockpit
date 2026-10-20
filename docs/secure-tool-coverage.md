@@ -34,8 +34,9 @@ trees match; [post-merge CI](https://github.com/0xsl0th/recon-cockpit/actions/ru
 is tracked separately under `.secure-agent/pr99-review-20261020/`.
 The three accepted name-bound DNS/HTTP/TLS profiles preserve separate action
 authority and add no generic resolver or broader target support. Current work is
-the contract-only [Stage 4 engagement, credential and session custody plan](stage4-engagement-custody.md)
-and its [gate inventory](stage4-engagement-custody-gates.json); implementation and
+the [S4.2a offline engagement records](stage4-engagement-records.md)
+and [implementation inventory](stage4-engagement-records-gates.json), following
+S4.1 acceptance in PR #100 at `7a7eace`; implementation and
 new execution authority require their separate gates. Attached networks and
 deeper composition stay deferred.
 
@@ -194,7 +195,7 @@ G1–G6 and Stage 2 at 52 profiles across the same 17 programs. All six required
 outcomes in the [finite professional-v1 contract](professional-v1-coverage.md)
 are accepted. Stage 3 was subsequently accepted through PR #99, including
 [S3.7 combined acceptance](stage3-combined-acceptance.md). Continue the
-contract-only [Stage 4 custody plan](stage4-engagement-custody.md) under the
+[S4.2a offline record preparation](stage4-engagement-records.md) under the
 [product roadmap](product-roadmap.md), without changing the
 scope or closure of any accepted milestone.
 
@@ -224,7 +225,7 @@ scope or closure of any accepted milestone.
 | T03 — accepted | Pinned local advertisement policy in both transport directions | Reuse byte-identical C14 collector; one request/write EOF/first packet, no login or extra probe. Known deviations useful, unknowns inconclusive. | [x] G1–G6 closed in [PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81) at `b90a365e`: 52 native / 21,898 portable passes, six ordinary and two robustness completions, two unknown and nine malformed/pressure inconclusive cases. Fresh review and five final checks passed; no new program. See [runbook](ssh-policy-tools.md). |
 | T04 — accepted | Controlled one-level web hierarchy | Twelve unique compiled GETs, independent owner/native reconciliation, empty and populated completion, explicit ambiguity, authority and replay. Native retries remain negative evidence. | [x] G1–G6 closed in [PR #84](https://github.com/0xsl0th/recon-cockpit/pull/84) at `435a271`; 26 native and 22,577 portable passes retained, two independent reviews, 319 fresh focused tests and five final/post-merge checks passed. See [accepted runbook](web-hierarchy-tools.md). |
 | T05 — accepted | One bounded SNMP interface-description page | One fixed-seed TCP GETBULK, zero non-repeaters, four maximum repetitions, typed ordered rows or an explicit terminal boundary, authority, evidence and G1–G6. | [x] [Accepted profile](snmp-page-tools.md) in PR #85 at `8ca3887`; 51 native and 23,170 portable tests passed, followed by independent review, 357 fresh focused passes and five final checks. No walks, continuation, UDP or real communities. |
-| T06 — accepted | Fixed AAAA/PTR metadata | Positive, NODATA and NXDOMAIN outcomes, bounded typed responses, secure execution, evidence and G1–G6 for each separate profile. | [x] [Two accepted profiles](dns-address-tools.md), [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) at `f0542a8`, reusing dig. 83 native passes: 11 ordinary completions/zero unnecessary refusals, four robustness completions, 23 inconclusive negatives; four out-of-scope proposals blocked and 57 reports/114 inspection checks unchanged. 24,163 portable passes, fresh independent review and all five final checks closed G6 and Stage 2. Stage 3 is accepted through PR #99; current work is the contract-only [Stage 4 custody plan](stage4-engagement-custody.md). |
+| T06 — accepted | Fixed AAAA/PTR metadata | Positive, NODATA and NXDOMAIN outcomes, bounded typed responses, secure execution, evidence and G1–G6 for each separate profile. | [x] [Two accepted profiles](dns-address-tools.md), [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) at `f0542a8`, reusing dig. 83 native passes: 11 ordinary completions/zero unnecessary refusals, four robustness completions, 23 inconclusive negatives; four out-of-scope proposals blocked and 57 reports/114 inspection checks unchanged. 24,163 portable passes, fresh independent review and all five final checks closed G6 and Stage 2. Stage 3 is accepted through PR #99; current work is the [S4.2a offline record preparation](stage4-engagement-records.md). |
 | Later | Broader Windows/AD, authenticated SSH/LDAP/SMB, SQL readiness/queries and real SNMP deployments | Separate credential/session and engagement-scope design with relevant authorization, plus exact operation contracts and G1–G6. Existing interactive suggestions do not satisfy this row. | Deferred boundary work. |
 | Later | Additional web discovery/scanning engines | Evaluate incremental coverage beyond accepted ffuf/HTTP profiles before selecting a finite operation and corpus; no arbitrary plugins/templates/crawling. | Optional; deeper composition and comparison deferred. |
 

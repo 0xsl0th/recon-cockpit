@@ -26,8 +26,9 @@ preceding 12–13 estimate. At this preparation checkpoint, the 52 accepted prof
 and 17 external programs retained their existing semantics; these fixture server
 binaries added no secure-tool integration. The current catalog has 55 accepted
 profiles, zero candidates and the same 17 programs. Current work is the
-contract-only [Stage 4 engagement, credential and session custody plan](stage4-engagement-custody.md)
-and its [gate inventory](stage4-engagement-custody-gates.json). Credential use,
+[S4.2a offline engagement records](stage4-engagement-records.md)
+and [implementation inventory](stage4-engagement-records-gates.json), following
+S4.1 acceptance in PR #100 at `7a7eace`. Credential use,
 models, attached networks, general workflows and benchmarking remain deferred.
 
 ## Closed endpoints, names and operations
@@ -276,5 +277,5 @@ S3.6a is accepted. PR #98 subsequently accepted the separately validated
 [S3.7 combined acceptance](stage3-combined-acceptance.md) was accepted in PR #99
 at `4ef9b98`, closing Stage 3. Its reviewed and merged trees match;
 [post-merge CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/39502316329)
-is tracked separately under `.secure-agent/pr99-review-20261020/`. Continue with the contract-only [Stage 4 custody plan](stage4-engagement-custody.md).
+is tracked separately under `.secure-agent/pr99-review-20261020/`. Continue with the [S4.2a offline record preparation](stage4-engagement-records.md).
 The preparation-only limitations above describe this batch, not the later native evidence.

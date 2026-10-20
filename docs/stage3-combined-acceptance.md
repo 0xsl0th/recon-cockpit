@@ -9,7 +9,8 @@ PR [#98](https://github.com/0xsl0th/recon-cockpit/pull/98) accepted S3.6b at
 increments across thirteen PRs, #87–#99.** Fresh independent authority/evidence
 reviews found no blockers. Reviewed `96c4408`, its passing CI checkout and the
 actual merge share tree `321f50c2f53f3ecda88242f703ce32a46404d878`.
-The next increment is the [Stage 4 engagement/custody contract](stage4-engagement-custody.md).
+The [Stage 4 engagement/custody contract](stage4-engagement-custody.md) is accepted
+in PR #100; current work is [S4.2a record preparation](stage4-engagement-records.md).
 
 The historical [native contract](stage3-name-tls-native.md) is restored to the
 exact bytes accepted in `c71b599`, SHA-256
@@ -236,5 +237,5 @@ with no errors, failures or skips. Final evidence and reviews remain in
 `.secure-agent/pr99-review-20261020/merge-review-receipt.json`.
 The [post-merge workflow](https://github.com/0xsl0th/recon-cockpit/actions/runs/39502316329)
 is tracked separately there. Historical pre-acceptance receipts remain unchanged.
-S3.7 and Stage 3 are closed for this finite subset. The next Stage 4 contract
-starts planning only; professional-v1 release readiness remains a later gate.
+S3.7 and Stage 3 are closed for this finite subset. The Stage 4 contract accepted in PR #100
+establishes planning only; professional-v1 release readiness remains a later gate.

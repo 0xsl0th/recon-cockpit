@@ -1,0 +1,1019 @@
+{
+  "allowed_profiles": [
+    "configurable_http_headers_v1",
+    "configurable_nmap_service_v1",
+    "configurable_ssh_host_keys_v1"
+  ],
+  "api": {
+    "cli": [
+      "create",
+      "revise",
+      "revoke",
+      "show",
+      "receipt",
+      "export",
+      "inspect"
+    ],
+    "cli_flags": {
+      "create": [
+        "--store",
+        "--engagement-id",
+        "--roe-file",
+        "--event-id"
+      ],
+      "export": [
+        "--store",
+        "--output"
+      ],
+      "inspect": [
+        "--export"
+      ],
+      "receipt": [
+        "--store",
+        "--event-id"
+      ],
+      "revise": [
+        "--store",
+        "--roe-file",
+        "--event-id",
+        "--expected-revision",
+        "--expected-generation"
+      ],
+      "revoke": [
+        "--store",
+        "--event-id",
+        "--expected-revision",
+        "--expected-generation"
+      ],
+      "show": [
+        "--store"
+      ]
+    },
+    "contract": [
+      "EngagementError(code)",
+      "validate_roe(value)",
+      "decode_roe(raw)",
+      "canonical(value)",
+      "roe_digest(value)",
+      "validate_request(value)",
+      "request_digest(value)",
+      "validate_export(value)",
+      "decode_export(raw)"
+    ],
+    "inspection": [
+      "read_roe_file(path)",
+      "write_export(path, snapshot)",
+      "inspect_export(path)",
+      "report_export(snapshot, *, raw_sha256)"
+    ],
+    "store": [
+      "EngagementStore.create(directory, *, engagement_id, roe, event_id)",
+      "EngagementStore.open(directory, *, read_only=False)",
+      "append_revision(roe, *, expected_revision, expected_generation, event_id)",
+      "revoke(*, expected_revision, expected_generation, event_id)",
+      "event_receipt(event_id)",
+      "snapshot()",
+      "close()"
+    ]
+  },
+  "authorization": {
+    "credential_read": false,
+    "execution_authority": false,
+    "implementation_after_contract_pin": true,
+    "native_execution": false,
+    "network": false,
+    "portable_offline_validation_after_pin": true,
+    "provider_calls": false
+  },
+  "case_count": 68,
+  "cases": [
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C01",
+      "node_id": "tests/test_secure_engagement_contract.py::test_valid_canonical_detached_roe",
+      "proof": "Valid ROE normalizes to deterministic detached data; caller mutation cannot change prior results.",
+      "stage4_case_ids": [
+        "S4-E01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C02",
+      "node_id": "tests/test_secure_engagement_contract.py::test_strict_json_forms",
+      "proof": "Reject duplicate keys, invalid UTF-8, trailing JSON, nonfinite/floating values and excessive nesting.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C03",
+      "node_id": "tests/test_secure_engagement_contract.py::test_exact_fields_and_types",
+      "proof": "Unknown/missing fields, bool-as-int and wrong container types refuse without echoing input.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C04",
+      "node_id": "tests/test_secure_engagement_contract.py::test_uuid_canonical_forms",
+      "proof": "Engagement/event IDs accept only canonical lowercase RFC4122 UUID4 and reject aliases.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C05",
+      "node_id": "tests/test_secure_engagement_contract.py::test_byte_and_depth_limits",
+      "proof": "Exercise exact raw byte/depth boundaries where constructible (including valid whitespace-padded4096-byte ROE), first oversized input refusal and attainable structural maxima; do not fabricate a valid normalized request/export at an unreachable ceiling.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C06",
+      "node_id": "tests/test_secure_engagement_contract.py::test_disconnected_scope_targets",
+      "proof": "Pure unchanged scope validation rejects public/name/IPv6/noncanonical targets and invalid ports.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C07",
+      "node_id": "tests/test_secure_engagement_contract.py::test_scope_path_and_endpoint_collision",
+      "proof": "Reject path escapes/encoding/dot segments and colliding endpoint pairs.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C08",
+      "node_id": "tests/test_secure_engagement_contract.py::test_closed_profile_declarations",
+      "proof": "Three exact IDs only; sorted unique nonempty list; no registry expansion.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C09",
+      "node_id": "tests/test_secure_engagement_contract.py::test_whole_service_exclusions",
+      "proof": "Sorted unique HTTP/SSH exclusions, at most one, with endpoint exclusion overriding profile declaration.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C10",
+      "node_id": "tests/test_secure_engagement_contract.py::test_utc_window_grammar",
+      "proof": "Canonical valid Gregorian UTC seconds only, years2000-2099; reject offset/fraction/leap-second variants.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C11",
+      "node_id": "tests/test_secure_engagement_contract.py::test_window_duration_boundaries",
+      "proof": "Start<end, max86400 seconds inclusive; past/future record preparation does not authorize execution.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C12",
+      "node_id": "tests/test_secure_engagement_contract.py::test_declared_limit_boundaries",
+      "proof": "All six exact positive integer caps, their maxima and window/action relationships.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C13",
+      "node_id": "tests/test_secure_engagement_contract.py::test_digest_domains_and_field_binding",
+      "proof": "Exact zero-byte domain vectors; every variable validated ROE/request field binds its digest. Invalid mutations of fixed version/mode constants refuse.",
+      "stage4_case_ids": [
+        "S4-E06"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C14",
+      "node_id": "tests/test_secure_engagement_contract.py::test_normalized_request_shapes",
+      "proof": "Create/revise/revoke exact expected-value and ROE/null shapes; full-request identity includes CAS.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C15",
+      "node_id": "tests/test_secure_engagement_contract.py::test_export_reconstructs_history",
+      "proof": "Valid create/revise/revoke export replays to exact immutable receipts and final state.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C16",
+      "node_id": "tests/test_secure_engagement_contract.py::test_export_hash_and_transition_tampering",
+      "proof": "Mutated ROE/request hash, event semantics or final metadata refuses.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C17",
+      "node_id": "tests/test_secure_engagement_contract.py::test_export_order_identity_and_caps",
+      "proof": "Missing/extra/duplicate/reordered revisions/events, crossed engagement IDs and caps refuse.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-C18",
+      "node_id": "tests/test_secure_engagement_contract.py::test_closed_safe_error_codes",
+      "proof": "Exception accepts only closed codes; external values never become public exception text.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S01",
+      "node_id": "tests/test_secure_engagement_store.py::test_exclusive_private_creation",
+      "proof": "Create one private store; reject existing path without replacing any bytes.",
+      "stage4_case_ids": [
+        "S4-E01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S02",
+      "node_id": "tests/test_secure_engagement_store.py::test_reopen_preserves_all_committed_metadata",
+      "proof": "Reopen preserves UUID, revisions, events, generations and terminal state without authority.",
+      "stage4_case_ids": [
+        "S4-E01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S03",
+      "node_id": "tests/test_secure_engagement_store.py::test_revision_transaction_and_receipt",
+      "proof": "Successful current CAS atomically adds immutable revision/event and updates state.",
+      "stage4_case_ids": [
+        "S4-E06"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S04",
+      "node_id": "tests/test_secure_engagement_store.py::test_stale_revision_and_generation_refuse",
+      "proof": "Stale revision or generation individually refuses with no mutation.",
+      "stage4_case_ids": [
+        "S4-D06"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S05",
+      "node_id": "tests/test_secure_engagement_store.py::test_terminal_revocation",
+      "proof": "Revoke increments generation once and prevents new-event revise/revoke; no reactivation.",
+      "stage4_case_ids": [
+        "S4-R04"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S06",
+      "node_id": "tests/test_secure_engagement_store.py::test_exact_retry_after_later_state",
+      "proof": "Exact event retries after later revision/revoke return original receipt without new rows.",
+      "stage4_case_ids": [
+        "S4-D06"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S07",
+      "node_id": "tests/test_secure_engagement_store.py::test_event_id_content_conflict",
+      "proof": "Same event UUID with changed CAS, operation or ROE refuses and preserves committed state.",
+      "stage4_case_ids": [
+        "S4-D06"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S08",
+      "node_id": "tests/test_secure_engagement_store.py::test_explicit_same_content_revision",
+      "proof": "Fresh event/current CAS may append a same-content revision; no implicit deduplication.",
+      "stage4_case_ids": [
+        "S4-E06"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S09",
+      "node_id": "tests/test_secure_engagement_store.py::test_concurrent_distinct_cas_processes",
+      "proof": "Real spawned processes race distinct updates at identical CAS; exactly one commits.",
+      "stage4_case_ids": [
+        "S4-D06"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S10",
+      "node_id": "tests/test_secure_engagement_store.py::test_concurrent_exact_event_retry",
+      "proof": "Real independent connections/processes race identical request; one event and identical receipts.",
+      "stage4_case_ids": [
+        "S4-D06"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S11",
+      "node_id": "tests/test_secure_engagement_store.py::test_concurrent_revise_revoke_order",
+      "proof": "Real metadata revise/revoke race has one winner and valid ordered history; no dispatch claim.",
+      "stage4_case_ids": [
+        "S4-D06"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S12",
+      "node_id": "tests/test_secure_engagement_store.py::test_revision_and_event_capacity",
+      "proof": "Exercise64 revisions, reserve terminal revoke capacity, refuse next revision and preserve counts.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S13",
+      "node_id": "tests/test_secure_engagement_store.py::test_event_write_failure_rolls_back",
+      "proof": "Injected event insertion failure rolls back prior revision/state writes and poisons handle.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S14",
+      "node_id": "tests/test_secure_engagement_store.py::test_commit_failure_is_not_success",
+      "proof": "Commit fault/lost acknowledgment never reports success or retries with fresh event; reopen observes committed-or-uncommitted consistent state.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S15",
+      "node_id": "tests/test_secure_engagement_store.py::test_crash_before_commit",
+      "proof": "Actual spawned writer terminated with open transaction; trusted reopen recovers old committed snapshot.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S16",
+      "node_id": "tests/test_secure_engagement_store.py::test_crash_after_commit_before_ack",
+      "proof": "Actual writer commits then terminates before acknowledgment; reopen recovers exact receipt once.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S17",
+      "node_id": "tests/test_secure_engagement_store.py::test_exact_schema_and_trigger_inventory",
+      "proof": "Wrong version, extra/missing/modified table/index/trigger/view refuses before state use.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S18",
+      "node_id": "tests/test_secure_engagement_store.py::test_stored_row_replay_tampering",
+      "proof": "Direct row/hash/state/event mutation detected by full bounded replay; immutable triggers reject ordinary edits.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S19",
+      "node_id": "tests/test_secure_engagement_store.py::test_corruption_growth_and_query_bounds",
+      "proof": "Malformed DB, oversized file/rows and expensive schema/integrity work refuse within bounded SQLite work.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S20",
+      "node_id": "tests/test_secure_engagement_store.py::test_store_path_permissions_and_identity",
+      "proof": "Held private parent and directory/DB mode, UID, name/dev/inode checks; symlink/hardlink/type/replacement and parent privacy changes refuse.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S21",
+      "node_id": "tests/test_secure_engagement_store.py::test_sidecar_and_foreign_entry_custody",
+      "proof": "WAL/SHM/unexpected entries and invalid journal type/permissions/identity refuse.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S22",
+      "node_id": "tests/test_secure_engagement_store.py::test_hot_journal_readonly_and_recovery",
+      "proof": "Actual crash journal causes read-only refusal; separate trusted writable open recovers consistent committed state.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S23",
+      "node_id": "tests/test_secure_engagement_store.py::test_other_handle_close_preserves_lock",
+      "proof": "Real other process remains blocked when another same-process handle closes during transaction.",
+      "stage4_case_ids": [
+        "S4-D06"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S24",
+      "node_id": "tests/test_secure_engagement_store.py::test_inherited_handle_refuses_before_touch",
+      "proof": "Post-fork/foreign PID operation and close refuse before lock/connection access.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S25",
+      "node_id": "tests/test_secure_engagement_store.py::test_original_deadline_and_busy_bound",
+      "proof": "Actual held writer plus simulated expired work prove bounded wait and no phase reset; precommit deadline prevents mutation, postcommit expiry is uncertain failure requiring explicit receipt lookup.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S26",
+      "node_id": "tests/test_secure_engagement_store.py::test_descriptor_cleanup_and_poison",
+      "proof": "Success/failure/close paths close own FDs; poisoned handle refuses; close is idempotent in owner.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S27",
+      "node_id": "tests/test_secure_engagement_store.py::test_creation_write_and_sync_failures",
+      "proof": "Injected create/file/directory sync failure leaves no usable silently recreated store.",
+      "stage4_case_ids": [
+        "S4-D05"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-S28",
+      "node_id": "tests/test_secure_engagement_store.py::test_create_lost_ack_and_readonly_mutation",
+      "proof": "Explicit reopen/event lookup recovers create; read-only mutation refuses with unchanged data.",
+      "stage4_case_ids": [
+        "S4-E01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I01",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_python_cli_exact_report",
+      "proof": "Canonical export inspected through Python/CLI gives exact same bounded report and hash.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I02",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_canonical_export_only",
+      "proof": "Export is exact canonical bytes; equivalent noncanonical saved bytes refuse immutable inspection.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I03",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_roe_input_normalization",
+      "proof": "Private ROE input permits JSON whitespace and normalizes to exact request without echoing raw input.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I04",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_input_file_kind_and_link_custody",
+      "proof": "Symlink/hardlink/FIFO/device/directory inputs refuse without blocking.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I05",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_private_parent_and_alias_boundary",
+      "proof": "Private owned parent and held identity checks; trusted canonical ancestor aliases supported, final symlinks refused.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I06",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_bounded_short_reads_to_eof",
+      "proof": "Actual/artificial short reads are accumulated to EOF and compared; no one-read assumption.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I07",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_input_size_and_growth_caps",
+      "proof": "Byte admission at cutoffs and cutoff+1, initial zero/oversize and growth beyond cap refuse as applicable; admission alone does not imply full schema validity.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I08",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_input_bytes_changed_during_validation",
+      "proof": "Same-size bytes mutation across validation/re-read refuses without success.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I09",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_input_name_replaced_during_validation",
+      "proof": "Named entry or parent replaced during held-FD validation refuses.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I10",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_input_metadata_changed_during_validation",
+      "proof": "Mode/ownership/link/size/mtime/ctime changes refuse; read-induced atime is not corruption.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I11",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_export_never_overwrites",
+      "proof": "Exclusive output creation preserves existing/symlink destination; DB remains unchanged.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I12",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_partial_export_writes",
+      "proof": "Short writes complete correctly; zero/error write refuses and never claims complete output.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I13",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_export_sync_and_custody_failures",
+      "proof": "File/directory sync or replacement failure produces bounded refusal, preserving store.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I14",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_cli_closed_errors_and_exit_codes",
+      "proof": "Malformed args, duplicate/abbreviated/unknown flags, oversized/noncanonical decimal CAS, input and storage errors yield exact safe JSON exit2 with no traceback/path/input echo.",
+      "stage4_case_ids": [
+        "S4-E02"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I15",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_readonly_commands_preserve_store",
+      "proof": "Show/receipt/export use read-only snapshots; no DB byte/mode/mtime changes absent concurrent writer.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I16",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_inspection_has_no_execution_or_import",
+      "proof": "Inspect performs only data/file operations; no SQLite open, subprocess/network/provider/legacy import.",
+      "stage4_case_ids": [
+        "S4-P01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I17",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_report_output_caps",
+      "proof": "Maximum valid reports stay<=4096 bytes; fields closed; malformed or mismatched supplied raw_sha256 refuses rather than laundering report provenance.",
+      "stage4_case_ids": [
+        "S4-V01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-I18",
+      "node_id": "tests/test_secure_engagement_inspection.py::test_cli_create_revise_revoke_export_workflow",
+      "proof": "Actual offline CLI workflow, lost-ack receipt retrieval and immutable final inspection use pinned flags.",
+      "stage4_case_ids": [
+        "S4-E01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-P01",
+      "node_id": "tests/test_secure_engagement_preservation.py::test_additive_import_boundary",
+      "proof": "New production imports stay stdlib plus pure configurable_scope; native/authority/catalog closures unchanged.",
+      "stage4_case_ids": [
+        "S4-P01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-P02",
+      "node_id": "tests/test_secure_engagement_preservation.py::test_legacy_credentials_not_read",
+      "proof": "Synthetic legacy sentinel files remain unread; no automatic migration/import.",
+      "stage4_case_ids": [
+        "S4-P01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-P03",
+      "node_id": "tests/test_secure_engagement_preservation.py::test_documented_example_is_valid",
+      "proof": "The additive example is valid nonsecret ROE matching closed schema; docs commands parse.",
+      "stage4_case_ids": [
+        "S4-E01"
+      ],
+      "status": "pending"
+    },
+    {
+      "execution": "portable_offline_only",
+      "id": "S42A-P04",
+      "node_id": "tests/test_secure_engagement_preservation.py::test_case_inventory_exact_mapping",
+      "proof": "Static declared node/function mapping contains exactly68 unique cases with explicit partial Stage4 mappings; do not invoke nested pytest. Retained validation separately checks actual collected and completed exact IDs.",
+      "stage4_case_ids": [
+        "S4-P01"
+      ],
+      "status": "pending"
+    }
+  ],
+  "contract": "docs/stage4-engagement-records.md",
+  "coverage_claims": {
+    "direct_offline": [
+      "S4-E01",
+      "S4-E02"
+    ],
+    "partial_preparation_only": [
+      "S4-E06",
+      "S4-R04",
+      "S4-D05",
+      "S4-D06",
+      "S4-V01",
+      "S4-P01"
+    ],
+    "remaining": "All whole-stage cases and physical obligations not explicitly completed by later acceptance remain open. Metadata concurrency/crash tests do not close grant/dispatch/session/credential/real-use obligations."
+  },
+  "digest_domains": {
+    "request_hex": "7265636f6e2d656e676167656d656e742d726571756573742d763100",
+    "roe_hex": "7265636f6e2d656e676167656d656e742d726f652d763100"
+  },
+  "errors": [
+    "engagement_invalid_input",
+    "engagement_invalid_roe",
+    "engagement_invalid_export",
+    "engagement_limit_exceeded",
+    "engagement_already_exists",
+    "engagement_store_unavailable",
+    "engagement_store_invalid",
+    "engagement_read_only",
+    "engagement_conflict",
+    "engagement_revoked",
+    "engagement_event_unknown",
+    "engagement_snapshot_changed",
+    "engagement_output_exists",
+    "engagement_timeout"
+  ],
+  "fields": {
+    "export": [
+      "schema_version",
+      "kind",
+      "engagement_id",
+      "state",
+      "revisions",
+      "events"
+    ],
+    "receipt": [
+      "schema_version",
+      "engagement_id",
+      "event_id",
+      "sequence",
+      "operation",
+      "expected_revision",
+      "expected_generation",
+      "revision",
+      "generation",
+      "status",
+      "roe_sha256",
+      "request_sha256"
+    ],
+    "report": [
+      "schema_version",
+      "kind",
+      "engagement_id",
+      "revision",
+      "generation",
+      "status",
+      "revision_count",
+      "event_count",
+      "roe_sha256",
+      "export_sha256",
+      "execution_authority"
+    ],
+    "request": [
+      "schema_version",
+      "engagement_id",
+      "event_id",
+      "operation",
+      "expected_revision",
+      "expected_generation",
+      "roe"
+    ],
+    "revision": [
+      "revision",
+      "roe",
+      "roe_sha256"
+    ],
+    "roe": [
+      "schema_version",
+      "mode",
+      "scope",
+      "allowed_profiles",
+      "excluded_services",
+      "window",
+      "limits"
+    ],
+    "state": [
+      "revision",
+      "generation",
+      "status",
+      "last_sequence"
+    ]
+  },
+  "group_counts": {
+    "C": 18,
+    "I": 18,
+    "P": 4,
+    "S": 28
+  },
+  "implementation_allowlist": {
+    "existing_status_only_docs": [
+      "docs/product-roadmap.md",
+      "docs/roadmap.md",
+      "docs/continue-here.md",
+      "docs/secure-tool-catalog.md",
+      "docs/secure-tool-coverage.md",
+      "docs/stage3-combined-acceptance.md",
+      "docs/stage3-compatibility-routing.md",
+      "docs/stage3-name-tls-preflight.md"
+    ],
+    "historical_s4_1_contract_changes": false,
+    "new_contracts": [
+      "docs/stage4-engagement-records.md",
+      "docs/stage4-engagement-records-gates.json"
+    ],
+    "new_examples": [
+      "examples/secure-agent-engagement-roe.json"
+    ],
+    "new_modules": [
+      "recon_cockpit/secure_agent/engagement_contract.py",
+      "recon_cockpit/secure_agent/engagement_store.py",
+      "recon_cockpit/secure_agent/engagement_inspection.py"
+    ],
+    "new_scripts": [
+      "scripts/engagement_records.py"
+    ],
+    "new_tests": [
+      "tests/test_secure_engagement_contract.py",
+      "tests/test_secure_engagement_store.py",
+      "tests/test_secure_engagement_inspection.py",
+      "tests/test_secure_engagement_preservation.py"
+    ],
+    "shared_code_or_native_closure_changes": false
+  },
+  "limits": {
+    "busy_timeout_ms": 250,
+    "database_bytes": 2097152,
+    "database_page_size": 4096,
+    "database_pages": 512,
+    "events": 65,
+    "export_bytes": 524288,
+    "journal_bytes": 4194304,
+    "json_depth": 12,
+    "operation_ms": 2000,
+    "progress_callbacks": 2000,
+    "progress_step_instructions": 1000,
+    "report_bytes": 4096,
+    "request_bytes": 8192,
+    "revisions": 64,
+    "roe_bytes": 4096
+  },
+  "predecessor": {
+    "merge": "7a7eace9c30d315f9555f179f64b98f25633a219",
+    "pr": 100,
+    "s4_1_accepted": true,
+    "tree": "ea4bc9b9ced9b90bddaf63e997b9edc7453b77ed"
+  },
+  "required_acceptance": [
+    "Exact68 portable case IDs, no substituted count-only evidence",
+    "Full portable suite at final head",
+    "Five existing CI platform/Python jobs at reviewed head or exact-tree synthetic merge",
+    "Independent implementation/custody/evidence review",
+    "Accepted source/native closure unchanged proof; no new native count",
+    "Original failed attempts retained and explicit diagnostics labels",
+    "PR review and authorized merge before slice acceptance"
+  ],
+  "roadmap": {
+    "baseline_date": "2026-10-20",
+    "broad_current_pr_range": [
+      88,
+      135
+    ],
+    "broad_original_pr_range": [
+      87,
+      135
+    ],
+    "new_outcomes_added": false,
+    "professional_current_pr_range": [
+      48,
+      65
+    ],
+    "professional_original_pr_range": [
+      47,
+      65
+    ],
+    "remaining_optional_split": "S4.3 custody versus finite-operation integration",
+    "selected_split": "S4.2 preparation versus integration",
+    "stage4_current_pr_range": [
+      5,
+      6
+    ],
+    "stage4_original_pr_range": [
+      4,
+      6
+    ]
+  },
+  "schema_version": "1",
+  "slice": "S4.2a",
+  "sqlite": {
+    "implicit_objects": [
+      {
+        "name": "sqlite_autoindex_events_1",
+        "sql": null,
+        "table": "events",
+        "type": "index"
+      }
+    ],
+    "pragmas": {
+      "busy_timeout": 250,
+      "foreign_keys": 1,
+      "fullfsync": 1,
+      "journal_mode": "delete",
+      "query_only_for_read_only": 1,
+      "synchronous": 3,
+      "temp_store": 2,
+      "trusted_schema": 0
+    },
+    "schema_sql": [
+      "CREATE TABLE revisions (revision INTEGER PRIMARY KEY CHECK(typeof(revision)='integer' AND revision BETWEEN 1 AND 64), roe_json TEXT NOT NULL CHECK(typeof(roe_json)='text' AND length(roe_json) BETWEEN 1 AND 4096), roe_sha256 TEXT NOT NULL CHECK(typeof(roe_sha256)='text' AND length(roe_sha256)=64))",
+      "CREATE TABLE metadata (singleton INTEGER PRIMARY KEY CHECK(singleton=1), engagement_id TEXT NOT NULL CHECK(typeof(engagement_id)='text' AND length(engagement_id)=36), current_revision INTEGER NOT NULL REFERENCES revisions(revision) CHECK(typeof(current_revision)='integer' AND current_revision BETWEEN 1 AND 64), generation INTEGER NOT NULL CHECK(typeof(generation)='integer' AND generation BETWEEN 0 AND 64), status TEXT NOT NULL CHECK(status IN ('recorded','revoked')), last_sequence INTEGER NOT NULL CHECK(typeof(last_sequence)='integer' AND last_sequence BETWEEN 1 AND 65))",
+      "CREATE TABLE events (sequence INTEGER PRIMARY KEY CHECK(typeof(sequence)='integer' AND sequence BETWEEN 1 AND 65), event_id TEXT NOT NULL UNIQUE CHECK(typeof(event_id)='text' AND length(event_id)=36), request_sha256 TEXT NOT NULL CHECK(typeof(request_sha256)='text' AND length(request_sha256)=64), receipt_json TEXT NOT NULL CHECK(typeof(receipt_json)='text' AND length(receipt_json) BETWEEN 1 AND 4096))",
+      "CREATE TRIGGER immutable_revisions_update BEFORE UPDATE ON revisions BEGIN SELECT RAISE(ABORT,'engagement_immutable'); END",
+      "CREATE TRIGGER immutable_revisions_delete BEFORE DELETE ON revisions BEGIN SELECT RAISE(ABORT,'engagement_immutable'); END",
+      "CREATE TRIGGER immutable_events_update BEFORE UPDATE ON events BEGIN SELECT RAISE(ABORT,'engagement_immutable'); END",
+      "CREATE TRIGGER immutable_events_delete BEFORE DELETE ON events BEGIN SELECT RAISE(ABORT,'engagement_immutable'); END"
+    ],
+    "sqlite_limits": {
+      "ATTACHED": 0,
+      "COLUMN": 32,
+      "EXPR_DEPTH": 32,
+      "LENGTH": 524288,
+      "SQL_LENGTH": 16384,
+      "TRIGGER_DEPTH": 8,
+      "VARIABLE_NUMBER": 64
+    },
+    "user_version": 1
+  },
+  "stage4_acceptance": false,
+  "status": "contract_draft_pending_pin_and_implementation"
+}

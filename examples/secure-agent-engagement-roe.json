@@ -1,0 +1,28 @@
+{
+  "schema_version": "1",
+  "mode": "disconnected_owned",
+  "scope": {
+    "schema_version": "1",
+    "scope_id": "owned-example",
+    "http": {"target": "10.77.0.10", "port": 8080, "path": "/"},
+    "ssh": {"target": "10.77.0.20", "port": 2222}
+  },
+  "allowed_profiles": [
+    "configurable_http_headers_v1",
+    "configurable_nmap_service_v1",
+    "configurable_ssh_host_keys_v1"
+  ],
+  "excluded_services": [],
+  "window": {
+    "start_utc": "2026-10-20T00:00:00Z",
+    "end_utc": "2026-10-21T00:00:00Z"
+  },
+  "limits": {
+    "max_actions": 64,
+    "max_connections": 256,
+    "max_request_bytes": 1048576,
+    "max_response_bytes": 1048576,
+    "max_action_ms": 60000,
+    "max_engagement_ms": 86400000
+  }
+}
