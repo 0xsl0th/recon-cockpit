@@ -450,6 +450,63 @@ def test_corruption_growth_and_query_bounds(tmp_path, monkeypatch):
         assert store._interrupted and store._callbacks <= module.MAX_PROGRESS_CALLBACKS
         assert time.monotonic() - started < 3
 
+    # Configuration and the first validation transaction belong to the same
+    # constructor operation. Charge real SQLite callbacks across both phases.
+    original_configure = EngagementStore._configure
+    original_progress = EngagementStore._progress
+    query = ("WITH RECURSIVE x(v) AS (VALUES(0) UNION ALL SELECT v+1 "
+             "FROM x WHERE v<?) SELECT sum(v) FROM x")
+    for constructor in ("create", "open", "read_only_open"):
+        parent = tmp_path / ("constructor_progress_" + constructor)
+        parent.mkdir(mode=0o700)
+        target = parent / "store"
+        if constructor != "create":
+            with EngagementStore.create(target, engagement_id=str(uuid4()),
+                    roe=ROE, event_id=str(uuid4())):
+                pass
+        callbacks, configured = [], []
+        def counted_progress(self):
+            callbacks.append(True)
+            return original_progress(self)
+        def charged_configure(self, *, initial):
+            original_configure(self, initial=initial)
+            self._execute(query, (10000,)).fetchone()
+            configured.append((self, len(callbacks)))
+        def expensive_validation(self):
+            self._execute(query, (100000000,)).fetchone()
+        with monkeypatch.context() as patch:
+            patch.setattr(EngagementStore, "_progress", counted_progress)
+            patch.setattr(EngagementStore, "_configure", charged_configure)
+            patch.setattr(EngagementStore, "_schema_checked", expensive_validation)
+            with refusal("engagement_timeout"):
+                if constructor == "create":
+                    EngagementStore.create(target, engagement_id=str(uuid4()),
+                                           roe=ROE, event_id=str(uuid4()))
+                else:
+                    EngagementStore.open(target, read_only=constructor == "read_only_open")
+        assert len(configured) == 1
+        failed, charged = configured[0]
+        assert 0 < charged < module.MAX_PROGRESS_CALLBACKS
+        assert len(callbacks) == failed._callbacks == module.MAX_PROGRESS_CALLBACKS
+        assert failed._interrupted
+        assert failed._db is failed._parent_fd is failed._directory_fd is None
+
+    # A later independent API call starts a fresh counter under the lock;
+    # preserving constructor charges must not make the handle accumulate work
+    # across unrelated snapshot/receipt operations.
+    callbacks, configured = [], []
+    with monkeypatch.context() as patch:
+        patch.setattr(EngagementStore, "_progress", counted_progress)
+        patch.setattr(EngagementStore, "_configure", charged_configure)
+        with new_store(tmp_path, "independent_progress") as store:
+            assert 0 < store._callbacks == len(callbacks) < module.MAX_PROGRESS_CALLBACKS
+            before = len(callbacks)
+            snapshot = store.snapshot()
+            assert store._callbacks == len(callbacks) - before
+            before = len(callbacks)
+            store.event_receipt(snapshot["events"][0]["event_id"])
+            assert store._callbacks == len(callbacks) - before
+
 
 def test_store_path_permissions_and_identity(tmp_path):
     for index, fault in enumerate(("parent_mode", "directory_mode", "file_mode", "hardlink", "symlink", "replace", "directory_replace", "uid")):

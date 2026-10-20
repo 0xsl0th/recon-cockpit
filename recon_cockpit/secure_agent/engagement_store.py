@@ -370,7 +370,11 @@ class EngagementStore:
         if not self._lock.acquire(timeout=max(0, deadline - time.monotonic())):
             raise EngagementError("engagement_timeout")
         try:
-            self._deadline, self._callbacks, self._interrupted = deadline, 0, False
+            self._deadline = deadline
+            # _open already started the constructor budget before configuration.
+            # Only later independent operations receive a fresh callback count.
+            if self._engagement_id is not None:
+                self._callbacks, self._interrupted = 0, False
             self._check_deadline()
             self._check_files(empty=initializing, read_entry=self._read_only)
             self._db.set_progress_handler(self._progress, 1000)
