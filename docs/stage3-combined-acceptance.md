@@ -9,6 +9,13 @@ the thirteen-PR estimate includes twelve accepted PRs, #87–#98, and this S3.7
 slice. S3.7 remains open until its evidence, independent review and required
 checks are complete and accepted.
 
+The historical [native contract](stage3-name-tls-native.md) is restored to the
+exact bytes accepted in `c71b599`, SHA-256
+`cc99bb986f4f267a3206281340a34fef9e609dc724f4d586cf6ced20c35abc26`.
+Its original candidate/pending language records the contract's pre-acceptance
+checkpoint. Current acceptance and continuation status lives here and in the
+roadmaps; the original public contract hash and its authority test remain unchanged.
+
 This contract is pinned before implementing the additional inspection path or
 running the combined evidence validation. The accompanying
 `stage3-combined-acceptance-gates.json` names every reused native test identity,
@@ -208,6 +215,18 @@ SHA-256 `a06ae8bca63ef16b2cb52a6a5b936df6dd4989f6d3e3a4e02de3f1a6e016f28c`. Its 
 per-entrypoint receipts retain exact reports, exit status, source/runtime/input
 continuity and parser-process cleanup observations. Independent review checks
 these against the original inputs rather than accepting aggregate counts alone.
+
+The first final-head CI attempt at `b2d9906`,
+[run 39347428963](https://github.com/0xsl0th/recon-cockpit/actions/runs/39347428963),
+and the accompanying `portable-final-01` local run each recorded one failure
+and 28,776 passes, with 2,234 integration tests deselected. All five CI jobs
+failed in
+`test_contract_pins_preparation_full_native_contract_and_inventory`:
+S3.7 status annotations had changed the byte-pinned historical native contract.
+Restoring its accepted bytes corrects that documentation change, and the focused
+contract-pin test passes after restoration. Preserve the original CI and local
+results; neither is replaced by later passing evidence. Fresh final-head local
+and CI checks remain required after the correction.
 
 The final reviewed head must also pass the complete **28,777-test portable
 suite** locally and in all five Linux/macOS CI jobs, with no errors, failures or
