@@ -9,11 +9,16 @@ all five [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38
 Their 83 native and 24,163 portable passes remain intact. All five
 [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38597857953)
 also passed at `f0542a8`; preserve `.secure-agent/stage3-20261014/pr86-merge-review.json`.
-S3.1–S3.6 are accepted through PR #98 at `c71b599`. The three accepted
+Stage 3 is accepted through [PR #99](https://github.com/0xsl0th/recon-cockpit/pull/99)
+at `4ef9b98`, including [S3.7 combined acceptance](stage3-combined-acceptance.md).
+All ten logical increments are closed in thirteen PRs, #87–#99. The reviewed and
+merged trees match; [post-merge CI](https://github.com/0xsl0th/recon-cockpit/actions/runs/39502316329)
+is tracked separately under `.secure-agent/pr99-review-20261020/`. The three accepted
 name-bound DNS/HTTP/TLS profiles retain their [finite native contract](stage3-name-tls-native.md).
 Their catalog descriptions have no executable recipe: a fresh authorized action
 still requires current live owner/binding state. Current work is
-[S3.7 combined acceptance](stage3-combined-acceptance.md). Catalog metadata
+the contract-only [Stage 4 engagement, credential and session custody plan](stage4-engagement-custody.md)
+and its [gate inventory](stage4-engagement-custody-gates.json). Catalog metadata
 does not itself establish a new service capability. Acceptance applies to the documented
 disconnected owned-lab profiles; it grants no execution authority or general
 engagement readiness. The slices below retain their historical counts.
@@ -395,8 +400,9 @@ null-MX/NODATA/NXDOMAIN, and authorizes no name resolution or mail-server follow
 
 The [finite coverage contract](professional-v1-coverage.md) maps all accepted
 profiles to six required operator outcomes: all T01–T06 are accepted and Stage 2
-is closed. Stage 3 compatibility/routing work follows the accepted S3.1 contract,
-under the retained offline boundary.
+is closed. Stage 3 compatibility/routing work is accepted through PR #99 under
+the retained offline boundary; the contract-only [Stage 4 custody plan](stage4-engagement-custody.md)
+is the next roadmap increment.
 [T02 source feasibility](tls-posture-feasibility.md) is complete: stock sslscan
 cannot preserve the received rejection evidence required by this task. The
 [OpenSSL native diagnostic](tls-posture-native.md), accepted in PR #76,
@@ -480,7 +486,8 @@ tasks completed and 23 negatives kept inconclusive. All 57 saved reports passed
 source pins, limits and 24,163 portable passes. Both operations are available
 through the secure CLI/catalog; no new interactive or GUI support is claimed.
 
-T06 G1–G6 and Stage 2 are closed. S3.1–S3.6 are accepted through PR #98;
-[S3.7 combined acceptance](stage3-combined-acceptance.md) remains open. Credentials, paid calls, live
-evaluation, attached networks, deeper workflows and comparative benchmarking
-remain deferred.
+T06 G1–G6 and Stage 2 are closed. Stage 3, including
+[S3.7 combined acceptance](stage3-combined-acceptance.md), is accepted through PR #99.
+Current work defines the contract-only [Stage 4 custody plan](stage4-engagement-custody.md).
+Credential use, authenticated sessions, paid calls, live evaluation, attached
+networks, deeper workflows and comparative benchmarking remain deferred.

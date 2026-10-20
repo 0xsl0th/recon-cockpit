@@ -4,10 +4,12 @@ PR [#98](https://github.com/0xsl0th/recon-cockpit/pull/98) accepted S3.6b at
 `c71b599643b713139ea28390063b7730837ac203`. Its tree
 `6a4384431669ebc604c0b5b6878dcdee67892577` is identical to reviewed
 `05719b3176ee637125f45c5ed11c0de14f6dc09f` and the five passing CI checkouts.
-S3.6 is closed. Stage 3 has nine accepted logical increments and one remaining;
-the thirteen-PR estimate includes twelve accepted PRs, #87–#98, and this S3.7
-slice. S3.7 remains open until its evidence, independent review and required
-checks are complete and accepted.
+**PR [#99](https://github.com/0xsl0th/recon-cockpit/pull/99) accepts S3.7 at
+`4ef9b9827d887df827eab3d52991ec3b35a0ea12`, closing Stage 3: all ten logical
+increments across thirteen PRs, #87–#99.** Fresh independent authority/evidence
+reviews found no blockers. Reviewed `96c4408`, its passing CI checkout and the
+actual merge share tree `321f50c2f53f3ecda88242f703ce32a46404d878`.
+The next increment is the [Stage 4 engagement/custody contract](stage4-engagement-custody.md).
 
 The historical [native contract](stage3-name-tls-native.md) is restored to the
 exact bytes accepted in `c71b599`, SHA-256
@@ -225,12 +227,14 @@ failed in
 S3.7 status annotations had changed the byte-pinned historical native contract.
 Restoring its accepted bytes corrects that documentation change, and the focused
 contract-pin test passes after restoration. Preserve the original CI and local
-results; neither is replaced by later passing evidence. Fresh final-head local
-and CI checks remain required after the correction.
+results; neither is replaced by later passing evidence.
 
-The final reviewed head must also pass the complete **28,777-test portable
-suite** locally and in all five Linux/macOS CI jobs, with no errors, failures or
-skips. Those final-head receipts and reviews are retained in the same private
-directory and linked from the PR. S3.7 and Stage 3 remain open pending acceptance
-of the complete evidence and required checks; this validation does not begin
-Stage 4 or establish professional-v1 release readiness.
+The corrected final head `96c4408` passed the complete **28,777-test portable
+suite** locally and in all five [Linux/macOS CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39490545078),
+with no errors, failures or skips. Final evidence and reviews remain in
+`.secure-agent/stage3-combined-acceptance-20261019/`; the acceptance decision is
+`.secure-agent/pr99-review-20261020/merge-review-receipt.json`.
+The [post-merge workflow](https://github.com/0xsl0th/recon-cockpit/actions/runs/39502316329)
+is tracked separately there. Historical pre-acceptance receipts remain unchanged.
+S3.7 and Stage 3 are closed for this finite subset. The next Stage 4 contract
+starts planning only; professional-v1 release readiness remains a later gate.
