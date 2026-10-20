@@ -1,9 +1,9 @@
 # Roadmap — secure AI pentesting workflows
 
-Current continuation (19 October 2026):
+Current continuation (20 October 2026):
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
-52 accepted profiles and 17 external programs.** Current S3.6b development adds
-three candidate profiles while native, portable and review gates remain open.
+52 accepted profiles at that milestone.** Accepted S3.6b now brings current
+coverage to **55 profiles, zero candidates and 17 external programs**.
 [T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) merged as `f0542a8`
 after fresh authority/evidence review and all five
 [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38595455084).
@@ -98,7 +98,7 @@ See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
 **S3.4b is accepted in [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93)
-at `a7f46b1`; S3.4 is closed. S3.5 is accepted below; current work is S3.6 name/TLS binding.**
+at `a7f46b1`; S3.4 is closed. S3.5 is accepted below; current work is S3.7 combined acceptance.**
 The [SSH evidence](stage3-ssh-compatibility.md) records 94 native checks,
 71 accepted-profile regressions, 26,141 local portable tests, eight useful
 completions, twelve expected negatives and zero unnecessary refusals. Fresh
@@ -125,14 +125,25 @@ of 60 original bundles and five final CI jobs with 27,274 passes each.
 Original failed attempts remain recorded. [PR #97](https://github.com/0xsl0th/recon-cockpit/pull/97)
 accepted [S3.6a preparation](stage3-name-tls-preflight.md) at `8b086d5`, with
 46 read-only runtime inspections and five final and post-merge CI jobs passing
-27,603 portable tests each. Current [S3.6b native binding](stage3-name-tls-native.md)
-has its complete contract pinned at `44318ee`; native acceptance remains open.
-S3.7 combined acceptance follows. Static preparation grants no execution or
-native compatibility claim.
-Stage 3 has **ten increments: eight accepted and two remaining**. S3.6–S3.7
-follow in order; a logical increment may need more than one implementation PR.
-Coverage stays **52 accepted profiles / 17 external programs**. Completed
-milestones stay closed.
+27,603 portable tests each. Static preparation alone grants no execution.
+
+[PR #98](https://github.com/0xsl0th/recon-cockpit/pull/98) accepted
+[S3.6b native binding](stage3-name-tls-native.md), merged as `c71b599` after
+independent authority/evidence review. Reviewed head `05719b3` and the actual
+merge share tree `6a4384431669ebc604c0b5b6878dcdee67892577`. All five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39334102028)
+passed 28,723 portable tests each with no skips, failures or errors. All five
+[post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/39343038641)
+also passed the same complete suite. The accepted
+evidence retains 327 name/TLS native gates, 248 routing gates, 76 regressions,
+120 unchanged legacy inspections and 28,723 local portable passes. Both original
+unexplained failures remain recorded beside the complete passing follow-ups.
+S3.6 is closed. Current work is [S3.7 combined acceptance](stage3-combined-acceptance.md).
+Stage 3 has **ten increments: nine accepted and one remaining**, across the
+unchanged thirteen-PR estimate (twelve accepted PRs #87–#98 and S3.7).
+Coverage is **55 accepted profiles, zero candidates and 17 external programs**.
+S3.7 and Stage 3 remain open until the combined evidence, review and required
+checks are accepted. Completed milestones stay closed.
 
 S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
 **25,483 portable tests**, with **911 source hashes unchanged**. Fresh review at
@@ -186,7 +197,7 @@ claim that today's bounded fixtures support professional engagements.
 | 1 — accepted in PR #48 | [Configurable owned HTTP/SSH assessment](configurable-owned-lab.md) | Two varied operator manifests; actual Nmap → headers and Nmap → public SSH key results; exact scope and per-action isolation; all seven gates; cancellation, closed owners and unchanged evidence replay. First slice uses two disconnected endpoint fixtures, not a shared or attached real network. |
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
 | 3 — accepted, finite coverage tranche | T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | PRs #74/#80/#81/#84/#85/#86 close all required G1–G6 gates: 52 accepted profiles across 17 programs. T06 retains 83 native and 24,163 portable passes. Existing exact recipes, limits and evidence contracts stay closed; this is not general engagement compatibility. |
-| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87, S3.2a/S3.2b in PRs #88/#89 and S3.3a Apache preparation in PR #90. S3.3b HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`; PR #95 accepts routed Apache/B and PR #96 accepts the full matrix at `6f60ae0`, closing S3.5. PR #97 accepts S3.6a static name/TLS preparation; current S3.6b native binding precedes S3.7 combined acceptance. Planning grants no attached-network access or execution authority. |
+| 4 — current, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87, S3.2a/S3.2b in PRs #88/#89 and S3.3a Apache preparation in PR #90. S3.3b HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`; PR #95 accepts routed Apache/B and PR #96 accepts the full matrix at `6f60ae0`, closing S3.5. PR #97 accepts S3.6a static name/TLS preparation; PR #98 accepts S3.6b native binding at `c71b599`, closing S3.6. S3.7 combined acceptance is current. Planning grants no attached-network access or execution authority. |
 | 5 — later | Professional engagement lifecycle and authorized operations | Rules of engagement, secret/session custody, authenticated and intrusive actions, reporting/retest and broader compatibility need explicit design and relevant authorization. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
@@ -420,8 +431,8 @@ from the full hostile/negative matrix and revised them to **46–65**
 and **86–135**, with Stage 3 estimated at 12–13 PRs across ten logical increments.
 Selecting the separate S3.6a preparation and S3.6b native batches now selects
 13 PRs within that range, narrowing the current totals to **47–65** and
-**87–135** without adding an outcome. Eight logical increments are accepted;
-S3.6 and S3.7 remain. Completed work is included, not charged again.
+**87–135** without adding an outcome. Nine logical increments are accepted;
+S3.7 remains. Completed work is included, not charged again.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that every catalog profile is available through the GUI.
 [PR #73](https://github.com/0xsl0th/recon-cockpit/pull/73) accepted the forecast at

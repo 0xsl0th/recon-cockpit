@@ -2,8 +2,10 @@
 
 This contract is pinned before new implementation. S3.5 is accepted in
 [PR #96](https://github.com/0xsl0th/recon-cockpit/pull/96), merged as `6f60ae0`;
-its full native matrix and portable evidence remain closed. S3.6 and S3.7 stay
-open. The current batch is static preparation only. It creates no action,
+its full native matrix and portable evidence remain closed. This preparation
+was accepted in PR #97; PR #98 subsequently accepted the separate S3.6b native
+slice, closing S3.6. S3.7 combined acceptance remains open. The batch described
+below is static preparation only. It creates no action,
 approval, authority, socket, namespace, daemon or client execution.
 
 ## Required sequence
@@ -15,7 +17,8 @@ requirement below. Preparation does not establish configuration validity,
 startup, confinement, useful observations or name/trust enforcement. S3.7
 combined acceptance follows accepted S3.6; it cannot be skipped.
 
-Stage 3 retains ten logical increments: eight accepted and two remaining.
+The original preparation checkpoint had eight accepted increments and two
+remaining. After PR #98, Stage 3 has nine accepted increments and one remaining.
 Splitting S3.6 into preparation and native work yields thirteen PRs overall,
 within the preceding 12–13 estimate. The 52 accepted profiles and 17 external
 programs retain their existing semantics; these fixture server binaries add no
@@ -263,5 +266,7 @@ deselected, no skips/failures/errors and the completeness guard. Original failed
 attempts remain recorded separately. [PR #97](https://github.com/0xsl0th/recon-cockpit/pull/97)
 merged the reviewed head `057567d` at `8b086d5`; the reviewed and merged trees
 match. All five final and post-merge CI jobs passed the complete counts above.
-S3.6a is accepted. [S3.6b native binding](stage3-name-tls-native.md) and S3.7
-remain required.
+S3.6a is accepted. PR #98 subsequently accepted the separately validated
+[S3.6b native binding](stage3-name-tls-native.md) at `c71b599`, closing S3.6.
+[S3.7 combined acceptance](stage3-combined-acceptance.md) remains required;
+the preparation-only limitations above describe this batch, not the later native evidence.

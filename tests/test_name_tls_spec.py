@@ -285,14 +285,14 @@ def test_preparation_has_no_external_io_execution_or_authority_side_effects(monk
         spec.compiled_files(configuration, case)
 
 
-def test_preparation_profile_is_absent_from_accepted_catalog():
+def test_preparation_profile_is_absent_from_historical_52_catalog_projection():
     from recon_cockpit.secure_agent import tool_catalog
     catalog = tool_catalog.list_tools()
-    assert catalog["accepted_capability_count"] == 52 and catalog["candidate_capability_count"] == 3
-    candidates = {"owned_name_dns_v1", "owned_name_http_v1", "owned_name_tls_v1"}
+    assert catalog["accepted_capability_count"] == 55 and catalog["candidate_capability_count"] == 0
+    name_profiles = {"owned_name_dns_v1", "owned_name_http_v1", "owned_name_tls_v1"}
     assert {row["tool_id"] for row in catalog["tools"]
-            if row.get("acceptance_status") == "candidate"} == candidates
-    accepted = [row for row in catalog["tools"] if row["tool_id"] not in candidates]
+            if row.get("acceptance_status") == "accepted"} == name_profiles
+    accepted = [row for row in catalog["tools"] if row["tool_id"] not in name_profiles]
     assert len(accepted) == 52
     assert spec.PROFILE not in json.dumps(accepted)
 
