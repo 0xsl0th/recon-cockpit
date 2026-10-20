@@ -99,7 +99,8 @@ CI checkouts and the actual merge share tree `ea4bc9b9ced9b90bddaf63e997b9edc745
 All five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39503654735)
 passed 28,777 portable tests each, with no skips, failures or errors. The
 [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39506462323)
-is tracked separately in `.secure-agent/pr100-review-20261020/`.
+also passed all five jobs with 28,777 tests each. Its logs and independent review
+are retained separately in `.secure-agent/pr100-review-20261020/`.
 S4.1 accepts requirements and gates only. Current work is
 [S4.2a offline engagement records](stage4-engagement-records.md), using the
 already permitted preparation/integration split. Stage 4 retains four logical
@@ -123,6 +124,16 @@ real-use validation remain later required increments. The private checkpoint is
 Preserve all PR #98–#100 review records and original failed attempts. The accepted
 S4.1 and historical native contracts retain their bytes; current status belongs
 here and in the new implementation runbook. Do not repeat completed merges.
+
+The S4.2a implementation provides the pinned Python API and
+`scripts/engagement_records.py` commands, with 68 exact portable cases for strict
+metadata, immutable history, concurrent updates, crash recovery and private
+export/inspection. The contract was pinned at `4a8d8ca` before implementation.
+Keep the original development failures alongside final source, local-suite and
+five-job CI receipts in the private checkpoint directory above. Acceptance is
+pending review and merge; this preparation does not close S4.2. The next
+roadmap slice is S4.2b live engagement/session enforcement, whose contract and
+execution gates must be pinned before runtime changes or new native validation.
 
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
