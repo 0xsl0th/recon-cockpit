@@ -63,7 +63,8 @@ Stage 3 has **ten accepted logical increments**, delivered in **13 PRs,
 PR #99 accepts [S3.7 combined evidence](stage3-combined-acceptance.md) at `4ef9b98`,
 closing the stage without removing a required outcome. Static preparation stays
 separate from launch authority and native compatibility. The next required
-increment is the [Stage 4 engagement/custody contract](stage4-engagement-custody.md).
+increment is [S4.2a record preparation](stage4-engagement-records.md), following
+the Stage 4 contract accepted in PR #100.
 PRs #87–#93 accept S3.1, S3.2a/b, S3.3a/b and S3.4a/b; S3.2–S3.4 are closed.
 Preserve the [HTTP evidence](stage3-http-production.md) and accepted
 [OpenSSH compatibility](stage3-ssh-compatibility.md). S3.5 is accepted; its

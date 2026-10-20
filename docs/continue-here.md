@@ -92,25 +92,37 @@ remain preserved. The [post-merge run](https://github.com/0xsl0th/recon-cockpit/
 is tracked separately under `.secure-agent/pr99-review-20261020/` beside
 `merge-review-receipt.json`.
 Coverage remains **55 accepted profiles, zero candidates and 17 external programs**.
-Current work is the [S4.1 engagement/custody contract](stage4-engagement-custody.md),
-the first of four logical Stage 4 increments within its unchanged **4–6 PR**
-estimate. This first increment defines requirements and gates only. Completed
-milestones stay closed; professional-v1 release remains later work.
+**[PR #100](https://github.com/0xsl0th/recon-cockpit/pull/100) accepted the
+[S4.1 engagement/custody contract](stage4-engagement-custody.md) at `7a7eace`.**
+Fresh independent reviews found no blockers. Reviewed `0df7505`, its five passing
+CI checkouts and the actual merge share tree `ea4bc9b9ced9b90bddaf63e997b9edc7453b77ed`.
+All five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39503654735)
+passed 28,777 portable tests each, with no skips, failures or errors. The
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39506462323)
+is tracked separately in `.secure-agent/pr100-review-20261020/`.
+S4.1 accepts requirements and gates only. Current work is
+[S4.2a offline engagement records](stage4-engagement-records.md), using the
+already permitted preparation/integration split. Stage 4 retains four logical
+increments, one accepted and three open, with a current **5–6 PR** estimate
+inside the original 4–6 range. The summed baseline forecasts narrow to
+**48–65 professional-v1 PRs** and **88–135 broader-product PRs**, including
+completed work. Live engagement enforcement, credential custody and separately
+authorized real use remain later gates. Completed milestones stay closed.
 
-**Current: S4.1 contract only.** The active worktree is
-`/tmp/recon-stage4-custody-contract`, branch `docs/stage4-custody-contract`,
-based on accepted merge `4ef9b98`. Review the [Stage 4 contract](stage4-engagement-custody.md)
-and [finite gate inventory](stage4-engagement-custody-gates.json) before any
-implementation. The sequence is durable engagement/session enforcement,
-synthetic custody and one bounded authenticated read, then separately authorized
-real-credential validation and combined acceptance. This slice starts no native
-operation or credential handling. Later real-credential gates stay required if
-authorization is deferred. The private checkpoint is
-`.secure-agent/stage4-custody-contract-20261020/current-progress.json`;
+**Current: S4.2a offline record preparation.** The active worktree is
+`/tmp/recon-stage4-engagement-records`, branch `feature/stage4-engagement-records`,
+based on accepted merge `7a7eace`. The [implementation contract](stage4-engagement-records.md)
+and [exact gate inventory](stage4-engagement-records-gates.json) precede code.
+The slice adds bounded non-secret records, immutable ROE revisions, durable
+metadata revocation and data-only export/inspection. It starts no tool operation
+and handles no credential. S4.2b must separately prove live authority, windows,
+revocation and crash enforcement. Synthetic custody and separately authorized
+real-use validation remain later required increments. The private checkpoint is
+`.secure-agent/stage4-engagement-records-20261020/current-progress.json`;
 `.secure-agent/continue-here.json` is the repository-level recovery pointer.
-Preserve the PR #98/#99 review directories and all original name/TLS and combined
-acceptance evidence, including failures. Do not repeat completed merges or edit
-the byte-pinned historical `stage3-name-tls-native.md` contract for status updates.
+Preserve all PR #98–#100 review records and original failed attempts. The accepted
+S4.1 and historical native contracts retain their bytes; current status belongs
+here and in the new implementation runbook. Do not repeat completed merges.
 
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**
@@ -557,7 +569,9 @@ baseline. The 14 October Stage 3 revision changed those baseline totals to
 from the full hostile/negative matrix and revised them to **46–65**
 and **86–135**, with Stage 3 estimated at 12–13 PRs across ten logical increments.
 Selecting separate S3.6a preparation and S3.6b native batches now selects
-13 PRs within that range, narrowing current totals to **47–65** and **87–135**
+13 PRs within that range narrowed the totals to **47–65** and **87–135**.
+Selecting the permitted S4.2 preparation/integration split on 20 October narrows
+Stage 4 to **5–6 PRs**, with current totals **48–65** and **88–135**
 without adding an outcome. Completed work is included, not charged again.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that every catalog profile is available through the GUI.
@@ -2480,7 +2494,8 @@ Planning uses synthetic responses.
    at `c71b599`, closing S3.6. PR #99 accepts
    [S3.7 combined acceptance](stage3-combined-acceptance.md) at `4ef9b98`, closing
    all ten Stage 3 increments across thirteen PRs. Continue with the
-   [S4.1 engagement/custody contract](stage4-engagement-custody.md).
+   [S4.1 engagement/custody contract](stage4-engagement-custody.md), accepted in
+   PR #100 at `7a7eace`, then current [S4.2a records](stage4-engagement-records.md).
    Network attachment still requires separate authorization; do not substitute
    optional signatures or program quotas.
 5. Keep offline R5, accepted local R6, B0–B8, C1–C18, T01–T06 and the initial GUI closed.
