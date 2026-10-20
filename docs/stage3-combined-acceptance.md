@@ -147,6 +147,19 @@ after Stage 3 is accepted.
 
 ## Validation status
 
-Contract preparation only. The combined replay, final portable checks and
-independent review are pending. Historical results above are inputs to this
-slice; they do not by themselves accept S3.7 or close Stage 3.
+The contract and exact inventory were committed at `adecfb3` before
+implementation. The catalog now records accepted S3.6b status; 525 focused
+catalog and dependent portable tests pass, with all 52 prior list entries and
+complete descriptions/recipes byte-identical. The saved-composite wrapper and
+CLI pass 54 portable custody, mutation, bounds and entrypoint checks.
+
+Inspect a private saved N15 composite with
+`python scripts/name_tls_composite_inspect.py /path/to/n15-composite.json`,
+or call `name_tls_composite_evidence.inspect_composite(path)` from Python.
+Neither entrypoint has an execution or approval mode. Ordinary name/TLS and
+routing bundles keep their existing inspection commands and report schemas.
+
+The combined replay, final portable checks and independent review are pending.
+Historical results above are inputs to this slice; they do not by themselves
+accept S3.7 or close Stage 3. Durable progress and receipts are under
+`.secure-agent/stage3-combined-acceptance-20261019/`.

@@ -1,8 +1,9 @@
 # Product roadmap and remaining PR estimate
 
-Current continuation (15 October 2026):
+Current continuation (20 October 2026):
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
-52 accepted profiles, zero candidates and 17 external programs.**
+52 accepted profiles at that milestone.** Accepted S3.6b now brings current
+coverage to **55 profiles, zero candidates and 17 external programs**.
 [T06 PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) merged as `f0542a8`
 after fresh authority/evidence review and all five
 [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38595455084).
@@ -97,7 +98,7 @@ See the accepted [preparation evidence](stock-apache-feasibility.md);
 read-only preparation is not production support.
 
 **S3.4b is accepted in [PR #93](https://github.com/0xsl0th/recon-cockpit/pull/93)
-at `a7f46b1`; S3.4 is closed. S3.5 is accepted below; current work is S3.6 name/TLS binding.**
+at `a7f46b1`; S3.4 is closed. S3.5 is accepted below; current work is S3.7 combined acceptance.**
 The [SSH evidence](stage3-ssh-compatibility.md) records 94 native checks,
 71 accepted-profile regressions, 26,141 local portable tests, eight useful
 completions, twelve expected negatives and zero unnecessary refusals. Fresh
@@ -130,15 +131,25 @@ recorded. **S3.5 is closed.**
 [PR #97](https://github.com/0xsl0th/recon-cockpit/pull/97) accepted
 [S3.6a static preparation](stage3-name-tls-preflight.md) at `8b086d5`: 23 cases
 across A/B, four fixed ELF images and 46 read-only runtime inspections. All five
-final and post-merge CI jobs passed 27,603 portable tests each. Current work is
-[S3.6b native binding](stage3-name-tls-native.md), whose complete contract was
-pinned at `44318ee` before implementation. Its native gates remain unaccepted;
-S3.7 combined acceptance follows accepted S3.6.
-Stage 3 has **ten increments: eight accepted and two remaining**. S3.6–S3.7
-follow in order; S3.6 uses separate preparation and native implementation PRs.
-Coverage stays **52 accepted profiles / 17 external programs**; three new name-bound
-profiles are candidates pending the complete S3.6b native gates. Completed
-milestones stay closed.
+final and post-merge CI jobs passed 27,603 portable tests each.
+
+[PR #98](https://github.com/0xsl0th/recon-cockpit/pull/98) accepted
+[S3.6b native binding](stage3-name-tls-native.md), merged as `c71b599` after
+independent authority/evidence review. Reviewed head `05719b3` and the actual
+merge share tree `6a4384431669ebc604c0b5b6878dcdee67892577`. All five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39334102028)
+passed 28,723 portable tests each with no skips, failures or errors. All five
+[post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/39343038641)
+also passed the same complete suite. The accepted
+evidence retains 327 name/TLS native gates, 248 routing gates, 76 regressions,
+120 unchanged legacy inspections and 28,723 local portable passes. Both original
+unexplained failures remain recorded beside the complete passing follow-ups.
+S3.6 is closed. Current work is [S3.7 combined acceptance](stage3-combined-acceptance.md).
+Stage 3 has **ten increments: nine accepted and one remaining**, across the
+unchanged thirteen-PR estimate (twelve accepted PRs #87–#98 and S3.7).
+Coverage is **55 accepted profiles, zero candidates and 17 external programs**.
+S3.7 and Stage 3 remain open until the combined evidence, review and required
+checks are accepted. Completed milestones stay closed.
 
 S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
 **25,483 portable tests**, with **911 source hashes unchanged**. Fresh review at
@@ -227,7 +238,7 @@ release criteria still need their later concrete contracts before completion.
 | Area | Implemented and accepted | Remaining product gap |
 | --- | --- | --- |
 | Execution authority | Typed actions, policy/scope checks, isolated approval/audit/admission services, consumed grants, confined launch, bounds and cleanup. | Revalidate these guarantees for broader target configurations, credentials, sessions and intrusive effects. Local consistency hashes do not establish protection from a malicious host owner. |
-| Secure tools | **52 bounded profiles backed by 17 external programs**, plus repository-native capabilities represented in that profile count. Actual owned-lab execution and structured evidence exist for accepted operations. | Most profiles have fixed targets/requests and finite response grammars. They do not expose each program's full feature set or establish general real-server compatibility. |
+| Secure tools | **55 bounded profiles backed by 17 external programs**, plus repository-native capabilities represented in that profile count. Actual owned-lab execution and structured evidence exist for accepted operations. | Most profiles have fixed targets/requests and finite response grammars. They do not expose each program's full feature set or establish general real-server compatibility. |
 | GUI | Accepted local Tk desktop, light/dark Swiss Industrial themes, scope import/export, separate dry run and owned execution, isolated exact-action review, cancellation and evidence inspection. | Execution currently exposes one four-action disconnected HTTP/SSH workflow. Broader tool selection, engagement/assets/findings/report views and operational usability are future work. Extend this GUI; its initial milestone is already closed. |
 | Workflows | Accepted bounded discovery/HTTP/SSH and service/web workflows, with predecessor evidence, stops and saved decisions. | General multi-asset planning, durable engagement coordination and wider evidence-driven composition remain deferred. |
 | Evidence and reporting | Private bounded raw artifacts, structured observations, action/policy/runtime bindings, reports and read-only replay. | Engagement-wide asset/finding models, deduplication, reviewed severity, remediation, client deliverables and retest history. |
@@ -271,9 +282,9 @@ after the HTTP startup/confinement and OpenSSH fork/exec findings, producing a
 44–62 total forecast. The 15 October routing split produced the previous
 46–65 total and a 12–13-PR Stage 3 range. PRs #94–#96 now accept all S3.5 work.
 Selecting the already-allowed separate name/TLS preparation batch makes the
-current Stage 3 estimate **13 PRs**: eleven accepted PRs #87–#97,
-S3.6b native binding and S3.7 combined acceptance. The logical count stays
-**ten increments, eight accepted and two open**. This narrows the baseline
+current Stage 3 estimate **13 PRs**: twelve accepted PRs #87–#98 and
+S3.7 combined acceptance. The logical count is
+**ten increments, nine accepted and one open**. This narrows the baseline
 forecast to **47–65**, without adding a required outcome or changing the other
 stage estimates. Any additional necessary split must be recorded explicitly.
 These totals include completed work and do not lift offline-only restrictions.
@@ -282,7 +293,7 @@ These totals include completed work and do not lift offline-only restrictions.
 | --- | --- | ---: |
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
-| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`. PR #95 accepts routed Apache/B at `d0586f5`. PR #96 accepts the full matrix at `6f60ae0`, closing S3.5. PR #97 accepts S3.6a static DNS/TLS preparation. Current S3.6b must validate native name/trust binding and redirect/referral handling, then S3.7 combined acceptance follows. Attached lab/engagement networks require separate authorization. Eight logical increments are accepted and two remain. | 13 |
+| 3. Realistic lab and controlled target routing — current | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`. PR #95 accepts routed Apache/B at `d0586f5`. PR #96 accepts the full matrix at `6f60ae0`, closing S3.5. PR #97 accepts S3.6a static DNS/TLS preparation. PR #98 accepts S3.6b native name/trust binding and redirect/referral handling at `c71b599`, closing S3.6. Current S3.7 must complete combined acceptance. Attached lab/engagement networks require separate authorization. Nine logical increments are accepted and one remains. | 13 |
 | 4. Engagement, credential and session custody | Engagement identity, rules of engagement, approved effects/windows, revocation and crash-safe custody. First build with synthetic credentials; later introduce separately authorized real credentials and selected read-only authenticated operations. Secrets must not leak into planners, artifacts or logs. | 4–6 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |

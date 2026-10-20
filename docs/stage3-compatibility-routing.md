@@ -4,8 +4,9 @@
 `48c0bce`, 14 October 2026. That contract acceptance alone established no daemon
 execution or compatibility result.** [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86)
 accepted T06 at `f0542a8`; T01–T06 and the finite Stage 2 coverage tranche are
-closed. The baseline is **52 accepted secure profiles across 17 external
-programs**, with the repository-native profiles included in that profile count.
+closed. That baseline was **52 accepted secure profiles across 17 external
+programs**; accepted S3.6b brings the current count to **55 profiles, zero candidates
+and the same 17 programs**, with the repository-native profiles included in that profile count.
 Accepted offline R5/local R6, B0–B8, C1–C18 and the initial GUI stay closed.
 
 **S3.3b [PR #91](https://github.com/0xsl0th/recon-cockpit/pull/91) is accepted at
@@ -37,7 +38,7 @@ comparative benchmarking and proposal submission remain deferred.
 | --- | --- |
 | Accepted synthetic execution | Existing profiles have their own accepted finite owned-fixture evidence. The [configurable HTTP/SSH assessment](configurable-owned-lab.md) uses one disconnected namespace per endpoint, scripted responses, exact RFC1918 address/port/path binding and live denied-destination witnesses. It is not a shared multi-host topology or a stock-service compatibility result. |
 | Stock-daemon diagnostic | S3.2b's validated diagnostic runs an actual pinned nginx binary with generated public lab content and configuration inside a disposable owner. A diagnostic records native behavior and boundary failures; it grants no production capability and closes no existing compatibility claim by itself. |
-| Production integration | PR #91's accepted HTTP path connects supported nginx/Apache observations to action authority, isolated parsing, evidence and inspection; its finite native corpus, review and checks passed. Accepted v1 behavior remains intact. PR #93 accepts finite SSH compatibility at `a7f46b1`; PR #96 accepts S3.5 disconnected routing and aggregate enforcement; S3.6 name/TLS binding is current. |
+| Production integration | PR #91's accepted HTTP path connects supported nginx/Apache observations to action authority, isolated parsing, evidence and inspection; its finite native corpus, review and checks passed. Accepted v1 behavior remains intact. PR #93 accepts finite SSH compatibility at `a7f46b1`; PR #96 accepts S3.5 disconnected routing and aggregate enforcement; PR #98 accepts S3.6 name/TLS binding; S3.7 combined acceptance is current. |
 | Network attachment | Remains unauthorized. A later concrete attachment plan needs owner-approved target ownership, scope, effects, exclusions and routing before any execution. Passing disconnected tests is not that permission. |
 
 Read-only local package inventory on 14 October found nginx `1.28.0-6`, Apache
@@ -57,11 +58,11 @@ nginx and Apache source/runtime preparation from native work brought the estimat
 to nine. OpenSSH host-key collection requires three pinned executable images and
 a mandatory preauthentication fork. This cannot inherit HTTP's no-fork boundary:
 **S3.4a source/runtime preparation** precedes **S3.4b native compatibility**.
-Stage 3 has **ten logical increments: eight accepted, two remaining**.
-PRs #87–#96 accept ten implementation/contract PRs through S3.5. The current
+Stage 3 has **ten logical increments: nine accepted, one remaining**.
+PRs #87–#98 accept twelve implementation/contract PRs through S3.6. The current
 [product forecast](product-roadmap.md) selects **13 PRs** within the previous
-12–13 range: S3.6a static preparation, S3.6b native name/trust binding and S3.7
-combined acceptance remain. This preserves every required outcome and keeps
+12–13 range: S3.6a static preparation and S3.6b native name/trust binding are
+accepted; [S3.7 combined acceptance](stage3-combined-acceptance.md) remains. This preserves every required outcome and keeps
 static preparation separate from launch authority and native compatibility.
 PRs #87–#93 accept S3.1, S3.2a/b, S3.3a/b and S3.4a/b; S3.2–S3.4 are closed.
 Preserve the [HTTP evidence](stage3-http-production.md) and accepted
@@ -74,9 +75,10 @@ The [full routed case and enforcement matrix](stage3-routing-matrix.md), pinned
 at `f68e212`, passed 248 native routing checks and 76 regressions at `0e09f82`,
 plus 120 unchanged inspections of 60 original v1/v2 bundles. PR #96 accepted
 it at `6f60ae0` after independent review and five final CI jobs with 27,274
-passes each. S3.5 is closed. Current [S3.6a preparation](stage3-name-tls-preflight.md)
-pins the fixed DNS/TLS corpus; S3.6b must separately pin and validate native
-authority, ownership, process, traffic and name/trust enforcement before S3.6 closes.
+passes each. S3.5 is closed. PR #97 accepts [S3.6a preparation](stage3-name-tls-preflight.md).
+PR #98 accepts [S3.6b native binding](stage3-name-tls-native.md) at `c71b599`, with
+327 name/TLS gates, 324 retained native gates and all five final CI jobs passing
+28,723 tests each. S3.6 is closed; its original failed attempts remain preserved.
 
 | Slice | Required outcome | Completion evidence |
 | --- | --- | --- |
@@ -88,8 +90,8 @@ authority, ownership, process, traffic and name/trust enforcement before S3.6 cl
 | **S3.4a — accepted in PR #92: OpenSSH source/runtime preparation** | Compile two fixed configurations and the existing public test key, freeze the finite useful/negative corpus, inspect three pinned OpenSSH executables and their exact linked libraries. | [Preparation contract](stock-ssh-feasibility.md), portable validation and actual read-only installed-runtime receipts. No daemon, launcher registration, authentication or native-compatibility claim. |
 | **S3.4b — accepted in PR #93: native SSH compatibility** | Execute independently authorized NULL/banner identification and RSA host-key collection against the two stock OpenSSH configurations. Enforce the separately reviewed fork/exec and packet/connection boundary. | [Accepted native validation](stage3-ssh-compatibility.md), merge `a7f46b1`: complete declared ordinary/robustness/negative corpus plus authority, required approval, audit, destination, process/exec, request/byte, cancellation, cleanup, tamper and immutable-evidence gates. No user authentication, account probe, completed encrypted user session or verified host identity. |
 | **S3.5 — accepted: disconnected multi-host routing** | Put the supported services in distinct owned network namespaces connected by controlled owned links, with exact action-specific destination binding, explicit exclusions and aggregate request/connection/rate budgets across hosts and actions. | At least two service hosts with distinct recorded network namespace identities, routed links and an excluded listening endpoint; loopback address aliases alone do not qualify. Demonstrate useful selected-target execution, denied other-service/excluded traffic, and attempted budget bypass by splitting actions or restarting workers. No host network namespace, physical interface, default external route or host firewall modification. PR #94 accepts the first fixed-A nginx/OpenSSH slice; PR #95 accepts routed Apache/B; PR #96 accepts the full hostile/negative and enforcement matrix at `6f60ae0`. |
-| **S3.6 — names, TLS binding, redirects and referrals** | Add a bounded owned-resolver case with a declared name mapped to an explicit IPv4 endpoint set; bind the observed answer, exact HTTP Host, TLS SNI, expected certificate name and pinned trust material to a separately authorized action. Include one selected bounded TLS mode. Reject rebinding, excluded/ambiguous answers, undeclared names and name/trust mismatches. Record redirects and referral advertisements without following them. | A pinned stock resolver and exact query/answer plus TLS name/trust corpus; useful allowed-name execution and denied changed/excluded answers, Host/SNI/certificate-name mismatches and untrusted certificates. No recursive external lookup, search suffix, alias chasing, IPv6 transport, peer-selected trust or automatic follow-up. The [S3.6a preparation contract](stage3-name-tls-preflight.md) precedes static implementation; S3.6b must separately freeze and validate the native boundary. Returned data never enlarges scope. |
-| **S3.7 — combined acceptance** | Verify the finite HTTP/SSH/DNS routing and TLS name/trust subset together, preserve all accepted profiles and document remaining compatibility gaps. | Complete ordinary, hostile, negative and enforcement matrix; cleanup, unchanged replay, supported Linux prerequisites, independent review and required checks. Stage 3 closes only after S3.2–S3.6 are accepted, with no required case pending. |
+| **S3.6 — accepted: names, TLS binding, redirects and referrals** | Add a bounded owned-resolver case with a declared name mapped to an explicit IPv4 endpoint set; bind the observed answer, exact HTTP Host, TLS SNI, expected certificate name and pinned trust material to a separately authorized action. Include one selected bounded TLS mode. Reject rebinding, excluded/ambiguous answers, undeclared names and name/trust mismatches. Record redirects and referral advertisements without following them. | A pinned stock resolver and exact query/answer plus TLS name/trust corpus; useful allowed-name execution and denied changed/excluded answers, Host/SNI/certificate-name mismatches and untrusted certificates. No recursive external lookup, search suffix, alias chasing, IPv6 transport, peer-selected trust or automatic follow-up. The [S3.6a preparation contract](stage3-name-tls-preflight.md) preceded static implementation; PR #98 accepts the separately frozen [S3.6b native boundary](stage3-name-tls-native.md). Returned data never enlarges scope. |
+| **S3.7 — current: combined acceptance** | Verify the finite HTTP/SSH/DNS routing and TLS name/trust subset together, preserve all accepted profiles and document remaining compatibility gaps. | The [combined contract and exact inventory](stage3-combined-acceptance.md) require the complete ordinary, hostile, negative and enforcement matrix; cleanup, unchanged replay, supported Linux prerequisites, independent review and required checks. Stage 3 closes only after S3.2–S3.6 are accepted, with no required case pending. |
 
 Stage 3 is an operator-assisted compatibility/routing subset, not general
 professional pentest readiness. Each action requires its own authority; an
@@ -128,8 +130,9 @@ existing exact bounds, with general compatibility still unverified.
 | --- | ---: | --- |
 | TCP reachability and Nmap service hints | 4 | Reuse `configurable_nmap_service_v1` for the finite HTTP/SSH subset. Preserve the other fixed modes; no general multi-port scan or network inventory claim. |
 | HTTP/HTTPS, headers, discovery and finite exposure checks | 10 | Reuse the configurable header reader first. The other nine profiles, including HTTPS, ffuf hierarchy, WhatWeb and Nuclei checks, retain fixture scope; daemon compatibility for them is not implied by a successful GET. |
+| Owned name-bound DNS/HTTP/TLS | 3 | Accepted S3.6b binds a finite owned DNS observation to separately authorized HTTP/TLS actions, exact Host/SNI/name/trust and live owner state. No generic resolver, endpoint, trust-file or automatic follow-up support. |
 | DNS A/SRV/NSID/AXFR/MX/AAAA/PTR metadata | 7 | Preserve all seven fixed profiles. S3.6 adds a separately reviewed resolver/binding contract; existing returned names/addresses remain data. AXFR, arbitrary zones and the other metadata modes do not gain generic resolver support. |
-| TLS handshake, certificate and version posture | 11 | Preserve all fixed profile bounds. S3.6 must validate one selected TLS operation's exact endpoint, SNI, expected certificate name and pinned public lab trust binding, including mismatch failures. Other TLS modes, varied implementations, STARTTLS and broader version compatibility retain fixture scope for the later release matrix; HTTP success proves none of them. |
+| TLS handshake, certificate and version posture | 11 | Preserve all fixed profile bounds. Accepted S3.6 validates one selected TLS operation's exact endpoint, SNI, expected certificate name and pinned public lab trust binding, including mismatch failures. Other TLS modes, varied implementations, STARTTLS and broader version compatibility retain fixture scope for the later release matrix; HTTP success proves none of them. |
 | SSH keys, transport advertisements and policy observations | 4 | Target stock-service validation at configurable key collection and Nmap identification. Fixed host-key, algorithm and policy modes retain their accepted fixture scopes unless separately integrated and validated. |
 | Anonymous LDAP RootDSE | 1 | Retain fixture scope; real directory compatibility, referrals and authenticated searches are unverified. S3.6 referral denial does not establish directory compatibility. |
 | SMB shares/negotiation and RDP negotiation | 3 | Retain fixture scope; actual Windows/Samba compatibility, authentication and sessions remain separate work. |
@@ -336,9 +339,9 @@ regressions. PR #89 at `c068a9d` completed review/checks/merge; S3.2 stays close
 S3.3a is accepted in PR #90 at `d30a2f1`. S3.3b's production integration on
 both servers is accepted in PR #91 at `061c057`. S3.4a's finite OpenSSH
 configuration, public-key and runtime contract is accepted in PR #92. S3.4b is accepted in PR #93 at `a7f46b1`. PRs #94–#96 accept the complete
-[S3.5 routing work](stage3-routing-matrix.md), ending at `6f60ae0`. Continue
-[S3.6a static name/TLS preparation](stage3-name-tls-preflight.md), then S3.6b
-native binding and S3.7 combined acceptance under the same usefulness,
-enforcement, evidence and review gates. S3.4 and S3.5 stay closed.
+[S3.5 routing work](stage3-routing-matrix.md), ending at `6f60ae0`. PRs #97/#98
+accept S3.6 static preparation and native binding, ending at `c71b599`. Continue
+[S3.7 combined acceptance](stage3-combined-acceptance.md) under the same usefulness,
+enforcement, evidence and review gates. S3.2–S3.6 stay closed.
 Do not repeat accepted milestones, add optional signatures, set up model
 credentials or request network attachment for this disconnected stage.

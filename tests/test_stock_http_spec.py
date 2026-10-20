@@ -195,8 +195,8 @@ def test_all_52_catalog_profiles_and_existing_configurable_contracts_are_unchang
     # Captured from accepted PR #87 main 48c0bce before S3.2 preparation.
     catalog = tool_catalog.list_tools()
     assert tuple(catalog[key] for key in ('capability_count', 'accepted_capability_count',
-        'candidate_capability_count', 'external_program_count')) == (55, 52, 3, 17)
-    assert {row['tool_id'] for row in catalog['tools'] if row.get('acceptance_status') == 'candidate'} == {
+        'candidate_capability_count', 'external_program_count')) == (55, 55, 0, 17)
+    assert {row['tool_id'] for row in catalog['tools'] if row.get('acceptance_status') == 'accepted'} == {
         'owned_name_dns_v1', 'owned_name_http_v1', 'owned_name_tls_v1'}
     catalog['tools'] = [row for row in catalog['tools'] if row['tool_id'] not in (
         'owned_name_dns_v1', 'owned_name_http_v1', 'owned_name_tls_v1')]

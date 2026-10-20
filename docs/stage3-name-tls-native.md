@@ -3,14 +3,14 @@
 PR #97 accepted [S3.6a preparation](stage3-name-tls-preflight.md) at
 `8b086d5`. Its 46 installed-runtime inspections establish static file identity,
 not native execution. This document pins the separate native contract before
-implementation. S3.6 and S3.7 remain open; the ten logical Stage 3 increments
-still have eight accepted and two remaining. The current estimate remains
-thirteen Stage 3 PRs. Accepted routing v1–v3 and all 52 existing secure profiles
-retain their exact behavior and bounds.
+implementation at `44318ee`. PR #98 accepted this native slice at `c71b599`:
+S3.6 is closed and S3.7 remains open. Nine of the ten logical Stage 3 increments
+are accepted, with the unchanged thirteen-PR estimate. Accepted routing v1–v3
+and all 52 prior secure profiles retain their exact behavior and bounds.
 
 ## Authority that can be reviewed
 
-Three additive candidate tool IDs, `owned_name_dns_v1`, `owned_name_http_v1`
+Three additive accepted tool IDs, `owned_name_dns_v1`, `owned_name_http_v1`
 and `owned_name_tls_v1`, use the new `owned_name_tls_v1` launcher profile.
 Their strict parameter schemas carry the name, owner, runtime, selection and
 observation commitments. Existing adapters and parameter schemas are unchanged.
@@ -18,9 +18,10 @@ Both approval views intentionally omit planner rationale, so placing binding
 data only in rationale or an opaque action UUID would not satisfy exact review.
 The new fields must appear literally in the exact action shown by both views
 and enter the normal action, approval, audit and admission digests. No custom
-approval shortcut or self-issued grant is added. The three profiles remain
-candidates until all native, evidence, review and portable gates pass; dnsmasq
-and nginx are fixture servers and add no external secure program.
+approval shortcut or self-issued grant is added. PR #98 completed native,
+evidence, review and portable gates for the three profiles; the current catalog
+therefore has 55 accepted profiles and zero candidates. dnsmasq and nginx are
+fixture servers and add no external secure program; the program count stays 17.
 
 Only the two configurations and 23 cases in the preparation contract are
 selectable. The logical name is `harbordesk.test`; DNS asks exactly
@@ -406,5 +407,42 @@ S3.7 combined acceptance remains required after accepted S3.6b.
 
 This contract does not permit host services, attached targets, external routes,
 credentials, provider calls, generated keys, response-directed work or changes
-to accepted routing limits. Native process behavior and runtime-loaded module
-closure remain unverified until the separately recorded native gates pass.
+to accepted routing limits. The separately recorded native gates establish
+the finite process behavior and runtime-loaded closure described here.
+
+## Accepted validation and continuation
+
+[PR #98](https://github.com/0xsl0th/recon-cockpit/pull/98) accepted
+[S3.6b native binding](stage3-name-tls-native.md), merged as `c71b599` after
+independent authority/evidence review. Reviewed head `05719b3` and the actual
+merge share tree `6a4384431669ebc604c0b5b6878dcdee67892577`. All five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39334102028)
+passed 28,723 portable tests each with no skips, failures or errors. All five
+[post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/39343038641)
+also passed the same complete suite. The accepted
+evidence retains 327 name/TLS native gates, 248 routing gates, 76 regressions,
+120 unchanged legacy inspections and 28,723 local portable passes. Both original
+unexplained failures remain recorded beside the complete passing follow-ups.
+S3.6 is closed. Current work is [S3.7 combined acceptance](stage3-combined-acceptance.md).
+Stage 3 has **ten increments: nine accepted and one remaining**, across the
+unchanged thirteen-PR estimate (twelve accepted PRs #87–#98 and S3.7).
+Coverage is **55 accepted profiles, zero candidates and 17 external programs**.
+S3.7 and Stage 3 remain open until the combined evidence, review and required
+checks are accepted. Completed milestones stay closed.
+
+The private final audit is
+`.secure-agent/stage3-name-tls-native-20261015/final-validation-05719b3.json`,
+SHA-256 `4bb875a10c358607952b0fe9e43f5f43ebc03462e32daee0105a4772c4d78c02`.
+It pins all 651 distinct native identities, 1,073 source files and 83 installed
+native components. The original B16 DNS `isolation_unavailable` failure and the
+reverse-order Apache/A SSH open-but-unidentified failure remain unexplained.
+The two instrumented SSH diagnostics did not reproduce the latter and count
+for no acceptance gates. A single predeclared full 88-case follow-up passed;
+neither that pass nor the diagnostics establish a cause or fix. Retain the
+original artifacts, review receipts and decision record.
+
+The merge review is
+`.secure-agent/pr98-review-20261019/merge-review-receipt.json`. The five passing post-merge checks
+are retained separately in `postmerge-ci-c71b599.json` beside it and at [run 39343038641](https://github.com/0xsl0th/recon-cockpit/actions/runs/39343038641).
+Historical version-1 saved reports keep their original candidate wording;
+accepted catalog status does not rewrite immutable evidence.

@@ -49,8 +49,8 @@ def test_no_scope_or_old_profile_substitution(field,value):
 
 def test_hierarchy_and_completed_t05_t06_profiles_remain_accepted():
     result=catalog.list_tools()
-    assert (result['capability_count'],result['accepted_capability_count'],result['candidate_capability_count'],result['external_program_count']) == (55,52,3,17)
-    assert {row['tool_id'] for row in result['tools'] if row.get('acceptance_status') == 'candidate'} == {
+    assert (result['capability_count'],result['accepted_capability_count'],result['candidate_capability_count'],result['external_program_count']) == (55,55,0,17)
+    assert {row['tool_id'] for row in result['tools'] if row.get('acceptance_status') == 'accepted'} == {
         'owned_name_dns_v1', 'owned_name_http_v1', 'owned_name_tls_v1'}
     row=catalog.describe_tool(spec.TOOL_ID)
     assert 'acceptance_status' not in row and 'milestone' not in row

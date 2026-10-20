@@ -1,6 +1,6 @@
 # Discover accepted secure tools
 
-The compiled catalog contains **52 accepted profiles, zero candidates and
+The compiled catalog contains **55 accepted profiles, zero candidates and
 17 external programs**. T01–T06 meet G1–G6 and the finite Stage 2 tranche is closed.
 [PR #86](https://github.com/0xsl0th/recon-cockpit/pull/86) accepted the two
 [AAAA/PTR profiles](dns-address-tools.md) at `f0542a8` after independent review,
@@ -9,10 +9,12 @@ all five [final checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38
 Their 83 native and 24,163 portable passes remain intact. All five
 [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/38597857953)
 also passed at `f0542a8`; preserve `.secure-agent/stage3-20261014/pr86-merge-review.json`.
-S3.1 is accepted in PR #87 at `48c0bce`. Current work is the
-[S3.2a source/runtime preflight](stock-nginx-feasibility.md), followed by the
-separate S3.2b authorized nginx diagnostic. Neither planning nor catalog metadata
-establishes a new service capability. Acceptance applies to the documented
+S3.1–S3.6 are accepted through PR #98 at `c71b599`. The three accepted
+name-bound DNS/HTTP/TLS profiles retain their [finite native contract](stage3-name-tls-native.md).
+Their catalog descriptions have no executable recipe: a fresh authorized action
+still requires current live owner/binding state. Current work is
+[S3.7 combined acceptance](stage3-combined-acceptance.md). Catalog metadata
+does not itself establish a new service capability. Acceptance applies to the documented
 disconnected owned-lab profiles; it grants no execution authority or general
 engagement readiness. The slices below retain their historical counts.
 
@@ -478,8 +480,7 @@ tasks completed and 23 negatives kept inconclusive. All 57 saved reports passed
 source pins, limits and 24,163 portable passes. Both operations are available
 through the secure CLI/catalog; no new interactive or GUI support is claimed.
 
-T06 G1–G6 and Stage 2 are closed. S3.1 is accepted in PR #87;
-[S3.2a source/runtime preparation](stock-nginx-feasibility.md) precedes the
-required S3.2b authorized native diagnostic. S3.2 remains open. Credentials, paid calls, live
+T06 G1–G6 and Stage 2 are closed. S3.1–S3.6 are accepted through PR #98;
+[S3.7 combined acceptance](stage3-combined-acceptance.md) remains open. Credentials, paid calls, live
 evaluation, attached networks, deeper workflows and comparative benchmarking
 remain deferred.
