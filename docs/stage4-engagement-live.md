@@ -501,7 +501,7 @@ The native runtime seams are `inspect_runtime(control)`,
 returns the pinned endpoint owner and its bounded readiness, startup-only namespace
 descriptors, progress and cleanup interfaces. The ARM peer transfers only at the
 initial launcher bootstrap; the host retains no second writer.
-`prepare_client(*, runtime, prepared, endpoint_identity, control)` returns a
+`prepare_client(*, runtime, prepared, endpoint_identity, scope, control)` returns a
 `WaitingClient` with `release`, `observe_native`, `collect` and `close`, enforcing
 the operation-specific sequence. The parser API is
 `parse(*, tool_id, raw, stderr, scope, truncated, control, runtime)`, returning
@@ -911,3 +911,10 @@ This correction follows the original contract commit `cf1b47f` and precedes any
 native acceptance run. It changes no authority, target, test identity, count,
 source allowlist, byte cap, deadline or roadmap increment. Original contract and
 review receipts remain retained.
+
+### A02: actual meter forwarding and complete client scope
+
+Before any native acceptance, integration established two missing data paths.
+The broker forwards the exact validated final endpoint METER to the matching launcher over its already inherited broker-control channel. This observation supplies no release authority. It must follow the original endpoint METER observation, match the pending dispatch and original GO, and may not replace or revive an active slot. The launcher verifies the existing meter grammar, exact envelope/GO/endpoint/slot/ARM binding and original deadline before deriving its final client result. Forwarding preserves the full meter bytes as a canonical protocol object; no supplied host summary substitutes for endpoint observation. Missing, conflicting, repeated or late settlement cannot produce usefulness. Cancellation/EOF remains terminal and takes priority. The entire framed packet remains bounded to 32,768 bytes including wrapper overhead. Saved replay requires the original endpoint observation before the identical launcher forwarding observation.
+
+The fixed client bootstrap also includes the complete accepted scope already validated by its launcher. The client checks the scope digest against the immutable Prepared envelope and compares the derived fixed action exactly. This permits the actual configured SSH denial witness; scope data grants no authority. The keyword-only client API is `prepare_client(*, runtime, prepared, endpoint_identity, scope, control)`. Descriptor ownership, fixed native arguments, permissions, resource caps, source allowlist and all 288 case identities remain unchanged.

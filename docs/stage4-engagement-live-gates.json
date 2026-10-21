@@ -251,6 +251,7 @@
           "type": "object"
         },
         "GO": "release",
+        "METER": "runtime_contract.output_and_evidence.meter_exact_fields with all linked constraints",
         "PREPARE": "prepared",
         "STOP": null
       },
@@ -2059,7 +2060,9 @@
       "Transcript and all metadata deny unknown kind/role/opcode/fields and enforce coupled references/counts. A case boundary proof remains the exact native case proof schema in results.json; an arbitrary observation_ref cannot invent a successful physical witness.",
       "Validate exact raw bytes, decoded witness and digest equality.",
       "Preserve the direct witness consume_sequence, allowing gaps from refused attempts while requiring strict increase on the inherited reader.",
-      "The broker-observed receipt time is retained separately from the reviewer-issued time."
+      "The broker-observed receipt time is retained separately from the reviewer-issued time.",
+      "The broker forwards the exact validated final endpoint METER to the matching launcher over its already inherited broker-control channel. This observation supplies no release authority. It must follow the original endpoint METER observation, match the pending dispatch and original GO, and may not replace or revive an active slot. The launcher verifies the existing meter grammar, exact envelope/GO/endpoint/slot/ARM binding and original deadline before deriving its final client result. Forwarding preserves the full meter bytes as a canonical protocol object; no supplied host summary substitutes for endpoint observation. Missing, conflicting, repeated or late settlement cannot produce usefulness. Cancellation/EOF remains terminal and takes priority.",
+      "Each forwarded METER requires an earlier matching actual endpoint METER at the same broker observer, and no more than one forward per dispatch; parent role observations bind the actual endpoint channel source. Launcher receipt does not imply endpoint delivery until this crosslink is satisfied. Entire framed packet remains bounded to32768 bytes including wrapper overhead."
     ],
     "status": "draft_for_reciprocal_inventory_review"
   },
@@ -6471,6 +6474,25 @@
         "transcript_bytes": 2097152,
         "transcript_rows": 4096
       }
+    },
+    {
+      "id": "S42C-A02",
+      "native_acceptance_before_amendment": false,
+      "predecessor_contract_commit": "4bb0ad76acfe7b9a748519726db2db619f504dda",
+      "predecessor_contract_sha256": "0907c9fc9fb9058e171393d9d798742a912dac8fa3425ed5ad2314612a37128b",
+      "predecessor_inventory_sha256": "62f7c7ad262ed7a37129b12ae428762c56ca093286614a688c7eb2058adb4682",
+      "reason": "Deliver actual endpoint settlement to the launcher and complete validated scope to the client; neither adds authority.",
+      "scope_and_counts_unchanged": {
+        "accepted_regressions": 15,
+        "case_ids": 288,
+        "descriptor_graph": true,
+        "native_argv": true,
+        "new_native": 113,
+        "new_portable": 160,
+        "packet_bytes": 32768,
+        "resource_caps": true,
+        "source_allowlist": 39
+      }
     }
   ],
   "counting_rules": {
@@ -8484,7 +8506,7 @@
   },
   "runtime_contract": {
     "apis": {
-      "client.prepare": "prepare_client(*, runtime, prepared, endpoint_identity, control) -> WaitingClient; assumes inherited sessionnet; .ready/.release(release,control)/.observe_native(control)/.collect(control)/.close(); release is launcher-validated one-time GO projection",
+      "client.prepare": "prepare_client(*, runtime, prepared, endpoint_identity, scope, control) -> WaitingClient; assumes inherited sessionnet; .ready/.release(release,control)/.observe_native(control)/.collect(control)/.close(); release is launcher-validated one-time GO projection",
       "context.validate": "validate_live_context(value) -> detached validated context; pure consistency checker, no process/network/store execution",
       "endpoint.arm": "arm_endpoint(channel, *, release, endpoint_identity, control) -> exact ack; callable only by inherited launcher ARM peer; no host duplicate writer",
       "endpoint.prepare": "prepare_endpoint(*, runtime, session_binding, broker_peer, arm_peer, control) -> EndpointOwner; .ready receipt/.namespace_fds for host startup only; .progress(control)/.close(); host never writes ARM or reads broker-owned channel",
@@ -8526,7 +8548,7 @@
           "launcher_id"
         ],
         "broker": "exact authority-owned BrokerBootstrap object; only fixed /store/engagement operator mount,2preallocatedslots,actualreviewerIDs/modes andoriginalbrokerstop; authoritymachine object supplies exactfieldset",
-        "constraints": "roe/scope/policy and Prepared useunchangedclosedvalidators andauthoritysession_binding. terminal mode=terminal; graphicalmode=graphical_v1, exactXsocket andselectedcookiefile undernewbuilder. Brokerpayloadownedauthority toavoidconflictingduplicate schema. Parser receives actualrawinputonlyafterparentpinsREADY.",
+        "constraints": "roe/scope/policy and Prepared useunchangedclosedvalidators andauthoritysession_binding. terminal mode=terminal; graphicalmode=graphical_v1, exactXsocket andselectedcookiefile undernewbuilder. Brokerpayloadownedauthority toavoidconflictingduplicate schema. Parser receives actualrawinputonlyafterparentpinsREADY. Client scope is the unchanged accepted closed scope; its digest equals Prepared.envelope.scope_sha256 and the derived fixed slot action equals Prepared.action. Actual configured SSH denial uses this scope. Scope supplies data only, never request/grant authority.",
         "endpoint": [
           "session_binding",
           "roe",
@@ -8547,7 +8569,8 @@
         ],
         "headers": [
           "prepared",
-          "endpoint_identity"
+          "endpoint_identity",
+          "scope"
         ],
         "launcher": [
           "session_binding",
@@ -8558,7 +8581,8 @@
         ],
         "nmap": [
           "prepared",
-          "endpoint_identity"
+          "endpoint_identity",
+          "scope"
         ],
         "parser": [
           "slot",
