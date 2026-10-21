@@ -101,39 +101,62 @@ passed 28,777 portable tests each, with no skips, failures or errors. The
 [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39506462323)
 also passed all five jobs with 28,777 tests each. Its logs and independent review
 are retained separately in `.secure-agent/pr100-review-20261020/`.
-S4.1 accepts requirements and gates only. Current work is
-[S4.2a offline engagement records](stage4-engagement-records.md), using the
-already permitted preparation/integration split. Stage 4 retains four logical
-increments, one accepted and three open, with a current **5–6 PR** estimate
-inside the original 4–6 range. The summed baseline forecasts narrow to
-**48–65 professional-v1 PRs** and **88–135 broader-product PRs**, including
-completed work. Live engagement enforcement, credential custody and separately
-authorized real use remain later gates. Completed milestones stay closed.
+S4.1 accepts requirements and gates only.
+**[PR #101](https://github.com/0xsl0th/recon-cockpit/pull/101) accepts
+[S4.2a offline engagement records](stage4-engagement-records.md) at `43869cb`.**
+Merge review corrected a constructor progress-counter reset; the original
+2,180-callback failure and corrected 2,000-callback checks remain preserved.
+Reviewed `fe2e40e` and the actual merge share tree
+`4896f2567cac6ca25c4023c6c28a05d651b669de`. All 68 exact focused cases,
+28,845 local portable tests and all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39514380355)
+passed, with no skips, failures or errors. Preserve
+`.secure-agent/pr101-review-20261020/merge-review-receipt.json` and the
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39516648157),
+which also passed all five jobs with 28,845 portable tests each.
+This accepts offline metadata and inspection only.
 
-**Current: S4.2a offline record preparation.** The active worktree is
-`/tmp/recon-stage4-engagement-records`, branch `feature/stage4-engagement-records`,
-based on accepted merge `7a7eace`. The [implementation contract](stage4-engagement-records.md)
-and [exact gate inventory](stage4-engagement-records-gates.json) precede code.
-The slice adds bounded non-secret records, immutable ROE revisions, durable
-metadata revocation and data-only export/inspection. It starts no tool operation
-and handles no credential. S4.2b must separately prove live authority, windows,
-revocation and crash enforcement. Synthetic custody and separately authorized
-real-use validation remain later required increments. The private checkpoint is
-`.secure-agent/stage4-engagement-records-20261020/current-progress.json`;
+Current work is [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md).
+The additional explicit split separates its durable transaction domain from
+S4.2c isolated live enforcement: the existing record schema has no dispatch
+counters, and the current approval/launcher/traffic boundaries need independent
+engagement proofs. All 26 S4.2 obligations remain mapped, including all 18
+physical cases; ledger records cannot substitute for dispatch or cleanup evidence.
+Stage 4 retains four logical increments, one accepted and three open, with a
+revised **6–7 PR** estimate. The current summed baseline forecasts are
+**49–66 professional-v1 PRs** and **89–136 broader-product PRs**, including
+completed work. The original 4–6 and intermediate 5–6 Stage 4 forecasts remain
+historical; no outcome is removed or added. S4.3 synthetic custody and S4.4
+separately authorized real use remain required. Completed milestones stay closed.
+
+**Current: S4.2b durable dispatch accounting.** The active worktree is
+`/tmp/recon-stage4-engagement-dispatch-ledger`, branch
+`feature/stage4-engagement-dispatch-ledger`, based on accepted merge `43869cb`.
+The [implementation contract](stage4-engagement-dispatch-ledger.md) and
+[exact inventory](stage4-engagement-dispatch-ledger-gates.json) precede code.
+This slice adds a fresh versioned ledger for atomic revocation/reservation order,
+irreversible usage, exact retries and reported completion. Its records and
+reports grant no execution capability. All accepted modules and historical
+contracts retain their bytes; current status belongs in these status documents.
+
+The ledger accepts only its fixed SQLite DELETE-journal format. Existing WAL-mode
+databases are refused without converting or changing the main database file.
+SQLite can create WAL/SHM auxiliary files while inspecting such an unsupported
+input, including a read-only open; those files are retained. Read-only store
+access therefore does not promise that every invalid SQLite input leaves its
+directory unchanged. Saved-export inspection never opens SQLite. The original
+header-conversion failure and auxiliary-file observations are preserved separately.
+
+The private checkpoint is
+`.secure-agent/stage4-engagement-enforcement-20261020/current-progress.json`;
 `.secure-agent/continue-here.json` is the repository-level recovery pointer.
-Preserve all PR #98–#100 review records and original failed attempts. The accepted
-S4.1 and historical native contracts retain their bytes; current status belongs
-here and in the new implementation runbook. Do not repeat completed merges.
-
-The S4.2a implementation provides the pinned Python API and
-`scripts/engagement_records.py` commands, with 68 exact portable cases for strict
-metadata, immutable history, concurrent updates, crash recovery and private
-export/inspection. The contract was pinned at `4a8d8ca` before implementation.
-Keep the original development failures alongside final source, local-suite and
-five-job CI receipts in the private checkpoint directory above. Acceptance is
-pending review and merge; this preparation does not close S4.2. The next
-roadmap slice is S4.2b live engagement/session enforcement, whose contract and
-execution gates must be pinned before runtime changes or new native validation.
+Preserve every original failed attempt, including PR #101's constructor counter
+regression and corrected validation. S4.2a's contract remains pinned at `4a8d8ca`;
+its exact 68 cases and offline acceptance do not close live enforcement.
+Do not repeat completed merges. S4.2c must next pin and prove both reviewer
+displays, current authority at dispatch, physical aggregate limits, clock edges,
+concurrent dispatch races, revocation, interrupted delivery and bounded cleanup.
+Synthetic credential custody and separately authorized real use remain later
+required increments. Stage 4 remains open.
 
 **T01–T06 meet G1–G6 and the finite Stage 2 coverage tranche is closed:
 52 accepted profiles, zero candidates and 17 external programs.**

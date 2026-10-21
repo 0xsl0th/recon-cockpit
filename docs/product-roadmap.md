@@ -168,14 +168,32 @@ All five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/3
 passed 28,777 portable tests each, with no skips, failures or errors. The
 [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39506462323)
 is tracked separately in `.secure-agent/pr100-review-20261020/`.
-S4.1 accepts requirements and gates only. Current work is
-[S4.2a offline engagement records](stage4-engagement-records.md), using the
-already permitted preparation/integration split. Stage 4 retains four logical
-increments, one accepted and three open, with a current **5–6 PR** estimate
-inside the original 4–6 range. The summed baseline forecasts narrow to
-**48–65 professional-v1 PRs** and **88–135 broader-product PRs**, including
-completed work. Live engagement enforcement, credential custody and separately
-authorized real use remain later gates. Completed milestones stay closed.
+S4.1 accepts requirements and gates only.
+**[PR #101](https://github.com/0xsl0th/recon-cockpit/pull/101) accepts
+[S4.2a offline engagement records](stage4-engagement-records.md) at `43869cb`.**
+Merge review corrected a constructor progress-counter reset; the original
+2,180-callback failure and corrected 2,000-callback checks remain preserved.
+Reviewed `fe2e40e` and the actual merge share tree
+`4896f2567cac6ca25c4023c6c28a05d651b669de`. All 68 exact focused cases,
+28,845 local portable tests and all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39514380355)
+passed, with no skips, failures or errors. Preserve
+`.secure-agent/pr101-review-20261020/merge-review-receipt.json` and the
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39516648157),
+which also passed all five jobs with 28,845 portable tests each.
+This accepts offline metadata and inspection only.
+
+Current work is [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md).
+The additional explicit split separates its durable transaction domain from
+S4.2c isolated live enforcement: the existing record schema has no dispatch
+counters, and the current approval/launcher/traffic boundaries need independent
+engagement proofs. All 26 S4.2 obligations remain mapped, including all 18
+physical cases; ledger records cannot substitute for dispatch or cleanup evidence.
+Stage 4 retains four logical increments, one accepted and three open, with a
+revised **6–7 PR** estimate. The current summed baseline forecasts are
+**49–66 professional-v1 PRs** and **89–136 broader-product PRs**, including
+completed work. The original 4–6 and intermediate 5–6 Stage 4 forecasts remain
+historical; no outcome is removed or added. S4.3 synthetic custody and S4.4
+separately authorized real use remain required. Completed milestones stay closed.
 
 S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
 **25,483 portable tests**, with **911 source hashes unchanged**. Fresh review at
@@ -298,7 +316,7 @@ and 195/195 boundary fields. Thirteen new and 120 accepted bundles replayed
 unchanged. This is finite fixture evidence, not a repository-exposure or general
 vulnerability-detection claim. See the [C17 runbook](nuclei-git-tools.md).
 
-## Professional-v1 forecast: 48–65 PRs from the PR #72 baseline
+## Professional-v1 forecast: 49–66 PRs from the PR #72 baseline
 
 These ranges are additive totals from the accepted PR #72 baseline, excluding
 the documentation-only PR #73 forecast. They include work completed since that
@@ -311,10 +329,12 @@ Selecting the already-allowed separate name/TLS preparation batch makes the
 Stage 3 total **13 accepted PRs, #87–#99**, closing **all ten logical
 increments**. This selected the **47–65** baseline forecast without adding a
 required outcome. The accepted Stage 4 contract initially estimated **4–6 PRs**.
-Selecting its permitted S4.2 preparation/integration split now gives **5–6 PRs**
-across the same four logical increments; the S4.3 custody/operation split remains
-optional. This narrows the summed baseline forecast to **48–65**, without adding
-an outcome. Any further necessary split must be recorded explicitly.
+Selecting its permitted S4.2 preparation/integration split gave **5–6 PRs**
+and a **48–65** baseline total. The current S4.2b ledger/S4.2c live-enforcement
+split explicitly adds one PR: **6–7 Stage 4 PRs** and **49–66 professional-v1 PRs**.
+The fixed metadata store, durable dispatch accounting and live authority/traffic
+boundaries require distinct review evidence. The same four logical increments
+and every required outcome remain; the S4.3 custody/operation split stays optional.
 These totals include completed work and do not lift offline-only restrictions.
 
 | Stage | Deliverable and completion condition | Estimated PRs |
@@ -322,11 +342,11 @@ These totals include completed work and do not lift offline-only restrictions.
 | 1. Freeze the release contract | The [coverage contract](professional-v1-coverage.md) maps accepted exact profiles and six required task gaps. Finish the supported environment, compatibility and later authenticated-operation/release criteria without treating synthetic coverage as professional acceptance. Every required task needs a named result, lab case and gate. | 2 |
 | 2. Complete a practical coverage tranche — closed | All T01–T06 tasks have G1–G6 closed, most recently T06 in PR #86 at `f0542a8`. Accepted coverage is 52 profiles across 17 programs; retain the exact owned-fixture contracts, meaningful usefulness/denial results and evidence limitations. The historical program assumption was never a quota. | 8–12 |
 | 3. Realistic lab and controlled target routing — closed | [S3.1's accepted compatibility/routing contract](stage3-compatibility-routing.md), S3.2a/S3.2b nginx preparation/diagnostic and S3.3a Apache preparation are accepted. S3.3b's HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`. PR #95 accepts routed Apache/B at `d0586f5`. PR #96 accepts the full matrix at `6f60ae0`, closing S3.5. PR #97 accepts S3.6a static DNS/TLS preparation. PR #98 accepts S3.6b native name/trust binding and redirect/referral handling at `c71b599`, closing S3.6. PR #99 accepts S3.7 combined evidence at `4ef9b98`, closing all ten logical increments. Attached lab/engagement networks require separate authorization. | 13 |
-| 4. Engagement, credential and session custody — current | [S4.1 contract](stage4-engagement-custody.md) is accepted in PR #100. Current [S4.2a offline records](stage4-engagement-records.md) selects the permitted preparation/integration split; S4.2b must prove live engagement/session enforcement. Four logical increments retain engagement identity, rules of engagement, effects/windows, revocation and crash-safe custody. Synthetic credentials precede separately authorized real credentials and selected read-only operations. Secrets must not leak into planners, artifacts or logs. | 5–6 |
+| 4. Engagement, credential and session custody — current | [S4.1 contract](stage4-engagement-custody.md) is accepted in PR #100. PR #101 accepts [S4.2a offline records](stage4-engagement-records.md). Current [S4.2b dispatch accounting](stage4-engagement-dispatch-ledger.md) adds the durable transaction domain; S4.2c must prove isolated live engagement/session enforcement. The extra ledger/live split explicitly revises the estimate. Four logical increments retain engagement identity, rules of engagement, effects/windows, revocation and crash-safe custody. Synthetic credentials precede separately authorized real credentials and selected read-only operations. Secrets must not leak into planners, artifacts or logs. | 6–7 |
 | 5. Workflows, findings, reports and retests | After the required coverage tranche closes, add deterministic cross-tool decisions, provenance-linked asset/finding records, deduplication, analyst disposition, remediation and report/retest history. Preserve fresh action authority; saved work does not restore grants. | 8–12 |
 | 6. Extend the existing GUI | Expose supported catalog operations through shared services; add engagement/assets/findings/report views, clear progress and cancellation, useful errors and accessibility/usability work. Preserve the separate exact-action reviewer and both existing themes. | 5–7 |
 | 7. Professional-v1 release gate | Installation and dependency diagnostics, pinned runtime maintenance, data migration/export/retention, recovery, representative service compatibility, adversarial review, operator acceptance and documented support limits. Publish only after the separate release decision. | 7–13 |
-| **Professional-v1 total** | **Operator-assisted Linux release for its declared engagement subset. Live models and the full 40-program breadth are not prerequisites.** | **48–65** |
+| **Professional-v1 total** | **Operator-assisted Linux release for its declared engagement subset. Live models and the full 40-program breadth are not prerequisites.** | **49–66** |
 
 ### Finite coverage gate before deeper workflows
 
@@ -355,9 +375,11 @@ comparative benchmarking remain deferred despite completion of the coverage gate
 ## Broader product: 40–70 PRs beyond professional v1
 
 These remain **40–70 additional PRs beyond professional v1**. With the revised
-48–65 v1 forecast, the combined total is **88–135 PRs from the PR #72 accepted
-baseline**, including work completed since that baseline. Selecting the allowed
-S4.2 split narrows the preceding 47–65 / 87–135 forecasts. This supersedes the
+49–66 v1 forecast, the combined total is **89–136 PRs from the PR #72 accepted
+baseline**, including work completed since that baseline. The explicit S4.2b
+ledger/S4.2c live-enforcement split adds one PR to the preceding 48–65 / 88–135
+forecasts, which followed the permitted preparation split from 47–65 / 87–135.
+This supersedes the
 earlier 15 October 86–135 range, the 14 October 84–132 forecast and original
 80–130 estimate; it is not an additional
 remaining-work count.
@@ -369,7 +391,7 @@ remaining-work count.
 | Late bounded live-model integration and evaluation | Reuse the existing disabled integration. Approve data release, provider/model, credential source and spending ceiling, then run a small Nmap → HTTP → evidence pilot and adversarial variants. Compare against deterministic and appropriate operator/tool baselines before expanding autonomy. Offline operation remains a fallback. | 3–5 |
 | Scale and advanced operations | Larger engagement/resource scheduling, long-run recovery, performance/reliability work and expanded security/operator acceptance within the supported Linux product. | 3–5 |
 | **Additional expansion** | **Broader professional lifecycle and evaluated model assistance, subject to its separate approvals.** | **40–70** |
-| **Total from PR #72** | **Professional v1 plus broader expansion.** | **88–135** |
+| **Total from PR #72** | **Professional v1 plus broader expansion.** | **89–136** |
 
 Against the dated 16-program forecast baseline, the literal 40-program target
 left **24 programs**. Accepted T02/T03 reused existing implementations and T04

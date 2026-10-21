@@ -162,14 +162,32 @@ All five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/3
 passed 28,777 portable tests each, with no skips, failures or errors. The
 [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39506462323)
 is tracked separately in `.secure-agent/pr100-review-20261020/`.
-S4.1 accepts requirements and gates only. Current work is
-[S4.2a offline engagement records](stage4-engagement-records.md), using the
-already permitted preparation/integration split. Stage 4 retains four logical
-increments, one accepted and three open, with a current **5–6 PR** estimate
-inside the original 4–6 range. The summed baseline forecasts narrow to
-**48–65 professional-v1 PRs** and **88–135 broader-product PRs**, including
-completed work. Live engagement enforcement, credential custody and separately
-authorized real use remain later gates. Completed milestones stay closed.
+S4.1 accepts requirements and gates only.
+**[PR #101](https://github.com/0xsl0th/recon-cockpit/pull/101) accepts
+[S4.2a offline engagement records](stage4-engagement-records.md) at `43869cb`.**
+Merge review corrected a constructor progress-counter reset; the original
+2,180-callback failure and corrected 2,000-callback checks remain preserved.
+Reviewed `fe2e40e` and the actual merge share tree
+`4896f2567cac6ca25c4023c6c28a05d651b669de`. All 68 exact focused cases,
+28,845 local portable tests and all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39514380355)
+passed, with no skips, failures or errors. Preserve
+`.secure-agent/pr101-review-20261020/merge-review-receipt.json` and the
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39516648157),
+which also passed all five jobs with 28,845 portable tests each.
+This accepts offline metadata and inspection only.
+
+Current work is [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md).
+The additional explicit split separates its durable transaction domain from
+S4.2c isolated live enforcement: the existing record schema has no dispatch
+counters, and the current approval/launcher/traffic boundaries need independent
+engagement proofs. All 26 S4.2 obligations remain mapped, including all 18
+physical cases; ledger records cannot substitute for dispatch or cleanup evidence.
+Stage 4 retains four logical increments, one accepted and three open, with a
+revised **6–7 PR** estimate. The current summed baseline forecasts are
+**49–66 professional-v1 PRs** and **89–136 broader-product PRs**, including
+completed work. The original 4–6 and intermediate 5–6 Stage 4 forecasts remain
+historical; no outcome is removed or added. S4.3 synthetic custody and S4.4
+separately authorized real use remain required. Completed milestones stay closed.
 
 S3.4a validation at `2a26154` passed **20 installed-runtime inspections** and
 **25,483 portable tests**, with **911 source hashes unchanged**. Fresh review at
@@ -188,7 +206,7 @@ Network attachment requires separate ownership/scope/routing authorization.
 Proposal refresh and submission remain a separate November decision. Historical
 snapshots below retain their original counts; this continuation supersedes them.
 
-**Product forecast revised 20 October 2026: Stage 3 closed in thirteen PRs; the permitted S4.2 split narrows Stage 4 to 5–6 PRs and the professional-v1 baseline forecast to 48–65.** See the [consolidated roadmap and PR estimate](product-roadmap.md).
+**Product forecast revised 20 October 2026: Stage 3 stays closed in thirteen PRs. The explicit S4.2b ledger/S4.2c live-enforcement split revises Stage 4 to 6–7 PRs and the professional-v1 baseline forecast to 49–66.** See the [consolidated roadmap and PR estimate](product-roadmap.md).
 The historical planning baseline below began on 15 September 2026. This is a development plan, not a list
 of implemented capabilities. Start the next session with
 [continue-here.md](continue-here.md).
@@ -224,7 +242,7 @@ claim that today's bounded fixtures support professional engagements.
 | 2 — accepted in PR #54 | Shared CLI/GUI application services, then initial GUI | Scope, session state, proposals/approvals, cancellation, evidence and report views use the same authority path; begin from both [Swiss Industrial references](gui-design-references.md). No direct command execution or restored approvals in GUI code. Review any real-lab attachment as a separate boundary change. |
 | 3 — accepted, finite coverage tranche | T01–T06 in the [professional-v1 coverage contract](professional-v1-coverage.md) | PRs #74/#80/#81/#84/#85/#86 close all required G1–G6 gates: 52 accepted profiles across 17 programs. T06 retains 83 native and 24,163 portable passes. Existing exact recipes, limits and evidence contracts stay closed; this is not general engagement compatibility. |
 | 4 — accepted, product Stage 3 | [Finite service-compatibility and controlled routing contract](stage3-compatibility-routing.md) | S3.1 is accepted in PR #87, S3.2a/S3.2b in PRs #88/#89 and S3.3a Apache preparation in PR #90. S3.3b HTTP production is accepted in PR #91. S3.4a/b OpenSSH preparation and native compatibility are accepted in PRs #92/#93. PR #94 accepts the first fixed-A S3.5 routing slice at `46f9b73`; PR #95 accepts routed Apache/B and PR #96 accepts the full matrix at `6f60ae0`, closing S3.5. PR #97 accepts S3.6a static name/TLS preparation; PR #98 accepts S3.6b native binding at `c71b599`, closing S3.6. PR #99 accepts S3.7 at `4ef9b98`, closing Stage 3. Planning grants no attached-network access or execution authority. |
-| 5 — current, product Stage 4 | [Engagement, credential and session custody](stage4-engagement-custody.md) | PR #100 accepts S4.1. Current [S4.2a record preparation](stage4-engagement-records.md) precedes live engagement/session enforcement in S4.2b. Synthetic credential isolation and one bounded authenticated read follow. Later real-credential validation requires separate authorization and stays a required gate. The allowed S4.2 split narrows four logical increments to 5–6 PRs. Intrusive actions, reporting/retest and broader workflows remain later stages. |
+| 5 — current, product Stage 4 | [Engagement, credential and session custody](stage4-engagement-custody.md) | PR #100 accepts S4.1. PR #101 accepts [S4.2a records](stage4-engagement-records.md). Current [S4.2b dispatch accounting](stage4-engagement-dispatch-ledger.md) precedes isolated live enforcement in S4.2c. Synthetic credential isolation and one bounded authenticated read follow. Later real-credential validation requires separate authorization and stays a required gate. The additional ledger/live split explicitly revises the same four logical increments to 6–7 PRs; no physical gate is removed. Intrusive actions, reporting/retest and broader workflows remain later stages. |
 
 [PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) merged as `5f046eb`
 after review and all five final portable jobs passed. Its two varied manifests
@@ -455,11 +473,13 @@ baseline. The 14 October Stage 3 revision changed those baseline totals to
 **44–62** and **84–132**. The earlier 15 October routing plan separated the fixed deployment extension
 from the full hostile/negative matrix and revised them to **46–65**
 and **86–135**, with Stage 3 estimated at 12–13 PRs across ten logical increments.
-Selecting the separate S3.6a preparation and S3.6b native batches now selects
-13 PRs within that range narrowed the totals to **47–65** and **87–135**.
-PR #99 closed all ten Stage 3 increments; PR #100 accepts S4.1. Selecting the
-permitted S4.2 preparation/integration split narrows Stage 4 to **5–6 PRs** and
-the current totals to **48–65** and **88–135**, without adding an outcome.
+Selecting the separate S3.6a preparation and S3.6b native batches selected
+13 PRs within that range and narrowed the totals to **47–65** and **87–135**.
+PR #99 closed all ten Stage 3 increments; PR #100 accepts S4.1 and PR #101
+accepts S4.2a. The permitted preparation/integration split gave **5–6 Stage 4 PRs**
+and totals of **48–65** and **88–135**. The additional explicit S4.2b ledger/S4.2c
+live-enforcement split now revises them to **6–7**, **49–66** and **89–136**.
+Every required outcome remains, including all physical enforcement and real-use gates.
 Completed work is included, not charged again.
 These are scoped engineering forecasts, not completion percentages, approval of
 deferred work or a claim that every catalog profile is available through the GUI.
