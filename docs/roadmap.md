@@ -172,7 +172,8 @@ Reviewed `fe2e40e` and the actual merge share tree
 28,845 local portable tests and all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39514380355)
 passed, with no skips, failures or errors. Preserve
 `.secure-agent/pr101-review-20261020/merge-review-receipt.json` and the
-[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39516648157).
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39516648157),
+which also passed all five jobs with 28,845 portable tests each.
 This accepts offline metadata and inspection only.
 
 Current work is [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md).

@@ -111,7 +111,8 @@ Reviewed `fe2e40e` and the actual merge share tree
 28,845 local portable tests and all five [final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39514380355)
 passed, with no skips, failures or errors. Preserve
 `.secure-agent/pr101-review-20261020/merge-review-receipt.json` and the
-[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39516648157).
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39516648157),
+which also passed all five jobs with 28,845 portable tests each.
 This accepts offline metadata and inspection only.
 
 Current work is [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md).
@@ -136,6 +137,14 @@ This slice adds a fresh versioned ledger for atomic revocation/reservation order
 irreversible usage, exact retries and reported completion. Its records and
 reports grant no execution capability. All accepted modules and historical
 contracts retain their bytes; current status belongs in these status documents.
+
+The ledger accepts only its fixed SQLite DELETE-journal format. Existing WAL-mode
+databases are refused without converting or changing the main database file.
+SQLite can create WAL/SHM auxiliary files while inspecting such an unsupported
+input, including a read-only open; those files are retained. Read-only store
+access therefore does not promise that every invalid SQLite input leaves its
+directory unchanged. Saved-export inspection never opens SQLite. The original
+header-conversion failure and auxiliary-file observations are preserved separately.
 
 The private checkpoint is
 `.secure-agent/stage4-engagement-enforcement-20261020/current-progress.json`;
