@@ -6595,6 +6595,22 @@
         "transcript_bytes": 2097152,
         "transcript_rows": 4096
       }
+    },
+    {
+      "id": "S42C-A04",
+      "native_acceptance_before_amendment": false,
+      "predecessor_contract_commit": "bf2b01f",
+      "predecessor_contract_sha256": "dffcd00b63bd2cf071141269cf5af0274e31b739fbf2c098692c8911efca9dae",
+      "predecessor_inventory_sha256": "68a700201119eb09c05a37c911c8f60c52dcc4724ae8b5f8d72c82c27be34391",
+      "reason": "Retain the existing actual entry-stage parent observation for failed startup without fabricating READY.",
+      "scope_and_counts_unchanged": {
+        "authority": true,
+        "case_ids": 288,
+        "distinct_payloads": 94,
+        "process_member_bytes": 1048576,
+        "runtime_caps": true,
+        "source_paths": 39
+      }
     }
   ],
   "counting_rules": {
@@ -6838,7 +6854,8 @@
       "cleanup.recovery is separate and null if no actual postcleanup read-only reopening occurred. A complete recovery export requires this exact observation and vice versa; it is not an initial/final seal reference and has no fabricated broker descriptor.",
       "Recovery uses actually fresh accepted DispatchLedger.open(read_only=True), captures its real owner_reference, verified parent/directory held fstats and named database identity before/after, snapshot only, close before finished_at_ns. Owner must differ from every recorded broker owner; start is no earlier than all actual role/wrapper reaping. Entire open/snapshot/close observation is bounded by original2s and inherited outer deadline.",
       "Recovery raw canonical bytes/SHA and accepted state digest must match retained recovery-ledger.json. Private parent/directory0700 and database regular0600 identities are stable through accepted custody checks. Inspection never opens the store or reexecutes recovery.",
-      "All count/UUID/source/namespace/descriptor checks remain independently enforced; no row maximum substitutes for actual peak26/cumulative94/two-sequential-broker/four-dispatch bounds."
+      "All count/UUID/source/namespace/descriptor checks remain independently enforced; no row maximum substitutes for actual peak26/cumulative94/two-sequential-broker/four-dispatch bounds.",
+      "Startup observations retain only actual trusted parent readback at stage entry, without worker READY or a claim of sealed self-checks. Startup/readiness/native observations share a ceiling of94 distinct payload PID/start-time identities; repeated stages of one actual payload count once. Every known startup payload must resolve actual cleanup. Runtime source/role capture is separately required and entry identity alone does not prove post-bootstrap ROE/source validation. No endpoint/client identity is invented when startup refused before those roles were created."
     ],
     "member_containers": {
       "cleanup.json": {
@@ -7073,6 +7090,11 @@
             "enum": [
               "1"
             ]
+          },
+          "startup": {
+            "items": "runtime_contract.closed_objects.parent_observation, stage exactly entry",
+            "maximum_items": 94,
+            "type": "array"
           }
         },
         "type": "object"
