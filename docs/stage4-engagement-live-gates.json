@@ -295,6 +295,7 @@
       "launcher_to_broker": {
         "CLOSED": "worker_closed_ack",
         "NATIVE_OBSERVED": "runtime_contract.closed_objects.native_readiness",
+        "OBSERVATION": "launcher_observation",
         "PREPARED": "prepare_receipt",
         "READY": "runtime_contract.closed_objects.worker_ready",
         "RESULT": "runtime_contract.output_and_evidence.result_exact_fields with all linked constraints"
@@ -764,6 +765,7 @@
         "additional_fields": false,
         "all_fields_required": true,
         "fields": {
+          "ingress_channel_id": "uuid4",
           "review_mode": {
             "enum": [
               "terminal",
@@ -1135,6 +1137,73 @@
             "enum": [
               "configurable_nmap_service_v1",
               "configurable_http_headers_v1"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "launcher_capture": {
+        "additional_fields": false,
+        "all_fields_required": true,
+        "fields": {
+          "exit_code": {
+            "one_of": [
+              {
+                "type": "null"
+              },
+              {
+                "bool_allowed": false,
+                "maximum": 255,
+                "minimum": -255,
+                "type": "integer"
+              }
+            ]
+          },
+          "schema_version": {
+            "enum": [
+              "1"
+            ]
+          },
+          "slot": {
+            "enum": [
+              "http_identify",
+              "http_headers"
+            ]
+          },
+          "stderr_base64": "canonical base64 exact captured stderr; may encode zero bytes",
+          "stderr_bytes": {
+            "bool_allowed": false,
+            "maximum": 8192,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "stderr_sha256": "sha256",
+          "stdout_base64": "canonical base64 exact captured stdout; may encode zero bytes",
+          "stdout_bytes": {
+            "bool_allowed": false,
+            "maximum": 8192,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "stdout_sha256": "sha256",
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "launcher_observation": {
+        "additional_fields": false,
+        "all_fields_required": true,
+        "fields": {
+          "data": "exact selected launcher_capture | runtime_contract.closed_objects.role_readiness | runtime_contract.closed_objects.cleanup | authority_contract.schemas.capability_rpc_projection",
+          "dispatch_id": "uuid4",
+          "kind": {
+            "enum": [
+              "capture",
+              "role_readiness",
+              "cleanup",
+              "capability_projection"
             ]
           }
         },
@@ -2062,7 +2131,15 @@
       "Preserve the direct witness consume_sequence, allowing gaps from refused attempts while requiring strict increase on the inherited reader.",
       "The broker-observed receipt time is retained separately from the reviewer-issued time.",
       "The broker forwards the exact validated final endpoint METER to the matching launcher over its already inherited broker-control channel. This observation supplies no release authority. It must follow the original endpoint METER observation, match the pending dispatch and original GO, and may not replace or revive an active slot. The launcher verifies the existing meter grammar, exact envelope/GO/endpoint/slot/ARM binding and original deadline before deriving its final client result. Forwarding preserves the full meter bytes as a canonical protocol object; no supplied host summary substitutes for endpoint observation. Missing, conflicting, repeated or late settlement cannot produce usefulness. Cancellation/EOF remains terminal and takes priority.",
-      "Each forwarded METER requires an earlier matching actual endpoint METER at the same broker observer, and no more than one forward per dispatch; parent role observations bind the actual endpoint channel source. Launcher receipt does not imply endpoint delivery until this crosslink is satisfied. Entire framed packet remains bounded to32768 bytes including wrapper overhead."
+      "Each forwarded METER requires an earlier matching actual endpoint METER at the same broker observer, and no more than one forward per dispatch; parent role observations bind the actual endpoint channel source. Launcher receipt does not imply endpoint delivery until this crosslink is satisfied. Entire framed packet remains bounded to32768 bytes including wrapper overhead.",
+      "Each inherited ingress uses its own exact preallocated ingress_channel_id, sent in its slot bootstrap. IDs must be distinct across both slots and fixed for that broker lifetime. No additional channel or observer identity is invented. Lifecycle channel_id remains broker_id; reviewer/launcher/endpoint IDs remain their actual worker IDs.",
+      "OBSERVATION is launcher-to-broker only, over the existing inherited role-bound channel; it grants no authority and cannot cause GO or ARM.",
+      "Each observation matches the actual active Prepared dispatch. Capture slot and aggregate stdout+stderr length obey8192 identify or2048 headers, independently of32768 complete frame cap. Exact decoded bytes/counts/SHA match; zero-byte captures remain explicit. At most one capture pair per dispatch and four per invocation bundle.",
+      "role_readiness records only actual client/admission/parser children observed by this exact isolated launcher; their parent observer identity, source/runtime digest, namespaces, prepared references and separately recorded child lifecycle must match. Existing NATIVE_OBSERVED carries actual Nmap ELF observation.",
+      "cleanup records exactly the actual observed child identity and same original bounded reaping result. capability_projection uses the existing closed admission ISSUE/REDEEM union with reference digests only; no raw permit or approval capability is exported.",
+      "The broker validates every object, reserves transcript capacity before accepting ordinary continuation, and records the exact frame as an ordinary launcher protocol row. Missing/conflicting/duplicated capture or missing child evidence refuses usefulness; no host-supplied summary substitutes.",
+      "Client-result capture digests and parser input/output commitments resolve these actual captured bytes and child observations. Meter remains independently received from endpoint then explicitly forwarded to launcher by A02.",
+      "Session packaging may extract these exact retained broker transcript objects after sealed completion or confirmed reaping; it never invents host observations or presents the relay as a new host process readback. Parser receipt remains inside existing client_result; no extra parser_receipt kind is needed."
     ],
     "status": "draft_for_reciprocal_inventory_review"
   },
@@ -6493,6 +6570,31 @@
         "resource_caps": true,
         "source_allowlist": 39
       }
+    },
+    {
+      "id": "S42C-A03",
+      "native_acceptance_before_amendment": false,
+      "predecessor_contract_commit": "2e8d6f3",
+      "predecessor_contract_sha256": "a37d85d9c5c788f8f2fd61b25c83447caece38ca44925452e1cf26cecd85b80e",
+      "predecessor_inventory_sha256": "64cf5591f44599421bd01cf6474fb54d1d0fb7630fcbf05deae3b08ebc6b2219",
+      "reason": "Retain actual ingress identity, nested observations and fixed child runtime data; bind existing A/B fixture labels to exact scopes.",
+      "scope_and_counts_unchanged": {
+        "case_ids": 288,
+        "channel_graph": true,
+        "existing_native_regressions": 15,
+        "grant_or_release_authority": true,
+        "new_native": 113,
+        "new_portable": 160,
+        "parents": 26,
+        "physical_parents": 18,
+        "process_graph": true,
+        "protocol_packet_bytes": 32768,
+        "snapshot_bytes": 134217728,
+        "snapshot_files": 128,
+        "source_paths": 39,
+        "transcript_bytes": 2097152,
+        "transcript_rows": 4096
+      }
     }
   ],
   "counting_rules": {
@@ -7283,6 +7385,35 @@
   },
   "implementation_authorized": true,
   "native_execution_authorized": true,
+  "native_fixture_scope_rule": "A/B are labels for these exact existing owned fixture scopes. Production supports the already pinned closed private scope grammar and path/; no new external scope. Inspectors compare fixture labels to actual session/Prepared scope rather than trusting labels.",
+  "native_fixture_scopes": {
+    "A": {
+      "http": {
+        "path": "/",
+        "port": 8080,
+        "target": "10.77.0.10"
+      },
+      "schema_version": "1",
+      "scope_id": "owned-example",
+      "ssh": {
+        "port": 2222,
+        "target": "10.77.0.20"
+      }
+    },
+    "B": {
+      "http": {
+        "path": "/",
+        "port": 18080,
+        "target": "172.23.0.10"
+      },
+      "schema_version": "1",
+      "scope_id": "owned-example-alternate",
+      "ssh": {
+        "port": 12222,
+        "target": "172.23.0.20"
+      }
+    }
+  },
   "parent_case_count": 26,
   "parent_mapping": [
     {
@@ -9146,6 +9277,21 @@
           "review_witness"
         ]
       }
+    },
+    "launcher_runtime_bundle": {
+      "bytes_max": 2097152,
+      "destination": "/run/engagement-runtime-bundle.json",
+      "mode": 292,
+      "rules": [
+        "Launcher-only sealed data mount under existing128 temporary snapshot files/128MiB cap; snapshot FD consumed and closed before worker entry.",
+        "Launcher bounded-reads and validates this full bundle before confinement; SHA256 canonical bundle equals actual bootstrap.runtime_sha256, selected launcher role manifest equals mounted role manifest.",
+        "Trusted parent independently rereads mounted full runtime bytes through pinned actual launcher process root and compares size/hash to expected canonical bundle.",
+        "Other roles receive only their selected role manifests. No new steady descriptor, SCM transfer, executable, resource cap or child selection is introduced."
+      ],
+      "seals": 15,
+      "snapshot_fds_added": 1,
+      "source": "canonical(validate_runtime(full inspected bundle))",
+      "steady_fds_added": 0
     },
     "limits": {
       "bootstrap_fd_limit": 256,
