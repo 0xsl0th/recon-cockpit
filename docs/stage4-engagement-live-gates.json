@@ -6611,6 +6611,21 @@
         "runtime_caps": true,
         "source_paths": 39
       }
+    },
+    {
+      "id": "S42C-A05",
+      "native_acceptance_before_amendment": false,
+      "predecessor_contract_commit": "0a33b408a01e41d830f6cdff1bbd41659d8145ca",
+      "predecessor_contract_sha256": "083c2c6f03ec51e04efbc03ec26721424d9c8f92fcb4b3ad25aeebc1b8207821",
+      "predecessor_inventory_sha256": "cc89dfe1d034db9781c1346b947d27aed8f1339196b8746db37ba77342ba25a0",
+      "reason": "Represent the already-required actual new-image execve denial with the existing creation-denial fields; flags=0.",
+      "scope_and_counts_unchanged": {
+        "authority": true,
+        "case_ids": 288,
+        "distinct_payloads": 94,
+        "runtime_caps": true,
+        "source_paths": 39
+      }
     }
   ],
   "counting_rules": {
@@ -9780,7 +9795,8 @@
             "clone",
             "clone3",
             "unshare",
-            "setns"
+            "setns",
+            "execve"
           ]
         },
         "descriptor_custody": {

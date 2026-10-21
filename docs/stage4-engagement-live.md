@@ -932,3 +932,7 @@ The inventory now spells out both existing owned fixture scopes: A uses `owned-e
 ### A04: actual startup observations
 
 `processes.json` includes a required `startup` array of at most 94 existing closed parent observations with stage exactly `entry`. Startup observations retain only actual trusted parent readback at stage entry, without worker READY or a claim of sealed self-checks. Startup/readiness/native observations share a ceiling of94 distinct payload PID/start-time identities; repeated stages of one actual payload count once. Every known startup payload must resolve actual cleanup. Runtime source/role capture is separately required and entry identity alone does not prove post-bootstrap ROE/source validation. No endpoint/client identity is invented when startup refused before those roles were created. The existing 1-MiB member cap and all gate identities, runtime limits and source paths remain unchanged. No native acceptance preceded this correction.
+
+### Pre-acceptance amendment A05: actual execve denial
+
+The existing `creation_denial.operation` enum includes `execve` with `flags=0`, so the already-required new-image denial can retain its actual returned failure, errno and unchanged task observations. A successful exec cannot supply a returned denial. Multiple existing boundary observations retain the required fork, namespace and exec attempts under the same gate; no case, capability, source path or resource limit is added.
