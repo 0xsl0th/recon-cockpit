@@ -884,3 +884,30 @@ receipt presented as operational success. Failures remain separate: a valid
 refusal can have complete evidence; failed packaging never upgrades live status.
 The Python EngagementSession API ends at live cleanup; callers explicitly choose
 the separate data-only save/inspect operations.
+
+## Contract correction S42C-A01
+
+The first implementation pass exposed a missing transcript union for the direct
+approval witness. The witness is an unframed canonical packet; recording an
+invented outer protocol frame would misrepresent what the broker received. The
+explicit `approval_witness` transcript kind retains the exact bounded raw bytes
+as base64, their SHA256, the matching decoded witness and actual broker receipt
+time. A framed protocol row cannot stand in for this direct packet.
+
+The inventory also fixes the member containers for process observations, operation
+results, cleanup, export custody and core-case selectors. An operation's broker
+result is null when no actual acknowledgment was received. Its outcome remains
+unresolved, and the inspector derives admission and GO observations from retained
+history and channels; a missing reply never means zero effect. Core selectors
+reference exact retained rows and reconstructed state digests, without supplied
+pass/fail or expected-outcome assertions.
+
+A recovery export records its fresh read-only data handle, verified store identity,
+original two-second observation interval and actual closure separately from the
+broker's sealed export descriptors. It can start only after all live roles are
+verified reaped. Saved inspection does not reopen the store.
+
+This correction follows the original contract commit `cf1b47f` and precedes any
+native acceptance run. It changes no authority, target, test identity, count,
+source allowlist, byte cap, deadline or roadmap increment. Original contract and
+review receipts remain retained.

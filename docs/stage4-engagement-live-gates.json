@@ -1703,6 +1703,22 @@
         },
         "type": "object"
       },
+      "transcript_approval_witness": {
+        "additional_fields": false,
+        "all_fields_required": true,
+        "fields": {
+          "raw_base64": "canonical base64 of exact received unframed packet; decoded length 1..4096",
+          "raw_sha256": "sha256 of exact decoded raw bytes",
+          "received_at_ns": {
+            "bool_allowed": false,
+            "maximum": 9223372036854775807,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "witness": "exact approval_witness; canonical(witness)==decoded raw bytes"
+        },
+        "type": "object"
+      },
       "transcript_export": {
         "additional_fields": false,
         "all_fields_required": true,
@@ -1820,8 +1836,7 @@
               "lifecycle",
               "launcher",
               "endpoint",
-              "arm",
-              "approval_witness"
+              "arm"
             ]
           },
           "direction": {
@@ -1846,7 +1861,7 @@
               "uuid4"
             ]
           },
-          "data": "exact kind union: transcript_protocol|capability_rpc_projection|legacy_audit_witness|transcript_watch|transcript_phase|transcript_state|runtime_contract.output_and_evidence.meter_event_exact_fields with linked constraints|transcript_observation_ref|transcript_export",
+          "data": "exact kind union: transcript_protocol|capability_rpc_projection|legacy_audit_witness|transcript_watch|transcript_phase|transcript_state|runtime_contract.output_and_evidence.meter_event_exact_fields with linked constraints|transcript_observation_ref|transcript_export|transcript_approval_witness",
           "dispatch_id": {
             "one_of": [
               {
@@ -1865,7 +1880,8 @@
               "state",
               "meter",
               "observation_ref",
-              "export"
+              "export",
+              "approval_witness"
             ]
           },
           "observed_at_ns": {
@@ -2040,7 +2056,10 @@
       "Broker transcript records only its actual observed channels/state/watch. Host reviewer/admission observer projections remain role_observer provenance after cleanup; they are never attributed to broker memfd custody. Every retained broker_id/observer/session/dispatch must resolve exact actual role identity and segment ownership.",
       "Protocol rows never contain capability-bearing REVIEW/CONSUME/ISSUE/REDEEM rawframes; use only their named projections. Directapproval witness contains digests only and may be retained exactly. Legacy audit witness retains exact raw base64 separately from its full producer event.",
       "Watch and phase times are integer monotonic observations from the named actual observer; replay evaluates historical original deadlines/clock observations, not inspection currentwalltime. A phase or state row alone cannot substitute for actual matching packet, durable event, process or native effect evidence.",
-      "Transcript and all metadata deny unknown kind/role/opcode/fields and enforce coupled references/counts. A case boundary proof remains the exact native case proof schema in results.json; an arbitrary observation_ref cannot invent a successful physical witness."
+      "Transcript and all metadata deny unknown kind/role/opcode/fields and enforce coupled references/counts. A case boundary proof remains the exact native case proof schema in results.json; an arbitrary observation_ref cannot invent a successful physical witness.",
+      "Validate exact raw bytes, decoded witness and digest equality.",
+      "Preserve the direct witness consume_sequence, allowing gaps from refused attempts while requiring strict increase on the inherited reader.",
+      "The broker-observed receipt time is retained separately from the reviewer-issued time."
     ],
     "status": "draft_for_reciprocal_inventory_review"
   },
@@ -6430,6 +6449,30 @@
     ]
   },
   "contract": "stage4-engagement-live",
+  "contract_amendments": [
+    {
+      "id": "S42C-A01",
+      "native_acceptance_before_amendment": false,
+      "predecessor_contract_commit": "cf1b47f55dcf5c7cbe34b6568620ba26792b5a0f",
+      "predecessor_contract_sha256": "5fa9c4f2c93ebbcfb320f64afbc6876cb60139e219bde57811c3eb0dbda5e940",
+      "predecessor_inventory_sha256": "48132a31e7d102da7502d685ea5df17e9387ff633b02433073b59ea18e361611",
+      "reason": "Close member-container implementation seams and retain direct approval witness actual unframed bytes without inventing a protocol frame.",
+      "scope_and_counts_unchanged": {
+        "accepted_regressions": 15,
+        "bundle_bytes": 16777216,
+        "case_ids": 288,
+        "inspection_seconds": 15,
+        "nested_validation_seconds": 2,
+        "new_native": 113,
+        "new_portable": 160,
+        "parent_obligations": 26,
+        "physical_parent_obligations": 18,
+        "source_allowlist": 39,
+        "transcript_bytes": 2097152,
+        "transcript_rows": 4096
+      }
+    }
+  ],
   "counting_rules": {
     "accepted_integration_regressions": 15,
     "accepted_regressions_already_in_baseline_integration_denominator": true,
@@ -6657,6 +6700,468 @@
       "runtime_sha256": "SHA256(canonical(validate_runtime(execution_bundle))) with no prefix; schema/profile are inside exact closed bundle; excludes observed PID/FD/times and diagnostic wrapper labels",
       "schema_version": "literal 1 string",
       "transcript": "exact transcript_entry"
+    },
+    "member_container_rules": [
+      "All member keys/arrays are exact bounded containers around the already pinned closed authority/native objects. Existing per-file/whole-bundle byte bounds apply independently of row maxima.",
+      "An operation is identified by its actual Prepared dispatch/session/slot, matching manifest dispatches exactly. session is its actual acknowledged session_opened. result is null when no broker result acknowledgment was received; host never synthesizes a live_result. client/meter are only actual separately observed replies or null.",
+      "Outcome for an unacknowledged operation remains unresolved. Reservation/GO observation is derived from actual durable history/channel observations: true when proved, false only where explicit complete evidence proves no admission/release, otherwise null. Null result fields alone never prove no effect or a zero count.",
+      "Elapsed metrics are recorded observations only, with null for unobserved phases. Up to122000ms accommodates actually failed late broker cleanup without extending any original authority deadline; usefulness still requires all original deadlines.",
+      "readiness/native records are unique by actual role+PID/start identity and observation kind. Known created roles require matching actual cleanup; honest zero-start diagnostics have empty observations, never invented processes.",
+      "Boundary observation hash covers canonical observation object only, excluding its kind wrapper. Proof kind must match the resolving wrapper kind, and equal hash never permits a differently typed observation. Control observation hashes resolve independently to their actual paired observations.",
+      "Each native boundary proof and each core selector matches the one canonical owned gate case; selectors carry no passed/expected/no_effect booleans. Required outcomes derive from retained actual observations and exact pinned case predicates; unknown or incomplete predicates do not pass.",
+      "Core transcript references address exact retained segment index and per-segment row_sequence; duplicates/foreign/missing references refuse. State digests resolve actual reconstructed accepted v2 state prefixes, never caller snapshots with no corresponding history.",
+      "cleanup.exports contains only sealed initial/final broker observations: broker_id is actual producer; phase/reference hash/bytes/seals match actual snapshot and host+broker descriptor observations. Both descriptors are regular same-device/inode files, host flags O_RDONLY, broker O_RDWR; their phase purpose resolves exact original export memfd. Literal access-mode declarations are insufficient.",
+      "cleanup.recovery is separate and null if no actual postcleanup read-only reopening occurred. A complete recovery export requires this exact observation and vice versa; it is not an initial/final seal reference and has no fabricated broker descriptor.",
+      "Recovery uses actually fresh accepted DispatchLedger.open(read_only=True), captures its real owner_reference, verified parent/directory held fstats and named database identity before/after, snapshot only, close before finished_at_ns. Owner must differ from every recorded broker owner; start is no earlier than all actual role/wrapper reaping. Entire open/snapshot/close observation is bounded by original2s and inherited outer deadline.",
+      "Recovery raw canonical bytes/SHA and accepted state digest must match retained recovery-ledger.json. Private parent/directory0700 and database regular0600 identities are stable through accepted custody checks. Inspection never opens the store or reexecutes recovery.",
+      "All count/UUID/source/namespace/descriptor checks remain independently enforced; no row maximum substitutes for actual peak26/cumulative94/two-sequential-broker/four-dispatch bounds."
+    ],
+    "member_containers": {
+      "cleanup.json": {
+        "additional_fields": false,
+        "all_fields_required": true,
+        "fields": {
+          "exports": {
+            "items": {
+              "additional_fields": false,
+              "all_fields_required": true,
+              "fields": {
+                "broker_descriptor": "runtime_contract.closed_objects.descriptor",
+                "broker_id": "canonical UUID4",
+                "host_descriptor": "runtime_contract.closed_objects.descriptor",
+                "reference": "authority_contract.schemas.export_reference"
+              },
+              "type": "object"
+            },
+            "maximum_items": 4,
+            "type": "array"
+          },
+          "receipts": {
+            "items": "runtime_contract.closed_objects.cleanup",
+            "maximum_items": 94,
+            "type": "array"
+          },
+          "recovery": {
+            "one_of": [
+              {
+                "type": "null"
+              },
+              {
+                "additional_fields": false,
+                "all_fields_required": true,
+                "fields": {
+                  "bytes": {
+                    "bool_allowed": false,
+                    "maximum": 2097152,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "closed": {
+                    "const": true
+                  },
+                  "finished_at_ns": {
+                    "bool_allowed": false,
+                    "maximum": 9223372036854775807,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "ledger_state_sha256": "lowercase SHA256",
+                  "owner_id": "canonical UUID4",
+                  "read_only": {
+                    "const": true
+                  },
+                  "schema_version": {
+                    "enum": [
+                      "1"
+                    ]
+                  },
+                  "sha256": "lowercase SHA256",
+                  "source": {
+                    "enum": [
+                      "postcleanup_readonly"
+                    ]
+                  },
+                  "started_at_ns": {
+                    "bool_allowed": false,
+                    "maximum": 9223372036854775807,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "store_identity": {
+                    "additional_fields": false,
+                    "all_fields_required": true,
+                    "fields": {
+                      "database": {
+                        "additional_fields": false,
+                        "all_fields_required": true,
+                        "fields": {
+                          "device": {
+                            "bool_allowed": false,
+                            "maximum": 18446744073709551615,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "gid": {
+                            "bool_allowed": false,
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "inode": {
+                            "bool_allowed": false,
+                            "maximum": 18446744073709551615,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "mode": {
+                            "bool_allowed": false,
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "uid": {
+                            "bool_allowed": false,
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "directory": {
+                        "additional_fields": false,
+                        "all_fields_required": true,
+                        "fields": {
+                          "device": {
+                            "bool_allowed": false,
+                            "maximum": 18446744073709551615,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "gid": {
+                            "bool_allowed": false,
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "inode": {
+                            "bool_allowed": false,
+                            "maximum": 18446744073709551615,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "mode": {
+                            "bool_allowed": false,
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "uid": {
+                            "bool_allowed": false,
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "parent": {
+                        "additional_fields": false,
+                        "all_fields_required": true,
+                        "fields": {
+                          "device": {
+                            "bool_allowed": false,
+                            "maximum": 18446744073709551615,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "gid": {
+                            "bool_allowed": false,
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "inode": {
+                            "bool_allowed": false,
+                            "maximum": 18446744073709551615,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "mode": {
+                            "bool_allowed": false,
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "uid": {
+                            "bool_allowed": false,
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          },
+          "schema_version": {
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "processes.json": {
+        "additional_fields": false,
+        "all_fields_required": true,
+        "fields": {
+          "boundary_observations": {
+            "items": {
+              "additional_fields": false,
+              "all_fields_required": true,
+              "fields": {
+                "kind": "exact runtime_contract.role_boundary_proofs.kinds key",
+                "observation": "exact selected kind fields with pinned constraints"
+              },
+              "type": "object"
+            },
+            "maximum_items": 59,
+            "type": "array"
+          },
+          "native": {
+            "items": "runtime_contract.closed_objects.native_readiness",
+            "maximum_items": 4,
+            "type": "array"
+          },
+          "readiness": {
+            "items": "runtime_contract.closed_objects.role_readiness",
+            "maximum_items": 94,
+            "type": "array"
+          },
+          "schema_version": {
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "results.json": {
+        "additional_fields": false,
+        "all_fields_required": true,
+        "fields": {
+          "boundary_proofs": {
+            "items": "runtime_contract.role_boundary_proofs.common_fields with all linked constraints",
+            "maximum_items": 1,
+            "type": "array"
+          },
+          "core_proofs": {
+            "items": {
+              "additional_fields": false,
+              "all_fields_required": true,
+              "fields": {
+                "after_state_sha256": {
+                  "one_of": [
+                    {
+                      "type": "null"
+                    },
+                    "lowercase SHA256"
+                  ]
+                },
+                "before_state_sha256": {
+                  "one_of": [
+                    {
+                      "type": "null"
+                    },
+                    "lowercase SHA256"
+                  ]
+                },
+                "case_id": "exact S42C-N01..N54",
+                "dispatch_ids": {
+                  "items": "canonical UUID4",
+                  "maximum_items": 4,
+                  "type": "array"
+                },
+                "recovery_state_sha256": {
+                  "one_of": [
+                    {
+                      "type": "null"
+                    },
+                    "lowercase SHA256"
+                  ]
+                },
+                "schema_version": {
+                  "enum": [
+                    "1"
+                  ]
+                },
+                "transcript_refs": {
+                  "items": {
+                    "additional_fields": false,
+                    "all_fields_required": true,
+                    "fields": {
+                      "row_sequence": {
+                        "bool_allowed": false,
+                        "maximum": 4096,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "segment": {
+                        "bool_allowed": false,
+                        "maximum": 2,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "maximum_items": 128,
+                  "type": "array"
+                },
+                "variant": "exact case.variant"
+              },
+              "type": "object"
+            },
+            "maximum_items": 1,
+            "type": "array"
+          },
+          "operations": {
+            "items": {
+              "additional_fields": false,
+              "all_fields_required": true,
+              "fields": {
+                "client": {
+                  "one_of": [
+                    {
+                      "type": "null"
+                    },
+                    "runtime_contract.output_and_evidence.result_exact_fields with all linked constraints"
+                  ]
+                },
+                "elapsed_ms": {
+                  "additional_fields": false,
+                  "all_fields_required": true,
+                  "fields": {
+                    "action": {
+                      "one_of": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "bool_allowed": false,
+                          "maximum": 122000,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      ]
+                    },
+                    "admission": {
+                      "one_of": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "bool_allowed": false,
+                          "maximum": 122000,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      ]
+                    },
+                    "cleanup": {
+                      "one_of": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "bool_allowed": false,
+                          "maximum": 122000,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      ]
+                    },
+                    "native": {
+                      "one_of": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "bool_allowed": false,
+                          "maximum": 122000,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      ]
+                    },
+                    "parser": {
+                      "one_of": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "bool_allowed": false,
+                          "maximum": 122000,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      ]
+                    },
+                    "review": {
+                      "one_of": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "bool_allowed": false,
+                          "maximum": 122000,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "meter": {
+                  "one_of": [
+                    {
+                      "type": "null"
+                    },
+                    "runtime_contract.output_and_evidence.meter_exact_fields with all linked constraints"
+                  ]
+                },
+                "prepared": "authority_contract.schemas.prepared",
+                "result": {
+                  "one_of": [
+                    {
+                      "type": "null"
+                    },
+                    "authority_contract.schemas.live_result"
+                  ]
+                },
+                "session": "authority_contract.schemas.session_opened"
+              },
+              "type": "object"
+            },
+            "maximum_items": 4,
+            "type": "array"
+          },
+          "schema_version": {
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "type": "object"
+      }
     },
     "missing_evidence_enum": [
       "initial_export",
