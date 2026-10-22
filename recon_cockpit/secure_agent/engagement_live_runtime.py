@@ -2934,7 +2934,7 @@ def _start_role_owned(*,runtime,role,payload,rights,control,stdin_pair=None,extr
                 if type(source)is not int:_fail('invalid_role')
                 info=os.fstat(source)
                 if not stat.S_ISDIR(info.st_mode) or stat.S_IMODE(info.st_mode)!=0o700 or info.st_uid!=os.getuid():_fail('invalid_role')
-                argv.extend(('--perms','0700','--dir','/store','--bind','/proc/self/fd/'+str(source),destination))
+                argv.extend(('--perms','0700','--dir','/store','--bind-fd',str(source),destination))
             elif type(source)is int:argv.extend(('--perms','0400','--ro-bind-data',str(source),destination))
             else:argv.extend(('--bind' if role=='broker' else '--ro-bind',str(source),destination))
         for key,value in sorted(environment.items()):argv.extend(('--setenv',key,value))

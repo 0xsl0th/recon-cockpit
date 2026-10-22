@@ -173,6 +173,49 @@ def test_fixed_argv_and_initial_fd_closure(tmp_path,monkeypatch):
     with pytest.raises(OSError):os.fstat(fd)
     assert r.RIGHTS['terminal']==('intentional_tty','review_witness')
     assert r.RIGHTS['broker'][0]=='host_lifecycle'
+    # A directory passed through /proc/self/fd with ordinary --bind survives
+    # into the worker. The explicit fd-consuming operation must mount this
+    # same held object while the parent retains its independent custody.
+    import subprocess
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+    from recon_cockpit.secure_agent import engagement_live_broker_worker as broker_worker
+    store=tmp_path/'store';store.mkdir(mode=0o700)
+    store_fd=os.open(store,os.O_RDONLY|os.O_DIRECTORY)
+    identity=os.fstat(store_fd);calls=[];setup_fds=[]
+    manifest=next(row for row in declared_runtime()['roles'] if row['role']=='broker')
+    snapshot=SimpleNamespace(role='broker',stdlib='/usr/lib/python3.14',manifest=manifest,
+        pass_fds=(),mounts=lambda argv:argv,close=lambda:calls.append('snapshot_closed'))
+    def launch(argv,**options):
+        calls.append('launch')
+        setup_fds.extend(options['pass_fds'])
+        assert argv[argv.index('--bind-fd')+1:argv.index('--bind-fd')+3]==[str(store_fd),'/store/engagement']
+        assert '--bind' not in argv and '/proc/self/fd/'+str(store_fd) not in argv
+        assert store_fd in options['pass_fds']
+        assert os.fstat(store_fd)==identity
+        assert argv[-3]==r.ENTRYPOINTS['broker']
+        raise OSError(errno.EIO,'injected pre-launch failure')
+    try:
+        with monkeypatch.context() as patch:
+            channel_pair=socket.socketpair()
+            patch.setattr(r,'snapshot_role',lambda *args:snapshot)
+            patch.setattr(r,'_make_bootstrap',lambda **kwargs:{})
+            patch.setattr(r.os,'pipe2',lambda flags:os.pipe(),raising=False)
+            patch.setattr(subprocess,'Popen',launch)
+            with pytest.raises(OSError,match='injected pre-launch failure'):
+                r._start_role(runtime=declared_runtime(),role='broker',payload={},rights={},
+                    control=ExecutionControl(r.time.monotonic()+10),stdin_pair=channel_pair,
+                    extra_mounts=[(store_fd,'/store/engagement')])
+        assert calls==['launch','snapshot_closed'] and os.fstat(store_fd)==identity
+        assert all(channel.fileno()==-1 for channel in channel_pair)
+        for fd in setup_fds:
+            if fd!=store_fd:
+                with pytest.raises(OSError):os.fstat(fd)
+        # Do not repair the launch by weakening the worker's stdio-only check.
+        with monkeypatch.context() as patch:
+            patch.setattr(broker_worker.os,'listdir',lambda path:['0','1','2',str(store_fd)])
+            with pytest.raises(ValueError,match='engagement_live_inherited_descriptor'):
+                broker_worker._entry_only_stdio()
+    finally:os.close(store_fd)
     # The closed bootstrap FD is reused by SQLite custody. Both worker and
     # parent must identify its current object, not its obsolete initial purpose.
     targets={16:'/store',17:'/store/engagement',18:'/store/engagement/records.sqlite3',

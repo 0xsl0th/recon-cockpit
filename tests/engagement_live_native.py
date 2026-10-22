@@ -280,12 +280,109 @@ def run_runtime_case(variant,directory):
 def run_core_case(variant,directory):return run_case_watchdog('core',variant,directory)
 
 
+def _failure_json(value,*,maximum=131072):
+    # Copy only bounded JSON facts. Do not stringify arbitrary objects, inspect
+    # new processes, recover a ledger, or normalize a failed cleanup receipt.
+    nodes=0
+    def copy(value,depth=0):
+        nonlocal nodes
+        nodes+=1
+        if depth>20 or nodes>16384:raise ValueError('failure_value_limit')
+        if value is None or type(value)is bool:return value
+        if type(value)is int:
+            if value.bit_length()>128:raise ValueError('failure_value_limit')
+            return value
+        if type(value)is str:
+            if len(value)>8192:raise ValueError('failure_value_limit')
+            return value
+        if type(value)is list:
+            if len(value)>94:raise ValueError('failure_value_limit')
+            return [copy(item,depth+1) for item in value]
+        if type(value)is dict:
+            if len(value)>128 or any(type(key)is not str or len(key)>128 for key in value):
+                raise ValueError('failure_value_limit')
+            return {key:copy(item,depth+1) for key,item in value.items()}
+        raise ValueError('failure_value_type')
+    detached=copy(value)
+    if len(canonical(detached))>maximum:raise ValueError('failure_value_limit')
+    return detached
+
+
+def _save_case_failure(directory,kind,variant,error):
+    """Private diagnostic only; preserve actual failure and never emit a report."""
+    import base64
+    maximum=262144;budget=maximum-32768;observations=[];omitted=[];exceptions=[];sessions=[]
+    queue=[error];seen={id(error):0};session_ids={}
+    def retain(owner,name,value,*,binary=False):
+        nonlocal budget
+        try:
+            if binary:
+                if type(value)is not bytes:raise ValueError('failure_value_type')
+                captured=value[:4096]
+                value={'original_bytes':len(value),'retained_bytes':len(captured),
+                    'retained_sha256':sha(captured),'base64':base64.b64encode(captured).decode('ascii'),
+                    'truncated':len(captured)!=len(value)}
+                if value['truncated']:omitted.append({'owner':owner,'attribute':name,'reason':'raw_limit'})
+            else:value=_failure_json(value)
+            row={'owner':owner,'attribute':name,'value':value};encoded=canonical(row)
+            if len(encoded)>budget:raise ValueError('failure_total_limit')
+            budget-=len(encoded);observations.append(row)
+        except (ValueError,TypeError,OverflowError,RecursionError):
+            omitted.append({'owner':owner,'attribute':name,'reason':'unretained_value'})
+    for index,item in enumerate(queue):
+        attrs=BaseException.__getattribute__(item,'__dict__')
+        typename=type(item).__name__
+        row={'index':index,'type':typename[:128],'code':attrs.get('code') if type(attrs.get('code'))is str and attrs['code'] in contract.ERROR_CODES else None,
+             'links':{},'session_index':None}
+        exceptions.append(row)
+        for name in ('startup_cleanup','startup_observation','cleanup','owned_startup_guard'):
+            if name in attrs:retain('exception:'+str(index),name,attrs[name])
+        for name in ('startup_diagnostics','startup_info'):
+            if name in attrs:retain('exception:'+str(index),name,attrs[name],binary=True)
+        session=attrs.get('engagement_session')
+        if session is not None:
+            identity=id(session)
+            if identity not in session_ids:
+                try:state=object.__getattribute__(session,'__dict__')
+                except (AttributeError,TypeError):state=None
+                if type(state)is dict:
+                    session_ids[identity]=len(sessions);sessions.append({'index':len(sessions)})
+                    for name in ('_cleanup','_cleanup_receipts','_startup_observations'):
+                        if name in state:retain('session:'+str(session_ids[identity]),name,state[name])
+                else:omitted.append({'owner':'exception:'+str(index),'attribute':'engagement_session','reason':'unretained_value'})
+            row['session_index']=session_ids.get(identity)
+        for name in ('__cause__','__context__','startup_failure','cleanup_error','resource_cleanup_error'):
+            linked=BaseException.__getattribute__(item,name) if name.startswith('__') else attrs.get(name)
+            if linked is None:continue
+            if not isinstance(linked,BaseException):
+                omitted.append({'owner':'exception:'+str(index),'attribute':name,'reason':'not_exception'});continue
+            identity=id(linked)
+            if identity not in seen:
+                if len(queue)>=8:
+                    omitted.append({'owner':'exception:'+str(index),'attribute':name,'reason':'chain_limit'});continue
+                seen[identity]=len(queue);queue.append(linked)
+            row['links'][name]=seen[identity]
+    value={'schema_version':'1','acceptance':False,'kind':kind,
+        'variant':variant if type(variant)is str and len(variant)<=128 else None,
+        'observer_pid':os.getpid(),'observed_at_ns':time.monotonic_ns(),
+        'exception_chain':exceptions,'sessions':sessions,'observations':observations,
+        'omitted':omitted,'capture_complete':not omitted}
+    raw=canonical(value)
+    if len(raw)>maximum:raise ValueError('failure_artifact_limit')
+    private_write(Path(directory)/'case-failure.json',raw)
+
+
 def _main(arguments):
     if len(arguments)!=3 or arguments[0] not in ('--runtime','--core'):raise ValueError('fixed case arguments')
     variant,directory=arguments[1],Path(arguments[2])
-    if arguments[0]=='--runtime':path=_run_runtime_case(variant,directory)
-    else:path=_run_core_case(variant,directory)
-    sys.stdout.buffer.write(canonical({'bundle':str(path)})+b'\n');sys.stdout.buffer.flush()
+    try:
+        if arguments[0]=='--runtime':path=_run_runtime_case(variant,directory)
+        else:path=_run_core_case(variant,directory)
+        sys.stdout.buffer.write(canonical({'bundle':str(path)})+b'\n');sys.stdout.buffer.flush()
+    except BaseException as error:
+        try:_save_case_failure(directory,arguments[0][2:],variant,error)
+        except BaseException:pass # Diagnostic retention cannot replace the original failure.
+        raise
 
 
 
