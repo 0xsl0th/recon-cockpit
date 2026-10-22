@@ -1,10 +1,10 @@
-# Continue here — 21 October 2026
+# Continue here — 22 October 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-Current continuation (21 October 2026):
+Current continuation (22 October 2026):
 [PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94) is merged as `46f9b73`.
 Fresh independent authority/evidence reviews and 457 focused portable checks
 passed at `58c78e0`; all five final and [post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38767707515) passed. Reviewed and merged trees
@@ -144,8 +144,12 @@ separately authorized real use remain required. Completed milestones stay closed
 `/tmp/recon-stage4-engagement-live`, branch `feature/stage4-engagement-live`,
 based on accepted merge `d8e1a6f`. The
 [implementation contract](stage4-engagement-live.md) and
-[exact inventory](stage4-engagement-live-gates.json) must be independently
-reviewed and pinned before code or native execution. This increment binds the
+[exact inventory](stage4-engagement-live-gates.json) were independently reviewed
+and pinned before implementation; pre-acceptance amendments A01–A06 end at
+`98c9610`. Implementation and independent integration review are in progress.
+Development checks do not constitute native acceptance. Freeze the complete
+clean source tree and installed runtime before the exact acceptance runs.
+This increment binds the
 accepted finite HTTP prefix to fresh isolated review, durable admission, trusted
 payload metering and bounded cancellation/cleanup. Both reviewer displays and
 all required live races need physical proof. Accepted modules and historical
