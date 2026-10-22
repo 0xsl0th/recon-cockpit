@@ -27,7 +27,7 @@ def declared_runtime():
     sources=[{'module':m,'destination':r._destination(m),'size':1,'sha256':'b'*64} for m in r.source_modules()]
     roles=[]
     for role in r.ROLES:
-        destinations={'/usr/bin/python3','/lib64/ld-linux-x86-64.so.2'}
+        destinations={'/usr/bin/python3','/lib64/ld-linux-x86-64.so.2','/lib/x86_64-linux-gnu/libffi.so.8'}
         if role in ('nmap','launcher'):destinations.add('/tool/nmap')
         if role=='launcher':destinations.add('/usr/bin/bwrap')
         if role=='endpoint':destinations.add('/usr/sbin/nft')
@@ -229,6 +229,10 @@ def test_fixed_argv_and_initial_fd_closure(tmp_path,monkeypatch):
         assert [row['purpose'] for row in rows]==['held_parent_directory','held_store_directory','sqlite_main','selector']
         assert rows[-1]['kind']=='eventpoll'
     _import_descriptor_custody_cases(tmp_path,monkeypatch)
+    _audit_readback_cases(tmp_path,monkeypatch,('exact','shifted','unknown_extra','missing',
+        'append_identity','witness_identity','append_not_append','append_rdwr','witness_blocking',
+        'library_writable','library_path','library_hash','library_size','mount_identity',
+        'mount_writable','mapping_identity','mapping_path','changed_inventory'))
 
 
 def _import_descriptor_custody_cases(tmp_path,monkeypatch):
@@ -247,6 +251,7 @@ def _import_descriptor_custody_cases(tmp_path,monkeypatch):
         image.chmod(0o600 if case=='wrong_mode' else 0o444)
         before=os.fstat(fd);extra=[];opened=[];closed=[];held_reads=0
         manifest=deepcopy(next(x for x in declared_runtime()['roles'] if x['role']=='broker'))
+        manifest['native_files']=[row for row in manifest['native_files'] if row['destination']!=destination]
         row={'source':destination,'destination':destination,'size':len(content),'sha256':sha(content)}
         if case=='wrong_size':row['size']+=1
         if case=='wrong_hash':row['sha256']='0'*64
@@ -315,6 +320,87 @@ def _import_descriptor_custody_cases(tmp_path,monkeypatch):
     with monkeypatch.context() as patch:
         patch.setattr(r.os,'listdir',lambda path:['0','1','2'])
         r._close_import_descriptor(entry_verified=True,runtime_manifest=manifest,control=None)
+
+
+def _audit_readback_cases(tmp_path,monkeypatch,cases):
+    """Real image reads/FD closes; declared Linux process inventory/map model."""
+    destination='/lib/x86_64-linux-gnu/libffi.so.8';content=b'actual pinned audit dependency'
+    for case in cases:
+        directory=tmp_path/('audit-'+case);directory.mkdir()
+        image=directory/'image';image.write_bytes(content);image.chmod(0o444);info=image.stat()
+        other=directory/'other';other.write_bytes(content);other.chmod(0o444)
+        row={'source':destination,'destination':destination,'size':len(content),'sha256':sha(content)}
+        manifest=deepcopy(next(item for item in declared_runtime()['roles'] if item['role']=='parser'))
+        manifest['native_files']=[row if item['destination']==destination else item for item in manifest['native_files']]
+        initial={'version':'1','writer_id':uid(80),'device':12,'inode':103,'witness':[9,105]}
+        descriptors=[{'fd':i,'purpose':name,'kind':'seqpacket' if i==0 else 'pipe',
+            'device':9 if i==0 else 15,'inode':200+i,'mode':stat.S_IFSOCK if i==0 else stat.S_IFIFO,
+            'flags':0x802 if i==0 else 1} for i,name in enumerate(('stdin','stdout','stderr'))]
+        library={'fd':3,'purpose':'observed','kind':'regular','device':info.st_dev,'inode':info.st_ino,'mode':info.st_mode,'flags':0}
+        append={'fd':4,'purpose':'observed','kind':'regular','device':12,'inode':103,'mode':stat.S_IFREG|0o600,'flags':0x401}
+        witness={'fd':5,'purpose':'observed','kind':'stream_socket','device':9,'inode':105,'mode':stat.S_IFSOCK,'flags':0x802}
+        if case=='shifted':library['fd'],append['fd'],witness['fd']=5,3,4
+        descriptors.extend(sorted([library,append,witness],key=lambda x:x['fd']))
+        if case=='unknown_extra':descriptors.append({**library,'fd':6,'inode':info.st_ino+1})
+        if case=='missing':descriptors.pop()
+        if case=='append_identity':initial['inode']+=1
+        if case=='witness_identity':initial['witness'][1]+=1
+        if case=='append_not_append':append['flags']=1
+        if case=='append_rdwr':append['flags']=0x402
+        if case=='witness_blocking':witness['flags']=2
+        if case=='library_writable':library['flags']=2
+        if case=='library_hash':row['sha256']='0'*64
+        if case=='library_size':row['size']+=1
+        target=destination+' (deleted)'
+        if case=='library_path':target='/arbitrary/libffi.so.8 (deleted)'
+        mapped_target=destination if case=='mapping_path' else target
+        maps=directory/'maps';maps.write_text(f'1000-2000 r-xp 00000000 {os.major(info.st_dev):x}:{os.minor(info.st_dev):x} {info.st_ino+(case=="mapping_identity")} {mapped_target}\n')
+        opened=[];closed=[];now=[10.];checks=[];readlinks=[];inventories=[]
+        real_open=os.open;real_close=os.close
+        def open_observed(path,flags,*,dir_fd):
+            assert dir_fd==999
+            if path=='fd/'+str(library['fd']):actual=image
+            elif path=='root'+destination:
+                assert flags&os.O_NOFOLLOW
+                actual=other if case=='mount_identity' else image
+            else:assert path=='maps';actual=maps
+            number=real_open(actual,flags);opened.append(number);return number
+        def close_observed(number):
+            real_close(number);closed.append(number)
+            if case=='deadline_after_close' or (case=='deadline_maps_close' and len(closed)==3):now[0]=12.01
+        def readlink(*args,**kwargs):
+            readlinks.append(args);return target
+        def inventory(*args,**kwargs):
+            inventories.append(args)
+            current=deepcopy(descriptors)
+            if case=='changed_inventory':current[-1]['inode']+=1
+            return current
+        pin=SimpleNamespace(directory=999,pid=777,check_alive=lambda:checks.append('alive'))
+        with monkeypatch.context() as patch:
+            patch.setattr(r.os,'open',open_observed);patch.setattr(r.os,'close',close_observed)
+            patch.setattr(r.os,'readlink',readlink)
+            patch.setattr(r.os,'fstatvfs',lambda number:SimpleNamespace(f_flag=0 if case=='mount_writable' else os.ST_RDONLY))
+            patch.setattr(r,'_fd_inventory',inventory)
+            patch.setattr(r.time,'monotonic',lambda:now[0])
+            control=r._WorkerControl(12000000000)
+            if case=='deadline_before':now[0]=12.01
+            if case in ('exact','shifted'):
+                actual,observed=r._observe_audit_inventory(pin,manifest,descriptors,initial,control)
+                assert observed=={'destination':destination,'device':info.st_dev,'inode':info.st_ino,
+                    'mode':info.st_mode,'size':len(content),'sha256':sha(content),'read_only_mount':True}
+                roles={item['purpose']:item['fd'] for item in actual}
+                assert roles['audit_append']==append['fd'] and roles['audit_witness']==witness['fd'] and roles['audit_import_libffi']==library['fd']
+                r._validate_audit_inventory(actual,[{key:observed[key] for key in ('destination','device','inode')}])
+            else:
+                error=refused(r._observe_audit_inventory,pin,manifest,descriptors,initial,control)
+                if case.startswith('deadline'):assert error.code=='engagement_live_timeout'
+            assert len(opened)==len(closed) and set(opened)==set(closed)
+        for number in set(opened):
+            with pytest.raises(OSError):os.fstat(number)
+        if case=='deadline_before':assert opened==[]
+        if case=='deadline_after_close':assert len(opened)==1
+        if case=='deadline_maps_close':
+            assert len(opened)==3 and len(readlinks)==1 and inventories==[]
 
 
 def test_readiness_namespace_mapping_and_groups():
@@ -409,7 +495,7 @@ def test_aggregate_raw_capture_budget():
     result=_client_result();result['stdout_bytes']=True;refused(context.validate_client_result,result)
 
 
-def test_original_startup_deadline(monkeypatch):
+def test_original_startup_deadline(monkeypatch,tmp_path):
     calls=[]
     parent=SimpleNamespace(deadline=12.,clock=r.time.monotonic,cancelled=object(),check=lambda:calls.append('check'),remaining=lambda:1.25)
     clipped=r._ClippedControl(parent,11.)
@@ -440,6 +526,7 @@ def test_original_startup_deadline(monkeypatch):
         patch.setattr(socket,'socket',lambda **kwargs:received.append('channel'))
         assert refused(r._receive_initial,'parser',uid(1),'a'*64,entry_verified=True).code=='engagement_live_timeout'
         assert decoded==['manifest'] and received==[]
+    _audit_readback_cases(tmp_path,monkeypatch,('deadline_before','deadline_after_close','deadline_maps_close'))
 
     import resource
     from recon_cockpit.secure_agent.engagement_live_endpoint_worker import _nft_child_limits
@@ -584,7 +671,8 @@ def test_cleanup_failure_refuses_useful_result(monkeypatch):
 def test_context_runtime_meter_parser_crosslinks():
     from recon_cockpit.secure_agent import engagement_live_context as context
     bundle=declared_runtime();loaded={'runtime.json':{'schema_version':'1','runtime':bundle,'instrumentation':[]},
-        'manifest.json':{'runtime_sha256':r.runtime_digest(bundle),'broker_instances':[]},
+        'manifest.json':{'runtime_sha256':r.runtime_digest(bundle),'broker_instances':[],'transcript':{'segments':[]}},
+        'transcript.jsonl':b'',
         'processes.json':{'schema_version':'1','startup':[],'readiness':[],'native':[],'boundary_observations':[]},
         'results.json':{'schema_version':'1','operations':[],'boundary_proofs':[],'core_proofs':[]},
         'cleanup.json':{'schema_version':'1','receipts':[],'exports':[],'recovery':None}}

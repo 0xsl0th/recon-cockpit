@@ -10,6 +10,7 @@ import base64
 import binascii
 import math
 import os
+import re
 import socket
 import stat
 import time
@@ -173,7 +174,7 @@ def validate_audit_observation(value, prepared, *, source, sequence, previous_au
 @c.validation('invalid_witness')
 def validate_audit_readiness(value):
     c.obj(value, ('schema_version', 'writer_id', 'initial', 'ready', 'source_manifest',
-                  'append_identity', 'parent_observation'))
+                  'append_identity', 'parent_observation', 'import_image'))
     if value['schema_version'] != '1':
         c.fail()
     writer = c.uuid(value['writer_id'])
@@ -204,8 +205,59 @@ def validate_audit_readiness(value):
             or [info['device'], info['inode']] != [initial['device'], initial['inode']]):
         c.fail()
     from . import engagement_live_runtime as runtime
-    runtime.validate_audit_observation(value['parent_observation'])
+    parent = runtime.validate_audit_observation(value['parent_observation'])
+    if parent['stage'] != 'sealed': c.fail()
+    image = value['import_image']
+    c.obj(image, ('destination', 'device', 'inode', 'mode', 'size', 'sha256', 'read_only_mount'))
+    if (type(image['destination']) is not str or _LIBFFI.fullmatch(image['destination']) is None
+            or image['read_only_mount'] is not True): c.fail()
+    for key in ('device', 'inode'):
+        c.integer(image[key], 1 if key == 'inode' else 0, 2**64-1)
+    c.integer(image['mode'], 0, 2**32-1)
+    c.integer(image['size'], 1, 16777216); c.digest_string(image['sha256'])
+    if not stat.S_ISREG(image['mode']) or stat.S_IMODE(image['mode']) != 0o444: c.fail()
+    descriptors = parent['descriptors']
+    if (len(descriptors) != 6 or {row['fd'] for row in descriptors} != set(range(6))
+            or {row['purpose'] for row in descriptors} != {
+                'stdin', 'stdout', 'stderr', 'audit_import_libffi', 'audit_append', 'audit_witness'}): c.fail()
+    named = {row['purpose']: row for row in descriptors}
+    for fd, name in enumerate(('stdin', 'stdout', 'stderr')):
+        if named[name]['fd'] != fd: c.fail()
+    imported, append, witness = (named[key] for key in ('audit_import_libffi', 'audit_append', 'audit_witness'))
+    # These are retained Linux flags, including when inspected on another OS.
+    if (imported['kind'] != 'regular' or imported['flags'] & (3 | 0x200000)
+            or any(imported[key] != image[key] for key in ('device', 'inode', 'mode'))): c.fail()
+    if (append['kind'] != 'regular' or append['flags'] & 3 != 1
+            or not append['flags'] & 0x400 or append['flags'] & 0x200000
+            or any(append[key] != info[key] for key in ('device', 'inode', 'mode'))
+            or info['uid'] != parent['observer']['uid']): c.fail()
+    if (witness['kind'] != 'seqpacket' or not stat.S_ISSOCK(witness['mode'])
+            or witness['flags'] & 3 != 2 or not witness['flags'] & 0x800
+            or witness['flags'] & 0x200000
+            or [witness['device'], witness['inode']] != initial['witness']
+            or [source['device'], source['inode']] == initial['witness']): c.fail()
+    mapped = [row for row in parent['mapped_images'] if row['destination'] == image['destination']]
+    if len(mapped) != 1 or any(mapped[0][key] != image[key] for key in ('device', 'inode')): c.fail()
     return c.detached(value)
+
+
+_LIBFFI = re.compile(r'/(?:usr/)?lib(?:64)?/(?:[a-zA-Z0-9_-]+/)?libffi\.so\.\d+(?:\.\d+)*')
+
+
+@c.validation('invalid_witness')
+def validate_audit_runtime_binding(value, runtime_bundle):
+    """Mandatory live/replay check against the complete pinned runtime bundle."""
+    from . import engagement_live_runtime as runtime
+    value = validate_audit_readiness(value)
+    bundle = runtime.validate_runtime(runtime_bundle)
+    manifest = next(row for row in bundle['roles'] if row['role'] == 'parser')
+    libraries = [row for row in manifest['native_files'] if _LIBFFI.fullmatch(row['destination'])]
+    image = value['import_image']
+    if len(libraries) != 1 or any(image[key] != libraries[0][key] for key in ('destination', 'size', 'sha256')): c.fail()
+    python = next(row for row in manifest['native_files'] if row['destination'] == '/usr/bin/python3')
+    actual = value['parent_observation']['executable']
+    if any(actual[key] != python[key] for key in ('destination', 'size', 'sha256')): c.fail()
+    return value
 
 
 class DirectReader:
@@ -471,6 +523,83 @@ def _audit_events(raw):
     return result
 
 
+def _audit_transcript_rows(loaded, deadline):
+    """Read each retained segment independently; a partial tail is never joined."""
+    raw = loaded.get('transcript.jsonl', b'')
+    if type(raw) is not bytes or len(raw) > 2097152: c.fail('evidence_invalid')
+    segments = loaded['manifest.json']['transcript']['segments']
+    if type(segments) is not list or len(segments) > 3: c.fail('evidence_invalid')
+    rows, offset = [], 0
+    for index, segment in enumerate(segments):
+        c._check_deadline(deadline)
+        c.obj(segment, ('source', 'broker_id', 'offset', 'bytes', 'sha256', 'seals', 'status'))
+        c.integer(segment['offset'], 0, 2097152); c.integer(segment['bytes'], 0, 2097152)
+        c.member(segment['source'], ('broker_memfd', 'role_observer'))
+        c.member(segment['status'], ('sealed_complete', 'reaped_partial', 'observer_complete', 'observer_partial'))
+        if segment['offset'] != offset: c.fail('evidence_invalid')
+        part = raw[offset:offset+segment['bytes']]; offset += segment['bytes']
+        if len(part) != segment['bytes'] or c.digest(part) != segment['sha256']: c.fail('evidence_invalid')
+        lines = part.split(b'\n'); tail = lines.pop()
+        if tail and not segment['status'].endswith('partial'): c.fail('evidence_invalid')
+        for sequence, line in enumerate(lines, 1):
+            c._check_deadline(deadline)
+            if not line or len(rows) >= 4096: c.fail('evidence_invalid')
+            row = validate_transcript_row(c.decode(line, max_bytes=32768))
+            if c.canonical(row) != line or row['row_sequence'] != sequence: c.fail('evidence_invalid')
+            if segment['source'] == 'broker_memfd' and row['broker_id'] != segment['broker_id']: c.fail('evidence_invalid')
+            rows.append({'segment': index, 'source': segment['source'], 'row': row})
+    if offset != len(raw): c.fail('evidence_invalid')
+    return rows
+
+
+@c.validation('evidence_invalid')
+def _retained_audit_readiness(loaded, *, rows=None, deadline=None):
+    """Resolve observed audit custody for replay and process-cleanup accounting."""
+    from . import engagement_live_runtime as runtime
+    deadline = c._operation_deadline() if deadline is None else min(deadline, c._operation_deadline())
+    c._check_deadline(deadline)
+    if rows is None: rows = _audit_transcript_rows(loaded, deadline)
+    if type(rows) is not list or len(rows) > 4096: c.fail('evidence_invalid')
+    observations, missing, seen = [], set(), set()
+    for wrapped in rows:
+        c._check_deadline(deadline)
+        c.obj(wrapped, ('segment', 'source', 'row'))
+        row = wrapped['row']
+        if type(row) is not dict: c.fail('evidence_invalid')
+        if row.get('kind') != 'protocol': continue
+        data = row.get('data')
+        if type(data) is not dict or type(data.get('frame')) is not dict: c.fail('evidence_invalid')
+        if data.get('channel_role') != 'lifecycle' or data['frame'].get('operation') != 'AUDIT_OBSERVED': continue
+        row = validate_transcript_row(row); data = row['data']; broker = row['broker_id']
+        frame = data['frame']
+        if (wrapped['source'] != 'broker_memfd' or data['direction'] != 'received'
+                or broker is None or row['observer_id'] != broker or frame['channel_id'] != broker
+                or row['session_id'] is not None or row['dispatch_id'] is not None or broker in seen): c.fail('evidence_invalid')
+        seen.add(broker)
+        instances = loaded['manifest.json']['broker_instances']
+        if sum(item['broker_id'] == broker for item in instances) != 1: c.fail('evidence_invalid')
+        bundle = loaded['runtime.json']['runtime']
+        ready = validate_audit_runtime_binding(frame['body'], bundle)
+        if ready['parent_observation']['sampled_at_ns'] > row['observed_at_ns']: c.fail('evidence_invalid')
+        brokers = [item for item in loaded.get('processes.json', {}).get('readiness', [])
+                   if item['role'] == 'broker' and item['worker_ready']['worker_id'] == broker]
+        if not brokers:
+            missing.add('process_identity')
+        else:
+            if len(brokers) != 1: c.fail('evidence_invalid')
+            parent = runtime.validate_readiness('broker', brokers[0], bundle)['parent_observation']
+            readers = [item for item in parent['descriptors'] if item['purpose'] == 'audit_witness']
+            source = ready['source_manifest']
+            if (len(readers) != 1 or readers[0]['kind'] != 'seqpacket'
+                    or not stat.S_ISSOCK(readers[0]['mode']) or readers[0]['flags'] & 3 != 2
+                    or not readers[0]['flags'] & 0x800 or readers[0]['flags'] & 0x200000
+                    or any(readers[0][key] != source[key] for key in ('device', 'inode'))
+                    or parent['sampled_at_ns'] > row['observed_at_ns']): c.fail('evidence_invalid')
+        observations.append({'broker_id': broker, 'observed_at_ns': row['observed_at_ns'], 'readiness': ready})
+    c._check_deadline(deadline)
+    return {'observations': observations, 'missing_evidence': sorted(missing)}
+
+
 def validate_evidence_transcript(loaded, rows, *, deadline):
     """Reconstruct retained authority links; no effects or gate verdicts.
 
@@ -481,7 +610,8 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
     c._check_deadline(deadline)
     if type(rows) is not list or len(rows) > 4096: c.fail('evidence_invalid')
     final, events, states = _exports(loaded, deadline)
-    missing, dispatches = set(), {}
+    audit_context = _retained_audit_readiness(loaded, rows=rows, deadline=deadline)
+    missing, dispatches = set(audit_context['missing_evidence']), {}
     operations = loaded.get('results.json', {}).get('operations', [])
     if type(operations) is not list or len(operations) > 4: c.fail('evidence_invalid')
     for operation in operations:
@@ -526,17 +656,16 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
     seen_go, state_rows, meter_received, meter_forwarded = set(), {}, {}, set()
     meter_prefixes={}
     audit_sources, reviewed, consumed, projection_sequences = {}, {}, {}, {}
+    for observed in audit_context['observations']:
+        ready = observed['readiness']; writer = ready['writer_id']; source = ready['source_manifest']
+        key = (observed['broker_id'], writer)
+        audit_sources[key] = (source, observed['observed_at_ns'])
     admissions={}
     ingress_requests, ingress_results = {}, {}
     # Host projections and broker packets occupy different immutable segments;
     # build their indexes without pretending their file order is wall-clock order.
     for wrapped in rows:
         row=validate_transcript_row(wrapped['row']);data=row['data']
-        if row['kind']=='protocol' and data['channel_role']=='lifecycle' and data['frame']['operation']=='AUDIT_OBSERVED':
-            ready=validate_audit_readiness(data['frame']['body'])
-            source=ready['source_manifest'];writer=ready['writer_id']
-            if writer in audit_sources and audit_sources[writer]!=source:c.fail('evidence_invalid')
-            audit_sources[writer]=source
         if row['kind']=='protocol' and data['channel_role']=='launcher' and data['frame']['operation']=='OBSERVATION' and data['frame']['body']['kind']=='capability_projection':
             observed=data['frame']['body']
             if observed['dispatch_id']!=row['dispatch_id']:c.fail('evidence_invalid')
@@ -600,8 +729,9 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
             if wrapped['source']!='broker_memfd' or link is None: c.fail('evidence_invalid')
             raw=_base64(data['raw_base64'],2048); witness,_=_audit_decode(raw)
             writer=witness['writer_id']; previous=audit_sequences.get(writer,(0,0))
-            source=audit_sources.get(writer)
-            if source is None:c.fail('evidence_invalid')
+            observed=audit_sources.get((row['broker_id'],writer))
+            if observed is None or observed[1]>data['received_at_ns']:c.fail('evidence_invalid')
+            source=observed[0]
             validate_audit_observation(data,link['prepared'],source=source,
                 sequence=previous[0]+1,previous_audit=previous[1])
             audit_sequences[writer]=(witness['sequence'],witness['audit_sequence'])

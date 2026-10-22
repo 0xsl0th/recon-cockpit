@@ -453,6 +453,67 @@ def _retained_fixture_validation(loaded,*,deadline=None):
 
 
 @_bounded
+def _audit_process_closure(loaded,*,observations=None):
+    """Join actual transcript audit observations to retained process cleanup.
+
+    Audit uses the accepted worker, so it has no invented new-role readiness
+    record in processes.json. Missing cleanup remains missing; contradictory
+    identity, chronology or duplicate facts are invalid evidence.
+    """
+    from . import engagement_live_contract as contract
+    if observations is None:
+        from .engagement_live_witness import _retained_audit_readiness
+        observations=_retained_audit_readiness(loaded,
+            deadline=contract._operation_deadline())['observations']
+    known={};parents=[];missing=False
+    process_rows=loaded.get('processes.json',{})
+    ordinary=list(process_rows.get('startup',[]))+[
+        row['parent_observation'] for row in process_rows.get('readiness',[])+process_rows.get('native',[])]
+    for parent in ordinary:
+        p=parent['payload'];key=(p['pid'],p['start_time_ticks'])
+        fact=(parent.get('role'),parent.get('wrapper',{}).get('pid'))
+        if key in known and known[key]!=fact:_bad()
+        known[key]=fact
+    audit={}
+    for row in observations:
+        parent=row['readiness']['parent_observation'];p=parent['payload']
+        key=(p['pid'],p['start_time_ticks'])
+        if key in known and known[key]!=('audit',parent['wrapper']['pid']):_bad()
+        known[key]=('audit',parent['wrapper']['pid'])
+        if key in audit:
+            if audit[key]!=row:_bad()
+            continue
+        audit[key]=row;parents.append(parent)
+        if parent['sampled_at_ns']>row['observed_at_ns']:_bad()
+    all_ids=set(known)
+    for receipt in loaded['cleanup.json']['receipts']:
+        runtime.validate_cleanup(receipt)
+        all_ids.update((p['pid'],p['start_time_ticks']) for p in receipt['processes']
+            if p['pid']is not None and p['start_time_ticks']is not None)
+    if len(all_ids)>94:_bad()
+    for key,observed in audit.items():
+        parent=observed['readiness']['parent_observation'];matches=[]
+        for receipt in loaded['cleanup.json']['receipts']:
+            runtime.validate_cleanup(receipt)
+            for process in receipt['processes']:
+                current=(process['pid'],process['start_time_ticks'])
+                if current!=key:
+                    # A changed start/PID cannot hide behind a matching wrapper.
+                    if (process['wrapper_pid']==parent['wrapper']['pid']
+                            and (process['role']=='audit' or process['pid']==key[0])):_bad()
+                    continue
+                if process['role']!='audit' or process['wrapper_pid']!=parent['wrapper']['pid']:_bad()
+                if receipt['finished_at_ns']<observed['observed_at_ns']:_bad()
+                matches.append(process)
+                if (not receipt['descriptors_closed'] or not process['pin_verified']
+                        or not process['exit_observed'] or not process['reaped_observed']
+                        or process['wrapper_returncode']is None):missing=True
+        if not matches:missing=True
+        elif any(process!=matches[0] for process in matches[1:]):_bad()
+    return {'parents':parents,'missing_cleanup':missing}
+
+
+@_bounded
 def validate_live_context(value):
     """Validate loaded member objects; inspectors own file custody and replay."""
     from . import engagement_live_contract as contract
@@ -508,6 +569,9 @@ def validate_live_context(value):
         if (p['pid'],p['start_time_ticks']) not in identities:_bad()
         waiting=[ready for ready in readies.values() if ready['role']=='nmap' and ready['parent_observation']['payload']==p]
         if len(waiting)!=1 or native['waiting_image']!=waiting[0]['parent_observation']['executable'] or native['parent_observation']['namespaces']!=waiting[0]['parent_observation']['namespaces']:_bad()
+    # The accepted audit role is retained in actual AUDIT_OBSERVED packets,
+    # not a fabricated compound readiness row. Its identity shares this cap.
+    _audit_process_closure(value)
     if len(identities)>94:_bad()
     closed=set();closed_at=0
     for item in cleanup['receipts']:

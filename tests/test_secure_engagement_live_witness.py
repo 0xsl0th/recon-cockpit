@@ -81,18 +81,32 @@ def direct(monkeypatch,*,kind='approval',halfclosed=True):
         left.close();right.close()
 
 
-def audit_ready():
+def audit_ready(runtime_bundle=None):
     """Closed declared readiness, not a process/kernel observation."""
     from test_secure_engagement_live_runtime import declared_runtime,declared_readiness
-    parent=declared_readiness(declared_runtime(),'headers')['parent_observation']
+    bundle=declared_runtime() if runtime_bundle is None else runtime_bundle
+    parent=declared_readiness(bundle,'parser',pid=901)['parent_observation']
     parent['role']='audit';parent['uid_map'][0][0]=parent['gid_map'][0][0]=0
+    parent['sampled_at_ns']=M-1
+    library=next(row for row in next(role for role in bundle['roles'] if role['role']=='parser')['native_files']
+                 if '/libffi.so.' in row['destination'])
+    mapped=next(row for row in parent['mapped_images'] if row['destination']==library['destination'])
+    image={**{key:library[key] for key in ('destination','size','sha256')},
+           **{key:mapped[key] for key in ('device','inode')},'mode':stat.S_IFREG|0o444,'read_only_mount':True}
+    parent['descriptors']=[
+        {'fd':0,'purpose':'stdin','kind':'seqpacket','device':10,'inode':40,'mode':stat.S_IFSOCK|0o777,'flags':2050},
+        {'fd':1,'purpose':'stdout','kind':'pipe','device':10,'inode':41,'mode':stat.S_IFIFO|0o600,'flags':1},
+        {'fd':2,'purpose':'stderr','kind':'pipe','device':10,'inode':42,'mode':stat.S_IFIFO|0o600,'flags':1},
+        {'fd':3,'purpose':'audit_import_libffi','kind':'regular','device':image['device'],'inode':image['inode'],'mode':image['mode'],'flags':32768},
+        {'fd':4,'purpose':'audit_append','kind':'regular','device':20,'inode':21,'mode':stat.S_IFREG|0o600,'flags':166913},
+        {'fd':5,'purpose':'audit_witness','kind':'seqpacket','device':10,'inode':12,'mode':stat.S_IFSOCK|0o777,'flags':2050}]
     result={'schema_version':'1','writer_id':uid(90),
         'initial':{'version':'1','writer_id':uid(90),'device':20,'inode':21,'witness':[10,12]},
         'ready':{'version':'1','writer_id':uid(90),'ready':True,'checks':dict.fromkeys(legacy.CHECKS,True)},
         'source_manifest':{'version':'1','writer_id':uid(90),'device':10,'inode':11},
         'append_identity':{'device':20,'inode':21,'mode':stat.S_IFREG|0o600,'uid':1000,'gid':1000,'links':1,'size':0},
-        'parent_observation':parent}
-    return w.validate_audit_readiness(result)
+        'parent_observation':parent,'import_image':image}
+    return w.validate_audit_runtime_binding(result,bundle)
 
 
 def resequence(rows):
@@ -104,14 +118,19 @@ def resequence(rows):
     return rows
 
 
-def complete_authority_fixture(*,runtime_sha256='a'*64):
+def complete_authority_fixture(*,runtime_sha256=None,runtime_bundle=None):
     """Real pure v2 history and declared protocol data; no native authority.
 
     The independently encoded producer/witness/projections all bind the same
     exact Prepared. Callers must add actual-shaped client/runtime/cleanup data
     before asking the full bundle context to validate a useful result.
     """
-    session=opened();session['binding']['runtime_sha256']=runtime_sha256
+    from test_secure_engagement_live_runtime import declared_runtime,declared_readiness
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    bundle=declared_runtime() if runtime_bundle is None else runtime_bundle
+    digest=runtime.runtime_digest(bundle)
+    if runtime_sha256 is not None:assert runtime_sha256==digest
+    session=opened();session['binding']['runtime_sha256']=digest
     session=c.validate_session_opened(session);p=prepared(opened_value=session);env=p['envelope']
     state,create=ledger._apply(None,{'schema_version':'2','engagement_id':uid(1),'event_id':uid(100),
         'operation':'create','expected_revision':None,'expected_generation':None,'body':session['roe']})
@@ -185,7 +204,8 @@ def complete_authority_fixture(*,runtime_sha256='a'*64):
             'original_request_sha256':None,'original_reply_bytes':None,'original_reply_sha256':None}
         protocol('OBSERVATION',{'dispatch_id':uid(10),'kind':'capability_projection','data':projection},
                  uid(92),'launcher',at,direction='received')
-    protocol('AUDIT_OBSERVED',audit_ready(),uid(91),'lifecycle',M,dispatch=None)
+    audit_readiness=audit_ready(bundle)
+    protocol('AUDIT_OBSERVED',audit_readiness,uid(2),'lifecycle',M,dispatch=None)
     admission('ISSUE',p,permit,1,M)
     row('approval_witness',approval_observation,M+1);row('audit_witness',audit_observation,M+2)
     protocol('DISPATCH',{'prepared_sha256':c.prepared_digest(p),'reference_sha256':a['reference_sha256'],
@@ -211,7 +231,14 @@ def complete_authority_fixture(*,runtime_sha256='a'*64):
             'original_request_bytes':None,'original_request_sha256':None,'original_reply_bytes':None,'original_reply_sha256':None},
             at,source='role_observer',observer=uid(5))
     audit_wrapper={**event,'event_schema_version':'1','event_id':uid(93),'timestamp':'2026-10-21T00:00:00Z','source':'recon-cockpit.secure-agent'}
+    broker=declared_readiness(bundle,'broker',pid=200,worker_id=uid(2))
+    reader=next(row for row in broker['parent_observation']['descriptors'] if row['purpose']=='audit_witness')
+    reader.update(device=10,inode=11,mode=stat.S_IFSOCK|0o777,flags=2050)
+    broker['worker_ready']['descriptor_sha256']=sha(c.canonical(broker['parent_observation']['descriptors']))
     loaded={'initial-ledger.json':initial,'final-ledger.json':state,
+        'manifest.json':{'broker_instances':[{'broker_id':uid(2)}]},
+        'runtime.json':{'schema_version':'1','runtime':bundle,'instrumentation':[]},
+        'processes.json':{'schema_version':'1','startup':[],'readiness':[broker],'native':[],'boundary_observations':[]},
         'audit.jsonl':legacy.encode(audit_wrapper)+b'\n','results.json':{'operations':[{
             'session':session,'prepared':p,'result':result,'client':None,'meter':meter,
             'elapsed_ms':dict.fromkeys(('review','admission','native','parser','cleanup','action'))}]}}
@@ -298,6 +325,41 @@ def test_audit_full_producer_event_digest_is_required():
     lost=deepcopy(loaded);lost['results.json']['operations'][0]['result']=None
     result=w.validate_evidence_transcript(lost,rows,deadline=time.monotonic()+15)
     assert result['linkage']['dispatches'][uid(10)]['result'] is None and 'unsettled_dispatch' in result['missing_evidence']
+    # A07: an audit self-report is useful only through its actual broker reader
+    # custody, runtime image and received lifecycle observation.
+    def audit_row(items):
+        return next(item for item in items if item['row']['kind']=='protocol' and
+                    item['row']['data']['frame']['operation']=='AUDIT_OBSERVED')
+    for change in ('host_projection','sent','observer','channel','session','duplicate','reader'):
+        bad=deepcopy(rows);entry=audit_row(bad)
+        if change=='host_projection':entry['source']='role_observer'
+        elif change=='sent':entry['row']['data']['direction']='sent'
+        elif change=='observer':entry['row']['observer_id']=uid(999)
+        elif change=='channel':entry['row']['data']['frame']['channel_id']=uid(999)
+        elif change=='session':entry['row']['session_id']=uid(4)
+        elif change=='duplicate':bad.insert(1,deepcopy(entry))
+        else:entry['row']['data']['frame']['body']['source_manifest']['inode']+=1
+        refused(w.validate_evidence_transcript,loaded,resequence(bad),deadline=time.monotonic()+15)
+    absent=deepcopy(loaded);absent['processes.json']['readiness']=[]
+    assert w.validate_evidence_transcript(absent,rows,deadline=time.monotonic()+15)['missing_evidence']==['process_identity']
+    bad=deepcopy(rows);audit_row(bad)['row']['data']['frame']['body']['import_image']['sha256']='f'*64
+    refused(w.validate_evidence_transcript,loaded,bad,deadline=time.monotonic()+15)
+    # Context callers parse the same exact segment bytes, never concatenating
+    # an unfinished broker row with the following observer segment.
+    encoded=deepcopy(loaded);segments=[];parts=[]
+    for index,source in enumerate(('broker_memfd','role_observer')):
+        part=b''.join(c.canonical(item['row'])+b'\n' for item in rows if item['segment']==index)
+        if index==0:part+=b'{"unfinished":'
+        segments.append({'source':source,'broker_id':uid(2) if index==0 else None,
+            'offset':sum(map(len,parts)),'bytes':len(part),'sha256':sha(part),'seals':0 if index==0 else None,
+            'status':'reaped_partial' if index==0 else 'observer_complete'})
+        parts.append(part)
+    encoded['manifest.json']['transcript']={'segments':segments}
+    encoded['transcript.jsonl']=b''.join(parts)
+    extracted=w._retained_audit_readiness(encoded)
+    assert not extracted['missing_evidence'] and len(extracted['observations'])==1
+    encoded['manifest.json']['transcript']['segments'][0]['sha256']='f'*64
+    refused(w._retained_audit_readiness,encoded)
 
 
 def test_audit_wrapper_and_producer_are_distinct():
@@ -335,6 +397,87 @@ def test_audit_writer_sequence_and_durability_are_bound(monkeypatch):
     refused(w.validate_audit_witness,raw,p,source=bad,sequence=1,now_ns=M+1)
     ready=audit_ready();ready['ready']['checks']['file_operations_blocked']=False
     refused(w.validate_audit_readiness,ready)
+    from test_secure_engagement_live_runtime import declared_runtime
+    bundle=declared_runtime();valid=audit_ready(bundle)
+    for change in ('missing','extra','duplicate','purpose','append_identity','append_mode','append_access',
+                   'append_flag','witness_identity','witness_type','witness_blocking','writer_as_reader',
+                   'import_mode','import_access','import_path_access','import_mount','import_map','import_size','import_hash'):
+        bad=deepcopy(valid);descriptors=bad['parent_observation']['descriptors']
+        named={row['purpose']:row for row in descriptors}
+        if change=='missing':descriptors.pop()
+        elif change=='extra':descriptors.append({**descriptors[-1],'fd':6,'purpose':'unknown'})
+        elif change=='duplicate':descriptors[-1]['fd']=4
+        elif change=='purpose':named['audit_append']['purpose']='unknown'
+        elif change=='append_identity':bad['initial']['inode']+=1
+        elif change=='append_mode':named['audit_append']['mode']=stat.S_IFREG|0o644
+        elif change=='append_access':named['audit_append']['flags']|=2
+        elif change=='append_flag':named['audit_append']['flags']&=~0x400
+        elif change=='witness_identity':bad['initial']['witness'][1]+=1
+        elif change=='witness_type':named['audit_witness']['kind']='stream_socket'
+        elif change=='witness_blocking':named['audit_witness']['flags']&=~0x800
+        elif change=='writer_as_reader':bad['source_manifest'].update(device=10,inode=12)
+        elif change=='import_mode':bad['import_image']['mode']=named['audit_import_libffi']['mode']=stat.S_IFREG|0o644
+        elif change=='import_access':named['audit_import_libffi']['flags']|=2
+        elif change=='import_path_access':named['audit_import_libffi']['flags']|=0x200000
+        elif change=='import_mount':bad['import_image']['read_only_mount']=False
+        elif change=='import_map':next(row for row in bad['parent_observation']['mapped_images'] if '/libffi.so.' in row['destination'])['inode']+=1
+        elif change=='import_size':bad['import_image']['size']+=1
+        else:bad['import_image']['sha256']='e'*64
+        refused(w.validate_audit_runtime_binding,bad,bundle)
+    coherent=deepcopy(valid);coherent['import_image']['sha256']='e'*64
+    assert w.validate_audit_readiness(coherent)==coherent
+    refused(w.validate_audit_runtime_binding,coherent,bundle)
+    # Exercise the actual broker handler's mandatory context check with a real
+    # held reader identity and a modeled transport, without a worker/native run.
+    from recon_cockpit.secure_agent import engagement_live_broker_worker as worker
+    from recon_cockpit.secure_agent import engagement_live_protocol as protocol
+    left,right=socket.socketpair()
+    try:
+        held=os.fstat(left.fileno())
+        def handle(value):
+            loop=worker.BrokerLoop.__new__(worker.BrokerLoop)
+            loop.core=SimpleNamespace(broker_id=uid(2),runtime=bundle,audit_ready=None,
+                                      deadline_ns=time.monotonic_ns()+2*c.SECOND)
+            loop.lifecycle=object();loop.lifecycle_sequence=protocol.ChannelSequence(uid(2),'lifecycle')
+            loop.audit_reader=SimpleNamespace(channel=left);loop.transcript=lambda *args:None
+            frame={'schema_version':'1','channel_id':uid(2),'sequence':1,'operation':'AUDIT_OBSERVED','body':value}
+            with monkeypatch.context() as patch:
+                patch.setattr(protocol,'receive_packet',lambda *args,**kwargs:deepcopy(frame))
+                loop.lifecycle_request()
+            return loop.core
+        valid['source_manifest'].update(device=held.st_dev,inode=held.st_ino)
+        assert handle(valid).audit_ready==valid
+        coherent=deepcopy(valid);coherent['import_image']['sha256']='e'*64
+        refused(handle,coherent)
+        # One actual handler phase covers the received frame and nested codec.
+        # Expiry during validation must precede any stored audit authority.
+        now=[100.0];seen=[]
+        loop=worker.BrokerLoop.__new__(worker.BrokerLoop)
+        loop.core=SimpleNamespace(broker_id=uid(2),runtime=bundle,audit_ready=None,
+                                  deadline_ns=101*c.SECOND)
+        loop.lifecycle=object();loop.lifecycle_sequence=protocol.ChannelSequence(uid(2),'lifecycle')
+        loop.audit_reader=SimpleNamespace(channel=left)
+        loop.transcript=lambda *args:seen.append(('transcript',c._operation_deadline()))
+        frame={'schema_version':'1','channel_id':uid(2),'sequence':1,'operation':'AUDIT_OBSERVED','body':valid}
+        def receive(*args,control,**kwargs):
+            seen.append(('receive',control.deadline,c._operation_deadline()))
+            now[0]=100.5
+            return deepcopy(frame)
+        def expired_binding(value,runtime_bundle):
+            seen.append(('validation',c._operation_deadline()))
+            now[0]=101.01
+            return value
+        with monkeypatch.context() as patch:
+            patch.setattr(time,'monotonic',lambda:now[0])
+            patch.setattr(time,'monotonic_ns',lambda:int(now[0]*c.SECOND))
+            patch.setattr(protocol,'receive_packet',receive)
+            patch.setattr(w,'validate_audit_runtime_binding',expired_binding)
+            refused(loop.lifecycle_request,code='timeout')
+            assert c._operation_deadline()==now[0]+2
+        assert loop.core.audit_ready is None and not hasattr(loop.core,'audit_source')
+        assert seen==[('receive',101.0,101.0),('transcript',101.0),('validation',101.0)]
+
+    finally:left.close();right.close()
 
 
 @contextmanager
@@ -359,7 +502,7 @@ def audit_service(monkeypatch,deadline=None):
             except OSError:pass
 
 
-def test_audit_adapter_clips_original_exchange_deadline(monkeypatch):
+def test_audit_adapter_clips_original_exchange_deadline(monkeypatch,tmp_path):
     event=w.started_event(prepared())
     deadline=time.monotonic()+.06
     with audit_service(monkeypatch,deadline) as (service,peer,writers):
@@ -385,6 +528,70 @@ def test_audit_adapter_clips_original_exchange_deadline(monkeypatch):
             with pytest.raises(BlockingIOError):peer.recv(32768)
         finally:release.set();worker.join(1)
         assert not worker.is_alive()
+
+    # Model only process/bootstrap transport; real private file custody remains.
+    # Each late phase sees the same startup deadline, including the final copy.
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    from recon_cockpit.secure_agent import engagement_live_protocol as protocol
+    from recon_cockpit.secure_agent import audit as audit_module
+    from test_secure_engagement_live_runtime import declared_runtime
+    real_sink=audit_module.AuditSink
+    bundle=declared_runtime()
+    for expires_at in ('observer','binding','copy'):
+        now=[100.0];seen=[];cleanup=[]
+        with monkeypatch.context() as patch:
+            patch.setattr(time,'monotonic',lambda:now[0])
+            patch.setattr(time,'monotonic_ns',lambda:int(now[0]*c.SECOND))
+            channel=SimpleNamespace(setblocking=lambda value:None,close=lambda:None,
+                                    sendmsg=lambda buffers,*args:len(buffers[0]))
+            writer_fd=os.open(os.devnull,os.O_RDONLY)
+            stdout=open(os.devnull,'rb');stderr=open(os.devnull,'rb');service=None
+            try:
+                writer=SimpleNamespace(fileno=lambda:writer_fd,close=lambda:None)
+                role_bundle=SimpleNamespace(take_audit_writer=lambda:writer,audit_source_identity=(10,11))
+                service=adapter.EngagementAuditService(tmp_path/expires_at/'audit.jsonl',runtime=bundle,
+                    role_bundle=role_bundle,control=ExecutionControl(101.0,clock=time.monotonic))
+                snapshot=SimpleNamespace(stdlib='/unused',pass_fds=(),mounts=lambda argv:None,close=lambda:None)
+                patch.setattr(runtime,'_snapshot_audit',lambda *args:snapshot)
+                patch.setattr(runtime,'_observer',lambda:{'namespaces':dict.fromkeys(('user','net','mnt','pid'),'declared')})
+                patch.setattr(socket,'SOCK_SEQPACKET',getattr(socket,'SOCK_SEQPACKET',5),raising=False)
+                patch.setattr(socket,'socketpair',lambda *args:(channel,channel))
+                def held_sink(path):
+                    # Translate only Linux procfs spelling in this modeled
+                    # startup; retain the actual held private-parent identity.
+                    assert str(path)==f'/proc/self/fd/{service._parent}/audit.jsonl'
+                    held=os.fstat(service._parent);actual=service.path.parent.stat()
+                    assert (held.st_dev,held.st_ino)==(actual.st_dev,actual.st_ino)
+                    return real_sink(service.path)
+                patch.setattr(audit_module,'AuditSink',held_sink)
+                patch.setattr(os,'pipe2',lambda flags:os.pipe(),raising=False)
+                patch.setattr(adapter.subprocess,'Popen',lambda *args,**kwargs:SimpleNamespace(stdout=stdout,stderr=stderr))
+                patch.setattr(protocol,'_ready',lambda *args,**kwargs:None)
+                def reply(*args,**kwargs):
+                    now[0]=100.5
+                    return {'version':'1','writer_id':service.writer_id,'ready':True,
+                            'checks':dict.fromkeys(legacy.CHECKS,True)},b'{}'
+                patch.setattr(service,'_reply',reply)
+                patch.setattr(service,'close',lambda:cleanup.append(True))
+                def check_phase(name):
+                    seen.append((name,c._operation_deadline()))
+                    if name==expires_at:now[0]=101.01
+                    c._check_deadline(c._operation_deadline())
+                def observe(**kwargs):
+                    assert kwargs['control'].deadline==101.0
+                    check_phase('observer')
+                    return SimpleNamespace(receipt={},import_image={})
+                def binding(*args):check_phase('binding')
+                def copy(value):check_phase('copy');return value
+                patch.setattr(runtime,'_observe_legacy_audit',observe)
+                patch.setattr(w,'validate_audit_runtime_binding',binding)
+                patch.setattr(c,'detached',copy)
+                refused(service.start,code='timeout')
+                assert cleanup==[True] and c._operation_deadline()==now[0]+2
+                assert seen==[(name,101.0) for name in ('observer','binding','copy')[:('observer','binding','copy').index(expires_at)+1]]
+            finally:
+                stdout.close();stderr.close();os.close(writer_fd)
+                if service is not None and service._parent is not None:os.close(service._parent)
 
 
 def test_audit_output_or_witness_failure_is_terminal(monkeypatch):

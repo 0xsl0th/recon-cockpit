@@ -18,8 +18,8 @@ import uuid
 
 from .engagement_live_contract import LiveError
 
-CONTRACT_SHA256 = '7034c94f95314d2a5692db5681bd187ec9956df4f36404de2574e777c86ca1e7'
-GATES_SHA256 = '2cc4fb860f3844235e1b6484282c8062bcf612fcdfb3a6ce836782c70b5d6c6e'
+CONTRACT_SHA256 = '11b5e2f56e18ce4003e4dab6e2c99a68e7f7f29be1deeff4461e0a08cd49e9ca'
+GATES_SHA256 = '4e723dbc8cbf3690073dbfd41bbce3127f9a4d9a6bf1f99588df50c9e0e376ea'
 MAX_BUNDLE = 16777216
 MAX_REPORT = 8192
 MAX_TRANSCRIPT_ROWS = 4096
@@ -604,8 +604,9 @@ def _report(loaded,context,authority,manifest_sha,parser_count,tails):
         if m['ledger_exports']['initial']['status']!='complete' and not startup_negative:missing.add('initial_export')
         if m['ledger_exports']['final']['status']!='complete' and not (startup_negative or crash_negative):missing.add('final_export')
         if m['transcript']['status']!='complete' and not (startup_negative or crash_negative):missing.add('transcript')
-    cleanup=_cleanup_report(loaded)
-    if not _all_reaped(loaded) or cleanup['status']=='incomplete':missing.add('cleanup')
+    audit_closure=_audit_closure(loaded)
+    cleanup=_cleanup_report(loaded,audit=audit_closure)
+    if not _all_reaped(loaded,audit=audit_closure) or cleanup['status']=='incomplete':missing.add('cleanup')
     report={'schema_version':'1','contract_sha256':CONTRACT_SHA256,'gates_sha256':GATES_SHA256,
         'manifest_sha256':manifest_sha,'evidence_class':m['evidence_class'],'proof_kind':m['proof_kind'],
         'case_id':m['case_id'],'case_passed':passed,'status':'incomplete' if missing else 'complete',
@@ -1333,7 +1334,7 @@ def _cleanup_processes(loaded):
     return [*unique.values(),*unknown]
 
 
-def _cleanup_report(loaded):
+def _cleanup_report(loaded,*,audit=None):
     receipts=loaded['cleanup.json']['receipts']
     payloads={};wrappers={}
     complete=True
@@ -1348,13 +1349,22 @@ def _cleanup_report(loaded):
         payloads[key]=process
         if process['wrapper_pid'] is not None:
             wrappers[(process['wrapper_pid'],process['start_time_ticks'])]=process
-    return {'status':'not_started' if not receipts else 'complete' if complete else 'incomplete',
-            'observed_payloads':len(payloads) if receipts else None,
-            'reaped_payloads':sum(p['reaped_observed'] for p in payloads.values()) if receipts else None,
-            'reaped_wrappers':sum(p['wrapper_returncode'] is not None for p in wrappers.values()) if receipts else None}
+    if audit is None:audit=_audit_closure(loaded)
+    observed=set(payloads)|{(p['payload']['pid'],p['payload']['start_time_ticks']) for p in audit['parents']}
+    complete &= not audit['missing_cleanup']
+    started=bool(receipts or audit['parents'])
+    return {'status':'not_started' if not started else 'complete' if complete else 'incomplete',
+            'observed_payloads':len(observed) if started else None,
+            'reaped_payloads':sum(p['reaped_observed'] for p in payloads.values()) if started else None,
+            'reaped_wrappers':sum(p['wrapper_returncode'] is not None for p in wrappers.values()) if started else None}
 
 
-def _all_reaped(loaded):
+def _audit_closure(loaded):
+    from .engagement_live_context import _audit_process_closure
+    return _audit_process_closure(loaded)
+
+
+def _all_reaped(loaded,*,audit=None):
     # Cleanup may have exceeded an original work deadline while still producing
     # verified reaping. Save that failure honestly; never save a living role.
     reaped=set()
@@ -1368,6 +1378,9 @@ def _all_reaped(loaded):
             reaped.add((process['pid'],process['start_time_ticks']))
     observations=list(loaded['processes.json']['startup'])+[
         row['parent_observation'] for row in loaded['processes.json']['readiness']+loaded['processes.json']['native']]
+    if audit is None:audit=_audit_closure(loaded)
+    if audit['missing_cleanup']:return False
+    observations+=audit['parents']
     for observation in observations:
         payload=observation['payload']
         if (payload['pid'],payload['start_time_ticks']) not in reaped:
@@ -1536,7 +1549,9 @@ def inspect_live_bundle(path,*,deadline=None):
                     context=_context(loaded,end)
                     authority=_authority(loaded,rows,end)
                     count=_reparse(loaded,end)
-                    result=_report(loaded,context,authority,_sha(_canonical(manifest,32768)),count,tails)
+                    from .engagement_live_contract import _deadline_context
+                    with _deadline_context(end):
+                        result=_report(loaded,context,authority,_sha(_canonical(manifest,32768)),count,tails)
                     _check(end)
                     return result
             result=_inspect_files(parent,name,end,inspect)
@@ -1559,7 +1574,9 @@ def write_live_bundle(directory,*,manifest,members,deadline=None):
             _context(loaded,end);_authority(loaded,rows,end)
         # A late but fully observed emergency reap may be saved as failed evidence.
         # An unverified still-running role may never be hidden by packaging.
-        if not _all_reaped(loaded):_fail('cleanup_incomplete')
+        from .engagement_live_contract import _deadline_context
+        with _deadline_context(end):
+            if not _all_reaped(loaded):_fail('cleanup_incomplete')
         raw_manifest=_canonical(loaded['manifest.json'],32768)
         with _parent(directory,end) as (parent,parent_path,name,parent_identity):
             _check(end)

@@ -136,16 +136,19 @@ class EngagementAuditService:
             ready,info_raw=self._reply(phase,info_fd=info_read)
             expected={'version':'1','writer_id':self.writer_id,'ready':True,'checks':dict.fromkeys(legacy.CHECKS,True)}
             if ready!=expected:c.fail('audit_unavailable')
-            self._pin=runtime._observe_legacy_audit(info_raw=info_raw,process=self._process,bundle=self.runtime,observer=observer,control=phase)
-            current=self._verify_path()
-            reader_dev,reader_ino=self.bundle.audit_source_identity
-            self._ready={'schema_version':'1','writer_id':self.writer_id,'initial':initial,'ready':ready,
-                'source_manifest':{'version':'1','writer_id':self.writer_id,'device':reader_dev,'inode':reader_ino},
-                'append_identity':{'device':current.st_dev,'inode':current.st_ino,'mode':current.st_mode,
-                    'uid':current.st_uid,'gid':current.st_gid,'links':current.st_nlink,'size':current.st_size},
-                'parent_observation':self._pin.receipt}
-            from .engagement_live_witness import validate_audit_readiness
-            validate_audit_readiness(self._ready);phase.check();return self.readiness
+            phase.check()
+            with c._deadline_context(phase.deadline):
+                self._pin=runtime._observe_legacy_audit(info_raw=info_raw,process=self._process,bundle=self.runtime,observer=observer,control=phase,initial=initial)
+                current=self._verify_path()
+                reader_dev,reader_ino=self.bundle.audit_source_identity
+                self._ready={'schema_version':'1','writer_id':self.writer_id,'initial':initial,'ready':ready,
+                    'source_manifest':{'version':'1','writer_id':self.writer_id,'device':reader_dev,'inode':reader_ino},
+                    'append_identity':{'device':current.st_dev,'inode':current.st_ino,'mode':current.st_mode,
+                        'uid':current.st_uid,'gid':current.st_gid,'links':current.st_nlink,'size':current.st_size},
+                    'parent_observation':self._pin.receipt,'import_image':self._pin.import_image}
+                from .engagement_live_witness import validate_audit_runtime_binding
+                validate_audit_runtime_binding(self._ready,self.runtime)
+                phase.check();return self.readiness
         except BaseException as error:
             try:self.close()
             except c.LiveError as cleanup_error:

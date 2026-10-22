@@ -423,15 +423,21 @@ class BrokerLoop:
         p.send_packet(peer,frame,role=role,control=self.control());self.transcript(role,'sent',frame,row=row)
 
     def lifecycle_request(self):
-        frame=self.lifecycle_sequence.accept(p.receive_packet(self.lifecycle,role='lifecycle',control=self.control()))
+        phase=self.control()
+        with c._deadline_context(phase.deadline):
+            self._lifecycle_request(phase)
+
+    def _lifecycle_request(self,phase):
+        frame=self.lifecycle_sequence.accept(p.receive_packet(self.lifecycle,role='lifecycle',control=phase))
         p.require_request(frame,role='lifecycle');self.transcript('lifecycle','received',frame)
         op,body=frame['operation'],frame['body']
         if op=='STOP':self.stop(body['reason']);return
         if op=='AUDIT_OBSERVED':
             if self.core.audit_ready is not None:c.fail('invalid_role')
-            value=w.validate_audit_readiness(body)
+            value=w.validate_audit_runtime_binding(body,self.core.runtime)
             actual=os.fstat(self.audit_reader.channel.fileno())
             if (value['source_manifest']['device'],value['source_manifest']['inode'])!=(actual.st_dev,actual.st_ino):c.fail('invalid_witness')
+            phase.check()
             self.core.audit_ready=value;self.core.audit_source=value['source_manifest'];return
         if op!='ROLE_OBSERVED':c.fail('invalid_role')
         from .engagement_live_runtime import validate_readiness
@@ -444,6 +450,7 @@ class BrokerLoop:
         if role in {'terminal','graphical'}:
             if ready['worker_ready']['worker_id']!=slot['reviewer_id'] or role!=('terminal' if slot['review_mode']=='terminal' else 'graphical'):c.fail('invalid_role')
         elif key in self.worker_ready and ready['worker_ready']!=self.worker_ready[key]:c.fail('invalid_role')
+        phase.check()
         self.core.role_observations[key]=ready
 
     def ingress_request(self,index):

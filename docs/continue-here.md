@@ -145,10 +145,16 @@ separately authorized real use remain required. Completed milestones stay closed
 based on accepted merge `d8e1a6f`. The
 [implementation contract](stage4-engagement-live.md) and
 [exact inventory](stage4-engagement-live-gates.json) were independently reviewed
-and pinned before implementation; pre-acceptance amendments A01–A06 end at
-`98c9610`. Implementation and independent integration review are in progress.
-Development checks do not constitute native acceptance. Freeze the complete
-clean source tree and installed runtime before the exact acceptance runs.
+and pinned before implementation; pre-acceptance amendments A01–A07 end at
+`e4e2d89`. The first three native attempts are retained failures, with no new
+native gate accepted yet. Broker startup now completes after correcting setup
+descriptor closure and verifying the pinned read-only import image. An audit-only
+diagnostic then confirmed that the unchanged audit worker retains six descriptors,
+including libffi; A07 pins the exact inventory, actual image and endpoint bindings,
+and audit process cleanup obligations before their implementation. Independent
+integration review continues. The 160 portable cases passed on earlier freeze
+`f1c5915`; that run does not validate subsequent changes. Freeze the complete
+clean source tree and installed runtime again before the exact acceptance runs.
 This increment binds the
 accepted finite HTTP prefix to fresh isolated review, durable admission, trusted
 payload metering and bounded cancellation/cleanup. Both reviewer displays and

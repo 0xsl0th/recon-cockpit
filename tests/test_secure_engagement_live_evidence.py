@@ -38,6 +38,7 @@ def runtime():
         if role in ('nmap','launcher'):destinations.add('/tool/nmap')
         if role=='launcher':destinations.add('/usr/bin/bwrap')
         if role=='endpoint':destinations.add('/usr/sbin/nft')
+        if role=='parser':destinations.add('/lib/x86_64-linux-gnu/libffi.so.8')
         native=[]
         for destination in sorted(destinations):
             item=file(destination)
@@ -85,6 +86,27 @@ def fixture():
 def repin(manifest,members):
     manifest['members']=[{'name':n,'bytes':len(v),'sha256':sha(v)} for n,v in sorted(members.items())]
     return manifest,members
+
+
+def unchecked_saved(path,manifest,members):
+    """An edited private bundle bypasses the writer, never the inspector."""
+    repin(manifest,members);path.mkdir(mode=0o700)
+    for name,content in {**members,'manifest.json':raw(manifest)}.items():
+        item=path/name;item.write_bytes(content);item.chmod(0o600)
+    return path
+
+
+def rewrite_audit(manifest,members,change):
+    parts=[];found=0
+    for segment in manifest['transcript']['segments']:
+        encoded=members['transcript.jsonl'][segment['offset']:segment['offset']+segment['bytes']]
+        rows=[json.loads(line) for line in encoded.splitlines()]
+        for row in rows:
+            if row['kind']=='protocol' and row['data']['frame']['operation']=='AUDIT_OBSERVED':
+                change(row);found+=1
+        parts.append((b''.join(raw(row)+b'\n' for row in rows),segment['source'],segment['broker_id'],segment['status']))
+    assert found==1
+    return with_transcript(manifest,members,parts)
 
 
 def saved(tmp_path,manifest=None,members=None):
@@ -159,7 +181,7 @@ def useful_fixture(monkeypatch):
         for entry in role['native_files']:
             if entry['destination']=='/tool/nmap':entry['sha256']='d'*64
     bundle=r.validate_runtime(bundle);manifest['runtime_sha256']=sha(raw(bundle))
-    loaded,rows=complete_authority_fixture(runtime_sha256=manifest['runtime_sha256'])
+    loaded,rows=complete_authority_fixture(runtime_sha256=manifest['runtime_sha256'],runtime_bundle=bundle)
     operation=loaded['results.json']['operations'][0];p=operation['prepared'];env=p['envelope'];scope=operation['session']['scope']
     release=next(x['row']['data']['frame']['body'] for x in rows if x['row']['kind']=='protocol' and x['row']['data']['frame']['operation']=='GO')
     with monkeypatch.context() as local:
@@ -174,7 +196,12 @@ def useful_fixture(monkeypatch):
     parsed=configurable_parser.parse_output(p['action']['tool_id'],output,scope=scope,endpoint_id='http')
     readies=[declared_readiness(bundle,role,pid=200+20*i,worker_id=uid(2) if role=='broker' else None)
              for i,role in enumerate(('broker','nmap','parser','admission'))]
+    readies[0]=next(row for row in loaded['processes.json']['readiness'] if row['role']=='broker')
     cleanups=[declared_cleanup(ready,started=M+1000000,finished=M+2000000) for ready in readies]
+    audit_ready=next(row['row']['data']['frame']['body'] for row in rows if
+        row['row']['kind']=='protocol' and row['row']['data']['frame']['operation']=='AUDIT_OBSERVED')
+    audit_cleanup=declared_cleanup({'role':'audit','parent_observation':audit_ready['parent_observation']},
+        started=M+1000000,finished=M+2000000)
     native_parent=deepcopy(readies[1]['parent_observation']);native_parent['stage']='native';native_parent['sampled_at_ns']=M+50
     native_parent['executable'].update(destination='/tool/nmap',sha256='d'*64,inode=199)
     native={'schema_version':'1','role':'nmap','waiting_image':readies[1]['parent_observation']['executable'],
@@ -220,7 +247,7 @@ def useful_fixture(monkeypatch):
         def descriptor(access):return {'fd':20+i,'purpose':phase+'_export_memfd','kind':'regular',
             'device':11,'inode':20+i,'mode':stat.S_IFREG|0o600,'flags':access}
         exports.append({'broker_id':uid(2),'reference':reference,'host_descriptor':descriptor(os.O_RDONLY),'broker_descriptor':descriptor(os.O_RDWR)})
-    members['cleanup.json']=raw({'schema_version':'1','receipts':cleanups,'exports':exports,'recovery':None})
+    members['cleanup.json']=raw({'schema_version':'1','receipts':[*cleanups,audit_cleanup],'exports':exports,'recovery':None})
     capture={'schema_version':'1','slot':'http_identify','stdout_base64':request['raw_base64'],
         'stderr_base64':'','stdout_sha256':sha(output),'stderr_sha256':sha(b''),
         'stdout_bytes':len(output),'stderr_bytes':0,'exit_code':0,'truncated':False}
@@ -560,7 +587,7 @@ def audit_observation(p):
     return value,{'version':'1','writer_id':uid(91),'device':10,'inode':11}
 
 
-def test_requires_full_durable_audit_event_envelope():
+def test_requires_full_durable_audit_event_envelope(tmp_path,monkeypatch):
     import base64
     from recon_cockpit.secure_agent import audit_protocol,audit_witness
     from recon_cockpit.secure_agent import engagement_live_witness as witness
@@ -587,6 +614,43 @@ def test_requires_full_durable_audit_event_envelope():
     packet=audit_protocol.decode(base64.b64decode(bad['raw_base64']));packet['event_digest']=bad['producer_sha256']
     encoded=audit_protocol.encode(packet);bad['raw_base64']=base64.b64encode(encoded).decode();bad['raw_sha256']=sha(encoded)
     refused(witness.validate_audit_observation,bad,p,source=source,sequence=1)
+    # Public saved replay enforces A07 custody too. These are declared portable
+    # observations, not claims that a process or mounted image was inspected.
+    from recon_cockpit.secure_agent import engagement_live_parser,configurable_parser
+    monkeypatch.setattr(engagement_live_parser,'parse',lambda **kwargs:(
+        configurable_parser.parse_output(kwargs['tool_id'],kwargs['raw'],kwargs['stderr'],
+            scope=kwargs['scope'],endpoint_id='http',truncated=kwargs['truncated']),{}))
+    manifest,members=useful_fixture(monkeypatch)
+    original=unchecked_saved(tmp_path/'audit-good',deepcopy(manifest),dict(members))
+    assert e.inspect_live_bundle(original)['status']=='complete'
+    for variant in ('runtime_hash','mapping_identity','writable_mount','append_identity',
+                    'writer_identity','reader_identity','direction','observer','channel'):
+        changed_manifest=deepcopy(manifest);changed_members=dict(members)
+        def mutate(row):
+            data=row['data'];ready=data['frame']['body']
+            if variant=='runtime_hash':ready['import_image']['sha256']='e'*64
+            elif variant=='mapping_identity':
+                image=ready['import_image'];image['inode']+=1
+                next(d for d in ready['parent_observation']['descriptors'] if d['purpose']=='audit_import_libffi')['inode']=image['inode']
+            elif variant=='writable_mount':ready['import_image']['read_only_mount']=False
+            elif variant=='append_identity':ready['initial']['inode']+=1
+            elif variant=='writer_identity':ready['initial']['witness'][1]+=1
+            elif variant=='reader_identity':ready['source_manifest']['inode']+=1
+            elif variant=='direction':data['direction']='sent'
+            elif variant=='observer':row['observer_id']=uid(999)
+            else:data['frame']['channel_id']=uid(999)
+        rewrite_audit(changed_manifest,changed_members,mutate)
+        path=unchecked_saved(tmp_path/('audit-'+variant),changed_manifest,changed_members);before=snapshot(path)
+        refused(e.inspect_live_bundle,path)
+        assert snapshot(path)==before
+    changed_manifest=deepcopy(manifest);changed_members=dict(members)
+    processes=json.loads(members['processes.json'])
+    processes['readiness']=[row for row in processes['readiness'] if row['role']!='broker']
+    changed_members['processes.json']=raw(processes)
+    path=unchecked_saved(tmp_path/'audit-missing-broker',changed_manifest,changed_members)
+    report=e.inspect_live_bundle(path)
+    assert report['status']=='incomplete' and 'process_identity' in report['missing_evidence']
+    assert report['operations'][0]['outcome']=='useful' # Retained result is not rewritten.
 
 
 def test_replays_ledger_and_broker_state_together():
@@ -996,14 +1060,16 @@ def test_retains_partial_and_unobserved_outcomes(monkeypatch):
     assert report['status']=='complete' and report['operation_count']==report['useful_operation_count']==0
 
 
-def test_binds_cleanup_to_actual_process_identity():
+def test_binds_cleanup_to_actual_process_identity(tmp_path,monkeypatch):
     # Independent saved-identity crosslink; no current PID or synthetic kernel claim.
     identity={'pid':1234,'parent_pid':1233,'start_time_ticks':5678}
     process={'role':'parser','pid':1234,'start_time_ticks':5678,'pin_verified':True,
         'signal_attempted':False,'exit_observed':True,'reaped_observed':True,
         'wrapper_pid':1233,'wrapper_returncode':0}
     loaded={'processes.json':{'startup':[],'readiness':[{'parent_observation':{'payload':identity}}],'native':[]},
-        'cleanup.json':{'receipts':[{'status':'complete','processes':[process]}]}}
+        'manifest.json':{'transcript':{'segments':[]}},'transcript.jsonl':b'',
+        'cleanup.json':{'receipts':[{'schema_version':'1','started_at_ns':100,'finished_at_ns':200,
+            'deadline_ns':2000000100,'status':'complete','descriptors_closed':True,'processes':[process]}]}}
     assert e._all_reaped(loaded)
     for key,value in [('pid',4321),('start_time_ticks',5679),('reaped_observed',False),
                        ('exit_observed',False),('wrapper_returncode',None),('wrapper_pid',None)]:
@@ -1024,6 +1090,71 @@ def test_binds_cleanup_to_actual_process_identity():
         bad=deepcopy(loaded);bad['cleanup.json']['receipts'][-1]['processes'][0][key]=value
         assert e._cleanup_processes(bad) is None and not e._all_reaped(bad)
         refused(e._cleanup_report,bad)
+    # The accepted audit worker is observed in the real-shaped broker
+    # transcript, not an invented new-role compound readiness record.
+    from recon_cockpit.secure_agent import engagement_live_parser,configurable_parser
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    monkeypatch.setattr(engagement_live_parser,'parse',lambda **kwargs:(
+        configurable_parser.parse_output(kwargs['tool_id'],kwargs['raw'],kwargs['stderr'],
+            scope=kwargs['scope'],endpoint_id='http',truncated=kwargs['truncated']),{}))
+    manifest,members=useful_fixture(monkeypatch)
+    complete=unchecked_saved(tmp_path/'cleanup-good',deepcopy(manifest),dict(members))
+    good=e.inspect_live_bundle(complete)
+    assert good['status']=='complete' and good['cleanup']['observed_payloads']==5
+    for variant in ('missing','duplicate','role','wrapper','start','pid','chronology',
+                    'descriptors','pin','reap','wrapper_exit','failed'):
+        changed_manifest=deepcopy(manifest);changed_members=dict(members)
+        cleanup=json.loads(members['cleanup.json'])
+        actual=next(row for row in cleanup['receipts'] if row['processes'][0]['role']=='audit')
+        process=actual['processes'][0]
+        if variant=='missing':cleanup['receipts'].remove(actual)
+        elif variant=='duplicate':cleanup['receipts'].append(deepcopy(actual))
+        elif variant=='role':process['role']='parser'
+        elif variant=='wrapper':process['wrapper_pid']+=1
+        elif variant=='start':process['start_time_ticks']+=1
+        elif variant=='pid':process['pid']+=1
+        elif variant=='chronology':
+            actual.update(started_at_ns=1,finished_at_ns=2,deadline_ns=2000000001)
+        elif variant=='descriptors':actual.update(descriptors_closed=False,status='failed')
+        elif variant=='pin':
+            actual['status']='failed';process.update(pin_verified=False,signal_attempted=False)
+        elif variant=='reap':
+            actual['status']='failed';process.update(exit_observed=False,reaped_observed=False)
+        elif variant=='wrapper_exit':
+            actual['status']='failed';process['wrapper_returncode']=None
+        else:actual['status']='failed'
+        changed_members['cleanup.json']=raw(cleanup)
+        path=unchecked_saved(tmp_path/('cleanup-'+variant),changed_manifest,changed_members)
+        before=snapshot(path)
+        if variant in ('missing','descriptors','pin','reap','wrapper_exit','failed','duplicate'):
+            report=e.inspect_live_bundle(path)
+            assert report['operations']==good['operations']
+            assert report['cleanup']['observed_payloads']==5
+            if variant=='duplicate':
+                assert report['status']=='complete' and report['cleanup']==good['cleanup']
+            else:
+                assert report['status']=='incomplete' and 'cleanup' in report['missing_evidence']
+                assert report['cleanup']['status']=='incomplete'
+                assert report['cleanup']['reaped_payloads']==(4 if variant in ('missing','reap') else 5)
+            if variant in ('missing','descriptors','pin','reap','wrapper_exit'):
+                refused(e.write_live_bundle,tmp_path/('refuse-packaging-'+variant),
+                    manifest=changed_manifest,members=changed_members,code='cleanup_incomplete')
+        else:refused(e.inspect_live_bundle,path)
+        assert snapshot(path)==before
+    # The audit parent occupies a real slot in the same94-identity inventory.
+    values={name:(content if name.endswith(('.jsonl','.bin')) else json.loads(content))
+        for name,content in members.items()};values['manifest.json']=manifest
+    assert not context._audit_process_closure(values)['missing_cleanup']
+    basis=deepcopy(next(row for row in values['processes.json']['readiness'] if row['role']=='parser'))
+    for i in range(89):
+        item=deepcopy(basis);item['parent_observation']['payload']['pid']=2000+i
+        item['parent_observation']['wrapper']['pid']=3000+i
+        values['processes.json']['readiness'].append(item)
+    assert not context._audit_process_closure(values)['missing_cleanup']
+    last=deepcopy(basis);last['parent_observation']['payload']['pid']=2089
+    last['parent_observation']['wrapper']['pid']=3089
+    values['processes.json']['readiness'].append(last)
+    refused(context._audit_process_closure,values)
     # Startup exit78 is not a business-cause witness. These declared receipts
     # require the exact captured guard diagnostic commitment as well.
     from test_secure_engagement_live_runtime import declared_readiness,declared_cleanup

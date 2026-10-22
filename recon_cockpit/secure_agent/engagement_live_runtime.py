@@ -483,9 +483,35 @@ SPEC = {'apis': {'client.prepare': 'prepare_client(*, runtime, prepared, endpoin
  'fd_inventory': {'admission': ['stdio:3'],
                   'admission_max': 3,
                   'audit': ['stdio:3 (stdin is producer channel)',
-                            'append_file:1',
-                            'one_way_witness:1'],
-                  'audit_max': 5,
+                            'audit_import_libffi:1 (exact pinned read-only import image)',
+                            'audit_append:1 (initial append_file right)',
+                            'audit_witness:1 (initial audit_witness writer right)'],
+                  'audit_max': 6,
+                  'audit_rule': 'The unchanged accepted audit worker has exactly six steady '
+                                'descriptors: stdin/stdout/stderr plus audit_append, audit_witness '
+                                'and audit_import_libffi, with complete FD0..5 inventory. Derive '
+                                'the three non-stdio purposes from actual held identities and the '
+                                'pinned mounted library; do not infer append/witness identity from '
+                                'descriptor position. No unnamed, optional or count-only extra '
+                                'descriptor is accepted. Initial transferred rights remain '
+                                'append_file and audit_witness (the one-way writer) only. Required '
+                                'audit_readiness.import_image is the closed seven-field object '
+                                'destination/device/inode/mode/size/sha256/read_only_mount. The '
+                                'parent actually rereads the exact selected-runtime libffi mounted '
+                                'image and held descriptor under the original startup deadline, '
+                                'verifies regular0444 and O_RDONLY without O_PATH, unchanged '
+                                'device/inode/mode/size/bytes/SHA, a read-only mount and the same '
+                                'executable mapped-image destination/device/inode. The retained '
+                                'read_only_mount is true; all other roles retain their existing '
+                                'verified import-descriptor closure. Accepted '
+                                'audit_worker/planner_worker sources and audit source partition '
+                                'remain unchanged. Audit readiness binds audit_append descriptor '
+                                'device/inode/mode to append_identity and initial.device/inode, '
+                                'with private0600 regular file and O_WRONLY|O_APPEND and no '
+                                'O_PATH; audit_witness descriptor matches initial.witness '
+                                'transferred writer endpoint, nonblocking SEQPACKET lineage. '
+                                'source_manifest is the distinct reader endpoint held by the '
+                                'broker and must not be conflated with initial.witness.',
                   'broker_max': 21,
                   'broker_phase_rule': 'One bootstrap/runtime FD may exist only before opening '
                                        'store/SQLite descriptors and must close first. Three '
@@ -2702,7 +2728,79 @@ def _image(directory,path,destination):
     finally:os.close(fd)
 
 
-def _process_observation(pin,manifest,observer,expected_net,*,stage='sealed'):
+def _audit_import_row(manifest):
+    rows=[row for row in manifest['native_files'] if re.fullmatch(
+        r'/(?:usr/)?lib(?:64)?/(?:[a-zA-Z0-9_-]+/)?libffi\.so\.\d+(?:\.\d+)*',row['destination'])]
+    if len(rows)!=1:_fail('invalid_runtime')
+    return rows[0]
+
+
+def _audit_image(directory,path,row,control,*,canonical_mount=False):
+    flags=os.O_RDONLY|os.O_CLOEXEC|(os.O_NOFOLLOW if canonical_mount else 0)
+    fd=os.open(path,flags,dir_fd=directory)
+    try:
+        before=os.fstat(fd)
+        if before.st_mode!=(stat.S_IFREG|0o444) or before.st_size!=row['size']:_fail('invalid_runtime')
+        raw=_read_fd(fd,row['size'],control)
+        if _stamp(before)!=_stamp(os.fstat(fd)) or len(raw)!=row['size'] or hashlib.sha256(raw).hexdigest()!=row['sha256']:_fail('invalid_runtime')
+        readonly=bool(os.fstatvfs(fd).f_flag&os.ST_RDONLY)
+        if not readonly:_fail('invalid_runtime')
+        result={'destination':row['destination'],'device':before.st_dev,'inode':before.st_ino,
+            'mode':before.st_mode,'size':len(raw),'sha256':row['sha256'],'read_only_mount':readonly}
+    finally:os.close(fd)
+    _check(control)
+    return result
+
+
+def _observe_audit_inventory(pin,manifest,descriptors,initial,control):
+    """Attribute all actual audit FDs using bootstrap and immutable image pins."""
+    _fields(initial,('version','writer_id','device','inode','witness'))
+    if initial['version']!='1' or type(initial['writer_id'])is not str or _UUID.fullmatch(initial['writer_id'])is None:_fail('invalid_role')
+    for key in ('device','inode'):_integer(initial[key],0,2**64-1)
+    if type(initial['witness'])is not list or len(initial['witness'])!=2:_fail('invalid_role')
+    for number in initial['witness']:_integer(number,0,2**64-1)
+    if [row['fd'] for row in descriptors]!=list(range(6)):_fail('invalid_role')
+    _check(control);pin.check_alive()
+    result=[dict(row) for row in descriptors]
+    for name,identity in (('audit_append',[initial['device'],initial['inode']]),('audit_witness',initial['witness'])):
+        selected=[row for row in result[3:] if [row['device'],row['inode']]==identity]
+        if len(selected)!=1 or selected[0]['purpose']!='observed':_fail('invalid_role')
+        selected[0]['purpose']=name
+        if name=='audit_witness':
+            # This is the exact transferred endpoint whose SEQPACKET type was
+            # checked by the unchanged worker before its accepted READY.
+            if not stat.S_ISSOCK(selected[0]['mode']):_fail('invalid_role')
+            selected[0]['kind']='seqpacket'
+    extra=[row for row in result[3:] if row['purpose']=='observed']
+    if len(extra)!=1:_fail('invalid_role')
+    library=extra[0];library['purpose']='audit_import_libffi'
+    _audit_inventory_names(result)
+    expected=_audit_import_row(manifest);destination=expected['destination']
+    target=os.readlink('fd/'+str(library['fd']),dir_fd=pin.directory)
+    if target not in (destination,destination+' (deleted)'):_fail('invalid_runtime')
+    held=_audit_image(pin.directory,'fd/'+str(library['fd']),expected,control)
+    mounted=_audit_image(pin.directory,'root'+destination,expected,control,canonical_mount=True)
+    if held!=mounted or any(held[key]!=library[key] for key in ('device','inode','mode')):_fail('invalid_runtime')
+    maps=os.open('maps',os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC,dir_fd=pin.directory)
+    try:raw=_read_fd(maps,262144,control).decode('ascii')
+    finally:os.close(maps)
+    _check(control)
+    matched=False
+    for line in raw.splitlines():
+        parts=line.split(maxsplit=5)
+        if len(parts)!=6 or parts[1]!='r-xp' or parts[5]!=target:continue
+        try:device=tuple(int(x,16) for x in parts[3].split(':'));inode=int(parts[4])
+        except ValueError:_fail('invalid_runtime')
+        if device==(os.major(held['device']),os.minor(held['device'])) and inode==held['inode']:matched=True
+    if not matched or os.readlink('fd/'+str(library['fd']),dir_fd=pin.directory)!=target:_fail('invalid_runtime')
+    current=_fd_inventory('/proc/'+str(pin.pid),role='audit',steady=True)
+    if current!=descriptors:_fail('invalid_role')
+    _validate_audit_inventory(result,[{key:held[key] for key in ('destination','device','inode')}])
+    _check(control);pin.check_alive()
+    return result,held
+
+
+def _process_observation(pin,manifest,observer,expected_net,*,stage='sealed',audit_initial=None,control=None):
     pin.check_alive();directory=pin.directory
     ancestry=[];pid=pin.pid
     while len(ancestry)<16:
@@ -2730,8 +2828,10 @@ def _process_observation(pin,manifest,observer,expected_net,*,stage='sealed'):
     if stage in ('sealed','native') and (any(actual_status[k] for k in fields) or actual_status['no_new_privs']!=1 or actual_status['seccomp_mode']!=2):_fail('invalid_role')
     task_ids=sorted(int(x) for x in os.listdir('/proc/'+str(pin.pid)+'/task'))
     if len(task_ids)>SPEC['resources'][pin.role].get('tasks_max',1):_fail('invalid_role')
-    purposes=('audit_append','audit_witness') if pin.role=='audit' else RIGHTS.get(pin.role,())
+    purposes=() if pin.role=='audit' else RIGHTS.get(pin.role,())
     descriptors=_fd_inventory('/proc/'+str(pin.pid),purposes={0:'stdin',1:'stdout',2:'stderr',**{i+3:name for i,name in enumerate(purposes)}},role=pin.role,steady=stage in ('sealed','native'))
+    if pin.role=='audit':
+        descriptors,pin.import_image=_observe_audit_inventory(pin,manifest,descriptors,audit_initial,control)
     if len(descriptors)>_steady_fd_max(pin.role,stage):_fail('invalid_role')
     executable=_image(directory,'exe',manifest['executable'] if stage=='native' else '/usr/bin/python3')
     expected=next(x for x in manifest['native_files'] if x['destination']==executable['destination'])
@@ -2794,7 +2894,7 @@ def observe_native(pin,manifest,*,waiting_image,control):
         return {'schema_version':'1','role':'nmap','waiting_image':waiting_image,'parent_observation':observation,'observed_at_ns':time.monotonic_ns()}
 
 
-def _observe_legacy_audit(*,info_raw,process,bundle,observer,control):
+def _observe_legacy_audit(*,info_raw,process,bundle,observer,control,initial):
     if type(info_raw)is not bytes or len(info_raw)>4096:_fail()
     info=json.loads(info_raw)
     if type(info)is not dict or type(info.get('child-pid'))is not int:_fail()
@@ -2804,7 +2904,7 @@ def _observe_legacy_audit(*,info_raw,process,bundle,observer,control):
         manifest=json.loads(_json(next(x for x in validated['roles'] if x['role']=='parser')))
         manifest.update(role='audit',sources=[{**next(x for x in validated['sources'] if x['module']==module),'destination':'/app/'+module+'.py'} for module in SPEC['source_partitions']['audit_exact']])
         _check(control)
-        pin.receipt=_process_observation(pin,manifest,observer,None)
+        pin.receipt=_process_observation(pin,manifest,observer,None,audit_initial=initial,control=control)
         validate_audit_observation(pin.receipt)
         pin.verified=True;_check(control);return pin
     except BaseException:
@@ -3103,6 +3203,41 @@ def _release_startup_resources(*,snapshot,info_read,info_write,child,rights,pare
 _RETAINED_FIXTURE_DESCRIPTORS=ContextVar('engagement_live_retained_fixture_descriptors',default=None)
 
 
+def _audit_inventory_names(descriptors):
+    # These receipts describe the pinned Linux runtime, including on a reader
+    # hosted elsewhere. Do not interpret Linux access flags using host constants.
+    names=('stdin','stdout','stderr','audit_append','audit_witness','audit_import_libffi')
+    if type(descriptors)is not list or len(descriptors)!=6:_fail('invalid_role')
+    for row in descriptors:
+        _fields(row,SPEC['closed_objects']['descriptor']['fields'])
+        if type(row['purpose'])is not str or type(row['kind'])is not str:_fail('invalid_role')
+        for key in ('fd','device','inode','mode','flags'):_integer(row[key],0,2**64-1)
+    if ([row['fd'] for row in descriptors]!=list(range(6))
+            or {row['purpose'] for row in descriptors}!=set(names)
+            or len({(row['device'],row['inode']) for row in descriptors})!=6):_fail('invalid_role')
+    by_name={row['purpose']:row for row in descriptors}
+    for fd,name in enumerate(names[:3]):
+        row=by_name[name]
+        if row['fd']!=fd:_fail('invalid_role')
+        if fd==0:
+            if row['kind']!='seqpacket' or not stat.S_ISSOCK(row['mode']) or row['flags']&0x200003!=2 or not row['flags']&0x800:_fail('invalid_role')
+        elif row['kind']!='pipe' or not stat.S_ISFIFO(row['mode']) or row['flags']&0x200003!=1:_fail('invalid_role')
+    append=by_name['audit_append'];witness=by_name['audit_witness'];library=by_name['audit_import_libffi']
+    if append['kind']!='regular' or append['mode']!=(stat.S_IFREG|0o600) or append['flags']&0x200003!=1 or not append['flags']&0x400:_fail('invalid_role')
+    if witness['kind']!='seqpacket' or not stat.S_ISSOCK(witness['mode']) or witness['flags']&0x200003!=2 or not witness['flags']&0x800:_fail('invalid_role')
+    if library['kind']!='regular' or library['mode']!=(stat.S_IFREG|0o444) or library['flags']&0x200003!=0:_fail('invalid_role')
+    return by_name
+
+
+def _validate_audit_inventory(descriptors,images):
+    named=_audit_inventory_names(descriptors)
+    selected=[image for image in images if type(image.get('destination'))is str and re.fullmatch(
+        r'/(?:usr/)?lib(?:64)?/(?:[a-zA-Z0-9_-]+/)?libffi\.so\.\d+(?:\.\d+)*',image['destination'])]
+    library=named['audit_import_libffi']
+    if len(selected)!=1 or any(selected[0][key]!=library[key] for key in ('device','inode')):_fail('invalid_runtime')
+    return named
+
+
 def _validate_parent_observation(value,role=None,*,audit=False):
     _fields(value,SPEC['closed_objects']['parent_observation']['fields'])
     selected=value['role']
@@ -3159,6 +3294,9 @@ def _validate_parent_observation(value,role=None,*,audit=False):
     for row in images:
         _fields(row,('destination','device','inode'))
         for key in ('device','inode'):_integer(row[key],0,2**64-1)
+    if audit:
+        if value['stage']!='sealed':_fail('invalid_role')
+        _validate_audit_inventory(descriptors,images)
     _integer(value['sampled_at_ns'],1)
     return json.loads(_json(value))
 
