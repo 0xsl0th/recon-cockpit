@@ -936,3 +936,53 @@ The inventory now spells out both existing owned fixture scopes: A uses `owned-e
 ### Pre-acceptance amendment A05: actual execve denial
 
 The existing `creation_denial.operation` enum includes `execve` with `flags=0`, so the already-required new-image denial can retain its actual returned failure, errno and unchanged task observations. A successful exec cannot supply a returned denial. Multiple existing boundary observations retain the required fork, namespace and exec attempts under the same gate; no case, capability, source path or resource limit is added.
+
+### Pre-acceptance amendment A06: owned connection-cap fixture custody
+
+Only owned-gate cases `S42C-X45` (`meter_connection_cap_identify`) and
+`S42C-X46` (`meter_connection_cap_headers`) may use the exact instrumented
+connection fixture in `runtime_contract.owned_meter_connection_fixture`. The
+ordinary endpoint descriptor maximum remains **7**. Initial bootstrap rights,
+entry validation and all production socket restrictions remain unchanged.
+
+The fixed sealed test endpoint creates one abstract AF_UNIX/SOCK_STREAM listener
+and four identify peers or two headers peers in its private network namespace,
+after ordinary bootstrap/network setup and before sealing. These are injected
+metering primitives, not native-valid HTTP traffic or additional execution
+authority. No peer is transferred after bootstrap and no new socket creation is
+allowed after sealing. The same fixed per-case runtime source is sealed in the
+worker closure and used by its trusted parent. No arbitrary descriptor-limit
+argument or skip flag enables this path.
+
+Actual READY and independent process readback retain all **11** identify or **9**
+headers descriptors: six ordinary steady endpoint descriptors, one named fixture
+listener and four or two named preconnected peers. The inventory pins the exact
+FD numbers and purposes, actual types, identities and flags; the worker's digest
+must match the parent readback. One accepted-stream descriptor may exist at a
+time and closes before the next accept, giving a **source-derived** transient
+upper bound of **12** or **10**. READY does not measure that transient peak. Any
+claim of a measured peak additionally retains the actual complete peak-time FD
+inventory as a bounded private artifact and pins its hash in the native run
+receipt. No descriptor is omitted to make an ordinary inventory appear valid.
+The role's RLIMIT_NOFILE 64 and parent readback ceiling 32 remain unchanged.
+
+Saved validation establishes this exception only after structural member loading
+has identified exact owned-gate X45/X46 metadata, canonical case/variant/role
+configuration and both sealed endpoint/runtime source commitments in the selected
+runtime and endpoint role closure. A private `_retained_fixture_validation(loaded)`
+context scopes the same exact allowance around context, authority/transcript,
+parser replay and report checks, including writer validation, and resets it on
+every exit. It permits only the fixed complete endpoint inventory for that
+fixture; all source, namespace, process, cleanup, clock and meter checks remain
+required. Missing or conflicting metadata, missing/extra descriptors, a different
+case or role, or ordinary production evidence refuses. The case proof, observed
+control readiness and saved meter must resolve the same fixture runtime. This
+pure saved-data allowance creates no live capability or authority.
+
+The other nine byte/partial/clock primitive cases reuse the already inherited
+stdin socket and add no descriptors. Their injected labels and actual saved
+meter-event derivation remain mandatory. This amendment adds no process, target,
+permission, inherited right, case identity, source path, deadline or byte budget.
+All 288 cases, 113 new native cases, 160 portable cases, 15 accepted regressions,
+26 parent obligations and 18 physical parent obligations remain unchanged. No
+native acceptance preceded this amendment.

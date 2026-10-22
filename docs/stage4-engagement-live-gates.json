@@ -4198,7 +4198,7 @@
       "required_checks": [
         "meter_connection_cap_identify"
       ],
-      "required_proof": "Run actual isolated metering primitive at exact applicable cap and first forbidden additional unit; native-valid fixed requests remain narrower than oversized test-peer stimuli; retain truthful injected labels.",
+      "required_proof": "Run actual isolated metering primitive at exact applicable cap and first forbidden additional unit; native-valid fixed requests remain narrower than oversized test-peer stimuli; retain truthful injected labels. Apply only the exact A06 owned-meter connection fixture: retain complete actual steady descriptor inventory and distinguish the source-derived transient peak from any separately measured private peak artifact.",
       "role": "endpoint",
       "status": "required_not_executed",
       "variant": "meter_connection_cap_identify"
@@ -4217,7 +4217,7 @@
       "required_checks": [
         "meter_connection_cap_headers"
       ],
-      "required_proof": "Run actual isolated metering primitive at exact applicable cap and first forbidden additional unit; native-valid fixed requests remain narrower than oversized test-peer stimuli; retain truthful injected labels.",
+      "required_proof": "Run actual isolated metering primitive at exact applicable cap and first forbidden additional unit; native-valid fixed requests remain narrower than oversized test-peer stimuli; retain truthful injected labels. Apply only the exact A06 owned-meter connection fixture: retain complete actual steady descriptor inventory and distinguish the source-derived transient peak from any separately measured private peak artifact.",
       "role": "endpoint",
       "status": "required_not_executed",
       "variant": "meter_connection_cap_headers"
@@ -6624,6 +6624,35 @@
         "case_ids": 288,
         "distinct_payloads": 94,
         "runtime_caps": true,
+        "source_paths": 39
+      }
+    },
+    {
+      "id": "S42C-A06",
+      "instrument_only_exception": {
+        "X45_derived_peak": 12,
+        "X45_steady": 11,
+        "X46_derived_peak": 10,
+        "X46_steady": 9
+      },
+      "native_acceptance_before_amendment": false,
+      "predecessor_contract_commit": "c3a98e8c29a298e6ce5c3e091f4bcdf4fd3b4124",
+      "predecessor_contract_sha256": "f18f737026adfd2d9c7f928d62eba631b40f5c30deecdf6d090f6aa73556d3fd",
+      "predecessor_inventory_sha256": "d63c10ee737d7bead86a379fbbe99db5ff0561c264dac42636bbf61fd08b0b81",
+      "reason": "Retain the exact pre-seal owned connection-cap fixture descriptors in X45/X46 without widening ordinary endpoint limits or hiding actual descriptors.",
+      "scope_and_counts_unchanged": {
+        "accepted_regressions": 15,
+        "authority": true,
+        "case_ids": 288,
+        "deadlines_and_byte_caps": true,
+        "initial_rights": true,
+        "new_native": 113,
+        "new_portable": 160,
+        "ordinary_endpoint_max": 7,
+        "parent_obligations": 26,
+        "parent_readback_descriptors": 32,
+        "physical_parent_obligations": 18,
+        "rlimit_nofile": 64,
         "source_paths": 39
       }
     }
@@ -9573,6 +9602,71 @@
         "output_limit",
         "unresolved"
       ]
+    },
+    "owned_meter_connection_fixture": {
+      "allowed_evidence_class": "owned_gate",
+      "baseline_steady_descriptors": 6,
+      "cases": {
+        "S42C-X45": {
+          "derived_transient_peak": 12,
+          "preconnected_peers": 4,
+          "slot": "http_identify",
+          "steady_descriptors": 11,
+          "variant": "meter_connection_cap_identify"
+        },
+        "S42C-X46": {
+          "derived_transient_peak": 10,
+          "preconnected_peers": 2,
+          "slot": "http_headers",
+          "steady_descriptors": 9,
+          "variant": "meter_connection_cap_headers"
+        }
+      },
+      "creation_phase": "After unchanged initial bootstrap/entry-rights validation and production network setup, before role sealing. All listener/peer sockets are created and connected before sealing. No post-seal new socket permission.",
+      "fixture_listener_count": 1,
+      "fixture_transport": "AF_UNIX/SOCK_STREAM abstract address in the endpoint private network namespace; fixed owned primitive traffic only",
+      "live_validation": "Only the fixed per-case sealed endpoint and runtime source variants select the exception. Worker steady inventory and trusted parent readback retain every actual descriptor and exact source/runtime/role commitments. Baseline runtime endpoint_max remains 7; no ordinary caller-supplied fd_max, skip flag or additional inherited right.",
+      "ordinary_endpoint_max": 7,
+      "other_meter_cases": "The other nine byte/partial/clock primitive cases use the already inherited stdin socket and add zero descriptors. All primitive fixture traffic is labelled injected, cannot establish native HTTP usefulness, and is derived from actual saved metering events.",
+      "peak_evidence": "READY/readback establishes the actual steady inventory of 11/9. The transient 12/10 is a source-derived upper bound with one accepted stream at a time, not a measured READY count. A measured peak claim additionally requires actual peak-time complete FD inventory retained as a bounded private artifact with its exact hash in the native validation receipt; no fabricated canonical field or omitted FD.",
+      "retained_validation": {
+        "entrypoint": "private _retained_fixture_validation(loaded) after structural member loading",
+        "fail_closed": "Unknown case/role, missing or conflicting source/configuration binding, ordinary production evidence, missing/extra descriptors or absent proof cannot select the exception. The private retained-validation allowance changes only pure descriptor validation for that exact endpoint fixture; all other role, entry, namespace, source, process, deadline, cleanup and meter checks remain required.",
+        "required_binding": [
+          "manifest evidence_class is owned_gate and exact case_id X45 or X46",
+          "configuration equals the fixed case variant and role endpoint with its canonical configuration SHA256",
+          "both sealed endpoint and runtime source SHA256 commitments match runtime source inventory and selected endpoint role closure",
+          "all actual sealed fixture descriptor rows are retained, named and compared between worker hash and actual parent readback; exact 11 or 9 steady descriptors",
+          "case proof, control readiness and actual meter observation resolve to the same runtime and fixture configuration"
+        ],
+        "scope": "Bounded context manager around context, authority/transcript, parser replay and report validation; equivalent writer validation; reset on success and every failure. No live authority is returned."
+      },
+      "role": "endpoint",
+      "simultaneous_accepted_streams_max": 1,
+      "steady_descriptor_purposes": {
+        "0": "stdin",
+        "1": "stdout",
+        "10": "fixture_peer_4 (X45 only)",
+        "2": "stderr",
+        "3": "broker_control",
+        "4": "launcher_arm",
+        "5": "observed production listener",
+        "6": "fixture_listener",
+        "7": "fixture_peer_1",
+        "8": "fixture_peer_2",
+        "9": "fixture_peer_3 (X45 only)"
+      },
+      "unchanged": {
+        "all_case_ids": 288,
+        "authority_targets_deadlines_and_byte_caps": true,
+        "endpoint_rlimit_nofile": 64,
+        "initial_rights": true,
+        "native_case_ids": 113,
+        "new_inherited_descriptors": 0,
+        "new_processes": 0,
+        "parent_readback_descriptors": 32,
+        "production_endpoint_max": 7
+      }
     },
     "portable_inventory": {
       "path": "/home/sloth/Code/recon-cockpit/.secure-agent/pr102-review-20261021/s42c-runtime-portable-cases.json",
