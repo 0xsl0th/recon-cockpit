@@ -1024,3 +1024,50 @@ def test_binds_cleanup_to_actual_process_identity():
         bad=deepcopy(loaded);bad['cleanup.json']['receipts'][-1]['processes'][0][key]=value
         assert e._cleanup_processes(bad) is None and not e._all_reaped(bad)
         refused(e._cleanup_report,bad)
+    # Startup exit78 is not a business-cause witness. These declared receipts
+    # require the exact captured guard diagnostic commitment as well.
+    from test_secure_engagement_live_runtime import declared_readiness,declared_cleanup
+    from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
+    bundle=runtime();ready=declared_readiness(bundle,'broker',pid=501)
+    entry=deepcopy(ready['parent_observation']);entry['stage']='entry'
+    entry['sampled_at_ns']=1000000000
+    cleanup=declared_cleanup(ready,started=1020000000,finished=1030000000)
+    cleanup['processes'][0].update(signal_attempted=False,wrapper_returncode=78)
+    for number in (10,11,12,28,41):
+        case='S42C-N'+str(number).zfill(2);variant=e._case(case)['variant']
+        roe=json.loads((ROOT/'examples/secure-agent-engagement-roe.json').read_bytes())
+        if number==10:roe['excluded_services']=['http']
+        elif number in (11,12):roe['allowed_profiles'].remove(
+            'configurable_nmap_service_v1' if number==11 else 'configurable_http_headers_v1')
+        final,_=ledger._apply(None,{'schema_version':'2','engagement_id':uid(1),'event_id':uid(2),
+            'operation':'create','expected_revision':None,'expected_generation':None,'body':roe})
+        if number==41:
+            final,_=ledger._apply(final,{'schema_version':'2','engagement_id':uid(1),'event_id':uid(3),
+                'operation':'revoke','expected_revision':1,'expected_generation':0,'body':None})
+        code='engagement_live_'+('invalid_prepared' if number in (10,11,12) else 'window_not_open' if number==28 else 'revoked')
+        marker={'schema_version':'1','case_id':case,'guard':'validate_live_roe' if number in (10,11,12) else '_check_current',
+            'roe_sha256':sha(raw(roe)),'code':code,'clock':{'utc_ns':ledger._window(roe)[0]-1,
+                'mono_before_ns':1010000000,'mono_after_ns':1010000001}}
+        observed={'source':'role_observer','segment':0,'row':{'schema_version':'1','row_sequence':1,
+            'broker_id':uid(500),'observer_id':uid(500),'session_id':None,'dispatch_id':None,
+            'observed_at_ns':1040000000,'kind':'phase','data':{'phase':'prepare','stage':'refused','reason':code,
+                'clock':marker['clock'],'related_sha256':sha(raw(marker)),'original_deadline_ns':10000000000}}}
+        declared={'manifest.json':{'broker_instances':[]},'runtime.json':{'runtime':bundle,'instrumentation':[
+            {'kind':'sealed_fault','source_sha256':'b'*64,'configuration':{'case_id':case,'variant':variant,'role':'broker'}}]},
+            'cleanup.json':{'receipts':[cleanup]}}
+        assert e._startup_guard_refusal(declared,[observed],final,number,entry)
+        assert not e._startup_guard_refusal(declared,[],final,number,entry)
+        generic=deepcopy(observed);generic['row']['data']['related_sha256']=sha(raw(roe))
+        assert not e._startup_guard_refusal(declared,[generic],final,number,entry)
+        for field,value in [('guard','unrelated_startup_guard'),('code','engagement_live_invalid_runtime'),
+                            ('roe_sha256','f'*64),('case_id','S42C-N99')]:
+            wrong=deepcopy(marker);wrong[field]=value;projected=deepcopy(observed)
+            projected['row']['data'].update(reason=wrong['code'],related_sha256=sha(raw(wrong)))
+            assert not e._startup_guard_refusal(declared,[projected],final,number,entry)
+        wrong=deepcopy(marker);wrong['clock']['mono_before_ns']=wrong['clock']['mono_after_ns']=1040000001
+        projected=deepcopy(observed);projected['row']['data'].update(clock=wrong['clock'],related_sha256=sha(raw(wrong)))
+        assert not e._startup_guard_refusal(declared,[projected],final,number,entry)
+        unbound=deepcopy(declared);unbound['runtime.json']['instrumentation'][0]['source_sha256']='c'*64
+        assert not e._startup_guard_refusal(unbound,[observed],final,number,entry)
+        killed=deepcopy(declared);killed['cleanup.json']['receipts'][0]['processes'][0]['wrapper_returncode']=-9
+        assert not e._startup_guard_refusal(killed,[observed],final,number,entry)

@@ -704,6 +704,52 @@ def _core_losing_call(call,operations,number):
         actual['envelope_sha256']==contract.envelope_digest(env))
 
 
+def _startup_guard_refusal(loaded,rows,final,number,entry):
+    """Attribute natural startup refusal to the actual sealed business guard.
+
+    The host projects a bounded diagnostic received from that worker. It is not
+    a broker-memfd row or READY, and its timestamp is after actual cleanup.
+    """
+    if number not in (10,11,12,28,41):return False
+    case_id='S42C-N'+str(number).zfill(2);variant=_case(case_id)['variant']
+    reason='engagement_live_'+('invalid_prepared' if number in (10,11,12) else
+        'window_not_open' if number==28 else 'revoked')
+    guard='validate_live_roe' if number in (10,11,12) else '_check_current'
+    configured={item['source_sha256'] for item in loaded['runtime.json']['instrumentation'] if
+        item['kind']=='sealed_fault' and item['configuration']=={'case_id':case_id,'variant':variant,'role':'broker'}}
+    sources={item['module']:item['sha256'] for item in loaded['runtime.json']['runtime']['sources']}
+    if sources.get('engagement_live_broker_worker') not in configured:return False
+    if entry['role']!='broker' or entry['stage']!='entry':return False
+    payload=entry['payload'];processes=_cleanup_processes(loaded)
+    if processes is None:return False
+    actual=[item for item in processes if (item['pid'],item['start_time_ticks'])==
+        (payload['pid'],payload['start_time_ticks'])]
+    if len(actual)!=1 or actual[0]['role']!='broker' or not actual[0]['pin_verified'] or not actual[0]['exit_observed'] or not actual[0]['reaped_observed'] or actual[0]['wrapper_returncode']!=78 or actual[0]['signal_attempted'] is not False:return False
+    finishes=[receipt['finished_at_ns'] for receipt in loaded['cleanup.json']['receipts'] if
+        receipt['descriptors_closed'] and actual[0] in receipt['processes']]
+    if not finishes:return False
+    roe=final['revisions'][-1]['roe'];roe_sha=_sha(_canonical(roe))
+    admitted={item['broker_id'] for item in loaded['manifest.json']['broker_instances']}
+    matched=[]
+    for observed in rows:
+        row=observed['row'];data=row['data']
+        if (observed['source']!='role_observer' or row['kind']!='phase' or
+            row['broker_id'] in admitted or row['observer_id']!=row['broker_id'] or
+            row['session_id'] is not None or row['dispatch_id'] is not None or
+            data['phase']!='prepare' or data['stage']!='refused' or data['reason']!=reason or
+            data['clock'] is None):continue
+        clock=data['clock']
+        marker={'schema_version':'1','case_id':case_id,'guard':guard,'roe_sha256':roe_sha,
+            'code':reason,'clock':clock}
+        if data['related_sha256']!=_sha(_canonical(marker)):continue
+        if not entry['sampled_at_ns']<=clock['mono_before_ns']<=clock['mono_after_ns']<=min(finishes)<=row['observed_at_ns']:continue
+        if number==28:
+            from .engagement_dispatch_contract import _window
+            if clock['utc_ns']>=_window(roe)[0]:continue
+        matched.append(row)
+    return len(matched)==1
+
+
 def _restart_refusal(loaded,rows,operations,final,number):
     """Retained consumed authority cannot be revived by a later caller."""
     from . import engagement_live_contract as contract
@@ -1071,8 +1117,8 @@ def _evaluate_core_proof(loaded, proof, linkage):
         payload=observations[0]['payload']
         actual=[row for row in cleanup_processes if (row['pid'],row['start_time_ticks'])==
                 (payload['pid'],payload['start_time_ticks'])]
-        # Entry alone is not READY. Actual natural refusal plus the separately
-        # validated runtime/source identity and recovery is the finite proof.
+        # Entry and exit establish the process boundary only. The actual guard
+        # diagnostic is separately required below to attribute the refusal.
         return len(actual)==1 and actual[0]['wrapper_returncode']==78 and actual[0]['signal_attempted'] is False
     def reviewer_refused(op):
         env=op['prepared']['envelope'];role='terminal' if env['review_mode']=='terminal' else 'graphical'
@@ -1100,16 +1146,10 @@ def _evaluate_core_proof(loaded, proof, linkage):
     if number in (10,11,12,28):
         if operations or go or not usage_same or not recovery_required() or not startup_boundary():return False
         roe=final['revisions'][-1]['roe']
-        if number==28:
-            from .engagement_dispatch_contract import _window
-            start,_end=_window(roe)
-            return any(row['row']['data']['clock'] is not None and
-                row['row']['data']['clock']['utc_ns']<start and
-                row['row']['data']['clock']['mono_after_ns']<=row['row']['observed_at_ns']
-                for row in phase('prepare','refused','window_not_open',digest=_sha(_canonical(roe)),source='role_observer'))
-        invalid=('http' in roe['excluded_services'] if number==10 else
+        if not _startup_guard_refusal(loaded,selected,final,number,loaded['processes.json']['startup'][0]):return False
+        if number==28:return True
+        return ('http' in roe['excluded_services'] if number==10 else
             ('configurable_nmap_service_v1' if number==11 else 'configurable_http_headers_v1') not in roe['allowed_profiles'])
-        return invalid and bool(phase('prepare','refused',digest=_sha(_canonical(roe)),source='role_observer'))
     if number in (16,17):return changed_refusal(revisions,'revision_changed',True)
     if number in (18,19,20,21,22,23):
         if not operations or not denied('allowance_exhausted'):return False
@@ -1205,10 +1245,7 @@ def _evaluate_core_proof(loaded, proof, linkage):
         if (p['pid'],p['start_time_ticks'])==(q['pid'],q['start_time_ticks']) or second[0]['sampled_at_ns']<commits[0]['row']['observed_at_ns']:return False
         actual=[row for row in cleanup_processes if (row['pid'],row['start_time_ticks'])==(q['pid'],q['start_time_ticks'])]
         if len(actual)!=1 or actual[0]['wrapper_returncode']!=78 or actual[0]['signal_attempted'] is not False:return False
-        allowed={_sha(_canonical(final['revisions'][-1]['roe']))}|{contract.prepared_digest(op['prepared']) for op in operations}
-        return complete_broker and any(row['row']['data']['related_sha256'] in allowed and
-            row['row']['observed_at_ns']>=second[0]['sampled_at_ns'] for row in
-            phase('prepare','refused','revoked',source='role_observer'))
+        return complete_broker and _startup_guard_refusal(loaded,selected,final,number,second[0])
     if number in (36,37,38):
         if not changed_refusal(revokes,'revoked',number==37):return False
         if number==38:

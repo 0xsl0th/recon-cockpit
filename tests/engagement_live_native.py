@@ -1353,9 +1353,10 @@ def _failure_code(error):
 
 
 def _expected_failure(service,prepared,phase,operation,*,related=None):
+    from recon_cockpit.secure_agent.execution import ExecutionStopped
     _phase_observation(service,prepared,phase,'begin',related=related)
     try:value=operation()
-    except (Exception,) as error:
+    except (contract.LiveError,OSError,TimeoutError,ExecutionStopped) as error:
         _phase_observation(service,prepared,phase,'refused',related=related,reason=_failure_code(error),clock=contract.sample_clock())
         return error
     if isinstance(value,dict) and value.get('outcome') in ('denied','unresolved'):
@@ -1529,6 +1530,111 @@ def _core_configuration(case):
     return case.get('configuration') or 'A'
 
 
+STARTUP_GUARD_CASES={
+    'S42C-N10':('validate_live_roe','engagement_live_invalid_prepared'),
+    'S42C-N11':('validate_live_roe','engagement_live_invalid_prepared'),
+    'S42C-N12':('validate_live_roe','engagement_live_invalid_prepared'),
+    'S42C-N28':('_check_current','engagement_live_window_not_open'),
+    'S42C-N41':('_check_current','engagement_live_revoked')}
+STARTUP_GUARD_PREFIX=b'ENGAGEMENT-LIVE-OWNED-STARTUP '
+
+
+def _startup_guard_transform(case_id):
+    """Observe only the actual selected startup guard; never alter its result."""
+    guard,code=STARTUP_GUARD_CASES[case_id]
+    def change(source):
+        if guard=='validate_live_roe':
+            old="        self.roe=c.validate_live_roe(self.snapshot_value['revisions'][-1]['roe']);self.policy=ledger.policy_for_roe(self.roe)"
+            new="""        try:self.roe=c.validate_live_roe(self.snapshot_value['revisions'][-1]['roe'])
+        except c.LiveError as error:
+            _owned_startup_guard_refused(self,error)
+            raise
+        self.policy=ledger.policy_for_roe(self.roe)"""
+        else:
+            old="        self._check_current(self.snapshot_value)"
+            new="""        try:self._check_current(self.snapshot_value)
+        except c.LiveError as error:
+            _owned_startup_guard_refused(self,error)
+            raise"""
+        if source.count(old)!=1:raise AssertionError('exact startup guard source')
+        source=source.replace(old,new,1)
+        helper="""
+def _owned_startup_guard_refused(self,error):
+    if error.code!=__CODE__:return
+    marker={'schema_version':'1','case_id':__CASE__,'guard':__GUARD__,
+        'roe_sha256':c.digest(c.canonical(self.snapshot_value['revisions'][-1]['roe'])),
+        'code':error.code,'clock':c.sample_clock()}
+    raw=__PREFIX__+c.canonical(marker)+b'\\n'
+    if len(raw)>1024:c.fail('limit_exceeded')
+    if os.write(2,raw)!=len(raw):c.fail('unavailable')
+
+""".replace('__CODE__',repr(code)).replace('__CASE__',repr(case_id)).replace('__GUARD__',repr(guard)).replace('__PREFIX__',repr(STARTUP_GUARD_PREFIX))
+        tail="if __name__=='__main__':raise SystemExit(main())"
+        if source.count(tail)!=1:raise AssertionError('exact broker main source')
+        return source.replace(tail,helper+tail,1)
+    return change
+
+
+def _parse_startup_guard(raw,case_id,*,received_at_ns):
+    if type(raw)is not bytes or len(raw)>4096:raise AssertionError('bounded actual startup diagnostics required')
+    lines=raw.splitlines(keepends=True)
+    if (len(lines)!=2 or not lines[0].startswith(STARTUP_GUARD_PREFIX)
+            or not lines[0].endswith(b'\n') or lines[1]!=b'engagement_live_broker_refused\n'):
+        raise AssertionError('actual selected startup guard marker required')
+    encoded=lines[0][len(STARTUP_GUARD_PREFIX):-1]
+    marker=contract.decode(encoded,max_bytes=1024)
+    contract.obj(marker,('schema_version','case_id','guard','roe_sha256','code','clock'))
+    guard,code=STARTUP_GUARD_CASES[case_id]
+    if (canonical(marker)!=encoded or marker['schema_version']!='1' or marker['case_id']!=case_id
+            or marker['guard']!=guard or marker['code']!=code):
+        raise AssertionError('selected actual startup guard identity required')
+    contract.digest_string(marker['roe_sha256']);contract.ledger.validate_clock(marker['clock'])
+    if marker['clock']['mono_after_ns']>received_at_ns:raise AssertionError('future startup guard observation')
+    return marker
+
+
+@contextmanager
+def _capture_startup_guard(case,directory):
+    """Copy existing stderr before its normal cleanup; retain every failure."""
+    original=runtime._read_startup
+    def observed(process,info_read,control,*,initial_info=b''):
+        try:return original(process,info_read,control,initial_info=initial_info)
+        except BaseException as error:
+            if getattr(process,'_engagement_role',None)!='broker':raise
+            raw=bytearray(getattr(error,'startup_diagnostics',b''));eof=False
+            end=min(control.deadline,time.monotonic()+2)
+            try:
+                fd=process.stderr.fileno();os.set_blocking(fd,False)
+                while len(raw)<=4096 and time.monotonic()<end:
+                    if not select.select([fd],[],[],min(.01,max(0,end-time.monotonic())))[0]:continue
+                    try:part=os.read(fd,4097-len(raw))
+                    except BlockingIOError:continue
+                    if not part:eof=True;break
+                    raw.extend(part)
+                received=time.monotonic_ns()
+                private_write(Path(directory)/'startup-guard-stderr.bin',bytes(raw))
+                if not eof or len(raw)>4096:raise AssertionError('complete bounded startup diagnostics required')
+                marker=_parse_startup_guard(bytes(raw),case['id'],received_at_ns=received)
+                error.owned_startup_guard=marker
+            except BaseException as observation_error:
+                # Keep the original real startup refusal and its cleanup path;
+                # missing/invalid observation can never acquire a marker later.
+                error.owned_startup_guard_error=observation_error
+            raise
+    runtime._read_startup=observed
+    try:yield
+    finally:runtime._read_startup=original
+
+
+def _record_startup_guard(service,error,case,roe):
+    marker=getattr(error,'owned_startup_guard',None)
+    if marker is None:raise AssertionError('actual business guard refusal was not observed') from error
+    if marker['case_id']!=case['id'] or marker['roe_sha256']!=sha(canonical(roe)):
+        raise AssertionError('actual startup guard ROE mismatch')
+    return _phase_observation(service,None,'prepare','refused',related=sha(canonical(marker)),
+        reason=marker['code'],clock=marker['clock'])
+
+
 def _core_roe(case):
     """Finite valid ROE changes; production validators still inspect every one."""
     number=int(case['id'][-2:])
@@ -1542,16 +1648,19 @@ def _core_roe(case):
                 21:('max_response_bytes',4096),22:('max_engagement_ms',30000),
                 23:('max_actions',1),24:('max_actions',2)}[number]
             roe['limits'][key]=value
+            if number==22:roe['limits']['max_action_ms']=30000
         if number==28:
             now=datetime.now(timezone.utc)
             roe['window']={'start_utc':(now+timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'end_utc':(now+timedelta(minutes=10)).strftime('%Y-%m-%dT%H:%M:%SZ')}
+                'end_utc':(now+timedelta(minutes=11)).strftime('%Y-%m-%dT%H:%M:%SZ')}
         if number==29:
             start=datetime.fromtimestamp(case['_clock']['utc_ns']/contract.SECOND,timezone.utc)
             roe['window']={'start_utc':start.strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'end_utc':(start+timedelta(minutes=10)).strftime('%Y-%m-%dT%H:%M:%SZ')}
         if number in (30,31,32):
-            roe['window']['end_utc']=(datetime.now(timezone.utc)+timedelta(seconds=24)).strftime('%Y-%m-%dT%H:%M:%SZ')
+            now=datetime.now(timezone.utc)
+            roe['window']={'start_utc':(now-timedelta(minutes=10)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                           'end_utc':(now+timedelta(seconds=24)).strftime('%Y-%m-%dT%H:%M:%SZ')}
         return roe
     return transform
 
@@ -1632,8 +1741,7 @@ def _single_core(case,directory,*,variants=None):
         if service is None or service._cleanup is None:raise
         recover=True
         roe=json.loads((directory/'live'/'roe.json').read_bytes())
-        _phase_observation(service,None,'prepare','refused',related=sha(canonical(roe)),
-            reason='engagement_live_window_not_open' if number==28 else _failure_code(error),clock=contract.sample_clock())
+        _record_startup_guard(service,error,case,roe)
     if service is None:raise AssertionError('actual service owner required')
     return _write_case_payload(directory,_seal_case_payload(service,case,before=before,selected=selected,
         instrumentation=instrumentation,recover=recover,boundary_proofs=support,boundary_observations=observations))
@@ -2257,8 +2365,7 @@ def _multi_core(case,directory,*,variants=None):
             second=getattr(error,'engagement_session',second)
             if second is None:raise
             roe=json.loads((directory/'second'/'roe.json').read_bytes())
-            _phase_observation(second,None,'prepare','refused',related=sha(canonical(roe)),
-                reason=_failure_code(error),clock=contract.sample_clock())
+            _record_startup_guard(second,error,case,roe)
         if second is None or not second._verified_reaped():raise AssertionError('second generation must be actually reaped')
         payloads.append(second._evidence_payload(deadline=time.monotonic()+15,case_id=case['id'],
             instrumentation=instrumentation,recover=True))
@@ -2277,7 +2384,8 @@ def _run_core_case(variant,directory):
     if any(directory.iterdir()):raise AssertionError('fresh core case directory required')
     private_write(directory/'driver-source.py',Path(__file__).read_bytes())
     number=int(case['id'][-2:]);variants=None
-    if case['id'] in BROKER_FAULT_CASES:role='broker'
+    if case['id'] in STARTUP_GUARD_CASES:role='broker'
+    elif case['id'] in BROKER_FAULT_CASES:role='broker'
     elif case['id'] in DEADLINE_FAULT_CASES:role='launcher'
     elif number in (40,45,46):role='endpoint'
     elif number in (8,9,15):role=_socket_case(case)['role']
@@ -2286,14 +2394,16 @@ def _run_core_case(variant,directory):
     else:role=None
     if role is not None:
         variants=SourceVariants(directory/'source',case_id=case['id'],variant=variant,role=role)
-        if case['id'] in BROKER_FAULT_CASES:install_broker_fault(variants,case['id'])
+        if case['id'] in STARTUP_GUARD_CASES:variants.source('engagement_live_broker_worker',_startup_guard_transform(case['id']))
+        elif case['id'] in BROKER_FAULT_CASES:install_broker_fault(variants,case['id'])
         elif case['id'] in DEADLINE_FAULT_CASES:install_deadline_fault(variants,case['id'])
         elif number in (40,45,46):_install_progress(variants,case)
         elif number in (8,9,15):supporting_socket_source(variants,case)
         elif number==29:_install_inclusive_clock(variants,case)
         elif number==51:_install_audit_fsync(variants)
     from contextlib import nullcontext
-    with variants if variants is not None else nullcontext():
+    with variants if variants is not None else nullcontext(), \
+            _capture_startup_guard(case,directory) if case['id'] in STARTUP_GUARD_CASES else nullcontext():
         if number in (23,41,43,44,52,54):return _multi_core(case,directory,variants=variants)
         return _single_core(case,directory,variants=variants)
 
