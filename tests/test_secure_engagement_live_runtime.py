@@ -403,7 +403,7 @@ def _audit_readback_cases(tmp_path,monkeypatch,cases):
             assert len(opened)==3 and len(readlinks)==1 and inventories==[]
 
 
-def test_readiness_namespace_mapping_and_groups():
+def test_readiness_namespace_mapping_and_groups(monkeypatch):
     bundle=declared_runtime();ready=declared_readiness(bundle)
     for mutate in ('namespace','mapping','groups','bool','descriptors'):
         bad=deepcopy(ready)
@@ -422,6 +422,63 @@ def test_readiness_namespace_mapping_and_groups():
     for role,cap in (('endpoint',7),('broker',21),('terminal',5),('graphical',7),('headers',3),('admission',3)):
         assert r._steady_fd_max(role)==cap
     assert r._steady_fd_max('nmap','native')==16
+
+    import socket
+    # A launcher can make fixed child channels, while all three network socket
+    # families must actually return EPERM. Other errors and a successful socket
+    # fail closed; a successful witness socket is closed before refusal.
+    families=(socket.AF_INET,socket.AF_INET6,socket.AF_UNIX)
+    for bad_family in (None,*families):
+        for outcome in ('wrong_errno','allowed'):
+            attempts=[];closed=[]
+            def network_socket(family,kind):
+                attempts.append((family,kind))
+                if family==bad_family:
+                    if outcome=='allowed':return SimpleNamespace(close=lambda:closed.append(family))
+                    raise OSError(errno.EACCES,'declared unexpected restriction')
+                raise OSError(errno.EPERM,'declared seccomp denial')
+            with monkeypatch.context() as patch:
+                patch.setattr(socket,'socket',network_socket)
+                patch.setattr(socket,'socketpair',lambda *a,**kw:(_ for _ in ()).throw(AssertionError('launcher socketpair witness forbidden')))
+                if bad_family is None:r._launcher_network_creation_blocked()
+                else:refused(r._launcher_network_creation_blocked)
+            expected=families if bad_family is None else families[:families.index(bad_family)+1]
+            assert attempts==[(family,socket.SOCK_STREAM) for family in expected]
+            assert closed==([bad_family] if bad_family is not None and outcome=='allowed' else [])
+
+    # Exercise the actual bootstrap branch with modeled OS boundaries. The
+    # launcher selects the new network-only witness; a reviewer retains the
+    # accepted full socket/socketpair witness. No resource/filter is installed.
+    import resource
+    from recon_cockpit.secure_agent import planner_worker,worker,name_tls_worker_common
+    routed=[]
+    with monkeypatch.context() as patch:
+        patch.setattr(resource,'getrlimit',lambda kind:(resource.RLIM_INFINITY,resource.RLIM_INFINITY))
+        patch.setattr(resource,'setrlimit',lambda *args:None)
+        patch.setattr(os,'listdir',lambda path:['1'])
+        patch.setattr(os,'statvfs',lambda path:SimpleNamespace(f_flag=os.ST_RDONLY))
+        patch.setattr(os,'getuid',lambda:65534);patch.setattr(os,'getgid',lambda:65534)
+        patch.setattr(os,'getgroups',lambda:[65534])
+        patch.setattr(worker,'drop_privileges',lambda:None)
+        patch.setattr(name_tls_worker_common,'seal_group_identity',lambda identity:None)
+        patch.setattr(r,'_install_filter',lambda role:routed.append(('filter',role)))
+        patch.setattr(r,'_launcher_network_creation_blocked',lambda:routed.append(('witness','launcher_network')))
+        patch.setattr(planner_worker,'_sockets_blocked',lambda:routed.append(('witness','legacy_full')))
+        for name in ('_zero_capabilities','_no_new_privileges','_process_creation_blocked','_namespace_creation_blocked'):
+            patch.setattr(planner_worker,name,lambda:None)
+        for role in ('launcher','terminal'):
+            selected=next(row for row in bundle['roles'] if row['role']==role)
+            declared=declared_readiness(bundle,role)
+            descriptors=declared['parent_observation']['descriptors']
+            patch.setattr(r,'_fd_inventory',lambda **kwargs:deepcopy(descriptors))
+            deadline=r.time.monotonic_ns()+1000000000
+            bootstrap={**declared['worker_ready'],'deadline_ns':deadline}
+            entry={'role':role,'bootstrap':bootstrap,'identity':{},'namespaces':declared['worker_ready']['namespaces'],
+                'purposes':{row['fd']:row['purpose'] for row in descriptors},'descriptors':descriptors}
+            ready=r.bootstrap_role(role=role,entry=entry,runtime_manifest=selected,
+                expected_fds={row['purpose']:row['fd'] for row in descriptors if row['fd']>2},deadline_ns=deadline)
+            assert ready['role']==role
+    assert routed==[('filter','launcher'),('witness','launcher_network'),('filter','terminal'),('witness','legacy_full')]
 
     from recon_cockpit.secure_agent import engagement_live_context as context
     for case_id in ('S42C-X45','S42C-X46'):

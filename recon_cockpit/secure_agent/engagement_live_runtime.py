@@ -2575,6 +2575,19 @@ def _steady_fd_max(role,stage='sealed'):
     return SPEC['fd_inventory'][role+'_max']
 
 
+def _launcher_network_creation_blocked():
+    import socket
+    # The launcher needs its fixed private child socketpairs. Its network
+    # creation witness checks the socket syscall denied by its existing filter.
+    for family in (socket.AF_INET,socket.AF_INET6,socket.AF_UNIX):
+        try:connection=socket.socket(family,socket.SOCK_STREAM)
+        except OSError as error:
+            if error.errno!=errno.EPERM:_fail('invalid_role')
+        else:
+            connection.close()
+            _fail('invalid_role')
+
+
 def bootstrap_role(*,role,entry,runtime_manifest,expected_fds,deadline_ns):
     import resource
     import socket
@@ -2612,7 +2625,9 @@ def bootstrap_role(*,role,entry,runtime_manifest,expected_fds,deadline_ns):
     planner_worker._zero_capabilities();planner_worker._no_new_privileges()
     if role!='launcher':
         planner_worker._process_creation_blocked();planner_worker._namespace_creation_blocked()
-    if role not in ('nmap','headers','endpoint'):
+    if role=='launcher':
+        _launcher_network_creation_blocked()
+    elif role not in ('nmap','headers','endpoint'):
         planner_worker._sockets_blocked()
     # Filesystem leaf rules are installed after all parsers/data were preloaded.
     if role in ('nmap','headers','parser','endpoint'):

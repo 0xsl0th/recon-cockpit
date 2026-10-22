@@ -132,11 +132,13 @@ def native_session(directory,*,configuration='A',review_mode='terminal',source_v
     except BaseException as error:
         failure=error
         if service is None:service=getattr(error,'engagement_session',None)
+        if service is not None:error.engagement_session=service
         raise
     finally:
         if service is not None:
             try:service.close()
             except BaseException as error:
+                error.engagement_session=service
                 if failure is None:raise
                 failure.cleanup_error=error
 

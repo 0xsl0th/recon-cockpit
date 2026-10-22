@@ -146,15 +146,25 @@ based on accepted merge `d8e1a6f`. The
 [implementation contract](stage4-engagement-live.md) and
 [exact inventory](stage4-engagement-live-gates.json) were independently reviewed
 and pinned before implementation; pre-acceptance amendments A01–A07 end at
-`e4e2d89`. The first three native attempts are retained failures, with no new
-native gate accepted yet. Broker startup now completes after correcting setup
-descriptor closure and verifying the pinned read-only import image. An audit-only
-diagnostic then confirmed that the unchanged audit worker retains six descriptors,
-including libffi; A07 pins the exact inventory, actual image and endpoint bindings,
-and audit process cleanup obligations before their implementation. Independent
-integration review continues. The 160 portable cases passed on earlier freeze
-`f1c5915`; that run does not validate subsequent changes. Freeze the complete
-clean source tree and installed runtime again before the exact acceptance runs.
+`e4e2d89`. The first four native attempts are retained failures, with no new
+native gate accepted yet. Broker and audit startup now complete after correcting
+setup descriptor closure and verifying the pinned read-only import image. A07
+records the unchanged audit worker's exact six-descriptor inventory, actual image
+and endpoint bindings, and audit process cleanup obligations. All 160 portable
+cases passed on frozen `9e02273`. Native attempt four then reached the launcher
+and failed during sealing; its harness did not retain aggregate session cleanup.
+A separate bounded diagnostic confirmed that the launcher used a socket-pair
+denial check despite requiring private pairs for its fixed children. That diagnostic
+retains actual cleanup for all four started roles and performs no action. Its
+evidence does not repair the missing evidence from attempt four. The corrected
+launcher witness and actual session failure retention pass 32 focused runtime
+cases and five private retention checks. Review also identified a separate
+architecture blocker: post-seal children inherit the launcher's network-denying
+seccomp filter. A reviewed contract amendment must preserve the launcher's
+confinement while providing a fixed, separately bounded child construction path.
+Hold native acceptance until that design is pinned and implemented, then freeze
+the clean source tree and installed runtime again. Earlier passes do not validate
+later changes.
 This increment binds the
 accepted finite HTTP prefix to fresh isolated review, durable admission, trusted
 payload metering and bounded cancellation/cleanup. Both reviewer displays and
