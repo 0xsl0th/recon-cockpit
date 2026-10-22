@@ -2318,20 +2318,85 @@ def _make_bootstrap(*,snapshot,worker_id,rights,payload,control,observer=None,ex
     return value
 
 
+def _close_import_descriptor(*,entry_verified,runtime_manifest,control):
+    """Close only the pinned libffi image retained after stdio-only entry.
+
+    Bubblewrap's sealed bind-data image can retain the exact kernel suffix
+    `` (deleted)``. Its canonical mount, content and executable mapping must
+    still identify the same reviewed object; the suffix alone proves nothing.
+    """
+    import fcntl
+    if entry_verified is not True:_fail('invalid_role')
+    validate_role_manifest(runtime_manifest)
+    _check(control)
+    extra=[]
+    for name in os.listdir('/proc/self/fd'):
+        fd=int(name)
+        if fd<=2:continue
+        try:info=os.fstat(fd)
+        except OSError as error:
+            if error.errno==errno.EBADF:continue
+            raise
+        extra.append((fd,info))
+    if len(extra)>1:_fail('invalid_role')
+    if not extra:return
+    fd,before=extra[0]
+    rows=[row for row in runtime_manifest['native_files'] if re.fullmatch(
+        r'/(?:usr/)?lib(?:64)?/(?:[a-zA-Z0-9_-]+/)?libffi\.so\.\d+(?:\.\d+)*',row['destination'])]
+    if len(rows)!=1:_fail('invalid_runtime')
+    row=rows[0];destination=row['destination'];target=os.readlink('/proc/self/fd/'+str(fd))
+    flags=fcntl.fcntl(fd,fcntl.F_GETFL)
+    if (target not in (destination,destination+' (deleted)')
+            or before.st_mode!=stat.S_IFREG|0o444 or before.st_size!=row['size']
+            or flags & (os.O_ACCMODE|getattr(os,'O_PATH',0))!=os.O_RDONLY):_fail('invalid_role')
+    # Inventory was captured before opening either temporary verification FD.
+    mounted=os.open(destination,os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC)
+    try:
+        if _stamp(os.fstat(mounted))!=_stamp(before) or not os.fstatvfs(mounted).f_flag & os.ST_RDONLY:_fail('invalid_runtime')
+        raw=_read_fd(mounted,row['size'],control)
+        if len(raw)!=row['size'] or hashlib.sha256(raw).hexdigest()!=row['sha256']:_fail('invalid_runtime')
+        maps=os.open('/proc/self/maps',os.O_RDONLY|os.O_CLOEXEC)
+        try:mapped=_read_fd(maps,262144,control).decode('ascii')
+        finally:os.close(maps)
+        matched=False
+        for line in mapped.splitlines():
+            fields=line.split(maxsplit=5)
+            if len(fields)!=6 or fields[1]!='r-xp' or fields[5]!=target:continue
+            try:
+                device=tuple(int(part,16) for part in fields[3].split(':'))
+                inode=int(fields[4])
+            except ValueError:_fail('invalid_runtime')
+            if device==(os.major(before.st_dev),os.minor(before.st_dev)) and inode==before.st_ino:matched=True
+        if (not matched or _stamp(os.fstat(mounted))!=_stamp(before)
+                or _stamp(os.fstat(fd))!=_stamp(before)
+                or os.readlink('/proc/self/fd/'+str(fd))!=target
+                or fcntl.fcntl(fd,fcntl.F_GETFL)!=flags):_fail('invalid_runtime')
+        _check(control)
+    finally:os.close(mounted)
+    os.close(fd)
+    _check(control)
+
+
 def _receive_initial(role,worker_id,commitment,*,entry_verified):
+    initial_end=time.monotonic()+2
+    initial_control=_WorkerControl(int(initial_end*1e9))
+    from .engagement_live_contract import _deadline_context
+    with _deadline_context(initial_end):
+        manifest=_decode(_read_file(MANIFEST_PATH,131072,initial_control),131072)
+        validate_role_manifest(manifest,role)
     import array
     import fcntl
     import socket
     import ctypes
     import resource
-    from .name_tls_worker_common import close_import_descriptor
-    close_import_descriptor(entry_verified=entry_verified)
+    _close_import_descriptor(entry_verified=entry_verified,runtime_manifest=manifest,control=initial_control)
+    _check(initial_control)
     channel=socket.socket(fileno=0)
     import select
     channel.setblocking(False)
-    initial_end=time.monotonic()+2
     while not select.select([channel],[],[],max(0,min(.05,initial_end-time.monotonic())))[0]:
         if time.monotonic()>=initial_end:_fail('timeout')
+    _check(initial_control)
     raw,ancillary,flags,_=channel.recvmsg(32769,socket.CMSG_SPACE(32*array.array('i').itemsize),socket.MSG_CMSG_CLOEXEC)
     rights=[]
     try:
@@ -2344,7 +2409,7 @@ def _receive_initial(role,worker_id,commitment,*,entry_verified):
         if invalid_ancillary:_fail('invalid_frame')
         if flags & (socket.MSG_TRUNC|socket.MSG_CTRUNC) or len(raw)>32768 or len(ancillary)>1:_fail('invalid_frame')
         if hashlib.sha256(raw).hexdigest()!=commitment:_fail('invalid_runtime')
-        value=_decode(raw)
+        with _deadline_context(initial_end):value=_decode(raw)
         _fields(value,SPEC['closed_objects']['initial_bootstrap']['fields'])
         if value['schema_version']!='1' or value['role']!=role or value['worker_id']!=worker_id:_fail()
         rows=value['descriptors']
@@ -2355,16 +2420,16 @@ def _receive_initial(role,worker_id,commitment,*,entry_verified):
             observed=_descriptor(fd,purpose)
             if row['purpose']!=purpose or fd!=row['fd'] or any(observed[k]!=row[k] for k in ('device','inode','mode','flags')):_fail('invalid_role')
             actual[purpose]=fd
-        manifest=_decode(_read_file(MANIFEST_PATH,131072),131072)
-        validate_role_manifest(manifest,role)
         if _hash(manifest)!=value['role_manifest_sha256'] or _hash(manifest['sources'])!=value['source_sha256']:_fail()
         payload=value['payload']
         if role!='broker':_fields(payload,SPEC['closed_objects']['bootstrap_payloads'][role])
         if role in ('endpoint','launcher','terminal','graphical'):
             from .engagement_live_contract import validate_role_context
-            validate_role_context(binding=payload['session_binding'],roe=payload['roe'],scope=payload['scope'],policy=payload['policy'])
+            with _deadline_context(initial_end):
+                validate_role_context(binding=payload['session_binding'],roe=payload['roe'],scope=payload['scope'],policy=payload['policy'])
         _check(deadline_ns=_integer(value['deadline_ns'],1))
         channel.setblocking(False)
+        _check(initial_control)
         return value,manifest,actual,channel
     except BaseException:
         for fd in rights:

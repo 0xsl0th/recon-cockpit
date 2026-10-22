@@ -228,6 +228,93 @@ def test_fixed_argv_and_initial_fd_closure(tmp_path,monkeypatch):
         rows=r._fd_inventory('/declared',purposes={16:'runtime_input'},role='broker',steady=True)
         assert [row['purpose'] for row in rows]==['held_parent_directory','held_store_directory','sqlite_main','selector']
         assert rows[-1]['kind']=='eventpoll'
+    _import_descriptor_custody_cases(tmp_path,monkeypatch)
+
+
+def _import_descriptor_custody_cases(tmp_path,monkeypatch):
+    # Actual ordinary file descriptors/bytes; only the isolated /proc and
+    # read-only mount observations are modeled. No memfd/Linux API is required.
+    import fcntl
+    destination='/lib/x86_64-linux-gnu/libffi.so.8';content=b'pinned libffi image'
+    cases=('plain','deleted','unverified','truthy_entry','multiple','missing_pin','ambiguous_pin',
+        'wrong_target','duplicate_suffix','writable_fd','wrong_mode','wrong_size','wrong_hash',
+        'wrong_mount_inode','writable_mount','wrong_map_path','wrong_map_inode','wrong_map_device',
+        'nonexecutable_map','mapping_overflow','changed_held_identity','deadline')
+    for case in cases:
+        directory=tmp_path/('import-'+case);directory.mkdir()
+        image=directory/'image';image.write_bytes(content)
+        fd=os.open(image,os.O_RDWR if case=='writable_fd' else os.O_RDONLY)
+        image.chmod(0o600 if case=='wrong_mode' else 0o444)
+        before=os.fstat(fd);extra=[];opened=[];closed=[];held_reads=0
+        manifest=deepcopy(next(x for x in declared_runtime()['roles'] if x['role']=='broker'))
+        row={'source':destination,'destination':destination,'size':len(content),'sha256':sha(content)}
+        if case=='wrong_size':row['size']+=1
+        if case=='wrong_hash':row['sha256']='0'*64
+        if case!='missing_pin':manifest['native_files'].append(row)
+        if case=='ambiguous_pin':manifest['native_files'].append({**row,'destination':destination+'.1'})
+        manifest['native_files'].sort(key=lambda x:x['destination'])
+        target=destination+(' (deleted)' if case!='plain' else '')
+        if case=='wrong_target':target='/unreviewed/libffi.so.8 (deleted)'
+        if case=='duplicate_suffix':target+=' (deleted)'
+        path=destination+' (deleted)' if case=='wrong_map_path' else target
+        inode=before.st_ino+(case=='wrong_map_inode')
+        device=(os.major(before.st_dev),os.minor(before.st_dev)+(case=='wrong_map_device'))
+        perms='r--p' if case=='nonexecutable_map' else 'r-xp'
+        mapping=f'1000-2000 {perms} 00000000 {device[0]:x}:{device[1]:x} {inode} {path}\n'
+        if case=='wrong_map_path':mapping=mapping.replace(' (deleted)','')
+        if case=='mapping_overflow':mapping='x'*262145
+        maps=directory/'maps';maps.write_text(mapping)
+        other=directory/'other';other.write_bytes(content);other.chmod(0o444)
+        if case=='multiple':extra.append(os.open(other,os.O_RDONLY))
+        real_open=os.open;real_close=os.close;real_fstat=os.fstat
+        def open_observed(path,flags,*args,**kwargs):
+            if path==destination:
+                assert flags & os.O_NOFOLLOW and flags & os.O_ACCMODE==os.O_RDONLY
+                path=other if case=='wrong_mount_inode' else image
+            else:assert path=='/proc/self/maps';path=maps
+            result=real_open(path,flags,*args,**kwargs);opened.append(result);return result
+        def close_observed(number):closed.append(number);real_close(number)
+        def fstat_observed(number):
+            nonlocal held_reads
+            value=real_fstat(number)
+            if number==fd:
+                held_reads+=1
+                if case=='changed_held_identity' and held_reads>1:
+                    return SimpleNamespace(**{key:getattr(value,key) for key in ('st_dev','st_mode','st_size','st_mtime_ns','st_ctime_ns')},st_ino=value.st_ino+1)
+            return value
+        class Control:
+            checks=0
+            def check(self):
+                self.checks+=1
+                if case=='deadline' and self.checks==4:raise c.LiveError('engagement_live_timeout')
+        try:
+            with monkeypatch.context() as patch:
+                patch.setattr(r.os,'listdir',lambda path:['0','1','2',str(fd),*(str(x) for x in extra)])
+                patch.setattr(r.os,'readlink',lambda path:target)
+                patch.setattr(r.os,'open',open_observed)
+                patch.setattr(r.os,'close',close_observed)
+                patch.setattr(r.os,'fstat',fstat_observed)
+                patch.setattr(r.os,'fstatvfs',lambda number:SimpleNamespace(f_flag=0 if case=='writable_mount' else os.ST_RDONLY))
+                control=Control()
+                if case in ('plain','deleted'):
+                    r._close_import_descriptor(entry_verified=True,runtime_manifest=manifest,control=control)
+                    assert closed[-1]==fd
+                else:
+                    refused(r._close_import_descriptor,entry_verified=1 if case=='truthy_entry' else case!='unverified',runtime_manifest=manifest,control=control)
+                    assert fd not in closed and real_fstat(fd).st_ino==before.st_ino
+                assert set(opened)<=set(closed)
+            for number in opened:
+                with pytest.raises(OSError):real_fstat(number)
+            if case in ('plain','deleted'):
+                with pytest.raises(OSError):real_fstat(fd)
+        finally:
+            for number in [fd,*extra]:
+                try:real_close(number)
+                except OSError:pass
+    # An implementation with no retained import descriptor needs no special close.
+    with monkeypatch.context() as patch:
+        patch.setattr(r.os,'listdir',lambda path:['0','1','2'])
+        r._close_import_descriptor(entry_verified=True,runtime_manifest=manifest,control=None)
 
 
 def test_readiness_namespace_mapping_and_groups():
@@ -329,6 +416,30 @@ def test_original_startup_deadline(monkeypatch):
     assert clipped.cancelled is parent.cancelled and clipped.clock is parent.clock and clipped.deadline==11.
     parent.check=lambda:(_ for _ in ()).throw(c.LiveError('engagement_live_cancelled'))
     refused(clipped.check);refused(clipped.remaining)
+
+    # Verification cleanup cannot hand an expired original allowance to recv,
+    # even when a bootstrap packet would already be readable.
+    import socket
+    manifest=next(x for x in declared_runtime()['roles'] if x['role']=='parser')
+    now=[10.];received=[]
+    decoded=[];real_decode=r._decode
+    def decode_at_original_deadline(*args):
+        assert c._operation_deadline()==12.
+        decoded.append('manifest')
+        now[0]=10.25
+        assert c._operation_deadline()==12.
+        return real_decode(*args)
+    def late_cleanup(**kwargs):
+        assert kwargs['control'].deadline==12.
+        now[0]=12.01
+    with monkeypatch.context() as patch:
+        patch.setattr(r.time,'monotonic',lambda:now[0])
+        patch.setattr(r,'_read_file',lambda *args:raw(manifest))
+        patch.setattr(r,'_decode',decode_at_original_deadline)
+        patch.setattr(r,'_close_import_descriptor',late_cleanup)
+        patch.setattr(socket,'socket',lambda **kwargs:received.append('channel'))
+        assert refused(r._receive_initial,'parser',uid(1),'a'*64,entry_verified=True).code=='engagement_live_timeout'
+        assert decoded==['manifest'] and received==[]
 
     import resource
     from recon_cockpit.secure_agent.engagement_live_endpoint_worker import _nft_child_limits
