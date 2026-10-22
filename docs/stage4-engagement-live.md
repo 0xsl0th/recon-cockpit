@@ -986,3 +986,36 @@ permission, inherited right, case identity, source path, deadline or byte budget
 All 288 cases, 113 new native cases, 160 portable cases, 15 accepted regressions,
 26 parent obligations and 18 physical parent obligations remain unchanged. No
 native acceptance preceded this amendment.
+
+
+### Pre-acceptance amendment A07: actual audit inventory and retained custody
+
+An audit-only diagnostic of unchanged source `82f4e8d` observed six steady
+descriptors. The accepted audit worker retains the pinned read-only libffi image
+imported by its unchanged planner module. The former five-descriptor assumption
+also assigned append and witness purposes to the wrong positions. The diagnostic
+receipt is `c4cb1ba6412c55d93d74323c149f1db10218ee190e274a8ff9f04aaeab95e9e7`;
+it is diagnostic evidence, not native acceptance. Original failed runs remain
+retained.
+
+The unchanged accepted audit worker has exactly six steady descriptors: stdin/stdout/stderr plus audit_append, audit_witness and audit_import_libffi, with complete FD0..5 inventory. Derive the three non-stdio purposes from actual held identities and the pinned mounted library; do not infer append/witness identity from descriptor position. No unnamed, optional or count-only extra descriptor is accepted. Initial transferred rights remain append_file and audit_witness (the one-way writer) only.
+
+Required audit_readiness.import_image is the closed seven-field object destination/device/inode/mode/size/sha256/read_only_mount. The parent actually rereads the exact selected-runtime libffi mounted image and held descriptor under the original startup deadline, verifies regular0444 and O_RDONLY without O_PATH, unchanged device/inode/mode/size/bytes/SHA, a read-only mount and the same executable mapped-image destination/device/inode. The retained read_only_mount is true; all other roles retain their existing verified import-descriptor closure. Accepted audit_worker/planner_worker sources and audit source partition remain unchanged.
+
+Audit readiness binds audit_append descriptor device/inode/mode to append_identity and initial.device/inode, with private0600 regular file and O_WRONLY|O_APPEND and no O_PATH; audit_witness descriptor matches initial.witness transferred writer endpoint, nonblocking SEQPACKET lineage. source_manifest is the distinct reader endpoint held by the broker and must not be conflated with initial.witness.
+
+Protocol validation may validate the closed audit readiness shape without runtime authority. Service acceptance, broker AUDIT_OBSERVED admission and retained transcript replay must additionally require the same mandatory runtime-binding check: import_image destination/size/SHA resolves the single selected libffi native row in the exact runtime parser manifest, and descriptor/map identities resolve that actual observed image. No optional omission at an authority site.
+
+Retained AUDIT_OBSERVED must be actual broker_memfd lifecycle received traffic with observer_id and channel_id equal to that broker_id, null session/dispatch, and at most one admitted audit readiness per broker instance. Preserve existing channel sequence rules. Its source_manifest reader device/inode must match the unique audit_witness descriptor in separately retained actual readiness of the same broker. Missing actual broker readiness is incomplete; conflicting identity or host-projected substitution is invalid.
+
+Every actually retained AUDIT_OBSERVED parent payload PID/start_ticks and wrapper PID must resolve actual role=audit cleanup with exit/returncode/reaping, descriptor closure and chronology. Include those audit observations in the same cumulative94 distinct payload identity ceiling and all-reaped checks alongside startup/readiness/native observations, deduplicating only identical identities and rejecting conflicts. Missing cleanup remains incomplete. Do not fabricate compound new-role readiness for the accepted audit worker, or invent an audit process when startup ended before one was observed.
+
+Existing portable cases W04/W07/I05/I12/T06/T10 carry the additional regression
+obligations. All 288 case identities, 39 new paths, 26 parent obligations,
+18 physical parent obligations, 160 portable cases, 113 new native cases and
+15 accepted regressions remain unchanged. This amendment adds no process,
+transferred right, target, action, credential, resource-limit allowance or budget.
+The exact six-descriptor audit inventory replaces only the inaccurate five-FD
+assumption; it does not permit an arbitrary extra descriptor. No new native
+acceptance preceded this amendment. Stage 4 scope and roadmap estimates are
+unchanged.

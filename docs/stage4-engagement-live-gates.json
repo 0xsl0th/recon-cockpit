@@ -614,13 +614,52 @@
         },
         "type": "object"
       },
+      "audit_import_image": {
+        "additional_fields": false,
+        "all_fields_required": true,
+        "fields": {
+          "destination": "exact canonical destination of the single pinned libffi native row in the selected runtime parser manifest",
+          "device": {
+            "bool_allowed": false,
+            "maximum": 18446744073709551615,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "inode": {
+            "bool_allowed": false,
+            "maximum": 18446744073709551615,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mode": {
+            "bool_allowed": false,
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "read_only_mount": {
+            "enum": [
+              true
+            ]
+          },
+          "sha256": "sha256",
+          "size": {
+            "bool_allowed": false,
+            "maximum": 16777216,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "audit_readiness": {
         "additional_fields": false,
         "all_fields_required": true,
         "fields": {
           "append_identity": "audit_append_identity",
+          "import_image": "audit_import_image",
           "initial": "exact legacy audit bootstrap version/writer_id/device/inode/witness",
-          "parent_observation": "runtime_addendum.parent_observation with unchanged audit mapping rules",
+          "parent_observation": "runtime_addendum.parent_observation with exact A07 audit inventory and identity bindings",
           "ready": "exact legacy audit READY version/writer_id/ready/checks",
           "schema_version": {
             "enum": [
@@ -2139,7 +2178,13 @@
       "cleanup records exactly the actual observed child identity and same original bounded reaping result. capability_projection uses the existing closed admission ISSUE/REDEEM union with reference digests only; no raw permit or approval capability is exported.",
       "The broker validates every object, reserves transcript capacity before accepting ordinary continuation, and records the exact frame as an ordinary launcher protocol row. Missing/conflicting/duplicated capture or missing child evidence refuses usefulness; no host-supplied summary substitutes.",
       "Client-result capture digests and parser input/output commitments resolve these actual captured bytes and child observations. Meter remains independently received from endpoint then explicitly forwarded to launcher by A02.",
-      "Session packaging may extract these exact retained broker transcript objects after sealed completion or confirmed reaping; it never invents host observations or presents the relay as a new host process readback. Parser receipt remains inside existing client_result; no extra parser_receipt kind is needed."
+      "Session packaging may extract these exact retained broker transcript objects after sealed completion or confirmed reaping; it never invents host observations or presents the relay as a new host process readback. Parser receipt remains inside existing client_result; no extra parser_receipt kind is needed.",
+      "The unchanged accepted audit worker has exactly six steady descriptors: stdin/stdout/stderr plus audit_append, audit_witness and audit_import_libffi, with complete FD0..5 inventory. Derive the three non-stdio purposes from actual held identities and the pinned mounted library; do not infer append/witness identity from descriptor position. No unnamed, optional or count-only extra descriptor is accepted. Initial transferred rights remain append_file and audit_witness (the one-way writer) only.",
+      "Required audit_readiness.import_image is the closed seven-field object destination/device/inode/mode/size/sha256/read_only_mount. The parent actually rereads the exact selected-runtime libffi mounted image and held descriptor under the original startup deadline, verifies regular0444 and O_RDONLY without O_PATH, unchanged device/inode/mode/size/bytes/SHA, a read-only mount and the same executable mapped-image destination/device/inode. The retained read_only_mount is true; all other roles retain their existing verified import-descriptor closure. Accepted audit_worker/planner_worker sources and audit source partition remain unchanged.",
+      "Audit readiness binds audit_append descriptor device/inode/mode to append_identity and initial.device/inode, with private0600 regular file and O_WRONLY|O_APPEND and no O_PATH; audit_witness descriptor matches initial.witness transferred writer endpoint, nonblocking SEQPACKET lineage. source_manifest is the distinct reader endpoint held by the broker and must not be conflated with initial.witness.",
+      "Protocol validation may validate the closed audit readiness shape without runtime authority. Service acceptance, broker AUDIT_OBSERVED admission and retained transcript replay must additionally require the same mandatory runtime-binding check: import_image destination/size/SHA resolves the single selected libffi native row in the exact runtime parser manifest, and descriptor/map identities resolve that actual observed image. No optional omission at an authority site.",
+      "Retained AUDIT_OBSERVED must be actual broker_memfd lifecycle received traffic with observer_id and channel_id equal to that broker_id, null session/dispatch, and at most one admitted audit readiness per broker instance. Preserve existing channel sequence rules. Its source_manifest reader device/inode must match the unique audit_witness descriptor in separately retained actual readiness of the same broker. Missing actual broker readiness is incomplete; conflicting identity or host-projected substitution is invalid.",
+      "Every actually retained AUDIT_OBSERVED parent payload PID/start_ticks and wrapper PID must resolve actual role=audit cleanup with exit/returncode/reaping, descriptor closure and chronology. Include those audit observations in the same cumulative94 distinct payload identity ceiling and all-reaped checks alongside startup/readiness/native observations, deduplicating only identical identities and rejecting conflicts. Missing cleanup remains incomplete. Do not fabricate compound new-role readiness for the accepted audit worker, or invent an audit process when startup ended before one was observed."
     ],
     "status": "draft_for_reciprocal_inventory_review"
   },
@@ -2222,7 +2267,7 @@
         "S4-V01"
       ],
       "physical_execution": false,
-      "required_proof": "Projection-only witness or missing full input event refuses; distinguish producer event digest from saved writer envelope and bind writer sequence/identity.",
+      "required_proof": "Projection-only witness or missing full input event refuses; distinguish producer event digest from saved writer envelope and bind writer sequence/identity. Also bind actual broker-received AUDIT_OBSERVED to its runtime image, same-broker reader and full producer event; a declaration alone is insufficient.",
       "status": "required_not_executed"
     },
     {
@@ -2323,7 +2368,7 @@
         "S4-D07"
       ],
       "physical_execution": false,
-      "required_proof": "Validate PID/start-ticks/namespaces/pidfd/role pins and actual cleanup receipts; cached identity alone cannot prove liveness or successful reaping.",
+      "required_proof": "Validate PID/start-ticks/namespaces/pidfd/role pins and actual cleanup receipts; cached identity alone cannot prove liveness or successful reaping. Also require audit payload PID/start/wrapper cleanup from actual AUDIT_OBSERVED, reject conflicting cleanup, and include audit in the cumulative94 identity ceiling without fabricated readiness.",
       "status": "required_not_executed"
     },
     {
@@ -5150,7 +5195,7 @@
         "S4-E05"
       ],
       "physical_execution": false,
-      "required_proof": "portable mechanism/schema regression; physical applicability is separately covered by fixed native gates",
+      "required_proof": "portable mechanism/schema regression; physical applicability is separately covered by fixed native gates Also verify identity-derived six-descriptor audit inventory and actual import-image readback; preserve descriptor custody on failure and original startup deadline.",
       "status": "required_not_executed"
     },
     {
@@ -5199,7 +5244,7 @@
         "S4-W05"
       ],
       "physical_execution": false,
-      "required_proof": "portable mechanism/schema regression; physical applicability is separately covered by fixed native gates",
+      "required_proof": "portable mechanism/schema regression; physical applicability is separately covered by fixed native gates Also refuse audit image readback after the original startup deadline; no fresh import-verification budget.",
       "status": "required_not_executed"
     },
     {
@@ -6126,7 +6171,7 @@
         "S4-D05"
       ],
       "physical_execution": false,
-      "required_proof": "Retain old projected claims but alter engagement field in full producer event; digest mismatch refuses.",
+      "required_proof": "Retain old projected claims but alter engagement field in full producer event; digest mismatch refuses. Also reject host-projected AUDIT_OBSERVED, duplicate per-broker observations, absent or mismatched same-broker reader linkage and runtime-image substitutions.",
       "status": "required_not_executed"
     },
     {
@@ -6163,7 +6208,7 @@
         "S4-D05"
       ],
       "physical_execution": false,
-      "required_proof": "Wrong writer, missing fsync receipt, reused/gapped sequence and non-durable witness cannot create admission.",
+      "required_proof": "Wrong writer, missing fsync receipt, reused/gapped sequence and non-durable witness cannot create admission. Also require all six exact audit descriptors and import_image; reject unknown/missing extras, incorrect append/writer identities or flags, writable/replaced/unmapped/unpinned import images and missing runtime authority binding.",
       "status": "required_not_executed"
     },
     {
@@ -6655,6 +6700,31 @@
         "rlimit_nofile": 64,
         "source_paths": 39
       }
+    },
+    {
+      "audit_steady_descriptors": 6,
+      "diagnostic_receipt_sha256": "c4cb1ba6412c55d93d74323c149f1db10218ee190e274a8ff9f04aaeab95e9e7",
+      "id": "S42C-A07",
+      "native_acceptance_before_amendment": false,
+      "observed_source_commit": "82f4e8d82288450709674bee97c9c87ced239bcf",
+      "predecessor_contract_commit": "98c96102b307a024c3217ca22245c4b31d69e32f",
+      "predecessor_contract_sha256": "7034c94f95314d2a5692db5681bd187ec9956df4f36404de2574e777c86ca1e7",
+      "predecessor_inventory_sha256": "2cc4fb860f3844235e1b6484282c8062bcf612fcdfb3a6ce836782c70b5d6c6e",
+      "reason": "Audit-only actual readback identified the unchanged accepted worker retaining its pinned read-only libffi import image in addition to stdio, append and witness. Correct the finite inventory and retain actual image, endpoint and cleanup bindings before native acceptance.",
+      "scope_and_counts_unchanged": {
+        "accepted_regressions": 15,
+        "accepted_worker_sources": true,
+        "authority": true,
+        "case_ids": 288,
+        "distinct_payloads": 94,
+        "initial_rights": true,
+        "new_native": 113,
+        "new_portable": 160,
+        "parent_obligations": 26,
+        "physical_parent_obligations": 18,
+        "resource_limits_deadlines_and_byte_caps": true,
+        "source_paths": 39
+      }
     }
   ],
   "counting_rules": {
@@ -6842,7 +6912,10 @@
       "Replay actual complete new protocol sequence and durable v2 history, full original audit producer events, authority witnesses and native context before deriving operation or gate status. Reject coherent partial rewrites that break any retained crosslink.",
       "Independently reparse each actual eligible raw capture at most once through parser-only confinement; retain original captured stdout/stderr/truncation semantics. No new client/endpoint/reviewer/broker/audit writer/store.",
       "Compare old saved phase clocks for historical proof, not current wallclock. Current original monotonic budget bounds only inspection work.",
-      "Unknown status/extra member/invalid schema/hash or unsupported parser boundary yields closed error2; valid incomplete expected observations yield report status incomplete/exit1. Complete expected-negative predicate is status complete/exit0."
+      "Unknown status/extra member/invalid schema/hash or unsupported parser boundary yields closed error2; valid incomplete expected observations yield report status incomplete/exit1. Complete expected-negative predicate is status complete/exit0.",
+      "Protocol validation may validate the closed audit readiness shape without runtime authority. Service acceptance, broker AUDIT_OBSERVED admission and retained transcript replay must additionally require the same mandatory runtime-binding check: import_image destination/size/SHA resolves the single selected libffi native row in the exact runtime parser manifest, and descriptor/map identities resolve that actual observed image. No optional omission at an authority site.",
+      "Retained AUDIT_OBSERVED must be actual broker_memfd lifecycle received traffic with observer_id and channel_id equal to that broker_id, null session/dispatch, and at most one admitted audit readiness per broker instance. Preserve existing channel sequence rules. Its source_manifest reader device/inode must match the unique audit_witness descriptor in separately retained actual readiness of the same broker. Missing actual broker readiness is incomplete; conflicting identity or host-projected substitution is invalid.",
+      "Every actually retained AUDIT_OBSERVED parent payload PID/start_ticks and wrapper PID must resolve actual role=audit cleanup with exit/returncode/reaping, descriptor closure and chronology. Include those audit observations in the same cumulative94 distinct payload identity ceiling and all-reaped checks alongside startup/readiness/native observations, deduplicating only identical identities and rejecting conflicts. Missing cleanup remains incomplete. Do not fabricate compound new-role readiness for the accepted audit worker, or invent an audit process when startup ended before one was observed."
     ],
     "inventory_constraints": [
       "Complete manifest+all actual member sizes total<=16777216, at most18 regular files, no directories/links/extra files.",
@@ -7385,6 +7458,8 @@
     "pending": [],
     "portable_coverage_without_new_ids": {
       "S42C-I01": "writer/report roundtrip for complete useful, correct refusal and incomplete proof; packaging status separate",
+      "S42C-I05": "Also bind actual broker-received AUDIT_OBSERVED to its runtime image, same-broker reader and full producer event; a declaration alone is insufficient.",
+      "S42C-I12": "Also require audit payload PID/start/wrapper cleanup from actual AUDIT_OBSERVED, reject conflicting cleanup, and include audit in the cumulative94 identity ceiling without fabricated readiness.",
       "S42C-I15": "exclusive private directory/member writer and inspector custody including output_exists",
       "S42C-I16": "writer/readback identity/byte replacement and partial output retained on fault",
       "S42C-I17": "own15s/caller clip, nested2s, bounded parser cleanup and no late success",
@@ -9144,10 +9219,12 @@
       "admission_max": 3,
       "audit": [
         "stdio:3 (stdin is producer channel)",
-        "append_file:1",
-        "one_way_witness:1"
+        "audit_import_libffi:1 (exact pinned read-only import image)",
+        "audit_append:1 (initial append_file right)",
+        "audit_witness:1 (initial audit_witness writer right)"
       ],
-      "audit_max": 5,
+      "audit_max": 6,
+      "audit_rule": "The unchanged accepted audit worker has exactly six steady descriptors: stdin/stdout/stderr plus audit_append, audit_witness and audit_import_libffi, with complete FD0..5 inventory. Derive the three non-stdio purposes from actual held identities and the pinned mounted library; do not infer append/witness identity from descriptor position. No unnamed, optional or count-only extra descriptor is accepted. Initial transferred rights remain append_file and audit_witness (the one-way writer) only. Required audit_readiness.import_image is the closed seven-field object destination/device/inode/mode/size/sha256/read_only_mount. The parent actually rereads the exact selected-runtime libffi mounted image and held descriptor under the original startup deadline, verifies regular0444 and O_RDONLY without O_PATH, unchanged device/inode/mode/size/bytes/SHA, a read-only mount and the same executable mapped-image destination/device/inode. The retained read_only_mount is true; all other roles retain their existing verified import-descriptor closure. Accepted audit_worker/planner_worker sources and audit source partition remain unchanged. Audit readiness binds audit_append descriptor device/inode/mode to append_identity and initial.device/inode, with private0600 regular file and O_WRONLY|O_APPEND and no O_PATH; audit_witness descriptor matches initial.witness transferred writer endpoint, nonblocking SEQPACKET lineage. source_manifest is the distinct reader endpoint held by the broker and must not be conflated with initial.witness.",
       "broker_max": 21,
       "broker_phase_rule": "One bootstrap/runtime FD may exist only before opening store/SQLite descriptors and must close first. Three writable memfds transferred only at initial bootstrap; host retains independently reopened O_RDONLY peers, broker sole writer until F_SEAL_WRITE|GROW|SHRINK|SEAL. Audit producer remains host-owned; broker only witness reader.",
       "broker_proposed": [
