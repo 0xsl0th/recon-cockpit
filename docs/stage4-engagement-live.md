@@ -83,9 +83,10 @@ the integration does not assume all mutation travels through broker RPC.
 Each session has an isolated reviewer, launcher and endpoint. The reviewer uses
 either the terminal or graphical implementation chosen at session creation and
 fixed in the envelope. The launcher independently validates policy, actual
-runtime custody, action and the release envelope through an isolated nested
-admission worker. During preparation it may own the waiting client and nested-admission worker
-together through guarded GO. The isolated admission worker redeems its real
+runtime custody, action and the release envelope through an isolated admission
+worker. The trusted host constructs and observes the fixed children; only the
+launcher holds their request/release endpoints. During preparation a waiting
+client and its admission worker may coexist through guarded GO. The admission worker redeems its real
 one-use permit after GO, then is actually reaped before client release/native
 exec. During active native execution only the client or parser child is present. The exact graph bound counts this overlap.
 The endpoint is the synthetic service and the application-payload meter; it is
@@ -253,11 +254,11 @@ failed postcheck/commit/reply is `possibly_sent`/unresolved, cancels and reaps;
 its admission stays charged. No automatic reissue, refund, replay or recovery of
 that action is available.
 
-All role preparation and isolated nested admission preparation happen before
+All role preparation and isolated admission preparation happen before
 successful approval consume. The waiting identify client is a confined Python
 wrapper with sealed fixed native image/argv, not an already-running Nmap ELF.
 No ptrace or new trace authority is introduced. On GO the launcher rechecks its
-current window/deadline, redeems the exact one-use nested permit and releases the
+current window/deadline, redeems the exact one-use admission permit and releases the
 wrapper to exec the fixed native image. The endpoint remains unarmed while the
 parent observes the actual pinned PID's native ELF/maps/task/FD identity. Only
 then does it ARM the endpoint, which may admit/read/respond. Native Nmap may
@@ -414,7 +415,7 @@ orchestrator. Its public interface is:
 - `open_session(*, ingress=0) -> session_binding`, choosing the unused preallocated
   slot with that ingress index, and refusing a third or reopened session;
 - `prepare(session_id, slot, *, ingress=0) -> prepared`, deriving the exact action
-  in the broker and completing actual role/nested-admission preparation;
+  in the broker and completing actual role/admission preparation;
 - `review(prepared, *, control) -> approval_reference | None`, through the actual
   configured view, never a Boolean or textual approve RPC;
 - `execute(prepared, reference, *, ingress=0, control) -> live_result`, consuming
@@ -486,9 +487,10 @@ from a generic file, host dictionary or projected old claims without this live
 channel custody.
 
 `EngagementLauncher.start(session_binding, role_bundle, control)` starts the
-fixed isolated launcher with its preallocated peers. `prepare(prepared,control)`
-performs the exact operation-specific child/runtime/nested-admission setup and
-returns a bounded readiness receipt. `progress(control)`, `cancel(reason)` and
+fixed isolated launcher with its preallocated peers and starts its one fixed host
+supervisor. `prepare(prepared,control)` checks the actual preparation acknowledged
+by the broker after isolated admission and host-observed child startup.
+`progress(control)`, `cancel(reason)` and
 `close()` expose observation/cleanup only. There is no public launch/release
 method accepting a GO dictionary: release comes only from the inherited broker
 peer. The launcher never reads SQLite or constructs a successful approval/audit
@@ -506,6 +508,13 @@ initial launcher bootstrap; the host retains no second writer.
 the operation-specific sequence. The parser API is
 `parse(*, tool_id, raw, stderr, scope, truncated, control, runtime)`, returning
 `(parsed, parser_receipt)`; it accepts no arbitrary parser or executable.
+Those local client/parser APIs remain host-only. The live launcher must use
+`_prepare_supervised_client(*, runtime, prepared, endpoint_identity, scope,
+control, supervisor)` and `_parse_supervised_observed(*, tool_id, raw, stderr,
+scope, truncated, control, runtime, prepared, supervisor)`. Its
+`SupervisorChannel.start_child(*, child_slot, prepared, control)` returns a
+`LauncherChild` owning the real preallocated request endpoint and cached actual
+host READY; it has no fabricated process or pidfd interface.
 `validate_live_context(value)` crosslinks actual role, client, meter and process
 observations before a successful completion is recorded.
 
@@ -545,9 +554,13 @@ them in a finally path even if transfer or startup fails. `close` closes only
 still-owned descriptors, never a recycled number. The parent retains only the
 fixed host peers and three separately reopened read-only evidence memfds.
 It does not retain duplicate authority writers or add a new channel to an already
-bootstrapped role after READY. A launcher creates each future client, parser or
-admission stdin pair before that child’s own initial bootstrap; this transfers
-no new descriptor into an existing worker.
+bootstrapped role after READY. It also creates six fixed child stdin pairs per
+session before broker startup: client, admission and parser for each of the two
+HTTP slots. Their request ends transfer once to the launcher at INITIAL. The host
+retains each opposite end only until its fixed child is spawned, then closes it.
+The launcher alone sends that child's committed INITIAL and later protocol
+messages. Child INITIAL carries no rights. No role creates a later channel for
+transfer into an already bootstrapped worker.
 
 Protocol helpers are `encode_frame`, `decode_frame`, `send_packet`,
 `receive_packet`, `send_once` and initial-only `send_initial`, with exact signatures
@@ -655,8 +668,8 @@ deadline is no later than observed_at_ns+2000000000 and the original deadlines.
 The trusted host has one dedicated lifecycle monitor thread polling broker
 pidfd/channel and pending stop flags at most 100 ms apart. It performs only fixed
 role cancellation/cleanup, not caller callbacks or authority decisions. The
-host process allows main+this monitor+at most two API submitter threads; these
-are explicit orchestration threads, not silently counted as isolated payload
+host process allows main, this monitor, at most two API submitters and at most
+two fixed child supervisors: six explicit orchestration threads, not isolated payload
 RLIMIT_NPROC. Reviewer close sets its private stop flag and shuts down RPC before
 waiting for any RPC lock, so a blocked 30 s review cannot delay cancel. Broker
 revocation/death and lifecycle EOF close the active view, burn volatile grants
@@ -714,9 +727,12 @@ admitted. Any attempted GO sets release_attempted before its send. No edge retur
 to prepared/admitted after release_attempted. Terminal cancel/revision/revoke/EOF
 prevents delayed packets from reviving any prior state.
 
-The cumulative role transcript is at most 2 MiB and 4096 rows, with an 8 KiB reserved
-terminal cleanup allowance inside that cap. Before any ordinary effect, the broker
-reserves enough evidence capacity for its bounded row and terminal state; it
+The cumulative role transcript is at most 2 MiB and 4096 rows. Each of at most
+two broker segments has 896 KiB and 1984 rows, including its 8 KiB/eight-row
+terminal reserve. All host producers share the remaining 256 KiB and 128 rows;
+at most 96 are supervision projections. The same host budget spans both broker
+generations in a canonical bundle. Before any ordinary effect, the broker
+checks capacity for its bounded current row and terminal state; it
 fails closed if it cannot retain the corresponding observation. Watch rows are
 compact exact phase/clock/state-sequence/hash observations, not repeated 2 MiB
 exports. Packet and transcript capacities are independent; neither silently
@@ -727,9 +743,16 @@ strictly sequential broker instances and one host role-observer segment. Every
 segment has its own source, broker identity, offset, byte length, SHA256, seal
 status and completeness. The slices cover the file exactly and are validated
 separately; a partial trailing line never merges into the next segment. The
-combined member remains at most 2 MiB/4096 parsed rows. Aggregate overflow refuses
-packaging without truncation or a success claim, even if each source fit its own
-individual bound.
+combined member remains at most 2 MiB/4096 parsed rows. Host approval, root
+observer and supervision producers all reserve their bounded current exchange
+using one short-lock allocator, with reserved terminal tickets inside that same
+budget. Host supervision reserves before enabling receive; host-originated
+exchanges reserve before send, and child startup reserves before spawn.
+Count ceilings do not guarantee that every maximum-width row fits;
+byte exhaustion may refuse earlier. Unused current-exchange reservations may
+be released, but retained records are never discarded. The final combined bound
+is checked again during packaging without truncation or a success claim on
+overflow. This is not an escrow for every future post-GO observation.
 
 Host approval/admission RPC projections are explicitly role-observer records,
 not invented broker observations. The projection hashes commit to saved projected
@@ -769,25 +792,31 @@ Nmap retains AS 256 MiB/CPU 5 s/FD 64/task 1/FSIZE 0/native 5 s/aggregate output
 GET retains AS 256 MiB/CPU 5 s/FD 64/task 1/FSIZE 0/native 1 s/aggregate output 2048.
 Parser has AS 128 MiB/CPU 2 s/FD 32/task 1/wall 2 s/output 4096. Endpoint has
 AS 256 MiB/CPU 5 s/FD 64/task 1 and no writable filesystem. Admission has AS 256 MiB,
-CPU 7 s/FD 64/task 1; original lifetime ≤30 s, active exchange ≤2 s. The fixed nested
-launcher has its separately bounded builder/source staging FD allowance, not an
-invented FD 64 limit that cannot hold staged sealed modules. Graphical Tk's one
+CPU 7 s/FD 64/task 1; original lifetime ≤30 s, active exchange ≤2 s. The launcher
+has FD 64/NPROC 1/FSIZE 0 and exactly eleven initial steady descriptors; it stages
+no child images and forbids process, namespace and socket creation. All child
+staging occurs in the trusted host under the original finite snapshot bounds.
+Graphical Tk's one
 prewarmed notifier thread is explicitly counted; its task set cannot grow after
 TSYNC sealing. No whole-process bound is inferred solely from RLIMIT_NPROC.
 
 The owned graph has at most 12 payloads, 13 wrappers and one serialized setup
 helper: 26 descendant processes and 28 descendant tasks. The trusted host's one
-main thread, one lifecycle monitor and at most two API submitter threads are
-separate from that graph. The external X server/test drivers are disclosed and
+main thread, one lifecycle monitor, at most two API submitter threads and at most
+two fixed child-supervisor threads are separate from that graph: six host threads
+maximum, with no per-child thread. The external X server/test drivers are disclosed and
 not included as isolated payloads. The eight persistent payloads are broker,
 audit, two reviewers, two launchers and two endpoints; up to two waiting clients
 and two admission workers may coexist before GO. Admission is reaped before
 client exec/ARM; parser replaces a reaped client. Exact helper invocation counts
 and bwrap/UID-map structure are in the inventory. A child never attempts to
-nsenter a sibling user namespace: trusted host enters endpoint user/net first,
-then launcher creates its own user/mnt/pid while inheriting only that session
-net; clients inherit it, while parser/admission also unshare net. Namespace FDs
-are startup-only and never survive into native leaves.
+nsenter a sibling user namespace. The trusted host enters the pinned endpoint's
+user/net namespaces before constructing each launcher or networking client;
+each payload receives its own user/mnt/pid namespaces. Parser and admission also
+unshare net. Every namespace lease is acquired afresh from the held live endpoint
+pin, checked before and after acquisition and closed during startup. Namespace
+FDs never reach launcher or native payloads. Fixed `nsenter --no-fork` and the
+shim's `execv(bwrap)` preserve the same wrapper PID/start identity.
 
 The broker's named FD inventory peaks at 21 with bootstrap descriptor closed
 before opening the store: 13 communication FDs, three evidence memfds, two held
@@ -797,7 +826,11 @@ brokers. The predecessor and every owned role must be actually reaped before the
 successor starts. There are at most four actual client dispatches across both
 instances. The peak graph above remains 26 processes/28 tasks; the conservative
 cumulative inventory is at most 47 unique PID/start identities per instance and 94
-per bundle. The earliest observed initial export and latest observed final export
+per bundle. A full broker graph has at most 20 payload identities, 21 wrapper/
+audit-reaper identities and four nft helper identities: 45, within the existing
+47 ceiling. Six nsenter/shim/bwrap image chains reuse six wrapper identities;
+their image invocations are counted separately, not as six additional processes.
+The earliest observed initial export and latest observed final export
 retain their actual broker identities; intermediate event prefixes and receipts
 are replayed from the full history, not mislabeled as separately captured files.
 Actual lifecycle observations distinguish bootstrap, steady, transient journal
@@ -1019,3 +1052,167 @@ The exact six-descriptor audit inventory replaces only the inaccurate five-FD
 assumption; it does not permit an arbitrary extra descriptor. No new native
 acceptance preceded this amendment. Stage 4 scope and roadmap estimates are
 unchanged.
+
+
+### Pre-acceptance amendment A08: host construction and exclusive child channels
+
+The bounded launcher diagnostic at frozen `9e02273` identified an incorrect
+socket-pair denial witness. Its receipt is
+`08ff2ed212093b7f6142208ef70c6470f6904bb89f1c99a38d6ff931af52e994`.
+The witness and actual session failure retention were corrected at `7322466`;
+32 focused runtime cases and five private retention checks passed. Neither that
+diagnostic nor those portable checks is native acceptance. Source review then
+identified two independent blockers: a child inherits its parent's seccomp
+filters across fork/exec, and the launcher's hard FSIZE 0 prevents sealed child
+image staging. Adding a child filter cannot undo the inherited denial. Preserve
+all four original failed native attempts and the diagnostic separately.
+
+The trusted host now constructs, observes and reaps the fixed client, admission
+and parser children. The isolated launcher remains the sole holder of their
+request/release endpoints and of endpoint ARM. It receives GO only from its
+existing broker peer. Host supervision neither issues nor redeems an admission
+permit, writes a client GO, sends parser input, arms an endpoint, emits an audit
+event, nor changes the ledger. There is no new isolated network-capable builder
+role. This replaces the former nested-launcher construction path, rather than
+relaxing its network filter.
+
+Before broker startup, the existing role bundle creates exactly six child
+SEQPACKET pairs for each of its two session slots. Fixed child slots are identify
+client/admission/parser and headers client/admission/parser; their roles are
+respectively nmap/admission/parser and headers/admission/parser. Every slot has
+one fixed worker UUID and at most one start. The launcher receives the six request
+ends, together with broker_control and endpoint_arm, in its sole INITIAL rights
+transfer. Its complete initial inventory is FD 0 through 10. The host closes all
+copies of those request ends and retains only the opposite child ends until
+their one fixed spawn. Unused ends close during cleanup.
+
+Slot declarations bind the actual pair-creation identities, canonical launcher
+descriptor and opposite child stdin identity, exact role and worker UUID. The
+two socket endpoints have different inodes; equality is never used as a peer
+test. Check the exact original pair declaration and both observed endpoint
+identities. Queues must be empty before bootstrap handoff. A swapped endpoint,
+duplicate retained writer, unexpected descriptor, slot reuse, role change or
+foreign session/runtime refuses. Each child still enters with only FD 0/1/2 and
+receives an INITIAL with no rights. Its actual FD 0 must match the fixed opposite
+endpoint, and its bootstrap digest must match its committed argv and READY.
+
+Each launcher has one fixed host supervisor thread. At most two such threads
+exist; host thread capacity changes explicitly from four to six. The supervisor
+is started before the launcher is admitted for preparation. It alone owns its
+child spawn state, pipes, pidfds, process readback and cleanup. Concurrent ingress
+calls cannot compete to read the supervision channel or replace an active
+child's original control with a fresh caller deadline. The lifecycle monitor
+remains independent, and no additional thread is created for a child or request.
+Both supervisors must terminate before a successor broker can start.
+
+The existing launcher stdin/host channel becomes a closed supervision protocol
+after INITIAL. It remains separate from broker GO and endpoint ARM. It has exact
+request/reply correlation, monotonically increasing per-direction sequences and
+the actual launcher identity. The closed operations are START, OBSERVE_READY,
+NATIVE_BEGIN, OBSERVE_NATIVE, CAPTURE and REAP, with their exact schemas in the
+inventory. Every complete encoded frame, including its wrapper, is at most
+32768 bytes. No ordinary message carries ancillary data or descriptors. Reject
+the first malformed, unsolicited, duplicated, wrong-phase or foreign-slot frame
+and terminate that supervisor; do not retry a command. There are at most 22
+received requests per session, including a terminal refused request. STOP/EOF
+and the earliest original deadline take priority over ordinary progress.
+
+Startup is deliberately split. The host first registers a pending owner, takes
+the original bounded setup lock, derives the fixed payload/argv/source snapshot
+and proves that the complete BOOTSTRAP reply fits. It spawns the fixed child with
+the already-owned child stdin end and host-local stdout/stderr/info pipes. It
+publishes actual process ownership immediately and independently verifies entry,
+FD 0, source images, namespace and PID/start identity. It then returns only the
+exact committed bootstrap object. It cannot wait for READY before returning
+that object. The launcher validates its fixed slot, session, Prepared, runtime,
+worker and deadline, and sends INITIAL once through its sole request endpoint.
+Only the later OBSERVE_READY exchange reads actual READY and returns the host's
+independent sealed-process observation. No synthetic Popen, parent channel or
+readiness object stands in for a real child owner.
+
+For nmap and headers, the host obtains a fresh short namespace lease exclusively
+from the still-pinned live endpoint. It verifies liveness and the exact retained
+user/net identities before and after acquisition. No request may name a PID,
+namespace path, descriptor, arbitrary role or executable. Fixed nsenter
+`--no-fork` and the fixed shim's `execv(bwrap)` enter only that endpoint's user/net
+namespaces; setup descriptors close before payload entry. Admission and parser
+instead receive their own private net namespaces. The host serializes snapshot
+staging and namespace/helper setup across both supervisors under the original
+control; waiting for that lock does not create a new time allowance.
+
+Launcher confinement becomes a leaf boundary: all required process creation,
+namespace creation and socket/socket-pair denial witnesses must actually pass.
+NPROC is 1, NOFILE is 64 and FSIZE remains 0. The launcher mounts neither bwrap,
+Nmap nor child worker executables and performs no child source staging. Its
+closed source closure retains only the validation/proxy modules it actually
+uses. The full runtime bundle remains immutable data for verifying observed
+children; its presence does not permit executing another role.
+
+After actual broker GO and actual admission redemption, admission must be
+observed reaped before client release or ARM. NATIVE_BEGIN establishes one
+conservative host monotonic native deadline before the launcher writes client
+GO: no later than the original effect/action/session/broker deadline or now plus
+five seconds for Nmap/one second for headers. Both parties use that exact
+returned deadline. OBSERVE_NATIVE and CAPTURE cannot renew it. Nmap's actual
+pinned ELF/maps observation still precedes ARM. Headers require ARM ACK before
+NATIVE_BEGIN and the subsequent client release. Parser replaces the already-reaped client and receives
+input directly from the launcher.
+
+The supervisor enforces the earliest outstanding startup, action and native
+deadline even when no further request arrives. During active native work it
+also drains bounded stdout/stderr and enforces the shared 8192/2048-byte output
+cap. A stalled launcher cannot extend native lifetime or postpone overflow
+handling until CAPTURE. CAPTURED contains only child_slot, the existing compact
+raw capture, status and the actual single-child cleanup receipt or null. It
+does not duplicate complete readiness/native objects. Missing or failed cleanup
+cannot support useful success. Subsequent close uses the actual cached receipt;
+it does not issue another REAP or create a later cleanup allowance.
+
+Cancellation uses one shared first-stop epoch. Autonomous timeout/overflow or
+Session shutdown publishes the earliest absolute cleanup deadline, at most two
+seconds after that stop. Later close calls clamp to it. Stop/channel shutdown
+does not wait for an operation or ingress lock, and no state lock is held across
+I/O, Popen, readback or wait. The supervisor owns FD closure; another thread must
+not close or recycle a pidfd/procdir it is still using. A pending-start token
+exists before Popen. A result published after the stop fence is immediately
+owned and cleaned under the same recorded deadline, never bootstrapped or
+released. Unresolved publication, an unjoined thread or incomplete reap is
+failed/unknown cleanup, never complete. Retain actual supervisor start, stop,
+join, channel closure and pending-owner terminal observations alongside actual
+child cleanup; pidfd reaping alone does not prove thread termination.
+
+All parent observations, including audit and the new host-supervised children,
+resolve one actual trusted-host PID namespace and observer identity. Retained
+host source facts are distinct from the launcher's relays and the broker's
+receipt of those relays. Save fixed slot/pair identities, exact bootstrap
+reconstruction inputs and commitment, actual entry/READY/native observations,
+raw capture and cleanup once in their existing bounded evidence members. Closed
+host supervision projections retain original request/reply sequence, byte count
+and digest and resolve those exact source facts. A bootstrap hash without all
+its reconstruction inputs is insufficient. A null reply remains null.
+
+START may arrive before the outer broker PREPARED acknowledgment. Retain its
+actual validated Prepared and source provenance even if that outer reply is
+lost; do not invent a successful result. Actual host capture survives a missing
+launcher relay, but missing required broker traffic remains incomplete. Saved
+inspection checks both direct host facts and exact relayed commitments, rejects
+conflicts and orphaned identities, and never relabels host observation as
+launcher-parent readback. The exact schemas and per-source reservations in the
+inventory fit the unchanged 18-file, 16-MiB bundle and combined 2-MiB/4096-row
+transcript limits. Each source reserves its bounded current request/reply and
+terminal evidence before acknowledging further work. Capacity is an additional
+fail-closed limit: a source may exhaust it before its maximum lifetime or action
+count. This does not promise escrow for every future effect-bearing frame.
+Exhaustion after GO retains actual partial/uncertain evidence and durable started
+audit/quota state, without a useful result, refund, truncation or dropped history.
+
+The isolated peak remains 26 processes/28 tasks. The conservative cumulative
+47/94 distinct-process ceilings remain, with the corrected 45-identity derivation
+and six separately counted nsenter image invocations. Broker, audit, approval,
+GO, endpoint meter, targets, actions and credential scope are unchanged. The
+inventory assigns the new supervision, custody, timeout, concurrency and cleanup
+obligations to the existing exact cases. All 288 identities, 39 new paths,
+26 parent obligations and 18 physical parent obligations remain. Every affected
+native obligation requires fresh physical proof after implementation and a new
+clean source/runtime freeze. No native gate was accepted before this amendment;
+S4.2c remains one integration increment and the roadmap estimates are unchanged.
