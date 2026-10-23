@@ -17,6 +17,7 @@ class EndpointOwner:
         except BaseException:
             self.close();raise
         self.namespace_fds=tuple(self.namespace_fds)
+    def _namespace_lease(self,control):return _NamespaceLease(self,control)
     def progress(self,control):
         control.check();self.owner.pin.check_alive();return self.ready
     def _interrupt(self):
@@ -97,3 +98,43 @@ def arm_endpoint(channel,*,release,endpoint_identity,control):
     value=ack['body']
     if any(value[k]!=release[k] for k in ('session_id','dispatch_id','envelope_sha256','effective_lease_deadline_ns')) or value['endpoint_id']!=frame['channel_id'] or value['go_sha256']!=runtime._hash(release) or value['slot']!=frame['body']['slot']:runtime._fail('invalid_frame')
     return value
+
+
+class _NamespaceLease:
+    """Fresh startup-only namespace handles from one still-pinned endpoint."""
+    def __init__(self,endpoint,control):
+        self.endpoint=endpoint;self._fds=[];self._identities=[];self._closed=False
+        self.expected_net=endpoint.ready['parent_observation']['namespaces']['net']
+        pin=endpoint.owner.pin
+        try:
+            control.check();pin.check_alive()
+            for name in ('user','net'):
+                control.check()
+                expected=endpoint.ready['parent_observation']['namespaces'][name]
+                if os.readlink('ns/'+name,dir_fd=pin.directory)!=expected:runtime._fail('invalid_role')
+                fd=os.open('ns/'+name,os.O_RDONLY|os.O_CLOEXEC,dir_fd=pin.directory)
+                self._fds.append(fd)
+                info=os.fstat(fd);self._identities.append((info.st_dev,info.st_ino))
+                if os.readlink('/proc/self/fd/'+str(fd))!=expected:runtime._fail('invalid_role')
+            self.verify(control)
+        except BaseException:
+            self.close();raise
+    @property
+    def fds(self):
+        if self._closed:runtime._fail('invalid_role')
+        return tuple(self._fds)
+    def verify(self,control):
+        if self._closed or len(self._fds)!=2:runtime._fail('invalid_role')
+        pin=self.endpoint.owner.pin;control.check();pin.check_alive()
+        for name,fd,identity in zip(('user','net'),self._fds,self._identities,strict=True):
+            control.check();info=os.fstat(fd);expected=self.endpoint.ready['parent_observation']['namespaces'][name]
+            if (info.st_dev,info.st_ino)!=identity or os.readlink('/proc/self/fd/'+str(fd))!=expected or os.readlink('ns/'+name,dir_fd=pin.directory)!=expected:runtime._fail('invalid_role')
+        pin.check_alive();control.check()
+    def close(self):
+        if self._closed:return
+        self._closed=True;errors=[]
+        while self._fds:
+            fd=self._fds.pop()
+            try:os.close(fd)
+            except OSError as error:errors.append(error)
+        if errors:raise errors[0]

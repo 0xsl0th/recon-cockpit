@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import stat
 import time
 from contextlib import contextmanager
 from functools import wraps
@@ -20,8 +21,8 @@ from .models import parse_action, parse_policy
 
 PROFILE = 'engagement-http-prefix-live-v1'
 BACKEND = 'linux_engagement_http_prefix'
-CONTRACT_SHA256 = '11b5e2f56e18ce4003e4dab6e2c99a68e7f7f29be1deeff4461e0a08cd49e9ca'
-INVENTORY_SHA256 = '4e723dbc8cbf3690073dbfd41bbce3127f9a4d9a6bf1f99588df50c9e0e376ea'
+CONTRACT_SHA256 = '9a626dd27e43ea94de9898185f6d4608a4f8f11df2f516053d43b68f7315614f'
+INVENTORY_SHA256 = '0e1295432df0d05107a8383602057f0764bd0342bb6dbd0e50defd74b72b164d'
 MAX_PACKET = 32768
 MAX_CANONICAL = 2097152
 MAX_DEPTH = 64
@@ -57,6 +58,20 @@ RELEASE_FIELDS = frozenset(('schema_version broker_id ledger_owner_id session_id
     'reservation_state_sha256 approval_witness_sha256 audit_witness_sha256 guard_clock '
     'effective_lease_deadline_ns effect_stop_ns release_sequence').split())
 OUTCOMES = frozenset(('useful denied failed cancelled partial unresolved not_started').split())
+CHILD_SLOTS = {
+    'identify_client': ('nmap', 'http_identify', 5),
+    'identify_admission': ('admission', 'http_identify', 6),
+    'identify_parser': ('parser', 'http_identify', 7),
+    'headers_client': ('headers', 'http_headers', 8),
+    'headers_admission': ('admission', 'http_headers', 9),
+    'headers_parser': ('parser', 'http_headers', 10),
+}
+BROKER_TRANSCRIPT_BYTES = 896 * 1024
+BROKER_TRANSCRIPT_ROWS = 1984
+HOST_TRANSCRIPT_BYTES = 256 * 1024
+HOST_TRANSCRIPT_ROWS = 128
+SUPERVISION_ROWS = 96
+SUPERVISION_ROW_BYTES = 3072
 
 
 class LiveError(ValueError):
@@ -266,6 +281,39 @@ def decode(raw, *, max_bytes=MAX_PACKET):
 
 def detached(value, maximum=MAX_PACKET):
     return decode(canonical(value, max_bytes=maximum), max_bytes=maximum)
+
+
+@validation('invalid_channel')
+def validate_child_slot_bindings(value):
+    """The fixed pair inventory is data; it grants no child-release authority."""
+    value = detached(value)
+    if type(value) is not list or len(value) != len(CHILD_SLOTS):
+        fail()
+    workers, endpoints = set(), set()
+    for row, (name, (role, _, fd)) in zip(value, CHILD_SLOTS.items(), strict=True):
+        obj(row, ('child_slot', 'role', 'worker_id', 'pair'))
+        if row['child_slot'] != name or row['role'] != role:
+            fail()
+        worker = uuid(row['worker_id'])
+        if worker in workers:
+            fail()
+        workers.add(worker)
+        pair = obj(row['pair'], ('launcher_fd', 'request_endpoint', 'child_endpoint'))
+        if integer(pair['launcher_fd'], 5, 10) != fd:
+            fail()
+        for key in ('request_endpoint', 'child_endpoint'):
+            endpoint = obj(pair[key], ('device', 'inode', 'mode', 'flags'))
+            identity = (integer(endpoint['device'], 0, 2**64-1),
+                        integer(endpoint['inode'], 1, 2**64-1))
+            mode = integer(endpoint['mode'], 0, 2**32-1)
+            flags = integer(endpoint['flags'], 0, 2**32-1)
+            # Linux F_GETFL constants describe the pinned execution platform,
+            # independently of the portable inspector's operating system.
+            if (not stat.S_ISSOCK(mode) or flags & 3 != 2 or not flags & 0x800
+                    or flags & 0x200000 or identity in endpoints):
+                fail()
+            endpoints.add(identity)
+    return value
 
 
 @validation('invalid_prepared')

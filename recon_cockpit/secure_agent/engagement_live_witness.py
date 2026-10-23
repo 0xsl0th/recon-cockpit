@@ -433,6 +433,10 @@ def validate_transcript_row(value):
         c.integer(data['received_at_ns'])
     elif kind == 'capability_projection':
         validate_capability_projection(data)
+    elif kind == 'supervision_projection':
+        p.validate_supervision_projection(data)
+        if len(c.canonical(value)) + 1 > c.SUPERVISION_ROW_BYTES:
+            c.fail('limit_exceeded')
     elif kind == 'watch':
         c.obj(data, ('clock', 'finished_at_ns', 'ledger_sequence', 'ledger_state_sha256', 'reason',
                     'scheduled_at_ns', 'started_at_ns', 'status'))
@@ -612,6 +616,9 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
     final, events, states = _exports(loaded, deadline)
     audit_context = _retained_audit_readiness(loaded, rows=rows, deadline=deadline)
     missing, dispatches = set(audit_context['missing_evidence']), {}
+    from .engagement_live_context import validate_supervision_transcript
+    supervision = validate_supervision_transcript(loaded, rows, deadline=deadline)
+    missing.update(supervision['missing_evidence'])
     operations = loaded.get('results.json', {}).get('operations', [])
     if type(operations) is not list or len(operations) > 4: c.fail('evidence_invalid')
     for operation in operations:
@@ -652,6 +659,7 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
                 link['reservation_observed']=True; link['reservation']=reservation
             link['completion']=completion
     channel_sequences, row_sequences, approval_sequences, audit_sequences = {}, {}, {}, {}
+    segment_bytes, supervision_count = {}, 0
     audit_events = _audit_events(loaded.get('audit.jsonl',b''))
     seen_go, state_rows, meter_received, meter_forwarded = set(), {}, {}, set()
     meter_prefixes={}
@@ -708,6 +716,15 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
         expected=row_sequences.get(segment,0)+1
         if row['row_sequence']!=expected: c.fail('evidence_invalid')
         row_sequences[segment]=expected
+        segment_bytes[segment] = segment_bytes.get(segment, 0) + len(c.canonical(row)) + 1
+        broker_segment = wrapped['source'] == 'broker_memfd'
+        if (expected > (c.BROKER_TRANSCRIPT_ROWS if broker_segment else c.HOST_TRANSCRIPT_ROWS)
+                or segment_bytes[segment] > (c.BROKER_TRANSCRIPT_BYTES if broker_segment else c.HOST_TRANSCRIPT_BYTES)):
+            c.fail('limit_exceeded')
+        if row['kind'] == 'supervision_projection':
+            supervision_count += 1
+            if broker_segment or supervision_count > c.SUPERVISION_ROWS:
+                c.fail('evidence_invalid')
         did=row['dispatch_id']; link=dispatches.get(did); data=row['data']; kind=row['kind']
         if did is not None and link is None: c.fail('evidence_invalid')
         if link is not None and (row['session_id']!=link['prepared']['envelope']['session_id']

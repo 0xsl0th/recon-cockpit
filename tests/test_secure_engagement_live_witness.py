@@ -242,6 +242,8 @@ def complete_authority_fixture(*,runtime_sha256=None,runtime_bundle=None):
         'audit.jsonl':legacy.encode(audit_wrapper)+b'\n','results.json':{'operations':[{
             'session':session,'prepared':p,'result':result,'client':None,'meter':meter,
             'elapsed_ms':dict.fromkeys(('review','admission','native','parser','cleanup','action'))}]}}
+    from test_secure_engagement_live_evidence import attach_supervision_fixture
+    loaded, rows = attach_supervision_fixture(loaded, rows)
     return loaded,rows
 
 
@@ -340,7 +342,7 @@ def test_audit_full_producer_event_digest_is_required():
         elif change=='duplicate':bad.insert(1,deepcopy(entry))
         else:entry['row']['data']['frame']['body']['source_manifest']['inode']+=1
         refused(w.validate_evidence_transcript,loaded,resequence(bad),deadline=time.monotonic()+15)
-    absent=deepcopy(loaded);absent['processes.json']['readiness']=[]
+    absent=deepcopy(loaded);absent['processes.json']['readiness']=[row for row in absent['processes.json']['readiness'] if row['role']!='broker']
     assert w.validate_evidence_transcript(absent,rows,deadline=time.monotonic()+15)['missing_evidence']==['process_identity']
     bad=deepcopy(rows);audit_row(bad)['row']['data']['frame']['body']['import_image']['sha256']='f'*64
     refused(w.validate_evidence_transcript,loaded,bad,deadline=time.monotonic()+15)

@@ -1,10 +1,10 @@
-# Continue here — 22 October 2026
+# Continue here — 23 October 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-Current continuation (22 October 2026):
+Current continuation (23 October 2026):
 [PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94) is merged as `46f9b73`.
 Fresh independent authority/evidence reviews and 457 focused portable checks
 passed at `58c78e0`; all five final and [post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38767707515) passed. Reviewed and merged trees
@@ -160,11 +160,22 @@ evidence does not repair the missing evidence from attempt four. The corrected
 launcher witness and actual session failure retention pass 32 focused runtime
 cases and five private retention checks. Review also identified a separate
 architecture blocker: post-seal children inherit the launcher's network-denying
-seccomp filter. A reviewed contract amendment must preserve the launcher's
-confinement while providing a fixed, separately bounded child construction path.
-Hold native acceptance until that design is pinned and implemented, then freeze
-the clean source tree and installed runtime again. Earlier passes do not validate
-later changes.
+seccomp filter, and its hard FSIZE 0 prevents child image staging. A08 is now
+independently reviewed and pinned at `15f71ee`: the trusted host constructs and
+observes the fixed children, while the launcher exclusively owns their
+preallocated request/release channels. Two fixed host supervisors share one
+cleanup deadline and one bounded host evidence allocation; actual joins and
+reaping are required. A08 implementation and the existing-case regressions now
+cover original deadlines, actual socket custody, autonomous child supervision,
+bounded evidence retention and measured thread/process closure. Focused
+development runs passed the 76 authority/witness, 32 runtime/meter, 20 evidence
+and 32 Session/approval/preservation cases; final review corrections and their
+checks are retained separately. These development runs are not source-frozen
+acceptance. Freeze the complete clean implementation and installed runtime,
+then pass the exact 160 portable cases before retrying native acceptance with
+N04. All 113 new native cases, 15 accepted regressions, saved-bundle inspections,
+the complete portable suite and CI remain required. Earlier passes do not
+validate later changes.
 This increment binds the
 accepted finite HTTP prefix to fresh isolated review, durable admission, trusted
 payload metering and bounded cancellation/cleanup. Both reviewer displays and

@@ -13,7 +13,10 @@ from . import engagement_live_contract as c
 REPLY_FIELDS = frozenset(('request_sequence', 'status', 'code', 'data'))
 TERMINAL = frozenset(('CANCEL', 'CLOSE', 'CLOSED', 'STOP', 'SESSION_STOP', 'BROKER_STOP'))
 ROLES = frozenset(('terminal', 'graphical', 'admission', 'ingress', 'lifecycle',
-                   'launcher', 'endpoint', 'arm'))
+                   'launcher', 'endpoint', 'arm', 'launcher_supervision'))
+SUPERVISION_RESPONSES = {'START': 'BOOTSTRAP', 'OBSERVE_READY': 'READY',
+    'NATIVE_BEGIN': 'NATIVE_BUDGET', 'OBSERVE_NATIVE': 'NATIVE',
+    'CAPTURE': 'CAPTURED', 'REAP': 'REAPED'}
 REQUEST_OPERATIONS = {
     'terminal': {'REVIEW', 'CONSUME', 'CLOSE'},
     'graphical': {'REVIEW', 'CONSUME', 'CLOSE'},
@@ -23,6 +26,7 @@ REQUEST_OPERATIONS = {
     'launcher': {'PREPARE', 'GO', 'METER', 'CANCEL', 'STOP', 'READY', 'PREPARED', 'NATIVE_OBSERVED', 'OBSERVATION', 'RESULT', 'CLOSED'},
     'endpoint': {'PREPARE', 'CANCEL', 'STOP', 'READY', 'PREPARED', 'METER', 'CLOSED'},
     'arm': {'ARM', 'ACK', 'REFUSED'},
+    'launcher_supervision': set(SUPERVISION_RESPONSES) | set(SUPERVISION_RESPONSES.values()),
 }
 
 
@@ -79,9 +83,156 @@ def _runtime(kind, value):
     return validator(kind, value)
 
 
+def _child_slot(value, operation):
+    name = c.member(value, c.CHILD_SLOTS)
+    if operation in {'NATIVE_BEGIN', 'NATIVE_BUDGET', 'CAPTURE', 'CAPTURED'} and name not in {'identify_client', 'headers_client'}:
+        c.fail('invalid_frame')
+    if operation in {'OBSERVE_NATIVE', 'NATIVE'} and name != 'identify_client':
+        c.fail('invalid_frame')
+    return name
+
+
+def _single_cleanup(value, *, nullable=False):
+    if value is None and nullable:
+        return
+    _runtime('cleanup', value)
+    if len(value['processes']) != 1 or len(c.canonical(value)) > 2048:
+        c.fail('invalid_frame')
+
+
+def _supervision_body(operation, value, direction):
+    if direction == 'reply':
+        if operation not in SUPERVISION_RESPONSES.values():
+            c.fail('invalid_role')
+        c.obj(value, REPLY_FIELDS)
+        c.integer(value['request_sequence'], 1, 22)
+        c.member(value['status'], {'ok', 'refused'})
+        if value['status'] == 'refused':
+            c.member(value['code'], c.ERROR_CODES); _none(value['data'])
+            return
+        _none(value['code']); value = value['data']
+        fields = {'BOOTSTRAP': ('child_slot', 'bootstrap'),
+            'READY': ('child_slot', 'readiness'),
+            'NATIVE_BUDGET': ('child_slot', 'started_at_ns', 'native_deadline_ns'),
+            'NATIVE': ('child_slot', 'native_readiness'),
+            'CAPTURED': ('child_slot', 'capture', 'status', 'cleanup'),
+            'REAPED': ('child_slot', 'cleanup')}[operation]
+        c.obj(value, fields); name = _child_slot(value['child_slot'], operation)
+        if operation == 'BOOTSTRAP':
+            _runtime('initial_bootstrap', value['bootstrap'])
+            if value['bootstrap']['role'] != c.CHILD_SLOTS[name][0]:
+                c.fail('invalid_role')
+        elif operation == 'READY':
+            _runtime('role_readiness', value['readiness'])
+            if value['readiness']['role'] != c.CHILD_SLOTS[name][0]:
+                c.fail('invalid_role')
+        elif operation == 'NATIVE':
+            _runtime('native_readiness', value['native_readiness'])
+        elif operation == 'NATIVE_BUDGET':
+            start = c.integer(value['started_at_ns'])
+            cap = c.SLOTS[c.CHILD_SLOTS[name][1]][-1]
+            c.integer(value['native_deadline_ns'], start+1, start+cap)
+        elif operation == 'CAPTURED':
+            # Reuse the exact existing capture grammar, without inventing an
+            # actual dispatch identity for this shape-only check.
+            _validate_capture(value['capture'])
+            if value['capture']['slot'] != c.CHILD_SLOTS[name][1]:
+                c.fail('invalid_frame')
+            c.member(value['status'], {'succeeded', 'failed', 'cancelled', 'timeout', 'output_limit', 'unresolved'})
+            _single_cleanup(value['cleanup'], nullable=True)
+        else:
+            _single_cleanup(value['cleanup'])
+        return
+    if direction != 'request' or operation not in SUPERVISION_RESPONSES:
+        c.fail('invalid_role')
+    fields = ('child_slot',) + {'START': ('prepared',), 'OBSERVE_READY': ('bootstrap_sha256',),
+                              'NATIVE_BEGIN': ('release',)}.get(operation, ())
+    c.obj(value, fields); name = _child_slot(value['child_slot'], operation)
+    if operation == 'START':
+        prepared = c.validate_prepared(value['prepared'])
+        if prepared['envelope']['slot'] != c.CHILD_SLOTS[name][1]:
+            c.fail('invalid_frame')
+    elif operation == 'OBSERVE_READY':
+        c.digest_string(value['bootstrap_sha256'])
+    elif operation == 'NATIVE_BEGIN':
+        c.validate_release(value['release'])
+
+
+def _projection_payload(operation, value):
+    fields = {
+        'START': ('prepared_sha256',), 'BOOTSTRAP': ('bootstrap_sha256', 'bootstrap_bytes'),
+        'OBSERVE_READY': ('bootstrap_sha256',), 'READY': ('readiness_sha256',),
+        'NATIVE_BEGIN': ('release_sha256',), 'NATIVE_BUDGET': ('started_at_ns', 'native_deadline_ns'),
+        'OBSERVE_NATIVE': (), 'NATIVE': ('native_readiness_sha256',), 'CAPTURE': (),
+        'CAPTURED': ('capture_sha256', 'host_capture_sha256', 'cleanup_sha256', 'status'),
+        'REAP': (), 'REAPED': ('cleanup_sha256',),
+    }
+    c.member(operation, fields); c.obj(value, ('child_slot',) + fields[operation])
+    _child_slot(value['child_slot'], operation)
+    for key, item in value.items():
+        if key.endswith('_sha256'):
+            if item is None and operation == 'CAPTURED' and key == 'cleanup_sha256':
+                continue
+            c.digest_string(item)
+        elif key.endswith('_ns'):
+            c.integer(item)
+        elif key == 'bootstrap_bytes':
+            c.integer(item, 1, 32768)
+        elif key == 'status':
+            c.member(item, {'succeeded', 'failed', 'cancelled', 'timeout', 'output_limit', 'unresolved'})
+
+
+@c.validation('invalid_frame')
+def validate_supervision_projection(value):
+    """Closed observational projection; exact wire/source replay is separate."""
+    value = c.detached(value, c.SUPERVISION_ROW_BYTES)
+    if type(value) is not dict: c.fail()
+    kind = c.member(value.get('kind'), {'rpc', 'local_failure'})
+    common = ('kind', 'launcher_id', 'child_slot', 'child_worker_id', 'prepared_sha256')
+    c.obj(value, common + (('request', 'reply', 'local_error') if kind == 'rpc' else
+        ('code', 'observed_at_ns', 'capture_sha256', 'cleanup_sha256')))
+    c.uuid(value['launcher_id'])
+    if value['child_slot'] is None:
+        if kind != 'local_failure' or value['child_worker_id'] is not None:
+            c.fail()
+    else:
+        c.member(value['child_slot'], c.CHILD_SLOTS); c.uuid(value['child_worker_id'])
+    if value['prepared_sha256'] is not None: c.digest_string(value['prepared_sha256'])
+    if kind == 'local_failure':
+        c.member(value['code'], c.ERROR_CODES); c.integer(value['observed_at_ns'])
+        for key in ('capture_sha256', 'cleanup_sha256'):
+            if value[key] is not None: c.digest_string(value[key])
+        return value
+    request = value['request']; c.obj(request, ('sequence', 'operation', 'observed_at_ns', 'bytes', 'sha256', 'projection', 'projection_sha256'))
+    c.integer(request['sequence'], 1, 22); c.member(request['operation'], SUPERVISION_RESPONSES)
+    c.integer(request['observed_at_ns']); c.integer(request['bytes'], 1, 32768); c.digest_string(request['sha256'])
+    _projection_payload(request['operation'], request['projection'])
+    if (request['projection']['child_slot'] != value['child_slot'] or
+            c.digest(c.canonical(request['projection'])) != request['projection_sha256']): c.fail()
+    reply = value['reply']
+    if reply is not None:
+        c.obj(reply, ('sequence', 'operation', 'observed_at_ns', 'bytes', 'sha256', 'projection', 'projection_sha256'))
+        c.integer(reply['sequence'], 1, 22); c.integer(reply['observed_at_ns'], request['observed_at_ns'])
+        c.integer(reply['bytes'], 1, 32768); c.digest_string(reply['sha256'])
+        if reply['operation'] != SUPERVISION_RESPONSES[request['operation']]: c.fail()
+        data = c.obj(reply['projection'], REPLY_FIELDS)
+        if c.integer(data['request_sequence'], 1, 22) != request['sequence']: c.fail()
+        c.member(data['status'], {'ok', 'refused'})
+        if data['status'] == 'ok':
+            _none(data['code']); _projection_payload(reply['operation'], data['data'])
+            if data['data']['child_slot'] != value['child_slot']: c.fail()
+        else:
+            c.member(data['code'], c.ERROR_CODES); _none(data['data'])
+        if c.digest(c.canonical(data)) != reply['projection_sha256']: c.fail()
+    if value['local_error'] is not None: c.member(value['local_error'], c.ERROR_CODES)
+    return value
+
+
 def _body(role, operation, value, direction):
     if operation not in REQUEST_OPERATIONS[role]:
         c.fail('invalid_role')
+    if role == 'launcher_supervision':
+        return _supervision_body(operation, value, direction)
     if direction == 'reply':
         c.obj(value, REPLY_FIELDS)
         c.integer(value['request_sequence'], 1, 66)
@@ -237,13 +388,30 @@ def validate_frame(value, *, role, direction=None):
     c.obj(value, ('schema_version', 'channel_id', 'sequence', 'operation', 'body'))
     if value['schema_version'] != '1':
         c.fail()
-    c.uuid(value['channel_id']); c.integer(value['sequence'], 1, 130)
+    c.uuid(value['channel_id']); c.integer(value['sequence'], 1, 22 if role == 'launcher_supervision' else 130)
     c.member(value['operation'], REQUEST_OPERATIONS[role])
     inferred = 'reply' if type(value['body']) is dict and set(value['body']) == REPLY_FIELDS else 'request'
     if direction is not None and direction != inferred:
         c.fail()
     _body(role, value['operation'], value['body'], inferred)
     return value
+
+
+def _validate_capture(data):
+    c.obj(data, ('schema_version','slot','stdout_base64','stderr_base64','stdout_sha256',
+        'stderr_sha256','stdout_bytes','stderr_bytes','exit_code','truncated'))
+    if data['schema_version']!='1' or type(data['truncated'])is not bool:c.fail()
+    slot=c.member(data['slot'],c.SLOTS);total=0
+    for stream in ('stdout','stderr'):
+        encoded=data[stream+'_base64']
+        if type(encoded)is not str or len(encoded)>10924:c.fail()
+        try:raw=base64.b64decode(encoded,validate=True)
+        except (ValueError,TypeError):c.fail()
+        if base64.b64encode(raw).decode('ascii')!=encoded:c.fail()
+        if c.integer(data[stream+'_bytes'],0,8192)!=len(raw) or c.digest_string(data[stream+'_sha256'])!=c.digest(raw):c.fail()
+        total+=len(raw)
+    if total>c.SLOTS[slot][4]:c.fail('limit_exceeded')
+    if data['exit_code']is not None:c.integer(data['exit_code'],-255,255)
 
 
 @c.validation('invalid_frame')
@@ -254,20 +422,7 @@ def validate_launcher_observation(value):
     kind=c.member(value['kind'], {'capture','role_readiness','cleanup','capability_projection'})
     data=value['data']
     if kind=='capture':
-        c.obj(data, ('schema_version','slot','stdout_base64','stderr_base64','stdout_sha256',
-            'stderr_sha256','stdout_bytes','stderr_bytes','exit_code','truncated'))
-        if data['schema_version']!='1' or type(data['truncated'])is not bool:c.fail()
-        slot=c.member(data['slot'],c.SLOTS);total=0
-        for stream in ('stdout','stderr'):
-            encoded=data[stream+'_base64']
-            if type(encoded)is not str or len(encoded)>10924:c.fail()
-            try:raw=base64.b64decode(encoded,validate=True)
-            except (ValueError,TypeError):c.fail()
-            if base64.b64encode(raw).decode('ascii')!=encoded:c.fail()
-            if c.integer(data[stream+'_bytes'],0,8192)!=len(raw) or c.digest_string(data[stream+'_sha256'])!=c.digest(raw):c.fail()
-            total+=len(raw)
-        if total>c.SLOTS[slot][4]:c.fail('limit_exceeded')
-        if data['exit_code']is not None:c.integer(data['exit_code'],-255,255)
+        _validate_capture(data)
     elif kind in {'role_readiness','cleanup'}:
         _runtime(kind,data)
         if kind=='role_readiness' and data['worker_ready']['role'] not in {'admission','nmap','headers','parser'}:c.fail()
@@ -300,7 +455,8 @@ def require_request(value, *, role):
 
 def require_reply(value, request, *, role):
     value = validate_frame(value, role=role, direction='reply')
-    if (value['channel_id'] != request['channel_id'] or value['operation'] != request['operation']
+    operation = SUPERVISION_RESPONSES.get(request['operation']) if role == 'launcher_supervision' else request['operation']
+    if (value['channel_id'] != request['channel_id'] or value['operation'] != operation
             or value['body']['request_sequence'] != request['sequence']):
         c.fail('invalid_sequence')
     return value
@@ -400,7 +556,7 @@ class ChannelSequence:
             c.fail('invalid_sequence')
         terminal = value['operation'] in TERMINAL
         counter = direction + ('_terminal' if terminal else '_ordinary')
-        limit = 2 if terminal else (128 if type(value['body']) is dict and set(value['body']) == REPLY_FIELDS else 64)
+        limit = 22 if self.role == 'launcher_supervision' else 2 if terminal else (128 if type(value['body']) is dict and set(value['body']) == REPLY_FIELDS else 64)
         if getattr(self, counter) >= limit:
             c.fail('limit_exceeded')
         setattr(self, counter, getattr(self, counter) + 1)

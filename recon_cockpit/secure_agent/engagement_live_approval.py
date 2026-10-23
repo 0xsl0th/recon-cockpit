@@ -63,7 +63,10 @@ class EngagementApprovalService:
     """
 
     def __init__(self, policy, session_id, *, frontend, session_binding,
-                 runtime_manifest, witness_slot, control):
+                 runtime_manifest, witness_slot, control, host_evidence_budget=None,
+                 cleanup_epoch=None, failure_sink=None):
+        from .engagement_live_session import _HostEvidenceBudget
+
         if frontend not in {'terminal', 'graphical_v1'} or type(frontend) is not str:
             contract.fail('invalid_input')
         if type(control) is not ExecutionControl or control.clock is not time.monotonic:
@@ -90,6 +93,12 @@ class EngagementApprovalService:
         self._startup_observation = None
         self._sequence = protocol.ChannelSequence(binding['reviewer_id'], self._role)
         self._observations = []
+        self._host_evidence_budget = (_HostEvidenceBudget() if host_evidence_budget is None
+                                      else host_evidence_budget)
+        if type(self._host_evidence_budget) is not _HostEvidenceBudget:
+            contract.fail('invalid_input')
+        self._host_evidence_budget._check()
+        self._cleanup_epoch, self._failure_sink = cleanup_epoch, failure_sink
 
     def _check_owner(self):
         if self._pid != os.getpid():
@@ -107,6 +116,15 @@ class EngagementApprovalService:
         return None if self._ready is None else contract.detached(self._ready, 16384)
 
     def _start(self, *, control=None):
+        phase = control if control is not None else _clipped_control(self._control,
+            min(self._binding['session_deadline_ns'], self._binding['broker_deadline_ns']), self._stop)
+        with contract._deadline_context(phase.deadline):
+            phase.check()
+            result = self._start_owned(control=phase)
+            phase.check()
+            return result
+
+    def _start_owned(self, *, control):
         from . import engagement_live_runtime as runtime
         from .engagement_live_broker import RoleSlot
 
@@ -192,9 +210,13 @@ class EngagementApprovalService:
         phase = _clipped_control(self._control, min(self._binding['session_deadline_ns'],
                                                    self._binding['broker_deadline_ns']), self._stop)
         try:
-            with _bounded_lock(self._lock, phase):
-                return self._start(control=phase)
-        except BaseException:
+            with contract._deadline_context(phase.deadline), _bounded_lock(self._lock, phase):
+                result = self._start(control=phase)
+                phase.check()
+                return result
+        except BaseException as error:
+            if self._failure_sink is not None:
+                self._failure_sink(error)
             self.close()
             raise
 
@@ -240,13 +262,25 @@ class EngagementApprovalService:
             contract.fail('invalid_input')
         # Establish the phase at invocation, including time spent waiting for
         # another exchange. Mutex contention cannot renew the caller's budget.
-        prepared = contract.validate_prepared(prepared)
-        phase = _clipped_control(self._control, min(prepared['envelope']['action_deadline_ns'],
+        phase = _clipped_control(self._control, min(
             self._binding['session_deadline_ns'], self._binding['broker_deadline_ns'],
             time.monotonic_ns() + (30 if operation == 'REVIEW' else 2) * contract.SECOND), self._stop)
-        observation = None
+        observation = ticket = None
+        request_retained = False
+        def observation_row():
+            return {'schema_version': '1', 'broker_id': self._binding['broker_id'],
+                'session_id': self._binding['session_id'], 'dispatch_id': observation['dispatch_id'],
+                'observer_id': self._binding['reviewer_id'], 'row_sequence': 1,
+                'observed_at_ns': observation['observed_at_ns'], 'kind': 'capability_projection',
+                'data': observation['projection']}
         try:
-            with _bounded_lock(self._lock, phase):
+            with contract._deadline_context(phase.deadline):
+                phase.check()
+                prepared = contract.validate_prepared(prepared)
+                phase = _clipped_control(self._control, min(int(phase.deadline*contract.SECOND),
+                    prepared['envelope']['action_deadline_ns']), self._stop)
+                phase.check()
+            with contract._deadline_context(phase.deadline), _bounded_lock(self._lock, phase):
                 self._check()
                 if self._owner is None:
                     if operation == 'CONSUME':
@@ -263,23 +297,47 @@ class EngagementApprovalService:
                 observation = {'observed_at_ns': time.monotonic_ns(),
                                'dispatch_id': prepared['envelope']['dispatch_id'],
                                'projection': self._projection(request)}
+                initial_row = observation_row()
+                # Prepared is already exact; the closed reviewer reply can add
+                # only its bounded reference/consume/refusal projection.
+                ticket = self._host_evidence_budget.reserve(kind='other_host',
+                    maximum_bytes=len(contract.canonical(initial_row)) + 2048 + 3,
+                    maximum_rows=1, control=phase)
+                self._host_evidence_budget.record_request(ticket, initial_row)
+                request_retained = True
                 self._observations.append(observation)
                 protocol.send_packet(self._channel, request, role=self._role, control=phase)
                 reply = self._sequence.accept(protocol.receive_packet(self._channel, role=self._role, control=phase))
                 protocol.require_reply(reply, request, role=self._role)
                 observation['projection'] = self._projection(request, reply)
+                self._host_evidence_budget.finalize(ticket, observation_row())
+                ticket = None
                 self._check()
                 phase.check()
                 self._quiet()
                 if reply['body']['status'] != 'ok':
                     contract.fail('approval_unavailable')
                 return reply['body']['data']
-        except BaseException:
+        except BaseException as error:
+            if self._failure_sink is not None:
+                self._failure_sink(error)
             if observation is not None:
                 # This is when the incomplete exchange was actually observed,
                 # not a claim that its earlier send already witnessed timeout.
                 observation['observed_at_ns'] = time.monotonic_ns()
-            self.close()
+            try:
+                if ticket is not None:
+                    if request_retained:
+                        self._host_evidence_budget.finalize(ticket, observation_row())
+                    else:
+                        self._host_evidence_budget.release(ticket)
+            except BaseException as evidence_error:
+                error.evidence_error = evidence_error
+            finally:
+                try:
+                    self.close()
+                except BaseException as cleanup_error:
+                    error.cleanup_error = cleanup_error
             raise
 
     def review(self, action, policy, envelope, *, control):
@@ -306,6 +364,9 @@ class EngagementApprovalService:
         from . import engagement_live_runtime as runtime
 
         self._check_owner()
+        if self._cleanup_epoch is not None:
+            deadline = self._cleanup_epoch.stop(
+                bound_deadline_ns=int(deadline*contract.SECOND))['deadline_ns']/contract.SECOND
         self._interrupt()
         if self._cleanup_receipt is not None:
             return self._cleanup_receipt

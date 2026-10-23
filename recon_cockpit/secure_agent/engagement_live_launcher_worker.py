@@ -46,9 +46,9 @@ class LauncherControl:
 
 
 class LauncherState:
-    def __init__(self,*,payload,runtime,worker_id,host,broker,arm,ready,deadline_ns):
+    def __init__(self,*,payload,runtime,worker_id,host,broker,arm,ready,deadline_ns,request_channels):
         from .engagement_live_endpoint import ArmChannel
-        c.obj(payload,('session_binding','roe','scope','policy','endpoint_identity'))
+        c.obj(payload,('session_binding','roe','scope','policy','endpoint_identity','child_slots'))
         c.validate_role_context(binding=payload['session_binding'],roe=payload['roe'],scope=payload['scope'],policy=payload['policy'])
         rt.validate_readiness('endpoint',payload['endpoint_identity'],runtime)
         self.payload=payload;self.runtime=runtime;self.worker_id=worker_id;self.host=host;self.broker=broker
@@ -56,6 +56,10 @@ class LauncherState:
         self.sequence=p.ChannelSequence(worker_id,'launcher');self.pending=None;self.client=None;self.admission=None
         self.permit=None;self.admission_sequence=None;self.release=None;self.meter=None;self.stopped=False
         self.readies=[];self.cleanups=[];self.capture=None;self.prepared_ids=set();self._polling=False
+        self.supervisor=rt.SupervisorChannel(host,launcher_id=worker_id,
+            slot_bindings=payload['child_slots'],request_channels=request_channels,runtime=runtime,
+            endpoint_identity=payload['endpoint_identity'],role_context={key:payload[key]
+                for key in ('session_binding','roe','scope','policy')},control=self._control())
 
     def _control(self,deadline=None):return LauncherControl(self,min(self.deadline_ns,deadline if deadline is not None else self.deadline_ns))
     def poll_stop(self):
@@ -63,10 +67,6 @@ class LauncherState:
         if self._polling:return
         self._polling=True
         try:
-            if select.select([self.host],[],[],0)[0]:
-                # Host channel is lifecycle-only after bootstrap, so any bytes or
-                # EOF are terminal. It cannot release a client.
-                self.stopped=True;c.fail('cancelled')
             if select.select([self.broker],[],[],0)[0]:
                 frame=self.sequence.accept(p.receive_packet(self.broker,role='launcher',control=rt._WorkerControl(self.deadline_ns)))
                 if frame['operation'] in {'STOP','CANCEL'}:self.stopped=True;c.fail('cancelled')
@@ -74,6 +74,12 @@ class LauncherState:
                 meter=rt.validate_meter(frame['body'])
                 if meter['dispatch_id']!=self.release['dispatch_id'] or meter['go_sha256']!=rt._hash(self.release):c.fail('invalid_frame')
                 self.meter=meter
+            if select.select([self.host],[],[],0)[0]:
+                # Exactly one fixed supervision waiter may consume its reply;
+                # broker cancellation above always has priority.
+                supervisor=getattr(self,'supervisor',None)
+                if supervisor is None or not supervisor.pending:
+                    self.stopped=True;c.fail('cancelled')
         finally:self._polling=False
 
     def send(self,op,body,*,control=None):
@@ -116,15 +122,16 @@ class LauncherState:
             witness.validate_capability_projection(projection);self.observe('capability_projection',projection)
 
     def prepare(self,prepared):
-        from .engagement_live_client import prepare_client
+        from .engagement_live_client import _prepare_supervised_client
         value=c.validate_prepared_role_context(prepared,binding=self.payload['session_binding'],roe=self.payload['roe'],scope=self.payload['scope'],policy=self.payload['policy'])
         did=value['envelope']['dispatch_id']
         if self.pending is not None or did in self.prepared_ids or len(self.prepared_ids)>=2:c.fail('dispatch_replayed')
         self.prepared_ids.add(did);self.pending=value;self.readies=[];self.cleanups=[];self.meter=None;self.capture=None;self.release=None
         phase=self._control(value['envelope']['action_deadline_ns']);self.arm.prepare(value)
-        self.client=prepare_client(runtime=self.runtime,prepared=value,endpoint_identity=self.payload['endpoint_identity'],scope=self.payload['scope'],control=phase)
+        self.client=_prepare_supervised_client(runtime=self.runtime,prepared=value,endpoint_identity=self.payload['endpoint_identity'],scope=self.payload['scope'],control=phase,supervisor=self.supervisor)
         self.readies.append(self.client.ready);self.observe('role_readiness',self.client.ready)
-        self.admission=rt._start_role(runtime=self.runtime,role='admission',payload={'prepared':value,'endpoint_identity':self.payload['endpoint_identity'],'launcher_id':self.worker_id},rights={},control=phase)
+        admission_slot='identify_admission' if value['envelope']['slot']=='http_identify' else 'headers_admission'
+        self.admission=self.supervisor.start_child(child_slot=admission_slot,prepared=value,control=phase)
         self.readies.append(self.admission.ready);self.observe('role_readiness',self.admission.ready)
         self.admission_sequence=p.ChannelSequence(self.admission.ready['worker_ready']['worker_id'],'admission')
         self.permit,projection=self.admission_rpc('ISSUE',value)
@@ -137,7 +144,7 @@ class LauncherState:
 
     def run(self,release):
         from .engagement_live_endpoint import arm_endpoint
-        from .engagement_live_parser import _parse_observed
+        from .engagement_live_parser import _parse_supervised_observed
         from .engagement_live_context import meter_summary,validate_client_result,validate_dispatch_observations
         if self.pending is None or self.release is not None:c.fail('release_unavailable')
         release=c.validate_release_binding(release,self.pending,clock=c.sample_clock());self.release=release
@@ -158,7 +165,7 @@ class LauncherState:
             self.record_capture(capture)
             while self.meter is None:effect.check();select.select([self.broker,self.host],[],[],min(.01,effect.remaining()))
             if capture['status']=='succeeded':
-                parsed,parser_receipt,parser_ready=_parse_observed(tool_id=self.pending['action']['tool_id'],raw=capture['stdout'],stderr=capture['stderr'],scope=self.payload['scope'],truncated=capture['truncated'],control=whole,runtime=self.runtime)
+                parsed,parser_receipt,parser_ready=_parse_supervised_observed(tool_id=self.pending['action']['tool_id'],raw=capture['stdout'],stderr=capture['stderr'],scope=self.payload['scope'],truncated=capture['truncated'],control=whole,runtime=self.runtime,prepared=self.pending,supervisor=self.supervisor)
                 self.readies.append(parser_ready);self.cleanups.append(parser_receipt['cleanup'])
                 self.observe('role_readiness',parser_ready);self.observe('cleanup',parser_receipt['cleanup'])
             else:failure=capture['status']
@@ -193,23 +200,16 @@ class LauncherState:
         whole.check();self.send('RESULT',result);self.pending=None;self.client=None;self.release=None
 
     def close(self):
-        self.stopped=True;deadline=time.monotonic()+2;complete=True
-        for owner in (self.admission,None if self.client is None else self.client.owner):
-            if owner is not None:
-                try:
-                    cleanup=owner.close(deadline=deadline)
-                    if self.pending is not None:self.observe('cleanup',cleanup)
-                except (c.LiveError,OSError):complete=False
-        # CLOSED acknowledges actually completed child cleanup. A failed reap
-        # remains observable through the parent's bounded cleanup, never a
-        # successful worker acknowledgment.
-        if not complete:return
+        self.stopped=True;deadline=min(self.deadline_ns/c.SECOND,time.monotonic()+2)
+        self.supervisor.close()
+        # CLOSED reports worker stopping only. Actual child and host-thread
+        # cleanup are observed and retained independently by their real owner.
         try:self.send('CLOSED',{'role':'launcher','worker_id':self.worker_id,'stopped_at_ns':time.monotonic_ns()},control=rt._WorkerControl(int(deadline*c.SECOND)))
         except (c.LiveError,OSError):pass
 
 
 def main():
-    host=broker=arm=None;state=None
+    host=broker=arm=None;state=None;request_channels={}
     try:
         if len(sys.argv)!=3:c.fail('invalid_input')
         wid=c.uuid(sys.argv[1]);commit=c.digest_string(sys.argv[2])
@@ -220,10 +220,13 @@ def main():
         if c.canonical(bundle,max_bytes=2097152)!=raw or rt.runtime_digest(bundle)!=initial['runtime_sha256'] or next(x for x in bundle['roles'] if x['role']=='launcher')!=manifest:c.fail('invalid_runtime')
         broker=socket.socket(fileno=rights['broker_control']);arm=socket.socket(fileno=rights['endpoint_arm'])
         broker.setblocking(False);arm.setblocking(False)
+        for name in c.CHILD_SLOTS:
+            channel=socket.socket(fileno=rights[name+'_request']);channel.setblocking(False)
+            request_channels[name]=channel
         ready=rt.bootstrap_role(role='launcher',entry=entry,runtime_manifest=manifest,expected_fds=rights,deadline_ns=initial['deadline_ns'])
         ready['boundary_checks'].update(dict.fromkeys(rt.SPEC['closed_objects']['boundary_checks']['role_specific']['launcher'],True))
         rt._emit_ready(ready)
-        state=LauncherState(payload=initial['payload'],runtime=bundle,worker_id=wid,host=host,broker=broker,arm=arm,ready=ready,deadline_ns=initial['deadline_ns'])
+        state=LauncherState(payload=initial['payload'],runtime=bundle,worker_id=wid,host=host,broker=broker,arm=arm,ready=ready,deadline_ns=initial['deadline_ns'],request_channels=request_channels)
         state.send('READY',ready)
         while True:
             control=rt._WorkerControl(initial['deadline_ns'])
@@ -243,6 +246,7 @@ def main():
         if state is not None:state.close()
         for channel in (host,broker,arm):
             if channel is not None:channel.close()
+        for channel in request_channels.values():channel.close()
 
 
 if __name__=='__main__':raise SystemExit(main())

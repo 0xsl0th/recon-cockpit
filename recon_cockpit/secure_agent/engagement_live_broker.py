@@ -59,6 +59,25 @@ def _close(value):
         value.close()
 
 
+def _empty_pair_end(channel):
+    """A connected, nonblocking initial endpoint must contain no old message."""
+    try:
+        channel.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
+    except BlockingIOError:
+        return
+    except OSError:
+        c.fail('invalid_channel')
+    c.fail('invalid_channel')
+
+
+def _pair_identity(channel):
+    info = os.fstat(channel.fileno())
+    if not stat.S_ISSOCK(info.st_mode):
+        c.fail('invalid_channel')
+    return {'device': info.st_dev, 'inode': info.st_ino, 'mode': info.st_mode,
+            'flags': fcntl.fcntl(channel, fcntl.F_GETFL)}
+
+
 @contextmanager
 def _locked(lock,control):
     """Serialize one channel without waiting beyond its original control."""
@@ -83,6 +102,12 @@ class RoleSlot:
         self.ingress_channel_id = str(uuid4())
         self.launcher_id = str(uuid4())
         self.endpoint_id = str(uuid4())
+        self._child_bindings = []
+
+    @property
+    def child_slot_bindings(self):
+        self._owner._check()
+        return c.validate_child_slot_bindings(self._child_bindings)
 
     @property
     def ingress_host(self):
@@ -100,8 +125,18 @@ class RoleSlot:
 
     def take_launcher_bootstrap(self):
         i = self.slot_index
-        return self._owner._take_many({'host': f'launcher_host_{i}', 'child': f'launcher_child_{i}',
-            'broker_control': f'launcher_peer_{i}', 'endpoint_arm': f'arm_launcher_{i}'})
+        mapping = {'host': f'launcher_host_{i}', 'child': f'launcher_child_{i}',
+            'broker_control': f'launcher_peer_{i}', 'endpoint_arm': f'arm_launcher_{i}'}
+        for name in c.CHILD_SLOTS:
+            for side in ('request', 'child'):
+                _empty_pair_end(self._owner._peek(f'{name}_{side}_{i}'))
+            mapping[name + '_request'] = f'{name}_request_{i}'
+        return self._owner._take_many(mapping)
+
+    def take_child_endpoints(self):
+        """Transfer only opposite ends; never a launcher request-end duplicate."""
+        return self._owner._take_many({name: f'{name}_child_{self.slot_index}'
+                                       for name in c.CHILD_SLOTS})
 
 
 class PreallocatedRoleBundle:
@@ -110,7 +145,10 @@ class PreallocatedRoleBundle:
         self._pid = os.getpid()
         self._owned = {}
         self._closed = False
+        self._channels_closed = False
+        self._channel_close_error = None
         self._broker_taken = False
+        self._child_setup_lock = threading.Lock()
         self.slots = tuple(RoleSlot(self, index, review_mode) for index in range(2))
         self.lifecycle_id = str(uuid4())
         try:
@@ -128,6 +166,15 @@ class PreallocatedRoleBundle:
                 self._put_pair(f'arm_launcher_{i}', f'arm_endpoint_{i}')
                 for role in ('reviewer', 'endpoint', 'launcher'):
                     self._put_pair(f'{role}_host_{i}', f'{role}_child_{i}')
+                for name, (role, _, fd) in c.CHILD_SLOTS.items():
+                    self._put_pair(f'{name}_request_{i}', f'{name}_child_{i}')
+                    request = self._owned[f'{name}_request_{i}']
+                    child = self._owned[f'{name}_child_{i}']
+                    _empty_pair_end(request); _empty_pair_end(child)
+                    slot._child_bindings.append({'child_slot': name, 'role': role,
+                        'worker_id': str(uuid4()), 'pair': {'launcher_fd': fd,
+                        'request_endpoint': _pair_identity(request),
+                        'child_endpoint': _pair_identity(child)}})
             for name in ('initial', 'final', 'transcript'):
                 reader, writer = _memfd('engagement-live-' + name)
                 self._owned[name + '_reader'] = reader
@@ -145,7 +192,7 @@ class PreallocatedRoleBundle:
         self._owned[left], self._owned[right] = a, b
 
     def _check(self):
-        if os.getpid() != self._pid or self._closed:
+        if os.getpid() != self._pid or self._closed or self._channels_closed:
             c.fail('invalid_channel')
 
     def _peek(self, name):
@@ -169,7 +216,16 @@ class PreallocatedRoleBundle:
         return {name: self._peek(name + '_reader') for name in ('initial', 'final', 'transcript')}
 
     def take_evidence_readers(self):
-        return self._take_many({name:name+'_reader' for name in ('initial','final','transcript')})
+        # The sole permitted transfer after the terminal socket fence is
+        # data-only read custody; no worker/channel/writer can be taken again.
+        if os.getpid() != self._pid or self._closed: c.fail('invalid_channel')
+        mapping={name:name+'_reader' for name in ('initial','final','transcript')}
+        if any(name not in self._owned for name in mapping.values()): c.fail('invalid_channel')
+        for name in mapping.values():
+            fd=self._owned[name]
+            if type(fd) is not int or fcntl.fcntl(fd,fcntl.F_GETFL)&os.O_ACCMODE!=os.O_RDONLY:
+                c.fail('invalid_channel')
+        return {key:self._owned.pop(name) for key,name in mapping.items()}
 
     def take_audit_writer(self):
         return self._take_many({'audit_witness': 'audit_writer'})['audit_witness']
@@ -207,21 +263,32 @@ class PreallocatedRoleBundle:
             return slot.take_launcher_bootstrap()
         c.fail('invalid_role')
 
+    def close_remaining_channels(self):
+        """Terminal socket fence; retain only already-owned evidence handles."""
+        if os.getpid() != self._pid: c.fail('invalid_channel')
+        self._channels_closed = True
+        for name, value in list(self._owned.items()):
+            if type(value) is int: continue
+            try: value.close()
+            except OSError as error:
+                if self._channel_close_error is None: self._channel_close_error = error
+            finally: self._owned.pop(name, None)
+        if self._channel_close_error is not None: c.fail('cleanup_incomplete')
+
     def close(self):
-        if os.getpid() != self._pid:
-            c.fail('invalid_channel')
+        if os.getpid() != self._pid: c.fail('invalid_channel')
         if self._closed:
+            if self._channel_close_error is not None: c.fail('cleanup_incomplete')
             return
         self._closed = True
-        values, self._owned = self._owned, {}
         error = None
+        try: self.close_remaining_channels()
+        except c.LiveError as caught: error = caught
+        values, self._owned = self._owned, {}
         for value in values.values():
-            try:
-                _close(value)
-            except OSError as exc:
-                error = exc
-        if error is not None:
-            c.fail('cleanup_incomplete')
+            try: _close(value)
+            except OSError as caught: error = caught
+        if error is not None: c.fail('cleanup_incomplete')
 
 
 def preallocate_role_bundle(review_mode):

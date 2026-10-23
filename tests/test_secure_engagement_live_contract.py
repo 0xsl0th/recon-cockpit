@@ -282,6 +282,22 @@ def test_fixed_request_and_reply_role_grammar():
         bad=deepcopy(request);bad['body'][key]=item;refused(p.validate_frame,bad,role='terminal')
 
 
+    # Supervision uses a separate closed role, mapped replies and no arbitrary
+    # child/argv selector. Every request can be reconstructed canonically.
+    supervisor=p.ChannelSequence(uid(77),'launcher_supervision')
+    start=supervisor.make('START',{'child_slot':'identify_client','prepared':prepared()})
+    assert p.decode_frame(p.encode_frame(start,role='launcher_supervision',direction='request'),role='launcher_supervision',direction='request')==start
+    refused(p.validate_frame,start,role='launcher')
+    for slot in ('broker','identify_client/../parser',True):
+        bad=deepcopy(start);bad['body']['child_slot']=slot;refused(p.validate_frame,bad,role='launcher_supervision')
+    bad=deepcopy(start);bad['body']['argv']=['true'];refused(p.validate_frame,bad,role='launcher_supervision')
+    reply={'schema_version':'1','channel_id':uid(77),'sequence':1,'operation':'BOOTSTRAP',
+        'body':{'request_sequence':1,'status':'refused','code':'engagement_live_invalid_role','data':None}}
+    assert p.require_reply(reply,start,role='launcher_supervision')==reply
+    for operation in ('READY','START','GO'):
+        bad=deepcopy(reply);bad['operation']=operation;refused(p.require_reply,bad,start,role='launcher_supervision')
+
+
 def test_channel_sequences_and_cleanup_reserve():
     send=p.ChannelSequence(uid(8),'ingress');receive=p.ChannelSequence(uid(8),'ingress')
     first=send.make('SNAPSHOT',None);receive.accept(first)
@@ -291,6 +307,12 @@ def test_channel_sequences_and_cleanup_reserve():
     receive.accept(send.make('CLOSE',None));receive.accept(send.make('CLOSE',None))
     refused(send.make,'CLOSE',None,code='limit_exceeded')
     assert send.sent==66 and receive.received==66
+
+
+    supervision=p.ChannelSequence(uid(77),'launcher_supervision')
+    for _ in range(22):supervision.make('REAP',{'child_slot':'identify_admission'})
+    refused(supervision.make,'REAP',{'child_slot':'identify_admission'},code='invalid_frame')
+    assert supervision.sent==22
 
 
 def test_prepared_echo_is_data_not_authority():

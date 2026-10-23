@@ -1,5 +1,7 @@
 """S42C-L01..L16: fixed ordering and bounded local doubles, no native proof."""
 from copy import deepcopy
+from contextlib import contextmanager
+import threading
 import os
 import socket
 import time
@@ -112,6 +114,7 @@ def test_get_order_arms_before_fixed_worker_release(monkeypatch):
 
 
 def test_preparation_overlap_is_finitely_bounded(monkeypatch):
+    _supervisor_overlap_cases(monkeypatch)
     bundle,session,value,ready=data();calls=[]
     state=worker.LauncherState.__new__(worker.LauncherState)
     state.payload={'session_binding':session['binding'],'roe':session['roe'],'scope':session['scope'],'policy':session['policy'],'endpoint_identity':ready}
@@ -139,13 +142,16 @@ def test_stale_audit_and_approval_stop_delayed_release():
 
 def test_cancel_before_arm_has_terminal_priority(monkeypatch):
     state=worker.LauncherState.__new__(worker.LauncherState);state.stopped=False;state._polling=False
-    state.host=object();state.broker=object();state.pending=None
-    monkeypatch.setattr(worker.select,'select',lambda *args:([state.host,state.broker],[],[]))
+    state.host=object();state.broker=object();state.pending=None;state.deadline_ns=time.monotonic_ns()+c.SECOND
+    state.sequence=p.ChannelSequence(uid(777),'launcher')
+    monkeypatch.setattr(p,'receive_packet',lambda *args,**kwargs:{'schema_version':'1','channel_id':uid(777),'sequence':1,'operation':'CANCEL','body':{'reason':'engagement_live_cancelled'}})
+    monkeypatch.setattr(worker.select,'select',lambda *args:([state.broker],[],[]))
     refused(state.poll_stop);assert state.stopped
     monkeypatch.setattr(worker.select,'select',lambda *args:([],[],[]));refused(state.poll_stop)
 
 
 def test_all_client_control_authority_fds_are_closed(monkeypatch):
+    _supervisor_channel_close_failure_cases(monkeypatch)
     assert rt.RIGHTS['nmap']==rt.RIGHTS['headers']==rt.RIGHTS['parser']==rt.RIGHTS['admission']==()
     monkeypatch.setattr(admission.os,'listdir',lambda path:['0','1','2','99'])
     monkeypatch.setattr(admission.os,'fstat',lambda fd:SimpleNamespace(st_mode=0))
@@ -168,6 +174,7 @@ def test_native_timeouts_and_output_caps_remain_exact(monkeypatch):
 
 
 def test_parser_isolated_replay_has_no_live_capability(monkeypatch):
+    _parser_autonomous_deadline_case(monkeypatch)
     bundle,session,value,ready=data();requests=[]
     def start(**kw):requests.append(kw);c.fail('unavailable')
     monkeypatch.setattr(rt,'_start_role',start)
@@ -176,7 +183,8 @@ def test_parser_isolated_replay_has_no_live_capability(monkeypatch):
     assert len(requests)==1 and requests[0]['role']=='parser' and requests[0]['rights']=={} and set(requests[0]['payload'])=={'slot','scope'}
 
 
-def test_partial_meter_result_never_becomes_success():
+def test_partial_meter_result_never_becomes_success(monkeypatch):
+    _terminal_capture_cases(monkeypatch)
     fields=rt.SPEC['output_and_evidence']['result_exact_fields'];value=dict.fromkeys(fields)
     value.update(schema_version='1',dispatch_id=uid(10),slot='http_identify',status='succeeded',exit_code=0,truncated=False,
         envelope_sha256='a'*64,runtime_sha256='b'*64,stdout_sha256='c'*64,stderr_sha256='d'*64,stdout_bytes=1,stderr_bytes=0)
@@ -185,7 +193,9 @@ def test_partial_meter_result_never_becomes_success():
     value['stdout_bytes']=8193;refused(context.validate_client_result,value)
 
 
-def test_payload_identity_and_cleanup_are_not_boolean_claims():
+def test_payload_identity_and_cleanup_are_not_boolean_claims(monkeypatch):
+    _supervisor_thread_cases(monkeypatch)
+    _persistent_launcher_cleanup_case(monkeypatch)
     bundle=declared_runtime();ready=declared_readiness(bundle,'headers');cleanup=declared_cleanup(ready)
     assert rt.validate_readiness('headers',ready,bundle)==ready and rt.validate_cleanup(cleanup)==cleanup
     for field,bad in [('start_time_ticks',True),('pid',0)]:
@@ -194,6 +204,7 @@ def test_payload_identity_and_cleanup_are_not_boolean_claims():
 
 
 def test_all_phases_share_original_deadline_and_cleanup(monkeypatch):
+    _supervisor_thread_deadline_cases(monkeypatch)
     state=SimpleNamespace(pending=prepared(),poll_stop=lambda:None)
     control=worker.LauncherControl(state,M+3*c.SECOND)
     monkeypatch.setattr(c,'sample_clock',lambda:clock(3*c.SECOND));monkeypatch.setattr(worker.time,'monotonic',lambda:(M+3*c.SECOND)/c.SECOND)
@@ -204,7 +215,304 @@ def test_all_phases_share_original_deadline_and_cleanup(monkeypatch):
     worker_state=worker.LauncherState.__new__(worker.LauncherState)
     sent=[];worker_state.client=None;worker_state.pending=None
     worker_state.send=lambda *args,**kwargs:sent.append(args)
-    worker_state.admission=SimpleNamespace(close=lambda **kwargs:c.fail('cleanup_incomplete'))
-    worker_state.close();assert worker_state.stopped and sent==[]
-    worker_state.admission=None;worker_state.worker_id=uid(88)
+    worker_state.deadline_ns=time.monotonic_ns()+c.SECOND
+    worker_state.supervisor=SimpleNamespace(close=lambda:c.fail('cleanup_incomplete'))
+    refused(worker_state.close);assert worker_state.stopped and sent==[]
+    worker_state.supervisor=SimpleNamespace(close=lambda:None);worker_state.worker_id=uid(88)
     worker_state.close();assert sent[0][0]=='CLOSED'
+
+# These tests use real host threads and POSIX pairs with declared child process
+# observations. They do not claim Linux isolation or native process execution.
+@contextmanager
+def supervisor_lab(monkeypatch, *, seconds=3):
+    from recon_cockpit.secure_agent import engagement_live_launcher as host_launcher
+    from recon_cockpit.secure_agent import engagement_live_broker as host_broker
+    from recon_cockpit.secure_agent.engagement_live_session import _HostEvidenceBudget, _CleanupEpoch
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+    bundle=declared_runtime(); origin=time.monotonic_ns()
+    sample=lambda:{'utc_ns':1792540800000000000+time.monotonic_ns()-origin,
+                   'mono_before_ns':time.monotonic_ns(),'mono_after_ns':time.monotonic_ns()}
+    session=opened(clock_value=sample());session['binding']['runtime_sha256']=rt.runtime_digest(bundle)
+    value=c.derive_prepared(session,'http_identify',dispatch_id=uid(10),clock=sample())
+    endpoint_ready=declared_readiness(bundle,'endpoint',pid=700)
+    observer=endpoint_ready['parent_observation']['observer']
+    monkeypatch.setattr(rt,'_observer',lambda:deepcopy(observer))
+    original_identity=host_broker._pair_identity
+    def identity(peer):
+        # Portable socket custody is real; only Linux F_GETFL's wire spelling
+        # is modeled on systems with different POSIX flag constants.
+        row=original_identity(peer);row['flags']=2050
+        if not row['inode']:row['inode']=100000+peer.fileno()
+        return row
+    monkeypatch.setattr(host_broker,'_pair_identity',identity)
+    peers=[];bindings=[];ends={}
+    for index,(name,(role,_,fd)) in enumerate(c.CHILD_SLOTS.items()):
+        left,right=socket.socketpair();left.setblocking(False);right.setblocking(False)
+        peers.extend((left,right));ends[name]=right
+        bindings.append({'child_slot':name,'role':role,'worker_id':uid(800+index),
+            'pair':{'launcher_fd':fd,'request_endpoint':identity(left),'child_endpoint':identity(right)}})
+    host,remote=socket.socketpair();host.setblocking(False);remote.setblocking(False);peers.extend((host,remote))
+    control=ExecutionControl(time.monotonic()+seconds);budget=_HostEvidenceBudget();epoch=_CleanupEpoch(control);errors=[]
+    lease=SimpleNamespace(close=lambda:None)
+    endpoint_owner=SimpleNamespace(identity=endpoint_ready,_namespace_lease=lambda phase:lease)
+    launcher=SimpleNamespace(runtime=bundle,slot=SimpleNamespace(launcher_id=uid(700)),endpoint=endpoint_owner)
+    supervisor=host_launcher._FixedSupervisor(launcher=launcher,opened=session,channel=host,
+        bindings=bindings,endpoints=ends,control=control,budget=budget,epoch=epoch,
+        failure_sink=errors.append,setup_lock=threading.Lock())
+    model=SimpleNamespace(supervisor=supervisor,peer=remote,bindings=bindings,prepared=value,
+        session=session,runtime=bundle,control=control,budget=budget,epoch=epoch,errors=errors,clock=sample,owners=[],calls=[])
+    def spawn(**kwargs):
+        name=kwargs['supervision_identity']['child_slot'];binding=next(x for x in bindings if x['child_slot']==name)
+        assert identity(kwargs['child_stdin'])==binding['pair']['child_endpoint']
+        assert kwargs['control'].deadline==min(control.deadline,value['envelope']['action_deadline_ns']/c.SECOND)
+        assert kwargs['startup_deadline']<=kwargs['control'].deadline
+        assert kwargs['startup_deadline']<=time.monotonic()+(2 if kwargs['role']=='parser' else 10)
+        model.calls.append(kwargs);kwargs['child_stdin'].close()
+        bootstrap=rt.reconstruct_child_bootstrap(runtime=bundle,child_slot=binding,prepared=value,
+            session=session,endpoint_identity=endpoint_ready,observer=observer,
+            deadline_ns=int(kwargs['control'].deadline*c.SECOND),launcher_id=uid(700))
+        ready=declared_readiness(bundle,kwargs['role'],pid=800+len(model.owners),worker_id=binding['worker_id'])
+        ready['worker_ready']['bootstrap_sha256']=rt._hash(bootstrap)
+        entry=deepcopy(ready['parent_observation']);entry['stage']='entry';entry['descriptors']=entry['descriptors'][:3]
+        owner=SimpleNamespace(bootstrap=bootstrap,entry=entry,ready=ready,cleanup=None)
+        def close(*,deadline=None):
+            if owner.cleanup is None:
+                now=time.monotonic_ns();owner.cleanup=declared_cleanup(ready,started=now,finished=now+1)
+            return owner.cleanup
+        owner.close=close;owner.observe_ready=lambda control:(control.check() or ready)
+        model.owners.append(owner);return owner
+    monkeypatch.setattr(rt,'_spawn_child_owned',spawn)
+    try:yield model
+    finally:
+        supervisor.close(min(control.deadline,time.monotonic()+.5))
+        if supervisor.thread is not None and supervisor.thread.is_alive():supervisor.thread.join(.5)
+        for peer in peers:peer.close()
+
+
+def _supervisor_overlap_cases(monkeypatch):
+    with supervisor_lab(monkeypatch,seconds=20) as model:
+        sup=model.supervisor;value=model.prepared
+        boot=sup._execute('START',{'child_slot':'identify_client','prepared':value})
+        assert boot['bootstrap']['deadline_ns']==int(model.control.deadline*c.SECOND)
+        assert boot['bootstrap']['deadline_ns']>int(model.calls[0]['startup_deadline']*c.SECOND)
+        refused(sup._execute,'START',{'child_slot':'identify_client','prepared':value})
+        sup._execute('START',{'child_slot':'identify_admission','prepared':value})
+        refused(sup._execute,'START',{'child_slot':'identify_parser','prepared':value})
+        assert len(model.calls)==2
+        for name in ('identify_client','identify_admission'):sup._execute('REAP',{'child_slot':name})
+        sup._execute('START',{'child_slot':'identify_parser','prepared':value})
+        assert len(model.calls)==3 and all(row['descriptors']==[] for row in [owner.bootstrap for owner in model.owners])
+    with supervisor_lab(monkeypatch) as model:
+        one=model.supervisor.children['identify_client'];other=model.supervisor.children['headers_client']
+        one['endpoint'],other['endpoint']=other['endpoint'],one['endpoint']
+        refused(model.supervisor._execute,'START',{'child_slot':'identify_client','prepared':model.prepared})
+        assert model.calls==[]
+        receipt=model.supervisor.close(time.monotonic()+.5)
+        assert receipt['pending_slots']==[] and model.supervisor.resolved
+        assert model.supervisor.snapshot()['receipts']==[]
+
+
+def _supervisor_thread_cases(monkeypatch):
+    with supervisor_lab(monkeypatch) as model:
+        sup=model.supervisor;original_thread=threading.Thread
+        entered=threading.Event();resume=threading.Event();failures=[]
+        def child_thread(*args,**kwargs):
+            child=original_thread(*args,**kwargs)
+            def held_start():
+                entered.set();assert resume.wait(.5)
+                # Model a Thread.start call that resolves without starting
+                # after its caller requested stop, never a fabricated join.
+                assert sup.stop.is_set();c.fail('cancelled')
+            child.start=held_start
+            return child
+        def start_call():
+            try:sup.start()
+            except c.LiveError as error:failures.append(error)
+        caller=original_thread(target=start_call)
+        with monkeypatch.context() as patch:
+            patch.setattr(threading,'Thread',child_thread)
+            caller.start();assert entered.wait(.5)
+            try:
+                first=sup.close(time.monotonic()+.02)
+                assert first['state']=='unknown' and first['thread_alive_observed'] is None
+                assert first['status']=='failed' and not sup.resolved
+            finally:resume.set();caller.join(.5)
+        assert not caller.is_alive() and failures
+        second=sup.close(time.monotonic()+.5)
+        assert second['state']=='not_started' and second['thread_native_id'] is None
+        assert second['cleanup_deadline_ns']==first['cleanup_deadline_ns']
+        assert sup.resolved and model.budget.snapshot()['unresolved_tickets']==0
+    with supervisor_lab(monkeypatch) as model:
+        sup=model.supervisor;sup.start();sequence=p.ChannelSequence(uid(700),'launcher_supervision')
+        request=sequence.make('START',{'child_slot':'identify_client','prepared':model.prepared})
+        p.send_packet(model.peer,request,role='launcher_supervision',control=model.control)
+        reply=sequence.accept(p.receive_packet(model.peer,role='launcher_supervision',control=model.control))
+        p.require_reply(reply,request,role='launcher_supervision');assert reply['body']['status']=='ok'
+        # Two terminal tickets remain reserved until the actual thread joins.
+        assert model.budget.snapshot()['unresolved_tickets']>=2
+        sup.close(time.monotonic()+.5)
+        assert sup.closure['state']=='joined' and sup.resolved and sup.closed
+        assert not sup.thread.is_alive() and model.budget.snapshot()['unresolved_tickets']==0
+        rows=model.budget.snapshot()['rows'];assert any(row['data']['kind']=='rpc' for row in rows)
+        assert len(model.calls)==1
+    with supervisor_lab(monkeypatch) as model:
+        sup=model.supervisor;original=rt._spawn_child_owned;entered=threading.Event();resume=threading.Event()
+        def held(**kwargs):
+            entered.set();assert resume.wait(.5)
+            kwargs['control'].check()
+            return original(**kwargs)
+        monkeypatch.setattr(rt,'_spawn_child_owned',held)
+        sup.start();request=p.ChannelSequence(uid(700),'launcher_supervision').make('START',{'child_slot':'identify_client','prepared':model.prepared})
+        p.send_packet(model.peer,request,role='launcher_supervision',control=model.control);assert entered.wait(.5)
+        try:
+            receipt=sup.close(time.monotonic()+.02)
+            assert receipt['status']=='failed' and receipt['state']=='alive' and 'identify_client' in receipt['pending_slots']
+            assert not sup.resolved and model.budget.snapshot()['unresolved_tickets']>=2
+        finally:resume.set()
+        sup.thread.join(.5);assert not sup.thread.is_alive()
+        final=sup.close(time.monotonic()+1)
+        assert final['cleanup_deadline_ns']==receipt['cleanup_deadline_ns']
+        assert model.calls==[] and model.budget.snapshot()['unresolved_tickets']==0
+
+
+def _supervisor_thread_deadline_cases(monkeypatch):
+    with supervisor_lab(monkeypatch) as model:
+        sup=model.supervisor;state=sup.children['identify_admission']
+        state.update(state='bootstrap_returned',prepared=model.prepared,
+                     startup_deadline_ns=time.monotonic_ns()+500_000_000,start_resolved=True)
+        seen=[];received=threading.Event()
+        def receive(*args,**kwargs):
+            seen.append((threading.get_ident(),c._operation_deadline()))
+            received.set();c.fail('invalid_frame')
+        with monkeypatch.context() as patch:
+            patch.setattr(p,'receive_packet',receive)
+            sup.start();model.peer.send(b'x');assert received.wait(.5);sup.thread.join(.5)
+        assert seen==[(sup.thread.ident,state['startup_deadline_ns']/c.SECOND)]
+        assert seen[0][0]!=threading.get_ident() and model.calls==[]
+        sup.close(time.monotonic()+.5)
+
+    with supervisor_lab(monkeypatch, seconds=.8) as model:
+        sup=model.supervisor;seen=[];executed=threading.Event()
+        bound=model.prepared['envelope']['action_deadline_ns']/c.SECOND
+        def execute(operation,data):
+            seen.append((threading.get_ident(),c._operation_deadline(),time.monotonic()))
+            executed.set();c.fail('invalid_role')
+        monkeypatch.setattr(sup,'_execute',execute);sup.start()
+        request=p.ChannelSequence(uid(700),'launcher_supervision').make('START',{'child_slot':'identify_client','prepared':model.prepared})
+        p.send_packet(model.peer,request,role='launcher_supervision',control=model.control)
+        assert executed.wait(.5);sup.thread.join(.5)
+        sup.close(time.monotonic()+.5)
+        assert seen and seen[0][0]!=threading.get_ident()
+        assert seen[0][1]==min(bound,model.control.deadline)
+        assert seen[0][1]<seen[0][2]+2
+        rows=model.budget.snapshot()['rows']
+        terminal=[row for row in rows if row['data']['kind']=='local_failure']
+        assert len(terminal)==2 and all(row['data']['capture_sha256'] is None for row in terminal)
+        assert model.budget.snapshot()['unresolved_tickets']==0
+
+
+    with supervisor_lab(monkeypatch, seconds=.25) as model:
+        sup=model.supervisor;entered=threading.Event()
+        def expired(operation,data):
+            entered.set()
+            while time.monotonic()<model.control.deadline+.005:time.sleep(.002)
+            c._check_deadline(model.control.deadline)
+        monkeypatch.setattr(sup,'_execute',expired);sup.start()
+        request=p.ChannelSequence(uid(700),'launcher_supervision').make('START',{'child_slot':'identify_client','prepared':model.prepared})
+        p.send_packet(model.peer,request,role='launcher_supervision',control=model.control)
+        assert entered.wait(.2);sup.thread.join(.5);assert not sup.thread.is_alive()
+        sup.close(time.monotonic()+.5)
+        rows=model.budget.snapshot()['rows'];rpc=next(row['data'] for row in rows if row['data']['kind']=='rpc')
+        assert rpc['reply'] is None and rpc['local_error']=='engagement_live_timeout'
+        assert len([row for row in rows if row['data']['kind']=='local_failure'])==2
+        assert model.budget.snapshot()['unresolved_tickets']==0 and model.calls==[]
+
+
+def _terminal_capture_cases(monkeypatch):
+    from recon_cockpit.secure_agent import engagement_live_launcher as launcher
+    with supervisor_lab(monkeypatch) as model:
+        sup=model.supervisor
+        sup._execute('START',{'child_slot':'identify_client','prepared':model.prepared})
+        state=sup.children['identify_client'];owner=state['owner']
+        state['capture']=SimpleNamespace(partial=lambda:{'stdout':b'partial','stderr':b'',
+            'exit_code':None,'truncated':False,'status':'unresolved','cleanup':owner.cleanup,'native_readiness':None})
+        for _ in range(2):sup._terminal_tickets.append(model.budget.reserve(kind='supervision_projection',maximum_bytes=3072,maximum_rows=1,control=model.control))
+        sup._terminal(c.LiveError('engagement_live_unavailable'),state)
+        first=model.budget.snapshot()['rows'][0]['data']
+        assert first['capture_sha256'] is None and first['cleanup_sha256'] is None
+        assert model.budget.snapshot()['unresolved_tickets']==1
+        sup.close(time.monotonic()+.5)
+        final=model.budget.snapshot()['rows'][-1]['data']
+        retained=sup.snapshot()['captures'][model.prepared['envelope']['dispatch_id']]['host_capture']
+        assert final['capture_sha256']==c.digest(c.canonical(retained))
+        assert final['cleanup_sha256']==c.digest(c.canonical(owner.cleanup))
+        assert model.budget.snapshot()['unresolved_tickets']==0 and sup.resolved
+        assert not launcher._actually_reaped({'descriptors_closed':True,'processes':[]})
+        for key in ('pin_verified','exit_observed','reaped_observed'):
+            bad=deepcopy(owner.cleanup);bad['processes'][0][key]=False
+            assert not launcher._actually_reaped(bad)
+
+
+def _supervisor_channel_close_failure_cases(monkeypatch):
+    class BrokenClose:
+        def __init__(self, peer): self.peer=peer
+        def shutdown(self, how): return self.peer.shutdown(how)
+        def close(self):
+            self.peer.close()
+            raise OSError('declared close failure after actual descriptor release')
+    for target in ('endpoint','channel'):
+        with supervisor_lab(monkeypatch) as model:
+            sup=model.supervisor
+            if target=='channel': sup.channel=BrokenClose(sup.channel)
+            else:
+                state=sup.children['identify_client'];state['endpoint']=BrokenClose(state['endpoint'])
+            first=sup.close(time.monotonic()+.5)
+            assert first['channel_closed'] is False and first['status']=='failed' and not sup.resolved
+            error=sup._channel_close_error
+            second=sup.close(time.monotonic()+1)
+            assert second['cleanup_deadline_ns']==first['cleanup_deadline_ns']
+            assert second['channel_closed'] is False and not sup.resolved and sup._channel_close_error is error
+            assert sup.failure.code=='engagement_live_cleanup_incomplete'
+
+
+def _persistent_launcher_cleanup_case(monkeypatch):
+    from recon_cockpit.secure_agent import engagement_live_launcher as launcher
+    with supervisor_lab(monkeypatch) as model:
+        service=launcher.EngagementLauncher.__new__(launcher.EngagementLauncher)
+        service._pid=os.getpid();service._stop=threading.Event();service._closed=False
+        service._epoch=model.epoch;service._cleanup_error=None;service._cleanup=None
+        deadlines=[];ready=declared_readiness(model.runtime,'launcher',pid=950)
+        receipt=declared_cleanup(ready)
+        def owned_close(*,deadline):deadlines.append(deadline);return receipt
+        service._owner=SimpleNamespace(channel=model.peer,close=owned_close)
+        service._supervisor=SimpleNamespace(interrupt=lambda:None,
+            close=lambda deadline:c.fail('evidence_invalid'),resolved=False)
+        refused(service._close,time.monotonic()+.5)
+        assert service._cleanup==receipt and len(deadlines)==1
+        refused(service._close,time.monotonic()+2)
+        assert len(deadlines)==2 and deadlines[1]<=deadlines[0]
+        assert service._cleanup_error.cleanup==receipt
+        # Actual joining/reaping after the original epoch remains useful
+        # custody evidence, but cannot promote the live cleanup to success.
+        late={'status':'failed','state':'joined'}
+        service._cleanup_error=None
+        service._supervisor=SimpleNamespace(interrupt=lambda:None,
+            close=lambda deadline:late,resolved=True)
+        with pytest.raises(c.LiveError) as caught:service._close(time.monotonic()+2)
+        assert caught.value.supervisor_cleanup is late and caught.value.cleanup==receipt
+        assert len(deadlines)==3 and deadlines[2]<=deadlines[0]
+
+
+def _parser_autonomous_deadline_case(monkeypatch):
+    with supervisor_lab(monkeypatch) as model:
+        sup=model.supervisor;name='identify_parser'
+        sup._execute('START',{'child_slot':name,'prepared':model.prepared})
+        state=sup.children[name];sup._execute('OBSERVE_READY',{'child_slot':name,'bootstrap_sha256':c.digest(c.canonical(state['owner'].bootstrap))})
+        # Fixed clock-bound fixture: a ready parser retains its original phase
+        # deadline even if no further REAP or parser reply RPC ever arrives.
+        state['startup_deadline_ns']=time.monotonic_ns()+80_000_000
+        sup.start();sup.thread.join(.5)
+        assert not sup.thread.is_alive() and model.errors
+        assert getattr(model.errors[0],'code',None)=='engagement_live_timeout'
+        sup.close(time.monotonic()+.5)
+        assert state['owner'].cleanup is not None and sup.resolved

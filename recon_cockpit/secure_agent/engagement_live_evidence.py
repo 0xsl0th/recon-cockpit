@@ -18,8 +18,8 @@ import uuid
 
 from .engagement_live_contract import LiveError
 
-CONTRACT_SHA256 = '11b5e2f56e18ce4003e4dab6e2c99a68e7f7f29be1deeff4461e0a08cd49e9ca'
-GATES_SHA256 = '4e723dbc8cbf3690073dbfd41bbce3127f9a4d9a6bf1f99588df50c9e0e376ea'
+CONTRACT_SHA256 = '9a626dd27e43ea94de9898185f6d4608a4f8f11df2f516053d43b68f7315614f'
+GATES_SHA256 = '0e1295432df0d05107a8383602057f0764bd0342bb6dbd0e50defd74b72b164d'
 MAX_BUNDLE = 16777216
 MAX_REPORT = 8192
 MAX_TRANSCRIPT_ROWS = 4096
@@ -350,6 +350,8 @@ def _transcript(m, raw):
     rows=[];tails=[]
     for index,segment in enumerate(m['transcript']['segments']):
         part=raw[segment['offset']:segment['offset']+segment['bytes']]
+        if len(part)>(917504 if segment['source']=='broker_memfd' else 262144):
+            _fail('limit_exceeded')
         if _sha(part)!=segment['sha256']:
             _fail()
         lines=part.split(b'\n')
@@ -359,6 +361,8 @@ def _transcript(m, raw):
                 _fail()
             tails.append(index)
         for sequence,line in enumerate(lines,1):
+            if sequence>(1984 if segment['source']=='broker_memfd' else 128):
+                _fail('limit_exceeded')
             if not line or len(rows)>=MAX_TRANSCRIPT_ROWS:
                 _fail('limit_exceeded' if len(rows)>=MAX_TRANSCRIPT_ROWS else 'evidence_invalid')
             row=_decode(line,32768)
@@ -432,22 +436,23 @@ def _load_members(manifest,members,deadline):
 
 
 def _containers(loaded):
-    processes=_object(loaded['processes.json'],{'schema_version','startup','readiness','native','boundary_observations'})
+    processes=_object(loaded['processes.json'],{'schema_version','startup','readiness','native','boundary_observations','child_slots'})
     results=_object(loaded['results.json'],{'schema_version','operations','boundary_proofs','core_proofs'})
-    cleanup=_object(loaded['cleanup.json'],{'schema_version','receipts','exports','recovery'})
+    cleanup=_object(loaded['cleanup.json'],{'schema_version','receipts','exports','recovery','supervisors'})
     for value in (processes,results,cleanup):
         if value['schema_version']!='1':_fail()
     _list(processes['startup'],94);_list(processes['readiness'],94);_list(processes['native'],4)
+    _list(processes['child_slots'],24);_list(cleanup['supervisors'],4)
     kinds={'clock_boundary','creation_denial','descriptor_custody','image_identity','lifecycle',
            'meter_boundary','parser_absence','pin_mutation','socket_denial'}
     for observation in _list(processes['boundary_observations'],59):
         _object(observation,{'kind','observation'});_choice(observation['kind'],kinds)
         if type(observation['observation']) is not dict:_fail()
     for operation in _list(results['operations'],4):
-        _object(operation,{'session','prepared','result','client','meter','elapsed_ms'})
+        _object(operation,{'session','prepared','result','client','meter','elapsed_ms','host_capture'})
         for key in ('session','prepared'):
             if type(operation[key]) is not dict:_fail()
-        for key in ('result','client','meter'):
+        for key in ('result','client','meter','host_capture'):
             if operation[key] is not None and type(operation[key]) is not dict:_fail()
         timing=_object(operation['elapsed_ms'],TIMINGS)
         for value in timing.values():
@@ -1352,7 +1357,10 @@ def _cleanup_report(loaded,*,audit=None):
     if audit is None:audit=_audit_closure(loaded)
     observed=set(payloads)|{(p['payload']['pid'],p['payload']['start_time_ticks']) for p in audit['parents']}
     complete &= not audit['missing_cleanup']
-    started=bool(receipts or audit['parents'])
+    from .engagement_live_context import _supervisor_closure
+    supervision=_supervisor_closure(loaded)
+    complete &= supervision['complete']
+    started=bool(receipts or audit['parents'] or loaded['cleanup.json']['supervisors'])
     return {'status':'not_started' if not started else 'complete' if complete else 'incomplete',
             'observed_payloads':len(observed) if started else None,
             'reaped_payloads':sum(p['reaped_observed'] for p in payloads.values()) if started else None,
@@ -1367,6 +1375,9 @@ def _audit_closure(loaded):
 def _all_reaped(loaded,*,audit=None):
     # Cleanup may have exceeded an original work deadline while still producing
     # verified reaping. Save that failure honestly; never save a living role.
+    from .engagement_live_context import _supervisor_closure
+    if not _supervisor_closure(loaded)['all_closed']:return False
+    if any(not row['descriptors_closed'] for row in loaded['cleanup.json']['receipts']):return False
     reaped=set()
     processes=_cleanup_processes(loaded)
     if processes is None:return False

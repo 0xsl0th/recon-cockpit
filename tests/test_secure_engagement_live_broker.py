@@ -75,6 +75,7 @@ def recovered(directory):
 
 
 def test_bootstrap_preallocates_exact_two_slots(tmp_path,monkeypatch):
+    _preallocated_child_custody(tmp_path,monkeypatch)
     with lab(tmp_path,monkeypatch) as (core,store,*_):
         assert len(core.slots)==2 and store.snapshot()['sessions']==[]
         first=core.open_session(0);second=core.open_session(1)
@@ -295,6 +296,19 @@ def test_transcript_capacity_is_reserved_before_effect(tmp_path,monkeypatch):
         assert store.snapshot()['state']['usage']['actions']==1
 
 
+    # Exact partition boundaries include the original terminal reserve.
+    with tempfile.TemporaryFile() as stream:
+        transcript=b.Transcript.__new__(b.Transcript);transcript.fd=stream.fileno();transcript.sealed=False
+        transcript.bytes=c.BROKER_TRANSCRIPT_BYTES-8192-16
+        transcript.sequence=c.BROKER_TRANSCRIPT_ROWS-8-1
+        transcript.reserve(16)
+        refused(transcript.reserve,17)
+        transcript.sequence+=1;refused(transcript.reserve,1)
+        transcript.bytes=c.BROKER_TRANSCRIPT_BYTES-16;transcript.sequence=c.BROKER_TRANSCRIPT_ROWS-1
+        transcript.reserve(16,terminal=True);refused(transcript.reserve,17,terminal=True)
+        transcript.sequence+=1;refused(transcript.reserve,1,terminal=True)
+
+
 def test_exports_are_bounded_sealed_phase_snapshots(tmp_path,monkeypatch):
     with lab(tmp_path,monkeypatch) as (core,store,*_):
         with tempfile.TemporaryFile() as file:
@@ -338,3 +352,70 @@ def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
                     pytest.fail('held lock was acquired')
             assert lock.locked() and time.monotonic()-began<.3
         finally:lock.release()
+
+
+def _preallocated_child_custody(tmp_path, monkeypatch):
+    # Real portable pairs/files; Linux flags and memfd sealing are separately
+    # native gates. This checks transfer, queued bytes and physical closure.
+    with monkeypatch.context() as patch:
+        created=[]
+        def pair():
+            a,z=socket.socketpair();a.setblocking(False);z.setblocking(False)
+            created.extend((a,z));return a,z
+        def one_way():
+            a,z=pair();a.shutdown(socket.SHUT_WR);z.shutdown(socket.SHUT_RD);return a,z
+        count=[0]
+        def memfd(name):
+            count[0]+=1;path=tmp_path/('evidence-memory-'+str(count[0]))
+            writer=os.open(path,os.O_RDWR|os.O_CREAT|os.O_EXCL,0o600)
+            reader=os.open(path,os.O_RDONLY)
+            return reader,writer
+        original=host._pair_identity
+        def identity(peer):
+            actual=original(peer)
+            # The platform flags do not purport to be Linux kernel evidence.
+            return {**actual,'inode':actual['inode'] or 100000+peer.fileno(),'flags':2050}
+        patch.setattr(host,'_pair',pair);patch.setattr(host,'_one_way',one_way)
+        patch.setattr(host,'_memfd',memfd);patch.setattr(host,'_pair_identity',identity)
+        bundle=host.preallocate_role_bundle('terminal');transferred={};ends={};readers={}
+        try:
+            rows=[row for slot in bundle.slots for row in slot.child_slot_bindings]
+            assert len(rows)==12 and len({row['worker_id'] for row in rows})==12
+            assert len({(row['pair'][side]['device'],row['pair'][side]['inode']) for row in rows
+                        for side in ('request_endpoint','child_endpoint')})==24
+            slot=bundle.slots[0];writer=bundle._peek('identify_client_request_0');reader=bundle._peek('identify_client_child_0')
+            writer.send(b'not an INITIAL')
+            before=set(bundle._owned)
+            refused(slot.take_launcher_bootstrap)
+            assert set(bundle._owned)==before and reader.recv(1024)==b'not an INITIAL'
+            transferred=slot.take_launcher_bootstrap();ends=slot.take_child_endpoints()
+            assert set(transferred)=={'host','child','broker_control','endpoint_arm',*(name+'_request' for name in c.CHILD_SLOTS)}
+            assert set(ends)==set(c.CHILD_SLOTS)
+            refused(slot.take_launcher_bootstrap);refused(slot.take_child_endpoints)
+            for declaration in rows[:6]:
+                name=declaration['child_slot']
+                assert identity(ends[name])==declaration['pair']['child_endpoint']
+                assert identity(transferred[name+'_request'])==declaration['pair']['request_endpoint']
+                transferred[name+'_request'].send(b'x');assert ends[name].recv(1)==b'x'
+            bundle.close_remaining_channels()
+            refused(bundle.slots[1].take_launcher_bootstrap)
+            refused(bundle.take_audit_writer)
+            readers=bundle.take_evidence_readers()
+            assert set(readers)=={'initial','final','transcript'}
+            for fd in readers.values():
+                assert os.fstat(fd).st_size==0
+                with pytest.raises(OSError):os.write(fd,b'forbidden')
+        finally:
+            bundle.close()
+            for peer in [*transferred.values(),*ends.values()]:peer.close()
+            for fd in readers.values():os.close(fd)
+        assert all(peer.fileno()==-1 for peer in created)
+        # A failed close never becomes a later successful not_started fence.
+        bundle=host.preallocate_role_bundle('terminal')
+        class BrokenChannel:
+            def close(self):raise OSError('declared close failure')
+        bundle._owned['declared_broken_channel']=BrokenChannel()
+        refused(bundle.close_remaining_channels)
+        refused(bundle.close_remaining_channels)
+        refused(bundle.close)
+        refused(bundle.close)

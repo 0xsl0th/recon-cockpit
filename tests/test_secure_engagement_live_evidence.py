@@ -35,8 +35,7 @@ def runtime():
     roles=[]
     for role in r.ROLES:
         destinations={'/usr/bin/python3','/lib64/ld-linux-x86-64.so.2'}
-        if role in ('nmap','launcher'):destinations.add('/tool/nmap')
-        if role=='launcher':destinations.add('/usr/bin/bwrap')
+        if role=='nmap':destinations.add('/tool/nmap')
         if role=='endpoint':destinations.add('/usr/sbin/nft')
         if role=='parser':destinations.add('/lib/x86_64-linux-gnu/libffi.so.8')
         native=[]
@@ -69,9 +68,9 @@ def runtime():
 def fixture():
     runtime_value=runtime()
     members={'runtime.json':raw({'schema_version':'1','runtime':runtime_value,'instrumentation':[]}),
-        'processes.json':raw({'schema_version':'1','startup':[],'readiness':[],'native':[],'boundary_observations':[]}),
+        'processes.json':raw({'schema_version':'1','startup':[],'readiness':[],'native':[],'boundary_observations':[],'child_slots':[]}),
         'results.json':raw({'schema_version':'1','operations':[],'boundary_proofs':[],'core_proofs':[]}),
-        'cleanup.json':raw({'schema_version':'1','receipts':[],'exports':[],'recovery':None}),
+        'cleanup.json':raw({'schema_version':'1','receipts':[],'exports':[],'recovery':None,'supervisors':[]}),
         'audit.jsonl':b'','transcript.jsonl':b''}
     unavailable={'status':'unavailable','source':None,'file':None,'reason':'not_started','broker_id':None}
     manifest={'schema_version':'1','contract_sha256':e.CONTRACT_SHA256,'gates_sha256':e.GATES_SHA256,
@@ -86,6 +85,191 @@ def fixture():
 def repin(manifest,members):
     manifest['members']=[{'name':n,'bytes':len(v),'sha256':sha(v)} for n,v in sorted(members.items())]
     return manifest,members
+
+
+def attach_supervision_fixture(loaded, rows):
+    """Declared host/child facts for pure replay tests, never a kernel witness.
+
+    Rebuild after callers finalize their raw captures and process observations.
+    This does not call the authority fixture, execute a child, or inspect files.
+    """
+    import base64
+    from test_secure_engagement_live_runtime import declared_readiness, declared_cleanup
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    bundle=loaded['runtime.json']['runtime']
+    processes=loaded.setdefault('processes.json',{})
+    processes.setdefault('schema_version','1');processes.setdefault('startup',[])
+    processes.setdefault('readiness',[]);processes.setdefault('native',[])
+    processes.setdefault('boundary_observations',[])
+    cleanup=loaded.setdefault('cleanup.json',{'schema_version':'1','receipts':[],'exports':[],'recovery':None})
+    cleanup.setdefault('supervisors',[]);processes['child_slots']=[]
+    rows=[deepcopy(x) for x in rows if x['row']['kind']!='supervision_projection']
+    sequences={}
+    for index,op in enumerate(loaded['results.json']['operations']):
+        op.setdefault('host_capture',None)
+        p=op['prepared'];env=p['envelope'];did=env['dispatch_id'];broker=env['broker_id'];sid=env['session_id']
+        go=next((x['row'] for x in rows if x['row']['kind']=='protocol' and
+            x['row']['data']['frame']['operation']=='GO' and x['row']['dispatch_id']==did),None)
+        if go is None:continue
+        release=go['data']['frame']['body'];launcher_id=go['data']['frame']['channel_id'];anchor=env['clock_anchor']['mono_after_ns']
+        def existing(role,worker=None):
+            found=[x for x in processes['readiness'] if x['role']==role and
+                   (worker is None or x['worker_ready']['worker_id']==worker)]
+            if found:return found[0]
+            value=declared_readiness(bundle,role,pid=500+index*100+len(processes['readiness'])*3,worker_id=worker)
+            processes['readiness'].append(value);return value
+        launcher=existing('launcher',launcher_id);endpoint=existing('endpoint',uid(60))
+        observer=launcher['parent_observation']['observer']
+        prefix='identify_' if env['slot']=='http_identify' else 'headers_'
+        children={name:existing(role,uid(61) if name.endswith('admission') else None)
+                  for name,(role,slot,fd) in context._CHILD_SLOTS.items() if slot==env['slot']}
+        old_hashes={r._hash(value):value for value in children.values()}
+        client_pid=children[prefix+'client']['parent_observation']['payload']['pid']
+        client_finish=next((x['finished_at_ns'] for x in cleanup['receipts'] if
+            len(x['processes'])==1 and x['processes'][0]['pid']==client_pid),anchor+150)
+        slots={}
+        for number,(name,(role,action,fd)) in enumerate(context._CHILD_SLOTS.items()):
+            active=action==env['slot'];child=children.get(name)
+            worker=child['worker_ready']['worker_id'] if active else uid(700+index*10+number)
+            def endpoint_id(inode):return {'device':1,'inode':inode,'mode':stat.S_IFSOCK|0o600,'flags':2050}
+            pair={'launcher_fd':fd,'request_endpoint':endpoint_id(10000+index*100+number*2),
+                  'child_endpoint':endpoint_id(10001+index*100+number*2)}
+            desc=next(x for x in launcher['parent_observation']['descriptors'] if x['fd']==fd)
+            desc.update(pair['request_endpoint'])
+            record={'schema_version':'1','broker_id':broker,'session_id':sid,'launcher_id':launcher_id,
+                'child_slot':name,'role':role,'worker_id':worker,'pair':pair,
+                'prepared_sha256':c.prepared_digest(p) if active else None,'bootstrap':None,'entry_sha256':None}
+            processes['child_slots'].append(record);slots[name]=record
+            if active:
+                child['parent_observation']['sampled_at_ns']=(anchor-78 if name.endswith('client') else
+                    anchor-68 if name.endswith('admission') else client_finish+4)
+                desc=next(x for x in child['parent_observation']['descriptors'] if x['fd']==0)
+                desc.update(pair['child_endpoint'])
+                child['worker_ready']['descriptor_sha256']=r._hash(child['parent_observation']['descriptors'])
+                binding={k:record[k] for k in ('child_slot','role','worker_id','pair')}
+                boot=r.reconstruct_child_bootstrap(runtime=bundle,child_slot=binding,prepared=p,session=op['session'],
+                    endpoint_identity=endpoint,observer=observer,deadline_ns=min(env['action_deadline_ns'],anchor+1000000000),launcher_id=launcher_id)
+                record['bootstrap']={'deadline_ns':boot['deadline_ns'],'bytes':len(raw(boot)),'sha256':sha(raw(boot))}
+                child['worker_ready']['bootstrap_sha256']=record['bootstrap']['sha256']
+                entry=deepcopy(child['parent_observation']);entry['stage']='entry';entry['sampled_at_ns']-=2
+                processes['startup']=[x for x in processes['startup'] if x['payload']!=entry['payload']]+[entry]
+                record['entry_sha256']=sha(raw(entry))
+        launcher['worker_ready']['descriptor_sha256']=r._hash(launcher['parent_observation']['descriptors'])
+        child_cleanups={}
+        for name,child in children.items():
+            payload=child['parent_observation']['payload']
+            found=[x for x in cleanup['receipts'] if len(x['processes'])==1 and
+                x['processes'][0]['pid']==payload['pid'] and x['processes'][0]['start_time_ticks']==payload['start_time_ticks']]
+            receipt=found[0] if found else declared_cleanup(child,started=anchor+120,finished=anchor+150)
+            if name.endswith('admission'):receipt.update(started_at_ns=anchor+5,finished_at_ns=anchor+6,deadline_ns=anchor+2000000005)
+            if name.endswith('parser'):receipt.update(started_at_ns=client_finish+6,finished_at_ns=client_finish+7,deadline_ns=client_finish+2000000006)
+            if not found:cleanup['receipts'].append(receipt)
+            child_cleanups[name]=receipt
+        client_ready=children[prefix+'client'];parser_ready=children[prefix+'parser']
+        native=next((x for x in processes['native'] if x['parent_observation']['payload']==client_ready['parent_observation']['payload']),None)
+        if env['slot']=='http_identify':
+            if native is None:
+                parent=deepcopy(client_ready['parent_observation']);parent['stage']='native';parent['sampled_at_ns']=anchor+50
+                image=next(x for x in next(z for z in bundle['roles'] if z['role']=='nmap')['native_files'] if x['destination']=='/tool/nmap')
+                parent['executable'].update(destination='/tool/nmap',sha256=image['sha256'],size=image['size'])
+                native={'schema_version':'1','role':'nmap','waiting_image':deepcopy(client_ready['parent_observation']['executable']),
+                    'parent_observation':parent,'observed_at_ns':anchor+50};processes['native'].append(native)
+            native['parent_observation']['descriptors']=deepcopy(client_ready['parent_observation']['descriptors'])
+        client=op.get('client')
+        if client is not None:
+            client['readiness']['client_sha256']=sha(raw(client_ready))
+            client['readiness']['native_sha256']=None if native is None else sha(raw(native))
+            client['cleanup']=deepcopy(child_cleanups[prefix+'client'])
+            if client['parser_receipt']is not None:
+                client['parser_receipt']['readiness']=sha(raw(parser_ready))
+                client['parser_receipt']['cleanup']=deepcopy(child_cleanups[prefix+'parser'])
+            if op['result']is not None:
+                op['result']['client_result_sha256']=sha(raw(client))
+                op['result']['cleanup_sha256']=sha(raw(client['cleanup']))
+        streams={name:loaded.setdefault('client-'+did+'.'+name+'.bin',b'x' if name=='stdout' else b'')
+                 for name in ('stdout','stderr')}
+        capture={'schema_version':'1','slot':env['slot'],'exit_code':0 if client is None else client['exit_code'],
+                 'truncated':False if client is None else client['truncated']}
+        for name,data in streams.items():capture.update({name+'_base64':base64.b64encode(data).decode(),
+            name+'_bytes':len(data),name+'_sha256':sha(data)})
+        op['host_capture']={k:v for k,v in capture.items() if not k.endswith('_base64')}
+        op['host_capture'].update(status='succeeded' if client is None else client['status'],
+            cleanup_sha256=sha(raw(child_cleanups[prefix+'client'])))
+        for wrapped in rows:
+            value=wrapped['row']
+            if value['kind']!='protocol':continue
+            frame=value['data']['frame'];body=frame['body']
+            if frame['operation']=='OBSERVATION' and body['kind']=='role_readiness':
+                old=sha(raw(body['data']))
+                if old in old_hashes:body['data']=deepcopy(old_hashes[old])
+            elif frame['operation']=='OBSERVATION' and body['kind']=='cleanup':
+                identity=[(x['pid'],x['start_time_ticks']) for x in body['data']['processes']]
+                match=next((x for x in child_cleanups.values() if
+                    [(p['pid'],p['start_time_ticks']) for p in x['processes']]==identity),None)
+                if match is not None:body['data']=deepcopy(match)
+            if frame['operation']=='DISPATCH' and body.get('status')=='ok' and body.get('data',{}).get('dispatch_id')==did:
+                body['data']=deepcopy(op['result'])
+        def exchange(name,operation,body,result,projection,at):
+            number=sequences.get(launcher_id,0)+1;sequences[launcher_id]=number
+            response={'START':'BOOTSTRAP','OBSERVE_READY':'READY','NATIVE_BEGIN':'NATIVE_BUDGET',
+                      'OBSERVE_NATIVE':'NATIVE','CAPTURE':'CAPTURED','REAP':'REAPED'}[operation]
+            request={'schema_version':'1','channel_id':launcher_id,'sequence':number,'operation':operation,'body':body}
+            reply={'schema_version':'1','channel_id':launcher_id,'sequence':number,'operation':response,
+                'body':{'request_sequence':number,'status':'ok','code':None,'data':result}}
+            projected={'child_slot':name}
+            if operation=='START':projected['prepared_sha256']=c.prepared_digest(p)
+            elif operation=='OBSERVE_READY':projected['bootstrap_sha256']=body['bootstrap_sha256']
+            elif operation=='NATIVE_BEGIN':projected['release_sha256']=sha(raw(body['release']))
+            def observed(frame,part,time):return {'sequence':number,'operation':frame['operation'],'observed_at_ns':time,
+                'bytes':len(raw(frame)),'sha256':sha(raw(frame)),'projection':part,'projection_sha256':sha(raw(part))}
+            reply_part={'request_sequence':number,'status':'ok','code':None,'data':projection}
+            data={'kind':'rpc','launcher_id':launcher_id,'child_slot':name,'child_worker_id':slots[name]['worker_id'],
+                'prepared_sha256':c.prepared_digest(p),'request':observed(request,projected,at),
+                'reply':observed(reply,reply_part,at+1),'local_error':None}
+            rows.append({'segment':1,'source':'role_observer','row':{'schema_version':'1','broker_id':broker,'session_id':sid,
+                'dispatch_id':did,'observer_id':launcher_id,'row_sequence':1,'observed_at_ns':at+1,
+                'kind':'supervision_projection','data':data}})
+        def start(name,at):
+            slot=slots[name];binding={k:slot[k] for k in ('child_slot','role','worker_id','pair')}
+            boot=r.reconstruct_child_bootstrap(runtime=bundle,child_slot=binding,prepared=p,session=op['session'],
+                endpoint_identity=endpoint,observer=observer,deadline_ns=slot['bootstrap']['deadline_ns'],launcher_id=launcher_id)
+            exchange(name,'START',{'child_slot':name,'prepared':p},{'child_slot':name,'bootstrap':boot},
+                {'child_slot':name,'bootstrap_sha256':sha(raw(boot)),'bootstrap_bytes':len(raw(boot))},at)
+            ready=children[name]
+            exchange(name,'OBSERVE_READY',{'child_slot':name,'bootstrap_sha256':sha(raw(boot))},
+                {'child_slot':name,'readiness':ready},{'child_slot':name,'readiness_sha256':sha(raw(ready))},at+2)
+        start(prefix+'client',anchor-80);start(prefix+'admission',anchor-70)
+        name=prefix+'admission';receipt=child_cleanups[name]
+        exchange(name,'REAP',{'child_slot':name},{'child_slot':name,'cleanup':receipt},
+            {'child_slot':name,'cleanup_sha256':sha(raw(receipt))},anchor+5)
+        name=prefix+'client';begin=anchor+7;stop=min(release['effect_stop_ns'],begin+(5000000000 if prefix=='identify_' else 1000000000))
+        budget={'child_slot':name,'started_at_ns':begin,'native_deadline_ns':stop}
+        exchange(name,'NATIVE_BEGIN',{'child_slot':name,'release':release},budget,budget,begin)
+        if native is not None:exchange(name,'OBSERVE_NATIVE',{'child_slot':name},
+            {'child_slot':name,'native_readiness':native},{'child_slot':name,'native_readiness_sha256':sha(raw(native))},anchor+50)
+        receipt=child_cleanups[name];finished=receipt['finished_at_ns']
+        exchange(name,'CAPTURE',{'child_slot':name},{'child_slot':name,'capture':capture,'status':op['host_capture']['status'],'cleanup':receipt},
+            {'child_slot':name,'capture_sha256':sha(raw(capture)),'host_capture_sha256':sha(raw(op['host_capture'])),
+             'status':op['host_capture']['status'],'cleanup_sha256':sha(raw(receipt))},finished)
+        name=prefix+'parser';start(name,finished+2);receipt=child_cleanups[name]
+        exchange(name,'REAP',{'child_slot':name},{'child_slot':name,'cleanup':receipt},
+            {'child_slot':name,'cleanup_sha256':sha(raw(receipt))},max(finished+6,receipt['finished_at_ns']))
+        end=max(x['row']['observed_at_ns'] for x in rows)+10
+        cleanup['supervisors']=[row for row in cleanup['supervisors'] if row['launcher_id']!=launcher_id]+[{'schema_version':'1','broker_id':broker,'session_id':sid,'launcher_id':launcher_id,
+            'host_observer':observer,'thread_native_id':1000+index,'thread_started_at_ns':anchor-1000,'state':'joined',
+            'first_stop_requested_at_ns':end,'cleanup_started_at_ns':end,'cleanup_finished_at_ns':end+1,
+            'cleanup_deadline_ns':end+2000000000,'join_attempted':True,'thread_alive_observed':False,
+            'channel_closed':True,'pending_slots':[],'status':'complete'}]
+        for ready in (launcher,endpoint):
+            parent=ready['parent_observation']
+            if not any(p['pid']==parent['payload']['pid'] and p['start_time_ticks']==parent['payload']['start_time_ticks']
+                       for receipt in cleanup['receipts'] for p in receipt['processes']):
+                cleanup['receipts'].append(declared_cleanup(ready,started=end,finished=end+1))
+    counters={}
+    for wrapped in rows:
+        segment=wrapped['segment'];counters[segment]=counters.get(segment,0)+1
+        wrapped['row']['row_sequence']=counters[segment]
+    return loaded,rows
 
 
 def unchecked_saved(path,manifest,members):
@@ -146,10 +330,10 @@ def denied_fixture():
             'device':11,'inode':20+i,'mode':stat.S_IFREG|0o600,'flags':access}
         exports.append({'broker_id':uid(6),'reference':reference,'host_descriptor':descriptor(os.O_RDONLY),
             'broker_descriptor':descriptor(os.O_RDWR)})
-    members['processes.json']=raw({'schema_version':'1','startup':[],'readiness':[ready],'native':[],'boundary_observations':[]})
-    members['cleanup.json']=raw({'schema_version':'1','receipts':[cleanup],'exports':exports,'recovery':None})
+    members['processes.json']=raw({'schema_version':'1','startup':[],'readiness':[ready],'native':[],'boundary_observations':[],'child_slots':[]})
+    members['cleanup.json']=raw({'schema_version':'1','receipts':[cleanup],'exports':exports,'recovery':None,'supervisors':[]})
     members['results.json']=raw({'schema_version':'1','operations':[{'session':session,'prepared':p,'result':result,
-        'client':None,'meter':None,'elapsed_ms':{key:None for key in e.TIMINGS}}],'core_proofs':[],'boundary_proofs':[]})
+        'client':None,'meter':None,'host_capture':None,'elapsed_ms':{key:None for key in e.TIMINGS}}],'core_proofs':[],'boundary_proofs':[]})
     rows=[]
     for i,(direction,body) in enumerate((('received',{'prepared_sha256':c.prepared_digest(p),'reference_sha256':'f'*64,
             'consume_sequence':1,'audit_sequence':1}),('sent',{'request_sequence':1,'status':'ok','code':None,'data':result})),1):
@@ -194,7 +378,7 @@ def useful_fixture(monkeypatch):
         meter=meter.snapshot()
     output=service_xml().replace(b'127.0.0.1',scope['http']['target'].encode())
     parsed=configurable_parser.parse_output(p['action']['tool_id'],output,scope=scope,endpoint_id='http')
-    readies=[declared_readiness(bundle,role,pid=200+20*i,worker_id=uid(2) if role=='broker' else None)
+    readies=[declared_readiness(bundle,role,pid=200+20*i,worker_id=uid(2) if role=='broker' else uid(61) if role=='admission' else None)
              for i,role in enumerate(('broker','nmap','parser','admission'))]
     readies[0]=next(row for row in loaded['processes.json']['readiness'] if row['role']=='broker')
     cleanups=[declared_cleanup(ready,started=M+1000000,finished=M+2000000) for ready in readies]
@@ -235,7 +419,7 @@ def useful_fixture(monkeypatch):
         dispatches=[{'dispatch_id':env['dispatch_id'],'session_id':env['session_id'],'slot':'http_identify',
                      'stdout_file':'client-'+env['dispatch_id']+'.stdout.bin','stderr_file':'client-'+env['dispatch_id']+'.stderr.bin'}])
     members.update({'runtime.json':raw({'schema_version':'1','runtime':bundle,'instrumentation':[]}),
-        'processes.json':raw({'schema_version':'1','startup':[],'readiness':readies,'native':[native],'boundary_observations':[]}),
+        'processes.json':raw({'schema_version':'1','startup':[],'readiness':readies,'native':[native],'boundary_observations':[],'child_slots':[]}),
         'results.json':raw({'schema_version':'1','operations':[operation],'boundary_proofs':[],'core_proofs':[]}),
         'audit.jsonl':loaded['audit.jsonl'],'client-'+env['dispatch_id']+'.stdout.bin':output,
         'client-'+env['dispatch_id']+'.stderr.bin':b''})
@@ -247,7 +431,7 @@ def useful_fixture(monkeypatch):
         def descriptor(access):return {'fd':20+i,'purpose':phase+'_export_memfd','kind':'regular',
             'device':11,'inode':20+i,'mode':stat.S_IFREG|0o600,'flags':access}
         exports.append({'broker_id':uid(2),'reference':reference,'host_descriptor':descriptor(os.O_RDONLY),'broker_descriptor':descriptor(os.O_RDWR)})
-    members['cleanup.json']=raw({'schema_version':'1','receipts':[*cleanups,audit_cleanup],'exports':exports,'recovery':None})
+    members['cleanup.json']=raw({'schema_version':'1','receipts':[*cleanups,audit_cleanup],'exports':exports,'recovery':None,'supervisors':[]})
     capture={'schema_version':'1','slot':'http_identify','stdout_base64':request['raw_base64'],
         'stderr_base64':'','stdout_sha256':sha(output),'stderr_sha256':sha(b''),
         'stdout_bytes':len(output),'stderr_bytes':0,'exit_code':0,'truncated':False}
@@ -271,6 +455,11 @@ def useful_fixture(monkeypatch):
                 'body':{'dispatch_id':env['dispatch_id'],'kind':kind,'data':deepcopy(data)}}}}})
     terminal[0]['row']['row_sequence']=len(broker_rows)+1
     rows=[*broker_rows,*terminal]+[row for row in rows if row['segment']==1]
+    final_loaded={'manifest.json':manifest,**{name:(json.loads(data) if name.endswith('.json') else data)
+        for name,data in members.items()}}
+    final_loaded,rows=attach_supervision_fixture(final_loaded,rows)
+    for name,data in final_loaded.items():
+        if name!='manifest.json' and name!='transcript.jsonl':members[name]=raw(data) if name.endswith('.json') else data
     parts=[(b''.join(raw(row['row'])+b'\n' for row in rows if row['segment']==segment),source,
             uid(2) if segment==0 else None,'sealed_complete' if segment==0 else 'observer_complete')
            for segment,source in ((0,'broker_memfd'),(1,'role_observer'))]
@@ -657,9 +846,11 @@ def test_replays_ledger_and_broker_state_together():
     from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
     from recon_cockpit.secure_agent import engagement_live_witness as witness
     session,state=opened();p=c.derive_prepared(session,'http_identify',dispatch_id=uid(8),clock=session['binding']['clock_anchor'])
-    op={'session':session,'prepared':p,'result':None,'client':None,'meter':None,
+    op={'session':session,'prepared':p,'result':None,'client':None,'meter':None,'host_capture':None,
         'elapsed_ms':{key:None for key in e.TIMINGS}}
-    loaded={'results.json':{'operations':[op]},'final-ledger.json':state,'audit.jsonl':b''}
+    manifest,members=fixture()
+    loaded={name:(json.loads(value) if name.endswith('.json') else value) for name,value in members.items()}
+    loaded.update({'manifest.json':manifest,'results.json':{'operations':[op]},'final-ledger.json':state,'audit.jsonl':b''})
     proof=witness.validate_evidence_transcript(loaded,[],deadline=time.monotonic()+15)
     assert proof['linkage']['dispatches'][uid(8)]['reservation_observed'] is None
     assert 'unsettled_dispatch' in proof['missing_evidence']
@@ -698,8 +889,10 @@ def test_requires_single_winner_and_durable_race_order():
         'row_sequence':1,'observed_at_ns':sample['mono_after_ns'],'kind':'protocol','data':{'channel_role':'launcher',
         'direction':'sent','frame':{'schema_version':'1','channel_id':uid(96),'sequence':1,'operation':'GO','body':release}}}
     rows=[{'segment':0,'source':'broker_memfd','row':row}]
-    op={'session':session,'prepared':p,'result':None,'client':None,'meter':None,'elapsed_ms':{key:None for key in e.TIMINGS}}
-    loaded={'results.json':{'operations':[op]},'final-ledger.json':state,'audit.jsonl':b''}
+    op={'session':session,'prepared':p,'result':None,'client':None,'meter':None,'host_capture':None,'elapsed_ms':{key:None for key in e.TIMINGS}}
+    manifest,members=fixture()
+    loaded={name:(json.loads(value) if name.endswith('.json') else value) for name,value in members.items()}
+    loaded.update({'manifest.json':manifest,'results.json':{'operations':[op]},'final-ledger.json':state,'audit.jsonl':b''})
     result=witness.validate_evidence_transcript(loaded,rows,deadline=time.monotonic()+15)
     assert result['linkage']['dispatches'][uid(8)]['go_observed'] is True
     assert 'transcript' in result['missing_evidence'] and 'unsettled_dispatch' in result['missing_evidence']
@@ -785,6 +978,61 @@ def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch):
     from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
     manifest,members=useful_fixture(monkeypatch)
     loaded,original_rows,_=e._load_members(manifest,members,time.monotonic()+15)
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    supervision=context.validate_supervision_transcript(loaded,original_rows)
+    assert supervision['missing_evidence']==[] and supervision['all_closed']
+    for variant in ('pair','worker','bootstrap','observer','capture','raw','source','wire','projection','sequence','late_begin'):
+        bad=deepcopy(loaded);changed_rows=deepcopy(original_rows)
+        slots=bad['processes.json']['child_slots'];slot=next(x for x in slots if x['child_slot']=='identify_client')
+        rpc=next(x for x in changed_rows if x['row']['kind']=='supervision_projection')
+        if variant=='pair':slot['pair']['child_endpoint']['inode']+=1000
+        elif variant=='worker':slot['worker_id']=slots[1]['worker_id']
+        elif variant=='bootstrap':slot['bootstrap']['sha256']='d'*64
+        elif variant=='observer':bad['cleanup.json']['supervisors'][0]['host_observer']['namespaces']['pid']='pid:[999]'
+        elif variant=='capture':bad['results.json']['operations'][0]['host_capture']['status']='failed'
+        elif variant=='raw':
+            name=bad['manifest.json']['dispatches'][0]['stdout_file'];bad[name]=bad[name]+b'!'
+        elif variant=='source':rpc['source']='broker_memfd'
+        elif variant=='wire':rpc['row']['data']['request']['sha256']='d'*64
+        elif variant=='projection':
+            request=rpc['row']['data']['request'];request['projection']['prepared_sha256']='d'*64
+            request['projection_sha256']=sha(raw(request['projection']))
+        elif variant=='sequence':rpc['row']['data']['request']['sequence']=2
+        else:
+            rpc=next(x for x in changed_rows if x['row']['kind']=='supervision_projection' and x['row']['data']['request']['operation']=='NATIVE_BEGIN')
+            rpc['row']['data']['reply']['projection']['data']['started_at_ns']=rpc['row']['data']['reply']['observed_at_ns']+1
+            rpc['row']['data']['reply']['projection_sha256']=sha(raw(rpc['row']['data']['reply']['projection']))
+        refused(context.validate_supervision_transcript,bad,changed_rows)
+    # Lost direct source remains missing evidence, even if a valid broker relay
+    # still contains it. No digest-only row can reconstruct the absent fact.
+    missing=deepcopy(loaded)
+    missing['processes.json']['native']=[]
+    assert 'transcript' in context.validate_supervision_transcript(missing,original_rows)['missing_evidence']
+    # The causal error may be finalized before its already-received RPC. Keep
+    # its actual timestamp and an absent reply; never manufacture a CAPTURED.
+    partial=deepcopy(loaded);partial['results.json']['operations'][0].update(result=None,client=None)
+    failed_rows=deepcopy(original_rows)
+    capture_index=next(i for i,x in enumerate(failed_rows) if x['row']['kind']=='supervision_projection' and
+        x['row']['data']['request']['operation']=='CAPTURE')
+    request_row=failed_rows[capture_index];at=request_row['row']['data']['request']['observed_at_ns']
+    failed_rows=[x for x in failed_rows[:capture_index+1] if x['row']['kind']!='supervision_projection' or
+        x['row']['data']['request']['observed_at_ns']<=at]
+    request_row['row']['data'].update(reply=None,local_error='engagement_live_timeout')
+    request_row['row']['observed_at_ns']=at+3
+    data=request_row['row']['data'];cause=deepcopy(request_row)
+    cause['row']['observed_at_ns']=at+1
+    cause['row']['data']={key:data[key] for key in ('launcher_id','child_slot','child_worker_id','prepared_sha256')}
+    cause['row']['data'].update(kind='local_failure',code='engagement_live_timeout',observed_at_ns=at+1,
+        capture_sha256=None,cleanup_sha256=None)
+    final=deepcopy(cause);final['row']['observed_at_ns']=at+4;final['row']['data']['observed_at_ns']=at+4
+    host=partial['results.json']['operations'][0]['host_capture']
+    final['row']['data'].update(capture_sha256=sha(raw(host)),cleanup_sha256=host['cleanup_sha256'])
+    failed_rows.remove(request_row);failed_rows.extend((cause,request_row,final))
+    replay=context.validate_supervision_transcript(partial,failed_rows)
+    assert 'transcript' in replay['missing_evidence'] and replay['dispatches'][uid(10)]['capture'] is not None
+    late=deepcopy(failed_rows);extra=deepcopy(request_row)
+    extra['row']['data']['request'].update(observed_at_ns=at+5,sequence=extra['row']['data']['request']['sequence']+1)
+    late.append(extra);refused(context.validate_supervision_transcript,partial,late)
     operations=loaded['results.json']['operations'];op=operations[0];env=op['prepared']['envelope']
     second,owner,session=uid(201),uid(202),uid(203)
     ready=declared_readiness(loaded['runtime.json']['runtime'],'broker',pid=400,worker_id=second)
@@ -1009,7 +1257,7 @@ def test_retains_partial_and_unobserved_outcomes(monkeypatch):
     loaded={'manifest.json':manifest,'cleanup.json':json.loads(members['cleanup.json']),
         'processes.json':json.loads(members['processes.json']),
         'results.json':{'operations':[{'session':session,'prepared':p,'result':None,'client':None,
-            'meter':None,'elapsed_ms':{key:None for key in e.TIMINGS}}]}}
+            'meter':None,'host_capture':None,'elapsed_ms':{key:None for key in e.TIMINGS}}]}}
     authority={'missing_evidence':['unsettled_dispatch'],'linkage':{'dispatches':{dispatch:
         {'reservation_observed':None,'go_observed':None}}}}
     report=e._report(loaded,{},authority,'d'*64,0,[])
@@ -1066,9 +1314,9 @@ def test_binds_cleanup_to_actual_process_identity(tmp_path,monkeypatch):
     process={'role':'parser','pid':1234,'start_time_ticks':5678,'pin_verified':True,
         'signal_attempted':False,'exit_observed':True,'reaped_observed':True,
         'wrapper_pid':1233,'wrapper_returncode':0}
-    loaded={'processes.json':{'startup':[],'readiness':[{'parent_observation':{'payload':identity}}],'native':[]},
+    loaded={'processes.json':{'child_slots':[],'startup':[],'readiness':[{'parent_observation':{'payload':identity}}],'native':[]},
         'manifest.json':{'transcript':{'segments':[]}},'transcript.jsonl':b'',
-        'cleanup.json':{'receipts':[{'schema_version':'1','started_at_ns':100,'finished_at_ns':200,
+        'cleanup.json':{'supervisors':[],'receipts':[{'schema_version':'1','started_at_ns':100,'finished_at_ns':200,
             'deadline_ns':2000000100,'status':'complete','descriptors_closed':True,'processes':[process]}]}}
     assert e._all_reaped(loaded)
     for key,value in [('pid',4321),('start_time_ticks',5679),('reaped_observed',False),
@@ -1100,7 +1348,96 @@ def test_binds_cleanup_to_actual_process_identity(tmp_path,monkeypatch):
     manifest,members=useful_fixture(monkeypatch)
     complete=unchecked_saved(tmp_path/'cleanup-good',deepcopy(manifest),dict(members))
     good=e.inspect_live_bundle(complete)
-    assert good['status']=='complete' and good['cleanup']['observed_payloads']==5
+    assert good['status']=='complete' and good['cleanup']['observed_payloads']==7
+    direct,_,_=e._load_members(manifest,members,time.monotonic()+15)
+    assert context._supervisor_closure(direct)=={'all_closed':True,'complete':True}
+    # INITIAL preallocates both groups. The unused group's sockets really
+    # close, but no launcher, child, thread or join is invented for it.
+    unused=deepcopy(direct)
+    for number,slot in enumerate(direct['processes.json']['child_slots']):
+        item=deepcopy(slot)
+        item.update(session_id=uid(810),launcher_id=uid(811),worker_id=uid(812+number),
+            prepared_sha256=None,bootstrap=None,entry_sha256=None)
+        item['pair']['request_endpoint']['inode']=20000+number*2
+        item['pair']['child_endpoint']['inode']=20001+number*2
+        unused['processes.json']['child_slots'].append(item)
+    not_started=deepcopy(direct['cleanup.json']['supervisors'][0])
+    not_started.update(session_id=uid(810),launcher_id=uid(811),state='not_started',
+        thread_native_id=None,thread_started_at_ns=None,join_attempted=False)
+    unused['cleanup.json']['supervisors'].append(not_started)
+    assert context._supervisor_closure(unused)=={'all_closed':True,'complete':True}
+    assert context.validate_supervision_transcript(unused)['missing_evidence']==[]
+    unused_members=dict(members)
+    for name in ('processes.json','cleanup.json'):unused_members[name]=raw(unused[name])
+    unused_manifest=deepcopy(manifest);repin(unused_manifest,unused_members)
+    unused_path=tmp_path/'unused-allocation'
+    assert e.write_live_bundle(unused_path,manifest=unused_manifest,members=unused_members)['status']=='packaged'
+    assert e.inspect_live_bundle(unused_path)['status']=='complete'
+    unclosed=deepcopy(unused);unclosed['cleanup.json']['supervisors'].pop()
+    assert not context._supervisor_closure(unclosed)['all_closed']
+    # A started launcher with a known denial still requires its six retained
+    # socket declarations and actual thread closure. Deleting both together
+    # cannot turn the launcher into an unobserved/not-started allocation.
+    from test_secure_engagement_live_runtime import declared_readiness,declared_cleanup
+    negative_manifest,negative_members=denied_fixture()
+    negative,_,_=e._load_members(negative_manifest,negative_members,time.monotonic()+15)
+    launcher=declared_readiness(negative['runtime.json']['runtime'],'launcher',pid=801,worker_id=uid(820))
+    envelope=negative['results.json']['operations'][0]['prepared']['envelope']
+    for number,slot in enumerate(unused['processes.json']['child_slots'][6:]):
+        item=deepcopy(slot);item.update(broker_id=envelope['broker_id'],session_id=envelope['session_id'],launcher_id=uid(820))
+        descriptor=next(x for x in launcher['parent_observation']['descriptors'] if x['fd']==item['pair']['launcher_fd'])
+        descriptor.update(item['pair']['request_endpoint'])
+        negative['processes.json']['child_slots'].append(item)
+    launcher['worker_ready']['descriptor_sha256']=r._hash(launcher['parent_observation']['descriptors'])
+    negative['processes.json']['readiness'].append(launcher)
+    negative['cleanup.json']['receipts'].append(declared_cleanup(launcher,started=40000000000,finished=40100000000))
+    thread=deepcopy(direct['cleanup.json']['supervisors'][0])
+    thread.update(broker_id=envelope['broker_id'],session_id=envelope['session_id'],launcher_id=uid(820))
+    negative['cleanup.json']['supervisors'].append(thread)
+    assert context.validate_supervision_transcript(negative)['missing_evidence']==[]
+    assert context._supervisor_closure(negative)=={'all_closed':True,'complete':True}
+    for removed in ('all','one'):
+        changed=deepcopy(negative)
+        if removed=='all':
+            changed['processes.json']['child_slots']=[];changed['cleanup.json']['supervisors']=[]
+        else:changed['processes.json']['child_slots'].pop()
+        assert not context._supervisor_closure(changed)['all_closed'] and not e._all_reaped(changed)
+        assert {'cleanup','transcript'}<=set(context.validate_supervision_transcript(changed)['missing_evidence'])
+        altered=dict(negative_members)
+        for name in ('processes.json','cleanup.json'):altered[name]=raw(changed[name])
+        changed_manifest=deepcopy(negative_manifest);repin(changed_manifest,altered)
+        target=unchecked_saved(tmp_path/('missing-launcher-allocation-'+removed),changed_manifest,altered)
+        report=e.inspect_live_bundle(target)
+        assert report['status']=='incomplete' and report['operations'][0]['outcome']=='denied'
+        assert {'cleanup','transcript'}<=set(report['missing_evidence'])
+        refused(e.write_live_bundle,tmp_path/('refuse-missing-allocation-'+removed),
+            manifest=changed_manifest,members=altered,code='cleanup_incomplete')
+    for state,alive in (('alive',True),('unknown',None)):
+        changed=deepcopy(direct);thread=changed['cleanup.json']['supervisors'][0]
+        thread.update(state=state,thread_alive_observed=alive,status='failed',channel_closed=False)
+        assert not context._supervisor_closure(changed)['all_closed'] and not e._all_reaped(changed)
+    changed=deepcopy(direct);changed['cleanup.json']['supervisors']=[]
+    assert not context._supervisor_closure(changed)['all_closed']
+    changed=deepcopy(direct);thread=changed['cleanup.json']['supervisors'][0]
+    thread.update(cleanup_finished_at_ns=thread['cleanup_deadline_ns']+1,status='failed')
+    assert context._supervisor_closure(changed)=={'all_closed':True,'complete':False}
+    assert e._all_reaped(changed) and e._cleanup_report(changed)['status']=='incomplete'
+    for variant in ('duplicate','renewed','false_not_started','missing_tid','descriptor_open','late_thread','early_join'):
+        changed=deepcopy(direct);thread=changed['cleanup.json']['supervisors'][0]
+        if variant=='duplicate':changed['cleanup.json']['supervisors'].append(deepcopy(thread))
+        elif variant=='renewed':thread['cleanup_deadline_ns']=thread['first_stop_requested_at_ns']+2000000001
+        elif variant=='false_not_started':thread.update(state='not_started',thread_native_id=None,thread_started_at_ns=None,join_attempted=False)
+        elif variant=='missing_tid':thread['thread_native_id']=None
+        elif variant=='late_thread':thread['thread_started_at_ns']=thread['first_stop_requested_at_ns']
+        elif variant=='early_join':
+            thread['cleanup_finished_at_ns']=thread['cleanup_started_at_ns']=thread['first_stop_requested_at_ns']=10000000001
+            thread['cleanup_deadline_ns']=12000000001
+        else:
+            child=next(row for row in changed['cleanup.json']['receipts'] if row['processes'][0]['role']=='nmap')
+            child.update(descriptors_closed=False,status='failed');thread['status']='failed'
+            assert not context._supervisor_closure(changed)['all_closed'] and not e._all_reaped(changed)
+            continue
+        refused(context._supervisor_closure,changed)
     for variant in ('missing','duplicate','role','wrapper','start','pid','chronology',
                     'descriptors','pin','reap','wrapper_exit','failed'):
         changed_manifest=deepcopy(manifest);changed_members=dict(members)
@@ -1129,13 +1466,13 @@ def test_binds_cleanup_to_actual_process_identity(tmp_path,monkeypatch):
         if variant in ('missing','descriptors','pin','reap','wrapper_exit','failed','duplicate'):
             report=e.inspect_live_bundle(path)
             assert report['operations']==good['operations']
-            assert report['cleanup']['observed_payloads']==5
+            assert report['cleanup']['observed_payloads']==7
             if variant=='duplicate':
                 assert report['status']=='complete' and report['cleanup']==good['cleanup']
             else:
                 assert report['status']=='incomplete' and 'cleanup' in report['missing_evidence']
                 assert report['cleanup']['status']=='incomplete'
-                assert report['cleanup']['reaped_payloads']==(4 if variant in ('missing','reap') else 5)
+                assert report['cleanup']['reaped_payloads']==(6 if variant in ('missing','reap') else 7)
             if variant in ('missing','descriptors','pin','reap','wrapper_exit'):
                 refused(e.write_live_bundle,tmp_path/('refuse-packaging-'+variant),
                     manifest=changed_manifest,members=changed_members,code='cleanup_incomplete')
@@ -1146,7 +1483,7 @@ def test_binds_cleanup_to_actual_process_identity(tmp_path,monkeypatch):
         for name,content in members.items()};values['manifest.json']=manifest
     assert not context._audit_process_closure(values)['missing_cleanup']
     basis=deepcopy(next(row for row in values['processes.json']['readiness'] if row['role']=='parser'))
-    for i in range(89):
+    for i in range(87):
         item=deepcopy(basis);item['parent_observation']['payload']['pid']=2000+i
         item['parent_observation']['wrapper']['pid']=3000+i
         values['processes.json']['readiness'].append(item)
@@ -1185,7 +1522,7 @@ def test_binds_cleanup_to_actual_process_identity(tmp_path,monkeypatch):
                 'clock':marker['clock'],'related_sha256':sha(raw(marker)),'original_deadline_ns':10000000000}}}
         declared={'manifest.json':{'broker_instances':[]},'runtime.json':{'runtime':bundle,'instrumentation':[
             {'kind':'sealed_fault','source_sha256':'b'*64,'configuration':{'case_id':case,'variant':variant,'role':'broker'}}]},
-            'cleanup.json':{'receipts':[cleanup]}}
+            'cleanup.json':{'supervisors':[],'receipts':[cleanup]}}
         assert e._startup_guard_refusal(declared,[observed],final,number,entry)
         assert not e._startup_guard_refusal(declared,[],final,number,entry)
         generic=deepcopy(observed);generic['row']['data']['related_sha256']=sha(raw(roe))

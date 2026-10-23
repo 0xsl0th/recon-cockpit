@@ -43,3 +43,37 @@ def parse(*,tool_id,raw,stderr,scope,truncated,control,runtime):
     parsed,receipt,_=_parse_observed(tool_id=tool_id,raw=raw,stderr=stderr,scope=scope,
         truncated=truncated,control=control,runtime=runtime)
     return parsed,receipt
+
+
+def _parse_supervised_observed(*,tool_id,raw,stderr,scope,truncated,control,runtime,prepared,supervisor):
+    """Live parser input remains on the sole launcher-owned request endpoint."""
+    started=time.monotonic();bounded=rt._ClippedControl(control,min(control.deadline,started+2))
+    from .engagement_live_contract import _deadline_context
+    with _deadline_context(bounded.deadline):
+        bounded.check()
+        if tool_id not in (parser.NMAP,parser.HEADERS) or type(raw)is not bytes or type(stderr)is not bytes or type(truncated)is not bool:rt._fail('invalid_input')
+        slot='http_identify' if tool_id==parser.NMAP else 'http_headers'
+        if prepared['envelope']['slot']!=slot or len(raw)+len(stderr)>(8192 if slot=='http_identify' else 2048):rt._fail('limit_exceeded')
+        scope=validate_scope(scope)
+        request={'schema_version':'1','slot':slot,'scope':scope,'raw_base64':base64.b64encode(raw).decode('ascii'),
+                 'stderr_base64':base64.b64encode(stderr).decode('ascii'),'truncated':truncated}
+        encoded=rt._json(request)
+        if len(encoded)>16384:rt._fail('limit_exceeded')
+        owner=None;reply=None;cleanup=None
+        try:
+            bounded.check()
+            owner=supervisor.start_child(child_slot='identify_parser' if slot=='http_identify' else 'headers_parser',prepared=prepared,control=bounded)
+            bounded.check();rt._send_bytes(owner.channel,encoded,bounded)
+            reply=rt._receive_bytes(owner.channel,4096,bounded)
+            decoded=rt._decode(reply,4096);rt._fields(decoded,('schema_version','slot','parsed'))
+            if decoded['schema_version']!='1' or decoded['slot']!=slot:rt._fail('parser_unavailable')
+            parsed=parser.validate_result(tool_id,decoded['parsed'],scope,'http');bounded.check()
+        finally:
+            if owner is not None:cleanup=owner.close(deadline=bounded.deadline)
+        bounded.check();control.check()
+        if cleanup is None or cleanup['status']!='complete':rt._fail('cleanup_incomplete')
+        receipt={'schema_version':'1','slot':slot,'input_sha256':hashlib.sha256(encoded).hexdigest(),
+            'output_sha256':hashlib.sha256(reply).hexdigest(),'input_bytes':len(encoded),'output_bytes':len(reply),
+            'elapsed_ms':round((time.monotonic()-started)*1000),'readiness':rt._hash(owner.ready),'cleanup':cleanup}
+        bounded.check()
+        return parsed,receipt,owner.ready

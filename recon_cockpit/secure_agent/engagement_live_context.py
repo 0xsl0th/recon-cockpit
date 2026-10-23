@@ -12,6 +12,493 @@ import stat
 
 from . import engagement_live_runtime as runtime
 from .engagement_live_contract import bounded as _bounded
+from .engagement_live_contract import validation as _validation
+
+
+_CHILD_SLOTS = {
+    'identify_client': ('nmap', 'http_identify', 5),
+    'identify_admission': ('admission', 'http_identify', 6),
+    'identify_parser': ('parser', 'http_identify', 7),
+    'headers_client': ('headers', 'http_headers', 8),
+    'headers_admission': ('admission', 'http_headers', 9),
+    'headers_parser': ('parser', 'http_headers', 10),
+}
+
+
+def _sequence(value, maximum):
+    if type(value) is not list or len(value) > maximum:
+        _bad()
+    return value
+
+
+def _supervisor_closure(loaded):
+    """Actual thread closure is separate from process reaping and timing success."""
+    from . import engagement_live_contract as c
+    rows = _sequence(loaded['cleanup.json']['supervisors'], 4)
+    expected = {(x['broker_id'], x['session_id'], x['launcher_id'])
+                for x in loaded['processes.json']['child_slots']}
+    launchers = {x['worker_ready']['worker_id'] for x in loaded['processes.json']['readiness']
+                 if x.get('role') == 'launcher'}
+    allocated = {launcher: [key for key in expected if key[2] == launcher]
+                 for launcher in launchers}
+    seen = set(); all_closed = True; complete = True
+    for row in rows:
+        c.obj(row, ('schema_version', 'broker_id', 'session_id', 'launcher_id',
+            'host_observer', 'thread_native_id', 'thread_started_at_ns', 'state',
+            'first_stop_requested_at_ns', 'cleanup_started_at_ns', 'cleanup_finished_at_ns',
+            'cleanup_deadline_ns', 'join_attempted', 'thread_alive_observed',
+            'channel_closed', 'pending_slots', 'status'))
+        if row['schema_version'] != '1': _bad()
+        key = tuple(c.uuid(row[k]) for k in ('broker_id', 'session_id', 'launcher_id'))
+        if key in seen: _bad()
+        seen.add(key)
+        _observer(row['host_observer'])
+        for k in ('first_stop_requested_at_ns', 'cleanup_started_at_ns',
+                  'cleanup_finished_at_ns', 'cleanup_deadline_ns'):
+            c.integer(row[k])
+        if not (row['first_stop_requested_at_ns'] <= row['cleanup_started_at_ns'] <= row['cleanup_finished_at_ns']
+                and row['cleanup_deadline_ns'] <= row['first_stop_requested_at_ns'] + 2000000000): _bad()
+        for k in ('join_attempted', 'channel_closed'):
+            if type(row[k]) is not bool: _bad()
+        if row['thread_alive_observed'] is not None and type(row['thread_alive_observed']) is not bool: _bad()
+        for k in ('thread_native_id', 'thread_started_at_ns'):
+            if row[k] is not None: c.integer(row[k], 1 if k == 'thread_native_id' else 0,
+                2147483647 if k == 'thread_native_id' else 9223372036854775807)
+        if ((row['thread_native_id'] is None) != (row['thread_started_at_ns'] is None)
+                or row['thread_started_at_ns'] is not None and row['thread_started_at_ns'] > row['first_stop_requested_at_ns']): _bad()
+        pending = _sequence(row['pending_slots'], 6)
+        if len(set(pending)) != len(pending) or any(x not in _CHILD_SLOTS for x in pending): _bad()
+        c.member(row['state'], {'not_started', 'joined', 'alive', 'unknown'})
+        c.member(row['status'], {'complete', 'failed', 'unknown'})
+        if row['state'] == 'joined':
+            if (not row['join_attempted'] or row['thread_alive_observed'] is not False
+                    or row['thread_native_id'] is None or row['thread_started_at_ns'] is None): _bad()
+        elif row['state'] == 'not_started':
+            if (row['join_attempted'] or row['thread_alive_observed'] is not False
+                    or row['thread_native_id'] is not None or row['thread_started_at_ns'] is not None or pending): _bad()
+            if any(x['prepared_sha256'] is not None or x['bootstrap'] is not None or x['entry_sha256'] is not None
+                   for x in loaded['processes.json']['child_slots']
+                   if (x['broker_id'], x['session_id'], x['launcher_id']) == key): _bad()
+        elif row['state'] == 'alive' and row['thread_alive_observed'] is not True: _bad()
+        elif row['state'] == 'unknown' and row['thread_alive_observed'] is not None: _bad()
+        closed = row['state'] in ('joined', 'not_started') and row['channel_closed'] and not pending
+        owned = [x for x in loaded['processes.json']['child_slots']
+                 if (x['broker_id'], x['session_id'], x['launcher_id']) == key]
+        known = {x['worker_id'] for x in owned}
+        parents = [x['parent_observation'] for x in loaded['processes.json']['readiness']
+                   if x.get('worker_ready', {}).get('worker_id') in known]
+        entry_hashes = {x['entry_sha256'] for x in owned if x['entry_sha256'] is not None}
+        parents += [x for x in loaded['processes.json']['startup'] if runtime._hash(x) in entry_hashes]
+        if row['thread_started_at_ns'] is not None and any(
+                p['sampled_at_ns'] < row['thread_started_at_ns'] for p in parents): _bad()
+        for parent in parents:
+            receipts = [receipt for receipt in loaded['cleanup.json']['receipts'] if any(
+                p['pid'] == parent['payload']['pid'] and p['start_time_ticks'] == parent['payload']['start_time_ticks']
+                for p in receipt['processes'])]
+            matches = [p for receipt in receipts for p in receipt['processes']
+                       if p['pid'] == parent['payload']['pid'] and p['start_time_ticks'] == parent['payload']['start_time_ticks']]
+            closed &= bool(matches) and all(p['pin_verified'] and p['exit_observed'] and p['reaped_observed']
+                and p['wrapper_pid'] == parent['wrapper']['pid'] and p['wrapper_returncode'] is not None for p in matches)
+            closed &= all(receipt['descriptors_closed'] for receipt in receipts)
+            closed &= any(len(receipt['processes']) == 1 and receipt['finished_at_ns'] <= row['cleanup_finished_at_ns']
+                          for receipt in receipts)
+        timely = row['cleanup_finished_at_ns'] <= row['cleanup_deadline_ns']
+        if row['status'] == 'complete' and not (closed and timely): _bad()
+        all_closed &= closed
+        complete &= closed and timely and row['status'] == 'complete'
+    all_closed &= not (expected - seen)
+    # A coherent deletion of both allocation and closure rows must not erase
+    # an actual launcher which retained the six request endpoints at READY.
+    all_closed &= all(len(keys) == 1 and
+        {x['child_slot'] for x in loaded['processes.json']['child_slots']
+         if (x['broker_id'], x['session_id'], x['launcher_id']) == keys[0]} == set(_CHILD_SLOTS)
+        for keys in allocated.values())
+    complete &= all_closed
+    return {'all_closed': bool(all_closed), 'complete': bool(complete)}
+
+
+def _observer(value):
+    from . import engagement_live_contract as c
+    c.obj(value, ('pid', 'uid', 'gid', 'namespaces'))
+    c.integer(value['pid'], 1, 2147483647)
+    c.integer(value['uid'], 0, 4294967295); c.integer(value['gid'], 0, 4294967295)
+    c.obj(value['namespaces'], ('user', 'net', 'mnt', 'pid'))
+    for k, v in value['namespaces'].items():
+        if type(v) is not str or len(v) > 64 or not v.startswith(k + ':[') or not v.endswith(']') or not v[len(k)+2:-1].isdigit(): _bad()
+    return value
+
+
+def _retained_rows(loaded):
+    """Read existing bounded segments only; never executes an inspector/role."""
+    from .engagement_live_witness import validate_transcript_row
+    raw = loaded['transcript.jsonl']
+    if type(raw) is not bytes or len(raw) > 2097152: _bad()
+    rows = []; offset = 0
+    for index, segment in enumerate(loaded['manifest.json']['transcript']['segments']):
+        if segment['offset'] != offset: _bad()
+        limit = (917504, 1984) if segment['source'] == 'broker_memfd' else (262144, 128)
+        part = raw[offset:offset + segment['bytes']]
+        if len(part) != segment['bytes'] or len(part) > limit[0] or hashlib.sha256(part).hexdigest() != segment['sha256']: _bad()
+        offset += len(part)
+        lines = part.split(b'\n'); tail = lines.pop()
+        if tail and not segment['status'].endswith('partial'): _bad()
+        if len(lines) > limit[1]: _bad()
+        for sequence, line in enumerate(lines, 1):
+            row = validate_transcript_row(runtime._decode(line, 32768))
+            if row['row_sequence'] != sequence: _bad()
+            rows.append({'segment': index, 'source': segment['source'], 'row': row})
+    if offset != len(raw): _bad()
+    return rows
+
+
+def _host_capture(loaded, operation, cleanups):
+    from . import engagement_live_contract as c
+    value = operation['host_capture']
+    if value is None: return None
+    c.obj(value, ('schema_version', 'slot', 'status', 'exit_code', 'truncated',
+        'stdout_bytes', 'stderr_bytes', 'stdout_sha256', 'stderr_sha256', 'cleanup_sha256'))
+    envelope = operation['prepared']['envelope']
+    if value['schema_version'] != '1' or value['slot'] != envelope['slot'] or type(value['truncated']) is not bool: _bad()
+    c.member(value['status'], {'succeeded', 'failed', 'timeout', 'output_limit', 'cancelled', 'unresolved'})
+    if value['exit_code'] is not None: c.integer(value['exit_code'], -255, 255)
+    result = {k: value[k] for k in ('schema_version', 'slot', 'exit_code', 'truncated',
+        'stdout_bytes', 'stderr_bytes', 'stdout_sha256', 'stderr_sha256')}
+    maximum = 8192 if value['slot'] == 'http_identify' else 2048
+    for stream in ('stdout', 'stderr'):
+        c.integer(value[stream + '_bytes'], 0, maximum); c.digest_string(value[stream + '_sha256'])
+        raw = loaded.get('client-' + envelope['dispatch_id'] + '.' + stream + '.bin')
+        if type(raw) is not bytes or len(raw) != value[stream + '_bytes'] or hashlib.sha256(raw).hexdigest() != value[stream + '_sha256']: _bad()
+        result[stream + '_base64'] = base64.b64encode(raw).decode('ascii')
+    if value['stdout_bytes'] + value['stderr_bytes'] > maximum: _bad()
+    if value['cleanup_sha256'] is not None:
+        c.digest_string(value['cleanup_sha256'])
+        if value['cleanup_sha256'] not in cleanups: _bad()
+        receipt = cleanups[value['cleanup_sha256']]
+        if len(receipt['processes']) != 1 or len(runtime._json(receipt)) > 2048: _bad()
+    client = operation['client']
+    if client is not None and any(client[k] != value[k] for k in ('status', 'exit_code', 'truncated',
+            'stdout_bytes', 'stderr_bytes', 'stdout_sha256', 'stderr_sha256')): _bad()
+    return result
+
+
+@_validation('evidence_invalid')
+def validate_supervision_transcript(loaded, rows=None, *, deadline=None):
+    """Replay compact host observations against retained direct source objects.
+
+    Digests of unavailable objects are never treated as complete observations.
+    This performs no process, filesystem, store or engagement-clock sampling.
+    """
+    from . import engagement_live_contract as c
+    end = c._operation_deadline()
+    if deadline is not None: end = min(end, deadline)
+    with c._deadline_context(end):
+        return _validate_supervision(loaded, _retained_rows(loaded) if rows is None else rows, end)
+
+
+def _validate_supervision(loaded, rows, deadline):
+    from . import engagement_live_contract as c
+    from . import engagement_live_protocol as protocol
+    processes = loaded['processes.json']; cleanup = loaded['cleanup.json']
+    operations = loaded['results.json']['operations']; bundle = loaded['runtime.json']['runtime']
+    missing = set(); slots = {}; workers = set(); endpoints = set(); groups = {}
+    prepared = {c.prepared_digest(op['prepared']): op for op in operations}
+    readies = {runtime._hash(x): x for x in processes['readiness']}
+    ready_workers = {}
+    for ready in readies.values():
+        worker = ready['worker_ready']['worker_id']
+        if worker in ready_workers: _bad()
+        ready_workers[worker] = ready
+    entries = {runtime._hash(x): x for x in processes['startup']}
+    natives = {runtime._hash(x): x for x in processes['native']}
+    cleanups = {runtime._hash(x): x for x in cleanup['receipts']}
+    for receipt in cleanups.values(): runtime.validate_cleanup(receipt)
+    closure = _supervisor_closure(loaded)
+    unstarted = {(x['broker_id'], x['session_id'], x['launcher_id'])
+                 for x in cleanup['supervisors'] if x['state'] == 'not_started'}
+    brokers = {x['broker_id'] for x in loaded['manifest.json']['broker_instances']}
+    for slot in _sequence(processes['child_slots'], 24):
+        c._check_deadline(deadline)
+        c.obj(slot, ('schema_version', 'broker_id', 'session_id', 'launcher_id', 'child_slot',
+            'worker_id', 'role', 'pair', 'prepared_sha256', 'bootstrap', 'entry_sha256'))
+        if slot['schema_version'] != '1': _bad()
+        for key in ('broker_id', 'session_id', 'launcher_id', 'worker_id'): c.uuid(slot[key])
+        if slot['broker_id'] not in brokers or slot['worker_id'] in workers: _bad()
+        workers.add(slot['worker_id']); c.member(slot['child_slot'], _CHILD_SLOTS)
+        role, action_slot, fd = _CHILD_SLOTS[slot['child_slot']]
+        if slot['role'] != role: _bad()
+        key = (slot['launcher_id'], slot['child_slot'])
+        if key in slots: _bad()
+        slots[key] = slot
+        group = (slot['broker_id'], slot['session_id'], slot['launcher_id'])
+        groups.setdefault(group, set()).add(slot['child_slot'])
+        pair = slot['pair']; c.obj(pair, ('launcher_fd', 'request_endpoint', 'child_endpoint'))
+        if type(pair['launcher_fd']) is not int or pair['launcher_fd'] != fd: _bad()
+        for endpoint in ('request_endpoint', 'child_endpoint'):
+            obj = pair[endpoint]; c.obj(obj, ('device', 'inode', 'mode', 'flags'))
+            for k in ('device', 'inode'): c.integer(obj[k], 0, 18446744073709551615)
+            for k in ('mode', 'flags'): c.integer(obj[k], 0, 4294967295)
+            ident = (obj['device'], obj['inode'])
+            if (ident in endpoints or not stat.S_ISSOCK(obj['mode']) or obj['flags'] & 3 != 2
+                    or not obj['flags'] & 0x800 or obj['flags'] & 0x200000): _bad()
+            endpoints.add(ident)
+        launcher = ready_workers.get(slot['launcher_id'])
+        if launcher is None:
+            if group not in unstarted: missing.add('transcript')
+        else:
+            if launcher['role'] != 'launcher': _bad()
+            descriptor = [x for x in launcher['parent_observation']['descriptors'] if x['fd'] == fd]
+            if len(descriptor) != 1 or any(descriptor[0][k] != pair['request_endpoint'][k] for k in ('device', 'inode', 'mode', 'flags')): _bad()
+        if slot['prepared_sha256'] is not None:
+            c.digest_string(slot['prepared_sha256'])
+            op = prepared.get(slot['prepared_sha256'])
+            if op is None: missing.add('transcript')
+            elif any(op['prepared']['envelope'][k] != slot[k] for k in ('broker_id', 'session_id')) or op['prepared']['envelope']['slot'] != action_slot: _bad()
+        if slot['bootstrap'] is not None:
+            c.obj(slot['bootstrap'], ('deadline_ns', 'bytes', 'sha256'))
+            c.integer(slot['bootstrap']['deadline_ns']); c.integer(slot['bootstrap']['bytes'], 1, 32768); c.digest_string(slot['bootstrap']['sha256'])
+            if slot['prepared_sha256'] is None: _bad()
+        if slot['entry_sha256'] is not None:
+            c.digest_string(slot['entry_sha256']); parent = entries.get(slot['entry_sha256'])
+            if parent is None: missing.add('transcript')
+            else:
+                if parent['role'] != role or parent['stage'] != 'entry': _bad()
+                desc = [x for x in parent['descriptors'] if x['fd'] == 0]
+                if len(desc) != 1 or any(desc[0][k] != pair['child_endpoint'][k] for k in ('device', 'inode', 'mode', 'flags')): _bad()
+                ready = ready_workers.get(slot['worker_id'])
+                if ready is not None and (ready['role'] != role or ready['parent_observation']['payload'] != parent['payload']): _bad()
+        ready = ready_workers.get(slot['worker_id'])
+        if ready is not None and (slot['bootstrap'] is None or ready['worker_ready']['bootstrap_sha256'] != slot['bootstrap']['sha256']): _bad()
+    if any(names != set(_CHILD_SLOTS) for names in groups.values()): missing.add('transcript')
+    for ready in readies.values():
+        if ready['role'] == 'launcher':
+            actual = [names for key, names in groups.items() if key[2] == ready['worker_ready']['worker_id']]
+            if len(actual) != 1 or actual[0] != set(_CHILD_SLOTS): missing.add('transcript')
+    if not closure['all_closed'] or not closure['complete']: missing.add('cleanup')
+    # Every observed process is read in one actual host PID namespace. A digest
+    # or a relay label cannot translate an isolated parent's numeric PID.
+    parents = list(entries.values()) + [x['parent_observation'] for x in readies.values()] + [x['parent_observation'] for x in natives.values()]
+    from .engagement_live_witness import _retained_audit_readiness
+    audit = _retained_audit_readiness(loaded, rows=rows, deadline=deadline)
+    parents += [x['readiness']['parent_observation'] for x in audit['observations']]
+    observers = {runtime._hash(_observer(x['observer'])) for x in parents}
+    observers.update(runtime._hash(_observer(x['host_observer'])) for x in cleanup['supervisors'])
+    if len(observers) > 1: _bad()
+    for row in cleanup['supervisors']:
+        key = (row['broker_id'], row['session_id'], row['launcher_id'])
+        if key not in groups: _bad()
+    dispatches = {op['prepared']['envelope']['dispatch_id']: {
+        'capture': _host_capture(loaded, op, cleanups), 'native_budget': None} for op in operations}
+    releases, relays = _saved_execution(loaded, rows=rows)
+    for op in operations:
+        did = op['prepared']['envelope']['dispatch_id']; capture = dispatches[did]['capture']
+        if capture is not None and 'capture' in relays.get(did, {}) and capture != relays[did]['capture']: _bad()
+        if op['client'] is not None and capture is None: missing.add('transcript')
+        owned = {s['worker_id']: s for s in slots.values() if s['prepared_sha256'] == c.prepared_digest(op['prepared'])}
+        if capture is not None:
+            client_slots = [s for s in owned.values() if s['role'] in ('nmap', 'headers')]
+            if len(client_slots) != 1: missing.add('transcript')
+            else:
+                receipt = cleanups.get(op['host_capture']['cleanup_sha256'])
+                _slot_cleanup(receipt, client_slots[0], ready_workers, entries)
+        for ready in relays.get(did, {}).get('role_readiness', []):
+            worker = ready['worker_ready']['worker_id']
+            if worker not in owned or ready['role'] != owned[worker]['role']: _bad()
+            if worker not in ready_workers: missing.add('transcript')
+            elif ready != ready_workers[worker]: _bad()
+    state = {}; sequences = {}; reply_sequences = {}; count = 0; terminal = set(); local_counts = {}; last_time = {}; started = {}
+    # A failed request can be finalized after its terminal-cause row. Replay
+    # actual receive/observation times, without changing retained segment order
+    # or pretending the two host rows were recorded in the reverse order.
+    projected_rows = [item for item in rows if item['row']['kind'] == 'supervision_projection']
+    def causal_time(item):
+        data = item['row']['data']
+        return data['request']['observed_at_ns'] if data['kind'] == 'rpc' else data['observed_at_ns']
+    for wrapper in sorted(projected_rows, key=causal_time):
+        row = wrapper['row']
+        if row['kind'] != 'supervision_projection': continue
+        c._check_deadline(deadline); count += 1
+        if count > 96 or len(runtime._json(row)) > 3072 or wrapper['source'] != 'role_observer': _bad()
+        data = protocol.validate_supervision_projection(row['data'])
+        if row['observer_id'] != data['launcher_id']: _bad()
+        if data['kind'] == 'local_failure':
+            channel = data['launcher_id']; local_counts[channel] = local_counts.get(channel, 0) + 1
+            if local_counts[channel] > 2: _bad()
+            if data['observed_at_ns'] < last_time.get(channel, 0) or row['observed_at_ns'] < data['observed_at_ns']: _bad()
+            last_time[channel] = data['observed_at_ns']
+            terminal.add(channel)
+            matches = [s for s in slots.values() if s['launcher_id'] == data['launcher_id']]
+            if not matches: missing.add('transcript'); continue
+            if row['broker_id'] != matches[0]['broker_id'] or row['session_id'] != matches[0]['session_id']: _bad()
+            if data['child_slot'] is not None:
+                slot = slots.get((data['launcher_id'], data['child_slot']))
+                if slot is None or slot['worker_id'] != data['child_worker_id'] or slot['prepared_sha256'] != data['prepared_sha256']: _bad()
+            operation = prepared.get(data['prepared_sha256'])
+            if data['capture_sha256'] is not None and (operation is None or operation['host_capture'] is None
+                    or runtime._hash(operation['host_capture']) != data['capture_sha256']): _bad()
+            if data['cleanup_sha256'] is not None:
+                receipt = cleanups.get(data['cleanup_sha256'])
+                if receipt is None or data['child_slot'] is None: _bad()
+                _slot_cleanup(receipt, slot, ready_workers, entries)
+            continue
+        key = (data['launcher_id'], data['child_slot']); slot = slots.get(key)
+        if slot is None: missing.add('transcript'); continue
+        if (data['child_worker_id'] != slot['worker_id'] or data['prepared_sha256'] != slot['prepared_sha256']
+                or row['broker_id'] != slot['broker_id'] or row['session_id'] != slot['session_id']): _bad()
+        op = prepared.get(data['prepared_sha256']); request = data['request']; operation = request['operation']
+        if op is None: missing.add('transcript'); continue
+        did = op['prepared']['envelope']['dispatch_id']
+        if row['dispatch_id'] != did: _bad()
+        channel = data['launcher_id']; expected = sequences.get(channel, 0) + 1
+        if channel in terminal: _bad()
+        if request['observed_at_ns'] < last_time.get(channel, 0): _bad()
+        last_time[channel] = request['observed_at_ns']
+        if request['sequence'] != expected: _bad()
+        sequences[channel] = expected
+        stage = state.get(key, 'allocated')
+        allowed = {'START': {'allocated'}, 'OBSERVE_READY': {'entry'}, 'NATIVE_BEGIN': {'ready'},
+            'OBSERVE_NATIVE': {'active'}, 'CAPTURE': {'active', 'native'}, 'REAP': {'entry', 'ready', 'active', 'native'}}
+        if stage not in allowed[operation]: _bad()
+        prefix = 'identify_' if op['prepared']['envelope']['slot'] == 'http_identify' else 'headers_'
+        if operation == 'NATIVE_BEGIN' and state.get((channel, prefix+'admission')) != 'reaped': _bad()
+        if operation == 'START' and slot['role'] == 'parser' and state.get((channel, prefix+'client')) != 'reaped': _bad()
+        if operation == 'START':
+            active = [slots[k] for k,v in state.items() if k[0] == channel and v not in ('allocated','reaped','terminal')]
+            if (slot['role'] == 'parser' and active or slot['role'] != 'parser' and
+                    (len(active) >= 2 or any(s['role']=='parser' or s['prepared_sha256']!=slot['prepared_sha256'] for s in active))): _bad()
+            started[key] = request['observed_at_ns']
+        body = {'child_slot': data['child_slot']}
+        if operation == 'START': body['prepared'] = op['prepared']
+        elif operation == 'OBSERVE_READY':
+            if slot['bootstrap'] is None: missing.add('transcript'); continue
+            body['bootstrap_sha256'] = slot['bootstrap']['sha256']
+        elif operation == 'NATIVE_BEGIN':
+            release = releases.get(did)
+            if release is None: missing.add('transcript'); continue
+            body['release'] = release
+        projected = {'child_slot': data['child_slot']}
+        if operation == 'START': projected['prepared_sha256'] = c.prepared_digest(op['prepared'])
+        elif operation == 'OBSERVE_READY': projected['bootstrap_sha256'] = body['bootstrap_sha256']
+        elif operation == 'NATIVE_BEGIN': projected['release_sha256'] = runtime._hash(body['release'])
+        if request['projection'] != projected: _bad()
+        _supervision_frame(request, channel, body)
+        reply = data['reply']
+        state[key] = 'terminal'  # every missing/refused exchange consumes the slot
+        if reply is None:
+            terminal.add(channel)
+            missing.add('transcript'); continue
+        expected_reply = reply_sequences.get(channel, 0) + 1
+        if reply['sequence'] != expected_reply or reply['operation'] != protocol.SUPERVISION_RESPONSES[operation]: _bad()
+        reply_sequences[channel] = expected_reply
+        projection = reply['projection']
+        if projection['request_sequence'] != request['sequence'] or reply['observed_at_ns'] < request['observed_at_ns']: _bad()
+        if row['observed_at_ns'] < reply['observed_at_ns']: _bad()
+        last_time[channel] = reply['observed_at_ns']
+        result = None
+        if projection['status'] == 'refused': terminal.add(channel)
+        if projection['status'] == 'ok':
+            state[key] = {'START': 'entry', 'OBSERVE_READY': 'ready', 'NATIVE_BEGIN': 'active',
+                'OBSERVE_NATIVE': 'native', 'CAPTURE': 'reaped', 'REAP': 'reaped'}[operation]
+            part = projection['data']; result = {'child_slot': data['child_slot']}
+            if part['child_slot'] != data['child_slot']: _bad()
+            if operation == 'START':
+                bootstrap = _reconstruct_bootstrap(slot, op, ready_workers, bundle, parents)
+                if bootstrap is None: missing.add('transcript'); continue
+                if not request['observed_at_ns'] < bootstrap['deadline_ns']: _bad()
+                if slot['role'] == 'parser' and bootstrap['deadline_ns'] > request['observed_at_ns'] + 2000000000: _bad()
+                entry = entries.get(slot['entry_sha256'])
+                if entry is None: missing.add('transcript')
+                elif not request['observed_at_ns'] <= entry['sampled_at_ns'] <= reply['observed_at_ns']: _bad()
+                if part['bootstrap_sha256'] != runtime._hash(bootstrap) or part['bootstrap_bytes'] != len(runtime._json(bootstrap)): _bad()
+                result['bootstrap'] = bootstrap; state[key] = 'entry'
+            elif operation == 'OBSERVE_READY':
+                ready = readies.get(part['readiness_sha256'])
+                if ready is None: missing.add('transcript'); continue
+                if ready['worker_ready']['worker_id'] != slot['worker_id'] or ready['role'] != slot['role']: _bad()
+                limit = 2000000000 if slot['role'] == 'parser' else 10000000000
+                if ready['parent_observation']['sampled_at_ns'] > min(slot['bootstrap']['deadline_ns'],started[key]+limit): _bad()
+                entry = entries.get(slot['entry_sha256'])
+                if entry is not None and not entry['sampled_at_ns'] <= ready['parent_observation']['sampled_at_ns'] <= reply['observed_at_ns']: _bad()
+                result['readiness'] = ready; state[key] = 'ready'
+            elif operation == 'NATIVE_BEGIN':
+                release = releases[did]; start = part['started_at_ns']; stop = part['native_deadline_ns']
+                maximum = 5000000000 if op['prepared']['envelope']['slot'] == 'http_identify' else 1000000000
+                if not request['observed_at_ns'] <= start <= reply['observed_at_ns'] or not start < stop <= min(release['effect_stop_ns'], start + maximum): _bad()
+                if dispatches[did]['native_budget'] is not None: _bad()
+                result.update(started_at_ns=start, native_deadline_ns=stop)
+                dispatches[did]['native_budget'] = result; state[key] = 'active'
+            elif operation == 'OBSERVE_NATIVE':
+                native = natives.get(part['native_readiness_sha256']); ready = ready_workers.get(slot['worker_id'])
+                if native is None or ready is None: missing.add('transcript'); continue
+                if native['parent_observation']['payload'] != ready['parent_observation']['payload']: _bad()
+                budget = dispatches[did]['native_budget']
+                if budget is None or not budget['started_at_ns'] <= native['observed_at_ns'] <= budget['native_deadline_ns']: _bad()
+                result['native_readiness'] = native; state[key] = 'native'
+            elif operation == 'CAPTURE':
+                capture = dispatches[did]['capture']; host = op['host_capture']
+                if capture is None: missing.add('transcript'); continue
+                if (part['host_capture_sha256'] != runtime._hash(host) or part['capture_sha256'] != runtime._hash(capture)
+                        or part['status'] != host['status'] or part['cleanup_sha256'] != host['cleanup_sha256']): _bad()
+                receipt = None if host['cleanup_sha256'] is None else cleanups.get(host['cleanup_sha256'])
+                result.update(capture=capture, status=host['status'], cleanup=receipt); state[key] = 'reaped'
+                _slot_cleanup(receipt, slot, ready_workers, entries)
+                if receipt is None or receipt['status'] != 'complete': missing.add('cleanup')
+                elif receipt['finished_at_ns'] > reply['observed_at_ns']: _bad()
+            elif operation == 'REAP':
+                receipt = cleanups.get(part['cleanup_sha256'])
+                if receipt is None: missing.add('transcript'); continue
+                _slot_cleanup(receipt, slot, ready_workers, entries)
+                if receipt['finished_at_ns'] > reply['observed_at_ns']: _bad()
+                if receipt['status'] != 'complete': missing.add('cleanup')
+                result['cleanup'] = receipt; state[key] = 'reaped'
+        _supervision_frame(reply, channel, {'request_sequence': request['sequence'],
+            'status': projection['status'], 'code': projection['code'], 'data': result})
+    for slot in slots.values():
+        key = (slot['launcher_id'], slot['child_slot'])
+        if (slot['bootstrap'] is not None or slot['entry_sha256'] is not None) and key not in state: missing.add('transcript')
+    for op in operations:
+        if op['result'] is not None and op['result']['outcome'] == 'useful':
+            did = op['prepared']['envelope']['dispatch_id']; prefix = 'identify_' if op['prepared']['envelope']['slot'] == 'http_identify' else 'headers_'
+            selected = [s for s in slots.values() if s['prepared_sha256'] == c.prepared_digest(op['prepared'])]
+            if {s['child_slot'] for s in selected} != {prefix + x for x in ('client', 'admission', 'parser')}: missing.add('transcript')
+            if any(state.get((s['launcher_id'], s['child_slot'])) != 'reaped' for s in selected): missing.add('transcript')
+            if dispatches[did]['native_budget'] is None or dispatches[did]['capture'] is None: missing.add('transcript')
+    return {'missing_evidence': sorted(missing), 'dispatches': dispatches,
+        'child_slots': processes['child_slots'], 'supervisors': cleanup['supervisors'],
+        'all_closed': closure['all_closed'], 'cleanup_complete': closure['complete']}
+
+
+def _supervision_frame(observed, channel, body):
+    frame = {'schema_version': '1', 'channel_id': channel, 'sequence': observed['sequence'],
+        'operation': observed['operation'], 'body': body}
+    raw = runtime._json(frame)
+    if len(raw) > 32768 or observed['bytes'] != len(raw) or observed['sha256'] != hashlib.sha256(raw).hexdigest(): _bad()
+    if observed['projection_sha256'] != runtime._hash(observed['projection']): _bad()
+
+
+def _slot_cleanup(receipt, slot, ready_workers, entries):
+    if receipt is None: return
+    if len(receipt['processes']) != 1 or len(runtime._json(receipt)) > 2048: _bad()
+    ready = ready_workers.get(slot['worker_id'])
+    parent = ready['parent_observation'] if ready is not None else entries.get(slot['entry_sha256'])
+    if parent is None: return
+    process = receipt['processes'][0]
+    if (process['role'] != slot['role'] or process['pid'] != parent['payload']['pid']
+            or process['start_time_ticks'] != parent['payload']['start_time_ticks']
+            or process['wrapper_pid'] != parent['wrapper']['pid']): _bad()
+
+
+def _reconstruct_bootstrap(slot, op, ready_workers, bundle, parents):
+    launcher = ready_workers.get(slot['launcher_id'])
+    if launcher is None: return None
+    endpoint = [x for x in ready_workers.values() if x['role'] == 'endpoint'
+                and x['parent_observation']['namespaces']['net'] == launcher['parent_observation']['namespaces']['net']]
+    if len(endpoint) != 1 or slot['bootstrap'] is None or not parents: return None
+    binding = {k: slot[k] for k in ('child_slot', 'role', 'worker_id', 'pair')}
+    value = runtime.reconstruct_child_bootstrap(runtime=bundle, child_slot=binding,
+        prepared=op['prepared'], session=op['session'], endpoint_identity=endpoint[0],
+        observer=parents[0]['observer'], deadline_ns=slot['bootstrap']['deadline_ns'], launcher_id=slot['launcher_id'])
+    if runtime._hash(value) != slot['bootstrap']['sha256'] or len(runtime._json(value)) != slot['bootstrap']['bytes']: _bad()
+    return value
 
 
 BOUNDARY_CASES = {'S42C-X01': {'variant': 'sealed_nmap_executable_changed', 'role': 'nmap', 'kind': 'pin_mutation'}, 'S42C-X02': {'variant': 'sealed_nmap_library_changed', 'role': 'nmap', 'kind': 'pin_mutation'}, 'S42C-X03': {'variant': 'sealed_broker_sqlite_library_changed', 'role': 'broker', 'kind': 'pin_mutation'}, 'S42C-X04': {'variant': 'sealed_graphical_tk_library_changed', 'role': 'graphical', 'kind': 'pin_mutation'}, 'S42C-X05': {'variant': 'sealed_source_broker_changed', 'role': 'broker', 'kind': 'pin_mutation'}, 'S42C-X06': {'variant': 'sealed_source_launcher_changed', 'role': 'launcher', 'kind': 'pin_mutation'}, 'S42C-X07': {'variant': 'sealed_source_endpoint_changed', 'role': 'endpoint', 'kind': 'pin_mutation'}, 'S42C-X08': {'variant': 'sealed_source_client_changed', 'role': 'client', 'kind': 'pin_mutation'}, 'S42C-X09': {'variant': 'sealed_source_parser_changed', 'role': 'parser', 'kind': 'pin_mutation'}, 'S42C-X10': {'variant': 'sealed_source_terminal_changed', 'role': 'terminal', 'kind': 'pin_mutation'}, 'S42C-X11': {'variant': 'sealed_source_graphical_changed', 'role': 'graphical', 'kind': 'pin_mutation'}, 'S42C-X12': {'variant': 'role_manifest_client_to_parser', 'role': 'client_to_parser', 'kind': 'pin_mutation'}, 'S42C-X13': {'variant': 'role_manifest_endpoint_to_broker', 'role': 'endpoint_to_broker', 'kind': 'pin_mutation'}, 'S42C-X14': {'variant': 'unexpected_descriptor_broker', 'role': 'broker', 'kind': 'descriptor_custody'}, 'S42C-X15': {'variant': 'unexpected_descriptor_launcher', 'role': 'launcher', 'kind': 'descriptor_custody'}, 'S42C-X16': {'variant': 'unexpected_descriptor_endpoint', 'role': 'endpoint', 'kind': 'descriptor_custody'}, 'S42C-X17': {'variant': 'unexpected_descriptor_client', 'role': 'client', 'kind': 'descriptor_custody'}, 'S42C-X18': {'variant': 'unexpected_descriptor_parser', 'role': 'parser', 'kind': 'descriptor_custody'}, 'S42C-X19': {'variant': 'unexpected_descriptor_terminal', 'role': 'terminal', 'kind': 'descriptor_custody'}, 'S42C-X20': {'variant': 'unexpected_descriptor_graphical', 'role': 'graphical', 'kind': 'descriptor_custody'}, 'S42C-X21': {'variant': 'missing_descriptor_broker', 'role': 'broker', 'kind': 'descriptor_custody'}, 'S42C-X22': {'variant': 'missing_descriptor_endpoint', 'role': 'endpoint', 'kind': 'descriptor_custody'}, 'S42C-X23': {'variant': 'missing_descriptor_launcher', 'role': 'launcher', 'kind': 'descriptor_custody'}, 'S42C-X24': {'variant': 'missing_descriptor_terminal', 'role': 'terminal', 'kind': 'descriptor_custody'}, 'S42C-X25': {'variant': 'missing_descriptor_graphical', 'role': 'graphical', 'kind': 'descriptor_custody'}, 'S42C-X26': {'variant': 'forbidden_destination_wrong_target', 'role': 'client', 'kind': 'socket_denial'}, 'S42C-X27': {'variant': 'forbidden_destination_wrong_port', 'role': 'client', 'kind': 'socket_denial'}, 'S42C-X28': {'variant': 'forbidden_destination_ssh_endpoint', 'role': 'client', 'kind': 'socket_denial'}, 'S42C-X29': {'variant': 'endpoint_denies_connect', 'role': 'endpoint', 'kind': 'socket_denial'}, 'S42C-X30': {'variant': 'endpoint_denies_fastopen_sendto', 'role': 'endpoint', 'kind': 'socket_denial'}, 'S42C-X31': {'variant': 'endpoint_denies_fastopen_sendmsg', 'role': 'endpoint', 'kind': 'socket_denial'}, 'S42C-X32': {'variant': 'endpoint_denies_fastopen_sendmmsg', 'role': 'endpoint', 'kind': 'socket_denial'}, 'S42C-X33': {'variant': 'creation_denied_client', 'role': 'client', 'kind': 'creation_denial'}, 'S42C-X34': {'variant': 'creation_denied_parser', 'role': 'parser', 'kind': 'creation_denial'}, 'S42C-X35': {'variant': 'creation_denied_endpoint', 'role': 'endpoint', 'kind': 'creation_denial'}, 'S42C-X36': {'variant': 'creation_denied_broker', 'role': 'broker', 'kind': 'creation_denial'}, 'S42C-X37': {'variant': 'creation_denied_terminal', 'role': 'terminal', 'kind': 'creation_denial'}, 'S42C-X38': {'variant': 'creation_denied_graphical', 'role': 'graphical', 'kind': 'creation_denial'}, 'S42C-X39': {'variant': 'parser_network_filesystem_authority_absent', 'role': 'parser', 'kind': 'parser_absence'}, 'S42C-X40': {'variant': 'parent_observed_identity_nmap_mismatch', 'role': 'nmap', 'kind': 'image_identity'}, 'S42C-X41': {'variant': 'parent_observed_identity_waiting_python_mismatch', 'role': 'waiting_python', 'kind': 'image_identity'}, 'S42C-X42': {'variant': 'parent_observed_identity_parser_mismatch', 'role': 'parser', 'kind': 'image_identity'}, 'S42C-X43': {'variant': 'parent_observed_identity_endpoint_mismatch', 'role': 'endpoint', 'kind': 'image_identity'}, 'S42C-X44': {'variant': 'native_image_observation_missing_no_ARM', 'role': 'nmap', 'kind': 'image_identity'}, 'S42C-X45': {'variant': 'meter_connection_cap_identify', 'role': 'endpoint', 'kind': 'meter_boundary'}, 'S42C-X46': {'variant': 'meter_connection_cap_headers', 'role': 'endpoint', 'kind': 'meter_boundary'}, 'S42C-X47': {'variant': 'meter_request_cap_identify', 'role': 'endpoint', 'kind': 'meter_boundary'}, 'S42C-X48': {'variant': 'meter_request_cap_headers', 'role': 'endpoint', 'kind': 'meter_boundary'}, 'S42C-X49': {'variant': 'meter_response_cap_identify', 'role': 'endpoint', 'kind': 'meter_boundary'}, 'S42C-X50': {'variant': 'meter_response_cap_headers', 'role': 'endpoint', 'kind': 'meter_boundary'}, 'S42C-X51': {'variant': 'meter_partial_request', 'role': 'endpoint', 'kind': 'meter_boundary'}, 'S42C-X52': {'variant': 'meter_partial_response', 'role': 'endpoint', 'kind': 'meter_boundary'}, 'S42C-X53': {'variant': 'role_EOF_broker', 'role': 'broker', 'kind': 'lifecycle'}, 'S42C-X54': {'variant': 'role_EOF_endpoint', 'role': 'endpoint', 'kind': 'lifecycle'}, 'S42C-X55': {'variant': 'role_EOF_launcher', 'role': 'launcher', 'kind': 'lifecycle'}, 'S42C-X56': {'variant': 'endpoint_clock_forward_before_recv', 'role': 'endpoint', 'kind': 'clock_boundary'}, 'S42C-X57': {'variant': 'endpoint_clock_forward_before_send', 'role': 'endpoint', 'kind': 'clock_boundary'}, 'S42C-X58': {'variant': 'endpoint_deadline_before_send_after_partial', 'role': 'endpoint', 'kind': 'clock_boundary'}, 'S42C-X59': {'variant': 'actual_payload_and_wrapper_reaped', 'role': 'all', 'kind': 'lifecycle'}}
@@ -276,41 +763,39 @@ def validate_dispatch_observations(*,prepared,release,scope,capture,client_resul
     return client
 
 
-def _saved_execution(loaded):
+def _saved_execution(loaded, *, rows=None):
     """Resolve actual broker channel observations, including partial failures."""
     from .engagement_live_witness import validate_transcript_row
     raw=loaded.get('transcript.jsonl',b'')
     if type(raw)is not bytes or len(raw)>2097152:_bad()
     releases={};observations={}
-    for segment in loaded['manifest.json'].get('transcript',{}).get('segments',[]):
-        if segment['source']!='broker_memfd':continue
-        part=raw[segment['offset']:segment['offset']+segment['bytes']]
-        if len(part)!=segment['bytes'] or hashlib.sha256(part).hexdigest()!=segment['sha256']:_bad()
-        for line in part.split(b'\n')[:-1]:
-            row=validate_transcript_row(runtime._decode(line,32768))
-            if row['kind']!='protocol':continue
-            if row['broker_id']!=segment['broker_id'] or row['observer_id']!=row['broker_id']:_bad()
-            data=row['data'];frame=data['frame'];role=data['channel_role'];direction=data['direction']
-            operation=frame['operation'];body=frame['body'];dispatch=row['dispatch_id']
-            if role=='launcher' and direction=='sent' and operation=='GO':
-                if body['dispatch_id']!=dispatch or dispatch in releases:_bad()
-                releases[dispatch]=body
-            elif operation=='METER' and role in ('endpoint','launcher'):
-                if body['dispatch_id']!=dispatch or body['session_id']!=row['session_id']:_bad()
-                key='meter' if role=='endpoint' else 'forwarded_meter'
-                if direction!=('received' if role=='endpoint' else 'sent'):_bad()
-                found=observations.setdefault(dispatch,{})
-                if key in found:_bad()
-                found[key]=body
-            elif operation=='OBSERVATION' and role=='launcher' and direction=='received':
-                if body['dispatch_id']!=dispatch:_bad()
-                found=observations.setdefault(dispatch,{})
-                kind=body['kind']
-                if kind=='capture':
-                    if kind in found:_bad()
-                    found[kind]=body['data']
-                elif kind in ('role_readiness','cleanup'):
-                    found.setdefault(kind,[]).append(body['data'])
+    if rows is None: rows = _retained_rows(loaded)
+    for wrapper in rows:
+        if wrapper['source'] != 'broker_memfd': continue
+        row = validate_transcript_row(wrapper['row'])
+        if row['observer_id'] != row['broker_id']: _bad()
+        if row['kind']!='protocol':continue
+        data=row['data'];frame=data['frame'];role=data['channel_role'];direction=data['direction']
+        operation=frame['operation'];body=frame['body'];dispatch=row['dispatch_id']
+        if role=='launcher' and direction=='sent' and operation=='GO':
+            if body['dispatch_id']!=dispatch or dispatch in releases:_bad()
+            releases[dispatch]=body
+        elif operation=='METER' and role in ('endpoint','launcher'):
+            if body['dispatch_id']!=dispatch or body['session_id']!=row['session_id']:_bad()
+            key='meter' if role=='endpoint' else 'forwarded_meter'
+            if direction!=('received' if role=='endpoint' else 'sent'):_bad()
+            found=observations.setdefault(dispatch,{})
+            if key in found:_bad()
+            found[key]=body
+        elif operation=='OBSERVATION' and role=='launcher' and direction=='received':
+            if body['dispatch_id']!=dispatch:_bad()
+            found=observations.setdefault(dispatch,{})
+            kind=body['kind']
+            if kind=='capture':
+                if kind in found:_bad()
+                found[kind]=body['data']
+            elif kind in ('role_readiness','cleanup'):
+                found.setdefault(kind,[]).append(body['data'])
     return releases,observations
 
 
@@ -381,7 +866,10 @@ def _validate_exports(cleanup, loaded, closed_at, identities, closed):
     runtime._fields(recovery,('schema_version','source','owner_id','started_at_ns','finished_at_ns','read_only','store_identity','bytes','sha256','ledger_state_sha256','closed'))
     if recovery['schema_version']!='1' or recovery['source']!='postcleanup_readonly' or recovery['read_only']is not True or recovery['closed']is not True or type(recovery['owner_id'])is not str or runtime._UUID.fullmatch(recovery['owner_id'])is None or recovery['owner_id'] in owners:_bad()
     for field in ('started_at_ns','finished_at_ns'):runtime._integer(recovery[field])
-    if identities-closed or not closed_at<=recovery['started_at_ns']<=recovery['finished_at_ns']<=recovery['started_at_ns']+2000000000:_bad()
+    supervisors = _supervisor_closure(loaded)
+    closed_at = max([closed_at] + [row['cleanup_finished_at_ns'] for row in cleanup['supervisors']])
+    if (not supervisors['all_closed'] or identities-closed
+            or not closed_at<=recovery['started_at_ns']<=recovery['finished_at_ns']<=recovery['started_at_ns']+2000000000):_bad()
     runtime._fields(recovery['store_identity'],('parent','directory','database'))
     uid=None;gid=None
     for name,row in recovery['store_identity'].items():
@@ -531,12 +1019,12 @@ def validate_live_context(value):
         if runtime._hash(item['configuration'])!=item['configuration_sha256']:_bad()
         if item['kind'] in ('sealed_fault','sealed_clock') and item['source_sha256'] not in sealed_sources:_bad()
 
-    processes=value['processes.json'];runtime._fields(processes,('schema_version','startup','readiness','native','boundary_observations'))
+    processes=value['processes.json'];runtime._fields(processes,('schema_version','startup','readiness','native','boundary_observations','child_slots'))
     results=value['results.json'];runtime._fields(results,('schema_version','operations','boundary_proofs','core_proofs'))
-    cleanup=value['cleanup.json'];runtime._fields(cleanup,('schema_version','receipts','exports','recovery'))
+    cleanup=value['cleanup.json'];runtime._fields(cleanup,('schema_version','receipts','exports','recovery','supervisors'))
     for obj in (processes,results,cleanup):
         if obj['schema_version']!='1':_bad()
-    for obj,key,maximum in ((processes,'startup',94),(processes,'readiness',94),(processes,'native',4),(processes,'boundary_observations',59),(cleanup,'receipts',94),(results,'boundary_proofs',1),(results,'core_proofs',1)):
+    for obj,key,maximum in ((processes,'startup',94),(processes,'readiness',94),(processes,'native',4),(processes,'child_slots',24),(processes,'boundary_observations',59),(cleanup,'receipts',94),(cleanup,'supervisors',4),(results,'boundary_proofs',1),(results,'core_proofs',1)):
         if type(obj[key])is not list or len(obj[key])>maximum:_bad()
     readies={};identities=set();startup_identities=set();startup_hashes=set()
     for parent in processes['startup']:
@@ -588,7 +1076,7 @@ def validate_live_context(value):
     seen=set();meters={};releases,recorded=_saved_execution(value)
     retained_cleanup={runtime._hash(item):item for item in cleanup['receipts']}
     for op in results['operations']:
-        runtime._fields(op,('session','prepared','result','client','meter','elapsed_ms'))
+        runtime._fields(op,('session','prepared','result','client','meter','elapsed_ms','host_capture'))
         opened=contract.validate_session_opened(op['session']);prepared=contract.validate_prepared_context(op['prepared'],opened)
         envelope=prepared['envelope'];dispatch=envelope['dispatch_id']
         if dispatch in seen or envelope['runtime_sha256']!=digest:_bad()
@@ -651,5 +1139,6 @@ def validate_live_context(value):
                 client_result=client,meter=meter,child_readiness=children,child_cleanup=child_cleanups,
                 native_readiness=selected_native,runtime_bundle=bundle)
     if set(recorded)-seen:_bad()
+    validate_supervision_transcript(value, deadline=contract._operation_deadline())
     _boundary_checks(value,bundle,readies,natives,retained_cleanup,meters)
     return json.loads(runtime._json(results))

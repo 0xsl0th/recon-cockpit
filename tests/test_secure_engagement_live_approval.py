@@ -268,6 +268,47 @@ def test_original_deadline_bounds_review_consume_and_output(monkeypatch):
             holder.join(timeout=1)
         assert released.is_set()
 
+    # The invocation clock starts before validating Prepared. Advancing that
+    # validation cannot give CONSUME a fresh two seconds or reach transport.
+    service, value, _ = service_fixture(monkeypatch)
+    tick = [time.monotonic()]
+    original = ExecutionControl(tick[0]+60, clock=lambda:tick[0])
+    service._control = original
+    sent, closed = [], []
+    service._owner = object()
+    with monkeypatch.context() as patch:
+        patch.setattr(host.time,'monotonic',lambda:tick[0])
+        patch.setattr(host.time,'monotonic_ns',lambda:int(tick[0]*c.SECOND))
+        def slow_validation(value):
+            tick[0] += 2.1
+            return deepcopy(value)
+        patch.setattr(c,'validate_prepared',slow_validation)
+        patch.setattr(service,'_quiet',lambda:None)
+        patch.setattr(service,'close',lambda:closed.append(True))
+        patch.setattr(protocol,'send_packet',lambda *a,**kw:sent.append(a))
+        with pytest.raises(c.LiveError,match='timeout'):
+            service._exchange('CONSUME',value,'a'*48,original)
+    assert not sent and closed == [True] and not service._observations
+
+    # Cached readiness still consumes the narrower startup phase through its
+    # final detachment; returning an already-started role cannot renew time.
+    service, _, _ = service_fixture(monkeypatch)
+    tick = [time.monotonic()]
+    service._control = ExecutionControl(tick[0]+60, clock=lambda:tick[0])
+    service._binding['session_deadline_ns'] = int((tick[0]+.5)*c.SECOND)
+    service._owner, service._ready = object(), {'portable_fixture':True}
+    closed = []
+    with monkeypatch.context() as patch:
+        patch.setattr(host.time,'monotonic',lambda:tick[0])
+        def late_readiness(value, *args):
+            tick[0] += 1
+            return deepcopy(value)
+        patch.setattr(c,'detached',late_readiness)
+        patch.setattr(service,'close',lambda:closed.append(True))
+        with pytest.raises(c.LiveError,match='timeout'):
+            service.start()
+    assert closed == [True]
+
 
 def test_peer_eof_and_denial_issue_no_grant(monkeypatch):
     state, value, _ = state_fixture(monkeypatch)

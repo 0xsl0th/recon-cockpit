@@ -37,6 +37,7 @@ def service():
     obj._close_lock, obj._state_lock = threading.Lock(), threading.Lock()
     obj._slot_locks = (threading.Lock(), threading.Lock())
     obj._closed = False
+    obj._startup_quiesced = False
     obj._cleanup = obj._failure = obj._broker = obj._audit = obj._bundle = None
     obj._sessions = {}
     obj._operations = {}
@@ -47,14 +48,27 @@ def service():
     obj._used_slots = set()
     obj._monitor_thread = None
     obj._observer_rows = []
+    obj._child_slots = []
+    obj._unstarted_supervisors = []
+    obj._remaining_channels_closed = False
+    obj._host_evidence_budget = module._HostEvidenceBudget()
+    obj._cleanup_epoch = module._CleanupEpoch(obj._control)
     selected, value = opened(), prepared()
     row = {'opened': selected, 'ingress': 0, 'stopped': False,
            'reviewer': None, 'endpoint': None, 'launcher': None}
     obj._sessions[selected['binding']['session_id']] = row
     obj._operations[value['envelope']['dispatch_id']] = {'session': selected, 'prepared': value,
-        'result': None, 'client': None, 'meter': None,
+        'result': None, 'client': None, 'meter': None, 'host_capture': None,
         'elapsed_ms': dict.fromkeys(('review','admission','native','parser','cleanup','action'))}
     return obj, row, value
+
+
+def host_row(index=1):
+    return {'schema_version':'1','broker_id':uid(1),'observer_id':uid(1),
+        'session_id':None,'dispatch_id':None,'row_sequence':1,
+        'observed_at_ns':index,'kind':'phase','data':{'clock':None,
+        'original_deadline_ns':M,'phase':'prepare','reason':None,
+        'related_sha256':None,'stage':'started'}}
 
 
 def test_default_cli_is_inert_without_execute(tmp_path):
@@ -98,6 +112,26 @@ def test_session_original_control_cannot_be_replaced():
     obj._control.cancelled.set()
     with pytest.raises(Exception, match='session_cancelled'):
         obj._check(obj._control)
+    budget = module._HostEvidenceBudget()
+    control = ExecutionControl(time.monotonic()+10)
+    ticket = budget.reserve(kind='other_host', maximum_bytes=4096, maximum_rows=1, control=control)
+    row = host_row()
+    budget.record_request(ticket,row)
+    with pytest.raises(c.LiveError, match='evidence_invalid'):
+        budget.release(ticket)
+    changed = deepcopy(row)
+    changed['data']['phase'] = 'cleanup'
+    with pytest.raises(c.LiveError, match='evidence_invalid'):
+        budget.finalize(ticket,changed)
+    assert budget.snapshot()['unresolved_tickets'] == 1
+    budget.finalize(ticket,row)
+    row['data']['phase'] = 'cleanup'
+    assert budget.snapshot()['rows'][0]['data']['phase'] == 'prepare'
+    with pytest.raises(c.LiveError, match='evidence_invalid'):
+        budget.finalize(ticket,host_row())
+    budget._pid += 1
+    with pytest.raises(c.LiveError, match='foreign_owner'):
+        budget.snapshot()
 
 
 def test_prepare_echo_cannot_change_revision_or_scope():
@@ -144,7 +178,7 @@ def test_startup_failure_closes_every_created_role(monkeypatch):
                'deadline_ns':now+2000000000,'status':'complete','processes':[], 'descriptors_closed':True}
     class Broker:
         def __init__(self, **kw):pass
-        def start(self):return {'readiness':{'portable_observation':True}}
+        def start(self):return {'readiness':{'portable_observation':True},'allocated_slots':[]}
         def _interrupt(self):calls.append('broker_interrupt')
         def _close(self, deadline):calls.append(('broker_close',deadline));return receipt
     class Audit:
@@ -153,7 +187,7 @@ def test_startup_failure_closes_every_created_role(monkeypatch):
         def _interrupt(self):calls.append('audit_interrupt')
         def _close(self, deadline):calls.append(('audit_close',deadline));return receipt
     monkeypatch.setattr(runtime,'inspect_runtime',lambda control:{'pure_fixture':True})
-    monkeypatch.setattr(broker,'preallocate_role_bundle',lambda mode:SimpleNamespace(close=lambda:calls.append('bundle_close')))
+    monkeypatch.setattr(broker,'preallocate_role_bundle',lambda mode:SimpleNamespace(slots=[],close=lambda:calls.append('bundle_close')))
     monkeypatch.setattr(broker,'EngagementBroker',Broker)
     monkeypatch.setattr(audit,'EngagementAuditService',Audit)
     with pytest.raises(c.LiveError, match='audit_unavailable') as caught:
@@ -163,6 +197,125 @@ def test_startup_failure_closes_every_created_role(monkeypatch):
     assert len(deadlines)==2 and len(set(deadlines))==1
     assert calls.index('audit_interrupt') < next(i for i,v in enumerate(calls) if type(v)is tuple)
     assert caught.value.engagement_session._closed
+
+    # Session must signal both real host threads before joining either, and
+    # preserve endpoint descriptor custody until both have actually exited.
+    obj, row, _ = service()
+    events, launchers = [], []
+    class Launcher:
+        def __init__(self, name):
+            self.name, self.joined = name, False
+            self.stop = threading.Event()
+            self.thread = threading.Thread(target=lambda:self.stop.wait(2))
+            self.thread.start()
+        def _interrupt(self):
+            events.append(('stop', self.name))
+            self.stop.set()
+        @property
+        def supervisor_resolved(self):
+            return self.joined and not self.thread.is_alive()
+        def _close(self, deadline):
+            assert all(item.stop.is_set() for item in launchers)
+            self.thread.join(timeout=max(0, deadline-time.monotonic()))
+            self.joined = True
+            events.append(('join', self.name))
+            return receipt
+    class Endpoint:
+        def _interrupt(self):pass
+        def _close(self, deadline):
+            assert all(item.supervisor_resolved for item in launchers)
+            events.append(('endpoint', deadline))
+            return receipt
+    launchers.extend((Launcher('one'), Launcher('two')))
+    row['launcher'], row['endpoint'] = launchers[0], Endpoint()
+    obj._sessions[uid(98)] = {**row, 'launcher':launchers[1], 'endpoint':Endpoint()}
+    obj._roles = [row['endpoint'], launchers[0], obj._sessions[uid(98)]['endpoint'], launchers[1]]
+    assert obj.close()['status'] == 'complete'
+    assert [event[0] for event in events[:2]] == ['stop','stop']
+    assert [event[0] for event in events[2:4]] == ['join','join']
+    assert obj._verified_reaped()
+    assert obj._cleanup['deadline_ns'] == obj._cleanup_epoch.snapshot()['deadline_ns']
+
+    tightened, _, _ = service()
+    bound = time.monotonic_ns()+c.SECOND
+    observed_deadlines, joined_at = [], []
+    role = SimpleNamespace(
+        _interrupt=lambda:tightened._cleanup_epoch.stop(bound_deadline_ns=bound),
+        _close=lambda deadline:observed_deadlines.append(deadline) or receipt)
+    tightened._roles = [role]
+    tightened._monitor_thread = SimpleNamespace(
+        join=lambda **kw:joined_at.append(time.monotonic_ns()),is_alive=lambda:False)
+    actual = tightened.close()
+    assert observed_deadlines == [bound/c.SECOND]
+    assert actual['deadline_ns'] == bound
+    assert actual['finished_at_ns'] >= joined_at[0]
+
+    # Preallocation is retained even when no launcher was opened. Only actual
+    # socket closure behind the terminal startup fence justifies not_started.
+    unused, _, _ = service()
+    unused._child_slots = [{'broker_id':uid(1),'session_id':uid(90),
+                           'launcher_id':uid(91),'child_slot':name} for name in c.CHILD_SLOTS]
+    observer = {'portable_actual_observer':True}
+    monkeypatch.setattr(runtime,'_observer',lambda:observer)
+    fenced = []
+    def close_unused():
+        assert unused._startup_quiesced and unused._stop.is_set()
+        fenced.append(True)
+    unused._bundle = SimpleNamespace(close_remaining_channels=close_unused)
+    assert unused.close()['status'] == 'complete'
+    assert fenced == [True] and unused._verified_reaped()
+    closure, = unused._unstarted_supervisors
+    assert closure['state'] == 'not_started' and closure['channel_closed']
+    assert closure['thread_native_id'] is closure['thread_started_at_ns'] is None
+    assert not closure['join_attempted'] and closure['thread_alive_observed'] is False
+    assert closure['host_observer'] == observer and not closure['pending_slots']
+    failed_unused, _, _ = service()
+    failed_unused._child_slots = deepcopy(unused._child_slots)
+    def cannot_close():
+        raise OSError('owned endpoint close failed')
+    failed_unused._bundle = SimpleNamespace(close_remaining_channels=cannot_close)
+    with pytest.raises(c.LiveError,match='cleanup_incomplete'):
+        failed_unused.close()
+    assert not failed_unused._verified_reaped() and not failed_unused._unstarted_supervisors
+
+    unresolved, pending, _ = service()
+    touched = []
+    pending['launcher'] = SimpleNamespace(supervisor_resolved=False,
+        _interrupt=lambda:None,_close=lambda deadline:receipt)
+    pending['endpoint'] = SimpleNamespace(_interrupt=lambda:None,
+        _close=lambda deadline:touched.append(True) or receipt)
+    unresolved._roles = [pending['endpoint'], pending['launcher']]
+    with pytest.raises(c.LiveError, match='cleanup_incomplete'):
+        unresolved.close()
+    assert not touched and not unresolved._verified_reaped()
+    assert not unresolved._cleanup['descriptors_closed']
+
+    # Persistent role startup and child setup share the same single helper
+    # slot. A queued API caller must stop without starting another builder.
+    queued, _, _ = service()
+    entered, release = threading.Event(), threading.Event()
+    startup_calls, startup_errors = [], []
+    queued._bundle = SimpleNamespace(_child_setup_lock=threading.Lock())
+    def opening(*, ingress):
+        startup_calls.append(ingress)
+        entered.set()
+        assert release.wait(2)
+        raise c.LiveError('engagement_live_invalid_prepared')
+    queued._broker = SimpleNamespace(open_session=opening)
+    def open_slot(index):
+        try:queued._open_session(ingress=index)
+        except c.LiveError as error:startup_errors.append(error.code)
+    one = threading.Thread(target=open_slot,args=(0,))
+    two = threading.Thread(target=open_slot,args=(1,))
+    one.start()
+    assert entered.wait(2)
+    two.start()
+    time.sleep(.02)
+    assert startup_calls == [0]
+    release.set()
+    one.join(2);two.join(2)
+    assert not one.is_alive() and not two.is_alive()
+    assert startup_calls == [0] and len(startup_errors) == 2
 
 
 def test_cancel_and_eof_do_not_start_followup():
@@ -179,7 +332,7 @@ def test_cancel_and_eof_do_not_start_followup():
         obj.prepare(value['envelope']['session_id'],'http_headers')
 
 
-def test_lease_narrowing_never_renews_original_deadline():
+def test_lease_narrowing_never_renews_original_deadline(monkeypatch):
     obj, row, value = service()
     original = obj._control
     tighter = _clipped_control(original,int((original.deadline-3)*c.SECOND),obj._stop)
@@ -190,9 +343,20 @@ def test_lease_narrowing_never_renews_original_deadline():
     obj._stop.set()
     with pytest.raises(c.LiveError, match='cancelled'):
         tighter.check()
+    ticks = [10*c.SECOND]
+    monkeypatch.setattr(module.time, 'monotonic_ns', lambda:ticks[0])
+    epoch = module._CleanupEpoch(SimpleNamespace(deadline=20))
+    first = epoch.stop()
+    assert first == {'first_stop_requested_at_ns':10*c.SECOND,'deadline_ns':12*c.SECOND}
+    ticks[0] += 9*c.SECOND
+    assert epoch.stop() == first
+    assert epoch.stop(bound_deadline_ns=11*c.SECOND)['deadline_ns'] == 11*c.SECOND
+    assert epoch.stop()['deadline_ns'] == 11*c.SECOND
+    expired = module._CleanupEpoch(SimpleNamespace(deadline=1))
+    assert expired.stop()['deadline_ns'] == c.SECOND
 
 
-def test_uncertain_dispatch_is_never_retried():
+def test_uncertain_dispatch_is_never_retried(monkeypatch):
     obj, row, value = service()
     events = []
     row['reviewer'] = SimpleNamespace(consume=lambda *a, **kw:
@@ -207,6 +371,69 @@ def test_uncertain_dispatch_is_never_retried():
     assert events == ['audit','dispatch']
     assert obj._operations[value['envelope']['dispatch_id']]['result'] is None
 
+    # Observe the actual full send / decoded reply before protocol postchecks.
+    # A late postcheck must not erase a real effect or cause a dispatch retry.
+    import socket
+    from engagement_live_native import _observe_ingress
+    from recon_cockpit.secure_agent import engagement_live_protocol as protocol
+    request = {'schema_version':'1','operation':'DISPATCH','channel_id':uid(91),'sequence':1,
+        'body':{'prepared_sha256':c.prepared_digest(value),'reference_sha256':'a'*64,
+                'consume_sequence':1,'audit_sequence':1}}
+    e=value['envelope']
+    result={'schema_version':'1','broker_id':e['broker_id'],'session_id':e['session_id'],
+        'dispatch_id':e['dispatch_id'],'envelope_sha256':c.envelope_digest(e),'slot':e['slot'],
+        'outcome':'unresolved','reason':'engagement_live_unavailable','admission':None,
+        'release':None,'completion':None,'observation':None,'client_result_sha256':None,'cleanup_sha256':None}
+    original_send,original_decode=protocol.send_once,protocol.decode_frame
+    for mode,statuses in (('normal',('pending','ok')),('normal',('refused',)),
+                          ('send_expired',()),('receive_expired',('pending',)),('short_send',())):
+        observed, _, _ = service();now=[10.];calls=[]
+        def remaining():
+            if now[0]>=11.:raise c.LiveError('engagement_live_timeout')
+            return 11.-now[0]
+        control=SimpleNamespace(deadline=11.,remaining=remaining,check=lambda:remaining())
+        replies=[]
+        for index,status in enumerate(statuses):
+            body={'request_sequence':1,'status':status,'code':None,'data':result}
+            if status=='pending':body['data']={'dispatch_id':e['dispatch_id']}
+            if status=='refused':body.update(code='engagement_live_unavailable',data=None)
+            replies.append({'schema_version':'1','operation':'DISPATCH','channel_id':uid(91),
+                            'sequence':index+1,'body':body})
+        reply_raw=[c.canonical(frame) for frame in replies]
+        parent,peer=socket.socketpair()
+        def actual_send(channel,raw):
+            calls.append('send')
+            assert observed._host_evidence_budget.snapshot()['reserved_rows']==3
+            count=original_send(channel,raw[:-1] if mode=='short_send' else raw)
+            if mode=='send_expired':now[0]=11.01
+            return count
+        def actual_decode(*args,**kwargs):
+            frame=original_decode(*args,**kwargs);calls.append('decoded')
+            if mode=='receive_expired':now[0]=11.01
+            return frame
+        try:
+            with monkeypatch.context() as patch:
+                patch.setattr(module.time,'monotonic',lambda:now[0])
+                patch.setattr(protocol,'send_once',actual_send);patch.setattr(protocol,'decode_frame',actual_decode)
+                with _observe_ingress(observed):
+                    def exchange():
+                        with c._deadline_context(control.deadline):
+                            protocol.send_packet(parent,request,role='ingress',control=control)
+                            assert peer.recv(32768)==c.canonical(request)
+                            for encoded in reply_raw:
+                                peer.sendall(encoded)
+                                protocol.receive_packet(parent,role='ingress',control=control)
+                    if mode=='normal':exchange()
+                    else:
+                        with pytest.raises(c.LiveError,match='timeout' if mode.endswith('expired') else 'unavailable'):exchange()
+                retained=observed._host_evidence_budget.snapshot()
+            assert retained['unresolved_tickets']==0 and calls.count('send')==1
+            expected=0 if mode=='short_send' else 1+len(statuses)
+            assert len(retained['rows'])==expected
+            assert [item['data']['frame']['body']['status'] for item in retained['rows'][1:]]==list(statuses)
+            if mode=='send_expired':assert peer.recv(32768)==c.canonical(request)
+        finally:parent.close();peer.close()
+
 
 def test_recovery_opens_fresh_owner_without_replenishing(tmp_path):
     from test_secure_engagement_dispatch_store import new_store
@@ -219,6 +446,7 @@ def test_recovery_opens_fresh_owner_without_replenishing(tmp_path):
     with pytest.raises(c.LiveError, match='cleanup_incomplete'):
         obj._recover_ledger()
     obj._closed = True
+    obj._startup_quiesced = True
     obj._cleanup = {'status':'failed'}
     receipt={'status':'failed','descriptors_closed':True,'processes':[{
         'pid':123,'start_time_ticks':456,'wrapper_pid':122,'wrapper_returncode':0,
@@ -232,6 +460,13 @@ def test_recovery_opens_fresh_owner_without_replenishing(tmp_path):
     assert proof['read_only'] and proof['closed']
     assert proof['ledger_state_sha256'] == before['events'][-1]['receipt']['state_sha256']
     assert proof['finished_at_ns']-proof['started_at_ns'] <= 2000000000
+    row['launcher'] = SimpleNamespace(supervisor_resolved=False)
+    with pytest.raises(c.LiveError, match='cleanup_incomplete'):
+        obj._recover_ledger()
+    row['launcher'].supervisor_resolved = True
+    obj._startup_quiesced = False
+    with pytest.raises(c.LiveError, match='cleanup_incomplete'):
+        obj._recover_ledger()
 
 
 def test_cli_output_is_bounded_and_never_reports_late_success(monkeypatch):
@@ -255,3 +490,34 @@ def test_cli_output_is_bounded_and_never_reports_late_success(monkeypatch):
         raise error
     monkeypatch.setattr(value,'_output',partial_output)
     assert value.main([]) == 2 and len(written) == 1
+
+    # A single allocator survives sequential owners; two concurrent producers
+    # cannot both consume its last row. Reservations count before transport.
+    budget = module._HostEvidenceBudget()
+    control = ExecutionControl(time.monotonic()+10)
+    for index in range(127):
+        ticket = budget.reserve(kind='other_host', maximum_bytes=1024, maximum_rows=1, control=control)
+        budget.finalize(ticket,host_row(index+1))
+    barrier = threading.Barrier(2)
+    accepted, refused = [], []
+    def compete():
+        barrier.wait(timeout=2)
+        try:
+            ticket = budget.reserve(kind='other_host', maximum_bytes=1024, maximum_rows=1, control=control)
+            budget.finalize(ticket,host_row(128))
+            accepted.append(True)
+        except c.LiveError as error:
+            refused.append(error.code)
+    workers = [threading.Thread(target=compete) for _ in range(2)]
+    for item in workers:item.start()
+    for item in workers:item.join(timeout=2)
+    assert all(not item.is_alive() for item in workers)
+    assert accepted == [True] and refused == ['engagement_live_limit_exceeded']
+    assert len(budget.snapshot()['rows']) == 128
+    reserved = module._HostEvidenceBudget()
+    ticket = reserved.reserve(kind='other_host', maximum_bytes=262144, maximum_rows=1, control=control)
+    with pytest.raises(c.LiveError, match='limit_exceeded'):
+        reserved.reserve(kind='other_host', maximum_bytes=1, maximum_rows=1, control=control)
+    assert reserved.snapshot()['rows'] == []
+    reserved.release(ticket)
+    assert reserved.snapshot()['reserved_bytes'] == 0

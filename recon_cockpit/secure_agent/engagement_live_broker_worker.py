@@ -55,8 +55,8 @@ class Transcript:
         info=os.fstat(fd)
         if not stat.S_ISREG(info.st_mode) or info.st_size or fcntl.fcntl(fd,fcntl.F_GETFL)&os.O_ACCMODE!=os.O_RDWR or fcntl.fcntl(fd,fcntl.F_GET_SEALS):c.fail('invalid_channel')
     def reserve(self,amount=32768,*,terminal=False):
-        cap=2097152 if terminal else 2097152-8192
-        rows=4096 if terminal else 4096-8
+        cap=c.BROKER_TRANSCRIPT_BYTES if terminal else c.BROKER_TRANSCRIPT_BYTES-8192
+        rows=c.BROKER_TRANSCRIPT_ROWS if terminal else c.BROKER_TRANSCRIPT_ROWS-8
         if self.sealed or self.sequence>=rows or self.bytes+amount>cap:c.fail('limit_exceeded')
     def record(self,kind,data,*,session_id=None,dispatch_id=None,terminal=False,at=None):
         row={'schema_version':'1','broker_id':self.broker_id,'observer_id':self.broker_id,

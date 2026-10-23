@@ -28,8 +28,7 @@ def declared_runtime():
     roles=[]
     for role in r.ROLES:
         destinations={'/usr/bin/python3','/lib64/ld-linux-x86-64.so.2','/lib/x86_64-linux-gnu/libffi.so.8'}
-        if role in ('nmap','launcher'):destinations.add('/tool/nmap')
-        if role=='launcher':destinations.add('/usr/bin/bwrap')
+        if role=='nmap':destinations.add('/tool/nmap')
         if role=='endpoint':destinations.add('/usr/sbin/nft')
         native=[]
         for destination in sorted(destinations):
@@ -75,7 +74,6 @@ def declared_readiness(bundle,role='headers',*,pid=101,worker_id=None):
         'mapped_images':[{'destination':x['destination'],'device':1,'inode':300+i} for i,x in enumerate(manifest['native_files'])],
         'status':{'cap_inheritable':0,'cap_permitted':0,'cap_effective':0,'cap_bounding':0,'cap_ambient':0,'no_new_privs':1,'seccomp_mode':2},'sampled_at_ns':1000000000,'stage':'sealed'}
     checks=set(r.SPEC['closed_objects']['boundary_checks']['common'])|set(r.SPEC['closed_objects']['boundary_checks']['role_specific'][role])
-    if role=='launcher':checks-={'process_creation_blocked','namespace_creation_blocked'};checks|={'bounded_child_creation','fixed_namespace_builder'}
     ready={'schema_version':'1','role':role,'worker_id':worker_id or uid(pid),'bootstrap_sha256':'e'*64,'runtime_sha256':r.runtime_digest(bundle),
         'source_sha256':r._hash(manifest['sources']),'stage':'sealed_reviewer' if role in ('terminal','graphical') else 'sealed_waiting' if role in ('nmap','headers') else 'sealed_'+role,
         'namespaces':namespaces,'uid':65534,'gid':65534,'groups':[65534],'task_ids':[1],'descriptor_sha256':r._hash(descriptors),'boundary_checks':dict.fromkeys(checks,True)}
@@ -115,6 +113,8 @@ def test_fixed_native_elf_and_data_inventory():
     bad=deepcopy(bundle);bad['compiled'][0]['sha256']='0'*64;refused(r.validate_runtime,bad)
     refused(r._elf,b'not an ELF')
     assert r.SPEC['http_grammar']['nmap_argv'][0]=='/tool/nmap'
+    launcher=next(x for x in bundle['roles'] if x['role']=='launcher')
+    assert not {'/tool/nmap','/usr/bin/bwrap'} & {x['destination'] for x in launcher['native_files']}
 
 
 def test_role_partition_authority_absent():
@@ -161,6 +161,9 @@ def test_native_snapshot_mutation_refused(tmp_path,monkeypatch):
 
 
 def test_fixed_argv_and_initial_fd_closure(tmp_path,monkeypatch):
+    _supervised_spawn_cases(monkeypatch)
+    _supervised_proxy_cases(monkeypatch)
+    _supervised_bootstrap_cases(monkeypatch)
     import socket
     from recon_cockpit.secure_agent import engagement_live_client_worker as worker
     from test_secure_engagement_live_contract import opened
@@ -423,32 +426,9 @@ def test_readiness_namespace_mapping_and_groups(monkeypatch):
         assert r._steady_fd_max(role)==cap
     assert r._steady_fd_max('nmap','native')==16
 
-    import socket
-    # A launcher can make fixed child channels, while all three network socket
-    # families must actually return EPERM. Other errors and a successful socket
-    # fail closed; a successful witness socket is closed before refusal.
-    families=(socket.AF_INET,socket.AF_INET6,socket.AF_UNIX)
-    for bad_family in (None,*families):
-        for outcome in ('wrong_errno','allowed'):
-            attempts=[];closed=[]
-            def network_socket(family,kind):
-                attempts.append((family,kind))
-                if family==bad_family:
-                    if outcome=='allowed':return SimpleNamespace(close=lambda:closed.append(family))
-                    raise OSError(errno.EACCES,'declared unexpected restriction')
-                raise OSError(errno.EPERM,'declared seccomp denial')
-            with monkeypatch.context() as patch:
-                patch.setattr(socket,'socket',network_socket)
-                patch.setattr(socket,'socketpair',lambda *a,**kw:(_ for _ in ()).throw(AssertionError('launcher socketpair witness forbidden')))
-                if bad_family is None:r._launcher_network_creation_blocked()
-                else:refused(r._launcher_network_creation_blocked)
-            expected=families if bad_family is None else families[:families.index(bad_family)+1]
-            assert attempts==[(family,socket.SOCK_STREAM) for family in expected]
-            assert closed==([bad_family] if bad_family is not None and outcome=='allowed' else [])
-
     # Exercise the actual bootstrap branch with modeled OS boundaries. The
-    # launcher selects the new network-only witness; a reviewer retains the
-    # accepted full socket/socketpair witness. No resource/filter is installed.
+    # launcher and reviewer both select full process, namespace and socketpair
+    # denial witnesses. No resource/filter is installed.
     import resource
     from recon_cockpit.secure_agent import planner_worker,worker,name_tls_worker_common
     routed=[]
@@ -462,10 +442,11 @@ def test_readiness_namespace_mapping_and_groups(monkeypatch):
         patch.setattr(worker,'drop_privileges',lambda:None)
         patch.setattr(name_tls_worker_common,'seal_group_identity',lambda identity:None)
         patch.setattr(r,'_install_filter',lambda role:routed.append(('filter',role)))
-        patch.setattr(r,'_launcher_network_creation_blocked',lambda:routed.append(('witness','launcher_network')))
         patch.setattr(planner_worker,'_sockets_blocked',lambda:routed.append(('witness','legacy_full')))
-        for name in ('_zero_capabilities','_no_new_privileges','_process_creation_blocked','_namespace_creation_blocked'):
+        for name in ('_zero_capabilities','_no_new_privileges'):
             patch.setattr(planner_worker,name,lambda:None)
+        for name in ('_process_creation_blocked','_namespace_creation_blocked'):
+            patch.setattr(planner_worker,name,lambda name=name:routed.append(('witness',name)))
         for role in ('launcher','terminal'):
             selected=next(row for row in bundle['roles'] if row['role']==role)
             declared=declared_readiness(bundle,role)
@@ -478,7 +459,7 @@ def test_readiness_namespace_mapping_and_groups(monkeypatch):
             ready=r.bootstrap_role(role=role,entry=entry,runtime_manifest=selected,
                 expected_fds={row['purpose']:row['fd'] for row in descriptors if row['fd']>2},deadline_ns=deadline)
             assert ready['role']==role
-    assert routed==[('filter','launcher'),('witness','launcher_network'),('filter','terminal'),('witness','legacy_full')]
+    assert routed==[item for role in ('launcher','terminal') for item in [('filter',role),('witness','_process_creation_blocked'),('witness','_namespace_creation_blocked'),('witness','legacy_full')]]
 
     from recon_cockpit.secure_agent import engagement_live_context as context
     for case_id in ('S42C-X45','S42C-X46'):
@@ -526,7 +507,8 @@ def test_readiness_namespace_mapping_and_groups(monkeypatch):
         assert r._RETAINED_FIXTURE_DESCRIPTORS.get()is None
 
 
-def test_actual_native_elf_required_before_arm():
+def test_actual_native_elf_required_before_arm(monkeypatch):
+    _supervised_native_receipt_cases(monkeypatch)
     bundle=declared_runtime();waiting=declared_readiness(bundle,'nmap')
     image=waiting['parent_observation']['executable']
     bad={'schema_version':'1','role':'nmap','waiting_image':image,'parent_observation':deepcopy(waiting['parent_observation']),'observed_at_ns':2000000000}
@@ -544,7 +526,8 @@ def _client_result():
         'stdout_bytes':0,'stderr_bytes':0,'truncated':False,'readiness':None,'meter':None,'parsed':None,'parser_receipt':None,'cleanup':None}
 
 
-def test_aggregate_raw_capture_budget():
+def test_aggregate_raw_capture_budget(monkeypatch):
+    _supervised_capture_cases(monkeypatch)
     from recon_cockpit.secure_agent import engagement_live_context as context
     result=_client_result();result.update(stdout_bytes=2047,stderr_bytes=1)
     assert context.validate_client_result(result)==result
@@ -553,6 +536,8 @@ def test_aggregate_raw_capture_budget():
 
 
 def test_original_startup_deadline(monkeypatch,tmp_path):
+    _supervised_phase_deadline_cases(monkeypatch)
+    _pending_close_deadline_case(monkeypatch)
     calls=[]
     parent=SimpleNamespace(deadline=12.,clock=r.time.monotonic,cancelled=object(),check=lambda:calls.append('check'),remaining=lambda:1.25)
     clipped=r._ClippedControl(parent,11.)
@@ -622,6 +607,7 @@ def test_original_startup_deadline(monkeypatch,tmp_path):
 
 
 def test_native_action_session_deadline_minimum(monkeypatch):
+    _supervised_native_clock_case(monkeypatch)
     from recon_cockpit.secure_agent.engagement_live_client import WaitingClient
     from test_secure_engagement_live_contract import prepared,release,clock,M
     value=prepared();calls=[]
@@ -665,6 +651,7 @@ def _parser_model(monkeypatch,late=False):
 
 
 def test_parser_pin_before_input_release(monkeypatch):
+    _supervised_parser_case(monkeypatch)
     parser,kwargs,calls=_parser_model(monkeypatch)
     result,receipt=parser.parse(**kwargs)
     assert calls==['pin','input','cleanup'] and result=={'declared':True}
@@ -696,9 +683,23 @@ def test_payload_hup_and_shared_cleanup_deadline(monkeypatch):
     result=r.cleanup_owned([process],[pin],deadline=2.)
     assert result['deadline_ns']==2000000000 and result['status']=='complete'
     assert calls[0]=='signal' and calls[-1]=='close' and 0<calls[-2][1]<=.9
+    calls.clear()
+    owner=r.PendingChild(runtime={},role='parser',bootstrap={},control=SimpleNamespace(deadline=2.,cleanup_deadline=1.5))
+    monkeypatch.setattr(r,'cleanup_owned',lambda processes,pins,deadline:(calls.append(deadline) or result))
+    assert owner.close() is result and owner.close(deadline=9.) is result and calls==[1.5]
 
 
 def test_cleanup_failure_refuses_useful_result(monkeypatch):
+    _supervised_parser_case(monkeypatch,late=True)
+    actual=declared_cleanup(declared_readiness(declared_runtime(),'admission'))
+    actual['status']='failed'
+    peer=SimpleNamespace(close=lambda:None)
+    child=r.LauncherChild(SimpleNamespace(), 'identify_admission',peer,{}, {}, {})
+    child.cleanup=actual
+    for _ in range(2):
+        error=refused(child.close)
+        assert error.code=='engagement_live_cleanup_incomplete' and error.cleanup is actual
+
     parser,kwargs,calls=_parser_model(monkeypatch,late=True)
     refused(parser.parse,**kwargs)
     assert calls==['pin','input','cleanup']
@@ -730,9 +731,9 @@ def test_context_runtime_meter_parser_crosslinks():
     bundle=declared_runtime();loaded={'runtime.json':{'schema_version':'1','runtime':bundle,'instrumentation':[]},
         'manifest.json':{'runtime_sha256':r.runtime_digest(bundle),'broker_instances':[],'transcript':{'segments':[]}},
         'transcript.jsonl':b'',
-        'processes.json':{'schema_version':'1','startup':[],'readiness':[],'native':[],'boundary_observations':[]},
+        'processes.json':{'schema_version':'1','startup':[],'readiness':[],'native':[],'child_slots':[],'boundary_observations':[]},
         'results.json':{'schema_version':'1','operations':[],'boundary_proofs':[],'core_proofs':[]},
-        'cleanup.json':{'schema_version':'1','receipts':[],'exports':[],'recovery':None}}
+        'cleanup.json':{'schema_version':'1','receipts':[],'supervisors':[],'exports':[],'recovery':None}}
     assert context.validate_live_context(loaded)==loaded['results.json']
     bad=deepcopy(loaded);bad['manifest.json']['runtime_sha256']='0'*64;refused(context.validate_live_context,bad)
     bad=deepcopy(loaded);bad['cleanup.json']['recovery']={};refused(context.validate_live_context,bad)
@@ -754,3 +755,391 @@ def test_context_runtime_meter_parser_crosslinks():
     assert context.validate_live_context(bad)==bad['results.json']
 
 
+
+def _supervised_data(slot='http_identify'):
+    from test_secure_engagement_live_contract import opened,prepared,M
+    bundle=declared_runtime();session=opened();session['binding']['runtime_sha256']=r.runtime_digest(bundle)
+    value=prepared(slot,opened_value=session);endpoint=declared_readiness(bundle,'endpoint')
+    bindings=[]
+    for index,(name,(role,action,fd)) in enumerate(c.CHILD_SLOTS.items()):
+        bindings.append({'child_slot':name,'role':role,'worker_id':uid(400+index),'pair':{
+            'launcher_fd':fd,'request_endpoint':{'device':1,'inode':500+index*2,'mode':stat.S_IFSOCK,'flags':2|0x800},
+            'child_endpoint':{'device':1,'inode':501+index*2,'mode':stat.S_IFSOCK,'flags':2|0x800}}})
+    return bundle,session,value,endpoint,bindings
+
+
+def _supervised_bootstrap_cases(monkeypatch):
+    bundle,session,value,endpoint,bindings=_supervised_data()
+    observer=endpoint['parent_observation']['observer'];deadline=value['envelope']['action_deadline_ns']
+    from test_secure_engagement_live_contract import prepared
+    # This is pure reconstruction: any accidental filesystem/clock call fails.
+    with monkeypatch.context() as patch:
+        patch.setattr(r,'_observer',lambda:(_ for _ in ()).throw(AssertionError('pure replay read host')))
+        for binding in bindings:
+            item=prepared(c.CHILD_SLOTS[binding['child_slot']][1],opened_value=session)
+            boot=r.reconstruct_child_bootstrap(runtime=bundle,child_slot=binding,prepared=item,session=session,
+                endpoint_identity=endpoint,observer=observer,deadline_ns=deadline,launcher_id=uid(300))
+            assert boot['descriptors']==[] and boot['worker_id']==binding['worker_id']
+            assert boot['deadline_ns']==deadline
+            assert boot['expected_namespaces']['net']==(endpoint['parent_observation']['namespaces']['net'] if binding['role'] in ('nmap','headers') else observer['namespaces']['net'])
+            assert r.validate_protocol_value('initial_bootstrap',boot)==boot
+            for mutate in ('rights','observer','deadline','role'):
+                bad=deepcopy(boot)
+                if mutate=='rights':bad['descriptors']=[{'fd':3}]
+                elif mutate=='observer':bad['observer']['uid']=True
+                elif mutate=='deadline':bad['deadline_ns']=True
+                else:bad['role']='launcher'
+                refused(r.validate_initial_bootstrap,bad)
+    bad=deepcopy(bindings[0]);bad['pair']['child_endpoint']=deepcopy(bad['pair']['request_endpoint'])
+    refused(r.validate_child_slot,bad)
+
+
+def _supervised_spawn_cases(monkeypatch):
+    import socket,subprocess
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+    bundle,session,value,endpoint,bindings=_supervised_data()
+    binding=next(x for x in bindings if x['role']=='parser')
+    manifest=next(x for x in bundle['roles'] if x['role']=='parser')
+    for oversize in (False,True):
+        parent,child=socket.socketpair();calls=[];fds=[]
+        snapshot=SimpleNamespace(role='parser',runtime_sha256=r.runtime_digest(bundle),manifest=manifest,
+            pass_fds=(),close=lambda:calls.append('snapshot_closed'))
+        control=ExecutionControl(r.time.monotonic()+30)
+        payload={'slot':'http_identify','scope':session['scope']}
+        def launch(argv,**kwargs):
+            calls.append('popen');fds.extend(kwargs['pass_fds'])
+            assert kwargs['stdin'] is child and kwargs['close_fds'] and kwargs['start_new_session']
+            assert kwargs['stdin'] is not parent
+            raise OSError(errno.EIO,'fixed pre-spawn refusal')
+        with monkeypatch.context() as patch:
+            patch.setattr(r,'snapshot_role',lambda *a:snapshot)
+            patch.setattr(r,'_observer',lambda:endpoint['parent_observation']['observer'])
+            patch.setattr(r,'_base_command',lambda *a,**kw:['fixed'])
+            patch.setattr(r,'_finish_command',lambda *a,**kw:None)
+            patch.setattr(r.os,'pipe2',lambda flags:os.pipe(),raising=False)
+            patch.setattr(subprocess,'Popen',launch)
+            original_json=r._json
+            if oversize:patch.setattr(r,'_json',lambda obj:b'x'*32769 if type(obj)is dict and obj.get('operation')=='BOOTSTRAP' else original_json(obj))
+            try:
+                if oversize:
+                    assert refused(r._spawn_child_owned,runtime=bundle,role='parser',payload=payload,
+                        child_stdin=child,worker_id=binding['worker_id'],control=control,
+                        supervision_identity={'launcher_id':uid(300),'child_slot':binding['child_slot']}).code=='engagement_live_limit_exceeded'
+                else:
+                    with pytest.raises(OSError,match='fixed pre-spawn refusal'):
+                        r._spawn_child_owned(runtime=bundle,role='parser',payload=payload,child_stdin=child,
+                            worker_id=binding['worker_id'],control=control,
+                            supervision_identity={'launcher_id':uid(300),'child_slot':binding['child_slot']})
+            finally:parent.close()
+        assert child.fileno()==-1 and calls==(['snapshot_closed'] if oversize else ['popen','snapshot_closed'])
+        for fd in fds:
+            with pytest.raises(OSError):os.fstat(fd)
+    # Namespace helper image changes reuse the same wrapper; no hidden fork.
+    argv,passed=r._namespace_command(['fixed-bwrap'],(10,11),(12,13))
+    assert argv[:2]==['/usr/bin/nsenter','--no-fork'] and 'os.execv' in argv[-3]
+    assert passed==(10,11,12,13)
+
+
+def _pending_close_deadline_case(monkeypatch):
+    bundle=declared_runtime();ready=declared_readiness(bundle,'parser');now=[10.];calls=[]
+    control=SimpleNamespace(deadline=12.,clock=lambda:now[0],cancelled=object(),cleanup_deadline=13.,
+        check=lambda:None,remaining=lambda:12.-now[0])
+    owner=r.PendingChild(runtime=bundle,role='parser',bootstrap={'expected_namespaces':{}},control=control)
+    owner.process=object();owner.pin=object();owner.entry={'retained':'entry'};owner.info_read=81
+    def close(fd):calls.append(('close',fd));now[0]=12.1
+    cleanup=declared_cleanup(ready)
+    with monkeypatch.context() as patch:
+        patch.setattr(r.time,'monotonic',lambda:now[0])
+        patch.setattr(r,'_finish_observation',lambda **kw:(owner.pin,ready))
+        patch.setattr(r.os,'close',close)
+        patch.setattr(r,'cleanup_owned',lambda processes,pins,deadline:(calls.append(('cleanup',deadline)) or cleanup))
+        error=refused(owner.observe_ready,control)
+    assert error.code=='engagement_live_timeout' and error.startup_cleanup==cleanup
+    assert owner.info_read is None and calls==[('close',81),('cleanup',13.)]
+
+
+def _capture_fixture(monkeypatch,*,stdout=b'',stderr=b'',slot='http_headers'):
+    from recon_cockpit.secure_agent.engagement_live_client import SupervisedCapture
+    from test_secure_engagement_live_contract import prepared
+    bundle=declared_runtime();ready=declared_readiness(bundle,'headers' if slot=='http_headers' else 'nmap')
+    pipes=[]
+    for content in (stdout,stderr):
+        rd,wr=os.pipe();os.write(wr,content);os.close(wr);pipes.append(os.fdopen(rd,'rb',buffering=0))
+    calls=[];cleanup=declared_cleanup(ready)
+    process=SimpleNamespace(stdout=pipes[0],stderr=pipes[1],returncode=0,poll=lambda:0)
+    owner=SimpleNamespace(ready=ready,cleanup=None,process=process,pin=SimpleNamespace(check_alive=lambda:calls.append('alive')))
+    def close(*,deadline):calls.append(('close',deadline));owner.cleanup=cleanup;return cleanup
+    owner.close=close
+    engine=SupervisedCapture(owner,prepared(slot),bundle)
+    control=SimpleNamespace(deadline=r.time.monotonic()+5,clock=r.time.monotonic,cancelled=object(),
+        check=lambda:None,remaining=lambda:5,cleanup_deadline=r.time.monotonic()+2)
+    engine.started_at_ns=r.time.monotonic_ns();engine.native_deadline_ns=int(control.deadline*1e9)
+    return engine,control,calls,pipes
+
+
+def _supervised_capture_cases(monkeypatch):
+    for stdout,stderr,overflow in ((b'a'*2047,b'b',False),(b'a'*2048,b'b',True)):
+        engine,control,calls,pipes=_capture_fixture(monkeypatch,stdout=stdout,stderr=stderr)
+        try:
+            if overflow:
+                error=refused(engine.capture,control)
+                assert error.code=='engagement_live_limit_exceeded'
+                assert error.client_capture['truncated'] and error.client_capture['status']=='output_limit'
+                assert len(error.client_capture['stdout'])+len(error.client_capture['stderr'])==2048
+            else:
+                value=engine.capture(control)
+                assert value['status']=='succeeded' and value['capture']['stdout_bytes']==2047 and value['capture']['stderr_bytes']==1
+                assert value['cleanup']['status']=='complete'
+            assert len(calls)==1 and calls[0][0]=='close'
+            refused(engine.capture,control)
+        finally:
+            for pipe in pipes:pipe.close()
+    # Native image observation actively drains; it does not wait for CAPTURE.
+    engine,control,calls,pipes=_capture_fixture(monkeypatch,stdout=b'actual pipe bytes',slot='http_identify')
+    try:
+        with monkeypatch.context() as patch:
+            def observe(*args,control,**kwargs):control.check();return {'declared_native':True}
+            patch.setattr(r,'observe_native',observe)
+            assert engine.observe_native(control)=={'declared_native':True}
+        assert engine.partial()['stdout']==b'actual pipe bytes'
+        refused(engine.observe_native,control)
+    finally:
+        for pipe in pipes:pipe.close()
+
+
+def _supervised_native_clock_case(monkeypatch):
+    from recon_cockpit.secure_agent.engagement_live_client import SupervisedCapture,SupervisedWaitingClient
+    from test_secure_engagement_live_contract import prepared,release,clock,M
+    engine,control,calls,pipes=_capture_fixture(monkeypatch)
+    try:
+        value=prepared('http_headers');engine.prepared=value;engine.native_deadline_ns=None
+        with monkeypatch.context() as patch:
+            patch.setattr(c,'sample_clock',lambda:clock())
+            patch.setattr(r.time,'monotonic',lambda:M/1e9)
+            patch.setattr(r.time,'monotonic_ns',lambda:M)
+            control.deadline=M/1e9+3;control.clock=lambda:r.time.monotonic()
+            result=engine.begin(release(value),control)
+            assert result['native_deadline_ns']==M+c.SECOND
+            refused(engine.begin,release(value),control)
+            patch.setattr(r.time,'monotonic_ns',lambda:M+c.SECOND)
+            assert refused(engine.drain,control).code=='engagement_live_timeout'
+            assert engine.partial()['status']=='timeout' # idle driver can retain this before cleanup
+        # Release cannot reach the direct child endpoint before one actual budget.
+        order=[];owner=SimpleNamespace(slot='headers_client',channel=object(),ready={})
+        supervisor=SimpleNamespace(native_begin=lambda **kw:(order.append('native_begin') or {'native_deadline_ns':M+c.SECOND}))
+        client=SupervisedWaitingClient(owner,value,{},supervisor)
+        with monkeypatch.context() as patch:
+            patch.setattr(c,'sample_clock',lambda:clock());patch.setattr(r.time,'monotonic',lambda:M/1e9)
+            patch.setattr(r,'_send_bytes',lambda *a:order.append('direct_go'))
+            client.release(release(value),control);refused(client.release,release(value),control)
+        assert order==['native_begin','direct_go']
+    finally:
+        for pipe in pipes:pipe.close()
+
+
+def _supervised_parser_case(monkeypatch,late=False):
+    from recon_cockpit.secure_agent import engagement_live_parser as parser
+    from test_secure_engagement_live_contract import opened,prepared
+    bundle=declared_runtime();ready=declared_readiness(bundle,'parser');cleanup=declared_cleanup(ready)
+    calls=[];state={'expired':False}
+    def check():
+        if state['expired']:raise c.LiveError('engagement_live_timeout')
+    control=SimpleNamespace(deadline=r.time.monotonic()+2,clock=r.time.monotonic,cancelled=object(),check=check,remaining=lambda:2)
+    def close(*,deadline):calls.append('actual_reap');assert deadline<=control.deadline;state['expired']=late;return cleanup
+    owner=SimpleNamespace(ready=ready,channel=object(),close=close)
+    def start(**kwargs):calls.append('host_ready');assert kwargs['child_slot']=='headers_parser';return owner
+    supervisor=SimpleNamespace(start_child=start)
+    with monkeypatch.context() as patch:
+        patch.setattr(r,'_send_bytes',lambda *a:calls.append('direct_input'))
+        patch.setattr(r,'_receive_bytes',lambda *a:r._json({'schema_version':'1','slot':'http_headers','parsed':{'declared':True}}))
+        patch.setattr(parser.parser,'validate_result',lambda *a:{'declared':True})
+        kwargs=dict(tool_id=parser.parser.HEADERS,raw=b'captured',stderr=b'',scope=opened()['scope'],truncated=False,
+                    control=control,runtime=bundle,prepared=prepared('http_headers'),supervisor=supervisor)
+        if late:refused(parser._parse_supervised_observed,**kwargs)
+        else:
+            parsed,receipt,observed=parser._parse_supervised_observed(**kwargs)
+            assert parsed=={'declared':True} and observed==ready and receipt['cleanup']==cleanup
+    assert calls==['host_ready','direct_input','actual_reap']
+
+def _supervised_proxy_cases(monkeypatch):
+    import socket
+    from recon_cockpit.secure_agent import engagement_live_protocol as protocol
+    from test_secure_engagement_live_contract import M
+    # Actual ordinary stream pairs retain distinct opposite-end identities.
+    # Only received fd numbering/Linux flag spelling is modeled for portability.
+    for mutation in (None,'swap','bootstrap','worker','stdin','observer','runtime'):
+        bundle,session,prepared,endpoint,bindings=_supervised_data()
+        sockets=[];channels={};children={};observed={}
+        for binding in bindings:
+            parent,child=socket.socketpair();parent.setblocking(False);child.setblocking(False)
+            sockets.extend((parent,child));name=binding['child_slot'];channels[name]=parent;children[name]=child
+            for key,peer in (('request_endpoint',parent),('child_endpoint',child)):
+                actual=r._descriptor(peer.fileno(),key)
+                binding['pair'][key]={k:actual[k] for k in ('device','inode','mode','flags')}
+                binding['pair'][key]['flags']=2|0x800
+                assert os.get_blocking(peer.fileno())is False
+            observed[parent.fileno()]={**r._descriptor(parent.fileno(),name+'_request'),
+                'fd':binding['pair']['launcher_fd'],'flags':2|0x800}
+        host,peer=socket.socketpair();sockets.extend((host,peer));calls=[]
+        control=SimpleNamespace(deadline=M/1e9+30,clock=lambda:M/1e9,cancelled=object(),check=lambda:None,remaining=lambda:30)
+        context={key:session['binding'] if key=='session_binding' else session[key] for key in ('session_binding','roe','scope','policy')}
+        try:
+            with monkeypatch.context() as patch:
+                original_descriptor=r._descriptor
+                patch.setattr(r,'_descriptor',lambda fd,purpose:{**observed[fd],'purpose':purpose} if fd in observed else original_descriptor(fd,purpose))
+                selected=dict(channels)
+                if mutation=='swap':selected['identify_client'],selected['headers_client']=selected['headers_client'],selected['identify_client']
+                if mutation=='swap':
+                    refused(r.SupervisorChannel,host,launcher_id=uid(300),slot_bindings=bindings,request_channels=selected,
+                        runtime=bundle,endpoint_identity=endpoint,role_context=context,control=control)
+                    continue
+                proxy=r.SupervisorChannel(host,launcher_id=uid(300),slot_bindings=bindings,request_channels=selected,
+                    runtime=bundle,endpoint_identity=endpoint,role_context=context,control=control)
+                binding=bindings[0]
+                bootstrap=r.reconstruct_child_bootstrap(runtime=bundle,child_slot=binding,prepared=prepared,session=session,
+                    endpoint_identity=endpoint,observer=endpoint['parent_observation']['observer'],deadline_ns=M+30*c.SECOND,launcher_id=uid(300))
+                ready=declared_readiness(bundle,'nmap',worker_id=binding['worker_id'])
+                ready['worker_ready']['bootstrap_sha256']=r._hash(bootstrap)
+                stdin=ready['parent_observation']['descriptors'][0]
+                stdin.update(binding['pair']['child_endpoint']);ready['worker_ready']['descriptor_sha256']=r._hash(ready['parent_observation']['descriptors'])
+                if mutation=='bootstrap':bootstrap['payload']['scope']['http']['port']+=1
+                if mutation=='worker':ready['worker_ready']['worker_id']=uid(999)
+                if mutation=='stdin':stdin['inode']+=1;ready['worker_ready']['descriptor_sha256']=r._hash(ready['parent_observation']['descriptors'])
+                if mutation=='observer':ready['parent_observation']['observer']['pid']+=1
+                if mutation=='runtime':ready['worker_ready']['runtime_sha256']='f'*64
+                def rpc(op,body,phase):
+                    calls.append(op)
+                    if op=='START':return {'child_slot':'identify_client','bootstrap':bootstrap}
+                    if op=='OBSERVE_READY':return {'child_slot':'identify_client','readiness':ready}
+                    raise AssertionError('unexpected modeled host request')
+                proxy._rpc=rpc
+                patch.setattr(protocol,'send_initial',lambda channel,value,rights,control:(calls.append('INITIAL'),assert_no_rights(rights)))
+                patch.setattr(r.time,'monotonic',lambda:M/1e9)
+                if mutation is not None:
+                    refused(proxy.start_child,child_slot='identify_client',prepared=prepared,control=control)
+                    assert channels['identify_client'].fileno()==-1
+                else:
+                    owner=proxy.start_child(child_slot='identify_client',prepared=prepared,control=control)
+                    assert owner.ready==ready and not hasattr(owner,'process') and not hasattr(owner,'pin')
+                    assert calls==['START','INITIAL','OBSERVE_READY']
+                    refused(proxy.start_child,child_slot='identify_client',prepared=prepared,control=control)
+                    assert calls==['START','INITIAL','OBSERVE_READY']
+        finally:
+            for item in sockets:item.close()
+
+
+def assert_no_rights(rights):
+    assert rights==()
+
+
+def _supervised_native_receipt_cases(monkeypatch):
+    bundle,session,prepared,endpoint,bindings=_supervised_data()
+    # Nmap and Python are distinct real image commitments in this fixture.
+    for row in bundle['roles']:
+        for image in row['native_files']:
+            if image['destination']=='/tool/nmap':image['sha256']='c'*64
+    bundle=r.validate_runtime(bundle)
+    waiting=declared_readiness(bundle,'nmap');parent=deepcopy(waiting['parent_observation'])
+    image=next(x for x in bundle['roles'] if x['role']=='nmap')['native_files']
+    image=next(x for x in image if x['destination']=='/tool/nmap')
+    parent.update(stage='native',sampled_at_ns=2000000000)
+    parent['executable']={**parent['executable'],'destination':'/tool/nmap','sha256':image['sha256'],'size':image['size']}
+    good={'schema_version':'1','role':'nmap','waiting_image':deepcopy(waiting['parent_observation']['executable']),
+          'parent_observation':parent,'observed_at_ns':2000000000}
+    for mutation in (None,'pid','start','hash','size','map','waiting','observer','stage'):
+        value=deepcopy(good)
+        if mutation=='pid':value['parent_observation']['payload']['pid']+=1
+        elif mutation=='start':value['parent_observation']['payload']['start_time_ticks']+=1
+        elif mutation=='hash':value['parent_observation']['executable']['sha256']='f'*64
+        elif mutation=='size':value['parent_observation']['executable']['size']+=1
+        elif mutation=='map':value['parent_observation']['mapped_images'].append({'destination':'/bad.so','device':1,'inode':999})
+        elif mutation=='waiting':value['waiting_image']['inode']+=1
+        elif mutation=='observer':value['parent_observation']['observer']['pid']+=1
+        elif mutation=='stage':value['parent_observation']['stage']='sealed'
+        proxy=r.SupervisorChannel.__new__(r.SupervisorChannel)
+        proxy.runtime=bundle;proxy.states={'identify_client':'active'};proxy.native={}
+        control=SimpleNamespace(deadline=r.time.monotonic()+2,check=lambda:None);proxy.control=control
+        proxy.children={'identify_client':SimpleNamespace(ready=waiting)}
+        proxy._rpc=lambda *args:{'child_slot':'identify_client','native_readiness':value}
+        if mutation is None:assert proxy.observe_native(child_slot='identify_client',control=control)==good
+        else:refused(proxy.observe_native,child_slot='identify_client',control=control)
+
+
+def _supervised_phase_deadline_cases(monkeypatch):
+    from recon_cockpit.secure_agent import engagement_live_parser as parser
+    from recon_cockpit.secure_agent.engagement_live_client import SupervisedWaitingClient
+    from test_secure_engagement_live_contract import opened,prepared
+    # A host reply does not reset the original caller's remaining validation
+    # allowance. Expiry closes the sole proxy channel before another release.
+    now=[10.];calls=[]
+    control=SimpleNamespace(deadline=11.,clock=lambda:now[0],cancelled=object(),
+                            check=lambda:None,remaining=lambda:11.-now[0])
+    proxy=r.SupervisorChannel.__new__(r.SupervisorChannel)
+    proxy.control=control;proxy.states={'identify_client':'active'};proxy.native={}
+    def rpc(*args):now[0]=10.75;calls.append('host_reply');return {'native_readiness':{}}
+    def validate(*args):
+        assert c._operation_deadline()==11.
+        calls.append('original_validation');now[0]=11.01
+        c.canonical({})
+        raise AssertionError('expired validation returned')
+    proxy._rpc=rpc;proxy.close=lambda:calls.append('closed')
+    with monkeypatch.context() as patch:
+        patch.setattr(r.time,'monotonic',lambda:now[0])
+        patch.setattr(r,'validate_protocol_value',validate)
+        assert refused(proxy.observe_native,child_slot='identify_client',control=control).code=='engagement_live_timeout'
+    assert calls==['host_reply','original_validation','closed'] and proxy.native=={}
+
+    # REAP's post-reply validator and real request-channel closure share the
+    # same original bound; cached receipts are data, not another host exchange.
+    now[0]=10.;calls=[]
+    supervisor=SimpleNamespace(control=control,controls={'identify_parser':control},states={},
+        _rpc=lambda *args:(calls.append('reap_reply') or {'cleanup':{}}))
+    def cleanup_validation(*args):
+        assert c._operation_deadline()==11.
+        calls.append('cleanup_validation');now[0]=11.01;c.canonical({})
+        raise AssertionError('expired cleanup validator returned')
+    supervisor._check_cleanup=cleanup_validation
+    child=r.LauncherChild(supervisor,'identify_parser',SimpleNamespace(close=lambda:calls.append('request_closed')),{}, {}, {})
+    with monkeypatch.context() as patch:
+        patch.setattr(r.time,'monotonic',lambda:now[0])
+        assert refused(child.close).code=='engagement_live_timeout'
+    assert calls==['reap_reply','cleanup_validation','request_closed'] and child.cleanup is None
+    now[0]=10.;calls=[]
+    actual=declared_cleanup(declared_readiness(declared_runtime(),'parser'))
+    supervisor._check_cleanup=lambda *args:actual
+    def late_channel_close():calls.append('request_closed');now[0]=11.01
+    child=r.LauncherChild(supervisor,'identify_parser',SimpleNamespace(close=late_channel_close),{}, {}, {})
+    with monkeypatch.context() as patch:
+        patch.setattr(r.time,'monotonic',lambda:now[0])
+        assert refused(child.close).code=='engagement_live_timeout'
+    assert calls==['reap_reply','request_closed'] and child.cleanup is actual
+    assert child.close() is actual and calls==['reap_reply','request_closed']
+
+    # The public waiting-client proxy also binds release validation before its
+    # NATIVE_BEGIN RPC; it cannot begin work after that validation uses the lease.
+    value=prepared('http_headers');calls=[];now[0]=10.
+    client=SupervisedWaitingClient(SimpleNamespace(ready={}),value,{},
+        SimpleNamespace(native_begin=lambda **kwargs:calls.append('native_begin')))
+    def release_validation(*args,**kwargs):
+        assert c._operation_deadline()==11.
+        now[0]=11.01;c.canonical({})
+        raise AssertionError('expired validation returned')
+    with monkeypatch.context() as patch:
+        patch.setattr(r.time,'monotonic',lambda:now[0])
+        patch.setattr(c,'validate_release_binding',release_validation)
+        assert refused(client.release,{},control).code=='engagement_live_timeout'
+    assert calls==[] and client.released is False
+
+    # Parser input validation and encoding consume the same two-second phase
+    # that later owns startup/input/reaping; an expired prelude starts no child.
+    scope=opened()['scope'];calls=[];now[0]=10.;control.deadline=20.
+    def scope_validation(value):
+        assert c._operation_deadline()==12.
+        now[0]=12.01;return value
+    with monkeypatch.context() as patch:
+        patch.setattr(r.time,'monotonic',lambda:now[0])
+        patch.setattr(parser,'validate_scope',scope_validation)
+        assert refused(parser._parse_supervised_observed,tool_id=parser.parser.HEADERS,
+            raw=b'',stderr=b'',scope=scope,truncated=False,control=control,runtime={},
+            prepared=value,supervisor=SimpleNamespace(start_child=lambda **kwargs:calls.append('start'))).code=='engagement_live_timeout'
+    assert calls==[]

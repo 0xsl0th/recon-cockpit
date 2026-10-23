@@ -17,9 +17,168 @@ from .execution import ExecutionControl
 from .models import parse_action, parse_policy
 
 
+class _HostEvidenceBudget:
+    """One host allocation across all producers and sequential broker owners."""
+
+    def __init__(self):
+        self._pid = os.getpid()
+        self._lock = threading.Lock()
+        self._pending = {}
+        self._rows = []
+        self._bytes = 0
+        self._supervision = 0
+        self._session_owners = []
+
+    def _check(self):
+        if self._pid != os.getpid():
+            c.fail('foreign_owner')
+
+    def _attach_session(self, session):
+        self._check()
+        with self._lock:
+            prior = tuple(self._session_owners)
+        if len(prior) >= 2 or any(not owner._verified_reaped() for owner in prior):
+            c.fail('cleanup_incomplete')
+        with self._lock:
+            if tuple(self._session_owners) != prior:
+                c.fail('cleanup_incomplete')
+            self._session_owners.append(session)
+
+    def reserve(self, *, kind, maximum_bytes, maximum_rows, control):
+        from .engagement_live_approval import _bounded_lock
+
+        self._check()
+        if kind not in ('supervision_projection', 'other_host'):
+            c.fail('invalid_input')
+        c.integer(maximum_bytes, 1, 3072 if kind == 'supervision_projection' else 262144)
+        # Each ticket describes one actual observation, not an arbitrary batch.
+        c.integer(maximum_rows, 1, 1)
+        with _bounded_lock(self._lock, control):
+            reserved_bytes = sum(row['bytes'] for row in self._pending.values())
+            reserved_supervision = sum(row['kind'] == 'supervision_projection'
+                                       for row in self._pending.values())
+            if (self._bytes + reserved_bytes + maximum_bytes > 262144
+                    or len(self._rows) + len(self._pending) + 1 > 128
+                    or (kind == 'supervision_projection'
+                        and self._supervision + reserved_supervision + 1 > 96)):
+                c.fail('limit_exceeded')
+            ticket = object()
+            self._pending[ticket] = {'kind': kind, 'bytes': maximum_bytes,
+                                     'request': None, 'row': None}
+            return ticket
+
+    @staticmethod
+    def _copy_row(row):
+        if type(row) is not dict or type(row.get('kind')) is not str:
+            c.fail('evidence_invalid')
+        selected = deepcopy(row)
+        # Charge the maximum eventual combined host sequence width now.
+        selected['row_sequence'] = 128
+        raw = c.canonical(selected, max_bytes=262144)
+        return c.decode(raw, max_bytes=262144), len(raw) + 1
+
+    @staticmethod
+    def _request_identity(row):
+        selected = deepcopy(row)
+        selected.pop('observed_at_ns', None)
+        data = selected.get('data')
+        if selected['kind'] == 'supervision_projection' and type(data) is dict:
+            data.pop('reply', None)
+            data.pop('local_error', None)
+        elif selected['kind'] == 'capability_projection' and type(data) is dict:
+            for key in ('reply', 'reply_projection_sha256',
+                        'original_reply_sha256', 'original_reply_bytes'):
+                data.pop(key, None)
+        return selected
+
+    def record_request(self, ticket, row):
+        self._check()
+        selected, size = self._copy_row(row)
+        identity = self._request_identity(selected)
+        with self._lock:
+            pending = self._pending.get(ticket)
+            if (pending is None or pending['row'] is not None or size > pending['bytes']
+                    or (selected['kind'] == 'supervision_projection')
+                       != (pending['kind'] == 'supervision_projection')):
+                c.fail('evidence_invalid')
+            pending['request'], pending['row'] = identity, selected
+
+    def finalize(self, ticket, row):
+        self._check()
+        selected, size = self._copy_row(row)
+        identity = self._request_identity(selected)
+        with self._lock:
+            pending = self._pending.get(ticket)
+            if (pending is None or size > pending['bytes']
+                    or (selected['kind'] == 'supervision_projection')
+                       != (pending['kind'] == 'supervision_projection')
+                    or (pending['request'] is not None and pending['request'] != identity)
+                    or (pending['row'] is not None
+                        and selected['observed_at_ns'] < pending['row']['observed_at_ns'])):
+                c.fail('evidence_invalid')
+            self._rows.append(selected)
+            self._bytes += size
+            self._supervision += pending['kind'] == 'supervision_projection'
+            del self._pending[ticket]
+
+    def release(self, ticket):
+        self._check()
+        with self._lock:
+            pending = self._pending.get(ticket)
+            if pending is None or pending['row'] is not None:
+                c.fail('evidence_invalid')
+            del self._pending[ticket]
+
+    def snapshot(self):
+        self._check()
+        with self._lock:
+            return {'rows': deepcopy(self._rows + [row['row'] for row in self._pending.values()
+                                                   if row['row'] is not None]),
+                    'unresolved_tickets': len(self._pending),
+                    'reserved_bytes': sum(row['bytes'] for row in self._pending.values()),
+                    'reserved_rows': len(self._pending)}
+
+
+class _CleanupEpoch:
+    """The first stop fixes cleanup time; no caller can restart the clock."""
+
+    def __init__(self, control):
+        self._pid = os.getpid()
+        self._bound_ns = int(control.deadline * c.SECOND)
+        self._lock = threading.Lock()
+        self._value = None
+
+    def stop(self, *, bound_deadline_ns=None):
+        if self._pid != os.getpid():
+            c.fail('foreign_owner')
+        now = time.monotonic_ns()
+        bound = self._bound_ns
+        if bound_deadline_ns is not None:
+            bound = min(bound, c.integer(bound_deadline_ns, 1, c.INTEGER_MAX))
+        with self._lock:
+            if self._value is None:
+                self._value = {'first_stop_requested_at_ns': now,
+                               'deadline_ns': min(bound, now + 2 * c.SECOND)}
+            else:
+                self._value['deadline_ns'] = min(self._value['deadline_ns'], bound)
+            return dict(self._value)
+
+    def snapshot(self):
+        if self._pid != os.getpid():
+            c.fail('foreign_owner')
+        with self._lock:
+            return None if self._value is None else dict(self._value)
+
+
 class EngagementSession:
     @classmethod
     def start(cls, store_directory, audit_path, *, review_mode, control):
+        return cls._start_with_host_budget(store_directory, audit_path,
+            review_mode=review_mode, control=control, host_evidence_budget=_HostEvidenceBudget())
+
+    @classmethod
+    def _start_with_host_budget(cls, store_directory, audit_path, *, review_mode,
+                               control, host_evidence_budget):
         from . import engagement_live_runtime as runtime
         from .engagement_live_broker import EngagementBroker, preallocate_role_bundle
         from .engagement_live_audit import EngagementAuditService
@@ -28,6 +187,9 @@ class EngagementSession:
                 or review_mode not in {'terminal', 'graphical_v1'}):
             c.fail('invalid_input')
         control.check()
+        if type(host_evidence_budget) is not _HostEvidenceBudget:
+            c.fail('invalid_input')
+        host_evidence_budget._check()
         self = cls.__new__(cls)
         self._pid = os.getpid()
         self._control = control
@@ -52,9 +214,16 @@ class EngagementSession:
         self._failure = None
         self._cleanup = None
         self._closed = False
+        self._startup_quiesced = False
         self._started_at_ns = time.monotonic_ns()
         self._observer_rows = []
+        self._child_slots = []
+        self._unstarted_supervisors = []
+        self._remaining_channels_closed = False
+        self._host_evidence_budget = host_evidence_budget
+        self._cleanup_epoch = _CleanupEpoch(control)
         try:
+            self._host_evidence_budget._attach_session(self)
             self._runtime = runtime.inspect_runtime(control)
             self._bundle = preallocate_role_bundle(review_mode)
             self._broker = EngagementBroker(runtime=self._runtime, store_directory=store_directory,
@@ -62,6 +231,12 @@ class EngagementSession:
             self._roles.append(self._broker)
             self._broker_ready = self._broker.start()
             self._readiness.append(self._broker_ready['readiness'])
+            for slot, allocated in zip(self._bundle.slots, self._broker_ready['allocated_slots']):
+                for declaration in slot.child_slot_bindings:
+                    self._child_slots.append({'schema_version': '1',
+                        'broker_id': self._broker_ready['broker_id'],
+                        'session_id': allocated['session_id'], 'launcher_id': slot.launcher_id,
+                        **declaration, 'prepared_sha256': None, 'bootstrap': None, 'entry_sha256': None})
             self._audit = EngagementAuditService(audit_path, runtime=self._runtime,
                                                  role_bundle=self._bundle, control=control)
             self._roles.append(self._audit)
@@ -107,6 +282,13 @@ class EngagementSession:
         if observation is not None:
             self._startup_observations.append(observation)
 
+    def _supervisor_failed(self, error):
+        # This fixed notification may run on a supervisor. It must never join
+        # that thread or acquire a Session operation/cleanup lock.
+        self._cleanup_epoch.stop()
+        self._remember_failure(error)
+        self._stop.set()
+
     def _session(self, session_id):
         c.uuid(session_id)
         with self._state_lock:
@@ -137,11 +319,16 @@ class EngagementSession:
         from .engagement_live_endpoint import prepare_endpoint
         from .engagement_live_launcher import EngagementLauncher
         from .engagement_live_approval import EngagementApprovalService
-        from .engagement_live_approval import _clipped_control
+        from .engagement_live_approval import _clipped_control, _bounded_lock
 
         self._check()
         c.integer(ingress, 0, 1)
-        with self._slot_locks[ingress]:
+        startup = _clipped_control(self._control, int(self._control.deadline*c.SECOND), self._stop)
+        # The same finite setup slot covers persistent namespace/nft builders
+        # and later child construction. Two API submitters cannot create a
+        # second helper outside the explicit process-graph bound.
+        with _bounded_lock(self._slot_locks[ingress], startup), \
+                _bounded_lock(self._bundle._child_setup_lock, startup):
             self._check()
             with self._state_lock:
                 if ingress in self._used_slots:
@@ -173,7 +360,9 @@ class EngagementSession:
                     broker_peer=endpoint_peers, arm_peer=arm, control=_clipped_control(
                         self._control, binding['session_deadline_ns'], self._stop))
                 self._register(row, 'endpoint', endpoint, endpoint.ready)
-                launcher = EngagementLauncher(self._runtime, endpoint=endpoint, role_slot=slot)
+                launcher = EngagementLauncher(self._runtime, endpoint=endpoint, role_slot=slot,
+                    host_evidence_budget=self._host_evidence_budget,
+                    cleanup_epoch=self._cleanup_epoch, failure_sink=self._supervisor_failed)
                 # Register ownership before any launch can partially succeed.
                 self._roles.append(launcher)
                 row['launcher'] = launcher
@@ -184,7 +373,9 @@ class EngagementSession:
                 endpoint.close_namespaces()
                 reviewer = EngagementApprovalService(parse_policy(opened['policy']), binding['session_id'],
                     frontend=self._mode, session_binding=opened, runtime_manifest=self._runtime,
-                    witness_slot=slot, control=self._control)
+                    witness_slot=slot, control=self._control,
+                    host_evidence_budget=self._host_evidence_budget,
+                    cleanup_epoch=self._cleanup_epoch, failure_sink=self._supervisor_failed)
                 self._roles.append(reviewer)
                 row['reviewer'] = reviewer
                 self._check()
@@ -198,6 +389,7 @@ class EngagementSession:
                 self._remember_failure(error)
                 # Do not call close while holding this slot's startup lock.
                 # The monitor or the caller's finally block owns total cleanup.
+                self._cleanup_epoch.stop()
                 self._stop.set()
                 self._interrupt_roles(self._roles)
                 raise
@@ -218,7 +410,7 @@ class EngagementSession:
             if dispatch_id in self._operations or len(self._operations) >= 4:
                 c.fail('invalid_prepared')
             self._operations[dispatch_id] = {'session': row['opened'], 'prepared': value,
-                'result': None, 'client': None, 'meter': None,
+                'result': None, 'client': None, 'meter': None, 'host_capture': None,
                 'elapsed_ms': dict.fromkeys(('review', 'admission', 'native', 'parser', 'cleanup', 'action'))}
         row['launcher'].prepare(value, self._control)
         self._check()
@@ -276,8 +468,12 @@ class EngagementSession:
         self._check()
         row = self._session(session_id)
         row['stopped'] = True
+        self._cleanup_epoch.stop()
         self._interrupt_roles([row[key] for key in ('reviewer', 'launcher', 'endpoint')])
-        return self._broker.cancel(session_id)
+        try:
+            return self._broker.cancel(session_id)
+        finally:
+            self._stop.set()
 
     def revoke(self, *, expected_revision, expected_generation, event_id):
         self._check()
@@ -290,8 +486,17 @@ class EngagementSession:
 
     def _verified_reaped(self):
         """Packaging can retain a timed-out cleanup only after actual reaping."""
-        if not self._closed or self._cleanup is None:
+        if not self._closed or self._cleanup is None or not self._startup_quiesced:
             return False
+        if self._child_slots and not self._remaining_channels_closed:
+            return False
+        monitor = self._monitor_thread
+        if monitor is not None and monitor is not threading.current_thread() and monitor.is_alive():
+            return False
+        for session in self._sessions.values():
+            launcher = session['launcher']
+            if launcher is not None and not launcher.supervisor_resolved:
+                return False
         reaped = set()
         for receipt in self._cleanup_receipts:
             if not receipt['descriptors_closed']:
@@ -409,8 +614,62 @@ class EngagementSession:
         receipts.append(deepcopy(self._cleanup))
         operations = deepcopy(list(self._operations.values()))
         by_dispatch = {row['prepared']['envelope']['dispatch_id']:row for row in operations}
+        child_slots = deepcopy(self._child_slots)
+        supervisors = deepcopy(self._unstarted_supervisors)
+        startups = deepcopy(self._startup_observations)
         exports, instances, segments, raw_segments = [], [], [], []
         captures = set()
+        def retain_prepared(actual):
+            did = actual['envelope']['dispatch_id']
+            if did not in by_dispatch:
+                session = self._sessions.get(actual['envelope']['session_id'])
+                if session is None or len(operations) >= 4:
+                    c.fail('evidence_invalid')
+                c.validate_prepared_context(actual, session['opened'])
+                pending = {'session': session['opened'], 'prepared': actual, 'result': None,
+                    'client': None, 'meter': None, 'host_capture': None,
+                    'elapsed_ms': dict.fromkeys(('review','admission','native','parser','cleanup','action'))}
+                operations.append(pending)
+                by_dispatch[did] = pending
+            elif by_dispatch[did]['prepared'] != actual:
+                c.fail('evidence_invalid')
+            return by_dispatch[did]
+        for session in self._sessions.values():
+            launcher = session['launcher']
+            if launcher is None:
+                continue
+            actual = launcher.supervision_snapshot()
+            startups.extend(actual['startup'])
+            readies.extend(actual['readiness'])
+            natives.extend(actual['native'])
+            receipts.extend(actual['receipts'])
+            supervisors.extend(actual['supervisors'])
+            for slot in actual['child_slots']:
+                matching = [i for i, old in enumerate(child_slots)
+                            if (old['broker_id'], old['session_id'], old['child_slot'])
+                            == (slot['broker_id'], slot['session_id'], slot['child_slot'])]
+                if len(matching) != 1:
+                    c.fail('evidence_invalid')
+                old = child_slots[matching[0]]
+                if any(old[key] != slot[key] for key in
+                       ('schema_version','broker_id','session_id','launcher_id','child_slot','role','worker_id','pair')):
+                    c.fail('evidence_invalid')
+                child_slots[matching[0]] = slot
+            for prepared in actual['prepared']:
+                retain_prepared(c.validate_prepared(prepared))
+            for did, capture in actual['captures'].items():
+                operation = by_dispatch.get(did)
+                if operation is None or operation['host_capture'] is not None:
+                    c.fail('evidence_invalid')
+                operation['host_capture'] = deepcopy(capture['host_capture'])
+                for stream in ('stdout','stderr'):
+                    raw_capture = capture[stream]
+                    if (type(raw_capture) is not bytes
+                            or len(raw_capture) != capture['host_capture'][stream+'_bytes']
+                            or c.digest(raw_capture) != capture['host_capture'][stream+'_sha256']):
+                        c.fail('evidence_invalid')
+                    members['client-'+did+'.'+stream+'.bin'] = raw_capture
+                captures.add(did)
         unavailable = {'status':'unavailable','source':None,'file':None,'reason':'not_started','broker_id':None}
         ledger_exports = {key:dict(unavailable) for key in ('initial','final','recovery')}
         saved = None
@@ -453,19 +712,7 @@ class EngagementSession:
                             # Retain actual broker preparation even if the final
                             # host acknowledgment was lost during child setup.
                             actual = c.validate_prepared(frame['body'])
-                            did = actual['envelope']['dispatch_id']
-                            if did not in by_dispatch:
-                                session = self._sessions.get(actual['envelope']['session_id'])
-                                if session is None or len(operations) >= 4:
-                                    c.fail('evidence_invalid')
-                                c.validate_prepared_context(actual,session['opened'])
-                                pending = {'session':session['opened'],'prepared':actual,'result':None,
-                                    'client':None,'meter':None,'elapsed_ms':dict.fromkeys(
-                                        ('review','admission','native','parser','cleanup','action'))}
-                                operations.append(pending)
-                                by_dispatch[did] = pending
-                            elif by_dispatch[did]['prepared'] != actual:
-                                c.fail('evidence_invalid')
+                            retain_prepared(actual)
                         if row['data']['direction'] != 'received':
                             continue
                         operation = by_dispatch.get(row['dispatch_id'])
@@ -476,7 +723,10 @@ class EngagementSession:
                             if operation is not None:
                                 operation['client'] = frame['body']
                         elif frame['operation'] == 'NATIVE_OBSERVED':
-                            natives.append(frame['body'])
+                            # The original relay remains in the transcript;
+                            # only independently retained host facts enter the
+                            # process arrays. Replay decides missing/conflict.
+                            pass
                         elif frame['operation'] == 'OBSERVATION' and row['data']['channel_role'] == 'launcher':
                             observation = frame['body']
                             did = observation['dispatch_id']
@@ -484,9 +734,6 @@ class EngagementSession:
                                 c.fail('evidence_invalid')
                             data = observation['data']
                             if observation['kind'] == 'capture':
-                                if did in captures:
-                                    c.fail('evidence_invalid')
-                                captures.add(did)
                                 for stream in ('stdout','stderr'):
                                     encoded = data[stream+'_base64']
                                     raw_capture = base64.b64decode(encoded,validate=True)
@@ -494,21 +741,16 @@ class EngagementSession:
                                             or len(raw_capture) != data[stream+'_bytes']
                                             or c.digest(raw_capture) != data[stream+'_sha256']):
                                         c.fail('evidence_invalid')
-                                    members['client-'+did+'.'+stream+'.bin'] = raw_capture
-                            elif observation['kind'] == 'role_readiness':
-                                readies.append(data)
-                            elif observation['kind'] == 'cleanup':
-                                receipts.append(data)
-            observer_rows = deepcopy(self._observer_rows)
-            for session in self._sessions.values():
-                reviewer = session['reviewer']
-                if reviewer is None:
-                    continue
-                for item in reviewer._observations:
-                    observer_rows.append({'schema_version':'1','broker_id':session['opened']['binding']['broker_id'],
-                        'session_id':session['opened']['binding']['session_id'],'dispatch_id':item['dispatch_id'],
-                        'observer_id':session['opened']['binding']['reviewer_id'],'row_sequence':1,
-                        'observed_at_ns':item['observed_at_ns'],'kind':'capability_projection','data':item['projection']})
+                                    name = 'client-'+did+'.'+stream+'.bin'
+                                    if name in members and members[name] != raw_capture:
+                                        c.fail('evidence_invalid')
+            host = self._host_evidence_budget.snapshot()
+            if any(host[key] for key in ('unresolved_tickets','reserved_bytes','reserved_rows')):
+                c.fail('evidence_incomplete')
+            broker_ids = {row['broker_id'] for row in instances}
+            if self._broker is not None:
+                broker_ids.add(self._broker._broker_id)
+            observer_rows = [row for row in host['rows'] if row['broker_id'] in broker_ids]
             if observer_rows:
                 observer_rows.sort(key=lambda row:row['observed_at_ns'])
                 for index,row in enumerate(observer_rows,1):
@@ -536,13 +778,14 @@ class EngagementSession:
             members.update({
                 'runtime.json':c.canonical({'schema_version':'1','runtime':self._runtime,
                                             'instrumentation':list(instrumentation)},max_bytes=2097152),
-                'processes.json':c.canonical({'schema_version':'1','startup':unique(self._startup_observations),
+                'processes.json':c.canonical({'schema_version':'1','startup':unique(startups),
                     'readiness':unique(readies),
-                    'native':unique(natives),'boundary_observations':list(boundary_observations)},max_bytes=1048576),
+                    'native':unique(natives),'child_slots':child_slots,
+                    'boundary_observations':list(boundary_observations)},max_bytes=1048576),
                 'results.json':c.canonical({'schema_version':'1','operations':operations,
                     'boundary_proofs':list(boundary_proofs),'core_proofs':list(core_proofs)},max_bytes=524288),
                 'cleanup.json':c.canonical({'schema_version':'1','receipts':unique(receipts),
-                    'exports':exports,'recovery':recovery},max_bytes=524288),
+                    'supervisors':supervisors,'exports':exports,'recovery':recovery},max_bytes=524288),
                 'audit.jsonl':self._saved_audit(limit), 'transcript.jsonl':b''.join(raw_segments)})
             case = None if case_id is None else evidence._case(case_id)
             manifest = {'schema_version':'1','contract_sha256':c.CONTRACT_SHA256,
@@ -579,6 +822,8 @@ class EngagementSession:
     def _monitor(self):
         try:
             while not self._closing.wait(.05):
+                if self._stop.is_set():
+                    c.fail('session_unavailable')
                 self._control.check()
                 if self._broker.pidfd is not None:
                     import select
@@ -588,6 +833,7 @@ class EngagementSession:
                 if event is None:
                     continue
                 if event['operation'] == 'BROKER_STOP':
+                    self._cleanup_epoch.stop(bound_deadline_ns=event['body']['cleanup_deadline_ns'])
                     c.fail('session_unavailable')
                 with self._state_lock:
                     row = self._sessions.get(event['body']['session_id'])
@@ -596,13 +842,10 @@ class EngagementSession:
                 if row['stopped']:
                     continue
                 row['stopped'] = True
-                roles = [row[key] for key in ('reviewer', 'launcher', 'endpoint') if row[key] is not None]
-                self._interrupt_roles(roles)
-                deadline = min(self._control.deadline, time.monotonic() + 2)
-                for owner in roles:
-                    receipt = owner._close(deadline)
-                    if receipt is not None and receipt not in self._cleanup_receipts:
-                        self._cleanup_receipts.append(receipt)
+                # The shared stop epoch covers both supervisors. A terminal
+                # event cannot leave another owner running beyond that epoch.
+                self._cleanup_epoch.stop(bound_deadline_ns=event['body']['cleanup_deadline_ns'])
+                c.fail('session_unavailable')
         except BaseException as error:
             self._remember_failure(error)
             try:
@@ -610,54 +853,132 @@ class EngagementSession:
             except BaseException as cleanup_error:
                 self._remember_failure(cleanup_error)
 
+    def _close_unstarted_supervisors(self, launchers, epoch):
+        """Observe terminal custody of allocations whose thread never started."""
+        if not self._child_slots:
+            return
+        from . import engagement_live_runtime as runtime
+
+        began = time.monotonic_ns()
+        # Startup is already fenced and every existing supervisor has joined.
+        # This closes actual untransferred endpoints while preserving only the
+        # integer export readers needed for subsequent evidence packaging.
+        self._bundle.close_remaining_channels()
+        active = {owner.slot.launcher_id for owner in launchers
+                  if owner._supervisor is not None}
+        for owner in launchers:
+            if owner._supervisor is None and owner._owner is not None:
+                if owner._owner.channel.fileno() != -1:
+                    c.fail('cleanup_incomplete')
+        existing = {(row['broker_id'],row['session_id'],row['launcher_id'])
+                    for row in self._unstarted_supervisors}
+        missing = sorted({(row['broker_id'],row['session_id'],row['launcher_id'])
+                          for row in self._child_slots if row['launcher_id'] not in active} - existing)
+        observer = runtime._observer() if missing else None
+        finished = time.monotonic_ns()
+        epoch = self._cleanup_epoch.snapshot()
+        for broker_id,session_id,launcher_id in missing:
+            self._unstarted_supervisors.append({'schema_version':'1','broker_id':broker_id,
+                'session_id':session_id,'launcher_id':launcher_id,'host_observer':deepcopy(observer),
+                'thread_native_id':None,'thread_started_at_ns':None,'state':'not_started',
+                'first_stop_requested_at_ns':epoch['first_stop_requested_at_ns'],
+                'cleanup_started_at_ns':max(began,epoch['first_stop_requested_at_ns']),
+                'cleanup_finished_at_ns':finished,'cleanup_deadline_ns':epoch['deadline_ns'],
+                'join_attempted':False,'thread_alive_observed':False,'channel_closed':True,
+                'pending_slots':[],'status':'complete' if finished <= epoch['deadline_ns'] else 'failed'})
+        self._remaining_channels_closed = True
+
     def close(self):
         self._owner_check()
+        epoch = self._cleanup_epoch.stop()
+        deadline = epoch['deadline_ns'] / c.SECOND
         self._closing.set()
         self._stop.set()
         # All blocking view/client channels are interrupted before any lock is
         # acquired. Cleanup shares one budget across the entire live graph.
         self._interrupt_roles([r for r in self._roles if r is not self._broker])
-        now = time.monotonic()
-        deadline = min(self._control.deadline, now + 2) if now < self._control.deadline else now + 2
+        # Interrupting a live child may narrow the shared epoch to its earlier
+        # action deadline. All later roles inherit that same actual bound.
+        epoch = self._cleanup_epoch.snapshot()
+        deadline = epoch['deadline_ns'] / c.SECOND
         if not self._close_lock.acquire(timeout=max(0, deadline - time.monotonic())):
             c.fail('cleanup_incomplete')
+        errors = []
         try:
-            if self._closed:
+            already_failed = self._cleanup is not None and self._cleanup['status'] != 'complete'
+            if self._closed and self._verified_reaped():
+                if already_failed:
+                    c.fail('cleanup_incomplete')
                 return deepcopy(self._cleanup)
             began = time.monotonic_ns()
-            errors = []
             held = []
             try:
                 for lock in self._slot_locks:
                     if not lock.acquire(timeout=max(0, deadline-time.monotonic())):
                         c.fail('cleanup_incomplete')
                     held.append(lock)
+                self._startup_quiesced = True
             except BaseException as error:
                 errors.append(error)
             finally:
                 for lock in reversed(held):
                     lock.release()
-            for owner in reversed(self._roles):
+            launchers = [row['launcher'] for row in self._sessions.values()
+                         if row['launcher'] is not None]
+            endpoints = [row['endpoint'] for row in self._sessions.values()
+                         if row['endpoint'] is not None]
+            # Signal all roles above, then join every supervisor before an
+            # endpoint pin can be closed/recycled during a namespace lease.
+            ordered = launchers + [owner for owner in reversed(self._roles) if owner not in launchers]
+            for owner in ordered:
                 try:
+                    epoch = self._cleanup_epoch.snapshot()
+                    deadline = min(deadline, epoch['deadline_ns']/c.SECOND)
+                    if owner in endpoints and any(not item.supervisor_resolved for item in launchers):
+                        c.fail('cleanup_incomplete')
                     receipt = owner._close(deadline)
                     if receipt is not None and receipt not in self._cleanup_receipts:
                         self._cleanup_receipts.append(receipt)
                 except BaseException as error:
                     self._remember_failure(error)
                     errors.append(error)
+            supervisors_resolved = all(owner.supervisor_resolved for owner in launchers)
+            if self._startup_quiesced and supervisors_resolved:
+                try:
+                    self._close_unstarted_supervisors(launchers, epoch)
+                except BaseException as error:
+                    self._remember_failure(error)
+                    errors.append(error)
             finished = time.monotonic_ns()
+            epoch = self._cleanup_epoch.snapshot()
+            deadline = min(deadline, epoch['deadline_ns']/c.SECOND)
             resolved = all(r['status'] == 'complete' and r['descriptors_closed']
                            for r in self._cleanup_receipts)
+            channels_closed = not self._child_slots or self._remaining_channels_closed
+            resolved = resolved and supervisors_resolved and self._startup_quiesced and channels_closed
             self._cleanup = {'schema_version': '1', 'started_at_ns': began,
-                'finished_at_ns': finished, 'deadline_ns': int(deadline*c.SECOND),
-                'status': 'failed' if errors or not resolved or finished > int(deadline*c.SECOND) else 'complete',
+                'finished_at_ns': finished, 'deadline_ns': epoch['deadline_ns'],
+                'status': 'failed' if already_failed or errors or not resolved or finished > epoch['deadline_ns'] else 'complete',
                 'processes': [p for receipt in self._cleanup_receipts for p in receipt['processes']],
-                'descriptors_closed': all(r['descriptors_closed'] for r in self._cleanup_receipts)}
+                'descriptors_closed': supervisors_resolved and self._startup_quiesced and channels_closed
+                    and all(r['descriptors_closed'] for r in self._cleanup_receipts)}
             self._closed = True
-            if errors or self._cleanup['status'] != 'complete':
-                error = c.LiveError('engagement_live_cleanup_incomplete')
-                error.cleanup = self._cleanup
-                raise error
-            return deepcopy(self._cleanup)
         finally:
             self._close_lock.release()
+        monitor = self._monitor_thread
+        deadline = min(deadline, self._cleanup_epoch.snapshot()['deadline_ns']/c.SECOND)
+        if monitor is not None and monitor is not threading.current_thread():
+            monitor.join(timeout=max(0, deadline-time.monotonic()))
+            if monitor.is_alive():
+                self._cleanup['status'] = 'failed'
+                errors.append(c.LiveError('engagement_live_cleanup_incomplete'))
+        self._cleanup['deadline_ns'] = min(self._cleanup['deadline_ns'],
+            self._cleanup_epoch.snapshot()['deadline_ns'])
+        self._cleanup['finished_at_ns'] = time.monotonic_ns()
+        if self._cleanup['finished_at_ns'] > self._cleanup['deadline_ns']:
+            self._cleanup['status'] = 'failed'
+        if errors or self._cleanup['status'] != 'complete':
+            error = c.LiveError('engagement_live_cleanup_incomplete')
+            error.cleanup = self._cleanup
+            raise error
+        return deepcopy(self._cleanup)

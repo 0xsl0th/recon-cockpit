@@ -16,1714 +16,38 @@ import re
 import stat
 import time
 
-SPEC = {'apis': {'client.prepare': 'prepare_client(*, runtime, prepared, endpoint_identity, scope, '
-                            'control) -> WaitingClient; assumes inherited sessionnet; '
-                            '.ready/.release(release,control)/.observe_native(control)/.collect(control)/.close(); '
-                            'release is launcher-validated one-time GO projection',
-          'context.validate': 'validate_live_context(value) -> detached validated context; pure '
-                              'consistency checker, no process/network/store execution',
-          'endpoint.arm': 'arm_endpoint(channel, *, release, endpoint_identity, control) -> exact '
-                          'ack; callable only by inherited launcher ARM peer; no host duplicate '
-                          'writer',
-          'endpoint.prepare': 'prepare_endpoint(*, runtime, session_binding, broker_peer, '
-                              'arm_peer, control) -> EndpointOwner; .ready receipt/.namespace_fds '
-                              'for host startup only; .progress(control)/.close(); host never '
-                              'writes ARM or reads broker-owned channel',
-          'parser.parse': 'parse(*, tool_id, raw, stderr, scope, truncated, control, runtime) -> '
-                          '(validated unchanged parsed result, parser_receipt)',
-          'runtime.bootstrap_role': 'bootstrap_role(*, role, entry, runtime_manifest, '
-                                    'expected_fds, deadline_ns) -> worker_ready. '
-                                    'Calledafterfixedendpointsetup orGUIwarmup, beforeREADY: '
-                                    'verifyallowedstartupdelta; closeallstagingFDs; setrolelimits; '
-                                    'dropallcaps andNNP; installrolefilter andwitnesses. '
-                                    'GUIterminal accepted seal helpers mayfurtherrestrictIO '
-                                    'beforeemittingfinalREADY. No '
-                                    'unchangedplanner_worker._bootstrap UID0assumption. '
-                                    'Host-onlyimports inruntimefunctions remainlazy.',
-          'runtime.check_role_entry': 'check_role_entry(*, role, bootstrap, expected_fds, '
-                                      'observer) -> EntryIdentity. '
-                                      'Calledafterfixedfirstinitialtransfer, verifying '
-                                      'exactcompletepostbootstrapFDinventory/actualnamespaces/mapping/runtimecommitment. '
-                                      'Minimalroleentry independently '
-                                      'verified0/1/2beforeimports/transfer. EntryIdentity stores '
-                                      'fixed pre-setupdescriptor/tasksets; required '
-                                      'GUIwarmup/endpointsetup thenbootstrap_role seals. No '
-                                      'additionaltransferallowed.',
-          'runtime.cleanup': 'cleanup_owned(processes, pins, *, deadline=None) -> cleanup; '
-                             'inputprocesses list of owned subprocess objects, pins corresponding '
-                             'PinnedProcess orNone. Computeone max2s emergencydeadline '
-                             'optionallynarrowedby supplied emergencydeadline, never renewed '
-                             'perrole; close everypin/procdir/stream evenifcleanupfails. '
-                             'Workdeadlines mayexpire but no successreturned; descriptorownership '
-                             'explicit.',
-          'runtime.inspect_runtime': 'inspect_runtime(control) -> validated runtime bundle (no '
-                                     'role launch)',
-          'runtime.observe_native': 'observe_native(pin, manifest, *, waiting_image, control) -> '
-                                    'detached native image observation; no retry/exec; bounded '
-                                    'waiting only for same PID image transition',
-          'runtime.observe_process': 'observe_process(*, info_raw, process, role, bundle, '
-                                     'observer, expected_net, control) -> PinnedProcess; holds '
-                                     'pidfd+procdir, .receipt is parent_observation; '
-                                     '.check_alive(); .close(); role boundaries and '
-                                     'actualworkerREADY later combined by validate_readiness',
-          'runtime.snapshot_role': 'snapshot_role(bundle, role, control) -> RoleSnapshot context '
-                                   'manager: .sources/.native/.extensions exact '
-                                   'destination->sealedFD maps, .manifest detached selected role '
-                                   'manifest, .stdlib fixedreadonlypath; .mounts(argv) mutates and '
-                                   'returns same list, adds exact sealed --ro-bind-data mounts '
-                                   'plus controlled stdlib/lib-dynloadoverlay; caller closes '
-                                   'snapshot after successful/failedPopen; '
-                                   'nevertransferownershipimplicitly.',
-          'runtime.validate_manifest': 'validate_runtime(value) -> detached closed runtime bundle; '
-                                       'runtime_digest(value) -> SHA256 canonical bundle; '
-                                       'validate_readiness exact names and role source/native '
-                                       'manifest bindings.',
-          'runtime.validate_readiness': 'validate_readiness(role, value, bundle, *, '
-                                        'expected_binding=None) -> detached strict role_readiness; '
-                                        'no process launch; compoundreceipt<=16384, '
-                                        'workerline<=8192'},
- 'closed_objects': {'ancestry_row': {'fields': ['pid', 'parent_pid', 'start_time_ticks'],
-                                     'ordering': 'payload first, supervised wrapper last; starts '
-                                                 'nonincreasing toward ancestor, '
-                                                 'eachparentlinksnext; actual reread before/after '
-                                                 'pinned process check'},
-                    'bootstrap_descriptor': {'fd': 'strictinteger0..255; uniquefd/purpose; '
-                                                   'expectedroleinitialrights table exactly; '
-                                                   'actualfstat/flags/typeverified '
-                                                   'immediatelyafter singleinitialtransfer; no '
-                                                   'laterancillary.',
-                                             'fields': ['fd',
-                                                        'purpose',
-                                                        'device',
-                                                        'inode',
-                                                        'mode',
-                                                        'flags']},
-                    'bootstrap_payloads': {'admission': ['prepared',
-                                                         'endpoint_identity',
-                                                         'launcher_id'],
-                                           'broker': 'exact authority-owned BrokerBootstrap '
-                                                     'object; only fixed /store/engagement '
-                                                     'operator '
-                                                     'mount,2preallocatedslots,actualreviewerIDs/modes '
-                                                     'andoriginalbrokerstop; authoritymachine '
-                                                     'object supplies exactfieldset',
-                                           'constraints': 'roe/scope/policy and Prepared '
-                                                          'useunchangedclosedvalidators '
-                                                          'andauthoritysession_binding. terminal '
-                                                          'mode=terminal; '
-                                                          'graphicalmode=graphical_v1, '
-                                                          'exactXsocket andselectedcookiefile '
-                                                          'undernewbuilder. '
-                                                          'Brokerpayloadownedauthority '
-                                                          'toavoidconflictingduplicate schema. '
-                                                          'Parser receives '
-                                                          'actualrawinputonlyafterparentpinsREADY. '
-                                                          'Client scope is the unchanged accepted '
-                                                          'closed scope; its digest equals '
-                                                          'Prepared.envelope.scope_sha256 and the '
-                                                          'derived fixed slot action equals '
-                                                          'Prepared.action. Actual configured SSH '
-                                                          'denial uses this scope. Scope supplies '
-                                                          'data only, never request/grant '
-                                                          'authority.',
-                                           'endpoint': ['session_binding',
-                                                        'roe',
-                                                        'scope',
-                                                        'policy',
-                                                        'endpoint_id'],
-                                           'graphical': ['session_binding',
-                                                         'roe',
-                                                         'scope',
-                                                         'policy',
-                                                         'reviewer_id',
-                                                         'review_mode',
-                                                         'display',
-                                                         'display_socket',
-                                                         'authority_sha256'],
-                                           'headers': ['prepared', 'endpoint_identity', 'scope'],
-                                           'launcher': ['session_binding',
-                                                        'roe',
-                                                        'scope',
-                                                        'policy',
-                                                        'endpoint_identity'],
-                                           'nmap': ['prepared', 'endpoint_identity', 'scope'],
-                                           'parser': ['slot', 'scope'],
-                                           'terminal': ['session_binding',
-                                                        'roe',
-                                                        'scope',
-                                                        'policy',
-                                                        'reviewer_id',
-                                                        'review_mode',
-                                                        'tty_identity']},
-                    'boundary_checks': {'common': ['namespaces_private',
-                                                   'mapping_bound',
-                                                   'capabilities_dropped',
-                                                   'no_new_privs',
-                                                   'root_read_only',
-                                                   'descriptors_private',
-                                                   'process_creation_blocked',
-                                                   'namespace_creation_blocked'],
-                                        'notes': 'Forlauncher common process_creation_blocked and '
-                                                 'namespace_creation_blocked are replaced by '
-                                                 'bounded_child_creation and '
-                                                 'fixed_namespace_builder; supervisorcancreate '
-                                                 'onlydeclared childpaths '
-                                                 'undertrustedfixedbuilder, no claim '
-                                                 'seccompforbids allneeded fork/unshare while '
-                                                 'childbwrapneeds them. Nativeleaves andotherroles '
-                                                 'retainactualdeny witnesses.',
-                                        'required': 'all requiredtrue forREADY; parent '
-                                                    'observations '
-                                                    'independentlyverifyphysicalidentity; checks '
-                                                    'neverusedas soleevidence fornative gate',
-                                        'role_specific': {'admission': ['network_creation_blocked',
-                                                                        'authority_absent'],
-                                                          'broker': ['network_creation_blocked',
-                                                                     'store_path_bound'],
-                                                          'endpoint': ['outgoing_connect_blocked',
-                                                                       'fastopen_sendto_blocked',
-                                                                       'fastopen_sendmsg_blocked',
-                                                                       'fastopen_sendmmsg_blocked',
-                                                                       'listener_bound',
-                                                                       'landlock_applied'],
-                                                          'graphical': ['network_creation_blocked',
-                                                                        'display_bound',
-                                                                        'graphical_input_owned',
-                                                                        'remote_interpreter_disabled',
-                                                                        'task_set_sealed'],
-                                                          'headers': ['forbidden_target_blocked',
-                                                                      'forbidden_port_blocked',
-                                                                      'ssh_endpoint_blocked',
-                                                                      'raw_sockets_blocked',
-                                                                      'landlock_applied'],
-                                                          'launcher': ['network_creation_blocked',
-                                                                       'fixed_child_inventory'],
-                                                          'nmap': ['forbidden_target_blocked',
-                                                                   'forbidden_port_blocked',
-                                                                   'ssh_endpoint_blocked',
-                                                                   'raw_sockets_blocked',
-                                                                   'landlock_applied'],
-                                                          'parser': ['network_creation_blocked',
-                                                                     'filesystem_creation_blocked',
-                                                                     'authority_absent',
-                                                                     'landlock_applied'],
-                                                          'terminal': ['network_creation_blocked',
-                                                                       'terminal_bound',
-                                                                       'terminal_input_owned']},
-                                        'shape': 'exact role-specific boolean map'},
-                    'cleanup': {'fields': ['schema_version',
-                                           'started_at_ns',
-                                           'finished_at_ns',
-                                           'deadline_ns',
-                                           'status',
-                                           'processes',
-                                           'descriptors_closed'],
-                                'processes_max': 26,
-                                'required': 'one shared2s budget, allknownpayloads signalled '
-                                            'first, wrappers reaped; success only all '
-                                            'payloadpidfdsHUP and wrapperswait; descriptorclosure '
-                                            'evenerror; emptyprocesses only neverstarted, '
-                                            'notmissingobservation',
-                                'status': ['complete', 'failed', 'unknown']},
-                    'cleanup_process': {'fields': ['role',
-                                                   'pid',
-                                                   'start_time_ticks',
-                                                   'pin_verified',
-                                                   'signal_attempted',
-                                                   'exit_observed',
-                                                   'reaped_observed',
-                                                   'wrapper_pid',
-                                                   'wrapper_returncode'],
-                                        'nulls': 'pid/start/wrapper nullable only no trusted '
-                                                 'identity; returncode nullable ifunknown; '
-                                                 'unverified pin never signalled, bounded '
-                                                 'non-signallingHUP check afterwrappertermination'},
-                    'descriptor': {'fields': ['fd',
-                                              'purpose',
-                                              'kind',
-                                              'device',
-                                              'inode',
-                                              'mode',
-                                              'flags'],
-                                   'kernel_kinds': 'pidfd from actual held pidfd_open, eventpoll '
-                                                   'selector, proc_directory actualheldprocdir; '
-                                                   'kernelanon inode descriptors mustmatchpinned '
-                                                   'syscall-created identityandphasepurpose, '
-                                                   'notarbitrary anon_inode acceptance.',
-                                   'kind': ['pipe',
-                                            'seqpacket',
-                                            'stream_socket',
-                                            'listener',
-                                            'regular',
-                                            'directory',
-                                            'character',
-                                            'eventfd',
-                                            'eventpoll',
-                                            'pidfd',
-                                            'proc_directory'],
-                                   'purpose': 'finite role-phase inventory; actual '
-                                              'rights/nonblocking/close-on-exec and peer/listener '
-                                              'address checked against fixed rolebinding, not '
-                                              'inferred frompurpose string'},
-                    'file_identity': {'fields': ['destination',
-                                                 'device',
-                                                 'inode',
-                                                 'mode',
-                                                 'size',
-                                                 'sha256'],
-                                      'notes': 'hash compared to exact staged source/native '
-                                               'manifest; device/inode from actual process root or '
-                                               'pinned exe, not merely supplied source path'},
-                    'identity_values': {'groups': 'bounded0..64 repeated65534 values allowed; '
-                                                  'immutable current inventory',
-                                        'uids_gids': 'each exact4 integer list from /proc status'},
-                    'initial_bootstrap': {'descriptor_rows_max': 32,
-                                          'encoded_bytes_max': 32768,
-                                          'expected_namespaces': 'exact user/net/mnt/pid '
-                                                                 'identityoftrustedobserver plus '
-                                                                 'expected sessionnet '
-                                                                 'whereapplicable; worker '
-                                                                 'mustprivateuser/mnt/pid, '
-                                                                 'netprivateexceptsessionlauncher/client. '
-                                                                 'Full parentcheck independent.',
-                                          'fields': ['schema_version',
-                                                     'role',
-                                                     'worker_id',
-                                                     'observer',
-                                                     'expected_namespaces',
-                                                     'deadline_ns',
-                                                     'runtime_sha256',
-                                                     'role_manifest_sha256',
-                                                     'source_sha256',
-                                                     'descriptors',
-                                                     'payload'],
-                                          'payload': 'closed discriminated object indexed byrole '
-                                                     'below; no arbitrarydictionary, absolute '
-                                                     'path, argv, clockfunction or permit'},
-                    'mapped_image': {'fields': ['destination', 'device', 'inode'],
-                                     'notes': 'fixed manifest path, sortedunique; require actual '
-                                              'executable+ELFinterpreter and full required '
-                                              'nativeDT_NEEDED closure before ARM; unknown '
-                                              'file-backed executable mapping refuses; '
-                                              'vdso/vsyscall kernel mappings explicitly classified '
-                                              'without claiming filehash'},
-                    'mapping_rows': {'required': 'inside65534,length1 for newroles; outside equals '
-                                                 'actual observing parent uid/gid; retain '
-                                                 'composition to hostnonzero. Unchanged accepted '
-                                                 'audit mapping validated under its existing '
-                                                 'contract.',
-                                     'shape': 'one row [inside,outside,length] per uid/gid map'},
-                    'namespaces': {'fields': ['user', 'net', 'mnt', 'pid'],
-                                   'values': 'exact kernel namespace strings e.g net:[integer], '
-                                             'independent expected equality/private difference '
-                                             'checks'},
-                    'native_readiness': {'fields': ['schema_version',
-                                                    'role',
-                                                    'waiting_image',
-                                                    'parent_observation',
-                                                    'observed_at_ns'],
-                                         'required': 'same pinned waitingpayload '
-                                                     'PID/start/existingpidfd; executable differs '
-                                                     'from waitingPython and '
-                                                     'exactlymatchesfixedNmap; before first ARM',
-                                         'role': 'nmap'},
-                    'observer': {'fields': ['pid', 'uid', 'gid', 'namespaces']},
-                    'parent_observation': {'bounds': {'ancestry': 16,
-                                                      'descriptors': 32,
-                                                      'groups': 64,
-                                                      'mapped_images': 64,
-                                                      'task_ids': 2},
-                                           'fields': ['schema_version',
-                                                      'role',
-                                                      'observer',
-                                                      'wrapper',
-                                                      'payload',
-                                                      'ancestry',
-                                                      'namespaces',
-                                                      'uid_map',
-                                                      'gid_map',
-                                                      'uids',
-                                                      'gids',
-                                                      'groups',
-                                                      'task_ids',
-                                                      'descriptors',
-                                                      'executable',
-                                                      'mapped_images',
-                                                      'status',
-                                                      'sampled_at_ns',
-                                                      'stage'],
-                                           'notes': 'launcher observation descriptor set only '
-                                                    'non-snapshot steady phase; phase temporary '
-                                                    'snapshot inventory separate and max160. '
-                                                    'Native tasks<=1; GUI<=2exactTIDset; '
-                                                    'allothers1. Parent observations for '
-                                                    'nesteduserns chain to accepted host parent '
-                                                    'identity. Startuprefusal observations '
-                                                    'explicitlytagstage beforeseal; '
-                                                    'absentcompleteREADY '
-                                                    'neverfabricatedasallchecks true. '
-                                                    'Nativecasepredicate '
-                                                    'usesactualrefusal/staging/pairedcontrol '
-                                                    'evidence, notclaimedusefulness.',
-                                           'stage_enum': ['entry', 'prepared', 'sealed', 'native']},
-                    'prepare_observations': {'bound_bytes': 65536,
-                                             'fields': ['schema_version',
-                                                        'session_id',
-                                                        'dispatch_id',
-                                                        'envelope_sha256',
-                                                        'runtime_sha256',
-                                                        'launcher_readiness',
-                                                        'endpoint_readiness',
-                                                        'client_readiness',
-                                                        'admission_sha256',
-                                                        'prepared_at_ns'],
-                                             'notes': 'Retainedcompoundphysicalobservations<=65536; '
-                                                      'authority-owned compactprepare_receipt '
-                                                      'contains exacthashreferences, '
-                                                      'withoutprematureadmissioncleanup. Objects '
-                                                      'mustbe retainedbefore accepting '
-                                                      'theirhashes.'},
-                    'process_identity': {'fields': ['pid', 'parent_pid', 'start_time_ticks'],
-                                         'pid': '1..2^31-1'},
-                    'process_status': {'fields': ['cap_inheritable',
-                                                  'cap_permitted',
-                                                  'cap_effective',
-                                                  'cap_bounding',
-                                                  'cap_ambient',
-                                                  'no_new_privs',
-                                                  'seccomp_mode'],
-                                       'required': 'caps0/no_new_privs1/seccomp2 after leafseal; '
-                                                   'launcher allows only its fixed child '
-                                                   'construction path and retained source '
-                                                   'inventory, all network creation denied'},
-                    'role_readiness': {'bound_bytes': 16384,
-                                       'fields': ['schema_version',
-                                                  'role',
-                                                  'worker_ready',
-                                                  'parent_observation'],
-                                       'notes': 'parent-owned compound receipt retained as '
-                                                'evidence; not the8192-byte worker READY line'},
-                    'rules': 'All listedfieldsrequired/no unknownkeys; null onlyexpresslyallowed. '
-                             'Defaultstrict nonbool integers0..2^63-1. Signedexceptions: syscall '
-                             'return_value/network_return/filesystem_return/process_return=-1 '
-                             'or0..32768; subprocess wrapper_returncode andexit_code=-255..255; '
-                             'errno0..4095. Filedevice/inode unsigned0..2^64-1; pid/tid1..2^31-1; '
-                             'uid/gid0..2^32-1. schema_version literalstring1; digests '
-                             'lowercase64hex; UUIDscanonical4. Arrays and encodedbytecaps '
-                             'independent, no floats/nonfinite/booleans-as-integers.',
-                    'worker_ready': {'bound_bytes': 8192,
-                                     'fields': ['schema_version',
-                                                'role',
-                                                'worker_id',
-                                                'bootstrap_sha256',
-                                                'runtime_sha256',
-                                                'source_sha256',
-                                                'stage',
-                                                'namespaces',
-                                                'uid',
-                                                'gid',
-                                                'groups',
-                                                'task_ids',
-                                                'descriptor_sha256',
-                                                'boundary_checks'],
-                                     'notes': 'worker self-report is corroborated by parent actual '
-                                              'observation before any authority-consuming release; '
-                                              'worker booleans alone never establish custody',
-                                     'stage': ['sealed_waiting',
-                                               'sealed_endpoint',
-                                               'sealed_reviewer',
-                                               'sealed_launcher',
-                                               'sealed_broker',
-                                               'sealed_parser',
-                                               'sealed_admission']}},
- 'elf_inventory': {'files': 64,
-                   'path': '/home/sloth/Code/recon-cockpit/.secure-agent/pr102-review-20261021/s42c-static-runtime-inspection/inventory-v2.json',
-                   'sha256': '19fc526df668821cad64ad3f2bbd210a4c2a3561003f9a69450a5d8041b7ddfa'},
- 'entry_conventions': {'argv': ['/usr/bin/python3',
-                                '-I',
-                                '-S',
-                                '/app/recon_cockpit/secure_agent/{fixed_role_worker}.py',
-                                '{worker_uuid}',
-                                '{bootstrap_sha256}'],
-                       'bootstrap': 'One canonical<=32768-byte initial frame on '
-                                    'inheritedstdinSEQPACKET; exact initial PER-ROLE rights '
-                                    'transfer only, pertable below. Allpairsprecreated '
-                                    'beforebrokerstartup. Payloadexec entryhas0/1/2only; worker '
-                                    'checksbeforeimports, closesanyverifiedlibffibootstrapresidue, '
-                                    'receivesexactrights once, thencheck_role_entry '
-                                    'verifiescompletepostbootstrapinventory. No later '
-                                    'SCM_RIGHTS/ancillaryaccepted. '
-                                    'Childcomputesbootstrapdigestagainstargvcommitment; '
-                                    'rolemanifest fromfixedsealedmount.',
-                       'bwrap_info': 'Separate inherited info writeFD, closed afterPopen inparent; '
-                                     'collect<=4096 exact JSONchildPID; parent owns readFD and '
-                                     'closes it after observation. No infoFD reaches final worker '
-                                     'inventory.',
-                       'client_io_exception': 'After READY and one parent release, clientstdout '
-                                              'contains raw Nmap/HTTP bytes and stderr raw '
-                                              'diagnostics; remove exact READY bytes before '
-                                              'applying shared8192/2048 capture cap. '
-                                              'Waitingclientstdin receives only bounded '
-                                              'launcherrelease projection, no approval/audit '
-                                              'endpoint.',
-                       'interpreter': '/usr/bin/python3',
-                       'ordinary_io': 'stdinSEQPACKET bidirectionalRPC; stdout exactly one READY '
-                                      'line prefix RECON_ENGAGEMENT_LIVE_READY_V1 plus canonical '
-                                      'worker_ready JSON plus newline, then quiet; stderr '
-                                      'bounded4096 startup diagnostics, failureclosed and '
-                                      'neverecho arbitrary input.',
-                       'package_files': ['/app/recon_cockpit/__init__.py',
-                                         '/app/recon_cockpit/secure_agent/__init__.py'],
-                       'package_source': 'Both use exact inert accepted secure_agent/__init__.py '
-                                         'bytes',
-                       'parser_io': 'READYstdout thenquiet; request/reply via '
-                                    'inheritedstdinSEQPACKET, no raw output onstdout; '
-                                    'response<=4096.',
-                       'source_directory': '/app/recon_cockpit/secure_agent'},
- 'fd_inventory': {'admission': ['stdio:3'],
-                  'admission_max': 3,
-                  'audit': ['stdio:3 (stdin is producer channel)',
-                            'audit_import_libffi:1 (exact pinned read-only import image)',
-                            'audit_append:1 (initial append_file right)',
-                            'audit_witness:1 (initial audit_witness writer right)'],
-                  'audit_max': 6,
-                  'audit_rule': 'The unchanged accepted audit worker has exactly six steady '
-                                'descriptors: stdin/stdout/stderr plus audit_append, audit_witness '
-                                'and audit_import_libffi, with complete FD0..5 inventory. Derive '
-                                'the three non-stdio purposes from actual held identities and the '
-                                'pinned mounted library; do not infer append/witness identity from '
-                                'descriptor position. No unnamed, optional or count-only extra '
-                                'descriptor is accepted. Initial transferred rights remain '
-                                'append_file and audit_witness (the one-way writer) only. Required '
-                                'audit_readiness.import_image is the closed seven-field object '
-                                'destination/device/inode/mode/size/sha256/read_only_mount. The '
-                                'parent actually rereads the exact selected-runtime libffi mounted '
-                                'image and held descriptor under the original startup deadline, '
-                                'verifies regular0444 and O_RDONLY without O_PATH, unchanged '
-                                'device/inode/mode/size/bytes/SHA, a read-only mount and the same '
-                                'executable mapped-image destination/device/inode. The retained '
-                                'read_only_mount is true; all other roles retain their existing '
-                                'verified import-descriptor closure. Accepted '
-                                'audit_worker/planner_worker sources and audit source partition '
-                                'remain unchanged. Audit readiness binds audit_append descriptor '
-                                'device/inode/mode to append_identity and initial.device/inode, '
-                                'with private0600 regular file and O_WRONLY|O_APPEND and no '
-                                'O_PATH; audit_witness descriptor matches initial.witness '
-                                'transferred writer endpoint, nonblocking SEQPACKET lineage. '
-                                'source_manifest is the distinct reader endpoint held by the '
-                                'broker and must not be conflated with initial.witness.',
-                  'broker_max': 21,
-                  'broker_phase_rule': 'One bootstrap/runtime FD may exist only before opening '
-                                       'store/SQLite descriptors and must close first. Three '
-                                       'writable memfds transferred only at initial bootstrap; '
-                                       'host retains independently reopened O_RDONLY peers, broker '
-                                       'sole writer until F_SEAL_WRITE|GROW|SHRINK|SEAL. Audit '
-                                       'producer remains host-owned; broker only witness reader.',
-                  'broker_proposed': ['stdio:3',
-                                      'host_lifecycle:1',
-                                      'submitter:2',
-                                      'launcher_control:2',
-                                      'endpoint_control:2',
-                                      'review_witness:2',
-                                      'audit_witness:1',
-                                      'initial_export_memfd:1',
-                                      'final_export_memfd:1',
-                                      'transcript_memfd:1',
-                                      'held_parent_directory:1',
-                                      'held_store_directory:1',
-                                      'sqlite_main:1',
-                                      'transient_rollback_journal:1',
-                                      'selector:1'],
-                  'common': 'stdio0/1/2 explicitly typed; no implicit inherited extras. Startup '
-                            'sealed memfds/infoFD closed before leaf READY/limit application.',
-                  'endpoint': ['stdio:3',
-                               'broker_control:1',
-                               'launcher_arm:1',
-                               'listener:1',
-                               'accepted_tcp:1'],
-                  'endpoint_max': 7,
-                  'ephemeral_observation_fds': 'A scoped /proc/fd enumerator/readback FD may exist '
-                                               'during observation and is closed before final '
-                                               'steady inventory; record separately, do not hide '
-                                               'arbitrary descriptors.',
-                  'graphical': ['stdio:3',
-                                'one_way_witness:1',
-                                'exact_preopened_X11_socket:1',
-                                'at most2 notifier wake descriptors created during pinned Tk '
-                                'warmup, type pipe/eventfd and identities fixed before seal'],
-                  'graphical_max': 7,
-                  'graphical_note': 'Initial worker inventory rejects all unexpected FDs before '
-                                    'Tk. Record exact post-warmup delta, including any notifier '
-                                    'pipes/eventfd, then require unchanged identities. A spare '
-                                    'anonymous FD is not accepted merely because total<=8.',
-                  'headers': ['stdio:3', 'selected_ipv4_tcp:1'],
-                  'headers_max': 4,
-                  'launcher': ['stdio:3',
-                               'broker_control:1',
-                               'endpoint_arm:1',
-                               'up_to_two_children: bounded stdin/stdout/stderr/info/pidfd/procdir '
-                               'inventory',
-                               'temporary sealed-role FDs<=128; closed after child Popen'],
-                  'launcher_non_snapshot_max': 32,
-                  'launcher_total_max': 160,
-                  'nmap': 'stdio plus at most one selected IPv4 TCP socket and read-only '
-                          'descriptors to exact manifest files; all authority/channel/namespace '
-                          'descriptors absent; observed live fd count<=16, RLIMIT64',
-                  'parser': ['stdio:3'],
-                  'parser_max': 3,
-                  'terminal': ['stdio:3', 'intentional_tty:1', 'one_way_witness:1'],
-                  'terminal_max': 5,
-                  'waiting_client': ['stdio:3'],
-                  'waiting_client_max': 3},
- 'frontend_mode_enum': ['terminal', 'graphical_v1'],
- 'gui_resources': {'bytes': 17064478,
-                   'files': 423,
-                   'max_bytes': 33554432,
-                   'max_files': 512,
-                   'mode': 'fixedreadonlymounts+boundedbefore/afteridentity/hashinventory; '
-                           'distinct from sealedimplementation/ELF files',
-                   'path': '/home/sloth/Code/recon-cockpit/.secure-agent/pr102-review-20261021/s42c-static-runtime-inspection/gui-resources.json',
-                   'sha256': '0f7a2d0ac5c139b83d5816714b263d902628b7a90b8023491c20f9eebcc89c07'},
- 'http_grammar': {'headers_request_template': 'GET / HTTP/1.1\r\n'
-                                              'Host: {validated_ipv4}:{validated_port}\r\n'
-                                              'Connection: close\r\n'
-                                              '\r\n',
-                  'headers_response_basis': 'exact accepted '
-                                            'configurable_lab_worker.header_response(): vulnerable '
-                                            'HarborDesk portal response; response fixture '
-                                            'independent of requested path, no request reflection',
-                  'identify_connections': 'at most3, one or two initial scan/NULL empty-EOF/reset '
-                                          'connections before exactly one fixed GET; GET must be '
-                                          'connection2 or3 as accepted configurable fixture; no '
-                                          'other payload/response.',
-                  'identify_request_ascii': 'GET / HTTP/1.0\r\n\r\n',
-                  'identify_response_ascii': 'HTTP/1.0 200 OK\r\n'
-                                             'Server: nginx/1.26.0\r\n'
-                                             'Content-Length: 2\r\n'
-                                             'Connection: close\r\n'
-                                             '\r\n'
-                                             'OK',
-                  'nmap_argv': ['/tool/nmap',
-                                '--unprivileged',
-                                '-sT',
-                                '-sV',
-                                '--version-intensity',
-                                '1',
-                                '-Pn',
-                                '-n',
-                                '-p',
-                                '{validated_port}',
-                                '--max-retries',
-                                '0',
-                                '--max-parallelism',
-                                '1',
-                                '--host-timeout',
-                                '3s',
-                                '--datadir',
-                                '/tool/data',
-                                '--no-stylesheet',
-                                '-oX',
-                                '-',
-                                '{validated_ipv4}'],
-                  'nmap_data': 'exact four accepted NMAP_SERVICE_SERVICES, NMAP_SERVICE_PROTOCOLS, '
-                               'NMAP_SERVICE_PROBES and NMAP_SERVICE_NSE_SHIM byte constants from '
-                               'network_tools_runtime.py; no probe/port/timing rewrite',
-                  'path': '/',
-                  'rules': ['one request per admitted connection; no pipeline/body/extra bytes '
-                            'accepted',
-                            'buffer entire exact expected request before response',
-                            'recv bound never exceeds remaining fixed request budget',
-                            'send bound never exceeds remaining fixed response budget',
-                            'no over-cap sentinel read',
-                            'strict cap exhaustion terminates; unread queued kernel bytes remain '
-                            'unknown',
-                            'Nmap malformed and extra traffic refuses without positive parsed '
-                            'completion']},
- 'implementation_authorized': False,
- 'initial_rights_table': {'admission': {'count': 0, 'rights': []},
-                          'audit': {'count': 2,
-                                    'phase': 'unchanged accepted auditbootstrap grammar',
-                                    'rights': ['append_file', 'audit_witness']},
-                          'broker': {'count': 14,
-                                     'phase': 'runtime_input closes beforeSQLite/store open; host '
-                                              'onlyO_RDONLY memfdpeers; all other authority-owned '
-                                              'fields match authorityBrokerBootstrap',
-                                     'rights': ['host_lifecycle',
-                                                'ingress0',
-                                                'ingress1',
-                                                'launcher0',
-                                                'launcher1',
-                                                'endpoint0',
-                                                'endpoint1',
-                                                'review_witness0',
-                                                'review_witness1',
-                                                'audit_witness',
-                                                'initial_export_memfd',
-                                                'final_export_memfd',
-                                                'transcript_memfd',
-                                                'runtime_input']},
-                          'endpoint': {'count': 2, 'rights': ['broker_control', 'launcher_arm']},
-                          'graphical': {'count': 1, 'rights': ['review_witness']},
-                          'headers': {'count': 0, 'rights': []},
-                          'launcher': {'count': 2, 'rights': ['broker_control', 'endpoint_arm']},
-                          'nmap': {'count': 0, 'rights': []},
-                          'parser': {'count': 0, 'rights': []},
-                          'terminal': {'count': 2,
-                                       'rights': ['intentional_tty', 'review_witness']}},
- 'launcher_runtime_bundle': {'bytes_max': 2097152,
-                             'destination': '/run/engagement-runtime-bundle.json',
-                             'mode': 292,
-                             'rules': ['Launcher-only sealed data mount under existing128 '
-                                       'temporary snapshot files/128MiB cap; snapshot FD consumed '
-                                       'and closed before worker entry.',
-                                       'Launcher bounded-reads and validates this full bundle '
-                                       'before confinement; SHA256 canonical bundle equals actual '
-                                       'bootstrap.runtime_sha256, selected launcher role manifest '
-                                       'equals mounted role manifest.',
-                                       'Trusted parent independently rereads mounted full runtime '
-                                       'bytes through pinned actual launcher process root and '
-                                       'compares size/hash to expected canonical bundle.',
-                                       'Other roles receive only their selected role manifests. No '
-                                       'new steady descriptor, SCM transfer, executable, resource '
-                                       'cap or child selection is introduced.'],
-                             'seals': 15,
-                             'snapshot_fds_added': 1,
-                             'source': 'canonical(validate_runtime(full inspected bundle))',
-                             'steady_fds_added': 0},
- 'limits': {'bootstrap_fd_limit': 256,
-            'bootstrap_non_snapshot_fds_max': 64,
-            'bootstrap_snapshot_fds_max': 128,
-            'bwrap_info_bytes': 4096,
-            'control_packet_bytes': 4096,
-            'control_poll_ms': 50,
-            'owned_role_setup_seconds': 10,
-            'parser_input_bytes': 16384,
-            'parser_reply_bytes': 4096,
-            'preflight_seconds': 15,
-            'readiness_line_bytes': 8192,
-            'role_packet_bytes': 32768,
-            'shared_emergency_cleanup_seconds': 2,
-            'snapshot_file_max_bytes': 16777216,
-            'snapshot_manifest_max_bytes': 131072,
-            'snapshot_max_files': 128,
-            'snapshot_total_max_bytes': 134217728,
-            'source_file_max_bytes': 262144,
-            'source_manifest_max_bytes': 65536,
-            'source_total_max_bytes': 8388608,
-            'startup_poll_ms': 10,
-            'watch_and_cleanup_ms': 6100,
-            'watch_detection_ms': 4100,
-            'watch_schedule_ms': 100},
- 'mandatory_watch_witness': 'External v2 revoke commits just after observed watch; hold one actual '
-                            'bounded synchronous phase; observe next fresh DB read/refusal or '
-                            'failed read, actual endpoint stop and pinned payload/wrapper '
-                            'reaping<=4100+2000ms. Record actual commit/phase/read/cancel/reap '
-                            'monotonic timestamps; pure clock arithmetic or direct broker EOF is '
-                            'insufficient.',
- 'namespace_construction': ['Preallocate all role channel pairs before broker bootstrap; broker '
-                            'creates SIDs in READY; bind exact full current ROE/scope/policy in '
-                            'later role bootstrap.',
-                            'Create endpoint with its own user/net/mnt/pid namespaces. Host starts '
-                            'launcher by entering endpoint user/net first, then launcher creates '
-                            'private user/mnt/pid while inheriting only endpoint net.',
-                            'Launcher children inherit that net directly; each gets private '
-                            'user/mnt/pid. Parser and admission additionally unshare net. No '
-                            'post-seal sibling/ancestor setns is needed.',
-                            'Network namespace FDs are host-startup-only; never retained in '
-                            'client/parser/broker/reviewer. Launcher cannot create sockets; only '
-                            'its fixed children use selected network.',
-                            'Retain observer namespace/UID plus actual nested UID/GID map '
-                            'composition to host nonzero UID. Do not mislabel an immediate-parent '
-                            'map as direct host map. New workers use65534; bounded all65534 '
-                            'supplementary groups retained, not silently assumed empty.'],
- 'native_runtime': {'native_compiled_files': ['/tool/data/nmap-services',
-                                              '/tool/data/nmap-protocols',
-                                              '/tool/data/nmap-service-probes',
-                                              '/tool/data/nse_main.lua'],
-                    'nmap_elf_candidates': ['/usr/bin/nmap', '/usr/lib/nmap/nmap'],
-                    'process_identity': 'before input/GO pin actual payload via infoFD->pidfd and '
-                                        '/proc directory with validated integerPID, ancestry<=16, '
-                                        'start ticks and liveness before/after; retain '
-                                        'maps/namespace/UID/GID/caps/task/fd readback. Native '
-                                        'observation requires exact executable+interpreter+mapped '
-                                        'manifest libraries and same pinned waiting PID, no '
-                                        'unknown executable mapping.',
-                    'python_filesystem': 'Read-only distribution stdlib with lib-dynload replaced '
-                                         'by an empty mount then only fixed role extension files; '
-                                         'exact ELF interpreter/needed libraries and '
-                                         'implementation sources sealed; no claim full '
-                                         'stdlib/open-syscall trace.',
-                    'role_extensions': {'broker_extra': ['_sqlite3'],
-                                        'common': ['_ctypes',
-                                                   '_hashlib',
-                                                   '_hmac',
-                                                   '_uuid',
-                                                   '_queue',
-                                                   'resource'],
-                                        'graphical_extra': ['_tkinter'],
-                                        'terminal_extra': ['termios']},
-                    'role_specific_mounts': 'Only broker mounts explicit store directory; only '
-                                            'graphical gets fixed Tcl/Tk/DejaVu/fontconfig '
-                                            'resources and exact X socket+one selected cookie; '
-                                            'only endpoint setup gets nft; only launcher gets '
-                                            'fixed bwrap child builder. No Nmap/SSH/TLS executable '
-                                            'in parser/endpoint/reviewer/broker.',
-                    'seal': 'MFD_ALLOW_SEALING plus F_SEAL_WRITE|GROW|SHRINK|SEAL, inspect actual '
-                            'content hash/size/inode and seal flags; no mutable bind fallback for '
-                            'pinned files; close stage descriptors after mounts.',
-                    'selected_inspected_elf': '/usr/lib/nmap/nmap',
-                    'shell_wrapper_refused': True},
- 'output_and_evidence': {'capture': 'aggregate both pipes concurrently under original cap; if '
-                                    'truncation occurs refuse usefulness and retain exact captured '
-                                    'bytes+truncation marker; no unlimited diagnostics',
-                         'headers_stdout': 'exact raw HTTP response; worker JSON/base64 frame '
-                                           'overhead is separately bounded protocol data, never '
-                                           'folded into raw HTTP budget',
-                         'headers_stdout_plus_stderr_max': 2048,
-                         'identify_stdout_plus_stderr_max': 8192,
-                         'live_result_meter': 'compact final meter_summary only; full raw/events '
-                                              'belong to independently received direct endpoint '
-                                              'transcript and are bound by transcript_sha256. '
-                                              'Never nest full32KiB transcript inside32KiB result.',
-                         'meter_before_effect_rule': 'Before each nonterminal I/O, reserve room '
-                                                     'for its worst-case retained bytes/event '
-                                                     'plus4 terminal events and2048 encoded bytes. '
-                                                     'Refuse/cancel before an event or payload '
-                                                     'cannot be retained. Exact encoded<=32768 is '
-                                                     'independently checked; no silent drop.',
-                         'meter_encoded_bytes_max': 32768,
-                         'meter_event_exact_fields': ['sequence',
-                                                      'connection',
-                                                      'kind',
-                                                      'monotonic_ns',
-                                                      'requested_bytes',
-                                                      'actual_bytes',
-                                                      'remaining_before',
-                                                      'remaining_after',
-                                                      'reason'],
-                         'meter_event_kind': ['arm',
-                                              'accept',
-                                              'recv',
-                                              'send',
-                                              'eof',
-                                              'cancel',
-                                              'cap',
-                                              'close'],
-                         'meter_event_reason': 'null or one closed stop_reason; no arbitrary '
-                                               'exception text',
-                         'meter_events_max': 64,
-                         'meter_exact_fields': ['schema_version',
-                                                'endpoint_id',
-                                                'session_id',
-                                                'dispatch_id',
-                                                'envelope_sha256',
-                                                'go_sha256',
-                                                'arm_sequence',
-                                                'slot',
-                                                'accepted_connections',
-                                                'received_request_bytes',
-                                                'sent_response_bytes',
-                                                'request_sha256',
-                                                'response_sha256',
-                                                'request_base64',
-                                                'response_base64',
-                                                'reason',
-                                                'delivery_known',
-                                                'armed_at_ns',
-                                                'finished_at_ns',
-                                                'events'],
-                         'meter_nulls': 'No acknowledged final settlement means final '
-                                        'counters/finished_at/complete delivery are null/unknown; '
-                                        'retained last ack is separate, never promoted to '
-                                        'finalzero.',
-                         'meter_raw_payload_caps': {'http_headers': {'combined': 2304,
-                                                                     'request': 256,
-                                                                     'response': 2048},
-                                                    'http_identify': {'combined': 8192,
-                                                                      'request': 4096,
-                                                                      'response': 4096}},
-                         'meter_summary_exact_fields': ['schema_version',
-                                                        'endpoint_id',
-                                                        'session_id',
-                                                        'dispatch_id',
-                                                        'envelope_sha256',
-                                                        'go_sha256',
-                                                        'arm_sequence',
-                                                        'slot',
-                                                        'accepted_connections',
-                                                        'received_request_bytes',
-                                                        'sent_response_bytes',
-                                                        'request_sha256',
-                                                        'response_sha256',
-                                                        'reason',
-                                                        'delivery_known',
-                                                        'armed_at_ns',
-                                                        'finished_at_ns',
-                                                        'transcript_sha256'],
-                         'meter_terminal_bytes_reserve': 2048,
-                         'meter_terminal_event_reserve': 4,
-                         'parser_receipt_exact_fields': ['schema_version',
-                                                         'slot',
-                                                         'input_sha256',
-                                                         'output_sha256',
-                                                         'input_bytes',
-                                                         'output_bytes',
-                                                         'elapsed_ms',
-                                                         'readiness',
-                                                         'cleanup'],
-                         'parser_receipt_readiness': 'readiness field is SHA256 of '
-                                                     'separatelyretained completeparser '
-                                                     'role_readiness, notanother16KiBnestedobject; '
-                                                     'cleanupfield is thatoneparser cleanup '
-                                                     'object.',
-                         'parser_reply_exact_fields': ['schema_version', 'slot', 'parsed'],
-                         'parser_request_exact_fields': ['schema_version',
-                                                         'slot',
-                                                         'scope',
-                                                         'raw_base64',
-                                                         'stderr_base64',
-                                                         'truncated'],
-                         'parser_result_schema': 'unchanged configurable_parser result for NMAP or '
-                                                 'HEADERS only; no SSH endpoint/tool accepted',
-                         'parser_timing': 'successful elapsed includes cleanup and<=2000ms; '
-                                          'original action/inspection control checked after '
-                                          'cleanup and validation; emergency reaping may consume2s '
-                                          'after refusal but cannot produce late success.',
-                         'raw_dispatches_max': 4,
-                         'raw_files': ['client-{dispatch_id}.stdout.bin',
-                                       'client-{dispatch_id}.stderr.bin'],
-                         'reason_enum': ['complete',
-                                         'cancelled',
-                                         'timeout',
-                                         'window_closed',
-                                         'clock_invalid',
-                                         'revoked',
-                                         'revision_changed',
-                                         'budget_denied',
-                                         'connection_limit',
-                                         'request_limit',
-                                         'response_limit',
-                                         'output_limit',
-                                         'transcript_limit',
-                                         'malformed_request',
-                                         'peer_eof',
-                                         'channel_eof',
-                                         'native_failed',
-                                         'invalid_observation',
-                                         'cleanup_failed',
-                                         'unresolved'],
-                         'result_constraints': 'exit_code null if not observed else '
-                                               'integer-255..255; stop_reason null only success; '
-                                               'success requires exit0, no truncation, complete '
-                                               'settled known-delivery meter, valid matching '
-                                               'parser, full cleanup and original deadline live. '
-                                               'Failure parsed/parser_receipt null unless a '
-                                               'complete valid parse is retained explicitly as '
-                                               'non-authoritative diagnostic; no eligible '
-                                               'predecessor from a failure.',
-                         'result_exact_fields': ['schema_version',
-                                                 'dispatch_id',
-                                                 'envelope_sha256',
-                                                 'runtime_sha256',
-                                                 'slot',
-                                                 'status',
-                                                 'exit_code',
-                                                 'stop_reason',
-                                                 'stdout_sha256',
-                                                 'stderr_sha256',
-                                                 'stdout_bytes',
-                                                 'stderr_bytes',
-                                                 'truncated',
-                                                 'readiness',
-                                                 'meter',
-                                                 'parsed',
-                                                 'parser_receipt',
-                                                 'cleanup'],
-                         'result_readiness': 'Closed summary {client_sha256,native_sha256}; '
-                                             'native_sha256 null forheaders or '
-                                             'missingnativeobservation. '
-                                             'Fullrole_readiness/native_readiness '
-                                             'separatelyretained and verifiedbyactualparent; '
-                                             'immutablecontextrequiresmatchingobjects. This '
-                                             'prevents oversizednestedparentobjects in32KiB '
-                                             'result.',
-                         'result_status_enum': ['succeeded',
-                                                'failed',
-                                                'cancelled',
-                                                'timeout',
-                                                'output_limit',
-                                                'unresolved']},
- 'owned_meter_connection_fixture': {'allowed_evidence_class': 'owned_gate',
-                                    'baseline_steady_descriptors': 6,
-                                    'cases': {'S42C-X45': {'derived_transient_peak': 12,
-                                                           'preconnected_peers': 4,
-                                                           'slot': 'http_identify',
-                                                           'steady_descriptors': 11,
-                                                           'variant': 'meter_connection_cap_identify'},
-                                              'S42C-X46': {'derived_transient_peak': 10,
-                                                           'preconnected_peers': 2,
-                                                           'slot': 'http_headers',
-                                                           'steady_descriptors': 9,
-                                                           'variant': 'meter_connection_cap_headers'}},
-                                    'creation_phase': 'After unchanged initial '
-                                                      'bootstrap/entry-rights validation and '
-                                                      'production network setup, before role '
-                                                      'sealing. All listener/peer sockets are '
-                                                      'created and connected before sealing. No '
-                                                      'post-seal new socket permission.',
-                                    'fixture_listener_count': 1,
-                                    'fixture_transport': 'AF_UNIX/SOCK_STREAM abstract address in '
-                                                         'the endpoint private network namespace; '
-                                                         'fixed owned primitive traffic only',
-                                    'live_validation': 'Only the fixed per-case sealed endpoint '
-                                                       'and runtime source variants select the '
-                                                       'exception. Worker steady inventory and '
-                                                       'trusted parent readback retain every '
-                                                       'actual descriptor and exact '
-                                                       'source/runtime/role commitments. Baseline '
-                                                       'runtime endpoint_max remains 7; no '
-                                                       'ordinary caller-supplied fd_max, skip flag '
-                                                       'or additional inherited right.',
-                                    'ordinary_endpoint_max': 7,
-                                    'other_meter_cases': 'The other nine byte/partial/clock '
-                                                         'primitive cases use the already '
-                                                         'inherited stdin socket and add zero '
-                                                         'descriptors. All primitive fixture '
-                                                         'traffic is labelled injected, cannot '
-                                                         'establish native HTTP usefulness, and is '
-                                                         'derived from actual saved metering '
-                                                         'events.',
-                                    'peak_evidence': 'READY/readback establishes the actual steady '
-                                                     'inventory of 11/9. The transient 12/10 is a '
-                                                     'source-derived upper bound with one accepted '
-                                                     'stream at a time, not a measured READY '
-                                                     'count. A measured peak claim additionally '
-                                                     'requires actual peak-time complete FD '
-                                                     'inventory retained as a bounded private '
-                                                     'artifact with its exact hash in the native '
-                                                     'validation receipt; no fabricated canonical '
-                                                     'field or omitted FD.',
-                                    'retained_validation': {'entrypoint': 'private '
-                                                                          '_retained_fixture_validation(loaded) '
-                                                                          'after structural member '
-                                                                          'loading',
-                                                            'fail_closed': 'Unknown case/role, '
-                                                                           'missing or conflicting '
-                                                                           'source/configuration '
-                                                                           'binding, ordinary '
-                                                                           'production evidence, '
-                                                                           'missing/extra '
-                                                                           'descriptors or absent '
-                                                                           'proof cannot select '
-                                                                           'the exception. The '
-                                                                           'private '
-                                                                           'retained-validation '
-                                                                           'allowance changes only '
-                                                                           'pure descriptor '
-                                                                           'validation for that '
-                                                                           'exact endpoint '
-                                                                           'fixture; all other '
-                                                                           'role, entry, '
-                                                                           'namespace, source, '
-                                                                           'process, deadline, '
-                                                                           'cleanup and meter '
-                                                                           'checks remain '
-                                                                           'required.',
-                                                            'required_binding': ['manifest '
-                                                                                 'evidence_class '
-                                                                                 'is owned_gate '
-                                                                                 'and exact '
-                                                                                 'case_id X45 or '
-                                                                                 'X46',
-                                                                                 'configuration '
-                                                                                 'equals the fixed '
-                                                                                 'case variant and '
-                                                                                 'role endpoint '
-                                                                                 'with its '
-                                                                                 'canonical '
-                                                                                 'configuration '
-                                                                                 'SHA256',
-                                                                                 'both sealed '
-                                                                                 'endpoint and '
-                                                                                 'runtime source '
-                                                                                 'SHA256 '
-                                                                                 'commitments '
-                                                                                 'match runtime '
-                                                                                 'source inventory '
-                                                                                 'and selected '
-                                                                                 'endpoint role '
-                                                                                 'closure',
-                                                                                 'all actual '
-                                                                                 'sealed fixture '
-                                                                                 'descriptor rows '
-                                                                                 'are retained, '
-                                                                                 'named and '
-                                                                                 'compared between '
-                                                                                 'worker hash and '
-                                                                                 'actual parent '
-                                                                                 'readback; exact '
-                                                                                 '11 or 9 steady '
-                                                                                 'descriptors',
-                                                                                 'case proof, '
-                                                                                 'control '
-                                                                                 'readiness and '
-                                                                                 'actual meter '
-                                                                                 'observation '
-                                                                                 'resolve to the '
-                                                                                 'same runtime and '
-                                                                                 'fixture '
-                                                                                 'configuration'],
-                                                            'scope': 'Bounded context manager '
-                                                                     'around context, '
-                                                                     'authority/transcript, parser '
-                                                                     'replay and report '
-                                                                     'validation; equivalent '
-                                                                     'writer validation; reset on '
-                                                                     'success and every failure. '
-                                                                     'No live authority is '
-                                                                     'returned.'},
-                                    'role': 'endpoint',
-                                    'simultaneous_accepted_streams_max': 1,
-                                    'steady_descriptor_purposes': {'0': 'stdin',
-                                                                   '1': 'stdout',
-                                                                   '10': 'fixture_peer_4 (X45 '
-                                                                         'only)',
-                                                                   '2': 'stderr',
-                                                                   '3': 'broker_control',
-                                                                   '4': 'launcher_arm',
-                                                                   '5': 'observed production '
-                                                                        'listener',
-                                                                   '6': 'fixture_listener',
-                                                                   '7': 'fixture_peer_1',
-                                                                   '8': 'fixture_peer_2',
-                                                                   '9': 'fixture_peer_3 (X45 '
-                                                                        'only)'},
-                                    'unchanged': {'all_case_ids': 288,
-                                                  'authority_targets_deadlines_and_byte_caps': True,
-                                                  'endpoint_rlimit_nofile': 64,
-                                                  'initial_rights': True,
-                                                  'native_case_ids': 113,
-                                                  'new_inherited_descriptors': 0,
-                                                  'new_processes': 0,
-                                                  'parent_readback_descriptors': 32,
-                                                  'production_endpoint_max': 7}},
- 'portable_inventory': {'path': '/home/sloth/Code/recon-cockpit/.secure-agent/pr102-review-20261021/s42c-runtime-portable-cases.json',
-                        'sha256': 'cd249b14cf2d8986f4f210d2a5d8d118a9ca23a53d6f83e7a06f98a1ea9b319e'},
- 'process_graph': {'broker_instances_per_bundle_max': 2,
-                   'client_dispatches_per_bundle_max': 4,
-                   'cumulative_basis': 'Conservative upper '
-                                       'bound20payload+21bwrap/reaper+4nft+2nsenter image-start '
-                                       'entries perbroker. Execchain stages sharingPID/start '
-                                       'collapse to oneactualprocessidentity, '
-                                       'neverinflateobserveduniqueprocesscount. Two brokers '
-                                       'strictlysequential, fullyreapedbeforefreshstart; '
-                                       'peak26/28notdoubled.',
-                   'cumulative_process_identities_per_broker_max': 47,
-                   'cumulative_process_identities_per_bundle_max': 94,
-                   'cumulative_rule': 'rawclientpairs4/parserruns4/cost/outputcaps applyacross '
-                                      'bothinstances. Per-callcleanup.processes<=26; '
-                                      'aggregateevidence mayretain<=94 distinctPID/start '
-                                      'identities plusphaseobservations referencingthem. No '
-                                      'hiddenautomaticrestart or thirdbroker.',
-                   'host_supervisor_note': 'outside isolated descendant sum; external X '
-                                           'server/compositor and scripted test drivers separately '
-                                           'disclosed, not silently included',
-                   'host_supervisor_processes': 1,
-                   'invocation_basis': 'eight persistent roles + four actions times '
-                                       'admission/client/parser; host nsenter only to create two '
-                                       'launchers in endpoint nets; nft check+install per endpoint',
-                   'limits_note': 'Observed bounded role graph plus explicit builder inventory; no '
-                                  'claim to arbitrary process/exec syscall tracing. No retry on '
-                                  'failed spawn/exec/image observation.',
-                   'new_role_bwrap_flags': ['--as-pid-1', '--die-with-parent'],
-                   'owned_descendant_processes_max': 26,
-                   'owned_descendant_tasks_max': 28,
-                   'payloads_max': 12,
-                   'persistent_payloads': {'audit': 1,
-                                           'broker': 1,
-                                           'endpoint': 2,
-                                           'launcher': 2,
-                                           'reviewer': 2},
-                   'serialized_setup_helpers_max': 1,
-                   'sessions_max': 2,
-                   'simultaneous_brokers_max': 1,
-                   'successful_two_session_invocations_max': {'bwrap': 20, 'nft': 4, 'nsenter': 2},
-                   'transient_payloads': {'nested_admission_until_actual_GO_redemption': 2,
-                                          'waiting_or_active_client_or_parser': 2},
-                   'wrapper_basis': 'one bwrap supervisor per new-role payload; unchanged audit '
-                                    'may retain outer supervisor plus PID1 reaper',
-                   'wrapper_processes_max': 13},
- 'remaining_coordination': ['Authority/evidence public integration mustretain exactsigned '
-                            'numericexceptions, initial PER-ROLE transfer table '
-                            'andclosednmap/headers roles; no furtherAPI decision intended.',
-                            'RootGUI payloadfields/authoritybrokerpayload '
-                            'authoritativeclosedobjects confirmed; this '
-                            'proposalreferencesauthorityBrokerBootstrap explicitly.',
-                            'No code/tests/nativeexecution authorizeduntil reviewed '
-                            'contractcommit.'],
- 'resources': {'admission': {'as_mib': 256,
-                             'cpu_seconds': 7,
-                             'fsize_bytes': 0,
-                             'lifetime_rule': 'Originalaction-clipped lifetime<=30s, also clipped '
-                                              'tooriginalsession/brokerstop; '
-                                              'actualissue/redemptionworkphase<=2s '
-                                              'underthatsameoriginalbudget, CPU7total. '
-                                              'Alivealongsidewaitingclient throughconsumeandGO; '
-                                              'actualone-usepermit '
-                                              'redeemedthenworkerreapedbeforeclientexec/ARM; '
-                                              'CANCEL/EOF whileidle checked<=50ms; '
-                                              'nofreshdeadlineonredemption.',
-                             'nofile': 64,
-                             'nproc': 1,
-                             'phase_seconds': 2,
-                             'tasks': 1,
-                             'wall_seconds': 30},
-               'audit': {'as_mib': 256,
-                         'cpu_seconds': 7,
-                         'fsize_bytes': 1048576,
-                         'implementation': 'unchanged accepted audit_worker boundary',
-                         'nofile': 64,
-                         'nproc': 1,
-                         'tasks': 1,
-                         'wall_seconds': 120},
-               'broker': {'as_mib': 256,
-                          'cpu_seconds': 120,
-                          'fsize_bytes': 16777216,
-                          'nofile': 64,
-                          'nproc': 1,
-                          'tasks': 1,
-                          'wall_seconds': 120},
-               'endpoint': {'as_mib': 256,
-                            'cpu_seconds': 5,
-                            'fsize_bytes': 0,
-                            'nofile': 64,
-                            'nproc': 1,
-                            'tasks': 1,
-                            'wall_seconds': 60},
-               'graphical': {'as_mib': 256,
-                             'cpu_seconds': 7,
-                             'fsize_bytes': 1048576,
-                             'nofile': 64,
-                             'nproc': 1,
-                             'tasks_max': 2,
-                             'tasks_note': 'warm up Tk before seal; retain actual main/notifier '
-                                           'TIDs; exact set unchanged after TSYNC no-new-task '
-                                           'filter',
-                             'wall_seconds': 60},
-               'headers': {'as_mib': 256,
-                           'cpu_seconds': 5,
-                           'fsize_bytes': 0,
-                           'nofile': 64,
-                           'nproc': 1,
-                           'output_bytes': 2048,
-                           'tasks': 1,
-                           'wall_seconds': 1},
-               'launcher': {'as_mib': 256,
-                            'children': 'at most waitingclient+admission untilGO; actualpermit '
-                                        'redeemedthenadmissionreapedbeforeclientexec; '
-                                        'afterclientreaped atmostoneparser',
-                            'cpu_seconds': 15,
-                            'fsize_bytes': 0,
-                            'nofile': 256,
-                            'nproc': 8,
-                            'tasks': 1,
-                            'wall_seconds': 60},
-               'nmap': {'as_mib': 256,
-                        'cpu_seconds': 5,
-                        'fsize_bytes': 0,
-                        'nofile': 64,
-                        'nproc': 1,
-                        'output_bytes': 8192,
-                        'tasks': 1,
-                        'wall_seconds': 5},
-               'parser': {'as_mib': 128,
-                          'cpu_seconds': 2,
-                          'fsize_bytes': 0,
-                          'nofile': 32,
-                          'nproc': 1,
-                          'output_bytes': 4096,
-                          'tasks': 1,
-                          'wall_seconds': 2},
-               'setup_helper': {'as_mib': 256,
-                                'cpu_seconds': 2,
-                                'fsize_bytes': 0,
-                                'nofile': 64,
-                                'nproc': 1,
-                                'program': 'fixed nft check/install only; serialized',
-                                'tasks': 1,
-                                'wall_seconds': 2},
-               'terminal': {'as_mib': 256,
-                            'cpu_seconds': 7,
-                            'fsize_bytes': 1048576,
-                            'nofile': 64,
-                            'nproc': 1,
-                            'tasks': 1,
-                            'wall_seconds': 60}},
- 'role_boundary_proofs': {'case_id': 'one exact X01..X59 mappedcase; observation_sha256 references '
-                                     'thekind-specific actualkernel/file/processobservation. '
-                                     'Forstartuprefusal no completeREADYis invented; retain '
-                                     'actualchangedsealedFD/sourceinput '
-                                     'andchildrefusal/pairedcontrol, explicitlynonuseful.',
-                          'checks': 'Exact one-key map {<fixedcasevariant>:boolean}. Booleantrue '
-                                    'is independently derived fromthatcase required_proof plus '
-                                    'closedkindrawobservations, '
-                                    'parentreadiness/custody/pairedcontrol andstop/cleanup '
-                                    'predicates. A suppliedtrue without thoseinputs neverpasses. '
-                                    'Machinecase.required_checks must containthatexactvariant; no '
-                                    'inventedstrings afterpin.',
-                          'common_fields': ['schema_version',
-                                            'case_id',
-                                            'role',
-                                            'kind',
-                                            'runtime_sha256',
-                                            'source_sha256',
-                                            'observation_sha256',
-                                            'control_observation_sha256',
-                                            'started_at_ns',
-                                            'finished_at_ns',
-                                            'checks'],
-                          'instrumentation_schema': {'behavior': 'faultvalues andclocks compiled '
-                                                                 'into '
-                                                                 'sealedtestsource/nativebytes '
-                                                                 'andcommitted inexecutionruntime; '
-                                                                 'caller dictionary cannot '
-                                                                 'addtimings/addresses/argv/commands',
-                                                     'case_id': 'exactdeclared X/N case ID',
-                                                     'fields': ['case_id', 'variant', 'role'],
-                                                     'role': 'declaredtestrolelabel; maps '
-                                                             'toclosedruntime role '
-                                                             'usingfixedcasepredicate',
-                                                     'variant': 'exactmachinecasevariant'},
-                          'kinds': {'clock_boundary': {'constraints': 'sealedtrustedworker '
-                                                                      'clockstimulus '
-                                                                      'withsynchronizedtestroles; '
-                                                                      'nohostclockchange/nocallerclock; '
-                                                                      'actualsyscall '
-                                                                      'boundaryobserved',
-                                                       'fields': ['stimulus',
-                                                                  'clock_source_sha256',
-                                                                  'triggered_at_ns',
-                                                                  'meter_transcript_sha256',
-                                                                  'accepted_before',
-                                                                  'accepted_after',
-                                                                  'sent_before',
-                                                                  'sent_after',
-                                                                  'refused'],
-                                                       'stimulus': ['forward_before_recv',
-                                                                    'forward_before_send',
-                                                                    'deadline_after_partial']},
-                                    'creation_denial': {'constraints': 'realdeniedsyscall '
-                                                                       'andunchangedobservedtaskset; '
-                                                                       'role-specific '
-                                                                       'no-newprocess/namespace '
-                                                                       'claim',
-                                                        'fields': ['operation',
-                                                                   'flags',
-                                                                   'return_value',
-                                                                   'errno',
-                                                                   'tasks_before',
-                                                                   'tasks_after'],
-                                                        'operation': ['fork',
-                                                                      'clone',
-                                                                      'clone3',
-                                                                      'unshare',
-                                                                      'setns',
-                                                                      'execve']},
-                                    'descriptor_custody': {'changed_descriptor': 'exactdescriptor '
-                                                                                 'schema; '
-                                                                                 'missingdescriptor '
-                                                                                 'retains '
-                                                                                 'expectedbounddescriptor, '
-                                                                                 'notfabricatedactualentry',
-                                                           'fields': ['phase',
-                                                                      'expected_inventory_sha256',
-                                                                      'actual_inventory_sha256',
-                                                                      'changed_descriptor',
-                                                                      'refused']},
-                                    'image_identity': {'fields': ['expected_image_sha256',
-                                                                  'observed_image_sha256',
-                                                                  'waiting_observation_sha256',
-                                                                  'native_observation_sha256',
-                                                                  'arm_emitted',
-                                                                  'refused'],
-                                                       'nulls': 'nativeobservation/observedhash '
-                                                                'null ifmissing; '
-                                                                'actualsamepayloadobservationrequired '
-                                                                'forpositivecontrol'},
-                                    'lifecycle': {'constraints': 'actualEOF/process '
-                                                                 'event+pidfdHUP/wrapperwaitreceipt; '
-                                                                 'lastack notfinalzero ifmissing',
-                                                  'fields': ['origin',
-                                                             'triggered_at_ns',
-                                                             'cleanup_sha256',
-                                                             'meter_transcript_sha256',
-                                                             'last_ack_sha256',
-                                                             'cleanup_finished_at_ns'],
-                                                  'origin': ['broker_eof',
-                                                             'endpoint_eof',
-                                                             'launcher_eof',
-                                                             'payload_and_wrapper_cleanup']},
-                                    'meter_boundary': {'constraints': 'actualisolatedsocketpeer '
-                                                                      'andendpoint '
-                                                                      'syscallreturn/meter stream; '
-                                                                      'instrumentedprimitivecapbytesexplicitly '
-                                                                      'notvalidusefulHTTP '
-                                                                      'daemonoutput',
-                                                       'fields': ['slot',
-                                                                  'metric',
-                                                                  'stimulus_bytes',
-                                                                  'meter_transcript_sha256',
-                                                                  'input_sha256',
-                                                                  'output_sha256',
-                                                                  'delivery_known',
-                                                                  'refused'],
-                                                       'metric': ['connections',
-                                                                  'request',
-                                                                  'response',
-                                                                  'partial_request',
-                                                                  'partial_response']},
-                                    'parser_absence': {'constraints': 'fixedprobeonly '
-                                                                      'withinisolatedparser; '
-                                                                      'parentidentity+exactFDreceipt '
-                                                                      'required',
-                                                       'fields': ['network_return',
-                                                                  'network_errno',
-                                                                  'filesystem_return',
-                                                                  'filesystem_errno',
-                                                                  'process_return',
-                                                                  'process_errno',
-                                                                  'authority_fds_absent']},
-                                    'pin_mutation': {'fields': ['destination',
-                                                                'before_sha256',
-                                                                'after_sha256',
-                                                                'expected_seals',
-                                                                'observed_seals',
-                                                                'rejected_stage',
-                                                                'ready_emitted',
-                                                                'arm_emitted'],
-                                                     'stage': ['source_snapshot',
-                                                               'native_snapshot',
-                                                               'role_manifest',
-                                                               'worker_entry',
-                                                               'parent_image']},
-                                    'socket_denial': {'constraints': 'AF_INET=2/TCPstream1/protocol0or6; '
-                                                                     'fixeddeclared/forbiddenwitnessIPport; '
-                                                                     'MSG_FASTOPENflags '
-                                                                     'includes0x20000000; '
-                                                                     'actualEPERM '
-                                                                     'requiredforseccompcases, no '
-                                                                     'hostoutboundaddress',
-                                                      'fields': ['operation',
-                                                                 'family',
-                                                                 'socket_type',
-                                                                 'protocol',
-                                                                 'target',
-                                                                 'port',
-                                                                 'flags',
-                                                                 'return_value',
-                                                                 'errno',
-                                                                 'paired_control_connected',
-                                                                 'listener_accepts',
-                                                                 'listener_payload_bytes'],
-                                                      'operation': ['connect',
-                                                                    'sendto',
-                                                                    'sendmsg',
-                                                                    'sendmmsg']}},
-                          'required_checks_by_variant': {'actual_payload_and_wrapper_reaped': ['actual_payload_and_wrapper_reaped'],
-                                                         'creation_denied_broker': ['creation_denied_broker'],
-                                                         'creation_denied_client': ['creation_denied_client'],
-                                                         'creation_denied_endpoint': ['creation_denied_endpoint'],
-                                                         'creation_denied_graphical': ['creation_denied_graphical'],
-                                                         'creation_denied_parser': ['creation_denied_parser'],
-                                                         'creation_denied_terminal': ['creation_denied_terminal'],
-                                                         'endpoint_clock_forward_before_recv': ['endpoint_clock_forward_before_recv'],
-                                                         'endpoint_clock_forward_before_send': ['endpoint_clock_forward_before_send'],
-                                                         'endpoint_deadline_before_send_after_partial': ['endpoint_deadline_before_send_after_partial'],
-                                                         'endpoint_denies_connect': ['endpoint_denies_connect'],
-                                                         'endpoint_denies_fastopen_sendmmsg': ['endpoint_denies_fastopen_sendmmsg'],
-                                                         'endpoint_denies_fastopen_sendmsg': ['endpoint_denies_fastopen_sendmsg'],
-                                                         'endpoint_denies_fastopen_sendto': ['endpoint_denies_fastopen_sendto'],
-                                                         'forbidden_destination_ssh_endpoint': ['forbidden_destination_ssh_endpoint'],
-                                                         'forbidden_destination_wrong_port': ['forbidden_destination_wrong_port'],
-                                                         'forbidden_destination_wrong_target': ['forbidden_destination_wrong_target'],
-                                                         'meter_connection_cap_headers': ['meter_connection_cap_headers'],
-                                                         'meter_connection_cap_identify': ['meter_connection_cap_identify'],
-                                                         'meter_partial_request': ['meter_partial_request'],
-                                                         'meter_partial_response': ['meter_partial_response'],
-                                                         'meter_request_cap_headers': ['meter_request_cap_headers'],
-                                                         'meter_request_cap_identify': ['meter_request_cap_identify'],
-                                                         'meter_response_cap_headers': ['meter_response_cap_headers'],
-                                                         'meter_response_cap_identify': ['meter_response_cap_identify'],
-                                                         'missing_descriptor_broker': ['missing_descriptor_broker'],
-                                                         'missing_descriptor_endpoint': ['missing_descriptor_endpoint'],
-                                                         'missing_descriptor_graphical': ['missing_descriptor_graphical'],
-                                                         'missing_descriptor_launcher': ['missing_descriptor_launcher'],
-                                                         'missing_descriptor_terminal': ['missing_descriptor_terminal'],
-                                                         'native_image_observation_missing_no_ARM': ['native_image_observation_missing_no_ARM'],
-                                                         'parent_observed_identity_endpoint_mismatch': ['parent_observed_identity_endpoint_mismatch'],
-                                                         'parent_observed_identity_nmap_mismatch': ['parent_observed_identity_nmap_mismatch'],
-                                                         'parent_observed_identity_parser_mismatch': ['parent_observed_identity_parser_mismatch'],
-                                                         'parent_observed_identity_waiting_python_mismatch': ['parent_observed_identity_waiting_python_mismatch'],
-                                                         'parser_network_filesystem_authority_absent': ['parser_network_filesystem_authority_absent'],
-                                                         'role_EOF_broker': ['role_EOF_broker'],
-                                                         'role_EOF_endpoint': ['role_EOF_endpoint'],
-                                                         'role_EOF_launcher': ['role_EOF_launcher'],
-                                                         'role_manifest_client_to_parser': ['role_manifest_client_to_parser'],
-                                                         'role_manifest_endpoint_to_broker': ['role_manifest_endpoint_to_broker'],
-                                                         'sealed_broker_sqlite_library_changed': ['sealed_broker_sqlite_library_changed'],
-                                                         'sealed_graphical_tk_library_changed': ['sealed_graphical_tk_library_changed'],
-                                                         'sealed_nmap_executable_changed': ['sealed_nmap_executable_changed'],
-                                                         'sealed_nmap_library_changed': ['sealed_nmap_library_changed'],
-                                                         'sealed_source_broker_changed': ['sealed_source_broker_changed'],
-                                                         'sealed_source_client_changed': ['sealed_source_client_changed'],
-                                                         'sealed_source_endpoint_changed': ['sealed_source_endpoint_changed'],
-                                                         'sealed_source_graphical_changed': ['sealed_source_graphical_changed'],
-                                                         'sealed_source_launcher_changed': ['sealed_source_launcher_changed'],
-                                                         'sealed_source_parser_changed': ['sealed_source_parser_changed'],
-                                                         'sealed_source_terminal_changed': ['sealed_source_terminal_changed'],
-                                                         'unexpected_descriptor_broker': ['unexpected_descriptor_broker'],
-                                                         'unexpected_descriptor_client': ['unexpected_descriptor_client'],
-                                                         'unexpected_descriptor_endpoint': ['unexpected_descriptor_endpoint'],
-                                                         'unexpected_descriptor_graphical': ['unexpected_descriptor_graphical'],
-                                                         'unexpected_descriptor_launcher': ['unexpected_descriptor_launcher'],
-                                                         'unexpected_descriptor_parser': ['unexpected_descriptor_parser'],
-                                                         'unexpected_descriptor_terminal': ['unexpected_descriptor_terminal']}},
- 'role_discrimination': {'accepted_observer_only_role': 'audit',
-                         'case_role_labels': 'client/waiting_python/all are descriptive testlabels '
-                                             'only, never runtime selector; testclient label '
-                                             'selects exactnmap orheaders role '
-                                             'fromsealedcasevariant',
-                         'entrypoint_module_by_role': {'admission': 'engagement_live_admission_worker',
-                                                       'broker': 'engagement_live_broker_worker',
-                                                       'endpoint': 'engagement_live_endpoint_worker',
-                                                       'graphical': 'engagement_live_approval_worker',
-                                                       'headers': 'engagement_live_client_worker',
-                                                       'launcher': 'engagement_live_launcher_worker',
-                                                       'nmap': 'engagement_live_client_worker',
-                                                       'parser': 'engagement_live_parser_worker',
-                                                       'terminal': 'engagement_live_approval_worker'},
-                         'graphical_frontend_value': 'graphical_v1',
-                         'new_bootstrap_and_readiness_roles': ['broker',
-                                                               'terminal',
-                                                               'graphical',
-                                                               'launcher',
-                                                               'endpoint',
-                                                               'nmap',
-                                                               'headers',
-                                                               'parser',
-                                                               'admission']},
- 'runtime_digest': {'algorithm': 'SHA256',
-                    'domain_prefix_hex': '',
-                    'evidence_wrapper_fields': ['schema_version', 'runtime', 'instrumentation'],
-                    'excluded': ['actualprocessPID/FD/clockobservations',
-                                 'diagnosticinstrumentationlabels',
-                                 'runtime.jsonwrapper'],
-                    'included': 'closed execution bundle contains '
-                                'profile/version/fixedpaths/native+sourcehashes/rolepartitions',
-                    'input': 'canonical(validate_runtime(execution_bundle))',
-                    'instrumentation_binding': 'Changedworker/nativebehavior must be in '
-                                               'sealedsource/nativepins insideexecutionbundle; '
-                                               'unbound metadata configuration never selects '
-                                               'liveclock/native behavior.',
-                    'runtime_file_sha256': 'independent fullfileSHA in evidence members map; never '
-                                           'confused with execution runtime_sha256'},
- 'runtime_manifest_schema': {'builtin_modules': 'sorted exact observed '
-                                                'distributionPythonbuiltinlist, finite count<=128; '
-                                                'requiredimports must be present '
-                                                'eitherfixedbuiltins orroleextensionallowlist, no '
-                                                'guessed portableextensionlayout',
-                             'bundle_fields': ['schema_version',
-                                               'profile',
-                                               'platform',
-                                               'python',
-                                               'stdlib',
-                                               'sources',
-                                               'roles',
-                                               'helpers',
-                                               'compiled'],
-                             'compiled_schema': {'bytes': 'first4 '
-                                                          'exactacceptednetwork_tools_runtime '
-                                                          'constants; graphical_fontconfig exact '
-                                                          'accepted '
-                                                          'graphical_approval_isolation.FONT_CONFIG '
-                                                          'bytes mounted at '
-                                                          'graphical_approval_protocol.FONTCONFIG_PATH '
-                                                          '(/run/reviewer-fonts.conf); no '
-                                                          'callerXML. Copyconstant '
-                                                          'intoadditivebuilder or read '
-                                                          'acceptedhostconstant '
-                                                          'withoutmountingitsisolationmoduleinreviewer.',
-                                                 'count': 5,
-                                                 'destinations': ['/tool/data/nmap-services',
-                                                                  '/tool/data/nmap-protocols',
-                                                                  '/tool/data/nmap-service-probes',
-                                                                  '/tool/data/nse_main.lua',
-                                                                  '/run/reviewer-fonts.conf'],
-                                                 'max_file_bytes': 16384,
-                                                 'names': ['nmap_services',
-                                                           'nmap_protocols',
-                                                           'nmap_service_probes',
-                                                           'nmap_nse_shim',
-                                                           'graphical_fontconfig'],
-                                                 'note': 'SelectedephemeralXauthoritycookie is '
-                                                         'separatelycustodiedsessioncapability, '
-                                                         'notcompiledstaticruntimefile, '
-                                                         'neverexportsecretbytes.',
-                                                 'row_fields': ['name',
-                                                                'destination',
-                                                                'size',
-                                                                'sha256'],
-                                                 'type': 'list'},
-                             'file_row_fields': ['source', 'destination', 'size', 'sha256'],
-                             'file_rules': 'exact pathinventory fromfixedrole, stable fstat '
-                                           'dev/ino/mode/size/mtime_ns/ctime_ns aroundboundedread, '
-                                           'sealsrequired; filepath aliases resolved '
-                                           'underfixedstandard roots, no caller path',
-                             'helpers_schema': {'count': 4,
-                                                'destinations': {'bwrap': '/usr/bin/bwrap',
-                                                                 'nft': '/usr/sbin/nft',
-                                                                 'nsenter': '/usr/bin/nsenter',
-                                                                 'readelf': '/usr/bin/readelf'},
-                                                'executable': 'file_row',
-                                                'files': 'sorteduniquefile_rowlist,<=32/helper,exactinspectedDT_NEEDEDclosure; '
-                                                         'readonlyrootstockpaths only',
-                                                'interpreter': 'exact ELFinterpreterdestination',
-                                                'names': ['bwrap', 'nsenter', 'nft', 'readelf'],
-                                                'roles': 'readelf hostpreflightonly; nsenter '
-                                                         'hosttwo launcherstarts; nft '
-                                                         'endpointfixedsetup only; bwrap '
-                                                         'supervisorfixedchildren only; no '
-                                                         'arbitraryhelperargv/role mounting',
-                                                'row_fields': ['name',
-                                                               'executable',
-                                                               'interpreter',
-                                                               'files'],
-                                                'type': 'list'},
-                             'platform': 'linux-x86_64',
-                             'profile': 'engagement-live-runtime-v1',
-                             'python': 'exactsystemdistributionPython path/version/image/hash; '
-                                       'nativevalidation uses inspected3.14 layout, portabletests '
-                                       'simulate unavailableLinux APIs',
-                             'python_fields': ['source',
-                                               'destination',
-                                               'size',
-                                               'sha256',
-                                               'version',
-                                               'builtin_modules'],
-                             'resource_fields': ['kind',
-                                                 'source',
-                                                 'destination',
-                                                 'device',
-                                                 'inode',
-                                                 'mode',
-                                                 'files_sha256'],
-                             'resource_rules': 'fixedGUI Tcl/Tk/fonts/fontconfigdirs read-only; '
-                                               'boundedfileinventory/hashbeforeandafterstartup, no '
-                                               'recursivehostrootbind; Xsocket exactidentity '
-                                               'andselected16-bytecookie are separatelycustodied, '
-                                               'cookiebytesneverretainedinevidence',
-                             'role_fields': ['role',
-                                             'entrypoint',
-                                             'sources',
-                                             'executable',
-                                             'interpreter',
-                                             'native_files',
-                                             'extension_files',
-                                             'readonly_resources',
-                                             'required_mapped_images'],
-                             'role_runtime_delivery': 'Selected immutable rolemanifest '
-                                                      'mountedsealedat '
-                                                      '/run/engagement-runtime.json (0444), '
-                                                      'max131072; child reads/validatesbeforeseal '
-                                                      'and closesreadFD. Globalruntimefilehash '
-                                                      'isnot placedas large ordinarypacket; '
-                                                      'bootstrap bindsruntime_sha256 '
-                                                      'plusselectedmanifestsha.',
-                             'source_inventory': 'allexactnewproduction secure_agent modulepaths '
-                                                 'plus explicitacceptedroleunion below '
-                                                 'and2packagefiles; no tests/scripts in '
-                                                 'productionclosure; eachrole onlyitsclosedsubset',
-                             'source_row_fields': ['module', 'destination', 'size', 'sha256'],
-                             'stdlib_fields': ['path', 'device', 'inode', 'mode'],
-                             'stdlib_rules': 'fixedreadonlydistributionPythonstdlib; lib-dynload '
-                                             'hidden/replaced then exactroleextensions mounted. '
-                                             'Explicitly not fullstdlib-byte-sealing or '
-                                             'everyopen-syscallattestation.'},
- 'source_partitions': {'admission_extra': ['engagement_live_admission_worker'],
-                       'audit_exact': ['planner_worker',
-                                       'audit_worker',
-                                       'audit_protocol',
-                                       'audit_witness'],
-                       'broker_extra': ['engagement_dispatch_store',
-                                        'engagement_live_broker_worker',
-                                        'engagement_live_witness',
-                                        'engagement_live_context',
-                                        'configurable_parser',
-                                        'http_headers_parser',
-                                        'network_tools_nmap_parser',
-                                        'network_tools_parser',
-                                        'audit_witness',
-                                        'audit_protocol'],
-                       'common': ['engagement_live_runtime',
-                                  'engagement_live_contract',
-                                  'engagement_live_protocol',
-                                  'engagement_dispatch_contract',
-                                  'engagement_contract',
-                                  'configurable_contract',
-                                  'configurable_scope',
-                                  'models',
-                                  'tool_parameters',
-                                  'tool_adapters',
-                                  'session_limits',
-                                  'worker',
-                                  'tool_worker_common',
-                                  'name_tls_worker_common',
-                                  'planner_worker',
-                                  'name_tls_topology_spec'],
-                       'endpoint_extra': ['engagement_live_endpoint_worker'],
-                       'headers_extra': ['engagement_live_client_worker'],
-                       'launcher_extra': ['engagement_live_launcher_worker',
-                                          'engagement_live_client',
-                                          'engagement_live_client_worker',
-                                          'engagement_live_parser',
-                                          'engagement_live_endpoint',
-                                          'engagement_live_admission_worker',
-                                          'engagement_live_witness',
-                                          'engagement_live_context',
-                                          'execution',
-                                          'isolation',
-                                          'routed',
-                                          'engagement_live_parser_worker',
-                                          'configurable_parser',
-                                          'http_headers_parser',
-                                          'network_tools_nmap_parser',
-                                          'network_tools_parser',
-                                          'audit_witness',
-                                          'audit_protocol'],
-                       'nmap_extra': ['engagement_live_client_worker'],
-                       'parser_extra': ['engagement_live_parser_worker',
-                                        'configurable_parser',
-                                        'http_headers_parser',
-                                        'network_tools_nmap_parser',
-                                        'network_tools_parser'],
-                       'principle': 'Exact common+roleextra+2 inertpackagefiles; accepted audit '
-                                    'ownlayout. No '
-                                    'graphical_approval_isolation/approval_isolation/planner_isolation '
-                                    'dependency for reused pureview/seal helpers. Launcher '
-                                    'includes fixedchild sourceunion forstage. Host-onlyimports '
-                                    'remainlazy andunmounted inleaves. Sourcecodepresence is '
-                                    'notpermissionto mount binaries/data/authority.',
-                       'terminal_and_graphical_extra': ['approval_worker',
-                                                        'graphical_approval_worker',
-                                                        'graphical_approval_view',
-                                                        'graphical_approval_protocol',
-                                                        'approval_protocol',
-                                                        'approvals',
-                                                        'name_tls_public',
-                                                        'engagement_live_approval_worker',
-                                                        'engagement_live_approval_view']},
- 'status': 'runtime_contract_addendum_for_review',
- 'supersedes_sha256': '7a2b4bc576a9726dbb3beadaafcb285d1426df725696901c3e1bcfa7427a6368'}
+# Exact machine contract mirror; compact literals preserve the fixed source-file cap.
+SPEC = {
+    'apis': {'client.prepare': 'prepare_client(*, runtime, prepared, endpoint_identity, scope, control) -> WaitingClient; explicit local trusted-host diagnostic path. Live launcher uses only private supervised proxy, never local spawning.', 'context.validate': 'validate_live_context(value) -> detached validated context; pure consistency checker, no process/network/store execution', 'endpoint.arm': 'arm_endpoint(channel, *, release, endpoint_identity, control) -> exact ack; callable only by inherited launcher ARM peer; no host duplicate writer', 'endpoint.prepare': 'prepare_endpoint(*, runtime, session_binding, broker_peer, arm_peer, control) -> EndpointOwner; .ready receipt/.namespace_fds for host startup only; .progress(control)/.close(); host never writes ARM or reads broker-owned channel', 'parser.parse': 'parse(*, tool_id, raw, stderr, scope, truncated, control, runtime) -> (validated unchanged parsed result, parser_receipt)', 'runtime.bootstrap_role': 'bootstrap_role(*, role, entry, runtime_manifest, expected_fds, deadline_ns) -> worker_ready. Calledafterfixedendpointsetup orGUIwarmup, beforeREADY: verifyallowedstartupdelta; closeallstagingFDs; setrolelimits; dropallcaps andNNP; installrolefilter andwitnesses. GUIterminal accepted seal helpers mayfurtherrestrictIO beforeemittingfinalREADY. No unchangedplanner_worker._bootstrap UID0assumption. Host-onlyimports inruntimefunctions remainlazy.', 'runtime.check_role_entry': 'check_role_entry(*, role, bootstrap, expected_fds, observer) -> EntryIdentity. Calledafterfixedfirstinitialtransfer, verifying exactcompletepostbootstrapFDinventory/actualnamespaces/mapping/runtimecommitment. Minimalroleentry independently verified0/1/2beforeimports/transfer. EntryIdentity stores fixed pre-setupdescriptor/tasksets; required GUIwarmup/endpointsetup thenbootstrap_role seals. No additionaltransferallowed.', 'runtime.cleanup': 'cleanup_owned(processes, pins, *, deadline=None) -> cleanup; inputprocesses list of owned subprocess objects, pins corresponding PinnedProcess orNone. Computeone max2s emergencydeadline optionallynarrowedby supplied emergencydeadline, never renewed perrole; close everypin/procdir/stream evenifcleanupfails. Workdeadlines mayexpire but no successreturned; descriptorownership explicit.', 'runtime.inspect_runtime': 'inspect_runtime(control) -> validated runtime bundle (no role launch)', 'runtime.observe_native': 'observe_native(pin, manifest, *, waiting_image, control) -> detached native image observation; no retry/exec; bounded waiting only for same PID image transition', 'runtime.observe_process': 'observe_process(*, info_raw, process, role, bundle, observer, expected_net, control) -> PinnedProcess; holds pidfd+procdir, .receipt is parent_observation; .check_alive(); .close(); role boundaries and actualworkerREADY later combined by validate_readiness', 'runtime.snapshot_role': 'snapshot_role(bundle, role, control) -> RoleSnapshot context manager: .sources/.native/.extensions exact destination->sealedFD maps, .manifest detached selected role manifest, .stdlib fixedreadonlypath; .mounts(argv) mutates and returns same list, adds exact sealed --ro-bind-data mounts plus controlled stdlib/lib-dynloadoverlay; caller closes snapshot after successful/failedPopen; nevertransferownershipimplicitly.', 'runtime.validate_manifest': 'validate_runtime(value) -> detached closed runtime bundle; runtime_digest(value) -> SHA256 canonical bundle; validate_readiness exact names and role source/native manifest bindings.', 'runtime.validate_readiness': 'validate_readiness(role, value, bundle, *, expected_binding=None) -> detached strict role_readiness; no process launch; compoundreceipt<=16384, workerline<=8192', 'supervision.capture': 'SupervisorChannel.capture(*, child_slot, control) -> exact four-field CAPTURED; strict raw/cleanup checks, actual partials retained on failure.', 'supervision.child_owner': 'ObservedChild owns actual Popen, pidfd, bootstrap, ready, stdout/stderr/info and cleanup. close(deadline) never touches a pretend channel. Existing normal RoleProcess for persistent roles remains unchanged.', 'supervision.host_supervisor_location': 'Private fixed threaded supervisor class in existing engagement_live_launcher.py; shared spawn/observation split in engagement_live_runtime.py. No new executable module, isolated role or source path. Broker ingress wait no longer needs callback/event-pump changes.', 'supervision.launcher_child': 'LauncherChild exposes .channel, .ready and .close(deadline=None); close performs one REAP under the same original control/first-stop deadline or returns actual cached CAPTURE cleanup. No fake .process/.pin attributes.', 'supervision.launcher_proxy': 'LauncherChild owns real inherited socket only plus exact slot/Prepared and fixed supervision client. It never fabricates Popen/pidfd/parent properties; calls explicit host check/observe/capture/reap operations. WaitingClient and live parser path gain private supervised-owner seams; public offline parser replay still uses existing host local RoleProcess.', 'supervision.live_client': '_prepare_supervised_client(*, runtime, prepared, endpoint_identity, scope, control, supervisor) -> SupervisedWaitingClient with .ready/.release(release,control)/.observe_native(control)/.collect(control)/.close(); release gets NATIVE_BEGIN before direct GO and never reads a fabricated process pin.', 'supervision.live_parser': '_parse_supervised_observed(*, tool_id, raw, stderr, scope, truncated, control, runtime, prepared, supervisor) -> (parsed, parser_receipt, actual_role_readiness); input/reply uses only launcher-owned channel and actual host REAP receipt.', 'supervision.local_paths': 'Existing public prepare_client and parse/_parse_observed stay explicit local host-only paths for owned low-level diagnostics or offline isolated parser replay. Live launcher imports only the supervised private paths; no post-seal local _start_role fallback.', 'supervision.native_begin': 'SupervisorChannel.native_begin(*, child_slot, release, control) -> exact NATIVE_BUDGET; one-use, returns fixed native deadline.', 'supervision.new_private_observe': 'PendingChild.observe_ready(control) -> compound readiness; separates _finish_start observation from its existing RoleProcess(process,channel,...) construction.', 'supervision.new_private_spawn': '_spawn_child_owned(*,runtime,role,payload,child_stdin,worker_id,control,namespace_lease=None) -> PendingChild with bootstrap, actual entry and retained process/pin/pipes; no request channel attribute or duplicate parent FD.', 'supervision.observe_native': 'SupervisorChannel.observe_native(*, child_slot, control) -> exact actual native_readiness; identify only after NATIVE_BEGIN.', 'supervision.parser_bound': 'Launcher parser phase retains original min(action/session, start+2s) before START. Supervisor derives its parser lifetime no later than min(original action/session, actual START receipt+2s); launcher can only stop earlier, never renew its own phase. Any missing final reply/earlier caller expiry triggers shared stop and cannot return useful parser success.', 'supervision.start_child': 'SupervisorChannel.start_child(*, child_slot, prepared, control) -> LauncherChild; START/BOOTSTRAP then one direct INITIAL then OBSERVE_READY/READY. Derive immutable slot role and payload from exact context; no caller-selected argv/path/FD/role.', 'supervision.supervisor_channel': 'SupervisorChannel(channel, *, launcher_id, slot_bindings, request_channels, runtime, endpoint_identity, role_context, control); role_context exact {session_binding,roe,scope,policy}; constructor inside launcher uses transferred request channels only, never Popen/host PID handles.'},
+    'closed_objects': {'ancestry_row': {'fields': ['pid', 'parent_pid', 'start_time_ticks'], 'ordering': 'payload first, supervised wrapper last; starts nonincreasing toward ancestor, eachparentlinksnext; actual reread before/after pinned process check'}, 'bootstrap_descriptor': {'fd': 'strictinteger0..255; uniquefd/purpose; expectedroleinitialrights table exactly; actualfstat/flags/typeverified immediatelyafter singleinitialtransfer; no laterancillary.', 'fields': ['fd', 'purpose', 'device', 'inode', 'mode', 'flags']}, 'bootstrap_payloads': {'admission': ['prepared', 'endpoint_identity', 'launcher_id'], 'broker': 'exact authority-owned BrokerBootstrap object; only fixed /store/engagement operator mount,2preallocatedslots,actualreviewerIDs/modes andoriginalbrokerstop; authoritymachine object supplies exactfieldset', 'constraints': 'roe/scope/policy and Prepared useunchangedclosedvalidators andauthoritysession_binding. terminal mode=terminal; graphicalmode=graphical_v1, exactXsocket andselectedcookiefile undernewbuilder. Brokerpayloadownedauthority toavoidconflictingduplicate schema. Parser receives actualrawinputonlyafterparentpinsREADY. Client scope is the unchanged accepted closed scope; its digest equals Prepared.envelope.scope_sha256 and the derived fixed slot action equals Prepared.action. Actual configured SSH denial uses this scope. Scope supplies data only, never request/grant authority.', 'endpoint': ['session_binding', 'roe', 'scope', 'policy', 'endpoint_id'], 'graphical': ['session_binding', 'roe', 'scope', 'policy', 'reviewer_id', 'review_mode', 'display', 'display_socket', 'authority_sha256'], 'headers': ['prepared', 'endpoint_identity', 'scope'], 'launcher': ['session_binding', 'roe', 'scope', 'policy', 'endpoint_identity', 'child_slots'], 'launcher_child_slot_custody_rule': 'Before each initial child-channel handoff, both endpoints must have empty queues as actually checked under the original bounded startup control. Bind the same declared socketpair identities; queued unexpected data, a swapped peer or retained duplicate request writer refuses before child bootstrap. After transfer the host never writes the launcher-owned child request endpoint.', 'launcher_child_slots': 'exact array of six authority_contract.schemas.child_slot_binding in runtime_contract.host_supervision.slots order, bound to corresponding actual transferred request descriptors; unique worker IDs and actual opposite endpoints', 'nmap': ['prepared', 'endpoint_identity', 'scope'], 'parser': ['slot', 'scope'], 'terminal': ['session_binding', 'roe', 'scope', 'policy', 'reviewer_id', 'review_mode', 'tty_identity']}, 'boundary_checks': {'common': ['namespaces_private', 'mapping_bound', 'capabilities_dropped', 'no_new_privs', 'root_read_only', 'descriptors_private', 'process_creation_blocked', 'namespace_creation_blocked'], 'notes': 'All common checks apply to launcher, including actual process_creation_blocked and namespace_creation_blocked. Launcher also proves socket/socketpair denial using the unchanged full accepted helper. fixed_child_inventory means only six preallocated one-use direct child request endpoints; all child spawning/staging/readback/reaping is by the trusted host supervisor. There is no bounded_child_creation or fixed_namespace_builder exception.', 'required': 'all requiredtrue forREADY; parent observations independentlyverifyphysicalidentity; checks neverusedas soleevidence fornative gate', 'role_specific': {'admission': ['network_creation_blocked', 'authority_absent'], 'broker': ['network_creation_blocked', 'store_path_bound'], 'endpoint': ['outgoing_connect_blocked', 'fastopen_sendto_blocked', 'fastopen_sendmsg_blocked', 'fastopen_sendmmsg_blocked', 'listener_bound', 'landlock_applied'], 'graphical': ['network_creation_blocked', 'display_bound', 'graphical_input_owned', 'remote_interpreter_disabled', 'task_set_sealed'], 'headers': ['forbidden_target_blocked', 'forbidden_port_blocked', 'ssh_endpoint_blocked', 'raw_sockets_blocked', 'landlock_applied'], 'launcher': ['network_creation_blocked', 'fixed_child_inventory'], 'nmap': ['forbidden_target_blocked', 'forbidden_port_blocked', 'ssh_endpoint_blocked', 'raw_sockets_blocked', 'landlock_applied'], 'parser': ['network_creation_blocked', 'filesystem_creation_blocked', 'authority_absent', 'landlock_applied'], 'terminal': ['network_creation_blocked', 'terminal_bound', 'terminal_input_owned']}, 'shape': 'exact role-specific boolean map'}, 'cleanup': {'fields': ['schema_version', 'started_at_ns', 'finished_at_ns', 'deadline_ns', 'status', 'processes', 'descriptors_closed'], 'processes_max': 26, 'required': 'one shared2s budget, allknownpayloads signalled first, wrappers reaped; success only all payloadpidfdsHUP and wrapperswait; descriptorclosure evenerror; emptyprocesses only neverstarted, notmissingobservation', 'status': ['complete', 'failed', 'unknown']}, 'cleanup_process': {'fields': ['role', 'pid', 'start_time_ticks', 'pin_verified', 'signal_attempted', 'exit_observed', 'reaped_observed', 'wrapper_pid', 'wrapper_returncode'], 'nulls': 'pid/start/wrapper nullable only no trusted identity; returncode nullable ifunknown; unverified pin never signalled, bounded non-signallingHUP check afterwrappertermination'}, 'descriptor': {'fields': ['fd', 'purpose', 'kind', 'device', 'inode', 'mode', 'flags'], 'kernel_kinds': 'pidfd from actual held pidfd_open, eventpoll selector, proc_directory actualheldprocdir; kernelanon inode descriptors mustmatchpinned syscall-created identityandphasepurpose, notarbitrary anon_inode acceptance.', 'kind': ['pipe', 'seqpacket', 'stream_socket', 'listener', 'regular', 'directory', 'character', 'eventfd', 'eventpoll', 'pidfd', 'proc_directory'], 'purpose': 'finite role-phase inventory; actual rights/nonblocking/close-on-exec and peer/listener address checked against fixed rolebinding, not inferred frompurpose string'}, 'file_identity': {'fields': ['destination', 'device', 'inode', 'mode', 'size', 'sha256'], 'notes': 'hash compared to exact staged source/native manifest; device/inode from actual process root or pinned exe, not merely supplied source path'}, 'identity_values': {'groups': 'bounded0..64 repeated65534 values allowed; immutable current inventory', 'uids_gids': 'each exact4 integer list from /proc status'}, 'initial_bootstrap': {'descriptor_rows_max': 32, 'encoded_bytes_max': 32768, 'expected_namespaces': 'exact user/net/mnt/pid identityoftrustedobserver plus expected sessionnet whereapplicable; worker mustprivateuser/mnt/pid, netprivateexceptsessionlauncher/client. Full parentcheck independent.', 'fields': ['schema_version', 'role', 'worker_id', 'observer', 'expected_namespaces', 'deadline_ns', 'runtime_sha256', 'role_manifest_sha256', 'source_sha256', 'descriptors', 'payload'], 'payload': 'closed discriminated object indexed byrole below; no arbitrarydictionary, absolute path, argv, clockfunction or permit'}, 'mapped_image': {'fields': ['destination', 'device', 'inode'], 'notes': 'fixed manifest path, sortedunique; require actual executable+ELFinterpreter and full required nativeDT_NEEDED closure before ARM; unknown file-backed executable mapping refuses; vdso/vsyscall kernel mappings explicitly classified without claiming filehash'}, 'mapping_rows': {'required': 'inside65534,length1 for newroles; outside equals actual observing parent uid/gid; retain composition to hostnonzero. Unchanged accepted audit mapping validated under its existing contract.', 'shape': 'one row [inside,outside,length] per uid/gid map'}, 'namespaces': {'fields': ['user', 'net', 'mnt', 'pid'], 'values': 'exact kernel namespace strings e.g net:[integer], independent expected equality/private difference checks'}, 'native_readiness': {'fields': ['schema_version', 'role', 'waiting_image', 'parent_observation', 'observed_at_ns'], 'required': 'same pinned waitingpayload PID/start/existingpidfd; executable differs from waitingPython and exactlymatchesfixedNmap; before first ARM', 'role': 'nmap'}, 'observer': {'fields': ['pid', 'uid', 'gid', 'namespaces']}, 'parent_observation': {'bounds': {'ancestry': 16, 'descriptors': 32, 'groups': 64, 'mapped_images': 64, 'task_ids': 2}, 'fields': ['schema_version', 'role', 'observer', 'wrapper', 'payload', 'ancestry', 'namespaces', 'uid_map', 'gid_map', 'uids', 'gids', 'groups', 'task_ids', 'descriptors', 'executable', 'mapped_images', 'status', 'sampled_at_ns', 'stage'], 'notes': 'Launcher sealed inventory is exact at most11 descriptors, decreasing only as six one-use request endpoints close; no launcher snapshot/child staging inventory. Host-only temporary setup descriptors remain separately bounded by existing setup/snapshot limits. Native tasks<=1; GUI<=2 exactTIDset; all others1. Every parent observation including audit/children uses the actual trusted-host observer and PID namespace of its broker invocation; nested user maps remain independently chained to that host. Startup refusal explicitly uses stage entry before seal; absent READY never fabricates true checks. Native predicates require actual refusal/staging/paired-control evidence, not supplied usefulness.', 'stage_enum': ['entry', 'prepared', 'sealed', 'native']}, 'prepare_observations': {'bound_bytes': 65536, 'fields': ['schema_version', 'session_id', 'dispatch_id', 'envelope_sha256', 'runtime_sha256', 'launcher_readiness', 'endpoint_readiness', 'client_readiness', 'admission_sha256', 'prepared_at_ns'], 'notes': 'Retainedcompoundphysicalobservations<=65536; authority-owned compactprepare_receipt contains exacthashreferences, withoutprematureadmissioncleanup. Objects mustbe retainedbefore accepting theirhashes.'}, 'process_identity': {'fields': ['pid', 'parent_pid', 'start_time_ticks'], 'pid': '1..2^31-1'}, 'process_status': {'fields': ['cap_inheritable', 'cap_permitted', 'cap_effective', 'cap_bounding', 'cap_ambient', 'no_new_privs', 'seccomp_mode'], 'required': 'caps0/no_new_privs1/seccomp2 after seal. Launcher is a fully sealed leaf: process/namespace/socket/socketpair creation denied, with only its exact preallocated request/ARM/broker channels. All child staging/spawning/observation occurs in the trusted host supervisor.'}, 'role_readiness': {'bound_bytes': 16384, 'fields': ['schema_version', 'role', 'worker_ready', 'parent_observation'], 'notes': 'parent-owned compound receipt retained as evidence; not the8192-byte worker READY line'}, 'rules': 'All listedfieldsrequired/no unknownkeys; null onlyexpresslyallowed. Defaultstrict nonbool integers0..2^63-1. Signedexceptions: syscall return_value/network_return/filesystem_return/process_return=-1 or0..32768; subprocess wrapper_returncode andexit_code=-255..255; errno0..4095. Filedevice/inode unsigned0..2^64-1; pid/tid1..2^31-1; uid/gid0..2^32-1. schema_version literalstring1; digests lowercase64hex; UUIDscanonical4. Arrays and encodedbytecaps independent, no floats/nonfinite/booleans-as-integers.', 'worker_ready': {'bound_bytes': 8192, 'fields': ['schema_version', 'role', 'worker_id', 'bootstrap_sha256', 'runtime_sha256', 'source_sha256', 'stage', 'namespaces', 'uid', 'gid', 'groups', 'task_ids', 'descriptor_sha256', 'boundary_checks'], 'notes': 'worker self-report is corroborated by parent actual observation before any authority-consuming release; worker booleans alone never establish custody', 'stage': ['sealed_waiting', 'sealed_endpoint', 'sealed_reviewer', 'sealed_launcher', 'sealed_broker', 'sealed_parser', 'sealed_admission']}},
+    'elf_inventory': {'files': 64, 'path': '/home/sloth/Code/recon-cockpit/.secure-agent/pr102-review-20261021/s42c-static-runtime-inspection/inventory-v2.json', 'sha256': '19fc526df668821cad64ad3f2bbd210a4c2a3561003f9a69450a5d8041b7ddfa'},
+    'entry_conventions': {'argv': ['/usr/bin/python3', '-I', '-S', '/app/recon_cockpit/secure_agent/{fixed_role_worker}.py', '{worker_uuid}', '{bootstrap_sha256}'], 'bootstrap': 'One canonical<=32768-byte initial frame on inheritedstdinSEQPACKET; exact initial PER-ROLE rights transfer only, pertable below. Allpairsprecreated beforebrokerstartup. Payloadexec entryhas0/1/2only; worker checksbeforeimports, closesanyverifiedlibffibootstrapresidue, receivesexactrights once, thencheck_role_entry verifiescompletepostbootstrapinventory. No later SCM_RIGHTS/ancillaryaccepted. Childcomputesbootstrapdigestagainstargvcommitment; rolemanifest fromfixedsealedmount.', 'bwrap_info': 'Separate inherited info writeFD, closed afterPopen inparent; collect<=4096 exact JSONchildPID; parent owns readFD and closes it after observation. No infoFD reaches final worker inventory.', 'client_io_exception': 'After READY and one parent release, clientstdout contains raw Nmap/HTTP bytes and stderr raw diagnostics; remove exact READY bytes before applying shared8192/2048 capture cap. Waitingclientstdin receives only bounded launcherrelease projection, no approval/audit endpoint.', 'interpreter': '/usr/bin/python3', 'ordinary_io': 'stdinSEQPACKET bidirectionalRPC; stdout exactly one READY line prefix RECON_ENGAGEMENT_LIVE_READY_V1 plus canonical worker_ready JSON plus newline, then quiet; stderr bounded4096 startup diagnostics, failureclosed and neverecho arbitrary input.', 'package_files': ['/app/recon_cockpit/__init__.py', '/app/recon_cockpit/secure_agent/__init__.py'], 'package_source': 'Both use exact inert accepted secure_agent/__init__.py bytes', 'parser_io': 'READYstdout thenquiet; request/reply via inheritedstdinSEQPACKET, no raw output onstdout; response<=4096.', 'source_directory': '/app/recon_cockpit/secure_agent'},
+    'fd_inventory': {'admission': ['stdio:3'], 'admission_max': 3, 'audit': ['stdio:3 (stdin is producer channel)', 'audit_import_libffi:1 (exact pinned read-only import image)', 'audit_append:1 (initial append_file right)', 'audit_witness:1 (initial audit_witness writer right)'], 'audit_max': 6, 'audit_rule': 'The unchanged accepted audit worker has exactly six steady descriptors: stdin/stdout/stderr plus audit_append, audit_witness and audit_import_libffi, with complete FD0..5 inventory. Derive the three non-stdio purposes from actual held identities and the pinned mounted library; do not infer append/witness identity from descriptor position. No unnamed, optional or count-only extra descriptor is accepted. Initial transferred rights remain append_file and audit_witness (the one-way writer) only. Required audit_readiness.import_image is the closed seven-field object destination/device/inode/mode/size/sha256/read_only_mount. The parent actually rereads the exact selected-runtime libffi mounted image and held descriptor under the original startup deadline, verifies regular0444 and O_RDONLY without O_PATH, unchanged device/inode/mode/size/bytes/SHA, a read-only mount and the same executable mapped-image destination/device/inode. The retained read_only_mount is true; all other roles retain their existing verified import-descriptor closure. Accepted audit_worker/planner_worker sources and audit source partition remain unchanged. Audit readiness binds audit_append descriptor device/inode/mode to append_identity and initial.device/inode, with private0600 regular file and O_WRONLY|O_APPEND and no O_PATH; audit_witness descriptor matches initial.witness transferred writer endpoint, nonblocking SEQPACKET lineage. source_manifest is the distinct reader endpoint held by the broker and must not be conflated with initial.witness.', 'broker_max': 21, 'broker_phase_rule': 'One bootstrap/runtime FD may exist only before opening store/SQLite descriptors and must close first. Three writable memfds transferred only at initial bootstrap; host retains independently reopened O_RDONLY peers, broker sole writer until F_SEAL_WRITE|GROW|SHRINK|SEAL. Audit producer remains host-owned; broker only witness reader.', 'broker_proposed': ['stdio:3', 'host_lifecycle:1', 'submitter:2', 'launcher_control:2', 'endpoint_control:2', 'review_witness:2', 'audit_witness:1', 'initial_export_memfd:1', 'final_export_memfd:1', 'transcript_memfd:1', 'held_parent_directory:1', 'held_store_directory:1', 'sqlite_main:1', 'transient_rollback_journal:1', 'selector:1'], 'common': 'stdio0/1/2 explicitly typed; no implicit inherited extras. Startup sealed memfds/infoFD closed before leaf READY/limit application.', 'endpoint': ['stdio:3', 'broker_control:1', 'launcher_arm:1', 'listener:1', 'accepted_tcp:1'], 'endpoint_max': 7, 'ephemeral_observation_fds': 'A scoped /proc/fd enumerator/readback FD may exist during observation and is closed before final steady inventory; record separately, do not hide arbitrary descriptors.', 'graphical': ['stdio:3', 'one_way_witness:1', 'exact_preopened_X11_socket:1', 'at most2 notifier wake descriptors created during pinned Tk warmup, type pipe/eventfd and identities fixed before seal'], 'graphical_max': 7, 'graphical_note': 'Initial worker inventory rejects all unexpected FDs before Tk. Record exact post-warmup delta, including any notifier pipes/eventfd, then require unchanged identities. A spare anonymous FD is not accepted merely because total<=8.', 'headers': ['stdio:3', 'selected_ipv4_tcp:1'], 'headers_max': 4, 'launcher': ['stdio:3 (stdin is sole launcher_supervision peer)', 'broker_control:1', 'endpoint_arm:1', 'identify_client_request:1', 'identify_admission_request:1', 'identify_parser_request:1', 'headers_client_request:1', 'headers_admission_request:1', 'headers_parser_request:1'], 'launcher_non_snapshot_max': 11, 'launcher_rule': 'Exactly FD0..10 immediately after initial transfer; only the six fixed request endpoints may be consumed/closed as their one-use slots finish. No child Popen/pidfd/procdir/namespace/snapshot/helper descriptor is retained in launcher. Child entry FD0 matches the opposite endpoint actual creation/readback identity; endpoint inodes are distinct, never asserted equal.', 'launcher_total_max': 11, 'nmap': 'stdio plus at most one selected IPv4 TCP socket and read-only descriptors to exact manifest files; all authority/channel/namespace descriptors absent; observed live fd count<=16, RLIMIT64', 'parser': ['stdio:3'], 'parser_max': 3, 'terminal': ['stdio:3', 'intentional_tty:1', 'one_way_witness:1'], 'terminal_max': 5, 'waiting_client': ['stdio:3'], 'waiting_client_max': 3},
+    'frontend_mode_enum': ['terminal', 'graphical_v1'],
+    'gui_resources': {'bytes': 17064478, 'files': 423, 'max_bytes': 33554432, 'max_files': 512, 'mode': 'fixedreadonlymounts+boundedbefore/afteridentity/hashinventory; distinct from sealedimplementation/ELF files', 'path': '/home/sloth/Code/recon-cockpit/.secure-agent/pr102-review-20261021/s42c-static-runtime-inspection/gui-resources.json', 'sha256': '0f7a2d0ac5c139b83d5816714b263d902628b7a90b8023491c20f9eebcc89c07'},
+    'host_supervision': {'choice': 'Existing trusted host supervises fixed children; isolated launcher remains kernel-network-denied and sole owner of child request/release endpoints.', 'existing_portable_proof_additions': {'S42C-T01': 'Exact reduced launcher module list, no recursive child-source union; all other role/source inventories preserved.', 'S42C-T02': 'Launcher native closure contains Python/common extension roots only, no bwrap/Nmap/nft extras or compiled Nmap data; host snapshot still derives exact fixed child native closure.', 'S42C-T03': 'Launcher full leaf filter/config and no child-authority descriptors; inherited child request ends are exact fixed slots and never host-side request owners.', 'S42C-T06': 'Real portable socketpair ownership tests for six distinct slots and zero child rights; actual FD0 opposite-end binding, mismatched/swap/repeated slot refusal, host duplicate closure and construction failure cleanup; fixed --no-fork/exec argv and no arbitrary path.', 'S42C-T07': 'Launcher invokes full process/namespace/socket/socketpair denial witnesses; strict expected11 descriptors and host-parent observation identity. Existing audit/mapping/group checks retained.', 'S42C-T08': 'Supervised Nmap actual-shaped native receipt required before ARM; nonnative/mismatched worker/runtime/PID/start/hash refuses; headers releases only after caller ARM ACK.', 'S42C-T09': 'Supervised capture aggregates stdout+stderr within existing slot cap, drains during idle/observe phases, detects overflow without later CAPTURE, retains actual partial/exit/truncation; CAPTURED compact receipt bound.', 'S42C-T10': 'Pending owner registered before spawn; initial deadline shared through snapshot/lock/bootstrap/ready, explicit cross-thread codec context; late process publication cannot bootstrap or report complete; all resource handles close.', 'S42C-T11': 'NATIVE_BEGIN occurs once before direct GO and original5s/1s timer does not renew on NATIVE/CAPTURE; autonomous original action/native expiry without subsequent RPC; parser stricter original2s preserved.', 'S42C-T12': 'Supervised parser uses direct launcher request endpoint with exact input/reply grammar and cap, rejects malformed host READY/cached cleanup; offline local parser path remains explicit.', 'S42C-T13': 'START returns BOOTSTRAP only after real modeled entry pin, launcher INITIAL precedes OBSERVE_READY; parser direct input follows validated host READY, no fake process pin or host parser writer.', 'S42C-T14': 'Shared first-stop absolute cleanup deadline inherited by subsequent Session/supervisor close; actual started thread joins before complete, no renewed allowance; single-child HUP and wrapper reaping retained.', 'S42C-T15': 'Missing/failed cleanup, pending Popen, live/unjoined supervisor, mismatched actual observer and late cleanup all refuse useful result; no success from cached invented receipt.', 'S42C-T16': 'Exact slot/Prepared/bootstrap/native/capture/cleanup source facts reconstruct supervision frame hashes; direct host facts equal actual relays; honest missing data remains incomplete and contradictions refuse.'}, 'launcher_seal': {'common_modules': ['engagement_live_runtime', 'engagement_live_contract', 'engagement_live_protocol', 'engagement_dispatch_contract', 'engagement_contract', 'configurable_contract', 'configurable_scope', 'models', 'tool_parameters', 'tool_adapters', 'session_limits', 'worker', 'tool_worker_common', 'name_tls_worker_common', 'planner_worker', 'name_tls_topology_spec'], 'data_mounts': 'Remove launcher-only Nmap compiled data staging. Runtime bundle and selected launcher manifest remain read-only. Full child/native source closure resides only in trusted host snapshots and actual fixed child mounts.', 'descriptors': 'Steady exact stdio/broker/ARM/six request ends, initially11 and decreasing only with one-use child cleanup. No child Popen, pidfd, proc-directory, snapshot staging or native setup helper descriptor in launcher.', 'filter': 'Launcher uses accepted full planner syscall filter including fork/vfork/clone/clone3/execve/execveat/unshare/setns/socket/socketpair/socketcall denial, retaining prior explicit connect/bind/listen/accept/accept4 and host-observation denial as fixed extra_denied. Accepted helper source unchanged.', 'launcher_extra_modules': ['engagement_live_launcher_worker', 'engagement_live_client', 'engagement_live_parser', 'engagement_live_endpoint', 'engagement_live_witness', 'engagement_live_context', 'configurable_parser', 'http_headers_parser', 'network_tools_nmap_parser', 'network_tools_parser', 'audit_witness', 'audit_protocol'], 'launcher_full_modules': ['audit_protocol', 'audit_witness', 'configurable_contract', 'configurable_parser', 'configurable_scope', 'engagement_contract', 'engagement_dispatch_contract', 'engagement_live_client', 'engagement_live_context', 'engagement_live_contract', 'engagement_live_endpoint', 'engagement_live_launcher_worker', 'engagement_live_parser', 'engagement_live_protocol', 'engagement_live_runtime', 'engagement_live_witness', 'http_headers_parser', 'models', 'name_tls_topology_spec', 'name_tls_worker_common', 'network_tools_nmap_parser', 'network_tools_parser', 'planner_worker', 'session_limits', 'tool_adapters', 'tool_parameters', 'tool_worker_common', 'worker'], 'native_mounts': 'Remove /tool/nmap and /usr/bin/bwrap plus their extra-only dependencies from launcher native closure. Keep only Python/shared libraries actually required by launcher and pure validators/proxies. Runtime bundle remains sealed read-only metadata for validation, never child executable authority.', 'native_partition': {'compiled_mounts': [], 'executable': '/usr/bin/python3', 'extensions': ['_ctypes', '_hashlib', '_hmac', '_uuid', '_queue', 'resource'], 'extra_extensions': [], 'full_bundle': '/run/engagement-runtime-bundle.json', 'native_files': 'Exact inspected ELF DT_NEEDED closure of the two roots plus six exact common extension files; dependencies shared by those roots/extensions remain. No union of Nmap/bwrap/nft/GUI/broker closures.', 'readonly_resources': [], 'required_mapped_images': 'Same exact inspected Python ELF/interpreter/common mappings as other ordinary Python leaves.', 'roots': ['/usr/bin/python3', '/lib/x86_64-linux-gnu/libseccomp.so.2'], 'selected_manifest': '/run/engagement-runtime.json'}, 'package_destinations': ['/app/recon_cockpit/__init__.py', '/app/recon_cockpit/secure_agent/__init__.py'], 'removed_launcher_extra_modules': ['engagement_live_client_worker', 'engagement_live_admission_worker', 'engagement_live_parser_worker', 'execution', 'isolation', 'routed'], 'resources': {'as_mib': 256, 'cpu_seconds': 15, 'fsize_bytes': 0, 'nofile': 64, 'nproc': 1, 'tasks': 1, 'wall_seconds': 60}, 'source_rule': 'Exact common + listed launcher_extra_modules + two inert package files, without recursive child role source union. Host-only runtime/endpoint/parser builder imports stay lazy and cannot execute after full launcher filter. Pure configurable_parser imports are covered by listed accepted parser modules. All actual new proxy imports must remain inside this frozen list.', 'sources': 'Exact common + launcher_extra_modules + two inert package files below, with no recursive child role union. All new proxy helpers stay in already-listed runtime/client/parser modules; host-only imports remain lazy.', 'witnesses': 'Use actual full process-creation, namespace-creation and socket/socketpair denial helpers. Common checks all remain applicable; remove bounded_child_creation and fixed_namespace_builder exceptions. The narrow network-only witness patch becomes superseded by A08 and is preserved only as diagnostic/focused evidence.'}, 'namespace_and_process_counts': {'distinct_process_upper_derivation': {'nft_helpers': 4, 'payloads': 20, 'sum': 45, 'wrappers_and_audit_extra': 21}, 'image_invocations_per_broker': {'nft': 4, 'nsenter': 6}, 'namespace_lease': 'For each nmap/headers spawn freshly open only actual pinned live endpoint user/net namespace descriptors, verify names/identities against original readiness before and after, use fixed nsenter path, close host lease before child READY. No descriptor reaches launcher or child; no long-lived namespace retention. Admission/parser directly unshare net.', 'note': '47/94 remain conservative distinct-identity ceilings; six nsenter image invocations are recorded separately and not double-counted as unique process identities.', 'nsenter': 'Explicit --no-fork; existing fixed Python shim os.execv(bwrap). The nsenter/shim/bwrap image chain reuses its actual wrapper PID/start identity. Serialized setup lock is released only after actual helper image transition observed; no hidden fork.', 'retained_caps': {'peak_payloads': 12, 'peak_processes': 26, 'peak_serialized_setup_helper': 1, 'peak_tasks': 28, 'peak_wrappers': 13, 'unique_per_broker': 47, 'unique_per_bundle': 94}}, 'native_order': {'headers': ['actual broker GO validated', 'actual admission REDEEM', 'host REAP confirms admission reaped', 'launcher ARM and exact ACK', 'NATIVE_BEGIN fixes original1s clock', 'launcher sends client GO directly', 'host CAPTURE and actual client reap', 'launcher direct parser exchange after host startup', 'actual meter/raw/parser/custody crosslink then result'], 'identify': ['actual broker GO validated', 'actual admission REDEEM', 'host REAP confirms admission reaped', 'NATIVE_BEGIN fixes one conservative original native clock', 'launcher sends client GO directly', 'host OBSERVE_NATIVE confirms actual Nmap ELF/maps', 'launcher ARM and exact ACK', 'host CAPTURE and actual client reap', 'launcher direct parser exchange after host startup', 'actual meter/raw/parser/custody crosslink then result'], 'timer': 'NATIVE_BEGIN samples actual host monotonic immediately before its reply and sets min(original effect_stop_ns, now+native_timeout_ns). This precedes actual client GO, so it cannot grant more than original5s/1s. Launcher and host use exactly this same returned deadline; no fresh clock on OBSERVE_NATIVE/CAPTURE or a second NATIVE_BEGIN.'}, 'preallocation': {'canonical_fds': {'broker_control': 3, 'endpoint_arm': 4, 'headers_admission_request': 9, 'headers_client_request': 8, 'headers_parser_request': 10, 'identify_admission_request': 6, 'identify_client_request': 5, 'identify_parser_request': 7}, 'child_entry': 'Each child enters with0/1/2 only. FD0 must equal that slot opposite endpoint identity. Child INITIAL transfers zero rights, as today. Future stdout/stderr/info pipes are host-local and never transferred to launcher.', 'host_fd_budget': 'Adds12 retained child endpoints after launcher transfers complete, maximum24 temporary pair endpoints before those transfers; exact host startup inventory must count both phases. No new worker rights after INITIAL.', 'host_ownership': 'Host retains only each opposite child endpoint until its one fixed spawn, then closes it. No duplicate of a launcher request endpoint remains after launcher INITIAL succeeds. Unused child ends close during common cleanup.', 'launcher_initial_and_steady_fds': 'Exactly0..10 before any request endpoint is consumed: stdio3, broker/ARM2, child request endpoints6. Maximum11 with no snapshot or child observation descriptors; NOFILE64.', 'launcher_rights_order': ['broker_control', 'endpoint_arm', 'identify_client_request', 'identify_admission_request', 'identify_parser_request', 'headers_client_request', 'headers_admission_request', 'headers_parser_request'], 'pair_receipt': 'Each static slot declaration binds its unique worker_id, fixed role, actual parent endpoint descriptor (canonical launcher FD/dev/inode/mode/flags), and opposite child endpoint identity (dev/inode/mode/flags) observed from the same actual socketpair creation. Distinct socketpair endpoint inodes are not compared for equality.', 'runtime_binding': 'Slot declarations are inside the actual launcher bootstrap commitment and checked against exact transferred descriptors. They are data/custody, not GO authority.', 'time': 'All12 fixed child stdin SEQPACKET pairs and unique child worker UUIDs are created by the existing host preallocation before broker startup. Six per session slot.'}, 'proof_changes_without_count_claim': ['Existing launcher readiness and physical boundary cases require actual full fork/namespace/socket/socketpair denial and absence of bwrap/Nmap mappings; actual client useful A/B proves separate non-inheriting host lineage.', 'Existing actual source/FD/namespace/readiness/EOF/cancellation/cleanup runtime cases must cover preallocated slot endpoint swap, stale/repeated slot start, no duplicate parent-end retention, and pending-spawn cancellation at exact stages.', 'Core concurrency gates still prepare both clients/admissions concurrently under unchanged26/28 bound, with only setup serialized.', 'Evidence must match direct host facts to relayed broker transcript, correct actual observer and each unique child identity/slot; orphan/contradictory observation or missing cleanup refuses usefulness.', 'No previous native failures are replaced. New lineage needs actual frozen native validation; portable models cannot establish physical acceptance.'], 'protocol': {'ancillary': 'none for every ordinary supervision frame; reject/truncate/close received ancillary using existing strict rules.', 'channel': 'Existing launcher stdin/host peer after INITIAL, changed from lifecycle-only to a fixed bidirectional launcher_supervision channel. No new channel or late SCM. Per-direction monotonic sequence, same actual launcher worker ID, closed request/reply matching.', 'commands': {'CAPTURE': {'effects': 'capture is exactly existing launcher_capture schema (canonical base64 actual raw bytes/counts/hashes/exit/truncated). status uses existing client result enum. cleanup is actual existing single-child cleanup or null when unavailable; nonnull processes length1 matching slot and canonical<=2048. No repeated readiness/native object or redundant hash fields in reply: proxy already caches exact prior observations. Missing/failed cleanup cannot yield useful success. Refused replies retain existing closed code/data:null; partial facts remain direct host evidence. CAPTURE reaps once and proxy.close uses cached cleanup without another REAP.', 'reply': ['child_slot', 'capture', 'status', 'cleanup'], 'reply_operation': 'CAPTURED', 'request': ['child_slot'], 'status_enum': ['succeeded', 'failed', 'cancelled', 'timeout', 'output_limit', 'unresolved']}, 'NATIVE_BEGIN': {'effects': 'For matching ready client only: verify actual pinned payload alive and release binding, record one native timer before launcher writes client GO. No socket or client release occurs here.', 'reply': ['child_slot', 'started_at_ns', 'native_deadline_ns'], 'reply_operation': 'NATIVE_BUDGET', 'request': ['child_slot', 'release']}, 'OBSERVE_NATIVE': {'effects': 'Nmap only, after NATIVE_BEGIN; actual pinned ELF/maps observation under the already-started native clock.', 'reply': ['child_slot', 'native_readiness'], 'reply_operation': 'NATIVE', 'request': ['child_slot']}, 'OBSERVE_READY': {'effects': 'Read actual stdout READY and complete parent observation only after launcher sends INITIAL. No second start.', 'reply': ['child_slot', 'readiness'], 'reply_operation': 'READY', 'request': ['child_slot', 'bootstrap_sha256']}, 'REAP': {'effects': 'Actual held payload/wrapper termination/reaping, using existing2s emergency common bound. Does not refund/complete an action.', 'reply': ['child_slot', 'cleanup'], 'reply_operation': 'REAPED', 'request': ['child_slot']}, 'START': {'effects': 'Host derives exact child payload/runtime/argv from fixed slot and original full opened session. No arbitrary command/path/role/FD/deadline is accepted.', 'reply': ['child_slot', 'bootstrap'], 'reply_operation': 'BOOTSTRAP', 'request': ['child_slot', 'prepared']}}, 'frame': {'additional_fields': False, 'channel_id': 'actual launcher_id UUID4', 'fields': ['schema_version', 'channel_id', 'sequence', 'operation', 'body'], 'role': 'launcher_supervision', 'schema_version': '1', 'sequence': 'positive per-direction integer1..22; no bool; independent send/receive sequences'}, 'frame_bytes_max': 32768, 'oversize': 'Before any Popen, construct and bound exact BOOTSTRAP reply frame, including wrapper; send native bootstrap object directly, never base64. Do not combine entry observation with bootstrap. READY compound is separately framed and must satisfy full32768. Unexpected oversized post-start observation refuses with actual cleanup and retained diagnostic, no chunking or limit increase.', 'records': 'Host retains direct request/reply sequence and actual entry/readiness/native/capture/cleanup source facts. Launcher relay keeps observer identity and exact object bytes/hashes; it never relabels them as launcher-parent observations.', 'refusal': 'Closed existing LiveError code only; actual startup observation/partial raw/cleanup are retained by host independently even when reply cannot be sent. Never manufacture READY/result/cleanup to complete an RPC.', 'reply_body': {'additional_fields': False, 'fields': ['request_sequence', 'status', 'code', 'data'], 'ok': 'code=null and exact command reply data', 'refused': 'code=existing closed LiveError, data=null; operation is the corresponding fixed reply operation; no pending or extra REFUSED operation', 'request_sequence': 'exact prior request sequence1..22', 'status': ['ok', 'refused']}, 'request_budget': {'reason': 'One terminal invalid request after a valid prefix; first malformed/wrong-phase/replayed request closes the channel. No retry. Host EOF/stop cleanup sends no new requests.', 'received_requests_max_per_broker': 44, 'received_requests_max_per_session': 22, 'successful_headers_per_session': 10, 'successful_identify_per_session': 11, 'successful_total_per_session': 21}, 'shared_bundle_budget': 'Across at most2 sequential brokers reserve at most1984 rows and896KiB per broker transcript; host observer segment at most128 rows and256KiB, including at most96 supervision rows. Supervision geometry allows88 RPC rows from hard44/broker plus8 terminal/local failure rows. Combined4096 rows/2MiB remain strict. Check capacity before next command/Popen; no retry, truncation or allowance increase. Complete supervision row remains at most3072 bytes;256KiB host byte budget is an independent cap, not a claim every96-row maximum simultaneously fits.'}, 'pump_and_cleanup': {'autonomous_capture': 'After NATIVE_BEGIN, drain bounded actual stdout/stderr during idle wait, native-image observation polls and every bounded service work check, not only CAPTURE. Output cap remains8192/2048 aggregate, no new clock or unbounded buffering. Overflow stops the client and retains truncated partial data. Startup READY handling is separate; no native bytes are mislabeled READY.', 'autonomous_expiry': 'Every idle select and active service phase is clipped to earliest original session/broker deadline and every pending startup/action/native deadline. Native5s/1s and waiting-client/admission action bounds apply without any future RPC. On expiry set terminal stop, shutdown supervision channel, retain actual reason/partial facts and immediately terminate/reap owned processes within the already-established common2s emergency cleanup bound.', 'cancellation': 'Monitor/caller sets stop and shuts down existing host supervision channel before lock acquisition. State lock protects only ownership publication, never read/write/Popen/readback/join/wait. Registered pending owners and actual processes are visible to cleanup. Supervisor I/O wakes on shutdown; caller joins existing thread within original shared cleanup deadline. A live/unjoined supervisor or unresolved Popen cannot produce complete cleanup.', 'deadlines': 'Each supervisor uses original session control/cancellation identity and fixed Prepared-derived action/startup/native limits. A competing ingress caller never lends its short control. Idle select<=50ms clipped original session/broker deadline. Native_begin sets the one host native timer before release. No additional allowance per RPC. Expired-work cleanup retains only the existing shared2s emergency interval and cannot return useful work.', 'first_stop_epoch': 'First supervisor/session stop atomically publishes original stopped_at_ns and absolute cleanup_deadline_ns<=stopped_at_ns+2s. Every later monitor/caller/session _close(deadline) clamps to min(stored first-stop deadline, supplied deadline); EOF does not renew cleanup. Supervisor notifies fixed Session owner using shared stop/wakeup state without acquiring Session I/O lock. Other-session cancellation uses that same first aggregate stop epoch when ending the graph.', 'late_spawn': 'Pending startup registered before Popen; if cleanup deadline arrives before process publication, receipt remains failed/unknown, never complete. Late process publication is immediately owned and cleaned using original recorded cleanup deadline, never detached or given a renewed success budget.', 'launcher_polling': 'Launcher control distinguishes one expected supervision reply from lifecycle EOF while preserving broker CANCEL/STOP priority. One pending supervision request, no unsolicited/wrong-phase reply or caller-supplied callback.', 'supervisor_closure': 'A canonical cleanup fact must separately retain actual host supervisor thread start/stop/join/is_alive observation, closed channel and zero pending start/child owners under shared cleanup deadline. At most4 such rows across2 sequential broker instances. Child pidfd reaping alone never proves supervisor thread closure. Exact row schema supplied by evidence owner before A08 pin.', 'thread_deadline_context': 'ContextVar state does not automatically cross threads. Supervisor explicitly enters the accepted shared deadline context from the original captured session/Prepared/phase control around each nested codec/validation phase; min(active original deadline, each public validator own2s) applies. Preserve original cancellation and clock identities. Cleanup uses separately retained first-stop emergency bound only; it cannot return successful work after original expiry.', 'thread_ownership': 'Exactly one fixed host supervisor thread per launcher, at most2 per broker. One sole reader and state-machine owner for that launcher supervision channel; no ingress caller pumps or transfers ownership. Register owner before thread.start; startup failure closes every pending endpoint. No per-child threads.', 'threads': 'Explicit host bound6: main + lifecycle monitor + at most2 API submitters + at most2 fixed child supervisors. Isolated26process/28task bounds do not include these disclosed host threads and do not change.'}, 'retained_host_journal': {'bootstrap': 'Retain exact canonical bootstrap hash/length/deadline and source/runtime commitments; reconstruct exact empty-rights child bootstrap from actual host observer, fixed slot, original Prepared/scope/endpoint and runtime during replay. Do not retain arbitrary alternate bootstrap dictionaries.', 'completion': 'Unresolved pending spawn, thread, child or cleanup state stays explicit incomplete; host journal never asserts a broker GO/ARM/permit success from local intent.', 'direction': 'Direct host facts stay distinct from launcher-to-broker relays, including failed/absent relays. Actual objects are retained once in existing process/cleanup/raw arrays and referenced by hashes from fixed slot journal.', 'native_budget': 'Retain actual NATIVE_BEGIN host timestamp and deadline. Crosslink every later native/capture/cleanup to that same child clock; no fresh phase clock.', 'observations': 'Resolve actual entry/compound READY/native image/cleanup by hash and actual PID/start identities. Capture binds raw file bytes/hash/length/exit/truncated; missing or conflicting direct fact cannot be supplied by a relay label.', 'observer': 'Every parent observation, including accepted audit and all children, resolves to the same actual host observer identity within this invocation. Do not mix launcher-local and host PID scopes. Sequential broker instances bind their actual host observer explicitly.', 'slot_identity': 'Journal binds broker/session/launcher, fixed child_slot, unique worker_id, one actual Prepared digest and actual paired endpoint identities. No fabricated peer-inode equality.', 'terminal_state': 'Retain actual autonomous timeout/overflow and partial capture even if no CAPTURE request or broker relay occurs; preserve missing acknowledgments as incomplete. Supervisor closure records separately prove join/no pending starts.'}, 'runtime_api_split': {'capture': 'SupervisorChannel.capture(*, child_slot, control) -> exact four-field CAPTURED; strict raw/cleanup checks, actual partials retained on failure.', 'child_owner': 'ObservedChild owns actual Popen, pidfd, bootstrap, ready, stdout/stderr/info and cleanup. close(deadline) never touches a pretend channel. Existing normal RoleProcess for persistent roles remains unchanged.', 'host_supervisor_location': 'Private fixed threaded supervisor class in existing engagement_live_launcher.py; shared spawn/observation split in engagement_live_runtime.py. No new executable module, isolated role or source path. Broker ingress wait no longer needs callback/event-pump changes.', 'launcher_child': 'LauncherChild exposes .channel, .ready and .close(deadline=None); close performs one REAP under the same original control/first-stop deadline or returns actual cached CAPTURE cleanup. No fake .process/.pin attributes.', 'launcher_proxy': 'LauncherChild owns real inherited socket only plus exact slot/Prepared and fixed supervision client. It never fabricates Popen/pidfd/parent properties; calls explicit host check/observe/capture/reap operations. WaitingClient and live parser path gain private supervised-owner seams; public offline parser replay still uses existing host local RoleProcess.', 'live_client': '_prepare_supervised_client(*, runtime, prepared, endpoint_identity, scope, control, supervisor) -> SupervisedWaitingClient with .ready/.release(release,control)/.observe_native(control)/.collect(control)/.close(); release gets NATIVE_BEGIN before direct GO and never reads a fabricated process pin.', 'live_parser': '_parse_supervised_observed(*, tool_id, raw, stderr, scope, truncated, control, runtime, prepared, supervisor) -> (parsed, parser_receipt, actual_role_readiness); input/reply uses only launcher-owned channel and actual host REAP receipt.', 'local_paths': 'Existing public prepare_client and parse/_parse_observed stay explicit local host-only paths for owned low-level diagnostics or offline isolated parser replay. Live launcher imports only the supervised private paths; no post-seal local _start_role fallback.', 'native_begin': 'SupervisorChannel.native_begin(*, child_slot, release, control) -> exact NATIVE_BUDGET; one-use, returns fixed native deadline.', 'new_private_observe': 'PendingChild.observe_ready(control) -> compound readiness; separates _finish_start observation from its existing RoleProcess(process,channel,...) construction.', 'new_private_spawn': '_spawn_child_owned(*,runtime,role,payload,child_stdin,worker_id,control,namespace_lease=None) -> PendingChild with bootstrap, actual entry and retained process/pin/pipes; no request channel attribute or duplicate parent FD.', 'observe_native': 'SupervisorChannel.observe_native(*, child_slot, control) -> exact actual native_readiness; identify only after NATIVE_BEGIN.', 'parser_bound': 'Launcher parser phase retains original min(action/session, start+2s) before START. Supervisor derives its parser lifetime no later than min(original action/session, actual START receipt+2s); launcher can only stop earlier, never renew its own phase. Any missing final reply/earlier caller expiry triggers shared stop and cannot return useful parser success.', 'start_child': 'SupervisorChannel.start_child(*, child_slot, prepared, control) -> LauncherChild; START/BOOTSTRAP then one direct INITIAL then OBSERVE_READY/READY. Derive immutable slot role and payload from exact context; no caller-selected argv/path/FD/role.', 'supervisor_channel': 'SupervisorChannel(channel, *, launcher_id, slot_bindings, request_channels, runtime, endpoint_identity, role_context, control); role_context exact {session_binding,roe,scope,policy}; constructor inside launcher uses transferred request channels only, never Popen/host PID handles.'}, 'schema_version': '1', 'slots': [{'action_slot': 'http_identify', 'max_starts': 1, 'name': 'identify_client', 'role': 'nmap'}, {'action_slot': 'http_identify', 'max_starts': 1, 'name': 'identify_admission', 'role': 'admission'}, {'action_slot': 'http_identify', 'max_starts': 1, 'name': 'identify_parser', 'role': 'parser'}, {'action_slot': 'http_headers', 'max_starts': 1, 'name': 'headers_client', 'role': 'headers'}, {'action_slot': 'http_headers', 'max_starts': 1, 'name': 'headers_admission', 'role': 'admission'}, {'action_slot': 'http_headers', 'max_starts': 1, 'name': 'headers_parser', 'role': 'parser'}], 'startup_order': ['Take the fixed slot under short state lock, register a PendingChild owner and original stop/deadline before acquiring any setup lock or Popen.', 'Acquire the one per-broker setup serialization lock with original-control checks and at most50ms waits. Source snapshot/bootstrap construction is bounded by the same original startup min(action/session/broker,now+10s).', 'Host builds exact bootstrap and BOOTSTRAP frame, proves it fits, obtains startup-only namespace lease if client, then performs the fixed spawn with only its child endpoint as stdin and local bounded pipes/info.', 'Publish actual process into registered pending owner immediately after Popen under short lock; if closed raced publication, do not continue startup: interrupt/reap under the already-established common cleanup deadline, retaining unknown/failed if it cannot finish. Cleanup cannot claim complete while Popen publication is pending.', 'Close host child endpoint and all consumed snapshot/namespace descriptors. Pin actual payload and verify entry0/1/2, FD0 opposite slot identity, source/native/runtime and expected namespace. Retain actual entry independently.', 'Return BOOTSTRAP containing exact object only; the host must not wait for READY before this response. Launcher validates fixed slot/context/runtime/worker and exact object commitment, then sends INITIAL once through its sole request end.', 'Launcher sends OBSERVE_READY; host reads actual READY under original pending startup deadline, observes seal/kernel/namespace/FDs, returns compound. Parent child owner has no request channel and cannot release the child.', 'Launcher verifies compound against the original child slot/Prepared/bootstrap and returns existing broker PREPARED only after both client and admission are actually ready and actual ISSUE succeeded.'], 'states': {'admission': 'At most one client plus matching admission per session before GO. Admission redemption is actual direct RPC, then host-confirmed reaping before any client GO/ARM.', 'duplicate': 'Every slot start once, every startup/observe/capture transition once where applicable; mismatched current Prepared, role, runtime, session or phase refuses.', 'parser': 'Only matching parser after actual client reaping; request/reply direct through launcher-owned channel. No overlap with live client/admission.', 'per_slot': ['allocated', 'starting', 'entry_observed', 'bootstrap_returned', 'ready', 'active_or_rpc', 'cleanup_pending', 'reaped'], 'terminal_failure': 'Any failure/cancellation consumes the slot and moves to cleanup_pending then reaped or retained_failed; never returns to allocated and never retries spawn.'}, 'status': 'contract_amendment_A08_fixed_on_complete_pair_commit'},
+    'http_grammar': {'headers_request_template': 'GET / HTTP/1.1\r\nHost: {validated_ipv4}:{validated_port}\r\nConnection: close\r\n\r\n', 'headers_response_basis': 'exact accepted configurable_lab_worker.header_response(): vulnerable HarborDesk portal response; response fixture independent of requested path, no request reflection', 'identify_connections': 'at most3, one or two initial scan/NULL empty-EOF/reset connections before exactly one fixed GET; GET must be connection2 or3 as accepted configurable fixture; no other payload/response.', 'identify_request_ascii': 'GET / HTTP/1.0\r\n\r\n', 'identify_response_ascii': 'HTTP/1.0 200 OK\r\nServer: nginx/1.26.0\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK', 'nmap_argv': ['/tool/nmap', '--unprivileged', '-sT', '-sV', '--version-intensity', '1', '-Pn', '-n', '-p', '{validated_port}', '--max-retries', '0', '--max-parallelism', '1', '--host-timeout', '3s', '--datadir', '/tool/data', '--no-stylesheet', '-oX', '-', '{validated_ipv4}'], 'nmap_data': 'exact four accepted NMAP_SERVICE_SERVICES, NMAP_SERVICE_PROTOCOLS, NMAP_SERVICE_PROBES and NMAP_SERVICE_NSE_SHIM byte constants from network_tools_runtime.py; no probe/port/timing rewrite', 'path': '/', 'rules': ['one request per admitted connection; no pipeline/body/extra bytes accepted', 'buffer entire exact expected request before response', 'recv bound never exceeds remaining fixed request budget', 'send bound never exceeds remaining fixed response budget', 'no over-cap sentinel read', 'strict cap exhaustion terminates; unread queued kernel bytes remain unknown', 'Nmap malformed and extra traffic refuses without positive parsed completion']},
+    'implementation_authorized': False,
+    'initial_rights_table': {'admission': {'count': 0, 'rights': []}, 'audit': {'count': 2, 'phase': 'unchanged accepted auditbootstrap grammar', 'rights': ['append_file', 'audit_witness']}, 'broker': {'count': 14, 'phase': 'runtime_input closes beforeSQLite/store open; host onlyO_RDONLY memfdpeers; all other authority-owned fields match authorityBrokerBootstrap', 'rights': ['host_lifecycle', 'ingress0', 'ingress1', 'launcher0', 'launcher1', 'endpoint0', 'endpoint1', 'review_witness0', 'review_witness1', 'audit_witness', 'initial_export_memfd', 'final_export_memfd', 'transcript_memfd', 'runtime_input']}, 'endpoint': {'count': 2, 'rights': ['broker_control', 'launcher_arm']}, 'graphical': {'count': 1, 'rights': ['review_witness']}, 'headers': {'count': 0, 'rights': []}, 'launcher': {'count': 8, 'rights': ['broker_control', 'endpoint_arm', 'identify_client_request', 'identify_admission_request', 'identify_parser_request', 'headers_client_request', 'headers_admission_request', 'headers_parser_request']}, 'nmap': {'count': 0, 'rights': []}, 'parser': {'count': 0, 'rights': []}, 'terminal': {'count': 2, 'rights': ['intentional_tty', 'review_witness']}},
+    'launcher_runtime_bundle': {'bytes_max': 2097152, 'destination': '/run/engagement-runtime-bundle.json', 'mode': 292, 'rules': ['Launcher-only sealed data mount under existing128 temporary snapshot files/128MiB cap; snapshot FD consumed and closed before worker entry.', 'Launcher bounded-reads and validates this full bundle before confinement; SHA256 canonical bundle equals actual bootstrap.runtime_sha256, selected launcher role manifest equals mounted role manifest.', 'Trusted parent independently rereads mounted full runtime bytes through pinned actual launcher process root and compares size/hash to expected canonical bundle.', 'Other workers receive selected role manifests only. Full launcher bundle is validation metadata, never executable child authority; it does not restore bwrap/Nmap/child source mounts. No new steady FD or later SCM transfer.'], 'seals': 15, 'snapshot_fds_added': 1, 'source': 'canonical(validate_runtime(full inspected bundle))', 'steady_fds_added': 0},
+    'limits': {'bootstrap_fd_limit': 256, 'bootstrap_non_snapshot_fds_max': 64, 'bootstrap_snapshot_fds_max': 128, 'bwrap_info_bytes': 4096, 'control_packet_bytes': 4096, 'control_poll_ms': 50, 'owned_role_setup_seconds': 10, 'parser_input_bytes': 16384, 'parser_reply_bytes': 4096, 'preflight_seconds': 15, 'readiness_line_bytes': 8192, 'role_packet_bytes': 32768, 'shared_emergency_cleanup_seconds': 2, 'snapshot_file_max_bytes': 16777216, 'snapshot_manifest_max_bytes': 131072, 'snapshot_max_files': 128, 'snapshot_total_max_bytes': 134217728, 'source_file_max_bytes': 262144, 'source_manifest_max_bytes': 65536, 'source_total_max_bytes': 8388608, 'startup_poll_ms': 10, 'watch_and_cleanup_ms': 6100, 'watch_detection_ms': 4100, 'watch_schedule_ms': 100},
+    'mandatory_watch_witness': 'External v2 revoke commits just after observed watch; hold one actual bounded synchronous phase; observe next fresh DB read/refusal or failed read, actual endpoint stop and pinned payload/wrapper reaping<=4100+2000ms. Record actual commit/phase/read/cancel/reap monotonic timestamps; pure clock arithmetic or direct broker EOF is insufficient.',
+    'namespace_construction': ['Preallocate fixed broker/session channels and all twelve child stdin pairs plus worker IDs before broker startup. Broker creates session IDs in READY; later launcher bootstrap binds exact current full session ROE/scope/policy and six child-slot endpoint identities.', 'Endpoint owns private user/net/mnt/pid. Host starts launcher using fixed nsenter --no-fork into that actual endpoint user/net, followed by fixed Python exec shim and bwrap private user/mnt/pid. Launcher retains session net but full seal denies creating or connecting sockets and any process/namespace creation.', 'Host directly starts each nmap/headers wrapper through a fresh startup-only lease of the pinned endpoint user/net namespaces and the same fixed nsenter --no-fork/exec-shim/bwrap chain. Child gets private user/mnt/pid and exact session net, without inheriting launcher seccomp or FSIZE constraints. Admission/parser are host-created with private network namespace.', 'Namespace leases match actual endpoint readiness before and after use and close before child READY. No namespace descriptor reaches launcher/client/parser/broker/reviewer. One original-control-bounded setup lock serializes setup helpers and actual wrapper image transitions; cleanup never requires that lock.', 'All parent observations, including accepted audit and each fixed child, bind the actual trusted-host observer and its PID namespace for that broker invocation. Actual maps and nested UID/GID composition remain verified; do not label immediate-parent maps as direct host maps or translate PIDs without actual observation. New workers use65534 with bounded actual groups.'],
+    'native_runtime': {'launcher_partition': {'compiled_mounts': [], 'executable': '/usr/bin/python3', 'extensions': ['_ctypes', '_hashlib', '_hmac', '_uuid', '_queue', 'resource'], 'extra_extensions': [], 'full_bundle': '/run/engagement-runtime-bundle.json', 'native_files': 'Exact inspected ELF DT_NEEDED closure of the two roots plus six exact common extension files; dependencies shared by those roots/extensions remain. No union of Nmap/bwrap/nft/GUI/broker closures.', 'readonly_resources': [], 'required_mapped_images': 'Same exact inspected Python ELF/interpreter/common mappings as other ordinary Python leaves.', 'roots': ['/usr/bin/python3', '/lib/x86_64-linux-gnu/libseccomp.so.2'], 'selected_manifest': '/run/engagement-runtime.json'}, 'native_compiled_files': ['/tool/data/nmap-services', '/tool/data/nmap-protocols', '/tool/data/nmap-service-probes', '/tool/data/nse_main.lua'], 'nmap_elf_candidates': ['/usr/bin/nmap', '/usr/lib/nmap/nmap'], 'process_identity': 'before input/GO pin actual payload via infoFD->pidfd and /proc directory with validated integerPID, ancestry<=16, start ticks and liveness before/after; retain maps/namespace/UID/GID/caps/task/fd readback. Native observation requires exact executable+interpreter+mapped manifest libraries and same pinned waiting PID, no unknown executable mapping.', 'python_filesystem': 'Read-only distribution stdlib with lib-dynload replaced by an empty mount then only fixed role extension files; exact ELF interpreter/needed libraries and implementation sources sealed; no claim full stdlib/open-syscall trace.', 'role_extensions': {'broker_extra': ['_sqlite3'], 'common': ['_ctypes', '_hashlib', '_hmac', '_uuid', '_queue', 'resource'], 'graphical_extra': ['_tkinter'], 'terminal_extra': ['termios']}, 'role_specific_mounts': 'Only broker mounts explicit store; graphical gets exact GUI resources/X socket/cookie; endpoint setup gets fixed nft. Launcher has Python/common extensions and read-only metadata only: no bwrap, Nmap or compiled Nmap data. Trusted host stages each exact role. Nmap executable/data only in fixed nmap child; no SSH/TLS executable in these HTTP-only roles.', 'seal': 'MFD_ALLOW_SEALING plus F_SEAL_WRITE|GROW|SHRINK|SEAL, inspect actual content hash/size/inode and seal flags; no mutable bind fallback for pinned files; close stage descriptors after mounts.', 'selected_inspected_elf': '/usr/lib/nmap/nmap', 'shell_wrapper_refused': True},
+    'output_and_evidence': {'capture': 'aggregate both pipes concurrently under original cap; if truncation occurs refuse usefulness and retain exact captured bytes+truncation marker; no unlimited diagnostics', 'headers_stdout': 'exact raw HTTP response; worker JSON/base64 frame overhead is separately bounded protocol data, never folded into raw HTTP budget', 'headers_stdout_plus_stderr_max': 2048, 'identify_stdout_plus_stderr_max': 8192, 'live_result_meter': 'compact final meter_summary only; full raw/events belong to independently received direct endpoint transcript and are bound by transcript_sha256. Never nest full32KiB transcript inside32KiB result.', 'meter_before_effect_rule': 'Before each nonterminal I/O, reserve room for its worst-case retained bytes/event plus4 terminal events and2048 encoded bytes. Refuse/cancel before an event or payload cannot be retained. Exact encoded<=32768 is independently checked; no silent drop.', 'meter_encoded_bytes_max': 32768, 'meter_event_exact_fields': ['sequence', 'connection', 'kind', 'monotonic_ns', 'requested_bytes', 'actual_bytes', 'remaining_before', 'remaining_after', 'reason'], 'meter_event_kind': ['arm', 'accept', 'recv', 'send', 'eof', 'cancel', 'cap', 'close'], 'meter_event_reason': 'null or one closed stop_reason; no arbitrary exception text', 'meter_events_max': 64, 'meter_exact_fields': ['schema_version', 'endpoint_id', 'session_id', 'dispatch_id', 'envelope_sha256', 'go_sha256', 'arm_sequence', 'slot', 'accepted_connections', 'received_request_bytes', 'sent_response_bytes', 'request_sha256', 'response_sha256', 'request_base64', 'response_base64', 'reason', 'delivery_known', 'armed_at_ns', 'finished_at_ns', 'events'], 'meter_nulls': 'No acknowledged final settlement means final counters/finished_at/complete delivery are null/unknown; retained last ack is separate, never promoted to finalzero.', 'meter_raw_payload_caps': {'http_headers': {'combined': 2304, 'request': 256, 'response': 2048}, 'http_identify': {'combined': 8192, 'request': 4096, 'response': 4096}}, 'meter_summary_exact_fields': ['schema_version', 'endpoint_id', 'session_id', 'dispatch_id', 'envelope_sha256', 'go_sha256', 'arm_sequence', 'slot', 'accepted_connections', 'received_request_bytes', 'sent_response_bytes', 'request_sha256', 'response_sha256', 'reason', 'delivery_known', 'armed_at_ns', 'finished_at_ns', 'transcript_sha256'], 'meter_terminal_bytes_reserve': 2048, 'meter_terminal_event_reserve': 4, 'parser_receipt_exact_fields': ['schema_version', 'slot', 'input_sha256', 'output_sha256', 'input_bytes', 'output_bytes', 'elapsed_ms', 'readiness', 'cleanup'], 'parser_receipt_readiness': 'readiness field is SHA256 of separatelyretained completeparser role_readiness, notanother16KiBnestedobject; cleanupfield is thatoneparser cleanup object.', 'parser_reply_exact_fields': ['schema_version', 'slot', 'parsed'], 'parser_request_exact_fields': ['schema_version', 'slot', 'scope', 'raw_base64', 'stderr_base64', 'truncated'], 'parser_result_schema': 'unchanged configurable_parser result for NMAP or HEADERS only; no SSH endpoint/tool accepted', 'parser_timing': 'successful elapsed includes cleanup and<=2000ms; original action/inspection control checked after cleanup and validation; emergency reaping may consume2s after refusal but cannot produce late success.', 'raw_dispatches_max': 4, 'raw_files': ['client-{dispatch_id}.stdout.bin', 'client-{dispatch_id}.stderr.bin'], 'reason_enum': ['complete', 'cancelled', 'timeout', 'window_closed', 'clock_invalid', 'revoked', 'revision_changed', 'budget_denied', 'connection_limit', 'request_limit', 'response_limit', 'output_limit', 'transcript_limit', 'malformed_request', 'peer_eof', 'channel_eof', 'native_failed', 'invalid_observation', 'cleanup_failed', 'unresolved'], 'result_constraints': 'exit_code null if not observed else integer-255..255; stop_reason null only success; success requires exit0, no truncation, complete settled known-delivery meter, valid matching parser, full cleanup and original deadline live. Failure parsed/parser_receipt null unless a complete valid parse is retained explicitly as non-authoritative diagnostic; no eligible predecessor from a failure.', 'result_exact_fields': ['schema_version', 'dispatch_id', 'envelope_sha256', 'runtime_sha256', 'slot', 'status', 'exit_code', 'stop_reason', 'stdout_sha256', 'stderr_sha256', 'stdout_bytes', 'stderr_bytes', 'truncated', 'readiness', 'meter', 'parsed', 'parser_receipt', 'cleanup'], 'result_readiness': 'Closed summary {client_sha256,native_sha256}; native_sha256 null forheaders or missingnativeobservation. Fullrole_readiness/native_readiness separatelyretained and verifiedbyactualparent; immutablecontextrequiresmatchingobjects. This prevents oversizednestedparentobjects in32KiB result.', 'result_status_enum': ['succeeded', 'failed', 'cancelled', 'timeout', 'output_limit', 'unresolved']},
+    'owned_meter_connection_fixture': {'allowed_evidence_class': 'owned_gate', 'baseline_steady_descriptors': 6, 'cases': {'S42C-X45': {'derived_transient_peak': 12, 'preconnected_peers': 4, 'slot': 'http_identify', 'steady_descriptors': 11, 'variant': 'meter_connection_cap_identify'}, 'S42C-X46': {'derived_transient_peak': 10, 'preconnected_peers': 2, 'slot': 'http_headers', 'steady_descriptors': 9, 'variant': 'meter_connection_cap_headers'}}, 'creation_phase': 'After unchanged initial bootstrap/entry-rights validation and production network setup, before role sealing. All listener/peer sockets are created and connected before sealing. No post-seal new socket permission.', 'fixture_listener_count': 1, 'fixture_transport': 'AF_UNIX/SOCK_STREAM abstract address in the endpoint private network namespace; fixed owned primitive traffic only', 'live_validation': 'Only the fixed per-case sealed endpoint and runtime source variants select the exception. Worker steady inventory and trusted parent readback retain every actual descriptor and exact source/runtime/role commitments. Baseline runtime endpoint_max remains 7; no ordinary caller-supplied fd_max, skip flag or additional inherited right.', 'ordinary_endpoint_max': 7, 'other_meter_cases': 'The other nine byte/partial/clock primitive cases use the already inherited stdin socket and add zero descriptors. All primitive fixture traffic is labelled injected, cannot establish native HTTP usefulness, and is derived from actual saved metering events.', 'peak_evidence': 'READY/readback establishes the actual steady inventory of 11/9. The transient 12/10 is a source-derived upper bound with one accepted stream at a time, not a measured READY count. A measured peak claim additionally requires actual peak-time complete FD inventory retained as a bounded private artifact with its exact hash in the native validation receipt; no fabricated canonical field or omitted FD.', 'retained_validation': {'entrypoint': 'private _retained_fixture_validation(loaded) after structural member loading', 'fail_closed': 'Unknown case/role, missing or conflicting source/configuration binding, ordinary production evidence, missing/extra descriptors or absent proof cannot select the exception. The private retained-validation allowance changes only pure descriptor validation for that exact endpoint fixture; all other role, entry, namespace, source, process, deadline, cleanup and meter checks remain required.', 'required_binding': ['manifest evidence_class is owned_gate and exact case_id X45 or X46', 'configuration equals the fixed case variant and role endpoint with its canonical configuration SHA256', 'both sealed endpoint and runtime source SHA256 commitments match runtime source inventory and selected endpoint role closure', 'all actual sealed fixture descriptor rows are retained, named and compared between worker hash and actual parent readback; exact 11 or 9 steady descriptors', 'case proof, control readiness and actual meter observation resolve to the same runtime and fixture configuration'], 'scope': 'Bounded context manager around context, authority/transcript, parser replay and report validation; equivalent writer validation; reset on success and every failure. No live authority is returned.'}, 'role': 'endpoint', 'simultaneous_accepted_streams_max': 1, 'steady_descriptor_purposes': {'0': 'stdin', '1': 'stdout', '10': 'fixture_peer_4 (X45 only)', '2': 'stderr', '3': 'broker_control', '4': 'launcher_arm', '5': 'observed production listener', '6': 'fixture_listener', '7': 'fixture_peer_1', '8': 'fixture_peer_2', '9': 'fixture_peer_3 (X45 only)'}, 'unchanged': {'all_case_ids': 288, 'authority_targets_deadlines_and_byte_caps': True, 'endpoint_rlimit_nofile': 64, 'initial_rights': True, 'native_case_ids': 113, 'new_inherited_descriptors': 0, 'new_processes': 0, 'parent_readback_descriptors': 32, 'production_endpoint_max': 7}},
+    'portable_inventory': {'path': '/home/sloth/Code/recon-cockpit/.secure-agent/pr102-review-20261021/s42c-runtime-portable-cases.json', 'sha256': 'cd249b14cf2d8986f4f210d2a5d8d118a9ca23a53d6f83e7a06f98a1ea9b319e'},
+    'process_graph': {'broker_instances_per_bundle_max': 2, 'client_dispatches_per_bundle_max': 4, 'cumulative_basis': 'Conservative47 unique payload/wrapper/helper identities per broker,94 per at most2 strictly sequential brokers. Actual ordinary upper derivation20payload+21wrapper/audit-reaper+4nft=45. Six nsenter and Python shim image invocations use --no-fork and exec to reuse actual wrapper PID/start, not six extra process identities. Retain actual image transitions; no unobserved hidden fork.', 'cumulative_process_identities_per_broker_max': 47, 'cumulative_process_identities_per_bundle_max': 94, 'cumulative_rule': 'rawclientpairs4/parserruns4/cost/outputcaps applyacross bothinstances. Per-callcleanup.processes<=26; aggregateevidence mayretain<=94 distinctPID/start identities plusphaseobservations referencingthem. No hiddenautomaticrestart or thirdbroker.', 'distinct_process_upper_derivation': {'nft_helpers': 4, 'payloads': 20, 'sum': 45, 'wrappers_and_audit_extra': 21}, 'host_orchestrator_threads_max': 6, 'host_supervisor_note': 'Existing trusted host process has at most6 disclosed threads: main, lifecycle monitor, two API submitters, two fixed single-owner supervisors. No per-child/request thread. These host threads are outside isolated26process/28task sum. Actual thread start/join/is_alive/no-pending closure separately retained; external X server/test drivers remain separately disclosed.', 'host_supervisor_processes': 1, 'host_supervisor_threads_max': 2, 'invocation_basis': 'Eight persistent roles plus four actions times admission/client/parser; all children started by trusted host. Fixed nsenter --no-fork used for two launchers and four clients; nft check/install per endpoint. Current client+admission overlap per session remains at most2, parser only after both reaped.', 'limits_note': 'Observed bounded role graph plus explicit builder inventory; no claim to arbitrary process/exec syscall tracing. No retry on failed spawn/exec/image observation.', 'new_role_bwrap_flags': ['--as-pid-1', '--die-with-parent'], 'owned_descendant_processes_max': 26, 'owned_descendant_tasks_max': 28, 'payloads_max': 12, 'persistent_payloads': {'audit': 1, 'broker': 1, 'endpoint': 2, 'launcher': 2, 'reviewer': 2}, 'serialized_setup_helpers_max': 1, 'sessions_max': 2, 'simultaneous_brokers_max': 1, 'successful_two_session_invocations_max': {'bwrap': 20, 'nft': 4, 'nsenter': 6}, 'transient_payloads': {'nested_admission_until_actual_GO_redemption': 2, 'waiting_or_active_client_or_parser': 2}, 'wrapper_basis': 'one bwrap supervisor per new-role payload; unchanged audit may retain outer supervisor plus PID1 reaper', 'wrapper_processes_max': 13},
+    'remaining_coordination': ['Authority/evidence public integration mustretain exactsigned numericexceptions, initial PER-ROLE transfer table andclosednmap/headers roles; no furtherAPI decision intended.', 'RootGUI payloadfields/authoritybrokerpayload authoritativeclosedobjects confirmed; this proposalreferencesauthorityBrokerBootstrap explicitly.', 'No code/tests/nativeexecution authorizeduntil reviewed contractcommit.'],
+    'resources': {'admission': {'as_mib': 256, 'cpu_seconds': 7, 'fsize_bytes': 0, 'lifetime_rule': 'Originalaction-clipped lifetime<=30s, also clipped tooriginalsession/brokerstop; actualissue/redemptionworkphase<=2s underthatsameoriginalbudget, CPU7total. Alivealongsidewaitingclient throughconsumeandGO; actualone-usepermit redeemedthenworkerreapedbeforeclientexec/ARM; CANCEL/EOF whileidle checked<=50ms; nofreshdeadlineonredemption.', 'nofile': 64, 'nproc': 1, 'phase_seconds': 2, 'tasks': 1, 'wall_seconds': 30}, 'audit': {'as_mib': 256, 'cpu_seconds': 7, 'fsize_bytes': 1048576, 'implementation': 'unchanged accepted audit_worker boundary', 'nofile': 64, 'nproc': 1, 'tasks': 1, 'wall_seconds': 120}, 'broker': {'as_mib': 256, 'cpu_seconds': 120, 'fsize_bytes': 16777216, 'nofile': 64, 'nproc': 1, 'tasks': 1, 'wall_seconds': 120}, 'endpoint': {'as_mib': 256, 'cpu_seconds': 5, 'fsize_bytes': 0, 'nofile': 64, 'nproc': 1, 'tasks': 1, 'wall_seconds': 60}, 'graphical': {'as_mib': 256, 'cpu_seconds': 7, 'fsize_bytes': 1048576, 'nofile': 64, 'nproc': 1, 'tasks_max': 2, 'tasks_note': 'warm up Tk before seal; retain actual main/notifier TIDs; exact set unchanged after TSYNC no-new-task filter', 'wall_seconds': 60}, 'headers': {'as_mib': 256, 'cpu_seconds': 5, 'fsize_bytes': 0, 'nofile': 64, 'nproc': 1, 'output_bytes': 2048, 'tasks': 1, 'wall_seconds': 1}, 'launcher': {'as_mib': 256, 'cpu_seconds': 15, 'fsize_bytes': 0, 'nofile': 64, 'nproc': 1, 'tasks': 1, 'wall_seconds': 60}, 'nmap': {'as_mib': 256, 'cpu_seconds': 5, 'fsize_bytes': 0, 'nofile': 64, 'nproc': 1, 'output_bytes': 8192, 'tasks': 1, 'wall_seconds': 5}, 'parser': {'as_mib': 128, 'cpu_seconds': 2, 'fsize_bytes': 0, 'nofile': 32, 'nproc': 1, 'output_bytes': 4096, 'tasks': 1, 'wall_seconds': 2}, 'setup_helper': {'as_mib': 256, 'cpu_seconds': 2, 'fsize_bytes': 0, 'nofile': 64, 'nproc': 1, 'program': 'fixed nft check/install only; serialized', 'tasks': 1, 'wall_seconds': 2}, 'terminal': {'as_mib': 256, 'cpu_seconds': 7, 'fsize_bytes': 1048576, 'nofile': 64, 'nproc': 1, 'tasks': 1, 'wall_seconds': 60}},
+    'role_boundary_proofs': {'case_id': 'one exact X01..X59 mappedcase; observation_sha256 references thekind-specific actualkernel/file/processobservation. Forstartuprefusal no completeREADYis invented; retain actualchangedsealedFD/sourceinput andchildrefusal/pairedcontrol, explicitlynonuseful.', 'checks': 'Exact one-key map {<fixedcasevariant>:boolean}. Booleantrue is independently derived fromthatcase required_proof plus closedkindrawobservations, parentreadiness/custody/pairedcontrol andstop/cleanup predicates. A suppliedtrue without thoseinputs neverpasses. Machinecase.required_checks must containthatexactvariant; no inventedstrings afterpin.', 'common_fields': ['schema_version', 'case_id', 'role', 'kind', 'runtime_sha256', 'source_sha256', 'observation_sha256', 'control_observation_sha256', 'started_at_ns', 'finished_at_ns', 'checks'], 'instrumentation_schema': {'behavior': 'faultvalues andclocks compiled into sealedtestsource/nativebytes andcommitted inexecutionruntime; caller dictionary cannot addtimings/addresses/argv/commands', 'case_id': 'exactdeclared X/N case ID', 'fields': ['case_id', 'variant', 'role'], 'role': 'declaredtestrolelabel; maps toclosedruntime role usingfixedcasepredicate', 'variant': 'exactmachinecasevariant'}, 'kinds': {'clock_boundary': {'constraints': 'sealedtrustedworker clockstimulus withsynchronizedtestroles; nohostclockchange/nocallerclock; actualsyscall boundaryobserved', 'fields': ['stimulus', 'clock_source_sha256', 'triggered_at_ns', 'meter_transcript_sha256', 'accepted_before', 'accepted_after', 'sent_before', 'sent_after', 'refused'], 'stimulus': ['forward_before_recv', 'forward_before_send', 'deadline_after_partial']}, 'creation_denial': {'constraints': 'realdeniedsyscall andunchangedobservedtaskset; role-specific no-newprocess/namespace claim', 'fields': ['operation', 'flags', 'return_value', 'errno', 'tasks_before', 'tasks_after'], 'operation': ['fork', 'clone', 'clone3', 'unshare', 'setns', 'execve']}, 'descriptor_custody': {'changed_descriptor': 'exactdescriptor schema; missingdescriptor retains expectedbounddescriptor, notfabricatedactualentry', 'fields': ['phase', 'expected_inventory_sha256', 'actual_inventory_sha256', 'changed_descriptor', 'refused']}, 'image_identity': {'fields': ['expected_image_sha256', 'observed_image_sha256', 'waiting_observation_sha256', 'native_observation_sha256', 'arm_emitted', 'refused'], 'nulls': 'nativeobservation/observedhash null ifmissing; actualsamepayloadobservationrequired forpositivecontrol'}, 'lifecycle': {'constraints': 'actualEOF/process event+pidfdHUP/wrapperwaitreceipt; lastack notfinalzero ifmissing', 'fields': ['origin', 'triggered_at_ns', 'cleanup_sha256', 'meter_transcript_sha256', 'last_ack_sha256', 'cleanup_finished_at_ns'], 'origin': ['broker_eof', 'endpoint_eof', 'launcher_eof', 'payload_and_wrapper_cleanup']}, 'meter_boundary': {'constraints': 'actualisolatedsocketpeer andendpoint syscallreturn/meter stream; instrumentedprimitivecapbytesexplicitly notvalidusefulHTTP daemonoutput', 'fields': ['slot', 'metric', 'stimulus_bytes', 'meter_transcript_sha256', 'input_sha256', 'output_sha256', 'delivery_known', 'refused'], 'metric': ['connections', 'request', 'response', 'partial_request', 'partial_response']}, 'parser_absence': {'constraints': 'fixedprobeonly withinisolatedparser; parentidentity+exactFDreceipt required', 'fields': ['network_return', 'network_errno', 'filesystem_return', 'filesystem_errno', 'process_return', 'process_errno', 'authority_fds_absent']}, 'pin_mutation': {'fields': ['destination', 'before_sha256', 'after_sha256', 'expected_seals', 'observed_seals', 'rejected_stage', 'ready_emitted', 'arm_emitted'], 'stage': ['source_snapshot', 'native_snapshot', 'role_manifest', 'worker_entry', 'parent_image']}, 'socket_denial': {'constraints': 'AF_INET=2/TCPstream1/protocol0or6; fixeddeclared/forbiddenwitnessIPport; MSG_FASTOPENflags includes0x20000000; actualEPERM requiredforseccompcases, no hostoutboundaddress', 'fields': ['operation', 'family', 'socket_type', 'protocol', 'target', 'port', 'flags', 'return_value', 'errno', 'paired_control_connected', 'listener_accepts', 'listener_payload_bytes'], 'operation': ['connect', 'sendto', 'sendmsg', 'sendmmsg']}}, 'required_checks_by_variant': {'actual_payload_and_wrapper_reaped': ['actual_payload_and_wrapper_reaped'], 'creation_denied_broker': ['creation_denied_broker'], 'creation_denied_client': ['creation_denied_client'], 'creation_denied_endpoint': ['creation_denied_endpoint'], 'creation_denied_graphical': ['creation_denied_graphical'], 'creation_denied_parser': ['creation_denied_parser'], 'creation_denied_terminal': ['creation_denied_terminal'], 'endpoint_clock_forward_before_recv': ['endpoint_clock_forward_before_recv'], 'endpoint_clock_forward_before_send': ['endpoint_clock_forward_before_send'], 'endpoint_deadline_before_send_after_partial': ['endpoint_deadline_before_send_after_partial'], 'endpoint_denies_connect': ['endpoint_denies_connect'], 'endpoint_denies_fastopen_sendmmsg': ['endpoint_denies_fastopen_sendmmsg'], 'endpoint_denies_fastopen_sendmsg': ['endpoint_denies_fastopen_sendmsg'], 'endpoint_denies_fastopen_sendto': ['endpoint_denies_fastopen_sendto'], 'forbidden_destination_ssh_endpoint': ['forbidden_destination_ssh_endpoint'], 'forbidden_destination_wrong_port': ['forbidden_destination_wrong_port'], 'forbidden_destination_wrong_target': ['forbidden_destination_wrong_target'], 'meter_connection_cap_headers': ['meter_connection_cap_headers'], 'meter_connection_cap_identify': ['meter_connection_cap_identify'], 'meter_partial_request': ['meter_partial_request'], 'meter_partial_response': ['meter_partial_response'], 'meter_request_cap_headers': ['meter_request_cap_headers'], 'meter_request_cap_identify': ['meter_request_cap_identify'], 'meter_response_cap_headers': ['meter_response_cap_headers'], 'meter_response_cap_identify': ['meter_response_cap_identify'], 'missing_descriptor_broker': ['missing_descriptor_broker'], 'missing_descriptor_endpoint': ['missing_descriptor_endpoint'], 'missing_descriptor_graphical': ['missing_descriptor_graphical'], 'missing_descriptor_launcher': ['missing_descriptor_launcher'], 'missing_descriptor_terminal': ['missing_descriptor_terminal'], 'native_image_observation_missing_no_ARM': ['native_image_observation_missing_no_ARM'], 'parent_observed_identity_endpoint_mismatch': ['parent_observed_identity_endpoint_mismatch'], 'parent_observed_identity_nmap_mismatch': ['parent_observed_identity_nmap_mismatch'], 'parent_observed_identity_parser_mismatch': ['parent_observed_identity_parser_mismatch'], 'parent_observed_identity_waiting_python_mismatch': ['parent_observed_identity_waiting_python_mismatch'], 'parser_network_filesystem_authority_absent': ['parser_network_filesystem_authority_absent'], 'role_EOF_broker': ['role_EOF_broker'], 'role_EOF_endpoint': ['role_EOF_endpoint'], 'role_EOF_launcher': ['role_EOF_launcher'], 'role_manifest_client_to_parser': ['role_manifest_client_to_parser'], 'role_manifest_endpoint_to_broker': ['role_manifest_endpoint_to_broker'], 'sealed_broker_sqlite_library_changed': ['sealed_broker_sqlite_library_changed'], 'sealed_graphical_tk_library_changed': ['sealed_graphical_tk_library_changed'], 'sealed_nmap_executable_changed': ['sealed_nmap_executable_changed'], 'sealed_nmap_library_changed': ['sealed_nmap_library_changed'], 'sealed_source_broker_changed': ['sealed_source_broker_changed'], 'sealed_source_client_changed': ['sealed_source_client_changed'], 'sealed_source_endpoint_changed': ['sealed_source_endpoint_changed'], 'sealed_source_graphical_changed': ['sealed_source_graphical_changed'], 'sealed_source_launcher_changed': ['sealed_source_launcher_changed'], 'sealed_source_parser_changed': ['sealed_source_parser_changed'], 'sealed_source_terminal_changed': ['sealed_source_terminal_changed'], 'unexpected_descriptor_broker': ['unexpected_descriptor_broker'], 'unexpected_descriptor_client': ['unexpected_descriptor_client'], 'unexpected_descriptor_endpoint': ['unexpected_descriptor_endpoint'], 'unexpected_descriptor_graphical': ['unexpected_descriptor_graphical'], 'unexpected_descriptor_launcher': ['unexpected_descriptor_launcher'], 'unexpected_descriptor_parser': ['unexpected_descriptor_parser'], 'unexpected_descriptor_terminal': ['unexpected_descriptor_terminal']}},
+    'role_discrimination': {'accepted_observer_only_role': 'audit', 'case_role_labels': 'client/waiting_python/all are descriptive testlabels only, never runtime selector; testclient label selects exactnmap orheaders role fromsealedcasevariant', 'entrypoint_module_by_role': {'admission': 'engagement_live_admission_worker', 'broker': 'engagement_live_broker_worker', 'endpoint': 'engagement_live_endpoint_worker', 'graphical': 'engagement_live_approval_worker', 'headers': 'engagement_live_client_worker', 'launcher': 'engagement_live_launcher_worker', 'nmap': 'engagement_live_client_worker', 'parser': 'engagement_live_parser_worker', 'terminal': 'engagement_live_approval_worker'}, 'graphical_frontend_value': 'graphical_v1', 'new_bootstrap_and_readiness_roles': ['broker', 'terminal', 'graphical', 'launcher', 'endpoint', 'nmap', 'headers', 'parser', 'admission']},
+    'runtime_digest': {'algorithm': 'SHA256', 'domain_prefix_hex': '', 'evidence_wrapper_fields': ['schema_version', 'runtime', 'instrumentation'], 'excluded': ['actualprocessPID/FD/clockobservations', 'diagnosticinstrumentationlabels', 'runtime.jsonwrapper'], 'included': 'closed execution bundle contains profile/version/fixedpaths/native+sourcehashes/rolepartitions', 'input': 'canonical(validate_runtime(execution_bundle))', 'instrumentation_binding': 'Changedworker/nativebehavior must be in sealedsource/nativepins insideexecutionbundle; unbound metadata configuration never selects liveclock/native behavior.', 'runtime_file_sha256': 'independent fullfileSHA in evidence members map; never confused with execution runtime_sha256'},
+    'runtime_manifest_schema': {'builtin_modules': 'sorted exact observed distributionPythonbuiltinlist, finite count<=128; requiredimports must be present eitherfixedbuiltins orroleextensionallowlist, no guessed portableextensionlayout', 'bundle_fields': ['schema_version', 'profile', 'platform', 'python', 'stdlib', 'sources', 'roles', 'helpers', 'compiled'], 'compiled_schema': {'bytes': 'first4 exactacceptednetwork_tools_runtime constants; graphical_fontconfig exact accepted graphical_approval_isolation.FONT_CONFIG bytes mounted at graphical_approval_protocol.FONTCONFIG_PATH (/run/reviewer-fonts.conf); no callerXML. Copyconstant intoadditivebuilder or read acceptedhostconstant withoutmountingitsisolationmoduleinreviewer.', 'count': 5, 'destinations': ['/tool/data/nmap-services', '/tool/data/nmap-protocols', '/tool/data/nmap-service-probes', '/tool/data/nse_main.lua', '/run/reviewer-fonts.conf'], 'max_file_bytes': 16384, 'names': ['nmap_services', 'nmap_protocols', 'nmap_service_probes', 'nmap_nse_shim', 'graphical_fontconfig'], 'note': 'SelectedephemeralXauthoritycookie is separatelycustodiedsessioncapability, notcompiledstaticruntimefile, neverexportsecretbytes.', 'row_fields': ['name', 'destination', 'size', 'sha256'], 'type': 'list'}, 'file_row_fields': ['source', 'destination', 'size', 'sha256'], 'file_rules': 'exact pathinventory fromfixedrole, stable fstat dev/ino/mode/size/mtime_ns/ctime_ns aroundboundedread, sealsrequired; filepath aliases resolved underfixedstandard roots, no caller path', 'helpers_schema': {'count': 4, 'destinations': {'bwrap': '/usr/bin/bwrap', 'nft': '/usr/sbin/nft', 'nsenter': '/usr/bin/nsenter', 'readelf': '/usr/bin/readelf'}, 'executable': 'file_row', 'files': 'sorteduniquefile_rowlist,<=32/helper,exactinspectedDT_NEEDEDclosure; readonlyrootstockpaths only', 'interpreter': 'exact ELFinterpreterdestination', 'names': ['bwrap', 'nsenter', 'nft', 'readelf'], 'roles': 'readelf host preflight only; nsenter fixed host starts of two launchers and four clients, always --no-fork; nft endpoint fixed setup only; bwrap trusted-host fixed-role construction only. No helper is mounted into launcher and no arbitrary helper argv/selection is accepted.', 'row_fields': ['name', 'executable', 'interpreter', 'files'], 'type': 'list'}, 'platform': 'linux-x86_64', 'profile': 'engagement-live-runtime-v1', 'python': 'exactsystemdistributionPython path/version/image/hash; nativevalidation uses inspected3.14 layout, portabletests simulate unavailableLinux APIs', 'python_fields': ['source', 'destination', 'size', 'sha256', 'version', 'builtin_modules'], 'resource_fields': ['kind', 'source', 'destination', 'device', 'inode', 'mode', 'files_sha256'], 'resource_rules': 'fixedGUI Tcl/Tk/fonts/fontconfigdirs read-only; boundedfileinventory/hashbeforeandafterstartup, no recursivehostrootbind; Xsocket exactidentity andselected16-bytecookie are separatelycustodied, cookiebytesneverretainedinevidence', 'role_fields': ['role', 'entrypoint', 'sources', 'executable', 'interpreter', 'native_files', 'extension_files', 'readonly_resources', 'required_mapped_images'], 'role_runtime_delivery': 'Selected immutable rolemanifest mountedsealedat /run/engagement-runtime.json (0444), max131072; child reads/validatesbeforeseal and closesreadFD. Globalruntimefilehash isnot placedas large ordinarypacket; bootstrap bindsruntime_sha256 plusselectedmanifestsha.', 'source_inventory': 'allexactnewproduction secure_agent modulepaths plus explicitacceptedroleunion below and2packagefiles; no tests/scripts in productionclosure; eachrole onlyitsclosedsubset', 'source_row_fields': ['module', 'destination', 'size', 'sha256'], 'stdlib_fields': ['path', 'device', 'inode', 'mode'], 'stdlib_rules': 'fixedreadonlydistributionPythonstdlib; lib-dynload hidden/replaced then exactroleextensions mounted. Explicitly not fullstdlib-byte-sealing or everyopen-syscallattestation.'},
+    'source_partitions': {'admission_extra': ['engagement_live_admission_worker'], 'audit_exact': ['planner_worker', 'audit_worker', 'audit_protocol', 'audit_witness'], 'broker_extra': ['engagement_dispatch_store', 'engagement_live_broker_worker', 'engagement_live_witness', 'engagement_live_context', 'configurable_parser', 'http_headers_parser', 'network_tools_nmap_parser', 'network_tools_parser', 'audit_witness', 'audit_protocol'], 'common': ['engagement_live_runtime', 'engagement_live_contract', 'engagement_live_protocol', 'engagement_dispatch_contract', 'engagement_contract', 'configurable_contract', 'configurable_scope', 'models', 'tool_parameters', 'tool_adapters', 'session_limits', 'worker', 'tool_worker_common', 'name_tls_worker_common', 'planner_worker', 'name_tls_topology_spec'], 'endpoint_extra': ['engagement_live_endpoint_worker'], 'headers_extra': ['engagement_live_client_worker'], 'launcher_extra': ['engagement_live_launcher_worker', 'engagement_live_client', 'engagement_live_parser', 'engagement_live_endpoint', 'engagement_live_witness', 'engagement_live_context', 'configurable_parser', 'http_headers_parser', 'network_tools_nmap_parser', 'network_tools_parser', 'audit_witness', 'audit_protocol'], 'launcher_rule': 'Exact common + listed launcher_extra_modules + two inert package files, without recursive child role source union. Host-only runtime/endpoint/parser builder imports stay lazy and cannot execute after full launcher filter. Pure configurable_parser imports are covered by listed accepted parser modules. All actual new proxy imports must remain inside this frozen list.', 'nmap_extra': ['engagement_live_client_worker'], 'parser_extra': ['engagement_live_parser_worker', 'configurable_parser', 'http_headers_parser', 'network_tools_nmap_parser', 'network_tools_parser'], 'principle': 'Exact common+roleextra+2 inert package files; accepted audit keeps its own layout. No graphical_approval_isolation/approval_isolation/planner_isolation dependency for reused pure view/seal helpers. Launcher uses only its explicit reduced role list and no recursive child source union or child executable/data mounts. Host-only imports remain lazy and unmounted in leaves. Source presence does not grant permission to binaries/data/authority.', 'terminal_and_graphical_extra': ['approval_worker', 'graphical_approval_worker', 'graphical_approval_view', 'graphical_approval_protocol', 'approval_protocol', 'approvals', 'name_tls_public', 'engagement_live_approval_worker', 'engagement_live_approval_view']},
+    'status': 'runtime_contract_addendum_for_review',
+    'supersedes_sha256': '7a2b4bc576a9726dbb3beadaafcb285d1426df725696901c3e1bcfa7427a6368',
+}
 
 NEW_MODULES = ('engagement_live_admission_worker', 'engagement_live_approval', 'engagement_live_approval_view', 'engagement_live_approval_worker', 'engagement_live_audit', 'engagement_live_broker', 'engagement_live_broker_worker', 'engagement_live_client', 'engagement_live_client_worker', 'engagement_live_context', 'engagement_live_contract', 'engagement_live_endpoint', 'engagement_live_endpoint_worker', 'engagement_live_evidence', 'engagement_live_launcher', 'engagement_live_launcher_worker', 'engagement_live_parser', 'engagement_live_parser_worker', 'engagement_live_protocol', 'engagement_live_runtime', 'engagement_live_session', 'engagement_live_witness')
 
@@ -1843,10 +167,6 @@ def role_modules(role):
     part = SPEC['source_partitions']
     extra = part['terminal_and_graphical_extra'] if role in ('terminal', 'graphical') else part[role + '_extra']
     modules = set(part['common']) | set(extra) | set(PACKAGE_FILES)
-    if role == 'launcher':
-        # The builder stages only its fixed child closures, not reviewer or DB roles.
-        for child in ('nmap', 'headers', 'parser', 'admission'):
-            modules.update(role_modules(child))
     return tuple(sorted(modules))
 
 
@@ -2040,14 +360,14 @@ def inspect_runtime(control):
             extensions.extend(x for x in rows if x['destination'] == str(matches[0]))
             files.update((x['destination'], x) for x in rows if x['destination'] != str(matches[0]))
         native_required = []
-        if role in ('nmap', 'launcher'):
+        if role == 'nmap':
             rows, _ = _closure('/usr/lib/nmap/nmap', '/tool/nmap', control)
             files.update((x['destination'], x) for x in rows)
             native_required = [x['destination'] for x in rows]
-        if role in ('endpoint', 'launcher'):
-            helper = next(x for x in helpers if x['name'] == ('nft' if role == 'endpoint' else 'bwrap'))
+        if role == 'endpoint':
+            helper = next(x for x in helpers if x['name'] == 'nft')
             files.update((x['destination'], x) for x in helper['files'])
-        # Launcher stages fixed child extensions; no broker/GUI extension is included.
+        # Every leaf mounts only its exact interpreter/role extension closure.
         rows = sorted(files.values(), key=lambda row: row['destination'])
         roles.append({'role': role, 'entrypoint': ENTRYPOINTS[role],
             'sources': [x for x in sources if x['module'] in role_modules(role)],
@@ -2110,8 +430,7 @@ def validate_role_manifest(value, role=None):
         _fail()
     executables = {p for p in destinations if p.startswith(('/usr/bin/','/usr/sbin/','/tool/'))}
     expected={'/usr/bin/python3'}
-    if selected in ('nmap','launcher'): expected.add('/tool/nmap')
-    if selected=='launcher':expected.add('/usr/bin/bwrap')
+    if selected=='nmap':expected.add('/tool/nmap')
     if selected=='endpoint':expected.add('/usr/sbin/nft')
     if executables != expected:
         _fail()
@@ -2217,7 +536,7 @@ class RoleSnapshot:
                     raw=_read_file(path,16777216,control)
                     self._stage(row,raw,target,control)
             for name,(destination,raw) in _compiled().items():
-                if (role in ('nmap','launcher') and name.startswith('nmap_')) or role=='graphical' and name=='graphical_fontconfig':
+                if (role=='nmap' and name.startswith('nmap_')) or role=='graphical' and name=='graphical_fontconfig':
                     row=next(x for x in bundle['compiled'] if x['name']==name)
                     self._stage(row,raw,self.compiled,control)
             self.manifest_fd=_sealed(_json(self.manifest),control=control);self._fds.append(self.manifest_fd)
@@ -2521,6 +840,12 @@ def check_role_entry(*,role,bootstrap,expected_fds,observer):
     for row in bootstrap['descriptors']:
         selected=next(x for x in actual if x['fd']==expected_fds[row['purpose']])
         if any(selected[k]!=row[k] for k in ('device','inode','mode','flags')):_fail('invalid_role')
+    if role=='launcher':
+        from .engagement_live_contract import validate_child_slot_bindings
+        slots=validate_child_slot_bindings(bootstrap['payload']['child_slots'])
+        for slot in slots:
+            row=next(item for item in actual if item['fd']==slot['pair']['launcher_fd'])
+            if row['purpose']!=slot['child_slot']+'_request' or any(row[key]!=slot['pair']['request_endpoint'][key] for key in ('device','inode','mode','flags')):_fail('invalid_role')
     _check(deadline_ns=bootstrap['deadline_ns'])
     return {'role':role,'bootstrap':bootstrap,'namespaces':namespaces,'identity':identity,
             'descriptors':actual,'purposes':purposes}
@@ -2530,20 +855,16 @@ def _install_filter(role):
     import ctypes
     import socket
     from . import planner_worker
-    if role not in ('nmap','headers','endpoint','launcher'):
-        planner_worker._install_syscall_filter()
+    if role not in ('nmap','headers','endpoint'):
+        extra=('connect','bind','listen','accept','accept4','ptrace','process_vm_readv',
+               'process_vm_writev','pidfd_getfd','bpf','keyctl','add_key','request_key',
+               'perf_event_open','userfaultfd','io_uring_setup','open_by_handle_at') if role=='launcher' else ()
+        planner_worker._install_syscall_filter(extra_denied=extra)
         return
-    if role=='launcher':
-        # Child namespaces/execution are allowed only by the fixed trusted builder;
-        # no arbitrary worker source or executable is mounted. Network syscalls
-        # and host-observation attacks remain denied.
-        denied=('socket','connect','bind','listen','accept','accept4','ptrace','process_vm_readv',
-                'process_vm_writev','pidfd_getfd','bpf','keyctl','add_key','request_key','perf_event_open','userfaultfd','io_uring_setup','open_by_handle_at')
-    else:
-        from .tool_worker_common import syscall_filter
-        syscall_filter(allow_threads=False)
-        denied=('execve',) if role in ('headers','endpoint') else ()
-        if role=='endpoint':denied+=('connect',)
+    from .tool_worker_common import syscall_filter
+    syscall_filter(allow_threads=False)
+    denied=('execve',) if role in ('headers','endpoint') else ()
+    if role=='endpoint':denied+=('connect',)
     class Arg(ctypes.Structure):
         _fields_=[('arg',ctypes.c_uint),('op',ctypes.c_int),('a',ctypes.c_uint64),('b',ctypes.c_uint64)]
     lib=ctypes.CDLL('libseccomp.so.2',use_errno=True)
@@ -2573,19 +894,6 @@ def _steady_fd_max(role,stage='sealed'):
     if role in ('nmap','headers'):return SPEC['fd_inventory']['waiting_client_max']
     if role=='launcher':return SPEC['fd_inventory']['launcher_non_snapshot_max']
     return SPEC['fd_inventory'][role+'_max']
-
-
-def _launcher_network_creation_blocked():
-    import socket
-    # The launcher needs its fixed private child socketpairs. Its network
-    # creation witness checks the socket syscall denied by its existing filter.
-    for family in (socket.AF_INET,socket.AF_INET6,socket.AF_UNIX):
-        try:connection=socket.socket(family,socket.SOCK_STREAM)
-        except OSError as error:
-            if error.errno!=errno.EPERM:_fail('invalid_role')
-        else:
-            connection.close()
-            _fail('invalid_role')
 
 
 def bootstrap_role(*,role,entry,runtime_manifest,expected_fds,deadline_ns):
@@ -2623,11 +931,8 @@ def bootstrap_role(*,role,entry,runtime_manifest,expected_fds,deadline_ns):
     _install_filter(role)
     if not os.statvfs('/').f_flag & os.ST_RDONLY:_fail('invalid_role')
     planner_worker._zero_capabilities();planner_worker._no_new_privileges()
-    if role!='launcher':
-        planner_worker._process_creation_blocked();planner_worker._namespace_creation_blocked()
-    if role=='launcher':
-        _launcher_network_creation_blocked()
-    elif role not in ('nmap','headers','endpoint'):
+    planner_worker._process_creation_blocked();planner_worker._namespace_creation_blocked()
+    if role not in ('nmap','headers','endpoint'):
         planner_worker._sockets_blocked()
     # Filesystem leaf rules are installed after all parsers/data were preloaded.
     if role in ('nmap','headers','parser','endpoint'):
@@ -2640,9 +945,6 @@ def bootstrap_role(*,role,entry,runtime_manifest,expected_fds,deadline_ns):
                 if destination.startswith('/tool/'):permissions[destination]=4
         apply_landlock(permissions)
     checks={name:True for name in SPEC['closed_objects']['boundary_checks']['common']}
-    if role=='launcher':
-        checks.pop('process_creation_blocked');checks.pop('namespace_creation_blocked')
-        checks.update(bounded_child_creation=True,fixed_namespace_builder=True)
     # Role-specific effect witnesses are supplied by their fixed worker after
     # setup; they are not inferred from a common seccomp installation.
     ready={'schema_version':'1','role':role,'worker_id':entry['bootstrap']['worker_id'],
@@ -2670,7 +972,6 @@ def validate_worker_ready(value):
     if value['schema_version']!='1' or _UUID.fullmatch(value['worker_id']) is None:_fail()
     for key in ('bootstrap_sha256','runtime_sha256','source_sha256','descriptor_sha256'):_digest(value[key])
     expected=set(SPEC['closed_objects']['boundary_checks']['common'])|set(SPEC['closed_objects']['boundary_checks']['role_specific'][role])
-    if role=='launcher':expected-={'process_creation_blocked','namespace_creation_blocked'};expected|={'bounded_child_creation','fixed_namespace_builder'}
     if type(value['boundary_checks'])is not dict or set(value['boundary_checks'])!=expected or any(x is not True for x in value['boundary_checks'].values()):_fail('invalid_role')
     if value['uid']!=65534 or type(value['uid'])is not int or value['gid']!=65534 or type(value['gid'])is not int:_fail()
     if type(value['groups'])is not list or len(value['groups'])>64 or any(type(x)is not int or x!=65534 for x in value['groups']):_fail()
@@ -3066,7 +1367,7 @@ class RoleProcess:
         return self.cleanup
 
 
-def _finish_start(*,process,channel,info_read,bootstrap,bundle,role,control,expected_net=None,pin=None,initial_info=b''):
+def _finish_observation(*,process,info_read,bootstrap,bundle,role,control,expected_net=None,pin=None,initial_info=b''):
     ready,info=_read_startup(process,info_read,control,initial_info=initial_info)
     validate_worker_ready(ready)
     if ready['worker_id']!=bootstrap['worker_id'] or ready['bootstrap_sha256']!=_hash(bootstrap) or ready['runtime_sha256']!=bootstrap['runtime_sha256'] or ready['source_sha256']!=bootstrap['source_sha256']:_fail('invalid_role')
@@ -3082,6 +1383,11 @@ def _finish_start(*,process,channel,info_read,bootstrap,bundle,role,control,expe
         if held['size']!=len(expected) or held['sha256']!=hashlib.sha256(expected).hexdigest():_fail('invalid_runtime')
     compound={'schema_version':'1','role':role,'worker_ready':ready,'parent_observation':pin.receipt}
     validate_readiness(role,compound,bundle)
+    return pin,compound
+
+
+def _finish_start(*,process,channel,info_read,bootstrap,bundle,role,control,expected_net=None,pin=None,initial_info=b''):
+    pin,compound=_finish_observation(process=process,info_read=info_read,bootstrap=bootstrap,bundle=bundle,role=role,control=control,expected_net=expected_net,pin=pin,initial_info=initial_info)
     return RoleProcess(process,channel,pin,bootstrap,compound)
 
 
@@ -3126,7 +1432,7 @@ def _start_role_owned(*,runtime,role,payload,rights,control,stdin_pair=None,extr
             # Fixed trusted startup shim drops namespace descriptors before bwrap;
             # these host setup capabilities never reach the new payload.
             close_code='import os,sys;keep={0,1,2,*map(int,sys.argv[1].split(","))};[(os.close(int(n))) for n in os.listdir("/proc/self/fd") if int(n) not in keep and os.path.exists("/proc/self/fd/"+n)];os.execv(sys.argv[2],sys.argv[2:])'
-            argv=['/usr/bin/nsenter','--user=/proc/self/fd/'+str(namespace_fds[0]),'--net=/proc/self/fd/'+str(namespace_fds[1]),'--preserve-credentials','--','/usr/bin/python3','-I','-S','-c',close_code,','.join(map(str,pass_fds)),*argv]
+            argv=['/usr/bin/nsenter','--no-fork','--user=/proc/self/fd/'+str(namespace_fds[0]),'--net=/proc/self/fd/'+str(namespace_fds[1]),'--preserve-credentials','--','/usr/bin/python3','-I','-S','-c',close_code,','.join(map(str,pass_fds)),*argv]
             pass_fds=(*pass_fds,*namespace_fds)
         _check(startup)
         process=subprocess.Popen(argv,stdin=child,stdout=subprocess.PIPE,stderr=subprocess.PIPE,pass_fds=pass_fds,start_new_session=True,close_fds=True)
@@ -3359,6 +1665,7 @@ def validate_cleanup(value):
 
 
 def validate_protocol_value(kind,value):
+    if kind=='initial_bootstrap':return validate_initial_bootstrap(value)
     if kind=='worker_ready':return validate_worker_ready(value)
     if kind=='cleanup':return validate_cleanup(value)
     if kind=='native_readiness':
@@ -3516,3 +1823,432 @@ def _receive_bytes(channel,maximum,control):
             for fd in fds:os.close(fd)
     if ancillary or flags&(socket.MSG_TRUNC|socket.MSG_CTRUNC) or not raw or len(raw)>maximum:_fail('invalid_frame')
     _check(control);return raw
+
+
+_CHILD_SLOTS={row['name']:row for row in SPEC['host_supervision']['slots']}
+
+
+def validate_child_slot(value):
+    _fields(value,('child_slot','role','worker_id','pair'))
+    slot=_CHILD_SLOTS.get(value['child_slot'])
+    if slot is None or value['role']!=slot['role'] or type(value['worker_id'])is not str or _UUID.fullmatch(value['worker_id'])is None:_fail('invalid_role')
+    pair=_fields(value['pair'],('launcher_fd','request_endpoint','child_endpoint'))
+    if type(pair['launcher_fd'])is not int or pair['launcher_fd']!=SPEC['host_supervision']['preallocation']['canonical_fds'][value['child_slot']+'_request']:_fail('invalid_role')
+    for endpoint in ('request_endpoint','child_endpoint'):
+        row=_fields(pair[endpoint],('device','inode','mode','flags'))
+        for key in ('device','inode'):_integer(row[key],0,2**64-1)
+        for key in ('mode','flags'):_integer(row[key],0,2**32-1)
+        if not stat.S_ISSOCK(row['mode']) or row['flags']&3!=2 or not row['flags']&0x800 or row['flags']&0x200000:_fail('invalid_role')
+    if (pair['request_endpoint']['device'],pair['request_endpoint']['inode'])==(pair['child_endpoint']['device'],pair['child_endpoint']['inode']):_fail('invalid_role')
+    return json.loads(_json(value))
+
+
+def _validate_observer(value):
+    _fields(value,('pid','uid','gid','namespaces'))
+    _integer(value['pid'],1,2**31-1)
+    for key in ('uid','gid'):_integer(value[key],0,2**32-1)
+    _fields(value['namespaces'],('user','net','mnt','pid'))
+    for key,name in value['namespaces'].items():
+        if type(name)is not str or re.fullmatch(key+r':\[\d+\]',name)is None:_fail('invalid_role')
+    return value
+
+
+def validate_initial_bootstrap(value):
+    _fields(value,SPEC['closed_objects']['initial_bootstrap']['fields'])
+    if value['schema_version']!='1' or value['role'] not in ('nmap','headers','admission','parser'):_fail('invalid_role')
+    if type(value['worker_id'])is not str or _UUID.fullmatch(value['worker_id'])is None:_fail('invalid_role')
+    _validate_observer(value['observer']);_integer(value['deadline_ns'],1)
+    expected=value['expected_namespaces'];_fields(expected,('user','net','mnt','pid'))
+    for key,name in expected.items():
+        if type(name)is not str or re.fullmatch(key+r':\[\d+\]',name)is None:_fail('invalid_role')
+        if key!='net' and name!=value['observer']['namespaces'][key]:_fail('invalid_role')
+    for key in ('runtime_sha256','role_manifest_sha256','source_sha256'):_digest(value[key])
+    if value['descriptors']!=[]:_fail('invalid_role')
+    payload=_fields(value['payload'],SPEC['closed_objects']['bootstrap_payloads'][value['role']])
+    from . import engagement_live_contract as c
+    from .configurable_scope import validate_scope,scope_digest
+    if value['role']=='parser':
+        if payload['slot'] not in c.SLOTS:_fail('invalid_role')
+        validate_scope(payload['scope'])
+    else:
+        prepared=c.validate_prepared(payload['prepared'])
+        endpoint=validate_protocol_value('role_readiness',payload['endpoint_identity'])
+        if endpoint['role']!='endpoint' or endpoint['worker_ready']['runtime_sha256']!=value['runtime_sha256'] or prepared['envelope']['runtime_sha256']!=value['runtime_sha256']:_fail('invalid_role')
+        if value['role']=='admission':c.uuid(payload['launcher_id'])
+        else:
+            if prepared['envelope']['slot']!=('http_identify' if value['role']=='nmap' else 'http_headers') or scope_digest(validate_scope(payload['scope']))!=prepared['envelope']['scope_sha256']:_fail('invalid_role')
+    if len(_json(value))>32768:_fail('limit_exceeded')
+    return json.loads(_json(value))
+
+
+def _child_payload(*,child_slot,prepared,role_context,endpoint_identity,launcher_id):
+    from . import engagement_live_contract as c
+    binding=validate_child_slot(child_slot)
+    _fields(role_context,('session_binding','roe','scope','policy'))
+    prepared=c.validate_prepared_role_context(prepared,binding=role_context['session_binding'],roe=role_context['roe'],scope=role_context['scope'],policy=role_context['policy'])
+    if prepared['envelope']['slot']!=_CHILD_SLOTS[binding['child_slot']]['action_slot']:_fail('invalid_prepared')
+    if type(launcher_id)is not str or _UUID.fullmatch(launcher_id)is None:_fail('invalid_role')
+    if binding['role'] in ('nmap','headers'):
+        return {'prepared':prepared,'endpoint_identity':endpoint_identity,'scope':role_context['scope']}
+    if binding['role']=='admission':return {'prepared':prepared,'endpoint_identity':endpoint_identity,'launcher_id':launcher_id}
+    return {'slot':prepared['envelope']['slot'],'scope':role_context['scope']}
+
+
+def _child_bootstrap(*,runtime,child_slot,prepared,role_context,endpoint_identity,observer,deadline_ns,launcher_id):
+    runtime=validate_runtime(runtime);slot=validate_child_slot(child_slot)
+    validate_readiness('endpoint',endpoint_identity,runtime);_validate_observer(observer)
+    _integer(deadline_ns,1)
+    payload=_child_payload(child_slot=slot,prepared=prepared,role_context=role_context,endpoint_identity=endpoint_identity,launcher_id=launcher_id)
+    if prepared['envelope']['runtime_sha256']!=runtime_digest(runtime):_fail('invalid_role')
+    if deadline_ns>min(prepared['envelope']['action_deadline_ns'],role_context['session_binding']['session_deadline_ns'],role_context['session_binding']['broker_deadline_ns']):_fail('invalid_role')
+    manifest=next(row for row in runtime['roles'] if row['role']==slot['role'])
+    expected=dict(observer['namespaces'])
+    if slot['role'] in ('nmap','headers'):expected['net']=endpoint_identity['parent_observation']['namespaces']['net']
+    value={'schema_version':'1','role':slot['role'],'worker_id':slot['worker_id'],'observer':observer,
+           'expected_namespaces':expected,'deadline_ns':deadline_ns,'runtime_sha256':runtime_digest(runtime),
+           'role_manifest_sha256':_hash(manifest),'source_sha256':_hash(manifest['sources']),'descriptors':[], 'payload':payload}
+    return validate_initial_bootstrap(value)
+
+
+def reconstruct_child_bootstrap(*,runtime,child_slot,prepared,session,endpoint_identity,observer,deadline_ns,launcher_id):
+    """Pure replay of one actual fixed child bootstrap; no clock or process reads."""
+    from . import engagement_live_contract as c
+    session=c.validate_session_opened(session)
+    context={'session_binding':session['binding'],'roe':session['roe'],'scope':session['scope'],'policy':session['policy']}
+    return _child_bootstrap(runtime=runtime,child_slot=child_slot,prepared=prepared,role_context=context,
+        endpoint_identity=endpoint_identity,observer=observer,deadline_ns=deadline_ns,launcher_id=launcher_id)
+
+
+def _namespace_command(argv,pass_fds,namespace_fds):
+    if type(namespace_fds)not in (tuple,list) or len(namespace_fds)!=2 or len(set(namespace_fds))!=2:_fail('invalid_role')
+    for fd in namespace_fds:_integer(fd,3,2**31-1)
+    # nsenter, shim and bwrap are one actual wrapper PID/start identity.
+    close_code='import os,sys;keep={0,1,2,*map(int,sys.argv[1].split(","))};[(os.close(int(n))) for n in os.listdir("/proc/self/fd") if int(n) not in keep and os.path.exists("/proc/self/fd/"+n)];os.execv(sys.argv[2],sys.argv[2:])'
+    return ['/usr/bin/nsenter','--no-fork','--user=/proc/self/fd/'+str(namespace_fds[0]),
+        '--net=/proc/self/fd/'+str(namespace_fds[1]),'--preserve-credentials','--','/usr/bin/python3','-I','-S','-c',
+        close_code,','.join(map(str,pass_fds)),*argv],(*pass_fds,*namespace_fds)
+
+
+def _failure_deadline(control):
+    # Read the shared epoch only when failing/closing, never for successful work.
+    deadline=getattr(control,'cleanup_deadline',None)
+    return time.monotonic()+2 if deadline is None else deadline
+
+
+class PendingChild:
+    """Actual host child custody; deliberately owns no request/release channel."""
+    def __init__(self,*,runtime,role,bootstrap,control):
+        self.runtime=runtime;self.role=role;self.bootstrap=bootstrap;self.control=control
+        self.process=None;self.pin=None;self.info_read=None;self.initial_info=b''
+        self.entry=None;self.ready=None;self.cleanup=None;self._cleanup_deadline=None;self._pid=os.getpid()
+        self.startup_deadline=control.deadline
+    def _check_owner(self):
+        if self._pid!=os.getpid():_fail('foreign_owner')
+    def observe_ready(self,control):
+        self._check_owner()
+        if self.ready is not None or self.process is None or self.cleanup is not None:_fail('invalid_role')
+        bounded=_ClippedControl(control,self.startup_deadline)
+        from .engagement_live_contract import _deadline_context
+        try:
+            with _deadline_context(bounded.deadline):
+                try:
+                    self.pin,self.ready=_finish_observation(process=self.process,info_read=self.info_read,bootstrap=self.bootstrap,
+                        bundle=self.runtime,role=self.role,control=bounded,expected_net=self.bootstrap['expected_namespaces']['net'] if self.role in ('nmap','headers') else None,
+                        pin=self.pin,initial_info=self.initial_info)
+                finally:
+                    if self.info_read is not None:
+                        fd,self.info_read=self.info_read,None;os.close(fd)
+                _check(bounded)
+            return self.ready
+        except BaseException as error:
+            error.child_owner=self;error.startup_observation=self.entry
+            try:error.startup_cleanup=self.close(deadline=_failure_deadline(self.control))
+            except BaseException as cleanup_error:
+                cleanup_error.child_owner=self;cleanup_error.startup_observation=self.entry;cleanup_error.startup_failure=error;raise
+            raise
+    def close(self,*,deadline=None):
+        self._check_owner()
+        if self.cleanup is not None:return self.cleanup
+        end=_failure_deadline(self.control) if deadline is None else deadline
+        self._cleanup_deadline=end if self._cleanup_deadline is None else min(end,self._cleanup_deadline)
+        descriptor_error=None
+        if self.info_read is not None:
+            fd,self.info_read=self.info_read,None
+            try:os.close(fd)
+            except OSError as error:descriptor_error=error
+        try:self.cleanup=cleanup_owned([] if self.process is None else [self.process],[] if self.pin is None else [self.pin],deadline=self._cleanup_deadline)
+        except BaseException as error:
+            self.cleanup=getattr(error,'cleanup',None);raise
+        if descriptor_error is not None:
+            from .engagement_live_contract import LiveError
+            self.cleanup={**self.cleanup,'status':'failed','descriptors_closed':False}
+            error=LiveError('engagement_live_cleanup_incomplete');error.cleanup=self.cleanup;raise error from descriptor_error
+        return self.cleanup
+
+
+ObservedChild=PendingChild
+
+
+def _spawn_child_owned(*,runtime,role,payload,child_stdin,worker_id,control,namespace_lease=None,supervision_identity=None,startup_deadline=None):
+    """Spawn one fixed child and return after entry, before launcher INITIAL.
+
+    The caller registers its pending slot before calling. The sole supervisor
+    owns this call until it resolves; external closure never races these handles.
+    """
+    import subprocess
+    snapshot=None;info_write=None;owner=None;successful=False;failure=None
+    try:
+        if role not in ('nmap','headers','admission','parser') or RIGHTS[role] or type(worker_id)is not str or _UUID.fullmatch(worker_id)is None:_fail('invalid_role')
+        runtime=validate_runtime(runtime);_check(control)
+        if getattr(control,'clock',time.monotonic)is not time.monotonic:_fail('invalid_input')
+        if (namespace_lease is None)!=(role in ('admission','parser')):_fail('invalid_role')
+        startup=_ClippedControl(control,min(control.deadline,time.monotonic()+(2 if role=='parser' else 10),control.deadline if startup_deadline is None else startup_deadline))
+        from .engagement_live_contract import _deadline_context
+        with _deadline_context(startup.deadline):
+            snapshot=snapshot_role(runtime,role,startup)
+            expected_net=None if namespace_lease is None else namespace_lease.expected_net
+            bootstrap=_make_bootstrap(snapshot=snapshot,worker_id=worker_id,rights={},payload=payload,control=startup if role=='parser' else control,expected_net=expected_net)
+            validate_initial_bootstrap(bootstrap)
+            # Bound every possible fixed BOOTSTRAP wrapper before the effect.
+            if supervision_identity is None:
+                identity={'launcher_id':worker_id,'child_slot':'identify_admission'}
+            else:
+                identity=_fields(supervision_identity,('launcher_id','child_slot'))
+                if type(identity['launcher_id'])is not str or _UUID.fullmatch(identity['launcher_id'])is None or identity['child_slot'] not in _CHILD_SLOTS or _CHILD_SLOTS[identity['child_slot']]['role']!=role:_fail('invalid_role')
+            check_frame={'schema_version':'1','channel_id':identity['launcher_id'],'sequence':22,'operation':'BOOTSTRAP',
+                'body':{'request_sequence':22,'status':'ok','code':None,'data':{'child_slot':identity['child_slot'],'bootstrap':bootstrap}}}
+            if len(_json(check_frame))>32768:_fail('limit_exceeded')
+            owner=PendingChild(runtime=runtime,role=role,bootstrap=bootstrap,control=control)
+            owner.startup_deadline=startup.deadline
+            import select
+            if select.select([child_stdin],[],[],0)[0]:_fail('invalid_channel')
+            child_identity=_descriptor(child_stdin.fileno(),'stdin')
+            owner.info_read,info_write=os.pipe2(os.O_CLOEXEC)
+            command=_base_command(snapshot,role=role,info_fd=info_write,worker_id=worker_id,bootstrap_sha256=_hash(bootstrap),unshare_net=role in ('admission','parser'))
+            _finish_command(command,role=role,worker_id=worker_id,bootstrap_sha256=_hash(bootstrap))
+            pass_fds=(*snapshot.pass_fds,info_write)
+            if namespace_lease is not None:
+                namespace_lease.verify(startup)
+                command,pass_fds=_namespace_command(command,pass_fds,namespace_lease.fds)
+            _check(startup)
+            owner.process=subprocess.Popen(command,stdin=child_stdin,stdout=subprocess.PIPE,stderr=subprocess.PIPE,pass_fds=pass_fds,start_new_session=True,close_fds=True)
+            owner.process._engagement_role=role
+            # Publication is immediate inside the registered sole-owner call.
+            child_stdin.close();fd,info_write=info_write,None;os.close(fd)
+            snapshot.close();snapshot=None
+            if namespace_lease is not None:
+                namespace_lease.verify(startup);namespace_lease.close();namespace_lease=None
+            _check(startup)
+            owner.initial_info,pid=_read_info(owner.process,owner.info_read,startup)
+            owner.pin=PinnedProcess(owner.process,pid,role);owner.process._engagement_unverified_pin=owner.pin
+            manifest=next(row for row in runtime['roles'] if row['role']==role)
+            expected_image=next(row for row in manifest['native_files'] if row['destination']=='/usr/bin/python3')
+            while True:
+                owner.pin.check_alive();_check(startup);actual=_image(owner.pin.directory,'exe','/usr/bin/python3')
+                if (actual['sha256'],actual['size'])==(expected_image['sha256'],expected_image['size']):break
+                time.sleep(min(.005,_remaining(startup)))
+            owner.pin.receipt=_process_observation(owner.pin,manifest,bootstrap['observer'],expected_net,stage='entry')
+            owner.entry=owner.pin.receipt;owner.pin.entry_receipt=owner.entry
+            stdin=next(row for row in owner.entry['descriptors'] if row['fd']==0)
+            if any(stdin[key]!=child_identity[key] for key in ('device','inode','mode','flags')):_fail('invalid_role')
+            owner.pin.verified=True
+            _check(startup)
+        successful=True;return owner
+    except BaseException as error:
+        failure=error
+        if owner is not None:
+            error.child_owner=owner;error.startup_observation=owner.entry
+        raise
+    finally:
+        errors=[]
+        for resource in (snapshot,namespace_lease,child_stdin):
+            if resource is not None:
+                try:resource.close()
+                except BaseException as error:errors.append(error)
+        if info_write is not None:
+            try:os.close(info_write)
+            except BaseException as error:errors.append(error)
+        if (not successful or errors) and owner is not None:
+            try:receipt=owner.close(deadline=_failure_deadline(control))
+            except BaseException as error:
+                error.child_owner=owner;error.startup_observation=owner.entry
+                if failure is not None:error.startup_failure=failure
+                raise
+            if failure is not None:failure.startup_cleanup=receipt
+        if errors and failure is None:
+            from .engagement_live_contract import LiveError
+            error=LiveError('engagement_live_unavailable');error.resource_cleanup_error=errors[0]
+            if owner is not None:error.child_owner=owner;error.startup_observation=owner.entry;error.startup_cleanup=owner.cleanup
+            raise error
+
+
+class LauncherChild:
+    """One genuine inherited request socket and cached observed host facts."""
+    def __init__(self,supervisor,slot,channel,prepared,bootstrap,ready):
+        self.supervisor=supervisor;self.slot=slot;self.channel=channel;self.prepared=prepared
+        self.bootstrap=bootstrap;self.ready=ready;self.cleanup=None;self.closed=False
+    def close(self,*,deadline=None):
+        if self.cleanup is not None:return self._completed_cleanup()
+        if self.closed:_fail('cleanup_incomplete')
+        self.closed=True;channel_closed=False
+        from .engagement_live_contract import _deadline_context
+        try:
+            control=self.supervisor.controls[self.slot]
+            if deadline is not None:control=_ClippedControl(control,deadline)
+            with _deadline_context(min(self.supervisor.control.deadline,control.deadline)):
+                try:
+                    control.check()
+                    value=self.supervisor._rpc('REAP',{'child_slot':self.slot},control)
+                    self.cleanup=self.supervisor._check_cleanup(self.slot,value['cleanup'])
+                    self.supervisor.states[self.slot]='reaped';result=self._completed_cleanup()
+                finally:
+                    channel_closed=True;self.channel.close()
+                control.check()
+            return result
+        finally:
+            if not channel_closed:self.channel.close()
+
+    def _completed_cleanup(self):
+        if self.cleanup['status']!='complete':
+            from .engagement_live_contract import LiveError
+            error=LiveError('engagement_live_cleanup_incomplete');error.cleanup=self.cleanup;raise error
+        return self.cleanup
+
+
+def _proxy_operation(operation):
+    """Inherit the caller's original phase through all validation and I/O."""
+    from functools import wraps
+    @wraps(operation)
+    def bounded(self,*,control,**values):
+        from .engagement_live_contract import _deadline_context
+        try:
+            with _deadline_context(min(self.control.deadline,control.deadline)):
+                control.check();result=operation(self,control=control,**values);control.check()
+            return result
+        except BaseException:
+            # No failed or late exchange may leave a reusable release path.
+            try:self.close()
+            except BaseException:pass
+            raise
+    return bounded
+
+
+class SupervisorChannel:
+    """Isolated fixed proxy; owns no host process/pidfd or child builder."""
+    def __init__(self,channel,*,launcher_id,slot_bindings,request_channels,runtime,endpoint_identity,role_context,control):
+        from . import engagement_live_contract as c
+        from .engagement_live_protocol import ChannelSequence
+        self.channel=channel;self.launcher_id=c.uuid(launcher_id);self.runtime=validate_runtime(runtime)
+        self.endpoint=validate_readiness('endpoint',endpoint_identity,self.runtime)
+        _fields(role_context,('session_binding','roe','scope','policy'))
+        c.validate_role_context(binding=role_context['session_binding'],roe=role_context['roe'],scope=role_context['scope'],policy=role_context['policy'])
+        self.context=json.loads(_json(role_context));self.control=control
+        slots=c.validate_child_slot_bindings(slot_bindings)
+        self.slots={row['child_slot']:row for row in slots}
+        if set(request_channels)!=set(self.slots):_fail('invalid_role')
+        self.channels=dict(request_channels)
+        for name,peer in self.channels.items():
+            actual=_descriptor(peer.fileno(),name+'_request');pair=self.slots[name]['pair']
+            if actual['fd']!=pair['launcher_fd'] or any(actual[key]!=pair['request_endpoint'][key] for key in ('device','inode','mode','flags')):_fail('invalid_role')
+        self.sequence=ChannelSequence(launcher_id,'launcher_supervision');self.pending=False;self.failed=False
+        self.states={name:'allocated' for name in self.slots};self.children={};self.controls={};self.budgets={};self.native={}
+    def _rpc(self,operation,body,control):
+        from . import engagement_live_protocol as p
+        from . import engagement_live_contract as c
+        if self.failed or self.pending:_fail('invalid_channel')
+        self.pending=True
+        try:
+            with c._deadline_context(min(self.control.deadline,control.deadline)):
+                control.check();request=self.sequence.make(operation,body)
+                p.send_packet(self.channel,request,role='launcher_supervision',control=control)
+                reply=self.sequence.accept(p.receive_packet(self.channel,role='launcher_supervision',control=control))
+                p.require_reply(reply,request,role='launcher_supervision')
+                if reply['body']['status']=='refused':raise c.LiveError(reply['body']['code'])
+                value=reply['body']['data']
+                if value['child_slot']!=body['child_slot']:_fail('invalid_frame')
+                control.check();return value
+        except BaseException:
+            import socket
+            self.failed=True
+            try:self.channel.shutdown(socket.SHUT_RDWR)
+            except OSError:pass
+            raise
+        finally:self.pending=False
+    @_proxy_operation
+    def start_child(self,*,child_slot,prepared,control):
+        from . import engagement_live_protocol as p
+        from . import engagement_live_contract as c
+        if child_slot not in self.slots or self.states[child_slot]!='allocated':_fail('dispatch_replayed')
+        with c._deadline_context(min(self.control.deadline,control.deadline)):
+            control.check()
+            prepared=c.validate_prepared_role_context(prepared,binding=self.context['session_binding'],roe=self.context['roe'],scope=self.context['scope'],policy=self.context['policy'])
+        if prepared['envelope']['slot']!=_CHILD_SLOTS[child_slot]['action_slot']:_fail('invalid_prepared')
+        self.states[child_slot]='starting';self.controls[child_slot]=control
+        peer=self.channels[child_slot];owner=None
+        try:
+            value=self._rpc('START',{'child_slot':child_slot,'prepared':prepared},control);bootstrap=value['bootstrap']
+            expected=_child_bootstrap(runtime=self.runtime,child_slot=self.slots[child_slot],prepared=prepared,role_context=self.context,
+                endpoint_identity=self.endpoint,observer=self.endpoint['parent_observation']['observer'],deadline_ns=bootstrap['deadline_ns'],launcher_id=self.launcher_id)
+            if bootstrap!=expected:_fail('invalid_role')
+            import select
+            if select.select([peer],[],[],0)[0]:_fail('invalid_channel')
+            p.send_initial(peer,bootstrap,(),control=control)
+            self.states[child_slot]='bootstrap_returned'
+            value=self._rpc('OBSERVE_READY',{'child_slot':child_slot,'bootstrap_sha256':_hash(bootstrap)},control)
+            ready=validate_readiness(self.slots[child_slot]['role'],value['readiness'],self.runtime,expected_binding={'worker_id':self.slots[child_slot]['worker_id']})
+            if ready['worker_ready']['bootstrap_sha256']!=_hash(bootstrap) or ready['parent_observation']['observer']!=bootstrap['observer']:_fail('invalid_role')
+            stdin=next((row for row in ready['parent_observation']['descriptors'] if row['fd']==0),None)
+            if stdin is None or any(stdin[key]!=self.slots[child_slot]['pair']['child_endpoint'][key] for key in ('device','inode','mode','flags')):_fail('invalid_role')
+            owner=LauncherChild(self,child_slot,peer,prepared,bootstrap,ready)
+            self.children[child_slot]=owner;self.states[child_slot]='ready';control.check();return owner
+        except BaseException:
+            import socket
+            self.failed=True
+            try:self.channel.shutdown(socket.SHUT_RDWR)
+            except OSError:pass
+            peer.close();raise
+    @_proxy_operation
+    def native_begin(self,*,child_slot,release,control):
+        from . import engagement_live_contract as c
+        if child_slot not in ('identify_client','headers_client') or self.states.get(child_slot)!='ready' or child_slot in self.budgets:_fail('release_unavailable')
+        child=self.children[child_slot]
+        with c._deadline_context(min(self.control.deadline,control.deadline)):
+            control.check();release=c.validate_release_binding(release,child.prepared,clock=c.sample_clock())
+        result=self._rpc('NATIVE_BEGIN',{'child_slot':child_slot,'release':release},control)
+        started=result['started_at_ns'];deadline=result['native_deadline_ns'];now=time.monotonic_ns()
+        if not started<=now<deadline or deadline>min(release['effect_stop_ns'],started+child.prepared['envelope']['native_timeout_ns'],int(control.deadline*1e9)):_fail('invalid_frame')
+        self.budgets[child_slot]=result;self.states[child_slot]='active';return result
+    @_proxy_operation
+    def observe_native(self,*,child_slot,control):
+        if child_slot!='identify_client' or self.states.get(child_slot)!='active' or child_slot in self.native:_fail('release_unavailable')
+        value=self._rpc('OBSERVE_NATIVE',{'child_slot':child_slot},control)
+        observation=validate_protocol_value('native_readiness',value['native_readiness']);ready=self.children[child_slot].ready['parent_observation'];parent=observation['parent_observation']
+        if any(parent[key]!=ready[key] for key in ('observer','payload','wrapper','namespaces')) or observation['waiting_image']!=ready['executable']:_fail('invalid_role')
+        manifest=next(row for row in self.runtime['roles'] if row['role']=='nmap')
+        expected=next(row for row in manifest['native_files'] if row['destination']=='/tool/nmap')
+        image=parent['executable'];mapped={row['destination'] for row in parent['mapped_images']}
+        allowed={row['destination'] for row in manifest['native_files']+manifest['extension_files']}
+        if image['sha256']!=expected['sha256'] or image['size']!=expected['size'] or not stat.S_ISREG(image['mode']) or not set(manifest['required_mapped_images'])<=mapped or mapped-allowed:_fail('invalid_runtime')
+        self.native[child_slot]=observation;return observation
+    def _check_cleanup(self,child_slot,cleanup):
+        cleanup=validate_cleanup(cleanup)
+        if len(cleanup['processes'])!=1 or len(_json(cleanup))>2048:_fail('invalid_role')
+        parent=self.children[child_slot].ready['parent_observation'];row=cleanup['processes'][0]
+        if row['role']!=self.slots[child_slot]['role'] or row['pid']!=parent['payload']['pid'] or row['start_time_ticks']!=parent['payload']['start_time_ticks'] or row['wrapper_pid']!=parent['wrapper']['pid']:_fail('invalid_role')
+        if cleanup['status']=='complete' and (not row['pin_verified'] or not row['exit_observed'] or not row['reaped_observed']):_fail('cleanup_incomplete')
+        return cleanup
+    @_proxy_operation
+    def capture(self,*,child_slot,control):
+        if child_slot not in ('identify_client','headers_client') or self.states.get(child_slot)!='active':_fail('release_unavailable')
+        result=self._rpc('CAPTURE',{'child_slot':child_slot},control);child=self.children[child_slot];raw=result['capture']
+        if raw['slot']!=child.prepared['envelope']['slot'] or raw['stdout_bytes']+raw['stderr_bytes']>child.prepared['envelope']['output_limit']:_fail('invalid_frame')
+        if result['cleanup'] is not None:result['cleanup']=self._check_cleanup(child_slot,result['cleanup'])
+        if result['status']=='succeeded' and (raw['exit_code']!=0 or raw['truncated'] or result['cleanup'] is None or result['cleanup']['status']!='complete'):_fail('invalid_frame')
+        child.cleanup=result['cleanup'];child.closed=True;child.channel.close();self.states[child_slot]='reaped' if child.cleanup is not None else 'retained_failed'
+        return result
+    def close(self):
+        import socket
+        self.failed=True
+        try:self.channel.shutdown(socket.SHUT_RDWR)
+        except OSError:pass
+        for peer in self.channels.values():peer.close()

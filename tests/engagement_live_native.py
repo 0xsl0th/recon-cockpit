@@ -95,10 +95,10 @@ class SourceVariants:
 
 @contextmanager
 def native_session(directory,*,configuration='A',review_mode='terminal',source_variants=None,
-                   roe_transform=None,store_directory=None,control=None):
+                   roe_transform=None,store_directory=None,control=None,host_evidence_budget=None):
     """Actual fresh v2 owner and live broker; no approval shortcut is installed."""
     from recon_cockpit.secure_agent.engagement_dispatch_store import DispatchLedger
-    from recon_cockpit.secure_agent.engagement_live_session import EngagementSession
+    from recon_cockpit.secure_agent.engagement_live_session import EngagementSession,_HostEvidenceBudget
     from recon_cockpit.secure_agent.execution import ExecutionControl
     directory=Path(directory);directory.mkdir(mode=0o700,parents=True,exist_ok=False)
     roe=json.loads((ROOT/'examples/secure-agent-engagement-roe.json').read_bytes())
@@ -127,7 +127,8 @@ def native_session(directory,*,configuration='A',review_mode='terminal',source_v
     try:
         if source_variants is not None and source_variants._original is None:
             raise ValueError('source_variants_context_required')
-        service=EngagementSession.start(store,directory/'audit.jsonl',review_mode=review_mode,control=control)
+        service=EngagementSession._start_with_host_budget(store,directory/'audit.jsonl',review_mode=review_mode,control=control,
+            host_evidence_budget=_HostEvidenceBudget() if host_evidence_budget is None else host_evidence_budget)
         yield service
     except BaseException as error:
         failure=error
@@ -522,46 +523,24 @@ def _startup_variant(variants,case):
 
 
 def _merge_role_payloads(payloads,case,instrumentation,proof,observations):
-    """Combine at most two actual sequential owners; keep each raw segment."""
+    """Use one aggregate host segment and both actual broker histories."""
     if not 1<=len(payloads)<=2:raise AssertionError('sequential owner bound')
-    manifest=deepcopy(payloads[-1][0]);members={}
-    processes={'schema_version':'1','startup':[],'readiness':[],'native':[],'boundary_observations':list(observations)}
-    results={'schema_version':'1','operations':[],'boundary_proofs':[proof],'core_proofs':[]}
-    cleanup={'schema_version':'1','receipts':[],'exports':[],'recovery':None}
-    segments=[];raw_transcript=b'';raw_audit=b'';instances=[]
-    def extend_unique(target,values):
-        seen={sha(canonical(row)) for row in target}
-        for row in values:
-            h=sha(canonical(row))
-            if h not in seen:target.append(row);seen.add(h)
-    for current,files in payloads:
-        if current['runtime_sha256']!=manifest['runtime_sha256']:raise AssertionError('one immutable runtime per case')
-        for name in ('startup','readiness','native'):extend_unique(processes[name],json.loads(files['processes.json'])[name])
-        old=json.loads(files['cleanup.json'])
-        extend_unique(cleanup['receipts'],old['receipts']);extend_unique(cleanup['exports'],old['exports'])
-        if old['recovery']is not None:cleanup['recovery']=old['recovery']
-        results['operations'].extend(json.loads(files['results.json'])['operations'])
-        extend_unique(instances,current['broker_instances'])
-        for row in current['transcript']['segments']:
-            selected=deepcopy(row);selected['offset']+=len(raw_transcript);segments.append(selected)
-        raw_transcript+=files['transcript.jsonl'];raw_audit+=files['audit.jsonl']
-        for name,raw in files.items():
-            if name not in ('initial-ledger.json','final-ledger.json','runtime.json','processes.json','results.json','cleanup.json','transcript.jsonl','audit.jsonl'):members[name]=raw
-    first=next(((m,f) for m,f in payloads if m['ledger_exports']['initial']['status']=='complete'),None)
-    if first is not None:
-        manifest['ledger_exports']['initial']=deepcopy(first[0]['ledger_exports']['initial']);members['initial-ledger.json']=first[1]['initial-ledger.json']
-    last=payloads[-1]
-    if last[0]['ledger_exports']['final']['status']=='complete':members['final-ledger.json']=last[1]['final-ledger.json']
-    manifest['broker_instances']=instances
-    manifest['transcript']={'status':'partial' if any(row['status'].endswith('partial') for row in segments) else 'complete' if segments else 'unavailable',
-        'segments':segments,'reason':'broker_lost' if any(row['status'].endswith('partial') for row in segments) else None if segments else 'not_started'}
-    members.update({'runtime.json':payloads[0][1]['runtime.json'],'processes.json':canonical(processes),'results.json':canonical(results),
-        'cleanup.json':canonical(cleanup),'transcript.jsonl':raw_transcript,'audit.jsonl':raw_audit})
+    if len(payloads)==2:
+        manifest,members=_merge_core_payloads(payloads)
+    else:
+        manifest,members=deepcopy(payloads[0])
+    processes=json.loads(members['processes.json'])
+    processes['boundary_observations']=list(observations)
+    results=json.loads(members['results.json'])
+    results['boundary_proofs']=[proof];results['core_proofs']=[]
+    members['processes.json']=canonical(processes);members['results.json']=canonical(results)
     manifest['members']=[{'name':name,'bytes':len(raw),'sha256':sha(raw)} for name,raw in sorted(members.items())]
     return manifest,members,time.monotonic()+15
 
 
 def _startup_runtime_case(case,directory):
+    from recon_cockpit.secure_agent.engagement_live_session import _HostEvidenceBudget
+    host_evidence_budget=_HostEvidenceBudget()
     role=_actual_role(case);mode='graphical_v1' if role=='graphical' else 'terminal'
     variants=SourceVariants(directory/'sources',case_id=case['case_id'],variant=case['variant'],role=case['role'])
     _startup_variant(variants,case);payloads=[];control_ready=None;fault=None;began=time.monotonic_ns()
@@ -570,7 +549,9 @@ def _startup_runtime_case(case,directory):
             variants.runtime_globals['_LIVE_FAULT_ACTIVE']=phase=='fault'
             service=None;failure=None
             try:
-                with native_session(directory/phase,review_mode=mode,source_variants=variants) as service:
+                with native_session(directory/phase,review_mode=mode,source_variants=variants,
+                        store_directory=None if phase=='control' else directory/'control'/'store',
+                        host_evidence_budget=host_evidence_budget) as service:
                     variants.runtime_globals['_LIVE_FAULT_BUNDLE']=service._runtime
                     owner=_exercise_runtime_role(service,case)
                     if phase=='fault':raise AssertionError('actual fault did not refuse isolated startup')
@@ -598,6 +579,7 @@ def _startup_runtime_case(case,directory):
                     lines=[line.removeprefix(b'LIVE-RUNTIME-OBS ') for line in diagnostic.splitlines() if line.startswith(b'LIVE-RUNTIME-OBS ')]
                     if len(lines)!=1:raise AssertionError('actual received descriptor observation required')
                     fault=json.loads(lines[0])
+            if not service._verified_reaped():raise AssertionError('previous owner must be actually reaped before reuse')
             manifest,members=service._evidence_payload(case_id=case['case_id'],instrumentation=variants.instrumentation,recover=True)
             payloads.append((manifest,members))
     if control_ready is None or fault is None:raise AssertionError('physical control and refusal required')
@@ -733,6 +715,17 @@ _LIVE_SOCKET_CASE=__CASE__
 _LIVE_SOCKET_HOST_PID=__HOST_PID__
 _LIVE_SOCKET_ROWS=[]
 _live_socket_finish_start=_finish_start
+_live_socket_start_child=SupervisorChannel.start_child
+
+
+def _live_supervised_socket_start(self,**kwargs):
+    owner=_live_socket_start_child(self,**kwargs)
+    if self.slots[owner.slot]['role']==_LIVE_SOCKET_CASE['probe_role']:
+        _send_bytes(owner.channel,b'LIVE-SOCKET-PROBE',kwargs['control'])
+    return owner
+
+
+SupervisorChannel.start_child=_live_supervised_socket_start
 
 
 def _finish_start(**kwargs):
@@ -916,9 +909,12 @@ def supporting_socket_case(service,prepared,case,directory):
         if len(actual)!=1:raise AssertionError('one actual endpoint syscall probe')
         raw=deepcopy(actual[0]['observation']);control=deepcopy(actual[0]['readiness'])
     else:
-        raw=_read_test_observation(row['launcher']._owner.process,b'LIVE-SOCKET-OBS ',service._control)
-        # The launcher sent the actual child's compound observation through its
-        # owned broker channel during PREPARE; do not fabricate a parent receipt.
+        # A08 keeps stderr and actual process custody with the trusted host.
+        # The sealed launcher alone sent the fixed probe on its inherited peer.
+        child=row['launcher']._supervisor.children['identify_client']['owner']
+        if child is None or child.ready is None:raise AssertionError('actual selected waiting child')
+        raw=_read_test_observation(child.process,b'LIVE-SOCKET-OBS ',service._control)
+        control=deepcopy(child.ready)
         did=prepared['envelope']['dispatch_id']
         controls=[item['data']['frame']['body']['data'] for item in _live_rows(service)
             if item['dispatch_id']==did and item['kind']=='protocol'
@@ -926,8 +922,7 @@ def supporting_socket_case(service,prepared,case,directory):
             and item['data']['frame']['operation']=='OBSERVATION'
             and item['data']['frame']['body']['kind']=='role_readiness'
             and item['data']['frame']['body']['data']['role']=='nmap']
-        if len(controls)!=1:raise AssertionError('actual selected waiting client readiness')
-        control=deepcopy(controls[0])
+        if len(controls)!=1 or controls[0]!=control:raise AssertionError('direct host observation and exact launcher relay')
     runtime._send_bytes(endpoint.channel,b'LIVE-SOCKET-COLLECT',service._control)
     listener=_read_test_observation(endpoint.process,b'LIVE-LISTENER-OBS ',service._control)
     if (raw['target'],raw['port'])!=(listener['target'],listener['port']):raise AssertionError('same actual paired listener')
@@ -1044,6 +1039,7 @@ _IMAGE_PROBE_SOURCE = r'''
 _LIVE_IMAGE_CASE=__CASE__
 _LIVE_IMAGE_ARMED=False
 _LIVE_IMAGE_LAST=None
+_LIVE_IMAGE_NATIVE=None
 _live_image_read=_image
 _live_image_observe_native=observe_native
 
@@ -1068,7 +1064,7 @@ def _live_parent_image_refusal(owner,bundle):
 
 
 def observe_native(pin,manifest,*,waiting_image,control):
-    global _LIVE_IMAGE_ARMED
+    global _LIVE_IMAGE_ARMED,_LIVE_IMAGE_NATIVE
     observed=_live_image_observe_native(pin,manifest,waiting_image=waiting_image,control=control)
     if _LIVE_IMAGE_CASE['variant']=='native_image_observation_missing_no_ARM':
         value={'expected_image_sha256':observed['parent_observation']['executable']['sha256'],
@@ -1079,8 +1075,8 @@ def observe_native(pin,manifest,*,waiting_image,control):
         except Exception:value=dict(_LIVE_IMAGE_LAST)
         else:_fail('invalid_role')
         finally:_LIVE_IMAGE_ARMED=False
-    raw=b'LIVE-IMAGE-OBS '+_json({'image':value,'native':observed})+b'\n'
-    if len(raw)>16384 or os.write(2,raw)!=len(raw):_fail('limit_exceeded')
+    _LIVE_IMAGE_NATIVE={'image':value,'native':observed}
+    if len(_json(_LIVE_IMAGE_NATIVE))>16384:_fail('limit_exceeded')
     _fail('invalid_runtime')
 '''
 
@@ -1098,8 +1094,9 @@ def _image_runtime_case(case,directory):
                 try:service.execute(prepared,reference,control=service._control)
                 except contract.LiveError:pass
                 else:raise AssertionError('native image failure must refuse dispatch')
-                launcher=service._sessions[opened['binding']['session_id']]['launcher']._owner
-                observed=_read_test_observation(launcher.process,b'LIVE-IMAGE-OBS ',service._control,maximum=16384)
+                observed=deepcopy(variants.runtime_globals['_LIVE_IMAGE_NATIVE'])
+                if observed is None:raise AssertionError('actual host native readback required')
+                private_write(directory/'native-image-observation.json',canonical(observed))
                 native=observed['native'];image=observed['image']
                 did=prepared['envelope']['dispatch_id']
                 controls=[row['data']['frame']['body']['data'] for row in _live_rows(service)
@@ -1429,9 +1426,15 @@ def _core_instrumentation(case,kind='scripted_review',role='host'):
             'source_sha256':sha(Path(__file__).read_bytes())}
 
 
-def _phase_observation(service,prepared,phase,stage,*,reason=None,related=None,clock=None,observer_id=None):
+def _phase_ticket(service):
+    return service._host_evidence_budget.reserve(kind='other_host',maximum_bytes=2048,
+        maximum_rows=1,control=service._control)
+
+
+def _phase_observation(service,prepared,phase,stage,*,reason=None,related=None,clock=None,observer_id=None,ticket=None):
     """Retain the actual caller's phase; never impersonate a broker observation."""
     from recon_cockpit.secure_agent.engagement_live_witness import validate_transcript_row
+    if ticket is None:ticket=_phase_ticket(service)
     e=prepared['envelope'] if prepared is not None else None
     ready=service._broker.readiness if service._broker is not None else None
     broker_id=ready['broker_id'] if ready is not None else service._broker._broker_id
@@ -1441,7 +1444,7 @@ def _phase_observation(service,prepared,phase,stage,*,reason=None,related=None,c
             'clock':clock,'original_deadline_ns':int(service._control.deadline*contract.SECOND) if e is None else e['action_deadline_ns'],
             'phase':phase,'reason':reason,'related_sha256':related if related is not None else
             None if prepared is None else contract.prepared_digest(prepared),'stage':stage}}
-    validate_transcript_row(row);service._observer_rows.append(row);return row
+    validate_transcript_row(row);service._host_evidence_budget.finalize(ticket,row);return row
 
 
 def _failure_code(error):
@@ -1454,12 +1457,13 @@ def _failure_code(error):
 def _expected_failure(service,prepared,phase,operation,*,related=None):
     from recon_cockpit.secure_agent.execution import ExecutionStopped
     _phase_observation(service,prepared,phase,'begin',related=related)
+    terminal_ticket=_phase_ticket(service)
     try:value=operation()
     except (contract.LiveError,OSError,TimeoutError,ExecutionStopped) as error:
-        _phase_observation(service,prepared,phase,'refused',related=related,reason=_failure_code(error),clock=contract.sample_clock())
+        _phase_observation(service,prepared,phase,'refused',related=related,reason=_failure_code(error),clock=contract.sample_clock(),ticket=terminal_ticket)
         return error
     if isinstance(value,dict) and value.get('outcome') in ('denied','unresolved'):
-        _phase_observation(service,prepared,phase,'refused',related=related,reason=value['reason'],clock=contract.sample_clock())
+        _phase_observation(service,prepared,phase,'refused',related=related,reason=value['reason'],clock=contract.sample_clock(),ticket=terminal_ticket)
         return value
     raise AssertionError('expected actual refusal was not observed')
 
@@ -1533,6 +1537,7 @@ def _reject_candidate(service,prepared,variant):
     candidate=_core_candidate(variant,prepared,row['opened']);digest=sha(canonical(candidate))
     _phase_observation(service,prepared,'prepare','begin',related=digest,
                        observer_id=reviewer._binding['reviewer_id'])
+    terminal_ticket=_phase_ticket(service)
     # Deliberately bypass only the host encoder's validation. The real worker
     # receives the malformed packet on its existing private channel.
     with reviewer._lock:
@@ -1548,7 +1553,7 @@ def _reject_candidate(service,prepared,variant):
         code=reviewer._owner.process.wait(timeout=max(.001,end-time.monotonic()))
         if code!=78:raise AssertionError('actual isolated decoder refusal required')
     _phase_observation(service,prepared,'prepare','refused',related=digest,
-        reason='engagement_live_approval_unavailable',observer_id=reviewer._binding['reviewer_id'])
+        reason='engagement_live_approval_unavailable',observer_id=reviewer._binding['reviewer_id'],ticket=terminal_ticket)
 
 
 def _consume_actual(service,prepared,reference):
@@ -1571,38 +1576,95 @@ def _pointers_actual(service,prepared,reference):
 
 @contextmanager
 def _observe_ingress(service,*,simultaneous=False):
-    """Record actual channel sends and replies, with a two-sender test barrier."""
+    """Retain actual completed primitives before a later deadline can refuse."""
     from recon_cockpit.secure_agent import engagement_live_protocol as protocol
     import threading
     send,receive=protocol.send_packet,protocol.receive_packet
+    send_once,decode_frame=protocol.send_once,protocol.decode_frame
     barrier=threading.Barrier(2) if simultaneous else None
-    requests={};lock=threading.Lock()
-    def record(frame,direction,at):
-        if frame['operation']!='DISPATCH':return
+    requests={};reply_tickets={};lock=threading.Lock();local=threading.local();observed=[]
+    def record(frame,direction,at,ticket):
         key=frame['channel_id'];body=frame['body']
-        with lock:
-            if direction=='sent':requests[(key,frame['sequence'])]=body
-            original=body if direction=='sent' else requests[(key,body['request_sequence'])]
-            operation=next(op for op in service._operations.values()
-                if contract.prepared_digest(op['prepared'])==original['prepared_sha256'])
-            e=operation['prepared']['envelope']
-            service._observer_rows.append({'schema_version':'1','broker_id':e['broker_id'],
-                'observer_id':e['broker_id'],'session_id':e['session_id'],'dispatch_id':e['dispatch_id'],
-                'row_sequence':1,'observed_at_ns':at,'kind':'protocol',
-                'data':{'channel_role':'ingress','direction':direction,'frame':deepcopy(frame)}})
-    def sent(channel,frame,*,role,control,**kwargs):
-        value=send(channel,frame,role=role,control=control,**kwargs)
-        if role=='ingress':
-            record(frame,'sent',time.monotonic_ns())
-            if barrier is not None and frame['operation']=='DISPATCH':barrier.wait(timeout=2)
-        return value
-    def received(channel,*,role,control,**kwargs):
-        frame=receive(channel,role=role,control=control,**kwargs)
-        if role=='ingress':record(frame,'received',time.monotonic_ns())
+        original=body if direction=='sent' else requests[(key,body['request_sequence'])]
+        operation=next(op for op in service._operations.values()
+            if contract.prepared_digest(op['prepared'])==original['prepared_sha256'])
+        e=operation['prepared']['envelope']
+        row={'schema_version':'1','broker_id':e['broker_id'],
+            'observer_id':e['broker_id'],'session_id':e['session_id'],'dispatch_id':e['dispatch_id'],
+            'row_sequence':1,'observed_at_ns':at,'kind':'protocol',
+            'data':{'channel_role':'ingress','direction':direction,'frame':frame}}
+        service._host_evidence_budget.finalize(ticket,row)
+    def primitive_send(channel,raw):
+        count=send_once(channel,raw)
+        active=getattr(local,'active',None)
+        if active is not None and active['direction']=='sent' and channel is active['channel'] and count==len(raw):
+            at=time.monotonic_ns()
+            if raw!=active['raw'] or active['observed']:raise AssertionError('fixed dispatch send changed')
+            frame=active['frame'];active['observed']=True
+            with lock:
+                requests[(frame['channel_id'],frame['sequence'])]=frame['body']
+                observed.append((frame,'sent',at,active['ticket']))
+        return count
+    def primitive_decode(raw,*,role,**kwargs):
+        frame=decode_frame(raw,role=role,**kwargs)
+        active=getattr(local,'active',None)
+        if active is not None and active['direction']=='received' and role=='ingress' and frame['operation']=='DISPATCH':
+            at=time.monotonic_ns()
+            with lock:
+                slots=reply_tickets[(frame['channel_id'],frame['body']['request_sequence'])]
+                ticket=slots.pop('pending' if frame['body']['status']=='pending' else 'final')
+                observed.append((deepcopy(frame),'received',at,ticket))
         return frame
+    def sent(channel,frame,*,role,control,**kwargs):
+        selected=role=='ingress' and frame['operation']=='DISPATCH'
+        if not selected:return send(channel,frame,role=role,control=control,**kwargs)
+        raw=canonical(frame);ticket=service._host_evidence_budget.reserve(kind='other_host',
+            maximum_bytes=len(raw)+1024,maximum_rows=1,control=control)
+        reserved=[]
+        try:
+            for maximum in (1024,17408):
+                reserved.append(service._host_evidence_budget.reserve(kind='other_host',
+                    maximum_bytes=maximum,maximum_rows=1,control=control))
+        except BaseException:
+            service._host_evidence_budget.release(ticket)
+            for unused in reserved:service._host_evidence_budget.release(unused)
+            raise
+        with lock:
+            key=(frame['channel_id'],frame['sequence']);duplicate=key in reply_tickets
+            if not duplicate:reply_tickets[key]=dict(zip(('pending','final'),reserved))
+        if duplicate:
+            service._host_evidence_budget.release(ticket)
+            for unused in reserved:service._host_evidence_budget.release(unused)
+            raise AssertionError('duplicate fixed dispatch request')
+        active={'direction':'sent','channel':channel,'frame':deepcopy(frame),'raw':raw,
+                'ticket':ticket,'observed':False}
+        previous=getattr(local,'active',None);local.active=active
+        try:
+            value=send(channel,frame,role=role,control=control,**kwargs)
+            if not active['observed']:raise AssertionError('dispatch send primitive not observed')
+            if barrier is not None:barrier.wait(timeout=2)
+            return value
+        finally:
+            local.active=previous
+            if not active['observed']:service._host_evidence_budget.release(ticket)
+    def received(channel,*,role,control,**kwargs):
+        if role!='ingress':return receive(channel,role=role,control=control,**kwargs)
+        previous=getattr(local,'active',None);local.active={'direction':'received','channel':channel}
+        try:return receive(channel,role=role,control=control,**kwargs)
+        finally:local.active=previous
     protocol.send_packet,protocol.receive_packet=sent,received
+    protocol.send_once,protocol.decode_frame=primitive_send,primitive_decode
     try:yield
-    finally:protocol.send_packet,protocol.receive_packet=send,receive
+    finally:
+        protocol.send_packet,protocol.receive_packet=send,receive
+        protocol.send_once,protocol.decode_frame=send_once,decode_frame
+        # The caller's RPC context has unwound. These are already-observed,
+        # capacity-reserved data facts, never a retry or a renewed operation.
+        try:
+            for frame,direction,at,ticket in sorted(observed,key=lambda row:row[2]):record(frame,direction,at,ticket)
+        finally:
+            for slots in reply_tickets.values():
+                for ticket in slots.values():service._host_evidence_budget.release(ticket)
 
 
 def _dispatch_pointers(service,prepared,pointers,ingress):
@@ -1725,13 +1787,13 @@ def _capture_startup_guard(case,directory):
     finally:runtime._read_startup=original
 
 
-def _record_startup_guard(service,error,case,roe):
+def _record_startup_guard(service,error,case,roe,*,ticket):
     marker=getattr(error,'owned_startup_guard',None)
     if marker is None:raise AssertionError('actual business guard refusal was not observed') from error
     if marker['case_id']!=case['id'] or marker['roe_sha256']!=sha(canonical(roe)):
         raise AssertionError('actual startup guard ROE mismatch')
     return _phase_observation(service,None,'prepare','refused',related=sha(canonical(marker)),
-        reason=marker['code'],clock=marker['clock'])
+        reason=marker['code'],clock=marker['clock'],ticket=ticket)
 
 
 def _core_roe(case):
@@ -1767,23 +1829,30 @@ def _core_roe(case):
 def _single_core(case,directory,*,variants=None):
     from contextlib import nullcontext
     from recon_cockpit.secure_agent.execution import ExecutionControl
+    from recon_cockpit.secure_agent.engagement_live_session import _HostEvidenceBudget
     number=int(case['id'][-2:]);mode='graphical_v1' if case.get('frontend')=='graphical' else 'terminal'
     before=None;selected=None;recover=False;service=None;support=[];observations=[]
     instrumentation=[_core_instrumentation(case)]
     if variants is not None:instrumentation+=variants.instrumentation
     if number==29:
         for item in instrumentation[1:]:item['kind']='sealed_clock'
-    control=None
+    control=ExecutionControl(time.monotonic()+120)
+    host_evidence_budget=_HostEvidenceBudget()
+    startup_ticket=None
     if number==29:
         import math
         # The pinned initial clock predates source preparation. Charge that
         # elapsed work to the original broker limit; never renew it afterward.
         deadline=math.nextafter((case['_clock']['mono_after_ns']+120*contract.SECOND)/contract.SECOND,-math.inf)
         control=ExecutionControl(deadline)
+    if number in (10,11,12,28):
+        startup_ticket=host_evidence_budget.reserve(kind='other_host',maximum_bytes=2048,
+            maximum_rows=1,control=control)
     try:
         with terminal_input() if mode=='terminal' else nullcontext():
             with native_session(directory/'live',configuration=_core_configuration(case),review_mode=mode,
-                    source_variants=variants,roe_transform=_core_roe(case),control=control) as service:
+                    source_variants=variants,roe_transform=_core_roe(case),control=control,
+                    host_evidence_budget=host_evidence_budget) as service:
                 opened=service.open_session();before=service.snapshot()['ledger_state_sha256']
                 if number in (4,5,6,7,29):
                     _useful(service,opened,'http_identify');_useful(service,opened,'http_headers')
@@ -1840,7 +1909,7 @@ def _single_core(case,directory,*,variants=None):
         if service is None or service._cleanup is None:raise
         recover=True
         roe=json.loads((directory/'live'/'roe.json').read_bytes())
-        _record_startup_guard(service,error,case,roe)
+        _record_startup_guard(service,error,case,roe,ticket=startup_ticket)
     if service is None:raise AssertionError('actual service owner required')
     return _write_case_payload(directory,_seal_case_payload(service,case,before=before,selected=selected,
         instrumentation=instrumentation,recover=recover,boundary_proofs=support,boundary_observations=observations))
@@ -1849,6 +1918,7 @@ def _single_core(case,directory,*,variants=None):
 def _external_change(service,prepared,*,revision=False):
     from recon_cockpit.secure_agent.engagement_dispatch_store import DispatchLedger
     from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
+    ticket=_phase_ticket(service)
     end=min(service._control.deadline,time.monotonic()+2)
     with ledger._deadline_context(end),DispatchLedger.open(service._store_directory) as store:
         actual=store.snapshot();state=actual['state']
@@ -1859,7 +1929,7 @@ def _external_change(service,prepared,*,revision=False):
             result=store.append_revision(roe,**kwargs)
         else:result=store.revoke(**kwargs)
     if result['disposition']!='recorded':raise AssertionError('actual external change required')
-    _phase_observation(service,prepared,'watch','end',related=result['receipt']['state_sha256'],clock=contract.sample_clock())
+    _phase_observation(service,prepared,'watch','end',related=result['receipt']['state_sha256'],clock=contract.sample_clock(),ticket=ticket)
     return result
 
 
@@ -1949,10 +2019,11 @@ def _core_phase_case(case,directory,service,opened,before,instrumentation):
             else:
                 instrumentation.append(_core_instrumentation(case,'process_signal','broker'))
                 _phase_observation(service,prepared,'client','begin')
+                terminal_ticket=_phase_ticket(service)
                 # The actual pinned pidfd is used; a numeric PID is never a
                 # substitute for owned process identity.
                 signal.pidfd_send_signal(service._broker.pidfd,signal.SIGKILL,None,0)
-                _phase_observation(service,prepared,'client','end')
+                _phase_observation(service,prepared,'client','end',ticket=terminal_ticket)
             _expected_failure(service,prepared,'guard' if number in (38,39,40) else 'client',
                 lambda:pending.result(timeout=max(.001,service._control.deadline-time.monotonic())))
         recover=number in (45,46)
@@ -2283,22 +2354,26 @@ def deadline_fault_transforms(case_id):
         source=_deadline_once(source,tail,_LAUNCHER_HELPERS.replace('__CASE__',case_id)+'\n'+tail)
         old="            capture=self.client.collect(effect);self.cleanups.append(capture['cleanup']);self.observe('cleanup',capture['cleanup'])"
         if case_id=='S42C-N34':
-            trigger="""            self.client.owner.pin.check_alive()
+            trigger="""            if self.client.native_ready is None:c.fail('invalid_role')
+            rt.validate_protocol_value('native_readiness',self.client.native_ready)
             _owned_deadline_marker(self,'native_observation')
             effect=_OwnedExpiredOriginal(effect,self.pending['envelope']['action_deadline_ns'])
             whole=_OwnedExpiredOriginal(whole,self.pending['envelope']['action_deadline_ns'])
 """
         else:
-            trigger="""            _owned_original_close=self.client.owner.close
-            def _owned_cleanup_close(*,deadline=None):
-                self.client.owner.close=_owned_original_close
+            trigger="""            _owned_original_collect=self.client.collect
+            def _owned_cleanup_collect(control):
+                self.client.collect=_owned_original_collect
+                # CAPTURE returns actual host reaping before this sealed fault.
+                # A proxy has no fabricated Popen or process pin to intercept.
+                captured=_owned_original_collect(control)
+                if captured['cleanup'] is None or captured['cleanup']['status']!='complete':
+                    c.fail('cleanup_incomplete')
                 _owned_deadline_marker(self,'cleanup')
-                # The actual unchanged owner.close retains its OS-clock 2s cap.
-                # Complete cleanup is attached to the refused original action.
-                cleanup=_owned_original_close(deadline=deadline)
-                error=c.LiveError('engagement_live_timeout');error.cleanup=cleanup
+                error=c.LiveError('engagement_live_timeout')
+                error.cleanup=captured['cleanup'];error.client_capture=captured
                 raise error
-            self.client.owner.close=_owned_cleanup_close
+            self.client.collect=_owned_cleanup_collect
 """
         return _deadline_once(source,old,trigger+old)
     def broker(source):
@@ -2319,9 +2394,9 @@ def _merge_core_payloads(payloads):
     from recon_cockpit.secure_agent.engagement_live_witness import validate_transcript_row
     if len(payloads)!=2:raise AssertionError('two sequential actual owners required')
     manifest=deepcopy(payloads[-1][0]);members={};segments=[];chunks=[];observers=[]
-    processes={'schema_version':'1','startup':[],'readiness':[],'native':[],'boundary_observations':[]}
+    processes={'schema_version':'1','startup':[],'readiness':[],'native':[],'child_slots':[],'boundary_observations':[]}
     results={'schema_version':'1','operations':[],'boundary_proofs':[],'core_proofs':[]}
-    cleanup={'schema_version':'1','receipts':[],'exports':[],'recovery':None}
+    cleanup={'schema_version':'1','receipts':[],'supervisors':[],'exports':[],'recovery':None}
     instances=[];dispatches=[];audit=[]
     def extend_unique(target,values):
         seen={sha(canonical(row)) for row in target}
@@ -2332,10 +2407,11 @@ def _merge_core_payloads(payloads):
         if (current['runtime_sha256']!=manifest['runtime_sha256'] or
                 files['runtime.json']!=payloads[0][1]['runtime.json']):
             raise AssertionError('one immutable runtime per restart case')
-        for name in ('startup','readiness','native','boundary_observations'):
+        for name in ('startup','readiness','native','child_slots','boundary_observations'):
             extend_unique(processes[name],json.loads(files['processes.json'])[name])
         old=json.loads(files['cleanup.json'])
         extend_unique(cleanup['receipts'],old['receipts']);extend_unique(cleanup['exports'],old['exports'])
+        extend_unique(cleanup['supervisors'],old['supervisors'])
         if old['recovery'] is not None:cleanup['recovery']=old['recovery']
         observed=json.loads(files['results.json'])
         results['operations'].extend(observed['operations'])
@@ -2359,6 +2435,7 @@ def _merge_core_payloads(payloads):
         observers.sort(key=lambda row:row['observed_at_ns'])
         for index,row in enumerate(observers,1):row['row_sequence']=index;validate_transcript_row(row)
         raw=b''.join(canonical(row)+b'\n' for row in observers)
+        if len(observers)>128 or len(raw)>262144:raise AssertionError('shared actual host evidence limit')
         segments.append({'source':'role_observer','broker_id':None,'offset':sum(map(len,chunks)),
             'bytes':len(raw),'sha256':sha(raw),'seals':None,'status':'observer_complete'})
         chunks.append(raw)
@@ -2390,10 +2467,11 @@ def _send_copied_go(service,prepared,frame,directory):
     raw=canonical(frame);digest=sha(raw)
     private_write(directory/'copied-go.json',raw)
     _phase_observation(service,None,'go','begin',related=digest)
+    sent_ticket,refused_ticket=_phase_ticket(service),_phase_ticket(service)
     channel=service._bundle.slots[0].ingress_host
     count=channel.send(raw)
     if count!=len(raw):raise AssertionError('one complete original GO packet required')
-    _phase_observation(service,None,'go','end',related=digest)
+    _phase_observation(service,None,'go','end',related=digest,ticket=sent_ticket)
     private_write(directory/'copied-go-send.json',canonical({'sha256':digest,'bytes':len(raw),
         'actual_sent_bytes':count,'channel_id':service._bundle.slots[0].ingress_channel_id}))
     end=min(service._control.deadline,time.monotonic()+2)
@@ -2404,19 +2482,24 @@ def _send_copied_go(service,prepared,frame,directory):
             if (data['channel_role']=='lifecycle' and data['direction']=='sent' and
                     actual['operation']=='BROKER_STOP'):
                 _phase_observation(service,None,'go','refused',related=digest,
-                    reason=actual['body']['reason'])
+                    reason=actual['body']['reason'],ticket=refused_ticket)
                 return
         time.sleep(.005)
     raise AssertionError('actual isolated copied-GO refusal not observed')
 
 
 def _multi_core(case,directory,*,variants=None):
+    from recon_cockpit.secure_agent.engagement_live_session import _HostEvidenceBudget
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+
     number=int(case['id'][-2:]);instrumentation=[_core_instrumentation(case)]
     if variants is not None:instrumentation+=variants.instrumentation
     if number==41:instrumentation.append(_core_instrumentation(case,'external_admin','broker'))
     payloads=[];before=None;selected=None;first=None;prepared=None;pointers=None
+    host_evidence_budget=_HostEvidenceBudget()
     with terminal_input():
-        with native_session(directory/'first',source_variants=variants,roe_transform=_core_roe(case)) as first:
+        with native_session(directory/'first',source_variants=variants,roe_transform=_core_roe(case),
+                            host_evidence_budget=host_evidence_budget) as first:
             opened=first.open_session();before=first.snapshot()['ledger_state_sha256']
             if number==41:
                 _external_change(first,None)
@@ -2446,9 +2529,13 @@ def _multi_core(case,directory,*,variants=None):
             if len(releases)!=1:raise AssertionError('one actual prior GO required')
             old_go=releases[0]
         second=None
+        control=ExecutionControl(time.monotonic()+120)
+        startup_ticket=(host_evidence_budget.reserve(kind='other_host',maximum_bytes=2048,
+            maximum_rows=1,control=control) if number==41 else None)
         try:
             with native_session(directory/'second',source_variants=variants,
-                    store_directory=first._store_directory) as second:
+                    store_directory=first._store_directory,control=control,
+                    host_evidence_budget=host_evidence_budget) as second:
                 if number==41:raise AssertionError('revoked store unexpectedly started a broker')
                 # An actual fresh session event independently binds the second
                 # ledger owner. No new action is prepared for a stale retry.
@@ -2464,7 +2551,7 @@ def _multi_core(case,directory,*,variants=None):
             second=getattr(error,'engagement_session',second)
             if second is None:raise
             roe=json.loads((directory/'second'/'roe.json').read_bytes())
-            _record_startup_guard(second,error,case,roe)
+            _record_startup_guard(second,error,case,roe,ticket=startup_ticket)
         if second is None or not second._verified_reaped():raise AssertionError('second generation must be actually reaped')
         payloads.append(second._evidence_payload(deadline=time.monotonic()+15,case_id=case['id'],
             instrumentation=instrumentation,recover=True))
