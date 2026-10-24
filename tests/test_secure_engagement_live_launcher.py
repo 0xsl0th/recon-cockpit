@@ -205,6 +205,7 @@ def test_payload_identity_and_cleanup_are_not_boolean_claims(monkeypatch):
 
 
 def test_all_phases_share_original_deadline_and_cleanup(monkeypatch):
+    _idle_supervisor_cleanup_reserve(monkeypatch)
     _supervisor_thread_deadline_cases(monkeypatch)
     state=SimpleNamespace(pending=prepared(),poll_stop=lambda:None)
     control=worker.LauncherControl(state,M+3*c.SECOND)
@@ -465,6 +466,34 @@ def _supervisor_thread_cases(monkeypatch):
         assert model.calls==[] and model.budget.snapshot()['unresolved_tickets']==0
 
 
+def _idle_supervisor_cleanup_reserve(monkeypatch):
+    # Real idle owner thread: stop while the original cleanup allowance remains.
+    with supervisor_lab(monkeypatch,seconds=2.25) as model:
+        sup=model.supervisor;original=sup.cleanup_bound_ns()
+        sup.start();sup.thread.join(.65)
+        assert not sup.thread.is_alive()
+        epoch=model.epoch.snapshot()
+        assert sup.failure.code=='engagement_live_timeout'
+        assert original-c.CLEANUP_NS<=epoch['first_stop_requested_at_ns']<original-c.SECOND
+        assert epoch['deadline_ns']<=original and epoch['deadline_ns']>time.monotonic_ns()+c.SECOND
+        sup.close(time.monotonic()+.5)
+        assert sup.closure['status']=='complete' and sup.closure['channel_closed']
+        assert model.calls==[] and model.budget.snapshot()['unresolved_tickets']==0
+    with supervisor_lab(monkeypatch,seconds=50) as model:
+        sup=model.supervisor;state=sup.children['identify_client']
+        state.update(state='ready',prepared=model.prepared)
+        try:
+            original=model.prepared['envelope']['action_deadline_ns']
+            phase=sup.phase()
+            assert sup.cleanup_bound_ns()==original
+            assert phase.deadline==original/c.SECOND
+            assert phase.work_deadline==(original-c.CLEANUP_NS)/c.SECOND
+            # A shorter native/startup phase keeps its full existing allowance.
+            short=time.monotonic_ns()+100_000_000
+            assert sup.phase(short).work_deadline==short/c.SECOND
+        finally:state.update(state='allocated',prepared=None)
+
+
 def _supervisor_thread_deadline_cases(monkeypatch):
     with supervisor_lab(monkeypatch) as model:
         phase=model.supervisor.phase();phase.check()
@@ -487,7 +516,7 @@ def _supervisor_thread_deadline_cases(monkeypatch):
         assert seen[0][0]!=threading.get_ident() and model.calls==[]
         sup.close(time.monotonic()+.5)
 
-    with supervisor_lab(monkeypatch, seconds=.8) as model:
+    with supervisor_lab(monkeypatch, seconds=2.8) as model:
         sup=model.supervisor;seen=[];executed=threading.Event()
         bound=model.prepared['envelope']['action_deadline_ns']/c.SECOND
         def execute(operation,data,*,request_observed_ns=None):
@@ -500,7 +529,7 @@ def _supervisor_thread_deadline_cases(monkeypatch):
         sup.close(time.monotonic()+.5)
         assert seen and seen[0][0]!=threading.get_ident()
         bound_ns=_supervisor_expected_bound_ns(model)
-        assert seen[0][1]==min(model.control.deadline,bound_ns/c.SECOND)
+        assert seen[0][1]==(bound_ns-c.CLEANUP_NS)/c.SECOND
         assert seen[0][1]<=min(bound,model.control.deadline)
         assert seen[0][1]<seen[0][2]+2
         rows=model.budget.snapshot()['rows']
@@ -509,12 +538,13 @@ def _supervisor_thread_deadline_cases(monkeypatch):
         assert model.budget.snapshot()['unresolved_tickets']==0
 
 
-    with supervisor_lab(monkeypatch, seconds=.25) as model:
+    with supervisor_lab(monkeypatch, seconds=2.25) as model:
         sup=model.supervisor;entered=threading.Event()
+        work_deadline=(sup.cleanup_bound_ns()-c.CLEANUP_NS)/c.SECOND
         def expired(operation,data,*,request_observed_ns=None):
             entered.set()
-            while time.monotonic()<model.control.deadline+.005:time.sleep(.002)
-            c._check_deadline(model.control.deadline)
+            while time.monotonic()<work_deadline+.005:time.sleep(.002)
+            c._check_deadline(work_deadline)
         monkeypatch.setattr(sup,'_execute',expired);sup.start()
         request=p.ChannelSequence(uid(700),'launcher_supervision').make('START',{'child_slot':'identify_client','prepared':model.prepared})
         p.send_packet(model.peer,request,role='launcher_supervision',control=model.control)

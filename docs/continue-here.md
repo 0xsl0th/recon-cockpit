@@ -387,6 +387,19 @@ the exact boundary, advancing normal clocks, unchanged jump detection, parser
 source separation and clock restoration after a failed wrapper operation.
 Preserve both N29 failed attempts and their regressions; fresh freeze nineteen
 validation is required before further acceptance claims.
+The aligned anchor was committed at `8875d22`. Freeze nineteen passed all 160
+portable cases, fresh N04 and N28/N29. N29 retained two useful operations, both
+complete saved inspections and all 11 processes reaped. N30 then failed cleanup:
+an idle supervisor waited until the original session deadline, leaving no time
+inside that same bound for reaping. The supervisor now distinguishes its original
+bootstrap/cleanup deadline from the earlier work cutoff that preserves the
+existing two-second cleanup reserve. Work checks, waits and nested validation
+contexts use that cutoff; shorter native/startup limits are unchanged, and no
+cleanup deadline is extended. A real idle-thread regression reproduces the
+original failure. All 44 focused launcher/session/runtime checks pass, with a
+further existing-case check of action-bound cleanup and shorter phase limits.
+Preserve N30's failed process/closure observations and the reproducer; freeze
+twenty must supply fresh proof, starting with N30 within the window group.
 [Draft PR #103](https://github.com/0xsl0th/recon-cockpit/pull/103) now holds this
 integration. It remains draft pending complete native, portable, CI and review
 gates; no acceptance or merge is authorized by this development checkpoint.

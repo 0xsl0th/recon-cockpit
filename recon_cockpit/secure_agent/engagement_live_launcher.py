@@ -29,6 +29,12 @@ class _SupervisorControl:
     def cleanup_deadline(self):
         return self.supervisor.epoch.stop(bound_deadline_ns=self.supervisor.cleanup_bound_ns())['deadline_ns'] / c.SECOND
 
+    @property
+    def work_deadline(self):
+        # Preserve original bootstrap/cleanup bounds, but stop work early enough
+        # to use their existing cleanup reserve, including while idle.
+        return min(self.deadline,(self.supervisor.cleanup_bound_ns()-c.CLEANUP_NS)/c.SECOND)
+
     def check(self):
         from .execution import ExecutionStopped
         try:
@@ -37,13 +43,13 @@ class _SupervisorControl:
             c.fail('cancelled' if error.reason == 'session_cancelled' else 'timeout')
         if self.supervisor.stop.is_set() or self.supervisor.epoch.stopped:
             c.fail('cancelled')
-        if self.clock() >= self.deadline:
+        if self.clock() >= self.work_deadline:
             c.fail('timeout')
         self.supervisor.check_pending_deadlines()
 
     def remaining(self):
         self.check()
-        return max(0, self.deadline - self.clock())
+        return max(0, self.work_deadline - self.clock())
 
 
 class _FixedSupervisor:
@@ -392,7 +398,7 @@ class _FixedSupervisor:
         try:
             # Receive an exact packet once; retain actual wire digest separately
             # from its compact typed projection. No untrusted ancillary survives.
-            with c._deadline_context(phase.deadline):
+            with c._deadline_context(phase.work_deadline):
                 frame = p.receive_packet(self.channel, role='launcher_supervision', control=phase)
                 raw = p.encode_frame(frame, role='launcher_supervision', direction='request')
                 frame = self.sequence.accept(frame)
@@ -412,7 +418,7 @@ class _FixedSupervisor:
                 phase = self.phase(prepared['envelope']['action_deadline_ns'])
             try:
                 phase.check()
-                with c._deadline_context(phase.deadline):
+                with c._deadline_context(phase.work_deadline):
                     result = self._execute(frame['operation'], data, request_observed_ns=observed)
                     phase.check()
                     body = {'request_sequence': frame['sequence'], 'status': 'ok', 'code': None, 'data': result}
@@ -423,7 +429,7 @@ class _FixedSupervisor:
                 # Original expired/cancelled work cannot obtain fresh send time.
                 if error.code.endswith(('_timeout', '_cancelled')): raise
             operation = p.SUPERVISION_RESPONSES[frame['operation']]
-            with c._deadline_context(phase.deadline):
+            with c._deadline_context(phase.work_deadline):
                 reply = self.sequence.make(operation, body)
                 encoded = p.encode_frame(reply, role='launcher_supervision', direction='reply')
             p._ready(self.channel, writing=True, control=phase)
