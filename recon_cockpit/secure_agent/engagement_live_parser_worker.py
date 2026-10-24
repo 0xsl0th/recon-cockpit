@@ -15,6 +15,9 @@ import base64
 import errno
 import socket
 import time
+# The accepted XML parser imports expat lazily. Load its modules before the
+# parser's filesystem seal; parsing must never reopen the Python library.
+from xml.parsers import expat
 from recon_cockpit.secure_agent import engagement_live_runtime as runtime
 from recon_cockpit.secure_agent import configurable_parser as parser
 from recon_cockpit.secure_agent.configurable_scope import validate_scope

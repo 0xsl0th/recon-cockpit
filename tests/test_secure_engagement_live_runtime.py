@@ -702,6 +702,7 @@ def test_native_action_session_deadline_minimum(monkeypatch):
 
 
 def test_parser_closed_input_and_reply(monkeypatch):
+    _parser_without_filesystem_reads()
     from recon_cockpit.secure_agent import engagement_live_parser as parser
     from test_secure_engagement_live_contract import opened
     control=SimpleNamespace(deadline=r.time.monotonic()+2,clock=r.time.monotonic,cancelled=object(),check=lambda:None,remaining=lambda:2)
@@ -710,6 +711,46 @@ def test_parser_closed_input_and_reply(monkeypatch):
     common['raw']=b'x'*8192;common['stderr']=b'x';refused(parser.parse,tool_id=parser.parser.NMAP,**common)
     refused(r._decode,b'{"x":1,"x":2}')
     refused(r._decode,b'{"x":true}garbage')
+
+
+def _parser_without_filesystem_reads():
+    """A fresh worker must parse after sealing without importing files."""
+    import subprocess
+    import sys
+    from test_secure_configurable_parser import scope, xml
+    script = '''
+import base64, json, sys
+from recon_cockpit.secure_agent import engagement_live_parser_worker as worker
+value = json.loads(sys.stdin.read())
+request = {'schema_version':'1', 'slot':'http_identify', 'scope':value['scope'],
+           'raw_base64':value['raw'], 'stderr_base64':'', 'truncated':False}
+payload = {'slot':'http_identify', 'scope':value['scope']}
+attempts = []
+def no_files(event, args):
+    if event == 'open':
+        attempts.append(event)
+        raise PermissionError('parser filesystem is sealed')
+sys.addaudithook(no_files)
+result = worker.parse_request(request, payload)
+assert result['parsed']['identification'] == 'identified'
+assert result['parsed']['service']['name'] == 'http'
+assert result['parsed']['target'] == value['scope']['http']['target']
+assert result['parsed']['port'] == value['scope']['http']['port']
+request['raw_base64'] = base64.b64encode(base64.b64decode(value['raw']).replace(
+    b'<!DOCTYPE nmaprun>', b'<!DOCTYPE nmaprun SYSTEM "file:///etc/passwd">')).decode()
+try:
+    worker.parse_request(request, payload)
+except ValueError:
+    pass
+else:
+    raise AssertionError('external XML entity declaration accepted')
+assert attempts == []
+'''
+    import base64
+    result = subprocess.run([sys.executable, '-B', '-c', script],
+        input=json.dumps({'scope':scope(), 'raw':base64.b64encode(xml()).decode()}),
+        capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
 
 
 def _parser_model(monkeypatch,late=False):

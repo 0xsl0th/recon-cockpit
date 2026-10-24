@@ -232,8 +232,20 @@ one nanosecond earlier than the original host deadline. Preserve that failed
 run; no native case ran on freeze eight. The test expectations now use the
 original host/action/session/broker bounds and exact integer conversions while
 retaining separate no-extension checks. All 16 focused launcher cases pass, with
-production bytes unchanged from freeze eight. Record a new clean freeze and pass
-all exact 160 portable cases before fresh native acceptance with N04.
+production bytes unchanged from freeze eight. Freeze nine and all exact 160
+portable cases passed at `e802a34`; the retained artifact audit confirms their
+exact selection and unchanged source/runtime. Native attempt eight reached the
+isolated identify parser, then failed after READY without a useful result. Its
+five persistent roles and supervisor have complete cleanup receipts. A separate
+single-run diagnostic captured the parser's `PermissionError` while importing
+`xml.parsers.expat` after its filesystem seal; actual child reaping and shared
+cleanup were retained. That diagnostic does not backfill the original failure.
+The correction preloads the XML module before sealing, using the existing pinned
+runtime and unchanged parser. A fresh-process regression reproduces the missing
+preload by denying file reads, then verifies useful parsing and external-doctype
+rejection after the correction. Preserve both the original native attempt and
+the failed regression. The corrected source requires a fresh freeze and all 160
+portable cases before another N04 acceptance run.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not
