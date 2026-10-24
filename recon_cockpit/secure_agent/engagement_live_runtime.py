@@ -415,9 +415,10 @@ def _validate_file(row):
     _digest(row['sha256'])
 
 
-def _validate_source(row):
+def _validate_source(row, *, modules=None):
     _fields(row, ('module','destination','size','sha256'))
-    if row['module'] not in source_modules() or row['destination'] != _destination(row['module']):
+    if modules is None: modules = source_modules()
+    if type(row['module']) is not str or row['module'] not in modules or row['destination'] != _destination(row['module']):
         _fail()
     _integer(row['size'],1,262144)
     _digest(row['sha256'])
@@ -432,8 +433,9 @@ def validate_role_manifest(value, role=None):
         _fail()
     if type(value['sources']) is not list or len(value['sources']) != len(role_modules(selected)):
         _fail()
+    modules = frozenset(source_modules())
     for row in value['sources']:
-        _validate_source(row)
+        _validate_source(row, modules=modules)
     if [x['module'] for x in value['sources']] != list(role_modules(selected)):
         _fail()
     for key in ('native_files','extension_files'):
@@ -484,9 +486,11 @@ def validate_runtime(value):
     if value['stdlib']['path']!='/usr/lib/python3.14':_fail()
     for key in ('device','inode','mode'):_integer(value['stdlib'][key],0,2**64-1)
     rows=value['sources']
-    if type(rows)is not list or len(rows)!=len(source_modules()):_fail()
-    for row in rows:_validate_source(row)
-    if [x['module'] for x in rows]!=list(source_modules()) or sum(x['size'] for x in rows)>8388608 or len(_json(rows))>65536:_fail()
+    modules=source_modules()
+    if type(rows)is not list or len(rows)!=len(modules):_fail()
+    allowed_modules=frozenset(modules)
+    for row in rows:_validate_source(row, modules=allowed_modules)
+    if [x['module'] for x in rows]!=list(modules) or sum(x['size'] for x in rows)>8388608 or len(_json(rows))>65536:_fail()
     if type(value['roles'])is not list or [x.get('role') for x in value['roles']]!=list(ROLES):_fail()
     for role in value['roles']:
         validate_role_manifest(role)
@@ -1668,8 +1672,9 @@ def validate_readiness(role,value,bundle,*,expected_binding=None):
     _role(role)
     if value['schema_version']!='1' or value['role']!=role:_fail()
     ready=validate_worker_ready(value['worker_ready']);parent=validate_parent_observation(value['parent_observation'],role)
-    manifest=next(x for x in validate_runtime(bundle)['roles'] if x['role']==role)
-    if ready['role']!=role or ready['runtime_sha256']!=runtime_digest(bundle) or ready['source_sha256']!=_hash(manifest['sources']):_fail()
+    checked=validate_runtime(bundle)
+    manifest=next(x for x in checked['roles'] if x['role']==role)
+    if ready['role']!=role or ready['runtime_sha256']!=_hash(checked) or ready['source_sha256']!=_hash(manifest['sources']):_fail()
     if ready['namespaces']!=parent['namespaces'] or len(ready['task_ids'])!=len(parent['task_ids']) or ready['descriptor_sha256']!=_hash(parent['descriptors']):_fail()
     expected=next(x for x in manifest['native_files'] if x['destination']=='/usr/bin/python3')
     if parent['executable']['sha256']!=expected['sha256'] or parent['executable']['size']!=expected['size'] or parent['stage']!='sealed':_fail()

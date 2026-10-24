@@ -244,8 +244,25 @@ The correction preloads the XML module before sealing, using the existing pinned
 runtime and unchanged parser. A fresh-process regression reproduces the missing
 preload by denying file reads, then verifies useful parsing and external-doctype
 rejection after the correction. Preserve both the original native attempt and
-the failed regression. The corrected source requires a fresh freeze and all 160
-portable cases before another N04 acceptance run.
+the failed regression. The correction was committed at `edb93c6`; freeze ten
+and all exact 160 portable cases passed. Native attempt nine completed both
+useful HTTP actions, then exceeded the original two-second context-validation
+budget before writing a canonical evidence bundle. It remains failed.
+
+A separate bounded diagnostic retained one actual candidate after the original
+packaging attempt. Its two useful operations and twelve complete cleanup
+receipts are diagnostic evidence only. Offline replay reproduced the timeout:
+the context repeatedly decoded the full transcript and repeatedly constructed
+the same source-membership sets. Validation now shares detached validated rows
+only within one invocation, derives source membership once per manifest and
+hashes an already-validated runtime copy. No validation result is cached across
+calls and no deadline is enlarged. The faster replay exposed original parser
+bootstrap deadlines 11.304167 and 8.519989 ms beyond their recorded START plus
+two seconds. The old candidate remains invalid. Host child startup now charges
+validation/setup time from that recorded request observation and conservatively
+converts its deadline to seconds. Preserve the original native, diagnostic and
+offline replay failures. The corrected source requires a fresh freeze and all
+160 portable cases before another N04 acceptance run.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

@@ -768,11 +768,19 @@ def _saved_execution(loaded, *, rows=None):
     from .engagement_live_witness import validate_transcript_row
     raw=loaded.get('transcript.jsonl',b'')
     if type(raw)is not bytes or len(raw)>2097152:_bad()
-    releases={};observations={}
     if rows is None: rows = _retained_rows(loaded)
+    else:
+        rows = [dict(wrapper, row=validate_transcript_row(wrapper['row']))
+                if wrapper['source'] == 'broker_memfd' else wrapper for wrapper in rows]
+    return _saved_execution_validated(rows)
+
+
+def _saved_execution_validated(rows):
+    """Resolve locally validated rows without repeating their closed decoders."""
+    releases={};observations={}
     for wrapper in rows:
         if wrapper['source'] != 'broker_memfd': continue
-        row = validate_transcript_row(wrapper['row'])
+        row = wrapper['row']
         if row['observer_id'] != row['broker_id']: _bad()
         if row['kind']!='protocol':continue
         data=row['data'];frame=data['frame'];role=data['channel_role'];direction=data['direction']
@@ -1059,7 +1067,14 @@ def validate_live_context(value):
         if len(waiting)!=1 or native['waiting_image']!=waiting[0]['parent_observation']['executable'] or native['parent_observation']['namespaces']!=waiting[0]['parent_observation']['namespaces']:_bad()
     # The accepted audit role is retained in actual AUDIT_OBSERVED packets,
     # not a fabricated compound readiness row. Its identity shares this cap.
-    _audit_process_closure(value)
+    # Each call decodes and validates its own immutable transcript bytes once.
+    # Reuse those detached rows only within this invocation; no caller-supplied
+    # validation flag or cross-call cache can bypass the original checks.
+    rows = _retained_rows(value)
+    from .engagement_live_witness import _retained_audit_readiness
+    audit = _retained_audit_readiness(value, rows=rows,
+        deadline=contract._operation_deadline())
+    _audit_process_closure(value, observations=audit['observations'])
     if len(identities)>94:_bad()
     closed=set();closed_at=0
     for item in cleanup['receipts']:
@@ -1073,7 +1088,7 @@ def validate_live_context(value):
     # known roles is incomplete, never synthesized as a successful receipt.
     if identities-closed and any(op.get('result',{}).get('outcome')=='useful' for op in results['operations'] if op.get('result')is not None):_bad()
     if type(results['operations'])is not list or len(results['operations'])>4:_bad()
-    seen=set();meters={};releases,recorded=_saved_execution(value)
+    seen=set();meters={};releases,recorded=_saved_execution_validated(rows)
     retained_cleanup={runtime._hash(item):item for item in cleanup['receipts']}
     for op in results['operations']:
         runtime._fields(op,('session','prepared','result','client','meter','elapsed_ms','host_capture'))
@@ -1139,6 +1154,6 @@ def validate_live_context(value):
                 client_result=client,meter=meter,child_readiness=children,child_cleanup=child_cleanups,
                 native_readiness=selected_native,runtime_bundle=bundle)
     if set(recorded)-seen:_bad()
-    validate_supervision_transcript(value, deadline=contract._operation_deadline())
+    validate_supervision_transcript(value, rows=rows, deadline=contract._operation_deadline())
     _boundary_checks(value,bundle,readies,natives,retained_cleanup,meters)
     return json.loads(runtime._json(results))

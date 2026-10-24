@@ -1,4 +1,5 @@
 """Host custody of one fixed launcher; authority arrives only from the broker."""
+import math
 import os
 import socket
 import threading
@@ -243,9 +244,12 @@ class _FixedSupervisor:
         return min(phase.deadline, time.monotonic()+2,
                    epoch['deadline_ns']/c.SECOND if epoch else phase.deadline)
 
-    def _start_child(self, name, prepared):
+    def _start_child(self, name, prepared, *, request_observed_ns=None):
         from . import engagement_live_runtime as rt
         from .engagement_live_broker import _locked
+        now = time.monotonic_ns()
+        if request_observed_ns is None: request_observed_ns = now
+        c.integer(request_observed_ns, 1, now)
         state = self.children[name]
         if state['state'] != 'allocated':
             c.fail('dispatch_replayed')
@@ -261,7 +265,7 @@ class _FixedSupervisor:
               or any(v['prepared']['envelope']['dispatch_id'] != value['envelope']['dispatch_id'] for v in active)):
             c.fail('invalid_role')
         deadline = min(value['envelope']['action_deadline_ns'], self._deadline_ns,
-                       time.monotonic_ns() + (2 if role == 'parser' else 10)*c.SECOND)
+                       request_observed_ns + (2 if role == 'parser' else 10)*c.SECOND)
         with self.state_lock:
             state.update(prepared=value, state='starting', pending=True, startup_deadline_ns=deadline)
             record = self._child_record(name); record['prepared_sha256'] = c.prepared_digest(value)
@@ -284,7 +288,7 @@ class _FixedSupervisor:
                 owner = rt._spawn_child_owned(runtime=self.launcher.runtime, role=role, payload=payload,
                     child_stdin=endpoint, worker_id=state['binding']['worker_id'], control=phase,
                     namespace_lease=lease, supervision_identity={'launcher_id': self.launcher.slot.launcher_id, 'child_slot': name},
-                    startup_deadline=deadline/c.SECOND)
+                    startup_deadline=math.nextafter(deadline/c.SECOND, -math.inf))
                 with self.state_lock:
                     state['owner'] = owner
                 phase.check()
@@ -306,11 +310,11 @@ class _FixedSupervisor:
                     state['pending'] = False
                     state['start_resolved'] = True
 
-    def _execute(self, operation, data):
+    def _execute(self, operation, data, *, request_observed_ns=None):
         from .engagement_live_client import SupervisedCapture
         name = data['child_slot']; state = self.children[name]
         if operation == 'START':
-            return self._start_child(name, data['prepared'])
+            return self._start_child(name, data['prepared'], request_observed_ns=request_observed_ns)
         if state['owner'] is None or state['prepared'] is None:
             c.fail('invalid_frame')
         phase = self.phase(state['prepared']['envelope']['action_deadline_ns'])
@@ -409,7 +413,7 @@ class _FixedSupervisor:
             try:
                 phase.check()
                 with c._deadline_context(phase.deadline):
-                    result = self._execute(frame['operation'], data)
+                    result = self._execute(frame['operation'], data, request_observed_ns=observed)
                     phase.check()
                     body = {'request_sequence': frame['sequence'], 'status': 'ok', 'code': None, 'data': result}
             except c.LiveError as error:

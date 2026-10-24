@@ -206,6 +206,10 @@ def test_role_partition_authority_absent():
     bundle=declared_runtime();p=deepcopy(next(x for x in bundle['roles'] if x['role']=='parser'))
     p['sources'].append(next(x for x in bundle['sources'] if x['module']=='engagement_dispatch_store'))
     refused(r.validate_role_manifest,p)
+    for module in ([], {}, None, True, 'unreviewed_module'):
+        changed=deepcopy(bundle)
+        changed['sources'][0]['module']=module
+        refused(r.validate_runtime,changed)
 
 
 def test_sealed_source_descriptor_custody(tmp_path,monkeypatch):

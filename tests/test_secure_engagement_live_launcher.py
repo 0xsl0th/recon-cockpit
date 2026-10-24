@@ -317,7 +317,7 @@ def _supervisor_refusal_cause_cases(monkeypatch):
                 assert channel is sup.channel and role == 'launcher_supervision'
                 control.check(); events.append('receive')
                 return request
-            def first_child_failure(operation, data):
+            def first_child_failure(operation, data, *, request_observed_ns=None):
                 assert operation == 'START' and data == request['body']
                 events.append('execute')
                 raise original
@@ -490,7 +490,7 @@ def _supervisor_thread_deadline_cases(monkeypatch):
     with supervisor_lab(monkeypatch, seconds=.8) as model:
         sup=model.supervisor;seen=[];executed=threading.Event()
         bound=model.prepared['envelope']['action_deadline_ns']/c.SECOND
-        def execute(operation,data):
+        def execute(operation,data,*,request_observed_ns=None):
             seen.append((threading.get_ident(),c._operation_deadline(),time.monotonic()))
             executed.set();c.fail('invalid_role')
         monkeypatch.setattr(sup,'_execute',execute);sup.start()
@@ -511,7 +511,7 @@ def _supervisor_thread_deadline_cases(monkeypatch):
 
     with supervisor_lab(monkeypatch, seconds=.25) as model:
         sup=model.supervisor;entered=threading.Event()
-        def expired(operation,data):
+        def expired(operation,data,*,request_observed_ns=None):
             entered.set()
             while time.monotonic()<model.control.deadline+.005:time.sleep(.002)
             c._check_deadline(model.control.deadline)
@@ -604,7 +604,10 @@ def _persistent_launcher_cleanup_case(monkeypatch):
 def _parser_autonomous_deadline_case(monkeypatch):
     with supervisor_lab(monkeypatch) as model:
         sup=model.supervisor;name='identify_parser'
-        sup._execute('START',{'child_slot':name,'prepared':model.prepared})
+        received=time.monotonic_ns()-500_000_000
+        sup._execute('START',{'child_slot':name,'prepared':model.prepared},request_observed_ns=received)
+        assert sup.children[name]['startup_deadline_ns'] <= received+2*c.SECOND
+        assert int(model.calls[0]['startup_deadline']*c.SECOND) <= received+2*c.SECOND
         state=sup.children[name];sup._execute('OBSERVE_READY',{'child_slot':name,'bootstrap_sha256':c.digest(c.canonical(state['owner'].bootstrap))})
         # Fixed clock-bound fixture: a ready parser retains its original phase
         # deadline even if no further REAP or parser reply RPC ever arrives.

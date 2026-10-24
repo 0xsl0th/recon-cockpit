@@ -979,6 +979,25 @@ def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch):
     manifest,members=useful_fixture(monkeypatch)
     loaded,original_rows,_=e._load_members(manifest,members,time.monotonic()+15)
     from recon_cockpit.secure_agent import engagement_live_context as context
+    context.validate_live_context(loaded)
+    # Reusing the same loaded object must never retain validation from an
+    # earlier call. Even rehashed transcript edits require fresh row checks.
+    original_transcript=loaded['transcript.jsonl']
+    original_segments=loaded['manifest.json']['transcript']['segments']
+    segments=deepcopy(original_segments);parts=[];offset=0
+    for index,segment in enumerate(original_segments):
+        part=original_transcript[segment['offset']:segment['offset']+segment['bytes']]
+        if index==0:
+            lines=part.splitlines();changed=json.loads(lines[0]);changed['unexpected']=True
+            lines[0]=raw(changed);part=b'\n'.join(lines)+b'\n'
+        segments[index].update(offset=offset,bytes=len(part),sha256=sha(part))
+        parts.append(part);offset+=len(part)
+    loaded['transcript.jsonl']=b''.join(parts)
+    loaded['manifest.json']['transcript']['segments']=segments
+    try:refused(context.validate_live_context,loaded)
+    finally:
+        loaded['transcript.jsonl']=original_transcript
+        loaded['manifest.json']['transcript']['segments']=original_segments
     supervision=context.validate_supervision_transcript(loaded,original_rows)
     assert supervision['missing_evidence']==[] and supervision['all_closed']
     for variant in ('pair','worker','bootstrap','observer','capture','raw','source','wire','projection','sequence','late_begin'):
