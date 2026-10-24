@@ -72,6 +72,12 @@ class Meter:
         if self.connections>=self.max_connections:self.stop('connection_limit');runtime._fail('meter_refused')
         self.connections+=1;self.current.clear();self.reply_offset=0;self._event('accept')
         return self.connections
+    def _stream_terminated(self,kind):
+        self._event(kind)
+        # b'' is only the Meter-to-run_loop close signal, not a fabricated recv
+        # result. The retained event distinguishes an actual EOF from a reset.
+        if not self.current and self.slot=='http_identify' and self.connections in (1,2):return b''
+        self.stop('peer_eof');runtime._fail('meter_refused')
     def receive(self,stream):
         self.check()
         left=self.request_limit-len(self.requests)
@@ -79,10 +85,10 @@ class Meter:
         self._capacity(left)
         try:raw=stream.recv(left)
         except BlockingIOError:return None
-        if not raw:
-            self._event('eof')
-            if not self.current and self.slot=='http_identify' and self.connections in (1,2):return b''
-            self.stop('peer_eof');runtime._fail('meter_refused')
+        except ConnectionResetError as error:
+            if error.errno!=errno.ECONNRESET:raise
+            return self._stream_terminated('reset')
+        if not raw:return self._stream_terminated('eof')
         self.requests.extend(raw);self.current.extend(raw)
         self._event('recv',requested=left,actual=len(raw),before=left)
         if not self.expected.startswith(self.current):self.stop('malformed_request');runtime._fail('meter_refused')

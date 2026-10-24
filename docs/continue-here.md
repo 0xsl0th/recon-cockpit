@@ -146,7 +146,7 @@ based on accepted merge `d8e1a6f`. The
 [implementation contract](stage4-engagement-live.md) and
 [exact inventory](stage4-engagement-live-gates.json) were independently reviewed
 and pinned before implementation; pre-acceptance amendments A01–A07 end at
-`e4e2d89`. The first six native attempts are retained failures, with no new
+`e4e2d89`. The first seven native attempts are retained failures, with no new
 native gate accepted yet. Broker and audit startup now complete after correcting
 setup descriptor closure and verifying the pinned read-only import image. A07
 records the unchanged audit worker's exact six-descriptor inventory, actual image
@@ -202,10 +202,31 @@ while preserving both mounted-file checks and all other required mappings.
 Failure retention also keeps the original supervisor exception, bounded code
 locations, actual closure and finalized host observations. All 64 focused
 portable runtime, launcher, Session, reviewer and preservation checks pass on
-these corrections. The exact gate inventory and accepted source pins remain
-unchanged. Freeze the complete corrected source and
-installed runtime, then pass all exact 160 portable cases before retrying native
-acceptance with N04. All 113 new native cases,
+these corrections. They were committed at `3e305fe`; freeze seven and all
+160 exact portable cases passed with unchanged source and runtime. Native attempt
+seven reached successful native observation and capture replies, then failed
+before a useful HTTP result. Its retained supervisor exception identifies the
+invalid-frame guard, but does not distinguish EOF from its other refusal causes.
+A separate single-run diagnostic retained an actual endpoint `ConnectionResetError`
+with errno 104 on the first empty identification connection, followed by launcher
+cancellation. Its Nmap output reported `tcpwrapped`; capture exit zero does not
+establish useful HTTP. Actual child and persistent-role cleanup and supervisor
+join were retained. The diagnostic's actual channel EOF and socket exception do
+not backfill the missing first cause in attempt seven.
+
+The identification grammar already permits one or two initial empty EOF/reset
+probes. A09 is independently reviewed and pinned at `66f3e7d` before implementation:
+record actual connection resets separately from successful zero-length reads,
+continue only empty identification connections 1 or 2, and preserve charged
+connections and all observed bytes. Partial requests, headers and connection 3
+still refuse. Existing meter cases cover the correction without new case IDs or
+larger limits. All 32 focused meter/runtime checks passed; after updating the four
+contract digest pins, all 44 contract/evidence checks and the static compilation
+of 54 core variants and 37 sources passed. The original static pin failure is
+retained. Independent implementation and evidence reviews are clear. Freeze the
+complete corrected source and installed runtime, then
+pass all exact 160 portable cases before fresh native acceptance with N04.
+All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not
 validate later changes.
