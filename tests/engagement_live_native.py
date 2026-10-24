@@ -55,6 +55,7 @@ class SourceVariants:
         self.directory=Path(directory);self.directory.mkdir(mode=0o700,parents=True,exist_ok=False)
         self.configuration={'case_id':case_id,'variant':variant,'role':role}
         self.paths={};self.records=[];self._original=None;self._host_runtime=False;self._saved_runtime=None;self.runtime_globals=None
+        self._host_contract_clock=False;self._saved_contract_clock=None
     @property
     def instrumentation(self):
         return [{'kind':'sealed_fault','configuration':deepcopy(self.configuration),'configuration_sha256':sha(canonical(self.configuration)),
@@ -72,6 +73,15 @@ class SourceVariants:
         return path
     def __enter__(self):
         if self._original is not None:raise RuntimeError('nested_source_override')
+        if self._host_contract_clock:
+            # N29's trusted host validates the same release as sealed roles.
+            # Use the identical committed projection; never patch OS clocks.
+            if self.configuration['case_id']!='S42C-N29':raise ValueError('fixed_clock_only')
+            path=self.paths['engagement_live_contract']
+            namespace={key:contract.__dict__[key] for key in ('__name__','__package__','__file__','__builtins__')}
+            exec(compile(path.read_bytes(),str(path),'exec'),namespace)
+            self._saved_contract_clock=contract.sample_clock
+            contract.sample_clock=namespace['sample_clock']
         self._original=runtime._source_path
         if self._host_runtime:
             # Execute the exact sealed test-wrapper source in the trusted test
@@ -87,6 +97,8 @@ class SourceVariants:
         if self.runtime_globals is not None:self.runtime_globals['_source_path']=resolver
         return self
     def __exit__(self,*unused):
+        if self._saved_contract_clock is not None:
+            contract.sample_clock=self._saved_contract_clock;self._saved_contract_clock=None
         if self._saved_runtime is not None:
             runtime.__dict__.clear();runtime.__dict__.update(self._saved_runtime);self._saved_runtime=None
         runtime._source_path=self._original;self._original=None
@@ -2324,6 +2336,7 @@ def _install_inclusive_clock(variants,case):
             'def sample_clock():\n    mono=time.monotonic_ns()\n'+\
             "    return ledger.validate_clock({'utc_ns':_OWNED_INCLUSIVE_ANCHOR['utc_ns']+mono-_OWNED_INCLUSIVE_ANCHOR['mono_after_ns'], 'mono_before_ns':mono, 'mono_after_ns':mono})\n"
     variants.source('engagement_live_contract',transform)
+    variants._host_contract_clock=True
     def broker(source):
         marker='\ndef main():\n'
         patch='''

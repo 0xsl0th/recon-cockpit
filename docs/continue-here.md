@@ -362,6 +362,21 @@ including an actual admitted guard failure. A real-ledger/direct-witness
 regression reproduced the unwanted stop; all 36 focused broker/session checks
 pass after the narrow correction. Preserve the freeze-sixteen incomplete bundle
 and reports. A new freeze and complete fresh validation remain required.
+That correction was committed at `9ae0d38`. Freeze seventeen passed all 160
+portable cases, fresh N04, the seven budget cases (including one useful N24
+winner, one allowance denial and all 16 processes reaped), and all three replay
+cases. The window batch passed N28 and stopped at N29: its sealed synthetic
+clock differed from the trusted host's real clock during release validation.
+The N29 harness now runs the exact committed clock projection in the host too;
+OS clocks, production tolerance, original deadlines and inclusive-boundary inputs
+are unchanged. A deterministic half-second mismatch reproduces the failure;
+all 40 focused contract/runtime checks pass after the test-only correction,
+including advancing time, release validation and restoration after exceptions.
+Preserve the original native failure and regression. Fresh frozen acceptance
+remains required, with the window group first after N04.
+[Draft PR #103](https://github.com/0xsl0th/recon-cockpit/pull/103) now holds this
+integration. It remains draft pending complete native, portable, CI and review
+gates; no acceptance or merge is authorized by this development checkpoint.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

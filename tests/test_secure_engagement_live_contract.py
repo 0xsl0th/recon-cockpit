@@ -174,7 +174,7 @@ def test_original_deadlines_do_not_reset():
     assert c.canonical(value) == old
 
 
-def test_inclusive_start_exclusive_end_conversion():
+def test_inclusive_start_exclusive_end_conversion(tmp_path, monkeypatch):
     kwargs = dict(anchor=clock(), window_start_utc_ns=U, window_end_utc_ns=U+c.SECOND,
                   deadline_ns=M+60*c.SECOND)
     assert c.check_clock(clock(), **kwargs) == M+c.SECOND
@@ -182,6 +182,38 @@ def test_inclusive_start_exclusive_end_conversion():
     refused(c.check_clock, clock(c.SECOND), **kwargs, code='window_closed')
     refused(c.check_clock, clock(c.SECOND-2, 2), **kwargs, code='window_closed')
     refused(c.check_clock, clock(-1), **kwargs, code='clock_changed')
+    _inclusive_native_clock_projection(tmp_path, monkeypatch)
+
+
+def _inclusive_native_clock_projection(tmp_path, monkeypatch):
+    from engagement_live_native import SourceVariants, _install_inclusive_clock
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    original_clock=c.sample_clock;original_source=runtime._source_path
+    elapsed=[0]
+    with monkeypatch.context() as patch:
+        patch.setattr(c.time,'time',lambda:U/c.SECOND+.5)
+        patch.setattr(c.time,'time_ns',lambda:U+c.SECOND//2+elapsed[0])
+        patch.setattr(c.time,'monotonic_ns',lambda:M+elapsed[0])
+        patch.setattr(c.time,'monotonic',lambda:(M+elapsed[0])/c.SECOND)
+        os_monotonic=c.time.monotonic;os_wall=c.time.time_ns
+        case={'id':'S42C-N29','variant':'inclusive_start_useful_prefix'}
+        variants=SourceVariants(tmp_path/'clock-source',case_id=case['id'],variant=case['variant'],role='broker')
+        _install_inclusive_clock(variants,case)
+        assert case['_clock']==clock()
+        value=prepared();permit=release(value)
+        with pytest.raises(RuntimeError,match='owned exit'):
+            with variants:
+                for delta in (0,c.SECOND):
+                    elapsed[0]=delta
+                    assert c.sample_clock()==clock(delta)
+                    assert c.validate_release_binding(permit,value,clock=c.sample_clock())==permit
+                    refused(c.validate_release_binding,permit,value,clock=original_clock())
+                    assert c.time.monotonic is os_monotonic and c.time.time_ns is os_wall
+                raise RuntimeError('owned exit')
+        assert c.sample_clock is original_clock and runtime._source_path is original_source
+        saved=json.loads((variants.directory/'source-variants.json').read_bytes())
+        source=variants.paths['engagement_live_contract'].read_bytes()
+        assert any(row['module']=='engagement_live_contract' and row['after_sha256']==hashlib.sha256(source).hexdigest() for row in saved['sources'])
 
 
 def test_backward_forward_and_highwater_discontinuities():
