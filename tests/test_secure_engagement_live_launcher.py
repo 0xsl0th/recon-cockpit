@@ -100,6 +100,7 @@ def test_go_requires_inherited_broker_peer(monkeypatch):
 
 
 def test_nmap_order_observes_native_before_endpoint_arm(monkeypatch):
+    _supervisor_refusal_cause_cases(monkeypatch)
     state,go,events=execution_model(monkeypatch);refused(state.run,go)
     assert events.index('client_release')<events.index('native_image')<events.index('NATIVE_OBSERVED')<events.index('arm')
     state,go,events=execution_model(monkeypatch,fail_native=True);refused(state.run,go)
@@ -287,6 +288,82 @@ def supervisor_lab(monkeypatch, *, seconds=3):
         supervisor.close(min(control.deadline,time.monotonic()+.5))
         if supervisor.thread is not None and supervisor.thread.is_alive():supervisor.thread.join(.5)
         for peer in peers:peer.close()
+
+
+def _supervisor_refusal_cause_cases(monkeypatch):
+    # Exercise the real exchange and terminal path with finite transport doubles.
+    # A sent refusal keeps its first cause; failed sends keep their own failure.
+    for reason, delivery in (('invalid_runtime', 'sent'), ('timeout', 'not_sent'),
+                             ('cancelled', 'not_sent'), ('invalid_runtime', 'send_error'),
+                             ('invalid_runtime', 'short_send')):
+        with supervisor_lab(monkeypatch) as model:
+            sup = model.supervisor
+            original = c.LiveError('engagement_live_' + reason)
+            send_error = OSError('declared refusal send failure')
+            events, sent = [], []
+            request = p.ChannelSequence(uid(700), 'launcher_supervision').make(
+                'START', {'child_slot':'identify_client', 'prepared':model.prepared})
+            def receive(channel, *, role, control):
+                assert channel is sup.channel and role == 'launcher_supervision'
+                control.check(); events.append('receive')
+                return request
+            def first_child_failure(operation, data):
+                assert operation == 'START' and data == request['body']
+                events.append('execute')
+                raise original
+            def ready(channel, *, writing, control):
+                assert channel is sup.channel and writing is True
+                control.check(); events.append('ready')
+            def send(channel, raw):
+                assert channel is sup.channel
+                events.append('send'); sent.append(raw)
+                if delivery == 'send_error': raise send_error
+                return len(raw) - (delivery == 'short_send')
+            for _ in range(2):
+                sup._terminal_tickets.append(model.budget.reserve(kind='supervision_projection',
+                    maximum_bytes=c.SUPERVISION_ROW_BYTES, maximum_rows=1, control=model.control))
+            ticket = model.budget.reserve(kind='supervision_projection',
+                maximum_bytes=c.SUPERVISION_ROW_BYTES, maximum_rows=1, control=model.control)
+            sup._request_ticket = ticket
+            with monkeypatch.context() as patch:
+                patch.setattr(sup, '_execute', first_child_failure)
+                patch.setattr(p, 'receive_packet', receive)
+                patch.setattr(p, '_ready', ready)
+                patch.setattr(p, 'send_once', send)
+                with pytest.raises((c.LiveError, OSError)) as caught:
+                    sup._exchange(ticket)
+            failure = caught.value
+            assert sup.failure is failure and model.errors == [failure]
+            assert sup._failure_state is sup.children['identify_client']
+            assert sup._request_ticket is None and model.calls == []
+            if delivery in {'sent', 'not_sent'}:
+                assert failure is original and failure.code == 'engagement_live_' + reason
+                names = []
+                trace = failure.__traceback__
+                while trace is not None:
+                    names.append(trace.tb_frame.f_code.co_name); trace = trace.tb_next
+                assert 'first_child_failure' in names
+            elif delivery == 'send_error':
+                assert failure is send_error and failure is not original
+            else:
+                assert failure is not original and failure.code == 'engagement_live_unavailable'
+            row = next(row['data'] for row in model.budget.snapshot()['rows']
+                       if row['data']['kind'] == 'rpc')
+            if delivery == 'not_sent':
+                assert events == ['receive', 'execute'] and sent == [] and row['reply'] is None
+                assert sup.sequence.sent == 0
+            else:
+                assert events == ['receive', 'execute', 'ready', 'send']
+                expected = {'schema_version':'1', 'channel_id':uid(700), 'sequence':1,
+                    'operation':'BOOTSTRAP', 'body':{'request_sequence':1, 'status':'refused',
+                        'code':original.code, 'data':None}}
+                assert sent == [p.encode_frame(expected, role='launcher_supervision', direction='reply')]
+                assert sup.sequence.sent == 1
+                assert (row['reply'] is not None) == (delivery == 'sent')
+            assert row['local_error'] == getattr(failure, 'code', 'engagement_live_unavailable')
+            sup.close(time.monotonic() + .5)
+            assert model.budget.snapshot()['unresolved_tickets'] == 0
+            assert sup.failure is failure and model.errors == [failure] and model.calls == []
 
 
 def _supervisor_overlap_cases(monkeypatch):

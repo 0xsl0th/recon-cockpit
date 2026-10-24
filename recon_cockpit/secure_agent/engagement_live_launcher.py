@@ -384,6 +384,7 @@ class _FixedSupervisor:
     def _exchange(self, ticket):
         from . import engagement_live_protocol as p
         phase = self.phase(); raw = None; row = None; state = None
+        refusal_error = None
         try:
             # Receive an exact packet once; retain actual wire digest separately
             # from its compact typed projection. No untrusted ancillary survives.
@@ -412,6 +413,7 @@ class _FixedSupervisor:
                     phase.check()
                     body = {'request_sequence': frame['sequence'], 'status': 'ok', 'code': None, 'data': result}
             except c.LiveError as error:
+                refusal_error = error
                 self._retain_error(error, state)
                 body = {'request_sequence': frame['sequence'], 'status': 'refused', 'code': error.code, 'data': None}
                 # Original expired/cancelled work cannot obtain fresh send time.
@@ -427,7 +429,7 @@ class _FixedSupervisor:
             row['data']['reply'] = {'sequence': reply['sequence'], 'operation': operation,
                 'observed_at_ns': time.monotonic_ns(), 'bytes': len(encoded), 'sha256': c.digest(encoded),
                 'projection': compact, 'projection_sha256': c.digest(c.canonical(compact))}
-            if body['status'] == 'refused': raise c.LiveError(body['code'])
+            if refusal_error is not None: raise refusal_error
             phase.check()
         except BaseException as error:
             if row is not None:

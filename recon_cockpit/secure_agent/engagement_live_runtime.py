@@ -261,6 +261,25 @@ def _closure(source, destination, control=None):
     return sorted(rows.values(), key=lambda row: row['destination']), interpreter
 
 
+def _required_native_images(rows, interpreter):
+    """Require the inspected ELF interpreter once, at its actual PT_INTERP path."""
+    if interpreter != '/lib64/ld-linux-x86-64.so.2':
+        _fail('unsupported_runtime')
+    loaders = [row for row in rows if row['destination'] == interpreter]
+    if len(loaders) != 1:
+        _fail('invalid_runtime')
+    loader = tuple(loaders[0][key] for key in ('source', 'size', 'sha256'))
+    # The loader's DT_NEEDED alias can name the same inspected ELF as PT_INTERP.
+    # Keep both sealed mounts and their byte checks; require the actual loader
+    # mapping rather than a second mapping of an independently mounted copy.
+    required = sorted({row['destination'] for row in rows
+        if row['destination'] in ('/tool/nmap', interpreter)
+        or tuple(row[key] for key in ('source', 'size', 'sha256')) != loader})
+    if '/tool/nmap' not in required:
+        _fail('invalid_runtime')
+    return required
+
+
 _COMPILED = {'graphical_fontconfig': ('/run/reviewer-fonts.conf',
                           b'<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd"'
                           b'>\n<fontconfig><dir>/usr/share/fonts/truetype/dejavu</dir>\n<cachedir>/var/cac'
@@ -361,9 +380,9 @@ def inspect_runtime(control):
             files.update((x['destination'], x) for x in rows if x['destination'] != str(matches[0]))
         native_required = []
         if role == 'nmap':
-            rows, _ = _closure('/usr/lib/nmap/nmap', '/tool/nmap', control)
+            rows, native_interpreter = _closure('/usr/lib/nmap/nmap', '/tool/nmap', control)
             files.update((x['destination'], x) for x in rows)
-            native_required = [x['destination'] for x in rows]
+            native_required = _required_native_images(rows, native_interpreter)
         if role == 'endpoint':
             helper = next(x for x in helpers if x['name'] == 'nft')
             files.update((x['destination'], x) for x in helper['files'])

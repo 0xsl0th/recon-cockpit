@@ -146,7 +146,7 @@ based on accepted merge `d8e1a6f`. The
 [implementation contract](stage4-engagement-live.md) and
 [exact inventory](stage4-engagement-live-gates.json) were independently reviewed
 and pinned before implementation; pre-acceptance amendments A01–A07 end at
-`e4e2d89`. The first five native attempts are retained failures, with no new
+`e4e2d89`. The first six native attempts are retained failures, with no new
 native gate accepted yet. Broker and audit startup now complete after correcting
 setup descriptor closure and verifying the pinned read-only import image. A07
 records the unchanged audit worker's exact six-descriptor inventory, actual image
@@ -185,10 +185,27 @@ failure, diagnostic and development corrections separately. Process reaping is
 attempted even when a reviewer or audit channel fails to close; combined custody
 failure retains the distinct actual process receipt, including in private native
 failure artifacts. A timing-only cleanup failure preserves its observed closed
-descriptors. The weekly-limit interruption left the working changes intact;
-development checks remain separate from the next source-frozen run. Freeze the complete
-corrected source and installed runtime, then pass all exact 160 portable cases
-before retrying native acceptance with N04. All 113 new native cases,
+descriptors. These corrections were committed at `7076e9f`; freeze six and all
+160 exact portable cases passed with unchanged source and runtime. Native attempt
+six then reached dispatch and stopped after a supervisor failure. Its five
+persistent roles have actual complete cleanup receipts, but its original inner
+exception was not retained. Two separately retained, bounded diagnostics on the
+same frozen source located the native mapping guard and then captured the exact
+missing destination: the DT_NEEDED alias of the already-mapped ELF interpreter.
+Both loader paths contain the same inspected bytes but have distinct mounted
+inodes. The actual interpreter, Nmap and every other required native image were
+mapped; no unknown executable mapping was observed. Both diagnostics retain
+actual child reaping, supervisor join and persistent-role cleanup, and neither
+returned a useful action or replaces the original failed acceptance evidence.
+The correction requires the exact interpreter image at its PT_INTERP path once,
+while preserving both mounted-file checks and all other required mappings.
+Failure retention also keeps the original supervisor exception, bounded code
+locations, actual closure and finalized host observations. All 64 focused
+portable runtime, launcher, Session, reviewer and preservation checks pass on
+these corrections. The exact gate inventory and accepted source pins remain
+unchanged. Freeze the complete corrected source and
+installed runtime, then pass all exact 160 portable cases before retrying native
+acceptance with N04. All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not
 validate later changes.

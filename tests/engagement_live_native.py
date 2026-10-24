@@ -330,14 +330,100 @@ def _save_case_failure(directory,kind,variant,error):
             row={'owner':owner,'attribute':name,'value':value};encoded=canonical(row)
             if len(encoded)>budget:raise ValueError('failure_total_limit')
             budget-=len(encoded);observations.append(row)
-        except (ValueError,TypeError,OverflowError,RecursionError):
+        except (ValueError,TypeError,OverflowError,RecursionError,RuntimeError):
             omitted.append({'owner':owner,'attribute':name,'reason':'unretained_value'})
+    def link(owner,name,linked):
+        if linked is None:return None
+        if not isinstance(linked,BaseException):
+            omitted.append({'owner':owner,'attribute':name,'reason':'not_exception'});return None
+        identity=id(linked)
+        if identity not in seen:
+            if len(queue)>=8:
+                omitted.append({'owner':owner,'attribute':name,'reason':'chain_limit'});return None
+            seen[identity]=len(queue);queue.append(linked)
+        return seen[identity]
+    def plain_state(value):
+        try:state=object.__getattribute__(value,'__dict__')
+        except (AttributeError,TypeError):return None
+        return state if type(state)is dict else None
+    def traceback_tail(item,owner):
+        # Code locations only: never frame locals, source, or exception strings.
+        tb=BaseException.__getattribute__(item,'__traceback__')
+        frames=[];visited=0;field_truncated=False
+        while tb is not None and visited<64:
+            code=tb.tb_frame.f_code
+            filename,name=code.co_filename,code.co_name
+            field_truncated |= len(filename)>512 or len(name)>128
+            frames.append({'filename':filename[:512],'function':name[:128],'line':tb.tb_lineno})
+            if len(frames)>8:frames.pop(0)
+            visited+=1;tb=tb.tb_next
+        if visited>8:omitted.append({'owner':owner,'attribute':'traceback','reason':'traceback_frames_limit'})
+        if tb is not None:omitted.append({'owner':owner,'attribute':'traceback','reason':'traceback_traversal_limit'})
+        if field_truncated:omitted.append({'owner':owner,'attribute':'traceback','reason':'traceback_field_limit'})
+        retain(owner,'traceback',{'frames':frames,'visited_frames':visited,
+            'scope':'last_frames' if tb is None else 'tail_of_visited_prefix',
+            'earlier_visited_frames_omitted':max(0,visited-len(frames)),
+            'traversal_truncated':tb is not None,'field_truncated':field_truncated})
+    def session_facts(state,record):
+        owner='session:'+str(record['index'])
+        record['first_failure_index']=link(owner,'_failure',state.get('_failure'))
+        record['supervisors']=[]
+        groups=state.get('_sessions')
+        if groups is None:return
+        if type(groups)is not dict or len(groups)>2:
+            omitted.append({'owner':owner,'attribute':'_sessions','reason':'unretained_value'});return
+        try:items=list(groups.items())
+        except RuntimeError:
+            omitted.append({'owner':owner,'attribute':'_sessions','reason':'concurrent_change'});return
+        if len(items)>2:
+            omitted.append({'owner':owner,'attribute':'_sessions','reason':'concurrent_change'});return
+        session_keys=set()
+        for key,group in items:
+            if type(key)is not str or len(key)>128 or type(group)is not dict:
+                omitted.append({'owner':owner,'attribute':'_sessions','reason':'unretained_value'});continue
+            session_keys.add(key)
+            launcher_object=group.get('launcher')
+            if launcher_object is None:continue
+            launcher=plain_state(launcher_object)
+            if launcher is None:
+                omitted.append({'owner':owner,'attribute':'launcher','reason':'unretained_value'});continue
+            supervisor_object=launcher.get('_supervisor')
+            if supervisor_object is None:continue
+            supervisor=plain_state(supervisor_object)
+            if supervisor is None:
+                omitted.append({'owner':owner,'attribute':'supervisor','reason':'unretained_value'});continue
+            entry={'index':len(record['supervisors']),'session_key':key,'failure_index':None}
+            subowner=owner+':supervisor:'+str(entry['index'])
+            entry['failure_index']=link(subowner,'failure',supervisor.get('failure'))
+            record['supervisors'].append(entry)
+            if 'closure' in supervisor:retain(subowner,'closure',supervisor['closure'])
+        allocator_object=state.get('_host_evidence_budget')
+        if allocator_object is None:return
+        allocator=plain_state(allocator_object)
+        if allocator is None:
+            omitted.append({'owner':owner,'attribute':'_host_evidence_budget','reason':'unretained_value'});return
+        rows=allocator.get('_rows')
+        if type(rows)is not list or len(rows)>128:
+            omitted.append({'owner':owner,'attribute':'finalized_supervision_rows','reason':'unretained_value'});return
+        relevant=[]
+        # Only already-finalized plain rows, without snapshot/locks/new actions.
+        # This is a bounded diagnostic tail, never a complete wire transcript.
+        for row in rows[:128]:
+            if (type(row)is dict and row.get('kind')=='supervision_projection'
+                    and type(row.get('session_id'))is str and row['session_id'] in session_keys):
+                relevant.append(row)
+        if len(relevant)>8:
+            omitted.append({'owner':owner,'attribute':'finalized_supervision_rows','reason':'row_tail_limit'})
+        retain(owner,'finalized_supervision_rows',{'rows':relevant[-8:],
+            'observed_matching_rows':len(relevant),'earlier_rows_omitted':max(0,len(relevant)-8),
+            'scope':'finalized_rows_only_nonatomic_diagnostic_tail'})
     for index,item in enumerate(queue):
         attrs=BaseException.__getattribute__(item,'__dict__')
         typename=type(item).__name__
         row={'index':index,'type':typename[:128],'code':attrs.get('code') if type(attrs.get('code'))is str and attrs['code'] in contract.ERROR_CODES else None,
              'links':{},'session_index':None}
         exceptions.append(row)
+        traceback_tail(item,'exception:'+str(index))
         for name in ('startup_cleanup','startup_observation','cleanup','process_cleanup','owned_startup_guard'):
             if name in attrs:retain('exception:'+str(index),name,attrs[name])
         for name in ('startup_diagnostics','startup_info'):
@@ -346,25 +432,18 @@ def _save_case_failure(directory,kind,variant,error):
         if session is not None:
             identity=id(session)
             if identity not in session_ids:
-                try:state=object.__getattribute__(session,'__dict__')
-                except (AttributeError,TypeError):state=None
-                if type(state)is dict:
-                    session_ids[identity]=len(sessions);sessions.append({'index':len(sessions)})
+                state=plain_state(session)
+                if state is not None:
+                    session_ids[identity]=len(sessions);record={'index':len(sessions)};sessions.append(record)
                     for name in ('_cleanup','_cleanup_receipts','_startup_observations'):
-                        if name in state:retain('session:'+str(session_ids[identity]),name,state[name])
+                        if name in state:retain('session:'+str(record['index']),name,state[name])
+                    session_facts(state,record)
                 else:omitted.append({'owner':'exception:'+str(index),'attribute':'engagement_session','reason':'unretained_value'})
             row['session_index']=session_ids.get(identity)
         for name in ('__cause__','__context__','startup_failure','cleanup_error','resource_cleanup_error'):
             linked=BaseException.__getattribute__(item,name) if name.startswith('__') else attrs.get(name)
-            if linked is None:continue
-            if not isinstance(linked,BaseException):
-                omitted.append({'owner':'exception:'+str(index),'attribute':name,'reason':'not_exception'});continue
-            identity=id(linked)
-            if identity not in seen:
-                if len(queue)>=8:
-                    omitted.append({'owner':'exception:'+str(index),'attribute':name,'reason':'chain_limit'});continue
-                seen[identity]=len(queue);queue.append(linked)
-            row['links'][name]=seen[identity]
+            target=link('exception:'+str(index),name,linked)
+            if target is not None:row['links'][name]=target
     value={'schema_version':'1','acceptance':False,'kind':kind,
         'variant':variant if type(variant)is str and len(variant)<=128 else None,
         'observer_pid':os.getpid(),'observed_at_ns':time.monotonic_ns(),
@@ -373,7 +452,6 @@ def _save_case_failure(directory,kind,variant,error):
     raw=canonical(value)
     if len(raw)>maximum:raise ValueError('failure_artifact_limit')
     private_write(Path(directory)/'case-failure.json',raw)
-
 
 def _main(arguments):
     if len(arguments)!=3 or arguments[0] not in ('--runtime','--core'):raise ValueError('fixed case arguments')

@@ -408,7 +408,7 @@ def test_lease_narrowing_never_renews_original_deadline(monkeypatch):
     assert expired.stop()['deadline_ns'] == c.SECOND
 
 
-def test_uncertain_dispatch_is_never_retried(monkeypatch):
+def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
     obj, row, value = service()
     events = []
     row['reviewer'] = SimpleNamespace(consume=lambda *a, **kw:
@@ -418,10 +418,52 @@ def test_uncertain_dispatch_is_never_retried(monkeypatch):
         events.append('dispatch')
         raise c.LiveError('engagement_live_unavailable')
     obj._broker = SimpleNamespace(_dispatch_with_control=dispatch)
-    with pytest.raises(c.LiveError, match='unavailable'):
+    with pytest.raises(c.LiveError, match='unavailable') as caught:
         obj.execute(value,'a'*48,control=obj._control)
     assert events == ['audit','dispatch']
     assert obj._operations[value['envelope']['dispatch_id']]['result'] is None
+
+    # An outer dispatch failure must retain the supervisor's distinct first
+    # error and actual cleanup facts without calling live owner methods.
+    from engagement_live_native import _save_case_failure
+    def first_supervisor_failure():
+        private_local = 'not-for-failure-artifacts'
+        raise c.LiveError('engagement_live_invalid_runtime')
+    try:
+        first_supervisor_failure()
+    except c.LiveError as error:
+        first = error
+    closure = {'state':'joined','status':'failed','pending_slots':[], 'channel_closed':False}
+    def forbidden_snapshot():
+        raise AssertionError('failure capture must only read retained state')
+    supervisor = SimpleNamespace(failure=first, closure=closure, snapshot=forbidden_snapshot)
+    row['launcher'] = SimpleNamespace(_supervisor=supervisor)
+    obj._failure = first
+    obj._cleanup = {'status':'failed', 'descriptors_closed':False, 'processes':[]}
+    retained_row = {'kind':'supervision_projection',
+        'session_id':value['envelope']['session_id'], 'data':{'kind':'local_failure'}}
+    obj._host_evidence_budget._rows.append(retained_row)
+    obj._host_evidence_budget.snapshot = forbidden_snapshot
+    caught.value.engagement_session = obj
+    _save_case_failure(tmp_path, 'core', 'portable_first_failure_retention', caught.value)
+    raw = (tmp_path/'case-failure.json').read_bytes()
+    saved = json.loads(raw)
+    assert saved['acceptance'] is False
+    assert b'not-for-failure-artifacts' not in raw
+    session_record = saved['sessions'][0]
+    first_index = session_record['first_failure_index']
+    assert first_index == session_record['supervisors'][0]['failure_index']
+    assert first_index != 0
+    assert saved['exception_chain'][first_index]['code'] == 'engagement_live_invalid_runtime'
+    observations = {(item['owner'], item['attribute']):item['value'] for item in saved['observations']}
+    assert observations[('session:0', '_cleanup')] == obj._cleanup
+    assert observations[('session:0:supervisor:0', 'closure')] == closure
+    assert observations[('session:0', 'finalized_supervision_rows')]['rows'] == [retained_row]
+    trace = observations[('exception:'+str(first_index), 'traceback')]
+    assert trace['frames'][-1]['function'] == 'first_supervisor_failure'
+    assert trace['traversal_truncated'] is False
+    assert supervisor.failure is first and obj._failure is first
+    assert events == ['audit','dispatch']
 
     # Observe the actual full send / decoded reply before protocol postchecks.
     # A late postcheck must not erase a real effect or cause a dispatch retry.

@@ -105,7 +105,8 @@ def test_exact_source_inventory():
         refused(r.validate_runtime,bad)
 
 
-def test_fixed_native_elf_and_data_inventory():
+def test_fixed_native_elf_and_data_inventory(monkeypatch):
+    _native_interpreter_alias_cases(monkeypatch)
     bundle=declared_runtime();role=next(x for x in bundle['roles'] if x['role']=='nmap')
     for key,value in (('executable','/bin/sh'),('interpreter','/lib/unknown.so')):
         bad=deepcopy(role);bad[key]=value;refused(r.validate_role_manifest,bad)
@@ -115,6 +116,85 @@ def test_fixed_native_elf_and_data_inventory():
     assert r.SPEC['http_grammar']['nmap_argv'][0]=='/tool/nmap'
     launcher=next(x for x in bundle['roles'] if x['role']=='launcher')
     assert not {'/tool/nmap','/usr/bin/bwrap'} & {x['destination'] for x in launcher['native_files']}
+
+
+def _native_interpreter_alias_cases(monkeypatch):
+    """Exercise real manifest derivation with finite inspected-ELF/OS doubles."""
+    import platform
+    import subprocess
+    declared=declared_runtime()
+    interpreter='/lib64/ld-linux-x86-64.so.2'
+    alias='/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2'
+    python={key:declared['python'][key] for key in ('source','destination','size','sha256')}
+    loader={'source':'/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2',
+            'destination':interpreter,'size':20,'sha256':'d'*64}
+    library={'source':'/usr/lib/x86_64-linux-gnu/libc.so.6',
+             'destination':'/lib/x86_64-linux-gnu/libc.so.6','size':30,'sha256':'e'*64}
+    unrelated={**loader,'source':'/usr/lib/unrelated.so','destination':'/lib/unrelated.so'}
+    nmap={'source':'/usr/lib/nmap/nmap','destination':'/tool/nmap','size':40,'sha256':'f'*64}
+    native_rows=[nmap,loader,{**loader,'destination':alias},library,unrelated]
+    native_interpreter=[interpreter]
+    resources={row['source']:row for row in next(row for row in declared['roles'] if row['role']=='graphical')['readonly_resources']}
+    common=[python,loader,library]
+    calls=[]
+    def closure(source,destination,control=None):
+        calls.append((source,destination))
+        if destination=='/tool/nmap':return deepcopy(native_rows),native_interpreter[0]
+        if destination=='/usr/bin/python3':return deepcopy(common),interpreter
+        row={'source':source,'destination':destination,'size':10,'sha256':'a'*64}
+        return deepcopy([row,loader,library]),interpreter
+    def metadata(command,**kwargs):
+        assert command[:4]==['/usr/bin/python3','-I','-S','-c'] and len(command)==5
+        return SimpleNamespace(stderr=b'',stdout=raw(['3.14.0',['sys']]))
+    def glob(path,pattern):
+        assert str(path)=='/usr/lib/python3.14/lib-dynload'
+        return [path/(pattern.split('.')[0]+'.so')]
+    real_stat=os.stat
+    def observed_stat(path,*args,**kwargs):
+        if str(path)=='/usr/lib/python3.14':
+            return SimpleNamespace(st_dev=1,st_ino=2,st_mode=stat.S_IFDIR|0o755)
+        return real_stat(path,*args,**kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(platform,'system',lambda:'Linux')
+        patch.setattr(platform,'machine',lambda:'x86_64')
+        patch.setattr(os,'getuid',lambda:1000,raising=False)
+        patch.setattr(os,'stat',observed_stat)
+        patch.setattr(subprocess,'run',metadata)
+        patch.setattr(Path,'glob',glob)
+        patch.setattr(r,'_closure',closure)
+        patch.setattr(r,'_file_row',lambda source,destination,control=None:deepcopy(python))
+        patch.setattr(r,'_read_file',lambda *args,**kwargs:b'declared source')
+        patch.setattr(r,'_resource',lambda path,control=None:deepcopy(resources[path]))
+        control=SimpleNamespace(deadline=r.time.monotonic()+15,check=lambda:None)
+        def inspect():
+            bundle=r.inspect_runtime(control)
+            return next(row for row in bundle['roles'] if row['role']=='nmap')
+        manifest=inspect()
+        assert ('/usr/lib/nmap/nmap','/tool/nmap') in calls
+        assert manifest['required_mapped_images']==sorted([interpreter,library['destination'],unrelated['destination'],'/tool/nmap'])
+        by_path={row['destination']:row for row in manifest['native_files']}
+        assert all(by_path[row['destination']]==row for row in native_rows)
+        # Source identity and both content commitments must agree. Identical
+        # bytes at another source are not enough to omit a required library.
+        for key,value in (('source','/usr/lib/different-loader.so'),('size',21),('sha256','0'*64)):
+            native_rows[2]={**loader,'destination':alias,key:value}
+            changed=inspect()
+            assert alias in changed['required_mapped_images']
+            assert next(row for row in changed['native_files'] if row['destination']==alias)==native_rows[2]
+        native_rows[2]={**loader,'destination':alias}
+        for value in (None,'/lib/unknown-loader.so'):
+            native_interpreter[0]=value
+            refused(inspect)
+        native_interpreter[0]=interpreter
+        # A DT_NEEDED alias never substitutes for a missing PT_INTERP entry.
+        native_rows.remove(loader)
+        refused(inspect)
+        native_rows.insert(1,loader)
+        native_rows.remove(nmap)
+        refused(inspect)
+        native_rows.insert(0,nmap)
+        same_image_root={**loader,'destination':'/tool/nmap'}
+        assert '/tool/nmap' in r._required_native_images([same_image_root,loader,native_rows[2]],interpreter)
 
 
 def test_role_partition_authority_absent():
@@ -1089,15 +1169,22 @@ def _supervised_native_receipt_cases(monkeypatch):
     for row in bundle['roles']:
         for image in row['native_files']:
             if image['destination']=='/tool/nmap':image['sha256']='c'*64
+    manifest=next(row for row in bundle['roles'] if row['role']=='nmap')
+    interpreter=manifest['interpreter'];alias='/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2'
+    loader=next(row for row in manifest['native_files'] if row['destination']==interpreter)
+    manifest['native_files'].append({**loader,'destination':alias})
+    manifest['native_files'].sort(key=lambda row:row['destination'])
     bundle=r.validate_runtime(bundle)
     waiting=declared_readiness(bundle,'nmap');parent=deepcopy(waiting['parent_observation'])
+    parent['mapped_images']=[row for row in parent['mapped_images'] if row['destination']!=alias]
     image=next(x for x in bundle['roles'] if x['role']=='nmap')['native_files']
     image=next(x for x in image if x['destination']=='/tool/nmap')
     parent.update(stage='native',sampled_at_ns=2000000000)
     parent['executable']={**parent['executable'],'destination':'/tool/nmap','sha256':image['sha256'],'size':image['size']}
     good={'schema_version':'1','role':'nmap','waiting_image':deepcopy(waiting['parent_observation']['executable']),
           'parent_observation':parent,'observed_at_ns':2000000000}
-    for mutation in (None,'pid','start','hash','size','map','waiting','observer','stage'):
+    for mutation in (None,'pid','start','hash','size','map','waiting','observer','stage',
+                     'missing_interpreter','missing_library','alias_instead_of_interpreter'):
         value=deepcopy(good)
         if mutation=='pid':value['parent_observation']['payload']['pid']+=1
         elif mutation=='start':value['parent_observation']['payload']['start_time_ticks']+=1
@@ -1107,6 +1194,12 @@ def _supervised_native_receipt_cases(monkeypatch):
         elif mutation=='waiting':value['waiting_image']['inode']+=1
         elif mutation=='observer':value['parent_observation']['observer']['pid']+=1
         elif mutation=='stage':value['parent_observation']['stage']='sealed'
+        elif mutation in ('missing_interpreter','missing_library','alias_instead_of_interpreter'):
+            missing='/lib/x86_64-linux-gnu/libffi.so.8' if mutation=='missing_library' else interpreter
+            value['parent_observation']['mapped_images']=[row for row in value['parent_observation']['mapped_images'] if row['destination']!=missing]
+            if mutation=='alias_instead_of_interpreter':
+                value['parent_observation']['mapped_images'].append({'destination':alias,'device':1,'inode':999})
+                value['parent_observation']['mapped_images'].sort(key=lambda row:row['destination'])
         proxy=r.SupervisorChannel.__new__(r.SupervisorChannel)
         proxy.runtime=bundle;proxy.states={'identify_client':'active'};proxy.native={}
         control=SimpleNamespace(deadline=r.time.monotonic()+2,check=lambda:None);proxy.control=control
