@@ -335,6 +335,7 @@ def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
         from recon_cockpit.secure_agent.execution import ExecutionControl,ExecutionStopped
         transport=host.EngagementBroker.__new__(host.EngagementBroker)
         transport._pid=os.getpid();transport._closed=False;transport._stop=threading.Event()
+        transport._cleanup_epoch=None
         transport.control=ExecutionControl(time.monotonic()+2);transport._deadline_ns=int(transport.control.deadline*c.SECOND)
         transport._owner=object();transport._locks=[threading.Lock(),threading.Lock()];transport._observations=[]
         transport._sequence=[p.ChannelSequence(uid(70),'ingress'),p.ChannelSequence(uid(71),'ingress')]
@@ -352,6 +353,37 @@ def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
                     pytest.fail('held lock was acquired')
             assert lock.locked() and time.monotonic()-began<.3
         finally:lock.release()
+    # A failed persistent startup inherits the first stop, while constructing
+    # and using an ordinary startup clip does not itself stop the session.
+    from recon_cockpit.secure_agent.engagement_live_session import _CleanupEpoch
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    now=[100.0]
+    with monkeypatch.context() as patch:
+        patch.setattr(time,'monotonic',lambda:now[0])
+        patch.setattr(time,'monotonic_ns',lambda:int(now[0]*c.SECOND))
+        original=ExecutionControl(200.0,clock=time.monotonic);epoch=_CleanupEpoch(original)
+        phase=host._ClippedControl(original,150*c.SECOND,cleanup_epoch=epoch)
+        phase.check();assert phase.deadline==150 and epoch.snapshot() is None
+        assert phase.cleanup_deadline==102.0
+        with pytest.raises(c.LiveError,match='cancelled'):phase.check()
+        now[0]=100.5
+        assert runtime._failure_deadline(phase)==102.0
+        # Its ten-second startup wrapper must not replace the original lifetime.
+        startup=runtime._ClippedControl(phase,110.0)
+        assert startup.deadline==110 and phase.deadline==150
+        seen=[];receipt={'status':'complete'}
+        def cleanup(processes,pins,*,deadline):seen.append(deadline);return receipt
+        patch.setattr(runtime,'cleanup_owned',cleanup)
+        broker=host.EngagementBroker.__new__(host.EngagementBroker)
+        broker._pid=os.getpid();broker.control=original;broker._deadline_ns=150*c.SECOND
+        broker._cleanup_epoch=epoch;broker._closed=False;broker._stop=threading.Event();broker._cleanup=None
+        broker._owner=SimpleNamespace(process=SimpleNamespace(poll=lambda:0),pin=object(),
+            channel=SimpleNamespace(shutdown=lambda how:None,close=lambda:None))
+        broker.bundle=SimpleNamespace(take_evidence_readers=lambda:{},close=lambda:None)
+        assert broker._close(150.0) is receipt and seen==[102.0]
+        now[0]=101.0
+        assert broker._close(180.0) is receipt and seen==[102.0]
+        assert epoch.snapshot()['deadline_ns']==102*c.SECOND
 
 
 def _preallocated_child_custody(tmp_path, monkeypatch):

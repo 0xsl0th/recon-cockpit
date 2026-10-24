@@ -47,6 +47,7 @@ import socket
 import time
 
 from . import engagement_live_contract as contract
+from . import engagement_live_protocol as protocol
 from .approvals import ApprovalStore
 from .engagement_live_approval_view import check_review_time, fresh_challenge, review_text
 from .models import parse_action, parse_policy
@@ -221,8 +222,6 @@ class _Deadline:
 
 
 def _serve(channel, state, role, witness_fd, *, terminal_fd=None, window=None):
-    from . import engagement_live_protocol as protocol
-
     binding = state.binding
     sequence = protocol.ChannelSequence(binding['reviewer_id'], role)
     session_control = _Deadline(state.deadline_ns, binding)

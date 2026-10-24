@@ -162,7 +162,7 @@ def test_direct_witness_binds_complete_context_and_consume_sequence(monkeypatch)
     assert reference.encode('ascii') not in raw
 
 
-def test_worker_refuses_forged_out_of_order_or_oversized_packets():
+def test_worker_refuses_forged_out_of_order_or_oversized_packets(monkeypatch):
     sequence = protocol.ChannelSequence(uid(5), 'terminal')
     request = {'schema_version': '1', 'channel_id': uid(5), 'sequence': 1,
                'operation': 'REVIEW', 'body': prepared()}
@@ -174,6 +174,106 @@ def test_worker_refuses_forged_out_of_order_or_oversized_packets():
     with pytest.raises(c.LiveError):
         protocol.decode_frame(b' ' * 32769, role='terminal', direction='request')
     assert sequence.received == 1
+
+    # Start a fresh copy of the real worker with a cold protocol cache. The
+    # portable seal double denies module-file reads after sealing, matching the
+    # actual terminal refusal without installing a process-wide syscall filter.
+    import importlib.machinery
+    from pathlib import Path
+    import sys
+    from types import ModuleType
+    import recon_cockpit.secure_agent as package
+    from recon_cockpit.secure_agent import approval_worker as terminal
+    from recon_cockpit.secure_agent import graphical_approval_worker as graphical
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+
+    source = Path(worker.__file__).read_text()
+    protocol_name = package.__name__ + '.engagement_live_protocol'
+    original_protocol = sys.modules[protocol_name]
+    original_get_data = importlib.machinery.SourceFileLoader.get_data
+    for role in ('terminal', 'graphical'):
+        with monkeypatch.context() as patch:
+            # This is a declared peer double; portable hosts need not implement
+            # Linux SEQPACKET sockets, and no socket is constructed by this path.
+            patch.setattr(socket, 'SOCK_SEQPACKET', getattr(socket, 'SOCK_SEQPACKET', 5), raising=False)
+            session = opened('terminal' if role == 'terminal' else 'graphical_v1')
+            binding = session['binding']
+            events, denied, replies, closed, diagnostics = [], [], [], [], []
+            sealed = [False]
+            def get_data(loader, path):
+                if sealed[0]:
+                    denied.append(path)
+                    raise PermissionError(1, 'module reads denied after seal', path)
+                if loader.name == protocol_name:
+                    events.append('protocol_load')
+                return original_get_data(loader, path)
+            patch.setattr(importlib.machinery.SourceFileLoader, 'get_data', get_data)
+            patch.delitem(sys.modules, protocol_name)
+            patch.delattr(package, 'engagement_live_protocol')
+            fresh = ModuleType(package.__name__ + '._portable_reviewer')
+            fresh.__package__ = package.__name__
+            exec(compile(source, worker.__file__, 'exec'), fresh.__dict__)
+
+            class Peer:
+                family, type = socket.AF_UNIX, socket.SOCK_SEQPACKET
+                def fileno(self): return 99
+                def setblocking(self, value): pass
+                def recv(self, *args): return b''
+                def close(self): closed.append('peer')
+            class Window:
+                def __init__(self): self._root = SimpleNamespace(winfo_screen=lambda: ':99.0')
+                def warmup(self): pass
+                def close(self): closed.append('window')
+
+            payload = {'session_binding': binding, 'roe': session['roe'],
+                'scope': session['scope'], 'policy': session['policy'],
+                'reviewer_id': binding['reviewer_id'], 'review_mode': binding['review_mode']}
+            if role == 'terminal': payload['tty_identity'] = [1, 2, 3]
+            else: payload.update(display=':99.0', display_socket=[1, 2],
+                                 authority_sha256=hashlib.sha256(b'cookie').hexdigest())
+            initial = {'observer': {}, 'payload': payload, 'runtime_sha256': binding['runtime_sha256'],
+                       'deadline_ns': binding['session_deadline_ns']}
+            rights = {'review_witness': 98, **({'intentional_tty': 97} if role == 'terminal' else {})}
+            patch.setattr(fresh, 'socket', SimpleNamespace(AF_UNIX=socket.AF_UNIX,
+                SOCK_SEQPACKET=socket.SOCK_SEQPACKET, MSG_DONTWAIT=socket.MSG_DONTWAIT,
+                socket=lambda **kwargs: Peer()))
+            patch.setattr(fresh, 'sys', SimpleNamespace(argv=['worker', binding['reviewer_id'], 'b'*64]))
+            patch.setattr(fresh, 'os', SimpleNamespace(environ={'DISPLAY': ':99.0'},
+                close=lambda fd: closed.append(fd),
+                write=lambda fd, raw: diagnostics.append(repr(sys.exception())) or len(raw)))
+            patch.setattr(fresh, 'time', SimpleNamespace(monotonic_ns=lambda: M, monotonic=lambda: M/c.SECOND))
+            patch.setattr(c, 'sample_clock', lambda: clock())
+            patch.setattr(runtime, '_read_file', lambda path, limit:
+                c.canonical({'role': role}) if path == runtime.MANIFEST_PATH else b'cookie')
+            patch.setattr(runtime, '_receive_initial', lambda *a, **kw: (initial, {}, rights, Peer()))
+            patch.setattr(runtime, 'check_role_entry', lambda **kw: {})
+            patch.setattr(runtime, 'bootstrap_role', lambda **kw: {'boundary_checks': {}})
+            patch.setattr(runtime, '_emit_ready', lambda value: events.append('ready'))
+            patch.setattr(terminal, 'verify_terminal', lambda *a: None)
+            patch.setattr(graphical, 'verify_display', lambda *a: None)
+            patch.setattr(view, 'ReviewWindow', Window)
+
+            def seal(*args):
+                events.append('seal')
+                sealed[0] = True
+                loaded = sys.modules.get(protocol_name)
+                if loaded is not None:
+                    def receive(*args, **kwargs):
+                        events.append('receive')
+                        kwargs['control'].check()
+                        return {'schema_version': '1', 'channel_id': binding['reviewer_id'],
+                                'sequence': 1, 'operation': 'CLOSE', 'body': None}
+                    patch.setattr(loaded, 'receive_packet', receive)
+                    patch.setattr(loaded, 'send_packet', lambda channel, frame, **kw: replies.append(frame))
+            patch.setattr(terminal, 'seal', seal)
+            patch.setattr(graphical, 'seal', seal)
+            assert fresh.main() == 0, (role, events, denied, diagnostics)
+            assert not denied
+            assert events.index('protocol_load') < events.index('seal') < events.index('ready') < events.index('receive')
+            assert len(replies) == 1 and replies[0]['operation'] == 'CLOSE'
+            assert replies[0]['body']['data']['role'] == role and closed
+        assert sys.modules[protocol_name] is original_protocol
+        assert package.engagement_live_protocol is original_protocol
 
 
 def test_unexpected_ancillary_descriptors_are_closed(monkeypatch):
@@ -256,11 +356,12 @@ def test_original_deadline_bounds_review_consume_and_output(monkeypatch):
         holder.start()
         began = time.monotonic()
         try:
-            with pytest.raises(Exception, match='session_timeout|timeout'):
+            with pytest.raises(Exception, match='session_timeout|timeout') as failure:
                 if operation == 'START':
                     service.start()
                 else:
                     service._exchange(operation, value, 'a'*48, original)
+            assert failure.value.cleanup_error.code == 'engagement_live_cleanup_incomplete'
             assert time.monotonic() - began < 0.5
             assert not sent and service._owner is None and not service._observations
             assert service._stop.is_set()
@@ -402,7 +503,7 @@ def test_inherited_service_refuses_before_lock_or_channel_use(monkeypatch):
             call()
 
 
-def test_runtime_failure_cannot_fallback_or_leave_live_review(monkeypatch):
+def test_runtime_failure_cannot_fallback_or_leave_live_review(monkeypatch, tmp_path):
     service, value, control = service_fixture(monkeypatch)
     starts, closes = [], []
     def failed_start(*, control):
@@ -423,3 +524,90 @@ def test_runtime_failure_cannot_fallback_or_leave_live_review(monkeypatch):
                        value['envelope'], control=control)
     assert starts == [True] and len(closes) == 2
     assert not service._observations
+
+    # Both explicit startup and first-review startup carry the session's first
+    # stop through the actual phase wrapper. A later failure cannot buy two
+    # more seconds, and simply constructing/checking a phase never stops work.
+    from recon_cockpit.secure_agent.engagement_live_session import _CleanupEpoch
+    for operation in ('START', 'REVIEW'):
+        service, value, _ = service_fixture(monkeypatch)
+        tick = [time.monotonic()]
+        original = ExecutionControl(tick[0]+60, clock=lambda:tick[0])
+        service._control = original
+        service._cleanup_epoch = epoch = _CleanupEpoch(original)
+        seen = []
+        with monkeypatch.context() as patch:
+            patch.setattr(host.time, 'monotonic', lambda:tick[0])
+            patch.setattr(host.time, 'monotonic_ns', lambda:int(tick[0]*c.SECOND))
+            def startup_failure(*, control):
+                control.check()
+                assert epoch.snapshot() is None
+                first = epoch.stop()
+                tick[0] += 1
+                end = control.cleanup_deadline
+                assert int(end*c.SECOND) <= first['deadline_ns']
+                assert first['deadline_ns']-int(end*c.SECOND) <= 1
+                assert epoch.snapshot() == first
+                seen.append(end)
+                raise c.LiveError('engagement_live_unsupported_runtime')
+            patch.setattr(service, '_start_owned', startup_failure)
+            patch.setattr(service, 'close', lambda:None)
+            with pytest.raises(c.LiveError, match='unsupported_runtime'):
+                if operation == 'START': service.start()
+                else: service._exchange('REVIEW', value, None, original)
+        assert len(seen) == 1 and not service._observations
+
+    # Process reaping still runs after a channel-close failure. A timing-only
+    # process failure retains its observed closed descriptors; only a separate
+    # resource-close failure makes combined descriptor custody incomplete.
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    for broken_channel, late_process in ((True, False), (False, True), (True, True)):
+        service, _, _ = service_fixture(monkeypatch)
+        service._cleanup_epoch = _CleanupEpoch(service._control)
+        owner = service._owner = SimpleNamespace(process=object(), pin=object(), cleanup=None)
+        events = []
+        resource_error = OSError('modeled reviewer channel close failure')
+        def channel_close():
+            events.append('channel_close')
+            if broken_channel: raise resource_error
+        service._channel = SimpleNamespace(shutdown=lambda how:events.append('interrupt'), close=channel_close)
+        now = time.monotonic_ns()
+        actual = {'schema_version':'1', 'started_at_ns':now, 'finished_at_ns':now,
+                  'deadline_ns':now+c.SECOND, 'status':'failed' if late_process else 'complete',
+                  'processes':[{'portable_process_observation':True}], 'descriptors_closed':True}
+        process_error = c.LiveError('engagement_live_cleanup_incomplete')
+        process_error.cleanup = actual
+        def reap(processes, pins, *, deadline):
+            assert processes == [owner.process] and pins == [owner.pin]
+            assert int(deadline*c.SECOND) <= service._cleanup_epoch.snapshot()['deadline_ns']
+            events.append('reap')
+            if late_process: raise process_error
+            return actual
+        with monkeypatch.context() as patch:
+            patch.setattr(runtime, 'cleanup_owned', reap)
+            with pytest.raises(c.LiveError, match='cleanup_incomplete') as caught:
+                service.close()
+            assert events == ['interrupt', 'channel_close', 'reap']
+            receipt = service._cleanup_receipt
+            assert owner.cleanup is receipt and receipt['status'] == 'failed'
+            assert receipt['processes'] == actual['processes'] and actual['descriptors_closed'] is True
+            if broken_channel:
+                assert receipt['descriptors_closed'] is False
+                assert caught.value.resource_cleanup_error is resource_error
+                assert caught.value.process_cleanup is actual
+            else:
+                assert receipt is actual and caught.value is process_error
+                assert receipt['descriptors_closed'] is True
+            assert service.close() is receipt
+            assert events.count('reap') == 1
+            if broken_channel:
+                from engagement_live_native import _save_case_failure
+                directory = tmp_path/str(late_process)
+                directory.mkdir(mode=0o700)
+                _save_case_failure(directory, 'core', 'portable_cleanup_retention', caught.value)
+                saved = json.loads((directory/'case-failure.json').read_bytes())
+                assert saved['capture_complete'] is True and saved['acceptance'] is False
+                observations = {row['attribute']:row['value'] for row in saved['observations']
+                                if row['owner'] == 'exception:0'}
+                assert observations['cleanup'] == receipt
+                assert observations['process_cleanup'] == actual

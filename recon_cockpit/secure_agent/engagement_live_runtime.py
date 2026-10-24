@@ -1480,15 +1480,19 @@ def _start_role_owned(*,runtime,role,payload,rights,control,stdin_pair=None,extr
     finally:
         _release_startup_resources(snapshot=snapshot,info_read=info_read,info_write=info_write,
             child=child,rights=rights,parent=parent,process=process,owner=owner,
-            successful=successful,failure=failure)
+            successful=successful,failure=failure,control=control)
 
 
-def _release_startup_resources(*,snapshot,info_read,info_write,child,rights,parent,process,owner,successful,failure):
+def _release_startup_resources(*,snapshot,info_read,info_write,child,rights,parent,process,owner,successful,failure,control):
     """Every owned close and process reap is attempted despite earlier errors."""
     errors=[]
+    deadline=None if successful else _failure_deadline(control)
     def close(call):
+        nonlocal deadline
         try:call()
-        except BaseException as error:errors.append(error)
+        except BaseException as error:
+            errors.append(error)
+            if deadline is None:deadline=_failure_deadline(control)
     if snapshot is not None:close(snapshot.close)
     for fd in (info_write,info_read):
         if fd is not None:close(lambda fd=fd:os.close(fd))
@@ -1497,25 +1501,37 @@ def _release_startup_resources(*,snapshot,info_read,info_write,child,rights,pare
         _,fd=rights.popitem()
         close(lambda fd=fd:os.close(fd))
     if successful and not errors:return
+    if deadline is None:deadline=_failure_deadline(control)
     close(parent.close)
     observation=getattr(getattr(process,'_engagement_unverified_pin',None),'entry_receipt',None)
     receipt=None
+    def failed_receipt(actual):
+        if actual is None:return None
+        value={**actual,'status':'failed','descriptors_closed':False}
+        if 'finished_at_ns' in value:value['finished_at_ns']=time.monotonic_ns()
+        if owner is not None:owner.cleanup=value
+        return value
     if process is not None:
-        try:receipt=owner.close() if owner is not None else cleanup_owned([process],[])
+        try:receipt=owner.close(deadline=deadline) if owner is not None else cleanup_owned([process],[],deadline=deadline)
         except BaseException as error:
-            if hasattr(error,'cleanup'):error.startup_cleanup=error.cleanup
+            actual=getattr(error,'cleanup',getattr(owner,'cleanup',None))
+            error.process_cleanup=actual
+            error.cleanup=error.startup_cleanup=failed_receipt(actual) if errors else actual
             error.startup_observation=observation
+            if errors:error.resource_cleanup_error=errors[0]
             if failure is not None:error.startup_failure=failure
             raise
+    actual=receipt
+    if errors:receipt=failed_receipt(actual)
     if failure is not None:
         failure.startup_cleanup=receipt
         failure.startup_observation=observation
-        if errors:failure.resource_cleanup_error=errors[0]
+        if errors:failure.resource_cleanup_error=errors[0];failure.process_cleanup=actual
     elif errors:
         from .engagement_live_contract import LiveError
         error=LiveError('engagement_live_unavailable')
         error.startup_cleanup=receipt;error.startup_observation=observation
-        error.resource_cleanup_error=errors[0]
+        error.resource_cleanup_error=errors[0];error.process_cleanup=actual
         raise error
 
 
@@ -1932,7 +1948,8 @@ def _namespace_command(argv,pass_fds,namespace_fds):
 def _failure_deadline(control):
     # Read the shared epoch only when failing/closing, never for successful work.
     deadline=getattr(control,'cleanup_deadline',None)
-    return time.monotonic()+2 if deadline is None else deadline
+    fallback=min(getattr(control,'deadline',float('inf')),time.monotonic()+2)
+    return fallback if deadline is None else min(deadline,fallback)
 
 
 class PendingChild:

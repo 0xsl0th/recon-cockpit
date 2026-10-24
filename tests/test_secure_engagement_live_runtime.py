@@ -706,24 +706,74 @@ def test_cleanup_failure_refuses_useful_result(monkeypatch):
     from recon_cockpit.secure_agent import engagement_live_context as context
     result=_client_result();result.update(status='succeeded',exit_code=0,stop_reason=None,parsed={'declared':True})
     refused(context.validate_client_result,result)
-    calls=[]
-    def broken_close():calls.append('snapshot');raise OSError('close failure')
+    calls=[];now=[10.0];deadline_reads=[]
+    monkeypatch.setattr(r.time,'monotonic',lambda:now[0])
+    class OriginalControl:
+        deadline=50.0
+        @property
+        def cleanup_deadline(self):deadline_reads.append(now[0]);return 12.0
+    control=OriginalControl()
+    def broken_close():
+        calls.append('snapshot');now[0]+=.1;raise OSError('close failure')
     process=SimpleNamespace(_engagement_unverified_pin=SimpleNamespace(entry_receipt={'actual':'entry'}))
     actual={'status':'complete'}
-    monkeypatch.setattr(r,'cleanup_owned',lambda processes,pins:(calls.append('reap') or actual))
-    monkeypatch.setattr(os,'close',lambda fd:calls.append(('fd',fd)))
+    def reap(processes,pins,*,deadline):
+        assert deadline==12.0;calls.append('reap');return actual
+    monkeypatch.setattr(r,'cleanup_owned',reap)
+    def close_fd(fd):calls.append(('fd',fd));now[0]+=.1
+    monkeypatch.setattr(os,'close',close_fd)
     peer=lambda name:SimpleNamespace(close=lambda:calls.append(name))
     original=c.LiveError('engagement_live_invalid_role');rights={'owned':17}
     r._release_startup_resources(snapshot=SimpleNamespace(close=broken_close),info_read=18,info_write=19,
         child=peer('child'),rights=rights,parent=peer('parent'),process=process,owner=None,
-        successful=False,failure=original)
+        successful=False,failure=original,control=control)
     assert calls==['snapshot',('fd',19),('fd',18),'child',('fd',17),'parent','reap']
-    assert rights=={} and original.startup_cleanup is actual and original.startup_observation=={'actual':'entry'}
-    calls.clear()
+    assert rights=={} and original.process_cleanup is actual and original.startup_observation=={'actual':'entry'}
+    assert original.startup_cleanup['status']=='failed' and not original.startup_cleanup['descriptors_closed']
+    assert deadline_reads==[10.0]
+    calls.clear();deadline_reads.clear()
+    before=now[0]
     error=refused(r._release_startup_resources,snapshot=SimpleNamespace(close=broken_close),info_read=None,
         info_write=None,child=peer('child'),rights={},parent=peer('parent'),process=process,
-        owner=None,successful=True,failure=None)
-    assert calls==['snapshot','child','parent','reap'] and error.startup_cleanup is actual
+        owner=None,successful=True,failure=None,control=control)
+    assert calls==['snapshot','child','parent','reap'] and error.process_cleanup is actual
+    assert error.startup_cleanup['status']=='failed' and not error.startup_cleanup['descriptors_closed']
+    assert deadline_reads==[before+.1]
+    calls.clear();deadline_reads.clear()
+    def owner_close(*,deadline):assert deadline==12.0;calls.append('owner_reap');return actual
+    owner=SimpleNamespace(close=owner_close)
+    r._release_startup_resources(snapshot=SimpleNamespace(close=broken_close),info_read=None,info_write=None,
+        child=peer('child'),rights={},parent=peer('parent'),process=process,
+        owner=owner,successful=False,failure=original,control=control)
+    assert calls==['snapshot','child','parent','owner_reap'] and len(deadline_reads)==1
+    assert owner.cleanup==original.startup_cleanup and owner.cleanup['status']=='failed'
+    assert not owner.cleanup['descriptors_closed'] and original.process_cleanup is actual
+    calls.clear();deadline_reads.clear()
+    r._release_startup_resources(snapshot=None,info_read=None,info_write=None,
+        child=peer('child'),rights={},parent=peer('parent'),process=process,
+        owner=None,successful=True,failure=None,control=control)
+    assert calls==['child'] and deadline_reads==[]
+    # A late-only process cleanup still proves that its descriptors closed.
+    # No additional close failure occurred, so retain that exact observation.
+    for use_owner in (False,True):
+        calls.clear();deadline_reads.clear()
+        late={'status':'failed','descriptors_closed':True}
+        failure=c.LiveError('engagement_live_cleanup_incomplete');failure.cleanup=late
+        def late_reap(*args,deadline):
+            assert deadline==12.0
+            raise failure
+        monkeypatch.setattr(r,'cleanup_owned',late_reap)
+        owner=SimpleNamespace(close=late_reap,cleanup=late) if use_owner else None
+        with pytest.raises(c.LiveError) as caught:
+            r._release_startup_resources(snapshot=None,info_read=None,info_write=None,
+                child=peer('child'),rights={},parent=peer('parent'),process=process,
+                owner=owner,successful=False,failure=original,control=control)
+        assert caught.value is failure and failure.startup_cleanup is late and failure.cleanup is late
+        assert failure.process_cleanup is late and not hasattr(failure,'resource_cleanup_error')
+        assert calls==['child','parent'] and len(deadline_reads)==1
+        if owner is not None:assert owner.cleanup is late
+    assert r._failure_deadline(SimpleNamespace(deadline=now[0]+.25))==now[0]+.25
+    assert r._failure_deadline(SimpleNamespace(deadline=9.0))==9.0
 
 
 def test_context_runtime_meter_parser_crosslinks():
@@ -855,7 +905,8 @@ def _pending_close_deadline_case(monkeypatch):
         patch.setattr(r,'cleanup_owned',lambda processes,pins,deadline:(calls.append(('cleanup',deadline)) or cleanup))
         error=refused(owner.observe_ready,control)
     assert error.code=='engagement_live_timeout' and error.startup_cleanup==cleanup
-    assert owner.info_read is None and calls==[('close',81),('cleanup',13.)]
+    # An inherited cleanup hint cannot widen the original control's deadline.
+    assert owner.info_read is None and calls==[('close',81),('cleanup',12.)]
 
 
 def _capture_fixture(monkeypatch,*,stdout=b'',stderr=b'',slot='http_headers'):

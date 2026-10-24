@@ -338,7 +338,7 @@ def _save_case_failure(directory,kind,variant,error):
         row={'index':index,'type':typename[:128],'code':attrs.get('code') if type(attrs.get('code'))is str and attrs['code'] in contract.ERROR_CODES else None,
              'links':{},'session_index':None}
         exceptions.append(row)
-        for name in ('startup_cleanup','startup_observation','cleanup','owned_startup_guard'):
+        for name in ('startup_cleanup','startup_observation','cleanup','process_cleanup','owned_startup_guard'):
             if name in attrs:retain('exception:'+str(index),name,attrs[name])
         for name in ('startup_diagnostics','startup_info'):
             if name in attrs:retain('exception:'+str(index),name,attrs[name],binary=True)

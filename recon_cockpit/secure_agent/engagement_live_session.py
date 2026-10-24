@@ -142,11 +142,17 @@ class _HostEvidenceBudget:
 class _CleanupEpoch:
     """The first stop fixes cleanup time; no caller can restart the clock."""
 
-    def __init__(self, control):
+    def __init__(self, control, *, stop_event=None, on_stop=None):
         self._pid = os.getpid()
         self._bound_ns = int(control.deadline * c.SECOND)
         self._lock = threading.Lock()
         self._value = None
+        self._stop_event = threading.Event() if stop_event is None else stop_event
+        self._on_stop = on_stop
+
+    @property
+    def stopped(self):
+        return self._stop_event.is_set()
 
     def stop(self, *, bound_deadline_ns=None):
         if self._pid != os.getpid():
@@ -156,11 +162,18 @@ class _CleanupEpoch:
         if bound_deadline_ns is not None:
             bound = min(bound, c.integer(bound_deadline_ns, 1, c.INTEGER_MAX))
         with self._lock:
-            if self._value is None:
+            first = self._value is None
+            if first:
                 self._value = {'first_stop_requested_at_ns': now,
                                'deadline_ns': min(bound, now + 2 * c.SECOND)}
+                self._stop_event.set()
             else:
                 self._value['deadline_ns'] = min(self._value['deadline_ns'], bound)
+        # The stop fence is already visible to every work control. Interrupting
+        # a peer may clamp this epoch again, so callbacks run outside its lock.
+        if first and self._on_stop is not None:
+            self._on_stop()
+        with self._lock:
             return dict(self._value)
 
     def snapshot(self):
@@ -221,13 +234,14 @@ class EngagementSession:
         self._unstarted_supervisors = []
         self._remaining_channels_closed = False
         self._host_evidence_budget = host_evidence_budget
-        self._cleanup_epoch = _CleanupEpoch(control)
+        self._cleanup_epoch = _CleanupEpoch(control, stop_event=self._stop, on_stop=self._request_stop)
         try:
             self._host_evidence_budget._attach_session(self)
             self._runtime = runtime.inspect_runtime(control)
             self._bundle = preallocate_role_bundle(review_mode)
             self._broker = EngagementBroker(runtime=self._runtime, store_directory=store_directory,
-                                             control=control, role_bundle=self._bundle)
+                                             control=control, role_bundle=self._bundle,
+                                             cleanup_epoch=self._cleanup_epoch)
             self._roles.append(self._broker)
             self._broker_ready = self._broker.start()
             self._readiness.append(self._broker_ready['readiness'])
@@ -238,7 +252,8 @@ class EngagementSession:
                         'session_id': allocated['session_id'], 'launcher_id': slot.launcher_id,
                         **declaration, 'prepared_sha256': None, 'bootstrap': None, 'entry_sha256': None})
             self._audit = EngagementAuditService(audit_path, runtime=self._runtime,
-                                                 role_bundle=self._bundle, control=control)
+                                                 role_bundle=self._bundle, control=control,
+                                                 cleanup_epoch=self._cleanup_epoch)
             self._roles.append(self._audit)
             self._audit.start()
             self._broker.observe_audit(self._audit.readiness)
@@ -289,6 +304,20 @@ class EngagementSession:
         self._remember_failure(error)
         self._stop.set()
 
+    def _request_stop(self):
+        """Publish the stop fence and interrupt peers without waiting for locks."""
+        self._owner_check()
+        self._stop.set()
+        for role in list(self._roles):
+            if role is self._broker:
+                continue
+            interrupt = getattr(role, '_interrupt', None)
+            if interrupt is not None:
+                try:
+                    interrupt()
+                except BaseException as error:
+                    self._remember_failure(error)
+
     def _session(self, session_id):
         c.uuid(session_id)
         with self._state_lock:
@@ -323,7 +352,8 @@ class EngagementSession:
 
         self._check()
         c.integer(ingress, 0, 1)
-        startup = _clipped_control(self._control, int(self._control.deadline*c.SECOND), self._stop)
+        startup = _clipped_control(self._control, int(self._control.deadline*c.SECOND),
+                                   self._stop, self._cleanup_epoch)
         # The same finite setup slot covers persistent namespace/nft builders
         # and later child construction. Two API submitters cannot create a
         # second helper outside the explicit process-graph bound.
@@ -358,7 +388,7 @@ class EngagementSession:
                 arm = peers.pop('launcher_arm')
                 endpoint = prepare_endpoint(runtime=self._runtime, session_binding=opened,
                     broker_peer=endpoint_peers, arm_peer=arm, control=_clipped_control(
-                        self._control, binding['session_deadline_ns'], self._stop))
+                        self._control, binding['session_deadline_ns'], self._stop, self._cleanup_epoch))
                 self._register(row, 'endpoint', endpoint, endpoint.ready)
                 launcher = EngagementLauncher(self._runtime, endpoint=endpoint, role_slot=slot,
                     host_evidence_budget=self._host_evidence_budget,

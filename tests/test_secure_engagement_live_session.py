@@ -172,17 +172,17 @@ def test_startup_failure_closes_every_created_role(monkeypatch):
     from recon_cockpit.secure_agent import engagement_live_runtime as runtime
     from recon_cockpit.secure_agent import engagement_live_broker as broker
     from recon_cockpit.secure_agent import engagement_live_audit as audit
-    calls = []
+    calls, startup_epochs = [], []
     now = time.monotonic_ns()
     receipt = {'schema_version':'1','started_at_ns':now,'finished_at_ns':now,
                'deadline_ns':now+2000000000,'status':'complete','processes':[], 'descriptors_closed':True}
     class Broker:
-        def __init__(self, **kw):pass
+        def __init__(self, **kw):startup_epochs.append(kw['cleanup_epoch'])
         def start(self):return {'readiness':{'portable_observation':True},'allocated_slots':[]}
         def _interrupt(self):calls.append('broker_interrupt')
         def _close(self, deadline):calls.append(('broker_close',deadline));return receipt
     class Audit:
-        def __init__(self, *a, **kw):pass
+        def __init__(self, *a, **kw):startup_epochs.append(kw['cleanup_epoch'])
         def start(self):raise c.LiveError('engagement_live_audit_unavailable')
         def _interrupt(self):calls.append('audit_interrupt')
         def _close(self, deadline):calls.append(('audit_close',deadline));return receipt
@@ -197,6 +197,58 @@ def test_startup_failure_closes_every_created_role(monkeypatch):
     assert len(deadlines)==2 and len(set(deadlines))==1
     assert calls.index('audit_interrupt') < next(i for i,v in enumerate(calls) if type(v)is tuple)
     assert caught.value.engagement_session._closed
+    assert len(startup_epochs) == 2
+    assert all(epoch is caught.value.engagement_session._cleanup_epoch for epoch in startup_epochs)
+
+    # A second startup's local cleanup must stop an already-running peer before
+    # it spends its reap budget. Notifications can recursively tighten the
+    # epoch, and one failed interrupt cannot prevent the remaining peers.
+    stopping, _, _ = service()
+    stopping._cleanup_epoch = module._CleanupEpoch(stopping._control,
+        stop_event=stopping._stop, on_stop=stopping._request_stop)
+    events = []
+    bound = time.monotonic_ns()+c.SECOND
+    def broken_interrupt():
+        events.append('first_peer')
+        raise OSError('modeled shutdown failure')
+    def peer_interrupt():
+        assert stopping._stop.is_set()
+        stopping._cleanup_epoch.stop(bound_deadline_ns=bound)
+        events.append('second_peer')
+    stopping._roles = [SimpleNamespace(_interrupt=broken_interrupt),
+                       SimpleNamespace(_interrupt=peer_interrupt)]
+    startup = _clipped_control(stopping._control, int(stopping._control.deadline*c.SECOND),
+                               stopping._stop, stopping._cleanup_epoch)
+    startup.check()
+    assert not events and stopping._cleanup_epoch.snapshot() is None
+    deadline = startup.cleanup_deadline
+    assert events == ['first_peer', 'second_peer'] and isinstance(stopping._failure, OSError)
+    assert int(deadline*c.SECOND) <= bound
+    before = stopping._cleanup_epoch.snapshot()
+    assert startup.cleanup_deadline == deadline
+    assert stopping._cleanup_epoch.snapshot() == before and len(events) == 2
+    with pytest.raises(c.LiveError, match='cancelled'): startup.check()
+
+    # Publication must fence concurrent work even if the notifying thread is
+    # paused before interrupting peers. The second caller must not await it.
+    entered, release, stopped = threading.Event(), threading.Event(), threading.Event()
+    def delayed_notice():
+        entered.set()
+        release.wait(1)
+    epoch = module._CleanupEpoch(stopping._control, stop_event=stopped, on_stop=delayed_notice)
+    work = _clipped_control(stopping._control, int(stopping._control.deadline*c.SECOND),
+                            cleanup_epoch=epoch)
+    notifier = threading.Thread(target=epoch.stop)
+    notifier.start()
+    try:
+        assert entered.wait(.5) and stopped.is_set() and epoch.stopped
+        first = epoch.snapshot()
+        assert epoch.stop() == first
+        with pytest.raises(c.LiveError, match='cancelled'): work.check()
+    finally:
+        release.set()
+        notifier.join(timeout=1)
+    assert not notifier.is_alive()
 
     # Session must signal both real host threads before joining either, and
     # preserve endpoint descriptor custody until both have actually exited.

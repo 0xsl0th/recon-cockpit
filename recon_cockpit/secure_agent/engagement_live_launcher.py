@@ -34,7 +34,7 @@ class _SupervisorControl:
             self.original.check()
         except ExecutionStopped as error:
             c.fail('cancelled' if error.reason == 'session_cancelled' else 'timeout')
-        if self.supervisor.stop.is_set():
+        if self.supervisor.stop.is_set() or self.supervisor.epoch.stopped:
             c.fail('cancelled')
         if self.clock() >= self.deadline:
             c.fail('timeout')
@@ -623,7 +623,7 @@ class EngagementLauncher:
             self._owner=rt._start_role(runtime=self.runtime,role='launcher',payload={
                 'session_binding':binding,'roe':opened['roe'],'scope':opened['scope'],'policy':opened['policy'],
                 'endpoint_identity':self.endpoint.identity,'child_slots':bindings},rights=transferred,
-                control=_ClippedControl(control,opened['binding']['session_deadline_ns'],self._stop),
+                control=_ClippedControl(control,opened['binding']['session_deadline_ns'],self._stop,self._epoch),
                 stdin_pair=(peers.pop('host'),peers.pop('child')),
                 namespace_fds=self.endpoint.namespace_fds,
                 expected_net=self.endpoint.identity['parent_observation']['namespaces']['net'],

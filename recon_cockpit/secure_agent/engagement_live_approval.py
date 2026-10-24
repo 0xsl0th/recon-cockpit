@@ -18,12 +18,26 @@ from .models import parse_policy
 
 
 class _ControlClip:
-    def __init__(self, original, deadline, stop):
+    def __init__(self, original, deadline, stop, cleanup_epoch=None):
         self.original, self.deadline, self._stop = original, deadline, stop
         self.cancelled, self.clock = original.cancelled, original.clock
+        self._cleanup_epoch = cleanup_epoch
+
+    @property
+    def cleanup_deadline(self):
+        # Reading this property begins failure cleanup; successful work never
+        # starts or renews the shared stop clock.
+        if self._cleanup_epoch is None:
+            inherited = getattr(self.original, 'cleanup_deadline', None)
+            return min(self.deadline, time.monotonic()+2 if inherited is None else inherited)
+        end_ns = self._cleanup_epoch.stop(
+            bound_deadline_ns=int(self.deadline*contract.SECOND))['deadline_ns']
+        end = end_ns/contract.SECOND
+        return math.nextafter(end, -math.inf) if int(end*contract.SECOND)>end_ns else end
 
     def remaining(self):
-        if self._stop is not None and self._stop.is_set():
+        if ((self._stop is not None and self._stop.is_set())
+                or (self._cleanup_epoch is not None and self._cleanup_epoch.stopped)):
             contract.fail('cancelled')
         self.original.check()
         remaining = self.deadline - self.clock()
@@ -35,11 +49,11 @@ class _ControlClip:
         self.remaining()
 
 
-def _clipped_control(original, deadline_ns, stop=None):
+def _clipped_control(original, deadline_ns, stop=None, cleanup_epoch=None):
     deadline = min(original.deadline, deadline_ns / contract.SECOND)
     if int(deadline * contract.SECOND) > deadline_ns:
         deadline = math.nextafter(deadline, -math.inf)
-    return _ControlClip(original, deadline, stop)
+    return _ControlClip(original, deadline, stop, cleanup_epoch)
 
 
 @contextmanager
@@ -117,7 +131,8 @@ class EngagementApprovalService:
 
     def _start(self, *, control=None):
         phase = control if control is not None else _clipped_control(self._control,
-            min(self._binding['session_deadline_ns'], self._binding['broker_deadline_ns']), self._stop)
+            min(self._binding['session_deadline_ns'], self._binding['broker_deadline_ns']),
+            self._stop, self._cleanup_epoch)
         with contract._deadline_context(phase.deadline):
             phase.check()
             result = self._start_owned(control=phase)
@@ -138,7 +153,8 @@ class EngagementApprovalService:
                    'scope': self._opened['scope'], 'policy': self._opened['policy'],
                    'reviewer_id': self._binding['reviewer_id'], 'review_mode': self._frontend}
         phase = control if control is not None else _clipped_control(self._control,
-            min(self._binding['session_deadline_ns'], self._binding['broker_deadline_ns']), self._stop)
+            min(self._binding['session_deadline_ns'], self._binding['broker_deadline_ns']),
+            self._stop, self._cleanup_epoch)
         phase.check()
         extra_mounts, environment = [], {}
         owned_fds = []
@@ -208,7 +224,8 @@ class EngagementApprovalService:
     def start(self):
         self._check_owner()
         phase = _clipped_control(self._control, min(self._binding['session_deadline_ns'],
-                                                   self._binding['broker_deadline_ns']), self._stop)
+                                                   self._binding['broker_deadline_ns']),
+                                 self._stop, self._cleanup_epoch)
         try:
             with contract._deadline_context(phase.deadline), _bounded_lock(self._lock, phase):
                 result = self._start(control=phase)
@@ -217,7 +234,10 @@ class EngagementApprovalService:
         except BaseException as error:
             if self._failure_sink is not None:
                 self._failure_sink(error)
-            self.close()
+            try:
+                self.close()
+            except BaseException as cleanup_error:
+                error.cleanup_error = cleanup_error
             raise
 
     def _quiet(self):
@@ -264,7 +284,8 @@ class EngagementApprovalService:
         # another exchange. Mutex contention cannot renew the caller's budget.
         phase = _clipped_control(self._control, min(
             self._binding['session_deadline_ns'], self._binding['broker_deadline_ns'],
-            time.monotonic_ns() + (30 if operation == 'REVIEW' else 2) * contract.SECOND), self._stop)
+            time.monotonic_ns() + (30 if operation == 'REVIEW' else 2) * contract.SECOND),
+            self._stop, self._cleanup_epoch)
         observation = ticket = None
         request_retained = False
         def observation_row():
@@ -278,7 +299,7 @@ class EngagementApprovalService:
                 phase.check()
                 prepared = contract.validate_prepared(prepared)
                 phase = _clipped_control(self._control, min(int(phase.deadline*contract.SECOND),
-                    prepared['envelope']['action_deadline_ns']), self._stop)
+                    prepared['envelope']['action_deadline_ns']), self._stop, self._cleanup_epoch)
                 phase.check()
             with contract._deadline_context(phase.deadline), _bounded_lock(self._lock, phase):
                 self._check()
@@ -364,9 +385,15 @@ class EngagementApprovalService:
         from . import engagement_live_runtime as runtime
 
         self._check_owner()
+        deadline = min(deadline, self._control.deadline,
+            self._binding['session_deadline_ns']/contract.SECOND,
+            self._binding['broker_deadline_ns']/contract.SECOND)
         if self._cleanup_epoch is not None:
-            deadline = self._cleanup_epoch.stop(
-                bound_deadline_ns=int(deadline*contract.SECOND))['deadline_ns']/contract.SECOND
+            end_ns = self._cleanup_epoch.stop(
+                bound_deadline_ns=int(deadline*contract.SECOND))['deadline_ns']
+            deadline = end_ns/contract.SECOND
+            if int(deadline*contract.SECOND)>end_ns:
+                deadline = math.nextafter(deadline, -math.inf)
         self._interrupt()
         if self._cleanup_receipt is not None:
             return self._cleanup_receipt
@@ -378,13 +405,37 @@ class EngagementApprovalService:
             if self._cleanup_receipt is not None:
                 return self._cleanup_receipt
             owner = self._owner
+            channel_error = cleanup_error = None
             if self._channel is not None:
-                self._channel.close()
-                self._channel = None
-            self._cleanup_receipt = runtime.cleanup_owned(
-                [] if owner is None else [owner.process], [] if owner is None else [owner.pin], deadline=deadline)
+                try:
+                    self._channel.close()
+                except BaseException as error:
+                    channel_error = error
+                else:
+                    self._channel = None
+            # A failed channel close cannot skip reaping the actual owner.
+            # Keep its process facts separate from combined descriptor custody.
+            try:
+                actual = runtime.cleanup_owned(
+                    [] if owner is None else [owner.process],
+                    [] if owner is None else [owner.pin], deadline=deadline)
+            except BaseException as error:
+                cleanup_error = error
+                actual = getattr(error, 'cleanup', None)
+            self._cleanup_receipt = actual
+            if channel_error is not None and actual is not None:
+                self._cleanup_receipt = {**actual, 'status': 'failed',
+                    'descriptors_closed': False, 'finished_at_ns': time.monotonic_ns()}
             if owner is not None:
                 owner.cleanup = self._cleanup_receipt
+            if channel_error is not None:
+                error = cleanup_error or contract.LiveError('engagement_live_cleanup_incomplete')
+                error.process_cleanup = actual
+                error.cleanup = self._cleanup_receipt
+                error.resource_cleanup_error = channel_error
+                raise error
+            if cleanup_error is not None:
+                raise cleanup_error
             return self._cleanup_receipt
         finally:
             if acquired:

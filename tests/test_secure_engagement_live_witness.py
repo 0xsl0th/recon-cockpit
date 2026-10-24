@@ -487,6 +487,7 @@ def audit_service(monkeypatch,deadline=None):
     """Real nonblocking pipes/channel, inert process double; no worker launch."""
     service=adapter.EngagementAuditService.__new__(adapter.EngagementAuditService)
     service._pid=os.getpid();service.control=ExecutionControl(time.monotonic()+1 if deadline is None else deadline)
+    service._cleanup_epoch=None
     service._lock=threading.Lock();service._stop=threading.Event();service._closed=False
     service.writer_id=uid(90);service._sequence=0;service._buffer=bytearray();service._observations=[]
     service._channel,peer=socket.socketpair();service._channel.setblocking(False);peer.setblocking(False)
@@ -505,6 +506,73 @@ def audit_service(monkeypatch,deadline=None):
 
 
 def test_audit_adapter_clips_original_exchange_deadline(monkeypatch,tmp_path):
+    from recon_cockpit.secure_agent.engagement_live_session import _CleanupEpoch
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    now=[100.0]
+    with monkeypatch.context() as patch:
+        patch.setattr(time,'monotonic',lambda:now[0])
+        patch.setattr(time,'monotonic_ns',lambda:int(now[0]*c.SECOND))
+        with audit_service(patch) as (service,peer,writers):
+            service.control=ExecutionControl(200.0,clock=time.monotonic)
+            service._cleanup_epoch=_CleanupEpoch(service.control)
+            service._pin=service._parent=service._cleanup=None
+            phase=service._phase(service.control);phase.check()
+            assert service._cleanup_epoch.snapshot() is None
+            service._cleanup_epoch.stop();now[0]=100.5
+            deadlines=[];receipt={'status':'complete'}
+            def cleanup(processes,pins,*,deadline):deadlines.append(deadline);return receipt
+            patch.setattr(runtime,'cleanup_owned',cleanup)
+            assert service._close(150.0) is receipt and deadlines==[102.0]
+            now[0]=101.0
+            assert service.close() is receipt and deadlines==[102.0]
+        # A temporary close failure after successful startup fixes the epoch at
+        # that failure, still closes later resources, and reaps the real owner.
+        with audit_service(patch) as (service,peer,writers):
+            service.control=ExecutionControl(200.0,clock=time.monotonic)
+            service._cleanup_epoch=_CleanupEpoch(service.control)
+            service._pin=service._parent=service._cleanup=None
+            calls=[];deadlines.clear()
+            first=OSError('temporary close failed')
+            def broken():calls.append('first');raise first
+            def later():
+                assert service._cleanup_epoch.stopped
+                calls.append('later');now[0]+=.5
+            with pytest.raises(c.LiveError) as caught:
+                service._release_startup_resources((SimpleNamespace(close=broken),SimpleNamespace(close=later)),(),None)
+            assert calls==['first','later'] and deadlines==[103.0]
+            assert caught.value.resource_cleanup_error is first and caught.value.process_cleanup is receipt
+            assert caught.value.startup_cleanup['status']=='failed' and not caught.value.startup_cleanup['descriptors_closed']
+        # A channel close error cannot skip process reap or become cached success.
+        with audit_service(patch) as (service,peer,writers):
+            service.control=ExecutionControl(200.0,clock=time.monotonic)
+            service._cleanup_epoch=_CleanupEpoch(service.control)
+            service._pin=service._parent=service._cleanup=None
+            channel=service._channel;deadlines.clear();first=OSError('channel close failed')
+            def broken_channel():raise first
+            service._channel=SimpleNamespace(shutdown=lambda how:None,close=broken_channel)
+            try:
+                with pytest.raises(c.LiveError) as caught:service._close(150.0)
+                assert deadlines==[103.5] and caught.value.process_cleanup is receipt
+                assert caught.value.cleanup['status']=='failed' and not caught.value.cleanup['descriptors_closed']
+                assert caught.value.resource_cleanup_error is first
+                with pytest.raises(c.LiveError) as again:service._close(170.0)
+                assert again.value is caught.value and deadlines==[103.5]
+            finally:service._channel=channel
+        # A late-only reap failure retains its real closed-descriptor fact;
+        # it must not be rewritten as a channel or parent-close failure.
+        with audit_service(patch) as (service,peer,writers):
+            service.control=ExecutionControl(200.0,clock=time.monotonic)
+            service._cleanup_epoch=_CleanupEpoch(service.control)
+            service._pin=service._parent=service._cleanup=None
+            late={'status':'failed','descriptors_closed':True}
+            original=c.LiveError('engagement_live_cleanup_incomplete');original.cleanup=late
+            def late_reap(processes,pins,*,deadline):raise original
+            patch.setattr(runtime,'cleanup_owned',late_reap)
+            with pytest.raises(c.LiveError) as caught:service._close(150.0)
+            assert caught.value.cleanup is late and service._cleanup is late
+            assert caught.value.cleanup_error is original and not hasattr(caught.value,'resource_cleanup_error')
+            with pytest.raises(c.LiveError) as again:service._close(170.0)
+            assert again.value is caught.value and again.value.cleanup['descriptors_closed']
     event=w.started_event(prepared())
     deadline=time.monotonic()+.06
     with audit_service(monkeypatch,deadline) as (service,peer,writers):
@@ -574,7 +642,7 @@ def test_audit_adapter_clips_original_exchange_deadline(monkeypatch,tmp_path):
                     return {'version':'1','writer_id':service.writer_id,'ready':True,
                             'checks':dict.fromkeys(legacy.CHECKS,True)},b'{}'
                 patch.setattr(service,'_reply',reply)
-                patch.setattr(service,'close',lambda:cleanup.append(True))
+                patch.setattr(service,'_close',lambda deadline:cleanup.append(deadline))
                 def check_phase(name):
                     seen.append((name,c._operation_deadline()))
                     if name==expires_at:now[0]=101.01
@@ -589,7 +657,7 @@ def test_audit_adapter_clips_original_exchange_deadline(monkeypatch,tmp_path):
                 patch.setattr(w,'validate_audit_runtime_binding',binding)
                 patch.setattr(c,'detached',copy)
                 refused(service.start,code='timeout')
-                assert cleanup==[True] and c._operation_deadline()==now[0]+2
+                assert cleanup==[101.0] and c._operation_deadline()==now[0]+2
                 assert seen==[(name,101.0) for name in ('observer','binding','copy')[:('observer','binding','copy').index(expires_at)+1]]
             finally:
                 stdout.close();stderr.close();os.close(writer_fd)

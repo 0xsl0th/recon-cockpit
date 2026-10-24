@@ -19,12 +19,13 @@ from .engagement_live_witness import validate_started_event
 
 
 class EngagementAuditService:
-    def __init__(self,audit_path,*,runtime,role_bundle,control):
+    def __init__(self,audit_path,*,runtime,role_bundle,control,cleanup_epoch=None):
         from .execution import ExecutionControl
         from .engagement_live_runtime import validate_runtime
         if type(control)is not ExecutionControl or control.clock is not time.monotonic:c.fail('invalid_input')
         self.runtime=validate_runtime(runtime);self.path=Path(audit_path)
         self.bundle=role_bundle;self.control=control;self._pid=os.getpid();self.writer_id=str(uuid4())
+        self._cleanup_epoch=cleanup_epoch
         self._lock=threading.Lock();self._stop=threading.Event();self._closed=False
         self._process=self._channel=self._pin=None;self._ready=None;self._cleanup=None
         self._sequence=0;self._file_identity=None;self._parent=None;self._parent_identity=None
@@ -37,7 +38,7 @@ class EngagementAuditService:
         if self._closed or self._stop.is_set():c.fail('audit_unavailable')
         self.control.check()
     def _phase(self,control):
-        return _ClippedControl(control,min(int(self.control.deadline*c.SECOND),time.monotonic_ns()+2*c.SECOND),self._stop)
+        return _ClippedControl(control,min(int(self.control.deadline*c.SECOND),time.monotonic_ns()+2*c.SECOND),self._stop,self._cleanup_epoch)
 
     def _reply(self,control,*,info_fd=None):
         info=bytearray()
@@ -88,9 +89,9 @@ class EngagementAuditService:
         from .audit import AuditSink
         self._check()
         if self._process is not None:return self.readiness
-        snapshot=source=child=writer=None;info_read=info_write=None
+        snapshot=source=child=writer=None;info_read=info_write=None;failure=None
         try:
-            phase=_ClippedControl(self.control,min(int(self.control.deadline*c.SECOND),time.monotonic_ns()+10*c.SECOND),self._stop)
+            phase=_ClippedControl(self.control,min(int(self.control.deadline*c.SECOND),time.monotonic_ns()+10*c.SECOND),self._stop,self._cleanup_epoch)
             snapshot=runtime._snapshot_audit(self.runtime,phase)
             self._channel,child=socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET)
             self._channel.setblocking(False);child.setblocking(False)
@@ -150,17 +151,45 @@ class EngagementAuditService:
                 validate_audit_runtime_binding(self._ready,self.runtime)
                 phase.check();return self.readiness
         except BaseException as error:
-            try:self.close()
-            except c.LiveError as cleanup_error:
-                error.startup_cleanup=getattr(cleanup_error,'cleanup',None)
-            else:error.startup_cleanup=self._cleanup
-            if self._pin is not None:error.startup_observation=self._pin.receipt
+            failure=error
             raise
         finally:
-            for item in (snapshot,source,child,writer):
-                if item is not None:item.close()
-            for fd in (info_read,info_write):
-                if fd is not None:os.close(fd)
+            self._release_startup_resources((snapshot,source,child,writer),(info_read,info_write),failure)
+
+    def _release_startup_resources(self,items,fds,failure):
+        deadline=None if failure is None else _ClippedControl(self.control,
+            int(self.control.deadline*c.SECOND),cleanup_epoch=self._cleanup_epoch).cleanup_deadline
+        errors=[]
+        for close in ([item.close for item in items if item is not None]+
+                      [lambda fd=fd:os.close(fd) for fd in fds if fd is not None]):
+            try:close()
+            except BaseException as error:
+                errors.append(error)
+                if deadline is None:
+                    deadline=_ClippedControl(self.control,int(self.control.deadline*c.SECOND),
+                        cleanup_epoch=self._cleanup_epoch).cleanup_deadline
+        if failure is None and not errors:return
+        error=failure if failure is not None else c.LiveError('engagement_live_audit_unavailable')
+        if errors:error.resource_cleanup_error=errors[0]
+        try:self._close(deadline)
+        except BaseException as cleanup_error:
+            error.cleanup_error=cleanup_error
+            error.startup_cleanup=getattr(cleanup_error,'cleanup',self._cleanup)
+        else:error.startup_cleanup=self._cleanup
+        if errors:
+            actual=self._cleanup
+            self._fail_resource_cleanup()
+            error.process_cleanup=actual;error.startup_cleanup=self._cleanup
+            closed=c.LiveError('engagement_live_cleanup_incomplete');closed.cleanup=self._cleanup
+            closed.resource_cleanup_error=errors[0];closed.process_cleanup=actual
+            self._close_error=closed
+        if self._pin is not None:error.startup_observation=self._pin.receipt
+        if failure is None:raise error from errors[0]
+
+    def _fail_resource_cleanup(self):
+        if self._cleanup is not None:
+            self._cleanup={**self._cleanup,'status':'failed','descriptors_closed':False}
+            if 'finished_at_ns' in self._cleanup:self._cleanup['finished_at_ns']=time.monotonic_ns()
 
     def emit(self,event,*,control):
         from .engagement_live_protocol import _ready,send_once
@@ -198,16 +227,38 @@ class EngagementAuditService:
 
     def _close(self,deadline):
         from .engagement_live_runtime import cleanup_owned
+        if self._pid!=os.getpid():c.fail('foreign_owner')
+        deadline=_ClippedControl(self.control,int(deadline*c.SECOND),
+            cleanup_epoch=self._cleanup_epoch).cleanup_deadline
         self._interrupt()
-        if self._closed:return self._cleanup
-        self._closed=True
-        try:
-            if self._channel is not None:self._channel.close()
-            if self._process is not None:
-                self._cleanup=cleanup_owned([self._process],[] if self._pin is None else [self._pin],deadline=deadline)
+        if self._closed:
+            if getattr(self,'_close_error',None) is not None:raise self._close_error
             return self._cleanup
+        self._closed=True
+        errors=[];resource_errors=[];process_error=None
+        try:
+            if self._channel is not None:
+                try:self._channel.close()
+                except BaseException as error:errors.append(error);resource_errors.append(error)
+            if self._process is not None:
+                try:self._cleanup=cleanup_owned([self._process],[] if self._pin is None else [self._pin],deadline=deadline)
+                except BaseException as error:
+                    self._cleanup=getattr(error,'cleanup',None);errors.append(error);process_error=error
         finally:
-            if self._parent is not None:os.close(self._parent);self._parent=None
+            if self._parent is not None:
+                parent=self._parent;self._parent=None
+                try:os.close(parent)
+                except BaseException as error:errors.append(error);resource_errors.append(error)
+        if errors:
+            actual=self._cleanup
+            if resource_errors:self._fail_resource_cleanup()
+            error=c.LiveError('engagement_live_cleanup_incomplete');error.cleanup=self._cleanup
+            error.process_cleanup=actual
+            if resource_errors:error.resource_cleanup_error=resource_errors[0]
+            if process_error is not None:error.cleanup_error=process_error
+            self._close_error=error
+            raise error from errors[0]
+        return self._cleanup
     def close(self):return self._close(time.monotonic()+2)
 
     def saved_log(self, *, deadline):

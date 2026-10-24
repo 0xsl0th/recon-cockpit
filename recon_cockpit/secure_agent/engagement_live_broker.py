@@ -296,13 +296,23 @@ def preallocate_role_bundle(review_mode):
 
 
 class _ClippedControl:
-    def __init__(self, original, deadline_ns, stop=None):
+    def __init__(self, original, deadline_ns, stop=None, cleanup_epoch=None):
         self.original, self.stop = original, stop
+        self.cleanup_epoch = cleanup_epoch
         self.deadline = min(original.deadline, deadline_ns / c.SECOND)
         if int(self.deadline*c.SECOND)>deadline_ns:
             self.deadline=math.nextafter(self.deadline,-math.inf)
         self.cancelled,self.clock=original.cancelled,original.clock
+    @property
+    def cleanup_deadline(self):
+        if self.cleanup_epoch is not None:
+            end_ns=self.cleanup_epoch.stop(bound_deadline_ns=int(self.deadline*c.SECOND))['deadline_ns']
+            end=end_ns/c.SECOND
+            return math.nextafter(end,-math.inf) if int(end*c.SECOND)>end_ns else end
+        inherited=getattr(self.original,'cleanup_deadline',None)
+        return min(self.deadline,time.monotonic()+2) if inherited is None else min(self.deadline,inherited)
     def remaining(self):
+        if self.cleanup_epoch is not None and self.cleanup_epoch.stopped:c.fail('cancelled')
         if self.stop is not None and self.stop.is_set():c.fail('cancelled')
         self.original.check()
         value=self.deadline-self.clock()
@@ -358,13 +368,14 @@ def _validate_business(value,runtime_sha256,broker_id,slots):
 
 class EngagementBroker:
     """One host-owned process and two independent, serialized ingress channels."""
-    def __init__(self,*,runtime,store_directory,control,role_bundle):
+    def __init__(self,*,runtime,store_directory,control,role_bundle,cleanup_epoch=None):
         from .execution import ExecutionControl
         from .engagement_live_runtime import validate_runtime
         if type(control)is not ExecutionControl or control.clock is not time.monotonic:c.fail('invalid_input')
         if type(role_bundle)is not PreallocatedRoleBundle:c.fail('invalid_channel')
         self.runtime=validate_runtime(runtime);self.store_directory=Path(store_directory)
         self.control=control;self.bundle=role_bundle;self._pid=os.getpid();self._owner=None
+        self._cleanup_epoch=cleanup_epoch
         self._ready=None;self._closed=False;self._stop=threading.Event();self._locks=[threading.Lock(),threading.Lock()]
         self._lifecycle_lock=threading.Lock();self._sequence=[];self._lifecycle=None;self._cleanup=None
         self._parent_fd=self._directory_fd=None;self._observations=[]
@@ -397,7 +408,7 @@ class EngagementBroker:
                 info=os.fstat(fd)
                 if info.st_uid!=os.getuid() or not stat.S_ISDIR(info.st_mode) or stat.S_IMODE(info.st_mode)!=0o700:c.fail('invalid_input')
             before=os.fstat(self._directory_fd)
-            child_control=_ClippedControl(self.control,self._deadline_ns,self._stop)
+            child_control=_ClippedControl(self.control,self._deadline_ns,self._stop,self._cleanup_epoch)
             input_fd=runtime._sealed(c.canonical(self.runtime,max_bytes=c.MAX_CANONICAL),name='engagement-live-runtime',control=child_control)
             peers=self.bundle.take_broker_bootstrap(input_fd);input_fd=None
             host,child=peers.pop('host'),peers.pop('child')
@@ -457,8 +468,12 @@ class EngagementBroker:
         from . import engagement_live_protocol as p
         self._check();c.integer(ingress,0,1)
         if self._owner is None:c.fail('session_unavailable')
+        end=min(self._deadline_ns,self._deadline_ns if deadline_ns is None else deadline_ns)
+        terminal=operation in {'CANCEL','REVOKE','SNAPSHOT'}
+        stopped=None if self._cleanup_epoch is None else self._cleanup_epoch.snapshot()
+        if terminal and stopped is not None:end=min(end,stopped['deadline_ns'])
         phase=_ClippedControl(self.control if control is None else control,
-            min(self._deadline_ns,self._deadline_ns if deadline_ns is None else deadline_ns),self._stop)
+            end,self._stop,None if terminal else self._cleanup_epoch)
         with _locked(self._locks[ingress],phase):
             self._check();sequence=self._sequence[ingress];channel=self.bundle.slots[ingress].ingress_host
             request=sequence.make(operation,body)
@@ -518,7 +533,11 @@ class EngagementBroker:
         from . import engagement_live_protocol as p
         self._check()
         if self._lifecycle is None:c.fail('session_unavailable')
-        phase=_ClippedControl(self.control,min(self._deadline_ns,time.monotonic_ns()+2*c.SECOND),self._stop)
+        end=min(self._deadline_ns,time.monotonic_ns()+2*c.SECOND)
+        stopped=None if self._cleanup_epoch is None else self._cleanup_epoch.snapshot()
+        if operation=='STOP' and stopped is not None:end=min(end,stopped['deadline_ns'])
+        phase=_ClippedControl(self.control,end,self._stop,
+            None if operation=='STOP' else self._cleanup_epoch)
         with _locked(self._lifecycle_lock,phase):
             frame=self._lifecycle.make(operation,body)
             p.send_packet(self.bundle.host_lifecycle,frame,role='lifecycle',control=phase)
@@ -529,7 +548,10 @@ class EngagementBroker:
         from . import engagement_live_protocol as p
         if self._owner is None:return None
         if not select.select([self.bundle.host_lifecycle],[],[],0)[0]:return None
-        phase=_ClippedControl(self.control,min(self._deadline_ns,time.monotonic_ns()+2*c.SECOND))
+        end=min(self._deadline_ns,time.monotonic_ns()+2*c.SECOND)
+        stopped=None if self._cleanup_epoch is None else self._cleanup_epoch.snapshot()
+        if stopped is not None:end=min(end,stopped['deadline_ns'])
+        phase=_ClippedControl(self.control,end)
         frame=self._lifecycle.accept(p.receive_packet(self.bundle.host_lifecycle,role='lifecycle',control=phase))
         if frame['operation'] not in {'SESSION_STOP','BROKER_STOP'}:c.fail('invalid_frame')
         return frame
@@ -545,6 +567,8 @@ class EngagementBroker:
     def _close(self,deadline):
         from .engagement_live_runtime import cleanup_owned
         if os.getpid()!=self._pid:c.fail('foreign_owner')
+        deadline=_ClippedControl(self.control,min(int(deadline*c.SECOND),self._deadline_ns),
+            cleanup_epoch=self._cleanup_epoch).cleanup_deadline
         if self._closed:return self._cleanup
         self._interrupt();self._closed=True
         if self._owner is None:

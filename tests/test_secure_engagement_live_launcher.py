@@ -377,6 +377,12 @@ def _supervisor_thread_cases(monkeypatch):
 
 def _supervisor_thread_deadline_cases(monkeypatch):
     with supervisor_lab(monkeypatch) as model:
+        phase=model.supervisor.phase();phase.check()
+        assert not model.supervisor.stop.is_set()
+        model.epoch.stop()
+        with pytest.raises(c.LiveError,match='cancelled'):phase.check()
+        assert not model.supervisor.stop.is_set()
+    with supervisor_lab(monkeypatch) as model:
         sup=model.supervisor;state=sup.children['identify_admission']
         state.update(state='bootstrap_returned',prepared=model.prepared,
                      startup_deadline_ns=time.monotonic_ns()+500_000_000,start_resolved=True)

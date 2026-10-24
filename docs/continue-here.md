@@ -1,10 +1,10 @@
-# Continue here — 23 October 2026
+# Continue here — 24 October 2026
 
 ## Read this first
 
 This development checkpoint never resumes an assessment or restores approvals.
 
-Current continuation (23 October 2026):
+Current continuation (24 October 2026):
 [PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94) is merged as `46f9b73`.
 Fresh independent authority/evidence reviews and 457 focused portable checks
 passed at `58c78e0`; all five final and [post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38767707515) passed. Reviewed and merged trees
@@ -146,7 +146,7 @@ based on accepted merge `d8e1a6f`. The
 [implementation contract](stage4-engagement-live.md) and
 [exact inventory](stage4-engagement-live-gates.json) were independently reviewed
 and pinned before implementation; pre-acceptance amendments A01–A07 end at
-`e4e2d89`. The first four native attempts are retained failures, with no new
+`e4e2d89`. The first five native attempts are retained failures, with no new
 native gate accepted yet. Broker and audit startup now complete after correcting
 setup descriptor closure and verifying the pinned read-only import image. A07
 records the unchanged audit worker's exact six-descriptor inventory, actual image
@@ -170,10 +170,26 @@ cover original deadlines, actual socket custody, autonomous child supervision,
 bounded evidence retention and measured thread/process closure. Focused
 development runs passed the 76 authority/witness, 32 runtime/meter, 20 evidence
 and 32 Session/approval/preservation cases; final review corrections and their
-checks are retained separately. These development runs are not source-frozen
-acceptance. Freeze the complete clean implementation and installed runtime,
-then pass the exact 160 portable cases before retrying native acceptance with
-N04. All 113 new native cases, 15 accepted regressions, saved-bundle inspections,
+checks are retained separately. The complete A08 implementation was committed at
+`4ea1e24`; freeze five and all exact 160 portable cases passed with unchanged
+source and runtime. Native attempt five passed launcher startup, then the
+terminal reviewer exited after READY. A separately retained bounded diagnostic
+confirmed a protocol import after the reviewer's filesystem seal; all five
+started roles were reaped, with no review or action performed. The correction
+preloads that already-declared module before either reviewer seal. Review also
+found a possible cleanup-deadline renewal during persistent-role startup;
+attempt five itself finished within both deadlines. Startup cleanup now carries
+the shared first-stop deadline and publishes the stop fence before local reaping,
+including concurrent startup and resource-close failures. Preserve the original
+failure, diagnostic and development corrections separately. Process reaping is
+attempted even when a reviewer or audit channel fails to close; combined custody
+failure retains the distinct actual process receipt, including in private native
+failure artifacts. A timing-only cleanup failure preserves its observed closed
+descriptors. The weekly-limit interruption left the working changes intact;
+development checks remain separate from the next source-frozen run. Freeze the complete
+corrected source and installed runtime, then pass all exact 160 portable cases
+before retrying native acceptance with N04. All 113 new native cases,
+15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not
 validate later changes.
 This increment binds the
