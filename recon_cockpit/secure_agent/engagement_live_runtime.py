@@ -1437,7 +1437,7 @@ def _start_role_owned(*,runtime,role,payload,rights,control,stdin_pair=None,extr
         raw=_json(bootstrap);commitment=hashlib.sha256(raw).hexdigest()
         argv=_base_command(snapshot,role=role,info_fd=info_write,worker_id=worker_id,bootstrap_sha256=commitment,unshare_net=role not in ('launcher','nmap','headers'))
         for source,destination in extra_mounts:
-            allowed=(role=='broker' and destination=='/store/engagement') or (role=='graphical' and (destination.startswith('/tmp/.X11-unix/X') or destination=='/run/reviewer.Xauthority'))
+            allowed=(role=='broker' and destination=='/store/engagement') or (role=='graphical' and (destination.startswith('/tmp/.X11-unix/X') or destination=='/run/reviewer.xauthority'))
             if not allowed:_fail('invalid_role')
             if role=='broker':
                 if type(source)is not int:_fail('invalid_role')

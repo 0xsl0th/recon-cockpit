@@ -261,8 +261,22 @@ bootstrap deadlines 11.304167 and 8.519989 ms beyond their recorded START plus
 two seconds. The old candidate remains invalid. Host child startup now charges
 validation/setup time from that recorded request observation and conservatively
 converts its deadline to seconds. Preserve the original native, diagnostic and
-offline replay failures. The corrected source requires a fresh freeze and all
-160 portable cases before another N04 acceptance run.
+offline replay failures. The correction was committed at `a8941a5`; freeze eleven
+and all 160 exact portable cases passed. Fresh N04 and N05 terminal A/B native
+cases completed both useful actions, complete cleanup and both saved-evidence
+inspection methods. Their root artifact audits are clear; they are not an
+independent final review. The next batch stopped on N06 graphical A before N07
+ran. Its retained traceback identifies the runtime's mount allowlist: it used
+`/run/reviewer.Xauthority`, while the unchanged graphical protocol and client use
+`/run/reviewer.xauthority`. All four started persistent roles were reaped and the
+supervisor joined; no graphical reviewer or action started. The runtime now uses
+the established lowercase path, retaining read-only selected-cookie custody.
+The existing argv/descriptor case reproduces the original refusal and checks
+the corrected mount, rejection of the obsolete/unrelated paths and other roles,
+and cleanup of failed-start resources. Preserve the original native failure,
+the reproducing regression and its initial mount-assertion fixture correction.
+This change requires a fresh freeze and all 160 portable cases before the next
+native acceptance run; freeze-eleven passes do not validate later source.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

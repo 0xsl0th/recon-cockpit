@@ -245,6 +245,7 @@ def test_native_snapshot_mutation_refused(tmp_path,monkeypatch):
 
 
 def test_fixed_argv_and_initial_fd_closure(tmp_path,monkeypatch):
+    _graphical_startup_mounts(tmp_path,monkeypatch)
     _supervised_spawn_cases(monkeypatch)
     _supervised_proxy_cases(monkeypatch)
     _supervised_bootstrap_cases(monkeypatch)
@@ -320,6 +321,56 @@ def test_fixed_argv_and_initial_fd_closure(tmp_path,monkeypatch):
         'append_identity','witness_identity','append_not_append','append_rdwr','witness_blocking',
         'library_writable','library_path','library_hash','library_size','mount_identity',
         'mount_writable','mapping_identity','mapping_path','changed_inventory'))
+
+
+def _graphical_startup_mounts(tmp_path,monkeypatch):
+    import socket
+    import subprocess
+    from recon_cockpit.secure_agent import graphical_approval_protocol as graphical
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+
+    cookie=tmp_path/'selected-cookie';cookie.write_bytes(b'selected display cookie')
+    cookie_fd=os.open(cookie,os.O_RDONLY);identity=os.fstat(cookie_fd)
+    socket_path='/tmp/.X11-unix/X99'
+    assert r._compiled()['graphical_fontconfig'][0]==graphical.FONTCONFIG_PATH
+    try:
+        for role,destination,allowed in (
+            ('graphical',graphical.AUTHORITY_PATH,True),
+            ('graphical','/run/reviewer.Xauthority',False),
+            ('graphical','/run/unrelated.xauthority',False),
+            ('terminal',graphical.AUTHORITY_PATH,False),
+        ):
+            calls=[];setup_fds=[];pair=socket.socketpair()
+            manifest=next(row for row in declared_runtime()['roles'] if row['role']==role)
+            snapshot=SimpleNamespace(role=role,stdlib='/usr/lib/python3.14',manifest=manifest,
+                pass_fds=(),mounts=lambda argv:argv,close=lambda:calls.append('closed'))
+            def launch(argv,**options):
+                calls.append('launch');setup_fds.extend(options['pass_fds'])
+                assert allowed and argv[argv.index('--ro-bind-data')+1:argv.index('--ro-bind-data')+3]==[str(cookie_fd),graphical.AUTHORITY_PATH]
+                mounts=[argv[index+1:index+3] for index,arg in enumerate(argv) if arg=='--ro-bind']
+                assert [socket_path,socket_path] in mounts
+                assert '--bind' not in argv and cookie_fd in options['pass_fds']
+                assert ['--setenv','XAUTHORITY',graphical.AUTHORITY_PATH]==argv[argv.index('XAUTHORITY')-1:argv.index('XAUTHORITY')+2]
+                raise OSError(errno.EIO,'injected graphical pre-launch failure')
+            with monkeypatch.context() as patch:
+                patch.setattr(r,'snapshot_role',lambda *args:snapshot)
+                patch.setattr(r,'_make_bootstrap',lambda **kwargs:{})
+                patch.setattr(r.os,'pipe2',lambda flags:os.pipe(),raising=False)
+                patch.setattr(subprocess,'Popen',launch)
+                expected=OSError if allowed else c.LiveError
+                message='injected graphical pre-launch failure' if allowed else 'invalid_role'
+                with pytest.raises(expected,match=message):
+                    r._start_role(runtime=declared_runtime(),role=role,payload={},rights={},
+                        control=ExecutionControl(r.time.monotonic()+10),stdin_pair=pair,
+                        extra_mounts=[(socket_path,socket_path),(cookie_fd,destination)],
+                        environment={'DISPLAY':':99.0','XAUTHORITY':graphical.AUTHORITY_PATH} if role=='graphical' else {})
+            assert calls==(['launch','closed'] if allowed else ['closed'])
+            assert all(peer.fileno()==-1 for peer in pair)
+            assert os.fstat(cookie_fd)==identity
+            for fd in setup_fds:
+                if fd!=cookie_fd:
+                    with pytest.raises(OSError):os.fstat(fd)
+    finally:os.close(cookie_fd)
 
 
 def _import_descriptor_custody_cases(tmp_path,monkeypatch):
