@@ -1216,3 +1216,59 @@ obligations to the existing exact cases. All 288 identities, 39 new paths,
 native obligation requires fresh physical proof after implementation and a new
 clean source/runtime freeze. No native gate was accepted before this amendment;
 S4.2c remains one integration increment and the roadmap estimates are unchanged.
+
+
+### Pre-acceptance amendment A09: retain actual empty-probe resets
+
+The existing identification grammar already permits one or two initial empty
+scan/NULL connections ending in EOF or reset before the fixed GET on connection
+2 or 3. The accepted configurable fixture handles an actual connection reset
+only while that initial connection has accepted no request payload. The live
+endpoint omitted that reset handling, and its meter event vocabulary could not
+distinguish a reset from an ordinary EOF.
+
+One sealed-source diagnostic against clean source
+`3e305fe26681ab0c3d4894a1c8e30a5e3e3eb824` observed an actual
+`ConnectionResetError` with `errno=ECONNRESET` (104) in the first accepted
+identification connection, with no request or response payload yet observed.
+Its verification receipt is
+`92863485e43fa2440a4165e5001105bc85317c2496444439dc84c1a9dc3cdeaa`;
+the retained causal-attribution receipt is
+`df2e06e90896ef1d6c29940d5002db14fde29d06b3708d416b97958439b8a175`.
+This proves the socket error and meter state in that diagnostic. It is consistent
+with the native connection-scan probe, but no packet capture identifies the
+peer's cause. It neither supplies native acceptance nor backfills a first cause
+into the earlier native-07 attempt. All original failed artifacts remain intact.
+
+Add only the closed meter event kind `reset`. An `eof` event means an actual
+successful `recv` returned `b''`; a `reset` event means the attempted `recv`
+raised `ConnectionResetError` with `errno=ECONNRESET`. Both events have
+`requested_bytes`, `actual_bytes`, `remaining_before` and `remaining_after` equal
+to zero and `reason=null`. These non-payload event fields do not describe a
+successful read, refund capacity or claim that earlier payload was absent. An
+actual reset is never converted into a synthetic zero-length `recv` result or
+an `eof` event. The already admitted connection remains charged, and previously
+observed request/response bytes and their events remain unchanged.
+
+The endpoint records the actual termination event before deciding whether to
+continue. Only `http_identify` connection 1 or 2 with no request payload accepted
+on that connection may continue after EOF/reset. The next admitted connection
+uses the unchanged remaining connection and byte budgets. Headers, connection 3
+or any partial request terminate with the existing `peer_eof` refusal, retaining
+the actual termination event and all prior observations. Unrelated `OSError`
+values, including a `ConnectionResetError` without `errno=ECONNRESET`, retain
+their existing failure path. Current clock, cancellation and transcript-capacity
+checks still precede the attempted read; no read, write or admission is retried.
+
+Existing M02 proves EOF/reset permutations, distinct event provenance and bounded
+continuation/refusal; M08 retains partial accepted bytes after a reset; M16 checks
+settled/unknown counters and rejection of malformed reset events. Existing useful
+native gates, beginning with N04, retain whichever termination events actually
+occur before the exact useful HTTP exchange. No synthetic reset or diagnostic
+substitutes for those gates. Implementation follows only after this complete
+prose/inventory pair is committed, and fresh acceptance uses a new clean freeze.
+All 288 case identities, 39 new paths, 160 portable cases, 113 new native cases,
+15 accepted regressions, 26 parent obligations and 18 physical obligations remain
+unchanged. This amendment adds no target, action, capability, descriptor, process,
+command, retry, time allowance or connection/byte/transcript budget. No native
+gate was accepted before this amendment; S4.2c remains the same roadmap increment.
