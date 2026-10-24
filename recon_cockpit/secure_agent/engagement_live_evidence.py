@@ -906,6 +906,31 @@ def _logical_deadline_fault(loaded,rows,operation,phase,case_id):
     return True
 
 
+def _changed_stop_cancellation(attempt, watches, stops, operations):
+    """Attribute a local cancellation only to an earlier matching broker stop.
+
+    Callers already bind watches to the committed ledger event and require no
+    reservation/GO, unchanged usage, complete broker evidence and actual cleanup.
+    Cancellation by itself never proves a revision or revocation refusal.
+    """
+    row=attempt['row']
+    if attempt['source']!='role_observer' or row['data']['reason']!='engagement_live_cancelled':return False
+    for op in operations:
+        env=op['prepared']['envelope']
+        if (row['broker_id'],row['session_id'],row['dispatch_id'])!=(env['broker_id'],env['session_id'],env['dispatch_id']):continue
+        for watch in watches:
+            observed=watch['row']
+            if watch['source']!='broker_memfd' or observed['broker_id']!=env['broker_id']:continue
+            for stop in stops:
+                stopped=stop['row'];frame=stopped['data']['frame'];body=frame['body']
+                if stop['source']!='broker_memfd' or stopped['broker_id']!=env['broker_id']:continue
+                if frame['channel_id']!=env['broker_id'] or body['reason']!=observed['data']['reason']:continue
+                if frame['operation']=='SESSION_STOP' and body['session_id']!=env['session_id']:continue
+                if frame['operation'] not in ('SESSION_STOP','BROKER_STOP'):continue
+                if observed['observed_at_ns']<=stopped['observed_at_ns']<=row['observed_at_ns']:return True
+    return False
+
+
 def _evaluate_core_proof(loaded, proof, linkage):
     """Finite predicates over retained observations, never expected-result flags.
 
@@ -1021,8 +1046,9 @@ def _evaluate_core_proof(loaded, proof, linkage):
                 r['row']['data']['frame']['operation'] in ('SESSION_STOP','BROKER_STOP') and
                 r['row']['data']['frame']['body']['reason']=='engagement_live_'+reason]
             attempts=[r for r in refused if r['source']=='role_observer' and r['row']['dispatch_id'] in ids and
-                r['row']['data']['reason'] in {'engagement_live_'+reason,'engagement_live_session_unavailable',
-                    'engagement_live_unavailable','engagement_live_invalid_channel'} and
+                (r['row']['data']['reason'] in {'engagement_live_'+reason,'engagement_live_session_unavailable',
+                    'engagement_live_unavailable','engagement_live_invalid_channel'} or
+                 _changed_stop_cancellation(r,watches,stops,operations)) and
                 r['row']['observed_at_ns']>=commits[0]['row']['observed_at_ns']]
             if not watches or not stops or not attempts:return False
         if after_review and not any(r['row']['kind']=='capability_projection' and

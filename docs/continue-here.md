@@ -275,8 +275,27 @@ The existing argv/descriptor case reproduces the original refusal and checks
 the corrected mount, rejection of the obsolete/unrelated paths and other roles,
 and cleanup of failed-start resources. Preserve the original native failure,
 the reproducing regression and its initial mount-assertion fixture correction.
-This change requires a fresh freeze and all 160 portable cases before the next
-native acceptance run; freeze-eleven passes do not validate later source.
+The path correction was committed at `eba1ecd`; freeze twelve and all 160 portable
+cases passed. All four terminal/graphical A/B useful paths and six context/scope
+negatives passed with clear root artifact audits. The next batch recorded five
+passes and one N16 revision-after-review failure, then stopped. Its canonical
+bundle retains the actual revision commit, matching broker watch and lifecycle
+stops, host cancellation, no reservation/GO, unchanged usage and all seven
+payload/wrapper reaps. The original harness discarded the unsuccessful CLI
+output. A separate read-only replay reproduced an incomplete case predicate;
+it does not reconstruct that lost output. The predicate omitted cancellation
+as a possible local consequence of the already-proven broker stop. It now
+accepts that consequence only with the same broker/session/dispatch and an
+observed matching stop preceding cancellation, in addition to the existing
+ledger, watch, no-execution and cleanup requirements. Offline replay of the
+unchanged bundle now resolves the case while preserving the operation's
+unresolved result and null metrics. The original acceptance run remains failed.
+The harness now retains nonzero/stderr CLI results within its existing bounded
+failure capture. All 44 focused evidence/broker checks pass, including mismatched
+identity, missing/late stop and unrelated cancellation negatives. Preserve both
+offline diagnostic outcomes. A fresh source freeze and exact 160 portable cases
+are required before native acceptance resumes; earlier passes do not validate
+later source.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

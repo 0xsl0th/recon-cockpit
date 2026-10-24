@@ -170,6 +170,7 @@ def _bounded_inspector(command,deadline,directory):
                 else:pending.remove(stream)
                 if sum(map(len,captured.values()))>8192:raise AssertionError('CLI replay output cap')
         if time.monotonic()>deadline:raise TimeoutError('CLI replay deadline')
+        if process.returncode!=0 or captured[process.stderr]:raise AssertionError('CLI replay refused')
         return subprocess.CompletedProcess(command,process.returncode,bytes(captured[process.stdout]),bytes(captured[process.stderr]))
     except BaseException as error:
         reaped=_terminate_watchdog(process) if process.poll()is None else None

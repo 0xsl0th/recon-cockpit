@@ -649,6 +649,7 @@ def test_matches_immutable_python_and_cli_inspection(tmp_path):
 
 
 def test_closes_cli_errors_and_stdout_failures(tmp_path,monkeypatch):
+    _native_inspector_failure_retention(tmp_path)
     for args in ([],['--exec'],['--help','--help'],['--store','sensitive-path'],['one','two']):
         result=subprocess.run([sys.executable,'-B',str(CLI),*args],cwd=ROOT,
                               stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=5)
@@ -868,6 +869,7 @@ def test_replays_ledger_and_broker_state_together():
 
 
 def test_requires_single_winner_and_durable_race_order():
+    _changed_stop_cancellation_cases()
     from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
     from recon_cockpit.secure_agent import engagement_live_witness as witness
     session,state=opened();p=c.derive_prepared(session,'http_identify',dispatch_id=uid(8),clock=session['binding']['clock_anchor'])
@@ -931,6 +933,65 @@ def test_requires_single_winner_and_durable_race_order():
     assert not e._core_losing_call(call,[changed],24)
     duplicate=deepcopy(call);duplicate['reply']={'status':'refused','code':'engagement_live_dispatch_replayed','data':None}
     assert e._core_losing_call(duplicate,[operation],27) and not e._core_losing_call(duplicate,[operation],24)
+
+
+def _native_inspector_failure_retention(tmp_path):
+    from engagement_live_native import _bounded_inspector
+    for name,program,code,stdout,stderr in (
+        ('nonzero','import sys;print("incomplete report");sys.exit(1)',1,b'incomplete report\n',b''),
+        ('stderr','import sys;sys.stderr.write("retained failure\\n")',0,b'',b'retained failure\n'),
+    ):
+        directory=tmp_path/name;directory.mkdir(mode=0o700)
+        with pytest.raises(AssertionError,match='CLI replay refused'):
+            _bounded_inspector([sys.executable,'-I','-S','-c',program],time.monotonic()+15,directory)
+        failure=json.loads((directory/'inspection-cli-failure.json').read_bytes())
+        assert failure=={'error_type':'AssertionError','wrapper_returncode':code,'emergency_reaped':None,'acceptance':False}
+        assert (directory/'inspection-cli-failure.stdout').read_bytes()==stdout
+        assert (directory/'inspection-cli-failure.stderr').read_bytes()==stderr
+
+
+def _changed_stop_cancellation_cases():
+    # Declared transcript facts only. A local cancellation is not a business
+    # refusal without the same broker's observed change and earlier stop.
+    env={'broker_id':uid(1),'session_id':uid(2),'dispatch_id':uid(3)}
+    operations=[{'prepared':{'envelope':env}}]
+    for reason in ('revision_changed','revoked'):
+        watch={'source':'broker_memfd','row':{'broker_id':uid(1),'observed_at_ns':100,
+            'data':{'reason':'engagement_live_'+reason}}}
+        attempt={'source':'role_observer','row':{**env,'observed_at_ns':300,
+            'data':{'reason':'engagement_live_cancelled'}}}
+        for operation in ('SESSION_STOP','BROKER_STOP'):
+            body={'reason':'engagement_live_'+reason}
+            if operation=='SESSION_STOP':body['session_id']=uid(2)
+            stop={'source':'broker_memfd','row':{'broker_id':uid(1),'observed_at_ns':200,
+                'data':{'frame':{'channel_id':uid(1),'operation':operation,'body':body}}}}
+            assert e._changed_stop_cancellation(attempt,[watch],[stop],operations)
+            assert not e._changed_stop_cancellation(attempt,[],[stop],operations)
+            assert not e._changed_stop_cancellation(attempt,[watch],[],operations)
+            assert not e._changed_stop_cancellation(attempt,[watch],[stop],[])
+            for original,path,value in (
+                ('attempt',('source',),'broker_memfd'),
+                ('attempt',('row','broker_id'),uid(4)),
+                ('attempt',('row','session_id'),uid(4)),
+                ('attempt',('row','dispatch_id'),uid(4)),
+                ('attempt',('row','data','reason'),'engagement_live_timeout'),
+                ('attempt',('row','observed_at_ns'),199),
+                ('watch',('source',),'role_observer'),
+                ('watch',('row','broker_id'),uid(4)),
+                ('watch',('row','observed_at_ns'),201),
+                ('stop',('source',),'role_observer'),
+                ('stop',('row','broker_id'),uid(4)),
+                ('stop',('row','data','frame','channel_id'),uid(4)),
+                ('stop',('row','data','frame','body','reason'),'engagement_live_timeout'),
+                ('stop',('row','data','frame','operation'),'CLOSE'),
+            ):
+                changed=deepcopy({'attempt':attempt,'watch':watch,'stop':stop});target=changed[original]
+                for key in path[:-1]:target=target[key]
+                target[path[-1]]=value
+                assert not e._changed_stop_cancellation(changed['attempt'],[changed['watch']],[changed['stop']],operations)
+            if operation=='SESSION_STOP':
+                stop['row']['data']['frame']['body']['session_id']=uid(4)
+                assert not e._changed_stop_cancellation(attempt,[watch],[stop],operations)
 
 
 def transcript_row(sequence=1,broker=None):
