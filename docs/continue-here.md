@@ -295,7 +295,24 @@ failure capture. All 44 focused evidence/broker checks pass, including mismatche
 identity, missing/late stop and unrelated cancellation negatives. Preserve both
 offline diagnostic outcomes. A fresh source freeze and exact 160 portable cases
 are required before native acceptance resumes; earlier passes do not validate
-later source.
+later source. That correction was committed at `4db5edb`; freeze thirteen and
+all 160 exact portable cases passed. Seventeen new native cases then passed,
+including both revision-after-review cases and their saved inspections. The
+graphical revision case exercised the observed-stop/cancellation path; the
+terminal case retained an explicit revision refusal. The next batch stopped on
+N18 action exhaustion. Its now-retained CLI report identifies a denied second
+action with no reservation/GO, but an `invalid_input` reason. A portable real-ledger
+regression reproduced that reason: the generic deadline context translated the
+ledger's `allowance_exhausted` before the broker's domain-error mapper could see
+it. Broker transaction phases now translate ledger errors through the existing
+finite mapper before leaving that validation context. Reservation decisions,
+rollback, limits and deadlines are unchanged. All 60 focused broker/contract/
+Session cases pass; the existing budget case exercises actual prior reservations
+and refusal without mutation or release for all five resource limits. Preserve
+the original native failure, reproducing regression, and private-directory and
+ROE-limit fixture corrections. Fresh freeze/portable/native proof remains
+required. The next native plan prioritizes the affected budget group after N04;
+all earlier groups still require fresh results before acceptance.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

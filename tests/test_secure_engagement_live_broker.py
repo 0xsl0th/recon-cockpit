@@ -129,6 +129,7 @@ def test_fixed_reservation_charges_before_go(tmp_path,monkeypatch):
 
 
 def test_last_allowance_transactions_have_one_winner(tmp_path,monkeypatch):
+    _budget_error_propagation(tmp_path,monkeypatch)
     with lab(tmp_path,monkeypatch,limits={'max_actions':1}) as (core,store,*_):
         barrier=threading.Barrier(2);answers=[]
         def compete(i):
@@ -144,6 +145,29 @@ def test_last_allowance_transactions_have_one_winner(tmp_path,monkeypatch):
         for thread in threads:thread.start()
         for thread in threads:thread.join(3);assert not thread.is_alive()
         assert sorted(answers)==[False,True] and store.snapshot()['state']['usage']['actions']==1
+
+
+def _budget_error_propagation(tmp_path,monkeypatch):
+    # Exercise the broker's bounded transaction, not only DispatchLedger. A
+    # prior real reservation exhausts one limit; fresh direct witnesses still
+    # cannot acquire another allowance or cause a release.
+    for key,limit in (('max_actions',1),('max_connections',3),('max_request_bytes',4096),
+                      ('max_response_bytes',4096),('max_engagement_ms',30000)):
+        directory=tmp_path/key;directory.mkdir(mode=0o700)
+        with lab(directory,monkeypatch,limits={key:limit,'max_action_ms':30000}) as (core,store,rows,pair,channels):
+            sample=c.sample_clock()
+            store.record_session(session_id=uid(200),clock=sample,
+                original_deadline_ns=sample['mono_after_ns']+60*c.SECOND,event_id=uid(210),
+                expected_revision=1,expected_generation=0)
+            store.reserve(dispatch_id=uid(220),session_id=uid(200),slot='http_identify',
+                approval={'broker_id':uid(230),'consume_sequence':1,'witness_sha256':'a'*64},
+                audit={'writer_id':uid(240),'audit_sequence':1,'event_sha256':'b'*64},
+                clock=c.sample_clock(),event_id=uid(250),expected_revision=1,expected_generation=0)
+            row=ready(core);pointers=proofs(core,row,channels);before=store.snapshot()
+            with pytest.raises(c.LiveError) as caught:core.reserve(pointers)
+            assert caught.value.code=='engagement_live_allowance_exhausted'
+            assert store.snapshot()==before and row['admission'] is None
+            with pytest.raises(BlockingIOError):pair[1].recv(32768)
 
 
 def test_same_direct_proof_cannot_release_twice(tmp_path,monkeypatch):

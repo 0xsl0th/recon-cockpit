@@ -128,7 +128,13 @@ class BrokerCore:
     def phase(self,deadline_ns=None):
         limit=min(self.deadline_ns,deadline_ns if deadline_ns is not None else self.deadline_ns)/c.SECOND
         with c._deadline_context(min(limit,c._operation_deadline())):
-            self.check();yield;self.check()
+            self.check()
+            try:yield
+            except ledger.DispatchLedgerError as error:
+                # Preserve the actual transaction refusal before the generic
+                # validation deadline context maps it to invalid_input.
+                raise c.LiveError(_mapped(error)) from error
+            self.check()
 
     def check(self):
         if self.terminal_reason is not None:raise c.LiveError(self.terminal_reason)
