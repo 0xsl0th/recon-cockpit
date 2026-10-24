@@ -574,7 +574,15 @@ class BrokerLoop:
                     if row['state']!='terminal_unresolved':self.core.transition(row,'terminal_unresolved',_mapped(error))
                     result=self.core.result(row,outcome,_mapped(error));row['result']=result
                 self.reply(index,request,data=result,row=row);self.pending.pop(index)
-                self.cancel_slot(self.core.slots[row['slot_index']],_mapped(error))
+                reason=_mapped(error)
+                # An ordinary pre-admission budget refusal is terminal data
+                # for this dispatch, not a stop event for the shared graph.
+                # Its waiting roles retain their original deadlines and are
+                # reaped by normal host close; no grant or GO is restored.
+                budget_denied=(reason=='engagement_live_allowance_exhausted'
+                    and result['outcome']=='denied' and result['reason']==reason
+                    and row['admission']is None and row['release']is None)
+                if not budget_denied:self.cancel_slot(self.core.slots[row['slot_index']],reason)
 
     def cancel_slot(self,slot,reason):
         if slot['state']=='closed':return

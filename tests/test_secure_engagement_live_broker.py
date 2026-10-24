@@ -130,6 +130,7 @@ def test_fixed_reservation_charges_before_go(tmp_path,monkeypatch):
 
 def test_last_allowance_transactions_have_one_winner(tmp_path,monkeypatch):
     _budget_error_propagation(tmp_path,monkeypatch)
+    _budget_refusal_keeps_sibling(tmp_path,monkeypatch)
     with lab(tmp_path,monkeypatch,limits={'max_actions':1}) as (core,store,*_):
         barrier=threading.Barrier(2);answers=[]
         def compete(i):
@@ -167,6 +168,42 @@ def _budget_error_propagation(tmp_path,monkeypatch):
             with pytest.raises(c.LiveError) as caught:core.reserve(pointers)
             assert caught.value.code=='engagement_live_allowance_exhausted'
             assert store.snapshot()==before and row['admission'] is None
+            with pytest.raises(BlockingIOError):pair[1].recv(32768)
+
+
+def _budget_refusal_keeps_sibling(tmp_path,monkeypatch):
+    """A real pre-admission budget denial cannot stop an admitted sibling."""
+    for fault in (False,True):
+        directory=tmp_path/('guard-fault' if fault else 'budget-denial');directory.mkdir(mode=0o700)
+        with lab(directory,monkeypatch,limits={'max_actions':2 if fault else 1}) as (core,store,rows,pair,channels):
+            winner=ready(core);core.reserve(proofs(core,winner,channels));core.guarded_go(winner)
+            pair[1].recv(32768)
+            opened=core.open_session(1);value=core.prepare(opened['binding']['session_id'],'http_identify')
+            loser=core.dispatches[value['envelope']['dispatch_id']]
+            core.transition(loser,'preparing');core.transition(loser,'ready_for_review')
+            with direct(monkeypatch) as (reader,writer,_):
+                now=c.sample_clock()['mono_after_ns'];proof=approval(value,issued=now,expires=value['envelope']['action_deadline_ns'])
+                writer.send(c.canonical(proof));packet=reader.poll();core.approval_packet(*packet,reader)
+                raw,_=audit(value,sequence=2,audit_sequence=2,issued=now/c.SECOND)
+                channels[3].send(raw);packet=channels[2].poll();core.audit_packet(*packet,channels[2])
+            loser['pending_pointers']={'prepared_sha256':c.prepared_digest(value),
+                'reference_sha256':proof['reference_sha256'],'consume_sequence':1,'audit_sequence':2}
+            loop=b.BrokerLoop.__new__(b.BrokerLoop);loop.core=core
+            loop.pending={1:({'operation':'DISPATCH'},loser)};replies=[];stops=[]
+            loop.reply=lambda index,request,**kwargs:replies.append(kwargs['data'])
+            loop.cancel_slot=lambda slot,reason:stops.append((slot['session_id'],reason))
+            if fault:
+                def fail_guard(row):c.fail('timeout')
+                core.guarded_go=fail_guard
+            loop.advance()
+            assert winner['state']=='running' and not loop.pending and len(replies)==1
+            assert store.snapshot()['state']['usage']['actions']==(2 if fault else 1)
+            if fault:
+                assert replies[0]['outcome']=='unresolved' and stops==[(opened['binding']['session_id'],'engagement_live_timeout')]
+            else:
+                assert replies[0]['outcome']=='denied' and replies[0]['reason']=='engagement_live_allowance_exhausted'
+                assert replies[0]['admission'] is None and replies[0]['release'] is None and not stops
+                assert loser['state']=='terminal_unresolved'
             with pytest.raises(BlockingIOError):pair[1].recv(32768)
 
 

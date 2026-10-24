@@ -349,6 +349,19 @@ shared audit/lifecycle checks and unexpected-EOF checks for active slots. All
 regressions, the original failed batch, the bounded diagnostic and its incomplete
 offline replay; none supplies passing native proof. Fresh frozen acceptance is
 required, prioritizing N24 within the budget group after N04.
+Those corrections were committed at `4b39a1d`; freeze sixteen passed all 160
+portable cases and fresh N04. N24 now writes a valid bundle but remains
+incomplete: the host's shared first-stop epoch cancels the winner as soon as
+the budget loser emits SESSION_STOP. The retired-channel correction alone did
+not resolve the race. The contract treats an expected budget refusal as a valid
+reply, so a known allowance denial before admission now returns its unchanged
+denied result without emitting a shared-graph stop. Its dispatch remains terminal,
+with no reservation/release or reusable grant; waiting roles keep their original
+deadlines and normal host cleanup. All other failures retain cancellation,
+including an actual admitted guard failure. A real-ledger/direct-witness
+regression reproduced the unwanted stop; all 36 focused broker/session checks
+pass after the narrow correction. Preserve the freeze-sixteen incomplete bundle
+and reports. A new freeze and complete fresh validation remain required.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not
