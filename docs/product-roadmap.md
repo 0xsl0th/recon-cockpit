@@ -182,12 +182,24 @@ passed, with no skips, failures or errors. Preserve
 which also passed all five jobs with 28,845 portable tests each.
 This accepts offline metadata and inspection only.
 
-Current work is [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md).
-The additional explicit split separates its durable transaction domain from
-S4.2c isolated live enforcement: the existing record schema has no dispatch
-counters, and the current approval/launcher/traffic boundaries need independent
-engagement proofs. All 26 S4.2 obligations remain mapped, including all 18
-physical cases; ledger records cannot substitute for dispatch or cleanup evidence.
+**[PR #102](https://github.com/0xsl0th/recon-cockpit/pull/102) accepts
+[S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md) at `d8e1a6f`.**
+Fresh code and evidence reviews found no blockers. Reviewed `ffc5323` and the
+actual merge share tree `1cb1d5e8450b33bb9d73ed00f54b88ca52061a7c`.
+All 80 exact new cases, 28,925 local portable tests and all five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39521133152)
+passed without skips, failures or errors. Preserve
+`.secure-agent/pr102-review-20261021/merge-review-receipt.json`; the
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39525063830)
+also passed all five jobs with 28,925 portable tests each and the completeness
+guard. Its complete logs and verification are retained separately in that directory.
+
+Current work is [S4.2c live engagement enforcement](stage4-engagement-live.md).
+Its [exact inventory](stage4-engagement-live-gates.json) maps all 26 S4.2
+obligations, including all 18 physical cases, before implementation. The accepted
+ledger remains data-only. Live approval, durable current-state admission,
+physical aggregate limits, revocation and cleanup require the new integration's
+own evidence. This is the existing integration increment, with no further split.
 Stage 4 retains four logical increments, one accepted and three open, with a
 revised **6–7 PR** estimate. The current summed baseline forecasts are
 **49–66 professional-v1 PRs** and **89–136 broader-product PRs**, including
