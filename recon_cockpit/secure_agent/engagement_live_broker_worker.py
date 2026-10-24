@@ -598,21 +598,26 @@ class BrokerLoop:
 
     def run(self):
         import select
-        peers=[self.host,self.lifecycle,*self.ingress,*self.launchers,*self.endpoints,
-            *(r.channel for r in self.approval_readers),self.audit_reader.channel]
         while not self.stopping:
             try:
                 self.core.watch();self.advance()
                 for row in self.core.dispatches.values():
                     if row['state']not in {'settled','terminal_unresolved'}:
                         e=row['prepared']['envelope'];c.check_clock(c.sample_clock(),anchor=e['clock_anchor'],window_start_utc_ns=e['window_start_utc_ns'],window_end_utc_ns=e['window_end_utc_ns'],deadline_ns=e['action_deadline_ns'])
+                # SESSION_STOP deliberately closes that slot's role/witness
+                # channels. Their expected EOF cannot revoke a sibling's work.
+                # Shared audit/lifecycle and both ingress controls stay observed.
+                live=[i for i,slot in enumerate(self.core.slots) if slot['state'] not in ('stopping','closed')]
+                peers=[self.host,self.lifecycle,*self.ingress,self.audit_reader.channel,
+                    *(self.launchers[i] for i in live),*(self.endpoints[i] for i in live),
+                    *(self.approval_readers[i].channel for i in live)]
                 ready=select.select(peers,[],[],min(.02,max(0,(self.core.next_watch_ns-time.monotonic_ns())/c.SECOND)))[0]
                 # Lifecycle EOF/cancel wins over simultaneous authority and data.
                 if self.host in ready:self.stop('engagement_live_cancelled');break
                 if self.lifecycle in ready:self.lifecycle_request()
                 if self.stopping:break
                 for index,reader in enumerate(self.approval_readers):
-                    if reader.channel in ready:
+                    if self.core.slots[index]['state'] not in ('stopping','closed') and reader.channel in ready:
                         packet=reader.poll()
                         if packet:self.core.approval_packet(*packet,reader)
                 if self.audit_reader.channel in ready:
@@ -620,7 +625,7 @@ class BrokerLoop:
                     if packet:self.core.audit_packet(*packet,self.audit_reader)
                 for role,channels in (('endpoint',self.endpoints),('launcher',self.launchers)):
                     for index,peer in enumerate(channels):
-                        if peer in ready:self.core.watch();self.role_message(role,index)
+                        if self.core.slots[index]['state'] not in ('stopping','closed') and peer in ready:self.core.watch();self.role_message(role,index)
                 for index,peer in enumerate(self.ingress):
                     if peer in ready:self.core.watch();self.ingress_request(index)
             except (c.LiveError,ledger.DispatchLedgerError,OSError) as error:self.stop(_mapped(error))

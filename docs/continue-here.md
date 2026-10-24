@@ -330,6 +330,25 @@ it does not replace native acceptance. Preserve the original failure, three
 read-only tracing attempts (including the diagnostic serialization error),
 regression failure and duplicate synthetic-fixture correction. Fresh frozen
 portable and native results remain required after this replay change.
+The endpoint binding correction was committed at `93024b2`. Freeze fifteen
+passed all 160 portable cases, fresh N04 and N18–N23, including the restart
+case with complete saved inspection. N24 then failed during bundle validation:
+partial host ingress observations were incorrectly mixed into the broker's
+complete channel sequence. One bounded diagnostic retained the rejected
+candidate and reproduced the collision. Replay now requires every retained
+host DISPATCH packet to match the opposite-direction broker packet, with
+unique increasing host sequence numbers and request/dispatch pairing; broker
+sequences still start at one and remain contiguous. Its offline replay correctly
+remains incomplete because the original winner never received a final reply.
+That candidate shows the losing session's stop followed by a global witness
+failure. A real-channel portable regression reproduced expected reviewer EOF
+in a stopped slot cancelling the active sibling. The broker now retires stopped
+slots' role/witness channels from polling while retaining both ingress controls,
+shared audit/lifecycle checks and unexpected-EOF checks for active slots. All
+56 focused broker/witness/evidence cases pass. Preserve both reproducing
+regressions, the original failed batch, the bounded diagnostic and its incomplete
+offline replay; none supplies passing native proof. Fresh frozen acceptance is
+required, prioritizing N24 within the budget group after N04.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

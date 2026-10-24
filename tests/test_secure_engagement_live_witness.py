@@ -699,7 +699,50 @@ def test_halfclosed_channels_reject_write_and_rights(monkeypatch):
         writer.send(b'x'*4097);refused(reader.poll,code='invalid_witness');assert reader.closed
 
 
+def _host_ingress_replay_cases():
+    """A partial host observation is a mirror, not a second broker sequence."""
+    loaded,rows=complete_authority_fixture()
+    host=[]
+    for wrapped in rows:
+        row=wrapped['row']
+        if wrapped['source']!='broker_memfd' or row['kind']!='protocol':continue
+        data=row['data'];frame=data['frame']
+        if data['channel_role']!='ingress' or frame['operation']!='DISPATCH':continue
+        if data['direction']=='sent' and frame['body']['status']=='pending':continue
+        copied=deepcopy(wrapped);copied.update(segment=1,source='role_observer')
+        copied['row'].update(dispatch_id=uid(10),session_id=uid(4))
+        copied['row']['data']['direction']='sent' if data['direction']=='received' else 'received'
+        host.append(copied)
+    assert len(host)==2 and host[1]['row']['data']['frame']['sequence']==2
+    combined=resequence([*rows,*host])
+    assert not w.validate_evidence_transcript(loaded,combined,deadline=time.monotonic()+15)['missing_evidence']
+    for variant in ('duplicate','changed_request','changed_reply','unknown_channel','wrong_observer',
+                    'wrong_direction','missing_request','reply_before_request','broker_duplicate','broker_gap'):
+        altered=deepcopy(combined)
+        mirror=[x for x in altered if x['source']=='role_observer' and x['row']['kind']=='protocol']
+        request,reply=mirror
+        if variant=='duplicate':altered.append(deepcopy(request))
+        elif variant=='changed_request':request['row']['data']['frame']['body']['reference_sha256']='e'*64
+        elif variant=='changed_reply':reply['row']['data']['frame']['body']['data']['reason']='engagement_live_revoked'
+        elif variant=='unknown_channel':
+            for item in mirror:item['row']['data']['frame']['channel_id']=uid(1985)
+        elif variant=='wrong_observer':request['row']['observer_id']=uid(1985)
+        elif variant=='wrong_direction':request['row']['data']['direction']='received'
+        elif variant=='missing_request':altered.remove(request)
+        elif variant=='reply_before_request':reply['row']['observed_at_ns']=request['row']['observed_at_ns']-1
+        else:
+            actual=next(x for x in altered if x['source']=='broker_memfd' and x['row']['kind']=='protocol' and
+                x['row']['data']['channel_role']=='ingress' and x['row']['data']['direction']=='received')
+            if variant=='broker_duplicate':altered.append(deepcopy(actual))
+            else:actual['row']['data']['frame']['sequence']+=1
+        altered=resequence(altered)
+        if variant in ('unknown_channel','missing_request'):
+            assert 'transcript' in w.validate_evidence_transcript(loaded,altered,deadline=time.monotonic()+15)['missing_evidence']
+        else:refused(w.validate_evidence_transcript,loaded,altered,deadline=time.monotonic()+15)
+
+
 def test_proof_consumption_is_unique_across_ingresses(tmp_path,monkeypatch):
+    _host_ingress_replay_cases()
     # The broker's single event loop receives two callers; the same direct
     # reader sequence cannot produce two accepted copies of their shared proof.
     p=prepared();value=approval(p);encoded=c.canonical(value);accepted=[]

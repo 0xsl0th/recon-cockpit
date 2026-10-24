@@ -604,6 +604,38 @@ def _retained_audit_readiness(loaded, *, rows=None, deadline=None):
     return {'observations': observations, 'missing_evidence': sorted(missing)}
 
 
+def _host_ingress_links(rows, broker_frames, dispatches, deadline):
+    """Resolve partial host observations against the complete broker sequence."""
+    from . import engagement_live_protocol as p
+    missing = False; sequences = {}; requests = {}
+    for row in rows:
+        c._check_deadline(deadline)
+        data = row['data']; frame = data['frame']; body = frame['body']
+        direction = data['direction']; channel = (row['broker_id'], frame['channel_id'])
+        if row['observer_id'] != row['broker_id'] or frame['operation'] != 'DISPATCH': c.fail('evidence_invalid')
+        p.validate_frame(frame, role='ingress', direction='request' if direction == 'sent' else 'reply')
+        key = (*channel, direction); previous = sequences.get(key)
+        # The observer can begin after OPEN_SESSION/PREPARE and omit pending
+        # replies. Its retained packets must still increase without duplicates.
+        if previous is not None and (frame['sequence'] <= previous[0] or row['observed_at_ns'] < previous[1]): c.fail('evidence_invalid')
+        sequences[key] = (frame['sequence'], row['observed_at_ns'])
+        broker_direction = 'received' if direction == 'sent' else 'sent'
+        actual = broker_frames.get((*channel, broker_direction, frame['sequence']))
+        if actual is None: missing = True
+        elif actual != frame: c.fail('evidence_invalid')
+        link = dispatches.get(row['dispatch_id'])
+        if link is None: c.fail('evidence_invalid')
+        if direction == 'sent':
+            if body['prepared_sha256'] != c.prepared_digest(link['prepared']): c.fail('evidence_invalid')
+            requests[(*channel, frame['sequence'])] = row
+        else:
+            request = requests.get((*channel, body['request_sequence']))
+            if request is None: missing = True
+            elif (request['dispatch_id'] != row['dispatch_id'] or
+                    request['observed_at_ns'] > row['observed_at_ns']): c.fail('evidence_invalid')
+    return missing
+
+
 def validate_evidence_transcript(loaded, rows, *, deadline):
     """Reconstruct retained authority links; no effects or gate verdicts.
 
@@ -670,6 +702,7 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
         audit_sources[key] = (source, observed['observed_at_ns'])
     admissions={}
     ingress_requests, ingress_results = {}, {}
+    broker_ingress_frames, host_ingress_rows = {}, []
     # Host projections and broker packets occupy different immutable segments;
     # build their indexes without pretending their file order is wall-clock order.
     for wrapped in rows:
@@ -757,6 +790,14 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
             link['audit']=data
         elif kind=='protocol':
             frame=data['frame']; role=data['channel_role']
+            if role=='ingress':
+                if not broker_segment:
+                    host_ingress_rows.append(row)
+                    continue
+                if row['observer_id']!=row['broker_id']:c.fail('evidence_invalid')
+                broker_key=(row['broker_id'],frame['channel_id'],data['direction'],frame['sequence'])
+                if broker_key in broker_ingress_frames:c.fail('evidence_invalid')
+                broker_ingress_frames[broker_key]=frame
             key=(row['observer_id'],frame['channel_id'],data['direction'])
             previous=channel_sequences.get(key,0)
             if frame['sequence']!=previous+1: c.fail('evidence_invalid')
@@ -828,6 +869,7 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
                 if not accepted or data['actual_bytes']<=0 or data['remaining_before']!=cap-used:c.fail('evidence_invalid')
             elif any(data[key] for key in ('requested_bytes','actual_bytes','remaining_before','remaining_after')):c.fail('evidence_invalid')
             prefix.append(data)
+    if _host_ingress_links(host_ingress_rows,broker_ingress_frames,dispatches,deadline): missing.add('transcript')
     for did,link in dispatches.items():
         reservation,release=link['reservation'],link['release']
         approval,audit=link['approval'],link['audit']

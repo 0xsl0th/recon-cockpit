@@ -280,10 +280,45 @@ def test_clock_failure_before_and_after_admission(tmp_path,monkeypatch):
 
 
 def test_cancel_eof_and_late_role_messages_are_terminal(tmp_path,monkeypatch):
+    _stopped_session_channel_eof(monkeypatch)
     with lab(tmp_path,monkeypatch) as (core,store,*_):
         row=ready(core);core.stop('engagement_live_cancelled');refused(core.prepare,core.slots[0]['session_id'],'http_headers');refused(core.open_session,1)
         core.transition(row,'terminal_unresolved','engagement_live_cancelled');refused(core.transition,row,'running')
         assert not store.snapshot()['reservations']
+
+
+def _stopped_session_channel_eof(monkeypatch):
+    """Real peer closure in a retired session must not stop its live sibling.
+
+    The actual selector and witness decoder run; the final ingress callback is
+    a bounded test sink, not a native dispatch or authority witness.
+    """
+    for state in ('stopping','closed','active'):
+        with ExitStack() as stack:
+            def pair():
+                left,right=socket.socketpair();left.setblocking(False);right.setblocking(False)
+                stack.callback(left.close);stack.callback(right.close);return left,right
+            host_pair=pair();lifecycle=pair();ingress=[pair(),pair()]
+            launchers=[pair(),pair()];endpoints=[pair(),pair()]
+            readers=[stack.enter_context(direct(monkeypatch)) for _ in range(2)]
+            audit_reader=stack.enter_context(direct(monkeypatch,kind='audit'))[0]
+            core=SimpleNamespace(broker_id=uid(1700),dispatches={},
+                slots=[{'ingress_channel_id':uid(1710+i),'state':state if i==0 else 'active'} for i in range(2)],
+                watch=lambda:None,next_watch_ns=time.monotonic_ns()+20_000_000)
+            loop=b.BrokerLoop(core,host=host_pair[0],lifecycle=lifecycle[0],
+                ingress=[x[0] for x in ingress],launchers=[x[0] for x in launchers],
+                endpoints=[x[0] for x in endpoints],approval_readers=[x[0] for x in readers],audit_reader=audit_reader)
+            loop.advance=lambda:None;stopped=[];completed=[]
+            def stop(reason):stopped.append(reason);loop.stopping=True
+            def receive(index):
+                assert index==1 and ingress[index][0].recv(64)==b'independent continuation'
+                completed.append(index);loop.stopping=True
+            loop.stop=stop;loop.ingress_request=receive
+            readers[0][1].close();launchers[0][1].close();endpoints[0][1].close()
+            ingress[1][1].send(b'independent continuation')
+            loop.run()
+            if state=='active':assert stopped==['engagement_live_invalid_witness'] and not completed
+            else:assert not stopped and completed==[1]
 
 
 def test_success_requires_actual_parser_meter_crosslinks(tmp_path,monkeypatch):
