@@ -222,6 +222,14 @@ def test_all_phases_share_original_deadline_and_cleanup(monkeypatch):
     worker_state.supervisor=SimpleNamespace(close=lambda:None);worker_state.worker_id=uid(88)
     worker_state.close();assert sent[0][0]=='CLOSED'
 
+def _supervisor_expected_bound_ns(model):
+    # Derive the original bound from the contract inputs, before the supervisor's
+    # integer-nanosecond representation and its conversion back to seconds.
+    binding=model.session['binding']
+    return min(int(model.control.deadline*c.SECOND),binding['session_deadline_ns'],
+               binding['broker_deadline_ns'],model.prepared['envelope']['action_deadline_ns'])
+
+
 # These tests use real host threads and POSIX pairs with declared child process
 # observations. They do not claim Linux isolation or native process execution.
 @contextmanager
@@ -265,7 +273,9 @@ def supervisor_lab(monkeypatch, *, seconds=3):
     def spawn(**kwargs):
         name=kwargs['supervision_identity']['child_slot'];binding=next(x for x in bindings if x['child_slot']==name)
         assert identity(kwargs['child_stdin'])==binding['pair']['child_endpoint']
-        assert kwargs['control'].deadline==min(control.deadline,value['envelope']['action_deadline_ns']/c.SECOND)
+        bound_ns=_supervisor_expected_bound_ns(model)
+        assert kwargs['control'].deadline==min(control.deadline,bound_ns/c.SECOND)
+        assert kwargs['control'].deadline<=min(control.deadline,value['envelope']['action_deadline_ns']/c.SECOND)
         assert kwargs['startup_deadline']<=kwargs['control'].deadline
         assert kwargs['startup_deadline']<=time.monotonic()+(2 if kwargs['role']=='parser' else 10)
         model.calls.append(kwargs);kwargs['child_stdin'].close()
@@ -370,7 +380,10 @@ def _supervisor_overlap_cases(monkeypatch):
     with supervisor_lab(monkeypatch,seconds=20) as model:
         sup=model.supervisor;value=model.prepared
         boot=sup._execute('START',{'child_slot':'identify_client','prepared':value})
-        assert boot['bootstrap']['deadline_ns']==int(model.control.deadline*c.SECOND)
+        bound_ns=_supervisor_expected_bound_ns(model)
+        expected_phase=min(model.control.deadline,bound_ns/c.SECOND)
+        assert boot['bootstrap']['deadline_ns']==int(expected_phase*c.SECOND)
+        assert boot['bootstrap']['deadline_ns']<=bound_ns
         assert boot['bootstrap']['deadline_ns']>int(model.calls[0]['startup_deadline']*c.SECOND)
         refused(sup._execute,'START',{'child_slot':'identify_client','prepared':value})
         sup._execute('START',{'child_slot':'identify_admission','prepared':value})
@@ -486,7 +499,9 @@ def _supervisor_thread_deadline_cases(monkeypatch):
         assert executed.wait(.5);sup.thread.join(.5)
         sup.close(time.monotonic()+.5)
         assert seen and seen[0][0]!=threading.get_ident()
-        assert seen[0][1]==min(bound,model.control.deadline)
+        bound_ns=_supervisor_expected_bound_ns(model)
+        assert seen[0][1]==min(model.control.deadline,bound_ns/c.SECOND)
+        assert seen[0][1]<=min(bound,model.control.deadline)
         assert seen[0][1]<seen[0][2]+2
         rows=model.budget.snapshot()['rows']
         terminal=[row for row in rows if row['data']['kind']=='local_failure']

@@ -223,9 +223,17 @@ still refuse. Existing meter cases cover the correction without new case IDs or
 larger limits. All 32 focused meter/runtime checks passed; after updating the four
 contract digest pins, all 44 contract/evidence checks and the static compilation
 of 54 core variants and 37 sources passed. The original static pin failure is
-retained. Independent implementation and evidence reviews are clear. Freeze the
-complete corrected source and installed runtime, then
-pass all exact 160 portable cases before fresh native acceptance with N04.
+retained. Independent implementation and evidence reviews are clear. The reset
+correction was committed at `53d0590`; freeze eight passed independent source
+and runtime review. Its exact portable run retained 159 passes and one L16
+failure: a test compared floating-point seconds directly despite the existing
+conservative integer-nanosecond deadline bound. The observed bound was less than
+one nanosecond earlier than the original host deadline. Preserve that failed
+run; no native case ran on freeze eight. The test expectations now use the
+original host/action/session/broker bounds and exact integer conversions while
+retaining separate no-extension checks. All 16 focused launcher cases pass, with
+production bytes unchanged from freeze eight. Record a new clean freeze and pass
+all exact 160 portable cases before fresh native acceptance with N04.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not
