@@ -374,6 +374,19 @@ all 40 focused contract/runtime checks pass after the test-only correction,
 including advancing time, release validation and restoration after exceptions.
 Preserve the original native failure and regression. Fresh frozen acceptance
 remains required, with the window group first after N04.
+The host projection correction was committed at `1f08502`. Freeze eighteen
+passed all 160 portable cases and fresh N04; N29 then completed both useful
+operations but its saved parser replay refused the instrumented common contract
+source. Its original bundle remains unchanged and is not acceptance. N29 now
+projects both UTC and the monotonic bracket by the same subsecond offset to the
+preceding exact second. Only broker initialization and the first session use
+that pinned boundary; all later checks use normal clocks, including the host.
+This removes the common-source/host clock override and keeps the parser's entire
+source partition unchanged. All 40 focused contract/runtime checks pass, proving
+the exact boundary, advancing normal clocks, unchanged jump detection, parser
+source separation and clock restoration after a failed wrapper operation.
+Preserve both N29 failed attempts and their regressions; fresh freeze nineteen
+validation is required before further acceptance claims.
 [Draft PR #103](https://github.com/0xsl0th/recon-cockpit/pull/103) now holds this
 integration. It remains draft pending complete native, portable, CI and review
 gates; no acceptance or merge is authorized by this development checkpoint.

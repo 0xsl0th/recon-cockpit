@@ -182,10 +182,10 @@ def test_inclusive_start_exclusive_end_conversion(tmp_path, monkeypatch):
     refused(c.check_clock, clock(c.SECOND), **kwargs, code='window_closed')
     refused(c.check_clock, clock(c.SECOND-2, 2), **kwargs, code='window_closed')
     refused(c.check_clock, clock(-1), **kwargs, code='clock_changed')
-    _inclusive_native_clock_projection(tmp_path, monkeypatch)
+    _inclusive_native_clock_anchor(tmp_path, monkeypatch)
 
 
-def _inclusive_native_clock_projection(tmp_path, monkeypatch):
+def _inclusive_native_clock_anchor(tmp_path, monkeypatch):
     from engagement_live_native import SourceVariants, _install_inclusive_clock
     from recon_cockpit.secure_agent import engagement_live_runtime as runtime
     original_clock=c.sample_clock;original_source=runtime._source_path
@@ -199,21 +199,48 @@ def _inclusive_native_clock_projection(tmp_path, monkeypatch):
         case={'id':'S42C-N29','variant':'inclusive_start_useful_prefix'}
         variants=SourceVariants(tmp_path/'clock-source',case_id=case['id'],variant=case['variant'],role='broker')
         _install_inclusive_clock(variants,case)
-        assert case['_clock']==clock()
-        value=prepared();permit=release(value)
+        assert not set(variants.paths)&set(runtime.role_modules('parser'))
+        anchor={'utc_ns':U,'mono_before_ns':M-c.SECOND//2,'mono_after_ns':M-c.SECOND//2}
+        assert case['_clock']==anchor
+        boundary=dict(anchor=anchor,window_start_utc_ns=U,window_end_utc_ns=U+60*c.SECOND,
+            deadline_ns=M+60*c.SECOND)
+        assert c.check_clock(anchor,**boundary)>M
+        value=c.derive_prepared(opened(clock_value=anchor),'http_identify',dispatch_id=uid(10),clock=c.sample_clock())
+        permit=release(value);permit['guard_clock']=c.sample_clock()
         with pytest.raises(RuntimeError,match='owned exit'):
             with variants:
                 for delta in (0,c.SECOND):
                     elapsed[0]=delta
-                    assert c.sample_clock()==clock(delta)
+                    assert c.sample_clock is original_clock
+                    assert c.check_clock(c.sample_clock(),**boundary)>M+delta
                     assert c.validate_release_binding(permit,value,clock=c.sample_clock())==permit
-                    refused(c.validate_release_binding,permit,value,clock=original_clock())
+                    bad=deepcopy(c.sample_clock());bad['utc_ns']+=ledger.CLOCK_TOLERANCE+1
+                    refused(c.check_clock,bad,**boundary,code='clock_changed')
                     assert c.time.monotonic is os_monotonic and c.time.time_ns is os_wall
                 raise RuntimeError('owned exit')
         assert c.sample_clock is original_clock and runtime._source_path is original_source
         saved=json.loads((variants.directory/'source-variants.json').read_bytes())
-        source=variants.paths['engagement_live_contract'].read_bytes()
-        assert any(row['module']=='engagement_live_contract' and row['after_sha256']==hashlib.sha256(source).hexdigest() for row in saved['sources'])
+        source=variants.paths['engagement_live_broker_worker'].read_bytes()
+        assert saved['sources'][0]['after_sha256']==hashlib.sha256(source).hexdigest()
+        # Execute only the committed test wrapper around harmless stand-ins.
+        # Its initialization and first session see the exact boundary, then
+        # normal advancing clocks are restored even when the operation fails.
+        tree=ast.parse(source);names={'_owned_at_inclusive_boundary','_owned_inclusive_initialize','_owned_inclusive_session'}
+        wrapper=ast.Module(body=[node for node in tree.body if isinstance(node,ast.FunctionDef) and node.name in names],type_ignores=[])
+        import types
+        isolated=types.SimpleNamespace(sample_clock=original_clock,fail=c.fail)
+        seen=[]
+        def observe(*args):seen.append(isolated.sample_clock());return 'observed'
+        namespace={'c':isolated,'_OWNED_INCLUSIVE_ANCHOR':anchor,'_owned_inclusive_init':observe,'_owned_inclusive_open':observe}
+        exec(compile(wrapper,'owned-inclusive-wrapper','exec'),namespace)
+        owner=types.SimpleNamespace(slots=[{'state':'allocated'}])
+        assert namespace['_owned_inclusive_initialize'](owner)=='observed'
+        assert namespace['_owned_inclusive_session'](owner,0)=='observed'
+        assert seen==[anchor,anchor] and isolated.sample_clock is original_clock
+        def fail():raise RuntimeError('owned boundary failure')
+        with pytest.raises(RuntimeError,match='owned boundary failure'):
+            namespace['_owned_at_inclusive_boundary'](fail)
+        assert isolated.sample_clock is original_clock
 
 
 def test_backward_forward_and_highwater_discontinuities():
