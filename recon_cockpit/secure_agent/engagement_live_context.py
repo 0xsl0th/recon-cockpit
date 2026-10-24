@@ -289,6 +289,7 @@ def _validate_supervision(loaded, rows, deadline):
     dispatches = {op['prepared']['envelope']['dispatch_id']: {
         'capture': _host_capture(loaded, op, cleanups), 'native_budget': None} for op in operations}
     releases, relays = _saved_execution(loaded, rows=rows)
+    role_observations = _retained_role_observations(rows)
     for op in operations:
         did = op['prepared']['envelope']['dispatch_id']; capture = dispatches[did]['capture']
         if capture is not None and 'capture' in relays.get(did, {}) and capture != relays[did]['capture']: _bad()
@@ -401,7 +402,8 @@ def _validate_supervision(loaded, rows, deadline):
             part = projection['data']; result = {'child_slot': data['child_slot']}
             if part['child_slot'] != data['child_slot']: _bad()
             if operation == 'START':
-                bootstrap = _reconstruct_bootstrap(slot, op, ready_workers, bundle, parents)
+                bootstrap = _reconstruct_bootstrap(slot, op, ready_workers, bundle, parents,
+                    role_observations, request['observed_at_ns'])
                 if bootstrap is None: missing.add('transcript'); continue
                 if not request['observed_at_ns'] < bootstrap['deadline_ns']: _bad()
                 if slot['role'] == 'parser' and bootstrap['deadline_ns'] > request['observed_at_ns'] + 2000000000: _bad()
@@ -487,15 +489,44 @@ def _slot_cleanup(receipt, slot, ready_workers, entries):
             or process['wrapper_pid'] != parent['wrapper']['pid']): _bad()
 
 
-def _reconstruct_bootstrap(slot, op, ready_workers, bundle, parents):
+def _retained_role_observations(rows):
+    """Bind historical workers by broker slot, never by a reusable namespace ID."""
+    from .engagement_live_witness import validate_transcript_row
+    found = {}
+    for wrapper in rows:
+        row = wrapper['row']
+        if wrapper['source'] != 'broker_memfd' or row['kind'] != 'protocol': continue
+        data = row['data']; frame = data['frame']
+        if data['channel_role'] != 'lifecycle' or frame['operation'] != 'ROLE_OBSERVED': continue
+        row = validate_transcript_row(row); body = row['data']['frame']['body']
+        if data['direction'] != 'received' or row['observer_id'] != row['broker_id']: _bad()
+        if body['role'] not in ('endpoint', 'launcher'): continue
+        key = (row['broker_id'], body['slot_index'], body['role'])
+        if key in found or body['readiness']['role'] != body['role']: _bad()
+        found[key] = (body['readiness'], row['observed_at_ns'])
+    return found
+
+
+def _reconstruct_bootstrap(slot, op, ready_workers, bundle, parents, role_observations, started_at_ns):
     launcher = ready_workers.get(slot['launcher_id'])
     if launcher is None: return None
-    endpoint = [x for x in ready_workers.values() if x['role'] == 'endpoint'
-                and x['parent_observation']['namespaces']['net'] == launcher['parent_observation']['namespaces']['net']]
-    if len(endpoint) != 1 or slot['bootstrap'] is None or not parents: return None
+    matches = [(key, value) for key, value in role_observations.items()
+        if key[0] == slot['broker_id'] and key[2] == 'launcher'
+        and value[0]['worker_ready']['worker_id'] == slot['launcher_id']]
+    if not matches or slot['bootstrap'] is None or not parents: return None
+    if len(matches) != 1: _bad()
+    key, observed_launcher = matches[0]
+    observed_endpoint = role_observations.get((key[0], key[1], 'endpoint'))
+    if observed_endpoint is None: return None
+    endpoint = observed_endpoint[0]
+    for ready, at in (observed_launcher, observed_endpoint):
+        retained = ready_workers.get(ready['worker_ready']['worker_id'])
+        if retained is None: return None
+        if retained != ready or not ready['parent_observation']['sampled_at_ns'] <= at <= started_at_ns: _bad()
+    if endpoint['parent_observation']['namespaces']['net'] != launcher['parent_observation']['namespaces']['net']: _bad()
     binding = {k: slot[k] for k in ('child_slot', 'role', 'worker_id', 'pair')}
     value = runtime.reconstruct_child_bootstrap(runtime=bundle, child_slot=binding,
-        prepared=op['prepared'], session=op['session'], endpoint_identity=endpoint[0],
+        prepared=op['prepared'], session=op['session'], endpoint_identity=endpoint,
         observer=parents[0]['observer'], deadline_ns=slot['bootstrap']['deadline_ns'], launcher_id=slot['launcher_id'])
     if runtime._hash(value) != slot['bootstrap']['sha256'] or len(runtime._json(value)) != slot['bootstrap']['bytes']: _bad()
     return value

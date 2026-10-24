@@ -313,6 +313,23 @@ the original native failure, reproducing regression, and private-directory and
 ROE-limit fixture corrections. Fresh freeze/portable/native proof remains
 required. The next native plan prioritizes the affected budget group after N04;
 all earlier groups still require fresh results before acceptance.
+That mapper correction was committed at `9db039b`; freeze fourteen passed all
+160 portable cases and fresh N04. The budget batch passed N18–N22, then stopped
+at N23 (`reopen_exhausted`). Its saved report proves exhaustion survives a new
+broker, with no second reservation/GO and all 15 processes reaped, but reports
+missing transcript evidence. The two sequential namespaces reused the same
+kernel inode; bootstrap replay incorrectly treated that inode as a globally
+unique endpoint identity. Replay now resolves the exact endpoint and launcher
+from retained broker-slot lifecycle observations, cross-checks their full saved
+readiness and chronology, and retains the bootstrap hash/byte checks. Missing
+links stay incomplete; conflicting, late or mismatched links fail closed. All
+32 focused evidence/witness cases pass, including a reproducing inode-reuse
+regression and link mutations within the existing case inventory. A bounded
+offline diagnostic resolves the unchanged original bundle in 3.9 seconds;
+it does not replace native acceptance. Preserve the original failure, three
+read-only tracing attempts (including the diagnostic serialization error),
+regression failure and duplicate synthetic-fixture correction. Fresh frozen
+portable and native results remain required after this replay change.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

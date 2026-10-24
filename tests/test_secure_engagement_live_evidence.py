@@ -103,7 +103,9 @@ def attach_supervision_fixture(loaded, rows):
     processes.setdefault('boundary_observations',[])
     cleanup=loaded.setdefault('cleanup.json',{'schema_version':'1','receipts':[],'exports':[],'recovery':None})
     cleanup.setdefault('supervisors',[]);processes['child_slots']=[]
-    rows=[deepcopy(x) for x in rows if x['row']['kind']!='supervision_projection']
+    rows=[deepcopy(x) for x in rows if x['row']['kind']!='supervision_projection' and not
+        (x['row']['kind']=='protocol' and x['row']['data']['frame']['operation']=='ROLE_OBSERVED'
+         and x['row']['data']['frame']['body']['role'] in ('endpoint','launcher'))]
     sequences={}
     for index,op in enumerate(loaded['results.json']['operations']):
         op.setdefault('host_capture',None)
@@ -155,6 +157,16 @@ def attach_supervision_fixture(loaded, rows):
                 processes['startup']=[x for x in processes['startup'] if x['payload']!=entry['payload']]+[entry]
                 record['entry_sha256']=sha(raw(entry))
         launcher['worker_ready']['descriptor_sha256']=r._hash(launcher['parent_observation']['descriptors'])
+        # Declared lifecycle records bind the two workers to one broker slot.
+        # These are synthetic rows, never substitutes for retained native bytes.
+        for ready in (endpoint,launcher):
+            sequence=1+sum(x['row']['kind']=='protocol' and x['row']['data']['frame']['channel_id']==broker
+                and x['row']['data']['direction']=='received' for x in rows)
+            rows.append({'segment':0,'source':'broker_memfd','row':{'schema_version':'1','broker_id':broker,
+                'observer_id':broker,'session_id':None,'dispatch_id':None,'row_sequence':1,
+                'observed_at_ns':anchor-90,'kind':'protocol','data':{'channel_role':'lifecycle','direction':'received',
+                    'frame':{'schema_version':'1','channel_id':broker,'sequence':sequence,'operation':'ROLE_OBSERVED',
+                        'body':{'slot_index':index,'role':ready['role'],'readiness':deepcopy(ready)}}}}})
         child_cleanups={}
         for name,child in children.items():
             payload=child['parent_observation']['payload']
@@ -1013,6 +1025,43 @@ def with_transcript(manifest,members,parts):
     return repin(manifest,members)
 
 
+def _reused_namespace_replay(loaded,rows):
+    """Historical namespace inode reuse cannot choose another session's endpoint."""
+    from test_secure_engagement_live_runtime import declared_readiness,declared_cleanup
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    changed=deepcopy(loaded)
+    endpoint=declared_readiness(changed['runtime.json']['runtime'],'endpoint',pid=1980,worker_id=uid(1980))
+    current=next(x for x in changed['processes.json']['readiness'] if x['role']=='endpoint')
+    assert endpoint['parent_observation']['namespaces']['net']==current['parent_observation']['namespaces']['net']
+    changed['processes.json']['readiness'].append(endpoint)
+    changed['cleanup.json']['receipts'].append(declared_cleanup(endpoint))
+    assert context.validate_supervision_transcript(changed,rows)['missing_evidence']==[]
+    for variant in ('missing_endpoint','missing_launcher','foreign_source','foreign_broker','foreign_slot',
+                    'duplicate','late','future_sample','wrong_ready','missing_retained','wrong_observer'):
+        bad=deepcopy(changed);altered=deepcopy(rows)
+        target=next(x for x in altered if x['row']['kind']=='protocol' and
+            x['row']['data']['frame']['operation']=='ROLE_OBSERVED' and
+            x['row']['data']['frame']['body']['role']==('launcher' if variant=='missing_launcher' else 'endpoint'))
+        body=target['row']['data']['frame']['body']
+        if variant.startswith('missing_') and variant!='missing_retained':altered.remove(target)
+        elif variant=='foreign_source':target['source']='role_observer'
+        elif variant=='foreign_broker':target['row'].update(broker_id=uid(1981),observer_id=uid(1981))
+        elif variant=='foreign_slot':body['slot_index']=1
+        elif variant=='duplicate':altered.append(deepcopy(target))
+        elif variant=='late':target['row']['observed_at_ns']=bad['results.json']['operations'][0]['prepared']['envelope']['action_deadline_ns']
+        elif variant=='future_sample':
+            body['readiness']['parent_observation']['sampled_at_ns']=target['row']['observed_at_ns']+1
+            worker=body['readiness']['worker_ready']['worker_id']
+            bad['processes.json']['readiness']=[body['readiness'] if x['worker_ready']['worker_id']==worker else x for x in bad['processes.json']['readiness']]
+        elif variant=='wrong_ready':body['readiness']=deepcopy(endpoint)
+        elif variant=='missing_retained':
+            bad['processes.json']['readiness']=[x for x in bad['processes.json']['readiness'] if x!=current]
+        else:target['row']['observer_id']=uid(1981)
+        if variant in ('duplicate','late','future_sample','wrong_ready','wrong_observer'):
+            refused(context.validate_supervision_transcript,bad,altered)
+        else:assert 'transcript' in context.validate_supervision_transcript(bad,altered)['missing_evidence']
+
+
 def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch):
     manifest,members=fixture();broker=uid(80)
     manifest['broker_instances']=[{'broker_id':broker,'ledger_owner_id':uid(81)}]
@@ -1061,6 +1110,7 @@ def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch):
         loaded['manifest.json']['transcript']['segments']=original_segments
     supervision=context.validate_supervision_transcript(loaded,original_rows)
     assert supervision['missing_evidence']==[] and supervision['all_closed']
+    _reused_namespace_replay(loaded,original_rows)
     for variant in ('pair','worker','bootstrap','observer','capture','raw','source','wire','projection','sequence','late_begin'):
         bad=deepcopy(loaded);changed_rows=deepcopy(original_rows)
         slots=bad['processes.json']['child_slots'];slot=next(x for x in slots if x['child_slot']=='identify_client')
