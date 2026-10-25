@@ -450,6 +450,15 @@ def test_witness_custody_is_single_transfer_and_sealed(tmp_path,monkeypatch):
             raise
         return reader,writer
     monkeypatch.setattr(broker,'_pair',pair)
+    def one_way():
+        from test_secure_engagement_live_runtime import portable_halfclose
+        reader,writer=pair();portable_halfclose(reader,writer);return reader,writer
+    monkeypatch.setattr(broker,'_one_way',one_way)
+    original_identity=broker._pair_identity
+    def identity(peer):
+        from test_secure_engagement_live_runtime import portable_socket_identity
+        return portable_socket_identity(original_identity(peer),peer.fileno())
+    monkeypatch.setattr(broker,'_pair_identity',identity)
     monkeypatch.setattr(broker,'_memfd',export_pair)
     bundle = broker.preallocate_role_bundle('terminal')
     rights = bundle.slots[0].take_reviewer_bootstrap()

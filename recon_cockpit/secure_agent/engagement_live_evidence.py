@@ -605,9 +605,10 @@ def _report(loaded,context,authority,manifest_sha,parser_count,tails):
     if crash_negative:missing.discard('final_export')
     if tails and not crash_negative:missing.add('transcript_tail')
     if m['proof_kind']=='live_operation':
+        from .engagement_live_witness import latest_final_available
         if not operations and not startup_negative:missing.add('unsettled_dispatch')
         if m['ledger_exports']['initial']['status']!='complete' and not startup_negative:missing.add('initial_export')
-        if m['ledger_exports']['final']['status']!='complete' and not (startup_negative or crash_negative):missing.add('final_export')
+        if not latest_final_available(loaded) and not (startup_negative or crash_negative):missing.add('final_export')
         if m['transcript']['status']!='complete' and not (startup_negative or crash_negative):missing.add('transcript')
     audit_closure=_audit_closure(loaded)
     cleanup=_cleanup_report(loaded,audit=audit_closure)
@@ -654,6 +655,8 @@ def _core_candidate(variant, prepared, session):
 
 def _core_history(loaded,proof):
     """Resolve selectors into already replay-validated immutable event rows."""
+    from .engagement_live_witness import terminal_history_available
+    if not terminal_history_available(loaded):return None
     histories=[loaded[name] for name in ('initial-ledger.json','final-ledger.json','recovery-ledger.json') if name in loaded]
     if not histories:return None
     final=max(histories,key=lambda value:len(value['events']))

@@ -249,11 +249,8 @@ def supervisor_lab(monkeypatch, *, seconds=3):
     monkeypatch.setattr(rt,'_observer',lambda:deepcopy(observer))
     original_identity=host_broker._pair_identity
     def identity(peer):
-        # Portable socket custody is real; only Linux F_GETFL's wire spelling
-        # is modeled on systems with different POSIX flag constants.
-        row=original_identity(peer);row['flags']=2050
-        if not row['inode']:row['inode']=100000+peer.fileno()
-        return row
+        from test_secure_engagement_live_runtime import portable_socket_identity
+        return portable_socket_identity(original_identity(peer),peer.fileno())
     monkeypatch.setattr(host_broker,'_pair_identity',identity)
     peers=[];bindings=[];ends={}
     for index,(name,(role,_,fd)) in enumerate(c.CHILD_SLOTS.items()):

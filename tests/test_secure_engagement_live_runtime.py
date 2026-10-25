@@ -19,6 +19,41 @@ def uid(n):return str(UUID(int=n,version=4))
 def raw(v):return json.dumps(v,sort_keys=True,separators=(',',':'),ensure_ascii=True).encode()
 def sha(v):return hashlib.sha256(v).hexdigest()
 
+def portable_socket_identity(row, fd):
+    """Declared Linux wire identity for a real portable owned descriptor.
+
+    Darwin socket stat can omit a meaningful device/inode. Only that declared
+    identity and Linux flag spelling are modeled; the owned fd stays real.
+    """
+    row=dict(row);row['flags']=2050
+    if row['device']<0 or not row['inode']:
+        row.update(device=0,inode=100000+fd)
+    return row
+
+
+def portable_halfclose(reader, writer):
+    """Physically disable the reader's writes, then observe the peer's EOF."""
+    import socket
+    reader.shutdown(socket.SHUT_WR)
+    assert writer.recv(1)==b''
+    with pytest.raises(OSError) as caught:reader.send(b'forbidden')
+    assert caught.value.errno==errno.EPIPE
+
+
+class PortablePacket:
+    """Real portable bytes/ancillary data with a declared Linux flag view.
+
+    Darwin can echo the requested MSG_DONTWAIT bit. Only that input bit is
+    removed; ancillary data, truncation and other output flags remain visible.
+    """
+    def __init__(self, peer):self.inner=peer
+    def __getattr__(self, key):return getattr(self.inner,key)
+    def recvmsg(self, *args):
+        import socket
+        raw,ancillary,flags,address=self.inner.recvmsg(*args)
+        requested=args[2] if len(args)>2 else 0
+        return raw,ancillary,flags & ~(requested & socket.MSG_DONTWAIT),address
+
 def declared_runtime():
     """Declared fixture rows only. No native image/process/kernel claim is made."""
     def file(destination):
@@ -245,6 +280,15 @@ def test_native_snapshot_mutation_refused(tmp_path,monkeypatch):
 
 
 def test_fixed_argv_and_initial_fd_closure(tmp_path,monkeypatch):
+    import socket
+    absent={'device':-1,'inode':0,'mode':0o140777,'flags':0}
+    assert portable_socket_identity(absent,40)==portable_socket_identity(absent,40)
+    assert portable_socket_identity(absent,40)!=portable_socket_identity(absent,41)
+    ancillary=[(socket.SOL_SOCKET,socket.SCM_RIGHTS,b'held')]
+    packet=PortablePacket(SimpleNamespace(recvmsg=lambda *args:(b'bytes',ancillary,
+        socket.MSG_DONTWAIT|socket.MSG_TRUNC|socket.MSG_CTRUNC,None)))
+    assert packet.recvmsg(10,10,socket.MSG_DONTWAIT)==(b'bytes',ancillary,socket.MSG_TRUNC|socket.MSG_CTRUNC,None)
+    assert packet.recvmsg(10,10,0)[2]&socket.MSG_DONTWAIT
     _graphical_startup_mounts(tmp_path,monkeypatch)
     _supervised_spawn_cases(monkeypatch)
     _supervised_proxy_cases(monkeypatch)
@@ -1202,11 +1246,10 @@ def _supervised_proxy_cases(monkeypatch):
             sockets.extend((parent,child));name=binding['child_slot'];channels[name]=parent;children[name]=child
             for key,peer in (('request_endpoint',parent),('child_endpoint',child)):
                 actual=r._descriptor(peer.fileno(),key)
-                binding['pair'][key]={k:actual[k] for k in ('device','inode','mode','flags')}
-                binding['pair'][key]['flags']=2|0x800
+                binding['pair'][key]=portable_socket_identity({k:actual[k] for k in ('device','inode','mode','flags')},peer.fileno())
                 assert os.get_blocking(peer.fileno())is False
-            observed[parent.fileno()]={**r._descriptor(parent.fileno(),name+'_request'),
-                'fd':binding['pair']['launcher_fd'],'flags':2|0x800}
+            observed[parent.fileno()]={**portable_socket_identity(r._descriptor(parent.fileno(),name+'_request'),parent.fileno()),
+                'fd':binding['pair']['launcher_fd']}
         host,peer=socket.socketpair();sockets.extend((host,peer));calls=[]
         control=SimpleNamespace(deadline=M/1e9+30,clock=lambda:M/1e9,cancelled=object(),check=lambda:None,remaining=lambda:30)
         context={key:session['binding'] if key=='session_binding' else session[key] for key in ('session_binding','roe','scope','policy')}

@@ -1,4 +1,4 @@
-# Continue here — 24 October 2026
+# Continue here — 25 October 2026
 
 ## Read this first
 
@@ -402,7 +402,43 @@ Preserve N30's failed process/closure observations and the reproducer; freeze
 twenty must supply fresh proof, starting with N30 within the window group.
 [Draft PR #103](https://github.com/0xsl0th/recon-cockpit/pull/103) now holds this
 integration. It remains draft pending complete native, portable, CI and review
-gates; no acceptance or merge is authorized by this development checkpoint.
+gates. The operator has authorized an independent review agent and merging after
+the complete required checks and review pass, then continuing along the roadmap.
+This conditional authorization does not mark any acceptance gate complete.
+
+Freeze twenty at `1ab5fd7` passed all 160 portable cases, fresh N04 and
+N30/N28/N29/N31. N32 stopped after committing its reservation: the fixed test
+barrier ignored the launcher's actual stop and prevented normal final evidence
+sealing. A separate bounded diagnostic retained the original partial candidate
+and a separately labeled read-only recovery snapshot; neither repairs that
+failed acceptance attempt. Independent review also identified a broker-only idle
+monitor that needed the existing cleanup reserve, and replay that confused an
+unavailable later history with contradictory evidence. The monitor now stops
+before its original hard bound. Replay retains the richest validated prefix,
+rejects all independently knowable identity, ordering, witness and accounting
+contradictions, and treats strictly later unavailable joins as missing evidence.
+Initial-only history cannot establish a complete negative physical proof.
+An older sequential broker's final export remains a prefix. Read-only recovery
+can complete durable history, but cannot replace the latest broker's missing
+sealed final outside the existing proven startup/crash exceptions.
+
+The N32 source-only barrier now unwinds on actual traffic/EOF from its existing
+launcher peer so normal broker cleanup can seal its reservation. The host retains
+that early cancellation separately, then records a real refused continuation
+with the original Prepared/reference after actual ROE expiry and the graph's
+stop fence. No deadline, charge, GO guard or case predicate is relaxed.
+
+The freeze-twenty hosted run passed all four Linux jobs. macOS retained 40
+portable fixture failures and 29,045 passes: redundant stream half-close calls,
+negative socket device identifiers in declared Linux wire objects, and one
+receive precheck failure. The latter's flags were not captured; Apple XNU source
+supports an echoed input `MSG_DONTWAIT` explanation. Portable fixtures now use
+real one-way stream behavior with explicit declared Linux identities and remove
+only that echoed requested flag; ancillary data, truncation and all other flags
+remain checked. Production Linux confinement and protocol checks are unchanged.
+Preserve the failed CI log, independent reviews and all focused regressions in
+`.secure-agent/stage4-engagement-live-20261021/`. Fresh clean-source portable,
+native, full-suite, hosted and final independent review gates remain required.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

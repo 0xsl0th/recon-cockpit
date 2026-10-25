@@ -850,11 +850,14 @@ class EngagementSession:
                 interrupt()
 
     def _monitor(self):
+        work_deadline_ns=int(self._control.deadline*c.SECOND)-c.CLEANUP_NS
         try:
-            while not self._closing.wait(.05):
+            while not self._closing.wait(min(.05,max(0,(work_deadline_ns-time.monotonic_ns())/c.SECOND))):
                 if self._stop.is_set():
                     c.fail('session_unavailable')
                 self._control.check()
+                if time.monotonic_ns()>=work_deadline_ns:
+                    c.fail('timeout')
                 if self._broker.pidfd is not None:
                     import select
                     if select.select([self._broker.pidfd], [], [], 0)[0]:

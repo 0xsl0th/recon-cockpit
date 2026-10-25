@@ -503,6 +503,130 @@ def _match_receipt(value, events, *, operation, dispatch_id=None):
     return row
 
 
+def latest_final_available(loaded):
+    """An older broker's final export cannot close a later broker's history."""
+    manifest=loaded.get('manifest.json',{});instances=manifest.get('broker_instances',[])
+    final=manifest.get('ledger_exports',{}).get('final',{})
+    return ('final-ledger.json' in loaded and bool(instances)
+        and final.get('status')=='complete' and final.get('broker_id')==instances[-1]['broker_id'])
+
+
+def terminal_history_available(loaded):
+    return 'recovery-ledger.json' in loaded or latest_final_available(loaded)
+
+
+class _ReplayHistory:
+    """Known durable prefix and unverified later claims; never absence proof."""
+    def __init__(self, loaded, deadline):
+        self.final,self.events,self.states=_exports(loaded,deadline)
+        self.complete=terminal_history_available(loaded)
+        self.end=max((row['sequence'] for row in self.events.values()),default=0)
+        self.sequences={row['sequence']:row['event_id'] for row in self.events.values()}
+        self.claimed_states={};self.claimed_sequences={};self.references={};self.receipts={}
+        self.engagement_id=None if self.final is None else self.final['engagement_id']
+        self.identities={};self.charges={};self.slots={}
+        for row in self.events.values():
+            receipt=row['receipt'];operation=receipt['operation']
+            if operation in ('session','reserve','complete'):
+                identity=receipt['session_id'] if operation=='session' else receipt['dispatch_id']
+                self.identities[operation,identity]=receipt['event_id']
+        for reservation in ([] if self.final is None else self.final['reservations']):
+            did=reservation['dispatch_id'];event_id=self.identities['reserve',did]
+            self.charges[did]=(self.events[event_id]['sequence'],reservation['reservation'])
+            self.slots[reservation['session_id'],reservation['slot']]=did
+
+    def engagement(self, identity):
+        if self.engagement_id is not None and identity!=self.engagement_id:c.fail('evidence_invalid')
+        self.engagement_id=identity
+
+    def state(self, digest, sequence):
+        if digest in self.states:
+            if self.states[digest]!=sequence:c.fail('evidence_invalid')
+            return True
+        if (self.complete or sequence<=self.end
+                or self.claimed_states.get(digest,sequence)!=sequence
+                or self.claimed_sequences.get(sequence,digest)!=digest):c.fail('evidence_invalid')
+        self.claimed_states[digest]=sequence;self.claimed_sequences[sequence]=digest
+        return False
+
+    def reference(self, event_id, sequence, state_sha256, *, operation, dispatch_id=None, session_id=None):
+        identity=(operation,session_id if operation=='session' else dispatch_id)
+        if self.identities.get(identity,event_id)!=event_id:c.fail('evidence_invalid')
+        self.identities[identity]=event_id
+        row=self.events.get(event_id)
+        expected=(sequence,state_sha256,operation,dispatch_id)
+        if row is not None:
+            receipt=row['receipt']
+            if (row['sequence'],receipt['state_sha256'],receipt['operation'],receipt.get('dispatch_id'))!=expected:
+                c.fail('evidence_invalid')
+            return row
+        if (self.complete or sequence<=self.end or self.sequences.get(sequence,event_id)!=event_id
+                or self.references.get(event_id,expected)!=expected):c.fail('evidence_invalid')
+        self.state(state_sha256,sequence)
+        self.sequences[sequence]=event_id;self.references[event_id]=expected
+        return None
+
+    def reservation(self, event_id, sequence, state_sha256, envelope):
+        self.engagement(envelope['engagement_id'])
+        row=self.reference(event_id,sequence,state_sha256,operation='reserve',dispatch_id=envelope['dispatch_id'])
+        for receipt in [*(event['receipt'] for event in self.events.values()),*self.receipts.values()]:
+            if receipt['sequence']==sequence:continue
+            if receipt['sequence']>sequence:
+                if any(receipt[key]<envelope[key] for key in ('revision','generation')):c.fail('evidence_invalid')
+            elif (receipt['status']=='revoked'
+                    or any(receipt[key]>envelope[key] for key in ('revision','generation'))):c.fail('evidence_invalid')
+        charge=(sequence,envelope['cost']);did=envelope['dispatch_id']
+        slot=(envelope['session_id'],envelope['slot'])
+        if self.slots.get(slot,did)!=did:c.fail('evidence_invalid')
+        self.slots[slot]=did
+        if self.charges.get(did,charge)!=charge:c.fail('evidence_invalid')
+        self.charges[did]=charge
+        return row
+
+    def validate_charges(self):
+        # Every known reservation contributes its full cost once. Gaps may hide
+        # additional charges, but cannot erase a charge already retained here.
+        receipts={row['sequence']:row['receipt'] for row in self.events.values()}
+        receipts.update({row['sequence']:row for row in self.receipts.values()})
+        charges={sequence:cost for sequence,cost in self.charges.values()}
+        if not receipts:return
+        keys=next(iter(receipts.values()))['usage'];spent=dict.fromkeys(keys,0);unseen=dict(spent)
+        for sequence in sorted(receipts.keys()|charges.keys()):
+            for key,amount in charges.get(sequence,{}).items():spent[key]+=amount
+            receipt=receipts.get(sequence)
+            if receipt is None:continue
+            for key in keys:
+                usage=receipt['usage'][key]
+                if usage<spent[key]+unseen[key]:c.fail('evidence_invalid')
+                unseen[key]=max(unseen[key],usage-spent[key])
+
+    def receipt(self, value, *, operation, envelope):
+        value=c.validate_ledger_result(value);receipt=value['receipt']
+        self.engagement(receipt['engagement_id'])
+        if (receipt['operation']!=operation or any(receipt[key]!=envelope[key] for key in ('engagement_id','session_id'))
+                or receipt['dispatch_id']!=(None if operation=='session' else envelope['dispatch_id'])):c.fail('evidence_invalid')
+        if operation in ('session','reserve'):
+            if receipt['status']!='recorded' or any(receipt[key]!=envelope[key] for key in ('revision','generation')):c.fail('evidence_invalid')
+        elif any(receipt[key]<envelope[key] for key in ('revision','generation')):c.fail('evidence_invalid')
+        if operation=='reserve':
+            row=self.reservation(receipt['event_id'],receipt['sequence'],receipt['state_sha256'],envelope)
+        else:
+            row=self.reference(receipt['event_id'],receipt['sequence'],receipt['state_sha256'],
+                operation=operation,dispatch_id=receipt['dispatch_id'],session_id=receipt['session_id'])
+        for previous in [*(event['receipt'] for event in self.events.values()),*self.receipts.values()]:
+            if previous['sequence']==receipt['sequence']:continue
+            earlier,later=sorted((previous,receipt),key=lambda item:item['sequence'])
+            if (any(earlier[key]>later[key] for key in ('revision','generation'))
+                    or earlier['status']=='revoked' and later['status']!='revoked'
+                    or any(earlier['usage'][key]>later['usage'][key] for key in earlier['usage'])):c.fail('evidence_invalid')
+        if operation=='reserve' and any(receipt['usage'][key]<envelope['cost'][key] for key in envelope['cost']):c.fail('evidence_invalid')
+        if row is not None:
+            if row['receipt']!=receipt:c.fail('evidence_invalid')
+        elif self.receipts.get(receipt['event_id'],receipt)!=receipt:c.fail('evidence_invalid')
+        self.receipts[receipt['event_id']]=receipt
+        return row
+
+
 def _audit_events(raw):
     from datetime import datetime,timezone
     if type(raw) is not bytes or len(raw) > 1048576: c.fail('evidence_invalid')
@@ -645,7 +769,8 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
     from . import engagement_live_protocol as p
     c._check_deadline(deadline)
     if type(rows) is not list or len(rows) > 4096: c.fail('evidence_invalid')
-    final, events, states = _exports(loaded, deadline)
+    history=_ReplayHistory(loaded,deadline)
+    final,events,states=history.final,history.events,history.states
     audit_context = _retained_audit_readiness(loaded, rows=rows, deadline=deadline)
     missing, dispatches = set(audit_context['missing_evidence']), {}
     from .engagement_live_context import validate_supervision_transcript
@@ -661,8 +786,8 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
             'prepared': prepared, 'session': operation['session'], 'result': operation['result'],
             'approval': None, 'audit': None, 'release': None, 'reservation': None,
             'completion': None}
-        if final is not None:
-            _match_receipt(operation['session']['session_receipt'], events, operation='session')
+        history.engagement(e['engagement_id'])
+        if history.receipt(operation['session']['session_receipt'],operation='session',envelope=e) is not None:
             session = next((r for r in final['sessions'] if r['session_id']==e['session_id']),None)
             if session is None or any(session[k] != e[k] for k in ('revision','generation','policy_sha256')):
                 c.fail('evidence_invalid')
@@ -675,8 +800,7 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
                 c.fail('evidence_invalid')
             for field, op in (('admission','reserve'),('completion','complete')):
                 if result[field] is not None:
-                    if final is None: missing.add('final_export')
-                    else: _match_receipt(result[field],events,operation=op,dispatch_id=did)
+                    if history.receipt(result[field],operation=op,envelope=e) is None:missing.add('final_export')
         else:
             missing.add('unsettled_dispatch')
     if final is not None:
@@ -840,8 +964,8 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
                 if link['release'] is not None and link['release']!=release: c.fail('evidence_invalid')
                 link['release']=release;link['go_observed']=True
         elif kind=='watch':
-            if data['ledger_state_sha256'] is not None and states.get(data['ledger_state_sha256'])!=data['ledger_sequence']:
-                c.fail('evidence_invalid')
+            if data['ledger_state_sha256'] is not None and not history.state(data['ledger_state_sha256'],data['ledger_sequence']):
+                missing.add('final_export')
         elif kind=='state':
             if link is None: c.fail('evidence_invalid')
             prior=state_rows.get(did)
@@ -850,7 +974,7 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
             if prior is not None and STATES.index(prior)>=STATES.index('release_attempted') and data['to_state'] in STATES[:5]: c.fail('evidence_invalid')
             state_rows[did]=data['to_state']
         elif kind=='export':
-            if states.get(data['ledger_state_sha256'])!=data['ledger_sequence']: c.fail('evidence_invalid')
+            if not history.state(data['ledger_state_sha256'],data['ledger_sequence']):missing.add('final_export')
         elif kind=='meter':
             # Fixed owned instrumentation projects actual endpoint events into
             # the broker's transcript. It does not consume the final METER slot
@@ -871,29 +995,49 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
             prefix.append(data)
     if _host_ingress_links(host_ingress_rows,broker_ingress_frames,dispatches,deadline): missing.add('transcript')
     for did,link in dispatches.items():
+        e=link['prepared']['envelope']
         reservation,release=link['reservation'],link['release']
         approval,audit=link['approval'],link['audit']
         if reservation is not None:
             if approval is None or audit is None: missing.add('transcript')
-            else:
-                aw=approval['witness']; legacy,_=_audit_decode(_base64(audit['raw_base64'],2048))
+            if approval is not None:
+                aw=approval['witness']
                 if reservation['approval']!={'broker_id':aw['reviewer_id'],'consume_sequence':aw['consume_sequence'],'witness_sha256':approval['raw_sha256']}:
                     c.fail('evidence_invalid')
+            if audit is not None:
+                legacy,_=_audit_decode(_base64(audit['raw_base64'],2048))
                 if reservation['audit']!={'writer_id':legacy['writer_id'],'audit_sequence':legacy['audit_sequence'],'event_sha256':audit['producer_sha256']}:
                     c.fail('evidence_invalid')
         if release is not None:
-            if reservation is None: c.fail('evidence_invalid')
-            event=events.get(release['reservation_event_id'])
-            if event is None or event['receipt']['dispatch_id']!=did or event['receipt']['operation']!='reserve' or event['sequence']!=release['reservation_sequence'] or event['receipt']['state_sha256']!=release['reservation_state_sha256']:
-                c.fail('evidence_invalid')
+            event=history.reservation(release['reservation_event_id'],release['reservation_sequence'],
+                release['reservation_state_sha256'],e)
+            if reservation is None:
+                if event is not None or history.complete:c.fail('evidence_invalid')
+                missing.add('final_export')
             if approval is None or audit is None: missing.add('transcript')
-            else:
-                if release['approval_witness_sha256']!=approval['raw_sha256'] or release['audit_witness_sha256']!=audit['raw_sha256']: c.fail('evidence_invalid')
-                aw=approval['witness']; _,issued=_audit_decode(_base64(audit['raw_base64'],2048))
+            now=release['guard_clock']['mono_after_ns']
+            if approval is not None:
+                aw=approval['witness'];bound=min(aw['expires_at_ns'],aw['issued_at_ns']+c.FRESHNESS_NS)
+                if (release['approval_witness_sha256']!=approval['raw_sha256'] or aw['issued_at_ns']>now
+                        or now>=bound or release['effective_lease_deadline_ns']>bound):c.fail('evidence_invalid')
+            if audit is not None:
+                _,issued=_audit_decode(_base64(audit['raw_base64'],2048));bound=issued+c.FRESHNESS_NS
+                if (release['audit_witness_sha256']!=audit['raw_sha256'] or issued>now
+                        or now>=bound or release['effective_lease_deadline_ns']>bound):c.fail('evidence_invalid')
+            if reservation is not None and approval is not None and audit is not None:
                 lease=c.derive_effective_lease(link['prepared'],reservation,aw,{'issued_at_ns':issued},clock=release['guard_clock'])
                 if release['effective_lease_deadline_ns']!=lease: c.fail('evidence_invalid')
             admission=admissions.get(did)
             if admission is not None and admission['redeemed']is not None and admission['release']!=release:c.fail('evidence_invalid')
+        # Absence of the export cannot erase the ordering of retained claims.
+        session_sequence=link['session']['session_receipt']['receipt']['sequence']
+        reserve_id=history.identities.get(('reserve',did));complete_id=history.identities.get(('complete',did))
+        def sequence(event_id):
+            known=history.events.get(event_id)
+            return known['sequence'] if known is not None else history.references[event_id][0]
+        if reserve_id is not None and sequence(reserve_id)<=session_sequence:c.fail('evidence_invalid')
+        if complete_id is not None and (sequence(complete_id)<=session_sequence
+                or reserve_id is not None and sequence(complete_id)<=sequence(reserve_id)):c.fail('evidence_invalid')
         prefix=meter_prefixes.get(did,[])
         if prefix:
             if release is None:c.fail('evidence_invalid')
@@ -914,10 +1058,14 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
                 if admission is None or admission['redeemed']is None or did not in meter_forwarded:missing.add('transcript')
             if result['completion']is not None:
                 completion=link['completion'];observed=result['observation']
-                if completion is None or observed is None:c.fail('evidence_invalid')
+                if observed is None:c.fail('evidence_invalid')
                 expected={'evidence_sha256':c.digest(c.canonical(observed)),**{key:observed[key] for key in ('connections','request_bytes','response_bytes')}}
-                if completion['observation']!=expected:c.fail('evidence_invalid')
-                if result['outcome']=='useful' and completion['outcome']!='reported_success':c.fail('evidence_invalid')
+                if completion is None:
+                    if history.receipt(result['completion'],operation='complete',envelope=e) is not None:c.fail('evidence_invalid')
+                    missing.add('final_export')
+                else:
+                    if completion['observation']!=expected:c.fail('evidence_invalid')
+                    if result['outcome']=='useful' and completion['outcome']!='reported_success':c.fail('evidence_invalid')
             if result['release'] is not None:
                 summary=result['release']
                 if summary['send_status']=='sent' and release is None:
@@ -926,8 +1074,9 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
                         or summary['effective_lease_deadline_ns']!=release['effective_lease_deadline_ns']
                         or summary['effect_stop_ns']!=release['effect_stop_ns']): c.fail('evidence_invalid')
             if result['admission'] is None and reservation is not None and result['outcome']!='unresolved': c.fail('evidence_invalid')
-            if result['outcome'] in {'denied','not_started'} and result['admission'] is None and result['release'] is None and final is not None and reservation is None:
+            if result['outcome'] in {'denied','not_started'} and result['admission'] is None and result['release'] is None and history.complete and reservation is None:
                 link['reservation_observed']=False;link['go_observed']=False
-        if final is None: missing.add('final_export')
+        if not history.complete: missing.add('final_export')
+    history.validate_charges()
     c._check_deadline(deadline)
     return {'missing_evidence':sorted(missing),'linkage':{'dispatches':dispatches}}

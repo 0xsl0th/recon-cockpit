@@ -59,7 +59,10 @@ def proofs(core,row,channels):
     reader,writer,audit_reader,audit_writer=channels;value=row['prepared'];now=c.sample_clock()['mono_after_ns']
     a=approval(value,issued=now,expires=value['envelope']['action_deadline_ns']);raw=c.canonical(a)
     writer.send(raw);packet=reader.poll();core.approval_packet(packet[0],now,reader)
-    raw,source=audit(value,issued=now/c.SECOND);info=os.fstat(audit_reader.channel.fileno());source.update(device=info.st_dev,inode=info.st_ino)
+    from test_secure_engagement_live_runtime import portable_socket_identity
+    raw,source=audit(value,issued=now/c.SECOND);fd=audit_reader.channel.fileno();info=os.fstat(fd)
+    declared=portable_socket_identity({'device':info.st_dev,'inode':info.st_ino},fd)
+    source.update(device=declared['device'],inode=declared['inode'])
     core.audit_source=source;audit_writer.send(raw);packet=audit_reader.poll();core.audit_packet(packet[0],now,audit_reader)
     return {'prepared_sha256':c.prepared_digest(value),'reference_sha256':a['reference_sha256'],'consume_sequence':1,'audit_sequence':1}
 
@@ -317,11 +320,47 @@ def test_clock_failure_before_and_after_admission(tmp_path,monkeypatch):
 
 
 def test_cancel_eof_and_late_role_messages_are_terminal(tmp_path,monkeypatch):
+    _reserved_window_barrier_stop(tmp_path,monkeypatch)
     _stopped_session_channel_eof(monkeypatch)
     with lab(tmp_path,monkeypatch) as (core,store,*_):
         row=ready(core);core.stop('engagement_live_cancelled');refused(core.prepare,core.slots[0]['session_id'],'http_headers');refused(core.open_session,1)
         core.transition(row,'terminal_unresolved','engagement_live_cancelled');refused(core.transition,row,'running')
         assert not store.snapshot()['reservations']
+
+
+def _reserved_window_barrier_stop(tmp_path,monkeypatch):
+    """The fixed native barrier must unwind on its real existing peer.
+
+    The ledger reservation is real; the portable clock positions only this
+    extracted instrumentation near its immutable tail bound. No native claim.
+    """
+    import ast
+    import select
+    from engagement_live_native import broker_fault_transform
+    source=broker_fault_transform('S42C-N32')(Path(b.__file__).read_text())
+    function=next(node for node in ast.parse(source).body
+        if isinstance(node,ast.FunctionDef) and node.name=='_fixed_fault_mark')
+    for signal_kind in ('eof','terminal_traffic'):
+        directory=tmp_path/signal_kind;directory.mkdir(mode=0o700)
+        with lab(directory,monkeypatch) as (core,store,rows,pair,channels):
+            row=ready(core);core.reserve(proofs(core,row,channels));before=store.snapshot()
+            envelope=deepcopy(row['prepared']['envelope']);started=time.monotonic_ns()
+            clock=SimpleNamespace(time_ns=lambda:envelope['window_end_utc_ns']-1,
+                monotonic_ns=lambda:envelope['action_deadline_ns']+40_000_000+time.monotonic_ns()-started,
+                sleep=time.sleep)
+            namespace={'c':c,'time':clock,'_fault_select':select,'_fault_original_mark':b.BrokerCore.mark}
+            exec(compile(ast.Module(body=[function],type_ignores=[]),'<fixed N32 barrier>','exec'),namespace)
+            if signal_kind=='eof':pair[1].close()
+            else:pair[1].send(b'actual terminal traffic')
+            with pytest.raises(c.LiveError) as caught:
+                namespace['_fixed_fault_mark'](core,row,'reserve','end',related=row['admission'])
+            assert caught.value.code=='engagement_live_cancelled'
+            assert store.snapshot()==before and before['state']['usage']==envelope['cost']
+            assert row['prepared']['envelope']==envelope and row['release'] is None
+            assert any(kind=='phase' and data['phase']=='reserve' and data['stage']=='end'
+                for kind,data in rows.rows)
+            if signal_kind=='terminal_traffic':
+                with pytest.raises(BlockingIOError):pair[1].recv(32768)
 
 
 def _stopped_session_channel_eof(monkeypatch):
@@ -491,7 +530,8 @@ def _preallocated_child_custody(tmp_path, monkeypatch):
             a,z=socket.socketpair();a.setblocking(False);z.setblocking(False)
             created.extend((a,z));return a,z
         def one_way():
-            a,z=pair();a.shutdown(socket.SHUT_WR);z.shutdown(socket.SHUT_RD);return a,z
+            from test_secure_engagement_live_runtime import portable_halfclose
+            a,z=pair();portable_halfclose(a,z);return a,z
         count=[0]
         def memfd(name):
             count[0]+=1;path=tmp_path/('evidence-memory-'+str(count[0]))
@@ -500,9 +540,8 @@ def _preallocated_child_custody(tmp_path, monkeypatch):
             return reader,writer
         original=host._pair_identity
         def identity(peer):
-            actual=original(peer)
-            # The platform flags do not purport to be Linux kernel evidence.
-            return {**actual,'inode':actual['inode'] or 100000+peer.fileno(),'flags':2050}
+            from test_secure_engagement_live_runtime import portable_socket_identity
+            return portable_socket_identity(original(peer),peer.fileno())
         patch.setattr(host,'_pair',pair);patch.setattr(host,'_one_way',one_way)
         patch.setattr(host,'_memfd',memfd);patch.setattr(host,'_pair_identity',identity)
         bundle=host.preallocate_role_bundle('terminal');transferred={};ends={};readers={}

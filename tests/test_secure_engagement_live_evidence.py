@@ -859,11 +859,17 @@ def test_replays_ledger_and_broker_state_together():
     from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
     from recon_cockpit.secure_agent import engagement_live_witness as witness
     session,state=opened();p=c.derive_prepared(session,'http_identify',dispatch_id=uid(8),clock=session['binding']['clock_anchor'])
+    initial,_=ledger._apply(None,state['events'][0]['request'])
+    initial_hash=initial['events'][0]['receipt']['state_sha256']
+    selector={'before_state_sha256':initial_hash,'after_state_sha256':initial_hash,'recovery_state_sha256':None}
+    assert e._core_history({'initial-ledger.json':initial},selector) is None
     op={'session':session,'prepared':p,'result':None,'client':None,'meter':None,'host_capture':None,
         'elapsed_ms':{key:None for key in e.TIMINGS}}
     manifest,members=fixture()
     loaded={name:(json.loads(value) if name.endswith('.json') else value) for name,value in members.items()}
     loaded.update({'manifest.json':manifest,'results.json':{'operations':[op]},'final-ledger.json':state,'audit.jsonl':b''})
+    manifest['broker_instances']=[{'broker_id':uid(6),'ledger_owner_id':uid(4)}]
+    manifest['ledger_exports']['final'].update(status='complete',broker_id=uid(6))
     proof=witness.validate_evidence_transcript(loaded,[],deadline=time.monotonic()+15)
     assert proof['linkage']['dispatches'][uid(8)]['reservation_observed'] is None
     assert 'unsettled_dispatch' in proof['missing_evidence']
@@ -907,6 +913,8 @@ def test_requires_single_winner_and_durable_race_order():
     manifest,members=fixture()
     loaded={name:(json.loads(value) if name.endswith('.json') else value) for name,value in members.items()}
     loaded.update({'manifest.json':manifest,'results.json':{'operations':[op]},'final-ledger.json':state,'audit.jsonl':b''})
+    manifest['broker_instances']=[{'broker_id':uid(6),'ledger_owner_id':uid(4)}]
+    manifest['ledger_exports']['final'].update(status='complete',broker_id=uid(6))
     result=witness.validate_evidence_transcript(loaded,rows,deadline=time.monotonic()+15)
     assert result['linkage']['dispatches'][uid(8)]['go_observed'] is True
     assert 'transcript' in result['missing_evidence'] and 'unsettled_dispatch' in result['missing_evidence']
@@ -1421,6 +1429,14 @@ def test_retains_partial_and_unobserved_outcomes(monkeypatch):
     assert report['status']=='complete' and report['case_passed'] is True
     assert report['operations'][0]['outcome']=='unresolved' and report['useful_operation_count']==0
     assert report['operations'][0]['reservation_observed'] is None
+    # Recovery completes durable history, but an earlier broker's final cannot
+    # replace the latest broker's missing seal for an ordinary live gate.
+    from recon_cockpit.secure_agent import engagement_live_witness as witness
+    older=deepcopy(loaded);older['manifest.json']['broker_instances'].append({'broker_id':uid(999)})
+    older['recovery-ledger.json']=deepcopy(older['final-ledger.json'])
+    older['cleanup.json']['recovery']={'source':'postcleanup_readonly'}
+    assert witness.terminal_history_available(older) and not witness.latest_final_available(older)
+    assert 'final_export' in e._report(older,{},authority,'d'*64,0,[])['missing_evidence']
     loaded['results.json']['core_proofs'][0]['dispatch_ids']=[]
     assert 'unsettled_dispatch' in e._report(loaded,{},authority,'d'*64,0,[])['missing_evidence']
     loaded['results.json']['core_proofs'][0]['dispatch_ids']=[did]

@@ -385,6 +385,7 @@ def test_cancel_and_eof_do_not_start_followup():
 
 
 def test_lease_narrowing_never_renews_original_deadline(monkeypatch):
+    _idle_session_cleanup_reserve()
     obj, row, value = service()
     original = obj._control
     tighter = _clipped_control(original,int((original.deadline-3)*c.SECOND),obj._stop)
@@ -406,6 +407,34 @@ def test_lease_narrowing_never_renews_original_deadline(monkeypatch):
     assert epoch.stop()['deadline_ns'] == 11*c.SECOND
     expired = module._CleanupEpoch(SimpleNamespace(deadline=1))
     assert expired.stop()['deadline_ns'] == c.SECOND
+
+
+def _idle_session_cleanup_reserve():
+    # Real monitor thread, with declared role cleanup; no native process claim.
+    obj,_,_=service();obj._sessions.clear();obj._operations.clear()
+    obj._control=ExecutionControl(time.monotonic()+2.25)
+    obj._cleanup_epoch=module._CleanupEpoch(obj._control,stop_event=obj._stop,on_stop=obj._request_stop)
+    observed=[]
+    def close_role(deadline):
+        now=time.monotonic_ns();observed.append((now,deadline))
+        return {'schema_version':'1','started_at_ns':now,'finished_at_ns':now,
+            'deadline_ns':int(deadline*c.SECOND),'status':'complete','processes':[], 'descriptors_closed':True}
+    role=SimpleNamespace(pidfd=None,poll_lifecycle=lambda:None,_interrupt=lambda:None,_close=close_role)
+    obj._broker=role;obj._roles=[role]
+    thread=threading.Thread(target=obj._monitor);obj._monitor_thread=thread
+    original=int(obj._control.deadline*c.SECOND)
+    try:
+        thread.start();thread.join(.7)
+        assert not thread.is_alive()
+        assert obj._failure.code=='engagement_live_timeout'
+        assert obj._cleanup['status']=='complete' and obj._verified_reaped()
+        epoch=obj._cleanup_epoch.snapshot()
+        assert original-c.CLEANUP_NS<=epoch['first_stop_requested_at_ns']<original-c.SECOND
+        assert epoch['deadline_ns']<=original and observed
+        assert all(at<epoch['deadline_ns'] and bound<=original/c.SECOND for at,bound in observed)
+    finally:
+        obj._closing.set();obj._stop.set();thread.join(.5)
+        if not obj._closed:obj.close()
 
 
 def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
@@ -494,7 +523,8 @@ def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
             replies.append({'schema_version':'1','operation':'DISPATCH','channel_id':uid(91),
                             'sequence':index+1,'body':body})
         reply_raw=[c.canonical(frame) for frame in replies]
-        parent,peer=socket.socketpair()
+        from test_secure_engagement_live_runtime import PortablePacket
+        parent,peer=socket.socketpair();parent=PortablePacket(parent)
         def actual_send(channel,raw):
             calls.append('send')
             assert observed._host_evidence_budget.snapshot()['reserved_rows']==3

@@ -50,31 +50,36 @@ def audit(p=None,*,sequence=1,audit_sequence=1,issued=1000.0):
 
 
 @contextmanager
-def direct(monkeypatch,*,kind='approval',halfclosed=True):
+def direct(monkeypatch,*,kind='approval',halfclosed=True,stream=False):
     """Use a real pair. On macOS only its unavailable packet-type tag is modeled.
 
     Portable tests prove real direction, identity and ancillary behavior. They
     do not label the stream fallback as a Linux seqpacket/confinement witness.
     """
     packet_type=getattr(socket,'SOCK_SEQPACKET',5)
-    try:left,right=socket.socketpair(socket.AF_UNIX,packet_type);modeled=False
+    try:
+        if stream:raise OSError('explicit portable stream fixture')
+        left,right=socket.socketpair(socket.AF_UNIX,packet_type);modeled=False
     except OSError:left,right=socket.socketpair();modeled=True
     left.setblocking(False);right.setblocking(False)
-    if halfclosed:left.shutdown(socket.SHUT_WR);right.shutdown(socket.SHUT_RD)
+    if halfclosed:
+        from test_secure_engagement_live_runtime import portable_halfclose
+        portable_halfclose(left,right)
     identity=[os.fstat(left.fileno()).st_dev,os.fstat(left.fileno()).st_ino]
     reader=None
     try:
         with monkeypatch.context() as local:
             local.setattr(socket,'MSG_CMSG_CLOEXEC',getattr(socket,'MSG_CMSG_CLOEXEC',0),raising=False)
-            if modeled:
-                original=socket.socket
-                class PacketTag:
-                    family=socket.AF_UNIX;type=packet_type
-                    def __init__(self,*,fileno):self.inner=original(fileno=fileno)
-                    def __getattr__(self,key):return getattr(self.inner,key)
-                local.setattr(socket,'SOCK_SEQPACKET',packet_type,raising=False)
-                local.setattr(socket,'socket',PacketTag)
-            reader=w.DirectReader(left.detach(),identity,kind=kind)
+            with local.context() as constructor_patch:
+                if modeled:
+                    from test_secure_engagement_live_runtime import PortablePacket
+                    original=socket.socket
+                    class PacketTag(PortablePacket):
+                        family=socket.AF_UNIX;type=packet_type
+                        def __init__(self,*,fileno):super().__init__(original(fileno=fileno))
+                    local.setattr(socket,'SOCK_SEQPACKET',packet_type,raising=False)
+                    constructor_patch.setattr(socket,'socket',PacketTag)
+                reader=w.DirectReader(left.detach(),identity,kind=kind)
             yield reader,right,identity
     finally:
         if reader is not None:reader.close()
@@ -236,7 +241,8 @@ def complete_authority_fixture(*,runtime_sha256=None,runtime_bundle=None):
     reader.update(device=10,inode=11,mode=stat.S_IFSOCK|0o777,flags=2050)
     broker['worker_ready']['descriptor_sha256']=sha(c.canonical(broker['parent_observation']['descriptors']))
     loaded={'initial-ledger.json':initial,'final-ledger.json':state,
-        'manifest.json':{'broker_instances':[{'broker_id':uid(2)}]},
+        'manifest.json':{'broker_instances':[{'broker_id':uid(2)}],
+            'ledger_exports':{'final':{'status':'complete','broker_id':uid(2)}}},
         'runtime.json':{'schema_version':'1','runtime':bundle,'instrumentation':[]},
         'processes.json':{'schema_version':'1','startup':[],'readiness':[broker],'native':[],'boundary_observations':[]},
         'audit.jsonl':legacy.encode(audit_wrapper)+b'\n','results.json':{'operations':[{
@@ -274,7 +280,8 @@ def test_approval_witness_binds_complete_current_envelope(monkeypatch):
 def test_copied_or_wrong_endpoint_witness_refuses(monkeypatch):
     with direct(monkeypatch) as (reader,writer,identity):
         alien,peer=socket.socketpair();alien.setblocking(False);peer.setblocking(False)
-        alien.shutdown(socket.SHUT_WR);peer.shutdown(socket.SHUT_RD)
+        from test_secure_engagement_live_runtime import portable_halfclose
+        portable_halfclose(alien,peer)
         try:
             with pytest.raises(ValueError):w.DirectReader(alien.detach(),identity,kind='approval')
             writer.send(c.canonical(approval()));raw,_=reader.poll()
@@ -436,6 +443,8 @@ def test_audit_writer_sequence_and_durability_are_bound(monkeypatch):
     left,right=socket.socketpair()
     try:
         held=os.fstat(left.fileno())
+        from test_secure_engagement_live_runtime import portable_socket_identity
+        declared=portable_socket_identity({'device':held.st_dev,'inode':held.st_ino},left.fileno())
         def handle(value):
             loop=worker.BrokerLoop.__new__(worker.BrokerLoop)
             loop.core=SimpleNamespace(broker_id=uid(2),runtime=bundle,audit_ready=None,
@@ -445,9 +454,12 @@ def test_audit_writer_sequence_and_durability_are_bound(monkeypatch):
             frame={'schema_version':'1','channel_id':uid(2),'sequence':1,'operation':'AUDIT_OBSERVED','body':value}
             with monkeypatch.context() as patch:
                 patch.setattr(protocol,'receive_packet',lambda *args,**kwargs:deepcopy(frame))
+                original_fstat=os.fstat
+                patch.setattr(worker.os,'fstat',lambda fd:SimpleNamespace(st_dev=declared['device'],st_ino=declared['inode'])
+                    if fd==left.fileno() else original_fstat(fd))
                 loop.lifecycle_request()
             return loop.core
-        valid['source_manifest'].update(device=held.st_dev,inode=held.st_ino)
+        valid['source_manifest'].update(device=declared['device'],inode=declared['inode'])
         assert handle(valid).audit_ready==valid
         coherent=deepcopy(valid);coherent['import_image']['sha256']='e'*64
         refused(handle,coherent)
@@ -742,6 +754,7 @@ def _host_ingress_replay_cases():
 
 
 def test_proof_consumption_is_unique_across_ingresses(tmp_path,monkeypatch):
+    _partial_ledger_replay_cases()
     _host_ingress_replay_cases()
     # The broker's single event loop receives two callers; the same direct
     # reader sequence cannot produce two accepted copies of their shared proof.
@@ -798,7 +811,149 @@ def test_proof_consumption_is_unique_across_ingresses(tmp_path,monkeypatch):
     refused(w.validate_evidence_transcript,loaded,incomplete,deadline=time.monotonic()+15)
 
 
+def _partial_ledger_replay_cases():
+    loaded,rows=complete_authority_fixture();complete=loaded['final-ledger.json']
+    for count in (1,2,3,0):
+        partial=deepcopy(loaded);del partial['final-ledger.json']
+        if count:
+            prefix=None
+            for event in complete['events'][:count]:prefix,_=ledger._apply(prefix,event['request'])
+            partial['initial-ledger.json']=prefix
+        else:del partial['initial-ledger.json']
+        proof=w.validate_evidence_transcript(partial,rows,deadline=time.monotonic()+15)
+        assert 'final_export' in proof['missing_evidence']
+        link=proof['linkage']['dispatches'][uid(10)]
+        assert link['reservation_observed'] is (True if count>=3 else None)
+        assert link['go_observed'] is True and link['completion'] is None
+        if count:
+            # Calling the same prefix an actual final export is contradictory.
+            asserted=deepcopy(partial);asserted['final-ledger.json']=prefix
+            refused(w.validate_evidence_transcript,asserted,rows,deadline=time.monotonic()+15)
+    partial=deepcopy(loaded);del partial['final-ledger.json']
+    for key,value in (('event_id',uid(100)),('sequence',1),('state_sha256',complete['events'][0]['receipt']['state_sha256']),('engagement_id',uid(999))):
+        bad=deepcopy(partial);bad['results.json']['operations'][0]['result']['admission']['receipt'][key]=value
+        refused(w.validate_evidence_transcript,bad,rows,deadline=time.monotonic()+15)
+    # Independently knowable receipt bindings survive missing history. Exercise
+    # the same replay join directly so a contradictory protocol copy cannot be
+    # the accidental reason these mutations are rejected.
+    operation=partial['results.json']['operations'][0];envelope=operation['prepared']['envelope']
+    session=operation['session']['session_receipt'];admission=operation['result']['admission'];completion=operation['result']['completion']
+    for op,value,changes in (
+        ('session',session,{'dispatch_id':uid(999),'status':'revoked'}),
+        ('reserve',admission,{'session_id':uid(999),'revision':2,'generation':1,'status':'revoked','engagement_id':uid(999)}),
+        ('complete',completion,{'session_id':uid(999),'engagement_id':uid(999)})):
+        for key,changed in changes.items():
+            history=w._ReplayHistory({},time.monotonic()+15);history.engagement(envelope['engagement_id'])
+            bad=deepcopy(value);bad['receipt'][key]=changed
+            refused(history.receipt,bad,operation=op,envelope=envelope)
+    for known in (False,True):
+        history=w._ReplayHistory({'initial-ledger.json':complete} if known else {},time.monotonic()+15)
+        history.receipt(admission,operation='reserve',envelope=envelope)
+        receipt=admission['receipt']
+        refused(history.reference,uid(999),receipt['sequence']+10,'e'*64,
+            operation='reserve',dispatch_id=envelope['dispatch_id'])
+    history=w._ReplayHistory({},time.monotonic()+15)
+    history.receipt(session,operation='session',envelope=envelope)
+    bad=deepcopy(session);bad['receipt'].update(event_id=uid(999),sequence=20,state_sha256='e'*64)
+    refused(history.receipt,bad,operation='session',envelope=envelope)
+    history=w._ReplayHistory({},time.monotonic()+15)
+    history.receipt(admission,operation='reserve',envelope=envelope)
+    history.receipt(completion,operation='complete',envelope=envelope)
+    # A later completion can legitimately report current revised/revoked state.
+    history=w._ReplayHistory({},time.monotonic()+15)
+    history.receipt(admission,operation='reserve',envelope=envelope)
+    later=deepcopy(completion);later['receipt'].update(revision=2,generation=2,status='revoked')
+    assert history.receipt(later,operation='complete',envelope=envelope) is None
+    # Contradictory state claims remain invalid without any event receipts.
+    history=w._ReplayHistory({},time.monotonic()+15)
+    assert history.state('a'*64,8) is False
+    refused(history.state,'b'*64,8);refused(history.state,'a'*64,9)
+    # With no retained transcript, receipt ordering is still independently
+    # knowable; omitted packets only add missing evidence to the valid order.
+    bad=deepcopy(partial);op=bad['results.json']['operations'][0]
+    op['session']['session_receipt']['receipt']['sequence']=5
+    op['result']['admission']['receipt']['sequence']=6
+    op['result']['completion']['receipt']['sequence']=7
+    assert 'final_export' in w.validate_evidence_transcript(bad,[],deadline=time.monotonic()+15)['missing_evidence']
+    op['result']['completion']['receipt']['sequence']=4
+    refused(w.validate_evidence_transcript,bad,[],deadline=time.monotonic()+15)
+    partial['results.json']['operations'][0]['result']=None
+    minimal=resequence([deepcopy(wrapped) for wrapped in rows if wrapped['row']['kind'] in ('approval_witness','audit_witness')
+        or wrapped['row']['kind']=='protocol' and wrapped['row']['data']['frame']['operation'] in ('AUDIT_OBSERVED','GO')])
+    assert 'final_export' in w.validate_evidence_transcript(partial,minimal,deadline=time.monotonic()+15)['missing_evidence']
+    observed=next(row['row']['data'] for row in minimal if row['row']['kind']=='approval_witness')
+    release=next(row['row']['data']['frame']['body'] for row in minimal if row['row']['kind']=='protocol'
+        and row['row']['data']['frame']['operation']=='GO')
+    # Refresh every retained hash binding: only the independently excessive GO
+    # lease contradicts the actual approval expiry when its reservation is lost.
+    observed['witness']['expires_at_ns']=release['effective_lease_deadline_ns']-1
+    raw=c.canonical(observed['witness']);observed.update(raw_base64=base64.b64encode(raw).decode(),raw_sha256=sha(raw))
+    release['approval_witness_sha256']=sha(raw)
+    refused(w.validate_evidence_transcript,partial,minimal,deadline=time.monotonic()+15)
+    # An absent counterpart cannot erase a retained witness contradiction.
+    without_audit=resequence([row for row in minimal if row['row']['kind']!='audit_witness'])
+    refused(w.validate_evidence_transcript,partial,without_audit,deadline=time.monotonic()+15)
+    without_approval=resequence([deepcopy(row) for row in minimal if row['row']['kind']!='approval_witness'])
+    next(row['row']['data']['frame']['body'] for row in without_approval if row['row']['kind']=='protocol'
+        and row['row']['data']['frame']['operation']=='GO')['audit_witness_sha256']='e'*64
+    refused(w.validate_evidence_transcript,partial,without_approval,deadline=time.monotonic()+15)
+    _partial_history_claim_accounting(loaded,complete)
+
+
+def _partial_history_claim_accounting(loaded,complete):
+    first=loaded['results.json']['operations'][0];envelope=first['prepared']['envelope']
+    second=deepcopy(first);second.update(client=None,host_capture=None);new=second['prepared']['envelope']
+    new.update(session_id=uid(204),reviewer_id=uid(205),dispatch_id=uid(210))
+    second['session']['binding'].update(session_id=new['session_id'],reviewer_id=new['reviewer_id'])
+    second['result'].update(session_id=new['session_id'],dispatch_id=new['dispatch_id'],envelope_sha256=c.envelope_digest(new))
+    for index,(value,operation) in enumerate(((second['session']['session_receipt'],'session'),
+            (second['result']['admission'],'reserve'),(second['result']['completion'],'complete')),5):
+        value['receipt'].update(session_id=new['session_id'],dispatch_id=None if operation=='session' else new['dispatch_id'],
+            event_id=uid(200+index),sequence=index,state_sha256=str(index)*64,
+            usage={key:amount*(1 if operation=='session' else 2) for key,amount in new['cost'].items()})
+    partial=deepcopy(loaded);del partial['final-ledger.json']
+    partial['results.json']['operations'].append(second)
+    proof=w.validate_evidence_transcript(partial,[],deadline=time.monotonic()+15)
+    assert len(proof['linkage']['dispatches'])==2 and 'final_export' in proof['missing_evidence']
+    # The retained earlier final is still a strict prefix, but cannot prove
+    # absence of a later sequential broker's acknowledged durable activity.
+    older=deepcopy(partial);older['final-ledger.json']=complete
+    older['manifest.json']['broker_instances'].append({'broker_id':uid(400)})
+    later=older['results.json']['operations'][1]
+    later['session']['binding']['broker_id']=uid(400)
+    later['prepared']['envelope']['broker_id']=uid(400)
+    later['result'].update(broker_id=uid(400),envelope_sha256=c.envelope_digest(later['prepared']['envelope']))
+    replay=w.validate_evidence_transcript(older,[],deadline=time.monotonic()+15)
+    assert 'final_export' in replay['missing_evidence'] and not w.terminal_history_available(older)
+    asserted=deepcopy(older);asserted['manifest.json']['ledger_exports']['final']['broker_id']=uid(400)
+    refused(w.validate_evidence_transcript,asserted,[],deadline=time.monotonic()+15)
+    # A cumulative receipt must add this reserve to prior retained spending.
+    for prefix in ({},{'initial-ledger.json':complete}):
+        history=w._ReplayHistory(prefix,time.monotonic()+15)
+        if not prefix:
+            history.receipt(first['result']['admission'],operation='reserve',envelope=envelope)
+        bad=deepcopy(second['result']['admission']);bad['receipt']['usage']=dict(new['cost'])
+        history.receipt(bad,operation='reserve',envelope=new)
+        refused(history.validate_charges)
+        repeated=deepcopy(envelope);repeated['dispatch_id']=uid(311)
+        refused(history.reservation,uid(312),8,'e'*64,repeated)
+    # Even without a result receipt, a GO cannot reserve after a known revoke
+    # or after its Prepared revision has already been replaced.
+    for kind in ('revoke','revise'):
+        state,_=ledger._apply(complete,{'schema_version':'2','engagement_id':envelope['engagement_id'],
+            'event_id':uid(300),'operation':kind,'expected_revision':1,'expected_generation':0,
+            'body':None if kind=='revoke' else first['session']['roe']})
+        history=w._ReplayHistory({'initial-ledger.json':state},time.monotonic()+15)
+        refused(history.reservation,uid(301),6,'f'*64,new)
+
+
 def test_closed_witness_diagnostics_remain_bounded(monkeypatch):
+    # Explicit fallback runs on Linux too; constructor modeling cannot leak
+    # into another real pair or a nested reader's allocation.
+    with direct(monkeypatch,stream=True) as (first,writer,_):
+        with direct(monkeypatch,stream=True) as (second,other,_):
+            writer.send(b'first');other.send(b'second')
+            assert first.poll()[0]==b'first' and second.poll()[0]==b'second'
     with direct(monkeypatch) as (reader,writer,_):
         writer.close();refused(reader.poll,code='invalid_witness');assert reader.closed
         refused(reader.poll,code='invalid_channel')

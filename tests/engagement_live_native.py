@@ -2079,6 +2079,15 @@ def _core_phase_case(case,directory,service,opened,before,instrumentation):
         reference=review_actual(service,prepared)
         phase='complete' if number in (47,48) else 'guard' if number==32 else 'native_observation' if number==34 else 'cleanup' if number==35 else 'reserve'
         _expected_failure(service,prepared,phase,lambda:service.execute(prepared,reference,control=service._control))
+        if number==32:
+            # Retain the earlier actual cancellation separately. After the real
+            # ROE end, the original Prepared/reference must still be refused by
+            # the stopped graph before approval consumption or any new effect.
+            _wait_roe_end(service,prepared)
+            if not (service._closed or service._stop.is_set() or service._closing.is_set()):
+                raise AssertionError('original graph must be stopped before post-end continuation')
+            _expected_failure(service,prepared,'guard',
+                lambda:service.execute(prepared,reference,control=service._control))
         recover=number in (42,47,48,49,50)
     elif number==51:
         from recon_cockpit.secure_agent.engagement_live_witness import started_event
@@ -2138,6 +2147,7 @@ _BROKER_FAULT_CODE=r'''
 # This block exists only in the sealed, manifest-labelled test source.
 import sqlite3 as _fault_sqlite
 import signal as _fault_signal
+import select as _fault_select
 
 _fault_original_mark=BrokerCore.mark
 class _FixedFaultConnection:
@@ -2218,7 +2228,13 @@ def _fixed_fault_mark(self,row,phase,stage,*,related=None,reason=None):
         while time.time_ns()<end:
             if time.monotonic_ns()>=original+50000000:
                 raise RuntimeError('actual ROE end not observed within fixed tail')
-            time.sleep(min(.01,max(0,(end-time.time_ns())/c.SECOND)))
+            # There is no valid launcher continuation before GO. Actual EOF or
+            # traffic on its existing peer ends this observational hold without
+            # consuming a frame or granting authority, so normal teardown can
+            # seal the committed reservation within the original cleanup bound.
+            peer=self.launcher_channels[row['slot_index']][0]
+            if _fault_select.select([peer],[],[],min(.01,max(0,(end-time.time_ns())/c.SECOND)))[0]:
+                c.fail('cancelled')
         _fault_original_mark(self,row,'reserve','end',related=row['prepared'])
         # The next unchanged fresh guard performs the actual window refusal.
     return result
