@@ -358,6 +358,15 @@ def test_fixed_request_and_reply_role_grammar():
 
 
 def test_channel_sequences_and_cleanup_reserve():
+    for operation in ('SESSION_STOP','BROKER_STOP'):
+        body={'reason':'engagement_live_timeout','observed_at_ns':10*c.SECOND,
+            'cleanup_deadline_ns':9*c.SECOND}
+        if operation=='SESSION_STOP':body['session_id']=uid(9)
+        frame={'schema_version':'1','channel_id':uid(8),'sequence':1,'operation':operation,'body':body}
+        assert p.validate_frame(frame,role='lifecycle')==frame
+        for end in (0,True,12*c.SECOND+1):
+            bad=deepcopy(frame);bad['body']['cleanup_deadline_ns']=end
+            refused(p.validate_frame,bad,role='lifecycle')
     send=p.ChannelSequence(uid(8),'ingress');receive=p.ChannelSequence(uid(8),'ingress')
     first=send.make('SNAPSHOT',None);receive.accept(first)
     refused(receive.accept,first,code='invalid_sequence')

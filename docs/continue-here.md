@@ -460,6 +460,32 @@ audit-handler fixture branch omitted its declared Linux descriptor identity.
 Both now use the same existing portable projections as their neighboring
 fixtures; production transport and witness checks are unchanged. Focused source
 review and a fresh clean freeze must precede another native acceptance attempt.
+
+Freeze twenty-two at `f30da97` passed all 160 portable cases, fresh N04 and
+N33/N32/N30/N28/N29/N31/N34. All five CI jobs passed 29,085 portable tests each,
+with 2,347 integration deselections and the completeness guard. Independent N33
+inspection confirmed the causal held-review timeout and all seven actual
+payload/wrapper cleanups within the original deadline. It also found that broker
+stop packets advertised a few milliseconds beyond that original bound even
+though the host correctly clamped cleanup. Broker lifecycle messages now retain
+the earliest original and first-stop deadline, including already-expired bounds;
+replay rejects extensions of known bounds.
+Review also found aggregate shutdown attempted three terminal lifecycle frames
+for two open sessions against the fixed limit of two. Aggregate stop now cancels
+both role sets and emits one BROKER_STOP. A preceding SESSION_STOP already fences
+the shared host graph; duplicate cancellation or stop emits no extra notice.
+The original frame-limit regression is retained, and the protocol cap is unchanged.
+
+N35 stopped the native batch at its original case predicate. Its fixed clock
+instrumentation records expiry after CAPTURE returns actual host reaping, then
+relays the retained capture; the predicate incorrectly required reaping after
+that marker. The corrected check binds the exact host capture cleanup hash,
+native payload/wrapper identity, original deadline and observed order of native
+readiness, cleanup, marker and capture relay. N34 retains marker-before-cleanup
+ordering. The later N35 broker `invalid_witness` stop remains labeled as observed;
+its precise EOF peer was not captured. The original failed bundle is unchanged.
+All subsequent native groups remain unexecuted. Reviewed corrections require
+fresh portable, native, inspection, full-suite and hosted proof on a new freeze.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

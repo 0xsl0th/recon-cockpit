@@ -376,7 +376,9 @@ def _body(role, operation, value, direction):
             if 'session_id' in value:
                 c.uuid(value['session_id'])
             now = c.integer(value['observed_at_ns'])
-            if not now < c.integer(value['cleanup_deadline_ns'], 1) <= now + c.CLEANUP_NS:
+            # An already-expired original bound requests immediate stopping;
+            # it cannot be replaced with a fresh positive cleanup allowance.
+            if c.integer(value['cleanup_deadline_ns'], 1) > now + c.CLEANUP_NS:
                 c.fail('invalid_frame')
 
 

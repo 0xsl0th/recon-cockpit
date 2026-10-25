@@ -320,12 +320,40 @@ def test_clock_failure_before_and_after_admission(tmp_path,monkeypatch):
 
 
 def test_cancel_eof_and_late_role_messages_are_terminal(tmp_path,monkeypatch):
+    _broker_stop_frame_cases(tmp_path,monkeypatch)
     _reserved_window_barrier_stop(tmp_path,monkeypatch)
     _stopped_session_channel_eof(monkeypatch)
     with lab(tmp_path,monkeypatch) as (core,store,*_):
         row=ready(core);core.stop('engagement_live_cancelled');refused(core.prepare,core.slots[0]['session_id'],'http_headers');refused(core.open_session,1)
         core.transition(row,'terminal_unresolved','engagement_live_cancelled');refused(core.transition,row,'running')
         assert not store.snapshot()['reservations']
+
+
+def _broker_stop_frame_cases(tmp_path,monkeypatch):
+    """Two open sessions share at most one local and one aggregate notice."""
+    for prior in (0,1,2):
+        directory=tmp_path/('stop-frames-'+str(prior));directory.mkdir(mode=0o700)
+        with lab(directory,monkeypatch) as (core,store,rows,pair,channels):
+            core.open_session(0);core.open_session(1)
+            loop=b.BrokerLoop.__new__(b.BrokerLoop);loop.core=core;loop.lifecycle=pair[0]
+            loop.lifecycle_sequence=p.ChannelSequence(core.broker_id,'lifecycle');loop.stopping=False
+            loop.sequences={(role,index):None for role in ('launcher','endpoint') for index in (0,1)}
+            cancelled=[];loop.send_role=lambda role,index,operation,body:cancelled.append((role,index,operation))
+            for index in range(prior):
+                loop.cancel_slot(core.slots[index],'engagement_live_cancelled')
+                if index==0:
+                    assert p.decode_frame(pair[1].recv(32768),role='lifecycle',direction='request')['operation']=='SESSION_STOP'
+                else:
+                    with pytest.raises(BlockingIOError):pair[1].recv(32768)
+                loop.cancel_slot(core.slots[index],'engagement_live_cancelled')
+                with pytest.raises(BlockingIOError):pair[1].recv(32768)
+            loop.stop('engagement_live_cancelled')
+            frame=p.decode_frame(pair[1].recv(32768),role='lifecycle',direction='request')
+            assert frame['operation']=='BROKER_STOP'
+            assert loop.lifecycle_sequence.sent_terminal==1+bool(prior)
+            assert sorted(cancelled)==sorted((role,index,'CANCEL') for role in ('launcher','endpoint') for index in (0,1))
+            loop.stop('engagement_live_cancelled')
+            with pytest.raises(BlockingIOError):pair[1].recv(32768)
 
 
 def _reserved_window_barrier_stop(tmp_path,monkeypatch):
@@ -461,6 +489,7 @@ def test_exports_are_bounded_sealed_phase_snapshots(tmp_path,monkeypatch):
 
 
 def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
+    _broker_stop_deadline_cases(tmp_path,monkeypatch)
     with lab(tmp_path,monkeypatch) as (core,store,rows,pair,channels):
         row=ready(core);core.reserve(proofs(core,row,channels));before=store.snapshot();core.deadline_ns=time.monotonic_ns()-1
         refused(core.guarded_go,row);assert store.snapshot()==before
@@ -519,6 +548,35 @@ def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
         now[0]=101.0
         assert broker._close(180.0) is receipt and seen==[102.0]
         assert epoch.snapshot()['deadline_ns']==102*c.SECOND
+
+
+def _broker_stop_deadline_cases(tmp_path,monkeypatch):
+    """Real fixed-channel stop packets retain original and first-stop bounds."""
+    for stage in ('broker','session','action','early'):
+        directory=tmp_path/stage;directory.mkdir(mode=0o700)
+        with lab(directory,monkeypatch) as (core,store,rows,pair,channels):
+            if stage in ('action','early'):
+                row=ready(core);hard=row['prepared']['envelope']['action_deadline_ns']
+            elif stage=='session':hard=core.open_session(0)['binding']['session_deadline_ns']
+            else:hard=core.deadline_ns
+            loop=b.BrokerLoop.__new__(b.BrokerLoop);loop.core=core;loop.lifecycle=pair[0]
+            loop.lifecycle_sequence=p.ChannelSequence(core.broker_id,'lifecycle');loop.sequences={};loop.stopping=False
+            now=[hard-4*c.SECOND if stage=='early' else hard-1_000_000]
+            expected=hard-2*c.SECOND if stage=='early' else hard
+            with monkeypatch.context() as patch:
+                patch.setattr(time,'monotonic_ns',lambda:now[0])
+                if stage=='broker':loop.stop('engagement_live_timeout')
+                else:loop.cancel_slot(core.slots[0],'engagement_live_timeout')
+                frame=p.decode_frame(pair[1].recv(32768),role='lifecycle',direction='request')
+                assert frame['body']['cleanup_deadline_ns']==expected
+                if stage!='broker':
+                    # A later duplicate stop cannot renew an already-expired
+                    # original bound or lose it after the slot is closed.
+                    core.slots[0]['state']='closed'
+                    now[0]=hard-3*c.SECOND if stage=='early' else hard+1_000_000
+                    loop.stop('engagement_live_timeout')
+                    frame=p.decode_frame(pair[1].recv(32768),role='lifecycle',direction='request')
+                    assert frame['operation']=='BROKER_STOP' and frame['body']['cleanup_deadline_ns']==expected
 
 
 def _preallocated_child_custody(tmp_path, monkeypatch):

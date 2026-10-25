@@ -760,6 +760,32 @@ def _host_ingress_links(rows, broker_frames, dispatches, deadline):
     return missing
 
 
+def _validate_stop_deadlines(loaded,rows):
+    """A terminal wire message cannot renew any retained original bound."""
+    bounds={};stops=[]
+    def remember(binding,keys):
+        values=bounds.setdefault(binding['broker_id'],[])
+        values.extend(binding[key] for key in keys)
+    for operation in loaded.get('results.json',{}).get('operations',[]):
+        remember(operation['prepared']['envelope'],('broker_deadline_ns','session_deadline_ns','action_deadline_ns'))
+    for wrapped in rows:
+        row=wrapped['row']
+        if wrapped['source']!='broker_memfd' or row['kind']!='protocol':continue
+        data=row['data'];frame=data['frame'];body=frame['body']
+        if data['direction']!='sent':continue
+        if data['channel_role']=='ingress' and frame['operation']=='OPEN_SESSION' and body.get('status')=='ok':
+            remember(body['data']['binding'],('broker_deadline_ns','session_deadline_ns'))
+        if data['channel_role']=='lifecycle' and frame['operation'] in ('SESSION_STOP','BROKER_STOP'):
+            stops.append(row)
+    previous={}
+    for row in sorted(stops,key=lambda item:(item['broker_id'],item['row_sequence'])):
+        broker=row['broker_id'];body=row['data']['frame']['body'];end=body['cleanup_deadline_ns']
+        known=[*bounds.get(broker,[]),body['observed_at_ns']+c.CLEANUP_NS]
+        if broker in previous:known.append(previous[broker])
+        if body['observed_at_ns']>row['observed_at_ns'] or end>min(known):c.fail('evidence_invalid')
+        previous[broker]=end
+
+
 def validate_evidence_transcript(loaded, rows, *, deadline):
     """Reconstruct retained authority links; no effects or gate verdicts.
 
@@ -778,6 +804,7 @@ def validate_evidence_transcript(loaded, rows, *, deadline):
     missing.update(supervision['missing_evidence'])
     operations = loaded.get('results.json', {}).get('operations', [])
     if type(operations) is not list or len(operations) > 4: c.fail('evidence_invalid')
+    _validate_stop_deadlines(loaded,rows)
     for operation in operations:
         prepared = c.validate_prepared_context(operation['prepared'], operation['session'])
         e = prepared['envelope']; did = e['dispatch_id']

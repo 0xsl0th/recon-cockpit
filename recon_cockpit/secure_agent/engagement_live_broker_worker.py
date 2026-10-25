@@ -584,23 +584,42 @@ class BrokerLoop:
                     and row['admission']is None and row['release']is None)
                 if not budget_denied:self.cancel_slot(self.core.slots[row['slot_index']],reason)
 
-    def cancel_slot(self,slot,reason):
-        if slot['state']=='closed':return
+    def stop_deadline(self,now):
+        # Lifecycle stop is terminal to the shared graph. Retain every original
+        # bound even after slots/dispatches have transitioned or been closed.
+        bounds=[now+c.CLEANUP_NS,self.core.deadline_ns]
+        bounds.extend(slot['opened']['binding']['session_deadline_ns'] for slot in self.core.slots
+            if slot['opened'] is not None)
+        bounds.extend(row['prepared']['envelope']['action_deadline_ns'] for row in self.core.dispatches.values())
+        bound=min(bounds)
+        self._stop_deadline_ns=min(getattr(self,'_stop_deadline_ns',bound),bound)
+        return self._stop_deadline_ns
+
+    def cancel_slot(self,slot,reason,*,notify=True):
+        cancelled=getattr(self,'_cancelled_slots',set())
+        if slot['state']=='closed' or slot['slot_index'] in cancelled:return
+        now=time.monotonic_ns();deadline=self.stop_deadline(now)
         slot['state']='stopping';index=slot['slot_index']
+        cancelled.add(index);self._cancelled_slots=cancelled
         for role in ('launcher','endpoint'):
             if (role,index)in self.sequences:
                 try:self.send_role(role,index,'CANCEL',{'reason':reason})
                 except (c.LiveError,OSError):pass
-        now=time.monotonic_ns();frame=self.lifecycle_sequence.make('SESSION_STOP',{'session_id':slot['session_id'],'reason':reason,'observed_at_ns':now,'cleanup_deadline_ns':now+2*c.SECOND})
+        # One SESSION_STOP already fences the shared host graph. Reserve the
+        # second terminal lifecycle frame for the aggregate BROKER_STOP.
+        if not notify or getattr(self,'_session_stop_sent',False):return
+        self._session_stop_sent=True
+        frame=self.lifecycle_sequence.make('SESSION_STOP',{'session_id':slot['session_id'],'reason':reason,'observed_at_ns':now,'cleanup_deadline_ns':deadline})
         try:p.send_packet(self.lifecycle,frame,role='lifecycle',control=self.control());self.transcript('lifecycle','sent',frame)
         except (c.LiveError,OSError):pass
 
     def stop(self,reason):
         if self.stopping:return
+        self.stop_deadline(time.monotonic_ns())
         self.stopping=True;self.core.stop(reason)
         for slot in self.core.slots:
-            if slot['opened']is not None:self.cancel_slot(slot,reason)
-        now=time.monotonic_ns();frame=self.lifecycle_sequence.make('BROKER_STOP',{'reason':reason,'observed_at_ns':now,'cleanup_deadline_ns':now+2*c.SECOND})
+            if slot['opened']is not None:self.cancel_slot(slot,reason,notify=False)
+        now=time.monotonic_ns();frame=self.lifecycle_sequence.make('BROKER_STOP',{'reason':reason,'observed_at_ns':now,'cleanup_deadline_ns':self.stop_deadline(now)})
         try:p.send_packet(self.lifecycle,frame,role='lifecycle',control=self.control());self.transcript('lifecycle','sent',frame)
         except (c.LiveError,OSError):pass
 

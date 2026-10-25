@@ -976,22 +976,31 @@ def _logical_deadline_fault(loaded,rows,operation,phase,case_id):
         item['data']['frame']['operation']=='GO' and item['observed_at_ns']<=row['observed_at_ns'] and
         item['data']['frame']['body']['prepared_sha256']==contract.prepared_digest(prepared)]
     if len(native)!=1 or len(released)!=1 or native[0]['observed_at_ns']<released[0]['observed_at_ns']:return False
-    actual=native[0]['data']['frame']['body']['parent_observation']['payload']
+    parent=native[0]['data']['frame']['body']['parent_observation'];actual=parent['payload']
     cleanups=[receipt for receipt in loaded['cleanup.json']['receipts'] if
         any(item['pid']==actual['pid'] and item['start_time_ticks']==actual['start_time_ticks'] and
-            item['pin_verified'] and item['exit_observed'] and item['reaped_observed']
-            for item in receipt['processes']) and receipt['descriptors_closed'] and
-        receipt['finished_at_ns']>=row['observed_at_ns']]
+            item['wrapper_pid']==parent['wrapper']['pid'] and item['wrapper_returncode'] is not None
+            and item['pin_verified'] and item['exit_observed'] and item['reaped_observed']
+            for item in receipt['processes']) and receipt['status']=='complete' and receipt['descriptors_closed']
+        and native[0]['observed_at_ns']<=receipt['started_at_ns']<=receipt['finished_at_ns']<=receipt['deadline_ns']<=original]
     if not cleanups:return False
     if case_id=='S42C-N35':
-        # collect() publishes its retained capture after the actual close hook.
-        # No earlier wire capture or elapsed wall-time expiry is claimed.
+        # CAPTURE returns actual host reaping before the fixed clock fault;
+        # its retained bytes are relayed afterward, without claiming wall expiry.
+        host=operation['host_capture']
+        if host is None:return False
+        cleanups=[receipt for receipt in cleanups if _sha(_canonical(receipt))==host['cleanup_sha256']
+            and receipt['finished_at_ns']<=row['observed_at_ns']]
+        if len(cleanups)!=1:return False
         captures=[item for item in packets if item['data']['direction']=='received' and
             item['data']['frame']['operation']=='OBSERVATION' and
             item['data']['frame']['body']['kind']=='capture' and
             item['observed_at_ns']>=row['observed_at_ns']]
         if len(captures)!=1:return False
-    return True
+        capture=captures[0]['data']['frame']['body']['data']
+        return all(capture[key]==host[key] for key in ('schema_version','slot','exit_code','truncated',
+            'stdout_bytes','stderr_bytes','stdout_sha256','stderr_sha256'))
+    return any(receipt['started_at_ns']>=row['observed_at_ns'] for receipt in cleanups)
 
 
 def _changed_stop_cancellation(attempt, watches, stops, operations):

@@ -1229,6 +1229,7 @@ def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch):
 
 def test_preserves_original_deadlines_through_cleanup(monkeypatch):
     _review_timeout_causality_cases()
+    _stop_wire_deadline_cases()
     session,p=prepared()
     stop=c.effect_stop(p,p['envelope']['action_deadline_ns'])
     assert stop==p['envelope']['action_deadline_ns']-2000000000
@@ -1254,6 +1255,15 @@ def test_preserves_original_deadlines_through_cleanup(monkeypatch):
     rows=[*rows,native]
     for case,target,variant in (('S42C-N34','native_observation','deadline_during_native'),
                                ('S42C-N35','cleanup','deadline_during_result_cleanup')):
+        if case=='S42C-N35':
+            # The fixed cleanup fault follows CAPTURE's actual host reaping.
+            receipt=next(item for item in loaded['cleanup.json']['receipts']
+                if sha(raw(item))==op['host_capture']['cleanup_sha256'])
+            actual_time=receipt['finished_at_ns']+1
+            for wrapped in rows:
+                row=wrapped['row']
+                if row['kind']=='protocol' and row['data']['frame']['operation']=='OBSERVATION' and row['data']['frame']['body']['kind']=='capture':
+                    row['observed_at_ns']=actual_time+1
         loaded['runtime.json']['instrumentation']=[{'source_sha256':'b'*64,
             'configuration':{'case_id':case,'variant':variant,'role':'launcher'}}]
         phase={'source':'broker_memfd','segment':0,'row':{'kind':'phase','broker_id':env['broker_id'],
@@ -1276,11 +1286,55 @@ def test_preserves_original_deadlines_through_cleanup(monkeypatch):
         bad=deepcopy(loaded);bad['cleanup.json']['receipts']=[]
         assert not e._logical_deadline_fault(bad,rows,op,phase,case)
         if case=='S42C-N35':
+            for key,value in (('cleanup_sha256','e'*64),('stdout_sha256','e'*64)):
+                changed=deepcopy(op);changed['host_capture'][key]=value
+                assert not e._logical_deadline_fault(loaded,rows,changed,phase,case)
+            selected=next(index for index,item in enumerate(loaded['cleanup.json']['receipts'])
+                if sha(raw(item))==op['host_capture']['cleanup_sha256'])
+            for key,value in (('started_at_ns',native['row']['observed_at_ns']-1),
+                    ('finished_at_ns',actual_time+1),('deadline_ns',original+1),
+                    ('status','incomplete'),('descriptors_closed',False)):
+                bad=deepcopy(loaded);changed=deepcopy(op);receipt=bad['cleanup.json']['receipts'][selected]
+                receipt[key]=value;changed['host_capture']['cleanup_sha256']=sha(raw(receipt))
+                assert not e._logical_deadline_fault(bad,rows,changed,phase,case)
+            for key,value in (('pid',999),('start_time_ticks',999),('wrapper_pid',999),
+                    ('wrapper_returncode',None),('pin_verified',False),('exit_observed',False),('reaped_observed',False)):
+                bad=deepcopy(loaded);changed=deepcopy(op);receipt=bad['cleanup.json']['receipts'][selected]
+                receipt['processes'][0][key]=value;changed['host_capture']['cleanup_sha256']=sha(raw(receipt))
+                assert not e._logical_deadline_fault(bad,rows,changed,phase,case)
             earlier=deepcopy(rows)
             for row in earlier:
                 if row['row']['kind']=='protocol' and row['row']['data']['frame']['operation']=='OBSERVATION' and row['row']['data']['frame']['body']['kind']=='capture':
                     row['row']['observed_at_ns']=actual_time-1
             assert not e._logical_deadline_fault(loaded,earlier,op,phase,case)
+
+
+def _stop_wire_deadline_cases():
+    from recon_cockpit.secure_agent import engagement_live_witness as witness
+    session,value=prepared();env=value['envelope'];hard=env['action_deadline_ns']
+    loaded={'results.json':{'operations':[{'prepared':value}]}}
+    def stop(sequence,operation,observed,end):
+        body={'reason':'engagement_live_timeout','observed_at_ns':observed,'cleanup_deadline_ns':end}
+        if operation=='SESSION_STOP':body['session_id']=env['session_id']
+        return {'source':'broker_memfd','row':{'broker_id':env['broker_id'],'row_sequence':sequence,
+            'observed_at_ns':observed+1,'kind':'protocol','data':{'channel_role':'lifecycle','direction':'sent',
+                'frame':{'operation':operation,'body':body}}}}
+    rows=[stop(1,'SESSION_STOP',hard-c.CLEANUP_NS,hard),stop(2,'BROKER_STOP',hard+1,hard)]
+    witness._validate_stop_deadlines(loaded,rows)
+    bad=deepcopy(rows);bad[0]['row']['data']['frame']['body']['cleanup_deadline_ns']=hard+1
+    refused(witness._validate_stop_deadlines,loaded,bad)
+    # A shorter first-stop allowance remains binding even with more original
+    # action time remaining; dropping operations cannot renew an emitted bound.
+    early=[stop(1,'SESSION_STOP',hard-4*c.SECOND,hard-2*c.SECOND),
+        stop(2,'BROKER_STOP',hard-3*c.SECOND,hard-c.SECOND)]
+    refused(witness._validate_stop_deadlines,{'results.json':{'operations':[]}},early)
+    bad=deepcopy(rows);bad[0]['row']['observed_at_ns']-=2
+    refused(witness._validate_stop_deadlines,loaded,bad)
+    opened={'source':'broker_memfd','row':{'kind':'protocol','data':{'channel_role':'ingress','direction':'sent',
+        'frame':{'operation':'OPEN_SESSION','body':{'status':'ok','data':session}}}}}
+    no_operations={'results.json':{'operations':[]}}
+    expired=env['session_deadline_ns']
+    refused(witness._validate_stop_deadlines,no_operations,[opened,stop(1,'BROKER_STOP',expired-1,expired+1)])
 
 
 def _review_timeout_causality_cases():
