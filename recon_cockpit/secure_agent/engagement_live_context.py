@@ -195,6 +195,87 @@ def validate_supervision_transcript(loaded, rows=None, *, deadline=None):
         return _validate_supervision(loaded, _retained_rows(loaded) if rows is None else rows, end)
 
 
+def _cancelled_capture_terminal(loaded, rows, row, operation, slot, closure):
+    """A fully observed cancelled CAPTURE stays terminal with no reply.
+
+    Only retained host facts establish this negative exchange. They do not
+    establish delivery to the launcher or replace any broker authority link.
+    """
+    from . import engagement_live_contract as c
+    from . import engagement_live_protocol as protocol
+    data = row['data']; request = data['request']; envelope = operation['prepared']['envelope']
+    if (request['operation'] != 'CAPTURE' or data['local_error'] != 'engagement_live_cancelled'
+            or data['reply'] is not None or operation['result'] is not None or operation['client'] is not None
+            or slot['role'] not in ('nmap', 'headers') or not closure['complete']): return False
+    did = envelope['dispatch_id']; host = operation['host_capture']
+    if host is None or host['cleanup_sha256'] is None: return False
+    if any(x['dispatch_id'] == did for name in ('initial-ledger.json', 'final-ledger.json', 'recovery-ledger.json')
+           for x in loaded.get(name, {}).get('completions', [])): return False
+    threads = [x for x in loaded['cleanup.json']['supervisors'] if
+        all(x[k] == slot[k] for k in ('broker_id', 'session_id', 'launcher_id'))]
+    if len(threads) != 1: return False
+    thread = threads[0]; hard = min(envelope[k] for k in
+        ('action_deadline_ns', 'session_deadline_ns', 'broker_deadline_ns'))
+    if (thread['state'] != 'joined' or thread['status'] != 'complete'
+            or thread['pending_slots'] or not thread['channel_closed']
+            or thread['cleanup_deadline_ns'] > hard): return False
+    failures = [x['row'] for x in rows if x['source'] == 'role_observer'
+        and x['row']['kind'] == 'supervision_projection'
+        and x['row']['data']['kind'] == 'local_failure'
+        and x['row']['data']['launcher_id'] == slot['launcher_id']]
+    if len(failures) != 2: return False
+    failures.sort(key=lambda x: x['data']['observed_at_ns'])
+    for failure in failures:
+        value = protocol.validate_supervision_projection(failure['data'])
+        if (any(failure[k] != row[k] for k in ('broker_id', 'session_id', 'dispatch_id', 'observer_id'))
+                or any(value[k] != data[k] for k in
+                    ('launcher_id', 'child_slot', 'child_worker_id', 'prepared_sha256'))
+                or value['code'] != 'engagement_live_cancelled'): return False
+    cause, final = failures; first, last = cause['data'], final['data']
+    if first['capture_sha256'] is not None or first['cleanup_sha256'] is not None: return False
+    if (last['capture_sha256'] != runtime._hash(host)
+            or last['cleanup_sha256'] != host['cleanup_sha256']): return False
+    if not (request['observed_at_ns'] <= thread['first_stop_requested_at_ns']
+            <= first['observed_at_ns'] <= cause['observed_at_ns'] <= row['observed_at_ns']
+            <= thread['cleanup_finished_at_ns'] <= last['observed_at_ns']
+            <= final['observed_at_ns'] <= thread['cleanup_deadline_ns']): return False
+    receipts = [x for x in loaded['cleanup.json']['receipts'] if runtime._hash(x) == host['cleanup_sha256']]
+    if len(receipts) != 1: return False
+    receipt = receipts[0]
+    if (receipt['status'] != 'complete' or not receipt['descriptors_closed']
+            or len(receipt['processes']) != 1 or receipt['deadline_ns'] > hard
+            or not request['observed_at_ns'] <= receipt['started_at_ns'] <= receipt['finished_at_ns']
+                <= min(thread['cleanup_finished_at_ns'], thread['cleanup_deadline_ns'], hard)): return False
+    ready = [x for x in loaded['processes.json']['readiness'] if x['worker_ready']['worker_id'] == slot['worker_id']]
+    if len(ready) != 1: return False
+    parent = ready[0]['parent_observation']; process = receipt['processes'][0]
+    if (process['role'] != slot['role'] or process['pid'] != parent['payload']['pid']
+            or process['start_time_ticks'] != parent['payload']['start_time_ticks']
+            or process['wrapper_pid'] != parent['wrapper']['pid'] or process['wrapper_returncode'] is None
+            or not all(process[k] for k in ('pin_verified', 'exit_observed', 'reaped_observed'))): return False
+    if slot['role'] == 'nmap':
+        natives = [x for x in loaded['processes.json']['native'] if x['parent_observation']['payload'] == parent['payload']]
+        if (len(natives) != 1 or natives[0]['parent_observation']['wrapper'] != parent['wrapper']
+                or natives[0]['observed_at_ns'] > request['observed_at_ns']): return False
+    for wrapped in rows:
+        stop = wrapped['row']
+        if (wrapped['source'] != 'broker_memfd' or stop['kind'] != 'protocol'
+                or stop['broker_id'] != envelope['broker_id'] or stop['observer_id'] != stop['broker_id']): continue
+        part = stop['data']; frame = part['frame']; body = frame['body']
+        if (part['channel_role'] != 'lifecycle' or part['direction'] != 'sent'
+                or frame['channel_id'] != envelope['broker_id']
+                or frame['operation'] not in ('BROKER_STOP', 'SESSION_STOP')): continue
+        if frame['operation'] == 'SESSION_STOP' and body['session_id'] != envelope['session_id']: continue
+        segment = loaded['manifest.json']['transcript']['segments'][wrapped['segment']]
+        if segment['status'] != 'sealed_complete' or segment['broker_id'] != envelope['broker_id']: continue
+        protocol.validate_frame(frame, role='lifecycle', direction='request')
+        if (request['observed_at_ns'] <= body['observed_at_ns'] <= stop['observed_at_ns']
+                <= thread['first_stop_requested_at_ns']
+                and thread['cleanup_deadline_ns'] <= body['cleanup_deadline_ns']
+                <= min(hard, body['observed_at_ns'] + c.CLEANUP_NS)): return True
+    return False
+
+
 def _validate_supervision(loaded, rows, deadline):
     from . import engagement_live_contract as c
     from . import engagement_live_protocol as protocol
@@ -386,7 +467,9 @@ def _validate_supervision(loaded, rows, deadline):
         state[key] = 'terminal'  # every missing/refused exchange consumes the slot
         if reply is None:
             terminal.add(channel)
-            missing.add('transcript'); continue
+            if not _cancelled_capture_terminal(loaded, rows, row, op, slot, closure):
+                missing.add('transcript')
+            continue
         expected_reply = reply_sequences.get(channel, 0) + 1
         if reply['sequence'] != expected_reply or reply['operation'] != protocol.SUPERVISION_RESPONSES[operation]: _bad()
         reply_sequences[channel] = expected_reply

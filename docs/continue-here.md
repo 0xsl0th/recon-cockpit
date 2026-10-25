@@ -505,6 +505,23 @@ before the correction; all 44 focused broker/evidence tests then passed.
 Retained failed artifacts remain unchanged. All current-source native proof
 must run again after independent correction review and a fresh clean freeze,
 starting with N39 after the portable and N04 prerequisites.
+
+Freeze twenty-four at `27cb8bc` passed all 160 portable cases, fresh N04 and
+all five hosted CI suites (29,085 passes and 2,347 integration deselections each).
+N39 then committed the real external revocation after GO and reaped all seven
+processes, but saved inspection remained incomplete. Its CAPTURE request was
+cancelled before a reply could be sent. The sealed broker stop, both host
+terminal records, raw capture and exact child cleanup were retained, while
+replay unconditionally classified the null reply as missing transcript.
+The corrected pure replay path recognizes only a causally proved cancelled
+CAPTURE: exact request and terminal identities, original bounds, sealed stop on
+the broker's lifecycle channel, actual native PID/start/wrapper, retained capture
+and complete joined cleanup must all agree. The reply remains null and the
+operation unresolved; other missing authority or source evidence stays missing.
+All 48 affected replay/witness/launcher tests passed, including 32 negative
+mutations. One separately retained read-only diagnostic confirmed that cause on
+the unchanged failed bundle, with zero useful operations and no acceptance
+credit. A new reviewed freeze and all required validation remain necessary.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not
