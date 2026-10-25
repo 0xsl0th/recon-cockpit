@@ -309,7 +309,102 @@ def test_new_witness_age_and_expiry_are_independent():
     refused(w.validate_approval_witness,approval(sequence=3),value,previous_sequence=3,now_ns=M)
 
 
-def test_release_packet_has_single_dispatch_identity():
+def _fixed_n44_launcher_hold_cases(tmp_path,monkeypatch):
+    """Actual transformed hook under declared clock/EOF; no process witness.
+
+    Execute the unchanged release validator and transformed run/control bodies.
+    Deliberately forbidden continuations expose a misplaced hold or fallthrough;
+    they do not emulate successful broker, child, endpoint or cleanup behavior.
+    """
+    from types import SimpleNamespace
+    import time
+    from engagement_live_native import SourceVariants,install_broker_fault,_install_n44_launcher_hold,n44_launcher_hold_transform
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    original=ROOT/'recon_cockpit/secure_agent/engagement_live_launcher_worker.py'
+    original_bytes=original.read_bytes();baseline=hashlib.sha256(original_bytes).hexdigest()
+    case={'case_id':'S42C-N44','variant':'kill_broker_after_GO_before_observation','role':'broker'}
+    variants=SourceVariants(tmp_path/'n44-source',**case)
+    install_broker_fault(variants,case['case_id']);path=_install_n44_launcher_hold(variants)
+    source=path.read_bytes();tree=ast.parse(source)
+    assert original.read_bytes()==original_bytes
+    assert set(variants.paths)=={'engagement_live_broker_worker','engagement_live_launcher_worker'}
+    instruments=variants.instrumentation
+    assert [x['configuration'] for x in instruments]==[case,{**case,'role':'launcher'}]
+    for record,item in zip(variants.records,instruments):
+        content=variants.paths[record['module']].read_bytes()
+        assert record['after_sha256']==item['source_sha256']==hashlib.sha256(content).hexdigest()
+        assert item['configuration_sha256']==hashlib.sha256(c.canonical(item['configuration'])).hexdigest()
+    assert variants.records[-1]['before_sha256']==baseline
+    previous_source=runtime._source_path
+    with variants:pass
+    assert runtime._source_path is previous_source
+    saved=json.loads((variants.directory/'source-variants.json').read_bytes())
+    assert saved['sources'][-1]['configuration']=={**case,'role':'launcher'}
+    bad_source=original_bytes.decode().replace("self.admission_rpc('REDEEM',","self.admission_rpc('OTHER',")
+    with pytest.raises(ValueError):n44_launcher_hold_transform(bad_source)
+    with pytest.raises(ValueError):n44_launcher_hold_transform(source.decode())
+    with pytest.raises(ValueError):variants.source('engagement_live_launcher_worker',n44_launcher_hold_transform)
+    wrong=SourceVariants(tmp_path/'n43-source',case_id='S42C-N43',variant='kill_broker_after_reservation_before_GO',role='broker')
+    with pytest.raises(ValueError):_install_n44_launcher_hold(wrong)
+    assert not wrong.records
+    control=next(node for node in tree.body if isinstance(node,ast.ClassDef) and node.name=='LauncherControl')
+    launcher=next(node for node in tree.body if isinstance(node,ast.ClassDef) and node.name=='LauncherState')
+    run=next(node for node in launcher.body if isinstance(node,ast.FunctionDef) and node.name=='run')
+    hold=next(node for node in tree.body if isinstance(node,ast.FunctionDef) and node.name=='_fixed_n44_go_hold')
+    extracted=ast.Module(body=[control,hold,run],type_ignores=[])
+    namespace={'__package__':'recon_cockpit.secure_agent','c':c,'rt':runtime,'time':time}
+    exec(compile(extracted,str(path),'exec'),namespace)
+    actual_run=namespace['run'];actual_control=namespace['LauncherControl']
+    elapsed=[0];sleeps=[];polled=[];continued=[]
+    def sleep(seconds):
+        assert 0<=seconds<=.005
+        sleeps.append(seconds);elapsed[0]+=max(1,round(seconds*c.SECOND))
+    def forbidden(*args,**kwargs):
+        continued.append((args,kwargs));raise AssertionError('N44 hold reached post-GO work or run cleanup')
+    with monkeypatch.context() as patch:
+        patch.setattr(time,'monotonic_ns',lambda:M+elapsed[0])
+        patch.setattr(time,'monotonic',lambda:(M+elapsed[0])/c.SECOND)
+        patch.setattr(time,'sleep',sleep)
+        patch.setattr(c,'sample_clock',lambda:clock(elapsed[0]))
+        for variant,limit,lease,code in (
+                ('fixed_second',60*c.SECOND,10*c.SECOND,'timeout'),
+                ('original_owner',15_000_000,10*c.SECOND,'timeout'),
+                ('effect_stop',60*c.SECOND,10_000_000,'timeout'),
+                ('already_expired',0,10*c.SECOND,'timeout'),
+                ('eof',60*c.SECOND,10*c.SECOND,'cancelled')):
+            elapsed[0]=0;sleeps.clear();polled.clear();continued.clear()
+            value=prepared();go=release(value,lease=M+lease)
+            packet={'schema_version':'1','channel_id':uid(99),'sequence':1,'operation':'GO','body':go}
+            actual_go=p.decode_frame(p.encode_frame(packet,role='launcher',direction='request'),
+                role='launcher',direction='request')['body']
+            def poll_stop():
+                polled.append(M+elapsed[0])
+                if variant=='eof':c.fail('cancelled')
+            owner=SimpleNamespace(pending=value,release=None,deadline_ns=M+limit,poll_stop=poll_stop,
+                admission=SimpleNamespace(close=forbidden),client=SimpleNamespace(close=forbidden,release=forbidden,
+                    observe_native=forbidden,collect=forbidden),admission_rpc=forbidden,send=forbidden,
+                observe=forbidden,record_capture=forbidden,cleanups=[])
+            owner._control=lambda deadline=None:actual_control(owner,min(owner.deadline_ns,
+                owner.deadline_ns if deadline is None else deadline))
+            refused(actual_run,owner,actual_go,code=code)
+            assert owner.release==actual_go and owner.pending==value
+            assert not continued and not owner.cleanups
+            control_bound=int(owner._control(actual_go['effect_stop_ns']).deadline*c.SECOND)-M
+            bound=min(c.SECOND,limit,control_bound,value['envelope']['action_deadline_ns']-M)
+            assert bound<=min(limit,actual_go['effect_stop_ns']-M)
+            assert 0<=elapsed[0]<=bound,variant
+            if variant in ('eof','already_expired'):assert not sleeps
+            else:assert sleeps and elapsed[0]==bound and polled
+            # The validated GO was consumed even though no work followed it.
+            refused(actual_run,owner,actual_go,code='release_unavailable')
+        elapsed[0]=0;sleeps.clear();continued.clear()
+        owner.release=None;wrong_go=deepcopy(actual_go);wrong_go['dispatch_id']=uid(999)
+        refused(actual_run,owner,wrong_go)
+        assert owner.release is None and not sleeps and not continued
+    assert original.read_bytes()==original_bytes
+
+
+def test_release_packet_has_single_dispatch_identity(tmp_path,monkeypatch):
     value=prepared();go=release(value)
     assert c.validate_release_binding(go,value,clock=clock())==go
     for key in ('broker_id','ledger_owner_id','session_id','dispatch_id'):
@@ -318,6 +413,7 @@ def test_release_packet_has_single_dispatch_identity():
     bad=deepcopy(go);bad['release_sequence']=2;refused(c.validate_release,bad)
     frame={'schema_version':'1','channel_id':uid(99),'sequence':1,'operation':'GO','body':go}
     assert len(p.encode_frame(frame,role='launcher',direction='request'))<=4096
+    _fixed_n44_launcher_hold_cases(tmp_path,monkeypatch)
 
 
 def test_effect_stop_preserves_cleanup_margin():

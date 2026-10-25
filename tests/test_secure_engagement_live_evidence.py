@@ -2290,6 +2290,344 @@ def _cancelled_capture_replay(loaded,original_rows):
         else:assert {'transcript','cleanup'}&set(report['missing_evidence']),variant
 
 
+def _cancelled_native_begin_replay(loaded,original_rows):
+    """Declared crash interruption through the complete supervision replay.
+
+    A retained request and physical closure do not manufacture NATIVE_BUDGET,
+    native execution, useful output or a refund of the committed reservation.
+    The separate fixed-fault cases exercise all three complete crash predicates.
+    Other missing replies and missing terminal source facts remain unresolved.
+    """
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
+    from test_secure_engagement_live_runtime import declared_readiness,declared_cleanup
+    value=deepcopy(loaded);rows=deepcopy(original_rows)
+    op=value['results.json']['operations'][0];prepared=op['prepared'];env=prepared['envelope']
+    anchor=env['clock_anchor']['mono_after_ns'];digest=c.prepared_digest(prepared)
+    canonical_digest=sha(raw(prepared));assert digest!=canonical_digest
+    original_operation=deepcopy(op)
+    op.update(result=None,client=None,meter=None)
+    state=None
+    for event in value['final-ledger.json']['events']:
+        if event['request']['operation']!='complete':state,_=ledger._apply(state,event['request'])
+    value['final-ledger.json']=state;value['recovery-ledger.json']=deepcopy(state)
+    slots=value['processes.json']['child_slots']
+    client_slot=next(x for x in slots if x['child_slot']=='identify_client')
+    parser=next(x for x in slots if x['child_slot']=='identify_parser')
+    parser_ready=next(x for x in value['processes.json']['readiness']
+        if x['worker_ready']['worker_id']==parser['worker_id'])
+    parser_payload=parser_ready['parent_observation']['payload']
+    value['processes.json']['readiness'].remove(parser_ready)
+    value['processes.json']['startup']=[x for x in value['processes.json']['startup'] if x['payload']!=parser_payload]
+    value['cleanup.json']['receipts']=[x for x in value['cleanup.json']['receipts'] if not any(
+        p['pid']==parser_payload['pid'] and p['start_time_ticks']==parser_payload['start_time_ticks'] for p in x['processes'])]
+    parser.update(prepared_sha256=None,bootstrap=None,entry_sha256=None)
+    value['processes.json']['native']=[]
+    rpc=next(x for x in rows if x['row']['kind']=='supervision_projection'
+        and x['row']['data']['request']['operation']=='NATIVE_BEGIN')
+    data=rpc['row']['data'];channel=data['launcher_id'];sequence=data['request']['sequence']
+    def keep(item):
+        row=item['row'];part=row['data']
+        if row['kind']=='supervision_projection':return part['request']['sequence']<=sequence
+        if row['kind']=='meter':return False
+        if row['kind']!='protocol':return True
+        frame=part['frame'];body=frame['body']
+        if frame['operation']=='METER':return False
+        if frame['operation']=='DISPATCH' and part['direction']=='sent' and body['status']!='pending':return False
+        if frame['operation']=='OBSERVATION' and body['kind'] in ('role_readiness','cleanup','capture'):return False
+        return True
+    rows=[x for x in rows if keep(x)]
+    assert any(x['row']['kind']=='protocol' and x['row']['data']['frame']['operation']=='DISPATCH'
+        and x['row']['data']['direction']=='sent' and x['row']['data']['frame']['body']['status']=='pending' for x in rows)
+    go=next(x for x in rows if x['row']['kind']=='protocol'
+        and x['row']['data']['frame']['operation']=='GO')
+    request_at=anchor+100;stop=anchor+110;finished=anchor+160;deadline=stop+1_900_000_000
+    data['request']['observed_at_ns']=request_at
+    data.update(reply=None,local_error='engagement_live_cancelled');rpc['row']['observed_at_ns']=anchor+130
+    host=op['host_capture'];client_cleanup=next(x for x in value['cleanup.json']['receipts']
+        if sha(raw(x))==host['cleanup_sha256'])
+    for receipt in value['cleanup.json']['receipts']:
+        if any(p['role']=='admission' for p in receipt['processes']):continue
+        receipt.update(started_at_ns=anchor+135,finished_at_ns=anchor+155,deadline_ns=deadline)
+    client_cleanup.update(started_at_ns=anchor+140,finished_at_ns=anchor+150)
+    client_cleanup['processes'][0].update(wrapper_returncode=137,signal_attempted=True)
+    for stream in ('stdout','stderr'):
+        value['client-'+env['dispatch_id']+'.'+stream+'.bin']=b''
+        host.update({stream+'_bytes':0,stream+'_sha256':sha(b'')})
+    host.update(status='unresolved',exit_code=137,truncated=False,cleanup_sha256=sha(raw(client_cleanup)))
+    closed=next(x for x in value['cleanup.json']['supervisors'] if x['launcher_id']==channel)
+    closed.update(first_stop_requested_at_ns=stop,cleanup_started_at_ns=stop+1,
+        cleanup_finished_at_ns=finished,cleanup_deadline_ns=deadline)
+    broker_ready=next(x for x in value['processes.json']['readiness'] if x['role']=='broker'
+        and x['worker_ready']['worker_id']==env['broker_id'])
+    broker_parent=broker_ready['parent_observation'];broker_pid=broker_parent['payload']['pid']
+    broker_cleanup=next(x for x in value['cleanup.json']['receipts'] if any(
+        p['role']=='broker' and p['pid']==broker_pid for p in x['processes']))
+    broker_cleanup['processes'][0].update(wrapper_returncode=137,signal_attempted=False)
+    def clock(when):
+        base=env['clock_anchor']
+        return {'mono_before_ns':when-1,'mono_after_ns':when,
+            'utc_ns':base['utc_ns']+when-base['mono_after_ns']}
+    def phase(stage,when,source,related):
+        return {'segment':0 if source=='broker_memfd' else 1,'source':source,'row':{
+            'schema_version':'1','broker_id':env['broker_id'],'session_id':env['session_id'],
+            'dispatch_id':env['dispatch_id'],'observer_id':env['broker_id'],'row_sequence':1,
+            'observed_at_ns':when,'kind':'phase','data':{'phase':'go','stage':stage,'reason':None,
+                'related_sha256':related,'original_deadline_ns':env['action_deadline_ns'],'clock':clock(when-1)}}}
+    marker=phase('end',anchor+10,'broker_memfd',canonical_digest)
+    signal_begin=phase('begin',anchor+20,'role_observer',digest)
+    signal_end=phase('end',anchor+30,'role_observer',digest)
+    cause=deepcopy(rpc);cause['row']['observed_at_ns']=anchor+120
+    cause['row']['data']={k:data[k] for k in ('launcher_id','child_slot','child_worker_id','prepared_sha256')}
+    cause['row']['data'].update(kind='local_failure',code='engagement_live_cancelled',observed_at_ns=anchor+120,
+        capture_sha256=None,cleanup_sha256=None)
+    final=deepcopy(cause);final['row']['observed_at_ns']=anchor+170
+    final['row']['data'].update(observed_at_ns=anchor+170,capture_sha256=sha(raw(host)),cleanup_sha256=host['cleanup_sha256'])
+    rows.remove(rpc);rows.extend((marker,signal_begin,signal_end,cause,rpc,final))
+    value['manifest.json']['transcript'].update(status='partial',reason='broker_lost')
+    value['manifest.json']['transcript']['segments'][0].update(status='reaped_partial',seals=0)
+    def encode(current,observations):
+        parts=[];offset=0
+        for index,segment in enumerate(current['manifest.json']['transcript']['segments']):
+            selected=[x for x in observations if x['segment']==index]
+            for number,item in enumerate(selected,1):item['row']['row_sequence']=number
+            part=b''.join(raw(x['row'])+b'\n' for x in selected)
+            segment.update(offset=offset,bytes=len(part),sha256=sha(part));parts.append(part);offset+=len(part)
+        current['transcript.jsonl']=b''.join(parts)
+    def replay(current,observations):
+        encode(current,observations)
+        return context.validate_supervision_transcript(current,observations)
+    result=replay(value,rows)
+    assert result['missing_evidence']==[] and result['all_closed'] and result['cleanup_complete']
+    assert result['dispatches'][env['dispatch_id']]['native_budget'] is None
+    assert result['dispatches'][env['dispatch_id']]['capture'] is not None
+    assert data['reply'] is None and all(op[k] is None for k in ('result','client','meter'))
+    assert len(state['reservations'])==1 and state['state']['usage']==env['cost'] and not state['completions']
+    # Aggregate graph receipts repeat actual process identities. An honest
+    # duplicate observation is allowed, but its earliest broker reap must also
+    # follow the signal attempt; a later single-process row cannot conceal it.
+    aggregate_case=deepcopy(value)
+    aggregate=deepcopy(broker_cleanup)
+    companion=next(x for x in value['cleanup.json']['receipts'] if len(x['processes'])==1
+        and x['processes'][0]['role']=='audit')
+    aggregate['processes'].extend(deepcopy(companion['processes']))
+    aggregate.update(started_at_ns=anchor+135,finished_at_ns=anchor+156)
+    aggregate_case['cleanup.json']['receipts'].append(aggregate)
+    assert replay(aggregate_case,deepcopy(rows))['missing_evidence']==[]
+    aggregate.update(started_at_ns=anchor+8,finished_at_ns=anchor+18)
+    assert aggregate['finished_at_ns']<signal_begin['row']['data']['clock']['mono_after_ns']
+    assert 'transcript' in replay(aggregate_case,deepcopy(rows))['missing_evidence']
+    # The launcher, signal recorder and cleanup monitor run concurrently. Only
+    # causal lower bounds apply: a sent GO may reach NATIVE_BEGIN before the
+    # signal, and an actual reap may precede the signal's final journal row.
+    for ordering in ('request_before_signal','early_broker_reap','late_signal_journal','combined'):
+        reordered=deepcopy(value);observations=deepcopy(rows)
+        call=next(x for x in observations if x['row']['kind']=='supervision_projection'
+            and x['row']['data']['kind']=='rpc' and x['row']['data']['request']['operation']=='NATIVE_BEGIN')
+        end=next(x for x in observations if x['row']['kind']=='phase' and x['source']=='role_observer'
+            and x['row']['data']['stage']=='end')
+        if ordering in ('request_before_signal','combined'):call['row']['data']['request']['observed_at_ns']=anchor+15
+        if ordering in ('early_broker_reap','combined'):
+            killed=next(x for x in reordered['cleanup.json']['receipts'] if any(
+                p['role']=='broker' and p['pid']==broker_pid for p in x['processes']))
+            killed.update(started_at_ns=anchor+8,finished_at_ns=anchor+25)
+        if ordering in ('late_signal_journal','combined'):
+            # Keep the actual signal clock; only its journal append is later.
+            end['row']['observed_at_ns']=anchor+165
+        report=replay(reordered,observations)
+        assert report['missing_evidence']==[] and report['all_closed'] and report['cleanup_complete'],ordering
+        assert report['dispatches'][env['dispatch_id']]['native_budget'] is None,ordering
+    # Cancellation can happen after request retention but before capture
+    # construction. Honest absent hashes are incomplete, not contradictions.
+    for absent in ('capture_not_constructed','final_capture_proof_absent'):
+        incomplete=deepcopy(value);observations=deepcopy(rows)
+        terminal=next(x for x in observations if x['row']['kind']=='supervision_projection'
+            and x['row']['data']['kind']=='local_failure' and x['row']['data']['capture_sha256'] is not None)
+        terminal['row']['data'].update(capture_sha256=None,cleanup_sha256=None)
+        if absent=='capture_not_constructed':incomplete['results.json']['operations'][0]['host_capture']=None
+        report=replay(incomplete,observations)
+        assert 'transcript' in report['missing_evidence'] and report['cleanup_complete'],absent
+        assert report['dispatches'][env['dispatch_id']]['native_budget'] is None,absent
+    # A later broker's complete segment cannot supply the killed broker's
+    # marker, signal identity or physical closure. Its mere presence is valid.
+    second=uid(1960);other=declared_readiness(value['runtime.json']['runtime'],'broker',pid=1960,worker_id=second)
+    other['parent_observation']['sampled_at_ns']=anchor+200
+    other_cleanup=declared_cleanup(other,started=anchor+300,finished=anchor+400)
+    successor=deepcopy(value);successor_rows=deepcopy(rows)
+    successor['manifest.json']['broker_instances'].append({'broker_id':second,'ledger_owner_id':uid(1961)})
+    successor['processes.json']['readiness'].append(other);successor['cleanup.json']['receipts'].append(other_cleanup)
+    successor['manifest.json']['transcript']['segments'].append({'source':'broker_memfd','broker_id':second,
+        'status':'sealed_complete','seals':15,'bytes':0,'offset':0,'sha256':sha(b'')})
+    assert replay(successor,successor_rows)['missing_evidence']==[]
+    # Full supervision controls for the earlier crash cuts have no pending
+    # native exchange. N42 has no reserve; N43 retains the one charged reserve.
+    for number in (42,43):
+        earlier=deepcopy(value);prior=[deepcopy(x) for x in rows if x not in (rpc,cause,final,go,marker,signal_begin,signal_end)]
+        earlier['results.json']['operations'][0]['host_capture']=None
+        if number==42:
+            before=None
+            for event in state['events']:
+                if event['request']['operation']!='reserve':before,_=ledger._apply(before,event['request'])
+            earlier['final-ledger.json']=before;earlier['recovery-ledger.json']=deepcopy(before)
+            assert not before['reservations'] and not any(before['state']['usage'].values())
+        else:assert len(earlier['final-ledger.json']['reservations'])==1
+        assert replay(earlier,prior)['missing_evidence']==[],number
+    variants=('missing_cause','missing_final','duplicate_cause','duplicate_final','cause_code','rpc_code','cause_broker','cause_session','cause_dispatch',
+        'cause_observer','cause_worker','cause_prepared','cause_capture','cause_cleanup','final_capture','final_cleanup',
+        'missing_capture','host_success','raw_capture','client','meter','result','completion','native',
+        'missing_marker','duplicate_marker','marker_digest','marker_source','marker_broker','marker_observer',
+        'marker_session','marker_dispatch','marker_stage','marker_phase','marker_deadline','marker_future_clock','marker_after_signal',
+        'missing_signal_begin','missing_signal_end','duplicate_signal_begin','duplicate_signal_end',
+        'signal_digest','signal_source','signal_broker','signal_observer','signal_session','signal_dispatch',
+        'signal_deadline','signal_null_clock','signal_future_clock','signal_reverse','signal_after_hold','signal_after_final',
+        'missing_go','go_channel','go_broker','go_source','go_after_marker','go_reservation','go_prepared',
+        'release_hash','request_wire','request_sequence','request_worker','request_slot','request_prepared','reply_claim',
+        'missing_reservation','wrong_reservation','wrong_charge','missing_broker_cleanup','duplicate_broker_cleanup',
+        'broker_not_killed','broker_pid','broker_start','broker_wrapper','broker_unreaped','broker_cleanup_before_signal',
+        'client_pid','client_start','client_wrapper','missing_client_cleanup','client_unreaped','client_open_descriptors',
+        'early_stop','early_cause','early_final','late_final','late_cleanup','early_cleanup','host_epoch','original_bound',
+        'open_channel','pending_slot','later_rpc','sealed_crashed_broker','foreign_first_broker','extra_operation',
+        'pending_terminal','pending_dispatch','pending_after_go','stop_before_signal','native_relay','result_relay')
+    for variant in variants:
+        bad=deepcopy(value);changed=deepcopy(rows);operation=bad['results.json']['operations'][0]
+        call=next(x for x in changed if x['row']['kind']=='supervision_projection' and x['row']['data']['kind']=='rpc'
+            and x['row']['data']['request']['operation']=='NATIVE_BEGIN')
+        failures=[x for x in changed if x['row']['kind']=='supervision_projection' and x['row']['data']['kind']=='local_failure']
+        first,last=failures
+        fault=next(x for x in changed if x['row']['kind']=='phase' and x['source']=='broker_memfd')
+        begin,end=[x for x in changed if x['row']['kind']=='phase' and x['source']=='role_observer']
+        release_row=next(x for x in changed if x['row']['kind']=='protocol' and x['row']['data']['frame']['operation']=='GO')
+        thread=next(x for x in bad['cleanup.json']['supervisors'] if x['launcher_id']==channel)
+        child=next(x for x in bad['cleanup.json']['receipts'] if sha(raw(x))==operation['host_capture']['cleanup_sha256'])
+        killed=next(x for x in bad['cleanup.json']['receipts'] if any(p['role']=='broker' and p['pid']==broker_pid for p in x['processes']))
+        if variant.startswith('missing_') and variant[8:] in ('cause','final','marker','signal_begin','signal_end','go'):
+            changed.remove({'cause':first,'final':last,'marker':fault,'signal_begin':begin,'signal_end':end,'go':release_row}[variant[8:]])
+        elif variant.startswith('duplicate_') and variant!='duplicate_broker_cleanup':
+            changed.append(deepcopy({'cause':first,'final':last,'marker':fault,'signal_begin':begin,'signal_end':end}[variant[10:]]))
+        elif variant in ('cause_code','rpc_code'):
+            (first['row']['data'] if variant=='cause_code' else call['row']['data'])[
+                'code' if variant=='cause_code' else 'local_error']='engagement_live_timeout'
+        elif variant.startswith('cause_'):
+            field=variant[6:]
+            if field in ('capture','cleanup'):first['row']['data'][field+'_sha256']=sha(raw(operation['host_capture']))
+            elif field in ('worker','prepared'):first['row']['data'][{'worker':'child_worker_id','prepared':'prepared_sha256'}[field]]=uid(1999) if field=='worker' else 'e'*64
+            else:first['row'][field+'_id']=uid(1999)
+        elif variant in ('final_capture','final_cleanup'):last['row']['data'][variant[6:]+'_sha256']='e'*64
+        elif variant=='missing_capture':operation['host_capture']=None
+        elif variant=='host_success':
+            operation['host_capture']['status']='succeeded';last['row']['data']['capture_sha256']=sha(raw(operation['host_capture']))
+        elif variant=='raw_capture':bad['client-'+env['dispatch_id']+'.stdout.bin']=b'!'
+        elif variant in ('client','meter','result'):operation[variant]=deepcopy(original_operation[variant])
+        elif variant=='completion':bad['final-ledger.json']=deepcopy(loaded['final-ledger.json'])
+        elif variant=='native':bad['processes.json']['native']=deepcopy(loaded['processes.json']['native'])
+        elif variant in ('native_relay','result_relay'):
+            extra=deepcopy(release_row);frame=extra['row']['data']['frame']
+            frame.update(operation='NATIVE_OBSERVED' if variant=='native_relay' else 'RESULT',
+                body=deepcopy(loaded['processes.json']['native'][0] if variant=='native_relay' else original_operation['client']))
+            frame['sequence']=1+max(x['row']['data']['frame']['sequence'] for x in changed
+                if x['row']['kind']=='protocol' and x['row']['data']['frame']['channel_id']==channel
+                and x['row']['data']['direction']=='received')
+            extra['row']['data']['direction']='received';extra['row']['observed_at_ns']=anchor+140
+            changed.append(extra)
+        elif variant.startswith('marker_') or variant.startswith('signal_'):
+            target=fault if variant.startswith('marker_') else end;field=variant.split('_',1)[1]
+            row=target['row'];part=row['data']
+            if field=='digest':part['related_sha256']=digest if target is fault else canonical_digest
+            elif field=='source':target['source']='role_observer' if target is fault else 'broker_memfd'
+            elif field in ('broker','observer','session','dispatch'):row[field+'_id']=uid(1999)
+            elif field=='stage':part['stage']='begin'
+            elif field=='phase':part['phase']='reserve'
+            elif field=='deadline':part['original_deadline_ns']-=1
+            elif field=='future_clock':part['clock']=clock(row['observed_at_ns']+2)
+            elif field=='null_clock':part['clock']=None
+            elif field=='after_final':row['observed_at_ns']=last['row']['observed_at_ns']+1
+            else:
+                when=anchor+21 if field=='after_signal' else anchor+19 if field=='reverse' else fault['row']['observed_at_ns']+c.SECOND+1
+                row['observed_at_ns']=when;part['clock']=clock(when-1)
+        elif variant.startswith('go_'):
+            if variant=='go_channel':release_row['row']['data']['frame']['channel_id']=uid(1999)
+            elif variant=='go_broker':release_row['row']['broker_id']=uid(1999)
+            elif variant=='go_source':release_row['source']='role_observer'
+            elif variant=='go_after_marker':release_row['row']['observed_at_ns']=fault['row']['observed_at_ns']+1
+            else:
+                # Coherently update the host request too, so rejection must
+                # come from the independently retained release authority.
+                release=release_row['row']['data']['frame']['body']
+                release['reservation_event_id' if variant=='go_reservation' else 'prepared_sha256']=uid(1999) if variant=='go_reservation' else 'e'*64
+                request=call['row']['data']['request'];request['projection']['release_sha256']=sha(raw(release))
+                request['projection_sha256']=sha(raw(request['projection']))
+                frame={'schema_version':'1','channel_id':channel,'sequence':sequence,'operation':'NATIVE_BEGIN',
+                    'body':{'child_slot':'identify_client','release':release}}
+                request.update(bytes=len(raw(frame)),sha256=sha(raw(frame)))
+        elif variant=='release_hash':
+            request=call['row']['data']['request'];request['projection']['release_sha256']='e'*64
+            request['projection_sha256']=sha(raw(request['projection']))
+        elif variant=='request_wire':call['row']['data']['request']['sha256']='e'*64
+        elif variant=='request_sequence':call['row']['data']['request']['sequence']+=1
+        elif variant=='request_worker':call['row']['data']['child_worker_id']=uid(1999)
+        elif variant=='request_slot':call['row']['data']['child_slot']='headers_client'
+        elif variant=='request_prepared':call['row']['data']['prepared_sha256']='e'*64
+        elif variant=='reply_claim':
+            # A copied success reply has its actual earlier timestamp/budget;
+            # it cannot acknowledge this later interrupted request.
+            call['row']['data']['reply']=deepcopy(next(x['row']['data']['reply'] for x in original_rows
+                if x['row']['kind']=='supervision_projection' and x['row']['data']['request']['operation']=='NATIVE_BEGIN'))
+        elif variant=='missing_reservation':
+            for name in ('final-ledger.json','recovery-ledger.json'):bad[name]['reservations']=[]
+        elif variant=='wrong_reservation':
+            for name in ('final-ledger.json','recovery-ledger.json'):bad[name]['reservations'][0]['dispatch_id']=uid(1999)
+        elif variant=='wrong_charge':
+            for name in ('final-ledger.json','recovery-ledger.json'):
+                bad[name]['reservations'][0]['reservation']['connections']-=1
+                bad[name]['state']['usage']['connections']-=1
+        elif variant=='missing_broker_cleanup':bad['cleanup.json']['receipts'].remove(killed)
+        elif variant=='duplicate_broker_cleanup':bad['cleanup.json']['receipts'].append(deepcopy(killed))
+        elif variant=='broker_not_killed':killed['processes'][0]['wrapper_returncode']=0
+        elif variant=='broker_unreaped':killed['processes'][0]['reaped_observed']=False
+        elif variant=='broker_cleanup_before_signal':killed.update(started_at_ns=anchor+12,finished_at_ns=anchor+13)
+        elif variant in ('broker_pid','broker_start','broker_wrapper'):
+            killed['processes'][0][{'broker_pid':'pid','broker_start':'start_time_ticks','broker_wrapper':'wrapper_pid'}[variant]]+=1000
+        elif variant=='missing_client_cleanup':bad['cleanup.json']['receipts'].remove(child)
+        elif variant in ('client_pid','client_start','client_wrapper','client_unreaped','client_open_descriptors','late_cleanup','early_cleanup'):
+            if variant in ('client_pid','client_start','client_wrapper'):
+                child['processes'][0][{'client_pid':'pid','client_start':'start_time_ticks','client_wrapper':'wrapper_pid'}[variant]]+=1000
+            elif variant=='client_unreaped':child['processes'][0]['reaped_observed']=False
+            elif variant=='client_open_descriptors':child['descriptors_closed']=False
+            elif variant=='late_cleanup':child['finished_at_ns']=finished+1
+            else:child.update(started_at_ns=request_at-2,finished_at_ns=request_at-1)
+            operation['host_capture']['cleanup_sha256']=sha(raw(child))
+            last['row']['data'].update(cleanup_sha256=sha(raw(child)),capture_sha256=sha(raw(operation['host_capture'])))
+        elif variant=='early_stop':thread['first_stop_requested_at_ns']=request_at-1
+        elif variant=='stop_before_signal':
+            begin['row'].update(observed_at_ns=stop+3);begin['row']['data']['clock']=clock(stop+2)
+            end['row'].update(observed_at_ns=stop+5);end['row']['data']['clock']=clock(stop+4)
+        elif variant=='early_cause':first['row']['data']['observed_at_ns']=stop-1
+        elif variant in ('early_final','late_final'):
+            when=finished-1 if variant=='early_final' else deadline+1
+            last['row']['observed_at_ns']=when;last['row']['data']['observed_at_ns']=when
+        elif variant=='host_epoch':thread['cleanup_deadline_ns']=stop+1_900_000_001
+        elif variant=='original_bound':thread['cleanup_deadline_ns']=env['action_deadline_ns']+1
+        elif variant=='open_channel':thread.update(channel_closed=False,status='failed')
+        elif variant=='pending_slot':thread.update(pending_slots=['identify_client'],status='failed')
+        elif variant=='sealed_crashed_broker':bad['manifest.json']['transcript']['segments'][0].update(status='sealed_complete',seals=15)
+        elif variant=='foreign_first_broker':bad['manifest.json']['broker_instances'][0]['broker_id']=uid(1999)
+        elif variant=='extra_operation':bad['results.json']['operations'].append(deepcopy(operation))
+        elif variant.startswith('pending_'):
+            pending=next(x for x in changed if x['row']['kind']=='protocol'
+                and x['row']['data']['frame']['operation']=='DISPATCH' and x['row']['data']['direction']=='sent')
+            if variant=='pending_terminal':pending['row']['data']['frame']['body'].update(
+                status='refused',code='engagement_live_cancelled',data=None)
+            elif variant=='pending_dispatch':pending['row']['data']['frame']['body']['data']['dispatch_id']=uid(1999)
+            else:pending['row']['observed_at_ns']=release_row['row']['observed_at_ns']+1
+        elif variant=='later_rpc':
+            extra=deepcopy(call);extra['row']['data']['request'].update(observed_at_ns=finished+20,sequence=sequence+1)
+            changed.append(extra)
+        else:raise AssertionError(variant)
+        try:report=replay(bad,changed)
+        except c.LiveError as error:assert error.code=='engagement_live_evidence_invalid',variant
+        else:assert {'transcript','cleanup'}&set(report['missing_evidence']),variant
+
+
 def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch):
     manifest,members=fixture();broker=uid(80)
     manifest['broker_instances']=[{'broker_id':broker,'ledger_owner_id':uid(81)}]
@@ -2392,6 +2730,7 @@ def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch):
     extra['row']['data']['request'].update(observed_at_ns=at+5,sequence=extra['row']['data']['request']['sequence']+1)
     late.append(extra);refused(context.validate_supervision_transcript,partial,late)
     _cancelled_capture_replay(loaded,original_rows)
+    _cancelled_native_begin_replay(loaded,original_rows)
     operations=loaded['results.json']['operations'];op=operations[0];env=op['prepared']['envelope']
     second,owner,session=uid(201),uid(202),uid(203)
     ready=declared_readiness(loaded['runtime.json']['runtime'],'broker',pid=400,worker_id=second)

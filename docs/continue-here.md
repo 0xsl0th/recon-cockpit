@@ -667,6 +667,43 @@ inert fixture files. Require the actual boundary and cleanup receipt within the
 original allowance; a portable test count without that receipt cannot pass this
 checkpoint. This focused regression grants no native acceptance.
 
+Freeze thirty-one at `c911869` passed all 160 portable cases, N04 with both saved
+inspections, and all five hosted CI jobs with 29,085 passes and 2,347 deselections
+each. The next native batch passed N42 and N43, then stopped on N44 saved
+inspection. The actual case retained complete physical cleanup, the full durable
+reservation and an unresolved operation, but its cancelled `NATIVE_BEGIN` request
+had no reply. The reader correctly retained a missing-transcript flag until that
+specific negative exchange could be proved. Preserve the original failed bundle
+and report; N45/N46 and later groups were not executed on this freeze.
+
+The correction separately binds that cancellation to the original broker's GO,
+fixed crash marker, clocked signal and actual process identity, both matching
+local-failure projections, the negative capture, and bounded physical closure.
+It cannot supply a native budget, execution, completion, useful result or refund.
+Request handling, signal journaling and monitoring retain their causal partial
+orders rather than an assumed order between concurrent threads. Missing capture
+proof and other missing exchanges remain incomplete. Existing cancelled CAPTURE
+handling is unchanged.
+
+The reviewed N44 fixture also holds its sealed launcher variant at the validated
+GO boundary before admission redemption or another supervision request. This
+stabilizes the already permitted interleaving while retaining actual GO emission,
+the original broker crash marker and process kill, and every original deadline.
+The hold cannot resume on cancellation or expiry and adds no production control
+or descriptor. Its placement precedes child cleanup paths that could otherwise
+create a new pending request. Full supervision, concurrent timing and actual
+transformed-hook regressions must pass within the existing focused case IDs.
+Before refreezing, require complete helper startup again and one bounded Python
+and CLI replay of each unchanged N42/N43/N44 saved bundle. Those six diagnostic
+reads preserve original evidence and grant no native or final inspection credit.
+All 56 focused tests passed on this correction. Actual complete helper startup
+reached the withheld release boundary in 644 ms and completed cleanup in 648 ms,
+within the original allowance. All three retained bundles then passed both the
+Python and CLI readers with unchanged source, bundle and original-report bytes.
+The source packages for all 78 recovery-capable fixture configurations were
+also checked statically against the existing two-MiB bound; all fit. Fresh frozen
+portable/native validation and final acceptance remain required.
+
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

@@ -289,6 +289,199 @@ def _cancelled_capture_terminal(loaded, rows, row, operation, slot, closure):
     return False
 
 
+def _cancelled_native_begin_terminal(loaded, rows, row, operation, slot, closure):
+    """Prove the fixed broker crash interrupted one unreplied native request.
+
+    The host cancellation and physical closure resolve this negative exchange;
+    they never supply NATIVE_BUDGET, native execution, or a completed dispatch.
+    The ordinary authority/witness replay remains independently required.
+    """
+    from . import engagement_live_contract as c
+    from . import engagement_live_protocol as protocol
+    prepared = operation['prepared']; envelope = prepared['envelope']
+    data = row['data']; request = data['request']; did = envelope['dispatch_id']
+    broker = envelope['broker_id']; digest = c.prepared_digest(prepared)
+    instances = loaded['manifest.json']['broker_instances']
+    if (request['operation'] != 'NATIVE_BEGIN' or data['reply'] is not None
+            or data['local_error'] != 'engagement_live_cancelled'
+            or len(loaded['results.json']['operations']) != 1 or not instances
+            or instances[0] != {'broker_id': broker, 'ledger_owner_id': envelope['ledger_owner_id']}
+            or slot['role'] not in ('nmap', 'headers') or not closure['complete']
+            or any(operation[k] is not None for k in ('result', 'client', 'meter'))): return False
+    if (any(row[k] != envelope[k] for k in ('broker_id', 'session_id', 'dispatch_id'))
+            or row['observer_id'] != slot['launcher_id']
+            or data['launcher_id'] != slot['launcher_id'] or data['child_slot'] != slot['child_slot']
+            or data['child_worker_id'] != slot['worker_id'] or data['prepared_sha256'] != digest): return False
+    host = operation['host_capture']; empty = hashlib.sha256(b'').hexdigest()
+    if (host is None or host['cleanup_sha256'] is None or host['status'] != 'unresolved'
+            or host['exit_code'] != 137 or host['truncated']
+            or any(host[k + '_bytes'] != 0 or host[k + '_sha256'] != empty
+                   for k in ('stdout', 'stderr'))): return False
+    hard = min(envelope[k] for k in ('action_deadline_ns', 'session_deadline_ns', 'broker_deadline_ns'))
+    threads = [x for x in loaded['cleanup.json']['supervisors'] if
+        all(x[k] == slot[k] for k in ('broker_id', 'session_id', 'launcher_id'))]
+    if len(threads) != 1: return False
+    thread = threads[0]; first_stop = thread['first_stop_requested_at_ns']
+    bound = min(hard, first_stop + 1_900_000_000)
+    if (thread['state'] != 'joined' or thread['status'] != 'complete'
+            or not thread['join_attempted'] or thread['thread_alive_observed'] is not False
+            or thread['pending_slots'] or not thread['channel_closed']
+            or thread['cleanup_deadline_ns'] > bound): return False
+
+    # The GO and fixed crash marker belong to the original broker's retained
+    # partial stream. A later broker's sealed STOP cannot satisfy this proof.
+    segments = loaded['manifest.json']['transcript']['segments']
+    def same_context(value, observer):
+        return (all(value[k] == envelope[k] for k in ('broker_id', 'session_id', 'dispatch_id'))
+            and value['observer_id'] == observer)
+    goes = [x for x in rows if x['source'] == 'broker_memfd' and x['row']['kind'] == 'protocol'
+        and x['row']['data']['channel_role'] == 'launcher'
+        and x['row']['data']['direction'] == 'sent'
+        and x['row']['data']['frame']['operation'] == 'GO' and x['row']['dispatch_id'] == did]
+    if len(goes) != 1: return False
+    go = goes[0]; release = go['row']['data']['frame']['body']
+    part = segments[go['segment']]
+    if (not same_context(go['row'], broker) or part['source'] != 'broker_memfd'
+            or part['broker_id'] != broker or part['status'] != 'reaped_partial'
+            or go['row']['data']['frame']['channel_id'] != slot['launcher_id']): return False
+    protocol.validate_frame(go['row']['data']['frame'], role='launcher', direction='request')
+    if (any(release[k] != envelope[k] for k in ('broker_id', 'ledger_owner_id', 'session_id', 'dispatch_id'))
+            or release['envelope_sha256'] != c.envelope_digest(envelope)
+            or release['prepared_sha256'] != digest
+            or request['projection'] != {'child_slot': slot['child_slot'], 'release_sha256': runtime._hash(release)}): return False
+    _supervision_frame(request, slot['launcher_id'], {'child_slot': slot['child_slot'], 'release': release})
+    # Retained exports must still carry the exact full reservation. Neither a
+    # missing response nor cancellation is a completion or a refund.
+    reservations = []
+    for name in ('initial-ledger.json', 'final-ledger.json', 'recovery-ledger.json'):
+        export = loaded.get(name)
+        if export is None:
+            if name != 'initial-ledger.json': return False
+            continue
+        if any(x['dispatch_id'] == did for x in export['completions']): return False
+        if any(x['request']['operation'] == 'complete' and x['request']['body']['dispatch_id'] == did
+               for x in export['events']): return False
+        if name == 'initial-ledger.json': continue
+        found = [x for x in export['reservations'] if x['dispatch_id'] == did]
+        events = [x for x in export['events'] if x['request']['operation'] == 'reserve'
+            and x['request']['body']['dispatch_id'] == did]
+        if len(found) != 1 or len(events) != 1: return False
+        reserved = found[0]; event = events[0]; receipt = event['receipt']
+        if (any(reserved[k] != envelope[k] for k in ('dispatch_id', 'session_id', 'slot', 'generation',
+                'revision', 'action_sha256', 'policy_sha256'))
+                or reserved['owner_id'] != envelope['ledger_owner_id']
+                or reserved['action_id'] != prepared['action']['action_id']
+                or reserved['reservation'] != envelope['cost']
+                or event['event_id'] != release['reservation_event_id']
+                or event['sequence'] != release['reservation_sequence']
+                or receipt['state_sha256'] != release['reservation_state_sha256']
+                or receipt['dispatch_id'] != did or receipt['session_id'] != envelope['session_id']
+                or any(export['state']['usage'][k] < receipt['usage'][k]
+                    or receipt['usage'][k] < envelope['cost'][k] for k in envelope['cost'])): return False
+        reservations.append(runtime._json(reserved))
+    if len(reservations) != 2 or reservations[0] != reservations[1]: return False
+    def phases(source, stage, related):
+        selected = []
+        for item in rows:
+            value = item['row']
+            if item['source'] != source or value['kind'] != 'phase': continue
+            phase = value['data']; clock = phase['clock']
+            if (not same_context(value, broker) or phase['phase'] != 'go' or phase['stage'] != stage
+                    or phase['reason'] is not None or phase['related_sha256'] != related
+                    or phase['original_deadline_ns'] != envelope['action_deadline_ns'] or clock is None): continue
+            if not (envelope['action_ready_ns'] <= clock['mono_before_ns'] <= clock['mono_after_ns']
+                    <= value['observed_at_ns'] < hard): continue
+            selected.append(item)
+        return selected
+    markers = phases('broker_memfd', 'end', runtime._hash(prepared))
+    begins = phases('role_observer', 'begin', digest); ends = phases('role_observer', 'end', digest)
+    if len(markers) != 1 or len(begins) != 1 or len(ends) != 1: return False
+    marker, begin, end = markers[0], begins[0], ends[0]
+    if (marker['segment'] != go['segment'] or begin['segment'] != end['segment']
+            or segments[begin['segment']]['source'] != 'role_observer'
+            or segments[begin['segment']]['status'] != 'observer_complete'
+            or go['row']['row_sequence'] >= marker['row']['row_sequence']
+            or begin['row']['row_sequence'] >= end['row']['row_sequence']
+            or not (release['guard_clock']['mono_after_ns'] <= go['row']['observed_at_ns']
+                <= marker['row']['observed_at_ns'] <= begin['row']['data']['clock']['mono_before_ns']
+                <= begin['row']['observed_at_ns'] <= end['row']['data']['clock']['mono_before_ns']
+                <= end['row']['observed_at_ns'])
+            or not go['row']['observed_at_ns'] <= request['observed_at_ns'] <= first_stop
+            or begin['row']['data']['clock']['mono_after_ns'] > first_stop
+            or end['row']['observed_at_ns'] > marker['row']['observed_at_ns'] + c.SECOND): return False
+
+    failures = [x['row'] for x in rows if x['source'] == 'role_observer'
+        and x['row']['kind'] == 'supervision_projection' and x['row']['data']['kind'] == 'local_failure'
+        and x['row']['data']['launcher_id'] == slot['launcher_id']]
+    if len(failures) != 2: return False
+    failures.sort(key=lambda x: x['data']['observed_at_ns'])
+    for failure in failures:
+        value = protocol.validate_supervision_projection(failure['data'])
+        if (not same_context(failure, slot['launcher_id']) or value['code'] != 'engagement_live_cancelled'
+                or any(value[k] != data[k] for k in
+                    ('launcher_id', 'child_slot', 'child_worker_id', 'prepared_sha256'))): return False
+    cause, final = failures; first, last = cause['data'], final['data']
+    if (first['capture_sha256'] is not None or first['cleanup_sha256'] is not None
+            or last['capture_sha256'] != runtime._hash(host) or last['cleanup_sha256'] != host['cleanup_sha256']
+            or end['row']['observed_at_ns'] > final['observed_at_ns']
+            or not (first_stop <= first['observed_at_ns'] <= cause['observed_at_ns'] <= row['observed_at_ns']
+                <= thread['cleanup_finished_at_ns'] <= last['observed_at_ns']
+                <= final['observed_at_ns'] <= thread['cleanup_deadline_ns'])): return False
+    receipts = loaded['cleanup.json']['receipts']; processes = loaded['processes.json']
+    child_receipts = [x for x in receipts if runtime._hash(x) == host['cleanup_sha256']]
+    child_ready = [x for x in processes['readiness'] if x['worker_ready']['worker_id'] == slot['worker_id']]
+    broker_ready = [x for x in processes['readiness'] if x['role'] == 'broker'
+        and x['worker_ready']['worker_id'] == broker]
+    if len(child_receipts) != 1 or len(child_ready) != 1 or len(broker_ready) != 1: return False
+    child_parent = child_ready[0]['parent_observation']; broker_parent = broker_ready[0]['parent_observation']
+    def matches(process, parent, role):
+        return (process['role'] == role and process['pid'] == parent['payload']['pid']
+            and process['start_time_ticks'] == parent['payload']['start_time_ticks']
+            and process['wrapper_pid'] == parent['wrapper']['pid'])
+    killed = [x for x in receipts if len(x['processes']) == 1 and matches(x['processes'][0], broker_parent, 'broker')]
+    if len(killed) != 1: return False
+    # The signal journal and monitor cleanup are concurrent. Reaping may
+    # finish before the signal's end row is appended, and broker cleanup may
+    # already be waiting when the signal is sent. Only causal lower bounds
+    # apply; the child cleanup still follows its observed request.
+    broker_finishes = [receipt['finished_at_ns'] for receipt in receipts if any(
+        process['pid'] == broker_parent['payload']['pid']
+        and process['start_time_ticks'] == broker_parent['payload']['start_time_ticks']
+        for process in receipt['processes'])]
+    if (child_receipts[0]['started_at_ns'] < request['observed_at_ns']
+            or min(broker_finishes) < begin['row']['data']['clock']['mono_after_ns']): return False
+    for receipt, parent, role, latest in ((child_receipts[0], child_parent, slot['role'], thread['cleanup_finished_at_ns']),
+            (killed[0], broker_parent, 'broker', thread['cleanup_deadline_ns'])):
+        if (receipt['status'] != 'complete' or not receipt['descriptors_closed'] or len(receipt['processes']) != 1
+                or receipt['deadline_ns'] > bound
+                or not receipt['started_at_ns'] <= receipt['finished_at_ns']
+                    <= min(latest, receipt['deadline_ns'])): return False
+        process = receipt['processes'][0]
+        if (not matches(process, parent, role) or process['wrapper_returncode'] not in (-9, 137)
+                or not all(process[k] for k in ('pin_verified', 'exit_observed', 'reaped_observed'))): return False
+    if any(x['parent_observation']['payload'] == child_parent['payload'] for x in processes['native']): return False
+    if any(x['role'] == 'parser' and x['launcher_id'] == slot['launcher_id']
+            and any(x[k] is not None for k in ('prepared_sha256', 'bootstrap', 'entry_sha256'))
+            for x in processes['child_slots']): return False
+    for item in rows:
+        value = item['row']; part = value['data']
+        if value['kind'] == 'supervision_projection' and part['kind'] == 'rpc' and part['launcher_id'] == slot['launcher_id']:
+            if part['request']['sequence'] > request['sequence'] or part['request']['observed_at_ns'] > request['observed_at_ns']: return False
+        if value['dispatch_id'] != did: continue
+        if value['kind'] == 'meter': return False
+        if value['kind'] == 'protocol':
+            frame = part['frame']
+            if frame['operation'] in ('METER', 'NATIVE_OBSERVED', 'RESULT'): return False
+            if frame['operation'] == 'DISPATCH' and part['direction'] == 'sent':
+                if (item['source'] != 'broker_memfd' or not same_context(value, broker)
+                        or part['channel_role'] != 'ingress' or frame['body']['status'] != 'pending'
+                        or frame['body']['code'] is not None or frame['body']['data'] != {'dispatch_id': did}
+                        or value['observed_at_ns'] > go['row']['observed_at_ns']): return False
+            if frame['operation'] == 'OBSERVATION' and (frame['body']['kind'] == 'capture'
+                    or value['observed_at_ns'] >= request['observed_at_ns']): return False
+    return True
+
+
 def _validate_supervision(loaded, rows, deadline):
     from . import engagement_live_contract as c
     from . import engagement_live_protocol as protocol
@@ -480,8 +673,9 @@ def _validate_supervision(loaded, rows, deadline):
         state[key] = 'terminal'  # every missing/refused exchange consumes the slot
         if reply is None:
             terminal.add(channel)
-            if not _cancelled_capture_terminal(loaded, rows, row, op, slot, closure):
-                missing.add('transcript')
+            resolved = (_cancelled_native_begin_terminal(loaded, rows, row, op, slot, closure)
+                if operation == 'NATIVE_BEGIN' else _cancelled_capture_terminal(loaded, rows, row, op, slot, closure))
+            if not resolved: missing.add('transcript')
             continue
         expected_reply = reply_sequences.get(channel, 0) + 1
         if reply['sequence'] != expected_reply or reply['operation'] != protocol.SUPERVISION_RESPONSES[operation]: _bad()

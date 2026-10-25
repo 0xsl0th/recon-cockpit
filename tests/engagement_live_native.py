@@ -57,8 +57,12 @@ class SourceVariants:
         self.paths={};self.records=[];self._original=None;self._host_runtime=False;self._saved_runtime=None;self.runtime_globals=None
     @property
     def instrumentation(self):
-        return [{'kind':'sealed_fault','configuration':deepcopy(self.configuration),'configuration_sha256':sha(canonical(self.configuration)),
-                 'source_sha256':row['after_sha256']} for row in self.records]
+        result=[]
+        for row in self.records:
+            configuration=row.get('configuration',self.configuration)
+            result.append({'kind':'sealed_fault','configuration':deepcopy(configuration),
+                'configuration_sha256':sha(canonical(configuration)),'source_sha256':row['after_sha256']})
+        return result
     def source(self,module,transform):
         audit_case=module=='audit_worker' and self.configuration['case_id']=='S42C-N51' and self.configuration['variant']=='audit_fsync_failure'
         if module not in runtime.source_modules() or not (module.startswith('engagement_live_') or audit_case) or module in self.paths:raise ValueError('fixed_source_only')
@@ -2349,6 +2353,46 @@ def install_broker_fault(variants,case_id):
     return variants.source('engagement_live_broker_worker',broker_fault_transform(case_id))
 
 
+_N44_LAUNCHER_HOLD_CODE=r'''
+# BEGIN fixed S42C-N44 launcher synchronization.
+def _fixed_n44_go_hold(owner,control):
+    # The real GO was already validated and assigned. Hold before the run
+    # try/finally so cancellation cannot start a new child REAP exchange.
+    # Existing transport EOF/cancellation checks stay active; expiry refuses.
+    stop=min(owner.pending['envelope']['action_deadline_ns'],owner.deadline_ns,
+        int(control.deadline*c.SECOND),time.monotonic_ns()+c.SECOND)
+    while time.monotonic_ns()<stop:
+        control.check()
+        time.sleep(min(.005,max(0,(stop-time.monotonic_ns())/c.SECOND)))
+    c.fail('timeout')
+# END fixed S42C-N44 launcher synchronization.
+'''
+
+
+def n44_launcher_hold_transform(source):
+    """Freeze only the reviewed N44 launcher after its actual validated GO."""
+    tail="if __name__=='__main__':raise SystemExit(main())"
+    boundary="        parsed=parser_receipt=None;failure=None;capture=None\n        try:\n            self.admission_rpc('REDEEM',"
+    if (source.count(tail)!=1 or source.count(boundary)!=1 or 'def _fixed_n44_go_hold(' in source
+            or source.count("release=c.validate_release_binding(release,self.pending,clock=c.sample_clock());self.release=release")!=1):
+        raise ValueError('reviewed N44 launcher boundary changed')
+    changed=source.replace(boundary,
+        "        _fixed_n44_go_hold(self,effect)\n"+boundary)
+    changed=changed.replace(tail,_N44_LAUNCHER_HOLD_CODE+'\n'+tail)
+    compile(changed,'engagement_live_launcher_worker.py','exec')
+    return changed
+
+
+def _install_n44_launcher_hold(variants):
+    expected={'case_id':'S42C-N44','variant':'kill_broker_after_GO_before_observation','role':'broker'}
+    if variants.configuration!=expected:raise ValueError('fixed N44 source configuration mismatch')
+    path=variants.source('engagement_live_launcher_worker',n44_launcher_hold_transform)
+    # Retain each role's exact source/configuration projection. The broker
+    # marker/signal variant and its existing configuration remain unchanged.
+    variants.records[-1]['configuration']={**expected,'role':'launcher'}
+    return path
+
+
 def _replace_once(source,old,new):
     if source.count(old)!=1:raise ValueError('fixed reviewed source phase changed')
     return source.replace(old,new)
@@ -2775,7 +2819,9 @@ def _run_core_case(variant,directory):
     if role is not None:
         variants=SourceVariants(directory/'source',case_id=case['id'],variant=variant,role=role)
         if case['id'] in STARTUP_GUARD_CASES:variants.source('engagement_live_broker_worker',_startup_guard_transform(case['id']))
-        elif case['id'] in BROKER_FAULT_CASES:install_broker_fault(variants,case['id'])
+        elif case['id'] in BROKER_FAULT_CASES:
+            install_broker_fault(variants,case['id'])
+            if number==44:_install_n44_launcher_hold(variants)
         elif case['id'] in DEADLINE_FAULT_CASES:install_deadline_fault(variants,case['id'])
         elif number in (40,45,46):_install_progress(variants,case)
         elif number in (8,9,15):supporting_socket_source(variants,case)
