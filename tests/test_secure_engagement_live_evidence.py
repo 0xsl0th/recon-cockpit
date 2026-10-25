@@ -1228,6 +1228,7 @@ def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch):
 
 
 def test_preserves_original_deadlines_through_cleanup(monkeypatch):
+    _review_timeout_causality_cases()
     session,p=prepared()
     stop=c.effect_stop(p,p['envelope']['action_deadline_ns'])
     assert stop==p['envelope']['action_deadline_ns']-2000000000
@@ -1280,6 +1281,95 @@ def test_preserves_original_deadlines_through_cleanup(monkeypatch):
                 if row['row']['kind']=='protocol' and row['row']['data']['frame']['operation']=='OBSERVATION' and row['row']['data']['frame']['body']['kind']=='capture':
                     row['row']['observed_at_ns']=actual_time-1
             assert not e._logical_deadline_fault(loaded,earlier,op,phase,case)
+
+
+def _review_timeout_causality_cases():
+    """Declared portable observations; never a held native process claim."""
+    session,p=prepared();env=p['envelope'];hard=env['action_deadline_ns'];cutoff=hard-c.CLEANUP_NS
+    digest=c.prepared_digest(p);launcher=uid(600)
+    wire=c.canonical({'schema_version':'1','channel_id':env['reviewer_id'],'sequence':1,'operation':'REVIEW','body':p})
+    operation={'prepared':p,'result':None,'client':None,'meter':None}
+    def wrapped(kind,data,at,observer=None,dispatch=True):
+        return {'source':'role_observer','segment':1,'row':{'kind':kind,'data':data,'observed_at_ns':at,
+            'broker_id':env['broker_id'],'session_id':env['session_id'],
+            'dispatch_id':env['dispatch_id'] if dispatch else None,'observer_id':observer or env['broker_id']}}
+    def phase(stage,at,reason=None):
+        clock={'mono_before_ns':at-1,'mono_after_ns':at,
+            'utc_ns':env['clock_anchor']['utc_ns']+at-env['clock_anchor']['mono_after_ns']}
+        return wrapped('phase',{'phase':'consume','stage':stage,'reason':reason,
+            'related_sha256':digest,'original_deadline_ns':hard,'clock':clock},at+1)
+    rows=[phase('begin',cutoff-100),
+        wrapped('supervision_projection',{'kind':'local_failure','launcher_id':launcher,
+            'code':'engagement_live_timeout','observed_at_ns':cutoff+2},cutoff+3,launcher,False),
+        wrapped('capability_projection',{'role':'terminal','operation':'REVIEW','request':{'prepared':p},
+            'reply':None,'channel_id':env['reviewer_id'],'request_sequence':1,
+            'original_request_bytes':len(wire),'original_request_sha256':sha(wire)},cutoff+4,env['reviewer_id']),
+        phase('refused',cutoff+6,'engagement_live_cancelled'),
+        phase('begin',hard+1),phase('refused',hard+3,'engagement_live_session_unavailable')]
+    closure={'broker_id':env['broker_id'],'session_id':env['session_id'],'launcher_id':launcher,
+        'first_stop_requested_at_ns':cutoff+1,'cleanup_started_at_ns':cutoff+8,'cleanup_finished_at_ns':cutoff+10,
+        'cleanup_deadline_ns':hard,'state':'joined','status':'complete','join_attempted':True,
+        'thread_alive_observed':False,'channel_closed':True,'pending_slots':[]}
+    reviewer={'role':'terminal','worker_ready':{'worker_id':env['reviewer_id']},
+        'parent_observation':{'sampled_at_ns':env['action_ready_ns'],
+            'payload':{'pid':701,'start_time_ticks':7000},'wrapper':{'pid':700}}}
+    cleanup={'role':'terminal','pid':701,'start_time_ticks':7000,'wrapper_pid':700,
+        'wrapper_returncode':137,'pin_verified':True,'exit_observed':True,'reaped_observed':True}
+    loaded={'processes.json':{'readiness':[reviewer]},'cleanup.json':{'supervisors':[closure],'receipts':[{
+        'started_at_ns':cutoff+7,'finished_at_ns':cutoff+11,'deadline_ns':hard,
+        'status':'complete','descriptors_closed':True,'processes':[cleanup]}]}}
+    assert e._review_deadline_stopped(loaded,rows,operation)
+    for index in range(len(rows)-1):
+        assert not e._review_deadline_stopped(loaded,rows[:index]+rows[index+1:],operation)
+    assert not e._review_deadline_stopped(loaded,rows[:-1],operation)
+    for key,value in (('first_stop_requested_at_ns',cutoff-1),('cleanup_deadline_ns',hard+1),
+            ('cleanup_finished_at_ns',hard+1),('state','not_started'),('join_attempted',False),
+            ('thread_alive_observed',True),('channel_closed',False),('pending_slots',['identify_client']),
+            ('launcher_id',uid(601)),('session_id',uid(602))):
+        bad=deepcopy(loaded);bad['cleanup.json']['supervisors'][0][key]=value
+        assert not e._review_deadline_stopped(bad,rows,operation)
+    for index,key,value in ((1,'code','engagement_live_cancelled'),(2,'reply',{}),
+            (2,'original_request_bytes',None),(2,'original_request_bytes',len(wire)+1),
+            (2,'original_request_sha256','e'*64),(2,'channel_id',uid(604)),(2,'request_sequence',2),
+            (3,'original_deadline_ns',hard+1),
+            (5,'reason','engagement_live_cancelled')):
+        bad=deepcopy(rows);bad[index]['row']['data'][key]=value
+        assert not e._review_deadline_stopped(loaded,bad,operation)
+    bad=deepcopy(rows);bad[-1]['row']['data']['clock']['mono_before_ns']=hard-1
+    assert not e._review_deadline_stopped(loaded,bad,operation)
+    for index in (3,5):
+        bad=deepcopy(rows);bad[index]['row']['data']['clock']['utc_ns']+=60*c.SECOND
+        assert not e._review_deadline_stopped(loaded,bad,operation)
+    for index,at in ((0,cutoff),(4,hard-1),(4,hard+4)):
+        bad=deepcopy(rows);bad[index]['row']['observed_at_ns']=at
+        assert not e._review_deadline_stopped(loaded,bad,operation)
+    bad=deepcopy(rows);bad[2]['row']['observer_id']=uid(603)
+    assert not e._review_deadline_stopped(loaded,bad,operation)
+    consumed=deepcopy(rows[2]);consumed['row']['data']['operation']='CONSUME'
+    assert not e._review_deadline_stopped(loaded,[*rows,consumed],operation)
+    assert not e._review_deadline_stopped(loaded,[*rows,wrapped('approval_witness',{},cutoff)],operation)
+    assert not e._review_deadline_stopped(loaded,[*rows,wrapped('audit_witness',{},cutoff)],operation)
+    bad=deepcopy(loaded);bad['cleanup.json']['receipts'][0]['finished_at_ns']=hard+1
+    assert not e._review_deadline_stopped(bad,rows,operation)
+    for deadline in (hard+1,cutoff+10):
+        bad=deepcopy(loaded);bad['cleanup.json']['receipts'][0]['deadline_ns']=deadline
+        assert not e._review_deadline_stopped(bad,rows,operation)
+    for readiness in ([],[reviewer,reviewer]):
+        bad=deepcopy(loaded);bad['processes.json']['readiness']=readiness
+        assert not e._review_deadline_stopped(bad,rows,operation)
+    bad=deepcopy(loaded);bad['processes.json']['readiness'][0]['worker_ready']['worker_id']=uid(605)
+    assert not e._review_deadline_stopped(bad,rows,operation)
+    bad=deepcopy(loaded);bad['processes.json']['readiness'][0]['parent_observation']['sampled_at_ns']=cutoff
+    assert not e._review_deadline_stopped(bad,rows,operation)
+    bad=deepcopy(rows);bad[0]['row']['observed_at_ns']=env['action_ready_ns']-1
+    assert not e._review_deadline_stopped(loaded,bad,operation)
+    for key,value in (('pid',702),('start_time_ticks',7001),('wrapper_pid',703),
+            ('wrapper_returncode',None),('pin_verified',False),('exit_observed',False),('reaped_observed',False)):
+        bad=deepcopy(loaded);bad['cleanup.json']['receipts'][0]['processes'][0][key]=value
+        assert not e._review_deadline_stopped(bad,rows,operation)
+    for key,value in (('started_at_ns',cutoff),('status','incomplete'),('descriptors_closed',False),('processes',[])):
+        bad=deepcopy(loaded);bad['cleanup.json']['receipts'][0][key]=value
+        assert not e._review_deadline_stopped(bad,rows,operation)
 
 
 def test_binds_runtime_sources_and_excludes_diagnostics(tmp_path):

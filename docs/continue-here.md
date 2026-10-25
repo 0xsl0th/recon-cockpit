@@ -439,6 +439,27 @@ remain checked. Production Linux confinement and protocol checks are unchanged.
 Preserve the failed CI log, independent reviews and all focused regressions in
 `.secure-agent/stage4-engagement-live-20261021/`. Fresh clean-source portable,
 native, full-suite, hosted and final independent review gates remain required.
+
+Freeze twenty-one at `acfb706` passed all 160 portable cases, fresh N04 and
+N32/N30/N28/N29/N31. Independent inspection confirmed N32's full reservation,
+zero GO, early cancellation, sealed final evidence and bounded process cleanup,
+plus a separately refused continuation after the original ROE end. N33 then
+failed its case predicate: the actual held review stopped at the existing cleanup
+cutoff, while the predicate wrongly required it to remain pending until the hard
+deadline. Its original failed bundle and reports remain unchanged.
+The corrected predicate requires the actual pending REVIEW wire commitment,
+supervisor timeout at the original cutoff, matching reviewer readiness and
+payload/wrapper cleanup within the original hard bound, and an actual refused
+continuation after that bound. Neither cancellation alone nor a late probe alone
+establishes review expiry. The native fixture retains both attempts with the
+original Prepared; it renews no authority or deadline.
+
+The freeze-twenty-one macOS run retained three failures and 29,082 passes.
+The supervisor fixture still exposed native platform receive flags, and a second
+audit-handler fixture branch omitted its declared Linux descriptor identity.
+Both now use the same existing portable projections as their neighboring
+fixtures; production transport and witness checks are unchanged. Focused source
+review and a fresh clean freeze must precede another native acceptance attempt.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

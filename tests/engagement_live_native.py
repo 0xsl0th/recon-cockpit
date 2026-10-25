@@ -1977,6 +1977,13 @@ def _single_core(case,directory,*,variants=None):
                 elif number==33:
                     prepared=service.prepare(opened['binding']['session_id'],'http_identify')
                     _expected_failure(service,prepared,'consume',lambda:service.review(prepared,control=service._control))
+                    hard=prepared['envelope']['action_deadline_ns']
+                    while time.monotonic_ns()<hard:
+                        if time.monotonic()>=service._control.deadline:raise TimeoutError('original broker deadline')
+                        time.sleep(min(.01,max(0,(hard-time.monotonic_ns())/contract.SECOND)))
+                    if not (service._closed or service._stop.is_set() or service._closing.is_set()):
+                        raise AssertionError('timed-out review graph must already be stopped')
+                    _expected_failure(service,prepared,'consume',lambda:service.review(prepared,control=service._control))
                 elif number in (10,11,12,28):
                     raise AssertionError('invalid live ROE unexpectedly admitted a session')
                 else:

@@ -486,6 +486,9 @@ def test_audit_writer_sequence_and_durability_are_bound(monkeypatch):
             patch.setattr(time,'monotonic_ns',lambda:int(now[0]*c.SECOND))
             patch.setattr(protocol,'receive_packet',receive)
             patch.setattr(w,'validate_audit_runtime_binding',expired_binding)
+            original_fstat=os.fstat
+            patch.setattr(worker.os,'fstat',lambda fd:SimpleNamespace(st_dev=declared['device'],st_ino=declared['inode'])
+                if fd==left.fileno() else original_fstat(fd))
             refused(loop.lifecycle_request,code='timeout')
             assert c._operation_deadline()==now[0]+2
         assert loop.core.audit_ready is None and not hasattr(loop.core,'audit_source')

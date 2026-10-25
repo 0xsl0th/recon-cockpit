@@ -258,7 +258,9 @@ def supervisor_lab(monkeypatch, *, seconds=3):
         peers.extend((left,right));ends[name]=right
         bindings.append({'child_slot':name,'role':role,'worker_id':uid(800+index),
             'pair':{'launcher_fd':fd,'request_endpoint':identity(left),'child_endpoint':identity(right)}})
-    host,remote=socket.socketpair();host.setblocking(False);remote.setblocking(False);peers.extend((host,remote))
+    from test_secure_engagement_live_runtime import PortablePacket
+    host,remote=(PortablePacket(peer) for peer in socket.socketpair())
+    host.setblocking(False);remote.setblocking(False);peers.extend((host,remote))
     control=ExecutionControl(time.monotonic()+seconds);budget=_HostEvidenceBudget();epoch=_CleanupEpoch(control);errors=[]
     lease=SimpleNamespace(close=lambda:None)
     endpoint_owner=SimpleNamespace(identity=endpoint_ready,_namespace_lease=lambda phase:lease)

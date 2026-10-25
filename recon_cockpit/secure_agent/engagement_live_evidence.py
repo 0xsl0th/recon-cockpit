@@ -850,6 +850,91 @@ def _restart_refusal(loaded,rows,operations,final,number):
         actual_cleanup(target_ready,returncode=0,after=stop['observed_at_ns']) for stop in stops) for begin in begins for end in ends for failure in refused)
 
 
+def _review_deadline_stopped(loaded,rows,operation):
+    """Bind review expiry to the real reserve cutoff and original cleanup bound.
+
+    A late fenced probe supplements the pending review's timeout/closure chain;
+    neither arbitrary cancellation nor a post-deadline probe alone is proof.
+    """
+    from . import engagement_live_contract as contract
+    prepared=operation['prepared'];env=prepared['envelope'];hard=env['action_deadline_ns']
+    cutoff=hard-contract.CLEANUP_NS;digest=contract.prepared_digest(prepared)
+    if operation['result'] is not None or operation['client'] is not None or operation['meter'] is not None:return False
+    def same(row,dispatch=True):
+        return (row['broker_id']==env['broker_id'] and row['session_id']==env['session_id']
+            and (not dispatch or row['dispatch_id']==env['dispatch_id']))
+    selected=[wrapped for wrapped in rows if same(wrapped['row'])]
+    pending=[wrapped['row'] for wrapped in selected if wrapped['source']=='role_observer'
+        and wrapped['row']['kind']=='capability_projection'
+        and wrapped['row']['observer_id']==env['reviewer_id']
+        and wrapped['row']['data']['role']=='terminal' and wrapped['row']['data']['operation']=='REVIEW'
+        and wrapped['row']['data']['request']=={'prepared':prepared}
+        and wrapped['row']['data']['reply'] is None
+        and wrapped['row']['data']['original_request_bytes'] is not None
+        and wrapped['row']['data']['original_request_sha256'] is not None]
+    if len(pending)!=1:return False
+    request=pending[0]['data']
+    if request['channel_id']!=env['reviewer_id']:return False
+    wire=contract.canonical({'schema_version':'1','channel_id':env['reviewer_id'],
+        'sequence':request['request_sequence'],'operation':'REVIEW','body':prepared})
+    if request['original_request_bytes']!=len(wire) or request['original_request_sha256']!=_sha(wire):return False
+    if any(wrapped['row']['kind'] in ('approval_witness','audit_witness') or wrapped['row']['kind']=='capability_projection'
+        and (wrapped['row']['data']['operation']=='CONSUME' or wrapped['row']['data']['reply'] is not None)
+        for wrapped in selected):return False
+    phases=[wrapped['row'] for wrapped in selected if wrapped['source']=='role_observer'
+        and wrapped['row']['observer_id']==env['broker_id'] and wrapped['row']['kind']=='phase'
+        and wrapped['row']['data']['phase']=='consume' and wrapped['row']['data']['original_deadline_ns']==hard
+        and wrapped['row']['data']['related_sha256']==digest]
+    begin=[row for row in phases if row['data']['stage']=='begin']
+    def valid_clock(row,expired):
+        try:
+            contract.check_clock(row['data']['clock'],anchor=env['clock_anchor'],
+                window_start_utc_ns=env['window_start_utc_ns'],window_end_utc_ns=env['window_end_utc_ns'],deadline_ns=hard)
+        except contract.LiveError as error:
+            return expired and error.code=='engagement_live_timeout'
+        return not expired
+    refused=[row for row in phases if row['data']['stage']=='refused' and row['data']['clock'] is not None
+        and row['data']['clock']['mono_after_ns']<=row['observed_at_ns']]
+    late=[row for row in refused if row['data']['reason']=='engagement_live_session_unavailable'
+        and row['data']['clock']['mono_before_ns']>=hard and valid_clock(row,True)
+        and any(hard<=start['observed_at_ns']<=row['data']['clock']['mono_before_ns'] for start in begin)]
+    if not late:return False
+    closures=[row for row in loaded['cleanup.json']['supervisors'] if same(row,False)]
+    if len(closures)!=1:return False
+    closure=closures[0];stop=closure['first_stop_requested_at_ns'];observed=pending[0]['observed_at_ns']
+    if (closure['state']!='joined' or closure['status']!='complete' or not closure['join_attempted']
+            or closure['thread_alive_observed'] or not closure['channel_closed'] or closure['pending_slots']
+            or closure['cleanup_deadline_ns']!=hard or not cutoff<=stop<=observed<hard
+            or not stop<=closure['cleanup_started_at_ns']<=closure['cleanup_finished_at_ns']<=hard):return False
+    reviewers=[row for row in loaded['processes.json']['readiness'] if row['role']=='terminal'
+        and row['worker_ready']['worker_id']==env['reviewer_id']]
+    if len(reviewers)!=1:return False
+    reviewer=reviewers[0]['parent_observation'];payload=reviewer['payload']
+    if not any(max(env['action_ready_ns'],reviewer['sampled_at_ns'])<=row['observed_at_ns']<cutoff
+        for row in begin):return False
+    if not any(receipt['status']=='complete' and receipt['descriptors_closed']
+        and stop<=receipt['started_at_ns']<=receipt['finished_at_ns']<=hard and any(
+            process['role']=='terminal' and process['pid']==payload['pid']
+            and process['start_time_ticks']==payload['start_time_ticks']
+            and process['wrapper_pid']==reviewer['wrapper']['pid']
+            and process['wrapper_returncode'] is not None and process['pin_verified']
+            and process['exit_observed'] and process['reaped_observed']
+            for process in receipt['processes']) for receipt in loaded['cleanup.json']['receipts']):return False
+    if any(not row['started_at_ns']<=row['finished_at_ns']<=row['deadline_ns']<=hard
+        for row in loaded['cleanup.json']['receipts']):return False
+    failures=[wrapped['row'] for wrapped in rows if wrapped['source']=='role_observer'
+        and same(wrapped['row'],False) and wrapped['row']['kind']=='supervision_projection'
+        and wrapped['row']['observer_id']==closure['launcher_id']
+        and wrapped['row']['data']['launcher_id']==closure['launcher_id']
+        and wrapped['row']['data']['kind']=='local_failure'
+        and wrapped['row']['data']['code']=='engagement_live_timeout'
+        and stop<=wrapped['row']['data']['observed_at_ns']<=wrapped['row']['observed_at_ns']<=observed]
+    if not failures:return False
+    return any(row['data']['reason'] in ('engagement_live_cancelled','engagement_live_timeout','engagement_live_session_unavailable')
+        and observed<=row['data']['clock']['mono_before_ns']<=row['observed_at_ns']<hard
+        and valid_clock(row,False) for row in refused)
+
+
 def _logical_deadline_fault(loaded,rows,operation,phase,case_id):
     """Fixed owned clock-input proof; actual observation times remain OS times.
 
@@ -1258,10 +1343,9 @@ def _evaluate_core_proof(loaded, proof, linkage):
         return len(reserves)==1 if number==32 else not reserves and usage_same
     if number in (33,34,35):
         if number==33:
-            pending=[r for r in selected if r['row']['kind']=='capability_projection' and
-                r['row']['data']['operation']=='REVIEW' and r['row']['data']['reply'] is None]
-            return not go_ids and not reserves and any(r['row']['observed_at_ns']>=
-                r['row']['data']['request']['prepared']['envelope']['action_deadline_ns'] for r in pending)
+            return (len(operations)==1 and not go_ids and not reserves and usage_same
+                and complete_broker and waiting_boundary()
+                and _review_deadline_stopped(loaded,rows,operations[0]))
         target={33:'consume',34:'native_observation',35:'cleanup'}[number]
         candidates=phase(target,'refused','timeout')
         if not candidates:return False
