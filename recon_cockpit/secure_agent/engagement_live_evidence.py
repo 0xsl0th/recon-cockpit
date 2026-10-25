@@ -1311,8 +1311,55 @@ def _evaluate_core_proof(loaded, proof, linkage):
         return events
     def recovery_required():
         return recovery is not None and loaded['cleanup.json']['recovery'] is not None
-    def fault(name,stage='begin',source='broker_memfd'):
-        return any(phase(name,stage,digest=contract.prepared_digest(op['prepared']),source=source) for op in operations)
+    def bound_phase(op,name,stage,source,digest,reason=None):
+        env=op['prepared']['envelope'];hard=env['action_deadline_ns'];matched=[]
+        for entry in phases:
+            row=entry['row'];data=row['data'];clock=data['clock']
+            if (entry['source']!=source or row['broker_id']!=env['broker_id']
+                    or row['observer_id']!=env['broker_id'] or row['session_id']!=env['session_id']
+                    or row['dispatch_id']!=env['dispatch_id'] or data['phase']!=name or data['stage']!=stage
+                    or data['related_sha256']!=digest or data['reason']!=reason
+                    or data['original_deadline_ns']!=hard
+                    or not env['action_ready_ns']<=row['observed_at_ns']<hard):continue
+            if source=='broker_memfd' and m['transcript']['segments'][entry['segment']]['broker_id']!=env['broker_id']:continue
+            if clock is None:
+                if source!='role_observer' or stage!='begin':continue
+            elif not env['action_ready_ns']<=clock['mono_before_ns']<=clock['mono_after_ns']<=row['observed_at_ns']:continue
+            matched.append(entry)
+        return matched
+    def ordered(first,last):
+        return (first['segment']==last['segment']
+            and first['row']['row_sequence']<last['row']['row_sequence']
+            and first['row']['observed_at_ns']<=last['row']['observed_at_ns'])
+    def crash_marker(name,stage,cleanup_finished):
+        if len(operations)!=1:return False
+        op=operations[0];prepared=op['prepared'];digest=contract.prepared_digest(prepared)
+        markers=bound_phase(op,name,stage,'broker_memfd',_sha(_canonical(prepared)))
+        if len(markers)!=1:return False
+        marker=markers[0]
+        if number==42 and not any(ordered(begin,marker) for begin in
+                bound_phase(op,name,'begin','broker_memfd',None)):return False
+        # The host records its one pidfd signal attempt after seeing the fixed
+        # broker marker. A marker alone cannot prove an actual crash stimulus.
+        begins=[entry for entry in bound_phase(op,name,'begin','role_observer',digest)
+            if entry['row']['data']['clock'] is not None]
+        ends=bound_phase(op,name,'end','role_observer',digest)
+        if len(begins)!=1 or len(ends)!=1:return False
+        begin,end=begins[0],ends[0]
+        return (ordered(begin,end) and end['row']['data']['clock'] is not None
+            and marker['row']['observed_at_ns']<=begin['row']['data']['clock']['mono_before_ns']
+            and begin['row']['observed_at_ns']<=end['row']['data']['clock']['mono_before_ns']
+            and end['row']['observed_at_ns']<=marker['row']['observed_at_ns']+contract.SECOND
+            and begin['row']['data']['clock']['mono_after_ns']<=cleanup_finished)
+    def durability_fault(name):
+        if len(operations)!=1:return False
+        op=operations[0];prepared=op['prepared']
+        source='role_observer' if number==51 else 'broker_memfd'
+        digest=contract.prepared_digest(prepared) if number==51 else _sha(_canonical(prepared))
+        begins=bound_phase(op,name,'begin',source,digest if number==51 else None)
+        reason='engagement_live_audit_unavailable' if number==51 else 'engagement_live_unavailable'
+        failures=bound_phase(op,name,'refused',source,digest,reason)
+        return len(failures)==1 and any(ordered(begin,failures[0]) for begin in begins)
     def socket_support():
         support=loaded['results.json']['boundary_proofs']
         allowed={8:{'S42C-X26'},9:{'S42C-X27'},15:{'S42C-X28'}}.get(number,{'S42C-X26','S42C-X27','S42C-X28'})
@@ -1503,12 +1550,23 @@ def _evaluate_core_proof(loaded, proof, linkage):
             x['monotonic_ns']<commit for x in progress_events(op)) for op in operations):return False
         return all(op['result'] is None or op['result']['outcome']!='useful' for op in operations)
     if number in (42,43,44,45,46):
-        if not recovery_required() or not any(p['role']=='broker' and p['wrapper_returncode'] in (-9,137) and
-            p['exit_observed'] and p['reaped_observed'] for p in cleanup_processes):return False
-        if number==42:return fault('reserve') and not reserves and not go_ids and usage_same
+        if len(operations)!=1 or not recovery_required():return False
+        broker_id=operations[0]['prepared']['envelope']['broker_id']
+        ready=[row for row in loaded['processes.json']['readiness'] if row['role']=='broker'
+            and row['worker_ready']['worker_id']==broker_id]
+        if len(ready)!=1:return False
+        parent=ready[0]['parent_observation'];pin=parent['payload']
+        killed=[p for p in cleanup_processes if p['role']=='broker' and p['pid']==pin['pid']
+            and p['start_time_ticks']==pin['start_time_ticks'] and p['wrapper_pid']==parent['wrapper']['pid']]
+        if len(killed)!=1 or not (killed[0]['wrapper_returncode'] in (-9,137) and killed[0]['pin_verified']
+            and killed[0]['exit_observed'] and killed[0]['reaped_observed']):return False
+        cleanup_finished=min(receipt['finished_at_ns'] for receipt in loaded['cleanup.json']['receipts']
+            if any(p['pid']==pin['pid'] and p['start_time_ticks']==pin['start_time_ticks']
+                for p in receipt['processes']))
+        if number==42:return crash_marker('reserve','begin',cleanup_finished) and not reserves and not go_ids and usage_same
         if len(reserves)!=1:return False
-        if number==43 and (go_ids or not fault('reserve','end')):return False
-        if number==44 and (not go_ids or not fault('go','end')):return False
+        if number==43 and (go_ids or not crash_marker('reserve','end',cleanup_finished)):return False
+        if number==44 and (not go_ids or not crash_marker('go','end',cleanup_finished)):return False
         if number in (43,44):
             return _restart_refusal(loaded,rows,operations,final,number)
         for op in operations:
@@ -1523,7 +1581,7 @@ def _evaluate_core_proof(loaded, proof, linkage):
         return False
     if number in (47,48,49,50,51):
         target='complete' if number in (47,48) else 'audit' if number==51 else 'reserve'
-        if not fault(target,source='role_observer' if number==51 else 'broker_memfd') or not phase(target,'refused') or not recovery_required():return False
+        if not durability_fault(target) or not recovery_required():return False
         if number in (49,50,51):return not reserves and not go_ids and usage_same
         return len(reserves)==1 and not any(row['request']['operation']=='complete' and row['receipt']['dispatch_id'] in ids for row in changes)
     if number in (52,53,54):

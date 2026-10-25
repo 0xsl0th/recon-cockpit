@@ -561,7 +561,29 @@ tests passed, including 110 adversarial checks and valid scheduling variations.
 One separately retained bounded read-only diagnostic confirmed the correction
 on the unchanged failed bundle with a denied outcome and zero useful operations;
 the original failure remains preserved and receives no acceptance credit.
-Another clean reviewed freeze and fresh required validation remain necessary.
+Freeze twenty-seven at `ab9b4f0` passed all 160 portable cases and 25 fresh native
+cases through the revocation, deadline and earlier core groups. Independent
+reviews checked the completed revocation and deadline evidence. All five hosted
+suites passed 29,085 tests with 2,347 integration deselections each. N42 then
+stopped the native run: its precommit marker was present, but the broker exited
+78 instead of the required SIGKILL. Namespace PID1 self-signal behavior is the
+likely cause; the exact syscall return was not retained. The failed original
+bundle, reports and independent assessment remain unchanged.
+
+The fixed N42–N44 fixtures now hold at the exact broker phase for at most one
+second within the original deadline, then fail without resuming if no signal
+arrives. The existing host owner observes the exact operation marker and signals
+its pinned broker pidfd once, retaining before/after observations within the
+marker interval. Replay still requires that broker's actual crash, complete
+cleanup and recovery, plus the durable-state and restart-refusal predicates.
+Broker fault markers use the canonical Prepared hash; host observations use the
+distinct domain-separated digest. N47–N50 now bind the actual injected refusal
+to its preceding ordinary begin in the same broker segment. N51 retains its
+separate audit refusal. All 44 affected broker/evidence tests passed, including
+the actual transformed SQLite hook, deterministic host selector and full case
+predicates. Independent review found no open code issues. Another clean freeze
+and fresh required validation remain necessary; physical crash and recovery
+acceptance cannot be inferred from these portable tests.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

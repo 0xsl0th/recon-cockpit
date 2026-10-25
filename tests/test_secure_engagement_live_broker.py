@@ -124,6 +124,7 @@ def test_actual_witnesses_precede_reservation(tmp_path,monkeypatch):
 
 
 def test_fixed_reservation_charges_before_go(tmp_path,monkeypatch):
+    _fixed_crash_precommit_rollback(tmp_path)
     with lab(tmp_path,monkeypatch) as (core,store,rows,pair,channels):
         row=ready(core);core.reserve(proofs(core,row,channels));snapshot=store.snapshot()
         assert snapshot['state']['usage']==row['prepared']['envelope']['cost']
@@ -536,6 +537,8 @@ def test_exports_are_bounded_sealed_phase_snapshots(tmp_path,monkeypatch):
 
 
 def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
+    _fixed_crash_hold_deadline_cases()
+    _fixed_crash_host_signal_cases()
     _broker_stop_deadline_cases(tmp_path,monkeypatch)
     with lab(tmp_path,monkeypatch) as (core,store,rows,pair,channels):
         row=ready(core);core.reserve(proofs(core,row,channels));before=store.snapshot();core.deadline_ns=time.monotonic_ns()-1
@@ -595,6 +598,198 @@ def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
         now[0]=101.0
         assert broker._close(180.0) is receipt and seen==[101.9]
         assert epoch.snapshot()['deadline_ns']==101_900_000_000
+
+
+def _fixed_crash_namespace(case_id, clock, mark):
+    """Load the reviewed sealed hook itself, with no process/signal namespace."""
+    import ast
+    from engagement_live_native import broker_fault_transform
+    source=broker_fault_transform(case_id)(Path(b.__file__).read_text())
+    names={'_FixedFaultConnection','_fixed_crash_hold','_fixed_fault_mark'}
+    nodes=[node for node in ast.parse(source).body
+           if isinstance(node,(ast.FunctionDef,ast.ClassDef)) and node.name in names]
+    assert {node.name for node in nodes}==names
+    namespace={'c':c,'time':clock,'_fault_sqlite':sqlite3,'_fault_original_mark':mark}
+    exec(compile(ast.Module(body=nodes,type_ignores=[]),'<fixed owned crash barrier>','exec'),namespace)
+    return namespace
+
+
+def _fixed_crash_precommit_rollback(tmp_path):
+    """The actual N42 commit hook cannot make an uncommitted insert durable."""
+    from test_secure_engagement_live_contract import prepared
+    row={'prepared':prepared()};original=deepcopy(row);events=[];rows=Rows()
+    owner=SimpleNamespace(transcript=rows)
+    def mark(*args,**kwargs):
+        b.BrokerCore.mark(*args,**kwargs)
+        events.append('marker')
+    def expired():
+        events.append('clock')
+        return row['prepared']['envelope']['action_deadline_ns']
+    clock=SimpleNamespace(monotonic_ns=expired,
+        sleep=lambda amount:pytest.fail('expired crash hold must not sleep'))
+    namespace=_fixed_crash_namespace('S42C-N42',clock,mark)
+    path=tmp_path/'fixed-crash-precommit.sqlite3'
+    connection=sqlite3.connect(path,isolation_level=None)
+    reader=sqlite3.connect(path,isolation_level=None)
+    try:
+        connection.execute('CREATE TABLE reservations (dispatch_id TEXT PRIMARY KEY)')
+        connection.execute('CREATE TABLE metadata (value TEXT)')
+        wrapped=namespace['_FixedFaultConnection'](connection,owner,row,'reserve','reservations','kill_precommit')
+        # A non-target transaction commits normally; this is a reservation
+        # precommit fault, not a wrapper that rejects every SQLite commit.
+        wrapped.execute('BEGIN IMMEDIATE')
+        wrapped.execute('INSERT INTO metadata (value) VALUES (?)',('baseline',))
+        wrapped.commit()
+        assert reader.execute('SELECT value FROM metadata').fetchall()==[('baseline',)]
+        assert not wrapped.wrote and not wrapped.fired and events==[]
+        with pytest.raises(RuntimeError,match='owned crash barrier expired without host signal'):
+            with connection:
+                wrapped.execute('BEGIN IMMEDIATE')
+                wrapped.execute('INSERT INTO reservations (dispatch_id) VALUES (?)',
+                    (row['prepared']['envelope']['dispatch_id'],))
+                assert connection.in_transaction and wrapped.wrote
+                assert connection.execute('SELECT count(*) FROM reservations').fetchone()==(1,)
+                assert reader.execute('SELECT count(*) FROM reservations').fetchone()==(0,)
+                wrapped.commit()
+                pytest.fail('expired precommit hold returned to its caller')
+        assert wrapped.fired and not connection.in_transaction
+        assert connection.execute('SELECT count(*) FROM reservations').fetchone()==(0,)
+        assert reader.execute('SELECT count(*) FROM reservations').fetchone()==(0,)
+        assert events[0]=='marker' and events[1:] and set(events[1:])=={'clock'}
+        assert len(rows.rows)==1
+        kind,marker=rows.rows[0]
+        assert kind=='phase' and (marker['phase'],marker['stage'],marker['reason'])==('reserve','begin',None)
+        assert marker['related_sha256'] is not None and row==original
+    finally:
+        reader.close();connection.close()
+    reopened=sqlite3.connect(path)
+    try:
+        assert reopened.execute('SELECT count(*) FROM reservations').fetchone()==(0,)
+        assert reopened.execute('SELECT value FROM metadata').fetchall()==[('baseline',)]
+    finally:reopened.close()
+
+
+def _fixed_crash_hold_deadline_cases():
+    """Declared clock advancement tests bounded refusal, never a native crash."""
+    from test_secure_engagement_live_contract import prepared
+    row={'prepared':prepared()};original=deepcopy(row)
+    hard=row['prepared']['envelope']['action_deadline_ns']
+    for start in (hard,hard+1,hard-20_000_000,hard-2*c.SECOND):
+        now=[start];sleeps=[]
+        def sleep(amount):
+            assert 0<amount<=.005
+            sleeps.append(amount);now[0]+=round(amount*c.SECOND)
+        clock=SimpleNamespace(monotonic_ns=lambda:now[0],sleep=sleep)
+        namespace=_fixed_crash_namespace('S42C-N42',clock,b.BrokerCore.mark)
+        with pytest.raises(RuntimeError,match='owned crash barrier expired without host signal'):
+            namespace['_fixed_crash_hold'](SimpleNamespace(),row)
+            pytest.fail('fixed crash hold returned')
+        assert now[0]==max(start,min(hard,start+c.SECOND))
+        assert len(sleeps)<=201 and (bool(sleeps)==(start<hard))
+        assert row==original
+    for case_id,phase in (('S42C-N43','reserve'),('S42C-N44','go')):
+        events=[];rows=Rows();owner=SimpleNamespace(transcript=rows)
+        def mark(*args,**kwargs):
+            b.BrokerCore.mark(*args,**kwargs);events.append('marker')
+        def expired():events.append('clock');return hard
+        clock=SimpleNamespace(monotonic_ns=expired,
+            sleep=lambda amount:pytest.fail('expired crash hold must not sleep'))
+        namespace=_fixed_crash_namespace(case_id,clock,mark)
+        with pytest.raises(RuntimeError,match='owned crash barrier expired without host signal'):
+            namespace['_fixed_fault_mark'](owner,row,phase,'end')
+            pytest.fail('marked crash stage resumed execution')
+        assert owner._owned_fault_installed and row==original
+        assert events[:2]==['marker','marker'] and events[2:] and set(events[2:])=={'clock'}
+        assert len(rows.rows)==2
+        kind,marker=rows.rows[-1]
+        assert kind=='phase' and (marker['phase'],marker['stage'],marker['reason'])==(phase,'end',None)
+        assert marker['related_sha256'] is not None
+
+
+def _fixed_crash_host_signal_cases():
+    """The actual host selector can reach only a declared owned signal sink."""
+    import ast
+    import engagement_live_native as native
+    from test_secure_engagement_live_contract import prepared
+    value=prepared();env=value['envelope'];hard=env['action_deadline_ns']
+    start=hard-2*c.SECOND
+    nodes=[node for node in ast.parse(Path(native.__file__).read_text()).body
+           if isinstance(node,ast.FunctionDef) and node.name=='_signal_at_fixed_crash_phase']
+    assert len(nodes)==1
+    code=compile(ast.Module(body=nodes,type_ignores=[]),'<fixed owned host signal>','exec')
+    marker={'kind':'phase','broker_id':env['broker_id'],'observer_id':env['broker_id'],
+        'session_id':env['session_id'],'dispatch_id':env['dispatch_id'],'observed_at_ns':start,
+        'data':{'phase':'reserve','stage':'end','related_sha256':native.sha(native.canonical(value)),
+            'original_deadline_ns':hard,'reason':None,
+            'clock':{'utc_ns':0,'mono_before_ns':start-1,'mono_after_ns':start}}}
+    def run(batches,*,error=None,match=None,ticket_delay_ns=0):
+        now=[start];reads=[];signals=[];observations=[];sleeps=[]
+        pidfd=object();sigkill=object();ticket=object()
+        service=SimpleNamespace(_control=SimpleNamespace(deadline=(start+20_000_000)/c.SECOND),
+            _broker=SimpleNamespace(pidfd=pidfd))
+        pending=SimpleNamespace(done=lambda:False,
+            result=lambda:pytest.fail('unfinished declared operation has no result'))
+        def live_rows(selected):
+            assert selected is service and not signals
+            rows=batches[min(len(reads),len(batches)-1)];reads.append(deepcopy(rows))
+            return deepcopy(rows)
+        def sleep(amount):
+            assert 0<amount<=.005
+            sleeps.append(amount);now[0]+=max(1,round(amount*c.SECOND))
+        def sample():return {'utc_ns':0,'mono_before_ns':now[0],'mono_after_ns':now[0]}
+        def observe(selected,prepared_value,phase,stage,**kwargs):
+            assert selected is service and prepared_value is value and phase=='reserve'
+            observations.append((stage,kwargs))
+        def phase_ticket(selected):
+            assert selected is service
+            now[0]+=ticket_delay_ns
+            return ticket
+        def signal_sink(*args):signals.append((args,len(reads),now[0]))
+        namespace={'sha':native.sha,'canonical':native.canonical,
+            'contract':SimpleNamespace(SECOND=c.SECOND,sample_clock=sample),
+            'time':SimpleNamespace(monotonic=lambda:now[0]/c.SECOND,sleep=sleep),
+            'signal':SimpleNamespace(pidfd_send_signal=signal_sink,SIGKILL=sigkill),
+            '_live_rows':live_rows,'_phase_observation':observe,'_phase_ticket':phase_ticket}
+        exec(code,namespace)
+        invoke=lambda:namespace['_signal_at_fixed_crash_phase'](service,value,'reserve','end',pending=pending)
+        if error is None:
+            invoke()
+            assert len(signals)==1 and signals[0][0]==(pidfd,sigkill,None,0)
+            assert [stage for stage,kwargs in observations]==['begin','end']
+            assert observations[-1][1]['ticket'] is ticket
+        else:
+            with pytest.raises(error,match=match):invoke()
+            assert signals==[]
+        assert not pending.done() and now[0]<hard
+        return reads,signals,observations,sleeps
+    ordinary=deepcopy(marker);ordinary['data']['related_sha256']=None
+    reads,signals,observations,sleeps=run([[ordinary],[ordinary,marker]])
+    assert len(reads)==2 and len(sleeps)==1 and signals[0][1]==2
+    # Each mismatch must exhaust the host's finite wait without a signal,
+    # even though the original action and declared pending work remain live.
+    for section,key,replacement in (
+        (None,'broker_id',uid(999)),(None,'observer_id',uid(999)),
+        (None,'session_id',uid(999)),(None,'dispatch_id',uid(999)),
+        ('data','phase','go'),('data','stage','begin'),
+        ('data','related_sha256','f'*64),('data','original_deadline_ns',hard+1)):
+        wrong=deepcopy(marker)
+        (wrong if section is None else wrong[section])[key]=replacement
+        reads,signals,observations,sleeps=run([[ordinary,wrong]],
+            error=TimeoutError,match='actual fixed crash barrier')
+        assert reads and sleeps and observations==[]
+    run([[marker,deepcopy(marker)]],error=AssertionError,match='one exact fixed crash marker required')
+    for age_ns in (c.SECOND,c.SECOND+1):
+        expired=deepcopy(marker);observed=start-age_ns
+        expired['observed_at_ns']=observed
+        expired['data']['clock'].update(mono_before_ns=observed-1,mono_after_ns=observed)
+        reads,signals,observations,sleeps=run([[expired]],
+            error=TimeoutError,match='fixed crash barrier expired')
+        assert len(reads)==1 and not sleeps
+    # A marker live at lookup may expire during host observation/ticket work.
+    expiring=deepcopy(marker);observed=start-c.SECOND+5_000_000
+    expiring['observed_at_ns']=observed
+    expiring['data']['clock'].update(mono_before_ns=observed-1,mono_after_ns=observed)
+    run([[expiring]],error=TimeoutError,match='fixed crash barrier expired',ticket_delay_ns=5_000_000)
 
 
 def _broker_stop_deadline_cases(tmp_path,monkeypatch):

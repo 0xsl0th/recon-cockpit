@@ -889,6 +889,7 @@ def test_replays_ledger_and_broker_state_together():
 def test_requires_single_winner_and_durable_race_order():
     _changed_stop_cancellation_cases()
     _external_revocation_race_cases()
+    _fixed_fault_phase_cases()
     from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
     from recon_cockpit.secure_agent import engagement_live_witness as witness
     session,state=opened();p=c.derive_prepared(session,'http_identify',dispatch_id=uid(8),clock=session['binding']['clock_anchor'])
@@ -1257,6 +1258,245 @@ def _external_revocation_race_cases():
             try:accepted=evaluate(value,changed,selected)
             except c.LiveError as error:assert error.code=='engagement_live_evidence_invalid',(route,variant)
             else:assert not accepted,(route,variant)
+
+
+def _fixed_fault_phase_cases():
+    """Declared prevalidated context for unmocked crash/durability predicates.
+
+    These are synthetic ledger and observation facts, never physical crash
+    evidence. Keep the actual producer's digest and stage distinct from host
+    observations, and exercise the complete predicate rather than a stub.
+    """
+    from test_secure_engagement_live_runtime import declared_readiness,declared_cleanup
+    from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
+    manifest,members=denied_fixture()
+    baseline={name:json.loads(value) if name.endswith('.json') else value for name,value in members.items()}
+    baseline['manifest.json']=manifest
+    operation=baseline['results.json']['operations'][0];p=operation['prepared'];env=p['envelope']
+    operation.update(result=None,client=None,meter=None,host_capture=None)
+    before=deepcopy(baseline['final-ledger.json']);at=11*c.SECOND
+    canonical_digest=sha(raw(p));host_digest=c.prepared_digest(p)
+    assert canonical_digest!=host_digest
+    def clock(when):
+        anchor=env['clock_anchor']
+        return {'mono_before_ns':when-1,'mono_after_ns':when,
+            'utc_ns':anchor['utc_ns']+when-anchor['mono_after_ns']}
+    def observed(kind,data,when,source='broker_memfd',*,broker=None,identified=True):
+        bid=env['broker_id'] if broker is None else broker
+        return {'source':source,'row':{'schema_version':'1','broker_id':bid,'observer_id':bid,
+            'session_id':env['session_id'] if identified else None,
+            'dispatch_id':env['dispatch_id'] if identified else None,'row_sequence':1,
+            'observed_at_ns':when,'kind':kind,'data':data}}
+    def phase(name,stage,when,digest,*,source='broker_memfd',reason=None,broker=None,identified=True):
+        return observed('phase',{'phase':name,'stage':stage,'reason':reason,'related_sha256':digest,
+            'original_deadline_ns':env['action_deadline_ns'],
+            'clock':None if source=='role_observer' and stage=='begin' else clock(when-1)},
+            when,source,broker=broker,identified=identified)
+    def packet(operation,body,when,*,direction='sent',role='launcher',channel=uid(940),broker=None,identified=True):
+        return observed('protocol',{'channel_role':role,'direction':direction,'frame':{'schema_version':'1',
+            'channel_id':channel,'sequence':1,'operation':operation,'body':body}},when,
+            broker=broker,identified=identified)
+    reserve={'schema_version':'2','engagement_id':env['engagement_id'],'event_id':uid(941),'operation':'reserve',
+        'expected_revision':env['revision'],'expected_generation':env['generation'],
+        'body':{'owner_id':env['ledger_owner_id'],'session_id':env['session_id'],'dispatch_id':env['dispatch_id'],
+            'slot':env['slot'],'clock':clock(at+3),
+            'approval':{'broker_id':env['reviewer_id'],'consume_sequence':1,'witness_sha256':'a'*64},
+            'audit':{'writer_id':uid(942),'audit_sequence':1,'event_sha256':'b'*64}}}
+    admitted,reservation=ledger._apply(before,reserve)
+    release={'schema_version':'1','broker_id':env['broker_id'],'ledger_owner_id':env['ledger_owner_id'],
+        'session_id':env['session_id'],'dispatch_id':env['dispatch_id'],'envelope_sha256':c.envelope_digest(env),
+        'prepared_sha256':host_digest,'reservation_event_id':reservation['event_id'],
+        'reservation_sequence':reservation['sequence'],'reservation_state_sha256':reservation['state_sha256'],
+        'approval_witness_sha256':'a'*64,'audit_witness_sha256':'b'*64,'guard_clock':clock(at+4),
+        'effective_lease_deadline_ns':20*c.SECOND,'effect_stop_ns':c.effect_stop(p,20*c.SECOND),'release_sequence':1}
+    second,owner,sid=uid(950),uid(951),uid(952)
+    def fixture_for(number):
+        value=deepcopy(baseline);m=value['manifest.json'];case=e._case('S42C-N'+str(number))
+        m.update(case_id=case['id'],configuration='A',evidence_class='owned_gate')
+        configuration={'case_id':case['id'],'variant':case['variant'],'role':'audit' if number==51 else 'broker'}
+        item={'kind':'sealed_fault','source_sha256':'b'*64,'configuration':configuration,
+            'configuration_sha256':sha(raw(configuration))}
+        value['runtime.json']['instrumentation']=[item]
+        m['instrumentation']=[{k:item[k] for k in ('kind','source_sha256','configuration_sha256')}]
+        first=value['processes.json']['readiness'][0]
+        value['cleanup.json']['receipts']=[declared_cleanup(first,started=12*c.SECOND,finished=12_100_000_000)]
+        value['cleanup.json']['receipts'][0]['processes'][0].update(
+            wrapper_returncode=137 if number in (42,43,44) else 0,signal_attempted=number in (42,43,44))
+        final=deepcopy(admitted if number in (43,44,47,48) else before)
+        name='go' if number==44 else 'complete' if number in (47,48) else 'audit' if number==51 else 'reserve'
+        stage='end' if number in (43,44) else 'begin' if number==42 else 'refused'
+        source='role_observer' if number==51 else 'broker_memfd'
+        ordinary_digest=host_digest if number==51 else None
+        records={'ordinary':phase(name,'begin',at+1 if number==43 else at+10,ordinary_digest,source=source)}
+        if number==44:
+            records['go']=packet('GO',deepcopy(release),at+12)
+        elif number in (47,48):
+            records={'go':packet('GO',deepcopy(release),at+5),**records}
+        if number==43:
+            records['durable']=phase('reserve','end',at+15,sha(raw({'schema_version':'2','kind':'data_only',
+                'disposition':'recorded','receipt':reservation})))
+        elif number==44:
+            records['ordinary']['row']['data']['related_sha256']=sha(raw(release))
+            records['released']=phase('go','end',at+15,sha(raw(release)))
+        reason=None if number in (42,43,44) else 'engagement_live_audit_unavailable' if number==51 else 'engagement_live_unavailable'
+        records['marker']=phase(name,stage,at+20,host_digest if number==51 else canonical_digest,
+            source=source,reason=reason)
+        if number in (42,43,44):
+            records['signal_begin']=phase(name,'begin',at+23,host_digest,source='role_observer')
+            records['signal_begin']['row']['data']['clock']=clock(at+22)
+            records['signal_end']=phase(name,'end',at+25,host_digest,source='role_observer')
+        if number in (43,44):
+            ready=declared_readiness(value['runtime.json']['runtime'],'broker',pid=301,worker_id=second)
+            ready['parent_observation']['sampled_at_ns']=13*c.SECOND
+            value['processes.json']['readiness'].append(ready)
+            receipt=declared_cleanup(ready,started=14*c.SECOND,finished=14_100_000_000)
+            receipt['processes'][0].update(wrapper_returncode=0,signal_attempted=False)
+            value['cleanup.json']['receipts'].append(receipt)
+            m['broker_instances'].append({'broker_id':second,'ledger_owner_id':owner})
+            m['ledger_exports']['final']['broker_id']=second
+            next(x for x in value['cleanup.json']['exports'] if x['reference']['phase']=='final')['broker_id']=second
+            final,_=ledger._apply(final,{'schema_version':'2','engagement_id':env['engagement_id'],'event_id':uid(953),
+                'operation':'session','expected_revision':env['revision'],'expected_generation':env['generation'],
+                'body':{'owner_id':owner,'session_id':sid,'clock':clock(13*c.SECOND+1),
+                    'original_deadline_ns':env['session_deadline_ns']}})
+            records['restart_request']=packet('DISPATCH',{'prepared_sha256':host_digest,'reference_sha256':'c'*64,
+                'consume_sequence':1,'audit_sequence':1},13*c.SECOND+10,direction='received',role='ingress',
+                channel=uid(954),broker=second,identified=False)
+            records['restart_reply']=packet('DISPATCH',{'request_sequence':1,'status':'refused',
+                'code':'engagement_live_dispatch_replayed','data':None},13*c.SECOND+12,role='ingress',
+                channel=uid(954),broker=second,identified=False)
+            records['restart_refusal']=phase('prepare','refused',13*c.SECOND+14,host_digest,
+                source='role_observer',reason='engagement_live_dispatch_replayed',broker=second,identified=False)
+        value['final-ledger.json']=deepcopy(final);value['recovery-ledger.json']=deepcopy(final)
+        if number==42:
+            value.pop('final-ledger.json')
+            m['ledger_exports']['final']={'status':'unavailable','source':None,'file':None,'reason':'broker_lost','broker_id':None}
+            value['cleanup.json']['exports']=[x for x in value['cleanup.json']['exports'] if x['reference']['phase']!='final']
+        m['ledger_exports']['recovery']={'status':'complete','source':'postcleanup_readonly',
+            'file':'recovery-ledger.json','reason':None,'broker_id':None}
+        last=final['events'][-1]['receipt']['state_sha256']
+        identity=lambda mode,inode:{'device':1,'inode':inode,'mode':mode,'uid':1000,'gid':1000}
+        value['cleanup.json']['recovery']={'schema_version':'1','source':'postcleanup_readonly','owner_id':uid(955),
+            'started_at_ns':15*c.SECOND,'finished_at_ns':15*c.SECOND+1000,'read_only':True,'closed':True,
+            'ledger_state_sha256':last,'bytes':len(raw(final)),'sha256':sha(raw(final)),
+            'store_identity':{'parent':identity(stat.S_IFDIR|0o700,900),
+                'directory':identity(stat.S_IFDIR|0o700,901),'database':identity(stat.S_IFREG|0o600,902)}}
+        proof={'schema_version':'1','case_id':case['id'],'variant':case['variant'],'dispatch_ids':[env['dispatch_id']],
+            'before_state_sha256':before['events'][-1]['receipt']['state_sha256'],'after_state_sha256':last,
+            'recovery_state_sha256':last,'transcript_refs':[]}
+        return value,records,proof
+    def evaluate(value,records,proof):
+        number=int(proof['case_id'][-2:]);m=value['manifest.json'];parts=[];refs=[]
+        sources=[('broker_memfd',entry['broker_id'],
+            'reaped_partial' if number in (42,43,44) and entry['broker_id']==env['broker_id'] else 'sealed_complete')
+            for entry in m['broker_instances']]+[('role_observer',None,'observer_complete')]
+        for segment,(source,broker,status) in enumerate(sources):
+            rows=[item['row'] for item in records.values() if item['source']==source
+                and (source=='role_observer' or item['row']['broker_id']==broker)]
+            for sequence,row in enumerate(rows,1):
+                row['row_sequence']=sequence;refs.append({'segment':segment,'row_sequence':sequence})
+            parts.append((b''.join(raw(row)+b'\n' for row in rows),source,broker,status))
+        proof['transcript_refs']=refs;value['results.json']['core_proofs']=[proof]
+        for export in value['cleanup.json']['exports']:
+            data=raw(value[export['reference']['phase']+'-ledger.json'])
+            export['reference'].update(bytes=len(data),sha256=sha(data))
+        recovery=value['cleanup.json']['recovery']
+        if recovery is not None:
+            data=raw(value['recovery-ledger.json']);recovery.update(bytes=len(data),sha256=sha(data),
+                ledger_state_sha256=value['recovery-ledger.json']['events'][-1]['receipt']['state_sha256'])
+        encoded={name:raw(item) if name.endswith('.json') else item for name,item in value.items() if name!='manifest.json'}
+        with_transcript(m,encoded,parts);value['transcript.jsonl']=encoded['transcript.jsonl']
+        return e._evaluate_core_proof(value,proof,{'dispatches':{env['dispatch_id']:{}}})
+    for number in (42,43,44,47,48,49,50,51):
+        baseline_value,original,selected=fixture_for(number)
+        assert evaluate(deepcopy(baseline_value),deepcopy(original),deepcopy(selected)), ('fixed fault positive',number)
+        if number in (42,43,44):
+            boundary=deepcopy(original);end=boundary['signal_end']['row']
+            end['observed_at_ns']=boundary['marker']['row']['observed_at_ns']+c.SECOND
+            end['data']['clock']=clock(end['observed_at_ns']-1)
+            assert end['observed_at_ns']<env['action_deadline_ns']
+            assert evaluate(deepcopy(baseline_value),boundary,deepcopy(selected)), ('fixed signal exact one second',number)
+            extra_begin={'expected_failure_begin':phase(original['marker']['row']['data']['phase'],'begin',
+                at+18,host_digest,source='role_observer'),**deepcopy(original)}
+            assert evaluate(deepcopy(baseline_value),extra_begin,deepcopy(selected)), ('non-signal host begin',number)
+            reaped=deepcopy(baseline_value);receipt=reaped['cleanup.json']['receipts'][0]
+            receipt.update(started_at_ns=at+21,finished_at_ns=at+24,deadline_ns=at+21+2*c.SECOND)
+            assert evaluate(reaped,deepcopy(original),deepcopy(selected)), ('reap before signal-end journal',number)
+        common=('missing_marker','marker_digest','marker_source','marker_broker','marker_observer','marker_session',
+            'marker_dispatch','marker_deadline','marker_future_clock','marker_expired','marker_stage','marker_reason','missing_recovery')
+        crash=('missing_signal_begin','missing_signal_end','signal_begin_digest','signal_end_digest',
+            'signal_begin_broker','signal_begin_observer','signal_end_source','signal_end_session','signal_end_dispatch',
+            'signal_end_deadline','signal_end_future_clock','signal_begin_null_clock',
+            'signal_before_marker','signal_reverse_time','signal_after_hold','not_killed',
+            'duplicate_signal_begin','duplicate_signal_end','cleanup_before_signal',
+            'killed_pid','killed_start','killed_wrapper') if number in (42,43,44) else ()
+        durability=('missing_ordinary','ordinary_digest','ordinary_source','ordinary_broker','ordinary_observer',
+            'ordinary_session','ordinary_dispatch','ordinary_deadline','ordinary_phase','ordinary_stage','ordinary_after_marker',
+            'ordinary_reverse_sequence') if number in (42,47,48,49,50,51) else ()
+        restart=('missing_restart_request','missing_restart_reply','missing_restart_refusal','restart_reply_channel',
+            'restart_reply_reason','restart_refusal_digest','foreign_killed_broker') if number in (43,44) else ()
+        terminal=('reserved','released') if number in (42,49,50,51) else ('completed',) if number in (47,48) else ()
+        for variant in (*common,*crash,*durability,*restart,*terminal):
+            value=deepcopy(baseline_value);records=deepcopy(original);proof=deepcopy(selected)
+            if variant=='missing_recovery':
+                value.pop('recovery-ledger.json');value['cleanup.json']['recovery']=None;proof['recovery_state_sha256']=None
+            elif variant.startswith('missing_'):records.pop(variant[len('missing_'):])
+            elif variant=='not_killed':value['cleanup.json']['receipts'][0]['processes'][0]['wrapper_returncode']=78
+            elif variant.startswith('duplicate_signal_'):
+                records[variant]=deepcopy(records[variant[len('duplicate_'):]])
+            elif variant=='cleanup_before_signal':
+                value['cleanup.json']['receipts'][0].update(
+                    started_at_ns=at+20,finished_at_ns=at+21,deadline_ns=at+20+2*c.SECOND)
+            elif variant in ('killed_pid','killed_start','killed_wrapper'):
+                field={'killed_pid':'pid','killed_start':'start_time_ticks','killed_wrapper':'wrapper_pid'}[variant]
+                value['cleanup.json']['receipts'][0]['processes'][0][field]+=1000
+            elif variant=='foreign_killed_broker':
+                value['cleanup.json']['receipts'][0]['processes'][0].update(wrapper_returncode=0,signal_attempted=False)
+                value['cleanup.json']['receipts'][1]['processes'][0].update(wrapper_returncode=137,signal_attempted=True)
+            elif variant=='marker_expired':
+                row=records['marker']['row'];row['observed_at_ns']=env['action_deadline_ns']
+                row['data']['clock']=clock(row['observed_at_ns']-1)
+            elif variant=='signal_after_hold':
+                end=records['signal_end']['row'];end['observed_at_ns']=records['marker']['row']['observed_at_ns']+c.SECOND+1
+                end['data']['clock']=clock(end['observed_at_ns']-1)
+                assert end['observed_at_ns']<env['action_deadline_ns']
+            elif variant in ('signal_before_marker','signal_reverse_time','ordinary_after_marker'):
+                key='ordinary' if variant=='ordinary_after_marker' else 'signal_begin' if variant=='signal_before_marker' else 'signal_end'
+                when=at+21 if variant=='ordinary_after_marker' else at+19 if variant=='signal_before_marker' else at+22
+                records[key]['row']['observed_at_ns']=when
+                if records[key]['row']['data']['clock'] is not None:records[key]['row']['data']['clock']=clock(when-1)
+            elif variant=='ordinary_reverse_sequence':
+                ordinary=records.pop('ordinary');records['ordinary']=ordinary
+            elif variant=='restart_reply_channel':records['restart_reply']['row']['data']['frame']['channel_id']=uid(999)
+            elif variant=='restart_reply_reason':records['restart_reply']['row']['data']['frame']['body']['code']='engagement_live_foreign_owner'
+            elif variant=='restart_refusal_digest':records['restart_refusal']['row']['data']['related_sha256']='e'*64
+            elif variant in ('reserved','completed'):
+                if variant=='reserved':final=deepcopy(admitted)
+                else:
+                    final,_=ledger._apply(value['final-ledger.json'],{'schema_version':'2','engagement_id':env['engagement_id'],
+                        'event_id':uid(956),'operation':'complete','expected_revision':None,'expected_generation':None,
+                        'body':{'owner_id':env['ledger_owner_id'],'session_id':env['session_id'],'dispatch_id':env['dispatch_id'],
+                            'outcome':'reported_failure','observation':None,'clock':clock(at+30)}})
+                value['final-ledger.json']=deepcopy(final);value['recovery-ledger.json']=final
+                proof['after_state_sha256']=proof['recovery_state_sha256']=final['events'][-1]['receipt']['state_sha256']
+            elif variant=='released':records['go']=packet('GO',deepcopy(release),at+30)
+            else:
+                key=next(key for key in ('signal_begin','signal_end','ordinary','marker') if variant.startswith(key+'_'))
+                field=variant[len(key)+1:];item=records[key];row=item['row'];data=row['data']
+                if field=='digest':
+                    data['related_sha256']=canonical_digest if item['source']=='role_observer' else host_digest
+                elif field=='source':item['source']='role_observer' if item['source']=='broker_memfd' else 'broker_memfd'
+                elif field in ('broker','observer','session','dispatch'):row[field+'_id']=uid(999)
+                elif field=='deadline':data['original_deadline_ns']-=1
+                elif field=='future_clock':data['clock']=clock(row['observed_at_ns']+2)
+                elif field=='null_clock':data['clock']=None
+                elif field=='stage':data['stage']='end' if data['stage']!='end' else 'begin'
+                elif field=='phase':data['phase']='guard'
+                elif field=='reason':data['reason']='engagement_live_timeout'
+                else:raise AssertionError(variant)
+            try:accepted=evaluate(value,records,proof)
+            except c.LiveError as error:assert error.code=='engagement_live_evidence_invalid',(number,variant)
+            else:assert not accepted,(number,variant)
 
 
 def transcript_row(sequence=1,broker=None):

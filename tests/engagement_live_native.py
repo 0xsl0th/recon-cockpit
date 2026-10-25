@@ -2049,6 +2049,36 @@ def _wait_actual_phase(service,prepared,phase,stage,*,pending=None):
     raise TimeoutError('actual phase barrier')
 
 
+def _signal_at_fixed_crash_phase(service,prepared,phase,stage,*,pending):
+    """Signal the owned broker only after its exact fixed crash barrier."""
+    env=prepared['envelope'];digest=sha(canonical(prepared))
+    end=min(service._control.deadline,env['action_deadline_ns']/contract.SECOND)
+    while time.monotonic()<end:
+        found=[row for row in _live_rows(service) if row['kind']=='phase'
+            and row['broker_id']==row['observer_id']==env['broker_id']
+            and row['session_id']==env['session_id'] and row['dispatch_id']==env['dispatch_id']
+            and row['data']['phase']==phase and row['data']['stage']==stage
+            and row['data']['related_sha256']==digest
+            and row['data']['original_deadline_ns']==env['action_deadline_ns']
+            and row['data']['reason'] is None and row['data']['clock'] is not None
+            and row['data']['clock']['mono_before_ns']<=row['data']['clock']['mono_after_ns']
+                <=row['observed_at_ns']<env['action_deadline_ns']]
+        if found:
+            if len(found)!=1:raise AssertionError('one exact fixed crash marker required')
+            end=min(end,(found[0]['observed_at_ns']+contract.SECOND)/contract.SECOND)
+            break
+        if pending.done():pending.result();raise AssertionError('actual crash marker absent')
+        time.sleep(min(.005,max(0,end-time.monotonic())))
+    else:raise TimeoutError('actual fixed crash barrier')
+    _phase_observation(service,prepared,phase,'begin',clock=contract.sample_clock())
+    terminal_ticket=_phase_ticket(service)
+    if time.monotonic()>=end or pending.done():raise TimeoutError('fixed crash barrier expired')
+    # Namespace PID1 is terminated from its existing owner, using the same
+    # pinned pidfd as the other owned crash cases. No numeric PID fallback.
+    signal.pidfd_send_signal(service._broker.pidfd,signal.SIGKILL,None,0)
+    _phase_observation(service,prepared,phase,'end',clock=contract.sample_clock(),ticket=terminal_ticket)
+
+
 def _wait_actual_progress(service,prepared,kind,*,pending):
     end=min(service._control.deadline,prepared['envelope']['action_deadline_ns']/contract.SECOND)
     while time.monotonic()<end:
@@ -2082,7 +2112,16 @@ def _core_phase_case(case,directory,service,opened,before,instrumentation):
         operation=(lambda:_consume_actual(service,prepared,reference)) if number==30 else (
             lambda:_dispatch_pointers(service,prepared,pointers,0))
         _expected_failure(service,prepared,'consume' if number==30 else 'audit',operation)
-    elif number in (32,34,35,42,47,48,49,50):
+    elif number==42:
+        reference=review_actual(service,prepared)
+        instrumentation.append(_core_instrumentation(case,'process_signal','broker'))
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            pending=pool.submit(service.execute,prepared,reference,control=service._control)
+            _signal_at_fixed_crash_phase(service,prepared,'reserve','begin',pending=pending)
+            _expected_failure(service,prepared,'reserve',
+                lambda:pending.result(timeout=max(.001,service._control.deadline-time.monotonic())))
+        recover=True
+    elif number in (32,34,35,47,48,49,50):
         reference=review_actual(service,prepared)
         phase='complete' if number in (47,48) else 'guard' if number==32 else 'native_observation' if number==34 else 'cleanup' if number==35 else 'reserve'
         _expected_failure(service,prepared,phase,lambda:service.execute(prepared,reference,control=service._control))
@@ -2095,7 +2134,7 @@ def _core_phase_case(case,directory,service,opened,before,instrumentation):
                 raise AssertionError('original graph must be stopped before post-end continuation')
             _expected_failure(service,prepared,'guard',
                 lambda:service.execute(prepared,reference,control=service._control))
-        recover=number in (42,47,48,49,50)
+        recover=number in (47,48,49,50)
     elif number==51:
         from recon_cockpit.secure_agent.engagement_live_witness import started_event
         reference=review_actual(service,prepared);_consume_actual(service,prepared,reference)
@@ -2153,10 +2192,17 @@ _BROKER_FAULT_CODE=r'''
 # BEGIN fixed S42C owned-gate variant: __CASE__ / __KIND__.
 # This block exists only in the sealed, manifest-labelled test source.
 import sqlite3 as _fault_sqlite
-import signal as _fault_signal
 import select as _fault_select
 
 _fault_original_mark=BrokerCore.mark
+def _fixed_crash_hold(self,row):
+    # A finite test-only barrier gives the existing host owner time to signal
+    # its broker pidfd. Missing/late signals fail; execution never resumes.
+    stop=min(row['prepared']['envelope']['action_deadline_ns'],time.monotonic_ns()+1000000000)
+    while time.monotonic_ns()<stop:
+        time.sleep(min(.005,max(0,(stop-time.monotonic_ns())/c.SECOND)))
+    raise RuntimeError('owned crash barrier expired without host signal')
+
 class _FixedFaultConnection:
     def __init__(self,connection,owner,row,phase,target,kind):
         self.connection=connection;self.owner=owner;self.row=row
@@ -2174,8 +2220,7 @@ class _FixedFaultConnection:
                 related=self.row['prepared'],
                 reason=None if self.kind=='kill_precommit' else 'engagement_live_unavailable')
             if self.kind=='kill_precommit':
-                os.kill(os.getpid(),_fault_signal.SIGKILL)
-                raise RuntimeError('unreachable after SIGKILL')
+                _fixed_crash_hold(self.owner,self.row)
             error=_fault_sqlite.OperationalError('fixed owned simulated durability failure')
             if self.kind=='reserve_fsync':
                 error.sqlite_errorcode=_fault_sqlite.SQLITE_IOERR_FSYNC
@@ -2207,11 +2252,11 @@ def _fixed_fault_mark(self,row,phase,stage,*,related=None,reason=None):
     elif kind=='kill_reserved' and phase=='reserve' and stage=='end':
         self._owned_fault_installed=True
         _fault_original_mark(self,row,'reserve','end',related=row['prepared'])
-        os.kill(os.getpid(),_fault_signal.SIGKILL)
+        _fixed_crash_hold(self,row)
     elif kind=='kill_go' and phase=='go' and stage=='end':
         self._owned_fault_installed=True
         _fault_original_mark(self,row,'go','end',related=row['prepared'])
-        os.kill(os.getpid(),_fault_signal.SIGKILL)
+        _fixed_crash_hold(self,row)
     elif ((kind=='revoke_before' and phase=='reserve' and stage=='begin')
           or (kind=='revoke_after' and phase=='guard' and stage=='end')):
         self._owned_fault_installed=True
@@ -2590,6 +2635,7 @@ def _send_copied_go(service,prepared,frame,directory):
 
 
 def _multi_core(case,directory,*,variants=None):
+    from concurrent.futures import ThreadPoolExecutor
     from recon_cockpit.secure_agent.engagement_live_session import _HostEvidenceBudget
     from recon_cockpit.secure_agent.execution import ExecutionControl
 
@@ -2610,8 +2656,13 @@ def _multi_core(case,directory,*,variants=None):
                 reference=review_actual(first,prepared)
                 pointers=_pointers_actual(first,prepared,reference)
                 if number in (43,44):
-                    _expected_failure(first,prepared,'reserve' if number==43 else 'go',
-                        lambda:_dispatch_pointers(first,prepared,pointers,0))
+                    phase='reserve' if number==43 else 'go'
+                    instrumentation.append(_core_instrumentation(case,'process_signal','broker'))
+                    with ThreadPoolExecutor(max_workers=1) as pool:
+                        pending=pool.submit(_dispatch_pointers,first,prepared,pointers,0)
+                        _signal_at_fixed_crash_phase(first,prepared,phase,'end',pending=pending)
+                        _expected_failure(first,prepared,phase,
+                            lambda:pending.result(timeout=max(.001,first._control.deadline-time.monotonic())))
                 else:
                     result=_dispatch_pointers(first,prepared,pointers,0)
                     if result['outcome']!='useful':raise AssertionError('actual consumed allowance required')
