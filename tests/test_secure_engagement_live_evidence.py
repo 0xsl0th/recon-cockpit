@@ -270,7 +270,7 @@ def attach_supervision_fixture(loaded, rows):
         cleanup['supervisors']=[row for row in cleanup['supervisors'] if row['launcher_id']!=launcher_id]+[{'schema_version':'1','broker_id':broker,'session_id':sid,'launcher_id':launcher_id,
             'host_observer':observer,'thread_native_id':1000+index,'thread_started_at_ns':anchor-1000,'state':'joined',
             'first_stop_requested_at_ns':end,'cleanup_started_at_ns':end,'cleanup_finished_at_ns':end+1,
-            'cleanup_deadline_ns':end+2000000000,'join_attempted':True,'thread_alive_observed':False,
+            'cleanup_deadline_ns':end+1900000000,'join_attempted':True,'thread_alive_observed':False,
             'channel_closed':True,'pending_slots':[],'status':'complete'}]
         for ready in (launcher,endpoint):
             parent=ready['parent_observation']
@@ -1121,6 +1121,7 @@ def _cancelled_capture_replay(loaded,original_rows):
     closure=next(x for x in partial['cleanup.json']['supervisors'] if x['launcher_id']==channel)
     finished=max(closure['cleanup_finished_at_ns'],stop+5)
     deadline=min(env['action_deadline_ns'],env['session_deadline_ns'],env['broker_deadline_ns'],stop+1000000000)
+    wire_deadline=deadline-100000000
     closure.update(first_stop_requested_at_ns=stop,cleanup_started_at_ns=stop+1,
         cleanup_finished_at_ns=finished,cleanup_deadline_ns=deadline)
     cause=deepcopy(request_row);cause['row']['observed_at_ns']=stop+2
@@ -1136,7 +1137,7 @@ def _cancelled_capture_replay(loaded,original_rows):
         'row_sequence':1,'observed_at_ns':stop-1,'kind':'protocol','data':{'channel_role':'lifecycle',
             'direction':'sent','frame':{'schema_version':'1','channel_id':env['broker_id'],'sequence':1,
                 'operation':'BROKER_STOP','body':{'reason':'engagement_live_revoked',
-                    'observed_at_ns':stop-2,'cleanup_deadline_ns':deadline}}}}}
+                    'observed_at_ns':stop-2,'cleanup_deadline_ns':wire_deadline}}}}}
     rows.append(stop_row)
     counters={}
     for row in rows:
@@ -1153,12 +1154,18 @@ def _cancelled_capture_replay(loaded,original_rows):
     assert replay['dispatches'][env['dispatch_id']]['capture'] is not None
     assert data['reply'] is None and op['result'] is None and op['client'] is None
     assert not partial['final-ledger.json']['completions']
+    # The sealed STOP records a send, not a host receive. Another terminal
+    # channel can start a later host epoch; physical completion still fits both.
+    assert finished<wire_deadline<deadline<=stop+1_900_000_000
+    assert all(x['finished_at_ns']<=wire_deadline for x in partial['cleanup.json']['receipts'])
     for variant in ('missing_cause','missing_final','cause_code','rpc_code','cause_dispatch',
                     'cause_capture','cause_cleanup',
                     'final_worker','final_prepared','capture_hash','cleanup_hash','missing_capture',
                     'missing_stop','foreign_stop','foreign_stop_channel','late_stop','partial_stop','early_stop',
                     'early_cause','early_final','late_final','open_channel','pending_slot','cleanup_bound',
-                    'late_cleanup','missing_native','cleanup_pid','cleanup_wrapper',
+                    'late_cleanup','wire_late_cleanup','wire_late_supervisor','wire_late_final',
+                    'wire_late_global_cleanup','wire_late_sibling','extra_broker','host_epoch',
+                    'missing_native','cleanup_pid','cleanup_wrapper',
                     'raw_capture','useful_result','completion','later_rpc'):
         bad=deepcopy(partial);changed=deepcopy(rows)
         rpc=next(x for x in changed if x['row']['kind']=='supervision_projection' and
@@ -1196,9 +1203,43 @@ def _cancelled_capture_replay(loaded,original_rows):
         elif variant=='open_channel':closed.update(channel_closed=False,status='failed')
         elif variant=='pending_slot':closed.update(pending_slots=['identify_client'],status='failed')
         elif variant=='cleanup_bound':closed['cleanup_deadline_ns']=env['action_deadline_ns']+1
-        elif variant in ('late_cleanup','cleanup_pid','cleanup_wrapper'):
+        elif variant=='host_epoch':closed['cleanup_deadline_ns']=stop+1_900_000_001
+        elif variant=='extra_broker':
+            bad['manifest.json']['broker_instances'].append({'broker_id':uid(990),'ledger_owner_id':uid(991)})
+        elif variant=='wire_late_global_cleanup':
+            item=next(x for x in bad['cleanup.json']['receipts'] if any(p['role']=='broker' for p in x['processes']))
+            item['finished_at_ns']=wire_deadline+1
+            assert item['finished_at_ns']<min(item['deadline_ns'],deadline)
+        elif variant=='wire_late_sibling':
+            # A fully allocated but never-started sibling has its own valid
+            # closure. BROKER_STOP must also bound its actual channel cleanup.
+            sibling=deepcopy(closed)
+            sibling.update(session_id=uid(992),launcher_id=uid(993),state='not_started',
+                thread_native_id=None,thread_started_at_ns=None,join_attempted=False)
+            bad['cleanup.json']['supervisors'].append(sibling)
+            for index,slot in enumerate(list(bad['processes.json']['child_slots'])):
+                if slot['launcher_id']!=channel:continue
+                other=deepcopy(slot)
+                other.update(session_id=sibling['session_id'],launcher_id=sibling['launcher_id'],
+                    worker_id=uid(950+index),prepared_sha256=None,bootstrap=None,entry_sha256=None)
+                for endpoint in ('request_endpoint','child_endpoint'):other['pair'][endpoint]['inode']+=50000
+                bad['processes.json']['child_slots'].append(other)
+            assert context.validate_supervision_transcript(bad,changed)['missing_evidence']==[]
+            sibling['cleanup_finished_at_ns']=wire_deadline+1
+            assert sibling['cleanup_finished_at_ns']<sibling['cleanup_deadline_ns']
+        elif variant in ('wire_late_supervisor','wire_late_final'):
+            if variant=='wire_late_supervisor':closed['cleanup_finished_at_ns']=wire_deadline+1
+            last['row']['data']['observed_at_ns']=wire_deadline+2;last['row']['observed_at_ns']=wire_deadline+2
+            assert last['row']['observed_at_ns']<closed['cleanup_deadline_ns']
+        elif variant in ('late_cleanup','wire_late_cleanup','cleanup_pid','cleanup_wrapper'):
             item=next(x for x in bad['cleanup.json']['receipts'] if sha(raw(x))==operation['host_capture']['cleanup_sha256'])
             if variant=='late_cleanup':item.update(finished_at_ns=finished+1)
+            elif variant=='wire_late_cleanup':
+                item['finished_at_ns']=wire_deadline+1
+                closed['cleanup_finished_at_ns']=wire_deadline+2
+                last['row']['data']['observed_at_ns']=wire_deadline+3;last['row']['observed_at_ns']=wire_deadline+3
+                assert item['finished_at_ns']<item['deadline_ns']
+                assert last['row']['observed_at_ns']<closed['cleanup_deadline_ns']
             else:item['processes'][0]['pid' if variant=='cleanup_pid' else 'wrapper_pid']=999999
             digest=sha(raw(item));operation['host_capture']['cleanup_sha256']=digest
             last['row']['data'].update(cleanup_sha256=digest,capture_sha256=sha(raw(operation['host_capture'])))
@@ -1487,6 +1528,7 @@ def _stop_wire_deadline_cases():
 def _review_timeout_causality_cases():
     """Declared portable observations; never a held native process claim."""
     session,p=prepared();env=p['envelope'];hard=env['action_deadline_ns'];cutoff=hard-c.CLEANUP_NS
+    cleanup_end=min(hard,cutoff+1+1_900_000_000)
     digest=c.prepared_digest(p);launcher=uid(600)
     wire=c.canonical({'schema_version':'1','channel_id':env['reviewer_id'],'sequence':1,'operation':'REVIEW','body':p})
     operation={'prepared':p,'result':None,'client':None,'meter':None}
@@ -1509,7 +1551,7 @@ def _review_timeout_causality_cases():
         phase('begin',hard+1),phase('refused',hard+3,'engagement_live_session_unavailable')]
     closure={'broker_id':env['broker_id'],'session_id':env['session_id'],'launcher_id':launcher,
         'first_stop_requested_at_ns':cutoff+1,'cleanup_started_at_ns':cutoff+8,'cleanup_finished_at_ns':cutoff+10,
-        'cleanup_deadline_ns':hard,'state':'joined','status':'complete','join_attempted':True,
+        'cleanup_deadline_ns':cleanup_end,'state':'joined','status':'complete','join_attempted':True,
         'thread_alive_observed':False,'channel_closed':True,'pending_slots':[]}
     reviewer={'role':'terminal','worker_ready':{'worker_id':env['reviewer_id']},
         'parent_observation':{'sampled_at_ns':env['action_ready_ns'],
@@ -1517,14 +1559,16 @@ def _review_timeout_causality_cases():
     cleanup={'role':'terminal','pid':701,'start_time_ticks':7000,'wrapper_pid':700,
         'wrapper_returncode':137,'pin_verified':True,'exit_observed':True,'reaped_observed':True}
     loaded={'processes.json':{'readiness':[reviewer]},'cleanup.json':{'supervisors':[closure],'receipts':[{
-        'started_at_ns':cutoff+7,'finished_at_ns':cutoff+11,'deadline_ns':hard,
+        'started_at_ns':cutoff+7,'finished_at_ns':cutoff+11,'deadline_ns':cleanup_end,
         'status':'complete','descriptors_closed':True,'processes':[cleanup]}]}}
     assert e._review_deadline_stopped(loaded,rows,operation)
+    assert cleanup_end<hard and rows[-1]['row']['data']['clock']['mono_before_ns']>=hard
     for index in range(len(rows)-1):
         assert not e._review_deadline_stopped(loaded,rows[:index]+rows[index+1:],operation)
     assert not e._review_deadline_stopped(loaded,rows[:-1],operation)
-    for key,value in (('first_stop_requested_at_ns',cutoff-1),('cleanup_deadline_ns',hard+1),
-            ('cleanup_finished_at_ns',hard+1),('state','not_started'),('join_attempted',False),
+    for key,value in (('first_stop_requested_at_ns',cutoff-1),('cleanup_deadline_ns',cleanup_end+1),
+            ('cleanup_deadline_ns',hard),('cleanup_deadline_ns',hard+1),
+            ('cleanup_finished_at_ns',cleanup_end+1),('cleanup_finished_at_ns',hard+1),('state','not_started'),('join_attempted',False),
             ('thread_alive_observed',True),('channel_closed',False),('pending_slots',['identify_client']),
             ('launcher_id',uid(601)),('session_id',uid(602))):
         bad=deepcopy(loaded);bad['cleanup.json']['supervisors'][0][key]=value
@@ -1552,9 +1596,16 @@ def _review_timeout_causality_cases():
     assert not e._review_deadline_stopped(loaded,[*rows,wrapped('audit_witness',{},cutoff)],operation)
     bad=deepcopy(loaded);bad['cleanup.json']['receipts'][0]['finished_at_ns']=hard+1
     assert not e._review_deadline_stopped(bad,rows,operation)
-    for deadline in (hard+1,cutoff+10):
+    for deadline in (cleanup_end+1,hard,hard+1,cutoff+10):
         bad=deepcopy(loaded);bad['cleanup.json']['receipts'][0]['deadline_ns']=deadline
         assert not e._review_deadline_stopped(bad,rows,operation)
+    # A separate role's otherwise valid receipt may finish before the original
+    # action deadline yet still overrun the shared, earlier host cleanup epoch.
+    bad=deepcopy(loaded);other=deepcopy(bad['cleanup.json']['receipts'][0])
+    other.update(finished_at_ns=cleanup_end+1,deadline_ns=hard)
+    other['processes'][0].update(role='broker',pid=704,start_time_ticks=7002,wrapper_pid=705)
+    bad['cleanup.json']['receipts'].append(other)
+    assert not e._review_deadline_stopped(bad,rows,operation)
     for readiness in ([],[reviewer,reviewer]):
         bad=deepcopy(loaded);bad['processes.json']['readiness']=readiness
         assert not e._review_deadline_stopped(bad,rows,operation)

@@ -707,6 +707,7 @@ def _client_result():
 
 def test_aggregate_raw_capture_budget(monkeypatch):
     _supervised_capture_cases(monkeypatch)
+    _capture_cleanup_before_stop_cases(monkeypatch)
     from recon_cockpit.secure_agent import engagement_live_context as context
     result=_client_result();result.update(stdout_bytes=2047,stderr_bytes=1)
     assert context.validate_client_result(result)==result
@@ -1176,6 +1177,111 @@ def _supervised_capture_cases(monkeypatch):
         refused(engine.observe_native,control)
     finally:
         for pipe in pipes:pipe.close()
+
+
+def _capture_cleanup_before_stop_cases(monkeypatch):
+    import threading
+    from recon_cockpit.secure_agent.engagement_live_launcher import _FixedSupervisor, _SupervisorControl
+    from recon_cockpit.secure_agent.engagement_live_session import _CleanupEpoch
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+
+    now = [100*c.SECOND]
+    with monkeypatch.context() as patch:
+        patch.setattr(r.time, 'monotonic', lambda: now[0]/c.SECOND)
+        patch.setattr(r.time, 'monotonic_ns', lambda: now[0])
+        patch.setattr(r.time, 'sleep', lambda amount: None)
+        for original in (105., 100.75):
+            now[0] = 100*c.SECOND
+            engine, control, calls, pipes = _capture_fixture(patch, stdout=b'actual pipe bytes')
+            control.deadline = original
+            engine.native_deadline_ns = int(original*c.SECOND)
+            epoch = _CleanupEpoch(ExecutionControl(original))
+            def check():
+                if epoch.stopped:c.fail('cancelled')
+            control.check = check
+            close = engine.owner.close
+            def stop_during_close(*, deadline):
+                assert epoch.snapshot() is None
+                assert deadline == min(original, 101.9)
+                now[0] += 10_000_000
+                stopped = epoch.stop()
+                assert int(deadline*c.SECOND) <= stopped['deadline_ns']
+                assert stopped['deadline_ns'] <= stopped['first_stop_requested_at_ns']+1_900_000_000
+                cleanup = close(deadline=deadline)
+                now[0] += 10_000_000
+                assert epoch.stop(bound_deadline_ns=int(original*c.SECOND)) == stopped
+                return cleanup
+            engine.owner.close = stop_during_close
+            try:
+                # A declared owner reaches normal cleanup after draining real
+                # pipes. The later stop must still refuse a successful result;
+                # this portable case does not establish native execution.
+                error = refused(engine.capture, control)
+                assert error.code == 'engagement_live_cancelled'
+                assert error.client_capture['stdout'] == b'actual pipe bytes'
+                assert error.client_capture['status'] == 'unresolved'
+                assert error.client_capture['cleanup'] is engine.owner.cleanup
+                assert calls == [('close', min(original, 101.9))]
+                assert refused(engine.capture, control).code == 'engagement_live_dispatch_replayed'
+                assert calls == [('close', min(original, 101.9))]
+            finally:
+                for pipe in pipes:pipe.close()
+
+        for stop_when in ('never', 'before_bound', 'during_close'):
+            now[0] = 100*c.SECOND
+            engine, _, calls, pipes = _capture_fixture(patch, stdout=b'actual pipe bytes')
+            supervisor = _FixedSupervisor.__new__(_FixedSupervisor)
+            supervisor.control = ExecutionControl(105., clock=r.time.monotonic)
+            epoch = supervisor.epoch = _CleanupEpoch(supervisor.control)
+            supervisor.stop = threading.Event()
+            supervisor._deadline_ns = 105*c.SECOND
+            supervisor.children = {}
+            supervisor._checking = False
+            control = _SupervisorControl(supervisor, 105*c.SECOND)
+            engine.native_deadline_ns = 105*c.SECOND
+            assert control.normal_cleanup_deadline == 101.9 and epoch.snapshot() is None
+            events = []
+            class DeclaredExit:
+                stdout, stderr = pipes
+                def poll(self):return 0
+                @property
+                def returncode(self):
+                    # CAPTURE reads this declared exit after its final work
+                    # check, immediately before it asks for the cleanup bound.
+                    if stop_when == 'before_bound' and not events:
+                        now[0] += 10_000_000
+                        events.append(epoch.stop(bound_deadline_ns=100_600_000_000))
+                    return 0
+            engine.owner.process = DeclaredExit()
+            close = engine.owner.close
+            def close_after_lookup(*, deadline):
+                assert deadline == (100.6 if stop_when == 'before_bound' else 101.9)
+                if stop_when == 'before_bound':
+                    assert int(deadline*c.SECOND) == epoch.snapshot()['deadline_ns']
+                else:
+                    assert epoch.snapshot() is None
+                    if stop_when == 'during_close':
+                        now[0] += 10_000_000
+                        events.append(epoch.stop())
+                        assert int(deadline*c.SECOND) <= events[0]['deadline_ns']
+                return close(deadline=deadline)
+            engine.owner.close = close_after_lookup
+            try:
+                if stop_when == 'never':
+                    result = engine.capture(control)
+                    assert result['status'] == 'succeeded' and epoch.snapshot() is None
+                else:
+                    error = refused(engine.capture, control)
+                    assert error.code == 'engagement_live_cancelled'
+                    assert error.client_capture['status'] == 'unresolved'
+                    assert error.client_capture['stdout'] == b'actual pipe bytes'
+                    assert error.client_capture['cleanup'] is engine.owner.cleanup
+                    assert epoch.stop(bound_deadline_ns=105*c.SECOND) == events[0]
+                assert calls == [('close', 100.6 if stop_when == 'before_bound' else 101.9)]
+                assert refused(engine.capture, control).code == 'engagement_live_dispatch_replayed'
+                assert len(calls) == 1
+            finally:
+                for pipe in pipes:pipe.close()
 
 
 def _supervised_native_clock_case(monkeypatch):

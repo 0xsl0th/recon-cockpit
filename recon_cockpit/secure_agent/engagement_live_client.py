@@ -163,7 +163,12 @@ class SupervisedCapture:
             failure=error
             if self.status is None:self.status='cancelled' if getattr(error,'code',None)=='engagement_live_cancelled' else 'timeout' if getattr(error,'code',None)=='engagement_live_timeout' else 'unresolved'
         try:
-            deadline=rt._failure_deadline(control) if failure is not None else min(control.deadline,time.monotonic()+2)
+            # A stop can race with successful capture cleanup after this bound
+            # is handed to the owner. Reserve the same detection margin now.
+            if failure is not None:deadline=rt._failure_deadline(control)
+            else:
+                normal=getattr(control,'normal_cleanup_deadline',None)
+                deadline=min(control.deadline,time.monotonic()+1.9) if normal is None else min(control.deadline,normal)
             self.cleanup=self.owner.close(deadline=deadline)
         except BaseException as error:
             if failure is not None:error.capture_failure=failure

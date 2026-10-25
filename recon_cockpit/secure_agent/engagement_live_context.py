@@ -206,6 +206,7 @@ def _cancelled_capture_terminal(loaded, rows, row, operation, slot, closure):
     data = row['data']; request = data['request']; envelope = operation['prepared']['envelope']
     if (request['operation'] != 'CAPTURE' or data['local_error'] != 'engagement_live_cancelled'
             or data['reply'] is not None or operation['result'] is not None or operation['client'] is not None
+            or len(loaded['manifest.json']['broker_instances']) != 1
             or slot['role'] not in ('nmap', 'headers') or not closure['complete']): return False
     did = envelope['dispatch_id']; host = operation['host_capture']
     if host is None or host['cleanup_sha256'] is None: return False
@@ -218,7 +219,8 @@ def _cancelled_capture_terminal(loaded, rows, row, operation, slot, closure):
         ('action_deadline_ns', 'session_deadline_ns', 'broker_deadline_ns'))
     if (thread['state'] != 'joined' or thread['status'] != 'complete'
             or thread['pending_slots'] or not thread['channel_closed']
-            or thread['cleanup_deadline_ns'] > hard): return False
+            or thread['cleanup_deadline_ns'] > min(hard,
+                thread['first_stop_requested_at_ns'] + 1_900_000_000)): return False
     failures = [x['row'] for x in rows if x['source'] == 'role_observer'
         and x['row']['kind'] == 'supervision_projection'
         and x['row']['data']['kind'] == 'local_failure'
@@ -269,9 +271,17 @@ def _cancelled_capture_terminal(loaded, rows, row, operation, slot, closure):
         segment = loaded['manifest.json']['transcript']['segments'][wrapped['segment']]
         if segment['status'] != 'sealed_complete' or segment['broker_id'] != envelope['broker_id']: continue
         protocol.validate_frame(frame, role='lifecycle', direction='request')
+        # A sealed send is not a host receive acknowledgment. Preserve both
+        # advertised bounds and prove physical completion within each, even
+        # when another terminal channel closes before this packet is polled.
+        # This narrow single-broker graph includes every sibling and root role,
+        # not only the selected client's already joined supervisor.
+        if (any(x['finished_at_ns'] > body['cleanup_deadline_ns'] for x in loaded['cleanup.json']['receipts'])
+                or any(x['cleanup_finished_at_ns'] > body['cleanup_deadline_ns']
+                    for x in loaded['cleanup.json']['supervisors'])): continue
         if (request['observed_at_ns'] <= body['observed_at_ns'] <= stop['observed_at_ns']
                 <= thread['first_stop_requested_at_ns']
-                and thread['cleanup_deadline_ns'] <= body['cleanup_deadline_ns']
+                and final['observed_at_ns'] <= body['cleanup_deadline_ns']
                 <= min(hard, body['observed_at_ns'] + c.CLEANUP_NS)): return True
     return False
 

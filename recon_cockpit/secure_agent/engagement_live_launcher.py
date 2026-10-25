@@ -30,6 +30,11 @@ class _SupervisorControl:
         return self.supervisor.epoch.stop(bound_deadline_ns=self.supervisor.cleanup_bound_ns())['deadline_ns'] / c.SECOND
 
     @property
+    def normal_cleanup_deadline(self):
+        # Successful cleanup must observe an existing stop without creating one.
+        return self.supervisor._normal_cleanup_deadline(self)
+
+    @property
     def work_deadline(self):
         # Preserve original bootstrap/cleanup bounds, but stop work early enough
         # to use their existing cleanup reserve, including while idle.
@@ -246,8 +251,11 @@ class _FixedSupervisor:
         self._record_capture(state)
 
     def _normal_cleanup_deadline(self, phase):
+        now = time.monotonic()
         epoch = self.epoch.snapshot()
-        return min(phase.deadline, time.monotonic()+2,
+        # A normal reap may already be in flight when another stop path fixes
+        # the shared 1900 ms allowance. It must start with the same short cap.
+        return min(phase.deadline, now+1.9,
                    epoch['deadline_ns']/c.SECOND if epoch else phase.deadline)
 
     def _start_child(self, name, prepared, *, request_observed_ns=None):

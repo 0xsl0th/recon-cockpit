@@ -205,6 +205,7 @@ def test_payload_identity_and_cleanup_are_not_boolean_claims(monkeypatch):
 
 
 def test_all_phases_share_original_deadline_and_cleanup(monkeypatch):
+    _normal_cleanup_before_stop_cases(monkeypatch)
     _idle_supervisor_cleanup_reserve(monkeypatch)
     _supervisor_thread_deadline_cases(monkeypatch)
     state=SimpleNamespace(pending=prepared(),poll_stop=lambda:None)
@@ -222,6 +223,65 @@ def test_all_phases_share_original_deadline_and_cleanup(monkeypatch):
     refused(worker_state.close);assert worker_state.stopped and sent==[]
     worker_state.supervisor=SimpleNamespace(close=lambda:None);worker_state.worker_id=uid(88)
     worker_state.close();assert sent[0][0]=='CLOSED'
+
+
+def _normal_cleanup_before_stop_cases(monkeypatch):
+    from recon_cockpit.secure_agent.engagement_live_launcher import _FixedSupervisor, _SupervisorControl
+    from recon_cockpit.secure_agent.engagement_live_session import _CleanupEpoch
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+
+    # Allocate the normal REAP allowance first, then publish a stop while that
+    # cleanup is in flight. These are deadline inputs, not process observations.
+    now = [100*c.SECOND]
+    with monkeypatch.context() as patch:
+        patch.setattr(time, 'monotonic', lambda: now[0]/c.SECOND)
+        patch.setattr(time, 'monotonic_ns', lambda: now[0])
+        for original in (105., 100.75):
+            now[0] = 100*c.SECOND
+            owner = _FixedSupervisor.__new__(_FixedSupervisor)
+            owner.control = ExecutionControl(original, clock=time.monotonic)
+            epoch = owner.epoch = _CleanupEpoch(owner.control)
+            phase = _SupervisorControl(owner, int(original*c.SECOND))
+            deadline = phase.normal_cleanup_deadline
+            assert deadline == min(original, 101.9)
+            assert epoch.snapshot() is None
+            now[0] += 10_000_000
+            stopped = epoch.stop()
+            assert int(deadline*c.SECOND) <= stopped['deadline_ns']
+            assert stopped['deadline_ns'] <= stopped['first_stop_requested_at_ns']+1_900_000_000
+            now[0] = 100_500_000_000
+            assert phase.normal_cleanup_deadline == stopped['deadline_ns']/c.SECOND
+            # A received earlier bound narrows later cleanup; repeated calls
+            # cannot restore either the normal allowance or the original one.
+            tightened = epoch.stop(bound_deadline_ns=100_600_000_000)
+            assert phase.normal_cleanup_deadline == 100.6
+            assert epoch.stop(bound_deadline_ns=int(original*c.SECOND)) == tightened
+            assert phase.normal_cleanup_deadline == 100.6
+
+        now[0] = 100*c.SECOND
+        owner = _FixedSupervisor.__new__(_FixedSupervisor)
+        owner.control = ExecutionControl(105., clock=time.monotonic)
+        epoch = owner.epoch = _CleanupEpoch(owner.control)
+        phase = _SupervisorControl(owner, 105*c.SECOND)
+        assert phase.normal_cleanup_deadline == 101.9 and epoch.snapshot() is None
+        sampled = []
+        def stop_after_time_sample():
+            sampled.append(now[0])
+            now[0] += 10_000_000
+            epoch.stop(bound_deadline_ns=100_600_000_000)
+            return sampled[-1]/c.SECOND
+        # A stop between the local clock sample and the epoch read must be
+        # visible. Reading the epoch first would retain the stale 101.9 bound.
+        with patch.context() as race:
+            race.setattr(time, 'monotonic', stop_after_time_sample)
+            assert phase.normal_cleanup_deadline == 100.6
+        assert sampled == [100*c.SECOND]
+        stopped = epoch.snapshot()
+        assert stopped['first_stop_requested_at_ns'] == 100_010_000_000
+        assert stopped['deadline_ns'] == 100_600_000_000
+        assert phase.normal_cleanup_deadline == 100.6
+        assert epoch.stop(bound_deadline_ns=105*c.SECOND) == stopped
+
 
 def _supervisor_expected_bound_ns(model):
     # Derive the original bound from the contract inputs, before the supervisor's

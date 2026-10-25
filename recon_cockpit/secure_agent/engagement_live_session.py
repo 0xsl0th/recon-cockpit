@@ -164,8 +164,12 @@ class _CleanupEpoch:
         with self._lock:
             first = self._value is None
             if first:
+                # Reserve the contract's <=100 ms broker-death detection
+                # latency even when ingress EOF or another closer wins the
+                # race with the lifecycle monitor. Every stop path shares
+                # this conservative allowance; later calls only narrow it.
                 self._value = {'first_stop_requested_at_ns': now,
-                               'deadline_ns': min(bound, now + 2 * c.SECOND)}
+                               'deadline_ns': min(bound, now + 1_900_000_000)}
                 self._stop_event.set()
             else:
                 self._value['deadline_ns'] = min(self._value['deadline_ns'], bound)

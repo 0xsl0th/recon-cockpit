@@ -386,6 +386,7 @@ def test_cancel_and_eof_do_not_start_followup():
 
 def test_lease_narrowing_never_renews_original_deadline(monkeypatch):
     _idle_session_cleanup_reserve()
+    _terminal_cleanup_budget_paths(monkeypatch)
     obj, row, value = service()
     original = obj._control
     tighter = _clipped_control(original,int((original.deadline-3)*c.SECOND),obj._stop)
@@ -400,13 +401,78 @@ def test_lease_narrowing_never_renews_original_deadline(monkeypatch):
     monkeypatch.setattr(module.time, 'monotonic_ns', lambda:ticks[0])
     epoch = module._CleanupEpoch(SimpleNamespace(deadline=20))
     first = epoch.stop()
-    assert first == {'first_stop_requested_at_ns':10*c.SECOND,'deadline_ns':12*c.SECOND}
+    assert first == {'first_stop_requested_at_ns':10*c.SECOND,'deadline_ns':11_900_000_000}
     ticks[0] += 9*c.SECOND
     assert epoch.stop() == first
     assert epoch.stop(bound_deadline_ns=11*c.SECOND)['deadline_ns'] == 11*c.SECOND
     assert epoch.stop()['deadline_ns'] == 11*c.SECOND
+    assert epoch.stop(bound_deadline_ns=30*c.SECOND)['deadline_ns'] == 11*c.SECOND
+    assert epoch.snapshot()['first_stop_requested_at_ns'] == first['first_stop_requested_at_ns']
+    ticks[0] = 10*c.SECOND
+    original = module._CleanupEpoch(SimpleNamespace(deadline=11))
+    assert original.stop(bound_deadline_ns=12*c.SECOND)['deadline_ns'] == 11*c.SECOND
+    received = module._CleanupEpoch(SimpleNamespace(deadline=20))
+    assert received.stop(bound_deadline_ns=10_500_000_000)['deadline_ns'] == 10_500_000_000
     expired = module._CleanupEpoch(SimpleNamespace(deadline=1))
     assert expired.stop()['deadline_ns'] == c.SECOND
+
+
+def _terminal_cleanup_budget_paths(monkeypatch):
+    # Exercise the monitor/close graph with declared role cleanup. The pidfd
+    # readiness is a stub; the EOF is a real local socket EOF, never a native
+    # worker or kernel-containment claim.
+    import select
+    import socket
+    from recon_cockpit.secure_agent.engagement_live_broker import EngagementBroker
+
+    for trigger in ('broker_death','lifecycle_eof','received_stop','direct_close'):
+        obj,_,_=service();obj._sessions.clear();obj._operations.clear()
+        obj._cleanup_epoch=module._CleanupEpoch(obj._control,stop_event=obj._stop,on_stop=obj._request_stop)
+        observed=[];polled=[];host,peer=socket.socketpair()
+        wire_deadline=time.monotonic_ns()+500_000_000
+        event={'operation':'BROKER_STOP','body':{'cleanup_deadline_ns':wire_deadline}}
+        handle=SimpleNamespace(_owner=object(),bundle=SimpleNamespace(host_lifecycle=host),
+            _deadline_ns=int(obj._control.deadline*c.SECOND),_cleanup_epoch=obj._cleanup_epoch,
+            control=obj._control,_lifecycle=SimpleNamespace(accept=lambda frame:frame))
+        def poll():
+            polled.append(trigger)
+            return EngagementBroker.poll_lifecycle(handle) if trigger=='lifecycle_eof' else event
+        def close_role(deadline):
+            now=time.monotonic_ns();observed.append(deadline)
+            return {'schema_version':'1','started_at_ns':now,'finished_at_ns':now,
+                'deadline_ns':int(deadline*c.SECOND),'status':'complete','processes':[],
+                'descriptors_closed':True}
+        ready_pin=object()
+        role=SimpleNamespace(pidfd=ready_pin if trigger=='broker_death' else None,
+            poll_lifecycle=poll,_interrupt=lambda:None,_close=close_role)
+        obj._broker=role;obj._roles=[role]
+        try:
+            peer.close()
+            with monkeypatch.context() as patch:
+                if trigger=='broker_death':
+                    def ready(reads,writes,errors,timeout):
+                        assert reads==[ready_pin] and not writes and not errors and timeout==0
+                        return reads,[],[]
+                    patch.setattr(select,'select',ready)
+                if trigger=='direct_close':obj.close()
+                else:obj._monitor()
+            epoch=obj._cleanup_epoch.snapshot()
+            expected=min(int(obj._control.deadline*c.SECOND),epoch['first_stop_requested_at_ns']+1_900_000_000)
+            if trigger=='received_stop':expected=min(expected,wire_deadline)
+            assert epoch['deadline_ns']==expected and observed==[expected/c.SECOND]
+            assert obj._cleanup['status']=='complete' and obj._verified_reaped()
+            assert obj._cleanup['finished_at_ns']<=epoch['deadline_ns']
+            assert obj.close()==obj._cleanup and obj._cleanup_epoch.snapshot()==epoch
+            if trigger in ('broker_death','direct_close'):
+                assert not polled
+                assert wire_deadline<epoch['deadline_ns']
+            else:assert polled==[trigger]
+            if trigger=='direct_close':assert obj._failure is None
+            else:
+                expected_error='engagement_live_invalid_frame' if trigger=='lifecycle_eof' else 'engagement_live_session_unavailable'
+                assert obj._failure.code==expected_error
+        finally:
+            host.close();peer.close()
 
 
 def _idle_session_cleanup_reserve():
@@ -430,7 +496,7 @@ def _idle_session_cleanup_reserve():
         assert obj._cleanup['status']=='complete' and obj._verified_reaped()
         epoch=obj._cleanup_epoch.snapshot()
         assert original-c.CLEANUP_NS<=epoch['first_stop_requested_at_ns']<original-c.SECOND
-        assert epoch['deadline_ns']<=original and observed
+        assert epoch['deadline_ns']<=min(original,epoch['first_stop_requested_at_ns']+1_900_000_000) and observed
         assert all(at<epoch['deadline_ns'] and bound<=original/c.SECOND for at,bound in observed)
     finally:
         obj._closing.set();obj._stop.set();thread.join(.5)

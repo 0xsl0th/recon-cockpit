@@ -575,10 +575,10 @@ def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
         original=ExecutionControl(200.0,clock=time.monotonic);epoch=_CleanupEpoch(original)
         phase=host._ClippedControl(original,150*c.SECOND,cleanup_epoch=epoch)
         phase.check();assert phase.deadline==150 and epoch.snapshot() is None
-        assert phase.cleanup_deadline==102.0
+        assert phase.cleanup_deadline==101.9
         with pytest.raises(c.LiveError,match='cancelled'):phase.check()
         now[0]=100.5
-        assert runtime._failure_deadline(phase)==102.0
+        assert runtime._failure_deadline(phase)==101.9
         # Its ten-second startup wrapper must not replace the original lifetime.
         startup=runtime._ClippedControl(phase,110.0)
         assert startup.deadline==110 and phase.deadline==150
@@ -591,10 +591,10 @@ def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
         broker._owner=SimpleNamespace(process=SimpleNamespace(poll=lambda:0),pin=object(),
             channel=SimpleNamespace(shutdown=lambda how:None,close=lambda:None))
         broker.bundle=SimpleNamespace(take_evidence_readers=lambda:{},close=lambda:None)
-        assert broker._close(150.0) is receipt and seen==[102.0]
+        assert broker._close(150.0) is receipt and seen==[101.9]
         now[0]=101.0
-        assert broker._close(180.0) is receipt and seen==[102.0]
-        assert epoch.snapshot()['deadline_ns']==102*c.SECOND
+        assert broker._close(180.0) is receipt and seen==[101.9]
+        assert epoch.snapshot()['deadline_ns']==101_900_000_000
 
 
 def _broker_stop_deadline_cases(tmp_path,monkeypatch):

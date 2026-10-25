@@ -537,9 +537,9 @@ def test_audit_adapter_clips_original_exchange_deadline(monkeypatch,tmp_path):
             deadlines=[];receipt={'status':'complete'}
             def cleanup(processes,pins,*,deadline):deadlines.append(deadline);return receipt
             patch.setattr(runtime,'cleanup_owned',cleanup)
-            assert service._close(150.0) is receipt and deadlines==[102.0]
+            assert service._close(150.0) is receipt and deadlines==[101.9]
             now[0]=101.0
-            assert service.close() is receipt and deadlines==[102.0]
+            assert service.close() is receipt and deadlines==[101.9]
         # A temporary close failure after successful startup fixes the epoch at
         # that failure, still closes later resources, and reaps the real owner.
         with audit_service(patch) as (service,peer,writers):
@@ -554,7 +554,7 @@ def test_audit_adapter_clips_original_exchange_deadline(monkeypatch,tmp_path):
                 calls.append('later');now[0]+=.5
             with pytest.raises(c.LiveError) as caught:
                 service._release_startup_resources((SimpleNamespace(close=broken),SimpleNamespace(close=later)),(),None)
-            assert calls==['first','later'] and deadlines==[103.0]
+            assert calls==['first','later'] and deadlines==[102.9]
             assert caught.value.resource_cleanup_error is first and caught.value.process_cleanup is receipt
             assert caught.value.startup_cleanup['status']=='failed' and not caught.value.startup_cleanup['descriptors_closed']
         # A channel close error cannot skip process reap or become cached success.
@@ -567,11 +567,11 @@ def test_audit_adapter_clips_original_exchange_deadline(monkeypatch,tmp_path):
             service._channel=SimpleNamespace(shutdown=lambda how:None,close=broken_channel)
             try:
                 with pytest.raises(c.LiveError) as caught:service._close(150.0)
-                assert deadlines==[103.5] and caught.value.process_cleanup is receipt
+                assert deadlines==[103.4] and caught.value.process_cleanup is receipt
                 assert caught.value.cleanup['status']=='failed' and not caught.value.cleanup['descriptors_closed']
                 assert caught.value.resource_cleanup_error is first
                 with pytest.raises(c.LiveError) as again:service._close(170.0)
-                assert again.value is caught.value and deadlines==[103.5]
+                assert again.value is caught.value and deadlines==[103.4]
             finally:service._channel=channel
         # A late-only reap failure retains its real closed-descriptor fact;
         # it must not be rewritten as a channel or parent-close failure.

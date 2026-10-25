@@ -522,6 +522,25 @@ All 48 affected replay/witness/launcher tests passed, including 32 negative
 mutations. One separately retained read-only diagnostic confirmed that cause on
 the unchanged failed bundle, with zero useful operations and no acceptance
 credit. A new reviewed freeze and all required validation remain necessary.
+
+Freeze twenty-five at `4823fa6` passed all 160 portable cases, fresh N04 and all
+five complete hosted suites (29,085 passes and 2,347 integration deselections).
+N39 again retained successful revocation and timely physical cleanup but failed
+inspection: replay compared the host's advertised cleanup deadline with a
+broker-sent bound without proof that the host received that packet. The revised
+single-broker cancellation check preserves both bounds and requires all actual
+graph cleanup, supervisor closure and final terminal observations within both.
+Review also found the fallback host epoch omitted the pinned 100 ms detection
+reserve. Every host first-stop path now allows at most 1,900 ms, clipped to all
+original and received bounds. Normal REAP and capture cleanup use that same
+short allowance before a stop can race with them. Their non-mutating deadline
+lookup samples time before reading the existing epoch, without starting a stop
+on successful work. N33 retains its original timeout cutoff and actual late
+refusal while requiring cleanup within the earlier host epoch.
+All 100 affected portable tests passed, and final independent source review
+found no open code issues. These corrections require another clean freeze and
+fresh required validation. All failed native and focused artifacts remain
+retained without acceptance credit.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

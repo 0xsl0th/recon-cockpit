@@ -902,10 +902,11 @@ def _review_deadline_stopped(loaded,rows,operation):
     closures=[row for row in loaded['cleanup.json']['supervisors'] if same(row,False)]
     if len(closures)!=1:return False
     closure=closures[0];stop=closure['first_stop_requested_at_ns'];observed=pending[0]['observed_at_ns']
+    cleanup_end=closure['cleanup_deadline_ns']
     if (closure['state']!='joined' or closure['status']!='complete' or not closure['join_attempted']
             or closure['thread_alive_observed'] or not closure['channel_closed'] or closure['pending_slots']
-            or closure['cleanup_deadline_ns']!=hard or not cutoff<=stop<=observed<hard
-            or not stop<=closure['cleanup_started_at_ns']<=closure['cleanup_finished_at_ns']<=hard):return False
+            or cleanup_end>min(hard,stop+1_900_000_000) or not cutoff<=stop<=observed<hard
+            or not stop<=closure['cleanup_started_at_ns']<=closure['cleanup_finished_at_ns']<=cleanup_end):return False
     reviewers=[row for row in loaded['processes.json']['readiness'] if row['role']=='terminal'
         and row['worker_ready']['worker_id']==env['reviewer_id']]
     if len(reviewers)!=1:return False
@@ -913,7 +914,7 @@ def _review_deadline_stopped(loaded,rows,operation):
     if not any(max(env['action_ready_ns'],reviewer['sampled_at_ns'])<=row['observed_at_ns']<cutoff
         for row in begin):return False
     if not any(receipt['status']=='complete' and receipt['descriptors_closed']
-        and stop<=receipt['started_at_ns']<=receipt['finished_at_ns']<=hard and any(
+        and stop<=receipt['started_at_ns']<=receipt['finished_at_ns']<=receipt['deadline_ns']<=cleanup_end and any(
             process['role']=='terminal' and process['pid']==payload['pid']
             and process['start_time_ticks']==payload['start_time_ticks']
             and process['wrapper_pid']==reviewer['wrapper']['pid']
@@ -921,6 +922,7 @@ def _review_deadline_stopped(loaded,rows,operation):
             and process['exit_observed'] and process['reaped_observed']
             for process in receipt['processes']) for receipt in loaded['cleanup.json']['receipts']):return False
     if any(not row['started_at_ns']<=row['finished_at_ns']<=row['deadline_ns']<=hard
+        or row['finished_at_ns']>cleanup_end
         for row in loaded['cleanup.json']['receipts']):return False
     failures=[wrapped['row'] for wrapped in rows if wrapped['source']=='role_observer'
         and same(wrapped['row'],False) and wrapped['row']['kind']=='supervision_projection'
