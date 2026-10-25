@@ -18,8 +18,8 @@ import uuid
 
 from .engagement_live_contract import LiveError
 
-CONTRACT_SHA256 = '3e97ae7b6b9f599ab30b4efb5d3ca455a2059baa601bf612a5cf26d2ea23bd90'
-GATES_SHA256 = '65cec0e6dddb47afec9eab25be2f1e9b21549121c1273c92c698457f661c17ef'
+CONTRACT_SHA256 = '7497a08dd16d6ff73d8e3102b6ea38a1ad69920fdd96ad091d3123b864df7aa1'
+GATES_SHA256 = 'b8853a68ff3bc43a63cbaf8e5b8642a1443ee25c276ae1a6a0b5204eb8d1d9f1'
 MAX_BUNDLE = 16777216
 MAX_REPORT = 8192
 MAX_TRANSCRIPT_ROWS = 4096
@@ -265,8 +265,8 @@ def _manifest(value):
                 _fail()
             _choice(row['reason'],{'not_started','not_acknowledged','broker_lost','invalid_or_partial','not_applicable'})
         elif row['status'] == 'complete':
-            source = 'postcleanup_readonly' if phase == 'recovery' else 'sealed_broker'
-            if row['source'] != source or row['file'] != phase+'-ledger.json' or row['reason'] is not None:
+            sources = {'postcleanup_readonly','postcleanup_copied_recovery'} if phase == 'recovery' else {'sealed_broker'}
+            if row['source'] not in sources or row['file'] != phase+'-ledger.json' or row['reason'] is not None:
                 _fail()
             if phase == 'recovery':
                 if row['broker_id'] is not None:
@@ -438,8 +438,13 @@ def _load_members(manifest,members,deadline):
 def _containers(loaded):
     processes=_object(loaded['processes.json'],{'schema_version','startup','readiness','native','boundary_observations','child_slots'})
     results=_object(loaded['results.json'],{'schema_version','operations','boundary_proofs','core_proofs'})
-    cleanup=_object(loaded['cleanup.json'],{'schema_version','receipts','exports','recovery','supervisors'})
-    for value in (processes,results,cleanup):
+    cleanup=loaded['cleanup.json']
+    cleanup_fields={'schema_version','receipts','exports','recovery','supervisors'}
+    if type(cleanup) is not dict:_fail()
+    if cleanup.get('schema_version')=='2':cleanup_fields.add('recovery_helpers')
+    elif cleanup.get('schema_version')!='1':_fail()
+    _object(cleanup,cleanup_fields)
+    for value in (processes,results):
         if value['schema_version']!='1':_fail()
     _list(processes['startup'],94);_list(processes['readiness'],94);_list(processes['native'],4)
     _list(processes['child_slots'],24);_list(cleanup['supervisors'],4)
@@ -481,7 +486,11 @@ def _containers(loaded):
         for key in ('reference','host_descriptor','broker_descriptor'):
             if type(record[key]) is not dict:_fail()
     recovery=cleanup['recovery']
-    if recovery is not None:
+    if recovery is not None and recovery.get('schema_version')=='2':
+        from .engagement_live_context import _recovery_shape
+        _recovery_shape(recovery,'copied_receipt')
+        if cleanup['schema_version']!='2':_fail()
+    elif recovery is not None:
         _object(recovery,{'schema_version','source','owner_id','started_at_ns','finished_at_ns','read_only',
                          'store_identity','bytes','sha256','ledger_state_sha256','closed'})
         if recovery['schema_version']!='1' or recovery['source']!='postcleanup_readonly' or recovery['read_only'] is not True or recovery['closed'] is not True:_fail()
@@ -495,6 +504,11 @@ def _containers(loaded):
             for key in ('device','inode'):_integer(row[key],0,(1<<64)-1)
             for key in ('mode','uid','gid'):_integer(row[key],0,(1<<32)-1)
         if recovery['owner_id'] in {r['ledger_owner_id'] for r in loaded['manifest.json']['broker_instances']}:_fail()
+    if cleanup['schema_version']=='2':
+        from .engagement_live_context import _recovery_shape
+        helpers=_list(cleanup['recovery_helpers'],2)
+        if not helpers:_fail()
+        for helper in helpers:_recovery_shape(helper,'helper_observation')
     if (loaded['manifest.json']['ledger_exports']['recovery']['status']=='complete') != (recovery is not None):_fail()
 
 
@@ -553,6 +567,8 @@ def _report(loaded,context,authority,manifest_sha,parser_count,tails):
     m=loaded['manifest.json']
     _object(authority,{'missing_evidence','linkage'})
     missing=set(authority['missing_evidence'])
+    if any(row['status']!='complete' for row in loaded['cleanup.json'].get('recovery_helpers',[])):
+        missing.add('recovery_export')
     if not missing<=MISSING:_fail()
     if m['evidence_class']=='diagnostic':missing.add('diagnostic_only')
     operations=[]
@@ -1591,6 +1607,8 @@ def _evaluate_core_proof(loaded, proof, linkage):
 
 
 def _evaluate_case(loaded, context, linkage):
+    if any(row['status']!='complete' for row in loaded['cleanup.json'].get('recovery_helpers',[])):
+        return False
     m=loaded['manifest.json'];case=_case(m['case_id'])
     if case['group']=='native_core':
         proofs=loaded['results.json']['core_proofs']
@@ -1652,10 +1670,18 @@ def _cleanup_report(loaded,*,audit=None):
     from .engagement_live_context import _supervisor_closure
     supervision=_supervisor_closure(loaded)
     complete &= supervision['complete']
-    started=bool(receipts or audit['parents'] or loaded['cleanup.json']['supervisors'])
+    helpers=loaded['cleanup.json'].get('recovery_helpers',[])
+    helper_reaped=0
+    for helper in helpers:
+        process=helper['process'];closure=helper['cleanup']
+        complete &= closure['status']=='complete'
+        if process['pid'] is not None and process['start_time_ticks'] is not None:
+            observed.add((process['pid'],process['start_time_ticks']))
+            helper_reaped += process['exit_observed_at_ns'] is not None and process['reaped_at_ns'] is not None
+    started=bool(receipts or audit['parents'] or loaded['cleanup.json']['supervisors'] or helpers)
     return {'status':'not_started' if not started else 'complete' if complete else 'incomplete',
             'observed_payloads':len(observed) if started else None,
-            'reaped_payloads':sum(p['reaped_observed'] for p in payloads.values()) if started else None,
+            'reaped_payloads':sum(p['reaped_observed'] for p in payloads.values())+helper_reaped if started else None,
             'reaped_wrappers':sum(p['wrapper_returncode'] is not None for p in wrappers.values()) if started else None}
 
 
@@ -1669,6 +1695,13 @@ def _all_reaped(loaded,*,audit=None):
     # verified reaping. Save that failure honestly; never save a living role.
     from .engagement_live_context import _supervisor_closure
     if not _supervisor_closure(loaded)['all_closed']:return False
+    for helper in loaded['cleanup.json'].get('recovery_helpers',[]):
+        process=helper['process'];closure=helper['cleanup']
+        if (process['publication_state']=='pending' or closure['status']=='unknown'
+                or any(closure[key] is not True for key in ('descriptors_closed','stdio_closed',
+                    'pidfd_closed','source_package_closed','parent_closed','directory_closed','directory_removed'))):return False
+        if process['publication_state']=='published' and any(process[key] is None for key in
+                ('pid','start_time_ticks','exit_observed_at_ns','reaped_at_ns','returncode')):return False
     if any(not row['descriptors_closed'] for row in loaded['cleanup.json']['receipts']):return False
     reaped=set()
     processes=_cleanup_processes(loaded)

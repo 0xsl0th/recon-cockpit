@@ -45,6 +45,7 @@ def service():
     obj._readiness = []
     obj._cleanup_receipts = []
     obj._startup_observations = []
+    obj._recovery_helpers = []
     obj._used_slots = set()
     obj._monitor_thread = None
     obj._observer_rows = []
@@ -571,6 +572,10 @@ def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
             'signal_attempted':True,'exit_observed':True,'reaped_observed':True}]}
     obj._cleanup = cleanup
     obj._cleanup_receipts = [deepcopy(cleanup)]
+    obj._recovery_helpers = [{'schema_version':'1','helper_id':uid(970),'broker_id':uid(971),
+        'generation':0,'status':'failed','process':{'pid':124,'reaped_observed':True},
+        'cleanup':{'status':'complete','scratch_disposition':'removed'},
+        'error':{'phase':'rw_validation','code':'engagement_live_unavailable'}}]
     supervisor.closure = {'state':'joined','status':'complete','pending_slots':[], 'channel_closed':True}
     phases=[]
     for index in range(10):
@@ -632,6 +637,11 @@ def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
                 assert failure['sessions'][0]['supervisors']==[]
                 assert ('session:0','finalized_phase_rows') not in facts
             else:
+                assert facts[('session:0','_recovery_helpers')]==obj._recovery_helpers
+                projected=facts[('session:0','recovery_helper_closure_rows')]
+                assert projected['rows']==obj._recovery_helpers
+                assert projected['observed_helper_rows']==projected['retained_helper_rows']==1
+                assert projected['omitted_helper_rows']==0 and projected['work_included'] is False
                 assert facts[('session:0:supervisor:0','closure')]==supervisor.closure
                 assert facts[('session:0','finalized_supervision_rows')]['rows']==[retained_row]
                 tail=facts[('session:0','finalized_phase_rows')]
@@ -639,6 +649,26 @@ def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
                     'scope':'finalized_rows_only_nonatomic_diagnostic_tail'}
                 assert {'owner':'session:0','attribute':'finalized_phase_rows','reason':'row_tail_limit'} in failure['omitted']
                 assert failure['capture_complete'] is False
+    # A permitted long journal record list may exceed the diagnostic capsule's
+    # independent list cap. Its actual process/cleanup facts still survive.
+    helper=deepcopy(obj._recovery_helpers[0]);helper['work']={'records':[{'index':i} for i in range(95)]}
+    obj._recovery_helpers=[helper]
+    original=c.LiveError('engagement_live_unavailable');original.engagement_session=obj
+    directory=tmp_path/'large-recovery-failure';directory.mkdir(mode=0o700)
+    with monkeypatch.context() as patch:
+        for name in ('snapshot','_recover_ledger','close'):patch.setattr(obj,name,forbidden_snapshot)
+        _save_case_failure(directory,'core','portable_large_recovery_failure',original)
+    encoded=(directory/'case-failure.json').read_bytes();assert len(encoded)<=262144
+    failure=json.loads(encoded)
+    facts={(item['owner'],item['attribute']):item['value'] for item in failure['observations']}
+    assert ('session:0','_recovery_helpers') not in facts
+    projection=facts[('session:0','recovery_helper_closure_rows')]
+    assert projection['rows']==[{key:value for key,value in helper.items() if key!='work'}]
+    assert projection['observed_helper_rows']==projection['retained_helper_rows']==1
+    assert projection['omitted_helper_rows']==0 and projection['work_included'] is False
+    assert {'owner':'session:0','attribute':'_recovery_helpers','reason':'unretained_value'} in failure['omitted']
+    assert failure['capture_complete'] is False and failure['acceptance'] is False
+    assert original.engagement_session is obj and obj._recovery_helpers==[helper]
     assert events == ['audit','dispatch']
 
     # Observe the actual full send / decoded reply before protocol postchecks.
@@ -706,7 +736,12 @@ def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
         finally:parent.close();peer.close()
 
 
-def test_recovery_opens_fresh_owner_without_replenishing(tmp_path):
+def test_recovery_opens_fresh_owner_without_replenishing(tmp_path,monkeypatch):
+    _recovery_payload_merge_cases()
+    _recovery_frame_cases()
+    _recovery_owner_coordination_cases(tmp_path,monkeypatch)
+    _recovery_packaging_snapshot_cases(monkeypatch)
+    _copied_recovery_primitive_cases(tmp_path,monkeypatch)
     from test_secure_engagement_dispatch_store import new_store
     obj, row, value = service()
     created = new_store(tmp_path)
@@ -723,6 +758,7 @@ def test_recovery_opens_fresh_owner_without_replenishing(tmp_path):
         'pid':123,'start_time_ticks':456,'wrapper_pid':122,'wrapper_returncode':0,
         'exit_observed':True,'reaped_observed':False}]}
     obj._cleanup_receipts=[receipt]
+    obj._host_evidence_budget._session_owners.append(obj)
     with pytest.raises(c.LiveError,match='cleanup_incomplete'):
         obj._recover_ledger()
     receipt['processes'][0]['reaped_observed']=True
@@ -738,6 +774,503 @@ def test_recovery_opens_fresh_owner_without_replenishing(tmp_path):
     obj._startup_quiesced = False
     with pytest.raises(c.LiveError, match='cleanup_incomplete'):
         obj._recover_ledger()
+
+
+def _recovery_payload_merge_cases():
+    """Merger-only declared payloads: no runtime or helper proof is asserted."""
+    from engagement_live_native import _merge_core_payloads
+    def payload(generation, *, helper=True, complete=True, direct=False):
+        observer={'helper_id':uid(970+generation),'broker_id':uid(980+generation),
+            'generation':generation,'status':'complete' if complete else 'failed'}
+        recovery={'owner_id':uid(990+generation),'source':'postcleanup_readonly' if direct else 'postcleanup_copied_recovery'} if complete else None
+        unavailable={'status':'unavailable','source':None,'file':None,'reason':'not_started','broker_id':None}
+        export={'status':'complete','source':recovery['source'],'file':'recovery-ledger.json',
+            'reason':None,'broker_id':None} if complete else deepcopy(unavailable)
+        manifest={'runtime_sha256':'a'*64,'broker_instances':[{'broker_id':observer['broker_id']}],
+            'dispatches':[],'transcript':{'segments':[]},
+            'ledger_exports':{'initial':deepcopy(unavailable),'final':deepcopy(unavailable),'recovery':export}}
+        cleanup={'schema_version':'2' if helper else '1','receipts':[],'exports':[],
+            'supervisors':[],'recovery':recovery}
+        if helper:cleanup['recovery_helpers']=[observer]
+        members={'runtime.json':b'{}','processes.json':c.canonical({'schema_version':'1',
+            **{key:[] for key in ('startup','readiness','native','child_slots','boundary_observations')}}),
+            'results.json':c.canonical({'schema_version':'1','operations':[],'boundary_proofs':[],'core_proofs':[]}),
+            'cleanup.json':c.canonical(cleanup),'audit.jsonl':b'','transcript.jsonl':b''}
+        if complete:members['recovery-ledger.json']=c.canonical({'declared_generation':generation})
+        return manifest,members
+    earlier,later=payload(0),payload(1)
+    before=deepcopy([earlier,later])
+    manifest,members=_merge_core_payloads([earlier,later])
+    merged=json.loads(members['cleanup.json'])
+    assert merged['schema_version']=='2'
+    assert merged['recovery_helpers']==[json.loads(item[1]['cleanup.json'])['recovery_helpers'][0]
+        for item in (earlier,later)]
+    assert merged['recovery']==json.loads(later[1]['cleanup.json'])['recovery']
+    assert members['recovery-ledger.json']==later[1]['recovery-ledger.json']
+    assert [earlier,later]==before
+    failed=payload(1,complete=False)
+    manifest,members=_merge_core_payloads([earlier,failed])
+    merged=json.loads(members['cleanup.json'])
+    assert [item['status'] for item in merged['recovery_helpers']]==['complete','failed']
+    assert merged['recovery'] is None and 'recovery-ledger.json' not in members
+    assert manifest['ledger_exports']['recovery']==failed[0]['ledger_exports']['recovery']
+    direct=payload(1,helper=False,direct=True)
+    manifest,members=_merge_core_payloads([earlier,direct])
+    merged=json.loads(members['cleanup.json'])
+    assert len(merged['recovery_helpers'])==1 and merged['recovery']['source']=='postcleanup_readonly'
+    assert members['recovery-ledger.json']==direct[1]['recovery-ledger.json']
+    _,members=_merge_core_payloads([payload(0,helper=False,direct=True),direct])
+    assert json.loads(members['cleanup.json'])['schema_version']=='1'
+    assert 'recovery_helpers' not in json.loads(members['cleanup.json'])
+    for field in ('helper_id','broker_id'):
+        duplicate=deepcopy(later);cleanup=json.loads(duplicate[1]['cleanup.json'])
+        cleanup['recovery_helpers'][0][field]=json.loads(earlier[1]['cleanup.json'])['recovery_helpers'][0][field]
+        duplicate[1]['cleanup.json']=c.canonical(cleanup)
+        with pytest.raises(AssertionError,match='one retained recovery helper'):
+            _merge_core_payloads([earlier,duplicate])
+
+
+def _recovery_frame_cases():
+    import hashlib
+    digest=lambda data:hashlib.sha256(data).hexdigest()
+    body=b'{"value":1}';header=len(body).to_bytes(8,'big');complete=header+body
+    empty,value,used=module._recovery_frame(b'',4096,1)
+    assert empty['payload_sha256'] is empty['frame_sha256'] is None and value is None and used==0
+    for prefix in (header[:1],header[:7],header,complete[:-1]):
+        row,value,used=module._recovery_frame(prefix,4096,1)
+        assert value is None and used==0 and row['complete'] is False
+        assert row['received_bytes']==len(prefix) and row['frame_sha256']==digest(prefix)
+        assert row['payload_sha256']==digest(prefix[8:])
+    row,value,used=module._recovery_frame(complete+b'trailing',4096,1)
+    assert value=={'value':1} and used==len(complete)
+    assert row['received_bytes']==len(complete) and row['frame_sha256']==digest(complete)
+    for body in (b'{"value": 1}',b'{"value":1,"value":2}',b'\xff',b'{'):
+        packet=len(body).to_bytes(8,'big')+body
+        with pytest.raises(module._RecoveryError,match='framing') as caught:
+            module._recovery_frame(packet,4096,1)
+        row=caught.value.frame
+        assert row['complete'] is False and row['frame_sha256']==digest(packet)
+        assert row['payload_sha256']==digest(body) and row['received_bytes']==len(packet)
+    with pytest.raises(module._RecoveryError,match='framing') as caught:
+        module._recovery_frame((4097).to_bytes(8,'big'),4096,1)
+    assert caught.value.frame['frame_sha256']==digest((4097).to_bytes(8,'big'))
+    assert caught.value.frame['declared_bytes'] is None
+
+
+def _recovery_owner_coordination_cases(tmp_path,monkeypatch):
+    # Concurrent close cannot mutate descriptors while the lifecycle owner is
+    # running, and contention consumes only the original deadline remainder.
+    now=time.monotonic_ns();owner=module._RecoveryOwner(None,-1,-2,now,now+50000000)
+    entered=threading.Event();release=threading.Event();calls=[];errors=[]
+    def running():
+        entered.set();assert release.wait(1);return 'retained'
+    def cleanup():calls.append('cleanup');owner.resolved=True
+    with monkeypatch.context() as patch:
+        patch.setattr(owner,'_run_locked',running);patch.setattr(owner,'_cleanup_locked',cleanup)
+        def invoke():
+            try:assert owner.run()=='retained'
+            except BaseException as error:errors.append(error)
+        worker=threading.Thread(target=invoke);worker.start()
+        try:
+            assert entered.wait(.5) and owner.active
+            before=dict(owner.fds);began=time.monotonic()
+            with pytest.raises(module._RecoveryError,match='helper_reap'):owner._cleanup()
+            assert time.monotonic()-began<.5 and not calls and owner.fds==before and owner.active
+        finally:release.set();worker.join(1)
+        assert not worker.is_alive() and not errors and not owner.active
+        owner._cleanup();owner._cleanup()
+        assert calls==['cleanup'] and owner.resolved
+    # Recovery registers before its I/O seam. A second recovery or successor
+    # attachment cannot pass the actual shared session ownership fence.
+    obj,_,_=service();obj._closed=obj._startup_quiesced=True;obj._cleanup={'status':'complete'}
+    budget=obj._host_evidence_budget;budget._session_owners.append(obj)
+    entered=threading.Event();release=threading.Event();calls=[];errors=[]
+    def recovering(**kwargs):
+        calls.append(kwargs);entered.set();assert release.wait(1);return b'{}',{}
+    with monkeypatch.context() as patch:
+        patch.setattr(obj,'_recover_ledger_registered',recovering)
+        def invoke_recovery():
+            try:assert obj._recover_ledger()==(b'{}',{})
+            except BaseException as error:errors.append(error)
+        worker=threading.Thread(target=invoke_recovery);worker.start()
+        try:
+            assert entered.wait(.5) and not obj._verified_reaped()
+            with pytest.raises(c.LiveError,match='cleanup_incomplete'):obj._recover_ledger()
+            successor,_,_=service()
+            with pytest.raises(c.LiveError,match='cleanup_incomplete'):budget._attach_session(successor)
+            assert len(calls)==1 and budget._session_owners==[obj]
+        finally:release.set();worker.join(1)
+        assert not worker.is_alive() and not errors and obj._verified_reaped()
+        budget._attach_session(successor)
+        with pytest.raises(c.LiveError,match='cleanup_incomplete'):obj._recover_ledger()
+        assert len(calls)==1 and budget._session_owners==[obj,successor]
+    # Exclusive creation failure confers no ownership; a successful mkdir
+    # followed by failed open leaves unresolved custody, never name-only rmdir.
+    for variant in ('collision','open_failure'):
+        parent=tmp_path/('scratch-'+variant);parent.mkdir(mode=0o700)
+        store=parent/'store';store.mkdir(mode=0o700)
+        parent_fd=os.open(parent,os.O_RDONLY|os.O_DIRECTORY);store_fd=os.open(store,os.O_RDONLY|os.O_DIRECTORY)
+        now=time.monotonic_ns();owner=module._RecoveryOwner(None,parent_fd,store_fd,now,now+2*c.SECOND)
+        proposed='recovery_'+owner.helper_id.replace('-','');existing=parent/proposed
+        if variant=='collision':existing.mkdir(mode=0o700)
+        removed=[];real_open=os.open
+        def fail_open(path,flags,*args,**kwargs):
+            if path==proposed:raise PermissionError('declared post-mkdir refusal')
+            return real_open(path,flags,*args,**kwargs)
+        with monkeypatch.context() as patch:
+            patch.setattr(module.os,'rmdir',lambda *args,**kwargs:removed.append((args,kwargs)))
+            if variant=='open_failure':patch.setattr(module.os,'open',fail_open)
+            with pytest.raises(FileExistsError if variant=='collision' else PermissionError):owner._allocate_scratch()
+            if variant=='collision':
+                assert owner.scratch_parent_name is None and owner._scratch_parent_created is False
+                owner._remove_scratch(None)
+            else:
+                assert owner._scratch_parent_created and owner._scratch_parent_identity is None
+                with pytest.raises(module._RecoveryError,match='scratch_cleanup'):owner._remove_scratch(None)
+            assert not removed and not owner.resolved and existing.is_dir()
+        for fd in set(owner.fds.values()):os.close(fd)
+
+
+def _recovery_packaging_snapshot_cases(monkeypatch):
+    """Guard unit/caller checks; declared rows are not acceptance evidence."""
+    from test_secure_engagement_live_evidence import runtime as declared_runtime
+    obj,_,_=service();obj._closed=obj._startup_quiesced=True
+    obj._cleanup={'schema_version':'1','started_at_ns':1,'finished_at_ns':2,'deadline_ns':3,
+        'status':'complete','processes':[],'descriptors_closed':True}
+    obj._operations.clear();obj._sessions.clear();obj._runtime=declared_runtime();obj._mode='terminal'
+    records=[{'helper_id':uid(979),'status':'complete','retained':{'closed':True}}]
+    def forbidden(*args,**kwargs):raise AssertionError('snapshot must not drive cleanup or recovery')
+    class UntouchedLock:
+        def acquire(self,*args,**kwargs):forbidden()
+        def release(self):forbidden()
+    owner=SimpleNamespace(quiescent=True,_lifecycle_lock=UntouchedLock(),run=forbidden,_cleanup=forbidden)
+    obj._recovery_owner=owner;obj._recovery_helpers=deepcopy(records)
+    budget=obj._host_evidence_budget
+    def unlocked():
+        assert budget._lock.acquire(blocking=False)
+        budget._lock.release()
+    captured=obj._recovery_packaging_snapshot(deadline=time.monotonic()+1)
+    assert captured==(owner,c.canonical(records,max_bytes=524288))
+    assert obj._recovery_packaging_snapshot(deadline=time.monotonic()+1,expected=captured)==captured
+    # Canonical ordering is stable, while bool/int distinctions must survive.
+    obj._recovery_helpers=[dict(reversed(list(records[0].items())))]
+    assert obj._recovery_packaging_snapshot(deadline=time.monotonic()+1,expected=captured)==captured
+    unlocked()
+    for variant in ('owner','nested','bool_int','pending','active'):
+        obj._recovery_owner=owner;owner.quiescent=True;obj._recovery_in_progress=False
+        obj._recovery_helpers=deepcopy(records)
+        if variant=='owner':obj._recovery_owner=SimpleNamespace(quiescent=True)
+        elif variant=='nested':obj._recovery_helpers[0]['status']='failed'
+        elif variant=='bool_int':
+            obj._recovery_helpers[0]['retained']['closed']=1
+            assert obj._recovery_helpers==records  # Python equality is insufficient.
+        elif variant=='pending':obj._recovery_in_progress=True
+        else:owner.quiescent=False
+        code='cleanup_incomplete' if variant in ('pending','active') else 'evidence_incomplete'
+        with pytest.raises(c.LiveError,match=code):
+            obj._recovery_packaging_snapshot(deadline=time.monotonic()+1,expected=captured)
+        unlocked()
+        assert captured[1]==c.canonical(records,max_bytes=524288)
+    obj._recovery_owner=owner;owner.quiescent=True;obj._recovery_in_progress=False
+    obj._recovery_helpers=deepcopy(records)
+    budget._lock.acquire();began=time.monotonic()
+    try:
+        with pytest.raises(c.LiveError,match='cleanup_incomplete'):
+            obj._recovery_packaging_snapshot(deadline=began+.02)
+        assert time.monotonic()-began<.5 and obj._recovery_helpers==records
+    finally:budget._lock.release()
+    unlocked()
+    # The actual caller captures helpers before reading saved audit bytes and
+    # checks them again immediately before returning the assembled payload.
+    with monkeypatch.context() as patch:
+        patch.setattr(obj,'_saved_audit',lambda deadline:b'')
+        patch.setattr(obj,'_recover_ledger',forbidden)
+        _,members=obj._evidence_payload(recover=False)
+        assert json.loads(members['cleanup.json'])['recovery_helpers']==records
+        for variant in ('owner','nested','bool_int','pending'):
+            obj._recovery_owner=owner;obj._recovery_in_progress=False;obj._recovery_helpers=deepcopy(records)
+            calls=[]
+            def mutate_after_capture(deadline):
+                calls.append('saved_audit')
+                if variant=='owner':obj._recovery_owner=SimpleNamespace(quiescent=True)
+                elif variant=='nested':obj._recovery_helpers[0]['status']='failed'
+                elif variant=='bool_int':obj._recovery_helpers[0]['retained']['closed']=1
+                else:obj._recovery_in_progress=True
+                return b''
+            patch.setattr(obj,'_saved_audit',mutate_after_capture)
+            with pytest.raises(c.LiveError,match='cleanup_incomplete' if variant=='pending' else 'evidence_incomplete'):
+                obj._evidence_payload(recover=False)
+            assert calls==['saved_audit'];unlocked()
+
+
+def _copied_recovery_primitive_cases(tmp_path,monkeypatch):
+    """Real local SQLite/lock checks; no isolated-runtime acceptance witness."""
+    import hashlib
+    from test_secure_engagement_dispatch_store import new_store
+    from recon_cockpit.secure_agent.engagement_dispatch_store import DispatchLedger,DispatchLedgerError
+    with new_store(tmp_path,'copied-recovery-source') as source:
+        expected=source.snapshot();source_owner=source.owner_reference;source_path=source.directory
+    main=(source_path/'records.sqlite3').read_bytes()
+    module._recovery_main_header(main)
+    pages=len(main)//4096;nonce=0xffffffff
+    selected=[1,pages] if pages>1 else [1]
+    def journal(numbers=selected,sector=512):
+        header=bytes(12)+b''.join(value.to_bytes(4,'big') for value in (nonce,pages,sector,4096))
+        result=bytearray(header+bytes(sector-len(header)))
+        for number in numbers:
+            page=main[(number-1)*4096:number*4096]
+            checksum=nonce;offset=len(page)-200
+            while offset>0:
+                checksum=(checksum+page[offset])&0xffffffff;offset-=200
+            result.extend(number.to_bytes(4,'big')+page+checksum.to_bytes(4,'big'))
+        return bytes(result)
+    retained=journal();original={'main':main,'journal':retained}
+    (source_path/'records.sqlite3-journal').write_bytes(retained)
+    (source_path/'records.sqlite3-journal').chmod(0o600)
+    classified=module._recovery_inactive_journal(main,retained)
+    assert classified['record_count']==len(selected)
+    assert [row['page_number'] for row in classified['records']]==selected
+    assert [row['index'] for row in classified['records']]==list(range(len(selected)))
+    assert all(row['checksum']==row['computed_checksum'] and row['before_image_sha256']==row['main_page_sha256']
+        for row in classified['records'])
+    assert classified['records'][0]['before_image_sha256']==hashlib.sha256(main[:4096]).hexdigest()
+    for sector in (512,65536):
+        assert module._recovery_inactive_journal(main,journal([],sector))['record_count']==0
+    def replace(raw,start,data):return raw[:start]+data+raw[start+len(data):]
+    broken=[retained+b'\x00',retained[:-1],retained+b'\x00'*4104,
+        replace(retained,0,b'\xd9'),replace(retained,8,b'\x01'),replace(retained,28,b'\x01'),
+        replace(retained,16,(pages+1).to_bytes(4,'big')),replace(retained,20,(513).to_bytes(4,'big')),
+        replace(retained,24,(1024).to_bytes(4,'big')),replace(retained,512,(0).to_bytes(4,'big')),
+        replace(retained,512,(pages+1).to_bytes(4,'big')),replace(retained,512+4100,b'\x00'*4),
+        replace(retained,512+4+1,bytes([retained[512+5]^1])),
+        retained+bytes.fromhex('d9d505f920a163d7'),journal([1,1])]
+    for bad in broken:
+        with pytest.raises(module._RecoveryError):module._recovery_inactive_journal(main,bad)
+    for bad in (b'',main[:-1],replace(main,0,b'X'),replace(main,16,b'\x08\x00'),
+            replace(main,18,b'\x02'),replace(main,19,b'\x02')):
+        with pytest.raises(module._RecoveryError,match='main_header'):
+            module._recovery_main_header(bad)
+    # The accepted read-only constructor continues to refuse the original
+    # retained journal. Only the distinct private copy is validated writable.
+    with pytest.raises(DispatchLedgerError):DispatchLedger.open(source_path,read_only=True)
+    scratch_parent=tmp_path/'copied-recovery-scratch';scratch_parent.mkdir(mode=0o700)
+    scratch=scratch_parent/'store';scratch.mkdir(mode=0o700)
+    for name,data in (('records.sqlite3',main),('records.sqlite3-journal',retained)):
+        target=scratch/name;target.write_bytes(data);target.chmod(0o600)
+    budget=module._RecoveryProgress(time.monotonic_ns()+2*c.SECOND)
+    query='WITH RECURSIVE n(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<10000) SELECT sum(x) FROM n'
+    seen=[]
+    class CopiedLedger(DispatchLedger):
+        def _progress(self):
+            if not seen or seen[-1] is not self:seen.append(self)
+            return budget.step(self)
+    with CopiedLedger._open(scratch,read_only=False,initial=None,deadline=budget.deadline_ns/c.SECOND) as writable:
+        rw_owner=writable.owner_reference
+        constructor_count=budget.callbacks
+        assert writable.snapshot()==expected
+        # A tiny valid store can execute fewer than1000 SQLite VM instructions
+        # and legitimately report zero callbacks. This fixed read-only test
+        # load exercises the registered callback without altering the ledger.
+        with writable._transaction():assert writable._execute(query).fetchone()[0]==50005000
+        rw_count=budget.callbacks
+    assert 0<=constructor_count<rw_count<4000
+    assert (scratch/'records.sqlite3').read_bytes()==main
+    assert (scratch/'records.sqlite3-journal').read_bytes()==retained
+    module._recovery_inactive_journal((scratch/'records.sqlite3').read_bytes(),(scratch/'records.sqlite3-journal').read_bytes())
+    (scratch/'records.sqlite3-journal').unlink()
+    with CopiedLedger._open(scratch,read_only=True,initial=None,deadline=budget.deadline_ns/c.SECOND) as readonly:
+        assert readonly.snapshot()==expected
+        assert readonly._db.execute('PRAGMA query_only').fetchone()[0]==1
+        assert len({source_owner,rw_owner,readonly.owner_reference})==3
+        with readonly._transaction():assert readonly._execute(query).fetchone()[0]==50005000
+    assert rw_count<budget.callbacks<4000 and len(seen)==2
+    assert (source_path/'records.sqlite3').read_bytes()==original['main']
+    assert (source_path/'records.sqlite3-journal').read_bytes()==original['journal']
+    # Exhaustion crosses constructor boundaries even though the accepted
+    # per-operation callback counter is reset by the next transaction.
+    seen.clear();budget=module._RecoveryProgress(time.monotonic_ns()+2*c.SECOND);budget.callbacks=3999
+    class LoadedConstructor(CopiedLedger):
+        # Test-only read load after the real constructor installs its handler;
+        # no accepted method is patched and the production subclass is intact.
+        def _configure(self,*,initial):
+            super()._configure(initial=initial)
+            self._db.execute(query).fetchone()
+    with pytest.raises(DispatchLedgerError,match='timeout'):
+        LoadedConstructor._open(scratch,read_only=True,initial=None,deadline=budget.deadline_ns/c.SECOND)
+    assert budget.callbacks==4000 and len(seen)==1 and seen[0]._interrupted is True
+    assert seen[0]._db is seen[0]._parent_fd is seen[0]._directory_fd is None
+    local=SimpleNamespace(_callbacks=0,_interrupted=False,_deadline=time.monotonic()+2)
+    assert budget.step(local)==1 and budget.callbacks==4000
+    local._callbacks=0;local._interrupted=False
+    assert budget.step(local)==1 and local._interrupted is True
+    with monkeypatch.context() as patch:
+        patch.setattr(module.time,'monotonic_ns',lambda:100)
+        timed=module._RecoveryProgress(100)
+        assert timed.step(local)==1 and timed.callbacks==1
+    _copied_recovery_lock_preservation(tmp_path)
+
+
+def _copied_recovery_lock_preservation(tmp_path):
+    """Closing source FDs in another process preserves an active SQLite lock."""
+    import fcntl
+    from test_secure_engagement_dispatch_store import new_store
+    program='''import json,os,sys
+sys.path.insert(0,sys.argv[1])
+from recon_cockpit.secure_agent.engagement_live_session import _recovery_lock
+fd=os.open(sys.argv[2],os.O_RDONLY|os.O_CLOEXEC)
+try:
+ rows=[_recovery_lock(fd,offset=1073741824,length=1),
+       _recovery_lock(fd,offset=1073741826,length=510),
+       _recovery_lock(fd,offset=1073741825,length=1,query=True)]
+finally:os.close(fd)
+print(json.dumps(rows,separators=(',',':'),sort_keys=True))
+'''
+    with new_store(tmp_path,'recovery-lock-source') as source:
+        path=source.directory/'records.sqlite3'
+        def observe():
+            result=subprocess.run([sys.executable,'-I','-S','-B','-c',program,str(ROOT),str(path)],
+                capture_output=True,timeout=3)
+            assert result.returncode==0 and not result.stderr
+            return json.loads(result.stdout)
+        source._db.execute('BEGIN IMMEDIATE')
+        try:
+            first=observe()
+            if not hasattr(fcntl,'F_OFD_GETLK') or not hasattr(fcntl,'F_OFD_SETLK'):
+                assert all(row.get('status','unsupported')=='unsupported' for row in first)
+                return
+            for rows in (first,observe()):
+                assert all(row['status']=='acquired' and row['errno'] is None for row in rows[:2])
+                assert rows[2]['result_type']=='F_WRLCK' and rows[2]['owner_pid']==os.getpid()
+                assert rows[2]['input_owner_pid']==0 and rows[2]['errno'] is None
+        finally:source._db.execute('ROLLBACK')
+        after=observe()
+        assert after[2]['result_type']=='F_UNLCK' and after[2]['owner_pid']==0
+
+
+def copied_recovery_work_fixture(tmp_path):
+    """Actual stage facts from a portable child, with declared outer bindings.
+
+    This is deliberately not a complete runtime/process observation and must
+    never be used as a native helper or case acceptance witness.
+    """
+    from test_secure_engagement_dispatch_store import new_store
+    with new_store(tmp_path,'recovery-work-source') as source:
+        expected=source.snapshot();old_owner=source.owner_reference;source_path=source.directory
+    main=(source_path/'records.sqlite3').read_bytes();pages=len(main)//4096;nonce=123
+    header=bytes(12)+b''.join(value.to_bytes(4,'big') for value in (nonce,pages,512,4096))
+    page=main[:4096];checksum=nonce
+    for offset in range(3896,0,-200):checksum=(checksum+page[offset])&0xffffffff
+    journal=header+bytes(512-28)+(1).to_bytes(4,'big')+page+checksum.to_bytes(4,'big')
+    source_journal=source_path/'records.sqlite3-journal';source_journal.write_bytes(journal);source_journal.chmod(0o600)
+    scratch_parent=tmp_path/'recovery-work-scratch';scratch_parent.mkdir(mode=0o700)
+    scratch=scratch_parent/'store';scratch.mkdir(mode=0o700)
+    # Exercise the declared fallback's joins on Linux as well, so its data
+    # model cannot silently drift until another platform runs this same case.
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    declared=_declared_recovery_work_fixture(expected,main,journal,old_owner)
+    assert context._recovery_work(declared[0],declared[1],set(declared[2]),{})==expected
+    import fcntl
+    if (not sys.platform.startswith('linux') or not all(hasattr(fcntl,name)
+            for name in ('F_OFD_SETLK','F_OFD_GETLK'))):
+        # The Linux helper is unsupported here. Pure replay still receives a
+        # declared complete data fixture, with no /proc access or child launch.
+        if not hasattr(fcntl,'F_OFD_SETLK'):
+            assert module._recovery_lock(-1,offset=1073741824,length=1)['status']=='unsupported'
+        if not hasattr(fcntl,'F_OFD_GETLK'):
+            assert module._recovery_lock(-1,offset=1073741825,length=1,query=True)['result_type'] is None
+        return declared
+    program='''import fcntl,json,os,resource,sys,time
+sys.path.insert(0,sys.argv[1])
+from recon_cockpit.secure_agent import engagement_live_session as m
+paths=sys.argv[2:6]
+original=[os.open(path,os.O_RDONLY|os.O_DIRECTORY|os.O_CLOEXEC) for path in paths]
+copies=[fcntl.fcntl(fd,fcntl.F_DUPFD_CLOEXEC,8) for fd in original]
+for target,fd in zip(range(4,8),copies):os.dup2(fd,target)
+for fd in set(original+copies)-set(range(4,8)):os.close(fd)
+started=time.monotonic_ns();deadline=started+2000000000
+work={'schema_version':'1','helper_id':sys.argv[6],'broker_id':sys.argv[7],
+ 'runtime_sha256':'a'*64,'source_package_sha256':'b'*64,'started_at_ns':started,
+ 'work_deadline_ns':deadline,'deadline_ns':deadline+500000000,'finished_at_ns':None,
+ 'copy':None,'rw':None,'ro':None,'post_rw_copy':None,'post_ro_copy':None,
+ 'journal_disposition':None,'progress_callbacks':0,'source_descriptors_closed':False,
+ 'copy_descriptors_closed':False,'source_package_closed_at_ns':time.monotonic_ns(),
+ 'sqlite_file_size_limit':None}
+contents=m._recovery_copy_files(work,deadline)
+resource.setrlimit(resource.RLIMIT_FSIZE,(8388608,8388608))
+soft,hard=resource.getrlimit(resource.RLIMIT_FSIZE)
+work['sqlite_file_size_limit']={'observed_at_ns':time.monotonic_ns(),'soft':soft,'hard':hard}
+progress=m._RecoveryProgress(deadline)
+rw=m._recovery_sqlite_stage(work,'rw',progress)
+m._recovery_dispose_journal(work,contents,deadline)
+ro=m._recovery_sqlite_stage(work,'ro',progress)
+assert rw==ro
+work['post_ro_copy'],unused=m._recovery_observe_store(6,7,deadline)
+work['finished_at_ns']=time.monotonic_ns()
+for fd in range(4,8):os.close(fd)
+print(json.dumps({'work':work,'export':ro},separators=(',',':'),sort_keys=True))
+'''
+    result=subprocess.run([sys.executable,'-I','-S','-B','-c',program,str(ROOT),
+        str(source_path.parent),str(source_path),str(scratch_parent),str(scratch),uid(970),uid(971)],
+        capture_output=True,timeout=4)
+    assert result.returncode==0 and not result.stderr,result.stderr.decode('utf-8',errors='replace')
+    retained=json.loads(result.stdout);work=retained['work']
+    assert retained['export']==expected
+    assert (source_path/'records.sqlite3').read_bytes()==main and source_journal.read_bytes()==journal
+    assert (scratch/'records.sqlite3').read_bytes()==main and not (scratch/'records.sqlite3-journal').exists()
+    helper={field:work[field] for field in ('helper_id','broker_id','deadline_ns','work_deadline_ns')}
+    helper.update(work=work,parent_observer={'uid':os.getuid(),'gid':os.getgid()},
+        config={field:work[field] for field in ('runtime_sha256','source_package_sha256')},
+        process={'release_sent_at_ns':work['started_at_ns']},
+        scratch={field:work['copy']['copied'][field] for field in ('parent','directory')})
+    return helper,{'recovery-ledger.json':retained['export']},{old_owner}
+
+
+def _declared_recovery_work_fixture(export,main,journal,old_owner):
+    """Portable replay declarations, explicitly not an executed helper receipt."""
+    from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
+    identity=lambda inode:{'device':1,'inode':inode,'mode':0o40700,'uid':os.getuid(),'gid':os.getgid()}
+    def file(name,data,inode):
+        stamp={**identity(inode),'mode':0o100600,'nlink':1,'size':len(data),'mtime_ns':10,'ctime_ns':10}
+        return {'name':name,'held':stamp,'named':deepcopy(stamp),'fd_flags':os.O_RDONLY,
+            'sha256':c.digest(data),'header_hex':data[:28].hex(),'trailer_hex':data[-16:].hex()}
+    source={'parent':identity(10),'directory':identity(11),'observed_at_ns':110,
+        'files':[file('records.sqlite3',main,12),file('records.sqlite3-journal',journal,13)]}
+    copied={'parent':identity(20),'directory':identity(21),'observed_at_ns':111,
+        'files':[file('records.sqlite3',main,22),file('records.sqlite3-journal',journal,23)]}
+    after=deepcopy(source);after['observed_at_ns']=113
+    def lock(offset,length,start):return {'command':'F_OFD_SETLK','lock_type':'F_RDLCK',
+        'offset':offset,'length':length,'started_at_ns':start,'finished_at_ns':start+1,'status':'acquired','errno':None}
+    def query(start):return {'command':'F_OFD_GETLK','query_type':'F_WRLCK','input_owner_pid':0,
+        'offset':1073741825,'length':1,'started_at_ns':start,'finished_at_ns':start+1,
+        'result_type':'F_UNLCK','owner_pid':0,'errno':None}
+    encoded=ledger.canonical(export)
+    def stage(mode,owner,start,before,count):return {'mode':mode,'owner_id':uid(owner),
+        'opened_at_ns':start,'snapshot_at_ns':start+1,'closed_at_ns':start+2,'closed':True,
+        'snapshot_bytes':len(encoded),'snapshot_sha256':c.digest(encoded),'snapshot_event_sequence':len(export['events']),
+        'ledger_state_sha256':export['events'][-1]['receipt']['state_sha256'],
+        'progress_callbacks_before':before,'progress_callbacks_after':count}
+    post_rw=deepcopy(copied);post_rw['observed_at_ns']=123
+    post_ro=deepcopy(copied);post_ro.update(observed_at_ns=131,files=[deepcopy(copied['files'][0])])
+    work={'schema_version':'1','helper_id':uid(970),'broker_id':uid(971),'runtime_sha256':'a'*64,
+        'source_package_sha256':'b'*64,'started_at_ns':101,'work_deadline_ns':1500000000,
+        'deadline_ns':2000000000,'finished_at_ns':132,'source_package_closed_at_ns':102,
+        'source_descriptors_closed':True,'copy_descriptors_closed':True,'progress_callbacks':5,
+        'copy':{'started_at_ns':103,'finished_at_ns':118,'source_before':source,'source_after':after,'copied':copied,
+            'raw_copy_fds_closed_at_ns':112,'raw_source_fds_closed_at_ns':117,
+            'locks':{'main_device':1,'main_inode':12,'pending':lock(1073741824,1,104),
+                'shared':lock(1073741826,510,106),'reserved_before':query(108),'reserved_after':query(114),'released_at_ns':116}},
+        'sqlite_file_size_limit':{'soft':8388608,'hard':8388608,'observed_at_ns':119},
+        'rw':stage('read_write',974,120,0,3),'ro':stage('read_only',975,128,3,5),
+        'post_rw_copy':post_rw,'post_ro_copy':post_ro,
+        'journal_disposition':{'status':'removed_inactive_copy','observed_at_ns':124,
+            'journal':deepcopy(copied['files'][1]),'main_before':deepcopy(copied['files'][0]),
+            'main_after':deepcopy(copied['files'][0]),'header':module._recovery_inactive_journal(main,journal),
+            'unlink_started_at_ns':125,'unlink_finished_at_ns':126,'absence_observed_at_ns':127}}
+    helper={key:work[key] for key in ('helper_id','broker_id','deadline_ns','work_deadline_ns')}
+    helper.update(work=work,parent_observer={'uid':os.getuid(),'gid':os.getgid()},
+        config={key:work[key] for key in ('runtime_sha256','source_package_sha256')},
+        process={'release_sent_at_ns':100},scratch={key:copied[key] for key in ('parent','directory')})
+    return helper,{'recovery-ledger.json':export},{old_owner}
 
 
 def test_cli_output_is_bounded_and_never_reports_late_success(monkeypatch):

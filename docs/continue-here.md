@@ -584,6 +584,34 @@ the actual transformed SQLite hook, deterministic host selector and full case
 predicates. Independent review found no open code issues. Another clean freeze
 and fresh required validation remain necessary; physical crash and recovery
 acceptance cannot be inferred from these portable tests.
+
+Freeze twenty-eight at `a2ba2c2` passed all 160 portable cases, fresh N04 and all
+five hosted suites (29,085 passes and 2,347 integration deselections each). N42
+then stopped during recovery packaging because the accepted read-only store
+correctly refused a retained rollback journal. The original database and journal
+remain untouched. That failure capsule did not retain the closed session, so
+actual SIGKILL and reaping are unproved for this attempt. The separate retention
+correction at `336418d` passed 12 focused checks and independent review; it does
+not repair the missing historical observations.
+
+Amendment A10's complete contract/inventory pair was independently reviewed and
+committed at `d047f2a` before its implementation. It permits one supervised
+data-only recovery helper after authority cleanup, with original files opened
+read-only only in that fresh process. Recovery operates on a distinct private
+copy, retains exact source/lock/runtime/process provenance and uses the same
+two-second total allowance. The accepted store's journal refusal, all 288 case
+identities, 1,093 immutable accepted files and roadmap scope remain unchanged.
+The implementation and its final corrections passed all 56 focused contract,
+session and evidence tests, with unchanged source hashes and no failures,
+errors or skips. Independent review checked bounded helper ownership, coherent
+evidence capture, zero-callback SQLite constructors, ASCII framing and the
+separate export/provenance byte limits. Preserve the earlier sandbox socket
+refusal, callback-fixture failure and recovery-frame cap failure with their
+diagnoses. Final independent code review found no open issues and cleared a
+fresh freeze; the complete acceptance gates remain pending. These focused
+checks grant no native acceptance. This is still
+S4.2c; S4.3 synthetic custody remains next and real credentials remain deferred.
+
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

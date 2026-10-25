@@ -568,6 +568,7 @@ def load_cli():
 
 
 def test_rejects_unknown_duplicate_or_unbounded_fields():
+    _copied_recovery_shape_cases()
     manifest,members=fixture()
     for key,value in [('unexpected',None),('schema_version',1),('contract_sha256','0'*64)]:
         changed=deepcopy(manifest);changed[key]=value;refused(e._manifest,changed)
@@ -582,6 +583,62 @@ def test_rejects_unknown_duplicate_or_unbounded_fields():
     assert (e.MAX_BUNDLE,e.MAX_REPORT,e.MAX_TRANSCRIPT_ROWS)==(16777216,8192,4096)
     bad=deepcopy(manifest);bad['members'].append(bad['members'][0]);refused(e._manifest,bad)
     assert e._manifest(manifest)==manifest
+
+
+def _copied_recovery_shape_cases():
+    """Closed data shapes only; these declarations make no process claim."""
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    config={'schema_version':'1','helper_id':uid(970),'broker_id':uid(971),
+        'runtime_sha256':'a'*64,'source_manifest_sha256':'b'*64,
+        'source_package_bytes':1024,'source_package_sha256':'c'*64,
+        'started_at_ns':100,'work_deadline_ns':1500000100,'deadline_ns':2000000100,
+        'inherited_fds':{'stdin':0,'stdout':1,'stderr':2,'source_package':8,
+            'source_parent':9,'source_store':10,'scratch_parent':11,'scratch_store':12}}
+    stamp={'ctime_ns':100,'mtime_ns':100,'device':1,'inode':2,'uid':1000,'gid':1000,
+        'mode':stat.S_IFREG|0o600,'nlink':1,'size':4096}
+    observation={'name':'records.sqlite3','fd_flags':os.O_RDONLY,'header_hex':
+        (b'SQLite format 3\x00'+bytes.fromhex('10000101')+bytes(8)).hex(),
+        'trailer_hex':'00'*16,'sha256':'d'*64,'held':stamp,'named':deepcopy(stamp)}
+    work={'schema_version':'1','helper_id':uid(970),'broker_id':uid(971),
+        'runtime_sha256':'a'*64,'source_package_sha256':'c'*64,'started_at_ns':100,
+        'work_deadline_ns':1500000100,'deadline_ns':2000000100,'finished_at_ns':None,
+        'copy':None,'rw':None,'ro':None,'post_rw_copy':None,'post_ro_copy':None,
+        'journal_disposition':None,'progress_callbacks':0,'source_descriptors_closed':False,
+        'copy_descriptors_closed':False,'source_package_closed_at_ns':None,'sqlite_file_size_limit':None}
+    for name,value in (('config',config),('file_observation',observation),('work_provenance',work)):
+        context._recovery_shape(value,name)
+        before=deepcopy(value)
+        for field in value:
+            changed=deepcopy(value);changed.pop(field)
+            refused(context._recovery_shape,changed,name)
+        changed=deepcopy(value);changed['unreviewed_field']=None
+        refused(context._recovery_shape,changed,name)
+        assert value==before
+    for field,value in (('source_package_bytes',True),('source_package_bytes',2097153),
+            ('source_package_bytes',0),('runtime_sha256','A'*64),('helper_id',uid(970).upper()),
+            ('started_at_ns',-1),('deadline_ns',2**63)):
+        changed=deepcopy(config);changed[field]=value
+        refused(context._recovery_shape,changed,'config')
+    for field,value in (('stdin',False),('stdout',True),('stderr',3),('source_store',2),
+            ('scratch_store',256),('source_package',True)):
+        changed=deepcopy(config);changed['inherited_fds'][field]=value
+        refused(context._recovery_shape,changed,'config')
+    changed=deepcopy(config);changed['inherited_fds']['extra']=13
+    refused(context._recovery_shape,changed,'config')
+    for field,value in (('header_hex','0'),('header_hex','AA'),('header_hex','00'*29),
+            ('trailer_hex','00'*17),('name','records.sqlite3-wal'),('sha256','e'*63)):
+        changed=deepcopy(observation);changed[field]=value
+        refused(context._recovery_shape,changed,'file_observation')
+    for field,value in (('nlink',True),('nlink',2),('size',16777217),('inode',True)):
+        changed=deepcopy(observation);changed['held'][field]=value
+        refused(context._recovery_shape,changed,'file_observation')
+    for count in (3999,4000):
+        changed=deepcopy(work);changed['progress_callbacks']=count
+        context._recovery_shape(changed,'work_provenance')
+    for field,value in (('progress_callbacks',4001),('progress_callbacks',True),
+            ('copy_descriptors_closed',1),('finished_at_ns','unknown')):
+        changed=deepcopy(work);changed[field]=value
+        refused(context._recovery_shape,changed,'work_provenance')
 
 
 def test_refuses_unsafe_evidence_input_custody(tmp_path):
@@ -649,7 +706,8 @@ def test_bounds_inspection_and_parser_cleanup(tmp_path,monkeypatch):
     refused(e.inspect_live_bundle,path,code='timeout')
 
 
-def test_matches_immutable_python_and_cli_inspection(tmp_path):
+def test_matches_immutable_python_and_cli_inspection(tmp_path,monkeypatch):
+    _copied_recovery_work_cases(tmp_path,monkeypatch)
     path=saved(tmp_path);before=snapshot(path)
     report=e.inspect_live_bundle(path)
     result=subprocess.run([sys.executable,'-B',str(CLI),str(path)],cwd=ROOT,
@@ -658,6 +716,265 @@ def test_matches_immutable_python_and_cli_inspection(tmp_path):
     assert result.stdout==raw(report)+b'\n'
     assert snapshot(path)==before
     assert report['authority_restored'] is False and report['live_execution_started_by_inspection'] is False
+
+
+def _copied_recovery_work_cases(tmp_path,monkeypatch):
+    from test_secure_engagement_live_session import copied_recovery_work_fixture
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
+    import socket
+    import sqlite3
+    helper,loaded,owners=copied_recovery_work_fixture(tmp_path)
+    before=deepcopy((helper,loaded));expected=loaded['recovery-ledger.json']
+    def check(value,retained=loaded):
+        return context._recovery_work(value,retained,set(owners),{})
+    def forbidden(*args,**kwargs):raise AssertionError('offline recovery replay attempted live work')
+    with monkeypatch.context() as patch:
+        patch.setattr(sqlite3,'connect',forbidden);patch.setattr(subprocess,'Popen',forbidden)
+        patch.setattr(socket,'socket',forbidden);patch.setattr(os,'open',forbidden)
+        assert check(helper)==expected
+        # The previous generation's export is reconstructed from the latest
+        # validated history, not mistaken for the latest post-revocation state.
+        latest,_=ledger._apply(expected,{'schema_version':'2','engagement_id':expected['engagement_id'],
+            'event_id':uid(972),'operation':'revoke','expected_revision':1,'expected_generation':0,'body':None})
+        assert check(helper,{'recovery-ledger.json':latest})==expected
+        refused(check,helper,{},code='evidence_incomplete')
+        unavailable=deepcopy(helper['work']['ro']);latest_raw=ledger.canonical(latest)
+        unavailable.update(snapshot_event_sequence=len(latest['events']),snapshot_bytes=len(latest_raw),
+            snapshot_sha256=sha(latest_raw),ledger_state_sha256=latest['events'][-1]['receipt']['state_sha256'])
+        refused(context._recovery_prefix,unavailable,{'recovery-ledger.json':expected},{},code='evidence_incomplete')
+        for variant in ('helper_id','runtime','deadline','unclosed_source','unclosed_copy',
+                'source_changed','source_hash','source_copy_alias','main_wal','journal_trailer',
+                'pending_range','shared_range','reserved_owner','reserved_errno','early_unlock',
+                'file_size_limit','rw_mode','same_owner','open_ro','missing_rw_snapshot','reused_budget',
+                'exhausted_budget','false_total','late_work','checksum','before_image','missing_record',
+                'unlink_before_validation','ro_mutation','snapshot_sequence','snapshot_hash'):
+            bad=deepcopy(helper);work=bad['work'];copy=work['copy'];rw=work['rw'];ro=work['ro']
+            source={row['name']:row for row in copy['source_before']['files']}
+            copied={row['name']:row for row in copy['copied']['files']}
+            main='records.sqlite3';journal=main+'-journal';locks=copy['locks']
+            if variant=='helper_id':work['helper_id']=uid(979)
+            elif variant=='runtime':work['runtime_sha256']='f'*64
+            elif variant=='deadline':work['deadline_ns']+=1
+            elif variant=='unclosed_source':work['source_descriptors_closed']=False
+            elif variant=='unclosed_copy':work['copy_descriptors_closed']=False
+            elif variant=='source_changed':
+                for field in ('held','named'):source[main][field]['mtime_ns']+=1
+            elif variant=='source_hash':source[main]['sha256']='e'*64
+            elif variant=='source_copy_alias':
+                for field in ('held','named'):
+                    for identity in ('device','inode'):copied[main][field][identity]=source[main][field][identity]
+            elif variant=='main_wal':source[main]['header_hex']=source[main]['header_hex'][:36]+'02'+source[main]['header_hex'][38:]
+            elif variant=='journal_trailer':source[journal]['trailer_hex']='00'*8+'d9d505f920a163d7'
+            elif variant=='pending_range':locks['pending']['offset']=1073741826
+            elif variant=='shared_range':locks['shared']['length']=1
+            elif variant=='reserved_owner':locks['reserved_after']['owner_pid']=-1
+            elif variant=='reserved_errno':locks['reserved_before']['errno']=11
+            elif variant=='early_unlock':locks['released_at_ns']=copy['source_after']['observed_at_ns']-1
+            elif variant=='file_size_limit':work['sqlite_file_size_limit'].update(soft=16777216,hard=16777216)
+            elif variant=='rw_mode':rw['mode']='read_only'
+            elif variant=='same_owner':ro['owner_id']=rw['owner_id']
+            elif variant=='open_ro':ro['closed']=False
+            elif variant=='missing_rw_snapshot':rw['snapshot_at_ns']=None
+            elif variant=='reused_budget':
+                ro['progress_callbacks_before']=0 if rw['progress_callbacks_after'] else 1
+                ro['progress_callbacks_after']=max(ro['progress_callbacks_after'],ro['progress_callbacks_before'])
+                work['progress_callbacks']=ro['progress_callbacks_after']
+            elif variant=='exhausted_budget':ro['progress_callbacks_after']=work['progress_callbacks']=4000
+            elif variant=='false_total':work['progress_callbacks']+=1
+            elif variant=='late_work':work['finished_at_ns']=bad['work_deadline_ns']+1
+            elif variant=='checksum':work['journal_disposition']['header']['records'][0]['computed_checksum']^=1
+            elif variant=='before_image':work['journal_disposition']['header']['records'][0]['main_page_sha256']='e'*64
+            elif variant=='missing_record':work['journal_disposition']['header']['records']=[]
+            elif variant=='unlink_before_validation':work['journal_disposition']['unlink_started_at_ns']=rw['closed_at_ns']-1
+            elif variant=='ro_mutation':work['post_ro_copy']['files'][0]['sha256']='e'*64
+            elif variant=='snapshot_sequence':ro['snapshot_event_sequence']+=1
+            elif variant=='snapshot_hash':ro['snapshot_sha256']='e'*64
+            refused(check,bad)
+        # Frames bind the exact nested canonical export and provenance, not a
+        # hash of an unavailable earlier generation or an alternate encoding.
+        result={'schema_version':'1','status':'complete','error':None,'export':expected,'provenance':helper['work']}
+        payload=raw(result);header=len(payload).to_bytes(8,'big')
+        frame={'started_at_ns':1,'finished_at_ns':2,'header_hex':header.hex(),
+            'declared_bytes':len(payload),'payload_bytes':len(payload),'received_bytes':len(payload)+8,
+            'payload_sha256':sha(payload),'frame_sha256':sha(header+payload),'complete':True}
+        context._recovery_frame(frame,result,2129920)
+        for field,value in (('header_hex',(len(payload)+1).to_bytes(8,'big').hex()),
+                ('received_bytes',len(payload)+9),('payload_bytes',len(payload)-1),
+                ('frame_sha256','e'*64),('payload_sha256','e'*64),('finished_at_ns',None),
+                ('complete',False)):
+            bad=deepcopy(frame);bad[field]=value
+            refused(context._recovery_frame,bad,result,2129920)
+        changed=deepcopy(result);changed['export']=latest
+        refused(context._recovery_frame,frame,changed,2129920)
+        _copied_recovery_large_frame_cases(monkeypatch)
+        _copied_recovery_failed_work_cases(helper,loaded,owners,latest)
+        _copied_recovery_receipt_cases(helper,loaded)
+    assert (helper,loaded)==before
+
+
+def _copied_recovery_large_frame_cases(monkeypatch):
+    """Bounded codec data only; large strings are not declared ledger exports."""
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    from recon_cockpit.secure_agent import engagement_live_session as producer
+    maximum=2129920
+    def sized(size):
+        value={'payload':''};value['payload']='x'*(size-len(raw(value)))
+        encoded=raw(value);assert len(encoded)==size
+        return value,encoded
+    def framed(encoded):
+        header=len(encoded).to_bytes(8,'big')
+        return {'started_at_ns':1,'finished_at_ns':2,'header_hex':header.hex(),
+            'declared_bytes':len(encoded),'payload_bytes':len(encoded),'received_bytes':len(encoded)+8,
+            'payload_sha256':sha(encoded),'frame_sha256':sha(header+encoded),'complete':True}
+    assert c.MAX_CANONICAL==2097152
+    for size in (2097153,maximum):
+        value,encoded=sized(size)
+        assert context._recovery_canonical(value,maximum)==encoded
+        assert producer._recovery_json(value)==encoded
+        context._recovery_frame(framed(encoded),value,maximum)
+        observed,decoded,consumed=producer._recovery_frame(len(encoded).to_bytes(8,'big')+encoded,maximum,1)
+        assert decoded==value and consumed==len(encoded)+8 and observed['complete'] is True
+        assert observed['payload_sha256']==sha(encoded)
+        refused(c.canonical,value,max_bytes=c.MAX_CANONICAL,code='limit_exceeded')
+    value,encoded=sized(maximum+1)
+    refused(context._recovery_canonical,value,maximum,code='limit_exceeded')
+    refused(context._recovery_frame,framed(encoded),value,maximum)
+    with pytest.raises(producer._RecoveryError,match='framing'):
+        producer._recovery_frame(len(encoded).to_bytes(8,'big')+encoded,maximum,1)
+    refused(context._recovery_canonical,{},maximum+1)
+    refused(c.canonical,{},max_bytes=maximum)
+    # Exercise the real result byte-bound seam. These strings test allocation
+    # arithmetic only and are not semantically valid ledger/provenance rows.
+    export,export_bytes=sized(c.MAX_CANONICAL)
+    result={'schema_version':'1','status':'complete','error':None,'export':export,'provenance':{'padding':''}}
+    metadata={**result,'export':None}
+    result['provenance']['padding']='m'*(32768-len(raw(metadata)))
+    metadata_bytes=raw({**result,'export':None});result_bytes=raw(result)
+    assert len(metadata_bytes)==32768 and len(export_bytes)==2097152
+    assert len(result_bytes)==maximum-4
+    assert len(result_bytes)-len(export_bytes)==32764  # The null placeholder costs four bytes.
+    assert context._recovery_result_bytes(result)==result_bytes
+    oversized=deepcopy(result);oversized['provenance']['padding']+='m'
+    assert len(raw({**oversized,'export':None}))==32769
+    assert len(raw(oversized))<=maximum
+    refused(context._recovery_result_bytes,oversized,code='limit_exceeded')
+    oversized_export,_=sized(c.MAX_CANONICAL+1)
+    refused(context._recovery_result_bytes,{'export':oversized_export,'provenance':None},code='limit_exceeded')
+    for malformed in ({'payload':1.5},{'payload':float('nan')},{'payload':'\ud800'},
+            {'payload':b'bytes'},{1:'nonstring key'},{'payload':2**64}):
+        refused(context._recovery_canonical,malformed,maximum)
+    deep=0
+    for unused in range(c.MAX_DEPTH+1):deep=[deep]
+    refused(context._recovery_canonical,deep,maximum,code='limit_exceeded')
+    unicode={'text':'caf\u00e9 \U0001f642','nested':['\u96ea']}
+    ascii_bytes=raw(unicode)
+    assert ascii_bytes.isascii() and b'\\u00e9' in ascii_bytes and b'\\ud83d' in ascii_bytes
+    assert producer._recovery_json(unicode)==context._recovery_canonical(unicode,maximum)==ascii_bytes
+    context._recovery_frame(framed(ascii_bytes),unicode,maximum)
+    utf8=json.dumps(unicode,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode('utf-8')
+    assert utf8!=ascii_bytes
+    refused(context._recovery_frame,framed(utf8),unicode,maximum)
+    with pytest.raises(producer._RecoveryError,match='framing') as caught:
+        producer._recovery_frame(len(utf8).to_bytes(8,'big')+utf8,maximum,1)
+    assert caught.value.frame['payload_sha256']==sha(utf8) and caught.value.frame['complete'] is False
+    # ASCII escaping, not Python character count or UTF-8 width, consumes the cap.
+    refused(context._recovery_canonical,{'payload':'\u00e9'*400000},maximum,code='limit_exceeded')
+    with pytest.raises(c.LiveError,match='timeout'):
+        with c._deadline_context(time.monotonic()-1):context._recovery_canonical({},maximum)
+    with pytest.raises(c.LiveError,match='timeout'):
+        with c._deadline_context(time.monotonic()-1):context._recovery_result_bytes({'export':None,'provenance':None})
+    # Serialization's tail must remain inside the same validation interval.
+    original=json.dumps;clock=[100.0]
+    def serialization_crosses_deadline(*args,**kwargs):
+        encoded=original(*args,**kwargs);clock[0]=100.2;return encoded
+    with monkeypatch.context() as patch:
+        patch.setattr(c.time,'monotonic',lambda:clock[0])
+        patch.setattr(context.json,'dumps',serialization_crosses_deadline)
+        with pytest.raises(c.LiveError,match='timeout'):
+            with c._deadline_context(100.1):context._recovery_canonical({},maximum)
+    assert c.MAX_CANONICAL==2097152
+
+
+def _copied_recovery_failed_work_cases(helper,loaded,owners,latest):
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
+    def check(value,retained=loaded):
+        context._recovery_shape(value['work'],'work_provenance')
+        context._recovery_partial_work(value,retained,set(owners),{})
+    failed=[]
+    for phase in ('rw','ro'):
+        value=deepcopy(helper);work=value['work'];stage=work[phase]
+        for field in ('snapshot_at_ns','snapshot_event_sequence','snapshot_bytes','snapshot_sha256','ledger_state_sha256'):
+            stage[field]=None
+        work['post_ro_copy']=None;work['finished_at_ns']=stage['closed_at_ns']
+        work['progress_callbacks']=stage['progress_callbacks_after']
+        if phase=='rw':
+            for field in ('ro','post_rw_copy','journal_disposition'):work[field]=None
+        value['transfer']={'result_error':'sqlite_'+phase,'result_status':'failed'}
+        check(value);failed.append(value)
+        for mutation in ('copy_alias','lock_range','narrow','owner_reused','wrong_reason'):
+            bad=deepcopy(value);work=bad['work']
+            if mutation=='copy_alias':
+                src=work['copy']['source_before']['files'][0];copy=work['copy']['copied']['files'][0]
+                for field in ('held','named'):
+                    for key in ('device','inode'):copy[field][key]=src[field][key]
+            elif mutation=='lock_range':work['copy']['locks']['pending']['offset']=1073741826
+            elif mutation=='narrow':work['sqlite_file_size_limit']['hard']=16777216
+            elif mutation=='owner_reused':work[phase]['owner_id']=next(iter(owners))
+            else:bad['transfer']['result_error']='reserved_writer'
+            refused(check,bad)
+    bad=deepcopy(failed[1]);bad['work']['journal_disposition']['header']['records'][0]['checksum']^=1
+    refused(check,bad)
+    bad=deepcopy(failed[1]);bad['work']['rw']['progress_callbacks_after']=4000
+    bad['work']['ro'].update(progress_callbacks_before=4000,progress_callbacks_after=4000)
+    bad['work']['progress_callbacks']=4000;bad['transfer']['result_error']='progress_limit'
+    refused(check,bad)
+    drift=deepcopy(helper);work=drift['work']
+    for field in ('rw','ro','post_rw_copy','post_ro_copy','journal_disposition','sqlite_file_size_limit'):work[field]=None
+    work['progress_callbacks']=0;work['finished_at_ns']=work['copy']['finished_at_ns']
+    work['copy']['source_after']['files'][0]['sha256']='e'*64
+    drift['transfer']={'result_error':'source_changed','result_status':'failed'}
+    check(drift)
+    bad=deepcopy(drift);bad['transfer']['result_error']='copy_custody';refused(check,bad)
+    bad=deepcopy(drift);bad['work']['rw']=deepcopy(helper['work']['rw']);refused(check,bad)
+    mismatch=deepcopy(helper);mismatch['work']['post_ro_copy']=None
+    encoded=ledger.canonical(latest);mismatch['work']['ro'].update(snapshot_bytes=len(encoded),
+        snapshot_sha256=sha(encoded),snapshot_event_sequence=len(latest['events']),
+        ledger_state_sha256=latest['events'][-1]['receipt']['state_sha256'])
+    mismatch['transfer']={'result_error':'snapshot_mismatch','result_status':'failed'}
+    check(mismatch,{'recovery-ledger.json':latest})
+    bad=deepcopy(mismatch);bad['transfer']['result_error']='sqlite_ro'
+    refused(check,bad,{'recovery-ledger.json':latest})
+    bad=deepcopy(mismatch);bad['work']['post_ro_copy']=deepcopy(helper['work']['post_ro_copy'])
+    refused(check,bad,{'recovery-ledger.json':latest})
+
+
+def _copied_recovery_receipt_cases(helper,loaded):
+    """Receipt joins over validated-work inputs, not a full process witness."""
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    value=deepcopy(helper);value.update(generation=0,status='complete')
+    work=value['work'];ro=work['ro'];store=work['post_ro_copy'];main=store['files'][0]['held']
+    receipt={'schema_version':'2','source':'postcleanup_copied_recovery','owner_id':ro['owner_id'],
+        'started_at_ns':ro['opened_at_ns'],'finished_at_ns':ro['closed_at_ns'],'read_only':True,'closed':True,
+        'store_identity':{'parent':store['parent'],'directory':store['directory'],
+            'database':{key:main[key] for key in ('device','inode','mode','uid','gid')}},
+        'bytes':ro['snapshot_bytes'],'sha256':ro['snapshot_sha256'],'ledger_state_sha256':ro['ledger_state_sha256'],
+        'helper_id':value['helper_id'],'helper_sha256':sha(c.canonical(value,max_bytes=524288))}
+    retained=deepcopy(loaded);retained['manifest.json']={'broker_instances':[{'broker_id':value['broker_id']}],
+        'ledger_exports':{'recovery':{'source':'postcleanup_copied_recovery','status':'complete','broker_id':None}}}
+    context._copied_recovery_receipt(receipt,[value],retained)
+    for field,change in (('owner_id',uid(999)),('started_at_ns',ro['opened_at_ns']+1),
+            ('sha256','e'*64),('helper_sha256','e'*64)):
+        bad=deepcopy(receipt);bad[field]=change
+        refused(context._copied_recovery_receipt,bad,[value],retained)
+    stale=deepcopy(retained);stale['manifest.json']['broker_instances'].append({'broker_id':uid(999)})
+    refused(context._copied_recovery_receipt,receipt,[value],stale)
+    later=deepcopy(value);later.update(helper_id=uid(999),broker_id=uid(998),generation=1,status='failed')
+    refused(context._copied_recovery_receipt,receipt,[value,later],stale)
+    failed=deepcopy(value);failed['status']='failed';bad=deepcopy(receipt)
+    bad['helper_sha256']=sha(c.canonical(failed,max_bytes=524288))
+    refused(context._copied_recovery_receipt,bad,[failed],retained)
 
 
 def test_closes_cli_errors_and_stdout_failures(tmp_path,monkeypatch):
@@ -886,7 +1203,238 @@ def test_replays_ledger_and_broker_state_together():
     refused(witness.validate_evidence_transcript,bad,[],deadline=time.monotonic()+15)
 
 
-def test_requires_single_winner_and_durable_race_order():
+def _copied_recovery_runtime_and_process_cases(monkeypatch):
+    """Declared saved bindings only; no actual process/VFS proof is claimed."""
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    bundle=runtime();broker=next(row for row in bundle['roles'] if row['role']=='broker')
+    extension=deepcopy(next(row for row in broker['extension_files'] if '/_sqlite3.' in row['destination']))
+    ctypes_extension=deepcopy(next(row for row in broker['extension_files'] if '/_ctypes.' in row['destination']))
+    library={'source':'/usr/lib/libsqlite3.so.0','destination':'/usr/lib/libsqlite3.so.0','size':1,'sha256':'c'*64}
+    ffi={'source':'/usr/lib/libffi.so.8','destination':'/usr/lib/libffi.so.8','size':1,'sha256':'e'*64}
+    libc={'source':'/usr/lib/libc.so.6','destination':'/usr/lib/libc.so.6','size':1,'sha256':'f'*64}
+    broker['native_files'].extend([library,ffi,libc]);broker['required_mapped_images'].append(libc['destination'])
+    loader=next(row for row in broker['native_files'] if 'ld-linux' in row['destination'])
+    loader_alias={**loader,'destination':'/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2'}
+    broker['native_files'].append(loader_alias);broker['required_mapped_images'].append(loader_alias['destination'])
+    images=[{key:row[key] for key in ('destination','size','sha256')}|
+        {'device':1,'inode':200+index,'mode':stat.S_IFREG|0o555} for index,row in
+        enumerate([row for row in broker['native_files'] if row is not loader_alias]+[extension,ctypes_extension])]
+    image_by_name={row['destination']:row for row in images}
+    identity=lambda number:{'device':1,'inode':number,'mode':stat.S_IFDIR|0o700,'uid':1000,'gid':1000}
+    source={'parent':identity(500),'directory':identity(501),
+        'files':[{'name':'records.sqlite3','held':{'device':1,'inode':502}}]}
+    scratch={'parent':identity(600),'directory':identity(601)}
+    purposes=['bounded config then release input pipe','READY/result framed stdout pipe',
+        'bounded diagnostic stderr pipe','sealed O_RDONLY source package','held source parent directory',
+        'held source store directory','registered scratch parent directory','registered scratch store directory']
+    descriptors=[];transports={}
+    for fd,purpose in enumerate(purposes):
+        kind='pipe' if fd<3 else 'regular' if fd==3 else 'directory'
+        inode=700+fd if fd<4 else (500,501,600,601)[fd-4]
+        mode=(stat.S_IFIFO if fd<3 else stat.S_IFREG if fd==3 else stat.S_IFDIR)|(0o600 if fd<4 else 0o700)
+        flags=os.O_RDONLY if fd==0 or fd>=3 else os.O_WRONLY
+        descriptors.append({'fd':fd,'purpose':purpose,'kind':kind,'device':1,'inode':inode,'mode':mode,'flags':flags})
+        if fd<3:
+            parent=deepcopy(descriptors[-1]);parent.update(fd=20+fd,flags=os.O_WRONLY if fd==0 else os.O_RDONLY)
+            child=deepcopy(descriptors[-1]);child['fd']=23+fd
+            transports[('stdin','stdout','stderr')[fd]]={'created_at_ns':12,'parent':parent,'child':child}
+    config={'runtime_sha256':sha(raw(bundle)),'source_manifest_sha256':sha(raw(bundle['sources'])),
+        'source_package_sha256':'d'*64,'source_package_bytes':1024,
+        'inherited_fds':{'stdin':0,'stdout':1,'stderr':2,'source_package':8,'source_parent':9,
+            'source_store':10,'scratch_parent':11,'scratch_store':12}}
+    vfs={'observed_at_ns':24,'library_source':library['source'],'library':image_by_name[library['destination']],
+        'library_version':3046001,'sqlite_module_version':[3,46,1],
+        'vfs_name':'unix','vfs_name_hex':'756e697800','vfs_struct_version':3}
+    ready={'schema_version':'1','helper_id':uid(970),'broker_id':uid(971),'kind':'copied_ledger_recovery_ready',
+        'pid':1001,'observed_at_ns':25,'runtime_sha256':config['runtime_sha256'],
+        'source_manifest_sha256':config['source_manifest_sha256'],'source_package_sha256':'d'*64,'default_vfs':vfs}
+    observed={'observed_at_ns':35,'runtime_sha256':config['runtime_sha256'],
+        'source_manifest_sha256':config['source_manifest_sha256'],
+        'interpreter':image_by_name[bundle['python']['destination']],
+        'sqlite_extension':image_by_name[extension['destination']],'mapped_images':images,
+        'stdlib':{'device':bundle['stdlib']['device'],'inode':bundle['stdlib']['inode'],
+            'mode':bundle['stdlib']['mode'],'uid':1000,'gid':1000},
+        'descriptors':descriptors,'default_vfs_sha256':sha(raw(vfs)),'vfs':'unix','locking':'posix_rollback',
+        'source_package':{'descriptor':deepcopy(descriptors[3]),'seals':15,'bytes':1024,
+            'sha256':'d'*64,'source_manifest_sha256':config['source_manifest_sha256']},
+        'resource_limits':{'observed_at_ns':35,**{key:{'soft':value,'hard':value} for key,value in
+            (('address_space',268435456),('cpu',2),('nofile',32),('file_size',16777216))}}}
+    helper={'started_at_ns':10,'config':config,'ready':ready,'runtime':observed,'scratch':scratch,
+        'transports':transports,'process':{'publication_registered_at_ns':19,'publication_resolved_at_ns':20,
+            'release_sent_at_ns':40,'exit_observed_at_ns':60},'transfer':{'ready':{'finished_at_ns':30}},
+        'work':{'copy':{'source_before':source}}}
+    def check_runtime(value):
+        context._recovery_shape(value['ready'],'ready');context._recovery_shape(value['runtime'],'helper_runtime')
+        context._recovery_runtime(value,bundle)
+    check_runtime(helper)
+    alias=deepcopy(helper)
+    next(row for row in alias['runtime']['mapped_images'] if row['destination']==loader['destination'])['destination']=loader_alias['destination']
+    check_runtime(alias)
+    release_failed=deepcopy(helper);release_failed['process']['release_sent_at_ns']=None
+    release_failed['work']=None
+    check_runtime(release_failed)
+    early_exit=deepcopy(release_failed);early_exit['process']['exit_observed_at_ns']=34
+    refused(check_runtime,early_exit)
+    for variant in ('runtime_hash','source_hash','interpreter_hash','sqlite_missing','sqlite_hash',
+            'extra_image','missing_loader','missing_libc','missing_ctypes','missing_libffi',
+            'wrong_library','vfs_name','vfs_bytes','vfs_version','version_number','vfs_hash',
+            'vfs_before_publication','release_before_runtime','resource_limit','package_seal','package_hash',
+            'package_write','package_path','extra_fd','wrong_fd_purpose','pipe_identity','pipe_access',
+            'pipe_alias','pipe_parent_alias','pipe_child_alias','pipe_passfd_alias',
+            'pipe_parent_path','pipe_child_path','pipe_ready_path',
+            'source_directory','scratch_directory','duplicate_inherited'):
+        bad=deepcopy(helper);observed=bad['runtime'];ready=bad['ready']
+        if variant=='runtime_hash':observed['runtime_sha256']='e'*64
+        elif variant=='source_hash':bad['config']['source_manifest_sha256']='e'*64
+        elif variant=='interpreter_hash':observed['interpreter']['sha256']='e'*64
+        elif variant=='sqlite_missing':observed['mapped_images']=[row for row in observed['mapped_images'] if row['destination']!=extension['destination']]
+        elif variant=='sqlite_hash':observed['sqlite_extension']['sha256']='e'*64
+        elif variant=='extra_image':observed['mapped_images'].append({**deepcopy(images[0]),'destination':'/unreviewed/library.so'})
+        elif variant in ('missing_loader','missing_libc','missing_ctypes','missing_libffi'):
+            selected={'missing_loader':loader,'missing_libc':libc,'missing_ctypes':ctypes_extension,'missing_libffi':ffi}[variant]
+            observed['mapped_images']=[row for row in observed['mapped_images'] if row['destination']!=selected['destination']]
+        elif variant=='wrong_library':ready['default_vfs']['library_source']='/unreviewed/libsqlite3.so'
+        elif variant=='vfs_name':ready['default_vfs']['vfs_name']='unix-excl'
+        elif variant=='vfs_bytes':ready['default_vfs']['vfs_name_hex']='756e6978'
+        elif variant=='vfs_version':ready['default_vfs']['vfs_struct_version']=4
+        elif variant=='version_number':ready['default_vfs']['library_version']+=1
+        elif variant=='vfs_hash':observed['default_vfs_sha256']='e'*64
+        elif variant=='vfs_before_publication':ready['default_vfs']['observed_at_ns']=19
+        elif variant=='release_before_runtime':bad['process']['release_sent_at_ns']=34
+        elif variant=='resource_limit':observed['resource_limits']['file_size']['hard']=16777217
+        elif variant=='package_seal':observed['source_package']['seals']=7
+        elif variant=='package_hash':observed['source_package']['sha256']='e'*64
+        elif variant in ('package_write','package_path'):
+            observed['descriptors'][3]['flags']=os.O_RDWR if variant=='package_write' else 0o10000000
+            observed['source_package']['descriptor']=deepcopy(observed['descriptors'][3])
+        elif variant=='extra_fd':observed['descriptors'].append({**deepcopy(observed['descriptors'][3]),'fd':8})
+        elif variant=='wrong_fd_purpose':observed['descriptors'][4]['purpose']='unreviewed_directory'
+        elif variant=='pipe_identity':bad['transports']['stdin']['parent']['inode']+=1
+        elif variant=='pipe_access':observed['descriptors'][0]['flags']=os.O_WRONLY
+        elif variant=='pipe_alias':
+            for side in ('parent','child'):bad['transports']['stderr'][side]['inode']=bad['transports']['stdout'][side]['inode']
+            observed['descriptors'][2]['inode']=observed['descriptors'][1]['inode']
+        elif variant=='pipe_parent_alias':bad['transports']['stdin']['parent']['fd']=bad['transports']['stdout']['parent']['fd']
+        elif variant=='pipe_child_alias':bad['transports']['stdin']['child']['fd']=bad['transports']['stdin']['parent']['fd']
+        elif variant=='pipe_passfd_alias':bad['transports']['stderr']['child']['fd']=bad['config']['inherited_fds']['source_package']
+        elif variant=='pipe_parent_path':bad['transports']['stdin']['parent']['flags']|=0o10000000
+        elif variant=='pipe_child_path':bad['transports']['stdin']['child']['flags']|=0o10000000
+        elif variant=='pipe_ready_path':observed['descriptors'][0]['flags']|=0o10000000
+        elif variant=='source_directory':observed['descriptors'][5]['inode']+=1
+        elif variant=='scratch_directory':observed['descriptors'][7]['inode']+=1
+        elif variant=='duplicate_inherited':bad['config']['inherited_fds']['source_store']=bad['config']['inherited_fds']['source_parent']
+        if variant in ('wrong_library','version_number','vfs_before_publication'):
+            observed['default_vfs_sha256']=sha(raw(ready['default_vfs']))
+        refused(check_runtime,bad)
+    # Physical closure is a separate join. A digest/EOF or one unrelated reaped
+    # process cannot replace the exact prior broker and sibling identities.
+    observer={'pid':900,'uid':1000,'gid':1000,'namespaces':{'pid':'pid:[1]','mnt':'mnt:[2]','net':'net:[3]','user':'user:[4]'}}
+    parent={'observer':observer,'sampled_at_ns':50,'payload':{'pid':1000,'start_time_ticks':2000},
+        'wrapper':{'pid':999,'start_time_ticks':1999},'descriptors':[
+            {'purpose':'held_store_directory','device':1,'inode':501},
+            {'purpose':'sqlite_main','device':1,'inode':502}]}
+    sibling=deepcopy(parent);sibling['payload'].update(pid=1010,start_time_ticks=2010);sibling['wrapper']['pid']=1009
+    def cleanup(parent):
+        return {'finished_at_ns':90,'descriptors_closed':True,'processes':[{
+            'pid':parent['payload']['pid'],'start_time_ticks':parent['payload']['start_time_ticks'],
+            'wrapper_pid':parent['wrapper']['pid'],'wrapper_returncode':0,'pin_verified':True,
+            'exit_observed':True,'reaped_observed':True}]}
+    physical={'broker_id':uid(971),'generation':0,'runtime':None,'started_at_ns':100,'finished_at_ns':200,'parent_observer':observer,
+        'work':{'copy':{'source_before':source}}}
+    loaded={'processes.json':{'startup':[],'child_slots':[],
+        'readiness':[{'role':'broker','worker_ready':{'worker_id':uid(971)},'parent_observation':parent}]},
+        'cleanup.json':{'receipts':[cleanup(parent),cleanup(sibling)],'supervisors':[]}}
+    parents=[parent,sibling]
+    # This lower-level join uses an explicitly declared generation map. The
+    # separate test below derives it from sealed role/audit/allocation links.
+    mapping={(row['payload']['pid'],row['payload']['start_time_ticks']):0 for row in parents}
+    later=deepcopy(sibling);later['sampled_at_ns']=201;later['payload'].update(pid=1020,start_time_ticks=2020)
+    later['wrapper']['pid']=1019;mapping[(1020,2020)]=1
+    def check_physical(value,retained,observations):
+        return context._recovery_physical_history(value,retained,observations,generation_by_identity=mapping)
+    assert check_physical(physical,loaded,parents)==parent
+    assert check_physical(physical,loaded,[*parents,later])==parent
+    for variant in ('missing_broker','foreign_observer','wrong_pid','wrong_start','wrong_wrapper','unreaped',
+            'unobserved_exit','open_descriptors','late_cleanup','missing_sibling',
+            'selected_broker_late','same_generation_late','source_inode','overlap'):
+        bad=deepcopy(loaded);changed=deepcopy(physical);pp=deepcopy(parents)
+        receipt=bad['cleanup.json']['receipts'][0];process=receipt['processes'][0]
+        if variant=='missing_broker':bad['processes.json']['readiness']=[]
+        elif variant=='foreign_observer':changed['parent_observer']['pid']+=1
+        elif variant=='wrong_pid':process['pid']+=1
+        elif variant=='wrong_start':process['start_time_ticks']+=1
+        elif variant=='wrong_wrapper':process['wrapper_pid']+=1
+        elif variant=='unreaped':process['reaped_observed']=False
+        elif variant=='unobserved_exit':process['exit_observed']=False
+        elif variant=='open_descriptors':receipt['descriptors_closed']=False
+        elif variant=='late_cleanup':receipt['finished_at_ns']=101
+        elif variant=='missing_sibling':bad['cleanup.json']['receipts'].pop()
+        elif variant=='selected_broker_late':bad['processes.json']['readiness'][0]['parent_observation']['sampled_at_ns']=101
+        elif variant=='same_generation_late':pp[1]['sampled_at_ns']=201
+        elif variant=='source_inode':changed['work']['copy']['source_before']['files'][0]['held']['inode']+=1
+        elif variant=='overlap':
+            other=deepcopy(later);other['sampled_at_ns']=150;pp.append(other)
+        refused(check_physical,changed,bad,pp)
+    _copied_recovery_generation_cases(monkeypatch)
+
+
+def _copied_recovery_generation_cases(monkeypatch):
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    manifest,members=useful_fixture(monkeypatch)
+    loaded={'manifest.json':manifest,**{name:json.loads(value) if name.endswith('.json') else value
+        for name,value in members.items()}}
+    processes=loaded['processes.json']
+    parents=[*processes['startup'],*[row['parent_observation'] for row in processes['readiness']+processes['native']],
+        *context._audit_process_closure(loaded)['parents']]
+    mapping,counts=context._recovery_generation_map(loaded,parents)
+    assert set(mapping.values())=={0} and set(counts)=={0}
+    assert counts[0]=={(parent[field]['pid'],parent[field]['start_time_ticks'])
+        for parent in parents for field in ('payload','wrapper')}
+    broker=next(row for row in processes['readiness'] if row['role']=='broker')
+    start=max([row['finished_at_ns'] for row in loaded['cleanup.json']['receipts']]+
+        [row['cleanup_finished_at_ns'] for row in loaded['cleanup.json']['supervisors']])+1
+    helper={'broker_id':broker['worker_ready']['worker_id'],'generation':0,'started_at_ns':start,
+        'finished_at_ns':start+10,'parent_observer':broker['parent_observation']['observer'],'work':None,'runtime':None}
+    assert context._recovery_physical_history(helper,loaded,parents)==broker['parent_observation']
+    for variant in ('missing_supervisor','missing_allocations','late_broker','live_supervisor','pending_supervisor'):
+        bad=deepcopy(loaded)
+        if variant=='missing_supervisor':bad['cleanup.json']['supervisors']=[]
+        elif variant=='missing_allocations':bad['processes.json']['child_slots']=[];bad['cleanup.json']['supervisors']=[]
+        elif variant=='late_broker':
+            next(row for row in bad['processes.json']['readiness'] if row['role']=='broker')['parent_observation']['sampled_at_ns']=start+1
+        elif variant=='live_supervisor':
+            bad['cleanup.json']['supervisors'][0].update(state='alive',thread_alive_observed=True,status='failed')
+        else:bad['cleanup.json']['supervisors'][0].update(pending_slots=['identify_client'],status='failed')
+        refused(context._recovery_physical_history,helper,bad,parents)
+    foreign=deepcopy(parents[0]);foreign['payload']['pid']+=10000
+    refused(context._recovery_generation_map,loaded,[*parents,foreign],code='evidence_incomplete')
+    contradiction=deepcopy(parents[0]);contradiction['wrapper']['pid']+=10000
+    refused(context._recovery_generation_map,loaded,[*parents,contradiction])
+    bad=deepcopy(loaded);bad['processes.json']['child_slots'][0]['broker_id']=uid(979)
+    refused(context._recovery_generation_map,bad,parents)
+    # Delete just the endpoint's sealed lifecycle association, coherently
+    # rebuilding segment offsets, row sequences and hashes. Its retained PID
+    # cannot be assigned by timestamp or by an unrelated cleanup receipt.
+    bad=deepcopy(loaded);chunks=[];removed=0
+    for segment in bad['manifest.json']['transcript']['segments']:
+        part=bad['transcript.jsonl'][segment['offset']:segment['offset']+segment['bytes']]
+        rows=[]
+        for line in part.splitlines():
+            row=json.loads(line);data=row['data']
+            if (row['kind']=='protocol' and data['frame']['operation']=='ROLE_OBSERVED'
+                    and data['frame']['body']['readiness']['role']=='endpoint'):
+                removed+=1;continue
+            rows.append(row)
+        for index,row in enumerate(rows,1):row['row_sequence']=index
+        part=b''.join(raw(row)+b'\n' for row in rows)
+        segment.update(offset=sum(map(len,chunks)),bytes=len(part),sha256=sha(part));chunks.append(part)
+    assert removed==1
+    bad['transcript.jsonl']=b''.join(chunks)
+    refused(context._recovery_generation_map,bad,parents,code='evidence_incomplete')
+
+
+def test_requires_single_winner_and_durable_race_order(monkeypatch):
+    _copied_recovery_runtime_and_process_cases(monkeypatch)
     _changed_stop_cancellation_cases()
     _external_revocation_race_cases()
     _fixed_fault_phase_cases()

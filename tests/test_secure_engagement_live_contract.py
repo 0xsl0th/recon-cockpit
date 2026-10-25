@@ -458,6 +458,7 @@ def test_imports_do_not_create_live_authority(monkeypatch):
 
 
 def test_sealed_contract_and_exact_inventory_pins():
+    from recon_cockpit.secure_agent import engagement_live_context as context
     document=ROOT/'docs/stage4-engagement-live.md';inventory=ROOT/'docs/stage4-engagement-live-gates.json'
     assert hashlib.sha256(document.read_bytes()).hexdigest()==c.CONTRACT_SHA256
     assert hashlib.sha256(inventory.read_bytes()).hexdigest()==c.INVENTORY_SHA256
@@ -467,3 +468,31 @@ def test_sealed_contract_and_exact_inventory_pins():
     actual={'tests/test_secure_engagement_live_contract.py::'+node.name for node in ast.parse(Path(__file__).read_text()).body if isinstance(node,ast.FunctionDef) and node.name.startswith('test_')}
     assert len(expected)==24 and actual==expected
     assert gates['parent_case_count']==26 and gates['physical_parent_case_count']==18
+    recovery=gates['evidence_contract']['copied_recovery']
+    assert context._RECOVERY_SCHEMAS==recovery['schemas']
+    assert recovery['status']=='reviewed_contract_pending_implementation'
+    assert recovery['implementation_authorized'] is True
+    assert recovery['implementation_authorized_only_after_complete_pair_commit'] is True
+    resources=recovery['resources'];framing=recovery['framing'];deadlines=recovery['deadlines']
+    assert resources['stdout_bytes']==sum(framing[name]['header_bytes']+framing[name]['payload_bytes_max']
+        for name in ('ready','result'))==2134032
+    assert resources['result_payload_bytes']==resources['export_bytes']+resources['provenance_bytes']
+    assert resources['scratch_data_bytes']==resources['main_bytes']+resources['journal_bytes']
+    assert resources['file_size_sqlite_bytes']==resources['main_bytes']<resources['file_size_copy_bytes']
+    assert deadlines['work_ns']+deadlines['closure_reserve_ns']==deadlines['total_ns']==2000000000
+    assert resources['source_rows']==52
+    assert resources['processes']==resources['tasks']==1
+    assert recovery['launch']['entrypoint'].endswith('engagement_live_session._recovery_copy_main')
+    assert set(recovery['launch']['descriptor_map'])==set(map(str,range(8)))
+    schemas=recovery['schemas'];prefix='evidence_contract.copied_recovery.schemas.'
+    assert schemas['helper_observation']['fields']['config']==prefix+'config'
+    assert schemas['sqlite_stage']['fields']['progress_callbacks_after']['maximum']==4000
+    def closed(schema):
+        if isinstance(schema,dict):
+            if schema.get('type')=='object':
+                assert schema['additional_fields'] is False and schema['all_fields_required'] is True
+            for value in schema.values():closed(value)
+        elif isinstance(schema,list):
+            for value in schema:closed(value)
+        elif isinstance(schema,str) and schema.startswith(prefix):assert schema[len(prefix):] in schemas
+    closed(schemas)

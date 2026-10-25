@@ -418,6 +418,19 @@ def _save_case_failure(directory,kind,variant,error):
             retain(owner,name,{'rows':relevant[-8:],
                 'observed_matching_rows':len(relevant),'earlier_rows_omitted':max(0,len(relevant)-8),
                 'scope':'finalized_rows_only_nonatomic_diagnostic_tail'})
+    def recovery_facts(owner,value):
+        # Keep bounded process/closure facts even when a large complete journal
+        # record list cannot fit the independent failure diagnostic capsule.
+        if type(value)is not list:
+            omitted.append({'owner':owner,'attribute':'recovery_helper_closure_rows','reason':'unretained_value'});return
+        fields=('schema_version','helper_id','broker_id','generation','status','started_at_ns',
+            'work_deadline_ns','deadline_ns','finished_at_ns','parent_observer','process','cleanup','error')
+        rows=[{key:row[key] for key in fields if key in row} for row in value[:2] if type(row)is dict]
+        missing=len(value)-len(rows)
+        if missing:omitted.append({'owner':owner,'attribute':'recovery_helper_closure_rows','reason':'row_limit_or_type'})
+        retain(owner,'recovery_helper_closure_rows',{'rows':rows,'observed_helper_rows':len(value),
+            'retained_helper_rows':len(rows),'omitted_helper_rows':missing,'work_included':False,
+            'scope':'retained_state_only_nonatomic_diagnostic_projection'})
     for index,item in enumerate(queue):
         attrs=BaseException.__getattribute__(item,'__dict__')
         typename=type(item).__name__
@@ -438,6 +451,10 @@ def _save_case_failure(directory,kind,variant,error):
                     session_ids[identity]=len(sessions);record={'index':len(sessions)};sessions.append(record)
                     for name in ('_cleanup','_cleanup_receipts','_startup_observations'):
                         if name in state:retain('session:'+str(record['index']),name,state[name])
+                    if '_recovery_helpers' in state:
+                        owner='session:'+str(record['index'])
+                        recovery_facts(owner,state['_recovery_helpers'])
+                        retain(owner,'_recovery_helpers',state['_recovery_helpers'])
                     session_facts(state,record)
                 else:omitted.append({'owner':'exception:'+str(index),'attribute':'engagement_session','reason':'unretained_value'})
             row['session_index']=session_ids.get(identity)
@@ -2556,7 +2573,7 @@ def _merge_core_payloads(payloads):
     processes={'schema_version':'1','startup':[],'readiness':[],'native':[],'child_slots':[],'boundary_observations':[]}
     results={'schema_version':'1','operations':[],'boundary_proofs':[],'core_proofs':[]}
     cleanup={'schema_version':'1','receipts':[],'supervisors':[],'exports':[],'recovery':None}
-    instances=[];dispatches=[];audit=[]
+    instances=[];dispatches=[];audit=[];recovery_helpers=[]
     def extend_unique(target,values):
         seen={sha(canonical(row)) for row in target}
         for row in values:
@@ -2571,7 +2588,10 @@ def _merge_core_payloads(payloads):
         old=json.loads(files['cleanup.json'])
         extend_unique(cleanup['receipts'],old['receipts']);extend_unique(cleanup['exports'],old['exports'])
         extend_unique(cleanup['supervisors'],old['supervisors'])
-        if old['recovery'] is not None:cleanup['recovery']=old['recovery']
+        # Every actual attempt survives the restart merge, including failure.
+        # An earlier successful export cannot stand in for the later owner.
+        recovery_helpers.extend(deepcopy(old.get('recovery_helpers',[])))
+        cleanup['recovery']=deepcopy(old['recovery'])
         observed=json.loads(files['results.json'])
         results['operations'].extend(observed['operations'])
         results['boundary_proofs'].extend(observed['boundary_proofs'])
@@ -2599,11 +2619,17 @@ def _merge_core_payloads(payloads):
             'bytes':len(raw),'sha256':sha(raw),'seals':None,'status':'observer_complete'})
         chunks.append(raw)
     for phase in ('initial','final','recovery'):
-        candidates=[(m,f) for m,f in payloads if m['ledger_exports'][phase]['status']=='complete']
+        candidates=[(m,f) for m,f in (payloads[-1:] if phase=='recovery' else payloads)
+            if m['ledger_exports'][phase]['status']=='complete']
         if candidates:
             m,f=candidates[0] if phase=='initial' else candidates[-1]
             manifest['ledger_exports'][phase]=deepcopy(m['ledger_exports'][phase])
             name=manifest['ledger_exports'][phase]['file'];members[name]=f[name]
+    if recovery_helpers:
+        if (len(recovery_helpers)>2 or len({row['helper_id'] for row in recovery_helpers})!=len(recovery_helpers)
+                or len({row['broker_id'] for row in recovery_helpers})!=len(recovery_helpers)):
+            raise AssertionError('one retained recovery helper per actual owner')
+        cleanup.update(schema_version='2',recovery_helpers=recovery_helpers)
     manifest['broker_instances']=instances;manifest['dispatches']=dispatches
     partial=any(row['status'].endswith('partial') for row in segments)
     manifest['transcript']={'status':'partial' if partial else 'complete',

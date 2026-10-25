@@ -15,6 +15,9 @@ from .engagement_live_contract import bounded as _bounded
 from .engagement_live_contract import validation as _validation
 
 
+# Exact closed A10 shapes; C24 checks this literal against the pinned inventory.
+_RECOVERY_SCHEMAS = {'config': {'additional_fields': False, 'all_fields_required': True, 'fields': {'broker_id': 'canonical UUID4', 'deadline_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'helper_id': 'canonical UUID4', 'inherited_fds': 'evidence_contract.copied_recovery.schemas.inherited_descriptor_map', 'runtime_sha256': 'lowercase SHA256', 'schema_version': {'const': '1'}, 'source_manifest_sha256': 'lowercase SHA256', 'source_package_bytes': {'bool_allowed': False, 'maximum': 2097152, 'minimum': 1, 'type': 'integer'}, 'source_package_sha256': 'lowercase SHA256', 'started_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'work_deadline_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'copied_receipt': {'additional_fields': False, 'all_fields_required': True, 'fields': {'bytes': {'bool_allowed': False, 'maximum': 2097152, 'minimum': 1, 'type': 'integer'}, 'closed': {'const': True}, 'finished_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'helper_id': 'canonical UUID4', 'helper_sha256': 'lowercase SHA256', 'ledger_state_sha256': 'lowercase SHA256', 'owner_id': 'canonical UUID4', 'read_only': {'const': True}, 'schema_version': {'const': '2'}, 'sha256': 'lowercase SHA256', 'source': {'const': 'postcleanup_copied_recovery'}, 'started_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'store_identity': {'additional_fields': False, 'all_fields_required': True, 'fields': {'database': {'additional_fields': False, 'all_fields_required': True, 'fields': {'device': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'gid': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'inode': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'mode': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'uid': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'directory': {'additional_fields': False, 'all_fields_required': True, 'fields': {'device': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'gid': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'inode': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'mode': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'uid': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'parent': {'additional_fields': False, 'all_fields_required': True, 'fields': {'device': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'gid': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'inode': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'mode': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'uid': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}}, 'type': 'object'}}, 'type': 'object'}, 'copy_stage': {'additional_fields': False, 'all_fields_required': True, 'fields': {'copied': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.store_observation']}, 'finished_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'locks': 'evidence_contract.copied_recovery.schemas.source_locks', 'raw_copy_fds_closed_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'raw_source_fds_closed_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'source_after': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.store_observation']}, 'source_before': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.store_observation']}, 'started_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'default_vfs_observation': {'additional_fields': False, 'all_fields_required': True, 'fields': {'library': 'runtime_contract.closed_objects.file_identity', 'library_source': {'maximum_length': 4096, 'minimum_length': 1, 'type': 'string'}, 'library_version': {'bool_allowed': False, 'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'observed_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'sqlite_module_version': {'items': {'bool_allowed': False, 'maximum': 999, 'minimum': 0, 'type': 'integer'}, 'maximum_items': 3, 'minimum_items': 3, 'type': 'array'}, 'vfs_name': {'const': 'unix'}, 'vfs_name_hex': {'const': '756e697800'}, 'vfs_struct_version': {'bool_allowed': False, 'maximum': 3, 'minimum': 1, 'type': 'integer'}}, 'type': 'object'}, 'file_observation': {'additional_fields': False, 'all_fields_required': True, 'fields': {'fd_flags': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'header_hex': {'encoding': 'lowercase even-length hexadecimal', 'maximum_length': 56, 'type': 'string'}, 'held': 'evidence_contract.copied_recovery.schemas.file_stamp', 'name': {'enum': ['records.sqlite3', 'records.sqlite3-journal']}, 'named': 'evidence_contract.copied_recovery.schemas.file_stamp', 'sha256': 'lowercase SHA256', 'trailer_hex': {'encoding': 'lowercase even-length hexadecimal', 'maximum_length': 32, 'type': 'string'}}, 'type': 'object'}, 'file_size_narrowing': {'additional_fields': False, 'all_fields_required': True, 'fields': {'hard': {'const': 8388608}, 'observed_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'soft': {'const': 8388608}}, 'type': 'object'}, 'file_stamp': {'additional_fields': False, 'all_fields_required': True, 'fields': {'ctime_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'device': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'gid': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'inode': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'mode': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'mtime_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'nlink': {'const': 1}, 'size': {'bool_allowed': False, 'maximum': 16777216, 'minimum': 0, 'type': 'integer'}, 'uid': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'framed_observation': {'additional_fields': False, 'all_fields_required': True, 'fields': {'complete': {'type': 'boolean'}, 'declared_bytes': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 2129920, 'minimum': 1, 'type': 'integer'}]}, 'finished_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'frame_sha256': {'one_of': [{'type': 'null'}, 'lowercase SHA256']}, 'header_hex': {'encoding': 'lowercase even-length hexadecimal', 'maximum_length': 16, 'type': 'string'}, 'payload_bytes': {'bool_allowed': False, 'maximum': 2129920, 'minimum': 0, 'type': 'integer'}, 'payload_sha256': {'one_of': [{'type': 'null'}, 'lowercase SHA256']}, 'received_bytes': {'bool_allowed': False, 'maximum': 2134032, 'minimum': 0, 'type': 'integer'}, 'started_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}}, 'type': 'object'}, 'helper_cleanup': {'additional_fields': False, 'all_fields_required': True, 'fields': {'deadline_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'descriptors_closed': {'type': 'boolean'}, 'directory_closed': {'type': 'boolean'}, 'directory_removed': {'type': 'boolean'}, 'finished_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'parent_closed': {'type': 'boolean'}, 'pidfd_closed': {'type': 'boolean'}, 'removed_names': {'items': {'enum': ['records.sqlite3', 'records.sqlite3-journal']}, 'maximum_items': 2, 'minimum_items': 0, 'type': 'array'}, 'scratch_disposition': {'enum': ['removed', 'retained', 'unknown']}, 'source_package_closed': {'type': 'boolean'}, 'started_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'status': {'enum': ['complete', 'failed', 'unknown']}, 'stdio_closed': {'type': 'boolean'}}, 'type': 'object'}, 'helper_error': {'enum': ['source_custody', 'source_changed', 'unsupported_ofd', 'reserved_writer', 'unsupported_runtime', 'unsupported_vfs', 'source_package', 'publication', 'ready', 'release', 'copy_custody', 'copy_limit', 'journal_trailer', 'sqlite_rw', 'journal_disposition', 'sqlite_ro', 'snapshot_mismatch', 'progress_limit', 'work_deadline', 'framing', 'output_limit', 'helper_exit', 'helper_reap', 'scratch_cleanup', 'descriptor_cleanup', 'main_header']}, 'helper_observation': {'additional_fields': False, 'all_fields_required': True, 'fields': {'broker_id': 'canonical UUID4', 'cleanup': 'evidence_contract.copied_recovery.schemas.helper_cleanup', 'config': 'evidence_contract.copied_recovery.schemas.config', 'config_bytes': {'bool_allowed': False, 'maximum': 4096, 'minimum': 1, 'type': 'integer'}, 'config_sha256': 'lowercase SHA256', 'deadline_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'error': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.helper_error']}, 'finished_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'generation': {'bool_allowed': False, 'maximum': 1, 'minimum': 0, 'type': 'integer'}, 'helper_id': 'canonical UUID4', 'parent_observer': 'runtime_contract.closed_objects.observer', 'process': 'evidence_contract.copied_recovery.schemas.process', 'ready': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.ready']}, 'runtime': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.helper_runtime']}, 'schema_version': {'const': '1'}, 'scratch': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.scratch_registration']}, 'started_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'status': {'enum': ['complete', 'failed', 'unknown']}, 'transfer': 'evidence_contract.copied_recovery.schemas.transfer', 'transports': 'evidence_contract.copied_recovery.schemas.transports', 'work': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.work_provenance']}, 'work_deadline_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'helper_runtime': {'additional_fields': False, 'all_fields_required': True, 'fields': {'default_vfs_sha256': 'lowercase SHA256', 'descriptors': {'items': 'runtime_contract.closed_objects.descriptor', 'maximum_items': 8, 'minimum_items': 8, 'type': 'array'}, 'interpreter': 'runtime_contract.closed_objects.file_identity', 'locking': {'const': 'posix_rollback'}, 'mapped_images': {'items': 'runtime_contract.closed_objects.file_identity', 'maximum_items': 64, 'minimum_items': 1, 'type': 'array'}, 'observed_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'resource_limits': 'evidence_contract.copied_recovery.schemas.resource_observation', 'runtime_sha256': 'lowercase SHA256', 'source_manifest_sha256': 'lowercase SHA256', 'source_package': 'evidence_contract.copied_recovery.schemas.package_observation', 'sqlite_extension': 'runtime_contract.closed_objects.file_identity', 'stdlib': 'evidence_contract.copied_recovery.schemas.identity', 'vfs': {'const': 'unix'}}, 'type': 'object'}, 'identity': {'additional_fields': False, 'all_fields_required': True, 'fields': {'device': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'gid': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'inode': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'mode': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'uid': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'inactive_header': {'additional_fields': False, 'all_fields_required': True, 'fields': {'header_hex': {'encoding': 'lowercase even-length hexadecimal', 'maximum_length': 56, 'type': 'string'}, 'nonce': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'original_pages': {'bool_allowed': False, 'maximum': 2048, 'minimum': 1, 'type': 'integer'}, 'padding_bytes': {'bool_allowed': False, 'maximum': 65508, 'minimum': 0, 'type': 'integer'}, 'padding_sha256': 'lowercase SHA256', 'page_bytes': {'const': 4096}, 'record_count': {'bool_allowed': False, 'maximum': 2048, 'minimum': 0, 'type': 'integer'}, 'records': {'items': 'evidence_contract.copied_recovery.schemas.inactive_record', 'maximum_items': 2048, 'minimum_items': 0, 'type': 'array'}, 'sector_bytes': {'bool_allowed': False, 'maximum': 65536, 'minimum': 512, 'type': 'integer'}}, 'type': 'object'}, 'inactive_record': {'additional_fields': False, 'all_fields_required': True, 'fields': {'before_image_sha256': 'lowercase SHA256', 'checksum': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'computed_checksum': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'index': {'bool_allowed': False, 'maximum': 2047, 'minimum': 0, 'type': 'integer'}, 'main_page_sha256': 'lowercase SHA256', 'page_number': {'bool_allowed': False, 'maximum': 2048, 'minimum': 1, 'type': 'integer'}}, 'type': 'object'}, 'inherited_descriptor_map': {'additional_fields': False, 'all_fields_required': True, 'fields': {'scratch_parent': {'bool_allowed': False, 'maximum': 255, 'minimum': 3, 'type': 'integer'}, 'scratch_store': {'bool_allowed': False, 'maximum': 255, 'minimum': 3, 'type': 'integer'}, 'source_package': {'bool_allowed': False, 'maximum': 255, 'minimum': 3, 'type': 'integer'}, 'source_parent': {'bool_allowed': False, 'maximum': 255, 'minimum': 3, 'type': 'integer'}, 'source_store': {'bool_allowed': False, 'maximum': 255, 'minimum': 3, 'type': 'integer'}, 'stderr': {'const': 2}, 'stdin': {'const': 0}, 'stdout': {'const': 1}}, 'type': 'object'}, 'journal_disposition': {'additional_fields': False, 'all_fields_required': True, 'fields': {'absence_observed_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'header': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.inactive_header']}, 'journal': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.file_observation']}, 'main_after': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.file_observation']}, 'main_before': 'evidence_contract.copied_recovery.schemas.file_observation', 'observed_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'status': {'enum': ['absent_after_rw', 'removed_empty_copy', 'removed_inactive_copy', 'refused']}, 'unlink_finished_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'unlink_started_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}}, 'type': 'object'}, 'limit_pair': {'additional_fields': False, 'all_fields_required': True, 'fields': {'hard': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'soft': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'lock_attempt': {'additional_fields': False, 'all_fields_required': True, 'fields': {'command': {'const': 'F_OFD_SETLK'}, 'errno': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 4095, 'minimum': 1, 'type': 'integer'}]}, 'finished_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'length': {'enum': [1, 510]}, 'lock_type': {'const': 'F_RDLCK'}, 'offset': {'enum': [1073741824, 1073741826]}, 'started_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'status': {'enum': ['acquired', 'refused', 'unsupported']}}, 'type': 'object'}, 'package_observation': {'additional_fields': False, 'all_fields_required': True, 'fields': {'bytes': {'bool_allowed': False, 'maximum': 2097152, 'minimum': 1, 'type': 'integer'}, 'descriptor': 'runtime_contract.closed_objects.descriptor', 'seals': {'const': 15}, 'sha256': 'lowercase SHA256', 'source_manifest_sha256': 'lowercase SHA256'}, 'type': 'object'}, 'package_source': {'additional_fields': False, 'all_fields_required': True, 'fields': {'destination': {'maximum_length': 256, 'minimum_length': 1, 'type': 'string'}, 'module': {'maximum_length': 128, 'minimum_length': 1, 'type': 'string'}, 'sha256': 'lowercase SHA256', 'size': {'bool_allowed': False, 'maximum': 2097152, 'minimum': 1, 'type': 'integer'}, 'source_base64': {'encoding': 'canonical padded base64', 'maximum_length': 2796204, 'type': 'string'}}, 'type': 'object'}, 'pidfd_observation': {'additional_fields': False, 'all_fields_required': True, 'fields': {'device': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'flags': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}, 'inode': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'mode': {'bool_allowed': False, 'maximum': 4294967295, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'process': {'additional_fields': False, 'all_fields_required': True, 'fields': {'exit_observed_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'observed_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'parent_pid': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}]}, 'pid': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}]}, 'pidfd': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.pidfd_observation']}, 'publication_registered_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'publication_resolved_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'publication_state': {'enum': ['pending', 'not_started', 'published']}, 'reaped_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'release_sent_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'returncode': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 255, 'minimum': -255, 'type': 'integer'}]}, 'signal_sent_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'start_time_ticks': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}]}, 'task_ids': {'items': {'bool_allowed': False, 'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'maximum_items': 1, 'minimum_items': 0, 'type': 'array'}}, 'type': 'object'}, 'ready': {'additional_fields': False, 'all_fields_required': True, 'fields': {'broker_id': 'canonical UUID4', 'default_vfs': 'evidence_contract.copied_recovery.schemas.default_vfs_observation', 'helper_id': 'canonical UUID4', 'kind': {'const': 'copied_ledger_recovery_ready'}, 'observed_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'pid': {'bool_allowed': False, 'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'runtime_sha256': 'lowercase SHA256', 'schema_version': {'const': '1'}, 'source_manifest_sha256': 'lowercase SHA256', 'source_package_sha256': 'lowercase SHA256'}, 'type': 'object'}, 'reserved_query': {'additional_fields': False, 'all_fields_required': True, 'fields': {'command': {'const': 'F_OFD_GETLK'}, 'errno': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 4095, 'minimum': 1, 'type': 'integer'}]}, 'finished_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'input_owner_pid': {'const': 0}, 'length': {'const': 1}, 'offset': {'const': 1073741825}, 'owner_pid': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 2147483647, 'minimum': -1, 'type': 'integer'}]}, 'query_type': {'const': 'F_WRLCK'}, 'result_type': {'one_of': [{'type': 'null'}, {'enum': ['F_UNLCK', 'F_RDLCK', 'F_WRLCK']}]}, 'started_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'resource_observation': {'additional_fields': False, 'all_fields_required': True, 'fields': {'address_space': 'evidence_contract.copied_recovery.schemas.limit_pair', 'cpu': 'evidence_contract.copied_recovery.schemas.limit_pair', 'file_size': 'evidence_contract.copied_recovery.schemas.limit_pair', 'nofile': 'evidence_contract.copied_recovery.schemas.limit_pair', 'observed_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'result': {'additional_fields': False, 'all_fields_required': True, 'fields': {'error': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.helper_error']}, 'export': {'one_of': [{'type': 'null'}, 'exact unchanged canonical v2 ledger export']}, 'provenance': 'evidence_contract.copied_recovery.schemas.work_provenance', 'schema_version': {'const': '1'}, 'status': {'enum': ['complete', 'failed']}}, 'type': 'object'}, 'scratch_registration': {'additional_fields': False, 'all_fields_required': True, 'fields': {'directory': 'evidence_contract.copied_recovery.schemas.identity', 'name': {'maximum_length': 128, 'minimum_length': 1, 'pattern': '[A-Za-z0-9_-]+', 'type': 'string'}, 'parent': 'evidence_contract.copied_recovery.schemas.identity', 'registered_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}, 'source_locks': {'additional_fields': False, 'all_fields_required': True, 'fields': {'main_device': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'main_inode': {'bool_allowed': False, 'maximum': 18446744073709551615, 'minimum': 0, 'type': 'integer'}, 'pending': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.lock_attempt']}, 'released_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'reserved_after': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.reserved_query']}, 'reserved_before': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.reserved_query']}, 'shared': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.lock_attempt']}}, 'type': 'object'}, 'source_package': {'additional_fields': False, 'all_fields_required': True, 'fields': {'runtime': 'runtime_contract.runtime_manifest_schema exact bundle', 'runtime_sha256': 'lowercase SHA256', 'schema_version': {'const': '1'}, 'source_manifest_sha256': 'lowercase SHA256', 'sources': {'items': 'evidence_contract.copied_recovery.schemas.package_source', 'maximum_items': 52, 'minimum_items': 52, 'type': 'array'}}, 'type': 'object'}, 'sqlite_stage': {'additional_fields': False, 'all_fields_required': True, 'fields': {'closed': {'type': 'boolean'}, 'closed_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'ledger_state_sha256': {'one_of': [{'type': 'null'}, 'lowercase SHA256']}, 'mode': {'enum': ['read_write', 'read_only']}, 'opened_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'owner_id': {'one_of': [{'type': 'null'}, 'canonical UUID4']}, 'progress_callbacks_after': {'bool_allowed': False, 'maximum': 4000, 'minimum': 0, 'type': 'integer'}, 'progress_callbacks_before': {'bool_allowed': False, 'maximum': 4000, 'minimum': 0, 'type': 'integer'}, 'snapshot_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'snapshot_bytes': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 2097152, 'minimum': 1, 'type': 'integer'}]}, 'snapshot_event_sequence': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 257, 'minimum': 1, 'type': 'integer'}]}, 'snapshot_sha256': {'one_of': [{'type': 'null'}, 'lowercase SHA256']}}, 'type': 'object'}, 'store_identity': {'additional_fields': False, 'all_fields_required': True, 'fields': {'database': 'evidence_contract.copied_recovery.schemas.identity', 'directory': 'evidence_contract.copied_recovery.schemas.identity', 'parent': 'evidence_contract.copied_recovery.schemas.identity'}, 'type': 'object'}, 'store_observation': {'additional_fields': False, 'all_fields_required': True, 'fields': {'directory': 'evidence_contract.copied_recovery.schemas.identity', 'files': {'items': 'evidence_contract.copied_recovery.schemas.file_observation', 'maximum_items': 2, 'minimum_items': 1, 'type': 'array'}, 'observed_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'parent': 'evidence_contract.copied_recovery.schemas.identity'}, 'type': 'object'}, 'transfer': {'additional_fields': False, 'all_fields_required': True, 'fields': {'export_bytes': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 2097152, 'minimum': 1, 'type': 'integer'}]}, 'export_sha256': {'one_of': [{'type': 'null'}, 'lowercase SHA256']}, 'provenance_bytes': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 32768, 'minimum': 1, 'type': 'integer'}]}, 'provenance_sha256': {'one_of': [{'type': 'null'}, 'lowercase SHA256']}, 'ready': 'evidence_contract.copied_recovery.schemas.framed_observation', 'result': 'evidence_contract.copied_recovery.schemas.framed_observation', 'result_error': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.helper_error']}, 'result_status': {'one_of': [{'type': 'null'}, {'enum': ['complete', 'failed']}]}, 'stderr_bytes': {'bool_allowed': False, 'maximum': 4096, 'minimum': 0, 'type': 'integer'}, 'stderr_eof': {'type': 'boolean'}, 'stderr_hex': {'encoding': 'lowercase even-length hexadecimal', 'maximum_length': 8192, 'type': 'string'}, 'stderr_sha256': 'lowercase SHA256', 'stdout_bytes': {'bool_allowed': False, 'maximum': 2134032, 'minimum': 0, 'type': 'integer'}, 'stdout_eof': {'type': 'boolean'}}, 'type': 'object'}, 'transport_pair': {'additional_fields': False, 'all_fields_required': True, 'fields': {'child': 'runtime_contract.closed_objects.descriptor', 'created_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'parent': 'runtime_contract.closed_objects.descriptor'}, 'type': 'object'}, 'transports': {'additional_fields': False, 'all_fields_required': True, 'fields': {'stderr': 'evidence_contract.copied_recovery.schemas.transport_pair', 'stdin': 'evidence_contract.copied_recovery.schemas.transport_pair', 'stdout': 'evidence_contract.copied_recovery.schemas.transport_pair'}, 'type': 'object'}, 'work_provenance': {'additional_fields': False, 'all_fields_required': True, 'fields': {'broker_id': 'canonical UUID4', 'copy': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.copy_stage']}, 'copy_descriptors_closed': {'type': 'boolean'}, 'deadline_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'finished_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'helper_id': 'canonical UUID4', 'journal_disposition': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.journal_disposition']}, 'post_ro_copy': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.store_observation']}, 'post_rw_copy': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.store_observation']}, 'progress_callbacks': {'bool_allowed': False, 'maximum': 4000, 'minimum': 0, 'type': 'integer'}, 'ro': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.sqlite_stage']}, 'runtime_sha256': 'lowercase SHA256', 'rw': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.sqlite_stage']}, 'schema_version': {'const': '1'}, 'source_descriptors_closed': {'type': 'boolean'}, 'source_package_closed_at_ns': {'one_of': [{'type': 'null'}, {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}]}, 'source_package_sha256': 'lowercase SHA256', 'sqlite_file_size_limit': {'one_of': [{'type': 'null'}, 'evidence_contract.copied_recovery.schemas.file_size_narrowing']}, 'started_at_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}, 'work_deadline_ns': {'bool_allowed': False, 'maximum': 9223372036854775807, 'minimum': 0, 'type': 'integer'}}, 'type': 'object'}}
+
 _CHILD_SLOTS = {
     'identify_client': ('nmap', 'http_identify', 5),
     'identify_admission': ('admission', 'http_identify', 6),
@@ -961,10 +964,17 @@ def _result_observation(result,client,meter,retained_cleanup):
 
 def _validate_exports(cleanup, loaded, closed_at, identities, closed):
     from . import engagement_dispatch_contract as ledger
+    helpers = _validate_recovery_helpers(loaded)
     manifest=loaded['manifest.json']
     instances=manifest.get('broker_instances',[])
     brokers={row['broker_id'] for row in instances}
     owners={row['ledger_owner_id'] for row in instances}
+    for helper in helpers:
+        closed_at=max(closed_at,helper['finished_at_ns'])
+        if helper['work'] is not None:
+            for key in ('rw','ro'):
+                stage=helper['work'][key]
+                if stage is not None and stage['owner_id'] is not None:owners.add(stage['owner_id'])
     if type(cleanup['exports'])is not list or len(cleanup['exports'])>4:_bad()
     seen=set();references={}
     for record in cleanup['exports']:
@@ -995,8 +1005,12 @@ def _validate_exports(cleanup, loaded, closed_at, identities, closed):
     if recovery is None:
         if 'recovery-ledger.json' in loaded:_bad()
         return
+    if recovery.get('schema_version') == '2':
+        _copied_recovery_receipt(recovery,helpers,loaded)
+        return
     runtime._fields(recovery,('schema_version','source','owner_id','started_at_ns','finished_at_ns','read_only','store_identity','bytes','sha256','ledger_state_sha256','closed'))
     if recovery['schema_version']!='1' or recovery['source']!='postcleanup_readonly' or recovery['read_only']is not True or recovery['closed']is not True or type(recovery['owner_id'])is not str or runtime._UUID.fullmatch(recovery['owner_id'])is None or recovery['owner_id'] in owners:_bad()
+    if manifest['ledger_exports']['recovery']['source']!='postcleanup_readonly':_bad()
     for field in ('started_at_ns','finished_at_ns'):runtime._integer(recovery[field])
     supervisors = _supervisor_closure(loaded)
     closed_at = max([closed_at] + [row['cleanup_finished_at_ns'] for row in cleanup['supervisors']])
@@ -1153,8 +1167,12 @@ def validate_live_context(value):
 
     processes=value['processes.json'];runtime._fields(processes,('schema_version','startup','readiness','native','boundary_observations','child_slots'))
     results=value['results.json'];runtime._fields(results,('schema_version','operations','boundary_proofs','core_proofs'))
-    cleanup=value['cleanup.json'];runtime._fields(cleanup,('schema_version','receipts','exports','recovery','supervisors'))
-    for obj in (processes,results,cleanup):
+    cleanup=value['cleanup.json']
+    cleanup_fields=('schema_version','receipts','exports','recovery','supervisors')
+    if cleanup.get('schema_version')=='2':cleanup_fields+=('recovery_helpers',)
+    elif cleanup.get('schema_version')!='1':_bad()
+    runtime._fields(cleanup,cleanup_fields)
+    for obj in (processes,results):
         if obj['schema_version']!='1':_bad()
     for obj,key,maximum in ((processes,'startup',94),(processes,'readiness',94),(processes,'native',4),(processes,'child_slots',24),(processes,'boundary_observations',59),(cleanup,'receipts',94),(cleanup,'supervisors',4),(results,'boundary_proofs',1),(results,'core_proofs',1)):
         if type(obj[key])is not list or len(obj[key])>maximum:_bad()
@@ -1281,3 +1299,817 @@ def validate_live_context(value):
     validate_supervision_transcript(value, rows=rows, deadline=contract._operation_deadline())
     _boundary_checks(value,bundle,readies,natives,retained_cleanup,meters)
     return json.loads(runtime._json(results))
+
+
+@_validation('evidence_invalid')
+def _recovery_shape(value, name):
+    """Validate the pinned closed shape without opening any retained resource."""
+    from . import engagement_live_contract as c
+    import re
+
+    def visit(item, rule, depth=0):
+        c._check_deadline(c._operation_deadline())
+        if depth > 64: _bad()
+        if type(rule) is str:
+            if rule.startswith('evidence_contract.copied_recovery.schemas.'):
+                return visit(item, _RECOVERY_SCHEMAS[rule.rsplit('.', 1)[1]], depth+1)
+            if rule == 'lowercase SHA256': return c.digest_string(item)
+            if rule == 'canonical UUID4': return c.uuid(item)
+            if rule == 'exact unchanged canonical v2 ledger export':
+                from .engagement_dispatch_contract import validate_export
+                return validate_export(item)
+            if rule == 'runtime_contract.runtime_manifest_schema exact bundle':
+                return runtime.validate_runtime(item)
+            kind = rule.removeprefix('runtime_contract.closed_objects.')
+            if kind == 'observer': return _observer(item)
+            if kind == 'descriptor':
+                runtime._fields(item, runtime.SPEC['closed_objects'][kind]['fields'])
+                c.integer(item['fd'], 0, 255)
+                c.member(item['kind'], runtime.SPEC['closed_objects'][kind]['kind'])
+                if type(item['purpose']) is not str or not 1 <= len(item['purpose']) <= 64: _bad()
+                for field in ('device','inode','mode','flags'): c.integer(item[field],0,2**64-1)
+                return
+            if kind == 'file_identity':
+                runtime._fields(item, runtime.SPEC['closed_objects'][kind]['fields'])
+                if type(item['destination']) is not str or not item['destination'].startswith('/') or len(item['destination']) > 4096: _bad()
+                for field in ('device','inode','mode'): c.integer(item[field],0,2**64-1)
+                c.integer(item['size'],1,16777216); c.digest_string(item['sha256'])
+                if not stat.S_ISREG(item['mode']): _bad()
+                return
+            _bad()
+        if 'one_of' in rule:
+            matches = 0
+            for choice in rule['one_of']:
+                try: visit(item, choice, depth+1)
+                except c.LiveError as error:
+                    if error.code.endswith(('_timeout','_limit_exceeded')): raise
+                else: matches += 1
+            if matches != 1: _bad()
+            return
+        if 'const' in rule:
+            if type(item) is not type(rule['const']) or item != rule['const']: _bad()
+            return
+        if 'enum' in rule:
+            if not any(type(item) is type(v) and item == v for v in rule['enum']): _bad()
+            return
+        kind = rule['type']
+        if kind == 'null':
+            if item is not None: _bad()
+        elif kind == 'boolean':
+            if type(item) is not bool: _bad()
+        elif kind == 'integer':
+            c.integer(item, rule['minimum'], rule['maximum'])
+        elif kind == 'object':
+            c.obj(item, rule['fields'])
+            for key, subrule in rule['fields'].items(): visit(item[key], subrule, depth+1)
+        elif kind == 'array':
+            if type(item) is not list or not rule['minimum_items'] <= len(item) <= rule['maximum_items']: _bad()
+            for child in item: visit(child, rule['items'], depth+1)
+        elif kind == 'string':
+            if type(item) is not str or not rule.get('minimum_length',0) <= len(item) <= rule['maximum_length']: _bad()
+            if 'pattern' in rule and re.fullmatch(rule['pattern'], item) is None: _bad()
+            if rule.get('encoding') == 'lowercase even-length hexadecimal' and (len(item)%2 or re.fullmatch('[0-9a-f]*',item) is None): _bad()
+            if rule.get('encoding') == 'canonical padded base64':
+                if base64.b64encode(base64.b64decode(item,validate=True)).decode('ascii')!=item:_bad()
+        else: _bad()
+    visit(value, _RECOVERY_SCHEMAS[name])
+    return value
+
+
+def _recovery_identity(row):
+    return tuple(row[k] for k in ('device','inode'))
+
+
+def _recovery_private(row, *, directory, observer):
+    if (row['uid'] != observer['uid'] or row['gid'] != observer['gid']
+            or stat.S_IMODE(row['mode']) != (0o700 if directory else 0o600)
+            or not (stat.S_ISDIR(row['mode']) if directory else stat.S_ISREG(row['mode']))): _bad()
+
+
+def _recovery_store(row, observer, *, preflight=True):
+    """Check saved held/named custody and format, never re-open its paths."""
+    _recovery_shape(row, 'store_observation')
+    for field in ('parent','directory'): _recovery_private(row[field],directory=True,observer=observer)
+    files = {entry['name']: entry for entry in row['files']}
+    if (len(files) != len(row['files']) or 'records.sqlite3' not in files
+            or set(files) - {'records.sqlite3','records.sqlite3-journal'}): _bad()
+    for name, entry in files.items():
+        held = entry['held']
+        _recovery_private(held,directory=False,observer=observer)
+        if (held != entry['named'] or held['nlink'] != 1
+                or entry['fd_flags'] & (os.O_ACCMODE | 0o10000000)): _bad()
+        if len(entry['header_hex']) != 2*min(28,held['size']) or len(entry['trailer_hex']) != 2*min(16,held['size']): _bad()
+        if name == 'records.sqlite3':
+            header = bytes.fromhex(entry['header_hex'])
+            if not 1<=held['size']<=8388608:_bad()
+            if preflight and (not 4096 <= held['size'] <= 8388608 or held['size']%4096
+                    or len(header)!=28 or header[:20] != b'SQLite format 3\x00\x10\x00\x01\x01'): _bad()
+        elif preflight and entry['trailer_hex'].endswith('d9d505f920a163d7'): _bad()
+    if len({_recovery_identity(entry['held']) for entry in files.values()}) != len(files): _bad()
+    return files
+
+
+def _recovery_order(*times):
+    if any(type(t) is not int for t in times) or any(a > b for a,b in zip(times,times[1:])): _bad()
+
+
+@_bounded
+def _recovery_canonical(value, maximum):
+    """A10's export-plus-provenance frame has its own finite byte ceiling."""
+    from . import engagement_live_contract as c
+    c.integer(maximum, 1, 2129920)
+    c._tree(value, maximum)
+    try:
+        raw = json.dumps(value, sort_keys=True, separators=(',', ':'),
+                         ensure_ascii=True, allow_nan=False).encode('ascii')
+    except (UnicodeError, ValueError, TypeError, RecursionError):
+        _bad()
+    if len(raw) > maximum:
+        c.fail('limit_exceeded')
+    c._check_deadline(c._operation_deadline())
+    return raw
+
+
+@_bounded
+def _recovery_result_bytes(result):
+    """Keep the nested export and null-export metadata allowances separate."""
+    from . import engagement_live_contract as c
+    c.canonical(result['export'], max_bytes=2097152)
+    c.canonical({**result, 'export':None}, max_bytes=32768)
+    return _recovery_canonical(result, 2129920)
+
+
+def _recovery_frame(frame, payload, maximum):
+    _recovery_shape(frame,'framed_observation')
+    if frame['received_bytes'] > maximum+8 or frame['payload_bytes'] > maximum: _bad()
+    header = bytes.fromhex(frame['header_hex'])
+    if len(header) > 8 or frame['received_bytes'] != len(header)+frame['payload_bytes']: _bad()
+    if len(header) == 8:
+        if frame['declared_bytes'] != int.from_bytes(header,'big') or not 1 <= frame['declared_bytes'] <= maximum: _bad()
+        if frame['payload_bytes']>frame['declared_bytes']:_bad()
+    elif frame['declared_bytes'] is not None or frame['payload_bytes']: _bad()
+    if frame['started_at_ns'] is None:
+        if frame['received_bytes'] or frame['finished_at_ns'] is not None: _bad()
+    elif frame['finished_at_ns'] is not None: _recovery_order(frame['started_at_ns'],frame['finished_at_ns'])
+    if frame['received_bytes']:
+        if frame['frame_sha256'] is None or frame['payload_sha256'] is None:_bad()
+        if frame['payload_bytes']==0:
+            if frame['frame_sha256']!=hashlib.sha256(header).hexdigest() or frame['payload_sha256']!=hashlib.sha256(b'').hexdigest():_bad()
+    if frame['complete']:
+        from . import engagement_live_contract as c
+        raw = _recovery_canonical(payload,maximum)
+        if (frame['finished_at_ns'] is None or header != len(raw).to_bytes(8,'big')
+                or frame['payload_bytes'] != len(raw) or frame['payload_sha256'] != c.digest(raw)
+                or frame['frame_sha256'] != c.digest(header+raw)): _bad()
+    elif payload is not None: _bad()
+
+
+def _recovery_prefix(stage, loaded, cache):
+    """Reconstruct this handle's own event prefix from validated retained data."""
+    from . import engagement_dispatch_contract as ledger
+    from . import engagement_live_contract as c
+    key = (stage['snapshot_event_sequence'],stage['snapshot_sha256'])
+    if key in cache: value = cache[key]
+    else:
+        candidates = []; eligible = False
+        for name in ('final-ledger.json','recovery-ledger.json'):
+            retained = loaded.get(name)
+            if retained is None or len(retained['events']) < stage['snapshot_event_sequence']: continue
+            eligible = True
+            validated = ledger.validate_export(retained)
+            engine = ledger._Engine()
+            for event in validated['events'][:stage['snapshot_event_sequence']]:
+                engine.push(ledger.validate_request(event['request']))
+            value = engine.export
+            if c.digest(ledger.canonical(value)) == stage['snapshot_sha256']: candidates.append(value)
+        if not candidates:
+            if eligible: _bad()
+            c.fail('evidence_incomplete')
+        value = candidates[0]
+        if any(other != value for other in candidates[1:]): _bad()
+        cache[key] = value
+    raw = ledger.canonical(value)
+    if (len(raw) != stage['snapshot_bytes'] or c.digest(raw) != stage['snapshot_sha256']
+            or value['events'][-1]['sequence'] != stage['snapshot_event_sequence']
+            or value['events'][-1]['receipt']['state_sha256'] != stage['ledger_state_sha256']): _bad()
+    return value
+
+
+def _recovery_copy_proof(helper, before_sql_at):
+    """The same completed raw-copy proof precedes every attempted SQLite open."""
+    work=helper['work'];copy=work['copy'];observer=helper['parent_observer']
+    if copy is None or work['source_descriptors_closed'] is not True or work['copy_descriptors_closed'] is not True:_bad()
+    source = _recovery_store(copy['source_before'],observer)
+    after = _recovery_store(copy['source_after'],observer)
+    copied = _recovery_store(copy['copied'],observer)
+    main = 'records.sqlite3'; journal = main+'-journal'
+    if journal not in source or source != after or set(source) != set(copied): _bad()
+    for field in ('parent','directory'):
+        if copy['source_before'][field] != copy['source_after'][field]: _bad()
+        if any(row[field] != helper['scratch'][field] for row in (copy['copied'],)): _bad()
+    source_ids = {_recovery_identity(row['held']) for row in source.values()}
+    if any(_recovery_identity(row['held']) in source_ids for row in copied.values()): _bad()
+    if {_recovery_identity(copy['source_before'][k]) for k in ('parent','directory')} & {_recovery_identity(helper['scratch'][k]) for k in ('parent','directory')}: _bad()
+    for name in source:
+        for field in ('sha256','header_hex','trailer_hex'):
+            if source[name][field] != copied[name][field]: _bad()
+        if source[name]['held']['size'] != copied[name]['held']['size']: _bad()
+    lock = copy['locks']
+    if (lock['main_device'],lock['main_inode']) != _recovery_identity(source[main]['held']): _bad()
+    for name,offset,length in (('pending',1073741824,1),('shared',1073741826,510)):
+        row = lock[name]
+        if (row is None or row['command']!='F_OFD_SETLK' or row['lock_type']!='F_RDLCK'
+                or row['offset']!=offset or row['length']!=length or row['status']!='acquired' or row['errno'] is not None): _bad()
+        _recovery_order(copy['started_at_ns'],row['started_at_ns'],row['finished_at_ns'])
+    for name in ('reserved_before','reserved_after'):
+        row = lock[name]
+        if (row is None or row['command']!='F_OFD_GETLK' or row['query_type']!='F_WRLCK'
+                or row['offset']!=1073741825 or row['length']!=1 or row['input_owner_pid']!=0
+                or row['result_type']!='F_UNLCK' or row['owner_pid']!=0 or row['errno'] is not None): _bad()
+        _recovery_order(row['started_at_ns'],row['finished_at_ns'])
+    _recovery_order(lock['pending']['finished_at_ns'],lock['shared']['started_at_ns'],
+        lock['shared']['finished_at_ns'],lock['reserved_before']['started_at_ns'],
+        lock['reserved_before']['finished_at_ns'],copy['source_before']['observed_at_ns'],
+        copy['copied']['observed_at_ns'],copy['source_after']['observed_at_ns'],
+        lock['released_at_ns'],copy['raw_source_fds_closed_at_ns'],copy['finished_at_ns'])
+    _recovery_order(copy['copied']['observed_at_ns'],lock['reserved_after']['started_at_ns'],
+        lock['reserved_after']['finished_at_ns'],lock['released_at_ns'])
+    _recovery_order(copy['copied']['observed_at_ns'],copy['raw_copy_fds_closed_at_ns'],copy['finished_at_ns'])
+    narrow = work['sqlite_file_size_limit']
+    if narrow is None:_bad()
+    if narrow['soft']!=8388608 or narrow['hard']!=8388608: _bad()
+    _recovery_order(helper['process']['release_sent_at_ns'],work['started_at_ns'],
+        work['source_package_closed_at_ns'],copy['started_at_ns'],copy['finished_at_ns'],
+        narrow['observed_at_ns'],before_sql_at)
+    return source,copied
+
+
+def _recovery_journal_proof(helper):
+    """Validate the completed RW/journal boundary before any RO attempt."""
+    from . import engagement_live_contract as c
+    work=helper['work'];rw=work['rw'];disposition=work['journal_disposition'];observer=helper['parent_observer']
+    if rw is None or not rw['closed'] or disposition is None or work['post_rw_copy'] is None:_bad()
+    copied=_recovery_store(work['copy']['copied'],observer)
+    post_rw=_recovery_store(work['post_rw_copy'],observer)
+    main='records.sqlite3';journal=main+'-journal'
+    for field in ('parent','directory'):
+        if work['post_rw_copy'][field]!=helper['scratch'][field]:_bad()
+    _recovery_order(rw['closed_at_ns'],work['post_rw_copy']['observed_at_ns'],disposition['observed_at_ns'])
+    if disposition['main_before'] != post_rw[main] or disposition['main_after'] is None: _bad()
+    if _recovery_identity(copied[main]['held']) != _recovery_identity(post_rw[main]['held']): _bad()
+    if disposition['status'] == 'absent_after_rw':
+        if (set(post_rw)!={main} or any(disposition[k] is not None for k in
+                ('journal','header','unlink_started_at_ns','unlink_finished_at_ns'))): _bad()
+        _recovery_order(disposition['observed_at_ns'],disposition['absence_observed_at_ns'])
+    elif disposition['status'] in ('removed_empty_copy','removed_inactive_copy'):
+        if (journal not in post_rw or disposition['journal']!=post_rw[journal]
+                or copied[journal]!=post_rw[journal] or copied[main]!=post_rw[main]
+                or disposition['main_before']!=disposition['main_after']): _bad()
+        _recovery_order(disposition['observed_at_ns'],disposition['unlink_started_at_ns'],
+            disposition['unlink_finished_at_ns'],disposition['absence_observed_at_ns'])
+        info=post_rw[journal];header=disposition['header']
+        if disposition['status']=='removed_empty_copy':
+            if info['held']['size']!=0 or header is not None: _bad()
+        else:
+            if header is None: _bad()
+            raw=bytes.fromhex(header['header_hex']);sector=header['sector_bytes'];pages=header['original_pages']
+            if (len(raw)!=28 or raw[:12]!=b'\0'*12 or raw.hex()!=info['header_hex']
+                    or not 512<=sector<=65536 or sector&(sector-1) or header['page_bytes']!=4096
+                    or pages!=post_rw[main]['held']['size']//4096 or not 1<=pages<=2048
+                    or raw[12:28]!=b''.join(v.to_bytes(4,'big') for v in (header['nonce'],pages,sector,4096))
+                    or header['padding_bytes']!=sector-28 or header['padding_sha256']!=c.digest(b'\0'*(sector-28))
+                    or header['record_count']!=len(header['records'])
+                    or info['held']['size']!=sector+4104*len(header['records'])): _bad()
+            page_ids=set()
+            for index,row in enumerate(header['records']):
+                if (row['index']!=index or not 1<=row['page_number']<=pages or row['page_number'] in page_ids
+                        or row['before_image_sha256']!=row['main_page_sha256']
+                        or row['checksum']!=row['computed_checksum']): _bad()
+                page_ids.add(row['page_number'])
+    else: _bad()
+    # SQLite RO is observational: source identities and copy content remain fixed.
+    if disposition['main_before']!=disposition['main_after']: _bad()
+
+
+def _recovery_work(helper, loaded, owners, cache):
+    """Join copy/lock/handle facts; no digest stands in for an earlier export."""
+    from . import engagement_live_contract as c
+    work = helper['work']; observer = helper['parent_observer']
+    if work is None: _bad()
+    _recovery_shape(work,'work_provenance')
+    for field in ('helper_id','broker_id','deadline_ns','work_deadline_ns'):
+        if work[field] != helper[field]: _bad()
+    for field in ('runtime_sha256','source_package_sha256'):
+        if work[field] != helper['config'][field]: _bad()
+    copy = work['copy']; rw = work['rw']; ro = work['ro']; disposition = work['journal_disposition']
+    if any(value is None for value in (copy,rw,ro,disposition,work['post_rw_copy'],work['post_ro_copy'],work['sqlite_file_size_limit'])): _bad()
+    if work['source_descriptors_closed'] is not True or work['copy_descriptors_closed'] is not True: _bad()
+    source,copied = _recovery_copy_proof(helper,rw['opened_at_ns'])
+    post_rw = _recovery_store(work['post_rw_copy'],observer)
+    post_ro = _recovery_store(work['post_ro_copy'],observer)
+    main = 'records.sqlite3'
+    for row in (work['post_rw_copy'],work['post_ro_copy']):
+        for field in ('parent','directory'):
+            if row[field]!=helper['scratch'][field]:_bad()
+    snapshots = []
+    for stage,mode in ((rw,'read_write'),(ro,'read_only')):
+        if (stage['mode']!=mode or stage['closed'] is not True or stage['owner_id'] is None
+                or stage['owner_id'] in owners or any(stage[k] is None for k in
+                ('snapshot_event_sequence','snapshot_bytes','snapshot_sha256','ledger_state_sha256'))): _bad()
+        owners.add(stage['owner_id'])
+        _recovery_order(stage['opened_at_ns'],stage['snapshot_at_ns'],stage['closed_at_ns'])
+        if not 0 <= stage['progress_callbacks_before'] <= stage['progress_callbacks_after'] < 4000: _bad()
+        snapshots.append(_recovery_prefix(stage,loaded,cache))
+    if (rw['progress_callbacks_before']!=0 or ro['progress_callbacks_before']!=rw['progress_callbacks_after']
+            or work['progress_callbacks']!=ro['progress_callbacks_after'] or snapshots[0]!=snapshots[1]): _bad()
+    _recovery_journal_proof(helper)
+    if disposition['main_after']!=post_ro[main] or set(post_ro)!={main}:_bad()
+    _recovery_order(disposition['absence_observed_at_ns'],ro['opened_at_ns'],ro['closed_at_ns'],
+        work['post_ro_copy']['observed_at_ns'],work['finished_at_ns'],helper['work_deadline_ns'])
+    return snapshots[-1]
+
+
+_RECOVERY_FD_PURPOSES = (
+    'bounded config then release input pipe', 'READY/result framed stdout pipe',
+    'bounded diagnostic stderr pipe', 'sealed O_RDONLY source package',
+    'held source parent directory', 'held source store directory',
+    'registered scratch parent directory', 'registered scratch store directory')
+
+
+def _recovery_runtime(helper, bundle):
+    from . import engagement_live_contract as c
+    observed=helper['runtime'];ready=helper['ready'];config=helper['config'];process=helper['process']
+    if observed is None or ready is None or helper['scratch'] is None: _bad()
+    runtime_sha=runtime._hash(bundle);source_sha=runtime._hash(bundle['sources'])
+    if (observed['runtime_sha256']!=runtime_sha or config['runtime_sha256']!=runtime_sha
+            or observed['source_manifest_sha256']!=source_sha or config['source_manifest_sha256']!=source_sha
+            or ready['runtime_sha256']!=runtime_sha or ready['source_manifest_sha256']!=source_sha
+            or ready['source_package_sha256']!=config['source_package_sha256']): _bad()
+    broker=next(row for row in bundle['roles'] if row['role']=='broker')
+    native={row['destination']:row for row in broker['native_files']+broker['extension_files']}
+    def pinned(row, expected):
+        if (row['destination']!=expected['destination'] or row['size']!=expected['size']
+                or row['sha256']!=expected['sha256']): _bad()
+    pinned(observed['interpreter'],bundle['python'])
+    for field in ('device','inode','mode'):
+        if observed['stdlib'][field]!=bundle['stdlib'][field]: _bad()
+    if not stat.S_ISDIR(observed['stdlib']['mode']): _bad()
+    images={row['destination']:row for row in observed['mapped_images']}
+    if len(images)!=len(observed['mapped_images']): _bad()
+    for name,row in images.items():
+        if name not in native: _bad()
+        pinned(row,native[name])
+    # The loader has two selected aliases for the same immutable source. One
+    # actual mapped inode may resolve both aliases; absence of its source may not.
+    mapped_sources={native[name]['source'] for name in images}
+    required_sources={native[name]['source'] for name in broker['required_mapped_images']}
+    for prefix in ('_ctypes.','libffi.so'):
+        required=[row for name,row in native.items() if os.path.basename(name).startswith(prefix)]
+        if len(required)!=1:_bad()
+        required_sources.add(required[0]['source'])
+    if not required_sources<=mapped_sources:_bad()
+    if images.get(observed['interpreter']['destination'])!=observed['interpreter']: _bad()
+    sqlite=[row for name,row in native.items() if os.path.basename(name).startswith('_sqlite3.')]
+    library=[row for name,row in native.items() if os.path.basename(name).startswith('libsqlite3.so')]
+    if len(sqlite)!=1 or len(library)!=1: _bad()
+    pinned(observed['sqlite_extension'],sqlite[0])
+    if images.get(sqlite[0]['destination'])!=observed['sqlite_extension']: _bad()
+    vfs=ready['default_vfs'];pinned(vfs['library'],library[0])
+    if (vfs['library_source']!=library[0]['source'] or images.get(library[0]['destination'])!=vfs['library']
+            or vfs['library_version']!=sum(n*m for n,m in zip(vfs['sqlite_module_version'],(1000000,1000,1)))
+            or observed['default_vfs_sha256']!=c.digest(c.canonical(vfs))): _bad()
+    pin_end=process['release_sent_at_ns'] if process['release_sent_at_ns'] is not None else process['exit_observed_at_ns']
+    _recovery_order(process['publication_resolved_at_ns'],vfs['observed_at_ns'],ready['observed_at_ns'],
+        helper['transfer']['ready']['finished_at_ns'],observed['observed_at_ns'],pin_end)
+    limits=observed['resource_limits']
+    _recovery_order(helper['transfer']['ready']['finished_at_ns'],limits['observed_at_ns'],pin_end)
+    for name,maximum in (('address_space',268435456),('cpu',2),('nofile',32),('file_size',16777216)):
+        if limits[name]!={'soft':maximum,'hard':maximum}: _bad()
+    descriptors=observed['descriptors']
+    if [row['fd'] for row in descriptors]!=list(range(8)) or [row['purpose'] for row in descriptors]!=list(_RECOVERY_FD_PURPOSES): _bad()
+    inherited=config['inherited_fds']
+    selected=[inherited[name] for name in ('source_package','source_parent','source_store','scratch_parent','scratch_store')]
+    if len(set(selected))!=5: _bad()
+    pipes=[];transport_fds=[]
+    for fd,name in enumerate(('stdin','stdout','stderr')):
+        pair=helper['transports'][name];parent=pair['parent'];child=pair['child'];actual=descriptors[fd]
+        pipes.append(_recovery_identity(child));transport_fds.extend((parent['fd'],child['fd']))
+        if (not stat.S_ISFIFO(child['mode']) or child['kind']!='pipe' or parent['kind']!='pipe'
+                or actual['kind']!='pipe' or child['purpose']!=_RECOVERY_FD_PURPOSES[fd]
+                or any(actual[k]!=child[k] or parent[k]!=child[k] for k in ('device','inode','mode'))
+                or child['flags']&os.O_ACCMODE!=(os.O_RDONLY if fd==0 else os.O_WRONLY)
+                or actual['flags']&os.O_ACCMODE!=(os.O_RDONLY if fd==0 else os.O_WRONLY)
+                or parent['flags']&os.O_ACCMODE!=(os.O_WRONLY if fd==0 else os.O_RDONLY)
+                or any(row['flags'] & 0o10000000 for row in (parent,child,actual))): _bad()
+        _recovery_order(helper['started_at_ns'],pair['created_at_ns'],process['publication_registered_at_ns'])
+    if len(set(pipes))!=3 or len(set(transport_fds+selected))!=11: _bad()
+    package=observed['source_package']
+    if (package['descriptor']!=descriptors[3] or package['seals']!=15
+            or package['bytes']!=config['source_package_bytes'] or package['sha256']!=config['source_package_sha256']
+            or package['source_manifest_sha256']!=source_sha or descriptors[3]['kind']!='regular'
+            or not stat.S_ISREG(descriptors[3]['mode'])): _bad()
+    for row in descriptors[3:]:
+        if row['flags'] & (os.O_ACCMODE | 0o10000000): _bad()  # Linux O_PATH.
+    for row in descriptors[4:]:
+        if row['kind']!='directory' or not stat.S_ISDIR(row['mode']) or stat.S_IMODE(row['mode'])!=0o700: _bad()
+    work=helper['work'];source=None if work is None or work['copy'] is None else work['copy']['source_before']
+    for fd,identity in ((6,helper['scratch']['parent']),(7,helper['scratch']['directory'])):
+        if descriptors[fd]['kind']!='directory' or any(descriptors[fd][k]!=identity[k] for k in ('device','inode','mode')): _bad()
+    if source is not None:
+        for fd,field in ((4,'parent'),(5,'directory')):
+            if descriptors[fd]['kind']!='directory' or any(descriptors[fd][k]!=source[field][k] for k in ('device','inode','mode')): _bad()
+
+
+def _recovery_partial_work(helper, loaded, owners, cache):
+    """Validate observed failure facts without turning a refusal into success."""
+    from . import engagement_live_contract as c
+    work=helper['work']
+    if work is None:return
+    reason=helper['transfer']['result_error']
+    if reason is None or helper['transfer']['result_status']!='failed':_bad()
+    _recovery_order(helper['process']['release_sent_at_ns'],work['started_at_ns'],work['finished_at_ns'])
+    if work['source_package_closed_at_ns'] is not None:
+        _recovery_order(work['started_at_ns'],work['source_package_closed_at_ns'],work['finished_at_ns'])
+    copy=work['copy'];rw=work['rw'];ro=work['ro'];previous=None
+    if rw is not None:
+        _recovery_copy_proof(helper,rw['opened_at_ns'] if rw['opened_at_ns'] is not None else work['finished_at_ns'])
+    if ro is not None:
+        if rw is None or rw['progress_callbacks_after']>=4000:_bad()
+        if any(rw[key] is None for key in ('owner_id','snapshot_at_ns','snapshot_event_sequence',
+                'snapshot_bytes','snapshot_sha256','ledger_state_sha256')):_bad()
+        _recovery_journal_proof(helper)
+    for key,stage,mode in (('rw',rw,'read_write'),('ro',ro,'read_only')):
+        if stage is None:continue
+        if stage['mode']!=mode or stage['progress_callbacks_before']>stage['progress_callbacks_after']:_bad()
+        if key=='rw' and stage['progress_callbacks_before']!=0:_bad()
+        if key=='ro' and (rw is None or not rw['closed']
+                or stage['progress_callbacks_before']!=rw['progress_callbacks_after']):_bad()
+        if stage['owner_id'] is not None:
+            if stage['owner_id'] in owners or stage['opened_at_ns'] is None:_bad()
+            owners.add(stage['owner_id'])
+        if stage['opened_at_ns'] is not None:
+            if (stage['owner_id'] is None or copy is None or work['sqlite_file_size_limit'] is None
+                    or not work['source_descriptors_closed'] or not work['copy_descriptors_closed']):_bad()
+            _recovery_order(work['source_package_closed_at_ns'],copy['finished_at_ns'],
+                work['sqlite_file_size_limit']['observed_at_ns'],stage['opened_at_ns'],work['finished_at_ns'])
+            if work['sqlite_file_size_limit']['soft']!=8388608 or work['sqlite_file_size_limit']['hard']!=8388608:_bad()
+        snapshot_keys=('snapshot_at_ns','snapshot_event_sequence','snapshot_bytes','snapshot_sha256','ledger_state_sha256')
+        if any(stage[field] is not None for field in snapshot_keys):
+            if any(stage[field] is None for field in snapshot_keys) or stage['opened_at_ns'] is None:_bad()
+            _recovery_order(stage['opened_at_ns'],stage['snapshot_at_ns'],work['finished_at_ns'])
+            _recovery_prefix(stage,loaded,cache)
+        if stage['closed']:
+            _recovery_order(stage['opened_at_ns'],stage['closed_at_ns'],work['finished_at_ns'])
+            if stage['snapshot_at_ns'] is not None:_recovery_order(stage['snapshot_at_ns'],stage['closed_at_ns'])
+        elif stage['closed_at_ns'] is not None:_bad()
+        if key=='ro':
+            if work['journal_disposition'] is None or work['journal_disposition']['status']=='refused':_bad()
+            if stage['opened_at_ns'] is not None:
+                _recovery_order(rw['closed_at_ns'],work['journal_disposition']['absence_observed_at_ns'],stage['opened_at_ns'])
+        previous=stage
+    if work['progress_callbacks']!=(0 if previous is None else previous['progress_callbacks_after']):_bad()
+    if rw is not None and ro is not None and ro['snapshot_sha256'] is not None:
+        equal=_recovery_prefix(rw,loaded,cache)==_recovery_prefix(ro,loaded,cache)
+        if not equal and (reason!='snapshot_mismatch' or work['post_ro_copy'] is not None):_bad()
+        if equal and reason=='snapshot_mismatch':_bad()
+    if work['progress_callbacks']==4000 and reason!='progress_limit':_bad()
+    if reason=='progress_limit' and work['progress_callbacks']!=4000:_bad()
+    if reason=='work_deadline' and work['finished_at_ns']<work['work_deadline_ns']:_bad()
+    if copy is not None:
+        _recovery_order(work['started_at_ns'],copy['started_at_ns'])
+        if copy['finished_at_ns'] is not None:_recovery_order(copy['started_at_ns'],copy['finished_at_ns'],work['finished_at_ns'])
+        locks=copy['locks'];failed_lock=False
+        for key,offset,length in (('pending',1073741824,1),('shared',1073741826,510)):
+            lock=locks[key]
+            if lock is None:continue
+            if lock['command']!='F_OFD_SETLK' or lock['lock_type']!='F_RDLCK' or lock['offset']!=offset or lock['length']!=length:_bad()
+            _recovery_order(copy['started_at_ns'],lock['started_at_ns'],lock['finished_at_ns'],work['finished_at_ns'])
+            if lock['status']=='acquired':
+                if lock['errno'] is not None or failed_lock:_bad()
+            else:failed_lock=True
+        if failed_lock and (reason!='unsupported_ofd' or copy['source_before'] is not None or rw is not None):_bad()
+        refused_reserved=False
+        for key in ('reserved_before','reserved_after'):
+            query=locks[key]
+            if query is None:continue
+            if (query['command']!='F_OFD_GETLK' or query['query_type']!='F_WRLCK' or query['offset']!=1073741825
+                    or query['length']!=1 or query['input_owner_pid']!=0):_bad()
+            _recovery_order(copy['started_at_ns'],query['started_at_ns'],query['finished_at_ns'],work['finished_at_ns'])
+            unlocked=query['result_type']=='F_UNLCK' and query['owner_pid']==0 and query['errno'] is None
+            if not unlocked:
+                refused_reserved=True
+                if reason not in ('reserved_writer','unsupported_ofd') or rw is not None:_bad()
+                if key=='reserved_before' and copy['source_before'] is not None:_bad()
+        stores=[]
+        for key in ('source_before','copied','source_after'):
+            store=copy[key]
+            if store is None:continue
+            _recovery_order(copy['started_at_ns'],store['observed_at_ns'],work['finished_at_ns'])
+            stores.append(store)
+            # A recorded bad header or drift may explain the refusal. A later
+            # opened SQLite handle would contradict that preflight outcome.
+            _recovery_store(store,helper['parent_observer'],preflight=rw is not None)
+        if len(stores)>1:_recovery_order(*(store['observed_at_ns'] for store in stores))
+        before=copy['source_before'];after=copy['source_after']
+        if before is not None and after is not None:
+            drift=any(before[key]!=after[key] for key in ('parent','directory','files'))
+            if drift and (reason!='source_changed' or rw is not None):_bad()
+        for field,flag in (('raw_source_fds_closed_at_ns','source_descriptors_closed'),('raw_copy_fds_closed_at_ns','copy_descriptors_closed')):
+            if copy[field] is not None:
+                if not work[flag]:_bad()
+                _recovery_order(copy['started_at_ns'],copy[field],work['finished_at_ns'])
+        if locks['released_at_ns'] is not None:
+            _recovery_order(copy['started_at_ns'],locks['released_at_ns'],copy['raw_source_fds_closed_at_ns'],work['finished_at_ns'])
+            for query in (locks['reserved_before'],locks['reserved_after']):
+                if query is not None:_recovery_order(query['finished_at_ns'],locks['released_at_ns'])
+        if rw is not None:
+            if (failed_lock or refused_reserved or any(copy[key] is None for key in ('source_before','copied','source_after',
+                    'raw_copy_fds_closed_at_ns','raw_source_fds_closed_at_ns','finished_at_ns'))
+                    or any(locks[key] is None for key in ('pending','shared','reserved_before','reserved_after','released_at_ns'))):_bad()
+    elif rw is not None or ro is not None:_bad()
+    if reason in ('source_custody','unsupported_ofd','reserved_writer','copy_custody','copy_limit','main_header','journal_trailer') and rw is not None:_bad()
+    if reason=='sqlite_rw' and ro is not None:_bad()
+    if reason=='journal_disposition' and ro is not None:_bad()
+    disposition=work['journal_disposition']
+    if disposition is not None:
+        if rw is None or not rw['closed'] or work['post_rw_copy'] is None:_bad()
+        _recovery_order(rw['closed_at_ns'],work['post_rw_copy']['observed_at_ns'],disposition['observed_at_ns'],work['finished_at_ns'])
+        if disposition['unlink_started_at_ns'] is not None:
+            _recovery_order(disposition['observed_at_ns'],disposition['unlink_started_at_ns'],work['finished_at_ns'])
+        if disposition['unlink_finished_at_ns'] is not None:
+            _recovery_order(disposition['unlink_started_at_ns'],disposition['unlink_finished_at_ns'],work['finished_at_ns'])
+        if disposition['absence_observed_at_ns'] is not None:
+            _recovery_order(disposition['observed_at_ns'],disposition['absence_observed_at_ns'],work['finished_at_ns'])
+    if work['post_ro_copy'] is not None:
+        if ro is None or not ro['closed']:_bad()
+        files=_recovery_store(work['post_ro_copy'],helper['parent_observer'])
+        for field in ('parent','directory'):
+            if work['post_ro_copy'][field]!=helper['scratch'][field]:_bad()
+        same=set(files)=={'records.sqlite3'} and files['records.sqlite3']==disposition['main_after']
+        if not same and reason!='source_changed':_bad()
+        _recovery_order(ro['closed_at_ns'],work['post_ro_copy']['observed_at_ns'],work['finished_at_ns'])
+
+
+def _recovery_generation_map(loaded, parents):
+    """Assign observed identities by sealed role links, never guessed timestamps."""
+    from . import engagement_live_contract as c
+    from .engagement_live_witness import _retained_audit_readiness
+    brokers={row['broker_id']:index for index,row in enumerate(loaded['manifest.json']['broker_instances'])}
+    mapped={};facts={};workers={}
+    def worker(worker_id, broker_id):
+        if broker_id not in brokers or worker_id in workers and workers[worker_id]!=broker_id:_bad()
+        workers[worker_id]=broker_id
+    def bind(parent, broker_id):
+        if broker_id not in brokers:_bad()
+        key=(parent['payload']['pid'],parent['payload']['start_time_ticks'])
+        fact=(parent['role'],parent['wrapper']['pid'],parent['wrapper']['start_time_ticks'])
+        if key in mapped and (mapped[key]!=brokers[broker_id] or facts[key]!=fact):_bad()
+        mapped[key]=brokers[broker_id];facts[key]=fact
+    for broker_id in brokers:worker(broker_id,broker_id)
+    for slot in loaded['processes.json']['child_slots']:
+        worker(slot['worker_id'],slot['broker_id']);worker(slot['launcher_id'],slot['broker_id'])
+        if slot['entry_sha256'] is not None:
+            matching=[parent for parent in loaded['processes.json']['startup'] if runtime._hash(parent)==slot['entry_sha256']]
+            if len(matching)!=1:_bad()
+            bind(matching[0],slot['broker_id'])
+    for operation in loaded['results.json']['operations']:
+        binding=operation['session']['binding']
+        worker(binding['reviewer_id'],binding['broker_id'])
+    rows=_retained_rows(loaded)
+    for item in rows:
+        row=item['row']
+        if row['kind']!='protocol' or item['source']!='broker_memfd':continue
+        data=row['data'];frame=data['frame']
+        if data['direction']=='received' and data['channel_role']=='lifecycle' and frame['operation']=='ROLE_OBSERVED':
+            ready=frame['body']['readiness']
+            if (row['observer_id']!=row['broker_id'] or frame['channel_id']!=row['broker_id']
+                    or row['session_id'] is not None or row['dispatch_id'] is not None
+                    or ready['role']!=frame['body']['role']):_bad()
+            if ready not in loaded['processes.json']['readiness']:_bad()
+            worker(ready['worker_ready']['worker_id'],row['broker_id'])
+            bind(ready['parent_observation'],row['broker_id'])
+    for ready in loaded['processes.json']['readiness']:
+        broker_id=workers.get(ready['worker_ready']['worker_id'])
+        if broker_id is not None:bind(ready['parent_observation'],broker_id)
+    for observed in _retained_audit_readiness(loaded,rows=rows,deadline=c._operation_deadline())['observations']:
+        bind(observed['readiness']['parent_observation'],observed['broker_id'])
+    identities={};counts={index:set() for index in brokers.values()}
+    for parent in parents:
+        key=(parent['payload']['pid'],parent['payload']['start_time_ticks'])
+        if key not in mapped:c.fail('evidence_incomplete')
+        fact=(parent['role'],parent['wrapper']['pid'],parent['wrapper']['start_time_ticks'])
+        if facts[key]!=fact:_bad()
+        for field in ('payload','wrapper'):
+            identity=(parent[field]['pid'],parent[field]['start_time_ticks'])
+            if identity in identities and identities[identity]!=mapped[key]:_bad()
+            identities[identity]=mapped[key];counts[mapped[key]].add(identity)
+    for receipt in loaded['cleanup.json']['receipts']:
+        for process in receipt['processes']:
+            if process['pid'] is None or process['start_time_ticks'] is None:c.fail('evidence_incomplete')
+            key=(process['pid'],process['start_time_ticks'])
+            if key not in mapped:c.fail('evidence_incomplete')
+            if process['wrapper_pid']!=facts[key][1] or process['role']!=facts[key][0]:_bad()
+            counts[mapped[key]].add(key)
+    return mapped,counts
+
+
+def _recovery_physical_history(helper, loaded, parents, *, generation_by_identity=None):
+    """Resolve observed process closure around each sequential helper interval."""
+    observer=helper['parent_observer'];start=helper['started_at_ns'];finish=helper['finished_at_ns']
+    receipts=loaded['cleanup.json']['receipts'];selected_broker=None
+    if generation_by_identity is None:generation_by_identity=_recovery_generation_map(loaded,parents)[0]
+    for ready in loaded['processes.json']['readiness']:
+        if ready['role']=='broker' and ready['worker_ready']['worker_id']==helper['broker_id']:
+            if selected_broker is not None: _bad()
+            selected_broker=ready['parent_observation']
+    if selected_broker is None: _bad()
+    if selected_broker['observer']!=observer: _bad()
+    _recovery_order(selected_broker['sampled_at_ns'],start)
+    if not _supervisor_closure(loaded)['all_closed']:_bad()
+    if helper['runtime'] is not None:
+        source_directory=helper['runtime']['descriptors'][5]
+        selected=[row for row in selected_broker['descriptors'] if row['purpose']=='held_store_directory']
+        if len(selected)!=1 or _recovery_identity(source_directory)!=_recovery_identity(selected[0]):_bad()
+    for parent in parents:
+        if parent['observer']!=observer: _bad()
+        sampled=parent['sampled_at_ns']
+        payload=parent['payload'];key=(payload['pid'],payload['start_time_ticks'])
+        if key not in generation_by_identity:_bad()
+        generation=generation_by_identity[key]
+        if generation > helper['generation']:
+            if sampled < finish:_bad()
+            continue
+        if sampled > start:_bad()
+        matches=[]
+        for receipt in receipts:
+            for process in receipt['processes']:
+                if (process['pid'],process['start_time_ticks'])==key:
+                    if (process['pin_verified'] and process['exit_observed'] and process['reaped_observed']
+                            and process['wrapper_pid']==parent['wrapper']['pid'] and process['wrapper_returncode'] is not None
+                            and receipt['descriptors_closed'] and receipt['finished_at_ns']<=start): matches.append(receipt)
+        if not matches: _bad()
+    for supervisor in loaded['cleanup.json']['supervisors']:
+        if supervisor['broker_id']==helper['broker_id']:
+            if (supervisor['state'] not in ('joined','not_started') or supervisor['thread_alive_observed'] is not False
+                    or not supervisor['channel_closed'] or supervisor['pending_slots']
+                    or supervisor['cleanup_finished_at_ns']>start): _bad()
+    source=None if helper['work'] is None or helper['work']['copy'] is None else helper['work']['copy']['source_before']
+    if source is not None:
+        descriptors={row['purpose']:row for row in selected_broker['descriptors']}
+        for name,value in (('held_store_directory',source['directory']),
+                           ('sqlite_main',next(row['held'] for row in source['files'] if row['name']=='records.sqlite3'))):
+            if name not in descriptors or _recovery_identity(descriptors[name])!=_recovery_identity(value): _bad()
+    return selected_broker
+
+
+@_bounded
+def _validate_recovery_helpers(loaded):
+    """A10 is saved-data validation only: no filesystem, SQLite or subprocess."""
+    from . import engagement_live_contract as c
+    cleanup=loaded['cleanup.json'];helpers=cleanup.get('recovery_helpers',[])
+    if cleanup['schema_version']=='1':
+        if helpers or 'recovery_helpers' in cleanup: _bad()
+        return []
+    if cleanup['schema_version']!='2' or type(helpers) is not list or not 1<=len(helpers)<=2: _bad()
+    brokers=loaded['manifest.json']['broker_instances'];bundle=loaded['runtime.json']['runtime']
+    owners={row['ledger_owner_id'] for row in brokers};cache={};seen=set();generations=[];identities=set()
+    parents=list(loaded['processes.json']['startup'])+[
+        row['parent_observation'] for row in loaded['processes.json']['readiness']+loaded['processes.json']['native']]
+    audit=_audit_process_closure(loaded)
+    parents.extend(audit['parents'])
+    generation_by_identity,generation_counts=_recovery_generation_map(loaded,parents)
+    for parent in parents:
+        for field in ('payload','wrapper'):
+            identities.add((parent[field]['pid'],parent[field]['start_time_ticks']))
+    for receipt in cleanup['receipts']:
+        for process in receipt['processes']:
+            if process['pid'] is not None and process['start_time_ticks'] is not None:
+                identities.add((process['pid'],process['start_time_ticks']))
+    for helper in helpers:
+        _recovery_shape(helper,'helper_observation')
+        if helper['helper_id'] in seen or helper['generation'] in generations: _bad()
+        seen.add(helper['helper_id']);generations.append(helper['generation'])
+        if helper['generation']>=len(brokers) or brokers[helper['generation']]['broker_id']!=helper['broker_id']: _bad()
+        config=helper['config'];raw=c.canonical(config,max_bytes=4096)
+        if helper['config_bytes']!=len(raw) or helper['config_sha256']!=c.digest(raw): _bad()
+        for field in ('helper_id','broker_id','started_at_ns','work_deadline_ns','deadline_ns'):
+            if config[field]!=helper[field]: _bad()
+        if (config['runtime_sha256']!=runtime._hash(bundle) or config['source_manifest_sha256']!=runtime._hash(bundle['sources'])
+                or helper['work_deadline_ns']<=helper['started_at_ns']
+                or helper['deadline_ns']>helper['started_at_ns']+2000000000
+                or helper['work_deadline_ns']>min(helper['started_at_ns']+1500000000,helper['deadline_ns']-500000000)): _bad()
+        _recovery_order(helper['started_at_ns'],helper['work_deadline_ns'],helper['deadline_ns'])
+        process=helper['process'];closure=helper['cleanup'];transfer=helper['transfer']
+        if helper['status']=='unknown' or process['publication_state']=='pending' or helper['finished_at_ns'] is None: _bad()
+        _recovery_order(helper['started_at_ns'],process['publication_registered_at_ns'],process['publication_resolved_at_ns'])
+        if process['publication_state']=='published':
+            for field in ('pid','parent_pid','start_time_ticks','pidfd','observed_at_ns','exit_observed_at_ns','reaped_at_ns','returncode'):
+                if process[field] is None: _bad()
+            if (process['parent_pid']!=helper['parent_observer']['pid'] or process['pid']==process['parent_pid']
+                    or process['task_ids']!=[process['pid']]): _bad()
+            key=(process['pid'],process['start_time_ticks'])
+            if key in identities: _bad()
+            identities.add(key)
+            generation_counts[helper['generation']].add(key)
+            _recovery_order(process['publication_resolved_at_ns'],process['observed_at_ns'],
+                process['exit_observed_at_ns'],process['reaped_at_ns'],closure['finished_at_ns'])
+            if process['signal_sent_at_ns'] is not None:
+                _recovery_order(process['observed_at_ns'],process['signal_sent_at_ns'],process['exit_observed_at_ns'])
+        else:
+            if process['publication_state']!='not_started' or process['task_ids'] or any(process[k] is not None for k in
+                    ('pid','parent_pid','start_time_ticks','pidfd','observed_at_ns','exit_observed_at_ns','reaped_at_ns','returncode','release_sent_at_ns','signal_sent_at_ns')): _bad()
+        if closure['deadline_ns']!=helper['deadline_ns'] or closure['status']=='unknown': _bad()
+        for field in ('descriptors_closed','directory_closed','directory_removed','parent_closed','pidfd_closed','source_package_closed','stdio_closed'):
+            if closure[field] is not True: _bad()
+        if closure['scratch_disposition']!='removed' or len(set(closure['removed_names']))!=len(closure['removed_names']): _bad()
+        _recovery_order(helper['started_at_ns'],closure['started_at_ns'],closure['finished_at_ns'],helper['finished_at_ns'])
+        if closure['status']=='complete' and closure['finished_at_ns']>helper['deadline_ns']: _bad()
+        if helper['scratch'] is None: _bad()
+        for field in ('parent','directory'): _recovery_private(helper['scratch'][field],directory=True,observer=helper['parent_observer'])
+        _recovery_order(helper['started_at_ns'],helper['scratch']['registered_at_ns'],process['publication_registered_at_ns'])
+        if transfer['stdout_bytes']!=transfer['ready']['received_bytes']+transfer['result']['received_bytes']: _bad()
+        diagnostic=bytes.fromhex(transfer['stderr_hex'])
+        if (len(diagnostic)!=transfer['stderr_bytes'] or c.digest(diagnostic)!=transfer['stderr_sha256']
+                or transfer['stdout_eof'] is not True or transfer['stderr_eof'] is not True): _bad()
+        _recovery_frame(transfer['ready'],helper['ready'],4096)
+        if helper['ready'] is not None:
+            for field in ('helper_id','broker_id'):
+                if helper['ready'][field]!=helper[field]: _bad()
+            if helper['ready']['pid']!=process['pid']: _bad()
+        if helper['work'] is not None:
+            for field in ('helper_id','broker_id','work_deadline_ns','deadline_ns'):
+                if helper['work'][field]!=helper[field]: _bad()
+            for field in ('runtime_sha256','source_package_sha256'):
+                if helper['work'][field]!=config[field]: _bad()
+        if process['release_sent_at_ns'] is not None:
+            _recovery_order(process['observed_at_ns'],process['release_sent_at_ns'],process['exit_observed_at_ns'])
+            _recovery_runtime(helper,bundle)
+        else:
+            if helper['work'] is not None: _bad()
+            if helper['runtime'] is not None:_recovery_runtime(helper,bundle)
+        export=None
+        if transfer['result_status']=='complete':
+            export=_recovery_work(helper,loaded,owners,cache)
+            export_raw=c.canonical(export,max_bytes=2097152)
+            if (transfer['export_bytes']!=len(export_raw) or transfer['export_sha256']!=c.digest(export_raw)
+                    or transfer['result_error'] is not None): _bad()
+        else:
+            if transfer['export_bytes'] is not None or transfer['export_sha256'] is not None: _bad()
+            if helper['work'] is not None:_recovery_partial_work(helper,loaded,owners,cache)
+        result=None
+        if transfer['result']['complete']:
+            if transfer['result_status'] not in ('complete','failed') or helper['work'] is None: _bad()
+            if transfer['result_status']=='failed' and transfer['result_error'] is None: _bad()
+            result={'schema_version':'1','status':transfer['result_status'],'error':transfer['result_error'],
+                    'export':export,'provenance':helper['work']}
+            provenance=c.canonical(helper['work'],max_bytes=32768)
+            _recovery_result_bytes(result)
+            if (transfer['provenance_bytes']!=len(provenance)
+                    or transfer['provenance_sha256']!=c.digest(provenance)): _bad()
+        elif transfer['result_status'] is not None or transfer['result_error'] is not None or transfer['provenance_bytes'] is not None or transfer['provenance_sha256'] is not None: _bad()
+        _recovery_frame(transfer['result'],result,2129920)
+        if transfer['result']['started_at_ns'] is not None:
+            _recovery_order(transfer['ready']['finished_at_ns'],process['release_sent_at_ns'],
+                transfer['result']['started_at_ns'])
+        if transfer['result']['complete']:
+            _recovery_order(helper['work']['finished_at_ns'],transfer['result']['finished_at_ns'])
+        for frame in (transfer['ready'],transfer['result']):
+            if frame['started_at_ns'] is not None:
+                _recovery_order(process['publication_resolved_at_ns'],frame['started_at_ns'])
+            if frame['finished_at_ns'] is not None: _recovery_order(frame['finished_at_ns'],closure['finished_at_ns'])
+        if helper['status']=='complete':
+            if (helper['error'] is not None or transfer['result_status']!='complete' or not transfer['result']['complete']
+                    or process['publication_state']!='published' or process['returncode']!=0
+                    or process['signal_sent_at_ns'] is not None or closure['status']!='complete'): _bad()
+            if closure['removed_names']!=['records.sqlite3']:_bad()
+            _recovery_order(helper['work']['finished_at_ns'],process['exit_observed_at_ns'])
+            _recovery_order(transfer['result']['finished_at_ns'],helper['finished_at_ns'],helper['deadline_ns'])
+        elif helper['error'] is None: _bad()
+        _recovery_physical_history(helper,loaded,parents,generation_by_identity=generation_by_identity)
+    if (generations!=sorted(generations) or len(identities)>94
+            or any(len(values)>47 for values in generation_counts.values())): _bad()
+    for before,after in zip(helpers,helpers[1:]):
+        _recovery_order(before['finished_at_ns'],after['started_at_ns'])
+    return helpers
+
+
+@_validation('evidence_invalid')
+def _copied_recovery_receipt(receipt, helpers, loaded):
+    from . import engagement_live_contract as c
+    _recovery_shape(receipt,'copied_receipt')
+    selected=[helper for helper in helpers if helper['helper_id']==receipt['helper_id']]
+    if len(selected)!=1 or selected[0] is not helpers[-1]: _bad()
+    helper=selected[0];work=helper['work']
+    if helper['generation']!=len(loaded['manifest.json']['broker_instances'])-1:_bad()
+    if helper['status']!='complete' or receipt['helper_sha256']!=c.digest(c.canonical(helper,max_bytes=524288)): _bad()
+    ro=work['ro'];store=work['post_ro_copy'];main=next(row for row in store['files'] if row['name']=='records.sqlite3')
+    expected={'parent':store['parent'],'directory':store['directory'],
+              'database':{key:main['held'][key] for key in ('device','inode','mode','uid','gid')}}
+    for field,actual in (('owner_id',ro['owner_id']),('started_at_ns',ro['opened_at_ns']),
+            ('finished_at_ns',ro['closed_at_ns']),('store_identity',expected),('bytes',ro['snapshot_bytes']),
+            ('sha256',ro['snapshot_sha256']),('ledger_state_sha256',ro['ledger_state_sha256'])):
+        if receipt[field]!=actual: _bad()
+    entry=loaded['manifest.json']['ledger_exports']['recovery']
+    if entry['source']!='postcleanup_copied_recovery' or entry['status']!='complete' or entry['broker_id'] is not None: _bad()
+    raw=c.canonical(loaded.get('recovery-ledger.json'),max_bytes=2097152)
+    if len(raw)!=receipt['bytes'] or c.digest(raw)!=receipt['sha256']: _bad()
