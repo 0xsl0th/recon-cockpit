@@ -739,6 +739,9 @@ def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
 def test_recovery_opens_fresh_owner_without_replenishing(tmp_path,monkeypatch):
     _recovery_payload_merge_cases()
     _recovery_frame_cases()
+    _recovery_import_fd_refusal_cases(monkeypatch)
+    _recovery_ready_descriptor_cases(tmp_path,monkeypatch)
+    _recovery_lock_platform_cases(tmp_path,monkeypatch)
     _recovery_owner_coordination_cases(tmp_path,monkeypatch)
     _recovery_packaging_snapshot_cases(monkeypatch)
     _copied_recovery_primitive_cases(tmp_path,monkeypatch)
@@ -855,6 +858,200 @@ def _recovery_frame_cases():
         module._recovery_frame((4097).to_bytes(8,'big'),4096,1)
     assert caught.value.frame['frame_sha256']==digest((4097).to_bytes(8,'big'))
     assert caught.value.frame['declared_bytes'] is None
+
+
+def _recovery_import_fd_refusal_cases(monkeypatch):
+    # Declared descriptor table only: never close or restat pytest's own FDs.
+    import errno
+    import resource
+    for variant in ('closed','close_refused','expired','expires_during_close','kept_identity_changed','wrong_limit'):
+        state={'now':100};closed=[];sampled=[]
+        def sample(fd):
+            sampled.append(fd)
+            assert fd in range(8)
+            return SimpleNamespace(st_dev=1,st_ino=10+fd+(100 if
+                variant=='kept_identity_changed' and len(sampled)>8 and fd==0 else 0),
+                st_mode=0o100600,st_uid=1000,st_gid=1000)
+        def close(fd):
+            closed.append(fd)
+            assert fd in range(8,32)
+            if fd==8 and variant=='close_refused':raise OSError(errno.EACCES,'declared close refusal')
+            if fd==8 and variant=='expires_during_close':state['now']=200
+            if fd!=8:raise OSError(errno.EBADF,'declared absent FD')
+        with monkeypatch.context() as patch:
+            patch.setattr(module.time,'monotonic_ns',lambda:state['now'])
+            patch.setattr(resource,'getrlimit',lambda which:(64,64) if variant=='wrong_limit' else (32,32))
+            patch.setattr(module.os,'fstat',sample);patch.setattr(module.os,'close',close)
+            if variant=='expired':state['now']=200
+            if variant=='closed':module._recovery_close_import_fds(200)
+            elif variant=='close_refused':
+                with pytest.raises(OSError) as error:module._recovery_close_import_fds(200)
+                assert error.value.errno==errno.EACCES
+            else:
+                with pytest.raises(module._RecoveryError) as error:module._recovery_close_import_fds(200)
+                if variant in ('expired','expires_during_close'):assert error.value.code=='work_deadline'
+        if variant=='closed':assert closed==list(range(8,32)) and sampled==list(range(8))*2
+        elif variant in ('expired','wrong_limit'):assert not closed and not sampled
+        elif variant in ('close_refused','expires_during_close'):
+            assert closed==[8] and sampled==list(range(8))
+        else:assert closed==list(range(8,32)) and sampled[-1]==0
+
+
+def _recovery_ready_descriptor_cases(tmp_path,monkeypatch):
+    """Real FD boundary only: no source package loader, SQLite, or native role.
+
+    READY's image/VFS metadata is declared shape data. The actual observer must
+    reach the first image observation before this fixture stops it; no runtime
+    acceptance is inferred from that sentinel.
+    """
+    import fcntl
+    import select
+    import stat
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    if not sys.platform.startswith('linux') or not hasattr(os,'memfd_create'):
+        # The Linux /proc observer is unsupported here; do not manufacture an
+        # inventory or skip the enclosing portable session case.
+        assert not sys.platform.startswith('linux') or not hasattr(os,'memfd_create')
+        return
+    remap=module._RECOVERY_BOOTSTRAP.split('copies=[',1)[1].split('for which,limit in ',1)[0]
+    remap='copies=['+remap
+    program='''import errno,fcntl,json,os,resource,select,sys,time
+inputs=json.loads(sys.argv[1])
+'''+remap+'''
+resource.setrlimit(resource.RLIMIT_NOFILE,(32,32))
+sys.path.insert(0,sys.argv[2])
+from recon_cockpit.secure_agent import engagement_live_session as m
+started=time.monotonic_ns();original_deadline=started+1500000000
+before=[m._recovery_descriptor(fd,m._RECOVERY_FD_PURPOSES[fd]) for fd in range(8)]
+extra=os.open(sys.argv[3],os.O_RDONLY|os.O_CLOEXEC)
+assert 8<=extra<32
+residue=m._recovery_descriptor(extra,'declared late import residue')
+m._recovery_close_import_fds(original_deadline)
+finished=time.monotonic_ns()
+try:os.fstat(extra)
+except OSError as error:assert error.errno==errno.EBADF
+else:raise AssertionError('late import residue still open')
+after=[m._recovery_descriptor(fd,m._RECOVERY_FD_PURPOSES[fd]) for fd in range(8)]
+assert before==after
+observation={'started_at_ns':started,'finished_at_ns':finished,'deadline_ns':original_deadline,
+ 'before':before,'after':after,'residue':residue,'residue_closed':True}
+os.set_blocking(0,False)
+os.set_blocking(1,False)
+m._recovery_write(1,m._recovery_json(observation)+b'\\n',original_deadline)
+deadline=(started+2000000000)/1e9
+while time.monotonic()<deadline:
+ if select.select([0],[],[],min(.02,max(0,deadline-time.monotonic())))[0]:
+  if os.read(0,1)==b'X':sys.exit(0)
+  sys.exit(2)
+sys.exit(3)
+'''
+    fds={};transports={};owned=set();process=None;owner=None
+    report={'scope':'ordinary child FD comparison only; no native acceptance',
+        'bootstrap_remap_sha256':c.digest(remap.encode('ascii')),'expected':None,
+        'actual':None,'differences':None,'outcome':None,'returncode':None}
+    output=tmp_path/'recovery-ready-descriptors.json'
+    class ReachedImages(Exception):pass
+    try:
+        for name in ('source_parent','source_store','scratch_parent','scratch_store'):
+            path=tmp_path/('ready-fd-'+name);path.mkdir(mode=0o700)
+            fds[name]=os.open(path,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW|os.O_CLOEXEC)
+            owned.add(fds[name])
+        writable=runtime._sealed(b'declared FD fixture; not a source package',name='recovery-ready-test')
+        owned.add(writable)
+        fds['source_package']=os.open('/proc/self/fd/'+str(writable),os.O_RDONLY|os.O_CLOEXEC)
+        owned.add(fds['source_package']);os.close(writable);owned.remove(writable)
+        pipe_fds={}
+        for index,name in enumerate(('stdin','stdout','stderr')):
+            read_fd,write_fd=os.pipe2(os.O_CLOEXEC);owned.update((read_fd,write_fd))
+            parent,child=(write_fd,read_fd) if index==0 else (read_fd,write_fd)
+            pipe_fds[name+'_parent']=parent;pipe_fds[name+'_child']=child
+            transports[name]={'parent':module._recovery_descriptor(parent,name+'_parent'),
+                'child':module._recovery_descriptor(child,module._RECOVERY_FD_PURPOSES[index])}
+        inputs=[fds[name] for name in module._RECOVERY_PURPOSES]
+        report['inherited_fds']=dict(fds)
+        report['transports_before_launch']=deepcopy(transports)
+        expected=[{**transports[name]['child'],'fd':index}
+            for index,name in enumerate(('stdin','stdout','stderr'))]
+        expected.extend(module._recovery_descriptor(fds[name],module._RECOVERY_FD_PURPOSES[index],number=index)
+            for index,name in enumerate(module._RECOVERY_PURPOSES,3))
+        report['expected']=expected
+        residue_file=tmp_path/'late-import-residue.so';residue_file.write_bytes(b'declared import residue; never loaded')
+        process=subprocess.Popen([sys.executable,'-I','-S','-B','-c',program,json.dumps(inputs),str(ROOT),str(residue_file)],
+            stdin=pipe_fds['stdin_child'],stdout=pipe_fds['stdout_child'],stderr=pipe_fds['stderr_child'],
+            close_fds=True,pass_fds=tuple(inputs),env={'LANG':'C','LC_ALL':'C'},cwd='/')
+        for name in ('stdin_child','stdout_child','stderr_child'):
+            fd=pipe_fds[name];os.close(fd);owned.remove(fd)
+        received=bytearray();until=time.monotonic()+2
+        while b'\n' not in received and time.monotonic()<until:
+            if select.select([pipe_fds['stdout_parent']],[],[],max(0,until-time.monotonic()))[0]:
+                part=os.read(pipe_fds['stdout_parent'],8193-len(received))
+                if not part:break
+                received.extend(part)
+                assert len(received)<=8192,str(output)
+        assert received.endswith(b'\n') and received.count(b'\n')==1,str(output)
+        closure=json.loads(received);report['child_import_closure']=closure
+        assert closure['before']==closure['after'] and closure['residue_closed']
+        assert closure['started_at_ns']<=closure['finished_at_ns']<closure['deadline_ns']
+        assert closure['deadline_ns']==closure['started_at_ns']+1_500_000_000
+        assert closure['residue']['flags']&os.O_ACCMODE==os.O_RDONLY
+        assert closure['residue']['kind']=='regular' and 8<=closure['residue']['fd']<32
+        residue_identity=residue_file.stat()
+        assert (closure['residue']['device'],closure['residue']['inode'])==(residue_identity.st_dev,residue_identity.st_ino)
+        now=time.monotonic_ns()
+        config={'helper_id':uid(980),'broker_id':uid(981),'runtime_sha256':'a'*64,
+            'source_manifest_sha256':'b'*64,'source_package_sha256':'c'*64}
+        image={'destination':'/declared/libsqlite3.so','device':1,'inode':1,
+            'mode':stat.S_IFREG|0o555,'size':1,'sha256':'d'*64}
+        ready={'schema_version':'1','kind':'copied_ledger_recovery_ready',**config,
+            'pid':process.pid,'observed_at_ns':now,'default_vfs':{'observed_at_ns':now,
+                'library_source':'/declared/libsqlite3.so','library':image,
+                'library_version':3046001,'sqlite_module_version':[3,46,1],
+                'vfs_name':'unix','vfs_name_hex':'756e697800','vfs_struct_version':3}}
+        owner=module._RecoveryOwner(SimpleNamespace(_runtime={'roles':[{'role':'broker',
+            'native_files':[{'source':'/declared/libsqlite3.so','destination':image['destination'],
+                'size':1,'sha256':'d'*64}],'extension_files':[]}]}),
+            fds['source_parent'],fds['source_store'],now,now+2*c.SECOND)
+        owner.fds=fds;owner.process=process;owner.record={'config':config,'process':{},'transports':transports}
+        owner._pin()
+        real_inventory=runtime._fd_inventory
+        def inventory(*args,**kwargs):
+            actual=real_inventory(*args,**kwargs)
+            report['actual']=deepcopy(actual)
+            report['differences']=[{'fd':index,'fields':{
+                key:{'actual':row.get(key),'expected':want.get(key)}
+                for key in want if (row.get(key)&~os.O_NONBLOCK if key=='flags' else row.get(key))
+                    !=(want[key]&~os.O_NONBLOCK if key=='flags' else want[key])}}
+                for index,(row,want) in enumerate(zip(actual,expected)) if row!=want]
+            output.write_text(json.dumps(report,sort_keys=True,indent=2)+'\n',encoding='ascii')
+            return actual
+        def stop_at_images(*args,**kwargs):raise ReachedImages()
+        with monkeypatch.context() as patch:
+            patch.setattr(runtime,'_fd_inventory',inventory)
+            patch.setattr(module,'_recovery_image',stop_at_images)
+            try:owner._observe_runtime(ready)
+            except ReachedImages:report['outcome']='descriptor boundary passed; images not observed'
+            except BaseException as error:
+                report['outcome']=getattr(error,'code',type(error).__name__)
+                pytest.fail('READY descriptor boundary failed: '+json.dumps(report,sort_keys=True))
+            else:pytest.fail('missing image-boundary sentinel')
+        assert report['actual'] is not None and [row['fd'] for row in report['actual']]==list(range(8))
+        assert not any(row['fields'] for row in report['differences']),str(output)
+    finally:
+        if process is not None:
+            try:
+                if process.poll() is None:
+                    try:os.write(pipe_fds['stdin_parent'],b'X')
+                    except (BrokenPipeError,OSError):pass
+                process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                process.kill();process.wait(timeout=1)
+            report['returncode']=process.returncode
+        if owner is not None:
+            for fd in (owner.pidfd,owner.proc_directory):
+                if fd is not None:owned.add(fd)
+        for fd in owned:os.close(fd)
+        output.write_text(json.dumps(report,sort_keys=True,indent=2)+'\n',encoding='ascii')
+    assert process.returncode==0,str(output)
 
 
 def _recovery_owner_coordination_cases(tmp_path,monkeypatch):
@@ -1110,9 +1307,62 @@ def _copied_recovery_primitive_cases(tmp_path,monkeypatch):
     _copied_recovery_lock_preservation(tmp_path)
 
 
+def _recovery_lock_platform_cases(tmp_path,monkeypatch):
+    import ctypes  # Initialize platform support before the declared-platform probes.
+    import fcntl
+    calls=[]
+    def forbidden(*args,**kwargs):
+        calls.append(args)
+        raise AssertionError('unsupported platform must not issue Linux flock syscall')
+    with monkeypatch.context() as patch:
+        patch.setattr(sys,'platform','darwin')
+        patch.setattr(fcntl,'F_OFD_SETLK',getattr(fcntl,'F_OFD_SETLK',1001),raising=False)
+        patch.setattr(fcntl,'F_OFD_GETLK',getattr(fcntl,'F_OFD_GETLK',1002),raising=False)
+        patch.setattr(fcntl,'fcntl',forbidden)
+        rows=[module._recovery_lock(-1,offset=1073741824,length=1),
+            module._recovery_lock(-1,offset=1073741826,length=510),
+            module._recovery_lock(-1,offset=1073741825,length=1,query=True)]
+    assert not calls
+    assert all(row['status']=='unsupported' and row['errno'] is None for row in rows[:2])
+    assert rows[2]['result_type'] is rows[2]['owner_pid'] is rows[2]['errno'] is None
+    assert rows[2]['input_owner_pid']==0
+    assert all(row['started_at_ns']==row['finished_at_ns'] for row in rows)
+    (tmp_path/'recovery-lock-declared-darwin.json').write_text(json.dumps(rows,sort_keys=True)+'\n')
+    # Constant availability is per command. A missing command never invokes
+    # fcntl, even where the other OFD command exists.
+    for command,query in (('F_OFD_SETLK',False),('F_OFD_GETLK',True)):
+        with monkeypatch.context() as patch:
+            patch.setattr(sys,'platform','linux');patch.delattr(fcntl,command,raising=False)
+            patch.setattr(fcntl,'fcntl',forbidden)
+            row=module._recovery_lock(-1,offset=1073741825 if query else 1073741824,length=1,query=query)
+        assert row['command']==command and row['errno'] is None
+        if query:assert row['result_type'] is row['owner_pid'] is None
+        else:assert row['status']=='unsupported'
+    assert not calls
+
+
 def _copied_recovery_lock_preservation(tmp_path):
     """Closing source FDs in another process preserves an active SQLite lock."""
     import fcntl
+    if sys.platform!='linux':
+        rows=[module._recovery_lock(-1,offset=1073741824,length=1),
+            module._recovery_lock(-1,offset=1073741826,length=510),
+            module._recovery_lock(-1,offset=1073741825,length=1,query=True)]
+        (tmp_path/'recovery-lock-platform-unsupported.json').write_text(
+            json.dumps({'platform':sys.platform,'rows':rows},sort_keys=True)+'\n')
+        assert all(row['status']=='unsupported' and row['errno'] is None for row in rows[:2]),rows
+        assert rows[2]['result_type'] is rows[2]['owner_pid'] is rows[2]['errno'] is None,rows
+        assert rows[2]['input_owner_pid']==0
+        return
+    missing=[(command,query) for command,query in (('F_OFD_SETLK',False),('F_OFD_GETLK',True))
+        if not hasattr(fcntl,command)]
+    if missing:
+        for command,query in missing:
+            row=module._recovery_lock(-1,offset=1073741825 if query else 1073741824,length=1,query=query)
+            assert row['command']==command and row['errno'] is None
+            if query:assert row['result_type'] is row['owner_pid'] is None
+            else:assert row['status']=='unsupported'
+        return
     from test_secure_engagement_dispatch_store import new_store
     program='''import json,os,sys
 sys.path.insert(0,sys.argv[1])
@@ -1127,19 +1377,19 @@ print(json.dumps(rows,separators=(',',':'),sort_keys=True))
 '''
     with new_store(tmp_path,'recovery-lock-source') as source:
         path=source.directory/'records.sqlite3'
+        observations=[]
         def observe():
             result=subprocess.run([sys.executable,'-I','-S','-B','-c',program,str(ROOT),str(path)],
                 capture_output=True,timeout=3)
             assert result.returncode==0 and not result.stderr
-            return json.loads(result.stdout)
+            rows=json.loads(result.stdout);observations.append(rows)
+            (tmp_path/'recovery-lock-observations.json').write_text(json.dumps(observations,sort_keys=True)+'\n')
+            return rows
         source._db.execute('BEGIN IMMEDIATE')
         try:
             first=observe()
-            if not hasattr(fcntl,'F_OFD_GETLK') or not hasattr(fcntl,'F_OFD_SETLK'):
-                assert all(row.get('status','unsupported')=='unsupported' for row in first)
-                return
             for rows in (first,observe()):
-                assert all(row['status']=='acquired' and row['errno'] is None for row in rows[:2])
+                assert all(row['status']=='acquired' and row['errno'] is None for row in rows[:2]),rows
                 assert rows[2]['result_type']=='F_WRLCK' and rows[2]['owner_pid']==os.getpid()
                 assert rows[2]['input_owner_pid']==0 and rows[2]['errno'] is None
         finally:source._db.execute('ROLLBACK')

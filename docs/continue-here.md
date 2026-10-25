@@ -609,8 +609,30 @@ separate export/provenance byte limits. Preserve the earlier sandbox socket
 refusal, callback-fixture failure and recovery-frame cap failure with their
 diagnoses. Final independent code review found no open issues and cleared a
 fresh freeze; the complete acceptance gates remain pending. These focused
-checks grant no native acceptance. This is still
-S4.2c; S4.3 synthetic custody remains next and real credentials remain deferred.
+checks grant no native acceptance.
+
+Freeze twenty-nine at `1a226d1` passed all 160 portable cases and fresh N04.
+N42 then failed at the recovery helper's READY check before release or database
+work. This capsule retains actual pidfd SIGKILL, reaping and complete cleanup
+within the original allowance. It did not retain the rejected FD inventory.
+A separate READY-only diagnostic using the exact frozen source package and
+descriptor permutation reproduced an extra read-only `libffi` descriptor after
+imports; descriptors zero through seven matched. The diagnostic sent no release
+and opened no database. The correction closes only descriptors eight through
+31 after imports, under the original deadline, and verifies that the retained
+descriptors keep their identities before READY. Exact parent checks remain.
+
+All four Linux hosted suites passed 29,085 tests with 2,347 deselections on
+freeze twenty-nine. macOS failed the recovery lock regression: its exposed OFD
+constants do not establish support for the implementation's Linux lock layout.
+The lock probe now returns explicit unsupported observations on non-Linux
+platforms before using that layout. The original macOS log does not establish
+the underlying errno. Both corrections passed all 56 focused tests, including
+actual child descriptor closure and Linux lock preservation. Independent review
+found no open code issues and cleared a fresh freeze, with native acceptance
+and merge still pending. Preserve both original failures and the bounded
+diagnostic. This is still S4.2c; S4.3 synthetic custody remains next and real
+credentials remain deferred.
 
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,

@@ -200,11 +200,7 @@ class _RecoveryProgress:
 
 
 def _recovery_lock(fd, *, offset, length, query=False):
-    import ctypes
-    import fcntl
-    class Flock(ctypes.Structure):
-        _fields_ = [('type', ctypes.c_short), ('whence', ctypes.c_short),
-                    ('start', ctypes.c_longlong), ('length', ctypes.c_longlong), ('pid', ctypes.c_int)]
+    import sys
     began = time.monotonic_ns()
     if query:
         row = {'command': 'F_OFD_GETLK', 'query_type': 'F_WRLCK', 'input_owner_pid': 0,
@@ -213,6 +209,13 @@ def _recovery_lock(fd, *, offset, length, query=False):
     else:
         row = {'command': 'F_OFD_SETLK', 'lock_type': 'F_RDLCK', 'offset': offset, 'length': length,
                'started_at_ns': began, 'finished_at_ns': began, 'status': 'unsupported', 'errno': None}
+    if sys.platform != 'linux':
+        return row
+    import ctypes
+    import fcntl
+    class Flock(ctypes.Structure):
+        _fields_ = [('type', ctypes.c_short), ('whence', ctypes.c_short),
+                    ('start', ctypes.c_longlong), ('length', ctypes.c_longlong), ('pid', ctypes.c_int)]
     command = getattr(fcntl, row['command'], None)
     if command is None:
         return row
@@ -383,6 +386,31 @@ def _recovery_default_vfs(bundle, deadline_ns):
     return {'library': observed, 'library_source': selected['source'], 'library_version': numeric,
             'sqlite_module_version': parts, 'vfs_struct_version': vfs.iVersion, 'vfs_name': 'unix',
             'vfs_name_hex': '756e697800', 'observed_at_ns': time.monotonic_ns()}
+
+
+def _recovery_close_import_fds(deadline_ns):
+    """Restore the fixed READY map before any original or copied database opens."""
+    _recovery_check(deadline_ns)
+    import errno
+    import resource
+    if resource.getrlimit(resource.RLIMIT_NOFILE) != (32, 32):
+        raise _RecoveryError('ready')
+    kept = []
+    for fd in range(8):
+        _recovery_check(deadline_ns)
+        kept.append(_recovery_identity(os.fstat(fd)))
+    for fd in range(8, 32):
+        _recovery_check(deadline_ns)
+        try:
+            os.close(fd)
+        except OSError as error:
+            if error.errno != errno.EBADF:
+                raise
+    for fd, identity in enumerate(kept):
+        _recovery_check(deadline_ns)
+        if _recovery_identity(os.fstat(fd)) != identity:
+            raise _RecoveryError('ready')
+    _recovery_check(deadline_ns)
 
 
 def _recovery_write(fd, raw, deadline_ns):
@@ -577,6 +605,7 @@ def _recovery_copy_main(config, package):
     deadline_ns = config['work_deadline_ns']
     _recovery_check(deadline_ns)
     vfs = _recovery_default_vfs(package['runtime'], deadline_ns)
+    _recovery_close_import_fds(deadline_ns)
     ready = {'schema_version': '1', 'kind': 'copied_ledger_recovery_ready',
              'helper_id': config['helper_id'], 'broker_id': config['broker_id'], 'pid': os.getpid(),
              'runtime_sha256': config['runtime_sha256'], 'source_manifest_sha256': config['source_manifest_sha256'],
