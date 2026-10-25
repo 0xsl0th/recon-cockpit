@@ -242,10 +242,57 @@ def test_revoke_before_guard_prevents_send(tmp_path,monkeypatch):
 
 
 def test_revoke_after_go_is_inflight_and_consumed(tmp_path,monkeypatch):
+    _external_revoke_at_fixed_post_go_barrier(tmp_path,monkeypatch)
     with lab(tmp_path,monkeypatch) as (core,store,rows,pair,channels):
         row=ready(core);core.reserve(proofs(core,row,channels));core.guarded_go(row);assert pair[1].recv(32768)
         store.revoke(expected_revision=1,expected_generation=0,event_id=uid(66));refused(core.watch,force=True)
         assert core.terminal_reason=='engagement_live_revoked' and store.snapshot()['state']['usage']['actions']==1
+
+
+def _external_revoke_at_fixed_post_go_barrier(tmp_path,monkeypatch):
+    """Execute the exact owned N39 hook against two actual ledger owners."""
+    import ast
+    from types import MethodType
+    from engagement_live_native import broker_fault_transform
+    source=broker_fault_transform('S42C-N39')(Path(b.__file__).read_text())
+    function=next(node for node in ast.parse(source).body
+        if isinstance(node,ast.FunctionDef) and node.name=='_fixed_fault_mark')
+    directory=tmp_path/'post-go-barrier';directory.mkdir(mode=0o700)
+    with lab(directory,monkeypatch) as (core,store,rows,pair,channels):
+        row=ready(core);core.reserve(proofs(core,row,channels))
+        barrier=threading.Event();results=[];errors=[];observed=[]
+        def mark(owner,dispatch,phase,stage,**kwargs):
+            b.BrokerCore.mark(owner,dispatch,phase,stage,**kwargs)
+            if getattr(owner,'_owned_fault_installed',False):
+                observed.append((phase,stage,time.monotonic_ns()));barrier.set()
+        namespace={'c':c,'time':time,'_fault_original_mark':mark}
+        exec(compile(ast.Module(body=[function],type_ignores=[]),'<fixed N39 barrier>','exec'),namespace)
+        monkeypatch.setattr(core,'mark',MethodType(namespace['_fixed_fault_mark'],core))
+        def revoke():
+            try:
+                assert barrier.wait(2),'actual fixed barrier absent'
+                with d._deadline_context(min(time.monotonic()+2,
+                        row['prepared']['envelope']['action_deadline_ns']/c.SECOND)):
+                    with DispatchLedger.open(directory/'ledger') as external:
+                        state=external.snapshot()['state']
+                        results.append(external.revoke(expected_revision=state['revision'],
+                            expected_generation=state['generation'],event_id=uid(66)))
+            except BaseException as error:errors.append(error)
+        worker=threading.Thread(target=revoke);worker.start()
+        try:core.guarded_go(row)
+        finally:worker.join(2)
+        assert not worker.is_alive() and not errors,errors
+        assert len(results)==1 and results[0]['disposition']=='recorded'
+        assert observed[0][:2]==('guard','end')
+        assert pair[1].recv(32768)
+        with pytest.raises(BlockingIOError):pair[1].recv(32768)
+        snapshot=store.snapshot()
+        assert len(snapshot['reservations'])==1 and not snapshot['completions']
+        assert snapshot['state']['usage']==row['prepared']['envelope']['cost']
+        assert snapshot['events'][-2]['request']['operation']=='reserve'
+        assert snapshot['events'][-1]['request']['operation']=='revoke'
+        refused(core.watch,force=True)
+        assert core.terminal_reason=='engagement_live_revoked'
 
 
 def test_send_eagain_short_and_unknown_never_retry(tmp_path,monkeypatch):

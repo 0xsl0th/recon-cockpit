@@ -486,6 +486,25 @@ ordering. The later N35 broker `invalid_witness` stop remains labeled as observe
 its precise EOF peer was not captured. The original failed bundle is unchanged.
 All subsequent native groups remain unexecuted. Reviewed corrections require
 fresh portable, native, inspection, full-suite and hosted proof on a new freeze.
+
+Freeze twenty-three at `0b664e3` passed all 160 portable cases, fresh N04 and
+the windows/deadlines, budgets and replay native groups. All five hosted CI jobs
+passed 29,085 tests with 2,347 integration deselections and the completeness
+guard; retained checkout metadata matches that frozen source tree. Independent N33/N35
+inspection confirmed the corrected original stop bounds and actual cleanup
+ordering. N36/N37/N38 also passed before N39 stopped its group: the external
+revocation timed out acquiring the writer lock. The fixed N39 source variant
+held `go/end` inside the guard transaction for 500 ms, exceeding the accepted
+250 ms SQLite busy timeout. Its retained ledger has a reservation and completion
+but no revocation; this failed attempt proves no revocation outcome.
+The fixture now observes and holds `guard/end`, after that transaction releases
+its lock, before attempting one real external revocation. The 500 ms hold,
+production behavior, original deadlines and case predicate remain unchanged.
+An exact-hook regression with two real ledger owners reproduced the timeout
+before the correction; all 44 focused broker/evidence tests then passed.
+Retained failed artifacts remain unchanged. All current-source native proof
+must run again after independent correction review and a fresh clean freeze,
+starting with N39 after the portable and N04 prerequisites.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

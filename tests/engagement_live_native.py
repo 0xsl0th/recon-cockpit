@@ -2105,7 +2105,7 @@ def _core_phase_case(case,directory,service,opened,before,instrumentation):
         reference=review_actual(service,prepared)
         with ThreadPoolExecutor(max_workers=1) as pool:
             pending=pool.submit(service.execute,prepared,reference,control=service._control)
-            if number in (38,39):_wait_actual_phase(service,prepared,'reserve' if number==38 else 'go',
+            if number in (38,39):_wait_actual_phase(service,prepared,'reserve' if number==38 else 'guard',
                 'begin' if number==38 else 'end',pending=pending)
             else:_wait_actual_progress(service,prepared,'recv' if number==45 else 'send',pending=pending)
             if number in (38,39,40):
@@ -2213,11 +2213,13 @@ def _fixed_fault_mark(self,row,phase,stage,*,related=None,reason=None):
         _fault_original_mark(self,row,'go','end',related=row['prepared'])
         os.kill(os.getpid(),_fault_signal.SIGKILL)
     elif ((kind=='revoke_before' and phase=='reserve' and stage=='begin')
-          or (kind=='revoke_after' and phase=='go' and stage=='end')):
+          or (kind=='revoke_after' and phase=='guard' and stage=='end')):
         self._owned_fault_installed=True
         # A fixed observational barrier, not permission or a callback. The host
         # must observe this actual row, attempt its real v2 transaction, and
         # retain that transaction's actual ordering. Timing alone never passes.
+        # Post-GO guard/end is outside the writer transaction. Holding go/end
+        # would artificially block the external owner beyond its busy timeout.
         _fault_original_mark(self,row,phase,stage,related=row['prepared'])
         stop=time.monotonic()+(.75 if kind=='revoke_before' else .5)
         while time.monotonic()<stop:
