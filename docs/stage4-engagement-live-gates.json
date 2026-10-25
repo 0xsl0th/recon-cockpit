@@ -8302,6 +8302,52 @@
         "resource_limits_deadlines_and_connection_byte_transcript_caps": true,
         "source_paths": 39
       }
+    },
+    {
+      "authorization_condition": "Only after the complete independently reviewed A10 prose/inventory pair is committed; this grants no runtime evidence, native acceptance or milestone completion.",
+      "diagnostic_limits": "Raw-only original N42 journal diagnostic, no SQLite open/native replay/acceptance. Eight retained records fit proposed strict inactive classifier; copied helper execution, runtime observations and recovery remain pending.",
+      "existing_regressions": [
+        "S42C-S10",
+        "S42C-S11",
+        "S42C-I02",
+        "S42C-I06",
+        "S42C-I12",
+        "S42C-C24",
+        "S42C-N42",
+        "S42C-N43",
+        "S42C-N44"
+      ],
+      "failed_history_preserved": true,
+      "id": "S42C-A10",
+      "implementation_authorized": true,
+      "implementation_authorized_only_after_complete_pair_commit": true,
+      "native_acceptance_before_amendment": false,
+      "predecessor_contract_sha256": "3e97ae7b6b9f599ab30b4efb5d3ca455a2059baa601bf612a5cf26d2ea23bd90",
+      "predecessor_inventory_sha256": "65cec0e6dddb47afec9eab25be2f1e9b21549121c1273c92c698457f661c17ef",
+      "predecessor_source_commit": "a2ba2c2689db1477843499ac616cb7adf3cf165d",
+      "proposal_sha256": "fc9b26503d36576997d42f65bbdb2a69861c84fa1c7eff52e7632cd6021c0244",
+      "raw_journal_diagnostic_sha256": "d655c3cc06f9d4b42c2c82359731b6bdfbfa56cd9b2cd8f42aafabad39072dcb",
+      "reason": "Accepted read-only v2 custody intentionally refuses a retained rollback journal. Preserve that refusal and original crash stimulus; explicitly permit only bounded postcleanup copied-store recovery with retained source/process/provenance, no authority restoration.",
+      "status": "reviewed_contract_pending_implementation",
+      "unchanged": {
+        "accepted_nonstatus_files": 1093,
+        "accepted_regressions": 15,
+        "accepted_store_and_worker_sources": true,
+        "authority_targets_actions_commands_and_rights": true,
+        "case_ids": 288,
+        "cumulative_per_bundle": 94,
+        "cumulative_per_generation": 47,
+        "inspections": 226,
+        "new_native": 113,
+        "new_portable": 160,
+        "owned_peak_processes": 26,
+        "owned_peak_tasks": 28,
+        "parent_obligations": 26,
+        "physical_parent_obligations": 18,
+        "roadmap_increment": "S4.2c; S4.3 remains next",
+        "source_paths": 39,
+        "tracked_files": 1140
+      }
     }
   ],
   "counting_rules": {
@@ -8356,6 +8402,2203 @@
       "write_live_bundle": "write_live_bundle(directory, *, manifest, members, deadline=None) -> packaging_receipt"
     },
     "authorization_condition": "only after this complete contract and inventory are committed; acceptance false until actual frozen proof",
+    "copied_recovery": {
+      "amendment": "S42C-A10",
+      "authorization_condition": "Only after the complete independently reviewed A10 prose/inventory pair is committed; this grants no runtime evidence, native acceptance or milestone completion.",
+      "copy_sqlite_rules": [
+        "Close every raw copied-main descriptor before any SQLite handle opens; do not hash raw copied main during an open SQLite handle. Raw rehash is only after RW closure/before RO open or after RO closure.",
+        "Use unchanged accepted DispatchLedger.open(existing_copy,read_only=False), snapshot and close only. No create/request/session/reserve/complete/events. Record fresh owner, canonical snapshot bytes/hash/state and actual close. SQLite may recover only the copied journal.",
+        "After accepted RW validation and closure, copied journal absent permits fresh RO. A surviving journal may be removed only from the copy by the exact empty/inactive classifier below. Any hot/nonzero/ambiguous/changed survivor refuses; original journal is never deleted or opened writable.",
+        "Fresh distinct accepted read_only=True/query_only copy handle then exports canonical data and closes. RW/RO owner IDs differ from each other and every broker owner; both snapshots and state digests agree exactly. No restored grants/refunds/replay or new events.",
+        "For inactive/empty survivor, copied main full size/hash is unchanged across RW constructor/snapshot/close and copy-only unlink; journal identity/hash/header/trailer remains identical to pre-RW copied observation until actual unlink. Observed main/journal changes invalidate inactive classification.",
+        "Zero-length journal uses removed_empty_copy, null header and no records. Nonempty removed_inactive_copy requires length>=sector, first12header bytes zero, bytes12..15 nonce,16..19 original pages,20..23 sector size,24..27 page size (unsigned big-endian), zero bytes28..sector-1, page4096, power-of-two sector512..65536, and original_pages==unchanged main size/4096 in1..2048.",
+        "Inactive journal size must equal sector_bytes+record_count*(4096+8),0..2048 records; exactly one header, no suffix/trailer/additional header. Every record is big-endian4byte page number,4096byte before-image,big-endian4byte checksum; unique page numbers1..original_pages. Retain the complete indexed record list.",
+        "Checksum is (header nonce + sum(before_image[4096-200*k] for k>=1 with index>0)) modulo2^32, matching recorded trailing checksum. Every before-image SHA equals that unchanged copied-main page SHA. Header/padding/trailer/full journal SHA and record facts are retained; no original hotness or performed-rollback claim follows from inactive classification.",
+        "After copy-only unlink via held scratch directory, observe journal absence and unchanged copied-main identity/size/hash before RO; after RO close observe same main bytes and no journal. A failed/missing stage remains null, not fabricated completion."
+      ],
+      "deadlines": {
+        "closure_reserve_ns": 500000000,
+        "progress_callbacks_max": 4000,
+        "progress_instructions": 1000,
+        "rules": [
+          "started_at_ns is captured before path selection, scratch allocation, source-package snapshot or Popen; deadline_ns=min(start+2000000000,inherited outer deadline). work_deadline_ns=min(start+1500000000,deadline_ns-500000000); refuse before setup if no positive work interval remains.",
+          "The same original interval covers parent setup, import/READY observation, locks/copy/hash, RW constructor/snapshot/close, copied-journal classification/unlink, distinct RO constructor/snapshot/close, both framed transfers/validation, actual exit/reap, scratch removal and descriptor closure.",
+          "At work deadline stop work and retain the remaining original closure reserve. Late physical closure remains a failed timing observation; no new interval makes it timely. Ownership persists until actual closure.",
+          "Shared callback allowance spans RW constructor/snapshot and RO constructor/snapshot from first constructor SQL. A new-live local subclass may override only _progress, retaining accepted interruption/deadline semantics; no accepted file edit/global monkeypatch. Local transaction counter resets never reset this shared budget.",
+          "A completed workflow performs fewer than4000 progress callbacks (0..3999); callback4000 is the first exhausted callback and interrupts under the unchanged accepted rule, including during constructors. Retain4000 only as a failure observation, never4001."
+        ],
+        "total_ns": 2000000000,
+        "work_ns": 1500000000
+      },
+      "framing": {
+        "config": {
+          "header": "8-byte unsigned big-endian payload length",
+          "payload_bytes_max": 4096,
+          "release": "after READY verification exactly one byte hex01 then input EOF; no trailing configuration/release data",
+          "schema": "evidence_contract.copied_recovery.schemas.config"
+        },
+        "ready": {
+          "header_bytes": 8,
+          "payload_bytes_max": 4096,
+          "schema": "evidence_contract.copied_recovery.schemas.ready"
+        },
+        "result": {
+          "export_encoding": "nested canonical JSON object, never base64",
+          "header_bytes": 8,
+          "payload_bytes_max": 2129920,
+          "schema": "evidence_contract.copied_recovery.schemas.result"
+        },
+        "rules": [
+          "Exactly one READY frame and at most one result frame; successful completion requires both complete and no trailing bytes. Partial/absent/invalid frames retain actual byte counts/hash and unavailable decoded fields.",
+          "Canonical result including export and all wrappers/metadata<=2129920; canonical export<=2097152; the remaining result bytes (including wrapper syntax and provenance) <=32768.",
+          "Framed observations retain actual available header prefix, count and payload SHA; complete requires exactly8header bytes and declared_bytes==actual payload bytes. READY declared length<=4096; result<=2129920."
+        ],
+        "stderr_separate_bytes_max": 4096,
+        "stdout_aggregate_calculation": "(8+4096)+(8+2129920)=2134032"
+      },
+      "implementation_authorized": true,
+      "implementation_authorized_only_after_complete_pair_commit": true,
+      "launch": {
+        "arguments": [
+          "-I",
+          "-S",
+          "-B",
+          "-c",
+          "fixed stdlib-only bootstrap literal in engagement_live_session"
+        ],
+        "classification": "one fixed trusted host data-only helper, not a runtime authority role",
+        "close_fds": true,
+        "descriptor_map": {
+          "0": "bounded config then release input pipe",
+          "1": "READY/result framed stdout pipe",
+          "2": "bounded diagnostic stderr pipe",
+          "3": "sealed O_RDONLY source package",
+          "4": "held source parent directory",
+          "5": "held source store directory",
+          "6": "registered scratch parent directory",
+          "7": "registered scratch store directory"
+        },
+        "entrypoint": "recon_cockpit.secure_agent.engagement_live_session._recovery_copy_main",
+        "environment": "fixed sanitized environment, no inherited Python search/config variables, no caller executable/module/source path/SQL/command",
+        "import_rules": [
+          "Config inherited_fds is a closed purpose map of the actual five capabilities registered by the trusted parent, plus fixed stdio0/1/2; IDs are unique,3..255 before remap, never caller-selected rights. Child bootstrap first duplicates every selected inherited descriptor to distinct free FDs>=8, then dup2 remaps the copies to fixed0..7 and closes all original/temporary descriptors outside the final map. Do not overwrite an input before preserving it; no parent preexec_fn. At most16 descriptors are needed by this remap, within32; apply the fixed32FD limit after canonical remap and before helper imports/READY.",
+          "Package is canonical uncompressed JSON <=2097152 bytes including its full runtime and metadata; exact52 runtime source rows with canonical base64 bytes, exact module/destination/size/hash and source-manifest equality.",
+          "Bootstrap verifies actual seals15 and O_RDONLY without O_PATH plus total package SHA/size before installing a loader for only that exact recon_cockpit module map. No project disk fallback; stdlib comes only from selected pinned interpreter layout.",
+          "No ZIP/pickle/marshal, caller-selected entrypoint or extra source module. ExecutionControl import becomes lazy only in existing _start_with_host_budget during later implementation; accepted execution.py remains untouched and outside52-source package.",
+          "READY follows imports; parent actual pidfd/PID/start/runtime/native mapping observation precedes one release byte. No original source file may open before that release.",
+          "After importing _sqlite3 and before READY, measure current default VFS through only public C APIs of the exact already-loaded/pinned libsqlite3 source path: ctypes.CDLL(path,mode=RTLD_NOLOAD|RTLD_NOW|RTLD_LOCAL), no fallback load or RTLD_GLOBAL. Fix sqlite3_vfs_find argtypes=[c_char_p],restype=c_void_p and call with NULL; require nonnull result. Read only public sqlite3_vfs prefix iVersion(c_int),szOsFile(c_int),mxPathname(c_int),pNext(c_void_p),zName(c_void_p) with platform-native alignment; require iVersion1..3 and nonnull zName, read exactly5bytes and require unix followed byNUL. Never dereference pNext or use unbounded c_char_p string conversion. _sqlite3 exports sqlite_version as a string: require exactly three dot-separated ASCII decimal components, each0..999 without whitespace/suffix/leading zeros except literal0; parse base10 into the retained sqlite_module_version tuple. Fix sqlite3_libversion_number argtypes=[],restype=c_int and require result==major*1000000+minor*1000+patch from that parsed tuple. No database connection/configuration/VFS registration/unregistration/private Connection pointer is used."
+        ],
+        "interpreter": "exact selected runtime.python executable",
+        "no_authority": [
+          "no network operation",
+          "no grant channel",
+          "no reviewer/audit/launcher authority",
+          "no resumed session or dispatch"
+        ],
+        "release_hex": "01"
+      },
+      "process_and_cleanup_rules": [
+        "Register pending publication and parent-owned exclusive scratch name/held identities before Popen; retain registration even if launch fails. No helper may start if prior publication/helper ownership is unresolved. Exactly one attempted helper per generation and<=2 per bundle.",
+        "Published helper identity is actual parent-observed PID/start/pidfd/parentPID, same parent observer as broker graph, and one task. READY PID and helper/broker IDs match; PID/start and image readback precede fixed release. EOF/child closed flags never establish exit or reap.",
+        "For complete: process publication published/resolved, real runtime/READY before release, returncode0, actual exit then reap, both streams EOF, handles/descriptors closed, exact registered scratch removed, all before original deadline. status failed preserves actual late/nonzero/partial observations; unknown publication/process/descriptor ownership blocks packaging.",
+        "After actual child exit/reap, parent may remove only known scratch main/journal names through its held registered directory after identity checks; unexpected entries or replacement refuse cleanup and retain scratch ownership. No arbitrary recursive deletion or original-store mutation.",
+        "Helper is one host data-only process with no wrapper, not a new isolated role. Count its actual PID/start once in per-generation/cumulative resource identity union: ordinary45+1<=47;<=94 across two sequential generations. It starts only after authority graph closure, preserving peak26processes/28tasks. Helper attempts/processes/replays do not add canonical native or useful counts.",
+        "Schema2 recovery_helpers preserves every attempted generation including failed helpers, sorted by generation and registration time. Combining two broker payloads unions exact helper records; it must not overwrite the earlier generation. Null stage fields mean unobserved/unperformed, never zero effect."
+      ],
+      "regressions_without_new_ids": [
+        "S42C-S10",
+        "S42C-S11",
+        "S42C-I02",
+        "S42C-I06",
+        "S42C-I12",
+        "S42C-C24",
+        "S42C-N42",
+        "S42C-N43",
+        "S42C-N44"
+      ],
+      "required_implementation_validation": [
+        "Confirm exact full52-source package plus runtime remains<=2MiB after helper code growth, exact selected native/VFS/stdlib observations, and joint result/provenance cap under fresh validation.",
+        "Implement and independently review exact process accounting and both-generation helper preservation before any acceptance; source/package/helper facts in this amendment are requirements, not observations."
+      ],
+      "resources": {
+        "address_space_bytes": 268435456,
+        "config_bytes": 4096,
+        "cpu_seconds": 2,
+        "export_bytes": 2097152,
+        "fd_max": 32,
+        "file_size_copy_bytes": 16777216,
+        "file_size_sqlite_bytes": 8388608,
+        "journal_bytes": 16777216,
+        "main_bytes": 8388608,
+        "processes": 1,
+        "provenance_bytes": 32768,
+        "ready_payload_bytes": 4096,
+        "result_payload_bytes": 2129920,
+        "rules": [
+          "Lower BOTH soft/hard RLIMIT_FSIZE from16777216 to8388608 before copied SQLite RW open; accepted existing journal<=16777216 may only be read/unlinked afterward. No transient rollback write can enlarge main past8MiB.",
+          "Parent concurrently drains stdout/stderr without waits that abandon either cap. No truncated/extra record is accepted. All parsing/canonical checks share the original deadline.",
+          "Joint caps apply: a maximum-sized file or record count is not a promise that its complete provenance fits. Refuse if full required record list/metadata does not fit32768, never truncate it."
+        ],
+        "scratch_data_bytes": 25165824,
+        "source_package_bytes": 2097152,
+        "source_rows": 52,
+        "stderr_bytes": 4096,
+        "stdout_bytes": 2134032,
+        "tasks": 1
+      },
+      "schema_crosslinks": [
+        "Every schema object is closed, all fields required, integers reject bool; nullable fields are null exactly when unavailable/unperformed. SHA256 is exact canonical bytes without a new domain. Helper observation/helper UUIDs are unique and generation0/1 resolves manifest broker_instances order.",
+        "Legacy cleanup schema1 and its direct recovery object remain unchanged. Cleanup schema2 has the same original fields plus1..2 recovery_helpers; recovery may be null, unchanged direct schema1, or copied schema2. A copied receipt resolves exactly one complete helper by helper_id and SHA256(canonical(helper_observation)); receipt cannot resolve only an earlier successful helper after a later failed attempt.",
+        "Complete copied receipt common fields describe ONLY final actual RO handle: owner_id=work.ro.owner_id; started/finished=RO opened/closed times; store_identity=post_ro_copy identities; bytes/SHA/state=RO snapshot and retained recovery-ledger.json. read_only=true does not describe earlier writable-copy workflow. broker_id stays null in recovery export entry.",
+        "Helper work IDs/runtime/package commitments equal config,READY and parent runtime observation. result.provenance is exactly work; result export canonical bytes/hash/state equals transfer export and RO; transfer provenance SHA covers canonical work. helper_sha covers finalized host+work observation and is not included inside that hashed object.",
+        "Record source-before <= copied <= source-after while source locks held; before RESERVED query precedes copy and after query follows it. Source raw closure follows after observation. Copy raw closure precedes RW opened; RW closed precedes post_rw observation/disposition; unlink/absence precedes RO opened; RO closed precedes post_ro observation/result finish. Every observed phase interval is ordered and within shared work deadline.",
+        "Parent started <= scratch registration/publication <= actual process/runtime/READY <= release <= work phases for complete. Result receive completion and actual exit/reap may interleave after helper output; both must finish before cleanup finish<=deadline. READY timestamp does not replace independent process/native pins. No helper/authority generation overlap.",
+        "All progress counters are monotone, transaction-local resets do not reset shared totals; complete shared total is0..3999. The first exhausted callback is4000 and must interrupt/refuse, matching accepted _progress>=4000; never permit4001. Stages share original work/deadline values.",
+        "Complete recovery export iff a matching recovery receipt exists and retained export hash/bytes/accepted-v2 state match. Copied source cannot be mislabeled direct or sealed_broker. No recovery replaces missing initial/final broker observation or settles an unacknowledged useful result.",
+        "Helper failures may be retained as schema2 observations only after physical ownership resolves; otherwise retain bounded private failure diagnostics and refuse packaging. Keep failed timings/status when later physical closure permits evidence retention. Inspection validates only saved objects and pure accepted export replay; never opens SQLite, executes the helper or redoes recovery.",
+        "Frame receive timestamps are actual parent observations: null only with no read attempt/bytes, started<=finished when complete; READY frame completion and independent runtime/process observation precede release. Result receive completion and exit/reap each precede cleanup finish, without falsely requiring parent drain before physical child exit. READY received_bytes<=4104 and result received_bytes<=2129928; each includes its own actual header/payload bytes, and their sum equals stdout_bytes. No omitted/trailing bytes permit complete.",
+        "Parent READY resource observation resolves the same helper PID/start and occurs before release: both soft/hard AS268435456,CPU2,NOFILE32,FSIZE16777216. Child sqlite_file_size_limit is an actual getrlimit observation of both soft/hard8388608 after raw-copy closure and before RW opened, and remains the cap through RO closure. Missing/late/wrong limit observations refuse complete proof.",
+        "Source-before/copy main header preflight resolves the same held/named/hash-bound main observations before RW opened; header_hex is exactly56hex characters for main. Require exact SQLite format3 magic,4096-page encoding1000,version bytes0101, and positive whole-page size<=8MiB independently of later accepted schema validation. A main_header failure has no RW/RO opened stage and no new scratch WAL/SHM.",
+        "helper_observation.config retains the exact closed config object supplied by the parent. Canonical(config) must have length=config_bytes<=4096 and SHA256=config_sha256; a digest/length alone never substitutes for this object. Config helper_id/broker_id/started_at_ns/work_deadline_ns/deadline_ns equal the enclosing helper record; runtime_sha256/source_manifest_sha256/source_package_bytes/source_package_sha256 bind the same actual selected runtime and sealed package observed at READY, and agree with READY/work wherever those stages exist.",
+        "Config inherited_fds is the retained actual parent launch-registry map used for Popen pass_fds and the fixed child remap, not reconstructed from READY target numbers. Its five incoming descriptor numbers are pairwise distinct3..255 and exclude fixed stdio0..2; each exact purpose resolves the corresponding registered source parent/store, scratch parent/store or sealed package capability and then the actual READY fd3..7 identity. Stdio resolves the recorded parent-created transport pairs. Chosen canonical map0..7 remains constant. Collision-safe child-only duplication/remap closes originals/temporaries and retains no extra capability; parent uses no preexec_fn. Missing or contradictory original map/config bindings refuse complete proof.",
+        "Each retained RW/RO snapshot_event_sequence and ledger_state_sha256 resolves the exact same accepted-v2 event/state prefix of a retained final-ledger.json or recovery-ledger.json history. Reconstruct that entire prefix export canonically and require exact snapshot_bytes/snapshot_sha256/state, including for each earlier-generation helper. Do not equate earlier prefixes with the latest state or accept an unattested hash. Missing reconstructible history is incomplete; inconsistent prefixes/digests/bytes refuse.",
+        "For every complete result frame, reconstruct the exact closed result object from its retained work/status/error and its own reconstructed RO prefix export (null for failed result), compare canonical payload bytes/SHA, then prepend its exact8-byte big-endian length and compare frame_sha256/received_bytes/header_hex. READY frame similarly reconstructs from the exact retained ready object. Identify these as reconstructed payloads; never claim an unretained earlier raw export. No new bundle raw file, store reopen or helper execution is permitted.",
+        "helper_runtime.descriptors is the actual parent READY readback, sorted exactlyfd0..7 with no extras and exact purposes from launch.descriptor_map. Pipes0..2 resolve parent-created transport pairs with same device/inode/type and correct opposite access; child stdin is O_RDONLY, stdout/stderr O_WRONLY. Parent endpoints retain their actual distinct FD/flags observations. fd3 is the same regular O_RDONLY/noO_PATH/seals15 source package as package_observation and config commitment. fd4..7 are O_RDONLY/noO_PATH directories matching exact held source parent/store and registered scratch parent/store identities; no caller-declared purpose or equal-FD-number shortcut.",
+        "Keep source package fd3 open through actual READY descriptor/image readback. Record actual source_package_closed_at_ns after release/package use and before any copied SQLite handle opens. Source-package closure, raw-copy closure and both actual8MiB limits precede RW.opened_at_ns. All helper descriptor observations/closures remain separate from isolated role readiness; no role/FD authority is added.",
+        "Complete source lock observations require pending exactlyoffset1073741824/length1 and shared exactlyoffset1073741826/length510, each F_OFD_SETLK/F_RDLCK,status=acquired,errno=null. Both RESERVED queries are F_OFD_GETLK/F_WRLCK,offset1073741825/length1,input_owner_pid0,result_type=F_UNLCK,returned owner_pid0,errno=null. Any success/errno contradiction or swapped range refuses.",
+        "Complete work requires RW.mode=read_write and RO.mode=read_only, both closed=true with nonnull ordered opened/snapshot/closed timestamps and every snapshot sequence/bytes/hash/state field present. Shared counters are contiguous: RW.before0,RO.before=RW.after,work.progress_callbacks=RO.after; each is0..3999 and never decreases. All required successful source/copy/limit/journal/RO/result/physical-closure observations are present; null is unavailable, never successful.",
+        "READY.default_vfs is the actual helper preREADY public-C-API observation: release has not occurred and no original raw database is open. runtime.default_vfs_sha256 equals SHA256(canonical(READY.default_vfs)); helper_runtime.vfs remains unix and locking posix_rollback. Observation time precedes READY timestamp. Its exact library_source and library destination/identity/size/hash resolve the same selected accepted DT_NEEDED libsqlite3 row and actual parent READY mapped image. Parent independently binds the actual _sqlite3 extension and libsqlite3 to that selected closure; no second/unpinned SQLite mapping is permitted. sqlite_module_version is the exact three-component base10 tuple parsed strictly from the imported _sqlite3.sqlite_version string, and library_version uses its exact numeric encoding; returned VFS name is exactly fivebytes756e697800 and public iVersion1..3. Unsupported/default-changed/name/version/library/mapping mismatch refuses before release; no loader fallback or connection probe."
+      ],
+      "schema_version": "1",
+      "schemas": {
+        "config": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "broker_id": "canonical UUID4",
+            "deadline_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "helper_id": "canonical UUID4",
+            "inherited_fds": "evidence_contract.copied_recovery.schemas.inherited_descriptor_map",
+            "runtime_sha256": "lowercase SHA256",
+            "schema_version": {
+              "const": "1"
+            },
+            "source_manifest_sha256": "lowercase SHA256",
+            "source_package_bytes": {
+              "bool_allowed": false,
+              "maximum": 2097152,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "source_package_sha256": "lowercase SHA256",
+            "started_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "work_deadline_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "copied_receipt": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "bytes": {
+              "bool_allowed": false,
+              "maximum": 2097152,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "closed": {
+              "const": true
+            },
+            "finished_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "helper_id": "canonical UUID4",
+            "helper_sha256": "lowercase SHA256",
+            "ledger_state_sha256": "lowercase SHA256",
+            "owner_id": "canonical UUID4",
+            "read_only": {
+              "const": true
+            },
+            "schema_version": {
+              "const": "2"
+            },
+            "sha256": "lowercase SHA256",
+            "source": {
+              "const": "postcleanup_copied_recovery"
+            },
+            "started_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "store_identity": {
+              "additional_fields": false,
+              "all_fields_required": true,
+              "fields": {
+                "database": {
+                  "additional_fields": false,
+                  "all_fields_required": true,
+                  "fields": {
+                    "device": {
+                      "bool_allowed": false,
+                      "maximum": 18446744073709551615,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "gid": {
+                      "bool_allowed": false,
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "inode": {
+                      "bool_allowed": false,
+                      "maximum": 18446744073709551615,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "mode": {
+                      "bool_allowed": false,
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "uid": {
+                      "bool_allowed": false,
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                },
+                "directory": {
+                  "additional_fields": false,
+                  "all_fields_required": true,
+                  "fields": {
+                    "device": {
+                      "bool_allowed": false,
+                      "maximum": 18446744073709551615,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "gid": {
+                      "bool_allowed": false,
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "inode": {
+                      "bool_allowed": false,
+                      "maximum": 18446744073709551615,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "mode": {
+                      "bool_allowed": false,
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "uid": {
+                      "bool_allowed": false,
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                },
+                "parent": {
+                  "additional_fields": false,
+                  "all_fields_required": true,
+                  "fields": {
+                    "device": {
+                      "bool_allowed": false,
+                      "maximum": 18446744073709551615,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "gid": {
+                      "bool_allowed": false,
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "inode": {
+                      "bool_allowed": false,
+                      "maximum": 18446744073709551615,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "mode": {
+                      "bool_allowed": false,
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "uid": {
+                      "bool_allowed": false,
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "copy_stage": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "copied": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.store_observation"
+              ]
+            },
+            "finished_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "locks": "evidence_contract.copied_recovery.schemas.source_locks",
+            "raw_copy_fds_closed_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "raw_source_fds_closed_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "source_after": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.store_observation"
+              ]
+            },
+            "source_before": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.store_observation"
+              ]
+            },
+            "started_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "default_vfs_observation": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "library": "runtime_contract.closed_objects.file_identity",
+            "library_source": {
+              "maximum_length": 4096,
+              "minimum_length": 1,
+              "type": "string"
+            },
+            "library_version": {
+              "bool_allowed": false,
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "observed_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "sqlite_module_version": {
+              "items": {
+                "bool_allowed": false,
+                "maximum": 999,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "maximum_items": 3,
+              "minimum_items": 3,
+              "type": "array"
+            },
+            "vfs_name": {
+              "const": "unix"
+            },
+            "vfs_name_hex": {
+              "const": "756e697800"
+            },
+            "vfs_struct_version": {
+              "bool_allowed": false,
+              "maximum": 3,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "file_observation": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "fd_flags": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "header_hex": {
+              "encoding": "lowercase even-length hexadecimal",
+              "maximum_length": 56,
+              "type": "string"
+            },
+            "held": "evidence_contract.copied_recovery.schemas.file_stamp",
+            "name": {
+              "enum": [
+                "records.sqlite3",
+                "records.sqlite3-journal"
+              ]
+            },
+            "named": "evidence_contract.copied_recovery.schemas.file_stamp",
+            "sha256": "lowercase SHA256",
+            "trailer_hex": {
+              "encoding": "lowercase even-length hexadecimal",
+              "maximum_length": 32,
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "file_size_narrowing": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "hard": {
+              "const": 8388608
+            },
+            "observed_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "soft": {
+              "const": 8388608
+            }
+          },
+          "type": "object"
+        },
+        "file_stamp": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "ctime_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "device": {
+              "bool_allowed": false,
+              "maximum": 18446744073709551615,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "gid": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "inode": {
+              "bool_allowed": false,
+              "maximum": 18446744073709551615,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "mode": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "mtime_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "nlink": {
+              "const": 1
+            },
+            "size": {
+              "bool_allowed": false,
+              "maximum": 16777216,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "uid": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "framed_observation": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "complete": {
+              "type": "boolean"
+            },
+            "declared_bytes": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 2129920,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              ]
+            },
+            "finished_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "frame_sha256": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "lowercase SHA256"
+              ]
+            },
+            "header_hex": {
+              "encoding": "lowercase even-length hexadecimal",
+              "maximum_length": 16,
+              "type": "string"
+            },
+            "payload_bytes": {
+              "bool_allowed": false,
+              "maximum": 2129920,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "payload_sha256": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "lowercase SHA256"
+              ]
+            },
+            "received_bytes": {
+              "bool_allowed": false,
+              "maximum": 2134032,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "started_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "helper_cleanup": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "deadline_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "descriptors_closed": {
+              "type": "boolean"
+            },
+            "directory_closed": {
+              "type": "boolean"
+            },
+            "directory_removed": {
+              "type": "boolean"
+            },
+            "finished_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "parent_closed": {
+              "type": "boolean"
+            },
+            "pidfd_closed": {
+              "type": "boolean"
+            },
+            "removed_names": {
+              "items": {
+                "enum": [
+                  "records.sqlite3",
+                  "records.sqlite3-journal"
+                ]
+              },
+              "maximum_items": 2,
+              "minimum_items": 0,
+              "type": "array"
+            },
+            "scratch_disposition": {
+              "enum": [
+                "removed",
+                "retained",
+                "unknown"
+              ]
+            },
+            "source_package_closed": {
+              "type": "boolean"
+            },
+            "started_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "complete",
+                "failed",
+                "unknown"
+              ]
+            },
+            "stdio_closed": {
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        },
+        "helper_error": {
+          "enum": [
+            "source_custody",
+            "source_changed",
+            "unsupported_ofd",
+            "reserved_writer",
+            "unsupported_runtime",
+            "unsupported_vfs",
+            "source_package",
+            "publication",
+            "ready",
+            "release",
+            "copy_custody",
+            "copy_limit",
+            "journal_trailer",
+            "sqlite_rw",
+            "journal_disposition",
+            "sqlite_ro",
+            "snapshot_mismatch",
+            "progress_limit",
+            "work_deadline",
+            "framing",
+            "output_limit",
+            "helper_exit",
+            "helper_reap",
+            "scratch_cleanup",
+            "descriptor_cleanup",
+            "main_header"
+          ]
+        },
+        "helper_observation": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "broker_id": "canonical UUID4",
+            "cleanup": "evidence_contract.copied_recovery.schemas.helper_cleanup",
+            "config": "evidence_contract.copied_recovery.schemas.config",
+            "config_bytes": {
+              "bool_allowed": false,
+              "maximum": 4096,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "config_sha256": "lowercase SHA256",
+            "deadline_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "error": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.helper_error"
+              ]
+            },
+            "finished_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "generation": {
+              "bool_allowed": false,
+              "maximum": 1,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "helper_id": "canonical UUID4",
+            "parent_observer": "runtime_contract.closed_objects.observer",
+            "process": "evidence_contract.copied_recovery.schemas.process",
+            "ready": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.ready"
+              ]
+            },
+            "runtime": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.helper_runtime"
+              ]
+            },
+            "schema_version": {
+              "const": "1"
+            },
+            "scratch": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.scratch_registration"
+              ]
+            },
+            "started_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "complete",
+                "failed",
+                "unknown"
+              ]
+            },
+            "transfer": "evidence_contract.copied_recovery.schemas.transfer",
+            "transports": "evidence_contract.copied_recovery.schemas.transports",
+            "work": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.work_provenance"
+              ]
+            },
+            "work_deadline_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "helper_runtime": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "default_vfs_sha256": "lowercase SHA256",
+            "descriptors": {
+              "items": "runtime_contract.closed_objects.descriptor",
+              "maximum_items": 8,
+              "minimum_items": 8,
+              "type": "array"
+            },
+            "interpreter": "runtime_contract.closed_objects.file_identity",
+            "locking": {
+              "const": "posix_rollback"
+            },
+            "mapped_images": {
+              "items": "runtime_contract.closed_objects.file_identity",
+              "maximum_items": 64,
+              "minimum_items": 1,
+              "type": "array"
+            },
+            "observed_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "resource_limits": "evidence_contract.copied_recovery.schemas.resource_observation",
+            "runtime_sha256": "lowercase SHA256",
+            "source_manifest_sha256": "lowercase SHA256",
+            "source_package": "evidence_contract.copied_recovery.schemas.package_observation",
+            "sqlite_extension": "runtime_contract.closed_objects.file_identity",
+            "stdlib": "evidence_contract.copied_recovery.schemas.identity",
+            "vfs": {
+              "const": "unix"
+            }
+          },
+          "type": "object"
+        },
+        "identity": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "device": {
+              "bool_allowed": false,
+              "maximum": 18446744073709551615,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "gid": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "inode": {
+              "bool_allowed": false,
+              "maximum": 18446744073709551615,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "mode": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "uid": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "inactive_header": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "header_hex": {
+              "encoding": "lowercase even-length hexadecimal",
+              "maximum_length": 56,
+              "type": "string"
+            },
+            "nonce": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "original_pages": {
+              "bool_allowed": false,
+              "maximum": 2048,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "padding_bytes": {
+              "bool_allowed": false,
+              "maximum": 65508,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "padding_sha256": "lowercase SHA256",
+            "page_bytes": {
+              "const": 4096
+            },
+            "record_count": {
+              "bool_allowed": false,
+              "maximum": 2048,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "records": {
+              "items": "evidence_contract.copied_recovery.schemas.inactive_record",
+              "maximum_items": 2048,
+              "minimum_items": 0,
+              "type": "array"
+            },
+            "sector_bytes": {
+              "bool_allowed": false,
+              "maximum": 65536,
+              "minimum": 512,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "inactive_record": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "before_image_sha256": "lowercase SHA256",
+            "checksum": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "computed_checksum": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "index": {
+              "bool_allowed": false,
+              "maximum": 2047,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "main_page_sha256": "lowercase SHA256",
+            "page_number": {
+              "bool_allowed": false,
+              "maximum": 2048,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "inherited_descriptor_map": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "scratch_parent": {
+              "bool_allowed": false,
+              "maximum": 255,
+              "minimum": 3,
+              "type": "integer"
+            },
+            "scratch_store": {
+              "bool_allowed": false,
+              "maximum": 255,
+              "minimum": 3,
+              "type": "integer"
+            },
+            "source_package": {
+              "bool_allowed": false,
+              "maximum": 255,
+              "minimum": 3,
+              "type": "integer"
+            },
+            "source_parent": {
+              "bool_allowed": false,
+              "maximum": 255,
+              "minimum": 3,
+              "type": "integer"
+            },
+            "source_store": {
+              "bool_allowed": false,
+              "maximum": 255,
+              "minimum": 3,
+              "type": "integer"
+            },
+            "stderr": {
+              "const": 2
+            },
+            "stdin": {
+              "const": 0
+            },
+            "stdout": {
+              "const": 1
+            }
+          },
+          "type": "object"
+        },
+        "journal_disposition": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "absence_observed_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "header": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.inactive_header"
+              ]
+            },
+            "journal": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.file_observation"
+              ]
+            },
+            "main_after": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.file_observation"
+              ]
+            },
+            "main_before": "evidence_contract.copied_recovery.schemas.file_observation",
+            "observed_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "absent_after_rw",
+                "removed_empty_copy",
+                "removed_inactive_copy",
+                "refused"
+              ]
+            },
+            "unlink_finished_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "unlink_started_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "limit_pair": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "hard": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "soft": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "lock_attempt": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "command": {
+              "const": "F_OFD_SETLK"
+            },
+            "errno": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 4095,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              ]
+            },
+            "finished_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "length": {
+              "enum": [
+                1,
+                510
+              ]
+            },
+            "lock_type": {
+              "const": "F_RDLCK"
+            },
+            "offset": {
+              "enum": [
+                1073741824,
+                1073741826
+              ]
+            },
+            "started_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "acquired",
+                "refused",
+                "unsupported"
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "package_observation": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "bytes": {
+              "bool_allowed": false,
+              "maximum": 2097152,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "descriptor": "runtime_contract.closed_objects.descriptor",
+            "seals": {
+              "const": 15
+            },
+            "sha256": "lowercase SHA256",
+            "source_manifest_sha256": "lowercase SHA256"
+          },
+          "type": "object"
+        },
+        "package_source": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "destination": {
+              "maximum_length": 256,
+              "minimum_length": 1,
+              "type": "string"
+            },
+            "module": {
+              "maximum_length": 128,
+              "minimum_length": 1,
+              "type": "string"
+            },
+            "sha256": "lowercase SHA256",
+            "size": {
+              "bool_allowed": false,
+              "maximum": 2097152,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "source_base64": {
+              "encoding": "canonical padded base64",
+              "maximum_length": 2796204,
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "pidfd_observation": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "device": {
+              "bool_allowed": false,
+              "maximum": 18446744073709551615,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "flags": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "inode": {
+              "bool_allowed": false,
+              "maximum": 18446744073709551615,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "mode": {
+              "bool_allowed": false,
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "process": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "exit_observed_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "observed_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "parent_pid": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              ]
+            },
+            "pid": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              ]
+            },
+            "pidfd": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.pidfd_observation"
+              ]
+            },
+            "publication_registered_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "publication_resolved_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "publication_state": {
+              "enum": [
+                "pending",
+                "not_started",
+                "published"
+              ]
+            },
+            "reaped_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "release_sent_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "returncode": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 255,
+                  "minimum": -255,
+                  "type": "integer"
+                }
+              ]
+            },
+            "signal_sent_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "start_time_ticks": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "task_ids": {
+              "items": {
+                "bool_allowed": false,
+                "maximum": 2147483647,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "maximum_items": 1,
+              "minimum_items": 0,
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "ready": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "broker_id": "canonical UUID4",
+            "default_vfs": "evidence_contract.copied_recovery.schemas.default_vfs_observation",
+            "helper_id": "canonical UUID4",
+            "kind": {
+              "const": "copied_ledger_recovery_ready"
+            },
+            "observed_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "pid": {
+              "bool_allowed": false,
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "runtime_sha256": "lowercase SHA256",
+            "schema_version": {
+              "const": "1"
+            },
+            "source_manifest_sha256": "lowercase SHA256",
+            "source_package_sha256": "lowercase SHA256"
+          },
+          "type": "object"
+        },
+        "reserved_query": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "command": {
+              "const": "F_OFD_GETLK"
+            },
+            "errno": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 4095,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              ]
+            },
+            "finished_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "input_owner_pid": {
+              "const": 0
+            },
+            "length": {
+              "const": 1
+            },
+            "offset": {
+              "const": 1073741825
+            },
+            "owner_pid": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 2147483647,
+                  "minimum": -1,
+                  "type": "integer"
+                }
+              ]
+            },
+            "query_type": {
+              "const": "F_WRLCK"
+            },
+            "result_type": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "enum": [
+                    "F_UNLCK",
+                    "F_RDLCK",
+                    "F_WRLCK"
+                  ]
+                }
+              ]
+            },
+            "started_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "resource_observation": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "address_space": "evidence_contract.copied_recovery.schemas.limit_pair",
+            "cpu": "evidence_contract.copied_recovery.schemas.limit_pair",
+            "file_size": "evidence_contract.copied_recovery.schemas.limit_pair",
+            "nofile": "evidence_contract.copied_recovery.schemas.limit_pair",
+            "observed_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "result": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "error": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.helper_error"
+              ]
+            },
+            "export": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "exact unchanged canonical v2 ledger export"
+              ]
+            },
+            "provenance": "evidence_contract.copied_recovery.schemas.work_provenance",
+            "schema_version": {
+              "const": "1"
+            },
+            "status": {
+              "enum": [
+                "complete",
+                "failed"
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "scratch_registration": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "directory": "evidence_contract.copied_recovery.schemas.identity",
+            "name": {
+              "maximum_length": 128,
+              "minimum_length": 1,
+              "pattern": "[A-Za-z0-9_-]+",
+              "type": "string"
+            },
+            "parent": "evidence_contract.copied_recovery.schemas.identity",
+            "registered_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "source_locks": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "main_device": {
+              "bool_allowed": false,
+              "maximum": 18446744073709551615,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "main_inode": {
+              "bool_allowed": false,
+              "maximum": 18446744073709551615,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "pending": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.lock_attempt"
+              ]
+            },
+            "released_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "reserved_after": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.reserved_query"
+              ]
+            },
+            "reserved_before": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.reserved_query"
+              ]
+            },
+            "shared": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.lock_attempt"
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "source_package": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "runtime": "runtime_contract.runtime_manifest_schema exact bundle",
+            "runtime_sha256": "lowercase SHA256",
+            "schema_version": {
+              "const": "1"
+            },
+            "source_manifest_sha256": "lowercase SHA256",
+            "sources": {
+              "items": "evidence_contract.copied_recovery.schemas.package_source",
+              "maximum_items": 52,
+              "minimum_items": 52,
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "sqlite_stage": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "closed": {
+              "type": "boolean"
+            },
+            "closed_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "ledger_state_sha256": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "lowercase SHA256"
+              ]
+            },
+            "mode": {
+              "enum": [
+                "read_write",
+                "read_only"
+              ]
+            },
+            "opened_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "owner_id": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "canonical UUID4"
+              ]
+            },
+            "progress_callbacks_after": {
+              "bool_allowed": false,
+              "maximum": 4000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "progress_callbacks_before": {
+              "bool_allowed": false,
+              "maximum": 4000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "snapshot_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "snapshot_bytes": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 2097152,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              ]
+            },
+            "snapshot_event_sequence": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 257,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              ]
+            },
+            "snapshot_sha256": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "lowercase SHA256"
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "store_identity": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "database": "evidence_contract.copied_recovery.schemas.identity",
+            "directory": "evidence_contract.copied_recovery.schemas.identity",
+            "parent": "evidence_contract.copied_recovery.schemas.identity"
+          },
+          "type": "object"
+        },
+        "store_observation": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "directory": "evidence_contract.copied_recovery.schemas.identity",
+            "files": {
+              "items": "evidence_contract.copied_recovery.schemas.file_observation",
+              "maximum_items": 2,
+              "minimum_items": 1,
+              "type": "array"
+            },
+            "observed_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "parent": "evidence_contract.copied_recovery.schemas.identity"
+          },
+          "type": "object"
+        },
+        "transfer": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "export_bytes": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 2097152,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              ]
+            },
+            "export_sha256": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "lowercase SHA256"
+              ]
+            },
+            "provenance_bytes": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 32768,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              ]
+            },
+            "provenance_sha256": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "lowercase SHA256"
+              ]
+            },
+            "ready": "evidence_contract.copied_recovery.schemas.framed_observation",
+            "result": "evidence_contract.copied_recovery.schemas.framed_observation",
+            "result_error": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.helper_error"
+              ]
+            },
+            "result_status": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "enum": [
+                    "complete",
+                    "failed"
+                  ]
+                }
+              ]
+            },
+            "stderr_bytes": {
+              "bool_allowed": false,
+              "maximum": 4096,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "stderr_eof": {
+              "type": "boolean"
+            },
+            "stderr_hex": {
+              "encoding": "lowercase even-length hexadecimal",
+              "maximum_length": 8192,
+              "type": "string"
+            },
+            "stderr_sha256": "lowercase SHA256",
+            "stdout_bytes": {
+              "bool_allowed": false,
+              "maximum": 2134032,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "stdout_eof": {
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        },
+        "transport_pair": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "child": "runtime_contract.closed_objects.descriptor",
+            "created_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "parent": "runtime_contract.closed_objects.descriptor"
+          },
+          "type": "object"
+        },
+        "transports": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "stderr": "evidence_contract.copied_recovery.schemas.transport_pair",
+            "stdin": "evidence_contract.copied_recovery.schemas.transport_pair",
+            "stdout": "evidence_contract.copied_recovery.schemas.transport_pair"
+          },
+          "type": "object"
+        },
+        "work_provenance": {
+          "additional_fields": false,
+          "all_fields_required": true,
+          "fields": {
+            "broker_id": "canonical UUID4",
+            "copy": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.copy_stage"
+              ]
+            },
+            "copy_descriptors_closed": {
+              "type": "boolean"
+            },
+            "deadline_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "finished_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "helper_id": "canonical UUID4",
+            "journal_disposition": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.journal_disposition"
+              ]
+            },
+            "post_ro_copy": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.store_observation"
+              ]
+            },
+            "post_rw_copy": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.store_observation"
+              ]
+            },
+            "progress_callbacks": {
+              "bool_allowed": false,
+              "maximum": 4000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "ro": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.sqlite_stage"
+              ]
+            },
+            "runtime_sha256": "lowercase SHA256",
+            "rw": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.sqlite_stage"
+              ]
+            },
+            "schema_version": {
+              "const": "1"
+            },
+            "source_descriptors_closed": {
+              "type": "boolean"
+            },
+            "source_package_closed_at_ns": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                {
+                  "bool_allowed": false,
+                  "maximum": 9223372036854775807,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ]
+            },
+            "source_package_sha256": "lowercase SHA256",
+            "sqlite_file_size_limit": {
+              "one_of": [
+                {
+                  "type": "null"
+                },
+                "evidence_contract.copied_recovery.schemas.file_size_narrowing"
+              ]
+            },
+            "started_at_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "work_deadline_ns": {
+              "bool_allowed": false,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "selection": {
+        "attempts_per_bundle_max": 2,
+        "attempts_per_generation_max": 1,
+        "no_journal": "unchanged direct schema1/read-only original path",
+        "rules": [
+          "Attempt is consumed at publication registration, including failed spawn; no fallback after arbitrary direct-readonly error, retry, second helper or reused prior receipt.",
+          "All actual role/wrapper reaping, supervisor closure and pending-publication resolution precede helper setup. Unknown live owner blocks packaging and another generation.",
+          "Parent may hold and inspect directory capabilities and named metadata but never opens/hashes original main/journal; raw source file descriptors exist only in the freshly execed helper."
+        ],
+        "source": "actual permitted records.sqlite3-journal directory entry after all live authority is reaped"
+      },
+      "source_custody_rules": [
+        "Before raw source open, helper verifies held/named parent/store identities, private0700 ownership and fixed inventory; only main and optional journal. Main is regular0600, single-link,1..8388608 bytes; journal regular0600 single-link,0..16777216 bytes. No symlink/hardlink/extra entry.",
+        "All file observations use O_RDONLY without O_PATH, exact held/named device/inode/mode/uid/gid/nlink/size/mtime/ctime equality; header_hex is first min(28,size) bytes and trailer_hex last min(16,size) bytes. Parent never creates an original raw file descriptor.",
+        "Source store directory/main device+inode match selected broker readiness held_store_directory/sqlite_main. Host source parent identity is not equated with broker namespace /store parent. Both observed store directories and raw files remain distinct from scratch.",
+        "Nonblocking Linux OFD read locks: PENDING1073741824/1 then SHARED1073741826/510 on original main. Never lock RESERVED1073741825. F_OFD_GETLK query F_WRLCK on RESERVED/1 before and after copy must return F_UNLCK; retain both actual query observations. No POSIX/flock fallback.",
+        "Hold source locks through source-after observation, then close original raw descriptors. Source-before/source-after exact inventories, held/named stamps and full byte hashes must agree. Reserved queries are time-specific observations, not proof that no writer ever raced; file/journal drift refuses.",
+        "Copy exact held source bytes into parent-registered exclusive0700 scratch with new regular0600 single-link inodes; copied names/size/hash/header/trailer equal source-before, no source alias/link. Scratch is never live authority and has only fixed main/journal names.",
+        "Before ANY SQLite copy open, both retained source/copy main header_hex observations must contain the exact SQLite format3 magic53514c69746520666f726d6174203300 in bytes0..15, big-endian page_size4096 in bytes16..17, write_version1/read_version1 in bytes18/19, and main size a positive whole multiple of4096<=8388608. Unsupported WAL/format/page headers refuse before SQLite can create WAL/SHM or any third scratch file. This is raw-byte preflight only, never original SQLite open.",
+        "Before copied SQLite open, reject a journal whose last8 bytes equal SQLite journal/super-journal magic d9d505f920a163d7. Accepted ATTACH limit0 admits no legitimate external master-journal path; do not let SQLite follow a copied embedded master path.",
+        "Explicit selected runtime SQLite Unix/POSIX rollback VFS only. Unsupported OFD/VFS/native pin refuses. Parent observes loaded interpreter/stdlib/SQLite extension and all executable mappings after imports and before release; each maps exact selected runtime file identity/hash, no unknown mapping."
+      ],
+      "status": "reviewed_contract_pending_implementation"
+    },
     "deadlines": {
       "caller_absolute_clip": true,
       "deadline_includes": "custody, validation, I/O, descriptor/parser cleanup, final encoding and successful emission",
@@ -8528,10 +10771,10 @@
         "stdout_file": "client-{exact dispatch_id}.stdout.bin|null"
       },
       "export_entry": {
-        "broker_id": "actual owning broker uuid4 for sealed_broker complete; null for unavailable or postcleanup_readonly",
+        "broker_id": "actual owning broker uuid4 for sealed_broker complete; null for unavailable or either postcleanup recovery source",
         "file": "initial-ledger.json|final-ledger.json|recovery-ledger.json|null",
         "reason": "null|not_started|not_acknowledged|broker_lost|invalid_or_partial|not_applicable",
-        "source": "sealed_broker|postcleanup_readonly|null",
+        "source": "sealed_broker|postcleanup_readonly|postcleanup_copied_recovery|null",
         "status": "complete|unavailable"
       },
       "host_capture": {
@@ -8792,7 +11035,7 @@
       },
       "recovery-ledger.json": {
         "maximum_bytes": 2097152,
-        "presence": "iff recovery.status complete; source postcleanup_readonly only",
+        "presence": "iff manifest recovery export status complete; source postcleanup_readonly or postcleanup_copied_recovery with exact corresponding receipt",
         "schema": "exact canonical unchanged v2 validated export; separate actual data handle after verified all-role reaping"
       },
       "results.json": {
@@ -8957,7 +11200,7 @@
       "Complete manifest+all actual member sizes total<=16777216, at most18 regular files, no directories/links/extra files.",
       "Live-operation and role-boundary proofs never fabricate missing exports, raw capture, process or protocol rows. Every complete export has actual source-specific custody observation and exact file hash.",
       "Unavailable export has source/file null and non-null closed reason. Complete export has exact permitted file/source and reason null. All3 export roles are independent.",
-      "Postcleanup recovery may open a fresh read-only v2 data handle only after actual all-role reaping, outside inspect/write APIs; it never resumes earlier owner/session/grants, never substitutes for missing sealed final observation.",
+      "Postcleanup direct recovery retains the unchanged fresh read-only v2 path. Only the explicit A10 copied-recovery helper may recover a private byte-identical copy after all live authority is reaped; exact closed provenance/source label, two-second total budget and helper process accounting apply. Neither branch restores authority or replaces a sealed final observation.",
       "Raw names use only the exact canonical UUID4 dispatch in dispatch_entry; both files or neither, including retained zero-byte captures. No path interpolation from arbitrary member names.",
       "Production_run requires live_operation, case_id null and empty instrumentation. Owned_gate requires pinned exact gate predicate and matching permitted instrumentation, configuration and review mode. Diagnostic never satisfies a gate.",
       "Role_boundary may have actual live-operation observations but never requires fabricated ledger/client state; operation list remains empty when there were no dispatches.",
@@ -9012,8 +11255,8 @@
       "Each native boundary proof and each core selector matches the one canonical owned gate case; selectors carry no passed/expected/no_effect booleans. Required outcomes derive from retained actual observations and exact pinned case predicates; unknown or incomplete predicates do not pass.",
       "Core transcript references address exact retained segment index and per-segment row_sequence; duplicates/foreign/missing references refuse. State digests resolve actual reconstructed accepted v2 state prefixes, never caller snapshots with no corresponding history.",
       "cleanup.exports contains only sealed initial/final broker observations: broker_id is actual producer; phase/reference hash/bytes/seals match actual snapshot and host+broker descriptor observations. Both descriptors are regular same-device/inode files, host flags O_RDONLY, broker O_RDWR; their phase purpose resolves exact original export memfd. Literal access-mode declarations are insufficient.",
-      "cleanup.recovery is separate and null if no actual postcleanup read-only reopening occurred. A complete recovery export requires this exact observation and vice versa; it is not an initial/final seal reference and has no fabricated broker descriptor.",
-      "Recovery uses actually fresh accepted DispatchLedger.open(read_only=True), captures its real owner_reference, verified parent/directory held fstats and named database identity before/after, snapshot only, close before finished_at_ns. Owner must differ from every recorded broker owner; start is no earlier than all actual role/wrapper reaping. Entire open/snapshot/close observation is bounded by original2s and inherited outer deadline.",
+      "cleanup.recovery is separate and null if no actual final postcleanup read-only export occurred. A complete recovery export requires the matching legacy direct or A10 copied receipt and vice versa; neither is a fabricated broker seal. cleanup schema2 additionally retains all generation-specific helper observations, independently of the latest export.",
+      "Legacy direct recovery uses actually fresh accepted DispatchLedger.open(read_only=True), real owner_reference, verified original store identity, snapshot and actual close within inherited original2s. A10 copied recovery retains the same common fields only for the final RO-copy handle, and links the separate closed helper observation proving source/copy/RW/RO/process chronology under one shared2s. Owners differ from all brokers and each other; all authority reaping precedes setup.",
       "Recovery raw canonical bytes/SHA and accepted state digest must match retained recovery-ledger.json. Private parent/directory0700 and database regular0600 identities are stable through accepted custody checks. Inspection never opens the store or reexecutes recovery.",
       "All count/UUID/source/namespace/descriptor checks remain independently enforced; no row maximum substitutes for actual peak26/cumulative94/two-sequential-broker/four-dispatch bounds.",
       "Startup observations retain only actual trusted parent readback at stage entry, without worker READY or a claim of sealed self-checks. Startup/readiness/native observations share a ceiling of94 distinct payload PID/start-time identities; repeated stages of one actual payload count once. Every known startup payload must resolve actual cleanup. Runtime source/role capture is separately required and entry identity alone does not prove post-bootstrap ROE/source validation. No endpoint/client identity is invented when startup refused before those roles were created.",
@@ -9029,190 +11272,196 @@
       "Raw bytes occur only in existing dispatch stdout/stderr files; zero-byte files remain actual observations, not assumed absence.",
       "Reconstruct existing launcher_capture by adding actual raw stdout/stderr base64 to the stored schema/slot/exit/truncated/counts/hashes subset. CAPTURED data is exactly {child_slot,capture:<launcher_capture>,status:<stored status>,cleanup:<actual referenced receipt|null>}; no repeated readiness/native objects.",
       "Cleanup object resolves cleanup.receipts, at most1 exact child and<=2048 canonical bytes. Null or failed cleanup is retained and prevents usefulness.",
-      "Keep actual partial host_capture even when CAPTURE RPC/reply or broker ACK never occurred. No host result is promoted to broker acknowledgment."
+      "Keep actual partial host_capture even when CAPTURE RPC/reply or broker ACK never occurred. No host result is promoted to broker acknowledgment.",
+      "A10 helper runtime/process/file observations use their separate closed evidence schemas, never a new runtime role or an invented isolated readiness receipt. Full helper identity accounting remains within existing47/94 cumulative and26process/28task peak bounds."
     ],
     "member_containers": {
       "cleanup.json": {
-        "additional_fields": false,
-        "all_fields_required": true,
-        "fields": {
-          "exports": {
-            "items": {
-              "additional_fields": false,
-              "all_fields_required": true,
-              "fields": {
-                "broker_descriptor": "runtime_contract.closed_objects.descriptor",
-                "broker_id": "canonical UUID4",
-                "host_descriptor": "runtime_contract.closed_objects.descriptor",
-                "reference": "authority_contract.schemas.export_reference"
+        "one_of": [
+          {
+            "additional_fields": false,
+            "all_fields_required": true,
+            "fields": {
+              "exports": {
+                "items": {
+                  "additional_fields": false,
+                  "all_fields_required": true,
+                  "fields": {
+                    "broker_descriptor": "runtime_contract.closed_objects.descriptor",
+                    "broker_id": "canonical UUID4",
+                    "host_descriptor": "runtime_contract.closed_objects.descriptor",
+                    "reference": "authority_contract.schemas.export_reference"
+                  },
+                  "type": "object"
+                },
+                "maximum_items": 4,
+                "type": "array"
               },
-              "type": "object"
-            },
-            "maximum_items": 4,
-            "type": "array"
-          },
-          "receipts": {
-            "items": "runtime_contract.closed_objects.cleanup",
-            "maximum_items": 94,
-            "type": "array"
-          },
-          "recovery": {
-            "one_of": [
-              {
-                "type": "null"
+              "receipts": {
+                "items": "runtime_contract.closed_objects.cleanup",
+                "maximum_items": 94,
+                "type": "array"
               },
-              {
-                "additional_fields": false,
-                "all_fields_required": true,
-                "fields": {
-                  "bytes": {
-                    "bool_allowed": false,
-                    "maximum": 2097152,
-                    "minimum": 1,
-                    "type": "integer"
+              "recovery": {
+                "one_of": [
+                  {
+                    "type": "null"
                   },
-                  "closed": {
-                    "const": true
-                  },
-                  "finished_at_ns": {
-                    "bool_allowed": false,
-                    "maximum": 9223372036854775807,
-                    "minimum": 0,
-                    "type": "integer"
-                  },
-                  "ledger_state_sha256": "lowercase SHA256",
-                  "owner_id": "canonical UUID4",
-                  "read_only": {
-                    "const": true
-                  },
-                  "schema_version": {
-                    "enum": [
-                      "1"
-                    ]
-                  },
-                  "sha256": "lowercase SHA256",
-                  "source": {
-                    "enum": [
-                      "postcleanup_readonly"
-                    ]
-                  },
-                  "started_at_ns": {
-                    "bool_allowed": false,
-                    "maximum": 9223372036854775807,
-                    "minimum": 0,
-                    "type": "integer"
-                  },
-                  "store_identity": {
+                  {
                     "additional_fields": false,
                     "all_fields_required": true,
                     "fields": {
-                      "database": {
-                        "additional_fields": false,
-                        "all_fields_required": true,
-                        "fields": {
-                          "device": {
-                            "bool_allowed": false,
-                            "maximum": 18446744073709551615,
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "gid": {
-                            "bool_allowed": false,
-                            "maximum": 4294967295,
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "inode": {
-                            "bool_allowed": false,
-                            "maximum": 18446744073709551615,
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "mode": {
-                            "bool_allowed": false,
-                            "maximum": 4294967295,
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "uid": {
-                            "bool_allowed": false,
-                            "maximum": 4294967295,
-                            "minimum": 0,
-                            "type": "integer"
-                          }
-                        },
-                        "type": "object"
+                      "bytes": {
+                        "bool_allowed": false,
+                        "maximum": 2097152,
+                        "minimum": 1,
+                        "type": "integer"
                       },
-                      "directory": {
-                        "additional_fields": false,
-                        "all_fields_required": true,
-                        "fields": {
-                          "device": {
-                            "bool_allowed": false,
-                            "maximum": 18446744073709551615,
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "gid": {
-                            "bool_allowed": false,
-                            "maximum": 4294967295,
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "inode": {
-                            "bool_allowed": false,
-                            "maximum": 18446744073709551615,
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "mode": {
-                            "bool_allowed": false,
-                            "maximum": 4294967295,
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "uid": {
-                            "bool_allowed": false,
-                            "maximum": 4294967295,
-                            "minimum": 0,
-                            "type": "integer"
-                          }
-                        },
-                        "type": "object"
+                      "closed": {
+                        "const": true
                       },
-                      "parent": {
+                      "finished_at_ns": {
+                        "bool_allowed": false,
+                        "maximum": 9223372036854775807,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "ledger_state_sha256": "lowercase SHA256",
+                      "owner_id": "canonical UUID4",
+                      "read_only": {
+                        "const": true
+                      },
+                      "schema_version": {
+                        "enum": [
+                          "1"
+                        ]
+                      },
+                      "sha256": "lowercase SHA256",
+                      "source": {
+                        "enum": [
+                          "postcleanup_readonly"
+                        ]
+                      },
+                      "started_at_ns": {
+                        "bool_allowed": false,
+                        "maximum": 9223372036854775807,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "store_identity": {
                         "additional_fields": false,
                         "all_fields_required": true,
                         "fields": {
-                          "device": {
-                            "bool_allowed": false,
-                            "maximum": 18446744073709551615,
-                            "minimum": 0,
-                            "type": "integer"
+                          "database": {
+                            "additional_fields": false,
+                            "all_fields_required": true,
+                            "fields": {
+                              "device": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "gid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "inode": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "mode": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "uid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "type": "object"
                           },
-                          "gid": {
-                            "bool_allowed": false,
-                            "maximum": 4294967295,
-                            "minimum": 0,
-                            "type": "integer"
+                          "directory": {
+                            "additional_fields": false,
+                            "all_fields_required": true,
+                            "fields": {
+                              "device": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "gid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "inode": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "mode": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "uid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "type": "object"
                           },
-                          "inode": {
-                            "bool_allowed": false,
-                            "maximum": 18446744073709551615,
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "mode": {
-                            "bool_allowed": false,
-                            "maximum": 4294967295,
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "uid": {
-                            "bool_allowed": false,
-                            "maximum": 4294967295,
-                            "minimum": 0,
-                            "type": "integer"
+                          "parent": {
+                            "additional_fields": false,
+                            "all_fields_required": true,
+                            "fields": {
+                              "device": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "gid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "inode": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "mode": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "uid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "type": "object"
                           }
                         },
                         "type": "object"
@@ -9220,23 +11469,233 @@
                     },
                     "type": "object"
                   }
-                },
-                "type": "object"
+                ]
+              },
+              "schema_version": {
+                "enum": [
+                  "1"
+                ]
+              },
+              "supervisors": {
+                "items": "evidence_contract.definitions.supervisor_closure",
+                "maximum_items": 4,
+                "type": "array"
               }
-            ]
+            },
+            "type": "object"
           },
-          "schema_version": {
-            "enum": [
-              "1"
-            ]
-          },
-          "supervisors": {
-            "items": "evidence_contract.definitions.supervisor_closure",
-            "maximum_items": 4,
-            "type": "array"
+          {
+            "additional_fields": false,
+            "all_fields_required": true,
+            "fields": {
+              "exports": {
+                "items": {
+                  "additional_fields": false,
+                  "all_fields_required": true,
+                  "fields": {
+                    "broker_descriptor": "runtime_contract.closed_objects.descriptor",
+                    "broker_id": "canonical UUID4",
+                    "host_descriptor": "runtime_contract.closed_objects.descriptor",
+                    "reference": "authority_contract.schemas.export_reference"
+                  },
+                  "type": "object"
+                },
+                "maximum_items": 4,
+                "type": "array"
+              },
+              "receipts": {
+                "items": "runtime_contract.closed_objects.cleanup",
+                "maximum_items": 94,
+                "type": "array"
+              },
+              "recovery": {
+                "one_of": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "additional_fields": false,
+                    "all_fields_required": true,
+                    "fields": {
+                      "bytes": {
+                        "bool_allowed": false,
+                        "maximum": 2097152,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "closed": {
+                        "const": true
+                      },
+                      "finished_at_ns": {
+                        "bool_allowed": false,
+                        "maximum": 9223372036854775807,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "ledger_state_sha256": "lowercase SHA256",
+                      "owner_id": "canonical UUID4",
+                      "read_only": {
+                        "const": true
+                      },
+                      "schema_version": {
+                        "enum": [
+                          "1"
+                        ]
+                      },
+                      "sha256": "lowercase SHA256",
+                      "source": {
+                        "enum": [
+                          "postcleanup_readonly"
+                        ]
+                      },
+                      "started_at_ns": {
+                        "bool_allowed": false,
+                        "maximum": 9223372036854775807,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "store_identity": {
+                        "additional_fields": false,
+                        "all_fields_required": true,
+                        "fields": {
+                          "database": {
+                            "additional_fields": false,
+                            "all_fields_required": true,
+                            "fields": {
+                              "device": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "gid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "inode": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "mode": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "uid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "directory": {
+                            "additional_fields": false,
+                            "all_fields_required": true,
+                            "fields": {
+                              "device": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "gid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "inode": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "mode": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "uid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "parent": {
+                            "additional_fields": false,
+                            "all_fields_required": true,
+                            "fields": {
+                              "device": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "gid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "inode": {
+                                "bool_allowed": false,
+                                "maximum": 18446744073709551615,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "mode": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "uid": {
+                                "bool_allowed": false,
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "type": "object"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "evidence_contract.copied_recovery.schemas.copied_receipt"
+                ]
+              },
+              "recovery_helpers": {
+                "items": "evidence_contract.copied_recovery.schemas.helper_observation",
+                "maximum_items": 2,
+                "minimum_items": 1,
+                "type": "array"
+              },
+              "schema_version": {
+                "const": "2"
+              },
+              "supervisors": {
+                "items": "evidence_contract.definitions.supervisor_closure",
+                "maximum_items": 4,
+                "type": "array"
+              }
+            },
+            "type": "object"
           }
-        },
-        "type": "object"
+        ]
       },
       "processes.json": {
         "additional_fields": false,

@@ -360,7 +360,9 @@ A live bundle has a closed exact regular-file inventory totaling at most 16 MiB.
 When actually observed, it retains initial and final validated v2 exports (at most
 2 MiB each) with their real seal/source status. Unavailable exports remain explicitly
 unavailable; a post-cleanup read-only recovery export is separately labeled and
-never substituted for a missing broker snapshot. It also retains the actual
+never substituted for a missing broker snapshot. Direct recovery retains its
+original receipt; the separately specified A10 copied-recovery branch records
+the writable-copy stages and the final read-only handle honestly. It also retains the actual
 bounded durable audit JSONL (at most 1 MiB), ordered role/protocol/meter transcripts
 (at most 2 MiB), at most four actual client raw-output pairs with each pair bounded
 by its original slot output cap, sealed source/runtime/native manifests, actual
@@ -938,7 +940,8 @@ pass/fail or expected-outcome assertions.
 A recovery export records its fresh read-only data handle, verified store identity,
 original two-second observation interval and actual closure separately from the
 broker's sealed export descriptors. It can start only after all live roles are
-verified reaped. Saved inspection does not reopen the store.
+verified reaped. Saved inspection does not reopen the store. A10 below adds a
+separate closed copied-recovery source without changing this direct receipt.
 
 This correction follows the original contract commit `cf1b47f` and precedes any
 native acceptance run. It changes no authority, target, test identity, count,
@@ -1272,3 +1275,215 @@ All 288 case identities, 39 new paths, 160 portable cases, 113 new native cases,
 unchanged. This amendment adds no target, action, capability, descriptor, process,
 command, retry, time allowance or connection/byte/transcript budget. No native
 gate was accepted before this amendment; S4.2c remains the same roadmap increment.
+
+
+### Pre-acceptance amendment A10: bounded copied-ledger recovery
+
+This independently reviewed amendment takes effect only when its complete
+prose/inventory pair is committed. That commit authorizes the specified
+implementation; it grants no runtime evidence or native acceptance. A09 remains
+unchanged.
+The predecessor contract/inventory hashes are respectively
+`3e97ae7b6b9f599ab30b4efb5d3ca455a2059baa601bf612a5cf26d2ea23bd90` and
+`65cec0e6dddb47afec9eab25be2f1e9b21549121c1273c92c698457f661c17ef` at source
+`a2ba2c2689db1477843499ac616cb7adf3cf165d`. The accepted v2 store intentionally
+refuses every retained journal on a read-only open. Keep that refusal, the real
+pre-COMMIT crash stimulus and all original failed artifacts unchanged.
+
+The raw-only N42 journal diagnostic receipt
+`d655c3cc06f9d4b42c2c82359731b6bdfbfa56cd9b2cd8f42aafabad39072dcb` observed
+eight unique records fitting the strict inactive classifier below, with matching
+checksums and original-main before-images. It did not open SQLite, run recovery or
+establish native acceptance. All helper execution/runtime/stage facts remain
+pending actual implementation and fresh validation.
+
+Only an actually observed permitted rollback-journal entry selects copied
+recovery after all roles/wrappers, supervisors and publications are resolved.
+No-journal recovery keeps its exact schema1 direct-readonly path. No arbitrary
+read-only error triggers a fallback. Consume at most one helper attempt per
+broker generation, including failed publication, and at most two per bundle.
+Neither branch restores grants, owners, sessions, budget, dispatches or release;
+no new ledger event, retry, target, network operation or credential is permitted.
+
+One fixed trusted host data-only helper runs after the authority graph closes.
+It is not a new isolated runtime role. Register pending publication and an
+exclusive parent-owned0700 scratch directory before Popen. Parent holds source
+directory capabilities but NEVER opens original main/journal files, even to
+hash them: closing a raw descriptor in a process already owning SQLite POSIX
+locks could disturb those locks. Raw source file custody exists only after
+fresh exec. Parent retains actual PID/start/pidfd, import-image observation,
+exit/reap and scratch ownership; EOF or a child assertion is not reaping.
+
+The chosen fixed entry is `_recovery_copy_main` in the existing
+`engagement_live_session` module, launched by the selected pinned interpreter
+with `-I -S -B` and a fixed stdlib-only bootstrap. The closed FD-purpose map is
+stdin0/config+release, stdout1/framing, stderr2/diagnostic, sealed source package3,
+source parent4/store5, and registered scratch parent6/store7. Environment is
+sanitized, all other inherited FDs close, and no caller entrypoint/module/path,
+SQL or command is accepted. This FD map and entry are chosen fixed constants,
+never caller-selectable authority. Config carries the closed
+purpose map of actual parent-registered inherited FDs, not caller-selected rights.
+Child bootstrap first duplicates all selected descriptors to distinct free FDs>=8,
+then remaps them to fixed0..7 and closes original/temporary descriptors outside
+that map. This avoids clobbering an input; no parent preexec_fn is used. Incoming
+capability numbers3..255 are distinct; the transient remap needs at most16FDs
+within32. Apply the32FD limit after remap and before imports/READY.
+
+The source package is canonical uncompressed JSON, at most2MiB including full
+selected runtime, metadata and exact52 source rows with canonical base64 bytes.
+Bootstrap checks actual seals15/O_RDONLY, whole SHA/size and every exact module,
+destination, size/hash and source-manifest binding, then installs a loader only
+for that exact recon_cockpit module map. No ZIP, pickle, marshal or project disk
+fallback is allowed. Later implementation moves ExecutionControl import only
+into its existing `_start_with_host_budget` use; no source module is added and
+accepted execution.py remains unchanged.
+
+Config is one8-byte big-endian length and at most4096 canonical bytes. After
+imports, helper emits READY as one8-byte length plus at most4096 canonical bytes.
+Before READY and after `_sqlite3` import, helper measures the default VFS through
+public C APIs of the exact already-loaded, pinned libsqlite3 source path. Use
+`ctypes.CDLL` with `RTLD_NOLOAD|RTLD_NOW|RTLD_LOCAL`, without fallback loading or
+GLOBAL visibility. Fix `sqlite3_vfs_find` argument/restypes to c_char_p/c_void_p,
+call NULL, and read only the public native-aligned prefix through zName, with
+pointer fields as c_void_p. Require nonnull pointers and iVersion1..3; read
+exactly5 name bytes and require `unix\0`, never an unbounded string/pNext walk.
+Parse `_sqlite3.sqlite_version`, a string, as exactly three dot-separated ASCII
+decimal components0..999, with no whitespace, suffix or leading zeros except0.
+Retain that base10 tuple. Fix `sqlite3_libversion_number` to no arguments/c_int
+and require its integer equal parsed major*1000000+minor*1000+patch.
+Retain observation time, exact library identity/hash/source, version integer and
+tuple, name bytes and struct version in READY. Parent's independent READY maps
+bind both actual `_sqlite3` and libsqlite3 to the selected accepted DT_NEEDED
+closure, with no second/unpinned SQLite; helper runtime retains the observation
+hash. No DB connection, configuration, register/unregister or private Connection
+pointer is used. Unsupported/default/name/version/mapping mismatch refuses
+before release. This observes VFS selection without probing any database.
+
+Parent verifies actual helper PID/start/pidfd and selected interpreter, stdlib,
+SQLite extension and all executable native mappings, plus an actual READY
+descriptor readback of exactly0..7, before sending one fixed release byte hex01
+and input EOF. Pipes bind the actual parent-created endpoint identities/access;
+directories bind held source/scratch identities, and package3 binds actual
+O_RDONLY/seals15. Keep package3 open through readback, then retain its actual
+closure before either copied SQLite handle opens. Only then may original raw files open. A
+result is one8-byte length plus at most2129920 canonical bytes, including nested
+JSON export<=2097152 and all remaining provenance/wrapper metadata<=32768.
+Export is not base64. Stdout total is exactly bounded by
+`(8+4096)+(8+2129920)=2134032`; stderr has a separate4096-byte bound. Drain both
+streams while running; extra/partial/malformed frames cannot be complete proof.
+
+Start one original2s budget before path choice, scratch allocation, source
+snapshot or spawn, clipped by the inherited outer deadline. Work gets at most
+1.5s; reserve0.5s within the SAME interval for exit/reap, scratch and descriptor
+closure. This covers imports, source locks/copy/hash, RW/RO constructors,
+snapshots, close, journal disposition, transfer and bounded validation. A late
+but real cleanup remains failed; no replacement interval repairs acceptance.
+One shared4000-callback allowance at1000 instructions spans both constructors
+and snapshots from first SQL. Only a local new-live `_progress` override may
+enforce this without modifying/monkeypatching accepted store code; local
+transaction callback resets cannot replenish the shared counter. Completed
+workflows use0..3999 callbacks; callback4000 is the first exhausted callback and
+must interrupt/refuse, matching accepted `_progress >= 4000`. Never allow4001.
+For success RW.before=0, RO.before=RW.after and final total=RO.after; all counters
+are monotone0..3999. Both successful stages have their exact read_write/read_only
+mode, nonnull ordered observations and actual closed=true.
+
+Helper limits are one process/one task,256MiB address space,2CPU seconds,32FDs,
+8MiB main,16MiB journal and24MiB total scratch data. RLIMIT_FSIZE begins at16MiB
+for copying, then BOTH soft/hard limits narrow to8MiB before copied SQLite RW
+open. This prevents transient main growth beyond8MiB during rollback; an
+existing<=16MiB journal may still be read/unlinked. Maxima are independent:
+a file within its size bound is not promised to fit complete provenance.
+
+Hold fixed private source parent/store directories; require only the main and
+optional journal, owned regular0600 single-link files, no symlink/extra entry,
+and stable held/named mode/size/mtime/ctime/identity. The source directory/main
+device+inode must match the selected broker's retained `held_store_directory`
+and `sqlite_main` descriptors. Host parent is not equated with namespace `/store`.
+Acquire nonblocking Linux OFD read locks on PENDING1073741824/1 and
+SHARED1073741826/510. NEVER lock RESERVED1073741825; query a conflicting write
+lock there using F_OFD_GETLK before and after copy, refusing an observed holder.
+Successful lock records bind those exact paired ranges, acquired status and
+null errno. Both RESERVED query inputs use l_pid0 and must return F_UNLCK,
+owner_pid0 and null errno. No POSIX/flock fallback or unsupported VFS is allowed. These queries are sampled
+observations, not proof no writer ever raced. Keep locks through exact
+source-after inventory/stamp/full-hash comparison; any journal drift refuses.
+
+Copy exact held bytes to distinct registered scratch inodes; original files
+are never writable or deleted. Before ANY SQLite copy open, retain and check
+the source/copy main headers: exact `SQLite format 3\0` magic, page_size4096,
+read/write version1 and positive whole-page size<=8MiB. This raw-byte check
+refuses unsupported WAL/format/page settings before SQLite could create WAL/SHM
+or a third scratch file; it never opens the original through SQLite.
+Before SQLite opens the copy, reject journal
+tails ending in `d9d505f920a163d7`, the SQLite super-journal trailer magic: accepted
+ATTACH0 admits no legitimate embedded external master path. Close every raw
+copied-main FD before a SQLite handle opens. Rehash raw copy only between closed
+RW and RO handles or after RO closes. Use unchanged accepted existing-store
+RW open/snapshot/close only, followed by a distinct read-only/query_only
+open/snapshot/close; owners differ from each other and all brokers, and snapshots
+match exactly. No create/request/session/reserve/complete method is allowed.
+
+After successful RW validation and actual closure, an absent journal permits RO.
+A survivor permits copy-only unlink only if unchanged in identity/hash/header,
+and copied main size/hash stayed unchanged through RW. A zero-length journal
+is separately classified. A nonempty inactive journal requires first12 header
+bytes zero, a28-byte header, zero padding through the sector boundary, page4096,
+power-of-two sector512..65536, and original_pages equal unchanged main_size/4096
+in1..2048. Its exact size is sector plus0..2048 records of4104 bytes, with no
+additional header or suffix. Each record has one unique page number within the
+original page count,4096-byte before-image and big-endian32-bit checksum.
+Checksum is header nonce plus bytes at page offsets4096-200*k for positive
+offsets, modulo2^32. Every checksum and before-image SHA must match its observed
+checksum and unchanged main page. Retain all indexed record facts, header,
+padding/trailer/full hashes and actual disposition. Any hot/nonzero/ambiguous
+survivor refuses. No inactive classification claims original hotness or actual
+rollback. Observe copy journal absence and unchanged main across unlink, then
+RO export/close; never delete the original journal.
+
+`evidence_contract.copied_recovery` pins the exact closed fields and joins.
+Cleanup schema1/direct recovery is unchanged. Cleanup schema2 adds1..2 helper
+observations for every attempted generation, including failed helpers, separate
+from the latest recovery export. Each helper retains the exact closed config,
+with canonical bytes/hash matching its recorded count/commitment and exact
+helper/broker/runtime/package/start/deadline bindings. Its original five inherited
+FD numbers resolve the parent launch registry and actual capability identities;
+they are not reconstructed from remapped READY3..7 or replaced by a bare digest.
+A copied receipt uses schema2/source
+`postcleanup_copied_recovery`, keeps common owner/start/finish/read_only/store
+identity/bytes/hash/state/closed fields for ONLY the final RO handle, and links
+one complete helper by UUID and canonical observation hash. Merge retains both
+generation records; a later failure cannot select an earlier success as its
+receipt. Each earlier RW/RO snapshot sequence/state must resolve its own exact
+validated prefix of retained final/recovery event history. Reconstruct canonical
+export bytes and the complete result body/frame with that retained work record,
+then compare exact sizes/hashes/header. Do not compare an earlier snapshot to
+the latest state, accept an unattested digest or claim nonexistent raw files.
+Missing reconstructible history is incomplete; contradictory history refuses. Null fields remain actual unobserved stages. A complete record requires
+actual process/runtime/stage/closure evidence, not supplied success flags.
+Unknown ownership blocks packaging; resolved failures retain timing/refusal
+facts and may remain failure-only diagnostics. Parent cleans only known scratch
+names through registered held identities after actual child reaping; unexpected
+entries retain failed cleanup/ownership rather than widening deletion.
+
+Count the one actual helper PID/start within existing cumulative limits:
+ordinary45+one helper<=47 per generation,<=94 across two sequential generations.
+No authority graph overlap preserves peak26processes/28tasks; no helper wrapper
+or isolated role is invented. Retain complete record provenance under32768 or
+refuse; never truncate to fit. Saved inspection opens no SQLite store and never
+executes the helper. A copied export never substitutes for a missing broker
+seal or acknowledgment and grants no live usefulness or additional case credit.
+
+Extend existing S10/S11/I02/I06/I12/C24 and fresh N42/N43/N44 obligations with
+source lock contention, same-process lock preservation, unsupported OFD/VFS,
+source/copy drift/alias/mode/link/size rejection, strict journal/trailer rules,
+one shared deadline/callback budget, helper publication/framing/timeout/exit/reap,
+scratch cleanup and exact saved provenance mutations. Legacy direct positives
+remain. Commit this complete reviewed pair before implementation; then fresh clean
+freeze, full required portable/native/CI/226 inspections and independent semantic
+closure remain mandatory. This contract asserts no helper execution or runtime
+observation.
+All288 case objects and26/18 parent proofs,160 new portable/113 new native/15
+accepted regressions,39 new paths/1140 tracked files/1093 unchanged accepted
+nonstatus files, authority and roadmap bounds remain unchanged. S4.2c remains
+unaccepted; S4.3 custody remains next.
