@@ -34,6 +34,11 @@ class _RecoveryError(Exception):
         super().__init__(code)
 
 
+def _recovery_environment():
+    """Disable host OpenSSL configuration before the fresh bootstrap imports."""
+    return {'LANG': 'C', 'LC_ALL': 'C', 'OPENSSL_CONF': ''}
+
+
 def _recovery_json(value):
     import json
     return json.dumps(value, sort_keys=True, separators=(',', ':'),
@@ -915,7 +920,7 @@ class _RecoveryOwner:
                 stdin=self.transport_fds['stdin_child'], stdout=self.transport_fds['stdout_child'],
                 stderr=self.transport_fds['stderr_child'], close_fds=True,
                 pass_fds=tuple(self.fds[name] for name in _RECOVERY_PURPOSES),
-                env={'LANG': 'C', 'LC_ALL': 'C'}, cwd='/')
+                env=_recovery_environment(), cwd='/')
             self.record['process'].update(publication_state='published', pid=self.process.pid,
                                           publication_resolved_at_ns=time.monotonic_ns())
         except BaseException as error:
@@ -1011,12 +1016,13 @@ class _RecoveryOwner:
                 or descriptors[3]['flags'] & getattr(os, 'O_PATH', 0)):
             raise _RecoveryError('source_package')
         bundle = self.session._runtime
+        broker = next(row for row in bundle['roles'] if row['role'] == 'broker')
+        native = {row['destination']: row for row in broker['native_files']+broker['extension_files']}
         allowed = {}
-        for role in (row for row in bundle['roles'] if row['role'] == 'broker'):
-            for row in role['native_files']+role['extension_files']:
-                previous = allowed.setdefault(row['source'], row)
-                if any(previous[key] != row[key] for key in ('size', 'sha256')):
-                    raise _RecoveryError('unsupported_runtime')
+        for row in native.values():
+            previous = allowed.setdefault(row['source'], row)
+            if any(previous[key] != row[key] for key in ('size', 'sha256')):
+                raise _RecoveryError('unsupported_runtime')
         images = {}
         inode_images = {}
         for source, row in allowed.items():
@@ -1042,6 +1048,18 @@ class _RecoveryOwner:
                 raise _RecoveryError('unsupported_runtime')
             for image in candidates:
                 mapped[image['destination']] = image
+        # Both selected loader aliases may identify one actual mapped source.
+        # Require the same source coverage here as the saved-evidence reader,
+        # before release can permit any raw original or copied database opens.
+        mapped_sources = {native[name]['source'] for name in mapped}
+        required_sources = {native[name]['source'] for name in broker['required_mapped_images']}
+        for prefix in ('_ctypes.', 'libffi.so'):
+            required = [row for name, row in native.items() if Path(name).name.startswith(prefix)]
+            if len(required) != 1:
+                raise _RecoveryError('unsupported_runtime')
+            required_sources.add(required[0]['source'])
+        if not required_sources <= mapped_sources:
+            raise _RecoveryError('unsupported_runtime')
         interpreter = _recovery_image(os.readlink(directory+'/exe'), bundle['python']['destination'], self.work_deadline_ns)
         if any(interpreter[key] != bundle['python'][key] for key in ('size', 'sha256')):
             raise _RecoveryError('unsupported_runtime')
@@ -1054,7 +1072,7 @@ class _RecoveryOwner:
         if (sqlite['destination'] not in mapped or mapped[sqlite['destination']] != sqlite
                 or vfs['library'] != images.get(vfs['library_source'])
                 or mapped.get(vfs['library']['destination']) != vfs['library']
-                or interpreter['destination'] not in mapped
+                or mapped.get(interpreter['destination']) != interpreter
                 or vfs['library_version'] != sum(n*m for n,m in zip(vfs['sqlite_module_version'], (1000000,1000,1)))):
             raise _RecoveryError('unsupported_runtime')
         tasks = sorted(int(value) for value in os.listdir(directory+'/task'))

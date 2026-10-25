@@ -634,6 +634,39 @@ and merge still pending. Preserve both original failures and the bounded
 diagnostic. This is still S4.2c; S4.3 synthetic custody remains next and real
 credentials remain deferred.
 
+Freeze thirty at `46430f6` passed all 160 portable cases and fresh N04 with both
+saved inspections. N42 passed the descriptor boundary, then refused an
+unsupported runtime before release or database work; actual helper cleanup
+completed within its original bound. A separate unreleased diagnostic using
+the exact frozen package retained the rejected executable mapping:
+`ossl-modules/legacy.so`, loaded outside the selected native closure. The host's
+OpenSSL configuration enables that provider. The original native capsule did
+not retain its rejected map, so the diagnostic's distinct process observations
+must not be substituted for it. The correction fixes an empty `OPENSSL_CONF`
+in the fresh helper environment before interpreter startup and aligns mandatory
+mapped-source and interpreter-identity checks with saved-evidence validation.
+It preserves exact unknown-image refusal and the selected runtime inventory.
+
+All four Linux hosted suites passed on freeze thirty. macOS failed a different,
+accepted-v1 external SQLite lock test at its unchanged transaction deadline,
+after all five blocked-probe assertions in the transaction body. The log does
+not retain per-probe timings. Preserve that failure without changing accepted
+test sources or extending deadlines. All 56 focused checks passed on the
+runtime correction with unchanged source hashes and no failures, errors or
+skips. The complete-startup regression reached the withheld release boundary
+after actual runtime validation and completed helper cleanup in 606 ms within
+the original two-second allowance. The pure saved-evidence runtime validator
+also accepted those observations. Independent artifact inspection confirmed
+the exact 52-source package, READY frame, mapped-image joins and actual reaping.
+Every required frozen validation gate remains pending for this correction.
+Before another frozen cycle, the focused gate must exercise complete production
+recovery-owner startup with a current pinned runtime: source packaging, process
+publication, native imports, VFS, exact descriptors, complete runtime validation
+and cleanup. It intercepts the release byte before writing it, using only fresh
+inert fixture files. Require the actual boundary and cleanup receipt within the
+original allowance; a portable test count without that receipt cannot pass this
+checkpoint. This focused regression grants no native acceptance.
+
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

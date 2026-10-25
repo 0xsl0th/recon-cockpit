@@ -739,8 +739,11 @@ def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
 def test_recovery_opens_fresh_owner_without_replenishing(tmp_path,monkeypatch):
     _recovery_payload_merge_cases()
     _recovery_frame_cases()
+    _recovery_environment_cases(tmp_path,monkeypatch)
+    _recovery_complete_startup_cases(tmp_path,monkeypatch)
     _recovery_import_fd_refusal_cases(monkeypatch)
     _recovery_ready_descriptor_cases(tmp_path,monkeypatch)
+    _recovery_observed_runtime_cases(monkeypatch)
     _recovery_lock_platform_cases(tmp_path,monkeypatch)
     _recovery_owner_coordination_cases(tmp_path,monkeypatch)
     _recovery_packaging_snapshot_cases(monkeypatch)
@@ -858,6 +861,339 @@ def _recovery_frame_cases():
         module._recovery_frame((4097).to_bytes(8,'big'),4096,1)
     assert caught.value.frame['frame_sha256']==digest((4097).to_bytes(8,'big'))
     assert caught.value.frame['declared_bytes'] is None
+
+
+def _recovery_complete_startup_cases(tmp_path,monkeypatch):
+    """Full startup when a focused driver supplies a genuine selected runtime.
+
+    Portable CI does not invent the fixed distribution's native dependencies.
+    Its unconditional environment/import and declared observer checks remain
+    separate. The focused driver must require this receipt to say executed.
+    """
+    import hashlib
+    import traceback
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    selected=os.environ.get('RECON_LIVE_TEST_RECOVERY_RUNTIME')
+    expected_sha=os.environ.get('RECON_LIVE_TEST_RECOVERY_RUNTIME_SHA256')
+    output=tmp_path/'recovery-complete-startup.json'
+    report={'schema_version':'1','acceptance':False,'executed':False,
+        'scope':'complete helper startup and parent runtime validation; release intercepted before write; no recovery work',
+        'initial_broker_readiness':'declared fixture binding actual private file/directory stat identities; no broker authority',
+        'release_boundary_reached':False,'runtime_validation_returned':False,'release_attempt_count':0,
+        'source_metadata_calls':0,'release_sent':False,'work':None,'result':None,'helper':None,
+        'raw_maps':[],'image_observations':[],'package':None,'observed_error':None,'cleanup_complete':False,
+        'parent_source_file_opens':0,
+        'parent_source_file_opens_scope':'os.open calls during owner.run only; post-run synthetic fixture integrity reads are separate',
+        'config_writes':[],'pure_runtime_validated':False}
+    def save():output.write_text(json.dumps(report,sort_keys=True,indent=2)+'\n',encoding='ascii')
+    if selected is None:
+        assert expected_sha is None
+        report['not_executed_reason']='No genuine runtime supplied to this portable invocation; not complete-startup validation.'
+        save();return
+    assert sys.platform=='linux' and expected_sha is not None
+    assert len(expected_sha)==64 and all(ch in '0123456789abcdef' for ch in expected_sha)
+    runtime_fd=os.open(selected,os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC)
+    try:
+        with os.fdopen(runtime_fd,'rb') as stream:runtime_raw=stream.read(c.MAX_CANONICAL+1)
+    except BaseException:
+        raise
+    assert len(runtime_raw)<=c.MAX_CANONICAL and hashlib.sha256(runtime_raw).hexdigest()==expected_sha
+    bundle=runtime.validate_runtime(json.loads(runtime_raw))
+    def source_pins():
+        result={}
+        for row in bundle['sources']:
+            raw=runtime._source_path(row['module']).read_bytes()
+            assert len(raw)==row['size']
+            result[row['module']]=hashlib.sha256(raw).hexdigest()
+        return result
+    report.update(executed=True,runtime_file_sha256=expected_sha,runtime_sha256=runtime.runtime_digest(bundle),
+        source_manifest_sha256=hashlib.sha256(module._recovery_json(bundle['sources'])).hexdigest(),source_pins_before=source_pins())
+    assert report['source_pins_before']=={row['module']:row['sha256'] for row in bundle['sources']}
+    parent=tmp_path/'complete-startup-source';parent.mkdir(mode=0o700)
+    directory=parent/'store';directory.mkdir(mode=0o700)
+    # These are inert test bytes, never a SQLite database. The real setup only
+    # stats them; the child cannot enter source custody without the release byte.
+    original={module._RECOVERY_MAIN:b'not a SQLite database; startup fixture only',module._RECOVERY_JOURNAL:b''}
+    for name,raw in original.items():
+        path=directory/name;path.write_bytes(raw);path.chmod(0o600)
+    held=directory.stat();main=(directory/module._RECOVERY_MAIN).stat();broker_id=uid(988)
+    readiness={'readiness':{'worker_ready':{'role':'broker','worker_id':broker_id},'parent_observation':{'descriptors':[
+        {'purpose':'held_store_directory','device':held.st_dev,'inode':held.st_ino},
+        {'purpose':'sqlite_main','device':main.st_dev,'inode':main.st_ino}]}}}
+    session=SimpleNamespace(_runtime=bundle,_broker=SimpleNamespace(_broker_id=broker_id,readiness=readiness),
+        _recovery_helpers=[],_host_evidence_budget=SimpleNamespace(_session_owners=[]))
+    session._host_evidence_budget._session_owners.append(session)
+    started=time.monotonic_ns();deadline=started+2*c.SECOND
+    parent_fd=os.open(parent,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW|os.O_CLOEXEC)
+    try:store_fd=os.open('store',os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW|os.O_CLOEXEC,dir_fd=parent_fd)
+    except BaseException:os.close(parent_fd);raise
+    owner=module._RecoveryOwner(session,parent_fd,store_fd,started,deadline)
+    report.update(started_at_ns=started,work_deadline_ns=owner.work_deadline_ns,deadline_ns=deadline)
+    write=module._recovery_write;package=module._recovery_package;proc_read=runtime._proc_read;image=module._recovery_image
+    source_metadata=owner._source_metadata;observe_runtime=owner._observe_runtime;real_open=os.open
+    class ReleaseBoundarySentinel(Exception):pass
+    def stop_release(fd,raw,limit):
+        if fd==owner.transport_fds.get('stdin_parent'):
+            if raw==b'\x01':
+                report['release_attempt_count']+=1;report['release_boundary_reached']=True
+                report['release_boundary_at_ns']=time.monotonic_ns()
+                report['release_attempt']={'fd':fd,'registered_stdin_fd':owner.transport_fds['stdin_parent'],
+                    'deadline_ns':limit,'bytes':len(raw),'hex':raw.hex()}
+                assert limit==owner.work_deadline_ns and report['runtime_validation_returned']
+                raise ReleaseBoundarySentinel()
+            report['config_writes'].append({'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),'deadline_ns':limit})
+        return write(fd,raw,limit)
+    def observe_package(value,control):
+        raw=package(value,control)
+        report['package']={'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),'source_count':len(value['sources'])}
+        return raw
+    def observe_source():
+        report['source_metadata_calls']+=1
+        return source_metadata()
+    def observe_all(ready):
+        try:value=observe_runtime(ready)
+        except BaseException as error:
+            report['runtime_validation_error']={'type':type(error).__name__,'code':getattr(error,'code',None),
+                'traceback':''.join(traceback.format_exception(error))[:16384]}
+            raise
+        report['runtime_validation_returned']=True
+        report['runtime_validation_returned_at_ns']=time.monotonic_ns()
+        return value
+    def observe_maps(fd,name,maximum):
+        raw=proc_read(fd,name,maximum)
+        if fd==owner.proc_directory and name=='maps':
+            assert len(report['raw_maps'])<2 and len(raw)<=262144
+            report['raw_maps'].append({'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),
+                'text':raw.decode('utf-8'),'observed_at_ns':time.monotonic_ns()})
+        return raw
+    def observe_image(path,destination,limit):
+        value=image(path,destination,limit)
+        assert len(report['image_observations'])<129
+        report['image_observations'].append({'source':str(path),'image':deepcopy(value),'deadline_ns':limit})
+        return value
+    def forbid_source_open(path,flags,*args,**kwargs):
+        if os.fspath(path) in (*original,*(str(directory/name) for name in original)):
+            report['parent_source_file_opens']+=1
+            raise AssertionError('parent must only stat the startup fixture files')
+        return real_open(path,flags,*args,**kwargs)
+    caught=None
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(module,'_recovery_write',stop_release);patch.setattr(module,'_recovery_package',observe_package)
+            patch.setattr(module,'_recovery_image',observe_image)
+            patch.setattr(runtime,'_proc_read',observe_maps);patch.setattr(owner,'_source_metadata',observe_source)
+            patch.setattr(owner,'_observe_runtime',observe_all);patch.setattr(module.os,'open',forbid_source_open)
+            try:owner.run()
+            except BaseException as error:
+                caught=error
+                report['observed_error']={'type':type(error).__name__,'code':getattr(error,'code',None),
+                    'traceback':''.join(traceback.format_exception(error))[:16384]}
+    finally:
+        report['helper']=deepcopy(owner.record)
+        report['work']=None if owner.record is None else owner.record['work']
+        report['result']=owner.result
+        report['release_sent']=owner.record is not None and owner.record['process']['release_sent_at_ns'] is not None
+        report['cleanup_complete']=bool(owner.resolved and owner.quiescent and owner.record is not None
+            and owner.record['cleanup']['status']=='complete' and owner.record['finished_at_ns']<=deadline)
+        report['owner_state']={'resolved':owner.resolved,'quiescent':owner.quiescent,'active':owner.active,
+            'owned_fd_names':sorted(owner.fds),'transport_fd_names':sorted(owner.transport_fds),
+            'publication_resolved':owner.publication.is_set(),
+            'pid':None if owner.process is None else owner.process.pid}
+        report['retained_stdout_bytes']=len(owner.stdout)
+        report['retained_stdout_hex']=bytes(owner.stdout[:4104]).hex()
+        report['retained_stdout_sha256']=hashlib.sha256(owner.stdout).hexdigest()
+        report['retained_stdout_complete']=len(owner.stdout)<=4104
+        report['retained_stderr_hex']=bytes(owner.stderr[:4096]).hex()
+        report['retained_stderr_sha256']=hashlib.sha256(owner.stderr).hexdigest()
+        report['retained_stderr_complete']=len(owner.stderr)<=4096
+        report['intentionally_failed_after_startup']=report['release_boundary_reached'] and not report['release_sent']
+        # Preserve the original observed startup/closure before any secondary
+        # integrity read can fail and obscure that evidence.
+        save()
+        try:
+            report['source_pins_after']=source_pins()
+            report['source_before_after_identical']=report['source_pins_before']==report['source_pins_after']
+            report['fixture_files_unchanged']=all((directory/name).read_bytes()==raw for name,raw in original.items())
+            report['remaining_parent_names']=sorted(path.name for path in parent.iterdir())
+        except BaseException as error:
+            report['post_run_integrity_error']={'type':type(error).__name__,'message':str(error)[:512]}
+            save();raise
+        save()
+    if report['runtime_validation_returned'] and report['cleanup_complete']:
+        from recon_cockpit.secure_agent import engagement_live_context as context
+        try:context._recovery_runtime(report['helper'],bundle)
+        except BaseException as error:
+            report['pure_runtime_validation_error']={'type':type(error).__name__,'code':getattr(error,'code',None),
+                'traceback':''.join(traceback.format_exception(error))[:16384]}
+            save();raise
+        report['pure_runtime_validated']=True;save()
+    assert isinstance(caught,module._RecoveryError) and caught.code=='publication',report['observed_error']
+    assert report['runtime_validation_returned'] and report['release_boundary_reached'] and report['release_attempt_count']==1
+    assert report['source_metadata_calls']==2 and report['parent_source_file_opens']==0
+    assert report['release_boundary_at_ns']<=owner.work_deadline_ns
+    assert report['pure_runtime_validated']
+    assert report['cleanup_complete'] and report['source_before_after_identical'] and report['fixture_files_unchanged']
+    assert report['remaining_parent_names']==['store'] and report['work'] is report['result'] is None and not report['release_sent']
+    helper=report['helper'];process=helper['process'];observed=helper['runtime']
+    assert helper['status']=='failed' and helper['error']=='publication' and helper['transfer']['ready']['complete']
+    assert report['retained_stdout_complete'] and report['retained_stderr_complete']
+    assert len(owner.stdout)==helper['transfer']['ready']['received_bytes'] and not owner.stderr
+    assert helper['transfer']['result']['received_bytes']==0 and process['release_sent_at_ns'] is None
+    assert report['release_attempt']=={'fd':helper['transports']['stdin']['parent']['fd'],
+        'registered_stdin_fd':helper['transports']['stdin']['parent']['fd'],
+        'deadline_ns':owner.work_deadline_ns,'bytes':1,'hex':'01'}
+    assert process['pidfd'] is not None and process['signal_sent_at_ns'] is not None and process['returncode']==-9
+    assert process['reaped_at_ns']<=helper['cleanup']['finished_at_ns']<=helper['finished_at_ns']<=deadline
+    assert [row['fd'] for row in observed['descriptors']]==list(range(8)) and observed['vfs']=='unix'
+    assert observed['interpreter'] in observed['mapped_images'] and report['raw_maps']
+    assert report['package']['source_count']==52 and report['package']['sha256']==helper['config']['source_package_sha256']
+    assert report['package']['bytes']==helper['config']['source_package_bytes']
+    framed=len(owner.config_raw).to_bytes(8,'big')+owner.config_raw
+    assert report['config_writes']==[{'bytes':len(framed),'sha256':hashlib.sha256(framed).hexdigest(),'deadline_ns':owner.work_deadline_ns}]
+
+
+def _recovery_environment_cases(tmp_path,monkeypatch):
+    # A fresh interpreter must receive the production environment before its
+    # first OpenSSL-backed import; changing os.environ afterward is too late.
+    hostile=tmp_path/'hostile-openssl.cnf'
+    hostile.write_text('openssl_conf = init\n[init]\nproviders = providers\n[providers]\n'
+        'legacy = legacy\n[legacy]\nactivate = 1\n')
+    expected={'LANG':'C','LC_ALL':'C','OPENSSL_CONF':''}
+    calls=[]
+    def published(*args,**kwargs):
+        calls.append((args,kwargs));return SimpleNamespace(pid=985)
+    with monkeypatch.context() as patch:
+        patch.setenv('OPENSSL_CONF',str(hostile));patch.setenv('OPENSSL_MODULES',str(tmp_path/'hostile-provider-directory'))
+        first=module._recovery_environment();second=module._recovery_environment()
+        assert first==second==expected and first is not second
+        first['OPENSSL_CONF']='changed by caller'
+        assert module._recovery_environment()==expected and os.environ['OPENSSL_CONF']==str(hostile)
+        now=time.monotonic_ns();owner=module._RecoveryOwner(SimpleNamespace(
+            _runtime={'python':{'source':sys.executable}}),9,10,now,now+2*c.SECOND)
+        owner.fds=dict(zip(module._RECOVERY_PURPOSES,range(8,13)))
+        owner.transport_fds={'stdin_child':20,'stdout_child':21,'stderr_child':22}
+        owner.record={'process':{}}
+        with patch.context() as launch:
+            launch.setattr(subprocess,'Popen',published)
+            owner._publish()
+        assert owner.publication.is_set() and owner.record['process']['publication_state']=='published'
+        assert len(calls)==1 and calls[0][1]['env']==expected
+        assert calls[0][0][0][-1]==module._RECOVERY_BOOTSTRAP
+        program='''import json,os,sys
+before={key:os.environ.get(key) for key in ('LANG','LC_ALL','OPENSSL_CONF','OPENSSL_MODULES')}
+import hashlib,_hashlib,ctypes,_ctypes,_sqlite3
+digest=_hashlib.openssl_sha256(b'').hexdigest()
+assert digest=='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+value={'before_import_environment':before,'digest':digest,'sqlite_version':_sqlite3.sqlite_version,
+ 'native_modules':{name:getattr(sys.modules[name],'__file__',None) for name in ('_hashlib','_ctypes','_sqlite3')},
+ 'maps':None,'maps_supported':sys.platform=='linux'}
+if value['maps_supported']:
+ with open('/proc/self/maps','rb') as stream:raw=stream.read(262145)
+ assert len(raw)<=262144
+ value['maps']=raw.decode('utf-8')
+print(json.dumps(value,sort_keys=True,separators=(',',':')))
+'''
+        result=subprocess.run([sys.executable,'-I','-S','-B','-c',program],
+            env=module._recovery_environment(),capture_output=True,timeout=3)
+        assert result.returncode==0 and not result.stderr,result.stderr.decode('utf-8',errors='replace')
+        observed=json.loads(result.stdout)
+    assert observed['before_import_environment']=={**expected,'OPENSSL_MODULES':None}
+    assert all(observed['native_modules'].values())
+    if observed['maps_supported']:
+        assert '/ossl-modules/legacy.so' not in observed['maps']
+    (tmp_path/'recovery-fresh-import-environment.json').write_text(json.dumps(observed,sort_keys=True)+'\n')
+
+
+def _recovery_observed_runtime_cases(monkeypatch):
+    """Declared OS/image facts through the real producer, not native evidence."""
+    import ctypes  # Initialize on the actual platform before any OS modelling.
+    import fcntl
+    import resource
+    import stat
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    from test_secure_engagement_live_runtime import declared_runtime
+    base=declared_runtime();broker=next(row for row in base['roles'] if row['role']=='broker')
+    libc={'source':'/usr/lib/libc.so.6','destination':'/usr/lib/libc.so.6','size':1,'sha256':'c'*64}
+    sqlite={'source':'/usr/lib/libsqlite3.so.0','destination':'/usr/lib/libsqlite3.so.0','size':1,'sha256':'d'*64}
+    broker['native_files'].extend((libc,sqlite));broker['required_mapped_images'].append(libc['destination'])
+    loader=next(row for row in broker['native_files'] if 'ld-linux' in row['destination'])
+    alias={**loader,'destination':'/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2'}
+    broker['native_files'].append(alias);broker['required_mapped_images'].append(alias['destination'])
+    broker['native_files'].sort(key=lambda row:row['destination']);broker['required_mapped_images'].sort()
+    runtime.validate_runtime(base)
+    for variant in ('complete','missing_libc','missing_loader','missing_ctypes','missing_libffi',
+            'unknown_provider','interpreter_identity','ambiguous_ctypes','ambiguous_libffi'):
+        bundle=deepcopy(base);selected=next(row for row in bundle['roles'] if row['role']=='broker')
+        if variant.startswith('ambiguous_'):
+            key='extension_files' if variant=='ambiguous_ctypes' else 'native_files'
+            prefix='_ctypes.' if key=='extension_files' else 'libffi.so'
+            original=next(row for row in selected[key] if Path(row['destination']).name.startswith(prefix))
+            selected[key].append({**original,'source':original['source']+'.other','destination':original['destination']+'.other'})
+        files=selected['native_files']+selected['extension_files'];by_source={}
+        for row in files:by_source.setdefault(row['source'],row)
+        device=os.makedev(1,2)
+        images={source:{'destination':row['destination'],'device':device,'inode':200+index,
+            'mode':stat.S_IFREG|0o555,'size':row['size'],'sha256':row['sha256']}
+            for index,(source,row) in enumerate(by_source.items())}
+        omitted={'missing_libc':libc['source'],'missing_loader':loader['source'],
+            'missing_ctypes':next(row['source'] for row in files if Path(row['destination']).name.startswith('_ctypes.')),
+            'missing_libffi':next(row['source'] for row in files if Path(row['destination']).name.startswith('libffi.so'))}.get(variant)
+        maps=''.join(f'{4096+index*4096:x}-{8192+index*4096:x} r-xp 00000000 01:02 {image["inode"]} {source}\n'
+            for index,(source,image) in enumerate(images.items()) if source!=omitted)
+        if variant=='unknown_provider':maps+='ff000-ff100 r-xp 00000000 01:02 999 /unselected/ossl-modules/legacy.so\n'
+        descriptors=[];transports={}
+        for fd,purpose in enumerate(module._RECOVERY_FD_PURPOSES):
+            kind='pipe' if fd<3 else 'regular' if fd==3 else 'directory'
+            mode=(stat.S_IFIFO if fd<3 else stat.S_IFREG if fd==3 else stat.S_IFDIR)|0o600
+            descriptors.append({'fd':fd,'purpose':purpose,'kind':kind,'device':1,'inode':700+fd,
+                'mode':mode,'flags':os.O_RDONLY if fd==0 or fd>=3 else os.O_WRONLY})
+            if fd<3:transports[('stdin','stdout','stderr')[fd]]={'child':{**descriptors[-1],'fd':20+fd}}
+        now=time.monotonic_ns();config={'helper_id':uid(986),'broker_id':uid(987),'runtime_sha256':'a'*64,
+            'source_manifest_sha256':'b'*64,'source_package_sha256':'d'*64,'source_package_bytes':1024}
+        vfs={'observed_at_ns':now,'library_source':sqlite['source'],'library':images[sqlite['source']],
+            'library_version':3046001,'sqlite_module_version':[3,46,1],'vfs_name':'unix','vfs_name_hex':'756e697800','vfs_struct_version':3}
+        ready={'schema_version':'1','kind':'copied_ledger_recovery_ready',**{k:v for k,v in config.items() if k!='source_package_bytes'},
+            'pid':985,'observed_at_ns':now,'default_vfs':vfs}
+        owner=module._RecoveryOwner(SimpleNamespace(_runtime=bundle),9,10,now,now+2*c.SECOND)
+        owner.fds=dict(zip(module._RECOVERY_PURPOSES,range(8,13)));owner.process=SimpleNamespace(pid=985)
+        owner.record={'config':config,'transports':transports,'process':{}};reads={};reached=[]
+        class SourceBoundary(Exception):pass
+        def stop():reached.append(True);raise SourceBoundary()
+        def image(path,destination,deadline):
+            reads[path]=reads.get(path,0)+1
+            result={**images[path],'destination':destination}
+            if variant=='interpreter_identity' and path==bundle['python']['source'] and reads[path]>1:result['inode']+=1
+            return result
+        limits={resource.RLIMIT_AS:(268435456,268435456),resource.RLIMIT_CPU:(2,2),
+            resource.RLIMIT_NOFILE:(32,32),resource.RLIMIT_FSIZE:(16777216,16777216)}
+        real_stat=os.stat
+        def selected_stat(path,*args,**kwargs):
+            if path==bundle['stdlib']['path']:
+                return SimpleNamespace(st_dev=bundle['stdlib']['device'],st_ino=bundle['stdlib']['inode'],
+                    st_mode=bundle['stdlib']['mode'],st_uid=1000,st_gid=1000)
+            return real_stat(path,*args,**kwargs)
+        with monkeypatch.context() as patch:
+            patch.setattr(owner,'_check_pin',lambda:None);patch.setattr(owner,'_source_metadata',stop)
+            patch.setattr(runtime,'_fd_inventory',lambda *args,**kwargs:deepcopy(descriptors))
+            patch.setattr(module,'_recovery_descriptor',lambda fd,purpose,number=None:deepcopy(descriptors[number]))
+            patch.setattr(fcntl,'F_GET_SEALS',getattr(fcntl,'F_GET_SEALS',1034),raising=False)
+            patch.setattr(fcntl,'fcntl',lambda fd,command:15)
+            patch.setattr(module,'_recovery_image',image)
+            patch.setattr(runtime,'_proc_read',lambda directory,name,maximum:maps.encode())
+            patch.setattr(module.os,'readlink',lambda path:bundle['python']['source'])
+            patch.setattr(module.os,'listdir',lambda path:['985'])
+            patch.setattr(module.os,'stat',selected_stat)
+            patch.setattr(resource,'prlimit',lambda pid,which:limits[which],raising=False)
+            if variant=='complete':
+                with pytest.raises(SourceBoundary):owner._observe_runtime(ready)
+            else:
+                with pytest.raises(module._RecoveryError,match='unsupported_runtime'):owner._observe_runtime(ready)
+        assert bool(reached)==(variant=='complete'),variant
+        if reached:
+            observed=owner.record['runtime'];assert len(observed['descriptors'])==8
+            assert observed['vfs']=='unix' and observed['interpreter'] in observed['mapped_images']
+            # Both selected loader aliases resolve to one source identity.
+            assert any(row['inode']==images[loader['source']]['inode'] for row in observed['mapped_images'])
 
 
 def _recovery_import_fd_refusal_cases(monkeypatch):
