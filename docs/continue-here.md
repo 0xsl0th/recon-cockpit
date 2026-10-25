@@ -541,6 +541,27 @@ All 100 affected portable tests passed, and final independent source review
 found no open code issues. These corrections require another clean freeze and
 fresh required validation. All failed native and focused artifacts remain
 retained without acceptance credit.
+
+Freeze twenty-six at `167ebbd` passed all 160 portable cases, fresh N04, N39,
+N36 and N37, plus all five complete hosted suites. Independent physical review
+confirmed N39's full charge, unresolved outcome and seven reaped payloads and
+wrappers within both cleanup bounds. N38 stopped the batch at its case predicate:
+the actual pending dispatch was denied as revoked by the fresh reservation-state
+check before the later periodic watch. It had no reservation, GO or useful work,
+and complete cleanup. Replay incorrectly required that later watch record.
+
+The narrow N38 correction binds one pending request, exact acknowledgment and
+fixed reserve phase to the independently committed revoke. It then requires
+either the matching broker denial and host refusal, or the matching changed
+watch, lifecycle stop and host refusal. Both paths require waiting-child evidence,
+no effect and complete cleanup. Host pending-result observations do not claim
+that the broker's later `guarded_go` ran. Distinct Prepared digests, original
+bounds, phase clocks and actual journal ordering remain explicit. All 20 evidence
+tests passed, including 110 adversarial checks and valid scheduling variations.
+One separately retained bounded read-only diagnostic confirmed the correction
+on the unchanged failed bundle with a denied outcome and zero useful operations;
+the original failure remains preserved and receives no acceptance credit.
+Another clean reviewed freeze and fresh required validation remain necessary.
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

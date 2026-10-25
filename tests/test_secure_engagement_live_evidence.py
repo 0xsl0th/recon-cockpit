@@ -888,6 +888,7 @@ def test_replays_ledger_and_broker_state_together():
 
 def test_requires_single_winner_and_durable_race_order():
     _changed_stop_cancellation_cases()
+    _external_revocation_race_cases()
     from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
     from recon_cockpit.secure_agent import engagement_live_witness as witness
     session,state=opened();p=c.derive_prepared(session,'http_identify',dispatch_id=uid(8),clock=session['binding']['clock_anchor'])
@@ -1012,6 +1013,250 @@ def _changed_stop_cancellation_cases():
             if operation=='SESSION_STOP':
                 stop['row']['data']['frame']['body']['session_id']=uid(4)
                 assert not e._changed_stop_cancellation(attempt,[watch],[stop],operations)
+
+
+def _external_revocation_race_cases():
+    """Declared N38 facts exercise the full predicate, not a native witness.
+
+    Real ledger transitions and unmocked transcript/history/cleanup checks keep
+    the two failure layers separate: direct reserve denial can beat the watch.
+    """
+    from test_secure_engagement_live_runtime import declared_readiness,declared_cleanup
+    from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    manifest,members=denied_fixture()
+    loaded={name:json.loads(value) if name.endswith('.json') else value for name,value in members.items()}
+    loaded['manifest.json']=manifest
+    op=loaded['results.json']['operations'][0];p=op['prepared'];env=p['envelope']
+    before=deepcopy(loaded['final-ledger.json']);digest=c.prepared_digest(p);at=11*c.SECOND
+    revoke={'schema_version':'2','engagement_id':env['engagement_id'],'event_id':uid(900),
+        'operation':'revoke','expected_revision':env['revision'],'expected_generation':env['generation'],'body':None}
+    final,committed=ledger._apply(before,revoke);loaded['final-ledger.json']=final
+    op['result']['reason']='engagement_live_revoked'
+    case=e._case('S42C-N38')
+    manifest.update(case_id=case['id'],configuration='A',evidence_class='owned_gate')
+    configuration={'case_id':case['id'],'variant':case['variant'],'role':'broker'}
+    loaded['runtime.json']['instrumentation']=[{'kind':'sealed_fault','source_sha256':'b'*64,
+        'configuration':configuration,'configuration_sha256':sha(raw(configuration))}]
+    proof={'schema_version':'1','case_id':case['id'],'variant':case['variant'],
+        'dispatch_ids':[env['dispatch_id']],'before_state_sha256':before['events'][-1]['receipt']['state_sha256'],
+        'after_state_sha256':committed['state_sha256'],'recovery_state_sha256':None,'transcript_refs':[]}
+    bundle=loaded['runtime.json']['runtime'];ready={}
+    for index,role in enumerate(('launcher','endpoint','nmap','admission')):
+        ready[role]=declared_readiness(bundle,role,pid=600+index*10,worker_id=uid(600+index))
+    loaded['processes.json']['readiness'].extend(ready.values())
+    loaded['cleanup.json']['receipts']=[declared_cleanup(row,started=12*c.SECOND,finished=12_100_000_000)
+        for row in loaded['processes.json']['readiness']]
+    launcher=ready['launcher']['worker_ready']['worker_id']
+    # The predicate consumes declared, prevalidated context. Keep its complete
+    # allocation/join graph explicit rather than bypassing _all_reaped.
+    for index,(name,(role,_,fd)) in enumerate(context._CHILD_SLOTS.items()):
+        worker=ready[role]['worker_ready']['worker_id'] if name in ('identify_client','identify_admission') else uid(620+index)
+        def endpoint(inode):return {'device':1,'inode':inode,'mode':stat.S_IFSOCK|0o600,'flags':2050}
+        loaded['processes.json']['child_slots'].append({'schema_version':'1','broker_id':env['broker_id'],
+            'session_id':env['session_id'],'launcher_id':launcher,'child_slot':name,'role':role,'worker_id':worker,
+            'prepared_sha256':None,'bootstrap':None,'entry_sha256':None,
+            'pair':{'launcher_fd':fd,'request_endpoint':endpoint(70000+2*index),'child_endpoint':endpoint(70001+2*index)}})
+    loaded['cleanup.json']['supervisors']=[{'schema_version':'1','broker_id':env['broker_id'],
+        'session_id':env['session_id'],'launcher_id':launcher,'host_observer':ready['launcher']['parent_observation']['observer'],
+        'thread_native_id':601,'thread_started_at_ns':900000000,'state':'joined',
+        'first_stop_requested_at_ns':12*c.SECOND,'cleanup_started_at_ns':12*c.SECOND,
+        'cleanup_finished_at_ns':12_200_000_000,'cleanup_deadline_ns':13_900_000_000,
+        'join_attempted':True,'thread_alive_observed':False,'channel_closed':True,'pending_slots':[],'status':'complete'}]
+    def clock(when):
+        anchor=env['clock_anchor']
+        return {'mono_before_ns':when-1,'mono_after_ns':when,
+            'utc_ns':anchor['utc_ns']+when-anchor['mono_after_ns']}
+    def row(kind,data,when,source='broker_memfd',identified=True):
+        return {'source':source,'row':{'schema_version':'1','broker_id':env['broker_id'],
+            'observer_id':env['broker_id'],'session_id':env['session_id'] if identified else None,
+            'dispatch_id':env['dispatch_id'] if identified else None,'row_sequence':1,
+            'observed_at_ns':when,'kind':kind,'data':data}}
+    def phase(name,stage,when,related,reason=None,source='role_observer'):
+        return row('phase',{'phase':name,'stage':stage,'reason':reason,'related_sha256':related,
+            'original_deadline_ns':env['action_deadline_ns'],'clock':clock(when-1)},when,source)
+    def packet(operation,body,when,*,direction='sent',role='ingress',channel=uid(98),sequence=1,identified=True):
+        return row('protocol',{'channel_role':role,'direction':direction,'frame':{'schema_version':'1',
+            'channel_id':channel,'sequence':sequence,'operation':operation,'body':body}},when,identified=identified)
+    prepared_receipt={'schema_version':'1','prepared_sha256':digest,'envelope_sha256':c.envelope_digest(env),
+        'launcher_ready_sha256':sha(raw(ready['launcher']['worker_ready'])),
+        'endpoint_ready_sha256':sha(raw(ready['endpoint'])),'client_ready_sha256':sha(raw(ready['nmap'])),
+        'admission_ready_sha256':sha(raw(ready['admission'])),'admission_result_sha256':'c'*64,
+        'admission_permit_sha256':'d'*64,'ready_at_ns':at,'preparation_deadline_ns':env['action_deadline_ns']}
+    records={
+        'prepared':packet('PREPARED',prepared_receipt,at+1,direction='received',role='launcher',channel=launcher),
+        'request':packet('DISPATCH',{'prepared_sha256':digest,'reference_sha256':'f'*64,
+            'consume_sequence':1,'audit_sequence':1},at+10,direction='received',identified=False),
+        'pending':packet('DISPATCH',{'request_sequence':1,'status':'pending','code':None,
+            'data':{'dispatch_id':env['dispatch_id']}},at+11,sequence=2),
+        # Broker fixed reserve/begin hashes canonical Prepared bytes. Ingress
+        # and host guard use the distinct domain-separated prepared_digest.
+        'reserve':phase('reserve','begin',at+12,sha(raw(p)),source='broker_memfd'),
+        'reply':packet('DISPATCH',{'request_sequence':1,'status':'ok','code':None,'data':deepcopy(op['result'])},at+29,sequence=3),
+        'commit':phase('watch','end',at+20,committed['state_sha256']),
+        'begin':phase('guard','begin',at+21,digest),
+        'refused':phase('guard','refused',at+31,digest,'engagement_live_revoked')}
+    def evaluate(value,observed,selected):
+        parts=[];refs=[]
+        for segment,(source,broker,status) in enumerate((('broker_memfd',env['broker_id'],'sealed_complete'),
+                                                        ('role_observer',None,'observer_complete'))):
+            values=[x['row'] for x in observed.values() if x['source']==source]
+            for sequence,item in enumerate(values,1):
+                item['row_sequence']=sequence;refs.append({'segment':segment,'row_sequence':sequence})
+            parts.append((b''.join(raw(item)+b'\n' for item in values),source,broker,status))
+        selected['transcript_refs']=refs;value['results.json']['core_proofs']=[selected]
+        # Every mutation receives fresh byte/segment/export commitments so an
+        # unrelated stale hash cannot supply the rejection under test.
+        for export in value['cleanup.json']['exports']:
+            name=export['reference']['phase']+'-ledger.json';encoded=raw(value[name])
+            export['reference'].update(bytes=len(encoded),sha256=sha(encoded))
+        encoded={name:raw(item) if name.endswith('.json') else item for name,item in value.items() if name!='manifest.json'}
+        with_transcript(value['manifest.json'],encoded,parts);value['transcript.jsonl']=encoded['transcript.jsonl']
+        return e._evaluate_core_proof(value,selected,{'dispatches':{env['dispatch_id']:{}}})
+    assert records['request']['row']['observed_at_ns']<records['commit']['row']['observed_at_ns']
+    assert not any(x['row']['kind']=='watch' for x in records.values())
+    assert evaluate(deepcopy(loaded),deepcopy(records),deepcopy(proof)), 'N38 direct reserve denial without changed watch'
+    # The terminal broker reply may finish before the host observes its pending
+    # result. Only commit-before-denial and commit-before-host-attempt are needed.
+    early_reply=deepcopy(records);early_reply['reply']['row']['observed_at_ns']=at+20
+    assert evaluate(deepcopy(loaded),early_reply,deepcopy(proof))
+    for route in ('direct','watch'):
+        basis=deepcopy(loaded);original=deepcopy(records)
+        if route=='watch':
+            basis['results.json']['operations'][0]['result']=None;original.pop('reply')
+            # Ordinary lifecycle observations have no body.reason. They remain
+            # in the complete segment while STOP selection ignores them.
+            original['role_observed']=packet('ROLE_OBSERVED',{'slot_index':0,'role':'launcher',
+                'readiness':ready['launcher']},at+13,role='lifecycle',channel=env['broker_id'],identified=False)
+            original['watch']=row('watch',{'clock':clock(at+24),'scheduled_at_ns':at+22,
+                'started_at_ns':at+23,'finished_at_ns':at+24,'ledger_sequence':committed['sequence'],
+                'ledger_state_sha256':committed['state_sha256'],'status':'changed','reason':'engagement_live_revoked'},at+25)
+            original['stop']=packet('BROKER_STOP',{'reason':'engagement_live_revoked','observed_at_ns':at+26,
+                'cleanup_deadline_ns':at+1_900_000_026},at+27,role='lifecycle',channel=env['broker_id'],identified=False)
+            assert evaluate(deepcopy(basis),deepcopy(original),deepcopy(proof)), 'N38 actual watch/STOP without denial ACK'
+        # The broker journals a sent packet after sending it. Host sampling
+        # can interleave before that journal row; the later host refusal row
+        # remains the upper bound for this cross-process observation.
+        delayed_record=deepcopy(original)
+        terminal=delayed_record['reply' if route=='direct' else 'stop']['row']
+        terminal['observed_at_ns']=at+30
+        refusal=delayed_record['refused']['row']
+        assert refusal['data']['clock']['mono_before_ns']<terminal['observed_at_ns']<refusal['observed_at_ns']
+        assert evaluate(deepcopy(basis),delayed_record,deepcopy(proof)), (route,'terminal journal after host clock sample')
+        common=('missing_commit','commit_digest','commit_source','commit_observer','commit_broker','commit_session',
+            'commit_dispatch','commit_deadline','late_commit','missing_begin','begin_digest','begin_broker','begin_session',
+            'begin_dispatch','begin_before_commit','missing_refusal','refusal_digest','refusal_reason','refusal_before_commit',
+            'missing_request','request_digest','missing_pending','pending_channel','pending_sequence','pending_dispatch',
+            'missing_reserve_begin','reserve_digest','reserve_after_commit','reserved','extra_event','released','armed',
+            'missing_waiting','waiting_hash','native_started','client_result','meter','capture','incomplete_cleanup',
+            'reserve_future_clock','commit_future_clock','refusal_future_clock')
+        extra=('missing_reply','reply_channel','reply_sequence','reply_dispatch','reply_digest','reply_reason',
+               'reply_outcome','reply_before_commit','reply_after_refusal','result_mismatch',
+               'result_broker','result_session','result_dispatch','result_slot','result_digest') if route=='direct' else (
+               'missing_watch','watch_sequence','watch_digest','watch_reason','watch_before_commit',
+               'missing_stop','stop_channel','stop_reason','stop_before_watch','stop_body_before_watch','stop_after_refusal')
+        for variant in (*common,*extra):
+            value=deepcopy(basis);changed=deepcopy(original);selected=deepcopy(proof)
+            operation=value['results.json']['operations'][0]
+            if variant.startswith('missing_'):
+                key={'refusal':'refused','reserve_begin':'reserve','waiting':'prepared'}.get(variant[8:],variant[8:])
+                changed.pop(key)
+            elif variant in ('commit_digest','begin_digest','refusal_digest','reserve_digest'):
+                key=variant.split('_')[0];key='refused' if key=='refusal' else key
+                changed[key]['row']['data']['related_sha256']=digest if key=='reserve' else 'e'*64
+            elif variant.endswith('_future_clock'):
+                key=variant.split('_')[0];key='refused' if key=='refusal' else key
+                phase_row=changed[key]['row']
+                phase_row['data']['clock']=clock(phase_row['observed_at_ns']+2)
+            elif variant.startswith('commit_') and variant.split('_')[1] in ('source','observer','broker','session','dispatch','deadline'):
+                key=variant.split('_')[1]
+                if key=='source':changed['commit']['source']='broker_memfd'
+                elif key=='deadline':changed['commit']['row']['data']['original_deadline_ns']=env['action_deadline_ns']-1
+                else:changed['commit']['row'][key+'_id']=uid(999)
+            elif variant.startswith('begin_') and variant.split('_')[1] in ('broker','session','dispatch'):
+                changed['begin']['row'][variant.split('_')[1]+'_id']=uid(999)
+            elif variant in ('late_commit','begin_before_commit','refusal_before_commit','reserve_after_commit'):
+                key,when={'late_commit':('commit',at+32),'begin_before_commit':('begin',at+19),
+                    'refusal_before_commit':('refused',at+19),'reserve_after_commit':('reserve',at+22)}[variant]
+                changed[key]['row']['observed_at_ns']=when;changed[key]['row']['data']['clock']=clock(when-1)
+            elif variant=='refusal_reason':changed['refused']['row']['data']['reason']='engagement_live_cancelled'
+            elif variant=='request_digest':changed['request']['row']['data']['frame']['body']['prepared_sha256']='e'*64
+            elif variant in ('pending_channel','pending_sequence','pending_dispatch'):
+                frame=changed['pending']['row']['data']['frame']
+                if variant=='pending_channel':frame['channel_id']=uid(999)
+                elif variant=='pending_sequence':frame['body']['request_sequence']=2
+                else:frame['body']['data']['dispatch_id']=uid(999)
+            elif variant=='extra_event':
+                request=deepcopy(before['events'][-1]['request'])
+                request['event_id']=uid(903);request['body'].update(session_id=uid(904),clock=clock(at-1))
+                extra,_=ledger._apply(before,request)
+                value['final-ledger.json'],revoked=ledger._apply(extra,revoke)
+                selected['after_state_sha256']=revoked['state_sha256']
+                changed['commit']['row']['data']['related_sha256']=revoked['state_sha256']
+                if route=='watch':changed['watch']['row']['data'].update(ledger_sequence=revoked['sequence'],ledger_state_sha256=revoked['state_sha256'])
+            elif variant in ('reserved','released','armed'):
+                reserved,receipt=ledger._apply(before,{'schema_version':'2','engagement_id':env['engagement_id'],
+                    'event_id':uid(901),'operation':'reserve','expected_revision':1,'expected_generation':0,
+                    'body':{'owner_id':env['ledger_owner_id'],'session_id':env['session_id'],'dispatch_id':env['dispatch_id'],
+                        'slot':env['slot'],'clock':clock(at-1),'approval':{'broker_id':env['reviewer_id'],'consume_sequence':1,'witness_sha256':'a'*64},
+                        'audit':{'writer_id':uid(902),'audit_sequence':1,'event_sha256':'b'*64}}})
+                if variant=='reserved':
+                    value['final-ledger.json'],revoked=ledger._apply(reserved,revoke)
+                    selected['after_state_sha256']=revoked['state_sha256']
+                    changed['commit']['row']['data']['related_sha256']=revoked['state_sha256']
+                    if route=='watch':changed['watch']['row']['data'].update(ledger_sequence=revoked['sequence'],ledger_state_sha256=revoked['state_sha256'])
+                else:
+                    release={'schema_version':'1','broker_id':env['broker_id'],'ledger_owner_id':env['ledger_owner_id'],
+                        'session_id':env['session_id'],'dispatch_id':env['dispatch_id'],'envelope_sha256':c.envelope_digest(env),
+                        'prepared_sha256':digest,'reservation_event_id':receipt['event_id'],'reservation_sequence':receipt['sequence'],
+                        'reservation_state_sha256':receipt['state_sha256'],'approval_witness_sha256':'a'*64,'audit_witness_sha256':'b'*64,
+                        'guard_clock':clock(at+21),'effective_lease_deadline_ns':20*c.SECOND,
+                        'effect_stop_ns':c.effect_stop(p,20*c.SECOND),'release_sequence':1}
+                    changed['release']=packet('GO' if variant=='released' else 'ARM',
+                        release if variant=='released' else {'release':release,'slot':env['slot']},at+22,
+                        role='launcher' if variant=='released' else 'arm',channel=launcher)
+            elif variant=='waiting_hash':changed['prepared']['row']['data']['frame']['body']['client_ready_sha256']='e'*64
+            elif variant=='native_started':
+                parent=deepcopy(ready['nmap']['parent_observation']);parent['stage']='native'
+                value['processes.json']['native']=[{'schema_version':'1','role':'nmap','waiting_image':parent['executable'],
+                    'parent_observation':parent,'observed_at_ns':at+22}]
+            elif variant in ('client_result','meter','capture'):
+                operation[{'client_result':'client','capture':'host_capture'}.get(variant,variant)]={}
+            elif variant=='incomplete_cleanup':value['cleanup.json']['receipts'][0]['status']='failed'
+            elif variant.startswith('reply_'):
+                frame=changed['reply']['row']['data']['frame'];body=frame['body']
+                if variant=='reply_channel':frame['channel_id']=uid(999)
+                elif variant=='reply_sequence':body['request_sequence']=2
+                elif variant=='reply_dispatch':body['data']['dispatch_id']=uid(999)
+                elif variant=='reply_digest':body['data']['envelope_sha256']='e'*64
+                elif variant=='reply_reason':body['data']['reason']='engagement_live_allowance_exhausted'
+                elif variant=='reply_outcome':body['data']['outcome']='unresolved'
+                else:changed['reply']['row']['observed_at_ns']=at+19 if variant=='reply_before_commit' else at+32
+            elif variant=='result_mismatch':operation['result']['reason']='engagement_live_allowance_exhausted'
+            elif variant.startswith('result_'):
+                key=variant.split('_')[1]
+                field='envelope_sha256' if key=='digest' else 'slot' if key=='slot' else key+'_id'
+                operation['result'][field]='e'*64 if key=='digest' else 'http_headers' if key=='slot' else uid(999)
+                changed['reply']['row']['data']['frame']['body']['data']=deepcopy(operation['result'])
+            elif variant.startswith('watch_'):
+                data=changed['watch']['row']['data']
+                if variant=='watch_sequence':data['ledger_sequence']-=1
+                elif variant=='watch_digest':data['ledger_state_sha256']='e'*64
+                elif variant=='watch_reason':data['reason']='engagement_live_revision_changed'
+                else:
+                    changed['watch']['row']['observed_at_ns']=at+19
+                    data.update(scheduled_at_ns=at+15,started_at_ns=at+16,finished_at_ns=at+17,clock=clock(at+17))
+            else:
+                frame=changed['stop']['row']['data']['frame']
+                if variant=='stop_channel':frame['channel_id']=uid(999)
+                elif variant=='stop_reason':frame['body']['reason']='engagement_live_revision_changed'
+                elif variant=='stop_body_before_watch':frame['body']['observed_at_ns']=at+24
+                else:
+                    when=at+24 if variant=='stop_before_watch' else at+32
+                    changed['stop']['row']['observed_at_ns']=when;frame['body']['observed_at_ns']=when
+            try:accepted=evaluate(value,changed,selected)
+            except c.LiveError as error:assert error.code=='engagement_live_evidence_invalid',(route,variant)
+            else:assert not accepted,(route,variant)
 
 
 def transcript_row(sequence=1,broker=None):

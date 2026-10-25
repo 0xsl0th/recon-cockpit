@@ -1030,6 +1030,116 @@ def _changed_stop_cancellation(attempt, watches, stops, operations):
     return False
 
 
+def _pre_release_revocation(loaded, rows, selected, operation, revoke):
+    """Prove the actual pre-release refusal without inventing a later guard.
+
+    The host's guard phases observe an already pending dispatch. Only the
+    broker request/reserve records establish overlap with the external commit.
+    Inputs have already passed context and authority replay validation.
+    """
+    from . import engagement_live_contract as contract
+    manifest=loaded['manifest.json'];prepared=operation['prepared'];env=prepared['envelope']
+    if (len(manifest['broker_instances'])!=1 or len(loaded['results.json']['operations'])!=1
+            or manifest['broker_instances'][0]['broker_id']!=env['broker_id']
+            or loaded['processes.json']['native']
+            or any(operation[key] is not None for key in ('client','meter','host_capture'))):return False
+    if (any(row['status']!='complete' for row in loaded['cleanup.json']['receipts'])
+            or any(row['status']!='complete' for row in loaded['cleanup.json']['supervisors'])):return False
+    result=operation['result'];reason='engagement_live_revoked'
+    if result is not None and (result['outcome']!='denied' or result['reason']!=reason
+            or any(result[key]!=env[key] for key in ('broker_id','session_id','dispatch_id','slot'))
+            or result['envelope_sha256']!=contract.envelope_digest(env)
+            or any(result[key] is not None for key in ('admission','release','completion',
+                'observation','client_result_sha256','cleanup_sha256'))):return False
+    if any(row['dispatch_id']==env['dispatch_id'] for name in
+            ('initial-ledger.json','final-ledger.json','recovery-ledger.json')
+            for row in loaded.get(name,{}).get('completions',[])):return False
+    if any(w['row']['kind']=='protocol' and w['row']['dispatch_id']==env['dispatch_id']
+            and w['row']['data']['frame']['operation'] in ('GO','ARM','NATIVE_OBSERVED') for w in rows):return False
+    hard=env['action_deadline_ns'];digest=contract.prepared_digest(prepared)
+    reserve_digest=_sha(_canonical(prepared))
+
+    def same(w,source,*,dispatch=True):
+        row=w['row']
+        if (w['source']!=source or row['broker_id']!=env['broker_id']
+                or row['observer_id']!=env['broker_id'] or row['observed_at_ns']>hard):return False
+        if dispatch and any(row[key]!=env[key] for key in ('session_id','dispatch_id')):return False
+        if source=='broker_memfd':
+            segment=manifest['transcript']['segments'][w['segment']]
+            if segment['status']!='sealed_complete' or segment['broker_id']!=env['broker_id']:return False
+        return True
+
+    def phase(source,name,stage,related,code=None):
+        return [w for w in selected if same(w,source) and w['row']['kind']=='phase'
+            and w['row']['data']['phase']==name and w['row']['data']['stage']==stage
+            and w['row']['data']['related_sha256']==related
+            and w['row']['data']['reason']==code and w['row']['data']['original_deadline_ns']==hard]
+
+    begins=phase('broker_memfd','reserve','begin',reserve_digest)
+    commits=phase('role_observer','watch','end',revoke['receipt']['state_sha256'])
+    pending=phase('role_observer','guard','begin',digest)
+    refused=phase('role_observer','guard','refused',digest,reason)
+    if any(len(found)!=1 for found in (begins,commits,pending,refused)):return False
+    begin,commit,wait,refusal=(found[0]['row']['observed_at_ns'] for found in (begins,commits,pending,refused))
+    if not begin<commit<=wait<=refusal:return False
+    for found,lower in ((begins,env['action_ready_ns']),(commits,begin),(refused,wait)):
+        row=found[0]['row'];clock=row['data']['clock']
+        if clock is None or not lower<=clock['mono_before_ns']<=clock['mono_after_ns']<=row['observed_at_ns']:return False
+
+    ingress=[w for w in rows if same(w,'broker_memfd',dispatch=False) and w['row']['kind']=='protocol'
+        and w['row']['data']['channel_role']=='ingress'
+        and w['row']['data']['frame']['operation']=='DISPATCH']
+    requests=[w for w in ingress if w['row']['data']['direction']=='received']
+    if len(requests)!=1:return False
+    request=requests[0]['row'];frame=request['data']['frame']
+    # Ingress records the received packet before resolving its Prepared pointer;
+    # its row has no dispatch/session IDs. The packet and later replies bind it.
+    if (request['session_id'] is not None or request['dispatch_id'] is not None
+            or frame['body']['prepared_sha256']!=digest
+            or request['observed_at_ns']>begins[0]['row']['data']['clock']['mono_before_ns']):return False
+    acknowledgments=[w for w in ingress if w['row']['data']['direction']=='sent'
+        and w['row']['data']['frame']['body']['status']=='pending']
+    if len(acknowledgments)!=1 or not same(acknowledgments[0],'broker_memfd'):return False
+    acknowledgment=acknowledgments[0]['row'];ack=acknowledgment['data']['frame'];body=ack['body']
+    if (ack['channel_id']!=frame['channel_id'] or body['request_sequence']!=frame['sequence']
+            or body['code'] is not None or body['data']!={'dispatch_id':env['dispatch_id']}
+            or not request['observed_at_ns']<=acknowledgment['observed_at_ns']<=begin):return False
+    replies=[w['row'] for w in ingress if w['row']['data']['direction']=='sent'
+        and w['row']['data']['frame']['body']['status']!='pending']
+    if replies:
+        # A real terminal reply cannot be replaced by a watch from another
+        # exchange. The result remains the exact recorded denied outcome.
+        if len(replies)!=1 or result is None:return False
+        reply=replies[0];reply_frame=reply['data']['frame'];body=reply_frame['body']
+        return (all(reply[key]==env[key] for key in ('session_id','dispatch_id'))
+            and reply_frame['channel_id']==frame['channel_id']
+            and body['request_sequence']==frame['sequence'] and body['status']=='ok'
+            and body['code'] is None and body['data']==result
+            and commit<=reply['observed_at_ns']<=refusal)
+
+    # A periodic watch can stop the graph before a terminal ingress reply.
+    # Preserve that distinct path only with the same committed state and a
+    # separately retained lifecycle stop before the actual host refusal.
+    if result is not None:return False
+    watches=[w['row'] for w in selected if same(w,'broker_memfd',dispatch=False)
+        and w['row']['kind']=='watch' and w['row']['data']['status']=='changed'
+        and w['row']['data']['reason']==reason
+        and w['row']['data']['ledger_sequence']==revoke['sequence']
+        and w['row']['data']['ledger_state_sha256']==revoke['receipt']['state_sha256']]
+    stops=[w['row'] for w in rows if same(w,'broker_memfd',dispatch=False)
+        and w['row']['kind']=='protocol' and w['row']['data']['channel_role']=='lifecycle'
+        and w['row']['data']['direction']=='sent'
+        and w['row']['data']['frame']['operation'] in ('SESSION_STOP','BROKER_STOP')]
+    for watch in watches:
+        for stop in stops:
+            packet=stop['data']['frame'];body=packet['body']
+            if packet['channel_id']!=env['broker_id'] or body['reason']!=reason:continue
+            if packet['operation']=='SESSION_STOP' and body['session_id']!=env['session_id']:continue
+            if packet['operation'] not in ('SESSION_STOP','BROKER_STOP'):continue
+            if commit<=watch['observed_at_ns']<=body['observed_at_ns']<=stop['observed_at_ns']<=refusal:return True
+    return False
+
+
 def _evaluate_core_proof(loaded, proof, linkage):
     """Finite predicates over retained observations, never expected-result flags.
 
@@ -1379,8 +1489,8 @@ def _evaluate_core_proof(loaded, proof, linkage):
     if number in (36,37,38):
         if not changed_refusal(revokes,'revoked',number==37):return False
         if number==38:
-            return bool(phase('guard','refused','revoked')) and any(r['row']['kind']=='watch' and
-                r['row']['data']['status']=='changed' and r['row']['data']['ledger_state_sha256']==revokes[-1]['receipt']['state_sha256'] for r in selected)
+            return (len(operations)==len(revokes)==1 and changes==revokes and waiting_boundary()
+                and _pre_release_revocation(loaded,rows,selected,operations[0],revokes[0]))
         return True
     if number in (39,40):
         if len(reserves)!=1 or len(revokes)!=1 or not go_ids:return False
