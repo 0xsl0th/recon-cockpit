@@ -560,6 +560,87 @@ def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
     assert supervisor.failure is first and obj._failure is first
     assert events == ['audit','dispatch']
 
+    # Sealing runs after the native context has already closed. Its failure
+    # must keep that existing owner's facts without running owner methods.
+    from engagement_live_native import _retain_payload_failure, _seal_case_payload, _write_case_payload
+    from recon_cockpit.secure_agent import engagement_live_evidence as saved_evidence
+    obj._closed = obj._startup_quiesced = True
+    cleanup = {'schema_version':'1','started_at_ns':100,'finished_at_ns':120,'deadline_ns':150,
+        'status':'complete','descriptors_closed':True,'processes':[{'role':'broker','pid':123,
+            'start_time_ticks':456,'wrapper_pid':122,'wrapper_returncode':-9,'pin_verified':True,
+            'signal_attempted':True,'exit_observed':True,'reaped_observed':True}]}
+    obj._cleanup = cleanup
+    obj._cleanup_receipts = [deepcopy(cleanup)]
+    supervisor.closure = {'state':'joined','status':'complete','pending_slots':[], 'channel_closed':True}
+    phases=[]
+    for index in range(10):
+        phase=host_row(index+1)
+        phase.update(broker_id=value['envelope']['broker_id'],observer_id=value['envelope']['broker_id'],
+            session_id=value['envelope']['session_id'],dispatch_id=value['envelope']['dispatch_id'])
+        phase['data'].update(phase='reserve' if index>=8 else 'prepare',
+            stage='begin' if index%2==0 else 'end',related_sha256=c.prepared_digest(value))
+        phases.append(phase)
+    foreign=deepcopy(phases[0]);foreign['session_id']=uid(99)
+    obj._host_evidence_budget._rows.extend([*phases,foreign])
+    associated=SimpleNamespace(_cleanup={'status':'failed','processes':[]},
+        _cleanup_receipts=[],_startup_observations=[],_sessions={})
+    for boundary in ('single_seal','multi_payload','writer_refusal'):
+        for association in ('absent','none','existing'):
+            payload_calls=[];writer_calls=[]
+            original=c.LiveError('engagement_live_output_exists' if boundary=='writer_refusal' else 'engagement_live_unavailable')
+            if association!='absent':original.engagement_session=associated if association=='existing' else None
+            def payload_attempt(**kwargs):
+                payload_calls.append(kwargs)
+                assert obj._closed is True
+                if boundary=='writer_refusal':return {},{}
+                raise original
+            def refusing_writer(destination,**kwargs):
+                writer_calls.append((destination,kwargs))
+                raise original
+            with monkeypatch.context() as patch:
+                patch.setattr(obj,'_evidence_payload',payload_attempt)
+                patch.setattr(saved_evidence,'write_live_bundle',refusing_writer)
+                for name in ('snapshot','_recover_ledger','close'):
+                    patch.setattr(obj,name,forbidden_snapshot)
+                with pytest.raises(c.LiveError) as sealed:
+                    if boundary=='single_seal':
+                        _seal_case_payload(obj,{'id':'S42C-N42'},before=None,recover=True)
+                    elif boundary=='multi_payload':
+                        with _retain_payload_failure(obj):
+                            obj._evidence_payload(case_id='S42C-N43',recover=True)
+                    else:
+                        with _retain_payload_failure(obj):
+                            manifest,members=obj._evidence_payload(case_id='S42C-N32',recover=True)
+                            _write_case_payload(tmp_path/'unwritten',(manifest,members,time.monotonic()+15))
+                assert sealed.value is original
+                expected=associated if association=='existing' else obj
+                assert original.engagement_session is expected
+                directory=tmp_path/('payload-failure-'+boundary+'-'+association)
+                directory.mkdir(mode=0o700)
+                _save_case_failure(directory,'core','portable_postcontext_payload_failure',original)
+            assert len(payload_calls)==1 and payload_calls[0]['recover'] is True
+            assert len(writer_calls)==(1 if boundary=='writer_refusal' else 0)
+            assert not (tmp_path/'unwritten').exists()
+            retained=(directory/'case-failure.json').read_bytes()
+            assert len(retained)<=262144
+            failure=json.loads(retained)
+            assert failure['acceptance'] is False and failure['exception_chain'][0]['session_index']==0
+            facts={(item['owner'],item['attribute']):item['value'] for item in failure['observations']}
+            assert facts[('session:0','_cleanup')]==expected._cleanup
+            assert facts[('session:0','_cleanup_receipts')]==expected._cleanup_receipts
+            if association=='existing':
+                assert failure['sessions'][0]['supervisors']==[]
+                assert ('session:0','finalized_phase_rows') not in facts
+            else:
+                assert facts[('session:0:supervisor:0','closure')]==supervisor.closure
+                assert facts[('session:0','finalized_supervision_rows')]['rows']==[retained_row]
+                tail=facts[('session:0','finalized_phase_rows')]
+                assert tail=={'rows':phases[-8:],'observed_matching_rows':10,'earlier_rows_omitted':2,
+                    'scope':'finalized_rows_only_nonatomic_diagnostic_tail'}
+                assert {'owner':'session:0','attribute':'finalized_phase_rows','reason':'row_tail_limit'} in failure['omitted']
+                assert failure['capture_complete'] is False
+    assert events == ['audit','dispatch']
+
     # Observe the actual full send / decoded reply before protocol postchecks.
     # A late postcheck must not erase a real effect or cause a dispatch retry.
     import socket

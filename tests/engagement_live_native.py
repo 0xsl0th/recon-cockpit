@@ -405,19 +405,19 @@ def _save_case_failure(directory,kind,variant,error):
             omitted.append({'owner':owner,'attribute':'_host_evidence_budget','reason':'unretained_value'});return
         rows=allocator.get('_rows')
         if type(rows)is not list or len(rows)>128:
-            omitted.append({'owner':owner,'attribute':'finalized_supervision_rows','reason':'unretained_value'});return
-        relevant=[]
+            for name in ('finalized_supervision_rows','finalized_phase_rows'):
+                omitted.append({'owner':owner,'attribute':name,'reason':'unretained_value'})
+            return
         # Only already-finalized plain rows, without snapshot/locks/new actions.
-        # This is a bounded diagnostic tail, never a complete wire transcript.
-        for row in rows[:128]:
-            if (type(row)is dict and row.get('kind')=='supervision_projection'
-                    and type(row.get('session_id'))is str and row['session_id'] in session_keys):
-                relevant.append(row)
-        if len(relevant)>8:
-            omitted.append({'owner':owner,'attribute':'finalized_supervision_rows','reason':'row_tail_limit'})
-        retain(owner,'finalized_supervision_rows',{'rows':relevant[-8:],
-            'observed_matching_rows':len(relevant),'earlier_rows_omitted':max(0,len(relevant)-8),
-            'scope':'finalized_rows_only_nonatomic_diagnostic_tail'})
+        # These bounded diagnostic tails are never a complete wire transcript.
+        for kind,name in (('supervision_projection','finalized_supervision_rows'),('phase','finalized_phase_rows')):
+            relevant=[row for row in rows[:128] if type(row)is dict and row.get('kind')==kind
+                and type(row.get('session_id'))is str and row['session_id'] in session_keys]
+            if len(relevant)>8:
+                omitted.append({'owner':owner,'attribute':name,'reason':'row_tail_limit'})
+            retain(owner,name,{'rows':relevant[-8:],
+                'observed_matching_rows':len(relevant),'earlier_rows_omitted':max(0,len(relevant)-8),
+                'scope':'finalized_rows_only_nonatomic_diagnostic_tail'})
     for index,item in enumerate(queue):
         attrs=BaseException.__getattribute__(item,'__dict__')
         typename=type(item).__name__
@@ -1558,15 +1558,27 @@ def _useful(service,session,slot,*,ingress=0):
     return prepared
 
 
+@contextmanager
+def _retain_payload_failure(service):
+    """Associate retained owner facts without reopening or retrying anything."""
+    try:
+        yield
+    except BaseException as error:
+        attributes=BaseException.__getattribute__(error,'__dict__')
+        if attributes.get('engagement_session') is None:
+            attributes['engagement_session']=service
+        raise
+
+
 def _seal_case_payload(service,case,*,before,selected=None,instrumentation=(),recover=False,
                        boundary_proofs=(),boundary_observations=()):
     """Selectors name retained observations; they never supply a passing claim."""
-    from recon_cockpit.secure_agent import engagement_live_evidence as evidence
-    limit=time.monotonic()+15
-    manifest,members=service._evidence_payload(deadline=limit,case_id=case['id'],
-        instrumentation=instrumentation,recover=recover,boundary_proofs=boundary_proofs,
-        boundary_observations=boundary_observations)
-    return _annotate_core_payload(manifest,members,case,before=before,selected=selected,deadline=limit)
+    with _retain_payload_failure(service):
+        limit=time.monotonic()+15
+        manifest,members=service._evidence_payload(deadline=limit,case_id=case['id'],
+            instrumentation=instrumentation,recover=recover,boundary_proofs=boundary_proofs,
+            boundary_observations=boundary_observations)
+        return _annotate_core_payload(manifest,members,case,before=before,selected=selected,deadline=limit)
 
 
 def _annotate_core_payload(manifest,members,case,*,before,selected=None,deadline):
@@ -1997,8 +2009,9 @@ def _single_core(case,directory,*,variants=None):
         roe=json.loads((directory/'live'/'roe.json').read_bytes())
         _record_startup_guard(service,error,case,roe,ticket=startup_ticket)
     if service is None:raise AssertionError('actual service owner required')
-    return _write_case_payload(directory,_seal_case_payload(service,case,before=before,selected=selected,
-        instrumentation=instrumentation,recover=recover,boundary_proofs=support,boundary_observations=observations))
+    with _retain_payload_failure(service):
+        return _write_case_payload(directory,_seal_case_payload(service,case,before=before,selected=selected,
+            instrumentation=instrumentation,recover=recover,boundary_proofs=support,boundary_observations=observations))
 
 
 def _external_change(service,prepared,*,revision=False):
@@ -2667,8 +2680,9 @@ def _multi_core(case,directory,*,variants=None):
                     result=_dispatch_pointers(first,prepared,pointers,0)
                     if result['outcome']!='useful':raise AssertionError('actual consumed allowance required')
         if not first._verified_reaped():raise AssertionError('first generation must be actually reaped')
-        payloads.append(first._evidence_payload(deadline=time.monotonic()+15,case_id=case['id'],
-            instrumentation=instrumentation,recover=True))
+        with _retain_payload_failure(first):
+            payloads.append(first._evidence_payload(deadline=time.monotonic()+15,case_id=case['id'],
+                instrumentation=instrumentation,recover=True))
         if number==23:
             before=_last_state(json.loads(payloads[0][1]['recovery-ledger.json']))
         old_go=None
@@ -2705,11 +2719,13 @@ def _multi_core(case,directory,*,variants=None):
             roe=json.loads((directory/'second'/'roe.json').read_bytes())
             _record_startup_guard(second,error,case,roe,ticket=startup_ticket)
         if second is None or not second._verified_reaped():raise AssertionError('second generation must be actually reaped')
-        payloads.append(second._evidence_payload(deadline=time.monotonic()+15,case_id=case['id'],
-            instrumentation=instrumentation,recover=True))
-    manifest,members=_merge_core_payloads(payloads)
-    return _write_case_payload(directory,_annotate_core_payload(manifest,members,case,
-        before=before,selected=selected,deadline=time.monotonic()+15))
+        with _retain_payload_failure(second):
+            payloads.append(second._evidence_payload(deadline=time.monotonic()+15,case_id=case['id'],
+                instrumentation=instrumentation,recover=True))
+    with _retain_payload_failure(second):
+        manifest,members=_merge_core_payloads(payloads)
+        return _write_case_payload(directory,_annotate_core_payload(manifest,members,case,
+            before=before,selected=selected,deadline=time.monotonic()+15))
 
 
 def _run_core_case(variant,directory):
