@@ -1297,21 +1297,23 @@ def _evaluate_core_proof(loaded, proof, linkage):
             ('engagement_live_endpoint_worker','engagement_live_broker_worker')):return []
         released=[row for row in go if row['row']['dispatch_id']==did]
         if len(released)!=1:return []
-        sent_at=released[0]['row']['observed_at_ns']
+        release=released[0];sent_at=release['row']['observed_at_ns']
         ready=[row for row in loaded['processes.json']['readiness'] if row['role']=='endpoint' and
                row['parent_observation']['sampled_at_ns']<=sent_at]
         if not ready:return []
         # A fixed sealed test frame retains a prefix of actual endpoint events.
         # It is never a final METER, a settlement, or proof of final byte totals.
-        events=[];received=sent=accepted=0;previous=sent_at;closed=False
+        events=[];received=sent=accepted=0;closed=False
+        previous=release['row']['data']['frame']['body']['guard_clock']['mono_after_ns'];row_sequence=release['row']['row_sequence']
         request_cap,response_cap=(4096,4096) if env['slot']=='http_identify' else (256,2048)
         from .engagement_live_runtime import validate_meter_event
         for sequence,entry in enumerate(projected,1):
             row=entry['row'];event=validate_meter_event(row['data']);kind=event['kind']
             if (row['broker_id']!=env['broker_id'] or row['observer_id']!=env['broker_id'] or
                 row['session_id']!=env['session_id'] or event['sequence']!=sequence or closed or
+                entry['segment']!=release['segment'] or row['row_sequence']<=row_sequence or
                 not previous<=event['monotonic_ns']<=row['observed_at_ns'] or (kind=='arm')!=(sequence==1)):return []
-            previous=event['monotonic_ns']
+            previous=event['monotonic_ns'];row_sequence=row['row_sequence']
             if kind=='accept':accepted+=1
             if event['connection']!=accepted or accepted>(3 if env['slot']=='http_identify' else 1):return []
             if kind in ('recv','send'):

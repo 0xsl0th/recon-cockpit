@@ -355,7 +355,7 @@ def denied_fixture():
     return with_transcript(manifest,members,[(b''.join(raw(row)+b'\n' for row in rows),'broker_memfd',uid(6),'sealed_complete')])
 
 
-def useful_fixture(monkeypatch):
+def useful_fixture(monkeypatch,*,distinct_sources=False):
     """Declared native receipts plus actual pure codecs/meter; no kernel claim.
 
     Only the parser subprocess boundary is substituted by the accepted pure
@@ -373,6 +373,13 @@ def useful_fixture(monkeypatch):
     from recon_cockpit.secure_agent import engagement_live_context as context
     from recon_cockpit.secure_agent import configurable_parser
     manifest,members=fixture();bundle=json.loads(members['runtime.json'])['runtime']
+    if distinct_sources:
+        # Distinct declared source bytes let crash-prefix tests detect swapping
+        # the endpoint and broker instrumentation instead of sharing one hash.
+        for sources in [bundle['sources'],*(role['sources'] for role in bundle['roles'])]:
+            for source in sources:
+                if source['module'] in ('engagement_live_endpoint_worker','engagement_live_broker_worker'):
+                    source['sha256']=sha(source['module'].encode('ascii'))
     for role in bundle['roles']:
         for entry in role['native_files']:
             if entry['destination']=='/tool/nmap':entry['sha256']='d'*64
@@ -2191,6 +2198,12 @@ def _cancelled_capture_replay(loaded,original_rows):
     # channel can start a later host epoch; physical completion still fits both.
     assert finished<wire_deadline<deadline<=stop+1_900_000_000
     assert all(x['finished_at_ns']<=wire_deadline for x in partial['cleanup.json']['receipts'])
+    # These labels are declared revocation controls, never historical native
+    # credit. A sealed STOP remains a distinct proof from a killed broker.
+    for number in (39,40):
+        control=deepcopy(partial);control['manifest.json']['case_id']='S42C-N'+str(number)
+        assert context.validate_supervision_transcript(control,deepcopy(rows))['missing_evidence']==[]
+    _cancelled_capture_crash_cases(partial,rows,loaded,original_rows)
     for variant in ('missing_cause','missing_final','cause_code','rpc_code','cause_dispatch',
                     'cause_capture','cause_cleanup',
                     'final_worker','final_prepared','capture_hash','cleanup_hash','missing_capture',
@@ -2288,6 +2301,352 @@ def _cancelled_capture_replay(loaded,original_rows):
         try:report=context.validate_supervision_transcript(bad,changed)
         except c.LiveError as error:assert error.code=='engagement_live_evidence_invalid',variant
         else:assert {'transcript','cleanup'}&set(report['missing_evidence']),variant
+
+
+def _cancelled_capture_crash_cases(stopped,stop_rows,useful,useful_rows):
+    """Declared complete N45/N46 causal chains, with actual pure replay.
+
+    Native observations, partial endpoint progress, null-clock signal rows and
+    nonempty cancelled exit-zero capture reproduce the retained N45 shape.
+    They do not fabricate CAPTURED, a final meter, client result or completion.
+    Adjacent cuts retain their existing no-pending/completed-exchange behavior.
+    """
+    import base64
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
+    from recon_cockpit.secure_agent import engagement_live_endpoint_worker as endpoint
+    baseline=deepcopy(stopped);initial_rows=deepcopy(stop_rows)
+    op=baseline['results.json']['operations'][0];prepared=op['prepared'];env=prepared['envelope']
+    digest=c.prepared_digest(prepared);anchor=env['clock_anchor']['mono_after_ns']
+    capture_at=anchor+100_000_000;progress_at=anchor+120_000_000
+    signal_at=anchor+130_000_000;end_at=anchor+140_000_000;stop_at=anchor+150_000_000
+    finish_at=anchor+190_000_000;final_at=anchor+200_000_000;bound=stop_at+1_900_000_000
+    channel=next(x['launcher_id'] for x in baseline['processes.json']['child_slots'] if x['child_slot']=='identify_client')
+    final_state=baseline.pop('final-ledger.json');baseline['recovery-ledger.json']=deepcopy(final_state)
+    manifest=baseline['manifest.json'];manifest.update(configuration='A',evidence_class='owned_gate')
+    manifest['ledger_exports']['final']={'status':'unavailable','source':None,'file':None,'reason':'broker_lost','broker_id':None}
+    manifest['ledger_exports']['recovery']={'status':'complete','source':'postcleanup_readonly',
+        'file':'recovery-ledger.json','reason':None,'broker_id':None}
+    baseline['cleanup.json']['exports']=[x for x in baseline['cleanup.json']['exports'] if x['reference']['phase']!='final']
+    identity=lambda mode,inode:{'device':1,'inode':inode,'mode':mode,'uid':1000,'gid':1000}
+    baseline['cleanup.json']['recovery']={'schema_version':'1','source':'postcleanup_readonly','owner_id':uid(955),
+        'started_at_ns':final_at+1,'finished_at_ns':final_at+1000,'read_only':True,'closed':True,
+        'ledger_state_sha256':final_state['events'][-1]['receipt']['state_sha256'],
+        'bytes':len(raw(final_state)),'sha256':sha(raw(final_state)),
+        'store_identity':{'parent':identity(stat.S_IFDIR|0o700,900),
+            'directory':identity(stat.S_IFDIR|0o700,901),'database':identity(stat.S_IFREG|0o600,902)}}
+    initial_rows=[x for x in initial_rows if not (x['row']['kind']=='protocol'
+        and x['row']['data']['frame']['operation'] in ('BROKER_STOP','SESSION_STOP')) and x['row']['kind']!='meter']
+    def select(value,observations):
+        operation=value['results.json']['operations'][0]
+        rpc=next(x for x in observations if x['row']['kind']=='supervision_projection'
+            and x['row']['data']['kind']=='rpc' and x['row']['data']['request']['operation']=='CAPTURE')
+        failures=[x for x in observations if x['row']['kind']=='supervision_projection' and x['row']['data']['kind']=='local_failure']
+        child=next(x for x in value['cleanup.json']['receipts'] if sha(raw(x))==operation['host_capture']['cleanup_sha256'])
+        broker=next(x for x in value['cleanup.json']['receipts'] if len(x['processes'])==1 and x['processes'][0]['role']=='broker')
+        thread=next(x for x in value['cleanup.json']['supervisors'] if x['launcher_id']==channel)
+        return operation,rpc,failures[0],failures[1],child,broker,thread
+    operation,rpc,cause,final,child,broker,thread=select(baseline,initial_rows)
+    rpc['row']['data']['request']['observed_at_ns']=capture_at;rpc['row']['observed_at_ns']=stop_at+3
+    for row,when in ((cause,stop_at+2),(final,final_at)):
+        row['row']['observed_at_ns']=row['row']['data']['observed_at_ns']=when
+    for receipt in baseline['cleanup.json']['receipts']:
+        if receipt['processes'][0]['role']=='admission':continue
+        receipt.update(started_at_ns=stop_at,finished_at_ns=anchor+185_000_000,deadline_ns=bound)
+    broker.update(started_at_ns=signal_at-1,finished_at_ns=signal_at+1)
+    broker['processes'][0].update(wrapper_returncode=-9,signal_attempted=False)
+    child.update(started_at_ns=anchor+170_000_000,finished_at_ns=anchor+180_000_000)
+    child['processes'][0].update(wrapper_returncode=0,signal_attempted=False)
+    operation['host_capture'].update(status='cancelled',exit_code=0,cleanup_sha256=sha(raw(child)))
+    final['row']['data'].update(capture_sha256=sha(raw(operation['host_capture'])),cleanup_sha256=sha(raw(child)))
+    thread.update(first_stop_requested_at_ns=stop_at,cleanup_started_at_ns=stop_at+1,
+        cleanup_finished_at_ns=finish_at,cleanup_deadline_ns=bound)
+    manifest['transcript'].update(status='partial',reason='broker_lost')
+    manifest['transcript']['segments'][0].update(status='reaped_partial',seals=0)
+    def observed(kind,data,when,source='role_observer'):
+        return {'segment':0 if source=='broker_memfd' else 1,'source':source,'row':{
+            'schema_version':'1','broker_id':env['broker_id'],'session_id':env['session_id'],
+            'dispatch_id':env['dispatch_id'],'observer_id':env['broker_id'],'row_sequence':1,
+            'observed_at_ns':when,'kind':kind,'data':data}}
+    def phase(stage,when,reason=None):
+        clock=None if reason is None else {'mono_before_ns':when-1,'mono_after_ns':when,
+            'utc_ns':env['clock_anchor']['utc_ns']+when-anchor}
+        return observed('phase',{'phase':'client','stage':stage,'reason':reason,'related_sha256':digest,
+            'original_deadline_ns':env['action_deadline_ns'],'clock':clock},when)
+    before_cause=initial_rows.index(cause)
+    initial_rows[before_cause:before_cause]=[phase('begin',signal_at),phase('end',end_at),phase('begin',end_at+1),
+        phase('refused',end_at+2,'engagement_live_invalid_frame')]
+    def fixture(number):
+        value=deepcopy(baseline);observations=deepcopy(initial_rows);m=value['manifest.json']
+        case=e._case('S42C-N'+str(number));m['case_id']=case['id']
+        config={'case_id':case['id'],'variant':case['variant'],'role':'endpoint'}
+        selected_sources={x['module']:x['sha256'] for x in value['runtime.json']['runtime']['sources']}
+        instrumentation=[{'kind':'sealed_fault','source_sha256':selected_sources[module],
+            'configuration':deepcopy(config),'configuration_sha256':sha(raw(config))}
+            for module in ('engagement_live_endpoint_worker','engagement_live_broker_worker')]
+        host_config={**config,'role':'host'}
+        instrumentation.append({'kind':'scripted_review','source_sha256':'b'*64,
+            'configuration':host_config,'configuration_sha256':sha(raw(host_config))})
+        signal_config={**config,'role':'broker'}
+        instrumentation.append({'kind':'process_signal','source_sha256':'b'*64,
+            'configuration':signal_config,'configuration_sha256':sha(raw(signal_config))})
+        value['runtime.json']['instrumentation']=instrumentation
+        m['instrumentation']=[{k:item[k] for k in ('kind','source_sha256','configuration_sha256')} for item in instrumentation]
+        # A send is preceded by a real-shaped recv. These are bounded prefixes,
+        # not final counters or an acknowledgment that the whole request ran.
+        kinds=('arm','accept','recv') if number in (39,45) else ('arm','accept','recv','send')
+        for sequence,kind in enumerate(kinds,1):
+            when=progress_at-len(kinds)+sequence
+            amount=len(endpoint.IDENTIFY_REQUEST) if kind=='recv' and number in (40,46) else 1 if kind in ('recv','send') else 0
+            event={'sequence':sequence,'kind':kind,'connection':0 if kind=='arm' else 1,
+                'requested_bytes':1 if kind=='send' else 4096 if amount else 0,'actual_bytes':amount,
+                'remaining_before':4096 if amount else 0,'remaining_after':4096-amount if amount else 0,
+                'monotonic_ns':when,'reason':None}
+            observations.append(observed('meter',event,when+1,'broker_memfd'))
+        reserve=next(x for x in final_state['events'] if x['request']['operation']=='reserve')
+        proof={'schema_version':'1','case_id':case['id'],'variant':case['variant'],'dispatch_ids':[env['dispatch_id']],
+            'before_state_sha256':final_state['events'][reserve['sequence']-2]['receipt']['state_sha256'],
+            'after_state_sha256':final_state['events'][-1]['receipt']['state_sha256'],
+            'recovery_state_sha256':final_state['events'][-1]['receipt']['state_sha256'],'transcript_refs':[]}
+        return value,observations,proof
+    def encode(value,observations,proof):
+        parts=[];offset=0;refs=[]
+        for index,segment in enumerate(value['manifest.json']['transcript']['segments']):
+            selected=[x for x in observations if x['segment']==index]
+            for sequence,item in enumerate(selected,1):
+                item['row']['row_sequence']=sequence;refs.append({'segment':index,'row_sequence':sequence})
+            encoded=b''.join(raw(x['row'])+b'\n' for x in selected)
+            segment.update(offset=offset,bytes=len(encoded),sha256=sha(encoded));parts.append(encoded);offset+=len(encoded)
+        value['transcript.jsonl']=b''.join(parts);proof['transcript_refs']=refs
+        value['results.json']['core_proofs']=[proof]
+    def evaluate(value,observations,proof):
+        encode(value,observations,proof)
+        supervision=context.validate_supervision_transcript(value,observations)
+        core=e._evaluate_core_proof(value,proof,{'dispatches':{env['dispatch_id']:{}}})
+        return supervision,core
+    def complete(value,observations,proof,label):
+        supervision,core=evaluate(value,observations,proof)
+        assert supervision['missing_evidence']==[] and supervision['all_closed'] and supervision['cleanup_complete'],label
+        assert supervision['dispatches'][env['dispatch_id']]['native_budget'] is not None,label
+        assert core,label
+        operation=value['results.json']['operations'][0]
+        assert all(operation[k] is None for k in ('result','client','meter')) and not value['recovery-ledger.json']['completions']
+        assert value['recovery-ledger.json']['state']['usage']==env['cost']
+        return supervision
+    for number in (39,40):
+        # The same declared live-supervision graph can terminate through a
+        # sealed revocation STOP. Its durable change is not a crash marker.
+        value,observations,proof=fixture(number)
+        operation,rpc,first,last,child,killed,closed=select(value,observations)
+        recovered,committed=ledger._apply(value['recovery-ledger.json'],{'schema_version':'2',
+            'engagement_id':env['engagement_id'],'event_id':uid(956),'operation':'revoke',
+            'expected_revision':env['revision'],'expected_generation':env['generation'],'body':None})
+        value['recovery-ledger.json']=recovered
+        value['cleanup.json']['recovery'].update(bytes=len(raw(recovered)),sha256=sha(raw(recovered)),ledger_state_sha256=committed['state_sha256'])
+        proof.update(after_state_sha256=committed['state_sha256'],recovery_state_sha256=committed['state_sha256'])
+        value['manifest.json']['transcript'].update(status='complete',reason=None)
+        value['manifest.json']['transcript']['segments'][0].update(status='sealed_complete',seals=15)
+        killed['processes'][0]['wrapper_returncode']=0
+        value['runtime.json']['instrumentation']=[x for x in value['runtime.json']['instrumentation'] if x['kind']!='process_signal']
+        value['manifest.json']['instrumentation']=[{k:x[k] for k in ('kind','source_sha256','configuration_sha256')}
+            for x in value['runtime.json']['instrumentation']]
+        observations=[x for x in observations if x['row']['kind']!='phase']
+        watch=phase('end',progress_at+10);watch['row']['data'].update(phase='watch',related_sha256=committed['state_sha256'])
+        watch['row']['data']['clock']={'mono_before_ns':progress_at+9,'mono_after_ns':progress_at+10,
+            'utc_ns':env['clock_anchor']['utc_ns']+progress_at+10-anchor}
+        observations.append(watch)
+        stop=deepcopy(next(x for x in stop_rows if x['row']['kind']=='protocol'
+            and x['row']['data']['frame']['operation']=='BROKER_STOP'))
+        stop['row']['observed_at_ns']=stop_at-1
+        stop['row']['data']['frame']['body'].update(observed_at_ns=stop_at-2,cleanup_deadline_ns=bound)
+        observations.append(stop)
+        complete(deepcopy(value),deepcopy(observations),deepcopy(proof),('sealed STOP',number))
+        for removed in (watch,stop):
+            changed=deepcopy(observations);changed.pop(observations.index(removed))
+            report,passed=evaluate(deepcopy(value),changed,deepcopy(proof))
+            assert report['missing_evidence'] or not passed,('separate STOP proof',number,removed['row']['kind'])
+    for number in (45,46):
+        value,observations,proof=fixture(number)
+        complete(deepcopy(value),deepcopy(observations),deepcopy(proof),('pending CAPTURE',number))
+        for order in ('progress_before_request','end_after_first_stop','end_after_reap','aggregate_cleanup','delayed_go_journal','killed_client_exit'):
+            current=deepcopy(value);changed=deepcopy(observations)
+            operation,rpc,first,last,child,killed,closed=select(current,changed)
+            end=next(x for x in changed if x['row']['kind']=='phase' and x['row']['data']['stage']=='end')
+            if order=='progress_before_request':rpc['row']['data']['request']['observed_at_ns']=progress_at+2
+            elif order=='delayed_go_journal':
+                go=next(x for x in changed if x['row']['kind']=='protocol' and x['row']['data']['frame']['operation']=='GO')
+                go['row']['observed_at_ns']=progress_at+2
+            elif order=='killed_client_exit':
+                child['processes'][0].update(wrapper_returncode=137,signal_attempted=True)
+                operation['host_capture'].update(exit_code=137,cleanup_sha256=sha(raw(child)))
+                last['row']['data'].update(capture_sha256=sha(raw(operation['host_capture'])),cleanup_sha256=sha(raw(child)))
+            elif order in ('end_after_first_stop','end_after_reap'):
+                # A delayed journal row says nothing about whether physical
+                # reaping or the monitor's first-stop happened before it.
+                end['row']['observed_at_ns']=stop_at+10 if order=='end_after_first_stop' else signal_at+2
+                for item in changed:
+                    if item['row']['kind']=='phase' and item is not end and item['row']['observed_at_ns']>signal_at:
+                        item['row']['observed_at_ns']=end['row']['observed_at_ns']+(1 if item['row']['data']['stage']=='begin' else 2)
+                        if item['row']['data']['clock'] is not None:
+                            when=item['row']['observed_at_ns'];item['row']['data']['clock'].update(mono_before_ns=when-1,mono_after_ns=when,
+                                utc_ns=env['clock_anchor']['utc_ns']+when-anchor)
+            else:
+                aggregate=deepcopy(killed);aggregate['processes'].append(deepcopy(child['processes'][0]))
+                aggregate['finished_at_ns']=child['finished_at_ns']+1;current['cleanup.json']['receipts'].append(aggregate)
+            complete(current,changed,deepcopy(proof),(number,order))
+        # No outstanding RPC after ARM: keep unknown capture absent. Completed
+        # CAPTURE before broker death: preserve its actual successful reply.
+        for cut in ('before_capture','after_capture'):
+            current=deepcopy(value);changed=deepcopy(observations)
+            operation,rpc,first,last,child,killed,closed=select(current,changed)
+            if cut=='before_capture':
+                changed.remove(rpc);operation['host_capture']=None
+                last['row']['data'].update(capture_sha256=None,cleanup_sha256=None)
+                for stream in ('stdout','stderr'):current['client-'+env['dispatch_id']+'.'+stream+'.bin']=b''
+            else:
+                child.update(started_at_ns=capture_at+1,finished_at_ns=capture_at+2)
+                host=operation['host_capture'];host.update(status='succeeded',cleanup_sha256=sha(raw(child)))
+                capture={k:v for k,v in host.items() if k not in ('status','cleanup_sha256')}
+                capture.update({stream+'_base64':base64.b64encode(current['client-'+env['dispatch_id']+'.'+stream+'.bin']).decode('ascii') for stream in ('stdout','stderr')})
+                sequence=rpc['row']['data']['request']['sequence'];name=rpc['row']['data']['child_slot']
+                part={'child_slot':name,'capture_sha256':sha(raw(capture)),'host_capture_sha256':sha(raw(host)),
+                    'status':'succeeded','cleanup_sha256':sha(raw(child))}
+                body={'request_sequence':sequence,'status':'ok','code':None,
+                    'data':{'child_slot':name,'capture':capture,'status':'succeeded','cleanup':child}}
+                packet={'schema_version':'1','channel_id':channel,'sequence':sequence,'operation':'CAPTURED','body':body}
+                projection={**body,'data':part};reply={'sequence':sequence,'operation':'CAPTURED','observed_at_ns':capture_at+3,
+                    'bytes':len(raw(packet)),'sha256':sha(raw(packet)),'projection':projection,'projection_sha256':sha(raw(projection))}
+                rpc['row']['data'].update(reply=reply,local_error=None);rpc['row']['observed_at_ns']=capture_at+3
+                last['row']['data'].update(capture_sha256=sha(raw(host)),cleanup_sha256=sha(raw(child)))
+            report=complete(current,changed,deepcopy(proof),(number,cut))
+            assert (report['dispatches'][env['dispatch_id']]['capture'] is None)==(cut=='before_capture')
+        variants=('missing_progress','wrong_progress_kind','progress_zero','progress_more_than_one','send_requested_more_than_one','earlier_selected_positive',
+            'send_before_recv','progress_before_native','progress_after_signal',
+            'progress_observed_after_signal','progress_wrong_source','progress_wrong_broker','progress_wrong_session',
+            'progress_sequence','progress_remaining','missing_recv_before_send','missing_signal_begin','missing_signal_end',
+            'duplicate_signal_begin','foreign_earlier_begin','duplicate_signal_end','signal_clock','signal_digest','signal_deadline','signal_source',
+            'signal_broker','signal_observer','signal_session','signal_dispatch','signal_before_progress','signal_end_before_begin',
+            'signal_end_after_final','first_stop_before_begin','missing_broker_reap','broker_not_killed','broker_pid',
+            'broker_start','broker_wrapper','broker_reap_before_begin','aggregate_reap_before_begin','global_cleanup_late',
+            'global_cleanup_bound','source_config','source_hash','signal_config','signal_source_hash','missing_host_config',
+            'partial_segment','missing_recovery','missing_native_budget','native_budget_bound',
+            'missing_reservation','reservation_owner','reservation_cost','reservation_state','usage_refund','missing_native',
+            'missing_host','missing_final','missing_cause','raw_capture','host_status','meter','client','result',
+            'completion','request_wire','request_sequence','request_worker','request_digest','request_after_stop',
+            'later_rpc','meter_relay','capture_relay','extra_operation','extra_broker')
+        for variant in variants:
+            if variant=='missing_recv_before_send' and number==45:continue
+            if variant=='send_before_recv' and number==46:continue
+            if variant=='send_requested_more_than_one' and number==45:continue
+            current=deepcopy(value);changed=deepcopy(observations);selected=deepcopy(proof)
+            operation,rpc,first,last,child,killed,closed=select(current,changed)
+            progress=[x for x in changed if x['row']['kind']=='meter'];event=progress[-1]
+            begins=[x for x in changed if x['row']['kind']=='phase' and x['row']['data']['stage']=='begin']
+            begin=begins[0];end=next(x for x in changed if x['row']['kind']=='phase' and x['row']['data']['stage']=='end')
+            if variant=='missing_progress':changed=[x for x in changed if x['row']['kind']!='meter']
+            elif variant=='wrong_progress_kind':event['row']['data']['kind']='send' if number==45 else 'recv'
+            elif variant=='progress_zero':event['row']['data'].update(actual_bytes=0,remaining_after=4096)
+            elif variant=='progress_more_than_one':event['row']['data'].update(requested_bytes=2 if number==46 else 4096,actual_bytes=2,remaining_after=4094)
+            elif variant=='send_requested_more_than_one':event['row']['data']['requested_bytes']=2
+            elif variant=='earlier_selected_positive':
+                earlier=deepcopy(event);earlier['row']['data']['monotonic_ns']-=1
+                earlier['row']['observed_at_ns']-=1
+                changed.insert(changed.index(event),earlier)
+                event['row']['data'].update(sequence=event['row']['data']['sequence']+1,
+                    requested_bytes=1 if number==46 else 4095,remaining_before=4095,remaining_after=4094)
+            elif variant=='send_before_recv':
+                earlier=deepcopy(event);earlier['row']['data'].update(kind='send',requested_bytes=1,monotonic_ns=progress_at-1)
+                earlier['row']['observed_at_ns']=progress_at
+                changed.insert(changed.index(event),earlier);event['row']['data']['sequence']+=1
+            elif variant=='progress_before_native':event['row']['data']['monotonic_ns']=anchor
+            elif variant=='progress_after_signal':event['row']['data']['monotonic_ns']=signal_at+1;event['row']['observed_at_ns']=signal_at+2
+            elif variant=='progress_observed_after_signal':event['row']['observed_at_ns']=signal_at+1
+            elif variant.startswith('progress_wrong_'):
+                field=variant.removeprefix('progress_wrong_')
+                if field=='source':event['source']='role_observer'
+                else:event['row'][field+'_id']=uid(999)
+            elif variant=='progress_sequence':event['row']['data']['sequence']+=1
+            elif variant=='progress_remaining':event['row']['data'].update(requested_bytes=1 if number==46 else 4095,remaining_before=4095,remaining_after=4094)
+            elif variant=='missing_recv_before_send':
+                changed.remove(next(x for x in progress if x['row']['data']['kind']=='recv'))
+                event['row']['data']['sequence']-=1
+            elif variant in ('missing_signal_begin','missing_signal_end'):changed.remove(begin if variant.endswith('begin') else end)
+            elif variant in ('duplicate_signal_begin','duplicate_signal_end'):
+                source=begin if variant.endswith('begin') else end;changed.insert(changed.index(source),deepcopy(source))
+            elif variant=='foreign_earlier_begin':
+                extra=deepcopy(begin);extra['row']['broker_id']=uid(999)
+                extra['row']['observed_at_ns']-=1;changed.insert(changed.index(begin),extra)
+            elif variant=='signal_clock':end['row']['data']['clock']={'mono_before_ns':end_at-1,'mono_after_ns':end_at,'utc_ns':env['clock_anchor']['utc_ns']+end_at-anchor}
+            elif variant=='signal_digest':end['row']['data']['related_sha256']=sha(raw(prepared))
+            elif variant=='signal_deadline':end['row']['data']['original_deadline_ns']+=1
+            elif variant=='signal_source':end['source']='broker_memfd'
+            elif variant in ('signal_broker','signal_observer','signal_session','signal_dispatch'):end['row'][variant.removeprefix('signal_')+'_id']=uid(999)
+            elif variant=='signal_before_progress':begin['row']['observed_at_ns']=progress_at-1
+            elif variant=='signal_end_before_begin':end['row']['observed_at_ns']=signal_at-1
+            elif variant=='signal_end_after_final':end['row']['observed_at_ns']=final_at+1
+            elif variant=='first_stop_before_begin':closed['first_stop_requested_at_ns']=signal_at-1
+            elif variant=='missing_broker_reap':current['cleanup.json']['receipts'].remove(killed)
+            elif variant=='broker_not_killed':killed['processes'][0]['wrapper_returncode']=0
+            elif variant in ('broker_pid','broker_start','broker_wrapper'):
+                killed['processes'][0][{'broker_pid':'pid','broker_start':'start_time_ticks','broker_wrapper':'wrapper_pid'}[variant]]+=1
+            elif variant=='broker_reap_before_begin':killed.update(started_at_ns=signal_at-2,finished_at_ns=signal_at-1)
+            elif variant=='aggregate_reap_before_begin':
+                aggregate=deepcopy(killed);aggregate.update(started_at_ns=signal_at-2,finished_at_ns=signal_at-1)
+                aggregate['processes'].append(deepcopy(child['processes'][0]));current['cleanup.json']['receipts'].append(aggregate)
+            elif variant=='global_cleanup_late':killed['finished_at_ns']=bound+1
+            elif variant=='global_cleanup_bound':killed['deadline_ns']=bound+1
+            elif variant in ('source_config','source_hash','signal_config'):
+                instrument=current['runtime.json']['instrumentation'][-1 if variant=='signal_config' else 0]
+                if variant=='source_hash':instrument['source_sha256']='d'*64
+                else:instrument['configuration']['role']='host';instrument['configuration_sha256']=sha(raw(instrument['configuration']))
+            elif variant=='signal_source_hash':current['runtime.json']['instrumentation'][-1]['source_sha256']='e'*64
+            elif variant=='missing_host_config':current['runtime.json']['instrumentation']=[x for x in current['runtime.json']['instrumentation'] if x['kind']!='scripted_review']
+            elif variant=='partial_segment':current['manifest.json']['transcript']['segments'][0].update(status='sealed_complete',seals=15)
+            elif variant in ('missing_native_budget','native_budget_bound'):
+                native=next(x for x in changed if x['row']['kind']=='supervision_projection' and
+                    x['row']['data']['kind']=='rpc' and x['row']['data']['request']['operation']=='NATIVE_BEGIN')
+                if variant=='missing_native_budget':native['row']['data'].update(reply=None,local_error='engagement_live_cancelled')
+                else:
+                    reply=native['row']['data']['reply'];reply['projection']['data']['native_deadline_ns']=progress_at-1
+                    packet={'schema_version':'1','channel_id':channel,'sequence':reply['sequence'],
+                        'operation':reply['operation'],'body':reply['projection']}
+                    reply.update(bytes=len(raw(packet)),sha256=sha(raw(packet)),projection_sha256=sha(raw(reply['projection'])))
+            elif variant=='missing_recovery':current.pop('recovery-ledger.json');current['cleanup.json']['recovery']=None
+            elif variant=='missing_reservation':current['recovery-ledger.json']['reservations']=[]
+            elif variant.startswith('reservation_'):
+                recovered=current['recovery-ledger.json'];reservation=recovered['reservations'][0]
+                if variant=='reservation_owner':reservation['owner_id']=uid(999)
+                elif variant=='reservation_cost':reservation['reservation']['request_bytes']-=1
+                else:next(x for x in recovered['events'] if x['request']['operation']=='reserve')['receipt']['state_sha256']='d'*64
+            elif variant=='usage_refund':current['recovery-ledger.json']['state']['usage']['actions']=0
+            elif variant=='missing_native':current['processes.json']['native']=[]
+            elif variant=='missing_host':operation['host_capture']=None;last['row']['data'].update(capture_sha256=None,cleanup_sha256=None)
+            elif variant in ('missing_final','missing_cause'):changed.remove(last if variant=='missing_final' else first)
+            elif variant=='raw_capture':current['client-'+env['dispatch_id']+'.stdout.bin']+=b'!'
+            elif variant=='host_status':
+                operation['host_capture']['status']='succeeded'
+                last['row']['data']['capture_sha256']=sha(raw(operation['host_capture']))
+            elif variant in ('meter','client','result'):operation[variant]=deepcopy(useful['results.json']['operations'][0][variant])
+            elif variant=='completion':current['recovery-ledger.json']=deepcopy(useful['final-ledger.json'])
+            elif variant=='request_wire':rpc['row']['data']['request']['sha256']='d'*64
+            elif variant=='request_sequence':rpc['row']['data']['request']['sequence']+=1
+            elif variant=='request_worker':rpc['row']['data']['child_worker_id']=uid(999)
+            elif variant=='request_digest':rpc['row']['data']['prepared_sha256']='d'*64
+            elif variant=='request_after_stop':rpc['row']['data']['request']['observed_at_ns']=stop_at+1
+            elif variant=='later_rpc':
+                extra=deepcopy(rpc);extra['row']['data']['request']['sequence']+=1
+                extra['row']['data']['request']['observed_at_ns']=final_at+1;changed.append(extra)
+            elif variant in ('meter_relay','capture_relay'):
+                candidates=[x for x in useful_rows if x['row']['kind']=='protocol' and
+                    (x['row']['data']['frame']['operation']=='METER' if variant=='meter_relay' else
+                    x['row']['data']['frame']['operation']=='OBSERVATION' and x['row']['data']['frame']['body']['kind']=='capture')]
+                assert candidates,variant
+                changed.append(deepcopy(candidates[0]))
+            elif variant=='extra_operation':current['results.json']['operations'].append(deepcopy(operation))
+            else:current['manifest.json']['broker_instances'].append({'broker_id':uid(997),'ledger_owner_id':uid(998)})
+            try:report,passed=evaluate(current,changed,selected)
+            except c.LiveError as error:assert error.code in ('engagement_live_evidence_invalid','engagement_live_evidence_incomplete'),(number,variant,error.code)
+            else:assert report['missing_evidence'] or not passed,(number,variant)
 
 
 def _cancelled_native_begin_replay(loaded,original_rows):
@@ -2652,7 +3011,7 @@ def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch):
     from test_secure_engagement_live_runtime import declared_readiness,declared_cleanup
     from test_secure_engagement_live_contract import M,clock
     from recon_cockpit.secure_agent import engagement_dispatch_contract as ledger
-    manifest,members=useful_fixture(monkeypatch)
+    manifest,members=useful_fixture(monkeypatch,distinct_sources=True)
     loaded,original_rows,_=e._load_members(manifest,members,time.monotonic()+15)
     from recon_cockpit.secure_agent import engagement_live_context as context
     context.validate_live_context(loaded)

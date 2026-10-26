@@ -704,6 +704,35 @@ The source packages for all 78 recovery-capable fixture configurations were
 also checked statically against the existing two-MiB bound; all fit. Fresh frozen
 portable/native validation and final acceptance remain required.
 
+Freeze thirty-two at `e21c545` passed all 160 portable cases, N04 with both
+saved inspections, and all five CI jobs with 29,085 passes and 2,347 deselections
+each. The native batch passed N44, N42 and N43, then stopped at N45 saved
+inspection. N46 and later batches remained unexecuted. N45 retained a cancelled
+CAPTURE request without a reply, actual native observation, nonempty raw output,
+complete cleanup and its full reservation charge. Its crashed broker had no
+sealed lifecycle STOP, which the existing cancelled-CAPTURE proof required.
+The original bundle and incomplete report remain unchanged.
+
+The correction preserves the common CAPTURE checks and graceful-stop proof,
+then separately validates the fixed N45/N46 crash cause: the selected source
+configuration, actual native budget and endpoint progress, original GO and full
+durable charge, the host signal window, exact killed process identity and
+bounded physical closure. Null signal clocks remain null; no reply, final meter,
+completion, useful result or refund is manufactured. Progress uses the GO guard
+clock and retained stream order rather than assuming that an event must follow
+the broker's post-send journal timestamp. Existing N44 proof logic is unchanged.
+
+All 56 focused tests passed, including full supervision and case predicates for
+N45/N46, distinct graceful-stop controls, capture-before/after-cancellation cuts,
+delayed journals and contradictory evidence. Complete helper startup also passed
+with actual cleanup in 623 ms under its original two-second bound. Five unchanged
+crash bundles, including both N44 paths and the failed N45 bundle, passed ten
+bounded Python/CLI reads with source, evidence and original counts preserved.
+All 78 recovery-capable source variants fit the existing package cap; the largest
+has 310 bytes remaining. These focused and replay results grant no fresh native
+acceptance. Refreeze this correction and prioritize N45 before resuming the
+remaining required validation and independent acceptance review.
+
 All 113 new native cases,
 15 accepted regressions, saved-bundle inspections,
 the complete portable suite and CI remain required. Earlier passes do not

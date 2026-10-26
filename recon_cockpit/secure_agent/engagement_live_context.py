@@ -198,7 +198,7 @@ def validate_supervision_transcript(loaded, rows=None, *, deadline=None):
         return _validate_supervision(loaded, _retained_rows(loaded) if rows is None else rows, end)
 
 
-def _cancelled_capture_terminal(loaded, rows, row, operation, slot, closure):
+def _cancelled_capture_terminal(loaded, rows, row, operation, slot, closure, *, native_budget=None):
     """A fully observed cancelled CAPTURE stays terminal with no reply.
 
     Only retained host facts establish this negative exchange. They do not
@@ -286,7 +286,122 @@ def _cancelled_capture_terminal(loaded, rows, row, operation, slot, closure):
                 <= thread['first_stop_requested_at_ns']
                 and final['observed_at_ns'] <= body['cleanup_deadline_ns']
                 <= min(hard, body['observed_at_ns'] + c.CLEANUP_NS)): return True
-    return False
+    return _cancelled_capture_crash_cause(loaded, rows, row, operation, slot, thread, final, native_budget, hard)
+
+
+def _cancelled_capture_crash_cause(loaded, rows, row, operation, slot, thread, final, budget, hard):
+    """Join a fixed partial-progress crash to the common cancelled CAPTURE proof.
+
+    Null-clock host rows bound a signal window, not a syscall timestamp.
+    """
+    from . import engagement_live_contract as c
+    from . import engagement_live_protocol as protocol
+    manifest = loaded['manifest.json']; prepared = operation['prepared']; env = prepared['envelope']
+    cases = {'S42C-N45': ('kill_during_partial_request', 'recv'), 'S42C-N46': ('kill_during_partial_response', 'send')}
+    selected = cases.get(manifest['case_id'])
+    if (selected is None or budget is None or len(loaded['results.json']['operations']) != 1
+            or slot['role'] != 'nmap' or env['slot'] != 'http_identify'
+            or operation['host_capture']['status'] != 'cancelled' or operation['meter'] is not None): return False
+    variant, progress_kind = selected; broker = env['broker_id']; did = env['dispatch_id']; digest = c.prepared_digest(prepared)
+    if manifest['broker_instances'] != [{'broker_id': broker, 'ledger_owner_id': env['ledger_owner_id']}]: return False
+    def matches(value, observer=broker):
+        return value['observer_id'] == observer and all(value[k] == env[k] for k in ('broker_id', 'session_id', 'dispatch_id'))
+    instrumentation = loaded['runtime.json']['instrumentation']; sources = loaded['runtime.json']['runtime']['sources']
+    config = {'case_id': manifest['case_id'], 'variant': variant, 'role': 'endpoint'}
+    expected = {x['sha256'] for x in sources if x['module'] in ('engagement_live_endpoint_worker', 'engagement_live_broker_worker')}
+    configured = [x['source_sha256'] for x in instrumentation if x['kind'] == 'sealed_fault' and x['configuration'] == config]
+    signals = [x for x in instrumentation if x['kind'] == 'process_signal' and x['configuration'] == {**config, 'role': 'broker'}]
+    reviews = [x for x in instrumentation if x['kind'] == 'scripted_review' and x['configuration'] == {**config, 'role': 'host'}]
+    if (len(expected) != 2 or len(configured) != 2 or set(configured) != expected or len(signals) != 1
+            or len(reviews) != 1 or signals[0]['source_sha256'] != reviews[0]['source_sha256']): return False
+    goes = [x for x in rows if x['row']['kind'] == 'protocol' and x['row']['dispatch_id'] == did
+        and x['row']['data']['frame']['operation'] == 'GO']
+    if len(goes) != 1: return False
+    go = goes[0]; data = go['row']['data']; release = data['frame']['body']; segment = manifest['transcript']['segments'][go['segment']]
+    if (go['source'] != 'broker_memfd' or not matches(go['row']) or data['direction'] != 'sent'
+            or data['channel_role'] != 'launcher' or data['frame']['channel_id'] != slot['launcher_id']
+            or segment['source'] != 'broker_memfd' or segment['broker_id'] != broker or segment['status'] != 'reaped_partial'): return False
+    protocol.validate_frame(data['frame'], role='launcher', direction='request')
+    if (any(release[k] != env[k] for k in ('broker_id', 'ledger_owner_id', 'session_id', 'dispatch_id'))
+            or release['prepared_sha256'] != digest or release['envelope_sha256'] != c.envelope_digest(env)): return False
+    recovery = loaded.get('recovery-ledger.json')
+    if recovery is None: return False
+    reserved = [x for x in recovery['reservations'] if x['dispatch_id'] == did]
+    events = [x for x in recovery['events'] if x['request']['operation'] == 'reserve' and x['request']['body']['dispatch_id'] == did]
+    if len(reserved) != 1 or len(events) != 1: return False
+    reservation = reserved[0]; event = events[0]; receipt = event['receipt']
+    if (any(reservation[k] != env[k] for k in ('session_id', 'slot', 'generation', 'revision', 'action_sha256', 'policy_sha256'))
+            or reservation['owner_id'] != env['ledger_owner_id'] or reservation['reservation'] != env['cost']
+            or reservation['action_id'] != prepared['action']['action_id']
+            or (event['event_id'], event['sequence'], receipt['state_sha256']) !=
+                (release['reservation_event_id'], release['reservation_sequence'], release['reservation_state_sha256'])
+            or any(recovery['state']['usage'][k] < receipt['usage'][k] or receipt['usage'][k] < env['cost'][k] for k in env['cost'])): return False
+    if any(x['request']['operation'] == 'complete' and x['request']['body']['dispatch_id'] == did
+            for name in ('initial-ledger.json', 'final-ledger.json', 'recovery-ledger.json')
+            for x in loaded.get(name, {}).get('events', [])): return False
+    bound = thread['cleanup_deadline_ns']  # Already bounded by original/first-stop deadlines.
+    roles = _retained_role_observations(rows)
+    indices = [key[1] for key, value in roles.items() if key[0] == broker and key[2] == 'launcher'
+        and value[0]['worker_ready']['worker_id'] == slot['launcher_id']]
+    if len(indices) != 1 or (broker, indices[0], 'endpoint') not in roles: return False
+    endpoint = roles[(broker, indices[0], 'endpoint')][0]
+    if endpoint not in loaded['processes.json']['readiness'] or endpoint['parent_observation']['sampled_at_ns'] > go['row']['observed_at_ns']: return False
+    progress = [x for x in rows if x['row']['kind'] == 'meter' and x['row']['dispatch_id'] == did]
+    if not 1 <= len(progress) <= 64: return False
+    previous = release['guard_clock']['mono_after_ns']; sequence = go['row']['row_sequence']; accepted = received = sent = 0
+    for number, item in enumerate(progress, 1):
+        value = item['row']; event = runtime.validate_meter_event(value['data']); kind = event['kind']
+        if (item['source'] != 'broker_memfd' or item['segment'] != go['segment'] or not matches(value)
+                or event['sequence'] != number or value['row_sequence'] <= sequence or (kind == 'arm') != (number == 1)
+                or not previous <= event['monotonic_ns'] <= value['observed_at_ns'] < hard
+                or not budget['started_at_ns'] <= event['monotonic_ns'] < min(budget['native_deadline_ns'], release['effect_stop_ns'])): return False
+        previous = event['monotonic_ns']; sequence = value['row_sequence']
+        if kind == 'accept': accepted += 1
+        if event['connection'] != accepted or accepted > 3 or event['reason'] is not None or kind in ('close', 'cancel'): return False
+        if kind in ('recv', 'send'):
+            if not accepted or event['remaining_before'] != 4096 - (received if kind == 'recv' else sent) or event['actual_bytes'] < 1: return False
+            if kind == 'recv': received += event['actual_bytes']
+            else: sent += event['actual_bytes']
+        elif any(event[k] for k in ('requested_bytes', 'actual_bytes', 'remaining_before', 'remaining_after')): return False
+    last = progress[-1]['row']['data']
+    if (last['kind'] != progress_kind or (last['actual_bytes'], last['requested_bytes']) !=
+            (1, 4096 if progress_kind == 'recv' else 1)
+            or any(x['row']['data']['kind'] == progress_kind for x in progress[:-1])
+            or (progress_kind == 'recv' and sent or progress_kind == 'send' and not received)): return False
+    phases = [x for x in rows if x['row']['kind'] == 'phase' and x['row']['dispatch_id'] == did
+        and x['row']['data']['phase'] == 'client' and x['row']['data']['stage'] in ('begin', 'end')]
+    ends = [x for x in phases if x['row']['data']['stage'] == 'end']
+    if len(ends) != 1: return False
+    end = ends[0]; begins = [x for x in phases if x['row']['data']['stage'] == 'begin'
+        and x['row']['observed_at_ns'] <= end['row']['observed_at_ns']]
+    if len(begins) != 1: return False
+    begin = begins[0]
+    if begin['segment'] != end['segment'] or begin['row']['row_sequence'] >= end['row']['row_sequence']: return False
+    for item in (begin, end):
+        value = item['row']; phase = value['data']; part = manifest['transcript']['segments'][item['segment']]
+        if (item['source'] != 'role_observer' or part['source'] != 'role_observer' or part['status'] != 'observer_complete'
+                or not matches(value) or phase['related_sha256'] != digest or phase['clock'] is not None
+                or phase['reason'] is not None or phase['original_deadline_ns'] != env['action_deadline_ns']): return False
+    began = begin['row']['observed_at_ns']; ended = end['row']['observed_at_ns']
+    if not (progress[-1]['row']['observed_at_ns'] <= began <= ended <= final['observed_at_ns'] <= bound
+            and began <= thread['first_stop_requested_at_ns'] and ended < hard) or any(
+                x['row']['observed_at_ns'] > began for x in progress): return False
+    ready = [x for x in loaded['processes.json']['readiness'] if x['role'] == 'broker' and x['worker_ready']['worker_id'] == broker]
+    if len(ready) != 1: return False
+    parent = ready[0]['parent_observation']; receipts = loaded['cleanup.json']['receipts']
+    killed = [(receipt, process) for receipt in receipts for process in receipt['processes']
+        if process['pid'] == parent['payload']['pid'] and process['start_time_ticks'] == parent['payload']['start_time_ticks']]
+    if (not killed or sum(len(receipt['processes']) == 1 for receipt, _ in killed) != 1
+            or min(receipt['finished_at_ns'] for receipt, _ in killed) < began
+            or any(process['role'] != 'broker' or process['wrapper_pid'] != parent['wrapper']['pid']
+                or process['wrapper_returncode'] not in (-9, 137) for _, process in killed)): return False
+    if (any(x['status'] != 'complete' or x['deadline_ns'] > bound
+            or any(not p['pin_verified'] for p in x['processes']) for x in receipts)
+            or any(x['cleanup_finished_at_ns'] > bound or x['cleanup_deadline_ns'] > bound
+                for x in loaded['cleanup.json']['supervisors'])): return False
+    return not any(x['row']['kind'] == 'protocol' and x['row']['dispatch_id'] == did and (
+        x['row']['data']['frame']['operation'] in ('METER', 'RESULT') or
+        x['row']['data']['frame']['operation'] == 'OBSERVATION' and x['row']['data']['frame']['body']['kind'] == 'capture') for x in rows)
 
 
 def _cancelled_native_begin_terminal(loaded, rows, row, operation, slot, closure):
@@ -674,7 +789,8 @@ def _validate_supervision(loaded, rows, deadline):
         if reply is None:
             terminal.add(channel)
             resolved = (_cancelled_native_begin_terminal(loaded, rows, row, op, slot, closure)
-                if operation == 'NATIVE_BEGIN' else _cancelled_capture_terminal(loaded, rows, row, op, slot, closure))
+                if operation == 'NATIVE_BEGIN' else _cancelled_capture_terminal(loaded, rows, row, op, slot, closure,
+                    native_budget=dispatches[did]['native_budget'] if stage == 'native' else None))
             if not resolved: missing.add('transcript')
             continue
         expected_reply = reply_sequences.get(channel, 0) + 1
