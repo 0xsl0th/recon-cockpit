@@ -668,20 +668,25 @@ def _startup_runtime_case(case,directory):
                     try:os.close(fd)
                     except OSError:pass
                 variants.runtime_globals['_LIVE_FAULT_EXTRA_FDS'].clear()
-            if service is None or phase=='fault' and failure is None:raise AssertionError('actual owned startup refusal required')
-            if phase=='fault':
-                records=variants.runtime_globals['_LIVE_FAULT_RECORDS']
-                if case['kind']=='pin_mutation':
-                    if len(records)!=1:raise AssertionError('one actual sealed input mutation')
-                    fault=deepcopy(records[0])
-                else:
-                    diagnostic=getattr(failure,'startup_diagnostics',b'')
-                    lines=[line.removeprefix(b'LIVE-RUNTIME-OBS ') for line in diagnostic.splitlines() if line.startswith(b'LIVE-RUNTIME-OBS ')]
-                    if len(lines)!=1:raise AssertionError('actual received descriptor observation required')
-                    fault=json.loads(lines[0])
-            if not service._verified_reaped():raise AssertionError('previous owner must be actually reaped before reuse')
-            manifest,members=service._evidence_payload(case_id=case['case_id'],instrumentation=variants.instrumentation,recover=True)
-            payloads.append((manifest,members))
+            try:
+                if service is None or phase=='fault' and failure is None:raise AssertionError('actual owned startup refusal required')
+                if phase=='fault':
+                    records=variants.runtime_globals['_LIVE_FAULT_RECORDS']
+                    if case['kind']=='pin_mutation':
+                        if len(records)!=1:raise AssertionError('one actual sealed input mutation')
+                        fault=deepcopy(records[0])
+                    else:
+                        diagnostic=getattr(failure,'startup_diagnostics',b'')
+                        lines=[line.removeprefix(b'LIVE-RUNTIME-OBS ') for line in diagnostic.splitlines() if line.startswith(b'LIVE-RUNTIME-OBS ')]
+                        if len(lines)!=1:raise AssertionError('actual received descriptor observation required')
+                        fault=json.loads(lines[0])
+                if not service._verified_reaped():raise AssertionError('previous owner must be actually reaped before reuse')
+                manifest,members=service._evidence_payload(case_id=case['case_id'],instrumentation=variants.instrumentation,recover=True)
+                payloads.append((manifest,members))
+            except BaseException as error:
+                if service is not None:error.engagement_session=service
+                if failure is not None:error.startup_failure=failure
+                raise
     if control_ready is None or fault is None:raise AssertionError('physical control and refusal required')
     proof={'schema_version':'1','case_id':case['case_id'],'role':case['role'],'kind':case['kind'],
         'runtime_sha256':payloads[0][0]['runtime_sha256'],'source_sha256':variants.records[0]['after_sha256'],
@@ -1083,6 +1088,65 @@ def _eof_action_source(variants):
     variants.source('engagement_live_endpoint_worker',transform)
 
 
+def _wait_lifecycle_capture(service,prepared,pending):
+    """Observe the real in-flight CAPTURE before applying this fixed fault."""
+    env=prepared['envelope'];digest=contract.prepared_digest(prepared)
+    limit=min(env[k] for k in ('action_deadline_ns','session_deadline_ns','broker_deadline_ns'))-contract.CLEANUP_NS
+    while time.monotonic_ns()<limit:
+        service._control.check()
+        rows=[row for row in service._host_evidence_budget.snapshot()['rows']
+            if row['kind']=='supervision_projection' and row['dispatch_id']==env['dispatch_id']
+            and row['data']['kind']=='rpc' and row['data']['request']['operation']=='CAPTURE']
+        if rows:
+            if len(rows)!=1:raise AssertionError('one actual pending CAPTURE')
+            row=rows[0];data=row['data']
+            if (data['prepared_sha256']!=digest or data['reply'] is not None or data['local_error'] is not None
+                    or any(row[k]!=env[k]for k in ('broker_id','session_id','dispatch_id'))):
+                raise AssertionError('actual CAPTURE still in flight')
+            return row
+        if pending.done():raise AssertionError('action ended before pending CAPTURE')
+        time.sleep(min(.005,max(0,(limit-time.monotonic_ns())/contract.SECOND)))
+    raise TimeoutError('original pending CAPTURE boundary')
+
+
+def _lifecycle_stop_observed(service,prepared,owner,pending,variant):
+    """No explicit close can stand for the EOF detector under test."""
+    import socket
+    _wait_lifecycle_capture(service,prepared,pending)
+    if pending.done() or service._stop.is_set() or service._cleanup_epoch.snapshot() is not None:
+        raise AssertionError('live unfenced action before lifecycle stimulus')
+    terminal_ticket=_phase_ticket(service)
+    cleanup=None;env=prepared['envelope']
+    hard=min(env[k]for k in ('action_deadline_ns','session_deadline_ns','broker_deadline_ns'))
+    try:
+        begin=_phase_observation(service,prepared,'client','begin',clock=contract.sample_clock())
+        triggered=begin['observed_at_ns'];hard=min(hard,triggered+contract.CLEANUP_NS)
+        if variant=='actual_payload_and_wrapper_reaped':
+            service._cleanup_epoch.stop(bound_deadline_ns=hard)
+            cleanup=service.close()
+        else:
+            owner.channel.shutdown(socket.SHUT_RDWR)
+            # Same original two-second budget; reserve 1900ms for cleanup.
+            detect=min(triggered+100000000,hard-1900000000)
+            while not (service._stop.is_set() and service._cleanup_epoch.snapshot() is not None):
+                if time.monotonic_ns()>=detect or pending.done():
+                    raise AssertionError('autonomous EOF stop not observed before cleanup reserve')
+                time.sleep(min(.001,max(0,(detect-time.monotonic_ns())/contract.SECOND)))
+        _phase_observation(service,prepared,'client','end',clock=contract.sample_clock(),ticket=terminal_ticket)
+        terminal_ticket=None
+    finally:
+        if terminal_ticket is not None:service._host_evidence_budget.release(terminal_ticket)
+        service._cleanup_epoch.stop(bound_deadline_ns=hard)
+        if cleanup is None:cleanup=service.close()
+    try:pending.result(timeout=max(0,(hard-time.monotonic_ns())/contract.SECOND))
+    except contract.LiveError:pass
+    else:raise AssertionError('terminal lifecycle fault must not settle the action')
+    if (not pending.done() or cleanup['status']!='complete' or cleanup['finished_at_ns']>hard
+            or cleanup['finished_at_ns']-triggered>contract.CLEANUP_NS):
+        raise AssertionError('one original physical cleanup budget')
+    return triggered,cleanup
+
+
 def _lifecycle_runtime_case(case,directory):
     import socket
     from concurrent.futures import ThreadPoolExecutor
@@ -1100,12 +1164,7 @@ def _lifecycle_runtime_case(case,directory):
                 active=_read_test_observation(session['endpoint'].owner.process,b'LIVE-EOF-ACTIVE ',service._control)
                 if active['dispatch_id']!=prepared['envelope']['dispatch_id'] or active['envelope_sha256']!=contract.envelope_digest(prepared['envelope']) or not 0<active['received_request_bytes']<=4096:raise AssertionError('actual admitted request before EOF')
                 private_write(directory/'lifecycle-active.json',canonical(active))
-                triggered=time.monotonic_ns();end=triggered/1e9+2
-                if case['variant']!='actual_payload_and_wrapper_reaped':owner.channel.shutdown(socket.SHUT_RDWR)
-                cleanup=service.close()
-                try:pending.result(timeout=max(0,end-time.monotonic()))
-                except contract.LiveError:pass
-                if not pending.done() or cleanup['status']!='complete' or cleanup['finished_at_ns']-triggered>2000000000:raise AssertionError('one original physical cleanup budget')
+                triggered,cleanup=_lifecycle_stop_observed(service,prepared,owner,pending,case['variant'])
             finally:pool.shutdown(wait=False,cancel_futures=True)
         final=max(service._cleanup_receipts,key=lambda value:value['finished_at_ns'])
         origin={'role_EOF_broker':'broker_eof','role_EOF_endpoint':'endpoint_eof',
@@ -1117,7 +1176,8 @@ def _lifecycle_runtime_case(case,directory):
             'runtime_sha256':runtime.runtime_digest(service._runtime),'source_sha256':variants.records[0]['after_sha256'],
             'observation_sha256':sha(canonical(raw)),'control_observation_sha256':sha(canonical(control)),
             'started_at_ns':triggered,'finished_at_ns':cleanup['finished_at_ns'],'checks':{case['variant']:True}}
-        manifest,members=service._evidence_payload(case_id=case['case_id'],instrumentation=variants.instrumentation,
+        host=_core_instrumentation({'id':case['case_id'],'variant':case['variant']})
+        manifest,members=service._evidence_payload(case_id=case['case_id'],instrumentation=[*variants.instrumentation,host],
             boundary_proofs=[proof],boundary_observations=[{'kind':case['kind'],'observation':raw}],recover=True)
     return _write_case_payload(directory,(manifest,members,time.monotonic()+15))
 

@@ -147,6 +147,7 @@ def test_prepare_echo_cannot_change_revision_or_scope():
         with pytest.raises(c.LiveError):
             obj.prepare(value['envelope']['session_id'],'http_identify')
     assert not reached and not obj._operations
+    assert obj._cleanup_epoch.action_bound_ns() == int(obj._control.deadline*c.SECOND)
     obj._broker = SimpleNamespace(prepare=lambda *a,**kw:{'prepared':value,'preparation':None})
     def partial_setup(*a):
         raise c.LiveError('engagement_live_unavailable')
@@ -154,6 +155,7 @@ def test_prepare_echo_cannot_change_revision_or_scope():
     with pytest.raises(c.LiveError,match='unavailable'):
         obj.prepare(value['envelope']['session_id'],'http_identify')
     assert obj._operations[value['envelope']['dispatch_id']]['result'] is None
+    assert obj._cleanup_epoch.action_bound_ns() == min(int(obj._control.deadline*c.SECOND), value['envelope']['action_deadline_ns'])
 
 
 def test_execute_requires_actual_review_reference():
@@ -386,6 +388,7 @@ def test_cancel_and_eof_do_not_start_followup():
 
 
 def test_lease_narrowing_never_renews_original_deadline(monkeypatch):
+    _registered_prepared_epoch_cases(monkeypatch)
     _idle_session_cleanup_reserve()
     _terminal_cleanup_budget_paths(monkeypatch)
     obj, row, value = service()
@@ -416,6 +419,78 @@ def test_lease_narrowing_never_renews_original_deadline(monkeypatch):
     assert received.stop(bound_deadline_ns=10_500_000_000)['deadline_ns'] == 10_500_000_000
     expired = module._CleanupEpoch(SimpleNamespace(deadline=1))
     assert expired.stop()['deadline_ns'] == c.SECOND
+
+
+def _registered_prepared_epoch_cases(monkeypatch):
+    from recon_cockpit.secure_agent.engagement_live_launcher import _FixedSupervisor
+    from test_secure_engagement_live_witness import complete_authority_fixture
+    loaded, _ = complete_authority_fixture()
+    declared = deepcopy(loaded['results.json']['operations'][0])
+    value, selected = declared['prepared'], declared['session']
+    did = value['envelope']['dispatch_id']; hard = value['envelope']['action_deadline_ns']
+    now = [M+c.SECOND]
+    with monkeypatch.context() as patch:
+        patch.setattr(time, 'monotonic_ns', lambda: now[0])
+        patch.setattr(time, 'monotonic', lambda: now[0]/c.SECOND)
+        obj, _, _ = service(); obj._operations.clear(); obj._sessions.clear()
+        obj._control = ExecutionControl((M+120*c.SECOND)/c.SECOND, clock=time.monotonic)
+        obj._cleanup_epoch = module._CleanupEpoch(obj._control)
+        row = {'opened':selected, 'stopped':False, 'launcher':SimpleNamespace(prepare=lambda *a: None),
+            'reviewer':SimpleNamespace(consume=lambda *a, **kw:
+                {'accepted':True, 'reference_sha256':'a'*64, 'consume_sequence':1})}
+        obj._sessions[selected['binding']['session_id']] = row
+        obj._broker = SimpleNamespace(prepare=lambda *a, **kw: {'prepared':value})
+        # First START may already have registered the same exact original.
+        obj._cleanup_epoch.register_action(did, hard)
+        assert obj.prepare(selected['binding']['session_id'], 'http_identify') == value
+        assert obj._cleanup_epoch.action_bound_ns() == hard
+        obj._audit = SimpleNamespace(emit=lambda *a, **kw: {'sequence':1})
+        obj._broker._dispatch_with_control = lambda *a, **kw: deepcopy(declared['result'])
+        assert obj.execute(value, 'a'*48, control=obj._control) == declared['result']
+        assert obj._operations[did]['result']['outcome'] == 'useful'
+        # This declared pure terminal result never retires an original bound.
+        # The next eligible slot can use only the remaining original window.
+        now[0] += c.SECOND
+        second = c.derive_prepared(selected, 'http_headers', dispatch_id=uid(11), clock=clock(2*c.SECOND))
+        obj._broker.prepare = lambda *a, **kw: {'prepared':second}
+        assert obj.prepare(selected['binding']['session_id'], 'http_headers') == second
+        assert second['envelope']['action_deadline_ns'] > hard
+        sup = _FixedSupervisor.__new__(_FixedSupervisor)
+        sup.control = obj._control; sup._deadline_ns = selected['binding']['session_deadline_ns']
+        sup.epoch = obj._cleanup_epoch; sup.stop = threading.Event(); sup.children = {}; sup._checking = False
+        sup.phase(second['envelope']['action_deadline_ns']).check()
+        now[0] = hard-c.CLEANUP_NS
+        with pytest.raises(c.LiveError, match='timeout'): sup.phase(second['envelope']['action_deadline_ns']).check()
+        assert sup.cleanup_bound_ns() == hard
+
+        now[0] = M+c.SECOND
+        epoch = module._CleanupEpoch(SimpleNamespace(deadline=(M+120*c.SECOND)/c.SECOND))
+        for index in range(4): epoch.register_action(uid(20+index), hard-index*c.SECOND)
+        assert epoch.action_bound_ns() == hard-3*c.SECOND
+        epoch.register_action(uid(20), hard)  # Exact confirmation is idempotent at capacity.
+        for delta in (-1, 1):
+            with pytest.raises(c.LiveError, match='dispatch_replayed'): epoch.register_action(uid(20), hard+delta)
+        with pytest.raises(c.LiveError, match='dispatch_replayed'): epoch.register_action(uid(24), hard)
+        observed = []
+        def stopped():
+            assert epoch._lock.acquire(blocking=False)
+            epoch._lock.release()
+            observed.append(epoch.snapshot())
+            assert observed[-1]['deadline_ns'] == hard-3*c.SECOND
+            assert epoch.stop(bound_deadline_ns=hard+c.SECOND) == observed[-1]
+        epoch._on_stop = stopped
+        now[0] = hard-c.SECOND  # A late first stop still gets no new original time.
+        initial = epoch.stop()
+        assert observed == [initial] and initial['deadline_ns'] == hard-3*c.SECOND
+        with pytest.raises(c.LiveError, match='cancelled'): epoch.register_action(uid(20), hard)
+        now[0] += c.SECOND
+        assert epoch.stop() == initial
+        earlier = epoch.stop(bound_deadline_ns=hard-4*c.SECOND)
+        assert earlier['deadline_ns'] == hard-4*c.SECOND
+        assert epoch.stop(bound_deadline_ns=hard+c.SECOND) == earlier
+        epoch._pid += 1
+        for call in (epoch.action_bound_ns, lambda: epoch.register_action(uid(20), hard)):
+            with pytest.raises(c.LiveError, match='foreign_owner'): call()
 
 
 def _terminal_cleanup_budget_paths(monkeypatch):

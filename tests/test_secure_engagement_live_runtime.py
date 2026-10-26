@@ -715,7 +715,134 @@ def test_aggregate_raw_capture_budget(monkeypatch):
     result=_client_result();result['stdout_bytes']=True;refused(context.validate_client_result,result)
 
 
+def _startup_diagnostic_read_cases(monkeypatch,reader=None,*,modes=None):
+    """Actual startup reader with a declared nonblocking FIFO readiness backend."""
+    import selectors
+    from recon_cockpit.secure_agent.execution import ExecutionControl,ExecutionStopped
+    reader=r._read_startup if reader is None else reader
+    marker=b'LIVE-RUNTIME-OBS {"refused":true}\n';checks=[]
+    for mode in (modes if modes is not None else ('poll_exit','stdout_eof_first','partial_then_eagain','drain_error','expired','deadline_during_drain','blocking_setup_failed','registration_failed','cap','stderr_overflow','ready_with_stderr')):
+        now=[10.];reads=[];selected=[];nonblocking=set();closed=[];position=[0]
+        setup_error=OSError(errno.EIO,'declared setup failure')
+        payload=b'x'*5000 if mode in ('cap','stderr_overflow')else marker
+        chunks=[payload[:5],payload[5:]]if mode in ('partial_then_eagain','deadline_during_drain')else[payload]
+        process=SimpleNamespace(stdout=SimpleNamespace(fileno=lambda:101),stderr=SimpleNamespace(fileno=lambda:102),
+            poll=lambda:78 if mode not in ('stdout_eof_first','stderr_overflow','ready_with_stderr')else None)
+        class Selector:
+            def __init__(self):self.keys={}
+            def register(self,fd,event,key):
+                if mode=='registration_failed'and fd==102:raise setup_error
+                self.keys[fd]=SimpleNamespace(fd=fd,data=key)
+            def unregister(self,fd):self.keys.pop(fd)
+            def select(self,timeout):
+                assert 0<=timeout<=.01;selected.append(timeout)
+                assert len(selected)<=2,'no additional wait budget'
+                order=(101,102)if mode=='stdout_eof_first'else(102,101)if mode=='ready_with_stderr'else(102,)
+                return[(self.keys[fd],selectors.EVENT_READ)for fd in order]
+            def close(self):closed.append(True)
+        def set_blocking(fd,blocking):
+            assert not blocking
+            if mode=='blocking_setup_failed'and fd==102:raise setup_error
+            nonblocking.add(fd)
+        def read(fd,maximum):
+            assert fd in nonblocking and 0<maximum<=4096
+            reads.append((fd,maximum))
+            if fd==101:return r.READY_PREFIX+b'{}\n'if mode=='ready_with_stderr'else b''
+            assert fd==102
+            if mode=='drain_error':raise OSError(errno.EIO,'declared stderr failure')
+            if not chunks or mode=='partial_then_eagain'and position[0]:raise BlockingIOError(errno.EAGAIN,'empty nonblocking pipe')
+            part=chunks[0][:maximum];chunks[0]=chunks[0][len(part):]
+            if not chunks[0]:chunks.pop(0)
+            position[0]+=1
+            if mode=='deadline_during_drain':now[0]=12.
+            return part
+        if mode=='expired':now[0]=12.
+        control=ExecutionControl(12.,clock=lambda:now[0]);error=None
+        with monkeypatch.context()as patch:
+            patch.setattr(selectors,'DefaultSelector',Selector);patch.setattr(r.os,'set_blocking',set_blocking)
+            patch.setattr(r.os,'read',read);patch.setattr(r.time,'monotonic',lambda:now[0])
+            try:reader(process,103,control,initial_info=b'{"child-pid":17}')
+            except BaseException as caught:error=caught
+            else:raise AssertionError('diagnostics never become READY')
+        assert closed==[True] and control.deadline==12.
+        assert error.startup_info==b'{"child-pid":17}'and len(error.startup_diagnostics)<=4096
+        if mode in ('blocking_setup_failed','registration_failed'):assert error is setup_error
+        elif mode=='expired':assert isinstance(error,ExecutionStopped)and error.reason=='session_timeout'
+        else:assert error.code==('engagement_live_limit_exceeded'if mode=='stderr_overflow'else'engagement_live_invalid_role'if mode=='ready_with_stderr'else'engagement_live_unavailable')
+        expected=b''if mode in ('drain_error','expired','blocking_setup_failed')else marker[:5]if mode in ('partial_then_eagain','deadline_during_drain')else b'x'*4096 if mode in ('cap','stderr_overflow')else marker
+        assert error.startup_diagnostics==expected,mode
+        if mode not in ('stdout_eof_first','stderr_overflow','ready_with_stderr'):assert selected==[]
+        if mode in ('expired','blocking_setup_failed'):assert reads==[]
+        checks.append({'schedule':mode,'retained_bytes':len(error.startup_diagnostics),'reads':reads,'select_calls':len(selected),'original_deadline':control.deadline})
+    return checks
+
+
+def _startup_failure_attachment_case(monkeypatch,source_path=None):
+    """Actual two-phase harness retains failure and service after closure."""
+    import ast
+    from contextlib import contextmanager
+    from recon_cockpit.secure_agent import engagement_live_session as session
+    source=Path(source_path)if source_path is not None else ROOT/'tests/engagement_live_native.py'
+    tree=ast.parse(source.read_text());node=next(n for n in tree.body if isinstance(n,ast.FunctionDef)and n.name=='_startup_runtime_case')
+    primary=c.LiveError('engagement_live_unavailable');primary.startup_diagnostics=b''
+    events=[];services=[];saved=[]
+    class Variants:
+        def __init__(self,*a,**kw):
+            self.runtime_globals={'_LIVE_FAULT_EXTRA_FDS':[],'_LIVE_FAULT_RECORDS':[]};self.records=[{'after_sha256':'a'*64}];self.instrumentation=[]
+        def __enter__(self):return self
+        def __exit__(self,*a):return False
+    class Service:
+        def __init__(self):self.index=len(services);self._runtime={};self.closed=False;services.append(self)
+        def close(self):
+            self.closed=True;self._cleanup={'status':'complete','declared_only':True};self._cleanup_receipts=[self._cleanup]
+            events.append(('close',self.index));return self._cleanup
+        def _remember_failure(self,error):assert error is primary;events.append(('remember',self.index))
+        def _verified_reaped(self):assert self.closed;events.append(('verified',self.index));return True
+        def _evidence_payload(self,**kw):assert self.closed;events.append(('payload',self.index));return {'runtime_sha256':'b'*64},{}
+    @contextmanager
+    def owned(*a,**kw):
+        service=Service()
+        try:yield service
+        finally:service.close()
+    @contextmanager
+    def terminal():yield
+    def exercise(service,case):
+        if service.index==1:raise primary
+        return SimpleNamespace(ready={'declared_control':True})
+    namespace={'SourceVariants':Variants,'terminal_input':terminal,'native_session':owned,'_actual_role':lambda case:'terminal',
+        '_startup_variant':lambda *a:None,'_exercise_runtime_role':exercise,'contract':c,'deepcopy':deepcopy,'time':r.time,'os':os,'json':json,
+        '_write_case_payload':lambda *a:saved.append(a)}
+    exec(compile(ast.Module(body=[node],type_ignores=[]),str(source),'exec'),namespace)
+    with monkeypatch.context()as patch:
+        patch.setattr(session,'_HostEvidenceBudget',lambda:object())
+        try:namespace['_startup_runtime_case']({'case_id':'S42C-X24','variant':'missing_descriptor_terminal','kind':'descriptor_custody','role':'terminal'},Path('/declared-no-files'))
+        except AssertionError as error:
+            assert str(error)=='actual received descriptor observation required'
+            assert error.engagement_session is services[1] and error.startup_failure is primary
+            # The actual capsule writer copies already-held plain state only.
+            # It may not call cleanup/recovery/observation methods to fill gaps.
+            before=list(events);capsules=[]
+            nodes=[n for n in tree.body if isinstance(n,ast.FunctionDef)and n.name in ('_failure_json','_save_case_failure')]
+            sink={'contract':c,'canonical':raw,'sha':sha,'Path':Path,'os':os,'time':r.time,
+                'private_write':lambda path,data:capsules.append((path,data))}
+            exec(compile(ast.Module(body=nodes,type_ignores=[]),str(source),'exec'),sink)
+            sink['_save_case_failure']('/declared-no-files','runtime','missing_descriptor_terminal',error)
+            assert events==before and len(capsules)==1
+            capsule=json.loads(capsules[0][1]);assert not capsule['acceptance']and len(capsule['sessions'])==1
+            assert capsule['exception_chain'][0]['links']['startup_failure']==1
+            assert capsule['exception_chain'][0]['session_index']==0
+            assert capsule['exception_chain'][1]['code']=='engagement_live_unavailable'
+            retained=next(x['value']for x in capsule['observations']if x['owner']=='session:0'and x['attribute']=='_cleanup')
+            assert retained==services[1]._cleanup and len(capsules[0][1])<=262144
+        else:raise AssertionError('missing marker remains a refusal')
+    assert len(services)==2 and all(service.closed for service in services)and not saved
+    assert events.count(('payload',0))==1 and ('payload',1)not in events and ('verified',1)not in events
+    return events
+
+
 def test_original_startup_deadline(monkeypatch,tmp_path):
+    _startup_diagnostic_read_cases(monkeypatch)
+    _startup_failure_attachment_case(monkeypatch)
     _supervised_phase_deadline_cases(monkeypatch)
     _pending_close_deadline_case(monkeypatch)
     calls=[]

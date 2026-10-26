@@ -119,7 +119,7 @@ class _FixedSupervisor:
         return _SupervisorControl(self, min(self._deadline_ns, deadline_ns))
 
     def cleanup_bound_ns(self):
-        deadlines = [self._deadline_ns]
+        deadlines = [self._deadline_ns, self.epoch.action_bound_ns()]
         deadlines.extend(row['prepared']['envelope']['action_deadline_ns'] for row in self.children.values()
                          if row['prepared'] is not None and row['state'] not in {'allocated', 'reaped'})
         return min(deadlines)
@@ -130,6 +130,7 @@ class _FixedSupervisor:
         self._checking = True
         try:
             now = time.monotonic_ns()
+            if now >= self.cleanup_bound_ns(): c.fail('timeout')
             for state in self.children.values():
                 if state['state'] in {'allocated', 'reaped'}:
                     continue
@@ -255,7 +256,7 @@ class _FixedSupervisor:
         epoch = self.epoch.snapshot()
         # A normal reap may already be in flight when another stop path fixes
         # the shared 1900 ms allowance. It must start with the same short cap.
-        return min(phase.deadline, now+1.9,
+        return min(phase.deadline, self.cleanup_bound_ns()/c.SECOND, now+1.9,
                    epoch['deadline_ns']/c.SECOND if epoch else phase.deadline)
 
     def _start_child(self, name, prepared, *, request_observed_ns=None):
@@ -280,6 +281,7 @@ class _FixedSupervisor:
             c.fail('invalid_role')
         deadline = min(value['envelope']['action_deadline_ns'], self._deadline_ns,
                        request_observed_ns + (2 if role == 'parser' else 10)*c.SECOND)
+        self.epoch.register_action(value['envelope']['dispatch_id'], value['envelope']['action_deadline_ns'])
         with self.state_lock:
             state.update(prepared=value, state='starting', pending=True, startup_deadline_ns=deadline)
             record = self._child_record(name); record['prepared_sha256'] = c.prepared_digest(value)
@@ -373,6 +375,7 @@ class _FixedSupervisor:
             return {'child_slot': name, **result}
         if operation == 'REAP':
             if state['state'] == 'reaped': c.fail('dispatch_replayed')
+            if state['binding']['role'] == 'parser': phase = self.phase(state['startup_deadline_ns'])
             cleanup = owner.close(deadline=self._normal_cleanup_deadline(phase))
             self._append('receipts', cleanup); self._record_capture(state)
             state['state'] = 'reaped' if _actually_reaped(cleanup) else 'cleanup_pending'

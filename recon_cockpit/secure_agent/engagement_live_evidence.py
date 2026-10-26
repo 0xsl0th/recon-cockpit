@@ -629,6 +629,11 @@ def _report(loaded,context,authority,manifest_sha,parser_count,tails):
     audit_closure=_audit_closure(loaded)
     cleanup=_cleanup_report(loaded,audit=audit_closure)
     if not _all_reaped(loaded,audit=audit_closure) or cleanup['status']=='incomplete':missing.add('cleanup')
+    if passed and missing=={'unsettled_dispatch'} and m['proof_kind']=='role_boundary':
+        from .engagement_live_context import _boundary_unsettled_dispatch,_retained_rows
+        selected=_boundary_unsettled_dispatch(loaded,_retained_rows(loaded))
+        if selected is not None and {x['dispatch_id']for x in operations if x['outcome']=='unresolved'}=={selected}:
+            missing.remove('unsettled_dispatch')
     report={'schema_version':'1','contract_sha256':CONTRACT_SHA256,'gates_sha256':GATES_SHA256,
         'manifest_sha256':manifest_sha,'evidence_class':m['evidence_class'],'proof_kind':m['proof_kind'],
         'case_id':m['case_id'],'case_passed':passed,'status':'incomplete' if missing else 'complete',
@@ -954,71 +959,103 @@ def _review_deadline_stopped(loaded,rows,operation):
 
 
 def _logical_deadline_fault(loaded,rows,operation,phase,case_id):
-    """Fixed owned clock-input proof; actual observation times remain OS times.
+    """Fixed clock-input proof joined to actual host RPC and process cleanup.
 
-    Context and authority replay have already validated the source inventory,
-    channel rows, native identities and cleanup. This predicate additionally
-    binds the injected check to those actual observations for this dispatch.
+    Logical expiry is not wall time. Separate producer journals may lag the
+    operation they describe; source-bound program order supplies that edge.
+    Context and authority replay remain required before this case predicate.
     """
     from . import engagement_live_contract as contract
-    variants={'S42C-N34':('deadline_during_native','native_observation'),
-              'S42C-N35':('deadline_during_result_cleanup','cleanup')}
+    variants={'S42C-N34':('deadline_during_native','native_observation','REAP','REAPED'),
+              'S42C-N35':('deadline_during_result_cleanup','cleanup','CAPTURE','CAPTURED')}
     if case_id not in variants:return False
-    variant,target=variants[case_id];prepared=operation['prepared'];env=prepared['envelope']
+    variant,target,request_name,reply_name=variants[case_id]
+    prepared=operation['prepared'];env=prepared['envelope'];digest=contract.prepared_digest(prepared)
     row=phase['row'];data=row['data'];original=env['action_deadline_ns'];anchor=env['clock_anchor']
+    hard=min(env[k] for k in ('action_deadline_ns','session_deadline_ns','broker_deadline_ns'))
     expected={'mono_before_ns':original,'mono_after_ns':original,
               'utc_ns':anchor['utc_ns']+original-anchor['mono_after_ns']}
     if (phase['source']!='broker_memfd' or row['kind']!='phase' or
-        row['broker_id']!=env['broker_id'] or row['observer_id']!=env['broker_id'] or
-        row['session_id']!=env['session_id'] or row['dispatch_id']!=env['dispatch_id'] or
+        any(row[k]!=env[k] for k in ('broker_id','session_id','dispatch_id')) or
+        row['observer_id']!=env['broker_id'] or not env['action_ready_ns']<=row['observed_at_ns']<hard or
         data['phase']!=target or data['stage']!='refused' or data['reason']!='engagement_live_timeout' or
-        data['original_deadline_ns']!=original or data['clock']!=expected or
-        data['related_sha256']!=contract.prepared_digest(prepared)):return False
+        data['original_deadline_ns']!=original or data['clock']!=expected or data['related_sha256']!=digest or
+        operation['result'] is not None or operation['client'] is not None):return False
+    if any(x['dispatch_id']==env['dispatch_id'] for name in ('initial-ledger.json','final-ledger.json','recovery-ledger.json')
+        for x in loaded.get(name,{}).get('completions',[])):return False
+    segment=loaded['manifest.json']['transcript']['segments'][phase['segment']]
+    if segment['broker_id']!=env['broker_id'] or segment['source']!='broker_memfd':return False
     configured={item['source_sha256'] for item in loaded['runtime.json']['instrumentation'] if
         item['configuration']=={'case_id':case_id,'variant':variant,'role':'launcher'}}
     sources={item['module']:item['sha256'] for item in loaded['runtime.json']['runtime']['sources']}
     if not all(sources.get(module) in configured for module in
         ('engagement_live_launcher_worker','engagement_live_broker_worker')):return False
-    packets=[]
-    for entry in rows:
-        observed=entry['row']
-        if (entry['source']=='broker_memfd' and observed['kind']=='protocol' and
-            observed['broker_id']==env['broker_id']==observed['observer_id'] and
-            observed['session_id']==env['session_id'] and observed['dispatch_id']==env['dispatch_id'] and
-            observed['data']['channel_role']=='launcher'):packets.append(observed)
+    packets=[entry['row'] for entry in rows if entry['source']=='broker_memfd' and
+        entry['segment']==phase['segment'] and entry['row']['kind']=='protocol' and
+        all(entry['row'][k]==env[k] for k in ('broker_id','session_id','dispatch_id')) and
+        entry['row']['observer_id']==env['broker_id'] and entry['row']['data']['channel_role']=='launcher']
     native=[item for item in packets if item['data']['direction']=='received' and
         item['data']['frame']['operation']=='NATIVE_OBSERVED' and
-        item['observed_at_ns']<=row['observed_at_ns'] and
         item['data']['frame']['body'] in loaded['processes.json']['native']]
     released=[item for item in packets if item['data']['direction']=='sent' and
-        item['data']['frame']['operation']=='GO' and item['observed_at_ns']<=row['observed_at_ns'] and
-        item['data']['frame']['body']['prepared_sha256']==contract.prepared_digest(prepared)]
-    if len(native)!=1 or len(released)!=1 or native[0]['observed_at_ns']<released[0]['observed_at_ns']:return False
-    parent=native[0]['data']['frame']['body']['parent_observation'];actual=parent['payload']
-    cleanups=[receipt for receipt in loaded['cleanup.json']['receipts'] if
+        item['data']['frame']['operation']=='GO' and item['data']['frame']['body']['prepared_sha256']==digest]
+    if len(native)!=1 or len(released)!=1:return False
+    native=native[0];released=released[0];channel=released['data']['frame']['channel_id']
+    if native['data']['frame']['channel_id']!=channel:return False
+    if not (released['row_sequence']<native['row_sequence']<row['row_sequence'] and
+        released['observed_at_ns']<=native['observed_at_ns']<=row['observed_at_ns']):return False
+    parent=native['data']['frame']['body']['parent_observation'];actual=parent['payload']
+    slots=[x for x in loaded['processes.json']['child_slots'] if x['launcher_id']==channel and
+        x['prepared_sha256']==digest and x['child_slot']==('identify_client' if env['slot']=='http_identify' else 'headers_client')]
+    if len(slots)!=1:return False
+    slot=slots[0]
+    cleanups=[receipt for receipt in loaded['cleanup.json']['receipts'] if len(receipt['processes'])==1 and
         any(item['pid']==actual['pid'] and item['start_time_ticks']==actual['start_time_ticks'] and
-            item['wrapper_pid']==parent['wrapper']['pid'] and item['wrapper_returncode'] is not None
-            and item['pin_verified'] and item['exit_observed'] and item['reaped_observed']
-            for item in receipt['processes']) and receipt['status']=='complete' and receipt['descriptors_closed']
-        and native[0]['observed_at_ns']<=receipt['started_at_ns']<=receipt['finished_at_ns']<=receipt['deadline_ns']<=original]
-    if not cleanups:return False
-    if case_id=='S42C-N35':
-        # CAPTURE returns actual host reaping before the fixed clock fault;
-        # its retained bytes are relayed afterward, without claiming wall expiry.
-        host=operation['host_capture']
-        if host is None:return False
-        cleanups=[receipt for receipt in cleanups if _sha(_canonical(receipt))==host['cleanup_sha256']
-            and receipt['finished_at_ns']<=row['observed_at_ns']]
-        if len(cleanups)!=1:return False
-        captures=[item for item in packets if item['data']['direction']=='received' and
-            item['data']['frame']['operation']=='OBSERVATION' and
-            item['data']['frame']['body']['kind']=='capture' and
-            item['observed_at_ns']>=row['observed_at_ns']]
-        if len(captures)!=1:return False
-        capture=captures[0]['data']['frame']['body']['data']
-        return all(capture[key]==host[key] for key in ('schema_version','slot','exit_code','truncated',
-            'stdout_bytes','stderr_bytes','stdout_sha256','stderr_sha256'))
-    return any(receipt['started_at_ns']>=row['observed_at_ns'] for receipt in cleanups)
+            item['wrapper_pid']==parent['wrapper']['pid'] and item['wrapper_returncode'] is not None and
+            all(item[k] for k in ('pin_verified','exit_observed','reaped_observed')) for item in receipt['processes']) and
+        receipt['status']=='complete' and receipt['descriptors_closed'] and
+        native['data']['frame']['body']['observed_at_ns']<=receipt['started_at_ns']<=receipt['finished_at_ns']<=receipt['deadline_ns']<=hard]
+    if len(cleanups)!=1:return False
+    receipt=cleanups[0];cleanup_hash=_sha(_canonical(receipt));host=operation['host_capture']
+    # Same launcher/source/child and wire projections bind the actually completed
+    # host call. No CAPTURED is synthesized from a null reply or a broker relay.
+    calls=[entry['row'] for entry in rows if entry['source']=='role_observer' and
+        entry['row']['kind']=='supervision_projection' and entry['row']['data']['kind']=='rpc' and
+        all(entry['row'][k]==env[k] for k in ('broker_id','session_id','dispatch_id')) and
+        entry['row']['observer_id']==channel and entry['row']['data']['launcher_id']==channel and
+        entry['row']['data']['child_slot']==slot['child_slot'] and entry['row']['data']['child_worker_id']==slot['worker_id'] and
+        entry['row']['data']['prepared_sha256']==digest and entry['row']['data']['request']['operation']==request_name]
+    if len(calls)!=1:return False
+    call=calls[0];rpc=call['data'];reply=rpc['reply']
+    if (rpc['local_error'] is not None or reply is None or reply['operation']!=reply_name or
+        reply['projection']['status']!='ok' or reply['projection']['code'] is not None or
+        reply['projection']['data']['cleanup_sha256']!=cleanup_hash or
+        not rpc['request']['observed_at_ns']<=receipt['started_at_ns']<=receipt['finished_at_ns']
+            <=reply['observed_at_ns']<=call['observed_at_ns']<hard):return False
+    # The exact broker process must outlive its retained marker append.
+    brokers=[x['parent_observation'] for x in loaded['processes.json']['readiness'] if
+        x['role']=='broker' and x['worker_ready']['worker_id']==env['broker_id']]
+    if len(brokers)!=1:return False
+    broker=brokers[0]
+    ended=[x['finished_at_ns'] for x in loaded['cleanup.json']['receipts'] if any(
+        p['pid']==broker['payload']['pid'] and p['start_time_ticks']==broker['payload']['start_time_ticks'] and
+        p['wrapper_pid']==broker['wrapper']['pid'] and p['reaped_observed'] for p in x['processes'])]
+    if not ended or not row['observed_at_ns']<=min(ended)<=hard:return False
+    captures=[item for item in packets if item['data']['direction']=='received' and
+        item['data']['frame']['operation']=='OBSERVATION' and item['data']['frame']['body']['kind']=='capture']
+    if case_id=='S42C-N34':return not captures and (host is None or
+        host['status']=='unresolved' and host['cleanup_sha256']==cleanup_hash)
+    if host is None or host['cleanup_sha256']!=cleanup_hash or receipt['finished_at_ns']>row['observed_at_ns']:return False
+    part=reply['projection']['data']
+    if part['host_capture_sha256']!=_sha(_canonical(host)) or part['status']!=host['status']:return False
+    # A present relay must agree; its absence stays absence. The successful host
+    # capture and raw-byte replay establish custody without claiming delivery.
+    return len(captures)<=1 and all(item['row_sequence']>row['row_sequence'] and
+        item['observed_at_ns']>=row['observed_at_ns'] and
+        _sha(_canonical(item['data']['frame']['body']['data']))==part['capture_sha256'] and all(
+        item['data']['frame']['body']['data'][key]==host[key] for key in
+        ('schema_version','slot','exit_code','truncated','stdout_bytes','stderr_bytes','stdout_sha256','stderr_sha256'))
+        for item in captures)
 
 
 def _changed_stop_cancellation(attempt, watches, stops, operations):
@@ -1910,11 +1947,11 @@ def write_live_bundle(directory,*,manifest,members,deadline=None):
         from .engagement_live_context import _retained_fixture_validation
         with _retained_fixture_validation(loaded,deadline=end):
             _context(loaded,end);_authority(loaded,rows,end)
-        # A late but fully observed emergency reap may be saved as failed evidence.
-        # An unverified still-running role may never be hidden by packaging.
-        from .engagement_live_contract import _deadline_context
-        with _deadline_context(end):
-            if not _all_reaped(loaded):_fail('cleanup_incomplete')
+            # A late but fully observed emergency reap may be saved as failed evidence.
+            # An unverified still-running role may never be hidden by packaging.
+            from .engagement_live_contract import _deadline_context
+            with _deadline_context(end):
+                if not _all_reaped(loaded):_fail('cleanup_incomplete')
         raw_manifest=_canonical(loaded['manifest.json'],32768)
         with _parent(directory,end) as (parent,parent_path,name,parent_identity):
             _check(end)

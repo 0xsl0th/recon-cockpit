@@ -205,6 +205,7 @@ def test_payload_identity_and_cleanup_are_not_boolean_claims(monkeypatch):
 
 
 def test_all_phases_share_original_deadline_and_cleanup(monkeypatch):
+    _retained_prepared_bound_cases(monkeypatch)
     _normal_cleanup_before_stop_cases(monkeypatch)
     _idle_supervisor_cleanup_reserve(monkeypatch)
     _supervisor_thread_deadline_cases(monkeypatch)
@@ -240,6 +241,7 @@ def _normal_cleanup_before_stop_cases(monkeypatch):
             now[0] = 100*c.SECOND
             owner = _FixedSupervisor.__new__(_FixedSupervisor)
             owner.control = ExecutionControl(original, clock=time.monotonic)
+            owner._deadline_ns = int(original*c.SECOND); owner.children = {}
             epoch = owner.epoch = _CleanupEpoch(owner.control)
             phase = _SupervisorControl(owner, int(original*c.SECOND))
             deadline = phase.normal_cleanup_deadline
@@ -261,6 +263,7 @@ def _normal_cleanup_before_stop_cases(monkeypatch):
         now[0] = 100*c.SECOND
         owner = _FixedSupervisor.__new__(_FixedSupervisor)
         owner.control = ExecutionControl(105., clock=time.monotonic)
+        owner._deadline_ns = 105*c.SECOND; owner.children = {}
         epoch = owner.epoch = _CleanupEpoch(owner.control)
         phase = _SupervisorControl(owner, 105*c.SECOND)
         assert phase.normal_cleanup_deadline == 101.9 and epoch.snapshot() is None
@@ -281,6 +284,144 @@ def _normal_cleanup_before_stop_cases(monkeypatch):
         assert stopped['deadline_ns'] == 100_600_000_000
         assert phase.normal_cleanup_deadline == 100.6
         assert epoch.stop(bound_deadline_ns=105*c.SECOND) == stopped
+
+
+def _retained_prepared_bound_cases(monkeypatch):
+    """Real supervisor transitions, declared owners/clock; no native proof."""
+    import base64
+    from recon_cockpit.secure_agent import engagement_live_launcher as host
+    from recon_cockpit.secure_agent import engagement_live_broker as broker
+    from recon_cockpit.secure_agent.engagement_live_session import _CleanupEpoch
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+    bundle, session, value, endpoint_ready = data()
+    hard = value['envelope']['action_deadline_ns']; did = value['envelope']['dispatch_id']
+    now = [M+c.SECOND]
+    with monkeypatch.context() as patch:
+        patch.setattr(time, 'monotonic_ns', lambda: now[0])
+        patch.setattr(time, 'monotonic', lambda: now[0]/c.SECOND)
+        def owner():
+            sup = host._FixedSupervisor.__new__(host._FixedSupervisor)
+            sup.control = ExecutionControl(session['binding']['broker_deadline_ns']/c.SECOND, clock=time.monotonic)
+            sup._deadline_ns = session['binding']['session_deadline_ns']
+            sup.epoch = _CleanupEpoch(sup.control); sup.stop = threading.Event()
+            sup.state_lock = threading.Lock(); sup.setup_lock = threading.Lock()
+            sup._checking = False; sup._request_ticket = None; sup._terminal_tickets = []
+            sup.failure = None; sup._failure_state = None; sup.opened = session
+            sup.channel = SimpleNamespace(shutdown=lambda how: None)
+            sup.launcher = SimpleNamespace(runtime=bundle, slot=SimpleNamespace(launcher_id=uid(700)),
+                endpoint=SimpleNamespace(identity=endpoint_ready,
+                    _namespace_lease=lambda control: SimpleNamespace(close=lambda: None)))
+            sup._sources = {'captures':{}, 'receipts':[], 'native':[], 'startup':[], 'prepared':[], 'child_slots':[]}
+            sup.children = {}
+            for index, (name, (role, _, _)) in enumerate(c.CHILD_SLOTS.items()):
+                sup.children[name] = {'binding':{'child_slot':name, 'role':role, 'worker_id':uid(800+index),
+                    'pair':{'child_endpoint':'declared endpoint'}}, 'endpoint':object(), 'owner':None,
+                    'capture':None, 'prepared':None, 'state':'allocated', 'startup_deadline_ns':None,
+                    'pending':False, 'start_resolved':False}
+                sup._sources['child_slots'].append({'child_slot':name, 'prepared_sha256':None,
+                    'bootstrap':None, 'entry_sha256':None})
+            return sup
+
+        sup = owner(); sup.epoch.register_action(did, hard)
+        ready = declared_readiness(bundle, 'nmap', pid=808)
+        receipt = declared_cleanup(ready, started=now[0]-100, finished=now[0])
+        capture = {'stdout':b'declared portable capture', 'stderr':b'', 'exit_code':0,
+            'truncated':False, 'status':'succeeded', 'cleanup':receipt, 'native_readiness':None}
+        state = sup.children['identify_client']
+        wire = {key:capture[key] for key in ('exit_code', 'truncated')}
+        wire.update(schema_version='1', slot=value['envelope']['slot'])
+        for stream in ('stdout', 'stderr'):
+            raw = capture[stream]
+            wire.update({stream+'_base64':base64.b64encode(raw).decode('ascii'),
+                stream+'_bytes':len(raw), stream+'_sha256':c.digest(raw)})
+        def captured(control):
+            control.check()
+            return {'capture':wire, 'cleanup':receipt, 'status':'succeeded'}
+        state.update(prepared=value, state='active_or_rpc', start_resolved=True,
+            owner=SimpleNamespace(cleanup=receipt), capture=SimpleNamespace(capture=captured,
+                partial=lambda: capture, native_deadline_ns=hard-c.CLEANUP_NS))
+        result = sup._execute('CAPTURE', {'child_slot':'identify_client'})
+        assert result['cleanup'] is receipt and state['state'] == 'reaped'
+        saved = sup._sources['captures'][did]
+        assert saved['stdout'] == capture['stdout'] and saved['host_capture']['cleanup_sha256'] == c.digest(c.canonical(receipt))
+        assert sup.cleanup_bound_ns() == hard and sup.epoch.snapshot() is None
+        # A reaped CAPTURE still waits for meter/parser/result. No new hard or
+        # work allowance is created merely because all owned clients exited.
+        now[0] = hard-c.CLEANUP_NS-1; sup.phase().check()
+        now[0] += 1
+        with pytest.raises(c.LiveError, match='timeout'): sup.phase().check()
+        sup.check_pending_deadlines()  # Hard bound is distinct from work cutoff.
+        now[0] = hard+1
+        with pytest.raises(c.LiveError, match='timeout'): sup.check_pending_deadlines()
+        with pytest.raises(c.LiveError, match='timeout'): sup.phase().check()
+        assert sup.cleanup_bound_ns() == hard
+        assert sup.epoch.stop()['deadline_ns'] == hard
+
+        # Normal cleanup uses the shared original minimum even when another
+        # explicit phase has a later own-action hard bound.
+        now[0] = M+c.SECOND; sup = owner()
+        earlier = now[0]+500_000_000
+        sup.epoch.register_action(uid(901), earlier)
+        phase = sup.phase(hard)
+        assert phase.normal_cleanup_deadline == earlier/c.SECOND
+        assert sup.epoch.snapshot() is None
+
+        # REAP must use the parser's actual retained short deadline, but client
+        # cleanup must retain its reserve after native work has already expired.
+        for name in ('identify_parser', 'identify_client'):
+            sup = owner(); sup.epoch.register_action(did, hard); deadlines = []
+            state = sup.children[name]; parser_end = now[0]+250_000_000
+            role = state['binding']['role']
+            actual_shape = declared_readiness(bundle, role, pid=820 if role == 'parser' else 821)
+            def closed(*, deadline):
+                deadlines.append(deadline)
+                cleanup = declared_cleanup(actual_shape, started=now[0], finished=now[0]+1)
+                cleanup['deadline_ns'] = int(deadline*c.SECOND)
+                return rt.validate_cleanup(cleanup)
+            state.update(prepared=value, state='ready', owner=SimpleNamespace(close=closed),
+                startup_deadline_ns=parser_end, start_resolved=True)
+            if name.endswith('_client'):
+                state['capture'] = SimpleNamespace(native_deadline_ns=now[0]-1, partial=lambda: None)
+            sup._execute('REAP', {'child_slot':name})
+            expected = parser_end/c.SECOND if name.endswith('_parser') else now[0]/c.SECOND+1.9
+            assert deadlines == [expected] and state['state'] == 'reaped'
+            refused(sup._execute, 'REAP', {'child_slot':name})
+            assert deadlines == [expected]
+
+        # First valid START records the original before spawning or receiving
+        # a host PREPARED reply. The real exchange refuses and stops after an
+        # owned spawn seam fails; no child/process is actually constructed.
+        sup = owner(); failures = []; callbacks = []; sent = []; rows = []
+        def notice():
+            assert sup.epoch._lock.acquire(blocking=False)
+            sup.epoch._lock.release()
+            callbacks.append(sup.epoch.snapshot())
+            assert callbacks[-1]['deadline_ns'] <= hard
+            sup.interrupt(bound_deadline_ns=hard+c.SECOND)
+        sup.epoch = _CleanupEpoch(sup.control, on_stop=notice)
+        sup.failure_sink = failures.append
+        sup.sequence = p.ChannelSequence(uid(700), 'launcher_supervision')
+        sup.budget = SimpleNamespace(record_request=lambda ticket, row: rows.append(deepcopy(row)),
+            finalize=lambda ticket, row: rows.append(deepcopy(row)), release=lambda ticket: None)
+        def failed_spawn(**kwargs):
+            assert sup.epoch.action_bound_ns() == hard
+            assert sup.children['identify_client']['pending']
+            c.fail('unavailable')
+        request = p.ChannelSequence(uid(700), 'launcher_supervision').make('START',
+            {'child_slot':'identify_client', 'prepared':value})
+        with patch.context() as startup:
+            startup.setattr(rt, '_spawn_child_owned', failed_spawn)
+            startup.setattr(broker, '_pair_identity', lambda peer: 'declared endpoint')
+            startup.setattr(p, 'receive_packet', lambda channel, **kw: kw['control'].check() or request)
+            startup.setattr(p, '_ready', lambda channel, **kw: kw['control'].check())
+            startup.setattr(p, 'send_once', lambda channel, raw: sent.append(raw) or len(raw))
+            with pytest.raises(c.LiveError, match='unavailable') as caught: sup._exchange(object())
+        state = sup.children['identify_client']
+        assert state['owner'] is None and state['start_resolved'] and not state['pending']
+        assert failures == [caught.value] and len(callbacks) == 1 and len(sent) == 1
+        assert rows[-1]['data']['reply']['projection']['status'] == 'refused'
+        assert sup._request_ticket is None and sup.cleanup_bound_ns() == hard
+        assert sup.epoch.stop(bound_deadline_ns=hard+c.SECOND) == callbacks[0]
 
 
 def _supervisor_expected_bound_ns(model):

@@ -1634,8 +1634,23 @@ class _CleanupEpoch:
         self._bound_ns = int(control.deadline * c.SECOND)
         self._lock = threading.Lock()
         self._value = None
+        self._actions = {}
         self._stop_event = threading.Event() if stop_event is None else stop_event
         self._on_stop = on_stop
+
+    def action_bound_ns(self):
+        if self._pid != os.getpid(): c.fail('foreign_owner')
+        with self._lock:
+            return min([self._bound_ns, *self._actions.values()])
+
+    def register_action(self, dispatch_id, deadline_ns):
+        if self._pid != os.getpid(): c.fail('foreign_owner')
+        with self._lock:
+            if self._value is not None: c.fail('cancelled')
+            if dispatch_id in self._actions:
+                if self._actions[dispatch_id] != deadline_ns: c.fail('dispatch_replayed')
+            elif len(self._actions) >= 4: c.fail('dispatch_replayed')
+            else: self._actions[dispatch_id] = deadline_ns
 
     @property
     def stopped(self):
@@ -1649,6 +1664,7 @@ class _CleanupEpoch:
         if bound_deadline_ns is not None:
             bound = min(bound, c.integer(bound_deadline_ns, 1, c.INTEGER_MAX))
         with self._lock:
+            bound = min([bound, *self._actions.values()])
             first = self._value is None
             if first:
                 # Reserve the contract's <=100 ms broker-death detection
@@ -1934,6 +1950,7 @@ class EngagementSession:
         with self._state_lock:
             if dispatch_id in self._operations or len(self._operations) >= 4:
                 c.fail('invalid_prepared')
+            self._cleanup_epoch.register_action(dispatch_id, value['envelope']['action_deadline_ns'])
             self._operations[dispatch_id] = {'session': row['opened'], 'prepared': value,
                 'result': None, 'client': None, 'meter': None, 'host_capture': None,
                 'elapsed_ms': dict.fromkeys(('review', 'admission', 'native', 'parser', 'cleanup', 'action'))}

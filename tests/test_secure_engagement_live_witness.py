@@ -123,7 +123,7 @@ def resequence(rows):
     return rows
 
 
-def complete_authority_fixture(*,runtime_sha256=None,runtime_bundle=None):
+def complete_authority_fixture(*,runtime_sha256=None,runtime_bundle=None,slot='http_identify'):
     """Real pure v2 history and declared protocol data; no native authority.
 
     The independently encoded producer/witness/projections all bind the same
@@ -136,7 +136,7 @@ def complete_authority_fixture(*,runtime_sha256=None,runtime_bundle=None):
     digest=runtime.runtime_digest(bundle)
     if runtime_sha256 is not None:assert runtime_sha256==digest
     session=opened();session['binding']['runtime_sha256']=digest
-    session=c.validate_session_opened(session);p=prepared(opened_value=session);env=p['envelope']
+    session=c.validate_session_opened(session);p=prepared(slot,opened_value=session);env=p['envelope']
     state,create=ledger._apply(None,{'schema_version':'2','engagement_id':uid(1),'event_id':uid(100),
         'operation':'create','expected_revision':None,'expected_generation':None,'body':session['roe']})
     initial=deepcopy(state)
@@ -144,13 +144,26 @@ def complete_authority_fixture(*,runtime_sha256=None,runtime_bundle=None):
         'operation':'session','expected_revision':1,'expected_generation':0,'body':{'owner_id':uid(3),
         'session_id':uid(4),'clock':clock(),'original_deadline_ns':M+60*c.SECOND}})
     assert session_receipt==session['session_receipt']['receipt']
+    if slot=='http_headers':
+        # Declared prior history satisfies the unchanged predecessor rule.
+        # This supplies no native success evidence for the selected action.
+        state,_=ledger._apply(state,{'schema_version':'2','engagement_id':uid(1),'event_id':uid(112),
+            'operation':'reserve','expected_revision':1,'expected_generation':0,'body':{'owner_id':uid(3),
+            'session_id':uid(4),'dispatch_id':uid(110),'slot':'http_identify','clock':clock(1),
+            'approval':{'broker_id':uid(115),'consume_sequence':1,'witness_sha256':'a'*64},
+            'audit':{'writer_id':uid(116),'audit_sequence':1,'event_sha256':'b'*64}}})
+        state,_=ledger._apply(state,{'schema_version':'2','engagement_id':uid(1),'event_id':uid(113),
+            'operation':'complete','expected_revision':None,'expected_generation':None,'body':{'owner_id':uid(3),
+            'session_id':uid(4),'dispatch_id':uid(110),'clock':clock(2),'outcome':'reported_success',
+            'observation':{'connections':2,'request_bytes':18,'response_bytes':79,'evidence_sha256':'c'*64}}})
+        initial=deepcopy(state)
     a=approval(p);araw=c.canonical(a);event=w.started_event(p);draw,source=audit(p)
     approval_observation={'raw_base64':base64.b64encode(araw).decode(),'raw_sha256':sha(araw),'witness':a,'received_at_ns':M+1}
     audit_observation={'producer_event':event,'producer_sha256':sha(legacy.event_bytes(event)),
         'raw_base64':base64.b64encode(draw).decode(),'raw_sha256':sha(draw),'received_at_ns':M+2}
     state,reservation=ledger._apply(state,{'schema_version':'2','engagement_id':uid(1),'event_id':uid(102),
         'operation':'reserve','expected_revision':1,'expected_generation':0,'body':{'owner_id':uid(3),
-        'session_id':uid(4),'dispatch_id':uid(10),'slot':'http_identify','clock':clock(3),
+        'session_id':uid(4),'dispatch_id':uid(10),'slot':slot,'clock':clock(3),
         'approval':{'broker_id':uid(5),'consume_sequence':1,'witness_sha256':sha(araw)},
         'audit':{'writer_id':uid(90),'audit_sequence':1,'event_sha256':sha(legacy.event_bytes(event))}}})
     lease=c.derive_effective_lease(p,state['reservations'][0],a,{'issued_at_ns':M},clock=clock(4))
@@ -166,8 +179,9 @@ def complete_authority_fixture(*,runtime_sha256=None,runtime_bundle=None):
     from recon_cockpit.secure_agent import engagement_live_protocol as protocol_codec
     with patch.object(c,'sample_clock',lambda:clock(100)),patch.object(endpoint.time,'monotonic_ns',lambda:M+100):
         meter=endpoint.Meter(p,uid(60),session['scope']);meter.arm(release)
-        meter.admit();assert meter.receive(Stream([b'']))==b''
-        meter.admit();stream=Stream([endpoint.IDENTIFY_REQUEST]);assert meter.receive(stream)==endpoint.IDENTIFY_RESPONSE
+        if slot=='http_identify':
+            meter.admit();assert meter.receive(Stream([b'']))==b''
+        meter.admit();stream=Stream([meter.expected]);assert meter.receive(stream)==meter.reply
         assert meter.send(stream);meter=meter.snapshot()
     observation={'connections':meter['accepted_connections'],'request_bytes':meter['received_request_bytes'],
         'response_bytes':meter['sent_response_bytes'],'client_output_bytes':1,

@@ -1,10 +1,16 @@
-# Continue here — 25 October 2026
+# Continue here — 26 October 2026
 
 ## Read this first
 
+The authoritative development checkpoint is `.secure-agent/continue-here.json`.
+It records the current commit, confirmed blockers, completed gates, active workers
+and next action. The validation history below preserves earlier attempts; its
+passes do not grant acceptance to later source. The former
+`.secure-agent/stage4-engagement-live-20261021/current-progress.json` is historical.
+
 This development checkpoint never resumes an assessment or restores approvals.
 
-Current continuation (24 October 2026):
+Historical continuation (24 October 2026):
 [PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94) is merged as `46f9b73`.
 Fresh independent authority/evidence reviews and 457 focused portable checks
 passed at `58c78e0`; all five final and [post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38767707515) passed. Reviewed and merged trees
@@ -140,7 +146,7 @@ completed work. The original 4–6 and intermediate 5–6 Stage 4 forecasts rema
 historical; no outcome is removed or added. S4.3 synthetic custody and S4.4
 separately authorized real use remain required. Completed milestones stay closed.
 
-**Current: S4.2c live engagement enforcement.** The active worktree is
+**S4.2c implementation and validation history.** The active worktree is
 `/tmp/recon-stage4-engagement-live`, branch `feature/stage4-engagement-live`,
 based on accepted merge `d8e1a6f`. The
 [implementation contract](stage4-engagement-live.md) and
@@ -741,7 +747,8 @@ This increment binds the
 accepted finite HTTP prefix to fresh isolated review, durable admission, trusted
 payload metering and bounded cancellation/cleanup. Both reviewer displays and
 all required live races need physical proof. Accepted modules and historical
-contracts retain their bytes; current status belongs in these status documents.
+contracts retain their bytes. Current run state belongs in the authoritative
+private checkpoint; these documents preserve milestone history.
 
 The ledger accepts only its fixed SQLite DELETE-journal format. Existing WAL-mode
 databases are refused without converting or changing the main database file.
@@ -751,9 +758,9 @@ access therefore does not promise that every invalid SQLite input leaves its
 directory unchanged. Saved-export inspection never opens SQLite. The original
 header-conversion failure and auxiliary-file observations are preserved separately.
 
-The private checkpoint is
-`.secure-agent/stage4-engagement-live-20261021/current-progress.json`;
-`.secure-agent/continue-here.json` is the repository-level recovery pointer.
+The authoritative private checkpoint is `.secure-agent/continue-here.json`.
+It links the retained diagnostic and acceptance evidence separately; diagnostic
+results and earlier-source passes are never promoted to current acceptance.
 Preserve every original failed attempt, including PR #101's constructor counter
 regression and corrected validation. S4.2a's contract remains pinned at `4a8d8ca`;
 its exact 68 cases and offline acceptance do not close live enforcement.
