@@ -7,6 +7,7 @@ accepted as physical proof. Every failed attempt remains in its private director
 from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+import fcntl
 import hashlib
 import json
 import os
@@ -638,13 +639,52 @@ def _merge_role_payloads(payloads,case,instrumentation,proof,observations):
     return manifest,members,time.monotonic()+15
 
 
+@contextmanager
+def _startup_diagnostic_readback(variants,case):
+    """Retain already available fixture bytes before owned startup cleanup."""
+    if case['kind']!='descriptor_custody':
+        yield;return
+    namespace=variants.runtime_globals;original=namespace['_read_startup']
+    def available(control):
+        # Read only already-published bounds; never start/renew cleanup or wait.
+        end=int(control.deadline*1000000000)
+        for _ in range(4):
+            if control is None:return time.monotonic_ns()<end
+            end=min(end,int(control.deadline*1000000000))
+            if time.monotonic_ns()>=end:return False
+            epoch=getattr(control,'_cleanup_epoch',None)
+            if epoch is not None:
+                if not epoch._lock.acquire(blocking=False):return False
+                try:
+                    value=epoch._value
+                    if value is not None:end=min(end,value['deadline_ns'])
+                finally:epoch._lock.release()
+            control=getattr(control,'parent',getattr(control,'original',None))
+        return control is None and time.monotonic_ns()<end
+    def read(process,info_read,control,*,initial_info=b''):
+        try:return original(process,info_read,control,initial_info=initial_info)
+        except BaseException as error:
+            if namespace['_LIVE_FAULT_ACTIVE']:
+                retained=getattr(error,'startup_diagnostics',b'')
+                try:
+                    fd=process.stderr.fileno()
+                    if type(retained)is bytes and len(retained)<4096 and not os.get_blocking(fd)and available(control):
+                        part=os.read(fd,4096-len(retained))
+                        if available(control):error.startup_diagnostics=retained+part
+                except (OSError,ValueError):pass
+            raise
+    namespace['_read_startup']=read
+    try:yield
+    finally:namespace['_read_startup']=original
+
+
 def _startup_runtime_case(case,directory):
     from recon_cockpit.secure_agent.engagement_live_session import _HostEvidenceBudget
     host_evidence_budget=_HostEvidenceBudget()
     role=_actual_role(case);mode='graphical_v1' if role=='graphical' else 'terminal'
     variants=SourceVariants(directory/'sources',case_id=case['case_id'],variant=case['variant'],role=case['role'])
     _startup_variant(variants,case);payloads=[];control_ready=None;fault=None;began=time.monotonic_ns()
-    with variants,terminal_input():
+    with variants,terminal_input(),_startup_diagnostic_readback(variants,case):
         for phase in ('control','fault'):
             variants.runtime_globals['_LIVE_FAULT_ACTIVE']=phase=='fault'
             service=None;failure=None
@@ -988,12 +1028,12 @@ def supporting_socket_source(variants,case):
     return selected
 
 
-def _read_test_observation(process,prefix,control,*,maximum=4096):
-    raw=bytearray()
+def _read_test_observation(process,prefix,control,*,maximum=4096,stderr_fd=None):
+    raw=bytearray();stream=process.stderr if stderr_fd is None else stderr_fd
     while not raw.endswith(b'\n'):
         control.check()
-        if not select.select([process.stderr],[],[],min(.01,control.remaining()))[0]:continue
-        part=os.read(process.stderr.fileno(),maximum+1-len(raw))
+        if not select.select([stream],[],[],min(.01,control.remaining()))[0]:continue
+        part=os.read(stream.fileno() if stderr_fd is None else stderr_fd,maximum+1-len(raw))
         if not part or len(raw)+len(part)>maximum:raise AssertionError('bounded actual probe observation')
         raw.extend(part)
     if not raw.startswith(prefix):raise AssertionError('fixed probe frame')
@@ -1129,9 +1169,14 @@ def _lifecycle_stop_observed(service,prepared,owner,pending,variant):
             # Same original two-second budget; reserve 1900ms for cleanup.
             detect=min(triggered+100000000,hard-1900000000)
             while not (service._stop.is_set() and service._cleanup_epoch.snapshot() is not None):
-                if time.monotonic_ns()>=detect or pending.done():
+                # Ingress EOF may finish execute before the separate monitor
+                # publishes its stop fence. Observe that fence under the same
+                # original detector budget; a failed future is not its proof.
+                if time.monotonic_ns()>=detect:
                     raise AssertionError('autonomous EOF stop not observed before cleanup reserve')
                 time.sleep(min(.001,max(0,(detect-time.monotonic_ns())/contract.SECOND)))
+            if time.monotonic_ns()>=detect:
+                raise AssertionError('autonomous EOF stop not observed before cleanup reserve')
         _phase_observation(service,prepared,'client','end',clock=contract.sample_clock(),ticket=terminal_ticket)
         terminal_ticket=None
     finally:
@@ -1259,19 +1304,32 @@ def _image_runtime_case(case,directory):
                 private_write(directory/'native-image-observation.json',canonical(observed))
                 native=observed['native'];image=observed['image']
                 did=prepared['envelope']['dispatch_id']
-                controls=[row['data']['frame']['body']['data'] for row in _live_rows(service)
-                    if row['kind']=='protocol' and row['dispatch_id']==did and row['data']['direction']=='received'
-                    and row['data']['frame']['operation']=='OBSERVATION' and row['data']['frame']['body']['kind']=='role_readiness'
-                    and row['data']['frame']['body']['data']['role']=='nmap']
-                if len(controls)!=1:raise AssertionError('same actual waiting native control')
-                control=controls[0]
-                if any(row['kind']=='protocol' and row['dispatch_id']==did and row['data']['frame']['operation']=='NATIVE_OBSERVED' for row in _live_rows(service)):raise AssertionError('failed observation must not publish readiness')
             else:
                 owner=_exercise_runtime_role(service,case);control=deepcopy(owner.ready)
                 try:runtime._live_parent_image_refusal(owner,service._runtime)
                 except contract.LiveError:pass
                 else:raise AssertionError('actual parent readback mutation did not refuse')
                 image=deepcopy(variants.runtime_globals['_LIVE_IMAGE_LAST'])
+        if native_case:
+            from recon_cockpit.secure_agent.engagement_live_witness import validate_transcript_row
+            with contract._deadline_context(service._control.deadline):
+                saved=service._broker.close_evidence(deadline=service._control.deadline)
+                transcript=saved['transcript']
+                if (transcript is None or transcript['status']!='sealed_complete' or transcript['seals']!=15
+                        or not transcript['raw'].endswith(b'\n')):
+                    raise AssertionError('actual sealed image-refusal transcript required')
+                rows=[]
+                for line in transcript['raw'].split(b'\n')[:-1]:
+                    contract._check_deadline(service._control.deadline)
+                    rows.append(validate_transcript_row(contract.decode(line)))
+                controls=[row['data']['frame']['body']['data'] for row in rows
+                    if row['kind']=='protocol' and row['dispatch_id']==did and row['data']['direction']=='received'
+                    and row['data']['frame']['operation']=='OBSERVATION' and row['data']['frame']['body']['kind']=='role_readiness'
+                    and row['data']['frame']['body']['data']['role']=='nmap']
+                if len(controls)!=1:raise AssertionError('same actual waiting native control')
+                control=controls[0]
+                if any(row['kind']=='protocol' and row['dispatch_id']==did and row['data']['frame']['operation']=='NATIVE_OBSERVED' for row in rows):
+                    raise AssertionError('failed observation must not publish readiness')
         raw={**image,'waiting_observation_sha256':sha(canonical(control)),
              'native_observation_sha256':None if native is None or case['case_id']=='S42C-X44' else sha(canonical(native)),
              'arm_emitted':False,'refused':True}
@@ -1481,6 +1539,50 @@ def _drain_meter_peer(channel,directory,case,raw,deadline):
             failure.meter_peer_retention_error=error
 
 
+@contextmanager
+def _meter_probe_custody(endpoint,control,*,with_peer):
+    """Passive host copies of existing probe readers, never new worker rights."""
+    stderr_fd=None;peer=None;failure=None
+    def identity(fd):
+        value=os.fstat(fd);return value.st_dev,value.st_ino,value.st_mode
+    try:
+        with contract._deadline_context(control.deadline):
+            control.check()
+            original=endpoint.process.stderr.fileno();expected=identity(original)
+            if not stat.S_ISFIFO(expected[2]):raise AssertionError('actual meter stderr pipe')
+            stderr_fd=os.dup(original)
+            if (identity(stderr_fd)!=expected or endpoint.process.stderr.fileno()!=original
+                    or identity(original)!=expected or os.get_inheritable(stderr_fd)
+                    or os.get_blocking(stderr_fd)
+                    or fcntl.fcntl(stderr_fd,fcntl.F_GETFL)&os.O_ACCMODE!=os.O_RDONLY):
+                raise AssertionError('fixed nonblocking meter stderr reader')
+            if with_peer:
+                original_peer=endpoint.channel.fileno();expected_peer=identity(original_peer)
+                if not stat.S_ISSOCK(expected_peer[2]):raise AssertionError('actual meter peer socket')
+                peer=endpoint.channel.dup()
+                if (identity(peer.fileno())!=expected_peer or endpoint.channel.fileno()!=original_peer
+                        or identity(original_peer)!=expected_peer or os.get_inheritable(peer.fileno())
+                        or peer.getblocking() or os.get_blocking(peer.fileno())):
+                    raise AssertionError('fixed nonblocking meter peer reader')
+            control.check()
+            yield stderr_fd,peer
+            control.check()
+    except BaseException as error:
+        failure=error;raise
+    finally:
+        errors=[]
+        if peer is not None:
+            try:peer.close()
+            except BaseException as error:errors.append(error)
+        if stderr_fd is not None:
+            try:os.close(stderr_fd)
+            except BaseException as error:errors.append(error)
+        if errors:
+            if failure is not None:failure.meter_probe_custody_errors=errors
+            else:raise errors[0]
+        if failure is None:control.check()
+
+
 def _meter_runtime_case(case,directory):
     variants=SourceVariants(directory/'sources',case_id=case['case_id'],variant=case['variant'],role=case['role'])
     slot=_meter_primitive_source(variants,case);began=time.monotonic_ns()
@@ -1490,24 +1592,30 @@ def _meter_runtime_case(case,directory):
             if slot=='http_headers':_useful(service,opened,'http_identify')
             prepared=service.prepare(sid,slot);reference=review_actual(service,prepared)
             endpoint=service._sessions[sid]['endpoint'].owner;control=deepcopy(endpoint.ready)
-            if 'connection_cap' not in case['variant']:
-                from recon_cockpit.secure_agent.engagement_live_endpoint_worker import IDENTIFY_REQUEST,headers_request
-                request=IDENTIFY_REQUEST if slot=='http_identify' else headers_request(opened['scope'])
-                if 'request_cap' in case['variant']:
-                    cap=4096 if slot=='http_identify' else 256;parts=[b'x'*cap,b'x']
-                elif case['variant']=='meter_partial_request':parts=[request[:7],request[7:]]
-                else:parts=[request]
-                for part in parts:runtime._send_bytes(endpoint.channel,part,service._control)
-                private_write(directory/'meter-peer-input.bin',b''.join(parts))
-            try:service.execute(prepared,reference,control=service._control)
-            except contract.LiveError:pass
-            raw=_read_test_observation(endpoint.process,b'LIVE-METER-OBS ',service._control)
-            observation=canonical(raw)
-            if len(observation)>4096:raise AssertionError('bounded actual meter observation')
-            private_write(directory/'meter-observation.json',observation)
-            if 'connection_cap' not in case['variant']:
-                _drain_meter_peer(endpoint.channel,directory,case,raw,service._control.deadline)
-            if case['kind']=='clock_boundary':raw['clock_source_sha256']=variants.records[0]['after_sha256']
+            probe_control=runtime._ClippedControl(service._control,prepared['envelope']['action_deadline_ns']/contract.SECOND)
+            with _meter_probe_custody(endpoint,probe_control,with_peer='connection_cap' not in case['variant']) as (stderr_fd,peer):
+                if peer is not None:
+                    from recon_cockpit.secure_agent.engagement_live_endpoint_worker import IDENTIFY_REQUEST,headers_request
+                    request=IDENTIFY_REQUEST if slot=='http_identify' else headers_request(opened['scope'])
+                    if 'request_cap' in case['variant']:
+                        cap=4096 if slot=='http_identify' else 256;parts=[b'x'*cap,b'x']
+                    elif case['variant']=='meter_partial_request':parts=[request[:7],request[7:]]
+                    else:parts=[request]
+                    for part in parts:runtime._send_bytes(endpoint.channel,part,service._control)
+                    private_write(directory/'meter-peer-input.bin',b''.join(parts))
+                try:service.execute(prepared,reference,control=service._control)
+                except contract.LiveError:pass
+                # Cleanup can close original wrappers before execute returns.
+                # Retained copies only drain actual bytes, under the same stop
+                # epoch when present; neither input nor work can be resumed.
+                epoch=service._cleanup_epoch.snapshot()
+                if epoch is not None:probe_control.deadline=min(probe_control.deadline,epoch['deadline_ns']/contract.SECOND)
+                raw=_read_test_observation(endpoint.process,b'LIVE-METER-OBS ',probe_control,stderr_fd=stderr_fd)
+                observation=canonical(raw)
+                if len(observation)>4096:raise AssertionError('bounded actual meter observation')
+                private_write(directory/'meter-observation.json',observation)
+                if peer is not None:_drain_meter_peer(peer,directory,case,raw,probe_control.deadline)
+                if case['kind']=='clock_boundary':raw['clock_source_sha256']=variants.records[0]['after_sha256']
         proof={'schema_version':'1','case_id':case['case_id'],'role':case['role'],'kind':case['kind'],
             'runtime_sha256':runtime.runtime_digest(service._runtime),'source_sha256':variants.records[0]['after_sha256'],
             'observation_sha256':sha(canonical(raw)),'control_observation_sha256':sha(canonical(control)),
@@ -2613,9 +2721,49 @@ def _owned_deadline_marker(self,phase):
         'prepared_sha256':c.prepared_digest(self.pending),'phase':phase,
         'original_deadline_ns':original,'clock':projected}}
     raw=c.canonical(frame,max_bytes=4096)
-    if not select.select([],[self.broker],[],.1)[1] or self.broker.send(raw)!=len(raw):
-        c.fail('unavailable')
-    self._owned_deadline_seen=True
+    # One existing 100ms phase cap includes send and acknowledgement. The
+    # logical projected clock is evidence only, never a new transport budget.
+    limit=min(time.monotonic_ns()+100000000,self.deadline_ns,
+        *(e[key] for key in ('action_deadline_ns','session_deadline_ns','broker_deadline_ns')),
+        self.release['effect_stop_ns'],int(self.client.native_deadline*c.SECOND))
+    expected={'schema_version':'1','channel_id':self.worker_id,'sequence':1,
+        'operation':'OWNED_DEADLINE_ACK','body':{'marker_sha256':c.digest(raw)}}
+    original_poll=self.poll_stop;sent=False;acknowledged=False
+    def poll():
+        nonlocal acknowledged
+        if not self.stopped and not self._polling and select.select([self.broker],[],[],0)[0]:
+            pending=self.broker.recv(32769,socket.MSG_PEEK)
+            if pending and c.decode(pending).get('operation')=='OWNED_DEADLINE_ACK':
+                import array
+                received,ancillary,flags,_=self.broker.recvmsg(4097,socket.CMSG_SPACE(256),
+                    socket.MSG_DONTWAIT|socket.MSG_CMSG_CLOEXEC)
+                if ancillary:
+                    for level,kind,data in ancillary:
+                        if level==socket.SOL_SOCKET and kind==socket.SCM_RIGHTS:
+                            fds=array.array('i');fds.frombytes(data[:len(data)-len(data)%fds.itemsize])
+                            for fd in fds:os.close(fd)
+                    c.fail('invalid_channel')
+                if (not sent or acknowledged or flags & ~socket.MSG_CMSG_CLOEXEC
+                        or received!=pending or received!=c.canonical(expected,max_bytes=4096)):
+                    c.fail('invalid_frame')
+                acknowledged=True
+        # Normal METER, STOP/CANCEL, EOF and host cancellation retain their
+        # production validation and precedence, including after a valid ACK.
+        original_poll()
+    self.poll_stop=poll
+    try:
+        control=self._control(limit)
+        with c._deadline_context(control.deadline):
+            p._ready(self.broker,writing=True,control=control)
+            if p.send_once(self.broker,raw)!=len(raw):c.fail('unavailable')
+            sent=True
+            while not acknowledged:
+                control.check()
+                if not acknowledged:
+                    select.select([self.broker,self.host],[],[],min(.01,control.remaining()))
+            control.check()
+            self._owned_deadline_seen=True
+    finally:self.poll_stop=original_poll
 '''
 
 _BROKER=r'''        if role=='launcher':
@@ -2639,10 +2787,23 @@ _BROKER=r'''        if role=='launcher':
                 c.ledger.validate_clock(body['clock'])
                 if peer.recv(32769)!=raw:c.fail('invalid_frame')
                 row['_owned_deadline_seen']=True
-                self.core.transcript.record('phase',{'clock':body['clock'],
-                    'original_deadline_ns':original,'phase':body['phase'],'stage':'refused',
-                    'related_sha256':body['prepared_sha256'],'reason':'engagement_live_timeout'},
-                    session_id=e['session_id'],dispatch_id=e['dispatch_id'])
+                hard=min(self.core.deadline_ns,*(e[key] for key in
+                    ('action_deadline_ns','session_deadline_ns','broker_deadline_ns')))
+                with self.core.phase(hard):
+                    self.core.transcript.record('phase',{'clock':body['clock'],
+                        'original_deadline_ns':original,'phase':body['phase'],'stage':'refused',
+                        'related_sha256':body['prepared_sha256'],'reason':'engagement_live_timeout'},
+                        session_id=e['session_id'],dispatch_id=e['dispatch_id'])
+                    # Private barrier only after the actual journal append.
+                    # This packet does not alter normal role channel sequences.
+                    ack={'schema_version':'1','channel_id':candidate['channel_id'],'sequence':1,
+                        'operation':'OWNED_DEADLINE_ACK','body':{'marker_sha256':c.digest(raw)}}
+                    encoded=c.canonical(ack,max_bytes=4096)
+                    from .engagement_live_runtime import _WorkerControl
+                    control=_WorkerControl(min(hard,time.monotonic_ns()+100000000))
+                    p._ready(peer,writing=True,control=control)
+                    if p.send_once(peer,encoded)!=len(encoded):c.fail('unavailable')
+                    control.check()
                 return
 '''
 

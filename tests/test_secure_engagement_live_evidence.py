@@ -3464,11 +3464,154 @@ def _socket_preparation_pending_review(monkeypatch):
     return ['full-context-authority-report-reject:pending-review-null-row-dispatch']
 
 
-def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch):
+def _image_fixture_retained_transcript_cases(tmp_path,monkeypatch,*,source_path=None):
+    """Actual image fixture/probe source; declared owner/FD backend, no native claim."""
+    import ast
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+    from recon_cockpit.secure_agent.engagement_live_context import BOUNDARY_CASES
+    from recon_cockpit.secure_agent.engagement_live_witness import validate_transcript_row
+    source_path=Path(__file__).with_name('engagement_live_native.py') if source_path is None else Path(source_path)
+    tree=ast.parse(source_path.read_text())
+    names={'canonical','sha','private_write','_namespace_probe_source','_image_runtime_case','_live_rows'}
+    functions=[x for x in tree.body if isinstance(x,ast.FunctionDef)and x.name in names]
+    assert {x.name for x in functions}==names
+    addition=ast.literal_eval(next(x.value for x in tree.body if isinstance(x,ast.Assign)and
+        any(isinstance(t,ast.Name)and t.id=='_IMAGE_PROBE_SOURCE'for t in x.targets)))
+    runtime_text=Path(r.__file__).read_text();checks=[]
+    for number in (40,44):
+        value,records=_boundary_terminal_declared_fixture(monkeypatch,number)
+        operation=value['results.json']['operations'][0];prepared=operation['prepared'];did=prepared['envelope']['dispatch_id']
+        control=deepcopy(next(x for x in value['processes.json']['readiness']if x['role']=='nmap'))
+        row=deepcopy(next(x['row']for x in records if x['row']['kind']=='protocol'and x['row']['dispatch_id']==did and x['row']['data']['channel_role']=='launcher'))
+        row['data'].update(direction='received');row['data']['frame'].update(operation='OBSERVATION',body={'dispatch_id':did,'kind':'role_readiness','data':deepcopy(control)})
+        validate_transcript_row(row)
+        parent=deepcopy(control['parent_observation']);parent['stage']='native'
+        image=next(x for role in value['runtime.json']['runtime']['roles']if role['role']=='nmap'for x in role['native_files']if x['destination']=='/tool/nmap')
+        parent['executable'].update({k:image[k]for k in ('destination','size','sha256')})
+        native={'schema_version':'1','role':'nmap','waiting_image':deepcopy(control['parent_observation']['executable']),
+                'parent_observation':parent,'observed_at_ns':parent['sampled_at_ns']+1}
+        case={'case_id':'S42C-X'+str(number),**BOUNDARY_CASES['S42C-X'+str(number)]}
+        modes=['fenced_between_reads','fenced_before_read']
+        if number==44:modes+=['missing_transcript','partial','unsealed','truncated','invalid_row','missing_control','duplicate_control','foreign_dispatch','native_published','expired','expired_during_validation','missing_native']
+        for mode in modes:
+            directory=tmp_path/(str(number)+'-'+mode);directory.mkdir();events=[];published=[];written=[];holders={};live_reads=[]
+            selected=[deepcopy(row)]
+            if mode=='missing_control':selected=[]
+            elif mode=='duplicate_control':selected*=2
+            elif mode=='foreign_dispatch':selected[0]['dispatch_id']=uid(999)
+            elif mode=='native_published':
+                forbidden=deepcopy(row);forbidden['data']['frame'].update(operation='NATIVE_OBSERVED',body=deepcopy(native));selected.append(forbidden)
+            elif mode=='invalid_row':selected[0]['unexpected']=True
+            encoded=b''.join(raw(x)+b'\n'for x in selected)
+            if mode=='truncated':encoded=encoded[:-1]
+            saved={'transcript':None if mode=='missing_transcript'else{'raw':encoded,'status':'reaped_partial'if mode=='partial'else'sealed_complete','seals':0 if mode=='unsealed'else 15}}
+            original_deadline=time.monotonic()+30 if mode!='expired'else time.monotonic()-1
+            class Broker:
+                @property
+                def evidence_readers(self):
+                    live_reads.append('read')
+                    if mode!='fenced_between_reads'or len(live_reads)>1:c.fail('invalid_channel')
+                    return {'transcript':987654}
+                def close_evidence(self,*,deadline):
+                    assert holders['closed']and deadline==original_deadline
+                    events.append('sealed_evidence');return saved
+            class OS:
+                def __getattr__(self,name):return getattr(os,name)
+                def pread(self,fd,maximum,offset):assert fd==987654 and maximum==2097153 and offset==0;return encoded
+            class Variants:
+                def __init__(self,path,**configuration):self.records=[];self.instrumentation=[];self.runtime_globals={};self._host_runtime=False
+                def source(self,module,transform):
+                    assert module=='engagement_live_runtime';transformed=transform(runtime_text);compile(transformed,'declared-image-source','exec')
+                    self.records.append({'after_sha256':sha(transformed.encode())})
+                    assert addition.replace('__CASE__',repr(case))in transformed
+                def __enter__(self):
+                    assert self._host_runtime
+                    def observe(pin,manifest,*,waiting_image,control):
+                        assert control is holders['service']._control and waiting_image==native['waiting_image']
+                        events.append('declared_native_image_read');return deepcopy(native)
+                    def parent_read(pin,manifest,observer,net,*,stage):
+                        assert stage=='native';actual=self.runtime_globals['_image'](None,'exe',None)
+                        if actual!=native['parent_observation']['executable']:c.fail('invalid_role')
+                    self.runtime_globals={'_image':lambda *args:deepcopy(native['parent_observation']['executable']),
+                        'observe_native':observe,'_process_observation':parent_read,'_json':raw,'_fail':c.fail}
+                    exec(addition.replace('__CASE__',repr(case)),self.runtime_globals)
+                    holders['variants']=self;events.append('source_enter');return self
+                def __exit__(self,*args):events.append('source_closed')
+            @contextmanager
+            def terminal():yield
+            @contextmanager
+            def session(path,source_variants):
+                class Service:
+                    _control=SimpleNamespace(deadline=original_deadline);_runtime={'declared_runtime':True};_broker=Broker()
+                    def open_session(self):events.append('open');return operation['session']
+                    def prepare(self,sid,slot):assert sid==prepared['envelope']['session_id']and slot=='http_identify';events.append('prepare');return prepared
+                    def execute(self,actual,reference,*,control):
+                        assert actual is prepared and reference=='declared_review'and control is self._control;events.append('execute')
+                        pin=SimpleNamespace(receipt={'observer':{},'namespaces':{'net':'declared'}})
+                        try:source_variants.runtime_globals['observe_native'](pin,{},waiting_image=native['waiting_image'],control=control)
+                        except c.LiveError as error:
+                            assert error.code=='engagement_live_invalid_runtime'
+                            if mode=='missing_native':source_variants.runtime_globals['_LIVE_IMAGE_NATIVE']=None
+                            raise
+                    def _evidence_payload(self,**kwargs):
+                        assert holders['closed']and events[-1]=='sealed_evidence';published.append(kwargs);events.append('payload')
+                        return {'members':[]},{'processes.json':raw({'native':[]})}
+                service=Service();holders.update(service=service,closed=False)
+                try:yield service
+                finally:holders['closed']=True;events.append('session_closed')
+            def write_payload(path,payload):
+                assert holders['closed']and events[-1]=='source_closed';written.append(payload);return path/'declared-evidence'
+            namespace={'Path':Path,'os':OS(),'json':json,'hashlib':hashlib,'deepcopy':deepcopy,'time':time,
+                'runtime':SimpleNamespace(runtime_digest=lambda value:'d'*64),'contract':c,'SourceVariants':Variants,
+                'terminal_input':terminal,'native_session':session,'_IMAGE_PROBE_SOURCE':addition,
+                'review_actual':lambda *args:'declared_review','_write_case_payload':write_payload}
+            exec(compile(ast.Module(body=deepcopy(functions),type_ignores=[]),'actual-image-fixture-functions','exec'),namespace)
+            @contextmanager
+            def validation_clock():
+                if mode!='expired_during_validation':yield;return
+                from recon_cockpit.secure_agent import engagement_live_witness as witness
+                original_validator=witness.validate_transcript_row;expired=[False]
+                def validate(actual):
+                    result=original_validator(actual);expired[0]=True;return result
+                with monkeypatch.context()as local:
+                    local.setattr(c.records,'time',SimpleNamespace(monotonic=lambda:original_deadline+1 if expired[0]else time.monotonic()))
+                    local.setattr(witness,'validate_transcript_row',validate)
+                    yield
+            if mode not in ('fenced_before_read','fenced_between_reads'):
+                with pytest.raises((AssertionError,c.LiveError))as caught,validation_clock():namespace['_image_runtime_case'](case,directory)
+                messages={'missing_transcript':'actual sealed image-refusal transcript required','partial':'actual sealed image-refusal transcript required',
+                    'unsealed':'actual sealed image-refusal transcript required','truncated':'actual sealed image-refusal transcript required',
+                    'missing_control':'actual sealed image-refusal transcript required','duplicate_control':'same actual waiting native control',
+                    'foreign_dispatch':'same actual waiting native control','native_published':'failed observation must not publish readiness',
+                    'missing_native':'actual host native readback required','invalid_row':'engagement_live_evidence_invalid','expired':'engagement_live_timeout','expired_during_validation':'engagement_live_timeout'}
+                assert str(caught.value)==messages[mode],(mode,str(caught.value))
+                assert not published and not written and holders['closed']and events[-1]=='source_closed'
+                assert not live_reads;checks.append((number,mode));continue
+            result=namespace['_image_runtime_case'](case,directory)
+            assert result==directory/'declared-evidence'and not live_reads and len(published)==len(written)==1
+            assert events==['source_enter','open','prepare','execute','declared_native_image_read','session_closed','sealed_evidence','payload','source_closed']
+            retained=json.loads((directory/'native-image-observation.json').read_bytes());assert retained['native']==native
+            observation=published[0]['boundary_observations'][0]['observation'];proof=published[0]['boundary_proofs'][0]
+            assert observation['waiting_observation_sha256']==sha(raw(control))and proof['control_observation_sha256']==sha(raw(control))
+            assert observation['native_observation_sha256']==(None if number==44 else sha(raw(native)))
+            assert observation['refused']and observation['arm_emitted']is False
+            assert (observation['expected_image_sha256']==observation['observed_image_sha256'])is(number==44)
+            manifest,members,deadline=written[0];assert json.loads(members['processes.json'])['native']==[native]
+            assert manifest['members']==[{'name':name,'bytes':len(data),'sha256':sha(data)}for name,data in sorted(members.items())]
+            assert proof['observation_sha256']==sha(raw(observation))and proof['source_sha256']==holders['variants'].records[0]['after_sha256']
+            checks.append((number,mode))
+    assert len(checks)==16
+    return checks
+
+
+def test_rejects_replayed_foreign_or_missing_channel_records(monkeypatch,tmp_path):
+    _image_fixture_retained_transcript_cases(tmp_path,monkeypatch)
     _socket_preparation_regressions(monkeypatch)
     _socket_preparation_invalid_proofs(monkeypatch)
     _socket_preparation_pending_review(monkeypatch)
     _boundary_terminal_scoped_cases(monkeypatch)
+    _lifecycle_meter_terminal_cases(monkeypatch,tmp_path)
     manifest,members=fixture();broker=uid(80)
     manifest['broker_instances']=[{'broker_id':broker,'ledger_owner_id':uid(81)}]
     first=raw(transcript_row(1,broker))+b'\n'
@@ -3778,7 +3921,7 @@ def _logical_deadline_causal_cases(monkeypatch):
                 relay['row']['observed_at_ns']=marker['row']['observed_at_ns']+1;events.append(relay)
             complete(changed,events,deepcopy(proof),(number,order))
         for mutation in ('missing_rpc','null_reply','local_error','rpc_source','rpc_worker','rpc_digest','request_wire','request_sequence',
-                'reply_cleanup','reply_before_cleanup','missing_native','native_before_cleanup','marker_digest','marker_clock',
+                'reply_cleanup','reply_before_cleanup','missing_native','native_before_cleanup','missing_marker','marker_digest','marker_clock',
                 'marker_source','marker_after_broker_reap','marker_after_original','marker_deadline','marker_phase','marker_clock_utc',
                 'marker_session','marker_dispatch','marker_observer','marker_before_capture_complete','missing_config','wrong_config','cleanup_pid','cleanup_wrapper',
                 'cleanup_unreaped','cleanup_deadline','useful_result','completion','missing_reserve','restored_usage',
@@ -3800,6 +3943,7 @@ def _logical_deadline_causal_cases(monkeypatch):
             elif mutation=='native_before_cleanup':
                 native['row']['data']['frame']['body']['observed_at_ns']=receipt['started_at_ns']+1
                 changed['processes.json']['native'][0]['observed_at_ns']=receipt['started_at_ns']+1
+            elif mutation=='missing_marker':events.remove(marker)
             elif mutation=='marker_digest':marker['row']['data']['related_sha256']='e'*64
             elif mutation=='marker_clock':marker['row']['data']['clock']['mono_after_ns']-=1
             elif mutation=='marker_source':marker['source']='role_observer';marker['segment']=1
@@ -3964,6 +4108,7 @@ def _review_timeout_causality_cases():
 
 
 def test_binds_runtime_sources_and_excludes_diagnostics(tmp_path):
+    _startup_fixture_diagnostic_readback_cases(tmp_path)
     _meter_fixture_writer_scope_cases(tmp_path)
     manifest,members=fixture()
     mutated=json.loads(members['runtime.json']);mutated['runtime']['sources'][0]['sha256']='d'*64
@@ -4512,6 +4657,224 @@ def _meter_fixture_writer_scope_cases(tmp_path):
             assert r._steady_fd_max('endpoint')==7
 
 
+def _lifecycle_meter_terminal_cases(monkeypatch,tmp_path):
+    """Real Meter/codecs/saved reader over declared ownership; no native claim."""
+    from test_secure_engagement_live_contract import M,clock
+    from test_secure_engagement_live_meter import Stream
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    from recon_cockpit.secure_agent import engagement_live_witness as witness
+    from recon_cockpit.secure_agent import engagement_live_endpoint_worker as endpoint
+    checks=[]
+    def fixture(number,*,cancelled=False,forward=True):
+        value,rows=_boundary_terminal_declared_fixture(monkeypatch,47)
+        op=value['results.json']['operations'][0];prepared=op['prepared'];env=prepared['envelope']
+        cid='S42C-X'+str(number);case=context.BOUNDARY_CASES[cid]
+        thread=value['cleanup.json']['supervisors'][0];stop=thread['first_stop_requested_at_ns']
+        trigger=stop-100;end=thread['cleanup_finished_at_ns']+1 if number==59 else stop+10
+        release=next(x['row']['data']['frame']['body']for x in rows if x['row']['kind']=='protocol'and x['row']['data']['frame']['operation']=='GO')
+        control=next(x for x in value['processes.json']['readiness']if x['role']==('launcher'if number==59 else case['role']))
+        with monkeypatch.context()as local:
+            when=[M+100];local.setattr(c,'sample_clock',lambda:clock(when[0]-M));local.setattr(endpoint.time,'monotonic_ns',lambda:when[0])
+            meter=endpoint.Meter(prepared,uid(60),op['session']['scope']);meter.arm(release)
+            when[0]=M+200;meter.admit();assert meter.receive(Stream([b'']))==b''
+            when[0]=M+300;meter.admit()
+            when[0]=trigger-10;assert meter.receive(Stream([endpoint.IDENTIFY_REQUEST]))==endpoint.IDENTIFY_RESPONSE
+            when[0]=trigger+10;meter.cancel()
+            actual=meter.snapshot();r.validate_meter(actual)
+        op['meter']=actual
+        rows=[x for x in rows if not(x['row']['kind']=='protocol'and x['row']['data']['frame']['operation']=='METER')]
+        def protocol(role,direction,channel,operation,body,at):
+            sequence=1+max([x['row']['data']['frame']['sequence']for x in rows if x['row']['kind']=='protocol'
+                and x['row']['data']['frame']['channel_id']==channel and x['row']['data']['direction']==direction]or[0])
+            rows.append({'segment':0,'source':'broker_memfd','row':{'schema_version':'1','broker_id':env['broker_id'],
+                'observer_id':env['broker_id'],'session_id':None if operation=='BROKER_STOP'else env['session_id'],
+                'dispatch_id':None if operation=='BROKER_STOP'else env['dispatch_id'],'row_sequence':1,'observed_at_ns':at,
+                'kind':'protocol','data':{'channel_role':role,'direction':direction,'frame':{'schema_version':'1',
+                    'channel_id':channel,'sequence':sequence,'operation':operation,'body':body}}}})
+        protocol('endpoint','received',actual['endpoint_id'],'METER',actual,trigger+20)
+        if forward:protocol('launcher','sent',thread['launcher_id'],'METER',actual,trigger+30)
+        protocol('lifecycle','sent',env['broker_id'],'BROKER_STOP',{'reason':'engagement_live_cancelled',
+            'observed_at_ns':stop+2,'cleanup_deadline_ns':thread['cleanup_deadline_ns']},stop+3)
+        rpc=next(x for x in rows if x['row']['kind']=='supervision_projection'and x['row']['data']['kind']=='rpc'and x['row']['data']['request']['operation']=='CAPTURE')
+        data=rpc['row']['data'];data['request']['observed_at_ns']=trigger-20
+        if cancelled:
+            host=op['host_capture'];host['status']='cancelled';data.update(reply=None,local_error='engagement_live_cancelled')
+            rpc['row']['observed_at_ns']=stop+4
+            for at,capture in ((stop+2,None),(stop+50,sha(raw(host)))):
+                failure=deepcopy(rpc);failure['row']['observed_at_ns']=at
+                failure['row']['data']={k:data[k]for k in ('launcher_id','child_slot','child_worker_id','prepared_sha256')}
+                failure['row']['data'].update(kind='local_failure',code='engagement_live_cancelled',observed_at_ns=at,
+                    capture_sha256=capture,cleanup_sha256=None if capture is None else host['cleanup_sha256'])
+                rows.append(failure)
+        source=next(x['sha256']for x in value['runtime.json']['runtime']['sources']if x['module']=='engagement_live_endpoint_worker')
+        final=max(value['cleanup.json']['receipts'],key=lambda x:x['finished_at_ns'])
+        observation={'origin':{53:'broker_eof',54:'endpoint_eof',55:'launcher_eof',59:'payload_and_wrapper_cleanup'}[number],
+            'triggered_at_ns':trigger,'cleanup_finished_at_ns':final['finished_at_ns'],'cleanup_sha256':sha(raw(final)),
+            'last_ack_sha256':None,'meter_transcript_sha256':None}
+        proof={'schema_version':'1','case_id':cid,'kind':'lifecycle','role':case['role'],'runtime_sha256':value['manifest.json']['runtime_sha256'],
+            'source_sha256':source,'observation_sha256':sha(raw(observation)),'control_observation_sha256':sha(raw(control)),
+            'started_at_ns':trigger,'finished_at_ns':max(end,thread['cleanup_finished_at_ns'],stop+50 if cancelled else 0),
+            'checks':{case['variant']:True}}
+        value['results.json'].update(boundary_proofs=[proof]);value['processes.json']['boundary_observations']=[{'kind':'lifecycle','observation':observation}]
+        value['runtime.json']['instrumentation']=[]
+        for kind,role,digest in [('sealed_fault',case['role'],source),('scripted_review','host',sha(b'declared lifecycle host source'))]:
+            config={'case_id':cid,'variant':case['variant'],'role':role}
+            value['runtime.json']['instrumentation'].append({'kind':kind,'configuration':config,'configuration_sha256':sha(raw(config)),'source_sha256':digest})
+        value['manifest.json'].update(case_id=cid,instrumentation=[{k:x[k]for k in ('kind','configuration_sha256','source_sha256')}for x in value['runtime.json']['instrumentation']])
+        for stage,at in [('begin',trigger),('end',end)]:
+            sampled=dict(env['clock_anchor']);sampled.update(mono_before_ns=at,mono_after_ns=at,utc_ns=sampled['utc_ns']+at-sampled['mono_after_ns'])
+            rows.append({'source':'role_observer','segment':1,'row':{'schema_version':'1','broker_id':env['broker_id'],
+                'session_id':env['session_id'],'dispatch_id':env['dispatch_id'],'observer_id':env['broker_id'],'row_sequence':1,
+                'observed_at_ns':at,'kind':'phase','data':{'phase':'client','stage':stage,'reason':None,'clock':sampled,
+                    'related_sha256':c.prepared_digest(prepared),'original_deadline_ns':env['action_deadline_ns']}}})
+        # Retain the authority fixture's channel order. Its readiness rows
+        # have independent observation clocks; sorting broker rows by time
+        # changes already-bound protocol sequence order. Only host phases
+        # and completion projections need chronological placement here.
+        rows[:]=[x for x in rows if x['segment']==0]+sorted(
+            (x for x in rows if x['segment']==1),key=lambda x:x['row']['observed_at_ns'])
+        _boundary_terminal_encode(value,rows)
+        return value,rows
+    def replay(value,rows):
+        _boundary_terminal_encode(value,rows)
+        parsed=context.validate_live_context(value)
+        authority=witness.validate_evidence_transcript(value,rows,deadline=time.monotonic()+15)
+        return e._report(value,parsed,authority,'d'*64,0,[])
+    cases={}
+    for number in (53,54,55,59):
+        for cancelled in (False,True):
+            for forwarded in (False,True):
+                value,rows=fixture(number,cancelled=cancelled,forward=forwarded);report=replay(value,rows)
+                assert report['status']=='complete' and report['case_passed'] and report['missing_evidence']==[]
+                assert report['useful_operation_count']==0 and report['operations'][0]['outcome']=='unresolved'
+                op=value['results.json']['operations'][0]
+                assert op['client']is None and op['result']is None and not value['final-ledger.json']['completions']
+                assert report['operations'][0]['counts']['request_bytes']==len(endpoint.IDENTIFY_REQUEST)
+                assert report['operations'][0]['counts']['response_bytes']==0
+                cases[number,cancelled,forwarded]=(value,rows,report);checks.append(('complete',number,cancelled,forwarded))
+    for cancelled in (False,True):
+        value,rows,_=deepcopy(cases[54,cancelled,True]);value['results.json']['operations'][0]['meter']=None
+        rows=[x for x in rows if not(x['row']['kind']=='protocol'and x['row']['data']['frame']['operation']=='METER')]
+        report=replay(value,rows)
+        assert report['status']=='complete'and report['operations'][0]['outcome']=='unresolved'and report['useful_operation_count']==0
+        assert report['operations'][0]['counts']['request_bytes']is None
+        checks.append(('absent-meter',cancelled))
+    # Exercise the actual serialization, writer, public API and CLI on both
+    # delivery outcomes. No parser is present and inspection creates no child.
+    for cancelled in (False,True):
+        value,rows,expected=deepcopy(cases[54,cancelled,True]);manifest=value.pop('manifest.json')
+        members={name:raw(body)if name.endswith('.json')else body for name,body in value.items()}
+        repin(manifest,members);path=tmp_path/('eof-meter-cancelled'if cancelled else'eof-meter-captured')
+        assert e.write_live_bundle(path,manifest=manifest,members=members)['status']=='packaged'
+        report=e.inspect_live_bundle(path)
+        assert report['status']=='complete'and report['operations'][0]['outcome']=='unresolved'and report['useful_operation_count']==0
+        assert report['operations'][0]['counts']==expected['operations'][0]['counts']and report['parser_replay_count']==0
+        cli=subprocess.run([sys.executable,'-B',str(CLI),str(path)],cwd=ROOT,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=20)
+        assert cli.returncode==0 and cli.stderr==b'' and json.loads(cli.stdout)==report
+        checks.append(('saved-api-cli',cancelled))
+    value,rows,_=cases[54,False,True]
+    for mode in ('missing_received','duplicate_received','foreign_received','unsealed_received','wrong_received_channel',
+            'wrong_forwarded_channel','wrong_forwarded_body','forwarded_before_received','duplicate_forwarded',
+            'missing_go','wrong_go_digest','foreign_endpoint','foreign_envelope','wrong_reason','delivery_unknown',
+            'zero_request','response_bytes','post_trigger_accept','post_trigger_recv','post_trigger_send','missing_cancel',
+            'finished_before_trigger','finished_after_received','missing_capture','capture_after_trigger','capture_observer',
+            'reply_before_trigger','missing_begin','missing_end','phase_source','phase_clock','phase_dispatch','phase_deadline',
+            'phase_prepared','phase_observer','phase_before_stop','missing_host_source','host_source_role',
+            'missing_stop','foreign_stop_channel','stop_before_trigger','stop_after_record','late_fence','late_cleanup',
+            'open_thread','pending_thread','wrong_optional_meter_hash','useful_result','client','refund','completion'):
+        bad=deepcopy(value);events=deepcopy(rows);op=bad['results.json']['operations'][0];meter=op['meter']
+        packets=[x for x in events if x['row']['kind']=='protocol'and x['row']['data']['frame']['operation']=='METER']
+        received=next(x for x in packets if x['row']['data']['channel_role']=='endpoint');forwarded=next(x for x in packets if x['row']['data']['channel_role']=='launcher')
+        stop=next(x for x in events if x['row']['kind']=='protocol'and x['row']['data']['frame']['operation']=='BROKER_STOP')
+        phases=[x for x in events if x['row']['kind']=='phase'and x['row']['data']['phase']=='client'];begin,end=phases
+        trigger=begin['row']['observed_at_ns'];thread=bad['cleanup.json']['supervisors'][0]
+        rpc=next(x for x in events if x['row']['kind']=='supervision_projection'and x['row']['data']['kind']=='rpc'and x['row']['data']['request']['operation']=='CAPTURE')
+        if mode=='missing_received':events.remove(received)
+        elif mode=='duplicate_received':events.append(deepcopy(received))
+        elif mode=='foreign_received':received['source']='role_observer'
+        elif mode=='unsealed_received':bad['manifest.json']['transcript']['segments'][received['segment']]['status']='reaped_partial'
+        elif mode=='wrong_received_channel':received['row']['data']['frame']['channel_id']=uid(999)
+        elif mode=='wrong_forwarded_channel':forwarded['row']['data']['frame']['channel_id']=uid(999)
+        elif mode=='wrong_forwarded_body':forwarded['row']['data']['frame']['body']=deepcopy(meter);forwarded['row']['data']['frame']['body']['request_sha256']='f'*64
+        elif mode=='forwarded_before_received':forwarded['row']['observed_at_ns']=received['row']['observed_at_ns']-1
+        elif mode=='duplicate_forwarded':events.append(deepcopy(forwarded))
+        elif mode=='missing_go':events[:]=[x for x in events if not(x['row']['kind']=='protocol'and x['row']['data']['frame']['operation']=='GO')]
+        elif mode=='wrong_go_digest':meter['go_sha256']='f'*64
+        elif mode=='foreign_endpoint':meter['endpoint_id']=uid(999)
+        elif mode=='foreign_envelope':meter['envelope_sha256']='f'*64
+        elif mode=='wrong_reason':meter['reason']='complete'
+        elif mode=='delivery_unknown':meter['delivery_known']=False
+        elif mode=='zero_request':meter['received_request_bytes']=0
+        elif mode=='response_bytes':meter['sent_response_bytes']=1
+        elif mode.startswith('post_trigger_'):
+            meter['events'].append({**meter['events'][-1],'kind':mode.removeprefix('post_trigger_'),'monotonic_ns':trigger})
+        elif mode=='missing_cancel':meter['events']=[x for x in meter['events']if x['kind']!='cancel']
+        elif mode=='finished_before_trigger':meter['finished_at_ns']=trigger-1
+        elif mode=='finished_after_received':meter['finished_at_ns']=received['row']['observed_at_ns']+1
+        elif mode=='missing_capture':events.remove(rpc)
+        elif mode=='capture_after_trigger':rpc['row']['data']['request']['observed_at_ns']=trigger+1
+        elif mode=='capture_observer':rpc['row']['observer_id']=op['prepared']['envelope']['broker_id']
+        elif mode=='reply_before_trigger':rpc['row']['data']['reply']['observed_at_ns']=trigger-1
+        elif mode=='missing_begin':events.remove(begin)
+        elif mode=='missing_end':events.remove(end)
+        elif mode=='phase_source':begin['source']='broker_memfd'
+        elif mode=='phase_clock':end['row']['data']['clock']=None
+        elif mode=='phase_dispatch':begin['row']['dispatch_id']=uid(999)
+        elif mode=='phase_deadline':begin['row']['data']['original_deadline_ns']+=1
+        elif mode=='phase_prepared':begin['row']['data']['related_sha256']='f'*64
+        elif mode=='phase_observer':begin['row']['observer_id']=uid(999)
+        elif mode=='phase_before_stop':end['row']['data']['clock']['mono_before_ns']=trigger
+        elif mode=='missing_host_source':bad['runtime.json']['instrumentation']=[x for x in bad['runtime.json']['instrumentation']if x['kind']!='scripted_review']
+        elif mode=='host_source_role':bad['runtime.json']['instrumentation'][-1]['configuration']['role']='endpoint'
+        elif mode=='missing_stop':events.remove(stop)
+        elif mode=='foreign_stop_channel':stop['row']['data']['frame']['channel_id']=uid(999)
+        elif mode=='stop_before_trigger':stop['row']['data']['frame']['body']['observed_at_ns']=trigger-1
+        elif mode=='stop_after_record':stop['row']['data']['frame']['body']['observed_at_ns']=stop['row']['observed_at_ns']+1
+        elif mode=='late_fence':thread['first_stop_requested_at_ns']=trigger+100000000
+        elif mode=='late_cleanup':bad['cleanup.json']['receipts'][-1]['finished_at_ns']=thread['cleanup_deadline_ns']+1
+        elif mode=='open_thread':thread['channel_closed']=False
+        elif mode=='pending_thread':thread['pending_slots']=['identify_client']
+        elif mode=='wrong_optional_meter_hash':
+            observation=bad['processes.json']['boundary_observations'][0]['observation'];observation['meter_transcript_sha256']='f'*64
+            bad['results.json']['boundary_proofs'][0]['observation_sha256']=sha(raw(observation))
+        elif mode=='useful_result':op['result']={}
+        elif mode=='client':op['client']={}
+        elif mode=='refund':bad['recovery-ledger.json']['reservations'][0]['reservation']['connections']-=1
+        elif mode=='completion':bad['recovery-ledger.json']['completions'].append({'dispatch_id':op['prepared']['envelope']['dispatch_id']})
+        if mode in ('wrong_go_digest','foreign_endpoint','foreign_envelope','wrong_reason','delivery_unknown',
+                'zero_request','response_bytes','post_trigger_accept','post_trigger_recv','post_trigger_send',
+                'missing_cancel','finished_before_trigger','finished_after_received'):
+            # Keep observed bodies coherent so the intended source/timing
+            # guard, rather than an unrelated body mismatch, must reject.
+            for packet in packets:packet['row']['data']['frame']['body']=deepcopy(meter)
+        if mode=='foreign_envelope':
+            # The common loaded-context validator owns this shape/binding;
+            # the lifecycle predicate is intentionally not a standalone reader.
+            _boundary_terminal_encode(bad,events)
+            with pytest.raises(c.LiveError):context.validate_live_context(bad)
+        else:
+            try:selected=context._boundary_unsettled_dispatch(bad,events)
+            except c.LiveError:selected=None
+            assert selected is None,mode
+        checks.append(('reject',mode))
+    for mode in ('missing_cause','missing_final','final_capture_hash','raw_capture','missing_native','unreaped_child'):
+        bad,events,_=deepcopy(cases[54,True,True]);op=bad['results.json']['operations'][0]
+        failures=[x for x in events if x['row']['kind']=='supervision_projection'and x['row']['data']['kind']=='local_failure']
+        if mode=='missing_cause':events.remove(failures[0])
+        elif mode=='missing_final':events.remove(failures[-1])
+        elif mode=='final_capture_hash':failures[-1]['row']['data']['capture_sha256']='f'*64
+        elif mode=='raw_capture':bad['client-'+op['prepared']['envelope']['dispatch_id']+'.stdout.bin']+=b'changed'
+        elif mode=='missing_native':bad['processes.json']['native']=[]
+        else:
+            receipt=next(x for x in bad['cleanup.json']['receipts']if sha(raw(x))==op['host_capture']['cleanup_sha256'])
+            receipt['processes'][0]['reaped_observed']=False
+        try:report=replay(bad,events)
+        except c.LiveError:pass
+        else:assert report['status']=='incomplete'and report['missing_evidence'],mode
+        checks.append(('full-path-refuse',mode))
+    return checks
+
+
 def _cancelled_capture_eof_cases(original,original_rows):
     """Declared source/ownership proof; never a native EOF observation."""
     from recon_cockpit.secure_agent import engagement_live_context as context
@@ -4606,7 +4969,7 @@ def _cancelled_capture_eof_cases(original,original_rows):
 
 
 def _eof_fixture_control_flow_cases(prepared,source_path=None):
-    """Execute the exact fixed harness functions under declared owner/clock seams."""
+    """Exact capture/EOF/cleanup helper, declared clock and ownership schedule."""
     import ast
     import types
     from pathlib import Path
@@ -4618,27 +4981,51 @@ def _eof_fixture_control_flow_cases(prepared,source_path=None):
     env=prepared['envelope'];start=env['action_ready_ns']+100000000;checks=[]
     class Model:
      def __init__(self,variant,mode):
-      self.variant=variant;self.mode=mode;self.now=start;self.stop=False;self.epoch=None;self.due=None;self.done=False;self.log=[];self.release=[];self.closed=False
+      self.variant=variant;self.mode=mode;self.now=start;self.stop=False;self.epoch=None;self.due=None
+      self.future_due=None;self.done=False;self.log=[];self.release=[];self.closed=False;self.begin=None;self.autonomous_at=None
      def tick(self):self.now+=1;return self.now
      def sleep(self,n):self.now+=max(1,int(n*c.SECOND));self.observe()
      def observe(self):
-      if self.due is not None and self.now>=self.due and self.mode!='missing_detector':self.stop=True;self.epoch=self.epoch or {'deadline_ns':self.now+1900000000}
+      if self.future_due is not None and self.now>=self.future_due and not self.done:
+       self.done=True;self.log.append('future_published')
+      if self.due is not None and self.now>=self.due and self.mode not in ('missing_detector','failed_future_no_detector'):
+       if self.autonomous_at is None:
+        self.autonomous_at=self.now;self.log.append('autonomous_fence')
+       if self.mode!='epoch_only':self.stop=True
+       if self.mode!='stop_only' and self.epoch is None:
+        self.epoch={'first_stop_requested_at_ns':self.now,'deadline_ns':self.now+1900000000}
       return self.stop
-     def epoch_stop(self,**kw):self.log.append('epoch_stop');self.epoch={'deadline_ns':min(kw.get('bound_deadline_ns',2**63-1),self.now+1900000000)};return self.epoch
+     def epoch_stop(self,**kw):
+      self.log.append('epoch_stop');self.stop=True
+      bound=min(kw.get('bound_deadline_ns',2**63-1),*(env[k]for k in ('action_deadline_ns','session_deadline_ns','broker_deadline_ns')))
+      if self.epoch is None:self.epoch={'first_stop_requested_at_ns':self.now,'deadline_ns':min(bound,self.now+1900000000)}
+      else:self.epoch['deadline_ns']=min(self.epoch['deadline_ns'],bound)
+      return dict(self.epoch)
      def close(self):
       self.log.append('close');self.closed=True;self.stop=True;self.done=True;self.now+=10000000
       return {'status':'complete','finished_at_ns':self.now if self.mode!='late_cleanup' else env['action_deadline_ns']+1}
      def shutdown(self,how):
       self.log.append('shutdown');self.due=self.now+20000000
+      if self.mode in ('failed_future_first','successful_future_first','failed_future_no_detector'):
+       self.future_due=self.now+5000000
+      if self.mode=='last_allowed_fence':self.due=self.begin+99000000
+      if self.mode=='late_detector':self.due=self.begin+100000001
+      if self.mode=='boundary_detector':self.due=self.begin+100000000
       if self.mode=='shutdown_failure':raise OSError('declared shutdown refusal')
      def phase(self,service,p,phase,stage,**kw):
       self.log.append(stage)
       if self.mode==stage+'_failure':raise ValueError('declared phase failure')
-      if stage=='end' and self.variant!='actual_payload_and_wrapper_reaped':assert self.stop and self.epoch is not None and not self.closed
+      if stage=='begin':self.begin=self.now
+      if stage=='end' and self.variant!='actual_payload_and_wrapper_reaped':
+       assert self.stop and self.epoch is not None and not self.closed
+       assert self.autonomous_at is not None and self.now<self.begin+100000000
+       assert 'close'not in self.log and 'epoch_stop'not in self.log
       if stage=='end' and self.variant=='actual_payload_and_wrapper_reaped':assert self.closed
       return {'observed_at_ns':self.now}
      def result(self,**kw):
-      assert self.closed;c.fail('cancelled')
+      assert self.closed
+      if self.mode=='successful_future_first':return {'outcome':'useful'}
+      c.fail('cancelled')
      def run(self):
       row={'kind':'supervision_projection','broker_id':env['broker_id'],'session_id':env['session_id'],'dispatch_id':env['dispatch_id'],'data':{'kind':'rpc','request':{'operation':'CAPTURE'},'prepared_sha256':c.prepared_digest(prepared),'reply':None,'local_error':None}}
       if self.mode=='capture_replied':row['data']['reply']={}
@@ -4654,15 +5041,28 @@ def _eof_fixture_control_flow_cases(prepared,source_path=None):
       except (AssertionError,TimeoutError,ValueError,OSError):value=None;passed=False
       return passed,value
     for variant in ('role_EOF_broker','role_EOF_endpoint','role_EOF_launcher','actual_payload_and_wrapper_reaped'):
-      m=Model(variant,'positive');passed,value=m.run();assert passed and m.closed and m.done and m.log.count('close')==1
+     modes=('positive',)if variant=='actual_payload_and_wrapper_reaped'else('positive','failed_future_first','last_allowed_fence')
+     for mode in modes:
+      m=Model(variant,mode);passed,value=m.run();assert passed and m.closed and m.done and m.log.count('close')==1,(variant,mode,m.log)
       assert ('shutdown'in m.log)==(variant!='actual_payload_and_wrapper_reaped')
-      checks.append({'variant':variant,'mode':'positive','passed':True,'events':m.log})
-    for mode in ('missing_detector','begin_failure','end_failure','shutdown_failure','capture_replied','already_stopped','already_done','late_cleanup'):
+      assert value[1]['finished_at_ns']<=value[0]+c.CLEANUP_NS
+      if mode=='failed_future_first':
+       assert m.log.index('future_published')<m.log.index('autonomous_fence')<m.log.index('end')<m.log.index('close')
+       assert m.epoch['first_stop_requested_at_ns']==m.autonomous_at
+      checks.append({'variant':variant,'mode':mode,'passed':True,'events':m.log})
+    for mode in ('missing_detector','failed_future_no_detector','late_detector','boundary_detector','stop_only','epoch_only',
+                 'successful_future_first','begin_failure','end_failure','shutdown_failure','capture_replied','already_stopped','already_done','late_cleanup'):
       m=Model('role_EOF_broker',mode);passed,value=m.run();assert not passed,mode
-      if mode in ('missing_detector','begin_failure','end_failure','shutdown_failure','late_cleanup'):assert m.closed
-      if mode in ('begin_failure','end_failure','shutdown_failure','missing_detector'):assert m.release==['declared_end_ticket']
+      if mode not in ('capture_replied','already_stopped','already_done'):assert m.closed
+      if mode not in ('capture_replied','already_stopped','already_done','late_cleanup','successful_future_first'):
+       assert m.release==['declared_end_ticket']
+      if mode in ('missing_detector','failed_future_no_detector','late_detector','boundary_detector','stop_only','epoch_only'):
+       assert 'end'not in m.log and m.now>=m.begin+100000000
+      if mode=='failed_future_no_detector':assert 'future_published'in m.log and 'autonomous_fence'not in m.log
+      if mode=='successful_future_first':assert m.log.index('future_published')<m.log.index('autonomous_fence')<m.log.index('close')
       checks.append({'variant':m.variant,'mode':mode,'passed':True,'events':m.log,'released_tickets':m.release})
-    assert len(checks)==12
+    assert len(checks)==24
+    return checks
 
 
 def _fixed_fixture_parser_source_cases(monkeypatch):
@@ -4767,3 +5167,173 @@ def _fixed_fixture_parser_source_cases(monkeypatch):
             refused(r._fixed_meter_runtime_source,baseline,case,code='invalid_runtime')
         refused(r._fixed_meter_runtime_source,baseline.replace("def _steady_fd_max(role,stage='sealed'):","def changed_boundary():"),case_id,code='invalid_runtime')
         refused(r._fixed_meter_runtime_source,baseline+'x'*262144,case_id,code='invalid_runtime')
+
+
+def _startup_fixture_diagnostic_readback_cases(tmp_path,source_path=None):
+    """Real queued pipe bytes through the complete fixture control/fault path."""
+    import ast
+    import threading
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+    source=Path(source_path)if source_path is not None else ROOT/'tests/engagement_live_native.py'
+    parsed=ast.parse(source.read_text());names={'_startup_diagnostic_readback','_startup_runtime_case','_exercise_runtime_role','_merge_role_payloads'}
+    functions=[n for n in parsed.body if isinstance(n,ast.FunctionDef)and n.name in names]
+    assert {n.name for n in functions}==names
+    runtime_source=ast.parse((ROOT/'recon_cockpit/secure_agent/engagement_live_runtime.py').read_text())
+    startup=next(n for n in runtime_source.body if isinstance(n,ast.FunctionDef)and n.name=='_read_startup')
+    marker={'phase':'initial_bootstrap','expected_inventory_sha256':'a'*64,'actual_inventory_sha256':'b'*64,
+        'changed_descriptor':{'fd':9,'purpose':'declared_missing'},'refused':True}
+    encoded=b'LIVE-RUNTIME-OBS '+raw(marker)+b'\n';checks=[]
+    for role,number in (('terminal',24),('graphical',25)):
+        for mode in ('baseline_queued','queued','already_read','partial_prefix','absent','duplicate','malformed','partial_json','blocking','cap_full','read_error','startup_expired','startup_cross','epoch_expired','epoch_cross','epoch_lock_busy','bound_traversal_expired','flag_check_cross'):
+            events=[];holders={};reads=[];published=[];written=[];fds=[];observed_errors=[]
+            case={'case_id':'S42C-X'+str(number),'variant':'missing_descriptor_'+role,'role':role,'kind':'descriptor_custody'}
+            deadline=time.monotonic()+5
+            clock={'now':deadline-2}
+            class EpochLock:
+                def __init__(self):self.lock=threading.Lock()
+                def acquire(self,*,blocking):return self.lock.acquire(blocking=blocking)
+                def locked(self):return self.lock.locked()
+                def release(self):
+                    self.lock.release()
+                    if mode=='bound_traversal_expired'and holders.get('phase')=='fault':clock['now']=deadline
+            epoch=SimpleNamespace(_lock=EpochLock(),_value={'deadline_ns':int((deadline+2 if mode=='bound_traversal_expired'else deadline-1)*1e9)})
+            initial_epoch=deepcopy(epoch._value)
+            fixture_time=SimpleNamespace(monotonic=lambda:clock['now'],monotonic_ns=lambda:clock.get('exact_ns',int(clock['now']*1e9)))
+            class OS:
+                def __getattr__(self,name):return getattr(os,name)
+                def get_blocking(self,fd):
+                    events.append('fixture_nonblocking_check')
+                    if mode=='flag_check_cross':clock['now']=deadline
+                    return mode=='blocking'or os.get_blocking(fd)
+                def read(self,fd,maximum):
+                    if holders.get('phase')=='fault':
+                        reads.append(maximum)
+                        if mode=='read_error':raise OSError('declared_read_error')
+                    result=os.read(fd,maximum)
+                    if holders.get('phase')=='fault':
+                        if mode=='startup_cross':clock['now']=deadline
+                        elif mode=='epoch_cross':clock.update(now=epoch._value['deadline_ns']/1e9,exact_ns=epoch._value['deadline_ns'])
+                    return result
+            proxy=OS()
+            class Control:
+                def check(self):
+                    assert self.deadline==deadline
+                    if holders['phase']=='fault':c.fail('cancelled')
+                def remaining(self):self.check();return max(0,self.deadline-time.monotonic())
+            control=Control();control.deadline=deadline
+            control.parent=SimpleNamespace(deadline=deadline+1,_cleanup_epoch=None if mode.startswith('startup_')else epoch)
+            runtime_namespace={'os':proxy,'_check':lambda owner:owner.check(),
+                '_remaining':lambda owner,maximum:min(owner.remaining(),maximum),'_fail':c.fail,
+                'READY_PREFIX':b'LIVE-READY ','_decode':lambda body,limit:json.loads(body),'json':json}
+            exec(compile(ast.Module(body=[deepcopy(startup)],type_ignores=[]),'actual-runtime-startup-reader','exec'),runtime_namespace)
+            actual_reader=runtime_namespace['_read_startup']
+            def original(process,info_read,owner,*,initial_info=b''):
+                assert owner is control and initial_info==b'{}';events.append('startup_'+holders['phase'])
+                try:return actual_reader(process,info_read,owner,initial_info=initial_info)
+                except c.LiveError as error:
+                    assert holders['phase']=='fault'and error.code=='engagement_live_cancelled'
+                    assert error.startup_diagnostics==b''
+                    if mode=='already_read':error.startup_diagnostics=encoded
+                    elif mode=='partial_prefix':error.startup_diagnostics=encoded[:10]
+                    elif mode=='cap_full':error.startup_diagnostics=b'x'*4096
+                    observed_errors.append(error);raise
+            class Variants:
+                def __init__(self,path,**configuration):
+                    self.records=[{'after_sha256':'d'*64}];self.instrumentation=[]
+                    self.runtime_globals={'_read_startup':original,'_LIVE_FAULT_EXTRA_FDS':[],'_LIVE_FAULT_RECORDS':[]}
+                def __enter__(self):holders['variants']=self;events.append('variants_enter');return self
+                def __exit__(self,*args):
+                    assert self.runtime_globals['_read_startup'] is original
+                    events.append('variants_exit')
+            @contextmanager
+            def terminal():yield
+            @contextmanager
+            def session(path,*,review_mode,source_variants,store_directory,host_evidence_budget):
+                phase=Path(path).name;holders['phase']=phase
+                assert review_mode==('graphical_v1'if role=='graphical'else'terminal')and(store_directory is None)==(phase=='control')
+                pairs=[os.pipe()for _ in range(3)];owned=[fd for pair in pairs for fd in pair];fds.extend(owned)
+                process=SimpleNamespace(stdout=SimpleNamespace(fileno=lambda:pairs[0][0]),
+                    stderr=SimpleNamespace(fileno=lambda:pairs[1][0]),poll=lambda:None)
+                if phase=='control':os.write(pairs[0][1],b'LIVE-READY '+raw({'declared_control':True})+b'\n')
+                else:
+                    queued={'baseline_queued':encoded,'queued':encoded,'already_read':b'','partial_prefix':encoded[10:],'absent':b'',
+                        'duplicate':encoded+encoded,'malformed':b'LIVE-RUNTIME-OBS nope\n',
+                        'partial_json':encoded[:-4],'blocking':encoded,'cap_full':encoded,'read_error':encoded,
+                        'startup_expired':encoded,'startup_cross':encoded,'epoch_expired':encoded,'epoch_cross':encoded,'epoch_lock_busy':encoded,'bound_traversal_expired':encoded,'flag_check_cross':encoded}[mode]
+                    if queued:assert os.write(pairs[1][1],queued)==len(queued)
+                    if mode=='startup_expired':clock['now']=deadline
+                    elif mode=='epoch_expired':clock.update(now=epoch._value['deadline_ns']/1e9,exact_ns=epoch._value['deadline_ns'])
+                    elif mode=='epoch_lock_busy':assert epoch._lock.acquire(blocking=False)
+                class Service:
+                    _runtime={'declared_runtime':True};_sessions={};closed=False
+                    def open_session(self):
+                        try:ready,info=source_variants.runtime_globals['_read_startup'](process,pairs[2][0],control,initial_info=b'{}')
+                        except c.LiveError as error:error.engagement_session=self;raise
+                        assert info==b'{}';self._sessions={'declared-session':{'reviewer':SimpleNamespace(_owner=SimpleNamespace(ready=ready))}}
+                        return {'binding':{'session_id':'declared-session'}}
+                    def close(self):
+                        if not self.closed:
+                            for fd in owned:os.close(fd)
+                            self.closed=True;events.append('cleanup_'+phase)
+                        assert control.deadline==deadline
+                    def _remember_failure(self,error):assert error is observed_errors[-1];events.append('remember_failure')
+                    def _verified_reaped(self):assert self.closed;events.append('verified_'+phase);return True
+                    def _evidence_payload(self,**kwargs):
+                        assert self.closed and kwargs['recover']is True and kwargs['case_id']==case['case_id']
+                        events.append('evidence_'+phase);published.append(phase)
+                        return {'runtime_sha256':'e'*64,'members':[]},{'processes.json':raw({'boundary_observations':[]}),
+                            'results.json':raw({'boundary_proofs':[],'core_proofs':[]})}
+                service=Service();holders['service']=service
+                try:yield service
+                finally:service.close()
+            def merge_core(payloads):
+                assert len(payloads)==2 and published==['control','fault'];return deepcopy(payloads[0])
+            def write(path,payload):
+                assert events[-1]=='variants_exit'and holders['service'].closed
+                manifest,members,limit=payload
+                assert all(row['sha256']==sha(members[row['name']])and row['bytes']==len(members[row['name']])for row in manifest['members'])
+                observation=json.loads(members['processes.json'])['boundary_observations'][0]
+                proof=json.loads(members['results.json'])['boundary_proofs'][0]
+                assert observation=={'kind':'descriptor_custody','observation':marker}
+                assert proof['observation_sha256']==sha(raw(marker))and proof['control_observation_sha256']==sha(raw({'declared_control':True}))
+                path.mkdir();saved=path/'declared-delivery.json';saved.write_bytes(raw({'proof':proof,'observation':observation}))
+                assert json.loads(saved.read_bytes())=={'proof':proof,'observation':observation}
+                written.append(saved);return saved
+            namespace={'Path':Path,'os':proxy,'json':json,'deepcopy':deepcopy,'time':fixture_time,'contextmanager':contextmanager,
+                'contract':c,'SourceVariants':Variants,'terminal_input':terminal,'native_session':session,
+                '_startup_variant':lambda variants,selected:None,'_actual_role':lambda selected:selected['role'],
+                '_merge_core_payloads':merge_core,'_write_case_payload':write,'canonical':raw,'sha':sha}
+            exec(compile(ast.Module(body=deepcopy(functions),type_ignores=[]),'actual-startup-fixture-path','exec'),namespace)
+            if mode=='baseline_queued':
+                @contextmanager
+                def unchanged_reader(*args):yield
+                namespace['_startup_diagnostic_readback']=unchanged_reader
+            directory=tmp_path/('startup-readback-'+role+'-'+mode)
+            try:
+                if mode in ('queued','already_read','partial_prefix'):
+                    assert namespace['_startup_runtime_case'](case,directory)==directory/'declared-delivery.json'
+                    assert published==['control','fault']and len(written)==1
+                else:
+                    with pytest.raises((AssertionError,ValueError))as caught:namespace['_startup_runtime_case'](case,directory)
+                    assert caught.value.startup_failure is observed_errors[-1]
+                    assert published==['control']and not written
+                assert observed_errors[-1].code=='engagement_live_cancelled'and control.deadline==deadline
+                assert holders['service'].closed and events[-1]=='variants_exit'
+                assert events.index('cleanup_control')<events.index('evidence_control')<events.index('startup_fault')
+                assert events.index('startup_fault')<events.index('cleanup_fault')<events.index('remember_failure')
+                assert len(reads)==(0 if mode in ('baseline_queued','blocking','cap_full','startup_expired','epoch_expired','epoch_lock_busy','bound_traversal_expired','flag_check_cross')else 1)
+                if reads:assert reads==[4096-(len(encoded)if mode=='already_read'else 10 if mode=='partial_prefix'else 0)]
+                for fd in fds:
+                    with pytest.raises(OSError):os.fstat(fd)
+                assert epoch._value==initial_epoch
+                assert epoch._lock.locked()is(mode=='epoch_lock_busy')
+                if mode in ('startup_cross','epoch_cross'):assert observed_errors[-1].startup_diagnostics==b''
+                checks.append((role,mode))
+            finally:
+                if mode=='epoch_lock_busy'and epoch._lock.locked():epoch._lock.release()
+                for fd in fds:
+                    try:os.close(fd)
+                    except OSError:pass
+    assert len(checks)==36
+    return checks

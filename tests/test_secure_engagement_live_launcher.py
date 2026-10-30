@@ -205,6 +205,7 @@ def test_payload_identity_and_cleanup_are_not_boolean_claims(monkeypatch):
 
 
 def test_all_phases_share_original_deadline_and_cleanup(monkeypatch):
+    _fixed_deadline_marker_path_cases(monkeypatch)
     _retained_prepared_bound_cases(monkeypatch)
     _normal_cleanup_before_stop_cases(monkeypatch)
     _idle_supervisor_cleanup_reserve(monkeypatch)
@@ -847,3 +848,276 @@ def _parser_autonomous_deadline_case(monkeypatch):
         assert getattr(model.errors[0],'code',None)=='engagement_live_timeout'
         sup.close(time.monotonic()+.5)
         assert state['owner'].cleanup is not None and sup.resolved
+
+
+def _fixed_deadline_marker_path_cases(monkeypatch):
+    """Actual transformed run/close and journal ACK, with declared native boundary.
+
+    Real local sockets and memfd exercise delivery, normal METER/CANCEL/STOP,
+    capture return, teardown and append ordering. Admission/native creation and
+    CAPTURE RPC are declared here; native cases and saved inspection remain
+    separate gates. No private proposal or historical baseline is imported.
+    """
+    import ast
+    import json
+    from pathlib import Path
+    import select
+    from types import ModuleType, MethodType
+    from recon_cockpit.secure_agent import engagement_live_endpoint_worker as endpoint_worker
+    from test_secure_engagement_live_contract import U
+    from test_secure_engagement_live_meter import Stream
+    ROOT = Path(__file__).resolve().parents[1]
+    PROPOSAL = Path(__file__).with_name('engagement_live_native.py')
+
+    def transformed(case_id):
+        # Compile only the literal fixed fixture definitions; importing the native
+        # harness is unnecessary. Compile whole transformed workers without main.
+        names = {'DEADLINE_FAULT_CASES', '_deadline_once', '_LAUNCHER_HELPERS',
+                 '_BROKER', 'deadline_fault_transforms'}
+        tree = ast.parse(PROPOSAL.read_text())
+        nodes = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in names
+                 or isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id in names for t in n.targets)]
+        definitions = {}; exec(compile(ast.Module(body=nodes, type_ignores=[]), str(PROPOSAL), 'exec'), definitions)
+        transforms = definitions['deadline_fault_transforms'](case_id); result = []
+        for suffix in ('launcher', 'broker'):
+            name = 'engagement_live_'+suffix+'_worker'
+            source = transforms[name]((ROOT/'recon_cockpit/secure_agent'/f'{name}.py').read_text())
+            module = ModuleType('recon_cockpit.secure_agent._owned_'+suffix+'_model')
+            module.__package__ = 'recon_cockpit.secure_agent'; module.__file__ = str(PROPOSAL)
+            exec(compile(source, str(PROPOSAL)+':'+suffix, 'exec'), module.__dict__)
+            result.append(module)
+        return result
+
+    @contextmanager
+    def path_model(monkeypatch, case_id='S42C-N35'):
+        launcher, broker = transformed(case_id)
+        anchor = time.monotonic_ns()
+        def sample():
+            now = time.monotonic_ns()
+            return {'mono_before_ns':now, 'mono_after_ns':now, 'utc_ns':U+now-anchor}
+        monkeypatch.setattr(c, 'sample_clock', sample)
+        bundle = declared_runtime(); session = opened(clock_value=sample())
+        session['binding']['runtime_sha256'] = rt.runtime_digest(bundle)
+        value = c.derive_prepared(session, 'http_identify', dispatch_id=uid(10), clock=sample())
+        go = release(value, lease=sample()['mono_after_ns']+5*c.SECOND); go['guard_clock'] = sample()
+        left, right = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+        host, supervisor_host = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+        for peer in (left,right,host,supervisor_host): peer.setblocking(False)
+        fd = os.memfd_create('declared-marker-model', os.MFD_CLOEXEC|os.MFD_ALLOW_SEALING)
+        journal = broker.Transcript(fd, broker_id=value['envelope']['broker_id'])
+        events=[]; errors=[]; threads=[]
+        ready = declared_readiness(bundle,'nmap'); cleanup = declared_cleanup(ready)
+        native = {'schema_version':'1','role':'nmap','waiting_image':deepcopy(ready['parent_observation']['executable']),
+                  'parent_observation':deepcopy(ready['parent_observation']), 'observed_at_ns':time.monotonic_ns()}
+        native['parent_observation']['stage']='native'; native['parent_observation']['executable'].update(destination='/tool/nmap',sha256='f'*64)
+        capture={'stdout':b'actual model bytes','stderr':b'','exit_code':0,'truncated':False,
+                 'status':'succeeded','cleanup':cleanup,'readiness':ready,'native_readiness':native}
+        state=launcher.LauncherState.__new__(launcher.LauncherState)
+        state.pending=value; state.release=None; state.worker_id=uid(51); state.deadline_ns=value['envelope']['session_deadline_ns']
+        state.stopped=False; state._polling=False; state.host=host; state.broker=left; state.sequence=p.ChannelSequence(state.worker_id,'launcher')
+        state.runtime=bundle; state.payload={'scope':session['scope'],'endpoint_identity':declared_readiness(bundle,'endpoint')}
+        state.permit={'reference':'a'*64}; state.cleanups=[]; state.readies=[]; state.capture=None; state.meter=None; state.arm=object()
+        # Actual SupervisorChannel.close exercises the shutdown which triggered the
+        # old race. Client/admission/native boundaries remain explicitly declared.
+        supervisor=rt.SupervisorChannel.__new__(rt.SupervisorChannel)
+        supervisor.channel=host; supervisor.channels={}; supervisor.pending=False; supervisor.failed=False
+        state.supervisor=supervisor
+        state.admission_rpc=lambda *args:(events.append('redeem') or None)
+        state.admission=SimpleNamespace(close=lambda **kwargs:(events.append('admission_cleanup') or cleanup))
+        def collect(control):
+            control.check(); events.append('capture_delivered'); return capture
+        state.client=SimpleNamespace(native_ready=native,native_deadline=time.monotonic()+5,
+            release=lambda *args:events.append('release'),observe_native=lambda *args:native,
+            collect=collect,close=lambda:(events.append('native_cleanup') or cleanup))
+        row={'prepared':value,'release':go,'state':'running','observations':[]}
+        def send(operation,body,**kwargs):
+            events.append(operation)
+            if operation=='NATIVE_OBSERVED':row['native']=body
+        state.send=send
+        state.observe=lambda kind,data:events.append('relay_'+kind)
+        monkeypatch.setattr(endpoint,'arm_endpoint',lambda *args,**kwargs:events.append('arm'))
+        core=SimpleNamespace(slots=[{'dispatch_id':value['envelope']['dispatch_id']}],dispatches={value['envelope']['dispatch_id']:row},
+            transcript=journal,deadline_ns=value['envelope']['broker_deadline_ns'],check=lambda:c.check_clock(sample(),anchor=value['envelope']['clock_anchor'],
+            window_start_utc_ns=value['envelope']['window_start_utc_ns'],window_end_utc_ns=value['envelope']['window_end_utc_ns'],deadline_ns=value['envelope']['action_deadline_ns']))
+        core.phase=MethodType(broker.BrokerCore.phase,core)
+        loop=broker.BrokerLoop.__new__(broker.BrokerLoop)
+        loop.core=core;loop.launchers=[right];loop.endpoints=[];loop.sequences={('launcher',0):p.ChannelSequence(state.worker_id,'launcher')}
+        loop.stopping=False
+        def launch():
+            try:state.run(go)
+            except BaseException as error:errors.append(error)
+            finally:
+                events.append('launcher_close');state.close()
+        def start(*,expect_marker=True):
+            thread=threading.Thread(target=launch);threads.append(thread);thread.start()
+            if expect_marker:assert select.select([right],[],[],.5)[0], 'launcher never sent marker'
+            return thread
+        def ordinary(operation,body):
+            frame=loop.sequences[('launcher',0)].make(operation,body)
+            p.send_packet(right,frame,role='launcher',control=rt._WorkerControl(time.monotonic_ns()+c.SECOND))
+        model=SimpleNamespace(launcher=launcher,state=state,row=row,loop=loop,journal=journal,fd=fd,events=events,errors=errors,
+            left=left,right=right,host=host,supervisor_host=supervisor_host,start=start,threads=threads,ordinary=ordinary,
+            prepared=value,go=go,scope=session['scope'])
+        try:yield model
+        finally:
+            for peer in (left,right,host,supervisor_host):
+                try:peer.shutdown(socket.SHUT_RDWR)
+                except OSError:pass
+            for thread in threads:thread.join(1);assert not thread.is_alive()
+            for peer in (left,right,host,supervisor_host):peer.close()
+            os.close(fd)
+
+    def rows(model):
+        return [json.loads(line) for line in os.pread(model.fd,1048576,0).splitlines()]
+
+    def test_real_append_precedes_launcher_host_shutdown(monkeypatch,case_id,with_meter):
+        with path_model(monkeypatch,case_id) as model:
+            meter_value=None
+            if with_meter:
+                meter=endpoint_worker.Meter(model.prepared,uid(60),model.scope);meter.arm(model.go)
+                # Accepted identify grammar first observes the real empty probe.
+                meter.admit();assert meter.receive(Stream([b'']))==b''
+                meter.admit();stream=Stream([meter.expected]);assert meter.receive(stream)==meter.reply;assert meter.send(stream)
+                assert meter.connections==2 and meter.reason=='complete'
+                meter_value=meter.snapshot()
+            launcher_thread=model.start();entered=threading.Event();allow=threading.Event();broker_errors=[]
+            original=model.journal.record
+            def held(*args,**kwargs):
+                entered.set()
+                assert allow.wait(.05), 'test scheduling exceeded fixed barrier budget'
+                result=original(*args,**kwargs);model.events.append('broker_appended');return result
+            model.journal.record=held
+            if with_meter:model.ordinary('METER',meter_value)
+            def receive():
+                try:model.loop.role_message('launcher',0)
+                except BaseException as error:broker_errors.append(error)
+            receiver=threading.Thread(target=receive);model.threads.append(receiver);receiver.start()
+            try:
+                assert entered.wait(.05)
+                # The old fixture closes the supervision peer before this append.
+                assert 'launcher_close' not in model.events
+                assert not select.select([model.supervisor_host],[],[],0)[0]
+                assert not rows(model)
+            finally:allow.set()
+            launcher_thread.join(.5);receiver.join(.5)
+            assert not launcher_thread.is_alive() and not receiver.is_alive() and not broker_errors
+            assert len(model.errors)==1 and model.errors[0].code=='engagement_live_timeout'
+            assert model.events.index('broker_appended')<model.events.index('launcher_close')
+            if case_id=='S42C-N35':
+                assert model.events.index('capture_delivered')<model.events.index('broker_appended')
+                assert model.state.capture['stdout_bytes']==len(b'actual model bytes')
+            else:assert 'capture_delivered' not in model.events and 'native_cleanup' in model.events
+            assert select.select([model.supervisor_host],[],[],0)[0]
+            assert model.supervisor_host.recv(1)==b''
+            retained=rows(model);assert len(retained)==1
+            assert retained[0]['kind']=='phase' and retained[0]['data']['reason']=='engagement_live_timeout'
+            assert retained[0]['data']['original_deadline_ns']==model.prepared['envelope']['action_deadline_ns']
+            assert model.state._owned_deadline_seen is True
+            assert model.state.poll_stop.__func__.__name__=='poll_stop'
+            if with_meter:assert model.state.meter is not None
+            # The private ACK never increments ordinary incoming role sequence.
+            assert model.state.sequence.received==(1 if with_meter else 0)
+
+    def test_failure_never_substitutes_for_journal_ack(monkeypatch,failure):
+        with path_model(monkeypatch) as model:
+            thread=model.start()
+            if failure in ('CANCEL','STOP'):model.ordinary(failure,None if failure=='STOP' else {'reason':'engagement_live_cancelled'})
+            elif failure=='broker_eof':model.right.shutdown(socket.SHUT_RDWR)
+            elif failure=='host_eof':model.supervisor_host.shutdown(socket.SHUT_RDWR)
+            elif failure=='wrong_ack':
+                model.right.send(c.canonical({'schema_version':'1','channel_id':model.state.worker_id,'sequence':1,
+                    'operation':'OWNED_DEADLINE_ACK','body':{'marker_sha256':'f'*64}}))
+            elif failure=='journal_failure':
+                def failed(*args,**kwargs):raise OSError('declared append failure')
+                model.journal.record=failed
+                with pytest.raises(OSError):model.loop.role_message('launcher',0)
+                assert not select.select([model.left],[],[],0)[0], 'ACK sent despite failed journal append'
+                model.right.shutdown(socket.SHUT_RDWR)
+            thread.join(.5);assert not thread.is_alive()
+            assert len(model.errors)==1 and not getattr(model.state,'_owned_deadline_seen',False)
+            assert not rows(model) and model.state.poll_stop.__func__.__name__=='poll_stop'
+            assert model.state.supervisor.failed and 'launcher_close' in model.events
+            if failure in ('CANCEL','STOP','host_eof'):assert model.errors[0].code=='engagement_live_cancelled'
+            if failure=='missing_ack':assert model.errors[0].code=='engagement_live_timeout'
+
+    def test_terminal_or_duplicate_packet_immediately_after_ack(monkeypatch,following):
+        with path_model(monkeypatch) as model:
+            peeked=threading.Event();proceed=threading.Event()
+            class HeldAckRead:
+                # Scheduling seam only; the actual socket retains both packets.
+                def __getattr__(self,name):return getattr(model.left,name)
+                def recv(self,size,flags=0):
+                    raw=model.left.recv(size,flags)
+                    if flags & socket.MSG_PEEK and raw and json.loads(raw).get('operation')=='OWNED_DEADLINE_ACK':
+                        peeked.set();assert proceed.wait(.05), 'ACK scheduling gate exceeded fixed phase'
+                    return raw
+            model.state.broker=HeldAckRead()
+            thread=model.start();marker=model.right.recv(4097,socket.MSG_PEEK)
+            try:
+                model.loop.role_message('launcher',0)
+                assert peeked.wait(.05)
+                assert len(rows(model))==1 and 'launcher_close' not in model.events
+                if following=='CANCEL':model.ordinary('CANCEL',{'reason':'engagement_live_cancelled'})
+                else:model.right.send(c.canonical({'schema_version':'1','channel_id':model.state.worker_id,'sequence':1,
+                    'operation':'OWNED_DEADLINE_ACK','body':{'marker_sha256':c.digest(marker)}}))
+            finally:proceed.set()
+            thread.join(.5);assert not thread.is_alive()
+            assert len(model.errors)==1 and model.errors[0].code==('engagement_live_cancelled' if following=='CANCEL' else 'engagement_live_invalid_frame')
+            assert not getattr(model.state,'_owned_deadline_seen',False)
+            assert model.state.supervisor.failed and model.state.poll_stop.__func__.__name__=='poll_stop'
+            assert len(rows(model))==1 and 'RESULT' not in model.events
+
+    def test_original_deadline_can_expire_before_or_after_marker_send(monkeypatch,expiry):
+        # Only time is declared here. Real socket send/absence, actual transformed
+        # control and teardown remain exercised; no scheduler-dependent15ms race.
+        with path_model(monkeypatch) as model:
+            original_marker=model.launcher._owned_deadline_marker;clock=[];originals=[];sent=[]
+            def at_marker(state,phase):
+                entered=time.monotonic_ns();original=entered+15_000_000
+                originals.append(original);state.deadline_ns=original
+                clock.append(original+1 if expiry=='before_send' else entered)
+                fixed=SimpleNamespace(monotonic=lambda:clock[0]/c.SECOND,monotonic_ns=lambda:clock[0])
+                monkeypatch.setattr(model.launcher,'time',fixed)
+                monkeypatch.setattr(c.records,'time',fixed)
+                if expiry=='ack_wait':
+                    class SendThenExpire:
+                        def __getattr__(self,name):return getattr(model.left,name)
+                        def send(self,raw,flags=0):
+                            count=model.left.send(raw,flags)
+                            if json.loads(raw).get('operation')=='OWNED_DEADLINE':
+                                assert count==len(raw);sent.append(bytes(raw));clock[0]=original+1
+                            return count
+                    state.broker=SendThenExpire()
+                return original_marker(state,phase)
+            monkeypatch.setattr(model.launcher,'_owned_deadline_marker',at_marker)
+            thread=model.start(expect_marker=False);thread.join(.5)
+            assert not thread.is_alive() and len(originals)==1
+            assert len(model.errors)==1 and model.errors[0].code=='engagement_live_timeout'
+            assert model.state.deadline_ns==originals[0] and not getattr(model.state,'_owned_deadline_seen',False)
+            assert not rows(model) and model.state.supervisor.failed and 'launcher_close' in model.events
+            assert model.state.poll_stop.__func__.__name__=='poll_stop'
+            if expiry=='before_send':
+                assert not sent and not select.select([model.right],[],[],0)[0]
+            else:
+                assert len(sent)==1 and model.right.recv(4097)==sent[0]
+                assert json.loads(sent[0])['operation']=='OWNED_DEADLINE'
+
+    checked = 0
+    for case_id in ('S42C-N34', 'S42C-N35'):
+        for with_meter in (False, True):
+            with monkeypatch.context() as local:
+                test_real_append_precedes_launcher_host_shutdown(local, case_id, with_meter)
+            checked += 1
+    for failure in ('CANCEL', 'STOP', 'broker_eof', 'host_eof', 'wrong_ack', 'missing_ack', 'journal_failure'):
+        with monkeypatch.context() as local:
+            test_failure_never_substitutes_for_journal_ack(local, failure)
+        checked += 1
+    for following in ('CANCEL', 'duplicate_ack'):
+        with monkeypatch.context() as local:
+            test_terminal_or_duplicate_packet_immediately_after_ack(local, following)
+        checked += 1
+    for expiry in ('before_send', 'ack_wait'):
+        with monkeypatch.context() as local:
+            test_original_deadline_can_expire_before_or_after_marker_send(local, expiry)
+        checked += 1
+    assert checked == 15

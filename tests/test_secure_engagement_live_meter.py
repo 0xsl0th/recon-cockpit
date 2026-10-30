@@ -118,8 +118,12 @@ def test_read_never_exceeds_remaining(meter,tmp_path,monkeypatch):
     _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch)
 
 
-def _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch):
-    """Actual fixed fixture path; declared transports/owners supply no gate proof."""
+def _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch,*,source_path=None,baseline_only=False):
+    """Actual fixture and close path; declared FD aliases supply no native proof.
+
+    Buffered bytes surviving shared socket shutdown are declared here. A real
+    socket/native check remains required; no missing marker/output is inferred.
+    """
     import ast
     import base64
     from contextlib import contextmanager
@@ -127,14 +131,21 @@ def _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch):
     import os
     from pathlib import Path
     from recon_cockpit.secure_agent.engagement_live_context import BOUNDARY_CASES
-    source=Path(__file__).with_name('engagement_live_native.py').read_text()
+    source_path=Path(__file__).with_name('engagement_live_native.py') if source_path is None else Path(source_path)
+    source=source_path.read_text()
     tree=ast.parse(source)
-    names={'canonical','sha','private_write','_read_test_observation','_meter_primitive_source','_drain_meter_peer','_meter_runtime_case'}
+    names={'canonical','sha','private_write','_read_test_observation','_meter_primitive_source','_drain_meter_peer','_meter_probe_custody','_meter_runtime_case'}
+    if baseline_only:names.remove('_meter_probe_custody')
     functions=[node for node in tree.body if isinstance(node,ast.FunctionDef)and node.name in names]
     assert {node.name for node in functions}==names
     addition=ast.literal_eval(next(node.value for node in tree.body if isinstance(node,ast.Assign)and
         any(isinstance(target,ast.Name)and target.id=='_METER_PRIMITIVE_SOURCE'for target in node.targets)))
     worker_source=Path(e.__file__).read_text();original_worker_hash=hashlib.sha256(worker_source.encode()).hexdigest()
+    import stat
+    endpoint_tree=ast.parse(Path(r.__file__).with_name('engagement_live_endpoint.py').read_text())
+    role_tree=ast.parse(Path(r.__file__).read_text())
+    owner_nodes=[next(n for n in endpoint_tree.body if isinstance(n,ast.ClassDef)and n.name=='EndpointOwner'),
+                 next(n for n in role_tree.body if isinstance(n,ast.ClassDef)and n.name=='RoleProcess')]
     scenarios=[]
     for identifier,case in BOUNDARY_CASES.items():
         if case['kind']in('meter_boundary','clock_boundary')and 'connection_cap'not in case['variant']:
@@ -142,10 +153,33 @@ def _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch):
     assert {case['case_id']for case in scenarios}=={'S42C-X47','S42C-X48','S42C-X49','S42C-X50','S42C-X51','S42C-X52','S42C-X56','S42C-X57','S42C-X58'}
 
     class Peer:
-        def __init__(self):self.input=[];self.output=[];self.reads=[];self.sent=[];self.blocking=False
+        def __init__(self):
+            self.input=[];self.output=[];self.reads=[];self.sent=[];self.blocking=False
+            self.closed=False;self.fd=987655;self.alias=False;self.shared={'shutdown':False}
+            registry[self.fd]={'kind':'socket','inode':2,'alias':False}
+        def fileno(self):
+            if self.closed:raise ValueError('declared original peer closed')
+            return self.fd
+        def dup(self):
+            if ending=='peer_dup_failure':raise OSError(errno.EMFILE,'declared peer dup failure')
+            self.fileno();other=object.__new__(Peer);other.__dict__=dict(self.__dict__)
+            other.fd=next_fd[0];next_fd[0]+=1;other.alias=True
+            registry[other.fd]={'kind':'socket','inode':3 if ending=='peer_identity' else 2,'alias':True}
+            events.append('peer_dup');return other
+        def shutdown(self,how):
+            assert how==2;self.fileno();self.shared['shutdown']=True;events.append('owner_shutdown')
+        def close(self):
+            if self.closed:return
+            events.append('peer_alias_close' if self.alias else 'peer_owner_close')
+            if self.alias and ending in ('peer_close_failure','primary_and_close_failure'):
+                raise OSError(errno.EIO,'declared alias close failure')
+            self.closed=True;registry.pop(self.fd,None)
+            if self.alias and ending=='close_crossed_epoch':clock[0]=8.0
+
         def send_input(self,raw):self.input.append(bytes(raw));return len(raw)
         def getblocking(self):return self.blocking
         def recv(self,maximum):
+            self.fileno()
             self.reads.append(maximum);value=self.output.pop(0)
             if isinstance(value,BaseException):raise value
             assert len(value)<=maximum
@@ -162,27 +196,94 @@ def _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch):
         def detach(self):self.detached=True
     class DeclaredControl:
         deadline=10
-        def check(self):pass
-        def remaining(self):return 9
+        clock=staticmethod(lambda:clock[0])
+        cancelled=None
+        def check(self):
+            if clock[0]>=self.deadline:r._fail('timeout')
+        def remaining(self):self.check();return self.deadline-clock[0]
+
 
     for number,case in enumerate(scenarios):
-        endings=('quiescent','eof','reset')+(('reset_hash_mismatch','other_error')if case['case_id']=='S42C-X47'else())
+        endings=('quiescent','eof','reset','owner_closed')+(('reset_hash_mismatch','other_error')if case['case_id']=='S42C-X47'else())
+        if case['case_id']=='S42C-X49':endings+=('missing_marker','wrong_marker','oversized_marker','wrong_output_hash',
+            'expired_epoch','read_crossed_epoch','close_crossed_epoch','stderr_access','stderr_dup_failure','stderr_identity','peer_dup_failure','peer_identity',
+            'peer_close_failure','primary_and_close_failure')
+        if baseline_only:endings=('owner_closed',)
         for ending in endings:
             directory=tmp_path/(str(number)+'-'+ending);directory.mkdir()
-            peer=Peer();child=Child(peer);stderr=bytearray();published=[];events=[];holders={}
-            pipe=SimpleNamespace(fileno=lambda:987654)
+            registry={};next_fd=[987656];clock=[1.0];events=[];holders={};closed_writer=[False]
+            peer=Peer();child=Child(peer);stderr=bytearray();published=[]
+            class Pipe:
+                closed=False
+                def fileno(self):
+                    if self.closed:raise ValueError('declared original stderr closed')
+                    return 987654
+                def close(self):
+                    self.closed=True;registry.pop(987654,None);closed_writer[0]=True;events.append('stderr_owner_close')
+            pipe=Pipe();registry[987654]={'kind':'pipe','inode':1,'alias':False}
+
             def select_backend(reads,writes,errors,timeout):
                 assert not writes and not errors and 0<=timeout<=.1
-                return ([value for value in reads if (value is pipe and stderr)or(value is peer and peer.output)or(value is child and peer.input)],[],[])
+                selected=[]
+                for value in reads:
+                    if value is child:
+                        if peer.input:selected.append(value)
+                    elif value is pipe:
+                        pipe.fileno()
+                        if stderr or closed_writer[0]:selected.append(value)
+                    elif isinstance(value,int):
+                        assert value in registry and registry[value]['kind']=='pipe'
+                        if stderr or closed_writer[0]:selected.append(value)
+                    else:
+                        value.fileno()
+                        if value.output:selected.append(value)
+                return selected,[],[]
             class OS:
                 def __getattr__(self,name):return getattr(os,name)
                 def read(self,fd,maximum):
-                    assert fd==987654
-                    value=bytes(stderr[:maximum]);del stderr[:maximum];return value
+                    assert fd in registry and registry[fd]['kind']=='pipe'
+                    value=bytes(stderr[:maximum]);del stderr[:maximum]
+                    if ending=='read_crossed_epoch':clock[0]=8.0
+                    return value
+                def dup(self,fd):
+                    assert fd==987654 and fd in registry
+                    if ending=='stderr_dup_failure':raise OSError(errno.EMFILE,'declared stderr dup failure')
+                    duplicate=next_fd[0];next_fd[0]+=1
+                    registry[duplicate]={'kind':'pipe','inode':3 if ending=='stderr_identity' else 1,'alias':True}
+                    events.append('stderr_dup');return duplicate
+                def fstat(self,fd):
+                    if fd<987654:return os.fstat(fd)
+                    row=registry[fd]
+                    return SimpleNamespace(st_dev=1,st_ino=row['inode'],st_mode=(stat.S_IFIFO if row['kind']=='pipe'else stat.S_IFSOCK)|0o600)
+                def get_inheritable(self,fd):assert fd in registry;return False
+                def get_blocking(self,fd):assert fd in registry;return False
+                def close(self,fd):
+                    if fd<987654:return os.close(fd)
+                    assert fd in registry;events.append('stderr_alias_close');registry.pop(fd)
+
+            def descriptor_flags(fd,operation):
+                assert operation==3 and fd in registry and registry[fd]['kind']=='pipe'
+                return os.O_RDWR if ending=='stderr_access' else os.O_RDONLY
             class Runtime:
                 def __getattr__(self,name):return getattr(r,name)
                 def _send_bytes(self,channel,raw,control):assert channel is peer;peer.send_input(raw)
                 def runtime_digest(self,value):assert value=={'declared_runtime':True};return 'd'*64
+            def cleanup_owned(processes,pins,*,deadline):
+                assert processes==[holders['process']] and pins==[None]
+                processes[0].stderr.close();events.append('declared_process_cleanup')
+                return {'status':'complete','descriptors_closed':True}
+            owner_globals={'os':OS(),'socket':SimpleNamespace(SHUT_RDWR=2),'cleanup_owned':cleanup_owned}
+            exec(compile(ast.Module(body=deepcopy(owner_nodes),type_ignores=[]),'actual-endpoint-role-close','exec'),owner_globals)
+            process=SimpleNamespace(stderr=pipe);holders['process']=process
+            owner=owner_globals['RoleProcess'](process,peer,None,{}, {'declared_control':True})
+            endpoint_owner=owner_globals['EndpointOwner'].__new__(owner_globals['EndpointOwner'])
+            endpoint_owner.owner=owner;endpoint_owner.namespace_fds=()
+            epoch=[None]
+            def close_owner():
+                if owner.cleanup is not None:return
+                epoch[0]={'first_stop_requested_at_ns':int(clock[0]*c.SECOND),
+                          'deadline_ns':int((clock[0] if ending=='expired_epoch' else 8)*c.SECOND)}
+                endpoint_owner._interrupt();endpoint_owner._close(deadline=epoch[0]['deadline_ns']/c.SECOND)
             class Variants:
                 def __init__(self,path,**configuration):self.records=[];self.configuration=configuration;self._host_runtime=False;self.instrumentation=[]
                 def source(self,module,transform):
@@ -197,7 +298,8 @@ def _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch):
             def session(path,source_variants):
                 class Service:
                     _control=DeclaredControl();_runtime={'declared_runtime':True}
-                    _sessions={'declared-session':{'endpoint':SimpleNamespace(owner=SimpleNamespace(channel=peer,process=SimpleNamespace(stderr=pipe),ready={'declared_control':True}))}}
+                    _sessions={'declared-session':{'endpoint':endpoint_owner}}
+                    _cleanup_epoch=SimpleNamespace(snapshot=lambda:epoch[0])
                     def open_session(self):return {'binding':{'session_id':'declared-session'},'scope':opened()['scope']}
                     def prepare(self,sid,slot):
                         assert sid=='declared-session';base=meter(slot)
@@ -221,19 +323,72 @@ def _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch):
                         elif ending=='reset':peer.output.append(ConnectionResetError(errno.ECONNRESET,'declared peer reset'))
                         elif ending=='reset_hash_mismatch':peer.output.extend([b'x',ConnectionResetError(errno.ECONNRESET,'declared peer reset')])
                         elif ending=='other_error':peer.output.append(OSError(errno.EIO,'declared unrelated I/O failure'))
+                        if ending in ('missing_marker','primary_and_close_failure'):stderr.clear()
+                        elif ending=='wrong_marker':stderr[:]=b'WRONG '+stderr
+                        elif ending=='oversized_marker':stderr[:]=b'LIVE-METER-OBS '+b'x'*4096+b'\n'
+                        elif ending=='wrong_output_hash':
+                            data=json.loads(stderr[len(b'LIVE-METER-OBS '):-1]);data['output_sha256']='f'*64
+                            stderr[:]=b'LIVE-METER-OBS '+json.dumps(data,separators=(',',':')).encode()+b'\n'
+                        if ending not in ('quiescent','eof','reset','reset_hash_mismatch','other_error'):
+                            close_owner()
+                            assert pipe.closed and peer.closed
+                            with pytest.raises(ValueError):pipe.fileno()
+                            with pytest.raises(ValueError):peer.recv(1)
                         raise c.LiveError('engagement_live_invalid_frame')
-                    def _evidence_payload(self,**kwargs):published.append(kwargs);return {'declared':True},{}
+                    def _evidence_payload(self,**kwargs):
+                        assert owner.cleanup is not None and not registry
+                        events.append('payload');published.append(kwargs);return {'declared':True},{}
+
                 try:yield Service()
-                finally:events.append('session_closed')
+                finally:close_owner();events.append('session_closed')
             namespace={'__name__':'declared_complete_meter_fixture','Path':Path,'os':OS(),'json':json,'hashlib':hashlib,'deepcopy':deepcopy,
-                       'time':SimpleNamespace(monotonic=lambda:1.0,monotonic_ns=lambda:M+1000),'select':SimpleNamespace(select=select_backend),
+                       'time':SimpleNamespace(monotonic=lambda:clock[0],monotonic_ns=lambda:M+1000),'select':SimpleNamespace(select=select_backend),
+                       'stat':stat,'contextmanager':contextmanager,'fcntl':SimpleNamespace(F_GETFL=3,fcntl=descriptor_flags),
                        'runtime':Runtime(),'contract':c,'SourceVariants':Variants,'terminal_input':terminal,'native_session':session,
                        '_METER_PRIMITIVE_SOURCE':addition,'review_actual':lambda *args:'declared-reference',
                        '_useful':lambda *args:events.append('declared_identify_prerequisite'),
                        '_write_case_payload':lambda directory,payload:('declared-output',payload)}
             exec(compile(ast.Module(body=deepcopy(functions),type_ignores=[]),'actual-meter-harness-functions','exec'),namespace)
+            execute_case=namespace['_meter_runtime_case']
+            def invoke():
+                with monkeypatch.context()as local:
+                    local.setattr(c.records,'time',SimpleNamespace(monotonic=lambda:clock[0]))
+                    return execute_case(case,directory)
+            new_failures={'missing_marker':AssertionError,'wrong_marker':AssertionError,'oversized_marker':AssertionError,
+                'wrong_output_hash':AssertionError,'expired_epoch':c.LiveError,'read_crossed_epoch':AssertionError,
+                'close_crossed_epoch':c.LiveError,'stderr_access':AssertionError,'stderr_dup_failure':OSError,
+                'stderr_identity':AssertionError,'peer_dup_failure':OSError,'peer_identity':AssertionError,
+                'peer_close_failure':OSError,'primary_and_close_failure':AssertionError}
+            if ending in new_failures:
+                with pytest.raises(new_failures[ending])as caught:invoke()
+                assert not published and owner.cleanup is not None and pipe.closed and peer.closed
+                assert events[-2:]==['session_closed','source_context_closed']
+                if ending in ('peer_close_failure','primary_and_close_failure'):
+                    assert len(registry)==1 and next(iter(registry.values()))['kind']=='socket'
+                    assert 'peer_alias_close'in events and 'stderr_alias_close'in events
+                    if ending=='primary_and_close_failure':assert len(caught.value.meter_probe_custody_errors)==1
+                    registry.clear() # Declared alias remains failed, never actual leaked FD.
+                else:assert not registry
+                if ending in ('expired_epoch','close_crossed_epoch'):
+                    assert caught.value.code=='engagement_live_timeout'
+                    assert 'stderr_alias_close'in events and 'peer_alias_close'in events
+                if ending=='read_crossed_epoch':
+                    assert str(caught.value)=='primitive peer original deadline'
+                    assert (directory/'meter-observation.json').exists()
+                    assert 'stderr_alias_close'in events and 'peer_alias_close'in events
+                    assert json.loads((directory/'meter-peer-drain.json').read_bytes())['error_type']=='AssertionError'
+                if ending=='close_crossed_epoch':
+                    assert json.loads((directory/'meter-peer-drain.json').read_bytes())['error_type']is None
+                    assert events.index('peer_alias_close')<events.index('stderr_alias_close')
+                if ending in ('missing_marker','wrong_marker','oversized_marker','expired_epoch'):
+                    assert not (directory/'meter-observation.json').exists()
+                if ending=='wrong_output_hash':
+                    assert (directory/'meter-observation.json').exists()
+                    assert json.loads((directory/'meter-peer-drain.json').read_bytes())['error_type']=='AssertionError'
+                continue
             if ending in('reset_hash_mismatch','other_error'):
-                with pytest.raises(AssertionError if ending=='reset_hash_mismatch'else OSError):namespace['_meter_runtime_case'](case,directory)
+
+                with pytest.raises(AssertionError if ending=='reset_hash_mismatch'else OSError):invoke()
                 assert not published and events[-2:]==['session_closed','source_context_closed']
                 assert json.loads((directory/'meter-observation.json').read_bytes())==json.loads(holders['marker'][len(b'LIVE-METER-OBS '):-1])
                 retained=(directory/'meter-peer-output.bin').read_bytes();record=json.loads((directory/'meter-peer-drain.json').read_bytes())
@@ -241,12 +396,14 @@ def _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch):
                 assert record['termination']==('reset'if ending=='reset_hash_mismatch'else'error')
                 assert record['error_type']==('AssertionError'if ending=='reset_hash_mismatch'else'OSError')
                 continue
-            result=namespace['_meter_runtime_case'](case,directory)
-            assert result[0]=='declared-output'and len(published)==1 and events[-2:]==['session_closed','source_context_closed']
+            result=invoke()
+            assert result[0]=='declared-output'and len(published)==1 and events[-3:]==['session_closed','payload','source_context_closed']
+            assert not registry and pipe.closed and peer.closed
+            assert events.index('stderr_alias_close')<events.index('payload') and events.index('peer_alias_close')<events.index('payload')
             marker=json.loads((directory/'meter-observation.json').read_bytes());actual_marker=json.loads(holders['marker'][len(b'LIVE-METER-OBS '):-1])
             assert marker==actual_marker and not stderr and child.detached
             output=(directory/'meter-peer-output.bin').read_bytes();drain=json.loads((directory/'meter-peer-drain.json').read_bytes())
-            assert output==b''.join(peer.sent)and drain['termination']==ending and drain['retained_bytes']==len(output)
+            assert output==b''.join(peer.sent)and drain['termination']==('quiescent'if ending=='owner_closed'else ending)and drain['retained_bytes']==len(output)
             assert drain['retained_sha256']==hashlib.sha256(output).hexdigest()and drain['error_type']is None
             assert drain['errno']==(errno.ECONNRESET if ending=='reset'else None)
             assert drain['output_hash_checked']==(case['kind']=='meter_boundary')
@@ -257,6 +414,19 @@ def _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch):
                 assert child.reads==[cap]and peer.input==[b'x']and output==b''and holders['meter'].reason=='request_limit'
             if case['kind']=='clock_boundary':assert 'output_sha256'not in marker
             assert all(1<=n<=4097 for n in peer.reads)
+
+    # Connection-cap variants retain only the existing stderr reader; the
+    # host peer is never duplicated for these two already-bounded fixtures.
+    registry.clear();clock[0]=1.0;ending='connection_holder_only';pipe=Pipe()
+    registry[987654]={'kind':'pipe','inode':1,'alias':False}
+    unused=SimpleNamespace(dup=lambda:(_ for _ in()).throw(AssertionError('unexpected peer copy')))
+    endpoint=SimpleNamespace(process=SimpleNamespace(stderr=pipe),channel=unused)
+    with monkeypatch.context()as local:
+        local.setattr(c.records,'time',SimpleNamespace(monotonic=lambda:clock[0]))
+        with namespace['_meter_probe_custody'](endpoint,DeclaredControl(),with_peer=False)as (fd,held):
+            assert held is None and registry[fd]['alias'] and len(registry)==2
+        assert len(registry)==1 and 987654 in registry
+    pipe.close();assert not registry
 
     # Direct helper failures retain exact prefixes and keep the primary error.
     helper=namespace['_drain_meter_peer'];kind={'kind':'meter_boundary'};empty={'output_sha256':hashlib.sha256(b'').hexdigest()}
