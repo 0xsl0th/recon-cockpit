@@ -3989,6 +3989,7 @@ def test_retains_metric_nulls_and_separate_denominators(tmp_path):
 
 
 def test_reparses_raw_client_output_independently(monkeypatch):
+    _fixed_fixture_parser_source_cases(monkeypatch)
     """Use the accepted pure parser as a portable double, never claim isolation."""
     import types
     from recon_cockpit.secure_agent import configurable_parser
@@ -4662,3 +4663,107 @@ def _eof_fixture_control_flow_cases(prepared,source_path=None):
       if mode in ('begin_failure','end_failure','shutdown_failure','missing_detector'):assert m.release==['declared_end_ticket']
       checks.append({'variant':m.variant,'mode':mode,'passed':True,'events':m.log,'released_tickets':m.release})
     assert len(checks)==12
+
+
+def _fixed_fixture_parser_source_cases(monkeypatch):
+    """Real replay and source staging; declared FD/process backend, no isolation claim."""
+    from types import SimpleNamespace
+    from recon_cockpit.secure_agent import configurable_parser
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    from test_secure_engagement_live_runtime import declared_readiness
+    from test_secure_configurable_parser import xml, scope
+    baseline=(ROOT/'recon_cockpit/secure_agent/engagement_live_runtime.py').read_text()
+    for case_id in ('S42C-X45','S42C-X46'):
+        generated=r._fixed_meter_runtime_source(baseline,case_id).encode()
+        manifest,members=_meter_writer_fixture(case_id)
+        loaded={name:json.loads(value) for name,value in members.items() if name.endswith('.json')}
+        bundle=loaded['runtime.json']['runtime'];config=loaded['runtime.json']['instrumentation'][0]['configuration']
+        for row in bundle['sources']+[x for role in bundle['roles'] for x in role['sources']]:
+            value=generated if row['module']=='engagement_live_runtime' else b'x'
+            row.update(size=len(value),sha256=sha(value))
+        for row in [bundle['python']]+[x for role in bundle['roles'] for x in role['native_files']+role['extension_files']]+[x for helper in bundle['helpers'] for x in [helper['executable'],*helper['files']]]:
+            row.update(size=1,sha256=sha(b'x'))
+        bundle=r.validate_runtime(bundle);loaded['runtime.json']['runtime']=bundle
+        ready=declared_readiness(bundle,'endpoint')
+        ready['parent_observation']['descriptors']=loaded['processes.json']['readiness'][0]['parent_observation']['descriptors']
+        ready['worker_ready']['descriptor_sha256']=r._hash(ready['parent_observation']['descriptors'])
+        loaded['processes.json']['readiness']=[ready]
+        source=next(x for x in bundle['sources']if x['module']=='engagement_live_runtime')
+        instrument=[{'kind':'sealed_fault','configuration':config,'configuration_sha256':sha(raw(config)),'source_sha256':v}for v in (sha(b'x'),source['sha256'])]
+        loaded['runtime.json']['instrumentation']=instrument
+        manifest.update(runtime_sha256=r.runtime_digest(bundle),instrumentation=[{k:v for k,v in row.items()if k!='configuration'}for row in instrument])
+        proof=loaded['results.json']['boundary_proofs'][0]
+        proof.update(runtime_sha256=manifest['runtime_sha256'],source_sha256=sha(b'x'),control_observation_sha256=r._hash(ready))
+        session,p=prepared();session['scope']=scope();p['action']['tool_id']=configurable_parser.NMAP
+        did=p['envelope']['dispatch_id'];stdout='client-'+did+'.stdout.bin';stderr='client-'+did+'.stderr.bin'
+        parsed=configurable_parser.parse_output(configurable_parser.NMAP,xml(),scope=scope(),endpoint_id='http')
+        # Declared parsed predecessor tests the replay route for both source variants.
+        # The actual X45 negative gate does not invent such a predecessor.
+        loaded['results.json']['operations']=[{'prepared':p,'session':session,'client':{'parsed':parsed,'truncated':False}}]
+        manifest['dispatches']=[{'dispatch_id':did,'stdout_file':stdout,'stderr_file':stderr}]
+        loaded.update({'manifest.json':manifest,stdout:xml(),stderr:b''})
+        staged={};calls=[];disk=[baseline.encode()];nextfd=[100000]
+        real_os=r.os
+        class DeclaredOS:
+            def __getattr__(self,name):return getattr(real_os,name)
+            def fstat(self,fd):return SimpleNamespace(st_size=len(staged[fd]))
+            def close(self,fd):del staged[fd]
+        def seal(value,**kwargs):
+            nextfd[0]+=1;staged[nextfd[0]]=value;return nextfd[0]
+        def read(path,maximum,control):
+            if control is not None:control.check()
+            return disk[0] if Path(path).name=='engagement_live_runtime.py' else b'x'
+        def parser(**kwargs):
+            kwargs['control'].check()
+            with r.snapshot_role(kwargs['runtime'],'parser',kwargs['control']) as snapshot:
+                held=snapshot.sources['/app/recon_cockpit/secure_agent/engagement_live_runtime.py']
+                assert staged[held]==generated
+                calls.append((snapshot.runtime_sha256,source['sha256']))
+                result=configurable_parser.parse_output(kwargs['tool_id'],kwargs['raw'],kwargs['stderr'],scope=kwargs['scope'],endpoint_id='http',truncated=kwargs['truncated'])
+            assert not staged
+            return result,{'portable_declared_process_backend':True}
+        with monkeypatch.context() as patch:
+            patch.setattr(r,'os',DeclaredOS());patch.setattr(r,'_sealed',seal);patch.setattr(r,'_read_file',read)
+            patch.setitem(sys.modules,'recon_cockpit.secure_agent.engagement_live_parser',SimpleNamespace(parse=parser))
+            refused(e._reparse,loaded,time.monotonic()+15,code='invalid_runtime');assert not staged
+            with context._retained_fixture_validation(loaded):
+                assert e._reparse(loaded,time.monotonic()+15)==1
+                assert calls[-1]==(manifest['runtime_sha256'],source['sha256'])
+                with context._retained_fixture_validation({'manifest.json':{'case_id':None}}):
+                    refused(e._reparse,loaded,time.monotonic()+15,code='invalid_runtime')
+                # Every non-parser role retains ordinary disk-only staging.
+                for role in ('broker','endpoint','launcher','nmap','headers','audit'):
+                    snapshot=object.__new__(r.RoleSnapshot);snapshot.role=role;snapshot.runtime_sha256=manifest['runtime_sha256'];snapshot._fds=[]
+                    refused(snapshot._stage,source,snapshot._source_bytes(source,None),{},None,code='invalid_runtime')
+                for changed in (baseline.encode()+b'\n# changed source\n',b'\xff',generated+b'\n# arbitrary append\n'):
+                    disk[0]=changed;refused(e._reparse,loaded,time.monotonic()+15,code='invalid_runtime');assert not staged
+                disk[0]=baseline.encode()
+                loaded['results.json']['operations'][0]['client']['parsed']={'forged':True}
+                refused(e._reparse,loaded,time.monotonic()+15)
+                loaded['results.json']['operations'][0]['client']['parsed']=parsed
+            assert r._RETAINED_FIXTURE_DESCRIPTORS.get()is None and not staged
+            for fault in ('runtime','case','class','source','size','config','role','proof','append'):
+                bad=deepcopy(loaded)
+                if fault=='runtime':bad['manifest.json']['runtime_sha256']='f'*64
+                elif fault=='case':bad['manifest.json']['case_id']='S42C-X47'
+                elif fault=='class':bad['manifest.json']['evidence_class']='production_run'
+                elif fault=='source':bad['runtime.json']['instrumentation'][1]['source_sha256']='f'*64
+                elif fault=='size':next(x for x in bad['runtime.json']['runtime']['roles']if x['role']=='parser')['sources'][0]['size']+=1
+                elif fault=='config':bad['runtime.json']['instrumentation'][1]['configuration']['variant']='unrecognized'
+                elif fault=='role':next(x for x in bad['runtime.json']['runtime']['roles']if x['role']=='parser')['sources']=[x for x in next(x for x in bad['runtime.json']['runtime']['roles']if x['role']=='parser')['sources']if x['module']!='engagement_live_runtime']
+                elif fault=='proof':bad['results.json']['boundary_proofs'][0]['control_observation_sha256']='f'*64
+                else:
+                    wanted=generated+b'\n# source hash does not authorize arbitrary code\n'
+                    for row in bad['runtime.json']['runtime']['sources']+[x for role in bad['runtime.json']['runtime']['roles']for x in role['sources']]:
+                        if row['module']=='engagement_live_runtime':row.update(sha256=sha(wanted),size=len(wanted))
+                    b=bad['runtime.json']['runtime'];digest=r.runtime_digest(b)
+                    bad['manifest.json']['runtime_sha256']=digest;bad['runtime.json']['instrumentation'][1]['source_sha256']=sha(wanted)
+                    ready=bad['processes.json']['readiness'][0];ready['worker_ready'].update(runtime_sha256=digest,source_sha256=r._hash(next(x for x in b['roles']if x['role']=='endpoint')['sources']))
+                    bad['results.json']['boundary_proofs'][0].update(runtime_sha256=digest,control_observation_sha256=r._hash(ready))
+                with pytest.raises(c.LiveError):
+                    with context._retained_fixture_validation(bad):e._reparse(bad,time.monotonic()+15)
+                assert r._RETAINED_FIXTURE_DESCRIPTORS.get()is None and not staged
+        for case in ('S42C-X47',None,'../../source'):
+            refused(r._fixed_meter_runtime_source,baseline,case,code='invalid_runtime')
+        refused(r._fixed_meter_runtime_source,baseline.replace("def _steady_fd_max(role,stage='sealed'):","def changed_boundary():"),case_id,code='invalid_runtime')
+        refused(r._fixed_meter_runtime_source,baseline+'x'*262144,case_id,code='invalid_runtime')

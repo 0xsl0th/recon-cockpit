@@ -502,6 +502,20 @@ def _sealed(raw, *, name='engagement-live', control=None):
         raise
 
 
+def _fixed_meter_runtime_source(source,case_id):
+    """Reproduce the two fixed A06 source variants; never consume supplied code."""
+    case=SPEC['owned_meter_connection_fixture']['cases'].get(case_id)
+    if case is None or type(source)is not str or len(source.encode('utf-8'))>262144:_fail()
+    boundary="def _steady_fd_max(role,stage='sealed'):\n"
+    if source.count(boundary)!=1:_fail()
+    steady=case['steady_descriptors']
+    purposes={fd:SPEC['owned_meter_connection_fixture']['steady_descriptor_purposes'][str(fd)] for fd in range(5,steady)}
+    addition="\n_live_fixture_fd_inventory=_fd_inventory\n\ndef _fd_inventory(directory='/proc/self',purposes=None,*,role=None,steady=False):\n    rows=_live_fixture_fd_inventory(directory,purposes,role=role,steady=steady)\n    if role=='endpoint' and steady:\n        names=__PURPOSES__\n        for row in rows:\n            if row['fd'] in names:row['purpose']=names[row['fd']]\n    return rows\n"
+    result=source.replace(boundary,boundary+"    if role=='endpoint' and stage=='sealed':return "+str(steady)+"\n")+addition.replace('__PURPOSES__',repr(purposes))
+    if len(result.encode('utf-8'))>262144:_fail('limit_exceeded')
+    return result
+
+
 class RoleSnapshot:
     def __init__(self,bundle,role,control):
         bundle=validate_runtime(bundle);_role(role)
@@ -511,7 +525,7 @@ class RoleSnapshot:
         self._fds=[];self.closed=False;self.bundle_fd=None
         try:
             for row in self.manifest['sources']:
-                raw=_read_file(_source_path(row['module']),262144,control)
+                raw=self._source_bytes(row,control)
                 self._stage(row,raw,self.sources,control)
             for key,target in (('native_files',self.native),('extension_files',self.extensions)):
                 for row in self.manifest[key]:
@@ -534,6 +548,17 @@ class RoleSnapshot:
     def _stage(self,row,raw,target,control):
         if len(raw)!=row['size'] or hashlib.sha256(raw).hexdigest()!=row['sha256']:_fail()
         fd=_sealed(raw,control=control);self._fds.append(fd);target[row['destination']]=fd
+    def _source_bytes(self,row,control):
+        raw=_read_file(_source_path(row['module']),262144,control)
+        selected=_RETAINED_FIXTURE_DESCRIPTORS.get()
+        if (self.role=='parser' and row['module']=='engagement_live_runtime' and selected is not None
+                and selected['runtime_sha256']==self.runtime_sha256 and selected['runtime_source']==row
+                and (len(raw)!=row['size'] or hashlib.sha256(raw).hexdigest()!=row['sha256'])):
+            _check(control)
+            try:raw=_fixed_meter_runtime_source(raw.decode('utf-8'),selected['case_id']).encode('utf-8')
+            except UnicodeError:_fail()
+            _check(control)
+        return raw
     @property
     def pass_fds(self):return tuple(self._fds)
     def mounts(self,argv):

@@ -111,10 +111,187 @@ def test_connection_capacity_before_admission(meter):
         refused(m.admit);assert m.connections==cap and m.reason=='connection_limit'
 
 
-def test_read_never_exceeds_remaining(meter):
+def test_read_never_exceeds_remaining(meter,tmp_path,monkeypatch):
     m=meter();m.admit();m.requests.extend(b'x'*255);s=Stream([b'GZ'])
     assert m.receive(s)is None and s.read_calls==[1] and s.chunks==[b'Z']
     refused(m.receive,s);assert s.read_calls==[1] and m.reason=='request_limit'
+    _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch)
+
+
+def _fixed_meter_fixture_peer_cases(meter,tmp_path,monkeypatch):
+    """Actual fixed fixture path; declared transports/owners supply no gate proof."""
+    import ast
+    import base64
+    from contextlib import contextmanager
+    import json
+    import os
+    from pathlib import Path
+    from recon_cockpit.secure_agent.engagement_live_context import BOUNDARY_CASES
+    source=Path(__file__).with_name('engagement_live_native.py').read_text()
+    tree=ast.parse(source)
+    names={'canonical','sha','private_write','_read_test_observation','_meter_primitive_source','_drain_meter_peer','_meter_runtime_case'}
+    functions=[node for node in tree.body if isinstance(node,ast.FunctionDef)and node.name in names]
+    assert {node.name for node in functions}==names
+    addition=ast.literal_eval(next(node.value for node in tree.body if isinstance(node,ast.Assign)and
+        any(isinstance(target,ast.Name)and target.id=='_METER_PRIMITIVE_SOURCE'for target in node.targets)))
+    worker_source=Path(e.__file__).read_text();original_worker_hash=hashlib.sha256(worker_source.encode()).hexdigest()
+    scenarios=[]
+    for identifier,case in BOUNDARY_CASES.items():
+        if case['kind']in('meter_boundary','clock_boundary')and 'connection_cap'not in case['variant']:
+            scenarios.append({'case_id':identifier,**case})
+    assert {case['case_id']for case in scenarios}=={'S42C-X47','S42C-X48','S42C-X49','S42C-X50','S42C-X51','S42C-X52','S42C-X56','S42C-X57','S42C-X58'}
+
+    class Peer:
+        def __init__(self):self.input=[];self.output=[];self.reads=[];self.sent=[];self.blocking=False
+        def send_input(self,raw):self.input.append(bytes(raw));return len(raw)
+        def getblocking(self):return self.blocking
+        def recv(self,maximum):
+            self.reads.append(maximum);value=self.output.pop(0)
+            if isinstance(value,BaseException):raise value
+            assert len(value)<=maximum
+            return value
+    class Child:
+        def __init__(self,peer):self.peer=peer;self.reads=[];self.detached=False
+        def setblocking(self,value):assert value is False
+        def recv(self,maximum):
+            self.reads.append(maximum)
+            if not self.peer.input:raise BlockingIOError()
+            value=self.peer.input.pop(0);assert len(value)<=maximum
+            return value
+        def send(self,raw):self.peer.output.append(bytes(raw));self.peer.sent.append(bytes(raw));return len(raw)
+        def detach(self):self.detached=True
+    class DeclaredControl:
+        deadline=10
+        def check(self):pass
+        def remaining(self):return 9
+
+    for number,case in enumerate(scenarios):
+        endings=('quiescent','eof','reset')+(('reset_hash_mismatch','other_error')if case['case_id']=='S42C-X47'else())
+        for ending in endings:
+            directory=tmp_path/(str(number)+'-'+ending);directory.mkdir()
+            peer=Peer();child=Child(peer);stderr=bytearray();published=[];events=[];holders={}
+            pipe=SimpleNamespace(fileno=lambda:987654)
+            def select_backend(reads,writes,errors,timeout):
+                assert not writes and not errors and 0<=timeout<=.1
+                return ([value for value in reads if (value is pipe and stderr)or(value is peer and peer.output)or(value is child and peer.input)],[],[])
+            class OS:
+                def __getattr__(self,name):return getattr(os,name)
+                def read(self,fd,maximum):
+                    assert fd==987654
+                    value=bytes(stderr[:maximum]);del stderr[:maximum];return value
+            class Runtime:
+                def __getattr__(self,name):return getattr(r,name)
+                def _send_bytes(self,channel,raw,control):assert channel is peer;peer.send_input(raw)
+                def runtime_digest(self,value):assert value=={'declared_runtime':True};return 'd'*64
+            class Variants:
+                def __init__(self,path,**configuration):self.records=[];self.configuration=configuration;self._host_runtime=False;self.instrumentation=[]
+                def source(self,module,transform):
+                    assert module=='engagement_live_endpoint_worker'
+                    self.text=transform(worker_source);compile(self.text,'declared-meter-source','exec')
+                    self.records.append({'module':module,'before_sha256':original_worker_hash,'after_sha256':hashlib.sha256(self.text.encode()).hexdigest()})
+                def __enter__(self):return self
+                def __exit__(self,*args):events.append('source_context_closed')
+            @contextmanager
+            def terminal():yield
+            @contextmanager
+            def session(path,source_variants):
+                class Service:
+                    _control=DeclaredControl();_runtime={'declared_runtime':True}
+                    _sessions={'declared-session':{'endpoint':SimpleNamespace(owner=SimpleNamespace(channel=peer,process=SimpleNamespace(stderr=pipe),ready={'declared_control':True}))}}
+                    def open_session(self):return {'binding':{'session_id':'declared-session'},'scope':opened()['scope']}
+                    def prepare(self,sid,slot):
+                        assert sid=='declared-session';base=meter(slot)
+                        role_tree=ast.parse(source_variants.text)
+                        selected=[node for node in role_tree.body if isinstance(node,ast.ClassDef)and node.name in('Meter','_LiveShortSocket')or
+                                  isinstance(node,ast.FunctionDef)and node.name in('_live_drive_meter','_live_meter_clock')or
+                                  isinstance(node,ast.Assign)and any(isinstance(target,ast.Name)and target.id.startswith('_LIVE_')for target in node.targets)]
+                        role={'contract':c,'runtime':r,'time':SimpleNamespace(monotonic_ns=lambda:M+1000),
+                              'hashlib':hashlib,'base64':base64,'headers_request':e.headers_request,
+                              'IDENTIFY_REQUEST':e.IDENTIFY_REQUEST,'IDENTIFY_RESPONSE':e.IDENTIFY_RESPONSE,'HEADER_RESPONSE':e.HEADER_RESPONSE,
+                              'socket':SimpleNamespace(socket=lambda **kw:child),'select':SimpleNamespace(select=select_backend),
+                              'os':SimpleNamespace(write=lambda fd,raw:(stderr.extend(raw)or len(raw))if fd==2 else(_ for _ in()).throw(AssertionError('foreign fd')))}
+                        exec(compile(ast.Module(body=selected,type_ignores=[]),'actual-fixed-meter-role','exec'),role)
+                        base.__class__=role['Meter'];holders.update(meter=base,role=role)
+                        return base.prepared
+                    def execute(self,value,reference,control):
+                        assert value is holders['meter'].prepared and reference=='declared-reference'
+                        holders['actual_meter']=holders['role']['_live_drive_meter'](holders['meter'])
+                        holders['marker']=bytes(stderr)
+                        if ending=='eof':peer.output.append(b'')
+                        elif ending=='reset':peer.output.append(ConnectionResetError(errno.ECONNRESET,'declared peer reset'))
+                        elif ending=='reset_hash_mismatch':peer.output.extend([b'x',ConnectionResetError(errno.ECONNRESET,'declared peer reset')])
+                        elif ending=='other_error':peer.output.append(OSError(errno.EIO,'declared unrelated I/O failure'))
+                        raise c.LiveError('engagement_live_invalid_frame')
+                    def _evidence_payload(self,**kwargs):published.append(kwargs);return {'declared':True},{}
+                try:yield Service()
+                finally:events.append('session_closed')
+            namespace={'__name__':'declared_complete_meter_fixture','Path':Path,'os':OS(),'json':json,'hashlib':hashlib,'deepcopy':deepcopy,
+                       'time':SimpleNamespace(monotonic=lambda:1.0,monotonic_ns=lambda:M+1000),'select':SimpleNamespace(select=select_backend),
+                       'runtime':Runtime(),'contract':c,'SourceVariants':Variants,'terminal_input':terminal,'native_session':session,
+                       '_METER_PRIMITIVE_SOURCE':addition,'review_actual':lambda *args:'declared-reference',
+                       '_useful':lambda *args:events.append('declared_identify_prerequisite'),
+                       '_write_case_payload':lambda directory,payload:('declared-output',payload)}
+            exec(compile(ast.Module(body=deepcopy(functions),type_ignores=[]),'actual-meter-harness-functions','exec'),namespace)
+            if ending in('reset_hash_mismatch','other_error'):
+                with pytest.raises(AssertionError if ending=='reset_hash_mismatch'else OSError):namespace['_meter_runtime_case'](case,directory)
+                assert not published and events[-2:]==['session_closed','source_context_closed']
+                assert json.loads((directory/'meter-observation.json').read_bytes())==json.loads(holders['marker'][len(b'LIVE-METER-OBS '):-1])
+                retained=(directory/'meter-peer-output.bin').read_bytes();record=json.loads((directory/'meter-peer-drain.json').read_bytes())
+                assert retained==(b'x'if ending=='reset_hash_mismatch'else b'')
+                assert record['termination']==('reset'if ending=='reset_hash_mismatch'else'error')
+                assert record['error_type']==('AssertionError'if ending=='reset_hash_mismatch'else'OSError')
+                continue
+            result=namespace['_meter_runtime_case'](case,directory)
+            assert result[0]=='declared-output'and len(published)==1 and events[-2:]==['session_closed','source_context_closed']
+            marker=json.loads((directory/'meter-observation.json').read_bytes());actual_marker=json.loads(holders['marker'][len(b'LIVE-METER-OBS '):-1])
+            assert marker==actual_marker and not stderr and child.detached
+            output=(directory/'meter-peer-output.bin').read_bytes();drain=json.loads((directory/'meter-peer-drain.json').read_bytes())
+            assert output==b''.join(peer.sent)and drain['termination']==ending and drain['retained_bytes']==len(output)
+            assert drain['retained_sha256']==hashlib.sha256(output).hexdigest()and drain['error_type']is None
+            assert drain['errno']==(errno.ECONNRESET if ending=='reset'else None)
+            assert drain['output_hash_checked']==(case['kind']=='meter_boundary')
+            assert drain['expected_output_sha256']==(marker['output_sha256']if case['kind']=='meter_boundary'else None)
+            assert published[0]['boundary_observations'][0]['observation'].get('output_sha256')==marker.get('output_sha256')
+            if 'request_cap'in case['variant']:
+                cap=4096 if case['variant'].endswith('identify')else 256
+                assert child.reads==[cap]and peer.input==[b'x']and output==b''and holders['meter'].reason=='request_limit'
+            if case['kind']=='clock_boundary':assert 'output_sha256'not in marker
+            assert all(1<=n<=4097 for n in peer.reads)
+
+    # Direct helper failures retain exact prefixes and keep the primary error.
+    helper=namespace['_drain_meter_peer'];kind={'kind':'meter_boundary'};empty={'output_sha256':hashlib.sha256(b'').hexdigest()}
+    plain_reset=OSError('not a specialized reset');plain_reset.errno=errno.ECONNRESET
+    negatives=[('wrong_reset_errno',[ConnectionResetError(errno.EPIPE,'wrong errno')],empty,ConnectionResetError),
+               ('other_io_error',[OSError(errno.EIO,'other I/O')],empty,OSError),
+               ('plain_oserror104',[plain_reset],empty,OSError),
+               ('partial_then_reset',[b'x',ConnectionResetError(errno.ECONNRESET,'reset')],empty,AssertionError),
+               ('over_cap',[b'x'*4097],empty,AssertionError)]
+    for name,chunks,raw,error_type in negatives:
+        directory=tmp_path/name;directory.mkdir();peer=Peer();peer.output=list(chunks)
+        namespace['select']=SimpleNamespace(select=lambda reads,*args:([peer]if peer.output else[],[],[]))
+        with pytest.raises(error_type):helper(peer,directory,kind,raw,10)
+        output=(directory/'meter-peer-output.bin').read_bytes();record=json.loads((directory/'meter-peer-drain.json').read_bytes())
+        assert len(output)<=4096 and record['error_type']==error_type.__name__ and record['retained_bytes']==len(output)
+        if name=='partial_then_reset':assert output==b'x'and record['termination']=='reset'and record['output_hash_checked']is True
+        if name=='over_cap':assert output==b'x'*4096 and record['output_overflow']is True and record['received_return_bytes']==4097
+    for name,blocking,deadline in(('blocking_peer',True,10),('expired_original',False,1)):
+        directory=tmp_path/name;directory.mkdir();peer=Peer();peer.blocking=blocking;peer.output=[b'']
+        with pytest.raises(AssertionError):helper(peer,directory,kind,empty,deadline)
+        assert peer.reads==[]and (directory/'meter-peer-output.bin').read_bytes()==b''
+    directory=tmp_path/'deadline_during_drain';directory.mkdir();peer=Peer();peer.output=[b'']
+    ticks=iter((1,10));oldtime=namespace['time'];namespace['time']=SimpleNamespace(monotonic=lambda:next(ticks))
+    try:
+        with pytest.raises(AssertionError):helper(peer,directory,kind,empty,10)
+        record=json.loads((directory/'meter-peer-drain.json').read_bytes())
+        assert peer.reads==[4097]and record['termination']=='eof'and record['error_type']=='AssertionError'
+    finally:namespace['time']=oldtime
+    directory=tmp_path/'primary_error_retained';directory.mkdir();peer=Peer();error=OSError(errno.EIO,'primary');peer.output=[error]
+    oldwrite=namespace['private_write'];namespace['private_write']=lambda *args:(_ for _ in()).throw(OSError(errno.ENOSPC,'retention'))
+    try:
+        with pytest.raises(OSError)as caught:helper(peer,directory,kind,empty,10)
+        assert caught.value is error and caught.value.meter_peer_retention_error.errno==errno.ENOSPC
+    finally:namespace['private_write']=oldwrite
+    assert hashlib.sha256(Path(e.__file__).read_bytes()).hexdigest()==original_worker_hash
 
 
 def test_partial_read_counts_irreversible(meter):

@@ -1434,26 +1434,51 @@ def _meter_primitive_source(variants,case):
     if selected.get('metric')=='connections':
         fixture=runtime.SPEC['owned_meter_connection_fixture']['cases'][case['case_id']]
         steady=fixture['steady_descriptors'];peers=fixture['preconnected_peers']
-        def fixture_runtime(text):
-            boundary="def _steady_fd_max(role,stage='sealed'):\n"
-            if text.count(boundary)!=1:raise AssertionError('fixed fixture descriptor boundary')
-            text=text.replace(boundary,boundary+"    if role=='endpoint' and stage=='sealed':return "+str(steady)+"\n")
-            addition='''
-_live_fixture_fd_inventory=_fd_inventory
-
-def _fd_inventory(directory='/proc/self',purposes=None,*,role=None,steady=False):
-    rows=_live_fixture_fd_inventory(directory,purposes,role=role,steady=steady)
-    if role=='endpoint' and steady:
-        names=__PURPOSES__
-        for row in rows:
-            if row['fd'] in names:row['purpose']=names[row['fd']]
-    return rows
-'''
-            purposes={fd:runtime.SPEC['owned_meter_connection_fixture']['steady_descriptor_purposes'][str(fd)] for fd in range(5,steady)}
-            return text+addition.replace('__PURPOSES__',repr(purposes))
+        def fixture_runtime(text):return runtime._fixed_meter_runtime_source(text,case['case_id'])
         variants.source('engagement_live_runtime',fixture_runtime)
         variants._host_runtime=True
     return slot
+
+
+def _drain_meter_peer(channel,directory,case,raw,deadline):
+    """Retain actual nonblocking fixture output, including peer termination."""
+    import errno
+    output=bytearray();received=0;ending='quiescent';error_number=None;failure=None
+    expected=None;checked=False;overflow=False
+    try:
+        if channel.getblocking():raise AssertionError('primitive peer must remain nonblocking')
+        while True:
+            if time.monotonic()>=deadline:raise AssertionError('primitive peer original deadline')
+            if not select.select([channel],[],[],0)[0]:break
+            try:data=channel.recv(4097-len(output))
+            except ConnectionResetError as error:
+                if error.errno!=errno.ECONNRESET:raise
+                ending='reset';error_number=error.errno;break
+            if not data:ending='eof';break
+            received+=len(data);remaining=4096-len(output);output.extend(data[:remaining])
+            if len(data)>remaining:
+                overflow=True;raise AssertionError('primitive peer response cap')
+        if time.monotonic()>=deadline:raise AssertionError('primitive peer original deadline')
+        if case['kind']=='meter_boundary':
+            expected=raw['output_sha256'];checked=True
+            if sha(bytes(output))!=expected:raise AssertionError('actual received peer output matches meter')
+        return bytes(output)
+    except BaseException as error:
+        failure=error
+        if ending not in ('eof','reset'):ending='error';error_number=getattr(error,'errno',None)
+        raise
+    finally:
+        # A failed drain retains its bounded prefix without replacing its cause.
+        try:
+            private_write(directory/'meter-peer-output.bin',bytes(output))
+            private_write(directory/'meter-peer-drain.json',canonical({'acceptance':False,
+                'termination':ending,'errno':error_number,'received_return_bytes':received,
+                'retained_bytes':len(output),'retained_sha256':sha(bytes(output)),
+                'output_overflow':overflow,'output_hash_checked':checked,
+                'expected_output_sha256':expected,'error_type':None if failure is None else type(failure).__name__}))
+        except BaseException as error:
+            if failure is None:raise
+            failure.meter_peer_retention_error=error
 
 
 def _meter_runtime_case(case,directory):
@@ -1477,15 +1502,11 @@ def _meter_runtime_case(case,directory):
             try:service.execute(prepared,reference,control=service._control)
             except contract.LiveError:pass
             raw=_read_test_observation(endpoint.process,b'LIVE-METER-OBS ',service._control)
+            observation=canonical(raw)
+            if len(observation)>4096:raise AssertionError('bounded actual meter observation')
+            private_write(directory/'meter-observation.json',observation)
             if 'connection_cap' not in case['variant']:
-                output=bytearray()
-                while select.select([endpoint.channel],[],[],0)[0]:
-                    data=endpoint.channel.recv(4097)
-                    if not data:break
-                    output.extend(data)
-                    if len(output)>4096:raise AssertionError('primitive peer response cap')
-                private_write(directory/'meter-peer-output.bin',bytes(output))
-                if case['kind']=='meter_boundary' and sha(bytes(output))!=raw['output_sha256']:raise AssertionError('actual received peer output matches meter')
+                _drain_meter_peer(endpoint.channel,directory,case,raw,service._control.deadline)
             if case['kind']=='clock_boundary':raw['clock_source_sha256']=variants.records[0]['after_sha256']
         proof={'schema_version':'1','case_id':case['case_id'],'role':case['role'],'kind':case['kind'],
             'runtime_sha256':runtime.runtime_digest(service._runtime),'source_sha256':variants.records[0]['after_sha256'],
