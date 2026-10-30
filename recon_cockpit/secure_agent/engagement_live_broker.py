@@ -299,6 +299,7 @@ class _ClippedControl:
     def __init__(self, original, deadline_ns, stop=None, cleanup_epoch=None):
         self.original, self.stop = original, stop
         self.cleanup_epoch = cleanup_epoch
+        self.deadline_ns=min(c.integer(deadline_ns,1),int(original.deadline*c.SECOND))
         self.deadline = min(original.deadline, deadline_ns / c.SECOND)
         if int(self.deadline*c.SECOND)>deadline_ns:
             self.deadline=math.nextafter(self.deadline,-math.inf)

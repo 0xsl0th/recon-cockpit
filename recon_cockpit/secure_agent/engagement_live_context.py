@@ -1104,7 +1104,7 @@ def validate_boundary_observation(kind,value):
     if kind=='lifecycle' and value['cleanup_finished_at_ns']<value['triggered_at_ns']:_bad()
     return json.loads(runtime._json(value))
 def _boundary_checks(loaded,bundle,readies,natives,cleanups,meters):
-    import errno
+    # Linux ABI: EPERM=1 EACCES=13 EROFS=30 ENETUNREACH=101 ETIMEDOUT=110 EHOSTUNREACH=113.
     observations={}
     for row in loaded['processes.json']['boundary_observations']:
         runtime._fields(row,('kind','observation'))
@@ -1145,14 +1145,14 @@ def _boundary_checks(loaded,bundle,readies,natives,cleanups,meters):
         elif kind=='socket_denial':
             expected_op=v.rsplit('_',1)[-1]if v.startswith('endpoint_denies_')else 'connect'
             passed=observed_control and raw['operation']==expected_op and raw['return_value']==-1 and raw['paired_control_connected']and raw['listener_accepts']==0 and raw['listener_payload_bytes']==0
-            if v.startswith('endpoint_denies_'):passed&=raw['errno']==errno.EPERM
-            else:passed&=raw['errno']in(errno.EPERM,errno.EACCES,errno.ENETUNREACH,errno.EHOSTUNREACH,errno.ETIMEDOUT)
+            if v.startswith('endpoint_denies_'):passed&=raw['errno']==1
+            else:passed&=raw['errno']in(1,13,101,113,110)
             if 'fastopen' in v:passed&=bool(raw['flags']&0x20000000)
         elif kind=='creation_denial':
             rows=[item for kind,item in observations.values()if kind=='creation_denial']
-            passed=observed_control and len(rows)==3 and{item['operation']for item in rows}=={'fork','unshare','execve'}and all(item['return_value']==-1 and item['errno']==errno.EPERM and item['tasks_before']==item['tasks_after']==raw['tasks_before']for item in rows)
+            passed=observed_control and len(rows)==3 and{item['operation']for item in rows}=={'fork','unshare','execve'}and all(item['return_value']==-1 and item['errno']==1 and item['tasks_before']==item['tasks_after']==raw['tasks_before']for item in rows)
         elif kind=='parser_absence':
-            passed=observed_control and raw['authority_fds_absent']and all(raw[k]==-1 for k in('network_return','filesystem_return','process_return'))and raw['network_errno']==raw['process_errno']==errno.EPERM and raw['filesystem_errno']in(errno.EPERM,errno.EACCES,errno.EROFS)
+            passed=observed_control and raw['authority_fds_absent']and all(raw[k]==-1 for k in('network_return','filesystem_return','process_return'))and raw['network_errno']==raw['process_errno']==1 and raw['filesystem_errno']in(1,13,30)
         elif kind=='image_identity':
             passed=observed_control and raw['refused']and not raw['arm_emitted']and raw['waiting_observation_sha256']in readies and no_effect
             if v=='native_image_observation_missing_no_ARM':passed&=raw['native_observation_sha256']is None

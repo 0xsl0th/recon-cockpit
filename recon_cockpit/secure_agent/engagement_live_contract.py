@@ -21,8 +21,8 @@ from .models import parse_action, parse_policy
 
 PROFILE = 'engagement-http-prefix-live-v1'
 BACKEND = 'linux_engagement_http_prefix'
-CONTRACT_SHA256 = '7497a08dd16d6ff73d8e3102b6ea38a1ad69920fdd96ad091d3123b864df7aa1'
-INVENTORY_SHA256 = 'b8853a68ff3bc43a63cbaf8e5b8642a1443ee25c276ae1a6a0b5204eb8d1d9f1'
+CONTRACT_SHA256 = '132c42e3d8973d381ff9016eceb4b585b8406f2a89cb5dae5b7b2d5050e30f17'
+INVENTORY_SHA256 = '3453b793fba4809d8f75335f7ee65bc9e930ee95c18a36fd0cffaeefbb362efc'
 MAX_PACKET = 32768
 MAX_CANONICAL = 2097152
 MAX_DEPTH = 64

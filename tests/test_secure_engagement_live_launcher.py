@@ -853,8 +853,11 @@ def _parser_autonomous_deadline_case(monkeypatch):
 def _fixed_deadline_marker_path_cases(monkeypatch):
     """Actual transformed run/close and journal ACK, with declared native boundary.
 
-    Real local sockets and memfd exercise delivery, normal METER/CANCEL/STOP,
-    capture return, teardown and append ordering. Admission/native creation and
+    Real local sockets and files exercise delivery, normal METER/CANCEL/STOP,
+    capture return, teardown and append ordering. Linux also retains its physical
+    SEQPACKET/memfd path; every platform exercises a framed stream/tempfile path.
+    The portable file declares only the unavailable seal precondition; actual
+    Transcript construction, reserve and append remain in use. Admission/native creation and
     CAPTURE RPC are declared here; native cases and saved inspection remain
     separate gates. No private proposal or historical baseline is imported.
     """
@@ -862,6 +865,8 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
     import json
     from pathlib import Path
     import select
+    import sys
+    import tempfile
     from types import ModuleType, MethodType
     from recon_cockpit.secure_agent import engagement_live_endpoint_worker as endpoint_worker
     from test_secure_engagement_live_contract import U
@@ -888,9 +893,50 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
             result.append(module)
         return result
 
+    class StreamRecords:
+        """Bounded fixture framing over real bytes, retaining peek and EOF.
+
+        Canonical JSON contains no literal newline. One nonblocking send writes
+        one complete record; no retries or additional deadline allowances are
+        introduced. A pair-local lock prevents a reader from racing a send still
+        in progress; it is held only across bounded nonblocking socket calls.
+        """
+        def __init__(self, peer, gate): self.peer=peer; self.gate=gate
+        def __getattr__(self, name): return getattr(self.peer, name)
+        def send(self, raw, flags=0): return self.sendmsg([raw], [], flags)
+        def sendmsg(self, buffers, ancillary=(), flags=0):
+            raw=b''.join(buffers)
+            assert not ancillary and 0<len(raw)<=c.MAX_PACKET and b'\n' not in raw
+            wire=raw+b'\n'
+            with self.gate:
+                assert self.peer.sendmsg([wire], [], flags)==len(wire), 'short fixture record send'
+            return len(raw)
+        def recv(self, size, flags=0): return self.recvmsg(size, 0, flags)[0]
+        def recvmsg(self, size, ancillary_size=0, flags=0):
+            assert 0<size<=c.MAX_PACKET+1
+            with self.gate:
+                queued=self.peer.recvmsg(c.MAX_PACKET+1, 0, flags | socket.MSG_PEEK)[0]
+                if not queued:
+                    return self.peer.recvmsg(size, ancillary_size, flags)
+                boundary=queued.find(b'\n')
+                assert 0<boundary<=c.MAX_PACKET, 'incomplete or oversized fixture record'
+                wire, ancillary, received_flags, address=self.peer.recvmsg(boundary+1, ancillary_size, flags)
+                assert wire==queued[:boundary+1], 'fixture record changed after peek'
+            if boundary>size: received_flags |= socket.MSG_TRUNC
+            return wire[:-1][:size], ancillary, received_flags, address
+
+    def channel_pair(backend):
+        if backend=='seqpacket': return socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+        peers=socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM); gate=threading.Lock()
+        return tuple(StreamRecords(peer, gate) for peer in peers)
+
     @contextmanager
     def path_model(monkeypatch, case_id='S42C-N35'):
         launcher, broker = transformed(case_id)
+        if backend=='stream':
+            # Only this transformed module sees the portable flag value. Shared
+            # socket APIs and the physical Linux backend remain unchanged.
+            launcher.socket=SimpleNamespace(**vars(socket)); launcher.socket.MSG_CMSG_CLOEXEC=0
         anchor = time.monotonic_ns()
         def sample():
             now = time.monotonic_ns()
@@ -900,10 +946,22 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
         session['binding']['runtime_sha256'] = rt.runtime_digest(bundle)
         value = c.derive_prepared(session, 'http_identify', dispatch_id=uid(10), clock=sample())
         go = release(value, lease=sample()['mono_after_ns']+5*c.SECOND); go['guard_clock'] = sample()
-        left, right = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
-        host, supervisor_host = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+        left, right = channel_pair(backend)
+        host, supervisor_host = channel_pair(backend)
         for peer in (left,right,host,supervisor_host): peer.setblocking(False)
-        fd = os.memfd_create('declared-marker-model', os.MFD_CLOEXEC|os.MFD_ALLOW_SEALING)
+        journal_file=None
+        if backend=='seqpacket':
+            fd=os.memfd_create('declared-marker-model', os.MFD_CLOEXEC|os.MFD_ALLOW_SEALING)
+        else:
+            journal_file=tempfile.TemporaryFile(); fd=journal_file.fileno()
+            # This schedule tests actual append/ACK ordering, not Linux sealing.
+            # Declare only the seal query; keep real fstat, access flags and writes.
+            file_control=broker.fcntl; seal_query=object()
+            def declared_unsealed(descriptor, operation):
+                if descriptor==fd and operation is seal_query: return 0
+                return file_control.fcntl(descriptor, operation)
+            broker.fcntl=SimpleNamespace(**vars(file_control))
+            broker.fcntl.F_GET_SEALS=seal_query; broker.fcntl.fcntl=declared_unsealed
         journal = broker.Transcript(fd, broker_id=value['envelope']['broker_id'])
         events=[]; errors=[]; threads=[]
         ready = declared_readiness(bundle,'nmap'); cleanup = declared_cleanup(ready)
@@ -965,7 +1023,8 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
                 except OSError:pass
             for thread in threads:thread.join(1);assert not thread.is_alive()
             for peer in (left,right,host,supervisor_host):peer.close()
-            os.close(fd)
+            if journal_file is None: os.close(fd)
+            else: journal_file.close()
 
     def rows(model):
         return [json.loads(line) for line in os.pread(model.fd,1048576,0).splitlines()]
@@ -1102,22 +1161,24 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
                 assert len(sent)==1 and model.right.recv(4097)==sent[0]
                 assert json.loads(sent[0])['operation']=='OWNED_DEADLINE'
 
-    checked = 0
-    for case_id in ('S42C-N34', 'S42C-N35'):
-        for with_meter in (False, True):
+    backends=('seqpacket','stream') if sys.platform=='linux' else ('stream',)
+    for backend in backends:
+        checked = 0
+        for case_id in ('S42C-N34', 'S42C-N35'):
+            for with_meter in (False, True):
+                with monkeypatch.context() as local:
+                    test_real_append_precedes_launcher_host_shutdown(local, case_id, with_meter)
+                checked += 1
+        for failure in ('CANCEL', 'STOP', 'broker_eof', 'host_eof', 'wrong_ack', 'missing_ack', 'journal_failure'):
             with monkeypatch.context() as local:
-                test_real_append_precedes_launcher_host_shutdown(local, case_id, with_meter)
+                test_failure_never_substitutes_for_journal_ack(local, failure)
             checked += 1
-    for failure in ('CANCEL', 'STOP', 'broker_eof', 'host_eof', 'wrong_ack', 'missing_ack', 'journal_failure'):
-        with monkeypatch.context() as local:
-            test_failure_never_substitutes_for_journal_ack(local, failure)
-        checked += 1
-    for following in ('CANCEL', 'duplicate_ack'):
-        with monkeypatch.context() as local:
-            test_terminal_or_duplicate_packet_immediately_after_ack(local, following)
-        checked += 1
-    for expiry in ('before_send', 'ack_wait'):
-        with monkeypatch.context() as local:
-            test_original_deadline_can_expire_before_or_after_marker_send(local, expiry)
-        checked += 1
-    assert checked == 15
+        for following in ('CANCEL', 'duplicate_ack'):
+            with monkeypatch.context() as local:
+                test_terminal_or_duplicate_packet_immediately_after_ack(local, following)
+            checked += 1
+        for expiry in ('before_send', 'ack_wait'):
+            with monkeypatch.context() as local:
+                test_original_deadline_can_expire_before_or_after_marker_send(local, expiry)
+            checked += 1
+        assert checked == 15

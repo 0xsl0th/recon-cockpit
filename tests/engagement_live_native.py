@@ -582,6 +582,21 @@ def _live_fault_rights(role,rights,bootstrap):
     return selected
 
 
+def _live_initial_rights_to_close(role,rights):
+    # Only the deliberately omitted original witness stays host-owned during
+    # this faulty bootstrap. No duplicate is made and the host never writes it.
+    # The unchanged startup finally closes every remaining right, including on
+    # timeout/cancellation. All successfully transferred copies close normally.
+    selected={'S42C-X24':'terminal','S42C-X25':'graphical'}
+    if not _LIVE_FAULT_ACTIVE or selected.get(_LIVE_CASE['case_id'])!=role:
+        return tuple(reversed(rights))
+    if (_LIVE_CASE['kind']!='descriptor_custody' or _LIVE_CASE['actual_role']!=role
+            or _LIVE_CASE['variant']!='missing_descriptor_'+role
+            or tuple(rights)!=tuple(RIGHTS[role]) or tuple(rights)[-1]!='review_witness'):
+        _fail('invalid_role')
+    return tuple(name for name in reversed(rights) if name!='review_witness')
+
+
 def _live_received_rights(role,rights,rows):
     if role!=_LIVE_CASE['actual_role'] or _LIVE_CASE['kind']!='descriptor_custody' or len(rights)==len(rows):return
     actual=[]
@@ -616,6 +631,9 @@ def _startup_variant(variants,case):
         needle="        ancillary=[] if not rights else [(socket.SOL_SOCKET,socket.SCM_RIGHTS,array.array('i',tuple(rights.values())))]"
         if source.count(needle)!=1:raise AssertionError('rights insertion point changed')
         source=source.replace(needle,"        selected_rights=_live_fault_rights(role,rights,bootstrap)\n        ancillary=[] if not selected_rights else [(socket.SOL_SOCKET,socket.SCM_RIGHTS,array.array('i',tuple(selected_rights)))]",1)
+        needle="        while rights:\n            _,fd=rights.popitem()\n            os.close(fd)\n        owner=_finish_start("
+        if source.count(needle)!=1:raise AssertionError('initial rights closure insertion point changed')
+        source=source.replace(needle,"        for purpose in _live_initial_rights_to_close(role,rights):\n            os.close(rights.pop(purpose))\n        owner=_finish_start(",1)
         needle="        if type(rows)is not list or len(rows)!=len(RIGHTS[role]) or len(rights)!=len(rows):_fail('invalid_role')"
         if source.count(needle)!=1:raise AssertionError('receiver insertion point changed')
         source=source.replace(needle,"        _live_received_rights(role,rights,rows)\n"+needle,1)

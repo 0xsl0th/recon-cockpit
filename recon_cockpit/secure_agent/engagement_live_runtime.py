@@ -665,7 +665,7 @@ def _make_bootstrap(*,snapshot,worker_id,rights,payload,control,observer=None,ex
     expected=dict(observer['namespaces'])
     if expected_net is not None:expected['net']=expected_net
     value={'schema_version':'1','role':snapshot.role,'worker_id':worker_id,'observer':observer,
-        'expected_namespaces':expected,'deadline_ns':int(control.deadline*1e9),
+        'expected_namespaces':expected,'deadline_ns':_integer(getattr(control,'deadline_ns',int(control.deadline*1e9)),1),
         'runtime_sha256':snapshot.runtime_sha256,'role_manifest_sha256':_hash(snapshot.manifest),
         'source_sha256':_hash(snapshot.manifest['sources']),
         'descriptors':[{**_descriptor(fd,name), 'fd':index+3} for index,(name,fd) in enumerate(rights.items())], 'payload':payload}

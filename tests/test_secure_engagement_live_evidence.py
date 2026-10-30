@@ -3336,12 +3336,22 @@ def _socket_preparation_fixture(monkeypatch,number):
 
 
 def _socket_preparation_cases(monkeypatch):
+    import errno
     from recon_cockpit.secure_agent import engagement_live_context as context
     from recon_cockpit.secure_agent import engagement_live_witness as witness
     checks=[];cases={}
     for number in range(26,33):
         value,rows=_socket_preparation_fixture(monkeypatch,number)
-        result=context.validate_live_context(value);authority=witness.validate_evidence_transcript(value,rows,deadline=time.monotonic()+15)
+        # Saved linux-x86_64 evidence keeps errno110 even on a different reader OS.
+        with monkeypatch.context()as foreign:
+            for name,code in {'EPERM':201,'EACCES':202,'ENETUNREACH':203,'EHOSTUNREACH':204,'ETIMEDOUT':60,'EROFS':205}.items():
+                foreign.setattr(errno,name,code)
+            result=context.validate_live_context(value)
+            invalid=deepcopy(value);observation=invalid['processes.json']['boundary_observations'][0]['observation']
+            observation['errno']=errno.ETIMEDOUT if number<29 else errno.EPERM
+            invalid['results.json']['boundary_proofs'][0]['observation_sha256']=sha(raw(observation))
+            with pytest.raises(c.LiveError):context.validate_live_context(invalid)
+        authority=witness.validate_evidence_transcript(value,rows,deadline=time.monotonic()+15)
         report=e._report(value,result,authority,'d'*64,0,[])
         assert authority['missing_evidence']==['unsettled_dispatch']
         assert report['status']=='complete' and report['case_passed'] and report['missing_evidence']==[]

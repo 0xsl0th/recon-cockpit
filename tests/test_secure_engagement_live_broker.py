@@ -537,6 +537,7 @@ def test_exports_are_bounded_sealed_phase_snapshots(tmp_path,monkeypatch):
 
 
 def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
+    _broker_bootstrap_deadline_cases()
     _fixed_crash_hold_deadline_cases()
     _fixed_crash_host_signal_cases()
     _broker_stop_deadline_cases(tmp_path,monkeypatch)
@@ -598,6 +599,53 @@ def test_original_deadline_covers_lock_phase_and_cleanup(tmp_path,monkeypatch):
         now[0]=101.0
         assert broker._close(180.0) is receipt and seen==[101.9]
         assert epoch.snapshot()['deadline_ns']==101_900_000_000
+
+
+def _broker_bootstrap_deadline_cases():
+    from recon_cockpit.secure_agent.execution import ExecutionControl
+    from recon_cockpit.secure_agent import engagement_live_runtime as runtime
+    from test_secure_engagement_live_runtime import declared_readiness
+    bundle=declared_runtime()
+    snapshot=SimpleNamespace(role='broker',runtime_sha256=runtime.runtime_digest(bundle),
+        manifest=next(row for row in bundle['roles'] if row['role']=='broker'))
+    observer=declared_readiness(bundle,'broker')['parent_observation']['observer']
+    # Owned descriptor identities and a declared manifest; no native startup claim.
+    with ExitStack() as stack:
+        rights={}
+        for name in runtime.RIGHTS['broker']:
+            if 'witness' in name:
+                reader,writer=os.pipe();stack.callback(os.close,reader);stack.callback(os.close,writer)
+                rights[name]=reader
+            elif name.endswith('memfd') or name=='runtime_input':
+                rights[name]=stack.enter_context(tempfile.TemporaryFile()).fileno()
+            else:
+                reader,writer=socket.socketpair();stack.enter_context(reader);stack.enter_context(writer)
+                rights[name]=reader.fileno()
+        def bootstrap(control,deadline):
+            return runtime._make_bootstrap(snapshot=snapshot,worker_id=uid(901),rights=rights,
+                observer=observer,control=control,payload={
+                    'contract_sha256':c.CONTRACT_SHA256,'gates_sha256':c.INVENTORY_SHA256,
+                    'live_started_at_ns':deadline-60*c.SECOND,'original_broker_deadline_ns':deadline,
+                    'slot_specs':[{'slot_index':i,'reviewer_id':uid(910+i),'review_mode':'terminal',
+                        'ingress_channel_id':uid(920+i)} for i in range(2)],
+                    'store_directory':'/store/engagement'})
+        # Exact observed float counterexample, ordinary cap, and earlier parent cap.
+        for deadline,cap,expected in ((17097.000007,17097000006999,17097000006999),
+                (200.0,150*c.SECOND,150*c.SECOND),(100.125,150*c.SECOND,100125000000)):
+            original=ExecutionControl(deadline,clock=lambda:0.)
+            phase=host._ClippedControl(original,cap)
+            wire=bootstrap(phase,expected)
+            assert wire['deadline_ns']==wire['payload']['original_broker_deadline_ns']==expected
+            assert phase.deadline_ns==expected<=int(original.deadline*c.SECOND)
+            assert int(phase.deadline*c.SECOND)<=phase.deadline_ns
+            assert phase.deadline<=original.deadline and phase.remaining()==phase.deadline
+            if deadline==17097.000007:
+                assert int(phase.deadline*c.SECOND)==expected-1
+            # Generic controls still derive their bound from their own float.
+            assert bootstrap(original,expected)['deadline_ns']==int(original.deadline*c.SECOND)
+        for invalid in (True,1.5,0):
+            refused(host._ClippedControl,original,invalid)
+            refused(bootstrap,SimpleNamespace(deadline=100.,deadline_ns=invalid),100*c.SECOND)
 
 
 def _fixed_crash_namespace(case_id, clock, mark):

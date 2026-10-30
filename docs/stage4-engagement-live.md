@@ -1487,3 +1487,37 @@ All288 case objects and26/18 parent proofs,160 new portable/113 new native/15
 accepted regressions,39 new paths/1140 tracked files/1093 unchanged accepted
 nonstatus files, authority and roadmap bounds remain unchanged. S4.2c remains
 unaccepted; S4.3 custody remains next.
+
+
+### Pre-acceptance amendment A11: exact test-engine compatibility pin
+
+The user approved the dependency pin on 2026-10-30: change only `pyproject.toml`
+from `test = ["pytest>=8"]` to `test = ["pytest==9.1.1"]`. This restores the engine
+used by successful five-job freeze33 CI and the local environment. Pytest 9.2
+added an FD-capture `os.fstat` call that conflicts with accepted global test mocks;
+compatibility with later pytest versions remains unresolved.
+
+The user also approved both exact companion exceptions on 2026-10-30: align only
+the pytest `requires-dist` specifier in `uv.lock` with the pin, and update `_pin`
+in `tests/test_secure_engagement_dispatch_preservation.py` to
+check both exact new dependency files, reverse their sole changed lines in memory,
+and then perform the original baseline hash checks. The resolved lockfile already
+selects pytest 9.1.1; all package versions, artifact hashes and dependency edges
+remain unchanged. Every original baseline entry and mode check remains. No old
+gate or baseline is rewritten, and no test is skipped or deselected.
+
+Retain all original mode, Git-blob and SHA256 pins in the 1101-row accepted
+baseline. The 1093 protected nonstatus files comprise 1090 byte/mode-identical
+files and three exact deltas: the dependency pin, its lock metadata, and the
+preservation check. None is status-only. New gates pin each literal replacement
+and each full before/after file; S42C-P01 and the current-freeze audit reverse each
+replacement and validate the original pins. Additional byte or mode changes refuse;
+there is no blanket accepted-file exemption.
+
+All 288 case objects, 26 parent mappings and 18 physical obligations, 39 new paths,
+1140 tracked files, default capture, completeness guards, accepted production,
+runtime and native sources, original deadlines and caps remain unchanged. This
+preservation claim applies to the accepted baseline; corrections to new S4.2c
+production and test files require fresh validation. No acceptance credit is
+granted: the final source/runtime freeze and all required portable, native, CI and
+saved inspection evidence remain necessary. S4.2c remains unaccepted.

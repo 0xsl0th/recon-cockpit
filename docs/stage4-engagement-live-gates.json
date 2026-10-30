@@ -7974,6 +7974,45 @@
     }
   ],
   "change_allowlist": {
+    "approved_lock_metadata_change": {
+      "after_bytes": 6991,
+      "after_git_blob": "a22aa0896ef455ecef53c55977763d742ca122e2",
+      "after_sha256": "51eb36224d55e0b365af284f76933350082f184f23a12d53b4c4dff3e3a62eb8",
+      "after_text": "    { name = \"pytest\", marker = \"extra == 'test'\", specifier = \"==9.1.1\" },\n",
+      "before_bytes": 6987,
+      "before_git_blob": "d142ce204b9fef4cf8c7a10012e1563f5726bbba",
+      "before_sha256": "10b4fdf0e79e5878ef92641f9537ea5068331de1d1599caa6ab3ab0267ba2b26",
+      "before_text": "    { name = \"pytest\", marker = \"extra == 'test'\", specifier = \">=8\" },\n",
+      "id": "S42C-A11-lock-metadata",
+      "mode": "100644",
+      "path": "uv.lock"
+    },
+    "approved_preservation_test_change": {
+      "after_bytes": 12140,
+      "after_git_blob": "da635c0265257b996363677cbd6347122e362dc3",
+      "after_sha256": "1b1c50e2d1d3738c5199951eba0ebb303d9de305dcbb3ea22035c0a39f01c16a",
+      "after_text": "        raw = path.read_bytes()\n        exact_dependency_changes = {'pyproject.toml': ('3989fe11357acb3144ea7c5e0dc87aebe970e325f32e1a9fbbb1f82954574832',\n                            b'test = [\"pytest>=8\"]\\n',\n                            b'test = [\"pytest==9.1.1\"]\\n'),\n         'uv.lock': ('51eb36224d55e0b365af284f76933350082f184f23a12d53b4c4dff3e3a62eb8',\n                     b'    { name = \"pytest\", marker = \"extra == \\'test\\'\", specifier = \">=8\" },\\n',\n                     b'    { name = \"pytest\", marker = \"extra == \\'test\\'\", specifier = \"==9.1.1\" },\\n')}\n        if name in exact_dependency_changes:\n            after_sha256, before, after = exact_dependency_changes[name]\n            assert hashlib.sha256(raw).hexdigest() == after_sha256\n            assert raw.count(after) == 1 and before not in raw\n            restored = raw.replace(after, before)\n            assert restored.count(before) == 1 and after not in restored\n            assert restored.replace(before, after) == raw\n            raw = restored\n        assert hashlib.sha256(raw).hexdigest() == expected[\"sha256\"], name\n",
+      "before_bytes": 11132,
+      "before_git_blob": "3fdfa78356f85981a85b7f2c66aaa1f4967ca04c",
+      "before_sha256": "f4bb2fbabceddc15e6d1ab33c9c8c8e3edf36cd26e14f21f9b2d3e9da053b003",
+      "before_text": "        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected[\"sha256\"], name\n",
+      "id": "S42C-A11-preservation-check",
+      "mode": "100644",
+      "path": "tests/test_secure_engagement_dispatch_preservation.py"
+    },
+    "approved_test_dependency_change": {
+      "after_bytes": 745,
+      "after_git_blob": "3f2135c18703c6d8b8ffdb5dcce600c612839a2f",
+      "after_sha256": "3989fe11357acb3144ea7c5e0dc87aebe970e325f32e1a9fbbb1f82954574832",
+      "after_text": "test = [\"pytest==9.1.1\"]\n",
+      "before_bytes": 741,
+      "before_git_blob": "1605ee799fa1690b2d0296d007bb41c3056970b3",
+      "before_sha256": "3af7f08a9be31b066518afbffcc72512ab6f10aa7ff18bc4489b19a08498c8d1",
+      "before_text": "test = [\"pytest>=8\"]\n",
+      "id": "S42C-A11",
+      "mode": "100644",
+      "path": "pyproject.toml"
+    },
     "complete": true,
     "confirmed_new_tests_and_helpers": [
       "tests/engagement_live_native.py",
@@ -8348,6 +8387,39 @@
         "source_paths": 39,
         "tracked_files": 1140
       }
+    },
+    {
+      "acceptance_credit": false,
+      "accepted_nonstatus_byte_unchanged": 1090,
+      "accepted_nonstatus_exact_approved_test_dependency_delta": 1,
+      "accepted_nonstatus_exact_lock_metadata_delta": 1,
+      "accepted_nonstatus_exact_preservation_test_delta": 1,
+      "approved_change": [
+        "change_allowlist.approved_test_dependency_change",
+        "change_allowlist.approved_lock_metadata_change",
+        "change_allowlist.approved_preservation_test_change"
+      ],
+      "authorization": "The user explicitly approved the exact pytest==9.1.1 pin and both companion uv.lock metadata and legacy preservation-test changes on 2026-10-30. Authorization covers only the three exact literal transformations recorded in change_allowlist.",
+      "authorization_date": "2026-10-30",
+      "authorization_status": "approved",
+      "existing_status_only_count": 8,
+      "id": "S42C-A11",
+      "implementation_authorized": true,
+      "native_acceptance_before_amendment": false,
+      "original_1101_baseline_rows_unchanged": true,
+      "other_existing_changes": false,
+      "preservation_obligation": "Existing S4.2b _pin retains every original baseline hash and mode check, reversing only the two exact dependency metadata lines before original hash validation. S42C-P01 and the current-freeze audit separately require exact before/after bytes, SHA256, Git blobs, unchanged modes and reversible literal transformations for all three named files. No arbitrary file whitelist or whole-file grandfathering.",
+      "reason": "Restore the pytest engine used by successful five-job freeze33 CI and the local environment; pytest9.2 FD capture conflicts with previously accepted global os.fstat test mocks.",
+      "unchanged": [
+        "all288 selected case objects",
+        "all26 parent mappings and18 physical obligations",
+        "all39 new paths and1140 tracked paths",
+        "accepted production/runtime/native sources, original deadlines and caps",
+        "full portable/native/CI/replay acceptance requirements",
+        "every original accepted baseline entry and check; only exact dependency normalization added",
+        "default capture, test selection and completeness guards",
+        "uv.lock resolved package versions, sources, dependency graph and artifact hashes"
+      ]
     }
   ],
   "counting_rules": {
@@ -15577,7 +15649,10 @@
   "schema_version": "1",
   "source_baseline": {
     "accepted_merge": "d8e1a6fd12a3b7f3759aa8d790ce02a50b2340b1",
-    "accepted_nonstatus_unchanged_required": 1093,
+    "accepted_nonstatus_approved_lock_metadata_changes_required": 1,
+    "accepted_nonstatus_approved_preservation_test_changes_required": 1,
+    "accepted_nonstatus_approved_test_dependency_changes_required": 1,
+    "accepted_nonstatus_unchanged_required": 1090,
     "accepted_tree": "1cb1d5e8450b33bb9d73ed00f54b88ca52061a7c",
     "complete_tracked_count": 1101,
     "complete_tracked_manifest": [
@@ -22187,7 +22262,8 @@
         "path": "uv.lock",
         "sha256": "10b4fdf0e79e5878ef92641f9537ea5068331de1d1599caa6ab3ab0267ba2b26"
       }
-    ]
+    ],
+    "complete_tracked_manifest_sha256": "3a2ae8d0150fbf6f44ca2630508fc7f4199844df9805ffba39a39b62df637e54"
   },
   "stage4_accepted": false,
   "status": "complete_contract_ready_for_pin",
