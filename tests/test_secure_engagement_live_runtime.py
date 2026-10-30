@@ -783,14 +783,19 @@ def _startup_failure_attachment_case(monkeypatch,source_path=None):
     from contextlib import contextmanager
     from recon_cockpit.secure_agent import engagement_live_session as session
     source=Path(source_path)if source_path is not None else ROOT/'tests/engagement_live_native.py'
-    tree=ast.parse(source.read_text());node=next(n for n in tree.body if isinstance(n,ast.FunctionDef)and n.name=='_startup_runtime_case')
+    tree=ast.parse(source.read_text())
+    names=('_startup_diagnostic_readback','_startup_runtime_case')
+    nodes=[next(n for n in tree.body if isinstance(n,ast.FunctionDef)and n.name==name)for name in names]
     primary=c.LiveError('engagement_live_unavailable');primary.startup_diagnostics=b''
     events=[];services=[];saved=[]
     class Variants:
         def __init__(self,*a,**kw):
-            self.runtime_globals={'_LIVE_FAULT_EXTRA_FDS':[],'_LIVE_FAULT_RECORDS':[]};self.records=[{'after_sha256':'a'*64}];self.instrumentation=[]
+            self.runtime_globals={'_LIVE_FAULT_EXTRA_FDS':[],'_LIVE_FAULT_RECORDS':[],
+                '_read_startup':r._read_startup};self.records=[{'after_sha256':'a'*64}];self.instrumentation=[]
         def __enter__(self):return self
-        def __exit__(self,*a):return False
+        def __exit__(self,*a):
+            assert self.runtime_globals['_read_startup'] is r._read_startup
+            return False
     class Service:
         def __init__(self):self.index=len(services);self._runtime={};self.closed=False;services.append(self)
         def close(self):
@@ -809,10 +814,10 @@ def _startup_failure_attachment_case(monkeypatch,source_path=None):
     def exercise(service,case):
         if service.index==1:raise primary
         return SimpleNamespace(ready={'declared_control':True})
-    namespace={'SourceVariants':Variants,'terminal_input':terminal,'native_session':owned,'_actual_role':lambda case:'terminal',
+    namespace={'contextmanager':contextmanager,'SourceVariants':Variants,'terminal_input':terminal,'native_session':owned,'_actual_role':lambda case:'terminal',
         '_startup_variant':lambda *a:None,'_exercise_runtime_role':exercise,'contract':c,'deepcopy':deepcopy,'time':r.time,'os':os,'json':json,
         '_write_case_payload':lambda *a:saved.append(a)}
-    exec(compile(ast.Module(body=[node],type_ignores=[]),str(source),'exec'),namespace)
+    exec(compile(ast.Module(body=nodes,type_ignores=[]),str(source),'exec'),namespace)
     with monkeypatch.context()as patch:
         patch.setattr(session,'_HostEvidenceBudget',lambda:object())
         try:namespace['_startup_runtime_case']({'case_id':'S42C-X24','variant':'missing_descriptor_terminal','kind':'descriptor_custody','role':'terminal'},Path('/declared-no-files'))
