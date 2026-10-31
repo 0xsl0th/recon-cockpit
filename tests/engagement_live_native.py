@@ -2746,29 +2746,27 @@ def _owned_deadline_marker(self,phase):
         self.release['effect_stop_ns'],int(self.client.native_deadline*c.SECOND))
     expected={'schema_version':'1','channel_id':self.worker_id,'sequence':1,
         'operation':'OWNED_DEADLINE_ACK','body':{'marker_sha256':c.digest(raw)}}
-    original_poll=self.poll_stop;sent=False;acknowledged=False
-    def poll():
+    sent=False;acknowledged=False
+    def ack():
         nonlocal acknowledged
-        if not self.stopped and not self._polling and select.select([self.broker],[],[],0)[0]:
-            pending=self.broker.recv(32769,socket.MSG_PEEK)
-            if pending and c.decode(pending).get('operation')=='OWNED_DEADLINE_ACK':
-                import array
-                received,ancillary,flags,_=self.broker.recvmsg(4097,socket.CMSG_SPACE(256),
-                    socket.MSG_DONTWAIT|socket.MSG_CMSG_CLOEXEC)
-                if ancillary:
-                    for level,kind,data in ancillary:
-                        if level==socket.SOL_SOCKET and kind==socket.SCM_RIGHTS:
-                            fds=array.array('i');fds.frombytes(data[:len(data)-len(data)%fds.itemsize])
-                            for fd in fds:os.close(fd)
-                    c.fail('invalid_channel')
-                if (not sent or acknowledged or flags & ~socket.MSG_CMSG_CLOEXEC
-                        or received!=pending or received!=c.canonical(expected,max_bytes=4096)):
-                    c.fail('invalid_frame')
-                acknowledged=True
-        # Normal METER, STOP/CANCEL, EOF and host cancellation retain their
-        # production validation and precedence, including after a valid ACK.
-        original_poll()
-    self.poll_stop=poll
+        pending=self.broker.recv(32769,socket.MSG_PEEK)
+        if pending and c.decode(pending).get('operation')=='OWNED_DEADLINE_ACK':
+            import array
+            received,ancillary,flags,_=self.broker.recvmsg(4097,socket.CMSG_SPACE(256),
+                socket.MSG_DONTWAIT|socket.MSG_CMSG_CLOEXEC)
+            if ancillary:
+                for level,kind,data in ancillary:
+                    if level==socket.SOL_SOCKET and kind==socket.SCM_RIGHTS:
+                        fds=array.array('i');fds.frombytes(data[:len(data)-len(data)%fds.itemsize])
+                        for fd in fds:os.close(fd)
+                c.fail('invalid_channel')
+            if (not sent or acknowledged or flags & ~socket.MSG_CMSG_CLOEXEC
+                    or received!=pending or received!=c.canonical(expected,max_bytes=4096)):
+                c.fail('invalid_frame')
+            acknowledged=True
+            return not select.select([self.broker],[],[],0)[0]
+        return False
+    self._owned_ack=ack
     try:
         control=self._control(limit)
         with c._deadline_context(control.deadline):
@@ -2781,7 +2779,7 @@ def _owned_deadline_marker(self,phase):
                     select.select([self.broker,self.host],[],[],min(.01,control.remaining()))
             control.check()
             self._owned_deadline_seen=True
-    finally:self.poll_stop=original_poll
+    finally:del self._owned_ack
 '''
 
 _BROKER=r'''        if role=='launcher':
@@ -2832,6 +2830,10 @@ def deadline_fault_transforms(case_id):
     def launcher(source):
         tail="if __name__=='__main__':raise SystemExit(main())"
         source=_deadline_once(source,tail,_LAUNCHER_HELPERS.replace('__CASE__',case_id)+'\n'+tail)
+        # Intercept private ACKs at the sole ordinary broker receive branch.
+        # The original method still owns stopped/reentrancy and host handling.
+        ready="            if select.select([self.broker],[],[],0)[0]:"
+        source=_deadline_once(source,ready,ready[:-1]+" and not (getattr(self,'_owned_ack',None) and self._owned_ack()):")
         old="            capture=self.client.collect(effect);self.cleanups.append(capture['cleanup']);self.observe('cleanup',capture['cleanup'])"
         if case_id=='S42C-N34':
             trigger="""            if self.client.native_ready is None:c.fail('invalid_role')

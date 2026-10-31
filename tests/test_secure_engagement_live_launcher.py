@@ -18,7 +18,7 @@ from recon_cockpit.secure_agent import engagement_live_endpoint as endpoint
 from recon_cockpit.secure_agent import engagement_live_parser as parser
 from recon_cockpit.secure_agent import engagement_live_context as context
 from test_secure_engagement_live_contract import opened,prepared,release,clock,uid,M
-from test_secure_engagement_live_runtime import declared_runtime,declared_readiness,declared_cleanup
+from test_secure_engagement_live_runtime import declared_runtime,declared_readiness,declared_cleanup,PortablePacket
 
 
 def refused(function,*args,**kwargs):
@@ -901,7 +901,7 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
         introduced. A pair-local lock prevents a reader from racing a send still
         in progress; it is held only across bounded nonblocking socket calls.
         """
-        def __init__(self, peer, gate): self.peer=peer; self.gate=gate
+        def __init__(self, peer, gate): self.peer=PortablePacket(peer); self.gate=gate
         def __getattr__(self, name): return getattr(self.peer, name)
         def send(self, raw, flags=0): return self.sendmsg([raw], [], flags)
         def sendmsg(self, buffers, ancillary=(), flags=0):
@@ -925,10 +925,64 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
             if boundary>size: received_flags |= socket.MSG_TRUNC
             return wire[:-1][:size], ancillary, received_flags, address
 
+    class DarwinFlagEcho:
+        """Simulate only returned flags; bytes, ancillary data and EOF stay real."""
+        def __init__(self, peer): self.peer=peer; self.extra_flags=0; self.ancillary=()
+        def __getattr__(self, name): return getattr(self.peer, name)
+        def recvmsg(self, size, ancillary_size=0, flags=0):
+            raw, ancillary, received, address=self.peer.recvmsg(size, ancillary_size, flags)
+            self.ancillary=ancillary
+            return raw, ancillary, received | (flags & socket.MSG_DONTWAIT) | self.extra_flags, address
+
     def channel_pair(backend):
         if backend=='seqpacket': return socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
         peers=socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM); gate=threading.Lock()
-        return tuple(StreamRecords(peer, gate) for peer in peers)
+        # Force Darwin's requested flag echo in every existing stream schedule.
+        return tuple(StreamRecords(DarwinFlagEcho(peer), gate) for peer in peers)
+
+    def check_stream_flag_normalization():
+        import array
+        import errno
+        from recon_cockpit.secure_agent.execution import ExecutionControl
+        left,right=socket.socketpair(socket.AF_UNIX,socket.SOCK_STREAM)
+        with left,right,tempfile.TemporaryFile() as descriptor:
+            left.setblocking(False);right.setblocking(False)
+            echoed=DarwinFlagEcho(left);gate=threading.Lock()
+            reader=StreamRecords(echoed,gate);writer=StreamRecords(right,gate)
+            frame=p.ChannelSequence(uid(980),'launcher').make('STOP',None);raw=c.canonical(frame)
+            def receive_frame():
+                return p.receive_packet(reader,role='launcher',control=ExecutionControl(time.monotonic()+.1))
+            writer.send(raw)
+            assert reader.recv(c.MAX_PACKET,socket.MSG_DONTWAIT|socket.MSG_PEEK)==raw
+            assert receive_frame()==frame
+            # Only requested DONTWAIT is normalized; unexpected output still refuses.
+            for extra in (socket.MSG_TRUNC,socket.MSG_CTRUNC,1<<29):
+                echoed.extra_flags=extra;writer.send(raw)
+                with pytest.raises(c.LiveError) as caught:receive_frame()
+                assert caught.value.code=='engagement_live_invalid_frame'
+            echoed.extra_flags=socket.MSG_DONTWAIT;writer.send(raw)
+            assert reader.recvmsg(c.MAX_PACKET)[2] & socket.MSG_DONTWAIT
+            echoed.extra_flags=0;writer.send(raw)
+            value,ancillary,flags,_=reader.recvmsg(1,0,socket.MSG_DONTWAIT)
+            assert value==raw[:1] and not ancillary and flags & socket.MSG_TRUNC
+            assert not flags & socket.MSG_DONTWAIT
+            # Actual received rights remain visible to the production refusal/close path.
+            rights=array.array('i',[descriptor.fileno()]);wire=raw+b'\n'
+            assert right.sendmsg([wire],[(socket.SOL_SOCKET,socket.SCM_RIGHTS,rights)])==len(wire)
+            with pytest.raises(c.LiveError) as caught:receive_frame()
+            assert caught.value.code=='engagement_live_invalid_channel'
+            received=array.array('i')
+            assert len(echoed.ancillary)==1
+            level,kind,data=echoed.ancillary[0];assert (level,kind)==(socket.SOL_SOCKET,socket.SCM_RIGHTS)
+            received.frombytes(data);assert len(received)==1
+            for fd in received:
+                with pytest.raises(OSError) as closed:os.fstat(fd)
+                assert closed.value.errno==errno.EBADF
+            right.shutdown(socket.SHUT_WR)
+            value,ancillary,flags,_=reader.recvmsg(c.MAX_PACKET,0,socket.MSG_DONTWAIT)
+            assert value==b'' and not ancillary and flags==0
+            echoed.extra_flags=socket.MSG_DONTWAIT|socket.MSG_TRUNC|socket.MSG_CTRUNC|(1<<29)
+            assert reader.recvmsg(c.MAX_PACKET)[2] & echoed.extra_flags==echoed.extra_flags
 
     @contextmanager
     def path_model(monkeypatch, case_id='S42C-N35'):
@@ -1101,30 +1155,65 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
 
     def test_terminal_or_duplicate_packet_immediately_after_ack(monkeypatch,following):
         with path_model(monkeypatch) as model:
-            peeked=threading.Event();proceed=threading.Event()
-            class HeldAckRead:
-                # Scheduling seam only; the actual socket retains both packets.
+            queued=[]
+            class QueuedFollowing:
+                # Complete the actual append/ACK/following writes before the
+                # marker send returns; the original 100 ms phase includes them.
                 def __getattr__(self,name):return getattr(model.left,name)
-                def recv(self,size,flags=0):
-                    raw=model.left.recv(size,flags)
-                    if flags & socket.MSG_PEEK and raw and json.loads(raw).get('operation')=='OWNED_DEADLINE_ACK':
-                        peeked.set();assert proceed.wait(.05), 'ACK scheduling gate exceeded fixed phase'
-                    return raw
-            model.state.broker=HeldAckRead()
-            thread=model.start();marker=model.right.recv(4097,socket.MSG_PEEK)
-            try:
-                model.loop.role_message('launcher',0)
-                assert peeked.wait(.05)
-                assert len(rows(model))==1 and 'launcher_close' not in model.events
-                if following=='CANCEL':model.ordinary('CANCEL',{'reason':'engagement_live_cancelled'})
-                else:model.right.send(c.canonical({'schema_version':'1','channel_id':model.state.worker_id,'sequence':1,
-                    'operation':'OWNED_DEADLINE_ACK','body':{'marker_sha256':c.digest(marker)}}))
-            finally:proceed.set()
-            thread.join(.5);assert not thread.is_alive()
-            assert len(model.errors)==1 and model.errors[0].code==('engagement_live_cancelled' if following=='CANCEL' else 'engagement_live_invalid_frame')
+                def send(self,raw,flags=0):
+                    count=model.left.send(raw,flags)
+                    assert count==len(raw) and not queued
+                    assert json.loads(raw).get('operation')=='OWNED_DEADLINE'
+                    assert model.right.recv(4097,socket.MSG_PEEK)==raw
+                    model.loop.role_message('launcher',0)
+                    assert len(rows(model))==1 and 'launcher_close' not in model.events
+                    if following=='CANCEL':model.ordinary('CANCEL',{'reason':'engagement_live_cancelled'})
+                    else:
+                        duplicate=c.canonical({'schema_version':'1','channel_id':model.state.worker_id,'sequence':1,
+                            'operation':'OWNED_DEADLINE_ACK','body':{'marker_sha256':c.digest(raw)}})
+                        assert model.right.send(duplicate)==len(duplicate)
+                        if following=='duplicate_ack_host_eof':model.supervisor_host.shutdown(socket.SHUT_RDWR)
+                    queued.append(following)
+                    return count
+            model.state.broker=QueuedFollowing()
+            thread=model.start(expect_marker=False)
+            thread.join(.5);assert not thread.is_alive(),(backend,following,model.errors)
+            assert queued==[following],(backend,following,model.errors)
+            assert len(model.errors)==1 and getattr(model.errors[0],'code',None)==('engagement_live_cancelled' if following=='CANCEL' else 'engagement_live_invalid_frame'),(backend,following,model.errors)
             assert not getattr(model.state,'_owned_deadline_seen',False)
             assert model.state.supervisor.failed and model.state.poll_stop.__func__.__name__=='poll_stop'
             assert len(rows(model))==1 and 'RESULT' not in model.events
+
+    def test_ack_arriving_after_empty_broker_check(monkeypatch):
+        # Return an actual empty readiness observation, then deliver the actual
+        # journal ACK before the caller resumes. The old second broker check
+        # consumes it through the ordinary protocol and rejects the private ACK.
+        with path_model(monkeypatch) as model:
+            real_select=model.launcher.select.select;injected=[]
+            def inject_after_empty(readers,writers,errors,timeout=None):
+                selected=real_select(readers,writers,errors,timeout)
+                if (readers==[model.state.broker] and not writers and not errors and timeout==0
+                        and not selected[0] and not injected
+                        and real_select([model.right],[],[],0)[0]):
+                    raw=model.right.recv(4097,socket.MSG_PEEK)
+                    assert json.loads(raw)['operation']=='OWNED_DEADLINE'
+                    model.loop.role_message('launcher',0)
+                    assert len(rows(model))==1 and 'launcher_close' not in model.events
+                    assert real_select([model.left],[],[],0)[0]
+                    injected.append(raw)
+                return selected
+            # This transformed module alone sees the scheduling seam; physical
+            # readiness, packet data, append and every control clock remain real.
+            monkeypatch.setattr(model.launcher,'select',SimpleNamespace(select=inject_after_empty))
+            thread=model.start(expect_marker=False);thread.join(.5)
+            assert not thread.is_alive(),(backend,model.errors)
+            assert len(injected)==1,(backend,model.errors)
+            assert len(model.errors)==1 and getattr(model.errors[0],'code',None)=='engagement_live_timeout',(backend,model.errors)
+            assert model.state._owned_deadline_seen is True
+            assert len(rows(model))==1 and 'RESULT' not in model.events
+            assert model.state.supervisor.failed and 'launcher_close' in model.events
+            assert model.state.poll_stop.__func__.__name__=='poll_stop'
+            assert not hasattr(model.state,'_owned_ack')
 
     def test_original_deadline_can_expire_before_or_after_marker_send(monkeypatch,expiry):
         # Only time is declared here. Real socket send/absence, actual transformed
@@ -1161,6 +1250,7 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
                 assert len(sent)==1 and model.right.recv(4097)==sent[0]
                 assert json.loads(sent[0])['operation']=='OWNED_DEADLINE'
 
+    check_stream_flag_normalization()
     backends=('seqpacket','stream') if sys.platform=='linux' else ('stream',)
     for backend in backends:
         checked = 0
@@ -1173,7 +1263,7 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
             with monkeypatch.context() as local:
                 test_failure_never_substitutes_for_journal_ack(local, failure)
             checked += 1
-        for following in ('CANCEL', 'duplicate_ack'):
+        for following in ('CANCEL', 'duplicate_ack', 'duplicate_ack_host_eof'):
             with monkeypatch.context() as local:
                 test_terminal_or_duplicate_packet_immediately_after_ack(local, following)
             checked += 1
@@ -1181,4 +1271,6 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
             with monkeypatch.context() as local:
                 test_original_deadline_can_expire_before_or_after_marker_send(local, expiry)
             checked += 1
-        assert checked == 15
+        assert checked == 16  # Original15 plus duplicate-ACK/host-EOF precedence.
+        with monkeypatch.context() as local:
+            test_ack_arriving_after_empty_broker_check(local)
