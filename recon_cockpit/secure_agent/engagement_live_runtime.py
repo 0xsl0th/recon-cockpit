@@ -369,7 +369,7 @@ def _validate_file(row):
     _fields(row, ('source','destination','size','sha256'))
     for key in ('source','destination'):
         if (type(row[key]) is not str or len(row[key]) > 4096 or not row[key].startswith('/')
-                or '..' in Path(row[key]).parts or '\x00' in row[key]):
+                or '..' in (row[key].split('/') if os.name=='posix' else Path(row[key]).parts) or '\x00' in row[key]):
             _fail()
     if not row['source'].startswith(('/usr/bin/', '/usr/sbin/', '/usr/lib/', '/lib/')):
         _fail()
@@ -1941,13 +1941,13 @@ def _child_bootstrap(*,runtime,child_slot,prepared,role_context,endpoint_identit
     validate_readiness('endpoint',endpoint_identity,runtime);_validate_observer(observer)
     _integer(deadline_ns,1)
     payload=_child_payload(child_slot=slot,prepared=prepared,role_context=role_context,endpoint_identity=endpoint_identity,launcher_id=launcher_id)
-    if prepared['envelope']['runtime_sha256']!=runtime_digest(runtime):_fail('invalid_role')
+    if prepared['envelope']['runtime_sha256']!=_hash(runtime):_fail('invalid_role')
     if deadline_ns>min(prepared['envelope']['action_deadline_ns'],role_context['session_binding']['session_deadline_ns'],role_context['session_binding']['broker_deadline_ns']):_fail('invalid_role')
     manifest=next(row for row in runtime['roles'] if row['role']==slot['role'])
     expected=dict(observer['namespaces'])
     if slot['role'] in ('nmap','headers'):expected['net']=endpoint_identity['parent_observation']['namespaces']['net']
     value={'schema_version':'1','role':slot['role'],'worker_id':slot['worker_id'],'observer':observer,
-           'expected_namespaces':expected,'deadline_ns':deadline_ns,'runtime_sha256':runtime_digest(runtime),
+           'expected_namespaces':expected,'deadline_ns':deadline_ns,'runtime_sha256':_hash(runtime),
            'role_manifest_sha256':_hash(manifest),'source_sha256':_hash(manifest['sources']),'descriptors':[], 'payload':payload}
     return validate_initial_bootstrap(value)
 

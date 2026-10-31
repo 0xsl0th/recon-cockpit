@@ -1237,7 +1237,7 @@ def validate_dispatch_observations(*,prepared,release,scope,capture,client_resul
     bundle=runtime.validate_runtime(runtime_bundle);env=prepared['envelope'];slot=env['slot']
     if scope_digest(scope)!=env['scope_sha256']or configurable_contract.action(scope,1 if slot=='http_identify' else 2)!=prepared['action']:_bad()
     if release['dispatch_id']!=env['dispatch_id']or release['envelope_sha256']!=contract.envelope_digest(env)or release['prepared_sha256']!=contract.prepared_digest(prepared):_bad()
-    if client['dispatch_id']!=env['dispatch_id']or client['slot']!=slot or client['envelope_sha256']!=release['envelope_sha256']or client['runtime_sha256']!=runtime.runtime_digest(bundle)or client['runtime_sha256']!=env['runtime_sha256']:_bad()
+    if client['dispatch_id']!=env['dispatch_id']or client['slot']!=slot or client['envelope_sha256']!=release['envelope_sha256']or client['runtime_sha256']!=runtime._hash(bundle)or client['runtime_sha256']!=env['runtime_sha256']:_bad()
     if meter['dispatch_id']!=env['dispatch_id']or meter['session_id']!=env['session_id']or meter['slot']!=slot or meter['envelope_sha256']!=release['envelope_sha256']or meter['go_sha256']!=runtime._hash(release)or client['meter']!=meter_summary(meter):_bad()
     runtime._fields(capture,('schema_version','slot','exit_code','truncated','stdout_base64','stderr_base64','stdout_bytes','stderr_bytes','stdout_sha256','stderr_sha256'))
     if capture['schema_version']!='1' or capture['slot']!=slot or capture['exit_code']!=client['exit_code']or capture['truncated']!=client['truncated']:_bad()
@@ -1437,7 +1437,7 @@ def _fixture_descriptor_selection(loaded):
     if case is not None:
         if manifest.get('evidence_class')!='owned_gate':_bad()
         wrapper=loaded['runtime.json'];bundle=runtime.validate_runtime(wrapper['runtime'])
-        digest=runtime.runtime_digest(bundle)
+        digest=runtime._hash(bundle)
         if manifest['runtime_sha256']!=digest:_bad()
         config={'case_id':case_id,'variant':case['variant'],'role':'endpoint'}
         sources={row['module']:row for row in bundle['sources']}
@@ -1540,7 +1540,7 @@ def validate_live_context(value):
     from.import engagement_live_contract as contract
     if type(value)is not dict or not{'runtime.json','processes.json','results.json','cleanup.json','manifest.json'}<=set(value):_bad()
     wrapper=value['runtime.json'];runtime._fields(wrapper,('schema_version','runtime','instrumentation'))
-    bundle=runtime.validate_runtime(wrapper['runtime']);digest=runtime.runtime_digest(bundle)
+    bundle=runtime.validate_runtime(wrapper['runtime']);digest=runtime._hash(bundle)
     if wrapper['schema_version']!='1' or value['manifest.json']['runtime_sha256']!=digest:_bad()
     instrumentation=wrapper['instrumentation']
     if type(instrumentation)is not list or len(instrumentation)>16:_bad()
