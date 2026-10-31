@@ -432,8 +432,9 @@ def validate_role_manifest(value, role=None):
         if row['kind']!='directory' or row['source']!=path or row['destination']!=path:_fail()
         for key in ('device','inode','mode'):_integer(row[key],0,2**64-1)
         _digest(row['files_sha256'])
-    if len(_json(value))>131072:_fail('limit_exceeded')
-    return json.loads(_json(value))
+    raw=_json(value)
+    if len(raw)>131072:_fail('limit_exceeded')
+    return json.loads(raw)
 
 
 def validate_runtime(value):
@@ -456,7 +457,8 @@ def validate_runtime(value):
     if type(value['roles'])is not list or [x.get('role') for x in value['roles']]!=list(ROLES):_fail()
     for role in value['roles']:
         validate_role_manifest(role)
-        if role['sources']!=[x for x in rows if x['module'] in role_modules(role['role'])]:_fail()
+        selected=frozenset(role_modules(role['role']))
+        if role['sources']!=[x for x in rows if x['module'] in selected]:_fail()
         if next(x for x in role['native_files'] if x['destination']=='/usr/bin/python3')!={k:py[k] for k in ('source','destination','size','sha256')}:_fail()
     helpers=value['helpers']
     if type(helpers)is not list or [x.get('name') for x in helpers]!=['bwrap','nft','nsenter','readelf']:_fail()
@@ -469,8 +471,9 @@ def validate_runtime(value):
         if helper['executable'] not in helper['files']:_fail()
     compiled=[{'name':name,'destination':dest,'size':len(raw),'sha256':hashlib.sha256(raw).hexdigest()} for name,(dest,raw) in sorted(_compiled().items())]
     if value['compiled']!=compiled:_fail()
-    if len(_json(value))>2097152:_fail('limit_exceeded')
-    return json.loads(_json(value))
+    raw=_json(value)
+    if len(raw)>2097152:_fail('limit_exceeded')
+    return json.loads(raw)
 
 
 def runtime_digest(value):
