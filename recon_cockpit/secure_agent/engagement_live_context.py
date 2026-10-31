@@ -249,14 +249,25 @@ def _capture_terminal_facts(loaded,rows,row,operation,slot,closure,code):
         if(len(natives)!=1 or natives[0]['parent_observation']['wrapper']!=parent['wrapper']
                 or natives[0]['observed_at_ns']>request['observed_at_ns']):return False
     return thread,final,hard
-def _cancelled_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_budget=None):
-    facts=_capture_terminal_facts(loaded,rows,row,operation,slot,closure,'engagement_live_cancelled')
+def _stopped_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_budget=None):
+    cid=loaded['manifest.json']['case_id'];code=row['data']['local_error']
+    if code!='engagement_live_cancelled' and (cid!='S42C-X55' or code!='engagement_live_unavailable'):return False
+    facts=_capture_terminal_facts(loaded,rows,row,operation,slot,closure,code)
     if facts is False:return False
     from.import engagement_live_contract as c
     from.import engagement_live_protocol as protocol
     thread,final,hard=facts;data=row['data'];request=data['request'];envelope=operation['prepared']['envelope']
-    if loaded['manifest.json']['case_id']in{'S42C-X53','S42C-X54','S42C-X55','S42C-X59'}:
-        return _cancelled_capture_host_cause(loaded,rows,row,operation,slot,thread,native_budget,hard)
+    if cid in('S42C-X53','S42C-X54','S42C-X55','S42C-X59'):
+        host=operation['host_capture']
+        if(native_budget is None or slot['role']!='nmap'
+                or _boundary_unsettled_dispatch(loaded,rows)!=envelope['dispatch_id']):return False
+        if code=='engagement_live_cancelled':
+            if host['status']!='cancelled':return False
+        elif(host['status']!='succeeded' or host['exit_code']!=0 or host['truncated'] or operation['meter']is not None
+                or not any(runtime._hash(x)==host['cleanup_sha256'] and x['processes'][0]['wrapper_returncode']==0
+                    and x['finished_at_ns']<=min(thread['first_stop_requested_at_ns'],native_budget['native_deadline_ns'])
+                    for x in loaded['cleanup.json']['receipts'])):return False
+        return _lifecycle_host_cause(loaded,rows,row,operation,thread,hard)
     for wrapped in rows:
         stop=wrapped['row']
         if(wrapped['source']!='broker_memfd' or stop['kind']!='protocol'
@@ -909,7 +920,7 @@ def _validate_supervision(loaded,rows,deadline):
             resolved=(_cancelled_native_begin_terminal(loaded,rows,row,op,slot,closure)
                 if operation=='NATIVE_BEGIN' else _timeout_capture_terminal(loaded,rows,row,op,slot,closure,
                     native_budget=dispatches[did]['native_budget'])if data['local_error']=='engagement_live_timeout'
-                else _cancelled_capture_terminal(loaded,rows,row,op,slot,closure,
+                else _stopped_capture_terminal(loaded,rows,row,op,slot,closure,
                     native_budget=dispatches[did]['native_budget']if stage=='native' else None))
             if not resolved:missing.add('transcript')
             continue
@@ -2460,15 +2471,6 @@ def _copied_recovery_receipt(receipt,helpers,loaded):
     if entry['source']!='postcleanup_copied_recovery' or entry['status']!='complete' or entry['broker_id']is not None:_bad()
     raw=c.canonical(loaded.get('recovery-ledger.json'),max_bytes=2097152)
     if len(raw)!=receipt['bytes']or c.digest(raw)!=receipt['sha256']:_bad()
-def _cancelled_capture_host_cause(loaded,rows,row,operation,slot,thread,budget,hard):
-    """Owned EOF/close cause after common CAPTURE and boundary association."""
-    cid=loaded['manifest.json']['case_id'];origins={'S42C-X53':'broker_eof','S42C-X54':'endpoint_eof',
-        'S42C-X55':'launcher_eof','S42C-X59':'payload_and_wrapper_cleanup'}
-    env=operation['prepared']['envelope']
-    if(cid not in origins or budget is None or slot['role']!='nmap'
-            or operation['host_capture']['status']!='cancelled'
-            or _boundary_unsettled_dispatch(loaded,rows)!=env['dispatch_id']):return False
-    return _lifecycle_host_cause(loaded,rows,row,operation,thread,hard)
 def _lifecycle_host_cause(loaded,rows,row,operation,thread,hard):
     from.import engagement_live_contract as c
     origins={'S42C-X53':'broker_eof','S42C-X54':'endpoint_eof','S42C-X55':'launcher_eof','S42C-X59':'payload_and_wrapper_cleanup'}

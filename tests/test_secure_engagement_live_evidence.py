@@ -4998,6 +4998,83 @@ def _cancelled_capture_eof_cases(original,original_rows):
             else:assert report['missing_evidence'] or not report['cleanup_complete'],(number,mode)
 
 
+    _completed_capture_eof_cases(fixture,replay,original['results.json']['operations'][0]['meter'])
+
+
+def _completed_capture_eof_cases(fixture,replay,original_meter):
+    """Local success with no reply is terminal evidence, never useful work."""
+    def completed(number=55):
+        value,rows=fixture(number);op=value['results.json']['operations'][0];host=op['host_capture']
+        host['status']='succeeded'
+        receipt=next(x for x in value['cleanup.json']['receipts']
+            if sha(raw(x))==host['cleanup_sha256'])
+        receipt['processes'][0].update(wrapper_returncode=0,signal_attempted=False)
+        host['cleanup_sha256']=sha(raw(receipt))
+        for item in rows:
+            row=item['row'];data=row['data']
+            if row['kind']!='supervision_projection':continue
+            if data['kind']=='rpc' and data['request']['operation']=='CAPTURE':
+                data['local_error']='engagement_live_unavailable'
+            elif data['kind']=='local_failure':
+                data['code']='engagement_live_unavailable'
+                if data['capture_sha256'] is not None:data.update(capture_sha256=sha(raw(host)),cleanup_sha256=host['cleanup_sha256'])
+        return value,rows
+    value,rows=completed();op=value['results.json']['operations'][0];host=op['host_capture']
+    request=next(x['row']['data'] for x in rows if x['row']['kind']=='supervision_projection'
+        and x['row']['data']['kind']=='rpc' and x['row']['data']['request']['operation']=='CAPTURE')
+    thread=next(x for x in value['cleanup.json']['supervisors'] if x['launcher_id']==request['launcher_id'])
+    receipt=next(x for x in value['cleanup.json']['receipts'] if sha(raw(x))==host['cleanup_sha256'])
+    assert host['exit_code']==receipt['processes'][0]['wrapper_returncode']==0 and not host['truncated']
+    assert request['request']['observed_at_ns']<=receipt['finished_at_ns']<thread['first_stop_requested_at_ns']
+    report=replay(value,rows)
+    assert report['missing_evidence']==[] and report['all_closed'] and report['cleanup_complete'],'X55 completed capture without reply'
+    assert request['reply'] is None and all(op[k] is None for k in ('client','result','meter'))
+    assert report['dispatches'][op['prepared']['envelope']['dispatch_id']]['capture'] is not None
+    assert all(not value[name]['completions'] for name in ('initial-ledger.json','final-ledger.json','recovery-ledger.json'))
+    assert host['status']=='succeeded'
+    for mode in ('broker_eof','endpoint_eof','payload_cleanup','cancelled_success','unavailable_cancelled',
+            'exit_code','truncated','late_capture','wrapper_exit','native_deadline','other_error',
+            'missing_cause','missing_begin','missing_source','meter'):
+        number={'broker_eof':53,'endpoint_eof':54,'payload_cleanup':59}.get(mode,55)
+        bad,events=completed(number);op=bad['results.json']['operations'][0];host=op['host_capture']
+        rpc=next(x['row']['data'] for x in events if x['row']['kind']=='supervision_projection'
+            and x['row']['data']['kind']=='rpc' and x['row']['data']['request']['operation']=='CAPTURE')
+        closure=next(x for x in bad['cleanup.json']['supervisors'] if x['launcher_id']==rpc['launcher_id'])
+        child=next(x for x in bad['cleanup.json']['receipts'] if sha(raw(x))==host['cleanup_sha256'])
+        if mode in ('cancelled_success','other_error'):
+            code='engagement_live_cancelled' if mode=='cancelled_success' else 'engagement_live_evidence_invalid'
+            rpc['local_error']=code
+            for item in events:
+                if item['row']['kind']=='supervision_projection' and item['row']['data']['kind']=='local_failure':item['row']['data']['code']=code
+        elif mode=='unavailable_cancelled':host['status']='cancelled'
+        elif mode=='exit_code':host['exit_code']=1
+        elif mode=='truncated':host['truncated']=True
+        elif mode=='late_capture':child['finished_at_ns']=closure['first_stop_requested_at_ns']+1
+        elif mode=='wrapper_exit':child['processes'][0]['wrapper_returncode']=1
+        elif mode=='native_deadline':
+            native=next(x['row']['data'] for x in events if x['row']['kind']=='supervision_projection'
+                and x['row']['data']['kind']=='rpc' and x['row']['data']['request']['operation']=='NATIVE_BEGIN')
+            reply=native['reply'];reply['projection']['data']['native_deadline_ns']=child['finished_at_ns']-1
+            packet={'schema_version':'1','channel_id':native['launcher_id'],'sequence':reply['sequence'],
+                'operation':reply['operation'],'body':reply['projection']}
+            reply.update(bytes=len(raw(packet)),sha256=sha(raw(packet)),projection_sha256=sha(raw(reply['projection'])))
+        elif mode=='missing_cause':events=[x for x in events if not(x['row']['kind']=='supervision_projection'
+            and x['row']['data']['kind']=='local_failure' and x['row']['data']['capture_sha256'] is None)]
+        elif mode=='missing_begin':events=[x for x in events if not(x['row']['kind']=='phase' and x['row']['data']['phase']=='client' and x['row']['data']['stage']=='begin')]
+        elif mode=='missing_source':bad['runtime.json']['instrumentation']=[x for x in bad['runtime.json']['instrumentation'] if x['kind']!='scripted_review']
+        elif mode=='meter':op['meter']=deepcopy(original_meter)
+        # Rebind changed declarations so the target predicate, not a stale hash,
+        # must reject their inconsistent terminal claim.
+        host['cleanup_sha256']=sha(raw(child))
+        for item in events:
+            data=item['row']['data']
+            if item['row']['kind']=='supervision_projection' and data['kind']=='local_failure' and data['capture_sha256'] is not None:
+                data.update(capture_sha256=sha(raw(host)),cleanup_sha256=host['cleanup_sha256'])
+        try:report=replay(bad,events)
+        except c.LiveError:pass
+        else:assert report['missing_evidence'] or not report['cleanup_complete'],('X55 terminal refusal',mode)
+
+
 def _eof_fixture_control_flow_cases(prepared,source_path=None):
     """Exact capture/EOF/cleanup helper, declared clock and ownership schedule."""
     import ast
