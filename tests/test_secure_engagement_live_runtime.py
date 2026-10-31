@@ -52,7 +52,7 @@ class PortablePacket:
         import socket
         raw,ancillary,flags,address=self.inner.recvmsg(*args)
         requested=args[2] if len(args)>2 else 0
-        return raw,ancillary,flags & ~(requested & socket.MSG_DONTWAIT),address
+        return raw,ancillary,int(flags) & ~(int(requested) & int(socket.MSG_DONTWAIT)),address
 
 def declared_runtime():
     """Declared fixture rows only. No native image/process/kernel claim is made."""
@@ -279,6 +279,37 @@ def test_native_snapshot_mutation_refused(tmp_path,monkeypatch):
         selected['native_files'][0]['sha256']='bad';refused(r.validate_runtime,value)
 
 
+def _portable_packet_integer_flag_cases(monkeypatch):
+    # Exercise the actual wrapper with a small declared flag namespace, so
+    # enum complement width cannot hide unknown bits on a Linux test host.
+    import socket
+    import sys
+    from enum import IntFlag
+    class DeclaredFlags(IntFlag):
+        TRUNC=16
+        CTRUNC=32
+        DONTWAIT=128
+    real_socket=socket;checked=0
+    with monkeypatch.context() as local:
+        local.setitem(sys.modules,'socket',SimpleNamespace(MSG_DONTWAIT=DeclaredFlags.DONTWAIT))
+        for raw in (b'bytes',b''):
+            ancillary=[(1,1,b'held')] if raw else [];address=object()
+            for unknown in (1<<29,1<<6,(1<<29)|(1<<6)):
+                output_flags=128|16|32|unknown
+                for flag_type in (int,DeclaredFlags):
+                    packet=PortablePacket(SimpleNamespace(recvmsg=lambda *args:(raw,ancillary,flag_type(output_flags),address)))
+                    for requested in (DeclaredFlags.DONTWAIT,0,DeclaredFlags.TRUNC):
+                        result=packet.recvmsg(10,10,requested)
+                        expected=output_flags^128 if requested==DeclaredFlags.DONTWAIT else output_flags
+                        assert result[2]==expected,(raw,unknown,flag_type,requested,result[2],expected)
+                        assert type(result[2]) is int
+                        assert result[0] is raw and result[1] is ancillary and result[3] is address
+                        assert result[2]&unknown==unknown and result[2]&48==48
+                        checked+=1
+    assert sys.modules['socket'] is real_socket and checked==36
+    return checked
+
+
 def test_fixed_argv_and_initial_fd_closure(tmp_path,monkeypatch):
     import socket
     absent={'device':-1,'inode':0,'mode':0o140777,'flags':0}
@@ -289,6 +320,7 @@ def test_fixed_argv_and_initial_fd_closure(tmp_path,monkeypatch):
         socket.MSG_DONTWAIT|socket.MSG_TRUNC|socket.MSG_CTRUNC,None)))
     assert packet.recvmsg(10,10,socket.MSG_DONTWAIT)==(b'bytes',ancillary,socket.MSG_TRUNC|socket.MSG_CTRUNC,None)
     assert packet.recvmsg(10,10,0)[2]&socket.MSG_DONTWAIT
+    _portable_packet_integer_flag_cases(monkeypatch)
     _graphical_startup_mounts(tmp_path,monkeypatch)
     _supervised_spawn_cases(monkeypatch)
     _supervised_proxy_cases(monkeypatch)
