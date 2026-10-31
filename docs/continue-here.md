@@ -1,10 +1,16 @@
-# Continue here — 20 October 2026
+# Continue here — 26 October 2026
 
 ## Read this first
 
+The authoritative development checkpoint is `.secure-agent/continue-here.json`.
+It records the current commit, confirmed blockers, completed gates, active workers
+and next action. The validation history below preserves earlier attempts; its
+passes do not grant acceptance to later source. The former
+`.secure-agent/stage4-engagement-live-20261021/current-progress.json` is historical.
+
 This development checkpoint never resumes an assessment or restores approvals.
 
-Current continuation (20 October 2026):
+Historical continuation (24 October 2026):
 [PR #94](https://github.com/0xsl0th/recon-cockpit/pull/94) is merged as `46f9b73`.
 Fresh independent authority/evidence reviews and 457 focused portable checks
 passed at `58c78e0`; all five final and [post-merge CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/38767707515) passed. Reviewed and merged trees
@@ -115,12 +121,24 @@ passed, with no skips, failures or errors. Preserve
 which also passed all five jobs with 28,845 portable tests each.
 This accepts offline metadata and inspection only.
 
-Current work is [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md).
-The additional explicit split separates its durable transaction domain from
-S4.2c isolated live enforcement: the existing record schema has no dispatch
-counters, and the current approval/launcher/traffic boundaries need independent
-engagement proofs. All 26 S4.2 obligations remain mapped, including all 18
-physical cases; ledger records cannot substitute for dispatch or cleanup evidence.
+**[PR #102](https://github.com/0xsl0th/recon-cockpit/pull/102) accepts
+[S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md) at `d8e1a6f`.**
+Fresh code and evidence reviews found no blockers. Reviewed `ffc5323` and the
+actual merge share tree `1cb1d5e8450b33bb9d73ed00f54b88ca52061a7c`.
+All 80 exact new cases, 28,925 local portable tests and all five
+[final CI jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/39521133152)
+passed without skips, failures or errors. Preserve
+`.secure-agent/pr102-review-20261021/merge-review-receipt.json`; the
+[post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/39525063830)
+also passed all five jobs with 28,925 portable tests each and the completeness
+guard. Its complete logs and verification are retained separately in that directory.
+
+Current work is [S4.2c live engagement enforcement](stage4-engagement-live.md).
+Its [exact inventory](stage4-engagement-live-gates.json) maps all 26 S4.2
+obligations, including all 18 physical cases, before implementation. The accepted
+ledger remains data-only. Live approval, durable current-state admission,
+physical aggregate limits, revocation and cleanup require the new integration's
+own evidence. This is the existing integration increment, with no further split.
 Stage 4 retains four logical increments, one accepted and three open, with a
 revised **6–7 PR** estimate. The current summed baseline forecasts are
 **49–66 professional-v1 PRs** and **89–136 broader-product PRs**, including
@@ -128,15 +146,609 @@ completed work. The original 4–6 and intermediate 5–6 Stage 4 forecasts rema
 historical; no outcome is removed or added. S4.3 synthetic custody and S4.4
 separately authorized real use remain required. Completed milestones stay closed.
 
-**Current: S4.2b durable dispatch accounting.** The active worktree is
-`/tmp/recon-stage4-engagement-dispatch-ledger`, branch
-`feature/stage4-engagement-dispatch-ledger`, based on accepted merge `43869cb`.
-The [implementation contract](stage4-engagement-dispatch-ledger.md) and
-[exact inventory](stage4-engagement-dispatch-ledger-gates.json) precede code.
-This slice adds a fresh versioned ledger for atomic revocation/reservation order,
-irreversible usage, exact retries and reported completion. Its records and
-reports grant no execution capability. All accepted modules and historical
-contracts retain their bytes; current status belongs in these status documents.
+**S4.2c implementation and validation history.** The active worktree is
+`/tmp/recon-stage4-engagement-live`, branch `feature/stage4-engagement-live`,
+based on accepted merge `d8e1a6f`. The
+[implementation contract](stage4-engagement-live.md) and
+[exact inventory](stage4-engagement-live-gates.json) were independently reviewed
+and pinned before implementation; pre-acceptance amendments A01–A07 end at
+`e4e2d89`. The first seven native attempts are retained failures, with no new
+native gate accepted yet. Broker and audit startup now complete after correcting
+setup descriptor closure and verifying the pinned read-only import image. A07
+records the unchanged audit worker's exact six-descriptor inventory, actual image
+and endpoint bindings, and audit process cleanup obligations. All 160 portable
+cases passed on frozen `9e02273`. Native attempt four then reached the launcher
+and failed during sealing; its harness did not retain aggregate session cleanup.
+A separate bounded diagnostic confirmed that the launcher used a socket-pair
+denial check despite requiring private pairs for its fixed children. That diagnostic
+retains actual cleanup for all four started roles and performs no action. Its
+evidence does not repair the missing evidence from attempt four. The corrected
+launcher witness and actual session failure retention pass 32 focused runtime
+cases and five private retention checks. Review also identified a separate
+architecture blocker: post-seal children inherit the launcher's network-denying
+seccomp filter, and its hard FSIZE 0 prevents child image staging. A08 is now
+independently reviewed and pinned at `15f71ee`: the trusted host constructs and
+observes the fixed children, while the launcher exclusively owns their
+preallocated request/release channels. Two fixed host supervisors share one
+cleanup deadline and one bounded host evidence allocation; actual joins and
+reaping are required. A08 implementation and the existing-case regressions now
+cover original deadlines, actual socket custody, autonomous child supervision,
+bounded evidence retention and measured thread/process closure. Focused
+development runs passed the 76 authority/witness, 32 runtime/meter, 20 evidence
+and 32 Session/approval/preservation cases; final review corrections and their
+checks are retained separately. The complete A08 implementation was committed at
+`4ea1e24`; freeze five and all exact 160 portable cases passed with unchanged
+source and runtime. Native attempt five passed launcher startup, then the
+terminal reviewer exited after READY. A separately retained bounded diagnostic
+confirmed a protocol import after the reviewer's filesystem seal; all five
+started roles were reaped, with no review or action performed. The correction
+preloads that already-declared module before either reviewer seal. Review also
+found a possible cleanup-deadline renewal during persistent-role startup;
+attempt five itself finished within both deadlines. Startup cleanup now carries
+the shared first-stop deadline and publishes the stop fence before local reaping,
+including concurrent startup and resource-close failures. Preserve the original
+failure, diagnostic and development corrections separately. Process reaping is
+attempted even when a reviewer or audit channel fails to close; combined custody
+failure retains the distinct actual process receipt, including in private native
+failure artifacts. A timing-only cleanup failure preserves its observed closed
+descriptors. These corrections were committed at `7076e9f`; freeze six and all
+160 exact portable cases passed with unchanged source and runtime. Native attempt
+six then reached dispatch and stopped after a supervisor failure. Its five
+persistent roles have actual complete cleanup receipts, but its original inner
+exception was not retained. Two separately retained, bounded diagnostics on the
+same frozen source located the native mapping guard and then captured the exact
+missing destination: the DT_NEEDED alias of the already-mapped ELF interpreter.
+Both loader paths contain the same inspected bytes but have distinct mounted
+inodes. The actual interpreter, Nmap and every other required native image were
+mapped; no unknown executable mapping was observed. Both diagnostics retain
+actual child reaping, supervisor join and persistent-role cleanup, and neither
+returned a useful action or replaces the original failed acceptance evidence.
+The correction requires the exact interpreter image at its PT_INTERP path once,
+while preserving both mounted-file checks and all other required mappings.
+Failure retention also keeps the original supervisor exception, bounded code
+locations, actual closure and finalized host observations. All 64 focused
+portable runtime, launcher, Session, reviewer and preservation checks pass on
+these corrections. They were committed at `3e305fe`; freeze seven and all
+160 exact portable cases passed with unchanged source and runtime. Native attempt
+seven reached successful native observation and capture replies, then failed
+before a useful HTTP result. Its retained supervisor exception identifies the
+invalid-frame guard, but does not distinguish EOF from its other refusal causes.
+A separate single-run diagnostic retained an actual endpoint `ConnectionResetError`
+with errno 104 on the first empty identification connection, followed by launcher
+cancellation. Its Nmap output reported `tcpwrapped`; capture exit zero does not
+establish useful HTTP. Actual child and persistent-role cleanup and supervisor
+join were retained. The diagnostic's actual channel EOF and socket exception do
+not backfill the missing first cause in attempt seven.
+
+The identification grammar already permits one or two initial empty EOF/reset
+probes. A09 is independently reviewed and pinned at `66f3e7d` before implementation:
+record actual connection resets separately from successful zero-length reads,
+continue only empty identification connections 1 or 2, and preserve charged
+connections and all observed bytes. Partial requests, headers and connection 3
+still refuse. Existing meter cases cover the correction without new case IDs or
+larger limits. All 32 focused meter/runtime checks passed; after updating the four
+contract digest pins, all 44 contract/evidence checks and the static compilation
+of 54 core variants and 37 sources passed. The original static pin failure is
+retained. Independent implementation and evidence reviews are clear. The reset
+correction was committed at `53d0590`; freeze eight passed independent source
+and runtime review. Its exact portable run retained 159 passes and one L16
+failure: a test compared floating-point seconds directly despite the existing
+conservative integer-nanosecond deadline bound. The observed bound was less than
+one nanosecond earlier than the original host deadline. Preserve that failed
+run; no native case ran on freeze eight. The test expectations now use the
+original host/action/session/broker bounds and exact integer conversions while
+retaining separate no-extension checks. All 16 focused launcher cases pass, with
+production bytes unchanged from freeze eight. Freeze nine and all exact 160
+portable cases passed at `e802a34`; the retained artifact audit confirms their
+exact selection and unchanged source/runtime. Native attempt eight reached the
+isolated identify parser, then failed after READY without a useful result. Its
+five persistent roles and supervisor have complete cleanup receipts. A separate
+single-run diagnostic captured the parser's `PermissionError` while importing
+`xml.parsers.expat` after its filesystem seal; actual child reaping and shared
+cleanup were retained. That diagnostic does not backfill the original failure.
+The correction preloads the XML module before sealing, using the existing pinned
+runtime and unchanged parser. A fresh-process regression reproduces the missing
+preload by denying file reads, then verifies useful parsing and external-doctype
+rejection after the correction. Preserve both the original native attempt and
+the failed regression. The correction was committed at `edb93c6`; freeze ten
+and all exact 160 portable cases passed. Native attempt nine completed both
+useful HTTP actions, then exceeded the original two-second context-validation
+budget before writing a canonical evidence bundle. It remains failed.
+
+A separate bounded diagnostic retained one actual candidate after the original
+packaging attempt. Its two useful operations and twelve complete cleanup
+receipts are diagnostic evidence only. Offline replay reproduced the timeout:
+the context repeatedly decoded the full transcript and repeatedly constructed
+the same source-membership sets. Validation now shares detached validated rows
+only within one invocation, derives source membership once per manifest and
+hashes an already-validated runtime copy. No validation result is cached across
+calls and no deadline is enlarged. The faster replay exposed original parser
+bootstrap deadlines 11.304167 and 8.519989 ms beyond their recorded START plus
+two seconds. The old candidate remains invalid. Host child startup now charges
+validation/setup time from that recorded request observation and conservatively
+converts its deadline to seconds. Preserve the original native, diagnostic and
+offline replay failures. The correction was committed at `a8941a5`; freeze eleven
+and all 160 exact portable cases passed. Fresh N04 and N05 terminal A/B native
+cases completed both useful actions, complete cleanup and both saved-evidence
+inspection methods. Their root artifact audits are clear; they are not an
+independent final review. The next batch stopped on N06 graphical A before N07
+ran. Its retained traceback identifies the runtime's mount allowlist: it used
+`/run/reviewer.Xauthority`, while the unchanged graphical protocol and client use
+`/run/reviewer.xauthority`. All four started persistent roles were reaped and the
+supervisor joined; no graphical reviewer or action started. The runtime now uses
+the established lowercase path, retaining read-only selected-cookie custody.
+The existing argv/descriptor case reproduces the original refusal and checks
+the corrected mount, rejection of the obsolete/unrelated paths and other roles,
+and cleanup of failed-start resources. Preserve the original native failure,
+the reproducing regression and its initial mount-assertion fixture correction.
+The path correction was committed at `eba1ecd`; freeze twelve and all 160 portable
+cases passed. All four terminal/graphical A/B useful paths and six context/scope
+negatives passed with clear root artifact audits. The next batch recorded five
+passes and one N16 revision-after-review failure, then stopped. Its canonical
+bundle retains the actual revision commit, matching broker watch and lifecycle
+stops, host cancellation, no reservation/GO, unchanged usage and all seven
+payload/wrapper reaps. The original harness discarded the unsuccessful CLI
+output. A separate read-only replay reproduced an incomplete case predicate;
+it does not reconstruct that lost output. The predicate omitted cancellation
+as a possible local consequence of the already-proven broker stop. It now
+accepts that consequence only with the same broker/session/dispatch and an
+observed matching stop preceding cancellation, in addition to the existing
+ledger, watch, no-execution and cleanup requirements. Offline replay of the
+unchanged bundle now resolves the case while preserving the operation's
+unresolved result and null metrics. The original acceptance run remains failed.
+The harness now retains nonzero/stderr CLI results within its existing bounded
+failure capture. All 44 focused evidence/broker checks pass, including mismatched
+identity, missing/late stop and unrelated cancellation negatives. Preserve both
+offline diagnostic outcomes. A fresh source freeze and exact 160 portable cases
+are required before native acceptance resumes; earlier passes do not validate
+later source. That correction was committed at `4db5edb`; freeze thirteen and
+all 160 exact portable cases passed. Seventeen new native cases then passed,
+including both revision-after-review cases and their saved inspections. The
+graphical revision case exercised the observed-stop/cancellation path; the
+terminal case retained an explicit revision refusal. The next batch stopped on
+N18 action exhaustion. Its now-retained CLI report identifies a denied second
+action with no reservation/GO, but an `invalid_input` reason. A portable real-ledger
+regression reproduced that reason: the generic deadline context translated the
+ledger's `allowance_exhausted` before the broker's domain-error mapper could see
+it. Broker transaction phases now translate ledger errors through the existing
+finite mapper before leaving that validation context. Reservation decisions,
+rollback, limits and deadlines are unchanged. All 60 focused broker/contract/
+Session cases pass; the existing budget case exercises actual prior reservations
+and refusal without mutation or release for all five resource limits. Preserve
+the original native failure, reproducing regression, and private-directory and
+ROE-limit fixture corrections. Fresh freeze/portable/native proof remains
+required. The next native plan prioritizes the affected budget group after N04;
+all earlier groups still require fresh results before acceptance.
+That mapper correction was committed at `9db039b`; freeze fourteen passed all
+160 portable cases and fresh N04. The budget batch passed N18–N22, then stopped
+at N23 (`reopen_exhausted`). Its saved report proves exhaustion survives a new
+broker, with no second reservation/GO and all 15 processes reaped, but reports
+missing transcript evidence. The two sequential namespaces reused the same
+kernel inode; bootstrap replay incorrectly treated that inode as a globally
+unique endpoint identity. Replay now resolves the exact endpoint and launcher
+from retained broker-slot lifecycle observations, cross-checks their full saved
+readiness and chronology, and retains the bootstrap hash/byte checks. Missing
+links stay incomplete; conflicting, late or mismatched links fail closed. All
+32 focused evidence/witness cases pass, including a reproducing inode-reuse
+regression and link mutations within the existing case inventory. A bounded
+offline diagnostic resolves the unchanged original bundle in 3.9 seconds;
+it does not replace native acceptance. Preserve the original failure, three
+read-only tracing attempts (including the diagnostic serialization error),
+regression failure and duplicate synthetic-fixture correction. Fresh frozen
+portable and native results remain required after this replay change.
+The endpoint binding correction was committed at `93024b2`. Freeze fifteen
+passed all 160 portable cases, fresh N04 and N18–N23, including the restart
+case with complete saved inspection. N24 then failed during bundle validation:
+partial host ingress observations were incorrectly mixed into the broker's
+complete channel sequence. One bounded diagnostic retained the rejected
+candidate and reproduced the collision. Replay now requires every retained
+host DISPATCH packet to match the opposite-direction broker packet, with
+unique increasing host sequence numbers and request/dispatch pairing; broker
+sequences still start at one and remain contiguous. Its offline replay correctly
+remains incomplete because the original winner never received a final reply.
+That candidate shows the losing session's stop followed by a global witness
+failure. A real-channel portable regression reproduced expected reviewer EOF
+in a stopped slot cancelling the active sibling. The broker now retires stopped
+slots' role/witness channels from polling while retaining both ingress controls,
+shared audit/lifecycle checks and unexpected-EOF checks for active slots. All
+56 focused broker/witness/evidence cases pass. Preserve both reproducing
+regressions, the original failed batch, the bounded diagnostic and its incomplete
+offline replay; none supplies passing native proof. Fresh frozen acceptance is
+required, prioritizing N24 within the budget group after N04.
+Those corrections were committed at `4b39a1d`; freeze sixteen passed all 160
+portable cases and fresh N04. N24 now writes a valid bundle but remains
+incomplete: the host's shared first-stop epoch cancels the winner as soon as
+the budget loser emits SESSION_STOP. The retired-channel correction alone did
+not resolve the race. The contract treats an expected budget refusal as a valid
+reply, so a known allowance denial before admission now returns its unchanged
+denied result without emitting a shared-graph stop. Its dispatch remains terminal,
+with no reservation/release or reusable grant; waiting roles keep their original
+deadlines and normal host cleanup. All other failures retain cancellation,
+including an actual admitted guard failure. A real-ledger/direct-witness
+regression reproduced the unwanted stop; all 36 focused broker/session checks
+pass after the narrow correction. Preserve the freeze-sixteen incomplete bundle
+and reports. A new freeze and complete fresh validation remain required.
+That correction was committed at `9ae0d38`. Freeze seventeen passed all 160
+portable cases, fresh N04, the seven budget cases (including one useful N24
+winner, one allowance denial and all 16 processes reaped), and all three replay
+cases. The window batch passed N28 and stopped at N29: its sealed synthetic
+clock differed from the trusted host's real clock during release validation.
+The N29 harness now runs the exact committed clock projection in the host too;
+OS clocks, production tolerance, original deadlines and inclusive-boundary inputs
+are unchanged. A deterministic half-second mismatch reproduces the failure;
+all 40 focused contract/runtime checks pass after the test-only correction,
+including advancing time, release validation and restoration after exceptions.
+Preserve the original native failure and regression. Fresh frozen acceptance
+remains required, with the window group first after N04.
+The host projection correction was committed at `1f08502`. Freeze eighteen
+passed all 160 portable cases and fresh N04; N29 then completed both useful
+operations but its saved parser replay refused the instrumented common contract
+source. Its original bundle remains unchanged and is not acceptance. N29 now
+projects both UTC and the monotonic bracket by the same subsecond offset to the
+preceding exact second. Only broker initialization and the first session use
+that pinned boundary; all later checks use normal clocks, including the host.
+This removes the common-source/host clock override and keeps the parser's entire
+source partition unchanged. All 40 focused contract/runtime checks pass, proving
+the exact boundary, advancing normal clocks, unchanged jump detection, parser
+source separation and clock restoration after a failed wrapper operation.
+Preserve both N29 failed attempts and their regressions; fresh freeze nineteen
+validation is required before further acceptance claims.
+The aligned anchor was committed at `8875d22`. Freeze nineteen passed all 160
+portable cases, fresh N04 and N28/N29. N29 retained two useful operations, both
+complete saved inspections and all 11 processes reaped. N30 then failed cleanup:
+an idle supervisor waited until the original session deadline, leaving no time
+inside that same bound for reaping. The supervisor now distinguishes its original
+bootstrap/cleanup deadline from the earlier work cutoff that preserves the
+existing two-second cleanup reserve. Work checks, waits and nested validation
+contexts use that cutoff; shorter native/startup limits are unchanged, and no
+cleanup deadline is extended. A real idle-thread regression reproduces the
+original failure. All 44 focused launcher/session/runtime checks pass, with a
+further existing-case check of action-bound cleanup and shorter phase limits.
+Preserve N30's failed process/closure observations and the reproducer; freeze
+twenty must supply fresh proof, starting with N30 within the window group.
+[Draft PR #103](https://github.com/0xsl0th/recon-cockpit/pull/103) now holds this
+integration. It remains draft pending complete native, portable, CI and review
+gates. The operator has authorized an independent review agent and merging after
+the complete required checks and review pass, then continuing along the roadmap.
+This conditional authorization does not mark any acceptance gate complete.
+
+Freeze twenty at `1ab5fd7` passed all 160 portable cases, fresh N04 and
+N30/N28/N29/N31. N32 stopped after committing its reservation: the fixed test
+barrier ignored the launcher's actual stop and prevented normal final evidence
+sealing. A separate bounded diagnostic retained the original partial candidate
+and a separately labeled read-only recovery snapshot; neither repairs that
+failed acceptance attempt. Independent review also identified a broker-only idle
+monitor that needed the existing cleanup reserve, and replay that confused an
+unavailable later history with contradictory evidence. The monitor now stops
+before its original hard bound. Replay retains the richest validated prefix,
+rejects all independently knowable identity, ordering, witness and accounting
+contradictions, and treats strictly later unavailable joins as missing evidence.
+Initial-only history cannot establish a complete negative physical proof.
+An older sequential broker's final export remains a prefix. Read-only recovery
+can complete durable history, but cannot replace the latest broker's missing
+sealed final outside the existing proven startup/crash exceptions.
+
+The N32 source-only barrier now unwinds on actual traffic/EOF from its existing
+launcher peer so normal broker cleanup can seal its reservation. The host retains
+that early cancellation separately, then records a real refused continuation
+with the original Prepared/reference after actual ROE expiry and the graph's
+stop fence. No deadline, charge, GO guard or case predicate is relaxed.
+
+The freeze-twenty hosted run passed all four Linux jobs. macOS retained 40
+portable fixture failures and 29,045 passes: redundant stream half-close calls,
+negative socket device identifiers in declared Linux wire objects, and one
+receive precheck failure. The latter's flags were not captured; Apple XNU source
+supports an echoed input `MSG_DONTWAIT` explanation. Portable fixtures now use
+real one-way stream behavior with explicit declared Linux identities and remove
+only that echoed requested flag; ancillary data, truncation and all other flags
+remain checked. Production Linux confinement and protocol checks are unchanged.
+Preserve the failed CI log, independent reviews and all focused regressions in
+`.secure-agent/stage4-engagement-live-20261021/`. Fresh clean-source portable,
+native, full-suite, hosted and final independent review gates remain required.
+
+Freeze twenty-one at `acfb706` passed all 160 portable cases, fresh N04 and
+N32/N30/N28/N29/N31. Independent inspection confirmed N32's full reservation,
+zero GO, early cancellation, sealed final evidence and bounded process cleanup,
+plus a separately refused continuation after the original ROE end. N33 then
+failed its case predicate: the actual held review stopped at the existing cleanup
+cutoff, while the predicate wrongly required it to remain pending until the hard
+deadline. Its original failed bundle and reports remain unchanged.
+The corrected predicate requires the actual pending REVIEW wire commitment,
+supervisor timeout at the original cutoff, matching reviewer readiness and
+payload/wrapper cleanup within the original hard bound, and an actual refused
+continuation after that bound. Neither cancellation alone nor a late probe alone
+establishes review expiry. The native fixture retains both attempts with the
+original Prepared; it renews no authority or deadline.
+
+The freeze-twenty-one macOS run retained three failures and 29,082 passes.
+The supervisor fixture still exposed native platform receive flags, and a second
+audit-handler fixture branch omitted its declared Linux descriptor identity.
+Both now use the same existing portable projections as their neighboring
+fixtures; production transport and witness checks are unchanged. Focused source
+review and a fresh clean freeze must precede another native acceptance attempt.
+
+Freeze twenty-two at `f30da97` passed all 160 portable cases, fresh N04 and
+N33/N32/N30/N28/N29/N31/N34. All five CI jobs passed 29,085 portable tests each,
+with 2,347 integration deselections and the completeness guard. Independent N33
+inspection confirmed the causal held-review timeout and all seven actual
+payload/wrapper cleanups within the original deadline. It also found that broker
+stop packets advertised a few milliseconds beyond that original bound even
+though the host correctly clamped cleanup. Broker lifecycle messages now retain
+the earliest original and first-stop deadline, including already-expired bounds;
+replay rejects extensions of known bounds.
+Review also found aggregate shutdown attempted three terminal lifecycle frames
+for two open sessions against the fixed limit of two. Aggregate stop now cancels
+both role sets and emits one BROKER_STOP. A preceding SESSION_STOP already fences
+the shared host graph; duplicate cancellation or stop emits no extra notice.
+The original frame-limit regression is retained, and the protocol cap is unchanged.
+
+N35 stopped the native batch at its original case predicate. Its fixed clock
+instrumentation records expiry after CAPTURE returns actual host reaping, then
+relays the retained capture; the predicate incorrectly required reaping after
+that marker. The corrected check binds the exact host capture cleanup hash,
+native payload/wrapper identity, original deadline and observed order of native
+readiness, cleanup, marker and capture relay. N34 retains marker-before-cleanup
+ordering. The later N35 broker `invalid_witness` stop remains labeled as observed;
+its precise EOF peer was not captured. The original failed bundle is unchanged.
+All subsequent native groups remain unexecuted. Reviewed corrections require
+fresh portable, native, inspection, full-suite and hosted proof on a new freeze.
+
+Freeze twenty-three at `0b664e3` passed all 160 portable cases, fresh N04 and
+the windows/deadlines, budgets and replay native groups. All five hosted CI jobs
+passed 29,085 tests with 2,347 integration deselections and the completeness
+guard; retained checkout metadata matches that frozen source tree. Independent N33/N35
+inspection confirmed the corrected original stop bounds and actual cleanup
+ordering. N36/N37/N38 also passed before N39 stopped its group: the external
+revocation timed out acquiring the writer lock. The fixed N39 source variant
+held `go/end` inside the guard transaction for 500 ms, exceeding the accepted
+250 ms SQLite busy timeout. Its retained ledger has a reservation and completion
+but no revocation; this failed attempt proves no revocation outcome.
+The fixture now observes and holds `guard/end`, after that transaction releases
+its lock, before attempting one real external revocation. The 500 ms hold,
+production behavior, original deadlines and case predicate remain unchanged.
+An exact-hook regression with two real ledger owners reproduced the timeout
+before the correction; all 44 focused broker/evidence tests then passed.
+Retained failed artifacts remain unchanged. All current-source native proof
+must run again after independent correction review and a fresh clean freeze,
+starting with N39 after the portable and N04 prerequisites.
+
+Freeze twenty-four at `27cb8bc` passed all 160 portable cases, fresh N04 and
+all five hosted CI suites (29,085 passes and 2,347 integration deselections each).
+N39 then committed the real external revocation after GO and reaped all seven
+processes, but saved inspection remained incomplete. Its CAPTURE request was
+cancelled before a reply could be sent. The sealed broker stop, both host
+terminal records, raw capture and exact child cleanup were retained, while
+replay unconditionally classified the null reply as missing transcript.
+The corrected pure replay path recognizes only a causally proved cancelled
+CAPTURE: exact request and terminal identities, original bounds, sealed stop on
+the broker's lifecycle channel, actual native PID/start/wrapper, retained capture
+and complete joined cleanup must all agree. The reply remains null and the
+operation unresolved; other missing authority or source evidence stays missing.
+All 48 affected replay/witness/launcher tests passed, including 32 negative
+mutations. One separately retained read-only diagnostic confirmed that cause on
+the unchanged failed bundle, with zero useful operations and no acceptance
+credit. A new reviewed freeze and all required validation remain necessary.
+
+Freeze twenty-five at `4823fa6` passed all 160 portable cases, fresh N04 and all
+five complete hosted suites (29,085 passes and 2,347 integration deselections).
+N39 again retained successful revocation and timely physical cleanup but failed
+inspection: replay compared the host's advertised cleanup deadline with a
+broker-sent bound without proof that the host received that packet. The revised
+single-broker cancellation check preserves both bounds and requires all actual
+graph cleanup, supervisor closure and final terminal observations within both.
+Review also found the fallback host epoch omitted the pinned 100 ms detection
+reserve. Every host first-stop path now allows at most 1,900 ms, clipped to all
+original and received bounds. Normal REAP and capture cleanup use that same
+short allowance before a stop can race with them. Their non-mutating deadline
+lookup samples time before reading the existing epoch, without starting a stop
+on successful work. N33 retains its original timeout cutoff and actual late
+refusal while requiring cleanup within the earlier host epoch.
+All 100 affected portable tests passed, and final independent source review
+found no open code issues. These corrections require another clean freeze and
+fresh required validation. All failed native and focused artifacts remain
+retained without acceptance credit.
+
+Freeze twenty-six at `167ebbd` passed all 160 portable cases, fresh N04, N39,
+N36 and N37, plus all five complete hosted suites. Independent physical review
+confirmed N39's full charge, unresolved outcome and seven reaped payloads and
+wrappers within both cleanup bounds. N38 stopped the batch at its case predicate:
+the actual pending dispatch was denied as revoked by the fresh reservation-state
+check before the later periodic watch. It had no reservation, GO or useful work,
+and complete cleanup. Replay incorrectly required that later watch record.
+
+The narrow N38 correction binds one pending request, exact acknowledgment and
+fixed reserve phase to the independently committed revoke. It then requires
+either the matching broker denial and host refusal, or the matching changed
+watch, lifecycle stop and host refusal. Both paths require waiting-child evidence,
+no effect and complete cleanup. Host pending-result observations do not claim
+that the broker's later `guarded_go` ran. Distinct Prepared digests, original
+bounds, phase clocks and actual journal ordering remain explicit. All 20 evidence
+tests passed, including 110 adversarial checks and valid scheduling variations.
+One separately retained bounded read-only diagnostic confirmed the correction
+on the unchanged failed bundle with a denied outcome and zero useful operations;
+the original failure remains preserved and receives no acceptance credit.
+Freeze twenty-seven at `ab9b4f0` passed all 160 portable cases and 25 fresh native
+cases through the revocation, deadline and earlier core groups. Independent
+reviews checked the completed revocation and deadline evidence. All five hosted
+suites passed 29,085 tests with 2,347 integration deselections each. N42 then
+stopped the native run: its precommit marker was present, but the broker exited
+78 instead of the required SIGKILL. Namespace PID1 self-signal behavior is the
+likely cause; the exact syscall return was not retained. The failed original
+bundle, reports and independent assessment remain unchanged.
+
+The fixed N42–N44 fixtures now hold at the exact broker phase for at most one
+second within the original deadline, then fail without resuming if no signal
+arrives. The existing host owner observes the exact operation marker and signals
+its pinned broker pidfd once, retaining before/after observations within the
+marker interval. Replay still requires that broker's actual crash, complete
+cleanup and recovery, plus the durable-state and restart-refusal predicates.
+Broker fault markers use the canonical Prepared hash; host observations use the
+distinct domain-separated digest. N47–N50 now bind the actual injected refusal
+to its preceding ordinary begin in the same broker segment. N51 retains its
+separate audit refusal. All 44 affected broker/evidence tests passed, including
+the actual transformed SQLite hook, deterministic host selector and full case
+predicates. Independent review found no open code issues. Another clean freeze
+and fresh required validation remain necessary; physical crash and recovery
+acceptance cannot be inferred from these portable tests.
+
+Freeze twenty-eight at `a2ba2c2` passed all 160 portable cases, fresh N04 and all
+five hosted suites (29,085 passes and 2,347 integration deselections each). N42
+then stopped during recovery packaging because the accepted read-only store
+correctly refused a retained rollback journal. The original database and journal
+remain untouched. That failure capsule did not retain the closed session, so
+actual SIGKILL and reaping are unproved for this attempt. The separate retention
+correction at `336418d` passed 12 focused checks and independent review; it does
+not repair the missing historical observations.
+
+Amendment A10's complete contract/inventory pair was independently reviewed and
+committed at `d047f2a` before its implementation. It permits one supervised
+data-only recovery helper after authority cleanup, with original files opened
+read-only only in that fresh process. Recovery operates on a distinct private
+copy, retains exact source/lock/runtime/process provenance and uses the same
+two-second total allowance. The accepted store's journal refusal, all 288 case
+identities, 1,093 immutable accepted files and roadmap scope remain unchanged.
+The implementation and its final corrections passed all 56 focused contract,
+session and evidence tests, with unchanged source hashes and no failures,
+errors or skips. Independent review checked bounded helper ownership, coherent
+evidence capture, zero-callback SQLite constructors, ASCII framing and the
+separate export/provenance byte limits. Preserve the earlier sandbox socket
+refusal, callback-fixture failure and recovery-frame cap failure with their
+diagnoses. Final independent code review found no open issues and cleared a
+fresh freeze; the complete acceptance gates remain pending. These focused
+checks grant no native acceptance.
+
+Freeze twenty-nine at `1a226d1` passed all 160 portable cases and fresh N04.
+N42 then failed at the recovery helper's READY check before release or database
+work. This capsule retains actual pidfd SIGKILL, reaping and complete cleanup
+within the original allowance. It did not retain the rejected FD inventory.
+A separate READY-only diagnostic using the exact frozen source package and
+descriptor permutation reproduced an extra read-only `libffi` descriptor after
+imports; descriptors zero through seven matched. The diagnostic sent no release
+and opened no database. The correction closes only descriptors eight through
+31 after imports, under the original deadline, and verifies that the retained
+descriptors keep their identities before READY. Exact parent checks remain.
+
+All four Linux hosted suites passed 29,085 tests with 2,347 deselections on
+freeze twenty-nine. macOS failed the recovery lock regression: its exposed OFD
+constants do not establish support for the implementation's Linux lock layout.
+The lock probe now returns explicit unsupported observations on non-Linux
+platforms before using that layout. The original macOS log does not establish
+the underlying errno. Both corrections passed all 56 focused tests, including
+actual child descriptor closure and Linux lock preservation. Independent review
+found no open code issues and cleared a fresh freeze, with native acceptance
+and merge still pending. Preserve both original failures and the bounded
+diagnostic. This is still S4.2c; S4.3 synthetic custody remains next and real
+credentials remain deferred.
+
+Freeze thirty at `46430f6` passed all 160 portable cases and fresh N04 with both
+saved inspections. N42 passed the descriptor boundary, then refused an
+unsupported runtime before release or database work; actual helper cleanup
+completed within its original bound. A separate unreleased diagnostic using
+the exact frozen package retained the rejected executable mapping:
+`ossl-modules/legacy.so`, loaded outside the selected native closure. The host's
+OpenSSL configuration enables that provider. The original native capsule did
+not retain its rejected map, so the diagnostic's distinct process observations
+must not be substituted for it. The correction fixes an empty `OPENSSL_CONF`
+in the fresh helper environment before interpreter startup and aligns mandatory
+mapped-source and interpreter-identity checks with saved-evidence validation.
+It preserves exact unknown-image refusal and the selected runtime inventory.
+
+All four Linux hosted suites passed on freeze thirty. macOS failed a different,
+accepted-v1 external SQLite lock test at its unchanged transaction deadline,
+after all five blocked-probe assertions in the transaction body. The log does
+not retain per-probe timings. Preserve that failure without changing accepted
+test sources or extending deadlines. All 56 focused checks passed on the
+runtime correction with unchanged source hashes and no failures, errors or
+skips. The complete-startup regression reached the withheld release boundary
+after actual runtime validation and completed helper cleanup in 606 ms within
+the original two-second allowance. The pure saved-evidence runtime validator
+also accepted those observations. Independent artifact inspection confirmed
+the exact 52-source package, READY frame, mapped-image joins and actual reaping.
+Every required frozen validation gate remains pending for this correction.
+Before another frozen cycle, the focused gate must exercise complete production
+recovery-owner startup with a current pinned runtime: source packaging, process
+publication, native imports, VFS, exact descriptors, complete runtime validation
+and cleanup. It intercepts the release byte before writing it, using only fresh
+inert fixture files. Require the actual boundary and cleanup receipt within the
+original allowance; a portable test count without that receipt cannot pass this
+checkpoint. This focused regression grants no native acceptance.
+
+Freeze thirty-one at `c911869` passed all 160 portable cases, N04 with both saved
+inspections, and all five hosted CI jobs with 29,085 passes and 2,347 deselections
+each. The next native batch passed N42 and N43, then stopped on N44 saved
+inspection. The actual case retained complete physical cleanup, the full durable
+reservation and an unresolved operation, but its cancelled `NATIVE_BEGIN` request
+had no reply. The reader correctly retained a missing-transcript flag until that
+specific negative exchange could be proved. Preserve the original failed bundle
+and report; N45/N46 and later groups were not executed on this freeze.
+
+The correction separately binds that cancellation to the original broker's GO,
+fixed crash marker, clocked signal and actual process identity, both matching
+local-failure projections, the negative capture, and bounded physical closure.
+It cannot supply a native budget, execution, completion, useful result or refund.
+Request handling, signal journaling and monitoring retain their causal partial
+orders rather than an assumed order between concurrent threads. Missing capture
+proof and other missing exchanges remain incomplete. Existing cancelled CAPTURE
+handling is unchanged.
+
+The reviewed N44 fixture also holds its sealed launcher variant at the validated
+GO boundary before admission redemption or another supervision request. This
+stabilizes the already permitted interleaving while retaining actual GO emission,
+the original broker crash marker and process kill, and every original deadline.
+The hold cannot resume on cancellation or expiry and adds no production control
+or descriptor. Its placement precedes child cleanup paths that could otherwise
+create a new pending request. Full supervision, concurrent timing and actual
+transformed-hook regressions must pass within the existing focused case IDs.
+Before refreezing, require complete helper startup again and one bounded Python
+and CLI replay of each unchanged N42/N43/N44 saved bundle. Those six diagnostic
+reads preserve original evidence and grant no native or final inspection credit.
+All 56 focused tests passed on this correction. Actual complete helper startup
+reached the withheld release boundary in 644 ms and completed cleanup in 648 ms,
+within the original allowance. All three retained bundles then passed both the
+Python and CLI readers with unchanged source, bundle and original-report bytes.
+The source packages for all 78 recovery-capable fixture configurations were
+also checked statically against the existing two-MiB bound; all fit. Fresh frozen
+portable/native validation and final acceptance remain required.
+
+Freeze thirty-two at `e21c545` passed all 160 portable cases, N04 with both
+saved inspections, and all five CI jobs with 29,085 passes and 2,347 deselections
+each. The native batch passed N44, N42 and N43, then stopped at N45 saved
+inspection. N46 and later batches remained unexecuted. N45 retained a cancelled
+CAPTURE request without a reply, actual native observation, nonempty raw output,
+complete cleanup and its full reservation charge. Its crashed broker had no
+sealed lifecycle STOP, which the existing cancelled-CAPTURE proof required.
+The original bundle and incomplete report remain unchanged.
+
+The correction preserves the common CAPTURE checks and graceful-stop proof,
+then separately validates the fixed N45/N46 crash cause: the selected source
+configuration, actual native budget and endpoint progress, original GO and full
+durable charge, the host signal window, exact killed process identity and
+bounded physical closure. Null signal clocks remain null; no reply, final meter,
+completion, useful result or refund is manufactured. Progress uses the GO guard
+clock and retained stream order rather than assuming that an event must follow
+the broker's post-send journal timestamp. Existing N44 proof logic is unchanged.
+
+All 56 focused tests passed, including full supervision and case predicates for
+N45/N46, distinct graceful-stop controls, capture-before/after-cancellation cuts,
+delayed journals and contradictory evidence. Complete helper startup also passed
+with actual cleanup in 623 ms under its original two-second bound. Five unchanged
+crash bundles, including both N44 paths and the failed N45 bundle, passed ten
+bounded Python/CLI reads with source, evidence and original counts preserved.
+All 78 recovery-capable source variants fit the existing package cap; the largest
+has 310 bytes remaining. These focused and replay results grant no fresh native
+acceptance. Refreeze this correction and prioritize N45 before resuming the
+remaining required validation and independent acceptance review.
+
+All 113 new native cases,
+15 accepted regressions, saved-bundle inspections,
+the complete portable suite and CI remain required. Earlier passes do not
+validate later changes.
+This increment binds the
+accepted finite HTTP prefix to fresh isolated review, durable admission, trusted
+payload metering and bounded cancellation/cleanup. Both reviewer displays and
+all required live races need physical proof. Accepted modules and historical
+contracts retain their bytes. Current run state belongs in the authoritative
+private checkpoint; these documents preserve milestone history.
 
 The ledger accepts only its fixed SQLite DELETE-journal format. Existing WAL-mode
 databases are refused without converting or changing the main database file.
@@ -146,13 +758,13 @@ access therefore does not promise that every invalid SQLite input leaves its
 directory unchanged. Saved-export inspection never opens SQLite. The original
 header-conversion failure and auxiliary-file observations are preserved separately.
 
-The private checkpoint is
-`.secure-agent/stage4-engagement-enforcement-20261020/current-progress.json`;
-`.secure-agent/continue-here.json` is the repository-level recovery pointer.
+The authoritative private checkpoint is `.secure-agent/continue-here.json`.
+It links the retained diagnostic and acceptance evidence separately; diagnostic
+results and earlier-source passes are never promoted to current acceptance.
 Preserve every original failed attempt, including PR #101's constructor counter
 regression and corrected validation. S4.2a's contract remains pinned at `4a8d8ca`;
 its exact 68 cases and offline acceptance do not close live enforcement.
-Do not repeat completed merges. S4.2c must next pin and prove both reviewer
+Do not repeat completed merges. S4.2c must pin and prove both reviewer
 displays, current authority at dispatch, physical aggregate limits, clock edges,
 concurrent dispatch races, revocation, interrupted delivery and bounded cleanup.
 Synthetic credential custody and separately authorized real use remain later

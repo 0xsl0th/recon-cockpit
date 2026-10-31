@@ -63,9 +63,9 @@ Stage 3 has **ten accepted logical increments**, delivered in **13 PRs,
 PR #99 accepts [S3.7 combined evidence](stage3-combined-acceptance.md) at `4ef9b98`,
 closing the stage without removing a required outcome. Static preparation stays
 separate from launch authority and native compatibility. The next required
-increment is [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md),
-following the Stage 4 contract in PR #100 and offline records accepted in PR #101.
-S4.2c must separately prove live enforcement; all physical gates remain required.
+increment is [S4.2c live engagement enforcement](stage4-engagement-live.md),
+following the Stage 4 contract in PR #100, offline records in PR #101 and durable
+accounting in PR #102. All physical gates remain required for this integration.
 PRs #87–#93 accept S3.1, S3.2a/b, S3.3a/b and S3.4a/b; S3.2–S3.4 are closed.
 Preserve the [HTTP evidence](stage3-http-production.md) and accepted
 [OpenSSH compatibility](stage3-ssh-compatibility.md). S3.5 is accepted; its
