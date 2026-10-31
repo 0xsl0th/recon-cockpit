@@ -254,6 +254,50 @@ def test_backward_forward_and_highwater_discontinuities():
     with pytest.raises(ledger.DispatchLedgerError):
         ledger.window_budget(roe(), clock(), original_deadline_ns=M+60*c.SECOND,
                             utc_high_water_ns=U+ledger.CLOCK_TOLERANCE+1)
+    _clock_validation_error_classification()
+
+
+def _clock_validation_error_classification():
+    """Real ledger validation keeps its error when the shared phase expires."""
+    from types import SimpleNamespace
+    sample=clock();anchor=deepcopy(sample)
+    kwargs=dict(anchor=anchor,window_start_utc_ns=U-c.SECOND,
+        window_end_utc_ns=U+100*c.SECOND,deadline_ns=M+60*c.SECOND)
+    original=ledger.validate_clock;original_time=records.time
+    assert c.check_clock(sample,**kwargs)==M+60*c.SECOND
+    for expire_on in (1,2):
+        now=[M/c.SECOND];deadline=(M+100_000_000)/c.SECOND
+        seen=[];ledger_errors=[];previous=records._active_deadline()
+        assert previous is None
+        def expire_at_validation(value):
+            seen.append(value)
+            assert records._active_deadline()==deadline
+            if len(seen)==expire_on:now[0]=deadline
+            try:return original(value)
+            except ledger.DispatchLedgerError as error:
+                ledger_errors.append(error.code)
+                raise
+        with pytest.MonkeyPatch.context() as patch:
+            # Only the records module's time binding changes; the shared time
+            # module, clock samples and actual ledger validator stay intact.
+            patch.setattr(records,'time',SimpleNamespace(monotonic=lambda:now[0]))
+            patch.setattr(ledger,'validate_clock',expire_at_validation)
+            with pytest.raises(c.LiveError) as caught:
+                with c._deadline_context(deadline):
+                    c.check_clock(sample,**kwargs)
+            assert ledger_errors==['engagement_dispatch_timeout']
+            assert len(seen)==expire_on and now[0]==deadline
+            assert records._active_deadline()==previous
+            assert caught.value.code=='engagement_live_timeout'
+        assert ledger.validate_clock is original and records.time is original_time
+        assert sample==clock() and anchor==sample
+    malformed=deepcopy(sample);malformed['mono_after_ns']-=1
+    oversized={**sample,'padding':'x'*ledger.MAX_REQUEST_BYTES}
+    for value,code in ((malformed,'clock_changed'),(oversized,'limit_exceeded')):
+        for at_anchor in (False,True):
+            options={**kwargs,'anchor':value} if at_anchor else kwargs
+            refused(c.check_clock,sample if at_anchor else value,**options,code=code)
+    assert sample==clock() and anchor==sample
 
 
 def test_lease_is_minimum_of_every_original_bound():

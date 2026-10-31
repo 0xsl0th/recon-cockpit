@@ -461,8 +461,8 @@ def sample_clock():
 def check_clock(clock, *, anchor, window_start_utc_ns, window_end_utc_ns, deadline_ns):
     try:
         clock, anchor = ledger.validate_clock(clock), ledger.validate_clock(anchor)
-    except ledger.DispatchLedgerError:
-        fail('clock_changed')
+    except ledger.DispatchLedgerError as exc:
+        _map(exc, 'clock_changed')
     start = integer(window_start_utc_ns, ledger.UTC_MIN, ledger.UTC_MAX)
     end = integer(window_end_utc_ns, ledger.UTC_MIN, ledger.UTC_MAX)
     integer(deadline_ns, 1)
