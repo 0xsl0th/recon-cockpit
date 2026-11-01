@@ -128,7 +128,49 @@ def refused(function,*args,**kwargs):
     return caught.value
 
 
+def _source_union_partition_cases():
+    roles=('broker','terminal','graphical','launcher','endpoint','nmap','headers','parser','admission')
+    assert r.ROLES==roles
+    original_part=r.SPEC['source_partitions']
+    original_new=r.NEW_MODULES;original_packages=r.PACKAGE_FILES
+    def expected():
+        return tuple(sorted(set(r.NEW_MODULES)|set(r.PACKAGE_FILES)|set(r.SPEC['source_partitions']['audit_exact'])|
+            set().union(*(set(r.role_modules(role)) for role in r.ROLES))))
+    original=r.source_modules()
+    assert original==expected()
+    part=deepcopy(original_part)
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setitem(r.SPEC,'source_partitions',part)
+        extra_keys={'terminal_and_graphical_extra' if role in ('terminal','graphical') else role+'_extra' for role in roles}
+        for key in ('common','audit_exact',*sorted(extra_keys)):
+            marker='source_union_'+key
+            part[key].extend([marker,marker])
+            actual=r.source_modules()
+            assert actual==expected() and actual.count(marker)==1
+            del part[key][-2:]
+            assert r.source_modules()==original
+        for key in ('launcher_rule','principle','unreviewed_extra'):
+            part[key]=['not_a_source_'+key]
+        assert r.source_modules()==original
+        patch.setattr(r,'NEW_MODULES',(*original_new,'source_union_new'))
+        assert r.source_modules()==expected() and 'source_union_new' in r.source_modules()
+        patch.setattr(r,'PACKAGE_FILES',{**original_packages,'source_union_package':'/app/source_union_package.py'})
+        assert r.source_modules()==expected() and 'source_union_package' in r.source_modules()
+        part['common']=list(reversed(part['common']))+part['common'][:1]
+        for role in roles:
+            extra=part['terminal_and_graphical_extra'] if role in ('terminal','graphical') else part[role+'_extra']
+            assert r.role_modules(role)==tuple(sorted(set(part['common'])|set(extra)|set(r.PACKAGE_FILES)))
+        for role in (None,False,'not_a_reviewed_role'):
+            assert refused(r.role_modules,role).code=='engagement_live_invalid_role'
+        patch.setattr(r,'ROLES',(True,))
+        assert refused(r.source_modules).code=='engagement_live_invalid_role'
+    assert r.SPEC['source_partitions'] is original_part
+    assert r.NEW_MODULES is original_new and r.PACKAGE_FILES is original_packages and r.ROLES==roles
+    assert r.source_modules()==original
+
+
 def test_exact_source_inventory():
+    _source_union_partition_cases()
     bundle=declared_runtime()
     assert set(r.source_modules())=={x['module'] for x in bundle['sources']}
     assert set(r.SPEC['source_partitions']['audit_exact'])<=set(r.source_modules())

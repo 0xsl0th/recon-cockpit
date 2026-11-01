@@ -143,12 +143,12 @@ def role_modules(role):
     _role(role)
     part = SPEC['source_partitions']
     extra = part['terminal_and_graphical_extra'] if role in ('terminal', 'graphical') else part[role + '_extra']
-    modules = set(part['common']) | set(extra) | set(PACKAGE_FILES)
-    return tuple(sorted(modules))
+    return tuple(sorted(set(part['common']).union(extra, PACKAGE_FILES)))
 
 
 def source_modules():
-    return tuple(sorted(set(NEW_MODULES) | set(PACKAGE_FILES) | set(SPEC['source_partitions']['audit_exact']) | set().union(*(set(role_modules(r)) for r in ROLES))))
+    p=SPEC['source_partitions']
+    return tuple(sorted(set(NEW_MODULES).union(PACKAGE_FILES,p['audit_exact'],p['common'],*(p['terminal_and_graphical_extra' if _role(r) in ('terminal','graphical') else r+'_extra'] for r in ROLES))))
 
 
 def _file_row(source, destination, control=None):

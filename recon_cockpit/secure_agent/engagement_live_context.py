@@ -826,7 +826,8 @@ def _validate_supervision(loaded,rows,deadline):
         did=op['prepared']['envelope']['dispatch_id'];capture=dispatches[did]['capture']
         if capture is not None and 'capture' in relays.get(did,{})and capture!=relays[did]['capture']:_bad()
         if op['client']is not None and capture is None:missing.add('transcript')
-        owned={s['worker_id']:s for s in slots.values()if s['prepared_sha256']==c.prepared_digest(op['prepared'])}
+        digest=c.prepared_digest(op['prepared']) if slots else None
+        owned={s['worker_id']:s for s in slots.values()if s['prepared_sha256']==digest}
         if capture is not None:
             client_slots=[s for s in owned.values()if s['role']in('nmap','headers')]
             if len(client_slots)!=1:missing.add('transcript')
@@ -839,9 +840,7 @@ def _validate_supervision(loaded,rows,deadline):
             if worker not in ready_workers:missing.add('transcript')
             elif ready!=ready_workers[worker]:_bad()
     state={};sequences={};reply_sequences={};count=0;terminal=set();local_counts={};last_time={};started={}
-    # A failed request can be finalized after its terminal-cause row. Replay
-    # actual receive/observation times, without changing retained segment order
-    # or pretending the two host rows were recorded in the reverse order.
+    # Replay actual times: finalization may follow its cause; retained segment order is unchanged.
     projected_rows=[item for item in rows if item['row']['kind']=='supervision_projection']
     def causal_time(item):
         data=item['row']['data']
@@ -998,7 +997,8 @@ def _validate_supervision(loaded,rows,deadline):
     for op in operations:
         if op['result']is not None and op['result']['outcome']=='useful':
             did=op['prepared']['envelope']['dispatch_id'];prefix='identify_' if op['prepared']['envelope']['slot']=='http_identify' else 'headers_'
-            selected=[s for s in slots.values()if s['prepared_sha256']==c.prepared_digest(op['prepared'])]
+            digest=c.prepared_digest(op['prepared']) if slots else None
+            selected=[s for s in slots.values()if s['prepared_sha256']==digest]
             if{s['child_slot']for s in selected}!={prefix+x for x in('client','admission','parser')}:missing.add('transcript')
             if any(state.get((s['launcher_id'],s['child_slot']))!='reaped' for s in selected):missing.add('transcript')
             if dispatches[did]['native_budget']is None or dispatches[did]['capture']is None:missing.add('transcript')
