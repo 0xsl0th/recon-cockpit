@@ -1383,7 +1383,7 @@ def _capture_cleanup_before_stop_cases(monkeypatch):
                 error = refused(engine.capture, control)
                 assert error.code == 'engagement_live_cancelled'
                 assert error.client_capture['stdout'] == b'actual pipe bytes'
-                assert error.client_capture['status'] == 'unresolved'
+                assert error.client_capture['status'] == 'cancelled'
                 assert error.client_capture['cleanup'] is engine.owner.cleanup
                 assert calls == [('close', min(original, 101.9))]
                 assert refused(engine.capture, control).code == 'engagement_live_dispatch_replayed'
@@ -1437,7 +1437,7 @@ def _capture_cleanup_before_stop_cases(monkeypatch):
                 else:
                     error = refused(engine.capture, control)
                     assert error.code == 'engagement_live_cancelled'
-                    assert error.client_capture['status'] == 'unresolved'
+                    assert error.client_capture['status'] == 'cancelled'
                     assert error.client_capture['stdout'] == b'actual pipe bytes'
                     assert error.client_capture['cleanup'] is engine.owner.cleanup
                     assert epoch.stop(bound_deadline_ns=105*c.SECOND) == events[0]
@@ -1446,6 +1446,215 @@ def _capture_cleanup_before_stop_cases(monkeypatch):
                 assert len(calls) == 1
             finally:
                 for pipe in pipes:pipe.close()
+
+
+        # Only a definite stop after complete cleanup changes the retained
+        # status. Real pipes and the native/outer deadline checks remain in use.
+        for mode in ('native_deadline', 'outer_deadline', 'unknown_live', 'unknown_error',
+                     'cleanup_failure', 'initial_then_cleanup_failure'):
+            now[0] = 100*c.SECOND
+            engine, control, calls, pipes = _capture_fixture(patch, stdout=b'actual pipe bytes')
+            native_bound = 105*c.SECOND if mode == 'outer_deadline' else 100_500_000_000
+            engine.native_deadline_ns = native_bound
+            initial = c.LiveError('engagement_live_cancelled')
+            failure = OSError('declared post-close failure') if mode == 'unknown_error' else c.LiveError(
+                'engagement_live_cancelled' if mode == 'cleanup_failure' else 'engagement_live_unavailable')
+            if mode == 'unknown_error':failure.code = []
+            if mode == 'outer_deadline':
+                supervisor = _FixedSupervisor.__new__(_FixedSupervisor)
+                supervisor.control = ExecutionControl(105., clock=r.time.monotonic)
+                supervisor.epoch = _CleanupEpoch(supervisor.control)
+                supervisor.stop = threading.Event()
+                supervisor._deadline_ns = 105*c.SECOND
+                supervisor.children = {}
+                supervisor._checking = False
+                outer = _SupervisorControl(supervisor, 105*c.SECOND)
+            checks = []
+            def check():
+                checks.append(engine.owner.cleanup is not None)
+                if mode == 'initial_then_cleanup_failure':raise initial
+                if mode == 'outer_deadline':outer.check()
+                if engine.owner.cleanup is not None and mode in ('unknown_live', 'unknown_error'):
+                    raise failure
+            control.check = check
+            close = engine.owner.close
+            cleanup_bound = 102. if mode == 'initial_then_cleanup_failure' else 101.9
+            def close_before_final_check(*, deadline):
+                if mode == 'initial_then_cleanup_failure':
+                    assert engine.status == 'cancelled' and engine.eof == set()
+                else:
+                    assert engine.status == 'succeeded' and engine.eof == set(engine.buffers)
+                assert deadline == cleanup_bound and now[0] < engine.native_deadline_ns
+                cleanup = close(deadline=deadline)
+                for process in cleanup['processes']:
+                    process.update(wrapper_returncode=0, signal_attempted=False)
+                if mode in ('cleanup_failure', 'initial_then_cleanup_failure'):
+                    cleanup['status'] = 'failed'
+                    failure.cleanup = cleanup
+                    raise failure
+                if mode in ('native_deadline', 'outer_deadline'):now[0] = native_bound
+                return cleanup
+            engine.owner.close = close_before_final_check
+            try:
+                with pytest.raises(c.LiveError if mode != 'unknown_error' else OSError) as caught:
+                    engine.capture(control)
+                error = caught.value
+                if mode in ('native_deadline', 'outer_deadline'):
+                    assert error.code == 'engagement_live_timeout'
+                    assert error.client_capture['status'] == 'timeout'
+                    if mode == 'outer_deadline':
+                        assert outer.original.deadline == control.deadline == 105.
+                        assert now[0] == int(outer.original.deadline*c.SECOND)
+                else:
+                    assert error is failure and error.client_capture['status'] == 'unresolved'
+                if mode == 'initial_then_cleanup_failure':assert error.capture_failure is initial
+                retained = error.client_capture
+                assert retained['stdout'] == (b'' if mode == 'initial_then_cleanup_failure' else b'actual pipe bytes')
+                assert retained['stderr'] == b'' and retained['exit_code'] == 0 and not retained['truncated']
+                assert retained['cleanup'] is engine.owner.cleanup
+                cleanup_failed = mode in ('cleanup_failure', 'initial_then_cleanup_failure')
+                assert retained['cleanup']['status'] == ('failed' if cleanup_failed else 'complete')
+                assert checks[-1] is (not cleanup_failed)
+                assert engine.finished and engine.native_deadline_ns == native_bound
+                assert control.deadline == 105. and calls == [('close', cleanup_bound)]
+                assert refused(engine.capture, control).code == 'engagement_live_dispatch_replayed'
+                assert calls == [('close', cleanup_bound)]
+            finally:
+                for pipe in pipes:pipe.close()
+
+
+    _successful_capture_exchange_stop_cases(monkeypatch)
+
+
+def _successful_capture_exchange_stop_cases(monkeypatch):
+    """Actual exchange/pipe/socket delivery; declared processes and clock only."""
+    from dataclasses import replace
+    from recon_cockpit.secure_agent import engagement_live_protocol as protocol
+    from test_secure_engagement_live_launcher import supervisor_lab
+
+    for seam in ('after_execute', 'before_send', 'after_send'):
+        now = [100*c.SECOND]
+        with monkeypatch.context() as patch:
+            patch.setattr(r.time, 'monotonic', lambda: now[0]/c.SECOND)
+            patch.setattr(r.time, 'monotonic_ns', lambda: now[0])
+            patch.setattr(r.time, 'sleep', lambda amount: None)
+            with supervisor_lab(patch) as model:
+                sup = model.supervisor
+                # The frozen control's default clock was captured at class
+                # definition; bind this fixture to its declared clock explicitly.
+                original_control = model.control
+                model.control = sup.control = replace(original_control, clock=r.time.monotonic)
+                assert sup.control is model.control and type(model.control) is type(original_control)
+                assert model.control.deadline == original_control.deadline == 103.
+                assert model.control.cancelled is original_control.cancelled
+                assert model.control.clock is r.time.monotonic and model.control.remaining() == 3.
+                model.control.check()
+                assert sup.epoch is model.epoch and sup.epoch.action_bound_ns() == 103*c.SECOND
+                phase = sup.phase()
+                assert phase.original is model.control and phase.clock is model.control.clock
+                assert phase.deadline == model.control.deadline
+                phase.check()
+                state = sup.children['identify_client']
+                engine, _, calls, pipes = _capture_fixture(patch, stdout=b'actual pipe bytes', slot='http_identify')
+                engine.prepared = model.prepared
+                engine.started_at_ns = now[0]
+                engine.native_deadline_ns = min(sup._deadline_ns, model.prepared['envelope']['action_deadline_ns'])
+                original_native_bound = engine.native_deadline_ns
+                state.update(owner=engine.owner, capture=engine, prepared=model.prepared,
+                             state='active_or_rpc', start_resolved=True)
+                sup.epoch.register_action(model.prepared['envelope']['dispatch_id'],
+                                          model.prepared['envelope']['action_deadline_ns'])
+                original_phase = sup.phase
+                close = engine.owner.close
+                def completed_close(*, deadline):
+                    if engine.owner.cleanup is not None:return engine.owner.cleanup
+                    started = now[0]
+                    cleanup = close(deadline=deadline)
+                    now[0] += 1
+                    cleanup.update(started_at_ns=started, finished_at_ns=now[0], deadline_ns=int(deadline*c.SECOND))
+                    for process in cleanup['processes']:
+                        process.update(wrapper_returncode=0, signal_attempted=False)
+                    assert r.validate_cleanup(cleanup) == cleanup
+                    return cleanup
+                engine.owner.close = completed_close
+                stopped = []
+                saved = []
+                def stop_after_success():
+                    assert not stopped and engine.finished and engine.status == 'succeeded'
+                    assert state['state'] == 'reaped' and engine.owner.cleanup['status'] == 'complete'
+                    captured = deepcopy(sup._sources['captures'][model.prepared['envelope']['dispatch_id']])
+                    assert captured['stdout'] == b'actual pipe bytes' and captured['stderr'] == b''
+                    assert captured['host_capture']['status'] == 'succeeded'
+                    saved.append(captured)
+                    now[0] += 1
+                    stopped.append(sup.epoch.stop(bound_deadline_ns=sup.cleanup_bound_ns()))
+                    assert engine.owner.cleanup['finished_at_ns'] <= stopped[0]['first_stop_requested_at_ns']
+                    assert now[0] < original_native_bound
+                class Phase:
+                    def __init__(self, original):self.original = original
+                    def __getattr__(self, name):return getattr(self.original, name)
+                    def check(self):
+                        if seam == 'after_execute' and state['state'] == 'reaped' and not stopped:
+                            stop_after_success()
+                        self.original.check()
+                patch.setattr(sup, 'phase', lambda *args:Phase(original_phase(*args)))
+                request = protocol.ChannelSequence(uid(700), 'launcher_supervision').make(
+                    'CAPTURE', {'child_slot':'identify_client'})
+                request_raw = protocol.encode_frame(request, role='launcher_supervision', direction='request')
+                assert protocol.send_once(model.peer, request_raw) == len(request_raw)
+                for _ in range(2):
+                    sup._terminal_tickets.append(model.budget.reserve(kind='supervision_projection',
+                        maximum_bytes=c.SUPERVISION_ROW_BYTES, maximum_rows=1, control=model.control))
+                ticket = model.budget.reserve(kind='supervision_projection',
+                    maximum_bytes=c.SUPERVISION_ROW_BYTES, maximum_rows=1, control=model.control)
+                sup._request_ticket = ticket
+                actual_ready, actual_send = protocol._ready, protocol.send_once
+                sent = []
+                def ready(channel, *, writing, control):
+                    if channel is sup.channel and writing and seam == 'before_send':stop_after_success()
+                    return actual_ready(channel, writing=writing, control=control)
+                def send(channel, raw):
+                    assert channel is sup.channel and seam == 'after_send'
+                    count = actual_send(channel, raw)
+                    assert count == len(raw)
+                    sent.append(raw)
+                    stop_after_success()
+                    return count
+                patch.setattr(protocol, '_ready', ready)
+                patch.setattr(protocol, 'send_once', send)
+                try:
+                    error = refused(sup._exchange, ticket)
+                    assert error.code == 'engagement_live_cancelled'
+                    assert sup.failure is error and model.errors == [error]
+                    assert sup._request_ticket is None and len(stopped) == len(saved) == 1
+                    assert engine.status == 'succeeded' and engine.native_deadline_ns == original_native_bound
+                    assert sup._sources['captures'][model.prepared['envelope']['dispatch_id']] == saved[0]
+                    row = next(row['data'] for row in model.budget.snapshot()['rows'] if row['data']['kind'] == 'rpc')
+                    assert row['request']['operation'] == 'CAPTURE' and row['request']['sha256'] == c.digest(request_raw)
+                    assert row['local_error'] == 'engagement_live_cancelled'
+                    if seam == 'after_send':
+                        assert len(sent) == 1 and model.peer.recv(c.MAX_PACKET+1) == sent[0]
+                        reply = row['reply']
+                        assert reply['sha256'] == c.digest(sent[0]) and reply['operation'] == 'CAPTURED'
+                        assert reply['projection']['status'] == 'ok'
+                        assert reply['projection']['data']['status'] == 'succeeded'
+                        assert reply['projection']['data']['host_capture_sha256'] == c.digest(c.canonical(saved[0]['host_capture']))
+                        assert reply['projection']['data']['cleanup_sha256'] == c.digest(c.canonical(engine.owner.cleanup))
+                    else:
+                        assert sent == [] and row['reply'] is None and model.peer.recv(c.MAX_PACKET+1) == b''
+                    assert engine.owner.cleanup['finished_at_ns'] <= original_native_bound
+                    assert len(calls) == 1 and calls[0][0] == 'close'
+                    sup.close(min(model.control.deadline, r.time.monotonic()+.5))
+                    final = [row['data'] for row in model.budget.snapshot()['rows']
+                             if row['data']['kind'] == 'local_failure' and row['data']['capture_sha256'] is not None]
+                    assert len(final) == 1 and final[0]['code'] == 'engagement_live_cancelled'
+                    assert final[0]['capture_sha256'] == c.digest(c.canonical(saved[0]['host_capture']))
+                    assert final[0]['cleanup_sha256'] == c.digest(c.canonical(engine.owner.cleanup))
+                    assert sup._sources['captures'][model.prepared['envelope']['dispatch_id']] == saved[0]
+                    assert model.budget.snapshot()['unresolved_tickets'] == 0 and sup.resolved
+                    assert len(calls) == 1 and model.calls == []
+                finally:
+                    for pipe in pipes:pipe.close()
 
 
 def _supervised_native_clock_case(monkeypatch):

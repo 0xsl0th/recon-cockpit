@@ -251,23 +251,24 @@ def _capture_terminal_facts(loaded,rows,row,operation,slot,closure,code):
     return thread,final,hard
 def _stopped_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_budget=None):
     cid=loaded['manifest.json']['case_id'];code=row['data']['local_error']
-    if code!='engagement_live_cancelled' and (cid!='S42C-X55' or code!='engagement_live_unavailable'):return False
+    selected=cid in('S42C-N45','S42C-N46','S42C-X53','S42C-X54','S42C-X55','S42C-X59')
+    if code!='engagement_live_cancelled' and (not selected or code!='engagement_live_unavailable'):return False
     facts=_capture_terminal_facts(loaded,rows,row,operation,slot,closure,code)
     if facts is False:return False
     from.import engagement_live_contract as c
     from.import engagement_live_protocol as protocol
     thread,final,hard=facts;data=row['data'];request=data['request'];envelope=operation['prepared']['envelope']
-    if cid in('S42C-X53','S42C-X54','S42C-X55','S42C-X59'):
+    if selected:
         host=operation['host_capture']
-        if(native_budget is None or slot['role']!='nmap'
-                or _boundary_unsettled_dispatch(loaded,rows)!=envelope['dispatch_id']):return False
-        if code=='engagement_live_cancelled':
-            if host['status']!='cancelled':return False
-        elif(host['status']!='succeeded' or host['exit_code']!=0 or host['truncated'] or operation['meter']is not None
+        if native_budget is None or slot['role']!='nmap':return False
+        if not(code=='engagement_live_cancelled' and host['status']=='cancelled')and(host['status']!='succeeded' or host['exit_code']!=0 or host['truncated'] or operation['meter']is not None
                 or not any(runtime._hash(x)==host['cleanup_sha256'] and x['processes'][0]['wrapper_returncode']==0
                     and x['finished_at_ns']<=min(thread['first_stop_requested_at_ns'],native_budget['native_deadline_ns'])
                     for x in loaded['cleanup.json']['receipts'])):return False
-        return _lifecycle_host_cause(loaded,rows,row,operation,thread,hard)
+        if cid in('S42C-N45','S42C-N46'):
+            return _cancelled_capture_crash_cause(loaded,rows,row,operation,slot,thread,final,native_budget,hard)
+        return (_boundary_unsettled_dispatch(loaded,rows)==envelope['dispatch_id']
+            and _lifecycle_host_cause(loaded,rows,row,operation,thread,hard))
     for wrapped in rows:
         stop=wrapped['row']
         if(wrapped['source']!='broker_memfd' or stop['kind']!='protocol'
@@ -301,7 +302,7 @@ def _stopped_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_bu
                 and body['observed_at_ns']<=stop['observed_at_ns']<=min(finished)
                 and final['observed_at_ns']<=body['cleanup_deadline_ns']
                 <=min(hard,body['observed_at_ns']+c.CLEANUP_NS)):return True
-    return _cancelled_capture_crash_cause(loaded,rows,row,operation,slot,thread,final,native_budget,hard)
+    return False
 def _boundary_unsettled_dispatch(loaded,rows):
     """Bind this fixed negative's unresolved action after context validation."""
     from.import engagement_live_contract as c
@@ -425,7 +426,7 @@ def _timeout_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_bu
         and all(x['finished_at_ns']<=bound for x in loaded['cleanup.json']['receipts'])
         and all(x['cleanup_finished_at_ns']<=bound for x in loaded['cleanup.json']['supervisors']))
 def _cancelled_capture_crash_cause(loaded,rows,row,operation,slot,thread,final,budget,hard):
-    """Join a fixed partial-progress crash to the common cancelled CAPTURE proof.
+    """Join a fixed partial-progress crash to the common terminal CAPTURE proof.
 
     Null-clock host rows bound a signal window, not a syscall timestamp.
     """
@@ -436,7 +437,7 @@ def _cancelled_capture_crash_cause(loaded,rows,row,operation,slot,thread,final,b
     selected=cases.get(manifest['case_id'])
     if(selected is None or budget is None or len(loaded['results.json']['operations'])!=1
             or slot['role']!='nmap' or env['slot']!='http_identify'
-            or operation['host_capture']['status']!='cancelled' or operation['meter']is not None):return False
+            or operation['meter']is not None):return False
     variant,progress_kind=selected;broker=env['broker_id'];did=env['dispatch_id'];digest=c.prepared_digest(prepared)
     if manifest['broker_instances']!=[{'broker_id':broker,'ledger_owner_id':env['ledger_owner_id']}]:return False
     def matches(value,observer=broker):

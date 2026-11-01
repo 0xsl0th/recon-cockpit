@@ -83,6 +83,11 @@ def prepare_client(*,runtime,prepared,endpoint_identity,scope,control):
     return WaitingClient(owner,prepared,runtime)
 
 
+def _capture_status(error):
+    code=getattr(error,'code',None)
+    return 'cancelled' if code=='engagement_live_cancelled' else 'timeout' if code=='engagement_live_timeout' else 'unresolved'
+
+
 class SupervisedCapture:
     """Host-owned bounded raw capture; no child request/release endpoint."""
     def __init__(self,owner,prepared,runtime):
@@ -161,10 +166,9 @@ class SupervisedCapture:
             self.status='succeeded' if self.owner.process.returncode==0 else 'failed'
         except BaseException as error:
             failure=error
-            if self.status is None:self.status='cancelled' if getattr(error,'code',None)=='engagement_live_cancelled' else 'timeout' if getattr(error,'code',None)=='engagement_live_timeout' else 'unresolved'
+            if self.status is None:self.status=_capture_status(error)
         try:
-            # A stop can race with successful capture cleanup after this bound
-            # is handed to the owner. Reserve the same detection margin now.
+            # Reserve the stop-detection margin before cleanup.
             if failure is not None:deadline=rt._failure_deadline(control)
             else:
                 normal=getattr(control,'normal_cleanup_deadline',None)
@@ -176,7 +180,7 @@ class SupervisedCapture:
         self.finished=True
         if failure is None:
             try:self._check(control)
-            except BaseException as error:failure=error;self.status='unresolved'
+            except BaseException as error:failure=error;self.status=_capture_status(error)
         if failure is not None:
             failure.client_capture=self.partial();raise failure
         return {'capture':self._wire(),'status':self.status,'cleanup':self.cleanup}
