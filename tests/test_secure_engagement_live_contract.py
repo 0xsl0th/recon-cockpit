@@ -111,6 +111,39 @@ def test_raw_byte_depth_and_attainable_caps():
     value = prepared(); assert len(c.canonical(value)) < 16384
     bad = deepcopy(value); bad['envelope']['slot'] = 'x'*16384
     refused(c.validate_prepared, bad, code='limit_exceeded')
+    _raw_scanner_boundary_cases()
+
+
+def _raw_scanner_boundary_cases():
+    # The escaped byte is first in the next original 4096-byte interval.
+    padding = b'a'*4094
+    for escaped, expected in ((b'"', '"'), (b'\\', '\\')):
+        raw = b'"' + padding + b'\\' + escaped + b'[]{}"'
+        assert raw[4095] == 92 and raw[4096] in (34, 92)
+        assert c.decode(raw) == 'a'*4094 + expected + '[]{}'
+    # An escaped non-token must not hide a later closing quote or depth error.
+    gap = b'"' + padding + b'\\n' + b'z'*31 + b'"'
+    assert gap[4095:4097] == b'\\n'
+    assert c.decode(gap) == 'a'*4094 + '\n' + 'z'*31
+    refused(c.decode, gap + b'['*65, code='limit_exceeded')
+    quoted = '['*65 + ']'*65
+    nested = quoted
+    for _ in range(64): nested = [nested]
+    raw = b'['*64 + b'"' + quoted.encode('ascii') + b'"' + b']'*64
+    assert c.decode(raw) == nested
+    refused(c.decode, b'\\' + b'['*65, code='limit_exceeded')
+    refused(c.decode, b']' + b'['*65 + b'0' + b']'*64, code='invalid_input')
+    primitive = 0
+    for _ in range(64): primitive = [primitive]
+    raw = b'['*64 + b'0' + b']'*64
+    assert c.canonical(primitive) == raw and c.decode(raw) == primitive
+    # Canonical's tree levels and decode's container levels intentionally differ.
+    for leaf, encoded in (([], b'[]'), ({}, b'{}')):
+        value = leaf
+        for _ in range(64): value = [value]
+        raw = b'['*64 + encoded + b']'*64
+        assert c.canonical(value) == raw
+        refused(c.decode, raw, code='limit_exceeded')
 
 
 def test_complete_envelope_derives_only_fixed_http_plan():

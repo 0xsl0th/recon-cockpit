@@ -47,6 +47,7 @@ ERROR_CODES = frozenset('engagement_live_' + name for name in (
 _UUID = re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}')
 _HASH = re.compile(r'[0-9a-f]{64}')
 _SURROGATE = re.compile(r'[\ud800-\udfff]')
+_JSON_TOKENS = re.compile(rb'[\[\]{}"\\]')
 BINDING_FIELDS = frozenset(('schema_version profile engagement_id revision generation roe_sha256 '
     'scope_sha256 broker_id ledger_owner_id session_id reviewer_id review_mode policy_sha256 '
     'runtime_sha256 window_start_utc_ns window_end_utc_ns clock_anchor session_deadline_ns '
@@ -235,26 +236,20 @@ def decode(raw, *, max_bytes=MAX_PACKET):
     if not raw or len(raw) > max_bytes:
         fail('limit_exceeded')
     # Bound nesting before the recursive JSON decoder; quoted escapes do not count.
-    level = 0
-    quoted = escaped = False
-    for offset, byte in enumerate(raw):
-        if offset & 4095 == 0:
-            _check_deadline(_operation_deadline())
-        if quoted:
-            if escaped:
-                escaped = False
-            elif byte == 92:
-                escaped = True
-            elif byte == 34:
-                quoted = False
-        elif byte == 34:
-            quoted = True
-        elif byte in (91, 123):
-            level += 1
-            if level > MAX_DEPTH:
-                fail('limit_exceeded')
-        elif byte in (93, 125):
-            level -= 1
+    level, quoted, escaped_next = 0, False, -1
+    for offset in range(0, len(raw), 4096):
+        _check_deadline(_operation_deadline())
+        for token in _JSON_TOKENS.finditer(raw, offset, min(offset + 4096, len(raw))):
+            at = token.start(); byte = raw[at]
+            if quoted:
+                if at == escaped_next: continue
+                if byte == 92: escaped_next = at + 1
+                elif byte == 34: quoted = False
+            elif byte == 34: quoted = True
+            elif byte in (91, 123):
+                level += 1
+                if level > MAX_DEPTH: fail('limit_exceeded')
+            elif byte in (93, 125): level -= 1
     def pairs(items):
         result = {}
         for key, item in items:
