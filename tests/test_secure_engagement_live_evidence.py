@@ -2220,6 +2220,7 @@ def _cancelled_capture_replay(loaded,original_rows,*,build_only=False):
         # A later STOP decision cannot stand in for a prior host-close cause.
         terminal['row']['data']['frame']['body']['observed_at_ns']=stop+1
         assert 'transcript' in context.validate_supervision_transcript(delayed,events)['missing_evidence']
+    _unavailable_capture_stop_cases(partial,rows,loaded['results.json']['operations'][0]['meter'])
     _cancelled_capture_crash_cases(partial,rows,loaded,original_rows)
     for variant in ('missing_cause','missing_final','cause_code','rpc_code','cause_dispatch',
                     'cause_capture','cause_cleanup',
@@ -2318,6 +2319,94 @@ def _cancelled_capture_replay(loaded,original_rows,*,build_only=False):
         try:report=context.validate_supervision_transcript(bad,changed)
         except c.LiveError as error:assert error.code=='engagement_live_evidence_invalid',variant
         else:assert {'transcript','cleanup'}&set(report['missing_evidence']),variant
+
+
+def _unavailable_capture_stop_cases(stopped,stop_rows,original_meter):
+    """Completed native capture needs a sealed STOP, not a delivered reply."""
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    def fixture(number=40):
+        value=deepcopy(stopped);events=deepcopy(stop_rows)
+        value['manifest.json']['case_id']='S42C-N'+str(number)
+        host=value['results.json']['operations'][0]['host_capture']
+        receipt=next(x for x in value['cleanup.json']['receipts']
+            if sha(raw(x))==host['cleanup_sha256'])
+        receipt['processes'][0].update(wrapper_returncode=0,signal_attempted=False)
+        host['cleanup_sha256']=sha(raw(receipt))
+        for item in events:
+            data=item['row']['data']
+            if item['row']['kind']!='supervision_projection':continue
+            if data['kind']=='rpc' and data['request']['operation']=='CAPTURE':
+                data['local_error']='engagement_live_unavailable'
+            elif data['kind']=='local_failure':
+                data['code']='engagement_live_unavailable'
+                if data['capture_sha256'] is not None:data.update(capture_sha256=sha(raw(host)),cleanup_sha256=host['cleanup_sha256'])
+        return value,events
+    def select(value,events):
+        operation=value['results.json']['operations'][0];host=operation['host_capture']
+        rpc=next(x['row']['data'] for x in events if x['row']['kind']=='supervision_projection'
+            and x['row']['data']['kind']=='rpc' and x['row']['data']['request']['operation']=='CAPTURE')
+        child=next(x for x in value['cleanup.json']['receipts'] if sha(raw(x))==host['cleanup_sha256'])
+        thread=next(x for x in value['cleanup.json']['supervisors'] if x['launcher_id']==rpc['launcher_id'])
+        stop=next(x for x in events if x['row']['kind']=='protocol'
+            and x['row']['data']['frame']['operation']=='BROKER_STOP')
+        return operation,host,rpc,child,thread,stop
+    for number,kind in ((39,'BROKER_STOP'),(40,'BROKER_STOP'),(40,'SESSION_STOP')):
+        value,events=fixture(number);operation,host,rpc,child,thread,stop=select(value,events)
+        assert host['status']=='succeeded' and host['exit_code']==child['processes'][0]['wrapper_returncode']==0
+        assert not host['truncated'] and child['finished_at_ns']<=thread['first_stop_requested_at_ns']
+        assert rpc['reply'] is None and all(operation[k] is None for k in ('client','result','meter'))
+        assert not value['final-ledger.json']['completions']
+        frame=stop['row']['data']['frame'];frame['operation']=kind
+        if kind=='SESSION_STOP':frame['body']['session_id']=operation['prepared']['envelope']['session_id']
+        report=context.validate_supervision_transcript(value,events)
+        assert report['missing_evidence']==[] and report['all_closed'] and report['cleanup_complete'],('sealed STOP completed capture without reply',number,kind)
+        budget=report['dispatches'][operation['prepared']['envelope']['dispatch_id']]['native_budget']
+        assert child['finished_at_ns']<=budget['native_deadline_ns']
+    # Old cancellation cases and their full ownership/STOP mutation matrix
+    # remain below. Exercise only the additional completed-capture boundary.
+    for mode in ('cancelled_capture','unresolved_capture','exit_code','truncated','wrapper_exit',
+                 'late_capture','native_deadline','meter','missing_stop','late_stop_decision',
+                 'wire_late_global_cleanup','other_error'):
+        value,events=fixture();operation,host,rpc,child,thread,stop=select(value,events)
+        if mode=='cancelled_capture':host['status']='cancelled'
+        elif mode=='unresolved_capture':host['status']='unresolved'
+        elif mode=='exit_code':host['exit_code']=1
+        elif mode=='truncated':host['truncated']=True
+        elif mode=='wrapper_exit':child['processes'][0]['wrapper_returncode']=1
+        elif mode=='late_capture':
+            child['finished_at_ns']=thread['first_stop_requested_at_ns']+1
+            assert child['finished_at_ns']<min(child['deadline_ns'],thread['cleanup_finished_at_ns'])
+        elif mode=='native_deadline':
+            native=next(x['row']['data'] for x in events if x['row']['kind']=='supervision_projection'
+                and x['row']['data']['kind']=='rpc' and x['row']['data']['request']['operation']=='NATIVE_BEGIN')
+            reply=native['reply'];reply['projection']['data']['native_deadline_ns']=child['finished_at_ns']-1
+            packet={'schema_version':'1','channel_id':native['launcher_id'],'sequence':reply['sequence'],
+                'operation':reply['operation'],'body':reply['projection']}
+            reply.update(bytes=len(raw(packet)),sha256=sha(raw(packet)),projection_sha256=sha(raw(reply['projection'])))
+        elif mode=='meter':operation['meter']=deepcopy(original_meter)
+        elif mode=='missing_stop':events.remove(stop)
+        elif mode=='late_stop_decision':
+            stop['row']['data']['frame']['body']['observed_at_ns']=thread['first_stop_requested_at_ns']+1
+            stop['row']['observed_at_ns']=thread['first_stop_requested_at_ns']+2
+        elif mode=='wire_late_global_cleanup':
+            broker=next(x for x in value['cleanup.json']['receipts'] if any(p['role']=='broker' for p in x['processes']))
+            broker['finished_at_ns']=stop['row']['data']['frame']['body']['cleanup_deadline_ns']+1
+            assert broker['finished_at_ns']<min(broker['deadline_ns'],thread['cleanup_deadline_ns'])
+        else:
+            rpc['local_error']='engagement_live_evidence_invalid'
+            for item in events:
+                if item['row']['kind']=='supervision_projection' and item['row']['data']['kind']=='local_failure':
+                    item['row']['data']['code']='engagement_live_evidence_invalid'
+        # Refresh the declared proof digests after mutations, so stale hashes
+        # cannot substitute for rejecting the inconsistent terminal claim.
+        host['cleanup_sha256']=sha(raw(child))
+        for item in events:
+            data=item['row']['data']
+            if item['row']['kind']=='supervision_projection' and data['kind']=='local_failure' and data['capture_sha256'] is not None:
+                data.update(capture_sha256=sha(raw(host)),cleanup_sha256=host['cleanup_sha256'])
+        try:report=context.validate_supervision_transcript(value,events)
+        except c.LiveError as error:assert error.code=='engagement_live_evidence_invalid',mode
+        else:assert {'transcript','cleanup'}&set(report['missing_evidence']),('completed STOP refusal',mode)
 
 
 def _cancelled_capture_crash_cases(stopped,stop_rows,useful,useful_rows):

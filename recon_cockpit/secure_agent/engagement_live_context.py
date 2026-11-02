@@ -252,13 +252,13 @@ def _capture_terminal_facts(loaded,rows,row,operation,slot,closure,code):
 def _stopped_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_budget=None):
     cid=loaded['manifest.json']['case_id'];code=row['data']['local_error']
     selected=cid in('S42C-N45','S42C-N46','S42C-X53','S42C-X54','S42C-X55','S42C-X59')
-    if code!='engagement_live_cancelled' and (not selected or code!='engagement_live_unavailable'):return False
+    if code not in('engagement_live_cancelled','engagement_live_unavailable'):return False
     facts=_capture_terminal_facts(loaded,rows,row,operation,slot,closure,code)
     if facts is False:return False
     from.import engagement_live_contract as c
     from.import engagement_live_protocol as protocol
     thread,final,hard=facts;data=row['data'];request=data['request'];envelope=operation['prepared']['envelope']
-    if selected:
+    if selected or code=='engagement_live_unavailable':
         host=operation['host_capture']
         if native_budget is None or slot['role']!='nmap':return False
         if not(code=='engagement_live_cancelled' and host['status']=='cancelled')and(host['status']!='succeeded' or host['exit_code']!=0 or host['truncated'] or operation['meter']is not None
@@ -267,7 +267,7 @@ def _stopped_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_bu
                     for x in loaded['cleanup.json']['receipts'])):return False
         if cid in('S42C-N45','S42C-N46'):
             return _cancelled_capture_crash_cause(loaded,rows,row,operation,slot,thread,final,native_budget,hard)
-        return (_boundary_unsettled_dispatch(loaded,rows)==envelope['dispatch_id']
+        if selected:return (_boundary_unsettled_dispatch(loaded,rows)==envelope['dispatch_id']
             and _lifecycle_host_cause(loaded,rows,row,operation,thread,hard))
     for wrapped in rows:
         stop=wrapped['row']
@@ -281,11 +281,9 @@ def _stopped_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_bu
         segment=loaded['manifest.json']['transcript']['segments'][wrapped['segment']]
         if segment['status']!='sealed_complete' or segment['broker_id']!=envelope['broker_id']:continue
         protocol.validate_frame(frame,role='lifecycle',direction='request')
-        # A sealed send is not a host receive acknowledgment. Preserve both
-        # advertised bounds and prove physical completion within each, even
-        # when another terminal channel closes before this packet is polled.
-        # This narrow single-broker graph includes every sibling and root role,
-        # not only the selected client's already joined supervisor.
+        # A sealed send is not a host receive acknowledgment. Prove the whole
+        # single-broker graph (all siblings/root roles) closed within both
+        # advertised bounds, even if another channel triggered host stop.
         if(any(x['finished_at_ns']>body['cleanup_deadline_ns']for x in loaded['cleanup.json']['receipts'])
                 or any(x['cleanup_finished_at_ns']>body['cleanup_deadline_ns']
                     for x in loaded['cleanup.json']['supervisors'])):continue
