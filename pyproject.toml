@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=8"]
+test = ["pytest==9.1.1"]
 
 [project.scripts]
 recon-cockpit = "recon_cockpit.cli:main"

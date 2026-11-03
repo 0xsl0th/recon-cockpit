@@ -31,7 +31,22 @@ def _pin(paths):
     for name in paths:
         path, expected = ROOT / name, manifest[name]
         assert path.is_file() and not path.is_symlink(), name
-        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected["sha256"], name
+        raw = path.read_bytes()
+        exact_dependency_changes = {'pyproject.toml': ('3989fe11357acb3144ea7c5e0dc87aebe970e325f32e1a9fbbb1f82954574832',
+                            b'test = ["pytest>=8"]\n',
+                            b'test = ["pytest==9.1.1"]\n'),
+         'uv.lock': ('51eb36224d55e0b365af284f76933350082f184f23a12d53b4c4dff3e3a62eb8',
+                     b'    { name = "pytest", marker = "extra == \'test\'", specifier = ">=8" },\n',
+                     b'    { name = "pytest", marker = "extra == \'test\'", specifier = "==9.1.1" },\n')}
+        if name in exact_dependency_changes:
+            after_sha256, before, after = exact_dependency_changes[name]
+            assert hashlib.sha256(raw).hexdigest() == after_sha256
+            assert raw.count(after) == 1 and before not in raw
+            restored = raw.replace(after, before)
+            assert restored.count(before) == 1 and after not in restored
+            assert restored.replace(before, after) == raw
+            raw = restored
+        assert hashlib.sha256(raw).hexdigest() == expected["sha256"], name
         assert bool(path.stat().st_mode & 0o111) == (expected["mode"] == "100755"), name
 
 

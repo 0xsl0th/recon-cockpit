@@ -17,9 +17,9 @@ is tracked separately under `.secure-agent/pr99-review-20261020/`. The three acc
 name-bound DNS/HTTP/TLS profiles retain their [finite native contract](stage3-name-tls-native.md).
 Their catalog descriptions have no executable recipe: a fresh authorized action
 still requires current live owner/binding state. Current work is
-the [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md)
-and [implementation inventory](stage4-engagement-dispatch-ledger-gates.json), following
-S4.1 acceptance in PR #100 and S4.2a acceptance in PR #101 at `43869cb`. Catalog metadata
+the [S4.2c live engagement enforcement](stage4-engagement-live.md)
+and [implementation inventory](stage4-engagement-live-gates.json), following
+S4.1 acceptance in PR #100, S4.2a in PR #101 and S4.2b in PR #102 at `d8e1a6f`. Catalog metadata
 does not itself establish a new service capability. Acceptance applies to the documented
 disconnected owned-lab profiles; it grants no execution authority or general
 engagement readiness. The slices below retain their historical counts.
@@ -402,7 +402,7 @@ null-MX/NODATA/NXDOMAIN, and authorizes no name resolution or mail-server follow
 The [finite coverage contract](professional-v1-coverage.md) maps all accepted
 profiles to six required operator outcomes: all T01–T06 are accepted and Stage 2
 is closed. Stage 3 compatibility/routing work is accepted through PR #99 under
-the retained offline boundary; the [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md)
+the retained offline boundary; the [S4.2c live engagement enforcement](stage4-engagement-live.md)
 is the next roadmap increment.
 [T02 source feasibility](tls-posture-feasibility.md) is complete: stock sslscan
 cannot preserve the received rejection evidence required by this task. The
@@ -489,6 +489,6 @@ through the secure CLI/catalog; no new interactive or GUI support is claimed.
 
 T06 G1–G6 and Stage 2 are closed. Stage 3, including
 [S3.7 combined acceptance](stage3-combined-acceptance.md), is accepted through PR #99.
-Current work implements the [S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md).
+Current work implements the [S4.2c live engagement enforcement](stage4-engagement-live.md).
 Credential use, authenticated sessions, paid calls, live evaluation, attached
 networks, deeper workflows and comparative benchmarking remain deferred.
