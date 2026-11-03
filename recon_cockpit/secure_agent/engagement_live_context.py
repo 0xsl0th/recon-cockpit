@@ -189,66 +189,66 @@ def validate_supervision_transcript(loaded,rows=None,*,deadline=None):
     with c._deadline_context(end):
         return _validate_supervision(loaded,_retained_rows(loaded)if rows is None else rows,end)
 def _capture_terminal_facts(loaded,rows,row,operation,slot,closure,code):
-    """Common terminal ownership facts; wrappers supply a fixed failure code."""
-    from.import engagement_live_contract as c
-    from.import engagement_live_protocol as protocol
-    data=row['data'];request=data['request'];envelope=operation['prepared']['envelope']
-    if(request['operation']!='CAPTURE' or data['local_error']!=code
-            or data['reply']is not None or operation['result']is not None or operation['client']is not None
-            or len(loaded['manifest.json']['broker_instances'])!=1
-            or slot['role']not in('nmap','headers')or not closure['complete']):return False
-    did=envelope['dispatch_id'];host=operation['host_capture']
-    if host is None or host['cleanup_sha256']is None:return False
-    if any(x['dispatch_id']==did for name in('initial-ledger.json','final-ledger.json','recovery-ledger.json')
+ """Common terminal ownership facts; wrappers supply a fixed failure code."""
+ from.import engagement_live_contract as c
+ from.import engagement_live_protocol as protocol
+ data=row['data'];request=data['request'];envelope=operation['prepared']['envelope']
+ if(request['operation']!='CAPTURE' or data['local_error']!=code
+   or data['reply']is not None or operation['result']is not None or operation['client']is not None
+   or len(loaded['manifest.json']['broker_instances'])!=1
+   or slot['role']not in('nmap','headers')or not closure['complete']):return False
+ did=envelope['dispatch_id'];host=operation['host_capture']
+ if host is None or host['cleanup_sha256']is None:return False
+ if any(x['dispatch_id']==did for name in('initial-ledger.json','final-ledger.json','recovery-ledger.json')
            for x in loaded.get(name,{}).get('completions',[])):return False
-    threads=[x for x in loaded['cleanup.json']['supervisors']if
-        all(x[k]==slot[k]for k in('broker_id','session_id','launcher_id'))]
-    if len(threads)!=1:return False
-    thread=threads[0];hard=min(envelope[k]for k in
-        ('action_deadline_ns','session_deadline_ns','broker_deadline_ns'))
-    if(thread['state']!='joined' or thread['status']!='complete'
-            or thread['pending_slots']or not thread['channel_closed']
-            or thread['cleanup_deadline_ns']>min(hard,
-                thread['first_stop_requested_at_ns']+1_900_000_000)):return False
-    failures=[x['row']for x in rows if x['source']=='role_observer'
-        and x['row']['kind']=='supervision_projection'
-        and x['row']['data']['kind']=='local_failure'
-        and x['row']['data']['launcher_id']==slot['launcher_id']]
-    if len(failures)!=2:return False
-    failures.sort(key=lambda x:x['data']['observed_at_ns'])
-    for failure in failures:
-        value=protocol.validate_supervision_projection(failure['data'])
-        if(any(failure[k]!=row[k]for k in('broker_id','session_id','dispatch_id','observer_id'))
-                or any(value[k]!=data[k]for k in
-                    ('launcher_id','child_slot','child_worker_id','prepared_sha256'))
-                or value['code']!=code):return False
-    cause,final=failures;first,last=cause['data'],final['data']
-    if first['capture_sha256']is not None or first['cleanup_sha256']is not None:return False
-    if(last['capture_sha256']!=runtime._hash(host)
-            or last['cleanup_sha256']!=host['cleanup_sha256']):return False
-    if not(request['observed_at_ns']<=thread['first_stop_requested_at_ns']
-            <=first['observed_at_ns']<=cause['observed_at_ns']<=row['observed_at_ns']
-            <=thread['cleanup_finished_at_ns']<=last['observed_at_ns']
-            <=final['observed_at_ns']<=thread['cleanup_deadline_ns']):return False
-    receipts=[x for x in loaded['cleanup.json']['receipts']if runtime._hash(x)==host['cleanup_sha256']]
-    if len(receipts)!=1:return False
-    receipt=receipts[0]
-    if(receipt['status']!='complete' or not receipt['descriptors_closed']
-            or len(receipt['processes'])!=1 or receipt['deadline_ns']>hard
-            or not request['observed_at_ns']<=receipt['started_at_ns']<=receipt['finished_at_ns']
-                <=min(thread['cleanup_finished_at_ns'],thread['cleanup_deadline_ns'],hard)):return False
-    ready=[x for x in loaded['processes.json']['readiness']if x['worker_ready']['worker_id']==slot['worker_id']]
-    if len(ready)!=1:return False
-    parent=ready[0]['parent_observation'];process=receipt['processes'][0]
-    if(process['role']!=slot['role']or process['pid']!=parent['payload']['pid']
-            or process['start_time_ticks']!=parent['payload']['start_time_ticks']
-            or process['wrapper_pid']!=parent['wrapper']['pid']or process['wrapper_returncode']is None
-            or not all(process[k]for k in('pin_verified','exit_observed','reaped_observed'))):return False
-    if slot['role']=='nmap':
-        natives=[x for x in loaded['processes.json']['native']if x['parent_observation']['payload']==parent['payload']]
-        if(len(natives)!=1 or natives[0]['parent_observation']['wrapper']!=parent['wrapper']
-                or natives[0]['observed_at_ns']>request['observed_at_ns']):return False
-    return thread,final,hard
+ threads=[x for x in loaded['cleanup.json']['supervisors']if
+  all(x[k]==slot[k]for k in('broker_id','session_id','launcher_id'))]
+ if len(threads)!=1:return False
+ thread=threads[0];hard=min(envelope[k]for k in
+  ('action_deadline_ns','session_deadline_ns','broker_deadline_ns'))
+ if(thread['state']!='joined' or thread['status']!='complete'
+   or thread['pending_slots']or not thread['channel_closed']
+   or thread['cleanup_deadline_ns']>min(hard,
+    thread['first_stop_requested_at_ns']+1_900_000_000)):return False
+ failures=[x['row']for x in rows if x['source']=='role_observer'
+  and x['row']['kind']=='supervision_projection'
+  and x['row']['data']['kind']=='local_failure'
+  and x['row']['data']['launcher_id']==slot['launcher_id']]
+ if len(failures)!=2:return False
+ failures.sort(key=lambda x:x['data']['observed_at_ns'])
+ for failure in failures:
+  value=protocol.validate_supervision_projection(failure['data'])
+  if(any(failure[k]!=row[k]for k in('broker_id','session_id','dispatch_id','observer_id'))
+    or any(value[k]!=data[k]for k in
+     ('launcher_id','child_slot','child_worker_id','prepared_sha256'))
+    or value['code']!=code):return False
+ cause,final=failures;first,last=cause['data'],final['data']
+ if first['capture_sha256']is not None or first['cleanup_sha256']is not None:return False
+ if(last['capture_sha256']!=runtime._hash(host)
+   or last['cleanup_sha256']!=host['cleanup_sha256']):return False
+ if not(request['observed_at_ns']<=thread['first_stop_requested_at_ns']
+   <=first['observed_at_ns']<=cause['observed_at_ns']<=row['observed_at_ns']
+   <=thread['cleanup_finished_at_ns']<=last['observed_at_ns']
+   <=final['observed_at_ns']<=thread['cleanup_deadline_ns']):return False
+ receipts=[x for x in loaded['cleanup.json']['receipts']if runtime._hash(x)==host['cleanup_sha256']]
+ if len(receipts)!=1:return False
+ receipt=receipts[0]
+ if(receipt['status']!='complete' or not receipt['descriptors_closed']
+   or len(receipt['processes'])!=1 or receipt['deadline_ns']>hard
+   or not request['observed_at_ns']<=receipt['started_at_ns']<=receipt['finished_at_ns']
+    <=min(thread['cleanup_finished_at_ns'],thread['cleanup_deadline_ns'],hard)):return False
+ ready=[x for x in loaded['processes.json']['readiness']if x['worker_ready']['worker_id']==slot['worker_id']]
+ if len(ready)!=1:return False
+ parent=ready[0]['parent_observation'];process=receipt['processes'][0]
+ if(process['role']!=slot['role']or process['pid']!=parent['payload']['pid']
+   or process['start_time_ticks']!=parent['payload']['start_time_ticks']
+   or process['wrapper_pid']!=parent['wrapper']['pid']or process['wrapper_returncode']is None
+   or not all(process[k]for k in('pin_verified','exit_observed','reaped_observed'))):return False
+ if slot['role']=='nmap':
+  natives=[x for x in loaded['processes.json']['native']if x['parent_observation']['payload']==parent['payload']]
+  if(len(natives)!=1 or natives[0]['parent_observation']['wrapper']!=parent['wrapper']
+    or natives[0]['observed_at_ns']>request['observed_at_ns']):return False
+ return thread,final,hard
 def _stopped_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_budget=None):
     cid=loaded['manifest.json']['case_id'];code=row['data']['local_error']
     selected=cid in('S42C-N45','S42C-N46','S42C-X53','S42C-X54','S42C-X55','S42C-X59')
@@ -302,102 +302,113 @@ def _stopped_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_bu
                 <=min(hard,body['observed_at_ns']+c.CLEANUP_NS)):return True
     return False
 def _boundary_unsettled_dispatch(loaded,rows):
-    """Bind this fixed negative's unresolved action after context validation."""
-    from.import engagement_live_contract as c
-    m=loaded['manifest.json'];cid=m['case_id'];case=BOUNDARY_CASES.get(cid);number=int(cid[-2:])if case else 0
-    if(case is None or number!=40 and not 26<=number<=32 and not 44<=number<=59
-            or m['evidence_class']!='owned_gate' or m['proof_kind']!='role_boundary'):return None
-    proofs=loaded['results.json']['boundary_proofs'];observations=loaded['processes.json']['boundary_observations']
-    if len(proofs)!=1 or len(observations)!=1:return None
-    proof=proofs[0];raw=observations[0]['observation'];image=case['kind']=='image_identity';eof=case['kind']=='lifecycle';socket=case['kind']=='socket_denial'
-    module='engagement_live_client_worker' if socket and number<29 else 'engagement_live_runtime' if image else 'engagement_live_endpoint_worker'
-    sources=[x['sha256']for x in loaded['runtime.json']['runtime']['sources']if x['module']==module]
-    config={'case_id':cid,'variant':case['variant'],'role':case['role']}
-    if(len(sources)!=1 or proof['case_id']!=cid or proof['kind']!=case['kind']
-            or observations[0]['kind']!=case['kind']or proof['role']!=case['role']
-            or proof['source_sha256']!=sources[0]or proof['runtime_sha256']!=m['runtime_sha256']
-            or proof['observation_sha256']!=runtime._hash(raw)
-            or proof['checks']!={case['variant']:True}
-            or len([x for x in loaded['runtime.json']['instrumentation']if x['kind']=='sealed_fault'
-                and x['configuration']==config and x['source_sha256']==sources[0]])!=1):return None
-    controls=[x for x in loaded['processes.json']['readiness']
-        if runtime._hash(x)==proof['control_observation_sha256']]
-    role='nmap' if image or socket and number<29 else('launcher' if case['role']=='all' else case['role'])if eof else 'endpoint'
-    if len(controls)!=1 or controls[0]['role']!=role:return None
-    control=controls[0];worker=control['worker_ready']['worker_id']
-    if image:
-        if raw['waiting_observation_sha256']!=proof['control_observation_sha256']or not raw['refused']or raw['arm_emitted']:return None
-        slots=[x for x in loaded['processes.json']['child_slots']if x['worker_id']==worker and x['role']=='nmap']
-        if len(slots)!=1:return None
-        chosen=[x for x in loaded['results.json']['operations']if c.prepared_digest(x['prepared'])==slots[0]['prepared_sha256']]
-    elif eof or socket:chosen=loaded['results.json']['operations']
-    else:
-        chosen=[x for x in loaded['results.json']['operations']if x['meter']is not None
-            and runtime._hash(x['meter'])==raw['meter_transcript_sha256']and x['meter']['endpoint_id']==worker]
-    if len(chosen)!=1:return None
-    op=chosen[0];env=op['prepared']['envelope'];did=env['dispatch_id']
-    expected_slot='http_identify' if image or eof or socket or number in(45,47,49)else 'http_headers'
-    if op['result']is not None or op['client']is not None or env['slot']!=expected_slot:return None
-    if not image and not eof and not socket:
-        if case['kind']=='meter_boundary':
-            metric={45:'connections',46:'connections',47:'request',48:'request',49:'response',50:'response',51:'partial_request',52:'partial_response'}[number]
-            if raw['slot']!=expected_slot or raw['metric']!=metric:return None
-        elif raw['stimulus']!={56:'forward_before_recv',57:'forward_before_send',58:'deadline_after_partial'}[number]:return None
-    if eof or socket:
-        slots=[x for x in loaded['processes.json']['child_slots']if x['role']=='nmap'
-            and x['prepared_sha256']==c.prepared_digest(op['prepared'])]
-        if len(slots)!=1 or socket and op['meter']is not None:return None
-        roles=_retained_role_observations(rows);launcher=slots[0]['launcher_id']
-        keys=[key for key,value in roles.items()if key[0]==env['broker_id']and key[2]=='launcher'
-            and value[0]['worker_ready']['worker_id']==launcher]
-        if len(keys)!=1:return None
-        if role=='nmap':
-            if slots[0]['worker_id']!=worker:return None
-        elif role=='broker':
-            if worker!=env['broker_id']:return None
-        else:
-            selected=roles.get((env['broker_id'],keys[0][1],role))
-            if selected is None or selected[0]!=control:return None
-        if eof and raw['origin']!={53:'broker_eof',54:'endpoint_eof',55:'launcher_eof',59:'payload_and_wrapper_cleanup'}[number]:return None
-        if eof and op['meter']is not None:
-            peer=roles.get((env['broker_id'],keys[0][1],'endpoint'))
-            if not _lifecycle_meter_terminal(loaded,rows,op,slots[0],None if peer is None else peer[0]):return None
-    if socket:
-        target=op['session']['scope']['ssh' if number==28 else 'http'].copy()
-        if number==26:target['target']='10.255.255.254'
-        if number==27:target['port']+=1
-        if(any(raw[k]!=target[k]for k in('target','port'))or raw['protocol']!=0
-                or raw['flags']!=(0x20000000 if number>=30 else 0)
-                or op['host_capture']is not None or loaded['processes.json']['native']):return None
-    if image:
-        refused=[x['row']['data']for x in rows if x['source']=='role_observer'
-            and x['row']['kind']=='supervision_projection' and x['row']['dispatch_id']==did
-            and x['row']['data']['kind']=='rpc' and x['row']['data']['request']['operation']=='OBSERVE_NATIVE']
-        if(env['slot']!='http_identify' or op['meter']is not None or len(refused)!=1
-                or refused[0]['child_worker_id']!=worker or refused[0]['reply']is None
-                or refused[0]['local_error']!='engagement_live_invalid_runtime'
-                or refused[0]['reply']['projection']['status']!='refused'
-                or refused[0]['reply']['projection']['code']!='engagement_live_invalid_runtime'):return None
-    for wrapped in rows:
-        row=wrapped['row'];kind=row['kind'];part=row['data'];frame=part.get('frame')
-        if socket:
-            if kind in('meter','approval_witness','audit_witness','capability_projection'):return None
-            if kind=='supervision_projection' and part['kind']=='rpc' and part['request']['operation']not in('START','OBSERVE_READY','REAP'):return None
-            if kind=='protocol' and(frame['operation']not in('PREPARE','PREPARED','OBSERVATION','OPEN_SESSION','READY','ROLE_OBSERVED','AUDIT_OBSERVED','BROKER_STOP','SESSION_STOP')
-                    or frame['operation']=='OBSERVATION' and(frame['body']['kind']not in('role_readiness','capability_projection')
-                    or frame['body']['kind']=='capability_projection' and frame['body']['data']['operation']!='ISSUE')):return None
-        if row['dispatch_id']!=did:continue
-        if(image or eof)and kind=='meter':return None
-        if kind=='protocol':
-            if frame['operation']=='RESULT' or(image or eof and op['meter']is None)and frame['operation']=='METER' or image and frame['operation']=='NATIVE_OBSERVED':return None
-            if frame['operation']=='DISPATCH' and part['direction']=='sent' and frame['body']['status']!='pending':return None
-    for name in('final-ledger.json','recovery-ledger.json'):
-        export=loaded.get(name)
-        if export is None:return None
-        reserved=[x for x in export['reservations']if x['dispatch_id']==did]
-        if((bool(reserved)if socket else len(reserved)!=1 or reserved[0]['reservation']!=env['cost'])
-                or any(x['dispatch_id']==did for x in export['completions'])):return None
-    return did
+ """Bind this fixed negative's unresolved action after context validation."""
+ from.import engagement_live_contract as c
+ m=loaded['manifest.json'];cid=m['case_id'];case=BOUNDARY_CASES.get(cid);number=int(cid[-2:])if case else 0
+ if(case is None or number!=40 and not 26<=number<=32 and not 44<=number<=59
+   or m['evidence_class']!='owned_gate' or m['proof_kind']!='role_boundary'):return None
+ proofs=loaded['results.json']['boundary_proofs'];observations=loaded['processes.json']['boundary_observations']
+ if len(proofs)!=1 or len(observations)!=1:return None
+ proof=proofs[0];raw=observations[0]['observation'];image=case['kind']=='image_identity';eof=case['kind']=='lifecycle';socket=case['kind']=='socket_denial'
+ module='engagement_live_client_worker' if socket and number<29 else 'engagement_live_runtime' if image else 'engagement_live_endpoint_worker'
+ sources=[x['sha256']for x in loaded['runtime.json']['runtime']['sources']if x['module']==module]
+ config={'case_id':cid,'variant':case['variant'],'role':case['role']}
+ if(len(sources)!=1 or proof['case_id']!=cid or proof['kind']!=case['kind']
+   or observations[0]['kind']!=case['kind']or proof['role']!=case['role']
+   or proof['source_sha256']!=sources[0]or proof['runtime_sha256']!=m['runtime_sha256']
+   or proof['observation_sha256']!=runtime._hash(raw)
+   or proof['checks']!={case['variant']:True}
+   or len([x for x in loaded['runtime.json']['instrumentation']if x['kind']=='sealed_fault'
+    and x['configuration']==config and x['source_sha256']==sources[0]])!=1):return None
+ controls=[x for x in loaded['processes.json']['readiness']
+  if runtime._hash(x)==proof['control_observation_sha256']]
+ role='nmap' if image or socket and number<29 else('launcher' if case['role']=='all' else case['role'])if eof else 'endpoint'
+ if len(controls)!=1 or controls[0]['role']!=role:return None
+ control=controls[0];worker=control['worker_ready']['worker_id']
+ if image:
+  if raw['waiting_observation_sha256']!=proof['control_observation_sha256']or not raw['refused']or raw['arm_emitted']:return None
+  slots=[x for x in loaded['processes.json']['child_slots']if x['worker_id']==worker and x['role']=='nmap']
+  if len(slots)!=1:return None
+  chosen=[x for x in loaded['results.json']['operations']if c.prepared_digest(x['prepared'])==slots[0]['prepared_sha256']]
+ elif eof or socket:chosen=loaded['results.json']['operations']
+ else:
+  chosen=[x for x in loaded['results.json']['operations']if x['meter']is not None
+   and runtime._hash(x['meter'])==raw['meter_transcript_sha256']and x['meter']['endpoint_id']==worker]
+ if len(chosen)!=1:return None
+ op=chosen[0];env=op['prepared']['envelope'];did=env['dispatch_id']
+ expected_slot='http_identify' if image or eof or socket or number in(45,47,49)else 'http_headers'
+ if op['result']is not None or op['client']is not None or env['slot']!=expected_slot:return None
+ if not image and not eof and not socket:
+  if case['kind']=='meter_boundary':
+   metric={45:'connections',46:'connections',47:'request',48:'request',49:'response',50:'response',51:'partial_request',52:'partial_response'}[number]
+   if raw['slot']!=expected_slot or raw['metric']!=metric:return None
+  elif raw['stimulus']!={56:'forward_before_recv',57:'forward_before_send',58:'deadline_after_partial'}[number]:return None
+ if eof or socket:
+  slots=[x for x in loaded['processes.json']['child_slots']if x['role']=='nmap'
+   and x['prepared_sha256']==c.prepared_digest(op['prepared'])]
+  if len(slots)!=1 or socket and op['meter']is not None:return None
+  roles=_retained_role_observations(rows);launcher=slots[0]['launcher_id']
+  keys=[key for key,value in roles.items()if key[0]==env['broker_id']and key[2]=='launcher'
+   and value[0]['worker_ready']['worker_id']==launcher]
+  if len(keys)!=1:return None
+  if role=='nmap':
+   if slots[0]['worker_id']!=worker:return None
+  elif role=='broker':
+   if worker!=env['broker_id']:return None
+  else:
+   selected=roles.get((env['broker_id'],keys[0][1],role))
+   if selected is None or selected[0]!=control:return None
+  if eof and raw['origin']!={53:'broker_eof',54:'endpoint_eof',55:'launcher_eof',59:'payload_and_wrapper_cleanup'}[number]:return None
+  if eof and op['meter']is not None:
+   peer=roles.get((env['broker_id'],keys[0][1],'endpoint'))
+   if not _lifecycle_meter_terminal(loaded,rows,op,slots[0],None if peer is None else peer[0]):return None
+ if socket:
+  target=op['session']['scope']['ssh' if number==28 else 'http'].copy()
+  if number==26:target['target']='10.255.255.254'
+  if number==27:target['port']+=1
+  if(any(raw[k]!=target[k]for k in('target','port'))or raw['protocol']!=0
+    or raw['flags']!=(0x20000000 if number>=30 else 0)
+    or op['host_capture']is not None or loaded['processes.json']['native']):return None
+ if image:
+  refused=[x['row']['data']for x in rows if x['source']=='role_observer'
+   and x['row']['kind']=='supervision_projection' and x['row']['dispatch_id']==did
+   and x['row']['data']['kind']=='rpc' and x['row']['data']['request']['operation']=='OBSERVE_NATIVE']
+  if(env['slot']!='http_identify' or op['meter']is not None or len(refused)!=1
+    or refused[0]['child_worker_id']!=worker or refused[0]['reply']is None
+    or refused[0]['local_error']!='engagement_live_invalid_runtime'
+    or refused[0]['reply']['projection']['status']!='refused'
+    or refused[0]['reply']['projection']['code']!='engagement_live_invalid_runtime'):return None
+ for wrapped in rows:
+  row=wrapped['row'];kind=row['kind'];part=row['data'];frame=part.get('frame')
+  if socket:
+   if kind in('meter','approval_witness','audit_witness','capability_projection'):return None
+   if kind=='supervision_projection' and part['kind']=='rpc' and part['request']['operation']not in('START','OBSERVE_READY','REAP'):return None
+   if kind=='protocol' and frame['operation']=='CANCEL':
+    peer=roles.get((env['broker_id'],keys[0][1],part['channel_role']))
+    segment=m['transcript']['segments'][wrapped['segment']]
+    if(wrapped['source']!='broker_memfd' or segment['source']!='broker_memfd'
+      or segment['status']!='sealed_complete' or segment['broker_id']!=env['broker_id']
+      or row['broker_id']!=env['broker_id'] or row['observer_id']!=env['broker_id']
+      or part['direction']!='sent' or part['channel_role']not in('launcher','endpoint')
+      or peer is None or frame['channel_id']!=peer[0]['worker_ready']['worker_id']
+      or row['session_id']is not None or row['dispatch_id']is not None
+      or row['observed_at_ns']<peer[1]):return None
+    continue
+   if kind=='protocol' and(frame['operation']not in('PREPARE','PREPARED','OBSERVATION','OPEN_SESSION','READY','ROLE_OBSERVED','AUDIT_OBSERVED','BROKER_STOP','SESSION_STOP')
+     or frame['operation']=='OBSERVATION' and(frame['body']['kind']not in('role_readiness','capability_projection')
+     or frame['body']['kind']=='capability_projection' and frame['body']['data']['operation']!='ISSUE')):return None
+  if row['dispatch_id']!=did:continue
+  if(image or eof)and kind=='meter':return None
+  if kind=='protocol':
+   if frame['operation']=='RESULT' or(image or eof and op['meter']is None)and frame['operation']=='METER' or image and frame['operation']=='NATIVE_OBSERVED':return None
+   if frame['operation']=='DISPATCH' and part['direction']=='sent' and frame['body']['status']!='pending':return None
+ for name in('final-ledger.json','recovery-ledger.json'):
+  export=loaded.get(name)
+  if export is None:return None
+  reserved=[x for x in export['reservations']if x['dispatch_id']==did]
+  if((bool(reserved)if socket else len(reserved)!=1 or reserved[0]['reservation']!=env['cost'])
+    or any(x['dispatch_id']==did for x in export['completions'])):return None
+ return did
 def _timeout_capture_terminal(loaded,rows,row,operation,slot,closure,*,native_budget=None):
     """A fixed headers primitive can expire its actual original native budget."""
     if(slot['role']!='headers' or native_budget is None

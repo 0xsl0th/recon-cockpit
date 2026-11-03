@@ -3606,6 +3606,120 @@ def _socket_preparation_regressions(monkeypatch):
         out=e._report(value,result,changed,'d'*64,0,[])
         assert out['status']=='incomplete' and {'unsettled_dispatch',missing}<=set(out['missing_evidence'])
         checks.append('preserve-missing:'+missing)
+    checks.extend(_socket_terminal_cancel_cases(monkeypatch,cases))
+    return checks
+
+
+def _socket_terminal_cancel_cases(monkeypatch,cases):
+    """A sent terminal request proves neither receipt nor authorized effects."""
+    from recon_cockpit.secure_agent import engagement_live_context as context
+    from recon_cockpit.secure_agent import engagement_live_witness as witness
+    checks=[]
+    def fixture(number=26,role='launcher',stop_reason=None):
+        value,rows,_,_,_=deepcopy(cases[number])
+        env=value['results.json']['operations'][0]['prepared']['envelope']
+        slot=next(x for x in value['processes.json']['child_slots']if x['role']=='nmap')
+        roles=context._retained_role_observations(rows)
+        key=next(k for k,v in roles.items()if k[0]==env['broker_id'] and k[2]=='launcher'
+            and v[0]['worker_ready']['worker_id']==slot['launcher_id'])
+        peer,observed=roles[(env['broker_id'],key[1],role)]
+        closure=next(x for x in value['cleanup.json']['supervisors']if x['launcher_id']==slot['launcher_id'])
+        when=closure['first_stop_requested_at_ns']+1
+        assert observed<=when<closure['cleanup_finished_at_ns']
+        def append(channel,channel_role,opcode,body,at):
+            sequence=1+max((x['row']['data']['frame']['sequence']for x in rows
+                if x['row']['kind']=='protocol' and x['row']['observer_id']==env['broker_id']
+                and x['row']['data']['direction']=='sent' and x['row']['data']['frame']['channel_id']==channel),default=0)
+            item={'segment':0,'source':'broker_memfd','row':{'schema_version':'1',
+                'broker_id':env['broker_id'],'observer_id':env['broker_id'],'row_sequence':1,
+                'observed_at_ns':at,'session_id':None,'dispatch_id':None,'kind':'protocol',
+                'data':{'channel_role':channel_role,'direction':'sent','frame':{
+                    'schema_version':'1','channel_id':channel,'sequence':sequence,'operation':opcode,'body':body}}}}
+            rows.append(item);return item
+        cancel=append(peer['worker_ready']['worker_id'],role,'CANCEL',{'reason':'engagement_live_cancelled'},when)
+        if stop_reason is not None:
+            deadline=min(closure['cleanup_deadline_ns'],*(env[k]for k in('broker_deadline_ns','session_deadline_ns','action_deadline_ns')))
+            assert closure['cleanup_finished_at_ns']<=deadline<=when+1+c.CLEANUP_NS
+            append(env['broker_id'],'lifecycle','BROKER_STOP',{'reason':stop_reason,
+                'observed_at_ns':when+1,'cleanup_deadline_ns':deadline},when+1)
+        _boundary_terminal_encode(value,rows)
+        return value,rows,cancel,observed
+    # One public context/witness/report replay reaches the old refusal before
+    # the scoped matrix. Reuse the seven existing runtime fixtures throughout.
+    value,rows,cancel,_=fixture()
+    result=context.validate_live_context(value)
+    authority=witness.validate_evidence_transcript(value,rows,deadline=time.monotonic()+15)
+    report=e._report(value,result,authority,'d'*64,0,[])
+    assert report['status']=='complete',('terminal CANCEL must not add unsettled_dispatch',report['missing_evidence'])
+    assert report['case_passed'] and report['missing_evidence']==[]
+    assert authority['missing_evidence']==['unsettled_dispatch']
+    assert report['operation_count']==1 and report['parser_replay_count']==report['useful_operation_count']==0
+    operation=report['operations'][0]
+    assert operation['outcome']=='unresolved' and operation['go_observed'] is operation['reservation_observed'] is None
+    assert set(operation['counts'].values())=={None}
+    checks.append('full-CANCEL-context-witness-report')
+    for missing in ('transcript','cleanup','recovery_export'):
+        changed=deepcopy(authority);changed['missing_evidence'].append(missing)
+        out=e._report(value,result,changed,'d'*64,0,[])
+        assert out['status']=='incomplete' and {'unsettled_dispatch',missing}<=set(out['missing_evidence'])
+        checks.append('CANCEL-preserve-missing:'+missing)
+    # Optional later STOP observations neither authorize this CANCEL nor need
+    # to share its reason. Both selected peers remain bound to the same slot.
+    for number in range(26,33):
+        for role in ('launcher','endpoint'):
+            reason=(None,'engagement_live_cancelled','engagement_live_invalid_witness')[(number-26)%3]
+            good,events,_,_=fixture(number,role,reason)
+            witness._validate_stop_deadlines(good,events)
+            assert context._boundary_unsettled_dispatch(good,events)==good['results.json']['operations'][0]['prepared']['envelope']['dispatch_id']
+            checks.append('CANCEL-X'+str(number)+':'+role+':'+str(reason))
+    def rejected(label,change):
+        bad,events,item,observed=fixture()
+        change(bad,events,item,observed)
+        try:answer=context._boundary_unsettled_dispatch(bad,events)
+        except c.LiveError:answer=None
+        assert answer is None,label
+        checks.append('reject-CANCEL:'+label)
+    for label,change in [
+        ('source',lambda v,r,i,t:i.update(source='role_observer')),
+        ('segment',lambda v,r,i,t:i.update(segment=1)),
+        ('unsealed',lambda v,r,i,t:v['manifest.json']['transcript']['segments'][0].update(status='incomplete')),
+        ('segment-source',lambda v,r,i,t:v['manifest.json']['transcript']['segments'][0].update(source='role_observer')),
+        ('segment-broker',lambda v,r,i,t:v['manifest.json']['transcript']['segments'][0].update(broker_id=uid(999))),
+        ('row-broker',lambda v,r,i,t:i['row'].update(broker_id=uid(999))),
+        ('observer',lambda v,r,i,t:i['row'].update(observer_id=uid(999))),
+        ('peer',lambda v,r,i,t:i['row']['data']['frame'].update(channel_id=uid(999))),
+        ('peer-role',lambda v,r,i,t:i['row']['data'].update(channel_role='endpoint')),
+        ('unsupported-role',lambda v,r,i,t:i['row']['data'].update(channel_role='ingress')),
+        ('direction',lambda v,r,i,t:i['row']['data'].update(direction='received')),
+        ('session',lambda v,r,i,t:i['row'].update(session_id=v['results.json']['operations'][0]['prepared']['envelope']['session_id'])),
+        ('dispatch',lambda v,r,i,t:i['row'].update(dispatch_id=v['results.json']['operations'][0]['prepared']['envelope']['dispatch_id'])),
+        ('before-peer',lambda v,r,i,t:i['row'].update(observed_at_ns=t-1)),
+        ('missing-final',lambda v,r,i,t:v.pop('final-ledger.json')),
+        ('missing-recovery',lambda v,r,i,t:v.pop('recovery-ledger.json')),
+    ]:rejected(label,change)
+    for name in ('final-ledger.json','recovery-ledger.json'):
+        for field in ('reservations','completions'):
+            rejected(name+':'+field,lambda v,r,i,t,n=name,f=field:v[n][f].append({
+                'dispatch_id':v['results.json']['operations'][0]['prepared']['envelope']['dispatch_id']}))
+    for field in ('host_capture','meter','client','result'):
+        rejected(field,lambda v,r,i,t,f=field:v['results.json']['operations'][0].update({f:{}}))
+    rejected('native',lambda v,r,i,t:v['processes.json']['native'].append({}))
+    # An accepted terminal row must not skip a later authority/effect row.
+    def after(events,item,kind,data):
+        if kind=='protocol':data.update(channel_role='launcher',direction='sent')
+        extra=deepcopy(item);extra['row'].update(kind=kind,data=data);events.append(extra)
+    for kind in ('approval_witness','audit_witness','capability_projection','meter'):
+        rejected('later-'+kind,lambda v,r,i,t,k=kind:after(r,i,k,{}))
+    for opcode in ('GO','DISPATCH','RESULT'):
+        rejected('later-'+opcode,lambda v,r,i,t,o=opcode:after(r,i,'protocol',{'frame':{'operation':o}}))
+    # Syntax and channel sequencing still belong to the full witness parser.
+    for label,change in [
+        ('invalid-reason',lambda f:f['body'].update(reason='not_a_live_error')),
+        ('sequence-gap',lambda f:f.update(sequence=f['sequence']+1)),
+    ]:
+        bad,events,item,_=fixture();change(item['row']['data']['frame']);_boundary_terminal_encode(bad,events)
+        with pytest.raises(c.LiveError):witness.validate_evidence_transcript(bad,events,deadline=time.monotonic()+15)
+        checks.append('full-witness-reject-CANCEL:'+label)
     return checks
 
 
