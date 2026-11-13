@@ -1,38 +1,53 @@
-BORRADOR PARA REVISIÓN DEL TITULAR — NO ENVIADO
-Fecha de preparación: 30 de septiembre de 2026
+BORRADOR PARA REVISIÓN — NO ENVIADO
+Fecha de revisión: 13 de noviembre de 2026
 
-Antes de enviar: Enrique Folte debe revisar el texto y el PDF, adjuntar el
-archivo indicado y autorizar expresamente el envío. Este borrador no constituye
-una inscripción. Los registros privados de evaluación no están incluidos como
-adjuntos. Copiar el correo a partir de la línea «Para».
+El correo siguiente contiene los tres requisitos de inscripción de la
+convocatoria: desafío, arquitectura e integrante. No depende de un PDF adjunto.
+Copiar el mensaje a partir de la línea «Para» después de la revisión personal.
 
 Para: ingenieria@palermo.edu
-Asunto: Propuesta para el Concurso de Ciberseguridad 2026–2027 — Recon Cockpit, Desafío 4
-Adjunto previsto: recon-cockpit-propuesta-20260930.pdf
+Asunto: Inscripción al Concurso de Ciberseguridad 2026–2027 — Recon Cockpit, Desafío 4
 
 Estimado equipo de la Facultad de Ingeniería:
 
-Deseo presentar la propuesta «Recon Cockpit — agentes de pentesting con
-ejecución controlada» para el Desafío 4: Seguridad de agentes inteligentes
-autónomos, del Concurso de Desarrollo de Soluciones de Ciberseguridad 2026–2027.
+Deseo presentar Recon Cockpit al Concurso de Desarrollo de Soluciones de
+Ciberseguridad 2026–2027, en el Desafío 4: Seguridad de agentes inteligentes
+autónomos.
 
-Soy Enrique Folte, único integrante humano y responsable del proyecto. Utilizo
-Codex como herramienta de asistencia para el desarrollo, bajo mi revisión.
+El problema que quiero abordar es concreto: un agente que analiza un servicio
+puede encontrar instrucciones maliciosas en una respuesta y proponer una acción
+fuera del alcance autorizado. En tareas de pentesting, esa confusión puede
+convertir datos observados en órdenes de ejecución. Mi propuesta separa lo que
+el agente sugiere de lo que el sistema permite y ejecuta.
 
-El prototipo offline implementa un flujo acotado TCP → HTTP en un laboratorio
-propio, con acciones tipadas, control de alcance, aprobaciones de un solo uso,
-ejecución aislada, límites de recursos y evidencia trazable. La evaluación usa
-casos sembrados y respuestas sintéticas del proveedor; también se completó un
-ensayo con aprobaciones humanas reales. No se realizaron llamadas pagadas ni se
-afirma haber validado el comportamiento de un modelo real.
+La arquitectura consta de un planificador que entrega acciones estructuradas,
+una autoridad independiente que valida esquema, alcance, herramienta y límites,
+y un lanzador que vuelve a comprobar cada condición antes de la ejecución. Cuando
+la política exige revisión, la aprobación humana se vincula a la acción exacta y
+se consume una sola vez. Un escritor de auditoría confirma el registro previo y
+un ejecutor aislado restringe recursos, destino y puerto. Los resultados vuelven
+como evidencia no confiable; no pueden ampliar por sí mismos los permisos del
+agente.
 
-El PDF propuesto describe el desafío, la arquitectura, el integrante y el estado
-verificado del desarrollo, con referencias a la evidencia y a la guía de
-demostración. Distingue el candidato local offline aceptado del trabajo con
-modelos reales que permanece pendiente.
+Ya hay un demostrador offline de reconocimiento TCP y validación HTTP en un
+laboratorio propio, con pruebas de acciones permitidas y bloqueadas, respuestas
+hostiles sintéticas y un ensayo con aprobaciones humanas. El producto también
+cuenta con un catálogo más amplio de perfiles acotados, pero la evaluación para
+este desafío se concentrará en el flujo TCP → HTTP y en distinguir intención,
+decisión y ejecución. El piloto con proveedor simulado está implementado; aún no
+se ha evaluado un modelo real ni se han hecho llamadas pagadas.
 
-Agradeceré que me indiquen si necesitan información adicional para evaluar la
-propuesta y confirmar su recepción.
+Para la entrega final propongo una evaluación acotada en laboratorio propio que
+mida tanto el bloqueo de acciones indebidas como la capacidad de completar la
+tarea legítima y el costo de los controles. La demostración distinguirá con
+claridad los resultados sintéticos de cualquier resultado futuro con un modelo
+real.
+
+Soy Enrique Folte, único integrante y responsable del proyecto. Utilizo Codex
+como herramienta de asistencia para desarrollo y documentación, bajo mi revisión.
+
+Agradeceré que confirmen la recepción de la propuesta. Quedo a disposición para
+ampliar la arquitectura y la evidencia de pruebas.
 
 Saludos cordiales,
 Enrique Folte

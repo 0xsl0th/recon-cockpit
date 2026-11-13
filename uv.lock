@@ -99,7 +99,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8,<9.2" },
     { name = "rich", specifier = ">=13.7,<15" },
 ]
 provides-extras = ["test"]
