@@ -118,7 +118,7 @@ def test_preserves_source_and_native_closures():
         "README.md": "67f8ecabfab120d4dbe94fe0859f43d21947daf2eee2ee97cf1ba5e30d42b6a1",
         "docs/competition-proposal.md": "08965e6f5e562646b6d476ac2f1f969871c1bcc2e216478be96ba0f9dd697af1",
         "docs/competition-proposal-appendix.md": "bd438b04b1610cfae3005443bedb6a8646d2f86e294a8aa112df225efea61116",
-        "docs/submission-email.txt": "a3a50515589510f2b41300a5b08431e21e54798229eef2a98b689a5c6d5c41be",
+        "docs/submission-email.txt": "8fa8a93464e2339f92259f12fd30d305d07f7454bb2beb3a1a929b9c41dcd9d8",
         "pyproject.toml": "c787154cf92f473a3b625a124d9f473d97337ef91ec42d06662572d9e04b9f24",
         "uv.lock": "dd975456767c3dbcb89ed257075d2e88760516a9af2011d9f83743d4c4a67287",
     }

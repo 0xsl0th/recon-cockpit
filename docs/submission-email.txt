@@ -1,5 +1,5 @@
 BORRADOR PARA REVISIÓN — NO ENVIADO
-Fecha de revisión: 13 de noviembre de 2026
+Fecha de revisión: 14 de noviembre de 2026
 
 El correo siguiente contiene los tres requisitos de inscripción de la
 convocatoria: desafío, arquitectura e integrante. No depende de un PDF adjunto.
@@ -45,6 +45,9 @@ real.
 
 Soy Enrique Folte, único integrante y responsable del proyecto. Utilizo Codex
 como herramienta de asistencia para desarrollo y documentación, bajo mi revisión.
+
+El código y la documentación del proyecto están disponibles en:
+https://github.com/0xsl0th/recon-cockpit/
 
 Agradeceré que confirmen la recepción de la propuesta. Quedo a disposición para
 ampliar la arquitectura y la evidencia de pruebas.
