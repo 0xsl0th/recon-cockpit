@@ -91,10 +91,11 @@
     "accepted_manifest_entries": 1101,
     "status_paths": 8,
     "historical_A11_exceptions": 3,
-    "unchanged_nonstatus_files": 1086,
+    "unchanged_nonstatus_files": 1085,
     "refreshed_documents": 4,
     "original_S42C_new_paths": 39,
-    "additional_paths": 2
+    "additional_paths": 2,
+    "approved_portable_fixture_changes": 1
   },
   "preserved_boundaries": {
     "case_ids_unchanged": true,
@@ -102,5 +103,55 @@
     "authority_unchanged": true,
     "native_or_acceptance_credit": false
   },
-  "evidence_rule": "Retain original candidate50 source and failed/pass receipts under their original identities. This amendment does not rebind historical evidence to the merged source. Fresh source identity and reviewed binding are required before further native work."
+  "evidence_rule": "Retain original candidate50 source and failed/pass receipts under their original identities. This amendment does not rebind historical evidence to the merged source. Fresh source identity and reviewed binding are required before further native work.",
+  "approval_failure_fixture_change": {
+    "id": "S42C-main-sync-approval-failure-fixture",
+    "path": "tests/test_name_tls_approval_failure.py",
+    "mode": "100644",
+    "before": {
+      "bytes": 13462,
+      "sha256": "36c69353833555e7e79b7904bedc0ee12e32118306f810019fdfb50372f01799",
+      "git_blob": "4488fde1ac7c730615cff40f38db1d7c51767c71"
+    },
+    "after": {
+      "bytes": 14031,
+      "sha256": "be761df5fa73339da734a64effb210103b38f48736b08e6988bff68fc1a5e1d3",
+      "git_blob": "153ac01909959915f24802bb5f0d7f9b63f5471a"
+    },
+    "replacements": [
+      {
+        "before_text": "        program = \"import os; os.write(2,b'x'*5000); raise SystemExit(78)\"\n",
+        "after_text": "        # Keep diagnostic-limit rejection independent of interpreter-exit timing.\n        program = \"import os,time; os.write(2,b'x'*5000); time.sleep(30)\"\n"
+      },
+      {
+        "before_text": "        else:\n            with pytest.raises(AssertionError):\n                drain_natural_exit(approvals)\n",
+        "after_text": "        elif mode == 'too_much_output':\n            with pytest.raises(AssertionError, match='^approval failure diagnostic limit$'):\n                drain_natural_exit(approvals)\n            assert supervisor.total == 4097\n            assert supervisor.buffers['worker_out'] == b''\n            assert supervisor.buffers['worker_err'] == b'x' * 4097\n            assert process.poll() is None\n        else:\n            with pytest.raises(AssertionError):\n                drain_natural_exit(approvals)\n"
+      },
+      {
+        "before_text": "    finally:\n        supervisor.close()\n",
+        "after_text": "    finally:\n        supervisor.close()\n    assert process.poll() is not None\n    assert process.stdout.closed and process.stderr.closed\n"
+      }
+    ]
+  },
+  "approval_failure_dispatch_guard_change": {
+    "id": "S42C-main-sync-approval-failure-dispatch-guard",
+    "path": "tests/test_secure_engagement_dispatch_preservation.py",
+    "mode": "100644",
+    "before": {
+      "bytes": 13448,
+      "sha256": "da54bc95c47dbb1aa4ee80dd2b5c2226841d7ec31c52be62bda6bfb70d6fd0e6",
+      "git_blob": "6ec6b4be82b346e5d64b4d049e8ac22aa561f663"
+    },
+    "after": {
+      "bytes": 14696,
+      "sha256": "01217d62cd922fed260f18cf4b9f287db1a5152fafe60286c02263a2a352980a",
+      "git_blob": "82e2fd7f3340e2bd36dc30bacbadf8996f205f8d"
+    },
+    "replacements": [
+      {
+        "before_text": "            raw = restored\n        assert hashlib.sha256(raw).hexdigest() == expected[\"sha256\"], name\n",
+        "after_text": "            raw = restored\n        if name == \"tests/test_name_tls_approval_failure.py\":\n            amendment = ROOT / \"docs/stage4-engagement-live-main-sync-20261116.json\"\n            change = json.loads(amendment.read_text())[\"approval_failure_fixture_change\"]\n            assert _digest(change) == \"74ccc76e87154b502b86ebe353b2ce4204b984a677650433e2501b1c946c9d2e\"\n            assert change[\"path\"] == name and change[\"mode\"] == expected[\"mode\"]\n            restored = raw\n            for edit in reversed(change[\"replacements\"]):\n                before, after = edit[\"before_text\"].encode(), edit[\"after_text\"].encode()\n                assert restored.count(after) == 1\n                original = restored.replace(after, before)\n                assert original.count(before) == 1 and after not in original\n                assert original.replace(before, after) == restored\n                restored = original\n            for value, pins in ((raw, change[\"after\"]), (restored, change[\"before\"])):\n                assert len(value) == pins[\"bytes\"]\n                assert hashlib.sha256(value).hexdigest() == pins[\"sha256\"]\n                assert hashlib.sha1(b\"blob \" + str(len(value)).encode() + b\"\\0\" + value).hexdigest() == pins[\"git_blob\"]\n            raw = restored\n        assert hashlib.sha256(raw).hexdigest() == expected[\"sha256\"], name\n"
+      }
+    ]
+  }
 }

@@ -13,7 +13,7 @@ GATES = json.loads((ROOT / 'docs/stage4-engagement-live-gates.json').read_text()
 
 _ACCEPTED_MANIFEST_SHA256 = '3a2ae8d0150fbf6f44ca2630508fc7f4199844df9805ffba39a39b62df637e54'
 _MAIN_SYNC_PATH = 'docs/stage4-engagement-live-main-sync-20261116.json'
-_MAIN_SYNC_SHA256 = '05a61ac31c8888668f4676cb9d92e728ad8e33e3a147d3f03089c0338e2a9171'
+_MAIN_SYNC_SHA256 = '7d9c537c03b4624c8a77ee50ec1e0922a128fe973deaccc56632257c880bc446'
 _APPROVED_SOURCE_CHANGES = {'pyproject.toml': {'after_bytes': 745,
                     'after_git_blob': '3f2135c18703c6d8b8ffdb5dcce600c612839a2f',
                     'after_sha256': '3989fe11357acb3144ea7c5e0dc87aebe970e325f32e1a9fbbb1f82954574832',
@@ -153,6 +153,22 @@ def _restore_main_sync_dispatch(raw, mode, change):
     return restored
 
 
+def _restore_fixture_change(raw, mode, change):
+    # Reverse the separately pinned fixture/guard edits before historical checks.
+    assert mode == change['mode']
+    _check_sync_bytes(raw, change['after'])
+    restored = raw
+    for edit in reversed(change['replacements']):
+        before, after = edit['before_text'].encode(), edit['after_text'].encode()
+        assert restored.count(after) == 1
+        original = restored.replace(after, before)
+        assert original.count(before) == 1 and after not in original
+        assert original.replace(before, after) == restored
+        restored = original
+    _check_sync_bytes(restored, change['before'])
+    return restored
+
+
 def test_exact_accepted_source_and_change_allowlist():
     baseline = GATES['source_baseline']['complete_tracked_manifest']
     allowed = GATES['change_allowlist']
@@ -179,9 +195,16 @@ def test_exact_accepted_source_and_change_allowlist():
     assert len(refreshed) == 4 and not refreshed.keys() & (status | changes.keys())
     dispatch_change = sync['dispatch_preservation_change']
     assert dispatch_change['path'] == 'tests/test_secure_engagement_dispatch_preservation.py'
+    fixture_change = sync['approval_failure_fixture_change']
+    assert fixture_change['path'] == 'tests/test_name_tls_approval_failure.py'
+    assert fixture_change['path'] not in status | changes.keys() | refreshed.keys()
+    fixture_guard = sync['approval_failure_dispatch_guard_change']
+    assert fixture_guard['path'] == dispatch_change['path']
+    assert fixture_guard['before'] == dispatch_change['after']
     checked = 0
     amended = set()
     refreshed_checked = set()
+    fixture_checked = set()
     for row in baseline:
         path = ROOT / row['path']
         info = path.lstat()
@@ -197,18 +220,27 @@ def test_exact_accepted_source_and_change_allowlist():
                 _check_sync_bytes(raw, change['after'])
                 refreshed_checked.add(row['path'])
                 continue
+            if row['path'] == fixture_change['path']:
+                assert fixture_change['before']['sha256'] == row['sha256']
+                assert fixture_change['before']['git_blob'] == row['git_blob']
+                raw = _restore_fixture_change(raw, row['mode'], fixture_change)
+                fixture_checked.add(row['path'])
             if row['path'] == dispatch_change['path']:
+                raw = _restore_fixture_change(raw, row['mode'], fixture_guard)
                 raw = _restore_main_sync_dispatch(raw, row['mode'], dispatch_change)
             if row['path'] in changes:
                 raw = _restore_approved_source_change(raw, row['mode'], changes[row['path']])
                 amended.add(row['path'])
-            else:
+            elif row['path'] not in fixture_checked:
                 checked += 1
             assert hashlib.sha256(raw).hexdigest() == row['sha256'], row['path']
             assert hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest() == row['git_blob']
-    assert checked == 1086 and amended == set(_APPROVED_SOURCE_CHANGES)
+    assert checked == 1085 and amended == set(_APPROVED_SOURCE_CHANGES)
     assert refreshed_checked == refreshed.keys()
-    assert checked + len(refreshed_checked) == 1090
+    assert fixture_checked == {fixture_change['path']}
+    assert checked + len(refreshed_checked) + len(fixture_checked) == 1090
+    assert sync['source_accounting']['unchanged_nonstatus_files'] == checked
+    assert sync['source_accounting']['approved_portable_fixture_changes'] == len(fixture_checked)
     backup = sync['upstream_readme_backup']
     original = next(row for row in baseline if row['path'] == backup['original_baseline_path'])
     path = ROOT / backup['path']

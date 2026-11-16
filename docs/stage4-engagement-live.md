@@ -1521,38 +1521,3 @@ preservation claim applies to the accepted baseline; corrections to new S4.2c
 production and test files require fresh validation. No acceptance credit is
 granted: the final source/runtime freeze and all required portable, native, CI and
 saved inspection evidence remain necessary. S4.2c remains unaccepted.
-
-
-### Source synchronization amendment: main on 2026-11-16
-
-Synchronize candidate50 `6150b002eb1249d07c1be029b39dc574fae65d90` with
-main `61833a1ad787e9cd2cff6de685f7f985499dee31` after PRs #104 and #105.
-The additive `docs/stage4-engagement-live-main-sync-20261116.json` records exact
-before/after SHA256, Git-blob, length and mode pins for the four refreshed public
-documents, the upstream README backup, and the dispatch preservation guard.
-The accepted 1101-row manifest, its digest, all original A11 exception records,
-and the live gate JSON remain unchanged. Retain the exact `pytest==9.1.1` pin
-and matching lock metadata; that version also satisfies main's `<9.2` ceiling.
-
-S42C-P01 now checks 1086 unchanged protected nonstatus files, four explicitly
-pinned refreshed documents and the three original A11 exceptions. It reverses
-the exact additional dispatch-test block in memory before applying the original
-A11 transformation and checking the accepted baseline. This retains the original
-1093 protected-file accounting without treating documentation as status-only.
-The dispatch guard continues to validate both exact dependency transformations
-and the historical 1091-row manifest; its unchanged subset is 1079 files plus
-four pinned refreshed documents and eight existing status paths.
-
-The upstream README backup must match the original README bytes and mode. Only
-that backup and this amendment JSON are added to the tracked-path allowlist;
-the original 39 S4.2c new paths remain unchanged. The resulting source inventory
-has 1142 tracked paths. All 288 case IDs, 26 parent mappings, 18 physical
-obligations, authority boundaries, production/runtime/native sources, deadlines
-and caps remain unchanged. This amendment changes no acceptance outcome.
-
-Retain candidate50's source snapshots, passing receipts and failed attempts
-under their original identities. They do not automatically become evidence for
-the merged tree. Record the new source identity and review the resulting evidence
-binding before further native work; existing auditors require explicit rebinding.
-The original gate's A11 counts describe that historical amendment; this additive
-record supplies the current synchronization accounting. S4.2c remains unaccepted.

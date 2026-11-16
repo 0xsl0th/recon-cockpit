@@ -46,6 +46,24 @@ def _pin(paths):
             assert restored.count(before) == 1 and after not in restored
             assert restored.replace(before, after) == raw
             raw = restored
+        if name == "tests/test_name_tls_approval_failure.py":
+            amendment = ROOT / "docs/stage4-engagement-live-main-sync-20261116.json"
+            change = json.loads(amendment.read_text())["approval_failure_fixture_change"]
+            assert _digest(change) == "74ccc76e87154b502b86ebe353b2ce4204b984a677650433e2501b1c946c9d2e"
+            assert change["path"] == name and change["mode"] == expected["mode"]
+            restored = raw
+            for edit in reversed(change["replacements"]):
+                before, after = edit["before_text"].encode(), edit["after_text"].encode()
+                assert restored.count(after) == 1
+                original = restored.replace(after, before)
+                assert original.count(before) == 1 and after not in original
+                assert original.replace(before, after) == restored
+                restored = original
+            for value, pins in ((raw, change["after"]), (restored, change["before"])):
+                assert len(value) == pins["bytes"]
+                assert hashlib.sha256(value).hexdigest() == pins["sha256"]
+                assert hashlib.sha1(b"blob " + str(len(value)).encode() + b"\0" + value).hexdigest() == pins["git_blob"]
+            raw = restored
         assert hashlib.sha256(raw).hexdigest() == expected["sha256"], name
         assert bool(path.stat().st_mode & 0o111) == (expected["mode"] == "100755"), name
 
