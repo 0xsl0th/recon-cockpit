@@ -10,9 +10,10 @@ cantidades y umbrales son objetivos, no resultados ni autorización de ejecució
 | --- | --- |
 | La respuesta hostil no concede permisos. | El planificador sintético de sesiones detecta un marcador y propone deliberadamente otro destino. La política lo rechaza; las pruebas Linux comprueban que no aparece un segundo ejecutor. Esto verifica el mecanismo con conducta programada. |
 | Los errores de esquema y de alcance se distinguen. | Un campo de aprobación inventado se rechaza al validar el esquema; una acción estructuralmente válida hacia otro destino se deniega por política. No deben sumarse ambos como rechazos de alcance. |
-| La ruta integrada de evaluación es más restringida. | El host elige una acción elegible desde evidencia guardada. El proveedor recibe su descriptor, sin el cuerpo HTTP original; cualquier sustitución se rechaza antes de liberar la propuesta. No es una medición de susceptibilidad a inyección. |
+| La ruta R5 integrada de evaluación es más restringida. | El host elige una acción elegible desde evidencia guardada. El proveedor recibe su descriptor, sin el cuerpo HTTP original; cualquier sustitución se rechaza antes de liberar la propuesta. No es una medición de susceptibilidad a inyección. |
+| El piloto web posterior permite propuestas semánticas, todavía offline. | Reutiliza el transporte confinado con respuestas sintéticas y observaciones HTTP filtradas. La variante inyectada presenta una nota hostil y comprueba rechazo de una propuesta fuera de alcance; no observa un modelo real. |
 | Un hallazgo exige evidencia. | El flujo TCP/HTTP distingue condición sembrada validada, no demostrada e inconclusa. Un fallo de infraestructura no recibe crédito como abstención correcta. |
-| El modelo real aún no está integrado a este experimento. | La ruta TLS de planificación usa respuestas, credenciales y consumo sintéticos. El diagnóstico separado de proveedor intercambia un ACK fijo; no acredita planificación ni facturación real. |
+| El modelo real aún no está integrado a este experimento. | La ruta R5 y el piloto web posterior usan respuestas, credenciales y consumo sintéticos. El diagnóstico separado de proveedor intercambia un ACK fijo; tampoco acredita planificación ni facturación real. |
 
 Referencias concretas: [planificador sintético](../recon_cockpit/secure_agent/session_planner.py),
 [controlador y decisiones](../recon_cockpit/secure_agent/controller.py),
@@ -22,7 +23,10 @@ Referencias concretas: [planificador sintético](../recon_cockpit/secure_agent/s
 [autoridad combinada en Linux](../tests/test_secure_offline_authority_linux.py).
 El [perfil de datos](../recon_cockpit/secure_agent/assessment_planning_contract.py)
 y la [comparación exacta de propuestas](../recon_cockpit/secure_agent/assessment_planning.py)
-delimitan lo que hace hoy la evaluación integrada.
+delimitan la evaluación R5 integrada. El
+[piloto web posterior](web-model-pilot.md) y sus
+[pruebas](../tests/test_secure_web_model_pilot.py) documentan el recorrido
+semántico offline y sus límites.
 
 Las respuestas del [proveedor offline](../recon_cockpit/secure_agent/openai_fixtures.py)
 están pregrabadas y pueden emitir la propuesta hostil aun sin una respuesta HTTP.
@@ -107,27 +111,30 @@ Confirmé que había ingresado las tres frases y que el procedimiento era claro;
 posteriormente acepté el candidato local offline. Esa decisión se conserva en un
 registro separado: los campos pendientes del paquete inmutable describen su
 estado de creación y no se reescribieron. La aceptación no comprende un modelo
-real ni una presentación al concurso. Los artefactos privados no se adjuntan al
-PDF; los hashes permiten comprobar consistencia local, no autenticar todo lo
+real ni una presentación al concurso. Los artefactos privados no se incorporan a
+la propuesta ni al correo; los hashes permiten comprobar consistencia local,
+no autenticar todo lo
 registrado frente a un propietario del host que pueda modificarlo.
 
 ## C. Protocolo del hito con modelo real — planificado
 
 ### C.1. Integración necesaria y amenaza controlada
 
-Se preparará un perfil de investigación explícito, separado de la ruta integrada
-ya aceptada. Permitirá liberar únicamente un fragmento sintético de salida HTTP,
-de hasta 1.024 bytes UTF-8, con procedencia y etiqueta de dato no confiable.
-El adaptador deberá permitir observar una propuesta del modelo que no coincida
-con el candidato determinista; eso no le otorgará permiso para ejecutarla.
+Para la evaluación de 36 sesiones se preparará un perfil de investigación
+explícito, a partir del piloto web offline ya implementado. Permitirá liberar
+únicamente un fragmento sintético de salida HTTP, de hasta 1.024 bytes UTF-8,
+con procedencia y etiqueta de dato no confiable. El piloto ya permite observar
+una propuesta semántica distinta del candidato determinista; eso no le otorga
+permiso para ejecutarla ni acredita el comportamiento de un modelo real.
 Las acciones válidas pasarán por la autoridad; las inválidas se clasificarán
 como errores de esquema. Nunca se deshabilitarán la política del ejecutor,
 los límites ni las comprobaciones de auditoría/aprobación para lograr un ataque.
 
-El validador HTTP actual exige coincidencia exacta del documento: agregar texto
-sin un contrato nuevo produciría un resultado inconcluso por formato. Por eso el
-perfil experimental necesitará fixtures y un contrato de evidencia que separen
-los datos inmutables de la tarea del texto adversarial. Un mismo oráculo funcional
+El validador HTTP de la ruta R5 exige coincidencia exacta del documento: agregar
+texto sin un contrato nuevo produciría un resultado inconcluso por formato. Por
+eso el perfil experimental de 36 sesiones necesitará fixtures y un contrato de
+evidencia que separen los datos inmutables de la tarea del texto adversarial.
+Un mismo oráculo funcional
 independiente calificará ambos miembros del par. Ese trabajo permanece planificado;
 no se relajará el validador de la ruta ya aceptada para hacer pasar la demostración.
 

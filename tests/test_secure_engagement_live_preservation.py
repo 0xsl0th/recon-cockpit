@@ -12,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 GATES = json.loads((ROOT / 'docs/stage4-engagement-live-gates.json').read_text())
 
 _ACCEPTED_MANIFEST_SHA256 = '3a2ae8d0150fbf6f44ca2630508fc7f4199844df9805ffba39a39b62df637e54'
+_MAIN_SYNC_PATH = 'docs/stage4-engagement-live-main-sync-20261116.json'
+_MAIN_SYNC_SHA256 = '05a61ac31c8888668f4676cb9d92e728ad8e33e3a147d3f03089c0338e2a9171'
 _APPROVED_SOURCE_CHANGES = {'pyproject.toml': {'after_bytes': 745,
                     'after_git_blob': '3f2135c18703c6d8b8ffdb5dcce600c612839a2f',
                     'after_sha256': '3989fe11357acb3144ea7c5e0dc87aebe970e325f32e1a9fbbb1f82954574832',
@@ -121,6 +123,36 @@ def _new_paths():
                + allowed['new_contracts'])
 
 
+def _main_sync():
+    path = ROOT / _MAIN_SYNC_PATH
+    mode = path.lstat().st_mode
+    assert stat.S_ISREG(mode) and not mode & 0o111
+    raw = path.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == _MAIN_SYNC_SHA256
+    amendment = json.loads(raw)
+    assert amendment['accepted_manifest_sha256'] == _ACCEPTED_MANIFEST_SHA256
+    return amendment
+
+
+def _check_sync_bytes(raw, expected):
+    assert len(raw) == expected['bytes']
+    assert hashlib.sha256(raw).hexdigest() == expected['sha256']
+    assert hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest() == expected['git_blob']
+
+
+def _restore_main_sync_dispatch(raw, mode, change):
+    # Undo only the upstream documentation guard before applying original A11.
+    assert mode == change['mode']
+    _check_sync_bytes(raw, change['after'])
+    before, after = change['before_text'].encode(), change['after_text'].encode()
+    assert raw.count(after) == 1 and before not in raw
+    restored = raw.replace(after, before)
+    assert restored.count(before) == 1 and after not in restored
+    assert restored.replace(before, after) == raw
+    _check_sync_bytes(restored, change['before'])
+    return restored
+
+
 def test_exact_accepted_source_and_change_allowlist():
     baseline = GATES['source_baseline']['complete_tracked_manifest']
     allowed = GATES['change_allowlist']
@@ -140,8 +172,16 @@ def test_exact_accepted_source_and_change_allowlist():
     assert GATES['source_baseline']['accepted_nonstatus_approved_test_dependency_changes_required'] == 1
     assert GATES['source_baseline']['accepted_nonstatus_approved_preservation_test_changes_required'] == 1
     assert GATES['source_baseline']['accepted_nonstatus_approved_lock_metadata_changes_required'] == 1
+    # Keep the historical manifest/A11 records intact; main synchronization is
+    # separately pinned and never supplies acceptance credit for the new tree.
+    sync = _main_sync()
+    refreshed = {row['path']: row for row in sync['refreshed_documents']}
+    assert len(refreshed) == 4 and not refreshed.keys() & (status | changes.keys())
+    dispatch_change = sync['dispatch_preservation_change']
+    assert dispatch_change['path'] == 'tests/test_secure_engagement_dispatch_preservation.py'
     checked = 0
     amended = set()
+    refreshed_checked = set()
     for row in baseline:
         path = ROOT / row['path']
         info = path.lstat()
@@ -149,6 +189,16 @@ def test_exact_accepted_source_and_change_allowlist():
         assert ('100755' if info.st_mode & 0o111 else '100644') == row['mode']
         if row['path'] not in status:
             raw = path.read_bytes()
+            if row['path'] in refreshed:
+                change = refreshed[row['path']]
+                assert change['mode'] == row['mode']
+                assert change['before']['sha256'] == row['sha256']
+                assert change['before']['git_blob'] == row['git_blob']
+                _check_sync_bytes(raw, change['after'])
+                refreshed_checked.add(row['path'])
+                continue
+            if row['path'] == dispatch_change['path']:
+                raw = _restore_main_sync_dispatch(raw, row['mode'], dispatch_change)
             if row['path'] in changes:
                 raw = _restore_approved_source_change(raw, row['mode'], changes[row['path']])
                 amended.add(row['path'])
@@ -156,9 +206,21 @@ def test_exact_accepted_source_and_change_allowlist():
                 checked += 1
             assert hashlib.sha256(raw).hexdigest() == row['sha256'], row['path']
             assert hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest() == row['git_blob']
-    assert checked == 1090 and amended == set(_APPROVED_SOURCE_CHANGES)
+    assert checked == 1086 and amended == set(_APPROVED_SOURCE_CHANGES)
+    assert refreshed_checked == refreshed.keys()
+    assert checked + len(refreshed_checked) == 1090
+    backup = sync['upstream_readme_backup']
+    original = next(row for row in baseline if row['path'] == backup['original_baseline_path'])
+    path = ROOT / backup['path']
+    mode = path.lstat().st_mode
+    assert stat.S_ISREG(mode)
+    assert ('100755' if mode & 0o111 else '100644') == backup['mode'] == original['mode']
+    _check_sync_bytes(path.read_bytes(), backup)
+    assert backup['sha256'] == original['sha256'] and backup['git_blob'] == original['git_blob']
+    sync_additions = {_MAIN_SYNC_PATH, backup['path']}
+    assert len(sync_additions) == 2 and not sync_additions & _new_paths()
     tracked = set(subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().rstrip('\0').split('\0'))
-    assert tracked <= {row['path'] for row in baseline} | _new_paths()
+    assert tracked <= {row['path'] for row in baseline} | _new_paths() | sync_additions
     assert all((ROOT / name).is_file() for name in _new_paths())
 
 

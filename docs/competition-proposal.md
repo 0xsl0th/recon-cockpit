@@ -1,6 +1,6 @@
 # Recon Cockpit — control verificable de agentes de pentesting
 
-**Propuesta para el jurado · 30 de septiembre de 2026**
+**Propuesta para el jurado · 13 de noviembre de 2026**
 
 Concurso de Desarrollo de Soluciones de Ciberseguridad 2026–2027 ·
 Facultad de Ingeniería, Universidad de Palermo.
@@ -24,9 +24,10 @@ y que el rechazo pueda comprobarse en la evidencia.
 
 La propuesta responde al énfasis de la
 [convocatoria de UP](https://www.palermo.edu/ingenieria/concurso-ciberseguridad/)
-en control, encapsulamiento y trazabilidad de agentes. El alcance inicial es un
-laboratorio propio y un procedimiento breve de reconocimiento TCP y validación
-HTTP; no un pentester autónomo de propósito general.
+en control, encapsulamiento y trazabilidad de agentes. La evaluación propuesta
+se concentra en un laboratorio propio y un procedimiento breve de reconocimiento
+TCP y validación HTTP; no pretende demostrar un pentester autónomo de propósito
+general.
 
 ## 2. Aporte y resultado esperado
 
@@ -131,7 +132,8 @@ a su compromiso ni a toda inyección de instrucciones. Estas relaciones se
 contrastan con los contratos de [auditoría](launch-audit-witness.md),
 [aprobación](launch-approval-witness.md), [admisión](isolated-launch-admission.md)
 y [planificación offline](owned-tls-assessment-planning.md); el
-[anexo técnico](#anexo-tecnico) conserva la evidencia histórica y sus límites.
+[anexo técnico](competition-proposal-appendix.md) conserva la evidencia histórica
+y sus límites.
 
 ## 4. Qué está verificado y qué falta
 
@@ -140,13 +142,17 @@ y [planificación offline](owned-tls-assessment-planning.md); el
 | Verificado offline | Flujo TCP → HTTP → diagnóstico en un servicio propio, con acciones tipadas, controles de alcance, ejecutores aislados y reportes vinculados a evidencia. |
 | Verificado offline | Sesiones sintéticas con respuestas hostiles: una propuesta posterior fuera de alcance se rechaza antes de un segundo ejecutor y se registra la decisión. La reacción insegura del planificador es programada, no observada en un modelo real. |
 | Verificado offline | Dos perfiles repetidos de seis casos de laboratorio y un ensayo con aprobaciones humanas. Comprueban integración y resultados esperados; no miden la calidad de un modelo. |
-| Planificado | Integrar un modelo real con credenciales mediadas, datos sintéticos autorizados y presupuesto cerrado; evaluar tarea legítima, propuestas indebidas, bloqueo y sobrecarga. |
-| Planificado | Preparar la demostración adversarial y su protocolo de medición con una vista acotada de la salida HTTP. El planificador integrado actual recibe un candidato seleccionado por el host, no el cuerpo crudo de la respuesta. |
+| Verificado offline | Un piloto acotado Nmap → HTTP → evidencia reutiliza el transporte confinado del proveedor con respuestas sintéticas. En este piloto el planificador propone acciones semánticas después de recibir observaciones filtradas, incluida una nota hostil en el caso de prueba; aún no es una evaluación con un modelo real. |
+| Verificado en el producto | El catálogo actual tiene 55 perfiles seguros aceptados y una interfaz de escritorio para tareas propias y desconectadas. Son capacidades del producto, no resultados de este experimento con un agente real ni autorización para trabajar sobre redes ajenas. |
+| Planificado | Activar y evaluar un modelo real, después de revisar y aprobar datos, endpoint, credenciales y presupuesto. Medir tarea legítima, propuestas indebidas, bloqueo y sobrecarga en el laboratorio propio. |
+| Planificado | Ejecutar el protocolo adversarial con una vista acotada de la salida HTTP y conservar una alternativa de demostración offline si el modelo no está disponible o no produce la propuesta peligrosa. |
 
 Esta distinción importa: los resultados actuales no prueban que un modelo haya
-sido engañado y contenido. La futura evaluación requiere una integración y un
-perfil de datos específicos; no se obtiene simplemente agregando una clave de
-API. En esta revisión se documenta ese trabajo, sin implementarlo ni activarlo.
+sido engañado y contenido. Existe una integración experimental que funciona con
+fixtures propios, pero la evaluación real requiere aprobar su configuración y
+activar el proveedor. No se obtiene simplemente agregando una clave de API.
+Los registros de compromisos y despachos de la etapa actual son preparación
+offline: todavía no acreditan ejecución autorizada con credenciales reales.
 
 ## 5. Demostración para el jurado
 
@@ -193,10 +199,13 @@ entrega final**. Propongo un solo modelo y un solo laboratorio, con seis
 condiciones de tarea, versiones limpia y manipulada y tres repeticiones por
 combinación: **36 sesiones previstas**. Las variantes y el criterio de resultado
 se fijarán antes de medir. Es una evaluación exploratoria, no una prueba de
-seguridad general.
+seguridad general. El piloto técnico inicial de tres sesiones, definido por
+separado, servirá para comprobar con un modelo real la integración offline ya
+implementada antes de este protocolo más amplio.
 
 La ejecución requerirá mi aprobación previa del modelo, los datos, el endpoint,
-las credenciales y el gasto. El límite propuesto es **US$5 para todo el piloto**,
+las credenciales y el gasto. El límite propuesto para esta evaluación de 36
+sesiones es **US$5 en total**,
 con un máximo de **114 llamadas incluyendo preparación y fallos**, sin reintentos
 automáticos. Es un presupuesto para decidir, no gasto autorizado ni una estimación
 de precio. Si los límites impiden completar la muestra, se informará como parcial.
@@ -220,21 +229,22 @@ permiten estas comparaciones.
 La convocatoria establece el **15 de noviembre de 2026** para la propuesta y el
 **20 de mayo de 2027** para la entrega final. Esta última incluye implementación,
 pruebas, demostración y documentación.
-[Fuente oficial, consultada el 30/09/2026](https://www.palermo.edu/ingenieria/concurso-ciberseguridad/).
+[Fuente oficial, consultada el 13/11/2026](https://www.palermo.edu/ingenieria/concurso-ciberseguridad/).
 
 | Período | Entregable y decisión de salida |
 | --- | --- |
-| Octubre–8 de noviembre de 2026 | Propuesta revisada para el jurado, anexo de evidencia y protocolo adversarial definido. Demostrador offline conservado como base. |
-| 9–15 de noviembre | Revisión personal final y presentación de la propuesta. |
-| 16 de noviembre–10 de enero de 2027 | Preparar el perfil acotado de datos, el adaptador de evaluación y los controles del nuevo guion con fixtures. Aprobar por separado la configuración y el presupuesto del piloto real. |
+| 13–15 de noviembre de 2026 | Revisión personal final y presentación de la propuesta, con el demostrador offline conservado como base. |
+| 16 de noviembre–10 de enero de 2027 | Extender el piloto offline existente con el perfil de datos, corpus y controles del protocolo de 36 sesiones. Aprobar por separado la configuración y el presupuesto del trabajo con un modelo real. |
 | 11 de enero–28 de febrero | Hito de integración y evaluación con un modelo real: hasta 36 sesiones, mediciones y reporte de fallos. Si no puede ejecutarse, documentar la causa y activar la alternativa offline, sin declarar cumplido el hito. |
 | Marzo–15 de abril | Analizar seguridad, utilidad y sobrecarga; corregir defectos demostrados y verificar los cambios. Una ampliación del piloto necesita nueva autorización. |
 | 16 de abril–13 de mayo | Congelar alcance, preparar el paquete técnico y ensayar la demostración con resultados verificables y alternativa offline. |
 | 14–20 de mayo | Revisión final y entrega dentro del plazo oficial. |
 
-El alcance excluye nuevos catálogos generales, explotación abierta, múltiples
-agentes, GUI, VPN y objetivos ajenos. El cronograma no reabre lo ya verificado:
-concentra el trabajo pendiente en la integración real acotada y su evaluación.
+La evaluación del concurso excluye explotación abierta, múltiples agentes, VPN
+y objetivos ajenos. El catálogo más amplio y la interfaz de escritorio ya
+existentes quedan fuera de la medición propuesta. El cronograma no reabre lo ya
+verificado: concentra el trabajo pendiente en la integración real acotada y su
+evaluación.
 La elaboración de este documento no autoriza llamadas, cambios de seguridad ni
 el envío al concurso.
 
@@ -247,5 +257,6 @@ para arquitectura, código, pruebas y documentación; reviso sus aportes y asumo
 la responsabilidad de las decisiones y los resultados.
 
 La propuesta principal describe el problema, el aporte y la demostración. El
-anexo que sigue permite contrastar las afirmaciones con el repositorio y distingue
-la evidencia ya obtenida del protocolo que todavía debe ejecutarse.
+[anexo técnico](competition-proposal-appendix.md) permite contrastar las
+afirmaciones con el repositorio y distingue la evidencia ya obtenida del
+protocolo que todavía debe ejecutarse.

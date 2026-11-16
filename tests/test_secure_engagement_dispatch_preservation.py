@@ -127,9 +127,28 @@ def test_preserves_source_and_native_closures():
     assert len(baseline) == len({r["path"] for r in baseline}) == 1091
     exceptions = set(gates["change_allowlist"]["existing_status_only"])
     assert len(exceptions) == 8
-    fixed = [r["path"] for r in baseline if r["path"] not in exceptions]
-    assert len(fixed) == 1083
+    # The historical inventory stays frozen. These later documentation and test
+    # dependency updates are pinned separately so the accepted code remains fixed.
+    refreshed = {
+        "README.md": "67f8ecabfab120d4dbe94fe0859f43d21947daf2eee2ee97cf1ba5e30d42b6a1",
+        "docs/competition-proposal.md": "08965e6f5e562646b6d476ac2f1f969871c1bcc2e216478be96ba0f9dd697af1",
+        "docs/competition-proposal-appendix.md": "bd438b04b1610cfae3005443bedb6a8646d2f86e294a8aa112df225efea61116",
+        "docs/submission-email.txt": "8fa8a93464e2339f92259f12fd30d305d07f7454bb2beb3a1a929b9c41dcd9d8",
+    }
+    manifest = {r["path"]: r for r in baseline}
+    assert set(refreshed) <= set(manifest) and not set(refreshed) & exceptions
+    fixed = [r["path"] for r in baseline
+             if r["path"] not in exceptions and r["path"] not in refreshed]
+    assert len(fixed) == 1079
     _pin(fixed)
+    for name, expected_hash in refreshed.items():
+        path = ROOT / name
+        assert path.is_file() and not path.is_symlink(), name
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected_hash, name
+        assert bool(path.stat().st_mode & 0o111) == (manifest[name]["mode"] == "100755"), name
+    backup = ROOT / "docs/README-before-rewrite-2026-11-13.md"
+    assert backup.is_file() and not backup.is_symlink()
+    assert hashlib.sha256(backup.read_bytes()).hexdigest() == manifest["README.md"]["sha256"]
     # Historical contracts, runtime declarations, native fixtures and executable
     # closures are all covered by the complete accepted source manifest above.
     for name, expected in gates["source_baseline"]["sha256"].items():

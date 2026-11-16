@@ -1,4 +1,26 @@
-# Continue here — 26 October 2026
+# Continue here — 16 November 2026
+
+## Current source synchronization
+
+PR #103 now incorporates main `61833a1ad787e9cd2cff6de685f7f985499dee31`
+after PRs #104 and #105. The two Git conflicts were the pytest declarations;
+the exact `pytest==9.1.1` dependency and lock metadata remain pinned. The
+[additive preservation amendment](stage4-engagement-live-main-sync-20261116.json)
+records main's four refreshed documents, README archive and the merged dispatch
+preservation guard without replacing the historical source manifest or A11 pins.
+
+The initial focused check failed on the changed README; that failure is retained
+beside the corrected **8/8 passing preservation checks** under
+`.secure-agent/s42c-main-sync-20261116/`. Production, runtime/native fixture and
+original gate-inventory bytes remain unchanged. This is synchronization, not
+S4.2c acceptance, and no native diagnostic was launched.
+
+The smallest next step is to bind a new source snapshot and preservation auditor
+to the merged revision and this additive amendment. Keep candidate50's original
+passing and failed receipts under their old identity. Then establish current-host
+custody before the pending 42 diagnostics and final acceptance gates. The exact
+current head/tree, sync receipt and next action are in `.secure-agent/continue-here.json`.
+All validation history below remains historical.
 
 ## Read this first
 

@@ -1,436 +1,65 @@
 # Recon Cockpit
 
-For project direction, see the [development roadmap](docs/roadmap.md) and
-[competition proposal](docs/competition-proposal.md). To resume work after an
-interruption, start with [the current checkpoint](docs/continue-here.md).
-R5's agreed offline implementation and evaluation are complete, and the local
-R6 offline candidate is accepted. The merged
-[HarborDesk adversarial comparison](docs/web-comparison.md) provides the fallback
-demonstration. The new [bounded model pilot](docs/web-model-pilot.md) connects one
-Nmap → HTTP → evidence workflow to the existing confined provider transport,
-with usefulness, safety, cost and latency measurements against a fresh protected
-baseline. Validation uses owned TLS fixtures; real-model results remain pending.
-The operator has deferred credential setup and the live pilot until much later;
-live integration stays disabled. The [HTTP response-header assessment](docs/http-headers-assessment.md)
-is merged. The finite [secure-tool coverage milestone](docs/secure-tool-coverage.md)
-is complete: all B0–B8 rows are accepted, with 20 secure capabilities backed by
-11 external programs and explicit completion evidence.
-Nmap, curl, ffuf, dig, OpenSSL, SSH key collection, LDAP RootDSE and
-[anonymous SMB share metadata](docs/smb-tools.md) have accepted bounded secure
-profiles. [RPC registration and NFS export metadata](docs/rpc-nfs-tools.md) are also accepted.
-[Bounded FTP listing and SMTP capability discovery](docs/ftp-smtp-tools.md) are accepted.
-[Fixed Docker health/version and WinRM endpoint metadata](docs/docker-winrm-tools.md) are accepted.
-[Finite Nmap service identification](docs/nmap-service-tools.md) is accepted in PR #44.
-[Synthetic Kerberos principal reports](docs/kerberos-tools.md) are accepted in PR #45,
-with client-report limitations preserved. The merged
-[read-only CLI catalog](docs/secure-tool-catalog.md) lists accepted profiles,
-shows their exact scope and supplies existing owned-lab dry-run recipes. The
-accepted follow-on is a bounded [Nmap → ffuf → HTTP header workflow](docs/service-web-assessment.md)
-using three existing capabilities in one disconnected owned lab. Complete
-service and path-discovery evidence gates the next fixed action. This separate
-workflow merged in [PR #47](https://github.com/0xsl0th/recon-cockpit/pull/47).
-[PR #48](https://github.com/0xsl0th/recon-cockpit/pull/48) accepted
-[configurable HTTP/SSH owned endpoint fixtures](docs/configurable-owned-lab.md)
-with exact operator scope and the same isolated authority path. Its three
-configurable profiles reuse existing programs without real-network attachment.
-The [shared application service](docs/shared-assessment-service.md) now supplies
-validated requests, detached progress/session views, cancellation and read-only
-evidence inspection to both interfaces. The [offline desktop](docs/desktop-gui.md)
-uses the saved [Swiss Industrial references](docs/gui-design-references.md) for
-light/dark scope preparation, saved evidence, fresh dry runs and **Execute owned lab**
-sessions with progress and cancellation. Launch `python -m recon_cockpit.gui` from
-an appropriate local graphical session. Execution is restricted to the existing
-four-action disconnected HTTP/SSH fixtures and requires fresh approval for every
-action in the [isolated review window](docs/graphical-approvals.md). Dry runs execute
-no tools. Both modes replay saved evidence before displaying final usefulness.
-PR #53's reviewer correction and personal walkthrough are merged and accepted;
-the desktop Execute integration is accepted in PR #54.
-[Redis and SNMP metadata](docs/redis-snmp-tools.md) are accepted in
-[PR #55](https://github.com/0xsl0th/recon-cockpit/pull/55). The accepted
-[database TLS slice](docs/database-tls-tools.md), [PR #56](https://github.com/0xsl0th/recon-cockpit/pull/56),
-brought main to 27 bounded profiles using 13 external programs. It adds PostgreSQL
-and MySQL pre-authentication TLS through existing OpenSSL and the secure CLI.
-Validation passed 10,776 portable and 28 native Linux tests; both
-ordinary database TLS tasks completed and all 24 forbidden-destination witnesses
-blocked. The result establishes a verified fixture TLS handshake; it makes no
-database login, SQL query, readiness or product-identity claim.
-The accepted [WhatWeb profile](docs/whatweb-tools.md),
-[PR #57](https://github.com/0xsl0th/recon-cockpit/pull/57), adds one fixed HTTP GET
-with five passive plugins, bringing main to 28 profiles using 14 programs.
-Its structured hints are untrusted metadata; even an empty hint list can be useful
-completion. Local validation passed 11,109 portable and 39 selected native tests,
-including both ordinary tasks and both hostile/meta-redirect trials. Independent verification replayed 36
-accepted bundles unchanged. Independent review and all five hosted checks passed
-before the authorized merge.
-The accepted [DNS SRV profile](docs/dns-srv-tools.md) in
-[PR #58](https://github.com/0xsl0th/recon-cockpit/pull/58) reuses dig for one fixed
-nonrecursive TCP question. It distinguishes bounded service advertisements,
-NODATA, NXDOMAIN and a reported unavailable service; advertised targets and ports
-remain untrusted evidence without follow-up authority. That slice brought main to
-29 bounded profiles using the same 14 programs. Native validation passed 25 selected tests:
-16 C4 and nine accepted regressions. All four ordinary tasks and the separate
-hostile-metadata task completed, with zero unnecessary refusals and 20/20 blocked
-destinations across ten scenarios. Independent clean-source verification repeated
-those useful results and replayed 40 accepted bundles unchanged. All 11,428
-portable tests passed. Independent review and all five final hosted jobs passed;
-reviewed head `65810b8` merged as `6080a5c` with an identical tree.
-The accepted [RDP initial-negotiation profile](docs/rdp-negotiation-tools.md)
-adds `rdp_initial_negotiation_v1`, a repository-owned Ruby socket adapter.
-It sends one fixed TLS offer, closes its write side and reads one bounded reply
-frame, without TLS, CredSSP, NTLM, authentication or a remote session. A selection,
-legacy confirmation or known failure is untrusted metadata, not verified service
-identity or a list of every supported protocol. Accepted main has 30 profiles
-using the same 14 external programs; Ruby is supporting runtime, not another
-third-party assessment tool. All 13 owned cases passed validation: 5/5 ordinary
-and 2/2 separate robustness tasks completed, six negative cases stayed inconclusive,
-and 26/26 unauthorized destinations were blocked. Local validation passed 11,898
-portable and 36 native tests; clean-source replay preserved all 45 accepted bundles.
-[PR #59](https://github.com/0xsl0th/recon-cockpit/pull/59) merged as `846e459`.
-All five [final hosted checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37678942749)
-and the [post-merge checks](https://github.com/0xsl0th/recon-cockpit/actions/runs/37684453123)
-passed. The exact reviewed Linux Ruby 3.3 x86-64 runtime and write-half-close
-limit compatibility; no GUI workflow is added.
-The accepted C6 [SMB2 negotiation profile](docs/smb2-negotiation-tools.md) adds
-`smb2_negotiate_metadata_v1`, bringing that accepted slice to 31 profiles using the same
-14 programs. Its fixed 108-byte request offers SMB 2.1 and 3.0.2 with client
-capabilities zero, closes the write side and captures only one response frame,
-at most 4,100 bytes. Dialect, signing and capability fields are untrusted peer
-reports; they do not verify signing enforcement, authentication or identity.
-Supported opaque buffers are limited to 256 bytes by the parser. Raw peer bytes
-remain private evidence and are never decoded as authentication tokens; rejected
-frames can remain within the larger raw capture bound. There is no SESSION_SETUP,
-NTLM challenge collection workflow, credential use, login, share access or
-follow-up. C6 is accepted in PR #60, merged as `aa65bff7` after review and passing checks.
-Its catalog entry enables no real-network or GUI execution.
-The accepted C7 [SMTP STARTTLS profile](docs/smtp-starttls-tools.md) adds one bounded
-profile through existing OpenSSL, for **32 profiles using the same 14 programs**.
-It sends fixed EHLO/STARTTLS, verifies the fixture CA/name and records clean TLS
-closure without authentication, mail or application requests. Structured output
-means verified TLS only; SMTP reply codes, advertisement and product identity
-are not verified. Full portable, native/usefulness, enforcement and evidence
-checks passed. C7 is accepted in PR #61 at `7c5e88ad`; all five final and
-post-merge jobs passed.
+Recon Cockpit started as a terminal notebook for reconnaissance on targets you are authorized to test. It keeps scan results, notes, and suggested next steps together in one case, so you can pick up where you left off instead of piecing a session together from terminal history.
 
-The accepted C8 [LDAP STARTTLS profile](docs/ldap-starttls-tools.md) adds one fixed
-extended request and verified fixture TLS/clean close through existing OpenSSL,
-for **33 profiles using the same 14 programs**. It permits no bind, search,
-credentials, referral follow-up or application request. The native client leaves
-response IDs/remaining LDAP fields unchecked and discards the raw LDAP reply;
-only TLS facts are reported. Validation passed **13,683 portable** and **70 native
-tests**, including 2/2 ordinary and 2/2 separate robustness completions, eight
-inconclusive cases and 24/24 blocked destinations. Four clean-source trials and
-63 accepted evidence replays also passed. C8 is accepted in PR #62 at `a582bd6c`;
-all five final and post-merge jobs passed.
+The project now also explores a harder problem: **how can an agent help with security work without deciding its own permissions?** Secure Agent Mode puts policy, approval, execution limits, and audit outside the planner. Its demonstrations use owned services and synthetic provider responses, with evidence you can inspect afterward.
 
-The accepted C9 [FTP explicit TLS profile](docs/ftp-starttls-tools.md) adds one fixed
-AUTH TLS command and verified fixture TLS/clean close through existing OpenSSL,
-for **34 profiles using the same 14 programs**. It exposes no login, credentials,
-listing, transfer or data connection. The native client discards unchecked AUTH
-replies and retains only the final greeting; the bounded result reports TLS only.
-Validation passed 14,231 portable tests and a 65-test native confirmation, with
-2/2 ordinary and 3/3 robustness completions, 22/22 blocked destinations and 67
-accepted-bundle replays. One initial legacy stall error did not reproduce;
-its cause remains undetermined and is recorded in the verification report.
-C9 is accepted in [PR #63](https://github.com/0xsl0th/recon-cockpit/pull/63) at `e06e1a4`; all five final and post-merge jobs passed.
+| If you want to… | Start here |
+| --- | --- |
+| Work through one lab target by hand | [Interactive cockpit](#interactive-cockpit) |
+| See how an agent action is checked before execution | [Secure Agent Mode](#secure-agent-mode) |
+| Review scope and saved evidence in a local window | [Offline desktop](#offline-desktop) |
 
-The accepted C10 [DNS NSID profile](docs/dns-nsid-tools.md) adds one fixed nonrecursive TCP query
-requesting opaque server metadata through existing dig. Empty and absent replies
-are distinct; identifiers remain unverified, and no returned text selects follow-up.
-C10 brings accepted main to **35 secure profiles using 14 programs**. Validation passed
-**14,814 portable / 62 native tests**, six useful clean-source trials and 72
-unchanged accepted-bundle replays. PR #64 is merged at `dea8c7a`; all final and post-merge checks passed. Credentials
-and paid calls stay deferred. The initial historical snapshot-test failure was
-corrected without changing production code and remains recorded.
+## Install
 
-The accepted C11 [DNS AXFR profile](docs/dns-axfr-tools.md) observes one fixed
-synthetic zone transfer through existing dig. Completed transfer and explicit refusal
-are useful outcomes; partial/malformed transfers remain inconclusive. Accepted main
-has **36 profiles using 14 programs**. Validation passed **15,464 portable and 61
-native tests**, 3/3 ordinary and 2/2 robustness trials, five clean-commit trials and
-78 unchanged accepted-bundle replays. PR #65 merged at `82dd85a`; all five final
-and post-merge jobs passed. Returned data cannot select follow-up.
-
-The accepted C12 [HTTP OPTIONS profile](docs/http-options-tools.md) adds one fixed
-resource-specific request through existing curl, for **37 profiles using 14 programs**.
-Typed status, distinct absent/empty Allow and authentication-scheme names remain
-untrusted advertisements; no advertised method, redirect or login is executed.
-Validation passed **16,138 portable and 40 native tests**, with 6/6 ordinary and
-2/2 robustness completions, six inconclusive negatives, 28/28 blocked destinations,
-zero unnecessary refusals and 83 unchanged accepted-bundle replays.
-[PR #66](https://github.com/0xsl0th/recon-cockpit/pull/66) merged at `7faf974` after
-all five final CI jobs passed; its [post-merge run](https://github.com/0xsl0th/recon-cockpit/actions/runs/37713341040)
-also passed. C12 remains closed.
-
-The accepted C13 [SNMP successor profile](docs/snmp-next-tools.md) adds one fixed
-TCP GETNEXT for the ifDescr column through snmpgetnext, for **38 profiles using
-15 programs**. It distinguishes a reported description, empty description,
-endOfMibView and a supported outside-subtree successor without walks, UDP,
-credentials or returned-OID follow-up. **16,687 portable/43 native tests and
-91 accepted-bundle replays passed**. [PR #67](https://github.com/0xsl0th/recon-cockpit/pull/67)
-merged at `7cc6645` after independent review and all five final CI jobs passed.
-C13 remains closed; all five [post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37715717067) also passed.
-
-The accepted C14 [SSH algorithm profile](docs/ssh-algorithms-tools.md) adds one
-bounded identification/KEXINIT exchange through the sealed Ruby runtime, for
-**39 profiles using 15 programs**. Its finite directional advertisements do not
-complete key exchange or authentication. **17,728 portable/44 native tests and
-97 accepted-bundle replays passed**. [PR #68](https://github.com/0xsl0th/recon-cockpit/pull/68)
-merged at `a6f11b7` after review and all five final CI jobs passed; all five
-[post-merge jobs](https://github.com/0xsl0th/recon-cockpit/actions/runs/37719116743)
-also passed. C14 remains closed with its documented half-close/capture limits.
-
-[C15 TLS certificate coverage](docs/tls-certificate-tools.md) is accepted in
-[PR #69](https://github.com/0xsl0th/recon-cockpit/pull/69), merged as `e4c9d64`
-after independent review and all five final jobs passed. That slice reached
-**40 secure profiles using 15 external programs**. Its fixed fixture-verified
-OpenSSL handshake yields bounded DER fingerprint, validity and DNS/IP SAN metadata.
-**18,396 portable/39 native tests and 103 accepted-bundle replays passed.**
-Finite compatibility, CN fallback and trust/revocation limits remain documented.
-
-The accepted [C16 Nuclei check](docs/nuclei-tools.md) adds one pinned directory-listing
-signature check through a separate static runtime with bounded private scratch.
-The feasibility assessment was accepted in [PR #70](https://github.com/0xsl0th/recon-cockpit/pull/70)
-at `2f7fb5a`; the operator then authorized implementation and owned execution.
-[PR #71](https://github.com/0xsl0th/recon-cockpit/pull/71) brings accepted coverage
-to **41 profiles using 16 programs**, with 18,958 portable and 23 Linux checks
-passed plus 107 unchanged accepted-bundle replays. Fresh independent reviews
-found no blockers; all five final CI jobs gate the merge.
-Useful matched and unmatched results require complete independent owner bytes,
-a supported native dump and recomputed signature agreement. This is no generic
-vulnerability scan or CVE claim; credential/model/paid work remains deferred.
-
-Broader composition and comparative benchmarking remain later slices.
-Completed R5/R6 scope stays closed; credentials, paid calls and live-model
-evaluation remain deferred until much later.
-
-
-The merged [confined audit writer](docs/isolated-audit.md) is available through
-`--isolated-audit`. The merged [isolated terminal approval](docs/isolated-approvals.md) is selected
-through `--isolated-approvals`: a fixed worker owns review, fresh challenges and
-single-use grants. Both options apply to authority sessions and owned assessments.
-The controller retains policy and launch decisions; every launch still requires
-grant consumption when required and durable audit acknowledgement.
-
-The merged R5 [isolated launch admission](docs/isolated-launch-admission.md) adds a policy/budget gate.
-`--isolated-launch-admission` requires both options above and makes an independent
-worker reserve execution budgets and issue one-use permits before the existing
-owned executor runs. Policy/profile checks cannot be replaced by request flags,
-and lost receipts or worker faults stop further launches. The host still owns the
-launcher and enforces consent/audit ordering; no live provider path is enabled.
-
-The merged [confined fixture launcher](docs/isolated-fixture-launcher.md) adds
-`--isolated-launcher` with all three options above. Its dependent
-[persistent-lab integration](docs/isolated-owned-lab-launcher.md) supports
-`--workflow-assessment CASE --owned-lab` as well as `--fixture`. A fixed worker owns
-the admission client, lab lifecycle, namespace handles and executor launches;
-the host sends typed execution requests. Approval/audit ordering remains
-controller-enforced by default. The merged
-[direct launch-audit verification](docs/launch-audit-witness.md) adds
-`--require-launch-audit`: the launcher must receive a matching durable-intent
-witness directly from the audit worker before admission or execution.
-[Direct approval verification](docs/launch-approval-witness.md) adds
-`--require-launch-approval`: approval-required actions also need a matching,
-unexpired witness from the approval worker after single-use grant consumption.
-All verification remains offline; these options do not enable live providers.
-
-The merged R5 [bounded assessment-planning slice](docs/bounded-assessment-planning.md)
-adds explicit `--assessment-planning-offline` for repository-owned responses,
-an allowlisted planning context and durable simulated cost admission before
-proposal release. It requires both direct launch gates and a new private ledger.
-Default deterministic workflows, provider contracts and live-call settings remain unchanged.
-
-The merged [owned TLS planning integration](docs/owned-tls-assessment-planning.md)
-adds `--assessment-planning-owned-tls` for the same descriptor through a
-disconnected local TLS fixture. It uses generated synthetic credentials, the
-same simulation ledger and isolated parser, and all independent launch gates.
-Development, tests and demos make no paid model calls.
-
-The [offline planning evaluation](docs/planning-evaluation.md) adds
-`--evaluate-owned-planning` and read-only `--inspect-planning-evaluation`.
-It compares repeated cases with the preserved baseline, checking TLS cleanup,
-launch gates and one bounded simulation ledger. Live-model acceptance remains
-deferred; the local offline candidate has received separate operator acceptance.
-
-The [offline release packet and demo runbook](docs/offline-release-evidence.md)
-combine independently verified baseline/planning evidence with a pinned source
-snapshot. Packet creation and inspection are local and make no provider calls;
-the operator accepted the local candidate after the actual terminal rehearsal.
-Real-model acceptance and release publication remain deferred. See the
-[review record](docs/verification.md#r6-offline-operator-rehearsal--30-september-2026).
-
-## Secure Agent Mode — bounded sessions and owned HTTP assessments
-
-An additional entry point now accepts **deterministic mock agent** proposals and
-enforces schema → policy → human approval when required → isolated execution →
-structured result and JSONL audit. It uses no API keys or paid services. This
-milestone does not validate an autonomous model.
-
-Milestone 2 adds a bounded session loop: the fixed mock can propose follow-up
-actions from the previous untrusted response, and every action passes the same
-schema, policy, approval and audit checks. Session deadlines cover planning,
-approval waiting, setup and execution; step and reserved-output budgets stop
-further work. See [bounded sessions](docs/bounded-sessions.md) for the contract.
-
-The planner isolation slice adds an explicit Linux planner sandbox and an offline OpenAI
-Responses API codec. `--isolated-session-mock` runs the fixed mock with no network
-or credentials. OpenAI live calls remain disabled; the codec has no transport.
-See [planner isolation](docs/provider-isolation.md) for usage and remaining work.
-
-`--openai-offline` now connects the codec to a trusted broker and a dedicated
-Linux parser sandbox using framed pipes. It runs fixed synthetic API responses,
-reserves call/output-token/request-byte allowances before each exchange, and
-requires durable audit recording. Live calls and credential lookup remain
-unavailable. See [the offline broker](docs/offline-openai-broker.md).
+Use Python 3.11 or newer. The interactive cockpit needs `nmap` on your path; the secure Linux demos have [additional requirements](#run-an-owned-linux-demo). You can install the Python package with any environment manager:
 
 ```bash
-python -m recon_cockpit.secure_agent --openai-offline three_step --openai-model offline-fixture-model --dry-run
-python scripts/secure_agent_openai_demo.py --execute-fixtures
-```
-
-The model name above is a fixture identifier, not a claim of an available API
-model. Offline OpenAI mode requires Linux isolation even for tool dry-runs.
-
-`--control-plane-mock` moves the session coordinator into a persistent Linux
-sandbox. A host authority service owns policy, terminal approval, budgets and
-audit, and sends bound launch requests to fresh fixture executors over separate
-private pipes. Forged authority fields, replay and attempts to reset a session
-fail closed. This first slice contains coordinator compromise; the authority's
-approval, audit and launcher components still share a trusted host process.
-See [control-plane authority and IPC](docs/control-plane.md) for the contract.
-
-```bash
-python -m recon_cockpit.secure_agent --control-plane-mock three_step --dry-run
-python -m recon_cockpit.secure_agent --control-plane-mock three_step --fixture --execute
-python scripts/secure_agent_control_plane_demo.py --execute-fixtures
-```
-
-This path requires Linux isolation even for dry-runs and currently uses fixed
-mock scenarios and owned fixtures. Live API calls remain unavailable.
-
-`--control-plane-openai-offline` combines that authority path with the offline
-provider. The coordinator requests a plan, then submits the same plan for full
-authorization. Trusted execution records supply provider observations; separate
-provider and tool budgets share one session deadline. See the
-[combined offline path](docs/offline-authority.md) for the protocol and limits.
-
-```bash
-python -m recon_cockpit.secure_agent --control-plane-openai-offline three_step --openai-model offline-fixture-model --dry-run
-python scripts/secure_agent_offline_authority_demo.py --execute-fixtures
-```
-
-The demo uses twelve synthetic cases and an explicit unattended policy for
-owned fixtures. Normal CLI fixture execution still requires fresh human
-approval under the default policy. No live model or human approval is validated
-by the demo.
-
-`--http-assessment` now runs one deterministic, evidence-gated HTTP assessment
-through that combined path. It discovers an owned diagnostic endpoint, validates
-the seeded condition, and saves private execution artifacts plus JSON/Markdown
-reports. The follow-up requires actual successful discovery evidence. Reports
-distinguish `validated`, `not_demonstrated` and `inconclusive`, and remain drafts
-for operator review. See [the HTTP assessment contract](docs/http-assessment.md).
-
-`--discovery-assessment` adds a single isolated TCP connection before that HTTP
-workflow. Valid reachability evidence gates HTTP consideration; a separate policy
-must explicitly allow `tcp_connect`. The three execution records contribute to
-the draft report. See [the discovery contract](docs/discovery-assessment.md) for
-the command, evidence semantics and fixed topology.
-
-`--nmap-assessment` adds a separately versioned, owned-lab workflow using a real
-confined Nmap TCP-connect scan followed by HTTP validation. Its reviewed adapter
-contract is the foundation for later bundled tools. All isolated approval,
-admission and audit gates are mandatory; no public model is enabled. See
-[reviewed tool adapters](docs/tool-adapters.md) for prerequisites, limits and the
-complete command. Existing assessment profiles and evidence remain compatible.
-
-`--service-web-assessment` composes the accepted Nmap service-identification,
-ffuf and HTTP-header capabilities in one persistent owned lab. A complete HTTP
-service observation gates eight fixed path checks; complete non-wildcard discovery
-with a successful fixed portal gates its header request. The three-action session
-keeps every approval, admission and audit gate, and records useful completion,
-raw/structured evidence, elapsed time and zero provider calls/cost. The injected
-variant retains hostile ffuf metadata while deterministic planning stays fixed.
-See [the service/web workflow](docs/service-web-assessment.md) for the policy,
-commands, validation criteria and limits. It does not enable a model provider.
-
-`--workflow-assessment` runs the TCP-connect/HTTP path from a reviewed, versioned workflow card.
-The deterministic engine records the evidence and reason for each proposal or
-stop before requesting a synthetic provider reply. Reports distinguish proposed
-actions from executions and retain the card digest and decision trace. See
-[the workflow contract and commands](docs/workflow-assessment.md).
-
-Select `--owned-lab` with `--workflow-assessment` to keep the seeded service alive
-across those actions while retaining fresh executor sandboxes. Every new run
-creates a new instance; artifacts bind its identity, service counters and closure
-receipt. Workflow card v2 describes this lifecycle. See
-[the persistent owned lab contract](docs/owned-lab.md) for setup, reset and limits.
-
-`--evaluate-owned-lab --evaluation-dir NEW_DIRECTORY` runs the six owned cases
-three times by default, with a fresh lab and authority for each trial. Select the
-explicit unattended evaluation policy and `--execute` to run the 18-trial baseline.
-The runner independently grades saved evidence and writes JSON/Markdown aggregates
-covering expected decisions, isolation, cleanup and resource accounting.
-`--inspect-evaluation DIRECTORY` regrades without execution or writes.
-See [the evaluation contract and commands](docs/evaluation.md).
-
-The [owned TLS provider foundation](docs/provider-foundation.md) exercises a
-separate credential-bearing broker against a disposable, disconnected TLS
-fixture. Only the step and an allowlisted execution status leave the host;
-synthetic credentials enter private pipes. Each attempt reserves calls, bytes,
-output tokens and synthetic cost before durable audit and launch. It performs no
-tool actions and makes no real-model calls. Preview or run its standalone demo:
-
-```bash
-python scripts/secure_agent_provider_demo.py
-python scripts/secure_agent_provider_demo.py --execute --audit .secure-agent/provider-foundation/audit.jsonl
-```
-
-The [R5b provider cost ledger](docs/provider-cost-ledger.md) adds durable USD
-estimates, reservations, usage-derived charges and billing reconciliation, with
-atomic account/engagement/session/agent/action limits. Read-only JSON views expose
-available funds, unresolved calls and model totals for the future GUI. Its local
-demo uses fictional prices and receipts in an explicitly marked simulation ledger:
-
-```bash
-python scripts/secure_agent_cost_demo.py
-python scripts/secure_agent_cost_demo.py --ledger .secure-agent/cost-demo
-python -m recon_cockpit.secure_agent.cost_cli --ledger .secure-agent/cost-demo inspect
-```
-
-The [controlled provider call](docs/controlled-provider-call.md) connects this ledger
-to a single fixed synthetic request through a separate Linux credential sandbox.
-Live execution is disabled by default and is not wired into the CLI or assessment
-runner. All development verification uses owned TLS fixtures and synthetic keys;
-no paid or external provider calls were made. R5a's synthetic counters stay separate.
-
-The executable tool set includes bounded HTTP and the fixed discovery profile.
-The original `--fixture` HTTP mode reaches only its
-owned `127.0.0.1` service inside a fresh Linux namespace. The separate `--routed`
-backend reaches one explicitly authorized IPv4 literal and TCP port through an
-isolated worker and a supervised slirp transport. Policy supports broader scopes,
-but routed CIDR actions, IPv6, loopback, hostnames, TLS and Nmap remain unavailable.
-The existing interactive workflow below is preserved and has a different,
-human-operated security boundary.
-
-### Quick start
-
-From the repository, install Python 3.11+ and the project/test dependencies:
-
-```bash
+git clone https://github.com/0xsl0th/recon-cockpit.git
+cd recon-cockpit
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e '.[test]'
+python -m pip install -e .
+```
+
+If you already use `uv`, `uv sync --python 3.13` is another setup path.
+
+## Interactive cockpit
+
+Give it one IP address in an authorized lab:
+
+```bash
+python recon.py 10.10.11.123
+```
+
+For a new case, choose a Quick, Standard, or Full TCP Nmap scan. Quick runs after you select it; Standard and Full show the command and ask for another confirmation. Full covers all TCP ports. The menu then shows only service paths supported by the evidence it found. Choosing an action shows its exact command, and active follow-up commands require a fresh confirmation that defaults to **no**. The cockpit does not exploit the target or run the whole menu automatically.
+
+The case is saved under `cases/<target>/`. It contains Nmap output, a readable `notes.md`, structured case data, captured command output, and redacted command records. Your manual notes survive regeneration. Treat the folder as sensitive: credentials you enter are stored in plaintext in the case data and generated credentials table, although previews and command records mask known secrets.
+
+Run the same command later to reopen the case. Use `--rescan` to choose a new scan, or import Nmap XML without contacting the target:
+
+```bash
+python recon.py 10.10.11.123 --nmap-xml saved-scan.xml
+```
+
+The menu also offers bounded custom Nmap options and service-specific suggestions for HTTP, SSH, SMB, DNS, LDAP, and other observed services. Some suggestions use optional tools such as `ffuf`, `feroxbuster`, or `nxc`; install those only if you plan to use them. See `python recon.py --help` for imports, alternate case directories, and noninteractive use. On a **new** case, `--no-menu` falls back to a Quick scan unless you import existing XML.
+
+## Secure Agent Mode
+
+An agent proposes a typed action; a separate controller validates its shape, checks an operator policy, requests human approval when needed, and records the decision. The tool runs in a constrained Linux environment only after the required checks pass. Follow-up proposals go through the same checks. Responses from services remain untrusted data, not permission to change scope.
+
+You can inspect the accepted tool catalog and try a mock dry run without contacting a target:
+
+```bash
+python -m recon_cockpit.secure_agent --list-tools
 python -m recon_cockpit.secure_agent --mock --dry-run
 ```
 
-The basic `--mock --dry-run` works on macOS and Linux without isolation tools. Expected JSON:
-`provider: deterministic-mock-no-model`, `decision: approval_required`,
-`execution_status: dry_run`. No network request runs. Events go to the private
-`.secure-agent/audit.jsonl`; override the path with trusted operator flag
-`--audit /path/to/private-directory/audit.jsonl`.
+The mock is deterministic. The dry run validates and audits a proposal; it does not launch a network tool. The project has **55 accepted, narrowly scoped secure profiles** across 17 external programs, including bounded Nmap, HTTP, DNS, SSH, SMB, and TLS checks. A catalog entry describes a reviewed operation; it does not grant execution on arbitrary targets. Use `--describe-tool TOOL_ID` or the [secure tool catalog](docs/secure-tool-catalog.md) for exact limits.
 
-For real fixture execution, use a dedicated Linux/Kali lab. Install the system
-packages explicitly (this is operator setup, not an automatic privilege request):
+### Run an owned Linux demo
+
+Secure execution needs a compatible Linux or Kali environment with unprivileged user and network namespaces. On Debian-based systems, prepare the packages as the operator:
 
 ```bash
 sudo apt-get update
@@ -438,493 +67,51 @@ sudo apt-get install python3 python3-venv bubblewrap nftables libseccomp2 libc-b
 python -m recon_cockpit.secure_agent --mock --fixture --execute
 ```
 
-Run the Python command as a normal user, from a terminal. Review the exact action
-and policy digests, then type the displayed `approve <digest-prefix>` challenge.
-Expected result: `execution_status: succeeded`, HTTP status 200 in
-`result_metadata.results`, and an approval reference in the audit trail.
-The approved address belongs to the owned fixture **inside** the sandbox. It does
-not contact your host's port 8080. Raw response/rationale are not printed or logged.
+Run the final command as your **normal user**, in a terminal. It shows the action and policy digests, then asks you to type an `approve <digest-prefix>` challenge. The HTTP service at `127.0.0.1:8080` is created inside the sandbox; it is not a service on your host. If policy, audit, approval, or isolation is unavailable, execution blocks.
 
-The lab must permit unprivileged user/network namespaces and a compatible
-non-setuid Bubblewrap. The backend creates ephemeral namespaces, installs a
-default-deny nftables ruleset there, drops capabilities, and applies filesystem,
-syscall and resource restrictions. It makes no changes to host routes, firewall,
-forwarding, NAT or sysctls. Do not run secure mode with sudo, add broad mounts, or
-expose a Docker socket to it.
+There are richer offline workflows: bounded sessions, owned HTTP and Nmap assessments, saved evidence reports, and repeated evaluation. They use fixed scenarios and disconnected owned services. Start with the [assessment guide](docs/http-assessment.md), [service and web workflow](docs/service-web-assessment.md), or [verification record](docs/verification.md) before running one. Assessment directories and audit filenames must be new for each run; saved reports can be inspected without resuming execution.
 
-### Owned HTTP assessment and report
+The separate routed HTTP backend can reach one explicitly authorized IPv4 address and port under its documented constraints. Read the [routed HTTP design](docs/routed-http.md) before configuring it. The accepted owned-lab profiles and routed backend do not make this a general-purpose autonomous pentester or a ready-to-use production engagement service.
 
-After the Linux setup above, run from a normal interactive terminal. Choose a
-**new assessment directory and audit filename for each run**; the directory must
-not already exist. The default policy requests a fresh approval for each of the
-two exact GET actions:
+## Offline desktop
+
+The local Tk desktop lets you prepare the fixed owned-lab scope, start a dry run, inspect saved evidence, or execute a four-action disconnected HTTP/SSH lab. Each executed action needs fresh approval in a separate review window. The desktop makes no model calls and does not attach its owned lab to an external network.
+
+From a Linux graphical session with Tk installed (on Debian/Kali, `python3-tk`):
 
 ```bash
-python -m recon_cockpit.secure_agent --http-assessment a --fixture --execute \
-  --assessment-dir .secure-agent/http-assessment-a-001 \
-  --audit .secure-agent/http-assessment-a-001.audit.jsonl
-
-# Read-only inspection; does not resume execution or restore approvals/budgets
-python -m recon_cockpit.secure_agent --inspect-assessment .secure-agent/http-assessment-a-001
+python -m recon_cockpit.gui
 ```
 
-Review `.secure-agent/http-assessment-a-001/report.json` and `report.md`.
-Case `a` returns synthetic internal diagnostic metadata; `b` demonstrates the
-endpoint is absent; `c`–`f` cover malformed, stalled, oversized and hostile
-discovery responses. These cases remain inside owned namespace fixtures.
-The assessment defaults to two planning steps and 2,048 reserved output bytes.
-It uses fixed synthetic provider replies and makes no live API calls.
+See the [desktop guide](docs/desktop-gui.md) for the exact scope, approval, cancellation, and evidence behavior. Its dry run still needs the supported Linux isolation environment, even though it runs no tools.
 
-For a tool dry-run, use `--dry-run` in place of `--fixture --execute` and choose
-fresh output paths. No execution evidence is produced, so its assessment outcome
-is `inconclusive`. Exit status describes session execution; inspect
-`assessment_outcome` separately to determine the finding result.
+## What is verified, and what comes next
 
-Raw decoded responses stay in private artifact files; reports and audit use safe
-metadata and evidence references. Artifacts are not HTTP wire captures, and local
-digests do not prevent host-owner tampering. Inspection flags incomplete or
-mismatched evidence without restarting work. Retention and deletion remain with
-the operator. A validated result establishes the seeded fixture condition, not a
-general vulnerability, authentication bypass or autonomous-model performance.
+The project has tested controlled Linux execution, blocked out-of-scope destinations, human approval flows, saved evidence replay, and offline workflows against owned fixtures. The [verification record](docs/verification.md) separates those results from portable tests and from work that is still planned.
 
-### Routed HTTP
+Provider integration and cost controls have been exercised with synthetic responses, credentials, and prices. **Live model calls, paid provider use, and real-model behavior have not been validated or enabled.** The current [roadmap](docs/roadmap.md) also separates the accepted offline work from engagement-wide live enforcement and credential custody still to come. Local audit and evidence files need protection by the operator; they are not tamper-proof against the host owner or a compromised host.
 
-Install the additional rootless transport dependency as operator setup:
+## Run the tests
+
+Install the test extra and run the portable suite:
 
 ```bash
-sudo apt-get install --no-install-recommends slirp4netns
-```
-
-The application runs as a normal user and uses existing operator routes. No host
-firewall, routing, forwarding, NAT or sysctl changes are needed. Review the
-[routed design and examples](docs/routed-http.md) before configuring a real
-authorized destination. No real remote/VPN target or autonomous model has been
-validated; the routed tests use owned services in a disconnected outer namespace.
-
-To reproduce that lab and the human approval check (use fresh audit filenames):
-
-```bash
-python scripts/secure_agent_routed_demo.py --audit .secure-agent/routed-demo.jsonl
-python scripts/secure_agent_routed_demo.py --interactive --audit .secure-agent/routed-human.jsonl
-```
-
-### Reproducible verification
-
-The current local discovery verification and the historical R1/R2 results are in
-[verification.md](docs/verification.md), with exact test totals, commands and
-limitations. Portable checks and actual Linux isolation are separate evidence;
-hosted CI does not establish kernel enforcement.
-
-GitHub Actions runs the portable suite on Ubuntu with Python 3.11–3.14 and on
-macOS with Python 3.14 for pull requests into `main`, `feature/secure-agent-m2`,
-`feature/secure-agent-provider-isolation` or `feature/secure-agent-offline-authority`,
-and pushes to the configured secure-agent branches and `main`. These jobs require zero skipped portable tests; Linux
-integration tests are explicitly deselected. CI does not execute probes, supply
-human approvals, or establish kernel isolation. The opted-in Kali tests and
-human approval evidence in [verification.md](docs/verification.md) remain a
-separate review requirement for execution-boundary changes.
-
-```bash
-# Portable control-plane tests and existing workflow regressions
+python -m pip install -e '.[test]'
 python -m pytest -m 'not integration'
+```
 
-# Real Linux isolation tests: opted-in setup failures are failures, not passes
+On a prepared Linux lab, the opt-in integration suite checks real namespace and network enforcement:
+
+```bash
 RECON_LINUX_INTEGRATION=1 python -m pytest -m integration -v
-
-# Complete owned-fixture demo (Linux prerequisites above)
-python scripts/secure_agent_linux_demo.py
-
-# Multi-step owned-fixture demo: success, malicious follow-ups and stop limits
-python scripts/secure_agent_session_demo.py
 ```
 
-The unattended demos use a clearly labeled fixture-only policy with
-`require_approval: false` for their allowed-action cases. The original
-`secure_agent_linux_demo.py` also demonstrates approval-required failures;
-neither demo fabricates a human approval. The example
-policy used by the CLI requires human approval. Portable tests exercise missing,
-expired, replayed and changed-action approvals and concurrent single use. Kernel
-tests exercise real HTTP, malicious fixture output, redirects, timeouts/output
-caps, and direct socket attempts toward listening out-of-scope IP/port witnesses.
-
-Use `--proposal action.json` instead of `--mock` to submit untrusted JSON. See
-[the mock action](recon_cockpit/secure_agent/planner.py) for the exact required
-fields and [the example policy](examples/secure-agent-policy.json) for operator
-configuration. Extra fields, booleans used as numbers, command strings, arbitrary
-paths, headers, policy/approval overrides and unsupported tools are rejected.
-
-### Expected failures and troubleshooting
-
-- `noninteractive_approval_required`: an approval-required action was executed
-  without an interactive terminal. Review it interactively; there is no `--yes`.
-- `isolation_unavailable`: Linux, dependencies, user namespaces, sandbox setup,
-  or backend target support is missing. Execution remains blocked; dry-run works.
-  Use a dedicated compatible Linux/Kali VM rather than weakening host controls.
-- `audit_unavailable` / exit 3: the audit directory/file must be private and owned
-  by the controller user, writable, and a regular non-symlink file. Check disk
-  space and permissions. Reconcile any start event without a completion event
-  before retrying; a completion-write failure cannot undo an already sent request.
-- `evidence_unavailable` / exit 3: the assessment directory already exists or
-  private evidence could not be recorded. Inspect any retained assessment before
-  starting a new one; an unmatched start leaves completion unknown.
-- Exit 2 reports a policy/schema/approval/isolation denial, execution failure,
-  or a stopped session, including budget exhaustion and cancellation. Timeouts
-  and output limits have distinct structured reasons.
-- A suite with skipped Linux tests proves only the portable controls. The
-  prompt-injection fixtures demonstrate that specific malicious follow-up
-  proposals are rejected; they are not evidence of universal immunity.
-
-Local JSONL logs are not tamper-proof and can be rewritten by the owner or a
-compromised host. Approval hashes bind content; they do not protect host history.
-See [architecture](docs/architecture.md), [threat model](docs/threat-model.md),
-[Spanish competition draft](docs/competition-proposal.md), and
-[verification record](docs/verification.md).
-For continuation on Kali amd64, use the [Lenovo handover and session prompt](docs/handover-kali.md).
-
-## Interactive Recon Cockpit
-
-Recon Cockpit is an evidence-driven terminal UI for authorized HTB/THM-style
-targets. Give it one IP address and it creates a durable case, lets you choose one
-of three bounded Nmap profiles, parses the XML, and offers only the enumeration
-paths supported by the ports and fingerprints it actually observed.
-
-It does not exploit targets. It does not run service enumeration automatically.
-Standard, Full TCP, custom, and service-enumeration actions are shown as exact
-commands and require a fresh, default-no confirmation.
-
-## Install
-
-Requirements:
-
-- Python 3.11 or newer
-- Git and `uv` for the recommended install flow
-- `nmap` for scanning
-- Rich (installed with the project)
-- OpenSSH client tools (`ssh`, `ssh-keyscan`) and `curl` for SSH credential/key
-  checks, FTP, Docker API, and WinRM suggestions
-- Optional tools for other commands you choose to run: `feroxbuster`, `ffuf`,
-  NetExec (`nxc`), `smbclient`, `ldapsearch`, and `kerbrute`. The ffuf action
-  prompts for a wordlist path; SecLists is one option but is not required.
-
-Clone, install, and launch with Git and `uv`:
-
-```bash
-git clone https://github.com/0xsl0th/recon-cockpit.git
-cd recon-cockpit
-uv sync --python 3.13
-source .venv/bin/activate
-python recon.py 10.10.11.123
-```
-
-Python 3.13 is recommended for compatibility with the broader
-offensive-security Python ecosystem.
-
-Or use any Python environment manager and install the project with its normal
-editable-install command.
-
-## Start a case
-
-```bash
-python recon.py 10.10.11.123
-```
-
-For a new interactive case, choose a scan before any target command runs:
-
-```text
-Choose the initial Nmap scan
-
-  [1] Quick                  Top 1,000 TCP ports; light version probes
-  [2] Standard (recommended) Top 1,000 TCP ports; default scripts + versions
-  [3] Full TCP               All TCP ports; scripts + versions on open services
-
-Scan profile (2):
-```
-
-The Quick profile runs immediately after you choose it. Standard and Full TCP
-display the exact generated command and require a second confirmation that
-defaults to no. Full TCP explicitly warns that it will query all 65,535 TCP ports,
-then run Nmap's default NSE scripts and version probes on discovered services.
-Reopening an existing case reuses its saved evidence; pass `--rescan` to choose a
-fresh scan profile.
-
-With `--no-menu`, or when standard input is not interactive, the cockpit cannot
-ask for a profile and falls back to Quick. It prints that decision before running.
-
-The menu is derived from open-service evidence. For example:
-
-```text
-TARGET  10.10.11.123
-
-PORT      SERVICE   VERSION / EVIDENCE
-22/tcp    SSH       OpenSSH 9.2p1
-80/tcp    HTTP      Microsoft IIS httpd 10.0
-445/tcp   SMB       Microsoft Windows Server
-5985/tcp  WinRM     Microsoft HTTPAPI httpd 2.0
-
-Suggested next actions:
-
-  [1] Enumerate HTTP
-  [2] Enumerate SSH
-  [3] Enumerate SMB
-  [4] Inspect WinRM
-  [5] Run standard Nmap scripts
-  [6] Run full TCP Nmap scan
-```
-
-### Nmap scan profiles
-
-Quick scans the 1,000 most common TCP ports with light version probes:
-
-```text
-nmap -Pn -sV --version-light --top-ports 1000 --reason \
-  -oX cases/10.10.11.123/scans/quick-….xml \
-  -oN cases/10.10.11.123/scans/quick-….nmap 10.10.11.123
-```
-
-Standard is the recommended starting point for an interactive lab case:
-
-```text
-nmap -Pn -sC -sV -vv --top-ports 1000 --reason \
-  -oX cases/10.10.11.123/scans/standard-….xml \
-  -oN cases/10.10.11.123/scans/standard-….nmap 10.10.11.123
-```
-
-Full TCP scans every TCP port, then applies the same scripts and version probes to
-discovered services:
-
-```text
-nmap -Pn -p- -sC -sV -vv --reason \
-  -oX cases/10.10.11.123/scans/full-….xml \
-  -oN cases/10.10.11.123/scans/full-….nmap 10.10.11.123
-```
-
-The cockpit does not prepend `sudo`: these profiles work without automatic
-elevation and will not leave root-owned files inside the case. If privileged Nmap
-behavior is specifically needed, copy the displayed command and run it manually
-with the appropriate authorization.
-
-If ports 139/445 or an SMB fingerprint are absent, the SMB group does not exist.
-HTTP evidence produces ready-to-review feroxbuster and ffuf commands; the ffuf
-action asks for the wordlist path when selected. SMB evidence produces NetExec
-anonymous-share, smbclient, and RID-enumeration commands. LDAP produces RootDSE
-and base-DN queries; Kerberos produces a username-enumeration
-command with prompted domain and user-list values. IIS + SMB + WinRM evidence is
-identified as a probable Windows workflow and adjusts the wording and available
-credential checks. Domain credentials use NetExec's domain mode; credentials
-without a domain use `--local-auth`.
-
-Linux/Unix evidence adds equally service-specific workflows:
-
-- SSH offers host-key collection and algorithm enumeration.
-- FTP offers bounded anonymous listing and fixed `ftp-anon,ftp-syst` NSE checks.
-- RPC/NFS offers RPC program and export discovery without mounting anything.
-- DNS offers a server-identity query; SMTP lists advertised commands without
-  sending mail or enumerating users.
-- An exposed Docker daemon API offers GET-only ping, version, info, and container
-  metadata requests. Docker Registry fingerprints are not treated as daemon APIs.
-
-SSH alone is not enough to label a target Linux because Windows can expose
-OpenSSH. A Linux/Unix posture requires an OS/distribution fingerprint or a
-corroborating SSH plus NFS/RPC stack. Generic HTTP discovery is suppressed for
-Docker daemon and WinRM endpoints. These commands use Nmap's bundled NSE scripts,
-`ssh-keyscan`, and `curl`; they do not require `showmount`, `rpcinfo`, `dig`, or
-`swaks` to be installed.
-
-Selecting a service group only displays its possible commands. Selecting one still
-does not run it until you answer the final confirmation prompt. Nmap follow-up
-actions display their exact generated command and then ask for the same default-no
-confirmation. Commands execute as argument arrays, never through a shell, so
-metacharacters cannot silently add a pipeline or second command. Long-running
-output is streamed to the terminal and incrementally saved to a private transcript;
-the in-memory parser buffer is bounded.
-
-## Run a custom Nmap scan
-
-Start or reopen the case in interactive mode. Do not pass `--no-menu`:
-
-```bash
-python recon.py 10.10.11.123
-```
-
-After the summary, choose **Run custom Nmap scan** from the Actions menu. Its
-number changes depending on which service actions are available:
-
-```text
-Actions
-
-  [1] Enumerate HTTP
-  [2] Enumerate SSH
-  [3] Enumerate SMB
-  [4] Inspect WinRM
-  [5] Run standard Nmap scripts
-  [6] Run full TCP Nmap scan
-  [7] Run custom Nmap scan
-  [8] Add a credential
-  [9] Open target notes
-  [10] Ingest saved command output
-  [11] Quit
-
-Select: 7
-Nmap options (blank cancels): -sT --top-ports 50 -sV -T4 -vv
-```
-
-The prompt accepts Nmap options, not a complete shell command. The cockpit then
-constructs and displays:
-
-```text
-nmap -Pn -sT --top-ports 50 -sV -T4 -vv --reason \
-  -oX cases/10.10.11.123/scans/custom-….xml \
-  -oN cases/10.10.11.123/scans/custom-….nmap 10.10.11.123
-
-Run this active custom nmap enumeration command? [y/n] (n):
-```
-
-Review the final command and enter `y` to run it. The XML and normal output are
-saved under `cases/10.10.11.123/scans/`, parsed into the case, and reflected in
-`notes.md`.
-
-Enter options only: omit `nmap`, `sudo`, the target, output flags, pipes, and
-redirection. The cockpit owns the canonical single target and private output paths.
-It accepts common TCP/UDP scan types, numeric port selections, version and OS
-detection, verbosity, timing templates through `-T4`, and bounded rate, retry, and
-timeout controls. It rejects unknown flags, additional target sources, output
-overrides, arbitrary NSE scripts, spoofing, decoys, proxies, and other options that
-could escape the case scope. Use `-sC` for the fixed default NSE set.
-
-Every custom scan receives a separate default-no confirmation and executes without
-a shell. Raw-socket options such as `-sS`, `-sU`, or `-O` can fail when Nmap lacks
-the required capabilities; the cockpit never elevates itself. For options outside
-the safe custom builder, run Nmap separately and import its XML with `--nmap-xml`.
-
-## Cases and notes
-
-Each target gets a private case directory:
-
-```text
-cases/10.10.11.123/
-├── case.json        # structured source of truth
-├── notes.md         # regenerated human-readable notebook
-├── scans/           # nmap XML and normal output
-├── loot/            # ingested/captured command output and generated user lists
-└── commands/        # redacted argv/exit-status audit records
-```
-
-`notes.md` contains hosts, ports and versions, findings, domains, usernames,
-credentials, shares, and evidence-driven next actions. Text between the manual
-notes markers is preserved whenever the generated sections are refreshed.
-
-The interactive “Add a credential” action stores a manually entered identity and
-secret. Secrets appear only in the Credentials table in generated Markdown and
-are masked in command previews/audit records; `case.json` and the credentials
-table intentionally contain the plaintext value you entered. Case directories
-are written with owner-only permissions (`0700`) and generated files with `0600`,
-but the whole case should still be treated as sensitive.
-
-## Ingest command output
-
-Capture NetExec output however you prefer:
-
-```bash
-nxc smb 10.10.11.123 -u users.txt -p passwords.txt | tee loot/nxc.txt
-python recon.py --ingest loot/nxc.txt
-```
-
-The parser strips terminal color codes, requires a validated NetExec-style
-protocol/IP/port/host prefix for structured findings, and extracts supported
-evidence including:
-
-- target IP, hostname, domain, and SMB/OS banner details;
-- RID-enumerated usernames;
-- successful `[+]` authentications, including administrative `(Pwn3d!)` status;
-- shares, permissions, and remarks from an “Enumerated shares” table.
-
-Failed `[-]` authentication attempts are never recorded as valid credentials, and
-unrelated lines such as `[+] Download complete: …` are not mistaken for credentials.
-IPv4 and IPv6 target addresses are canonicalized before case matching.
-The case is selected from an ancestor `case.json`, a matching existing target, or
-a single target IP found in the output. If the output is ambiguous, specify it:
-
-```bash
-python recon.py 10.10.11.123 --ingest loot/nxc.txt
-```
-
-Output produced by a command launched from the cockpit is also saved under
-`loot/` and passed through the same parser automatically.
-
-## Offline imports and automation
-
-Import an existing scan without contacting the target:
-
-```bash
-python recon.py 10.10.11.123 --nmap-xml saved-scan.xml
-```
-
-Update a case and print its summary without opening the interactive menu:
-
-```bash
-python recon.py 10.10.11.123 --nmap-xml saved-scan.xml --no-menu
-python recon.py --ingest loot/nxc.txt --no-menu
-```
-
-Use a different case root with `--cases-dir PATH`.
-
-## Test
-
-```bash
-pytest
-```
-
-The tests cover nmap XML parsing, NetExec extraction, Markdown preservation and
-deduplication, target validation, scan confirmations, service-gated Linux/Unix and
-Windows suggestions, and conservative host-posture inference.
-
-C17 [Git HEAD marker coverage](docs/nuclei-git-tools.md) is accepted in
-[PR #72](https://github.com/0xsl0th/recon-cockpit/pull/72), bringing the catalog to
-**42 bounded profiles using 16 external programs**. It adds one finite synthetic
-check through the existing Nuclei runtime; no repository download, credentials
-or live-model work is included. The [product roadmap](docs/product-roadmap.md)
-separates current capabilities from future professional-use work and PR estimates.
-
-[C18 DNS MX metadata](docs/dns-mx-tools.md) is accepted in
-[PR #74](https://github.com/0xsl0th/recon-cockpit/pull/74), bringing accepted
-coverage to **43 profiles/16 programs**. It reuses dig for one fixed nonrecursive
-TCP question with no returned-host follow-up; G1–G6 are closed. The
-[finite professional-v1 coverage checklist](docs/professional-v1-coverage.md)
-records six required operator outcomes: T01 is accepted and T02–T06 remain open.
-[T02 source feasibility](docs/tls-posture-feasibility.md) rejected stock sslscan
-because it loses received rejection evidence. [PR #76](https://github.com/0xsl0th/recon-cockpit/pull/76)
-accepted the native diagnostic and its retained retry-boundary failure.
-[PR #77](https://github.com/0xsl0th/recon-cockpit/pull/77) accepted the
-[mediated diagnostic](docs/tls-posture-mediation.md): 8/8 ordinary observations,
-4/4 explicit rejections and the tested retry blocked before peer delivery, 1/1.
-[PR #78](https://github.com/0xsl0th/recon-cockpit/pull/78) accepted the
-[diagnostic observation/replay slice](docs/tls-posture-observations.md), with
-26/26 isolated replays and 18/18 safe negative cases. Those diagnostic receipts
-grant no execution authority. [PR #79](https://github.com/0xsl0th/recon-cockpit/pull/79)
-adds four separately versioned [production TLS posture candidates](docs/tls-posture-tools.md)
-through policy, fresh per-action approval, consumed permits, admission and both
-evidence inspectors. A corroborated protocol rejection can be useful while the
-actual process exit 1 remains a failed execution. PR #80 validates the remaining
-corpus; T02 stays open pending G6 review/checks and authorized merge. Accepted
-coverage remains **43 profiles / 16 programs**, with no T02 profile accepted yet.
-Credentials, paid calls, live models and deeper workflow work remain deferred. The owner has deferred the proposal
-refresh until November 2026; its separate submission decision remains pending.
-
-[T02 acceptance PR #80](https://github.com/0xsl0th/recon-cockpit/pull/80) completes
-the finite TLS corpus with 65 native and 21,593 portable passes, 20 useful
-observations, strict malformed/pressure results and unchanged historical replay.
-It also binds plaintext owner/client evidence and retains extra-stream refusal
-without authorizing another stream. G6 and accepted-count changes await its
-review/merge. The separate [T03 SSH policy PR #81](https://github.com/0xsl0th/recon-cockpit/pull/81)
-follows in review order. [Checkpoint](docs/continue-here.md).
-
-The next coverage candidates are ready for review in order:
-[T02 acceptance #80](https://github.com/0xsl0th/recon-cockpit/pull/80), then
-[T03 SSH policy #81](https://github.com/0xsl0th/recon-cockpit/pull/81). T02 adds the
-hostile/pressure corpus and stricter plaintext evidence binding. T03 reuses the
-bounded SSH collector to assess both transport directions against an immutable
-local policy; known deviations are useful, unknowns remain inconclusive.
-Native validation passed 65 and 52 checks respectively. There are **43 accepted
-profiles plus five candidates across 16 programs**; these reviews do not claim
-professional-service compatibility or complete product coverage. See the
-[checkpoint](docs/continue-here.md) for review order and remaining T04–T06 tasks.
+Portable passes alone do not prove the Linux boundary. The [verification record](docs/verification.md) has the observed results, environments, and remaining limits.
+
+## Project documents
+
+- [Architecture](docs/architecture.md) and [threat model](docs/threat-model.md): how the secure boundaries are intended to work.
+- [Secure tool catalog](docs/secure-tool-catalog.md) and [desktop guide](docs/desktop-gui.md): what you can run and inspect today.
+- [Current checkpoint](docs/continue-here.md) and [roadmap](docs/roadmap.md): where development stands.
+- [H4ck3d competition proposal](docs/competition-proposal.md): the problem, approach, and evaluation plan.
+- [Previous README](docs/README-before-rewrite-2026-11-13.md): the full project log kept before this rewrite.
