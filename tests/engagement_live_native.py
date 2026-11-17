@@ -317,7 +317,7 @@ def _failure_json(value,*,maximum=131072):
     return detached
 
 
-def _save_case_failure(directory,kind,variant,error):
+def _save_case_failure(directory,kind,variant,error,*,terminal_lifecycle=None):
     """Private diagnostic only; preserve actual failure and never emit a report."""
     import base64
     maximum=262144;budget=maximum-32768;observations=[];omitted=[];exceptions=[];sessions=[]
@@ -436,6 +436,11 @@ def _save_case_failure(directory,kind,variant,error):
         retain(owner,'recovery_helper_closure_rows',{'rows':rows,'observed_helper_rows':len(value),
             'retained_helper_rows':len(rows),'omitted_helper_rows':missing,'work_included':False,
             'scope':'retained_state_only_nonatomic_diagnostic_projection'})
+    if terminal_lifecycle is not None:
+        retain('case','terminal_lifecycle',terminal_lifecycle)
+        # The observer closes without waiting for live/late poll calls. Even an
+        # empty, loss-free prefix cannot establish a complete lifecycle history.
+        omitted.append({'owner':'case','attribute':'terminal_lifecycle','reason':'terminal_returns_prefix_only'})
     for index,item in enumerate(queue):
         attrs=BaseException.__getattribute__(item,'__dict__')
         typename=type(item).__name__
@@ -476,15 +481,100 @@ def _save_case_failure(directory,kind,variant,error):
     if len(raw)>maximum:raise ValueError('failure_artifact_limit')
     private_write(Path(directory)/'case-failure.json',raw)
 
+class _TerminalReturns:
+    """Bounded failure-only observation; never wait on a monitor or its lock."""
+    def __init__(self):
+        import threading
+        self.lock=threading.Lock()
+        self.closed=False;self.rows=[];self.omitted=0;self.uncertain=False
+        self.installed=False;self.restored=False
+
+    def record(self,owner,frame):
+        if frame is None or self.closed:return
+        if not self.lock.acquire(blocking=False):
+            self.uncertain=True;return
+        try:
+            if self.closed:return
+            if len(self.rows)==4:
+                self.omitted=min(4,self.omitted+1);return
+            state=object.__getattribute__(owner,'__dict__')
+            if type(state)is not dict or type(frame)is not dict or type(frame.get('body'))is not dict:
+                raise ValueError('terminal_observation_type')
+            body=frame['body']
+            # Copy only this fixed tuple of already-validated scalar fields.
+            # Holding the mutable frame itself would permit later edits to
+            # rewrite the observed reason. No protocol validation or IO here.
+            row=(state['_started_ns'],state['_deadline_ns'],frame['schema_version'],
+                frame['operation'],frame['channel_id'],frame['sequence'],
+                body.get('session_id'),body['reason'],body['observed_at_ns'],body['cleanup_deadline_ns'])
+            if (any(type(row[i])is not int or not 0<=row[i]<2**128 for i in (0,1,5,8,9))
+                    or any(type(row[i])is not str or len(row[i])>128 for i in (2,3,4,7))
+                    or (row[6]is not None and (type(row[6])is not str or len(row[6])>128))
+                    or row[2]!='1' or row[3]not in ('BROKER_STOP','SESSION_STOP')
+                    or (row[3]=='SESSION_STOP')!=(row[6]is not None)):
+                raise ValueError('terminal_observation_fields')
+            self.rows.append(row)
+        finally:self.lock.release()
+
+    def snapshot(self):
+        if not self.closed:raise ValueError('terminal_observer_still_open')
+        result={'scope':'returned_terminal_fields_before_capture_close_nonatomic_prefix',
+            'capture_complete':False,'maximum_events':4,'events':[],
+            'omitted_events_at_least':0,'observer_uncertain':self.uncertain,
+            'installed':self.installed,'restored':self.restored}
+        if not self.lock.acquire(blocking=False):
+            result['observer_uncertain']=True;return result
+        try:rows=tuple(self.rows);result['omitted_events_at_least']=self.omitted
+        finally:self.lock.release()
+        for start,deadline,version,operation,channel,sequence,session,reason,observed,cleanup in rows:
+            body={'reason':reason,'observed_at_ns':observed,'cleanup_deadline_ns':cleanup}
+            if session is not None:body['session_id']=session
+            result['events'].append({'broker_started_ns':start,'broker_deadline_ns':deadline,
+                'frame':{'schema_version':version,'operation':operation,'channel_id':channel,
+                    'sequence':sequence,'body':body}})
+        return result
+
+
+@contextmanager
+def _capture_terminal_returns():
+    # run_case_watchdog gives each _main invocation its own child process.
+    # The closed wrapper still delegates unchanged if a late call retained it.
+    capture=None;installed=False
+    try:
+        try:
+            from recon_cockpit.secure_agent.engagement_live_broker import EngagementBroker
+            capture=_TerminalReturns();original=EngagementBroker.poll_lifecycle
+            def poll(owner):
+                frame=original(owner) # Exactly one call; its exceptions escape unchanged.
+                try:capture.record(owner,frame)
+                except BaseException:capture.uncertain=True
+                return frame
+            EngagementBroker.poll_lifecycle=poll;installed=True;capture.installed=True
+        except BaseException:
+            if capture is not None:capture.uncertain=True
+        yield capture
+    finally:
+        if capture is not None:capture.closed=True
+        if installed:
+            try:EngagementBroker.poll_lifecycle=original;capture.restored=True
+            except BaseException:capture.uncertain=True
+
+
 def _main(arguments):
     if len(arguments)!=3 or arguments[0] not in ('--runtime','--core'):raise ValueError('fixed case arguments')
     variant,directory=arguments[1],Path(arguments[2])
+    capture=None
     try:
-        if arguments[0]=='--runtime':path=_run_runtime_case(variant,directory)
-        else:path=_run_core_case(variant,directory)
-        sys.stdout.buffer.write(canonical({'bundle':str(path)})+b'\n');sys.stdout.buffer.flush()
+        with _capture_terminal_returns() as capture:
+            if arguments[0]=='--runtime':path=_run_runtime_case(variant,directory)
+            else:path=_run_core_case(variant,directory)
+            sys.stdout.buffer.write(canonical({'bundle':str(path)})+b'\n');sys.stdout.buffer.flush()
     except BaseException as error:
-        try:_save_case_failure(directory,arguments[0][2:],variant,error)
+        terminal={'capture_complete':False,'capture_unavailable':True,'events':[]}
+        try:
+            if capture is not None:terminal=capture.snapshot()
+        except BaseException:pass
+        try:_save_case_failure(directory,arguments[0][2:],variant,error,terminal_lifecycle=terminal)
         except BaseException:pass # Diagnostic retention cannot replace the original failure.
         raise
 

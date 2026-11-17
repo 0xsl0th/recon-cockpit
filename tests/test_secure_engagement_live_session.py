@@ -579,7 +579,173 @@ def _idle_session_cleanup_reserve():
         if not obj._closed:obj.close()
 
 
+def _terminal_failure_capture_cases(monkeypatch,tmp_path):
+    import io
+    import engagement_live_native as native
+    from recon_cockpit.secure_agent import engagement_live_broker as broker_module
+    Broker=broker_module.EngagementBroker
+    owner=Broker.__new__(Broker);owner._started_ns=10;owner._deadline_ns=100
+    def frame(index=1,operation='BROKER_STOP'):
+        body={'reason':'engagement_live_timeout','observed_at_ns':20,'cleanup_deadline_ns':30}
+        if operation=='SESSION_STOP':body['session_id']=uid(92)
+        return {'schema_version':'1','operation':operation,'channel_id':uid(91),'sequence':index,'body':body}
+    def fail(*args,**kwargs):raise RuntimeError('diagnostic failure')
+
+    # Exercise the real CLI failure sink, without starting a broker or target.
+    # The first assertion also fails against the pre-change fixture: the actual
+    # returned stop reason was missing, despite the original failure surviving.
+    for mode in ('retained','observer_error','snapshot_error','writer_error','setup_error'):
+        directory=tmp_path/('terminal-'+mode);directory.mkdir()
+        event=frame();expected=deepcopy(event);calls=[]
+        primary=c.LiveError('engagement_live_cancelled')
+        first=c.LiveError('engagement_live_session_unavailable')
+        cleanup_error=c.LiveError('engagement_live_cleanup_incomplete')
+        prior=ValueError('prior cause');primary.__cause__=prior
+        prior_context=OSError('prior context');primary.__context__=prior_context
+        primary.cleanup_error=cleanup_error
+        retained_session=SimpleNamespace(_failure=first,_sessions={},
+            _cleanup={'status':'failed','descriptors_closed':False,'processes':[]})
+        primary.engagement_session=retained_session
+        before=dict(primary.__dict__)
+        def original(broker):calls.append(broker);return event
+        def run(variant,destination):
+            assert variant=='portable_terminal_capture' and destination==directory
+            assert owner.poll_lifecycle() is event
+            event['body']['reason']='engagement_live_cancelled'
+            raise primary
+        with monkeypatch.context()as patch:
+            patch.setattr(Broker,'poll_lifecycle',original)
+            patch.setattr(native,'_run_runtime_case',run)
+            if mode=='observer_error':patch.setattr(native._TerminalReturns,'record',fail)
+            if mode=='snapshot_error':patch.setattr(native._TerminalReturns,'snapshot',fail)
+            if mode=='writer_error':patch.setattr(native,'private_write',fail)
+            if mode=='setup_error':patch.setattr(native,'_TerminalReturns',fail)
+            with pytest.raises(c.LiveError)as caught:native._main(['--runtime','portable_terminal_capture',str(directory)])
+            assert caught.value is primary and Broker.poll_lifecycle is original
+        assert calls==[owner] and primary.__dict__==before and primary.__cause__ is prior
+        assert primary.cleanup_error is cleanup_error and primary.engagement_session is retained_session
+        assert primary.__context__ is prior_context
+        if mode=='writer_error':
+            assert not (directory/'case-failure.json').exists();continue
+        encoded=(directory/'case-failure.json').read_bytes();assert len(encoded)<=262144
+        saved=json.loads(encoded);facts={(x['owner'],x['attribute']):x['value']for x in saved['observations']}
+        observed=facts[('case','terminal_lifecycle')]
+        assert saved['capture_complete'] is False and saved['acceptance'] is False
+        assert saved['sessions'][0]['first_failure_index']!=0
+        assert facts[('session:0','_cleanup')]==retained_session._cleanup
+        assert {'owner':'case','attribute':'terminal_lifecycle','reason':'terminal_returns_prefix_only'}in saved['omitted']
+        if mode=='retained':
+            assert observed['scope']=='returned_terminal_fields_before_capture_close_nonatomic_prefix'
+            assert observed['events']==[{'broker_started_ns':10,'broker_deadline_ns':100,'frame':expected}]
+            assert observed['installed'] and observed['restored'] and not observed['observer_uncertain']
+        else:
+            assert observed['events']==[]
+            assert observed.get('capture_unavailable') or observed['observer_uncertain']
+
+    # None and original poll exceptions retain identity and execute once.
+    for value in (None,KeyboardInterrupt('original poll')):
+        calls=[]
+        def original(broker):
+            calls.append(broker)
+            if isinstance(value,BaseException):raise value
+            return value
+        with monkeypatch.context()as patch:
+            patch.setattr(Broker,'poll_lifecycle',original)
+            with native._capture_terminal_returns()as capture:
+                if isinstance(value,BaseException):
+                    with pytest.raises(KeyboardInterrupt)as caught:owner.poll_lifecycle()
+                    assert caught.value is value
+                else:assert owner.poll_lifecycle() is None
+            assert Broker.poll_lifecycle is original
+        assert calls==[owner] and capture.snapshot()['events']==[]
+
+    events=[frame(i+1,'SESSION_STOP' if i%2 else 'BROKER_STOP')for i in range(12)]
+    index=[0]
+    def original(broker):
+        event=events[index[0]];index[0]+=1;return event
+    with monkeypatch.context()as patch:
+        patch.setattr(Broker,'poll_lifecycle',original)
+        with native._capture_terminal_returns()as capture:
+            for event in events[:10]:assert owner.poll_lifecycle() is event
+            # Contention never blocks the original call or grants a new wait.
+            with capture.lock:assert owner.poll_lifecycle() is events[10]
+        saved=capture.snapshot();frozen=deepcopy(saved)
+        assert len(saved['events'])==4 and saved['omitted_events_at_least']==4
+        assert saved['observer_uncertain'] and saved['capture_complete'] is False
+        assert [x['frame']for x in saved['events']]==events[:4]
+        # A new case has independent state; no old counter or event leaks in.
+        with native._capture_terminal_returns()as following:assert owner.poll_lifecycle() is events[11]
+        assert len(following.snapshot()['events'])==1 and saved==frozen
+        assert Broker.poll_lifecycle is original
+
+    # Close while an original call is in flight, then return its frame. No late
+    # result can change the already serialized prefix or the next case's state.
+    holder={};event=frame();calls=[]
+    def late(broker):
+        calls.append(broker);holder['capture'].closed=True
+        holder['snapshot']=holder['capture'].snapshot()
+        return event
+    with monkeypatch.context()as patch:
+        patch.setattr(Broker,'poll_lifecycle',late)
+        with native._capture_terminal_returns()as capture:
+            holder['capture']=capture;retained_poll=Broker.poll_lifecycle
+            assert owner.poll_lifecycle() is event
+        prefix=holder['snapshot'];frozen=deepcopy(prefix)
+        assert retained_poll(owner) is event and holder['snapshot']['events']==[]
+        assert prefix==frozen and frozen['events']==capture.snapshot()['events']==[] and calls==[owner,owner]
+        assert Broker.poll_lifecycle is late
+
+    # Invalid/oversized observation data and a contended final snapshot are
+    # incomplete diagnostics, never replacements for the primary case failure.
+    bad=frame();bad['body']['reason']='x'*8193
+    with monkeypatch.context()as patch:
+        patch.setattr(Broker,'poll_lifecycle',lambda broker:bad)
+        with native._capture_terminal_returns()as capture:assert owner.poll_lifecycle() is bad
+        assert capture.snapshot()['events']==[] and capture.snapshot()['observer_uncertain']
+        with capture.lock:
+            saved=capture.snapshot();assert saved['events']==[] and saved['observer_uncertain']
+    directory=tmp_path/'terminal-unserializable';directory.mkdir()
+    native._save_case_failure(directory,'core','portable',ValueError(),terminal_lifecycle={'events':[object()]})
+    saved=json.loads((directory/'case-failure.json').read_bytes())
+    assert saved['capture_complete'] is False
+    assert any(x['reason']=='unretained_value' and x['attribute']=='terminal_lifecycle'for x in saved['omitted'])
+
+    # Even restoration failure leaves a disabled wrapper delegating to the
+    # original poll and cannot mask the original error. This uses a test-only
+    # metaclass; the actual broker class has ordinary attribute assignment.
+    event=frame();calls=[]
+    def original(broker):calls.append(broker);return event
+    class RestoreRefusal(type):
+        def __setattr__(cls,name,value):
+            if name=='poll_lifecycle' and value is original:raise RuntimeError('restore refused')
+            super().__setattr__(name,value)
+    class FakeBroker(metaclass=RestoreRefusal):
+        poll_lifecycle=original
+    fake=FakeBroker();fake._started_ns=10;fake._deadline_ns=100
+    primary=KeyboardInterrupt('case interrupted')
+    with monkeypatch.context()as patch:
+        patch.setattr(broker_module,'EngagementBroker',FakeBroker)
+        with pytest.raises(KeyboardInterrupt)as caught:
+            with native._capture_terminal_returns()as capture:
+                assert fake.poll_lifecycle() is event
+                raise primary
+        assert caught.value is primary and capture.closed
+        saved=capture.snapshot();assert saved['observer_uncertain'] and not saved['restored']
+        frozen=deepcopy(saved);assert fake.poll_lifecycle() is event
+        assert capture.snapshot()==frozen and calls==[fake,fake]
+
+    # Success restores the hook too and retains the original stdout grammar.
+    with monkeypatch.context()as patch:
+        before=Broker.poll_lifecycle;output=io.BytesIO()
+        patch.setattr(native,'_run_core_case',lambda *args:tmp_path/'bundle')
+        patch.setattr(native.sys,'stdout',SimpleNamespace(buffer=output))
+        native._main(['--core','portable_terminal_success',str(tmp_path)])
+        assert Broker.poll_lifecycle is before
+        assert json.loads(output.getvalue())=={'bundle':str(tmp_path/'bundle')}
+
+
 def test_uncertain_dispatch_is_never_retried(monkeypatch, tmp_path):
+    _terminal_failure_capture_cases(monkeypatch,tmp_path)
     obj, row, value = service()
     events = []
     row['reviewer'] = SimpleNamespace(consume=lambda *a, **kw:
