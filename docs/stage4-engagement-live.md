@@ -892,6 +892,10 @@ real earliest guard differs from its declared expectation must be corrected open
 before acceptance, without weakening the production boundary merely to reach a
 later guard.
 
+Amendment A12 declares one exact host-only failure observer for accepted G02.
+Its embedded source, fixed hook, bounds and classification are the sole additional
+instrumentation exception; it cannot change any sealed child role or gate outcome.
+
 ## Runner entrypoint
 
 The root-owned `scripts/engagement_live.py` accepts only `--execute`,
@@ -1521,3 +1525,50 @@ preservation claim applies to the accepted baseline; corrections to new S4.2c
 production and test files require fresh validation. No acceptance credit is
 granted: the final source/runtime freeze and all required portable, native, CI and
 saved inspection evidence remain necessary. S4.2c remains unaccepted.
+
+### Pre-acceptance amendment A12: declared G02 host failure observation
+
+The original freeze35 G02 failure lost its underlying launcher exception during
+generic `isolation_unavailable` translation. A reviewed sole-G02 diagnostic passed
+without a captured exception. That does not explain the original failure or
+reproduce its preceding same-process G01 execution. No historical result is
+relabeled or granted new acceptance credit.
+
+Declare only `S42C-A12-G02-host-failure-v1` for the unchanged accepted G02 node in
+the original G01, G02, G03 batch order. The machine inventory embeds the complete
+canonical UTF-8 observer source, byte length and SHA256. Reconstruct exactly those
+bytes into a fresh private tool directory and bind its fixed module path, load
+environment and output to the new candidate. No source substitutions, arbitrary
+hooks, plugin fallback, overwrite or ambient configuration are permitted.
+
+The host pytest fixture temporarily wraps only `LinuxFixtureLauncher._cleanup`
+for G02 and observes only its exact original `run` caller, configurable profile
+and active exception. It calls original cleanup once, preserving arguments,
+return identity and exception context, then restores the original descriptor in
+finally before G03. All accepted source bytes and sealed child roles stay intact.
+No authority, assertion, retry, time allowance, process action or reader changes.
+
+Capture at most four primitive records, eight traceback code/line entries and two
+4096-byte buffer-prefix hashes. No raw payload, locals, credentials, callback IO
+or retained live frame/exception references. Locks are nonblocking; the closed
+snapshot is immutable. Write one exclusive0600 receipt after original teardown.
+Preserve partial observations and unknown generations/custody; capture failures
+or omissions block eligibility and dependent work instead of changing the test
+outcome. G02 unexecuted after a G01 failure is recorded as such, never retried alone.
+
+The evidence class is declared host-observed accepted regression, separate from
+ordinary uninstrumented production success. The auxiliary receipt stays diagnostic
+and cannot supply gate success or prove the old cause. Ordinary complete test,
+artifact, source/runtime and independent evidence requirements still apply.
+
+This declaration also rebinds exactly four hash literals: the contract/inventory
+pins in owned `engagement_live_contract.py` and `engagement_live_evidence.py`.
+Accepted baseline sources and executable control flow stay unchanged; owned pin
+bytes and resulting source/runtime manifests change. The existing1MiB inventory
+limit stays enforced. A clean new candidate/freeze and an explicit affected-proof
+map are required. This four-file change adds no tracked path,
+collected case or authority. All288 case identities,39new paths,160focused portable,
+128native,113bundles/226original readers,26parent/18physical obligations and full
+portable/CI/final review requirements remain. Old-source passes do not automatically
+become final-source proof. No execution, automatic retry, historical repair or
+S4.2c acceptance is granted by preparing this amendment.
