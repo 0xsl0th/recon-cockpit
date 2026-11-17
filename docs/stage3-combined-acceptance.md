@@ -10,8 +10,8 @@ increments across thirteen PRs, #87–#99.** Fresh independent authority/evidenc
 reviews found no blockers. Reviewed `96c4408`, its passing CI checkout and the
 actual merge share tree `321f50c2f53f3ecda88242f703ce32a46404d878`.
 The [Stage 4 engagement/custody contract](stage4-engagement-custody.md) is accepted
-in PR #100. PR #101 accepts S4.2a records; current work is
-[S4.2b durable dispatch accounting](stage4-engagement-dispatch-ledger.md).
+in PR #100. PR #101 accepts S4.2a records and PR #102 accepts S4.2b accounting; current work is
+[S4.2c live engagement enforcement](stage4-engagement-live.md).
 
 The historical [native contract](stage3-name-tls-native.md) is restored to the
 exact bytes accepted in `c71b599`, SHA-256

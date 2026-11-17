@@ -219,7 +219,8 @@ def test_failure_capture_requires_bounded_natural_exit_before_cleanup(mode):
     if mode == 'wrong_exit':
         program = 'raise SystemExit(0)'
     elif mode == 'too_much_output':
-        program = "import os; os.write(2,b'x'*5000); raise SystemExit(78)"
+        # Keep diagnostic-limit rejection independent of interpreter-exit timing.
+        program = "import os,time; os.write(2,b'x'*5000); time.sleep(30)"
     elif mode == 'deadline':
         program = 'import time; time.sleep(1)'
     process = supervisor.launch('worker', [sys.executable, '-I', '-S', '-c', program])
@@ -233,8 +234,17 @@ def test_failure_capture_requires_bounded_natural_exit_before_cleanup(mode):
             assert captured['worker_stdout_base64'] == ''
             assert base64.b64decode(captured['worker_stderr_base64']) == b'approval_worker_refused\n'
             assert supervisor.total == len(b'approval_worker_refused\n')
+        elif mode == 'too_much_output':
+            with pytest.raises(AssertionError, match='^approval failure diagnostic limit$'):
+                drain_natural_exit(approvals)
+            assert supervisor.total == 4097
+            assert supervisor.buffers['worker_out'] == b''
+            assert supervisor.buffers['worker_err'] == b'x' * 4097
+            assert process.poll() is None
         else:
             with pytest.raises(AssertionError):
                 drain_natural_exit(approvals)
     finally:
         supervisor.close()
+    assert process.poll() is not None
+    assert process.stdout.closed and process.stderr.closed

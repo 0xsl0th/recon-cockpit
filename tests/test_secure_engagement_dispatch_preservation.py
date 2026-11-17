@@ -31,7 +31,40 @@ def _pin(paths):
     for name in paths:
         path, expected = ROOT / name, manifest[name]
         assert path.is_file() and not path.is_symlink(), name
-        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected["sha256"], name
+        raw = path.read_bytes()
+        exact_dependency_changes = {'pyproject.toml': ('3989fe11357acb3144ea7c5e0dc87aebe970e325f32e1a9fbbb1f82954574832',
+                            b'test = ["pytest>=8"]\n',
+                            b'test = ["pytest==9.1.1"]\n'),
+         'uv.lock': ('51eb36224d55e0b365af284f76933350082f184f23a12d53b4c4dff3e3a62eb8',
+                     b'    { name = "pytest", marker = "extra == \'test\'", specifier = ">=8" },\n',
+                     b'    { name = "pytest", marker = "extra == \'test\'", specifier = "==9.1.1" },\n')}
+        if name in exact_dependency_changes:
+            after_sha256, before, after = exact_dependency_changes[name]
+            assert hashlib.sha256(raw).hexdigest() == after_sha256
+            assert raw.count(after) == 1 and before not in raw
+            restored = raw.replace(after, before)
+            assert restored.count(before) == 1 and after not in restored
+            assert restored.replace(before, after) == raw
+            raw = restored
+        if name == "tests/test_name_tls_approval_failure.py":
+            amendment = ROOT / "docs/stage4-engagement-live-main-sync-20261116.json"
+            change = json.loads(amendment.read_text())["approval_failure_fixture_change"]
+            assert _digest(change) == "74ccc76e87154b502b86ebe353b2ce4204b984a677650433e2501b1c946c9d2e"
+            assert change["path"] == name and change["mode"] == expected["mode"]
+            restored = raw
+            for edit in reversed(change["replacements"]):
+                before, after = edit["before_text"].encode(), edit["after_text"].encode()
+                assert restored.count(after) == 1
+                original = restored.replace(after, before)
+                assert original.count(before) == 1 and after not in original
+                assert original.replace(before, after) == restored
+                restored = original
+            for value, pins in ((raw, change["after"]), (restored, change["before"])):
+                assert len(value) == pins["bytes"]
+                assert hashlib.sha256(value).hexdigest() == pins["sha256"]
+                assert hashlib.sha1(b"blob " + str(len(value)).encode() + b"\0" + value).hexdigest() == pins["git_blob"]
+            raw = restored
+        assert hashlib.sha256(raw).hexdigest() == expected["sha256"], name
         assert bool(path.stat().st_mode & 0o111) == (expected["mode"] == "100755"), name
 
 
@@ -119,14 +152,12 @@ def test_preserves_source_and_native_closures():
         "docs/competition-proposal.md": "08965e6f5e562646b6d476ac2f1f969871c1bcc2e216478be96ba0f9dd697af1",
         "docs/competition-proposal-appendix.md": "bd438b04b1610cfae3005443bedb6a8646d2f86e294a8aa112df225efea61116",
         "docs/submission-email.txt": "8fa8a93464e2339f92259f12fd30d305d07f7454bb2beb3a1a929b9c41dcd9d8",
-        "pyproject.toml": "c787154cf92f473a3b625a124d9f473d97337ef91ec42d06662572d9e04b9f24",
-        "uv.lock": "dd975456767c3dbcb89ed257075d2e88760516a9af2011d9f83743d4c4a67287",
     }
     manifest = {r["path"]: r for r in baseline}
     assert set(refreshed) <= set(manifest) and not set(refreshed) & exceptions
     fixed = [r["path"] for r in baseline
              if r["path"] not in exceptions and r["path"] not in refreshed]
-    assert len(fixed) == 1077
+    assert len(fixed) == 1079
     _pin(fixed)
     for name, expected_hash in refreshed.items():
         path = ROOT / name
