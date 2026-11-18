@@ -253,8 +253,8 @@ def test_exact_accepted_source_and_change_allowlist():
     assert len(sync_additions) == 2 and not sync_additions & _new_paths()
     # Admit only the reviewed S4.3 design documents; historical checks stay intact.
     s43_documents = {
-        'docs/stage4-synthetic-custody.md': '8eff7cdf1ea14a5f46832643e361fd2fe77efa7964402a5a6453046f9a4e2918',
-        'docs/stage4-synthetic-custody-gates.json': '95163cccf04854fdeb8ae5f17e7a37590511ea40525f0102fd398da85149d8f3',
+        'docs/stage4-synthetic-custody.md': '598b93b4105bea36bd1859e1f96894be13eaf111c4ca77dca2732a4721b98551',
+        'docs/stage4-synthetic-custody-gates.json': 'e51498092cd09ec91d8a24048eaeecdc0038362985d59776d1617092c01a1893',
     }
     for name, expected_sha256 in s43_documents.items():
         path = ROOT / name
@@ -264,14 +264,14 @@ def test_exact_accepted_source_and_change_allowlist():
     # Independently reviewed intrinsic codec slice: exact paths, never a package wildcard.
     s43_codec_files = {
         'recon_cockpit_synthetic/__init__.py': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-        'recon_cockpit_synthetic/contract.py': '944a8344f1ac63305277a6aad7c34165853c93966e3a063b95dbc084ed25b208',
-        'recon_cockpit_synthetic/codec.py': 'd45b9ad5028404cdd7d70f4b080487ac92c2da66584ee109d4d4109b99fa6217',
-        'tests/test_secure_synthetic_custody_contract.py': '493c066cc5045bdf17f3e0547a079cedf7397bde67c7b8f66905664f2c82ace3',
+        'recon_cockpit_synthetic/contract.py': 'b162ae1635f4d466fed7ece08e83d2a9f7a15a4643a11f791af49fab35eb4029',
+        'recon_cockpit_synthetic/codec.py': '691218e593960c077f2e35ed1130701cf3dc8f7afd9007c05cbc267ebe657b36',
+        'tests/test_secure_synthetic_custody_contract.py': '89d6db3ca95afac632e4c10f3dbcb9044c24f98b7b43643319b4bf7b93cd7dc5',
     }
     s43_codec_imports = {
         'recon_cockpit_synthetic/__init__.py': set(),
         'recon_cockpit_synthetic/contract.py': set(),
-        'recon_cockpit_synthetic/codec.py': {'json', 're', 'recon_cockpit_synthetic.contract'},
+        'recon_cockpit_synthetic/codec.py': {'datetime', 'json', 're', 'recon_cockpit_synthetic.contract'},
         'tests/test_secure_synthetic_custody_contract.py': {'json', 'pytest', 'recon_cockpit_synthetic.codec'},
     }
     forbidden = {'__import__', 'eval', 'exec', 'compile', 'globals', 'locals',

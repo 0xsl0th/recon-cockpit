@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "8eff7cdf1ea14a5f46832643e361fd2fe77efa7964402a5a6453046f9a4e2918",
+  "contract_sha256": "598b93b4105bea36bd1859e1f96894be13eaf111c4ca77dca2732a4721b98551",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -10911,5 +10911,43 @@
     "acceptance_credit": false,
     "native_execution_authorized": false,
     "validation": "Collect exact six unit nodes, run them and affected preservation check; require final independent diff/evidence review. Runtime prerequisites and publication remain separate."
+  },
+  "portable_roe_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_ROE_codec_implementation",
+    "scope_sha256": "33c671e4409a7bfae99b472134c170127d1be2ba97d315874137c533998b8efc",
+    "verified_base_merge": "4468061ef63c01964f90a5c7eeecd2402bd4f376",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [
+      "datetime"
+    ],
+    "calendar_import_usage": "Gregorian constructor validation only; no current time or timezone discovery.",
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_public_roe_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_roe_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_roe_bounds_and_fixture_order",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_roe_calendar_and_revision_relations",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_roe_encoding_and_depth",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_roe_subject_binding"
+    ],
+    "new_unit_node_count": 6,
+    "prior_result_unit_nodes_preserved": 6,
+    "combined_unit_node_count": 12,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 41,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "validation": "Collect exact12 unit IDs, revalidate affected shared-helper result units, new ROE units and affected preservation check; independent final review before publication."
   }
 }
