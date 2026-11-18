@@ -1361,3 +1361,31 @@ release, actual exchange, current authority, cancellation/expiry or cleanup has
 been proved. Those checks remain mandatory downstream before use/publication.
 No runtime, native execution, broader implementation readiness or S4.3 acceptance
 is established by this portable slice.
+
+## Portable intrinsic ROE codec amendment
+
+After verified PR108 publication, the independently reviewed next slice extends
+only the existing contract/codec, codec unit tests, these two design documents
+and the existing preservation test. It adds no tracked paths. The exact scope
+and node ledger are recorded separately in `portable_roe_codec_slice`.
+
+`decode_public_roe` and `encode_public_roe` validate the existing fourteen-field
+ROE grammar, five budget dimensions, ordered fixture subsets, fixed operation
+profile, canonical UUID/hash/UTC forms, Gregorian dates and intrinsic
+revision/predecessor/time relations. Frames remain bounded to4096 bytes/depth2.
+The only additional import is `datetime` for calendar validation; no wall clock,
+timezone discovery, I/O, hashing, SQL or runtime operation is performed.
+
+Valid empty fixture lists, exclusions and zero/insufficient budgets remain valid
+declared records. Parsing neither adopts a revision nor establishes admission,
+remaining lifetime allowance, current predecessor/owner/generation, live trust or
+runtime bindings. Those authority predicates remain separate and unimplemented.
+The returned subject equality is only equality to a caller-supplied trusted ID.
+
+Six exact ROE unit nodes join the six result unit nodes: actual unit collection12,
+formal portable identities29 unchanged, eventual portable union41, native89
+unchanged. No formal acceptance credit follows. Existing schema values, limits,
+case mappings, prior result-slice ledger and broader readiness flags are unchanged.
+The preservation amendment updates only literal changed-file pins and the explicit
+datetime import allowance. Native execution and publication of this new slice
+remain separate gates; all failed evidence is retained.
