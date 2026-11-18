@@ -251,8 +251,18 @@ def test_exact_accepted_source_and_change_allowlist():
     assert backup['sha256'] == original['sha256'] and backup['git_blob'] == original['git_blob']
     sync_additions = {_MAIN_SYNC_PATH, backup['path']}
     assert len(sync_additions) == 2 and not sync_additions & _new_paths()
+    # Admit only the reviewed S4.3 design documents; historical checks stay intact.
+    s43_documents = {
+        'docs/stage4-synthetic-custody.md': 'cfb1cda92f0ec60d6652656fb37992145ae4eaa464911fffd1f471c893f6bc98',
+        'docs/stage4-synthetic-custody-gates.json': '820435f2ec018d9635450aac48a87c3dd1e428e95c45b8321273d2933154931f',
+    }
+    for name, expected_sha256 in s43_documents.items():
+        path = ROOT / name
+        mode = path.lstat().st_mode
+        assert stat.S_ISREG(mode) and not mode & 0o111
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected_sha256, name
     tracked = set(subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().rstrip('\0').split('\0'))
-    assert tracked <= {row['path'] for row in baseline} | _new_paths() | sync_additions
+    assert tracked <= {row['path'] for row in baseline} | _new_paths() | sync_additions | s43_documents.keys()
     assert all((ROOT / name).is_file() for name in _new_paths())
 
 
