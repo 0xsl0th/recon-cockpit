@@ -4,7 +4,7 @@
 The user authorizes a corrected, independently reviewed design-only publication.
 Implementation and acceptance remain later work with every obligation retained.
 The historical6–7 PR estimate is superseded by this additional design checkpoint.
-Recovery bootstrap remains unresolved and disabled for execution.
+Recovery bootstrap design is specified below; runtime execution remains disabled.
 
 S4.2c is accepted at merge `3e51cf8912370f6833b75e5bd2b182479e9e7671`, tree
 `a970eddaf534516f79f09f8377c255872b1b785d`. PRs #104 and #105's competition
@@ -729,7 +729,7 @@ unlisted cleanup subprocess. Any necessary extra process requires a scope change
 | --- | ---: | --- |
 | `driver` | 1 / 1 / 8 | Owned per-case harness, supervisor control and public report; no credential/store FD. The outer test scheduler is outside this runtime graph and grants nothing. |
 | `supervisor` | 1 / 1 / 64 | Bootstrap, namespace setup, pidfds, role lifecycle channels and metadata-only observations; never receives a credential FD or raw private output. |
-| `broker` | 1 / 2 / 16 | Sole authority-store reader/writer, reviewer and worker control, validated public guard output. |
+| `broker` (ordinary profile) | 1 / 2 / 16 | Authority-store reader/writer, reviewer and worker control, validated public guard output. AUTH02/03/04 use the explicit two-instance, one-task-per-instance recovery exception below, with one store user at a time. |
 | `reviewer` | 1 / 2 / 16 | One terminal or graphical review process; fixed public commitments only. |
 | `fixture_source` | 1 / 1 / 12 | Pinned synthetic values and sealed credential descriptor; direct transfer to operation worker after current release authorization. |
 | `connector` | 1 / 1 / 12 | One TCP setup in the owned service network namespace; transfers the connected socket directly to operation worker and closes its copy before TLS. |
@@ -744,8 +744,9 @@ single-thread broker cases). Graphical display and probe raise the whole-graph
 ceiling to eleven processes/twenty tasks, with 204
 FDs across the complete declared role set. These are proposed structural bounds,
 not observed counts. No role may borrow another's unused allowance. No role may fork/clone/exec after READY; all declared role creation occurs during
-reviewed bootstrap within the same totals. Recovery creation remains unresolved
-and disabled. Lifetime worker replacements also
+reviewed bootstrap within the same totals. Recovery uses exactly one prestarted,
+confined broker instance in its reviewed profile; runtime execution remains
+disabled. Lifetime worker replacements also
 need explicit fixture allocation; a crash does not trigger automatic respawn.
 
 The execution graph includes driver and supervisor. An owner graph contains its
@@ -1033,11 +1034,9 @@ Three corrections to earlier proposals require explicit scope review before use:
   subprocess or host display fallback. The display's actual slot/task/protocol
   feasibility remains a native prerequisite.
 
-- AUTH02/03/04 remain mandatory, but their recovery bootstrap is unresolved and
-  execution disabled. The restricted READY supervisor cannot acquire the broker
-  identity, private mount/FD custody or bootstrap filter through a fork. The
-  proposed fork exception is withdrawn without adding privileges. Lifetime12 and
-  snapshot10 are provisional planning ceilings only, conferring no restart grant.
+- PR106 withdrew the impossible post-READY recovery fork. AUTH02/03/04 remain
+  mandatory and unexecuted. The reviewed prestarted recovery design below now
+  fixes the creator and evidence contract; runtime execution remains disabled.
 
 The bootstrap contract specifies closed `start`, `ready`, `stop`, `fixed_failure`,
 `prepare`, case-proposal/cancellation/report and transfer-ACK observation payloads.
@@ -1122,9 +1121,9 @@ K02/K03/A08 controls have explicit transaction/ordering bindings. The two-thread
 fixtures retain per-connection safety and configuration; Python documents
 [connection thread ownership](https://docs.python.org/3/library/sqlite3.html).
 Production SQL, old schema invariants, budgets and canonical obligations are
-unchanged. Independent review of this full proposal and the three scope corrections
-is pending. The next action is that review and a design commit decision, before
-production implementation; nothing is committed, pushed or merged automatically.
+unchanged. PR106 published the corrected design at merge834c9da. The recovery
+contract below is a later bounded design amendment; implementation, runtime proof
+and native acceptance remain separate gates.
 
 ## Evidence and the exact 19-obligation mapping
 
@@ -1212,10 +1211,10 @@ requires an explicit reviewed scope update before use.
 
 ## Review corrections and design-only publication
 
-Recovery allocation is an unresolved design prerequisite, not a functioning
-replacement mechanism. AUTH02/03/04 stay pending with their exact planned nodes.
-No post-READY clone/fork privilege is granted. Before implementation, separately
-review a coherent identity/mount/FD/filter/bootstrap authority path.
+PR106 left recovery allocation unresolved after withdrawing an impossible
+replacement mechanism. The later reviewed contract below supplies a finite
+prestarted design. AUTH02/03/04 retain their exact nodes and remain unexecuted.
+No post-READY clone/fork privilege or native execution is granted.
 
 Progress now has authenticated closed reports on existing connector, operation
 and service supervisor channels. Live subject/session/epoch/runtime and sample
@@ -1239,3 +1238,92 @@ null completion claims. There is no mutation/audit event or restored grant.
 The latest user authorization supersedes earlier same-PR/no-contract-only-merge
 wording in this draft. This publication is design-only; independent review and
 required CI remain mandatory. Implementation/native/Stage4 acceptance stay false.
+
+
+## Reviewed recovery bootstrap contract
+
+`recovery_bootstrap_contract` is the exact bounded design for AUTH02/03/04.
+Independent protocol/provenance and accounting reviews covered this amendment.
+Its implementation/execution flags remain false. This scope adds no production
+source, tests, credential source or native observation and grants no acceptance.
+
+The existing supervisor creates exactly one recovery-only broker during original
+privileged bootstrap, before its own confinement. Both broker instances use the
+existing broker UID/GID10001, zero capabilities and distinct instance/owner/session
+IDs. The recovery image/filter and private authority mount are established then;
+it receives only its supervisor endpoint and declared storage directory. Its
+confined receive barrier opens no database/journal. Supervisor observes SIGSTOP
+through its birth pidfd before the initial broker may open/create the store.
+This explicitly permits two broker processes in these three terminal fixtures,
+with one store user at a time; all other cases retain one broker. It is not an
+extra general launcher or a post-READY fork exception.
+
+Only after actual original-owner graph closure may supervisor consume its sole
+activation, recheck the stop, send SIGCONT and observe the actual continued event.
+Recovery then receives the closed activation packet and starts its fresh observer
+session. Its one challenge obtains authenticated historical provenance and fresh
+cleanup bindings before SQLite open. Recovery validates the same store/history,
+executes existing recover_owner/close_lease transactions, and performs read-only
+lookup. It cannot reserve/release, reconnect, resend, replenish or restart.
+
+The five exact packet payloads are prepared, activate, challenge, response and
+refused under the recovery prefix. Existing fixed-failure/monotone-stop and public
+record transports have explicit recovery endpoints. All fields are mandatory,
+closed and typed; response lists at most three separately validated binding IDs.
+Flattened control receipts preserve the existing physical nesting-depth3 limit.
+No extra public bundle member, arbitrary transcript or opaque extension is added.
+
+Supervisor continuously retains actual birth pidfds, original wait events and
+immutable instance membership. Original records retain their original observer
+sessions/times. Typed termination records prove actual reaping; process identity
+alone does not. Fresh recovery bindings require a current terminal-state and
+root-descriptor/transfer audit by that same live monitor. Canonical execution-graph
+identity ancestors may support exact owner/operation subsets; they never stand
+for whole-graph cleanup. Historical records delivered to the bounded read-only
+recovery cache cannot enter its live authority registry or be republished.
+
+The only cross-session authority exception is fresh graph_closed -> fresh
+recovery_closure_binding -> immutable original closure/member/wait provenance.
+An old action, approval, TLS, result or progress reference gains no new permission.
+AUTH04 looks up its existing closed completion; it creates no duplicate completion
+or operation closure. Unknown delivery remains unknown in AUTH03. AUTH02 retains
+the consumed reservation and refuses the old grant. Supervisor loss destroys this
+live-monitor path; saved receipts cannot reconstruct it.
+
+| Resource | Recovery allocation | Existing limit |
+| --- | --- | --- |
+| Processes / tasks / lifetime processes | 10 / 11 / 10 | 11 / 20 / 12 |
+| Snapshot process / descriptor records | 10 / 94 | 11 / 204 |
+| Phase snapshots | 10 total, at most5 per graph | 10 / 5 |
+| Physical records | 1,070 | 1,075 |
+| Public records including manifest | 1,395 | 1,530 reader cap |
+| Reserved public bytes | 2,909,552 | 4,194,304 |
+| Authority references | At most12 original +3 recovery | 32; no reuse |
+
+Every member has a count and byte reservation, including failures, waits,
+control receipts, bindings and final manifest/result. Physical records are bounded
+to2048 bytes in this profile; complete transport packets remain4096. The ten-slot
+snapshot ledger names every graph/phase. Reaped processes are never assigned a
+new /proc snapshot. Original broker publishes cut/witness evidence; recovery alone
+exports validated authority history and final recovered result, once.
+
+Transport accounting charges every hop, including the historical provenance
+cache: at most3960 seqpacket attempts and four bounded result-pipe frames. These
+are internal serialized-message bounds, separate from network/TLS budgets and
+the4MiB public artifact. Unknown/failed sends consume their allowance, with no
+retry. Failed prefixes remain failed; no cropping or invented late observations.
+
+No deadline restarts: standby consumes the original session/broker allowance,
+and original operation/work/cleanup bounds remain. Exact pidfd wait/signal
+arguments and both direct and indirect signal-producing interfaces are restricted.
+See Linux [waitid semantics](https://man7.org/linux/man-pages/man2/waitid.2.html),
+[inherited seccomp filters](https://man7.org/linux/man-pages/man2/seccomp.2.html)
+and [descriptor-driven signals](https://man7.org/linux/man-pages/man2/F_SETOWN.2const.html).
+The static contract does not prove actual filter, mount, VFS, timing or runtime
+feasibility; those remain mandatory native prerequisites.
+
+The next implementation step requires a separately reviewed literal source/import
+preservation amendment for selected portable modules and tests. This design
+amendment updates only these two design documents and their literal pins in the
+existing preservation test. Historical contracts, SQL semantics,19 obligations,
+29 portable node identities,89 native node identities and global limits remain.

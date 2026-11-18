@@ -1060,7 +1060,8 @@
         "Graph closure disables admission/progress use. Guard result and cleanup references survive solely for terminal observation/persistence until durable operation closure or session end.",
         "Cleanup is reusable read-only only for the same closed graph/subject in current observer session; consumer scope must match.",
         "Owner-wide cleanup must supply separate bound operation-graph references for close_lease; no wildcard scope.",
-        "Session end clears registry; a later owner needs fresh physical observations, never copied references."
+        "Session end clears registry; a later owner needs fresh physical observations, never copied references.",
+        "Recovery cleanup only: current-session graph_closed may resolve a validated current recovery_closure_binding; old physical ancestors remain read-only provenance. Never copy old authority IDs/registry entries. Exact recovery_bootstrap_contract rules and shared allocations apply."
       ],
       "single_use_transitions": [
         [
@@ -1221,7 +1222,8 @@
         "physical_predicates": [
           "Actual trusted monitor confirms complete process/descriptor closure against exact immutable graph registry and physical receipt.",
           "No stored UUID, caller boolean, timeout or process-name lookup substitutes for actual lifecycle proof.",
-          "Fresh observer may inspect old subject owner; scope must exactly match API consumer. Owner-wide closure does not implicitly authorize individual operation closure."
+          "Fresh observer may inspect old subject owner; scope must exactly match API consumer. Owner-wide closure does not implicitly authorize individual operation closure.",
+          "For reviewed recovery profile only, physical_receipt_id resolves current recovery_closure_binding, then its immutable original graph_closure; validate full fresh consumer/continuous monitor/subject membership chain. Normal cases still require direct graph_closure. Owner scope never substitutes for operation scope."
         ],
         "required_payload_fields": [
           "descriptors_closed",
@@ -2421,6 +2423,7 @@
       "host_prerequisite": "Exact supported kernel observations, UID/proc permission model and negative physical witnesses must pass before native readiness.",
       "method": "Hold pidfd from creation; waitid(P_PIDFD, WEXITED|WNOHANG) must report expected exited status and reap actual direct child, retaining PID/start/namespace binding. /proc disappearance alone is insufficient.",
       "no_secret_inspection": "Source/operation validate seals/access internally. Monitor reads /proc status/fd metadata only, never pidfd_getfd or /proc fd opens that duplicate secret objects.",
+      "recovery_profile": "Use exact wait/signal predicates and typed original monitor_termination records in recovery_bootstrap_contract. STOP/CONT do not prove death; no WNOWAIT reap claim. Continuous original monitor plus fresh binding supplies the narrow cleanup-only cross-session path.",
       "root_aliases": "Supervisor/driver/broker never acquire transferred secret/socket copies. Enumerate retained endpoints and pending rights, drain/close rejected rights without reads, confirm exact allowed slots. A living receiver copy prevents whole-graph closure but not sender closure.",
       "success_exit_status": 0,
       "successful_protocol": "Require live transfer_ack_observed from actual operation worker, matching transfer/descriptor and child exit0 from the code path that validated its private ACK and closed aliases. Supervisor does not read private transfer traffic. No observation means no successful closure."
@@ -2456,7 +2459,8 @@
       "Only standard pinned null device aliases may occupy0/1/2; operation result pipe and guard output have their own listed slots. Reviewer has only owned PTY/display, no inherited host terminal.",
       "CLOEXEC on all retained descriptors after bootstrap; expected exec/bootstrap-only resources close before READY. No extra process/helper to manage inherited descriptors.",
       "Ancillary receive must use a predeclared vacant slot/phase and bounded control buffer; exact kernel allocation/remapping and refusal cleanup need implementation proof. The static FD proposal does not claim that SCM_RIGHTS can request an arbitrary destination number.",
-      "Recovery bootstrap is unresolved and execution disabled: identity/mount/FD/filter authority needs separate reviewed design. AUTH02/03/04 remain mandatory and pending; retained allocation ceilings are provisional only."
+      "Recovery bootstrap design is fixed in recovery_bootstrap_contract: one prestarted confined instance, fresh continuous-monitor cleanup binding and finite evidence allocation. AUTH02/03/04 remain mandatory and unexecuted; actual runtime/isolation proof and execution authorization remain pending.",
+      "In the recovery profile, recovery broker instance uses recovery_bootstrap_contract.profile.recovery_slots instead of the original broker table. Supervisor24/25 exist only for this profile. Absent optional slots10/13/15 and broker contender9 stay vacant; all profile fixed-slot unions and snapshot reservations apply."
     ],
     "fd_slots": {
       "broker": {
@@ -2946,6 +2950,16 @@
           "object": "metadata_scratch",
           "phase": "temporary_observation"
         },
+        "24": {
+          "object": "seqpacket",
+          "peer": "recovery_broker_instance",
+          "phase": "recovery_profile_only"
+        },
+        "25": {
+          "object": "pidfd",
+          "peer": "recovery_broker_instance",
+          "phase": "recovery_profile_only"
+        },
         "3": {
           "object": "seqpacket",
           "peer": "driver",
@@ -3001,8 +3015,14 @@
         "review_required_before_use": true
       },
       {
-        "change": "Withdraw impossible supervisor replacement mechanism; recovery bootstrap unresolved and disabled.",
-        "reason": "Fork inherits restricted identity/mount/filter; no coherent recovery authority path exists yet. AUTH02/03/04 unchanged.",
+        "change": "Historical PR106 correction withdrew impossible supervisor replacement. The later reviewed prestarted recovery design is specified separately; execution remains disabled.",
+        "reason": "Historical PR106 rationale: fork inherits restricted identity/mount/filter and that proposed recovery path was incoherent. The later prestarted contract is a separate reviewed design; AUTH02/03/04 and execution gates remain unchanged.",
+        "review_required_before_use": true
+      },
+      {
+        "change": "One finite prestarted recovery broker, closed recovery codecs, continuous-monitor cleanup binding and exact bounded evidence profile.",
+        "design_review": "Independent protocol and accounting reviews passed; runtime still unproved.",
+        "reason": "Supplies creator/identity/mount/filter path before confinement and fresh closure provenance without post-READY fork or restored grants.",
         "review_required_before_use": true
       }
     ],
@@ -3079,6 +3099,21 @@
         "schema": "public_result",
         "wire": "Same bounded closed six-field record. Broker authenticates exclusive guard pipe and wraps result_released observation locally; guard cannot choose a broker/session envelope."
       },
+      "recovery_supervisor:public_evidence_record": {
+        "rights_count": 0,
+        "schema": "public_evidence_contract.transport_record",
+        "subject": "Exact recovery export ownership and provenance-cache rules; all sends charged. Supervisor-to-recovery carries only required original physical ancestors then current bindings. No file import or cache re-export."
+      },
+      "recovery_supervisor:recovery_challenge": {
+        "rights_count": 0,
+        "schema": "recovery_bootstrap_contract.packet_payloads.recovery_challenge",
+        "subject": "Exact closed recovery profile payload and inherited original deadline; no grant."
+      },
+      "recovery_supervisor:recovery_prepared": {
+        "rights_count": 0,
+        "schema": "recovery_bootstrap_contract.packet_payloads.recovery_prepared",
+        "subject": "Exact closed recovery profile payload and inherited original deadline; no grant."
+      },
       "reviewer_broker_authority:approval_recorded": {
         "rights_count": 0,
         "schema": "authority_observation_contract",
@@ -3095,12 +3130,32 @@
         "rights_count": 0,
         "schema": "public_evidence_contract.transport_record",
         "subject": "Validated public records only, producer identity retained. Supervisor adds physical/lifecycle/progress records; driver validates again before writing."
+      },
+      "supervisor_recovery:public_evidence_record": {
+        "rights_count": 0,
+        "schema": "public_evidence_contract.transport_record",
+        "subject": "Exact recovery export ownership and provenance-cache rules; all sends charged. Supervisor-to-recovery carries only required original physical ancestors then current bindings. No file import or cache re-export."
+      },
+      "supervisor_recovery:recovery_activate": {
+        "rights_count": 0,
+        "schema": "recovery_bootstrap_contract.packet_payloads.recovery_activate",
+        "subject": "Exact closed recovery profile payload and inherited original deadline; no grant."
+      },
+      "supervisor_recovery:recovery_refused": {
+        "rights_count": 0,
+        "schema": "recovery_bootstrap_contract.packet_payloads.recovery_refused",
+        "subject": "Exact closed recovery profile payload and inherited original deadline; no grant."
+      },
+      "supervisor_recovery:recovery_response": {
+        "rights_count": 0,
+        "schema": "recovery_bootstrap_contract.packet_payloads.recovery_response",
+        "subject": "Exact closed recovery profile payload and inherited original deadline; no grant."
       }
     },
     "remaining_runtime_requirements": [
       "Independent review of scope corrections and slot feasibility",
       "Actual launcher/source image, syscall/mount/UID/FD/readiness observations and closed runtime lock; no invented measurements",
-      "Recovery bootstrap is unresolved and execution disabled: identity/mount/FD/filter authority needs separate reviewed design. AUTH02/03/04 remain mandatory and pending; retained allocation ceilings are provisional only."
+      "Recovery bootstrap design is fixed in recovery_bootstrap_contract: one prestarted confined instance, fresh continuous-monitor cleanup binding and finite evidence allocation. AUTH02/03/04 remain mandatory and unexecuted; actual runtime/isolation proof and execution authorization remain pending."
     ],
     "status": "proposed_review_pending",
     "types": {
@@ -3245,7 +3300,9 @@
           "connector_supervisor",
           "operation_worker_supervisor",
           "owned_service_supervisor",
-          "fixture_probe_supervisor"
+          "fixture_probe_supervisor",
+          "supervisor_recovery",
+          "recovery_supervisor"
         ],
         "fields": {
           "bootstrap_manifest_sha256": "sha256",
@@ -3458,7 +3515,8 @@
           "supervisor_connector",
           "supervisor_operation_worker",
           "supervisor_owned_service",
-          "supervisor_fixture_probe"
+          "supervisor_fixture_probe",
+          "supervisor_recovery"
         ],
         "fields": {
           "bootstrap_manifest_sha256": "sha256",
@@ -4540,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "cfb1cda92f0ec60d6652656fb37992145ae4eaa464911fffd1f471c893f6bc98",
+  "contract_sha256": "20cd431f53c710232b5a5389ced4531cf437c31d90b28ecc3288986984f5b54d",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -5233,23 +5291,29 @@
   },
   "design_checkpoint": {
     "implementation_authorized": false,
-    "independent_review": "pending",
-    "recovery_design": "unresolved_execution_disabled",
+    "independent_review": "PR106 design publication and recovery protocol/accounting independently reviewed. Actual implementation/runtime/native gates remain pending.",
+    "recovery_design": "reviewed_prestarted_design_execution_disabled",
     "remaining_runtime_proofs": [
       "Concrete syscall argument filters and bootstrap/FD behavior",
       "Actual UID/namespace/mount/image/display limits",
       "Physical quota/inode/FSIZE denials on disposable owned allocation",
       "Actual source/connector/guard lifecycle and cross-process observation proofs",
       "Complete measured execution lock and exact test collection",
-      "Recovery bootstrap is unresolved and execution disabled: identity/mount/FD/filter authority needs separate reviewed design. AUTH02/03/04 remain mandatory and pending; retained allocation ceilings are provisional only."
+      "Recovery bootstrap design is fixed in recovery_bootstrap_contract: one prestarted confined instance, fresh continuous-monitor cleanup binding and finite evidence allocation. AUTH02/03/04 remain mandatory and unexecuted; actual runtime/isolation proof and execution authorization remain pending."
     ],
     "scope_corrections_require_review": true,
-    "status": "corrected_design_draft_review_pending",
+    "status": "design_reviewed_runtime_unproved",
     "stop_boundary": "Conditional design-only publication authorized by user after clean independent review and required checks. Implementation and native execution remain gated."
   },
   "execution_lock": null,
+  "historical_PR106": {
+    "merge_commit": "834c9da363efb4a2b0199efdcc889ca18eb622e5",
+    "merged": true,
+    "number": 106,
+    "scope": "Original corrected design publication"
+  },
   "implementation_plan": {
-    "commit_boundary": "User authorizes corrected reviewed design-only commit/push/merge after checks. No implementation or native acceptance; recovery bootstrap remains unresolved.",
+    "commit_boundary": "PR106 design published at834c9da. Recovery contract amendment is design-only and independently reviewed; production paths and native/acceptance gates remain unauthorized.",
     "concurrent_controls": {
       "S4-A08:revoke_after_release": "Observe actual release COMMIT first, then revoke before/around pre-write progress; cancellation and possibly-sent classification remain, no late success.",
       "S4-K02:duplicate_consume": "Two original live calls to release for one lease/ref, actual transaction boundary; exactly one winning release/dispatch, loser refused.",
@@ -6110,7 +6174,7 @@
     ]
   },
   "implementation_ready": false,
-  "intended_PR": 106,
+  "intended_PR": null,
   "limits": {
     "active_operations": 1,
     "broker_ms": 60000,
@@ -6142,7 +6206,7 @@
   },
   "native_execution_ready": false,
   "new_execution_authorized": false,
-  "next_step": "Independent review of four design corrections; recovery mechanism explicitly unresolved. Publish design only after required review/checks; no implementation/native acceptance.",
+  "next_step": "Validate reviewed recovery amendment and exact preservation pins; then prepare separately reviewed literal portable source/import preservation scope. Runtime/implementation/native acceptance remain pending; no closed S4.2c reruns.",
   "operation": {
     "automatic_retries": 0,
     "catalog_registration": false,
@@ -6188,7 +6252,8 @@
       "Issuer must be the declared live role authenticated by channel or local trusted observation. Self-reported booleans from an untrusted producer never replace kernel evidence.",
       "Metadata digests are over domain-separated canonical records with deterministic ordering and exact counts. Digest projection and public export schema remain pending; no hash of raw credential/TLS/output.",
       "Evidence collection must not acquire secret FD copies in driver/supervisor/broker. Required observations that cannot be made inside allowed custody block readiness.",
-      "No graph-closure record can claim its observer reaped. Execution-wide final supervisor shutdown is separately observed by driver."
+      "No graph-closure record can claim its observer reaped. Execution-wide final supervisor shutdown is separately observed by driver.",
+      "Recovery profile overrides same-graph/session lookup solely for declared canonical-E birth/death ancestry and fresh recovery_closure_binding->original closure/member/wait chain. Exact immutable owner/operation subsets remain mandatory; execution identity is never cleanup scope. All other original cross-checks remain."
     ],
     "encoding": "Canonical ASCII JSON; reject duplicate/unknown/missing fields, wrong scalar types, noncanonical enums and noninteger numbers. Null only for explicitly optional fields with cross-field permission.",
     "envelope_fields": {
@@ -6225,6 +6290,7 @@
       "max_snapshots_per_graph": 5,
       "max_socket_receipts_per_operation": 1,
       "max_source_receipts_per_operation": 1,
+      "recovery_profile": "Exact10-slot schedule,94 descriptor/10 process records per snapshot,1070-record/2048-byte physical profile and explicit M/P/R ancestry rules in recovery_bootstrap_contract. No duplicate phase, no dead-process snapshot, no cap reset. Same-session rule has only the declared cleanup/canonical-identity ancestry exceptions.",
       "snapshot_phases": [
         "ready",
         "socket_transferred",
@@ -6266,7 +6332,47 @@
           "owner_recovery"
         ]
       },
+      "control_kind_activate": {
+        "const": "recovery_activate"
+      },
+      "control_kind_challenge": {
+        "const": "recovery_challenge"
+      },
+      "control_kind_fixed_failure": {
+        "const": "fixed_failure"
+      },
+      "control_kind_prepared": {
+        "const": "recovery_prepared"
+      },
+      "control_kind_refused": {
+        "const": "recovery_refused"
+      },
+      "control_kind_response": {
+        "const": "recovery_response"
+      },
       "credential_size": "Integer1..64; exact declared fixture length; exclude bool/float.",
+      "exit_code": {
+        "enum": [
+          "CLD_EXITED",
+          "CLD_KILLED",
+          "CLD_DUMPED"
+        ]
+      },
+      "exit_status": "Integer0..255; no bool/float. Interpret only with exit_code.",
+      "failure_reason": {
+        "enum": [
+          "bootstrap_refused",
+          "binding_refused",
+          "protocol_refused",
+          "deadline",
+          "resource_limit",
+          "unexpected_exit",
+          "authority_unavailable"
+        ]
+      },
+      "false": {
+        "const": false
+      },
       "fd": "Integer0..2147483647, excluding bool/float; membership in exact runtime FD-slot table required, not merely numeric range.",
       "fd_count": "Integer0..204, excluding bool/float.",
       "fixture_id": {
@@ -6280,6 +6386,13 @@
         "enum": [
           "operation_graph",
           "owner_graph"
+        ]
+      },
+      "lifecycle_state": {
+        "enum": [
+          "stopped",
+          "precontinue",
+          "continued"
         ]
       },
       "loopback": {
@@ -6317,6 +6430,17 @@
         "const": "read_only"
       },
       "receipt_id_set": "Unique canonical UUID4 identifiers, max11; references resolve within this session and exact graph manifest.",
+      "recovery_reason": {
+        "enum": [
+          "binding_refused",
+          "bootstrap_refused",
+          "closure_unproved",
+          "deadline",
+          "resource_limit",
+          "unexpected_transition",
+          "authority_unavailable"
+        ]
+      },
       "role": {
         "enum": [
           "driver",
@@ -6342,6 +6466,26 @@
         "const": 9443
       },
       "sha256": "Exactly64 lowercase hex characters over validated public metadata only.",
+      "sigchld": {
+        "const": "SIGCHLD"
+      },
+      "signal": {
+        "enum": [
+          "SIGSTOP",
+          "SIGCONT"
+        ]
+      },
+      "stage": {
+        "enum": [
+          "bootstrap",
+          "ready",
+          "reserved",
+          "tls",
+          "released",
+          "exchange",
+          "cleanup"
+        ]
+      },
       "task_count": "Integer1..8; must also satisfy role cap; exclude bool/float.",
       "tcp": {
         "const": "tcp"
@@ -6352,6 +6496,14 @@
       "u64": "Integer0..18446744073709551615, excluding bool/float.",
       "uid_gid": "Integer0..4294967294, excluding bool/float; exact declared role binding required.",
       "uuid4": "Canonical lowercase UUID4; full-string match; no null unless explicitly marked optional.",
+      "uuid_list10": "Array1..10 unique UUID4 values, sorted ASCII; no nulls.",
+      "uuid_list3": "Array0..3 unique UUID4 values, sorted ASCII; no nulls.",
+      "wait_code": {
+        "enum": [
+          "CLD_STOPPED",
+          "CLD_CONTINUED"
+        ]
+      },
       "write_grow_shrink_seal": {
         "const": "write_grow_shrink_seal"
       },
@@ -6435,7 +6587,47 @@
           "Expected/reaped counts equal exact subject membership. All members have observed termination/reaping, all root-side copies closed, no transfer in flight. Producer must not be a member.",
           "Underlying validated live receipt sets and kernel closure observations remain available in current bounded registry; saved receipts/digests alone cannot establish cleanup.",
           "Operation scope binds current operation_id; owner scope has null operation_id and covers every subject-owner operation. Never substitute owner closure for an operation closure.",
-          "authority_observation_contract.graph_closed physical_receipt_id resolves to this receipt; graph_id and scope must match exactly."
+          "authority_observation_contract.graph_closed physical_receipt_id resolves to this receipt; graph_id and scope must match exactly.",
+          "Recovery-profile member identity may reference exact canonical E birth identity or matching same-graph ready observation with that birth ancestry. Validate immutable subject subset and original actual wait/root-copy provenance; no synthesized reaping and no additional closure receipt."
+        ]
+      },
+      "monitor_termination": {
+        "additional_fields": false,
+        "fields": {
+          "birth_process_receipt_id": "uuid4",
+          "exit_code": "exit_code",
+          "exit_status": "exit_status",
+          "instance_id": "uuid4",
+          "monitor_session_id": "uuid4",
+          "pidfd_reference": "uuid4",
+          "reaped_monotonic_ns": "monotonic_ns",
+          "si_pid": "pid",
+          "si_signo": "sigchld",
+          "si_uid": "uid_gid"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "driver"
+        ],
+        "required_fields": [
+          "birth_process_receipt_id",
+          "exit_code",
+          "exit_status",
+          "instance_id",
+          "monitor_session_id",
+          "pidfd_reference",
+          "reaped_monotonic_ns",
+          "si_pid",
+          "si_signo",
+          "si_uid"
+        ],
+        "rules": [
+          "One per actually reaped direct child, at most10 total including driver observation of supervisor. Use retained birth pidfd and actual waitid WEXITED outcome, never saved PID lookup.",
+          "Issuer/parent matches birth receipt. Original observer session/time remains unchanged forever. A signal death can prove termination but cannot satisfy successful source_closed/connector_closed.",
+          "Live monitor keeps birth handle and reaping provenance through any recovery challenge; public record alone confers no live authority.",
+          "Fields use recovery_bootstrap_contract.types plus the existing physical envelope. Complete canonical ASCII record <=2048 bytes in this profile; no extra fields or null payload fields. Preserve explicitly nullable envelope operation_id. Refuse before oversize emission.",
+          "Require actual waitid si_signo=SIGCHLD, si_pid equal bound child PID in observer namespace (never0), si_uid equal child real UID, not supervisor UID. Return0 with si_pid0 is not an event. Reaping uses WEXITED without WNOWAIT.",
+          "Recovery-profile ancestry exception: birth_process_receipt_id may resolve original E/ready bootstrap-M identity while this wait retains its actual original session. Exact immutable instance membership, pidfd/parent/epoch/runtime bindings remain mandatory; one wait record can back multiple declared containing graph subsets, never an undeclared graph."
         ]
       },
       "process_identity": {
@@ -6484,6 +6676,394 @@
           "Supervisor observes children; driver observes supervisor. Driver identity is bound by outer launcher custody, not a self-verified child receipt.",
           "PID coordinates must be visible to the observer; no zero/unmapped fallback. Bind process birth to boot/start and held pidfd, not PID alone.",
           "Process/parent/image/credentials must match manifest; task_count <= role cap. A process receipt is a point-in-time observation, not proof of later reaping."
+        ]
+      },
+      "recovery_closure_binding": {
+        "additional_fields": false,
+        "fields": {
+          "activation_id": "uuid4",
+          "challenge_id": "uuid4",
+          "consumer_owner_id": "uuid4",
+          "consumer_session_id": "uuid4",
+          "evaluated_monotonic_ns": "monotonic_ns",
+          "graph_closure_receipt_id": "uuid4",
+          "monitor_session_id": "uuid4",
+          "root_aliases_closed": "true",
+          "subject_graph_id": "uuid4",
+          "terminal_pidfds_verified": "true",
+          "termination_receipt_ids": "uuid_list10",
+          "transfers_empty": "true"
+        },
+        "issuer_roles": [
+          "supervisor"
+        ],
+        "required_fields": [
+          "activation_id",
+          "challenge_id",
+          "consumer_owner_id",
+          "consumer_session_id",
+          "evaluated_monotonic_ns",
+          "graph_closure_receipt_id",
+          "monitor_session_id",
+          "root_aliases_closed",
+          "subject_graph_id",
+          "terminal_pidfds_verified",
+          "termination_receipt_ids",
+          "transfers_empty"
+        ],
+        "rules": [
+          "One fresh binding per exact old graph per sole challenge, at most3. Envelope observer_session_id and consumer_session_id equal resumed recovery session; envelope subject_owner_id remains old owner. phase=closed; envelope graph_id=subject_graph_id and observed time=evaluated time.",
+          "Issuer is the same continuously live original supervisor outside subject membership. Actual held-birth-pidfd terminal checks and current exact root-copy/transfer audit occur after challenge. All required original reaping provenance remains in live monitor memory.",
+          "Exact termination ID set covers every original graph member once; each birth receipt and original closure retain original session/timestamps. Every ancestor link matches immutable case/runtime/epoch/instance/graph. No second waitid reaping or new /proc snapshot for dead members.",
+          "A referenced original closure is historical evidence of actual prior closure, not current authority. This fresh binding plus unbroken live kernel custody is the only recovery cross-session exception. Missing handle/provenance, supervisor restart or contradiction refuses.",
+          "No copy or renaming of old broker authority registry entries. Existing closed AUTH04 lease/result stays immutable and lookup-only; nonclosed leases each require their exact operation binding, never only owner binding.",
+          "Fields use recovery_bootstrap_contract.types plus the existing physical envelope. Complete canonical ASCII record <=2048 bytes in this profile; no extra fields or null payload fields. Preserve explicitly nullable envelope operation_id. Refuse before oversize emission.",
+          "Original closure/member/death links use the explicit canonical-E ancestry exception where needed; graph membership remains exact owner/operation subset. Historical ancestors arrive through the bounded read-only authenticated cache, with unchanged envelopes; only this fresh binding can feed current cleanup registration."
+        ]
+      },
+      "recovery_control_activate": {
+        "additional_fields": false,
+        "fields": {
+          "activation_id": "uuid4",
+          "case_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "continued_receipt_id": "uuid4",
+          "cut_transaction_id": "uuid4",
+          "engagement_id": "uuid4",
+          "message_kind": "control_kind_activate",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "owner_closure_receipt_id": "uuid4",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "activation_id",
+          "case_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "continued_receipt_id",
+          "cut_transaction_id",
+          "engagement_id",
+          "message_kind",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "owner_closure_receipt_id",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_control_challenge": {
+        "additional_fields": false,
+        "fields": {
+          "activation_id": "uuid4",
+          "case_id": "uuid4",
+          "challenge_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "engagement_id": "uuid4",
+          "message_kind": "control_kind_challenge",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "owner_closure_receipt_id": "uuid4",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "activation_id",
+          "case_id",
+          "challenge_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "engagement_id",
+          "message_kind",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "owner_closure_receipt_id",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_control_fixed_failure": {
+        "additional_fields": false,
+        "fields": {
+          "bootstrap_manifest_sha256": "sha256",
+          "case_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "graph_id": "uuid4",
+          "message_kind": "control_kind_fixed_failure",
+          "owner_id": "uuid4",
+          "reason": "failure_reason",
+          "role": "role",
+          "role_instance_id": "uuid4",
+          "runtime_lock_sha256": "sha256",
+          "session_deadline_ns": "monotonic_ns",
+          "session_id": "uuid4",
+          "stage": "stage"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "bootstrap_manifest_sha256",
+          "case_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "graph_id",
+          "message_kind",
+          "owner_id",
+          "reason",
+          "role",
+          "role_instance_id",
+          "runtime_lock_sha256",
+          "session_deadline_ns",
+          "session_id",
+          "stage"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_control_prepared": {
+        "additional_fields": false,
+        "fields": {
+          "bootstrap_manifest_sha256": "sha256",
+          "case_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "database_open": "false",
+          "engagement_id": "uuid4",
+          "fd_layout_sha256": "sha256",
+          "filter_sha256": "sha256",
+          "image_sha256": "sha256",
+          "message_kind": "control_kind_prepared",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "bootstrap_manifest_sha256",
+          "case_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "database_open",
+          "engagement_id",
+          "fd_layout_sha256",
+          "filter_sha256",
+          "image_sha256",
+          "message_kind",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_control_refused": {
+        "additional_fields": false,
+        "fields": {
+          "activation_id": "uuid4",
+          "case_id": "uuid4",
+          "challenge_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "engagement_id": "uuid4",
+          "message_kind": "control_kind_refused",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "reason": "recovery_reason",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "activation_id",
+          "case_id",
+          "challenge_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "engagement_id",
+          "message_kind",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "reason",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_control_response": {
+        "additional_fields": false,
+        "fields": {
+          "activation_id": "uuid4",
+          "binding_receipt_ids": "uuid_list3",
+          "case_id": "uuid4",
+          "challenge_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "engagement_id": "uuid4",
+          "message_kind": "control_kind_response",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "activation_id",
+          "binding_receipt_ids",
+          "case_id",
+          "challenge_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "engagement_id",
+          "message_kind",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_lifecycle": {
+        "additional_fields": false,
+        "fields": {
+          "bootstrap_manifest_sha256": "sha256",
+          "fd_layout_sha256": "sha256",
+          "filter_sha256": "sha256",
+          "monitor_session_id": "uuid4",
+          "observed_monotonic_ns": "monotonic_ns",
+          "pidfd_reference": "uuid4",
+          "recovery_instance_id": "uuid4",
+          "si_pid": "pid",
+          "si_signo": "sigchld",
+          "si_uid": "uid_gid",
+          "signal": "signal",
+          "state": "lifecycle_state",
+          "wait_code": "wait_code"
+        },
+        "issuer_roles": [
+          "supervisor"
+        ],
+        "required_fields": [
+          "bootstrap_manifest_sha256",
+          "fd_layout_sha256",
+          "filter_sha256",
+          "monitor_session_id",
+          "observed_monotonic_ns",
+          "pidfd_reference",
+          "recovery_instance_id",
+          "si_pid",
+          "si_signo",
+          "si_uid",
+          "signal",
+          "state",
+          "wait_code"
+        ],
+        "rules": [
+          "At most3 records in order stopped,precontinue,continued, one each, same birth pidfd and bootstrap manifest. stopped/precontinue require CLD_STOPPED/SIGSTOP and current stopped one-task state; continued requires actual CLD_CONTINUED/SIGCONT.",
+          "Initial waitid(P_PIDFD,WSTOPPED|WNOHANG|WNOWAIT) retains the stop notification. Precontinue rechecks current stopped state then consumes that notification with WSTOPPED|WNOHANG before the one SIGCONT; missing/mismatched notification refuses.",
+          "Bind actual observations and trusted filter installation provenance; a digest or Seccomp mode is not a proof of installed filter contents. Timestamps equal physical-envelope observation times; no synthetic reaping/stop receipt.",
+          "Fields use recovery_bootstrap_contract.types plus the existing physical envelope. Complete canonical ASCII record <=2048 bytes in this profile; no extra fields or null payload fields. Preserve explicitly nullable envelope operation_id. Refuse before oversize emission.",
+          "Require actual waitid si_signo=SIGCHLD, si_pid equal bound child PID in observer namespace (never0), si_uid equal child real UID, not supervisor UID. Return0 with si_pid0 is not an event. Reaping uses WEXITED without WNOWAIT."
         ]
       },
       "socket_custody": {
@@ -6706,7 +7286,7 @@
       "physical.jsonl": {
         "max_bytes": 3145728,
         "max_records": 1075,
-        "rule": "Ordinary cases at most5 phase snapshots; explicit restart cases at most10 across old/new graphs. Each graph phase used once; records deduplicated and total1075/3MiB caps still apply. No cap relaxation by creating another graph.",
+        "rule": "Ordinary cases at most5 phase snapshots; explicit restart cases at most10 across old/new graphs. Each graph phase used once; records deduplicated and total1075/3MiB caps still apply. No cap relaxation by creating another graph. Recovery uses the exact1070-record allocation and2048-byte record sublimit, including new lifecycle, termination, control and fresh binding records.",
         "schema": "physical_receipt_contract"
       },
       "progress.jsonl": {
@@ -6851,7 +7431,12 @@
       "Verify canonical encoding, exact hashes, all typed crosslinks and count/order rules. Reconstruct reservation/release/completion state with existing lease/event invariants; do not execute SQL, contact fixtures, import credentials or turn persisted observations into live authority.",
       "Useful result requires verified socket/TLS, release, request progress, matching guard result, completed lease and actual closure records. Null/unknown counters cannot satisfy zero-read/zero-request negatives.",
       "Every named variant needs its existing required_actual_progress and positive-control predicate. Startup refusal cannot satisfy a later boundary; preserve failures under unique owned output IDs.",
-      "Original Python/CLI observations are immutable, V02 aggregates them. V03/V04 copies apply the exact existing mutation inventory; coherent hostile-host rewriting remains outside the threat model."
+      "Original Python/CLI observations are immutable, V02 aggregates them. V03/V04 copies apply the exact existing mutation inventory; coherent hostile-host rewriting remains outside the threat model.",
+      "For AUTH02/03/04 recovery profile only: Offline reader validates structure and provenance consistency only; it never creates live authority from evidence. All existing owned-file, count, byte, monotonic-order and physical-proof requirements remain.",
+      "For AUTH02/03/04 recovery profile only: Require selected AUTH node/profile, exact two broker instances and declared graph membership; absent display/probe/concurrent threads; all phases and slot unions obey profile. Do not fabricate snapshots of exited processes.",
+      "For AUTH02/03/04 recovery profile only: Validate prepared->stopped before initial store-open, old durable cut and owner closure before continue/activation, actual continued wait before activation message, challenge before fresh binding and complete response before recovery SQL. Records needed for these order facts must be present; startup refusal cannot satisfy a late witness.",
+      "For AUTH02/03/04 recovery profile only: Verify binding current consumer/session/epoch/runtime, same original supervisor incarnation and monitor session, original closure/member/death exact graph sets, birth pidfd identities, historical original timestamps and new evaluation after challenge. Reject session relabelling, copied authority references, missing deaths, wrong scope or inconsistent current terminal/root-copy predicates.",
+      "For AUTH02/03/04 recovery profile only: A failed or incomplete record sequence is retained with its actual failed/interrupted context and cannot satisfy recovery success. AUTH04 must link original exchange/completion and unchanged lookup output; AUTH02/03 preserve counters and old-grant refusal/uncertainty."
     ],
     "record_dispatch": {
       "binding": [
@@ -6899,7 +7484,7 @@
         "transaction_witness"
       ]
     },
-    "registry_limits": "Authority observation max32 unchanged. Physical records max1075 per case; ordinary cases at most5 snapshots total, AUTH02/03/04 at most10 across old/new graphs, with each graph phase used once and existing per-snapshot11process/204FD caps. No duplicate republishing or unbounded history. Aggregate bytes/records still refuse overflow.",
+    "registry_limits": "Authority observation max32 unchanged. Physical records max1075 per case; ordinary cases at most5 snapshots total, AUTH02/03/04 at most10 across old/new graphs, with each graph phase used once and existing per-snapshot11process/204FD caps. No duplicate republishing or unbounded history. Aggregate bytes/records still refuse overflow. Recovery profile uses the tighter closed allocation and ten-slot schedule in recovery_bootstrap_contract, without changing any global/member cap.",
     "sentinel_checks": "Scan every released/retained public artifact against finite public synthetic values and literal/JSON-escaped/base64 forms. Emit only fixed pass/fail/count; never echo matched bytes, raw substring, or credential-derived digest. This supplements the grammar and proves no universal redaction.",
     "status": "proposed_review_pending",
     "transaction_witness": {
@@ -7159,6 +7744,7 @@
   "readiness": [
     {
       "id": "design_review",
+      "progress": "PR106 design publication complete. Recovery protocol/provenance and accounting amendment independently reviewed; implementation/runtime validation remains pending.",
       "requirement": "Review selected design and exact19-parent coverage.",
       "status": "pending"
     },
@@ -7202,6 +7788,1250 @@
       "status": "pending"
     }
   ],
+  "recovery_bootstrap_contract": {
+    "accounting": {
+      "allocation_rules": [
+        "Exactly ten lifetime processes: original nine-role terminal base plus one prestarted recovery broker. No display/probe, concurrent-authority thread, replacement process, new operation permission, retry or reactivation.",
+        "One original and one recovery broker task; reviewer at most two. Simultaneous tasks at most eleven. Existing global ceilings remain 11 processes,20 tasks,12 lifetime processes,204 FDs.",
+        "Snapshot records enumerate only actual declared fixed slots at their actual observation time. Loader/transient descriptors count against existing runtime caps but cannot be represented as invented READY table entries. Failed pre-confinement cases retain failure/prefix evidence and cannot claim an accepted snapshot.",
+        "One global ledger allows at most ten snapshots across every graph, at most five per graph, and at most one per graph/phase. Overlapping graph scopes consume separate actual observations and snapshot allowances. No ten-per-graph multiplication.",
+        "Selected profile reserves1070 physical records including all6 control projections,128 authority,64 bindings,32 observations,48 progress,50 transaction/lookup,context1,result1,manifest1:1395 total including manifest. Sum byte reservations2909552, below4194304, each member below its existing cap.",
+        "Physical record<=2048, public binding<=1024, progress<=1024, transaction witness/lookup<=2048, authority/observation<=3072 bytes; JSONL adds one LF. Context<=3072, result<=1024, manifest<=4096 bytes. Validate size before allocation/publication; no truncation or cap increase.",
+        "Failed prefixes share these reservations. Reserve fixed failure/context/result/manifest space before first emission. Failed/unknown send attempts spend their slots; no duplicate or replay earns more capacity. A partial bundle is reported incomplete/invalid, never a successful witness.",
+        "All32 observation records across original and recovery sessions share one export allowance. Allocate at most12 original live entries and3 recovery cleanup entries (old owner plus up to2 exact operation graphs); no slot recycling. Any additional entry required by an implementation needs review before it can run.",
+        "Mutation calls share12 attempts including refusals, with at most4 actual witness barriers/call as listed;2 read-only lookup observations share the50 transaction records. New code must prove each selected case fits; overflow refuses, never silently skips required history."
+      ],
+      "fixed_fd_union": {
+        "connector": 6,
+        "driver": 8,
+        "fixture_source": 9,
+        "operation_worker": 10,
+        "original_broker": 12,
+        "owned_service": 7,
+        "recovery_broker": 8,
+        "release_guard": 5,
+        "reviewer": 6,
+        "slot_details": {
+          "original_broker": "0..12 excluding9",
+          "recovery_broker": "0,1,2,3,7,8,10,11",
+          "reviewer": "0,1,2,3,4,6",
+          "supervisor": "0..25 excluding10,13,15"
+        },
+        "supervisor": 23,
+        "total": 94
+      },
+      "non_evidence_seqpacket_allocation": [
+        [
+          "case_proposal",
+          1
+        ],
+        [
+          "driver_cancel",
+          1
+        ],
+        [
+          "public_case_report",
+          1
+        ],
+        [
+          "original_start",
+          6
+        ],
+        [
+          "original_ready",
+          6
+        ],
+        [
+          "fixed_failure_original6_recovery1_supervisor1",
+          8
+        ],
+        [
+          "stop_original6_recovery1",
+          7
+        ],
+        [
+          "review_action",
+          2
+        ],
+        [
+          "prepare",
+          2
+        ],
+        [
+          "reservation_committed_to_worker_and_supervisor",
+          4
+        ],
+        [
+          "release_committed_to_worker_and_source",
+          4
+        ],
+        [
+          "cancel_to_worker_and_source",
+          4
+        ],
+        [
+          "exchange_committed",
+          2
+        ],
+        [
+          "connect_reserved",
+          2
+        ],
+        [
+          "source_closed",
+          2
+        ],
+        [
+          "connector_closed",
+          2
+        ],
+        [
+          "transfer_ack_observed",
+          4
+        ],
+        [
+          "socket_transfer",
+          2
+        ],
+        [
+          "credential_transfer",
+          2
+        ],
+        [
+          "private_transfer_ack",
+          4
+        ],
+        [
+          "recovery_prepared",
+          1
+        ],
+        [
+          "recovery_activate",
+          1
+        ],
+        [
+          "recovery_closure_challenge",
+          1
+        ],
+        [
+          "recovery_closure_response_or_refused",
+          1
+        ]
+      ],
+      "physical_record_allocation": {
+        "actual_terminal_or_monitor_loss": 10,
+        "existing_cap": 1075,
+        "graph_closure": 4,
+        "recovery_closure_binding": 3,
+        "recovery_control_received_projections": 6,
+        "rules": [
+          "Snapshot ceiling is ten times (ten process records +94 fixed descriptor slots)=1040; actual graph membership can only reduce it. Each observed FD incarnation/phase emits once, never duplicate sampling in a loop.",
+          "Four graph closures means original owner, at most two exact original operation graphs, and recovery owner; one closure per graph. No supervisor self-closure or substituted owner-for-operation closure.",
+          "Four custody slots conservatively cover one socket and one source receipt per at-most-two allocated operations; original request/connection/read caps still independently prevent extra work.",
+          "Three closure bindings mean old owner plus at most two old operations. Each has one fresh reference in new registry; historical physical closure stays immutable. AUTH04 already-closed operation does not get a second operation closure.",
+          "Ten terminal/monitor-loss slots are reservations for actual observations by surviving authorized observers. A dead observer never self-reports; absent terminal observations remain absent, and no fictitious closed-process /proc snapshot is emitted.",
+          "Six recovery control projection slots cover prepared,activate,challenge,response-or-refused,and at most two fixed failures. They are receipt projections of exact actual packets, not additional successful handshakes. No projection of an assumed send/delivery."
+        ],
+        "snapshot_descriptor_records": 940,
+        "snapshot_process_records": 100,
+        "socket_and_source_custody": 4,
+        "spare_unallocated": 5,
+        "stopped_precontinue_continued_lifecycle": 3,
+        "total": 1070
+      },
+      "progress_allocation": {
+        "producers": 3,
+        "rules": "Failure/partial/closure milestones consume the same16 producer slots; no per-loop samples or extra final record. Preserve unknown counters; never manufacture zero after producer loss.",
+        "samples_per_producer": 16,
+        "total": 48
+      },
+      "public_member_allocations": [
+        {
+          "canonical_record_max_bytes": 2048,
+          "existing_bytes_cap": 3145728,
+          "existing_records_cap": 1075,
+          "name": "physical.jsonl",
+          "records": 1070,
+          "reserved_bytes_including_lf": 2192430
+        },
+        {
+          "canonical_record_max_bytes": 3072,
+          "existing_bytes_cap": 524288,
+          "existing_records_cap": 128,
+          "name": "authority.jsonl",
+          "records": 128,
+          "reserved_bytes_including_lf": 393344
+        },
+        {
+          "canonical_record_max_bytes": 1024,
+          "existing_bytes_cap": 131072,
+          "existing_records_cap": 64,
+          "name": "bindings.jsonl",
+          "records": 64,
+          "reserved_bytes_including_lf": 65600
+        },
+        {
+          "canonical_record_max_bytes": 3072,
+          "existing_bytes_cap": 131072,
+          "existing_records_cap": 32,
+          "name": "observations.jsonl",
+          "records": 32,
+          "reserved_bytes_including_lf": 98336
+        },
+        {
+          "canonical_record_max_bytes": 1024,
+          "existing_bytes_cap": 65536,
+          "existing_records_cap": 64,
+          "name": "progress.jsonl",
+          "records": 48,
+          "reserved_bytes_including_lf": 49200
+        },
+        {
+          "canonical_record_max_bytes": 2048,
+          "existing_bytes_cap": 131072,
+          "existing_records_cap": 64,
+          "name": "transactions.jsonl",
+          "records": 50,
+          "reserved_bytes_including_lf": 102450
+        },
+        {
+          "existing_bytes_cap": 4096,
+          "existing_records_cap": 1,
+          "name": "context.json",
+          "records": 1,
+          "reserved_bytes": 3072
+        },
+        {
+          "existing_bytes_cap": 1024,
+          "existing_records_cap": 1,
+          "name": "result.json",
+          "records": 1,
+          "reserved_bytes": 1024
+        },
+        {
+          "existing_bytes_cap": "bounded by aggregate; no separate existing member cap",
+          "existing_records_cap": 1,
+          "name": "manifest.json",
+          "records": 1,
+          "reserved_bytes": 4096
+        }
+      ],
+      "snapshot_rules": [
+        "One global ten-slot ledger, at most5 per graph and one per graph/phase. Missing/unreached/absent second-operation slots are never emitted or reused for another phase. Every snapshot has at most10 actual process and94 actual descriptor records.",
+        "E/ready captures confined pre-stop recovery identity/table and original process births in bounded bootstrap order. old_owner/ready follows original store open; actual matching member identity records stay immutable. Recovery_owner/ready is after activation, fresh cleanup validation and store open, before first recovery mutation, so actual SQLite descriptors are observed.",
+        "Early exited members use retained birth and actual wait provenance; never emit new /proc identities for them. Snapshots record actual live members and permitted roots at declared barriers, not an atomic fiction.",
+        "No old-owner or recovery-owner closed snapshot is required: their closure receipts use actual wait/root-copy proof plus declared historical member identities. Do not borrow closed-snapshot capacity for extra readiness samples.",
+        "All snapshot observations are independent of control/closure records and count against the same1070 profile reservation, physical1075/3MiB and all public aggregate caps. Transient bootstrap descriptors still count runtime caps; inability to reach declared fixed tables is a retained failed case, never accepted ready evidence."
+      ],
+      "snapshot_slots": [
+        [
+          "execution_graph",
+          "ready"
+        ],
+        [
+          "old_owner_graph",
+          "ready"
+        ],
+        [
+          "old_operation_graph_1",
+          "ready"
+        ],
+        [
+          "old_operation_graph_1",
+          "socket_transferred"
+        ],
+        [
+          "old_operation_graph_1",
+          "credential_transferred"
+        ],
+        [
+          "old_operation_graph_1",
+          "result_released"
+        ],
+        [
+          "old_operation_graph_1",
+          "closed"
+        ],
+        [
+          "old_operation_graph_2",
+          "ready"
+        ],
+        [
+          "old_operation_graph_2",
+          "closed"
+        ],
+        [
+          "recovery_owner_graph",
+          "ready"
+        ]
+      ],
+      "transaction_allocation": {
+        "lookup_attempts": 2,
+        "mutation_call_attempts": 12,
+        "rules": [
+          "Emit only reached actual boundaries; missing intermediate/terminal records stay absent. Terminal outcomes are mutually exclusive. No extra after_begin/before_event_insert emission beyond the four-slot profile.",
+          "All initial and recovery mutation attempts, refused calls, uncertain commits and close_lease attempts share twelve slots. Lookups share two slots and generate no mutation event.",
+          "Up to two close_lease calls remain in twelve. Final recovery-ready update is part of the last allowed transaction, never an unbudgeted call."
+        ],
+        "selected_witness_schedule": [
+          "call_entered",
+          "before_begin",
+          "before_commit",
+          "exactly_one_of_after_commit_before_ack_refused_unknown_commit"
+        ],
+        "total_records": 50,
+        "witnesses_per_attempt": 4
+      },
+      "transport_totals": {
+        "all_seqpacket_attempts": 3960,
+        "bounded_result_pipe_frames": 4,
+        "evidence_seqpacket_attempts": 3890,
+        "extra_authority_producer_to_broker_hops": 32,
+        "historical_cache_seqpacket_attempts": 1070,
+        "max_encoded_packet_bytes": 4096,
+        "max_regular_hops_per_record": 2,
+        "max_serialized_wire_bytes_excluding_kernel_ancillary_and_network_tls": 16224272,
+        "other_seqpacket_attempts": 70,
+        "public_records": 1394,
+        "result_pipe_length_prefix_bytes": 4,
+        "result_pipe_payload_bytes": 1024,
+        "rules": [
+          "Two evidence hops conservatively reserve producer-to-supervisor and supervisor-to-driver for every payload record even when locally generated; authority observations alone may first traverse producer-to-broker, hence32 extra. All new control physical projections are already included among1394 records.",
+          "Response/refused share one mutually exclusive slot. Recovery/supervisor fixed failures use two of total8 failure slots; no extra retry or failure response loop. Proposed recovery stop/fixed-failure edges require declared codec authorization; budgeting is not authorization.",
+          "Per-method control quotas conservatively reserve two original leases. They are not permission for a second credential read, connection or request; all unchanged operation/effect budgets still apply.",
+          "Every physical metadata send consumes the one ingress allowance for its exact receipt. Public forwarding does not allocate a new receipt ID or register a second authority reference.",
+          "Signals and waitid observations are not seqpacket frames. Each actual result pipe has one uint32-length-prefixed frame per allowed result, at most four transmissions across two operations and two pipes.",
+          "An arbitrarily malicious sender is not given permission for unbounded traffic: receiver rejects the first undeclared/over-budget packet, closes the channel and cleans up. These numbers bound the authorized fixed program emission schedule, not raw packets an attacker may attempt before containment. Network TCP/TLS packets and kernel SCM ancillary bytes are separate from serialized evidence/control bytes.",
+          "Additional at-most1070 supervisor->recovery cache deliveries are charged separately. They preserve existing record bytes/IDs and are not exported again or admitted as live authority. Regular publication hops remain separate."
+        ]
+      }
+    },
+    "creation_and_custody": [
+      "Existing supervisor creates recovery child before final supervisor identity/mount/capability/filter drop, with broker UID/GID10001, private same /authority mount, fixed recovery image/filter, zero capabilities/no_new_privs/one task/no controlling terminal. No post-READY creation, exec, mount, identity change or filter relaxation.",
+      "Recovery bootstrap is trusted: install final confinement and enter receive-only barrier without DB/journal/sync open; supervisor observes exact prepared identity and issues SIGSTOP, verifies stop before initial broker opens/creates store. No claim SIGSTOP protects an arbitrary pre-stop program.",
+      "Only broker instances have authority mount/dir handles. Supervisor/driver retain none after bootstrap. Dormant broker directory7 is explicitly allowed; DB8/journal10/sync11 remain absent before response. Phase exclusivity is enforced by trusted state machine plus suspension; writable SQLite capability is not a SQL verb sandbox.",
+      "Recovery image dispatch permits only bounded store validation, recover_owner, close_lease and lookup_operation/export. All reservation, release, adoption, new socket/source, resend and arbitrary SQL calls refuse.",
+      "Existing original roles retain their own UIDs/mounts/FDs; all remain direct supervisor children. Signal/process/descriptor theft paths must be blocked even between same-UID brokers."
+    ],
+    "execution_authorized": false,
+    "export_ownership": {
+      "authority.jsonl": "Only recovery broker exports validated final complete case history, once; original broker does not publish authority member records in these3 selected cases. Unknown store state produces a failed partial bundle, not guessed history.",
+      "failures": "Debit record/byte/send allowance before operation; no retry after uncertain delivery. Freeze a prefix, spend reserved refusal/context/result slots and cleanup. No deletion, replacement, hidden duplicate, silently omitted required record or acceptance of incomplete evidence.",
+      "other_members": "Fixed producer classes retain existing provenance. Original broker sends transaction witnesses/observations before selected death; recovery sends only new witness/lookup/current cleanup records. Supervisor retains each received record once and forwards at most once to driver, plus at most once to the declared read-only recovery provenance cache. Cache records are never republished to driver or registered as live authority; all extra internal sends count. Driver never reconstructs lost messages.",
+      "result.json": "Recovery exports original completed result on AUTH04 only after persisted lookup; otherwise driver emits fixed failed/interrupted result. Guard pipe observations are not extra result.json exports."
+    },
+    "failure_and_time": [
+      "Every state can transition once to unavailable then cleanup; no retry, restart, reconnect, second activation or replenishment. Any ambiguous activation/COMMIT outcome remains unavailable. Fresh owner/event/reservation history is retained even on failure.",
+      "Original monotonic epoch and original30s session/60s broker allocation start at bootstrap including standby time. Each deadline is no later than that bound and original case allocation. Retain original operation5s/work4s/cleanup1s; no new reservation or recovery interval extends any bound.",
+      "Supervisor death loses continuous monitor authority; terminate case and preserve store/journal/failed evidence. No external launcher continuation is implied.",
+      "SQLite handles only its own owned rollback journal. Never delete/repair it or reset counters/revocation/owner quotas. Recovery internal ready state cannot enable disabled operation APIs."
+    ],
+    "implementation_authorized": false,
+    "live_registry_rules": [
+      "Original supervisor creates one monitor_session_id at bootstrap, bound to its own physical incarnation/epoch/runtime and immutable manifests. It retains birth pidfds and actual reaping events continuously, including early source/connector exits. No reconstitution from exported records.",
+      "Old physical records keep original observer_session_id/time; current recovery bindings use the fresh recovery session. This narrowly overrides same-session physical crosslink rules only along binding->original closure->original member/death chain. All case/runtime/epoch/instance/membership checks remain.",
+      "Fresh authority graph_closed payload physical_receipt_id may resolve a valid recovery_closure_binding for current consumer, exact old subject graph and lease scope. Normal graph_closed still resolves direct graph_closure. No other observation kind gains cross-session use.",
+      "Broker creates new observation IDs/envelopes from the actual current channel, after binding/response checks. No imported old observation ID or persisted handle becomes available in its registry. Old and new entries and exported records remain inside the same finite allocation; no eviction/refund.",
+      "Original graph closure has exactly one receipt. Binding is a fresh current evaluation of live continuous custody, not a duplicate closure. Closed AUTH04 operation requires lookup only; nonclosed old leases require exact operation bindings before close_lease.",
+      "Canonical execution-graph E ready birth records identify original instances under bootstrap observer M. Actual death records reference those birth records, preserving their own original observation session. This explicit ancestry exception applies directly to monitor_termination->birth and graph_closure->member references in this recovery profile, not only when traversed from a later binding.",
+      "Owner/operation graph members must be exact immutable subsets of E by instance IDs; closure count and reaping references equal that subset. Canonical E identity does not establish E cleanup and cannot substitute for subject owner/operation closure. A matching later same-graph ready identity may be used with the same E birth/pidfd ancestry; no invented dead-process sample.",
+      "After challenge and before bindings/response, supervisor delivers each necessary original physical ancestor once on supervisor_recovery public_evidence_record, with byte-identical original envelope. R stores them in a separate read-only provenance cache, never the live observation registry. Cache has at most1070 records/2192430 bytes including LF, same case/runtime/epoch and exact immutable manifest membership; any missing/duplicate/oversize/unexpected record refuses. No imported file input.",
+      "The response and its new binding IDs mark completion. R must resolve every required original closure, member identity, descriptor-set/digest backing record and wait record before accepting any binding. Live current terminal/root-copy recheck is still mandatory; cached historical records alone cannot authorize store open.",
+      "New binding records use R and are not historical cache imports. At most1070 historical deliveries share a separate debit-before-send no-retry allowance; they add no new bundle record or authority entry."
+    ],
+    "packet_payloads": {
+      "recovery_activate": {
+        "additional_fields": false,
+        "direction": "supervisor_recovery",
+        "fields": {
+          "activation_id": "uuid4",
+          "case_id": "uuid4",
+          "clock_epoch_id": "uuid4",
+          "continued_receipt_id": "uuid4",
+          "cut_transaction_id": "uuid4",
+          "engagement_id": "uuid4",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "owner_closure_receipt_id": "uuid4",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "max_messages": 1,
+        "max_packet_bytes": 4096,
+        "required_fields": [
+          "activation_id",
+          "case_id",
+          "clock_epoch_id",
+          "continued_receipt_id",
+          "cut_transaction_id",
+          "engagement_id",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "owner_closure_receipt_id",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rights_count": 0,
+        "rules": [
+          "Send only after old owner graph closed and exact CLD_CONTINUED/SIGCONT observed. Spend activation before signalling; no resend or unknown-delivery retry.",
+          "Recovery remains blocked on receive until this exact message; validate inherited endpoint/incarnation, original deadline and fixed context before challenge. No SQL or grants yet.",
+          "cut_transaction_id is an actual after_commit_before_ack witness from the selected original call; validate persisted transaction/history upon reopen. Unknown commit cannot satisfy a witness.",
+          "All fields required and typed by recovery_bootstrap_contract.types; existing s43-channel-v1 envelope, exact peer credentials, per-direction sequence and operation_id=null apply. Unknown/truncated/ancillary data refuses and closes unexpected rights without reading."
+        ]
+      },
+      "recovery_challenge": {
+        "additional_fields": false,
+        "direction": "recovery_supervisor",
+        "fields": {
+          "activation_id": "uuid4",
+          "case_id": "uuid4",
+          "challenge_id": "uuid4",
+          "clock_epoch_id": "uuid4",
+          "engagement_id": "uuid4",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "owner_closure_receipt_id": "uuid4",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "max_messages": 1,
+        "max_packet_bytes": 4096,
+        "required_fields": [
+          "activation_id",
+          "case_id",
+          "challenge_id",
+          "clock_epoch_id",
+          "engagement_id",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "owner_closure_receipt_id",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rights_count": 0,
+        "rules": [
+          "One fresh challenge from live resumed recovery instance after activation; no arbitrary requested graph list. Supervisor derives owner and all allocated old operation scopes from immutable live registry.",
+          "Consume challenge once; no reconnect, retry, new deadline or activation. Challenge fails after any custody or identity discontinuity.",
+          "All fields required and typed by recovery_bootstrap_contract.types; existing s43-channel-v1 envelope, exact peer credentials, per-direction sequence and operation_id=null apply. Unknown/truncated/ancillary data refuses and closes unexpected rights without reading."
+        ]
+      },
+      "recovery_prepared": {
+        "additional_fields": false,
+        "direction": "recovery_supervisor",
+        "fields": {
+          "bootstrap_manifest_sha256": "sha256",
+          "case_id": "uuid4",
+          "clock_epoch_id": "uuid4",
+          "database_open": "false",
+          "engagement_id": "uuid4",
+          "fd_layout_sha256": "sha256",
+          "filter_sha256": "sha256",
+          "image_sha256": "sha256",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "max_messages": 1,
+        "max_packet_bytes": 4096,
+        "required_fields": [
+          "bootstrap_manifest_sha256",
+          "case_id",
+          "clock_epoch_id",
+          "database_open",
+          "engagement_id",
+          "fd_layout_sha256",
+          "filter_sha256",
+          "image_sha256",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rights_count": 0,
+        "rules": [
+          "One report from confined recovery instance before initial store creation/open. Supervisor independently validates bootstrap installation provenance, image, credentials, mounts and exact FDs. Self-report is not attestation.",
+          "Recovery has reached the fixed receive-only barrier; no SQLite DB/journal/sync open, no arbitrary input. Supervisor must establish SIGSTOP state before starting initial store work.",
+          "All fields required and typed by recovery_bootstrap_contract.types; existing s43-channel-v1 envelope, exact peer credentials, per-direction sequence and operation_id=null apply. Unknown/truncated/ancillary data refuses and closes unexpected rights without reading."
+        ]
+      },
+      "recovery_refused": {
+        "additional_fields": false,
+        "direction": "supervisor_recovery",
+        "fields": {
+          "activation_id": "uuid4",
+          "case_id": "uuid4",
+          "challenge_id": "uuid4",
+          "clock_epoch_id": "uuid4",
+          "engagement_id": "uuid4",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "reason": "recovery_reason",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "max_messages": 1,
+        "max_packet_bytes": 4096,
+        "required_fields": [
+          "activation_id",
+          "case_id",
+          "challenge_id",
+          "clock_epoch_id",
+          "engagement_id",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "reason",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rights_count": 0,
+        "rules": [
+          "Only after a valid challenge (thus both IDs known). Fixed reason, no raw data. Mutually exclusive with response; retained prefix plus refusal is failed evidence, not a completed witness.",
+          "Failure before a valid challenge uses the fixed bootstrap failure path when authenticated context exists; otherwise driver records failed context with no invented peer fields.",
+          "All fields required and typed by recovery_bootstrap_contract.types; existing s43-channel-v1 envelope, exact peer credentials, per-direction sequence and operation_id=null apply. Unknown/truncated/ancillary data refuses and closes unexpected rights without reading."
+        ]
+      },
+      "recovery_response": {
+        "additional_fields": false,
+        "direction": "supervisor_recovery",
+        "fields": {
+          "activation_id": "uuid4",
+          "binding_receipt_ids": "uuid_list3",
+          "case_id": "uuid4",
+          "challenge_id": "uuid4",
+          "clock_epoch_id": "uuid4",
+          "engagement_id": "uuid4",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "max_messages": 1,
+        "max_packet_bytes": 4096,
+        "required_fields": [
+          "activation_id",
+          "binding_receipt_ids",
+          "case_id",
+          "challenge_id",
+          "clock_epoch_id",
+          "engagement_id",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rights_count": 0,
+        "rules": [
+          "Exactly one owner binding plus one per allocated old operation graph (maximum2); set size1..3, exact registry membership, no omitted allocated graph. Existing closed operations need no new close_lease, but supplied evidence conveys no grant.",
+          "All binding records must already be received and validated on this same authenticated endpoint via public_evidence_record; response is the end marker. No opaque arrays, caller-selected authority or imported file receipts.",
+          "On refusal send recovery_refused instead; never a partial success response. New broker creates fresh graph_closed authority references for owner and only nonclosed leases after validating the complete response.",
+          "All fields required and typed by recovery_bootstrap_contract.types; existing s43-channel-v1 envelope, exact peer credentials, per-direction sequence and operation_id=null apply. Unknown/truncated/ancillary data refuses and closes unexpected rights without reading."
+        ]
+      }
+    },
+    "physical_variants": {
+      "monitor_termination": {
+        "additional_fields": false,
+        "fields": {
+          "birth_process_receipt_id": "uuid4",
+          "exit_code": "exit_code",
+          "exit_status": "exit_status",
+          "instance_id": "uuid4",
+          "monitor_session_id": "uuid4",
+          "pidfd_reference": "uuid4",
+          "reaped_monotonic_ns": "monotonic_ns",
+          "si_pid": "pid",
+          "si_signo": "sigchld",
+          "si_uid": "uid_gid"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "driver"
+        ],
+        "required_fields": [
+          "birth_process_receipt_id",
+          "exit_code",
+          "exit_status",
+          "instance_id",
+          "monitor_session_id",
+          "pidfd_reference",
+          "reaped_monotonic_ns",
+          "si_pid",
+          "si_signo",
+          "si_uid"
+        ],
+        "rules": [
+          "One per actually reaped direct child, at most10 total including driver observation of supervisor. Use retained birth pidfd and actual waitid WEXITED outcome, never saved PID lookup.",
+          "Issuer/parent matches birth receipt. Original observer session/time remains unchanged forever. A signal death can prove termination but cannot satisfy successful source_closed/connector_closed.",
+          "Live monitor keeps birth handle and reaping provenance through any recovery challenge; public record alone confers no live authority.",
+          "Fields use recovery_bootstrap_contract.types plus the existing physical envelope. Complete canonical ASCII record <=2048 bytes in this profile; no extra fields or null payload fields. Preserve explicitly nullable envelope operation_id. Refuse before oversize emission.",
+          "Require actual waitid si_signo=SIGCHLD, si_pid equal bound child PID in observer namespace (never0), si_uid equal child real UID, not supervisor UID. Return0 with si_pid0 is not an event. Reaping uses WEXITED without WNOWAIT.",
+          "Recovery-profile ancestry exception: birth_process_receipt_id may resolve original E/ready bootstrap-M identity while this wait retains its actual original session. Exact immutable instance membership, pidfd/parent/epoch/runtime bindings remain mandatory; one wait record can back multiple declared containing graph subsets, never an undeclared graph."
+        ]
+      },
+      "recovery_closure_binding": {
+        "additional_fields": false,
+        "fields": {
+          "activation_id": "uuid4",
+          "challenge_id": "uuid4",
+          "consumer_owner_id": "uuid4",
+          "consumer_session_id": "uuid4",
+          "evaluated_monotonic_ns": "monotonic_ns",
+          "graph_closure_receipt_id": "uuid4",
+          "monitor_session_id": "uuid4",
+          "root_aliases_closed": "true",
+          "subject_graph_id": "uuid4",
+          "terminal_pidfds_verified": "true",
+          "termination_receipt_ids": "uuid_list10",
+          "transfers_empty": "true"
+        },
+        "issuer_roles": [
+          "supervisor"
+        ],
+        "required_fields": [
+          "activation_id",
+          "challenge_id",
+          "consumer_owner_id",
+          "consumer_session_id",
+          "evaluated_monotonic_ns",
+          "graph_closure_receipt_id",
+          "monitor_session_id",
+          "root_aliases_closed",
+          "subject_graph_id",
+          "terminal_pidfds_verified",
+          "termination_receipt_ids",
+          "transfers_empty"
+        ],
+        "rules": [
+          "One fresh binding per exact old graph per sole challenge, at most3. Envelope observer_session_id and consumer_session_id equal resumed recovery session; envelope subject_owner_id remains old owner. phase=closed; envelope graph_id=subject_graph_id and observed time=evaluated time.",
+          "Issuer is the same continuously live original supervisor outside subject membership. Actual held-birth-pidfd terminal checks and current exact root-copy/transfer audit occur after challenge. All required original reaping provenance remains in live monitor memory.",
+          "Exact termination ID set covers every original graph member once; each birth receipt and original closure retain original session/timestamps. Every ancestor link matches immutable case/runtime/epoch/instance/graph. No second waitid reaping or new /proc snapshot for dead members.",
+          "A referenced original closure is historical evidence of actual prior closure, not current authority. This fresh binding plus unbroken live kernel custody is the only recovery cross-session exception. Missing handle/provenance, supervisor restart or contradiction refuses.",
+          "No copy or renaming of old broker authority registry entries. Existing closed AUTH04 lease/result stays immutable and lookup-only; nonclosed leases each require their exact operation binding, never only owner binding.",
+          "Fields use recovery_bootstrap_contract.types plus the existing physical envelope. Complete canonical ASCII record <=2048 bytes in this profile; no extra fields or null payload fields. Preserve explicitly nullable envelope operation_id. Refuse before oversize emission.",
+          "Original closure/member/death links use the explicit canonical-E ancestry exception where needed; graph membership remains exact owner/operation subset. Historical ancestors arrive through the bounded read-only authenticated cache, with unchanged envelopes; only this fresh binding can feed current cleanup registration."
+        ]
+      },
+      "recovery_control_activate": {
+        "additional_fields": false,
+        "fields": {
+          "activation_id": "uuid4",
+          "case_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "continued_receipt_id": "uuid4",
+          "cut_transaction_id": "uuid4",
+          "engagement_id": "uuid4",
+          "message_kind": "control_kind_activate",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "owner_closure_receipt_id": "uuid4",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "activation_id",
+          "case_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "continued_receipt_id",
+          "cut_transaction_id",
+          "engagement_id",
+          "message_kind",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "owner_closure_receipt_id",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_control_challenge": {
+        "additional_fields": false,
+        "fields": {
+          "activation_id": "uuid4",
+          "case_id": "uuid4",
+          "challenge_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "engagement_id": "uuid4",
+          "message_kind": "control_kind_challenge",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "owner_closure_receipt_id": "uuid4",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "activation_id",
+          "case_id",
+          "challenge_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "engagement_id",
+          "message_kind",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "owner_closure_receipt_id",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_control_fixed_failure": {
+        "additional_fields": false,
+        "fields": {
+          "bootstrap_manifest_sha256": "sha256",
+          "case_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "graph_id": "uuid4",
+          "message_kind": "control_kind_fixed_failure",
+          "owner_id": "uuid4",
+          "reason": "failure_reason",
+          "role": "role",
+          "role_instance_id": "uuid4",
+          "runtime_lock_sha256": "sha256",
+          "session_deadline_ns": "monotonic_ns",
+          "session_id": "uuid4",
+          "stage": "stage"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "bootstrap_manifest_sha256",
+          "case_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "graph_id",
+          "message_kind",
+          "owner_id",
+          "reason",
+          "role",
+          "role_instance_id",
+          "runtime_lock_sha256",
+          "session_deadline_ns",
+          "session_id",
+          "stage"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_control_prepared": {
+        "additional_fields": false,
+        "fields": {
+          "bootstrap_manifest_sha256": "sha256",
+          "case_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "database_open": "false",
+          "engagement_id": "uuid4",
+          "fd_layout_sha256": "sha256",
+          "filter_sha256": "sha256",
+          "image_sha256": "sha256",
+          "message_kind": "control_kind_prepared",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "bootstrap_manifest_sha256",
+          "case_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "database_open",
+          "engagement_id",
+          "fd_layout_sha256",
+          "filter_sha256",
+          "image_sha256",
+          "message_kind",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_control_refused": {
+        "additional_fields": false,
+        "fields": {
+          "activation_id": "uuid4",
+          "case_id": "uuid4",
+          "challenge_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "engagement_id": "uuid4",
+          "message_kind": "control_kind_refused",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "reason": "recovery_reason",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "activation_id",
+          "case_id",
+          "challenge_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "engagement_id",
+          "message_kind",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "reason",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_control_response": {
+        "additional_fields": false,
+        "fields": {
+          "activation_id": "uuid4",
+          "binding_receipt_ids": "uuid_list3",
+          "case_id": "uuid4",
+          "challenge_id": "uuid4",
+          "channel_sequence": "u64",
+          "clock_epoch_id": "uuid4",
+          "engagement_id": "uuid4",
+          "message_kind": "control_kind_response",
+          "monitor_session_id": "uuid4",
+          "old_owner_graph_id": "uuid4",
+          "old_owner_id": "uuid4",
+          "original_deadline_ns": "monotonic_ns",
+          "recovery_instance_id": "uuid4",
+          "recovery_owner_id": "uuid4",
+          "recovery_session_id": "uuid4",
+          "runtime_lock_sha256": "sha256"
+        },
+        "issuer_roles": [
+          "supervisor",
+          "broker"
+        ],
+        "required_fields": [
+          "activation_id",
+          "binding_receipt_ids",
+          "case_id",
+          "challenge_id",
+          "channel_sequence",
+          "clock_epoch_id",
+          "engagement_id",
+          "message_kind",
+          "monitor_session_id",
+          "old_owner_graph_id",
+          "old_owner_id",
+          "original_deadline_ns",
+          "recovery_instance_id",
+          "recovery_owner_id",
+          "recovery_session_id",
+          "runtime_lock_sha256"
+        ],
+        "rules": [
+          "At most6 actual authenticated recovery-channel receives per case: prepared, activation, challenge, response OR refusal, and at most2 fixed failures. No arbitrary transcript or duplicate receive projection. Exact channel direction, peer and payload context must match immutable manifest.",
+          "Issuer is actual receiving supervisor or recovery broker. Record original observation session/time; prepared and activation precede fresh recovery-session creation and use the bootstrap monitor session. Subsequent challenge/response use fresh recovery session.",
+          "Same closed physical envelope; full record <=2048 bytes and transport <=4096. A failed receive produces no fabricated successful control receipt. Original failure reasons remain bounded.",
+          "Activation receive receipt must precede challenge receive receipt, and all binding receive records precede the response end marker; reader requires these records for successful recovery.",
+          "Flattened exact packet projection: physical kind selects this one closed field set; no nested payload wrapper. Preserve physical maximum container depth3. Reconstruct exact selected received packet fields by removing message_kind/channel_sequence only."
+        ]
+      },
+      "recovery_lifecycle": {
+        "additional_fields": false,
+        "fields": {
+          "bootstrap_manifest_sha256": "sha256",
+          "fd_layout_sha256": "sha256",
+          "filter_sha256": "sha256",
+          "monitor_session_id": "uuid4",
+          "observed_monotonic_ns": "monotonic_ns",
+          "pidfd_reference": "uuid4",
+          "recovery_instance_id": "uuid4",
+          "si_pid": "pid",
+          "si_signo": "sigchld",
+          "si_uid": "uid_gid",
+          "signal": "signal",
+          "state": "lifecycle_state",
+          "wait_code": "wait_code"
+        },
+        "issuer_roles": [
+          "supervisor"
+        ],
+        "required_fields": [
+          "bootstrap_manifest_sha256",
+          "fd_layout_sha256",
+          "filter_sha256",
+          "monitor_session_id",
+          "observed_monotonic_ns",
+          "pidfd_reference",
+          "recovery_instance_id",
+          "si_pid",
+          "si_signo",
+          "si_uid",
+          "signal",
+          "state",
+          "wait_code"
+        ],
+        "rules": [
+          "At most3 records in order stopped,precontinue,continued, one each, same birth pidfd and bootstrap manifest. stopped/precontinue require CLD_STOPPED/SIGSTOP and current stopped one-task state; continued requires actual CLD_CONTINUED/SIGCONT.",
+          "Initial waitid(P_PIDFD,WSTOPPED|WNOHANG|WNOWAIT) retains the stop notification. Precontinue rechecks current stopped state then consumes that notification with WSTOPPED|WNOHANG before the one SIGCONT; missing/mismatched notification refuses.",
+          "Bind actual observations and trusted filter installation provenance; a digest or Seccomp mode is not a proof of installed filter contents. Timestamps equal physical-envelope observation times; no synthetic reaping/stop receipt.",
+          "Fields use recovery_bootstrap_contract.types plus the existing physical envelope. Complete canonical ASCII record <=2048 bytes in this profile; no extra fields or null payload fields. Preserve explicitly nullable envelope operation_id. Refuse before oversize emission.",
+          "Require actual waitid si_signo=SIGCHLD, si_pid equal bound child PID in observer namespace (never0), si_uid equal child real UID, not supervisor UID. Return0 with si_pid0 is not an event. Reaping uses WEXITED without WNOWAIT."
+        ]
+      }
+    },
+    "profile": {
+      "broker_instances_max": 2,
+      "concurrent_authority_threads": false,
+      "global_limits_unchanged": true,
+      "graph_rule": "Two broker instances with distinct immutable instance/owner/session IDs. Recovery belongs to execution graph and its own owner graph, never the old owner/operation graphs. All role-name channel resolution additionally binds exact instance and endpoint.",
+      "lifetime_processes_max": 10,
+      "per_snapshot_descriptor_records_max": 94,
+      "per_snapshot_process_records_max": 10,
+      "processes_max": 10,
+      "recovery_instances_max": 1,
+      "recovery_slots": {
+        "0": "null read",
+        "1": "null write",
+        "10": "journal during transaction",
+        "11": "sync directory during transaction",
+        "2": "null write",
+        "3": "supervisor seqpacket",
+        "7": "authority directory",
+        "8": "database after valid cleanup response"
+      },
+      "review_view": "terminal",
+      "roles_absent": [
+        "graphical_display",
+        "fixture_probe"
+      ],
+      "same_existing_role_uid_gid": 10001,
+      "simultaneous_store_users_max": 1,
+      "supervisor_added_slots": {
+        "24": "recovery seqpacket",
+        "25": "recovery birth pidfd"
+      },
+      "tasks_max": 11
+    },
+    "provenance_matrix": {
+      "challenge_response_binding": "R starts only after activation receive; challenge, binding and response use R. Binding.consumer_session_id=physical envelope observer_session_id=R. Payload monitor_session_id=M. Activation/control and original P records remain typed historical ancestors only.",
+      "fresh_authority_cleanup": "Fresh graph_closed created in R after response, current observation time/ID; physical_receipt_id resolves current R binding. Old owner/operation subject remains P owner. No copied P authority entry.",
+      "original_process_descriptor_exit_graph_closure": "Original observer P, bound to continuous monitor M where issuer is supervisor. Preserve P/epoch/runtime/subject instance and actual original observation times. Reaping records are historical facts, not fresh observation after R starts.",
+      "prepared_stop_precontinue_continued_activation": "Bootstrap monitor observer session M (not future recovery observer R); immutable timestamps and instance IDs. R owner/session IDs are declared early but its observation lifetime has not begun.",
+      "recovery_exit": "Final live supervisor observation uses declared R monitor context before teardown; driver observes supervisor with its own continuous bootstrap monitor, never relabelled child observation."
+    },
+    "reader_rules": [
+      "Offline reader validates structure and provenance consistency only; it never creates live authority from evidence. All existing owned-file, count, byte, monotonic-order and physical-proof requirements remain.",
+      "Require selected AUTH node/profile, exact two broker instances and declared graph membership; absent display/probe/concurrent threads; all phases and slot unions obey profile. Do not fabricate snapshots of exited processes.",
+      "Validate prepared->stopped before initial store-open, old durable cut and owner closure before continue/activation, actual continued wait before activation message, challenge before fresh binding and complete response before recovery SQL. Records needed for these order facts must be present; startup refusal cannot satisfy a late witness.",
+      "Verify binding current consumer/session/epoch/runtime, same original supervisor incarnation and monitor session, original closure/member/death exact graph sets, birth pidfd identities, historical original timestamps and new evaluation after challenge. Reject session relabelling, copied authority references, missing deaths, wrong scope or inconsistent current terminal/root-copy predicates.",
+      "A failed or incomplete record sequence is retained with its actual failed/interrupted context and cannot satisfy recovery success. AUTH04 must link original exchange/completion and unchanged lookup output; AUTH02/03 preserve counters and old-grant refusal/uncertainty."
+    ],
+    "references": [
+      "https://man7.org/linux/man-pages/man2/seccomp.2.html",
+      "https://man7.org/linux/man-pages/man2/waitid.2.html",
+      "https://man7.org/linux/man-pages/man2/pidfd_open.2.html",
+      "https://man7.org/linux/man-pages/man2/F_SETOWN.2const.html"
+    ],
+    "remaining_runtime_gates": [
+      "Actual code/UID/mount/FD/filter/image/VFS identities and physical isolation proof",
+      "Actual test-node collection and owned fixture applicability",
+      "Exact native launch review; no acceptance or execution from this design"
+    ],
+    "schema_version": "s43-recovery-bootstrap-v1",
+    "signal_predicates": [
+      "Supervisor pidfd_send_signal permits only creation-bound own-child pidfd slots; recovery25 allows SIGSTOP once during bootstrap, SIGCONT once only for selected recovery profile, SIGKILL for cleanup. siginfo=NULL, flags=0. Other child slots allow only existing reviewed cleanup signals. Single-use counts are trusted state, not claimed stateful seccomp.",
+      "Supervisor waitid permits exact creation-bound P_PIDFD slots: recovery25 WSTOPPED/WCONTINUED/WEXITED with listed WNOHANG/WNOWAIT combinations; other children retain actual WEXITED reaping. Block SIGCHLD autoreaping (no SIG_IGN or SA_NOCLDWAIT). No process-group signalling, ptrace or job-control continuation.",
+      "All child filters deny kill/tkill/tgkill, pidfd_send_signal, rt_sigqueueinfo/rt_tgsigqueueinfo, ptrace, process_vm_readv/writev, pidfd_getfd and undeclared signal-producing APIs. No controlling terminal/foreground process group that can receive external SIGCONT.",
+      "fcntl permits only declared per-role commands/arguments; deny F_SETOWN/F_SETOWN_EX/F_SETSIG/F_SETLEASE and O_ASYNC in F_SETFL. Deny undeclared ioctl, io_uring and signal-generating timers or descriptor-driven signal ownership. Runtime argument tables must prove no indirect continuation route; no blanket fcntl allowance.",
+      "Unexpected continuation/exit, wrong wait code/signal, lost custody, wrong task count, filter/image/provenance mismatch or missing stopped-state check invalidates activation. Supported kernel/CPython/VFS behavior remains a separate native gate.",
+      "Exact wait sets: STOP initial WSTOPPED|WNOHANG|WNOWAIT; precontinue WSTOPPED|WNOHANG; CONT WCONTINUED|WNOHANG; termination WEXITED|WNOHANG without WNOWAIT. Treat ECHILD, zero si_pid, unsupported semantics, wrong child real UID or other wait result as unproved, never successful observation."
+    ],
+    "states": [
+      [
+        "bootstrap",
+        "prepared",
+        "confined receive barrier, no store open"
+      ],
+      [
+        "prepared",
+        "stopped",
+        "actual supervisor SIGSTOP and stopped observation; initial store may now start"
+      ],
+      [
+        "stopped",
+        "old_closed",
+        "selected actual durable cut, broker death and exact original owner-graph reaping/root closure"
+      ],
+      [
+        "old_closed",
+        "continue_spent",
+        "verify current stop; spend single activation; SIGCONT; observe actual continued before activation packet"
+      ],
+      [
+        "continue_spent",
+        "challenged",
+        "activation validated; one fresh challenge from resumed broker; no DB open"
+      ],
+      [
+        "challenged",
+        "closure_verified",
+        "complete live binding records plus response validated, one owner and all old operation scopes"
+      ],
+      [
+        "closure_verified",
+        "store_validated",
+        "open same owned store; settings/schema/rows/counters/chain/cut checked within original limits"
+      ],
+      [
+        "store_validated",
+        "owner_recovered",
+        "existing recover_owner transaction; old leases cancelled, grants never restored"
+      ],
+      [
+        "owner_recovered",
+        "reconciled",
+        "up to2 close_lease transactions in lease-ID order; existing close-kind semantics"
+      ],
+      [
+        "reconciled",
+        "lookup_complete",
+        "up to2 authorized read-only lookups; existing lookup_observed records"
+      ],
+      [
+        "lookup_complete",
+        "closed",
+        "cleanup recovery owner graph; driver/outer scheduler observe final supervisor/driver separately"
+      ]
+    ],
+    "status": "reviewed_design_runtime_pending",
+    "types": {
+      "control_kind_activate": {
+        "const": "recovery_activate"
+      },
+      "control_kind_challenge": {
+        "const": "recovery_challenge"
+      },
+      "control_kind_fixed_failure": {
+        "const": "fixed_failure"
+      },
+      "control_kind_prepared": {
+        "const": "recovery_prepared"
+      },
+      "control_kind_refused": {
+        "const": "recovery_refused"
+      },
+      "control_kind_response": {
+        "const": "recovery_response"
+      },
+      "exit_code": {
+        "enum": [
+          "CLD_EXITED",
+          "CLD_KILLED",
+          "CLD_DUMPED"
+        ]
+      },
+      "exit_status": "Integer0..255; no bool/float. Interpret only with exit_code.",
+      "failure_reason": {
+        "enum": [
+          "bootstrap_refused",
+          "binding_refused",
+          "protocol_refused",
+          "deadline",
+          "resource_limit",
+          "unexpected_exit",
+          "authority_unavailable"
+        ]
+      },
+      "false": {
+        "const": false
+      },
+      "graph_scope": {
+        "enum": [
+          "owner_graph",
+          "operation_graph"
+        ]
+      },
+      "lifecycle_state": {
+        "enum": [
+          "stopped",
+          "precontinue",
+          "continued"
+        ]
+      },
+      "monotonic_ns": "Integer0..9223372036854775807; no bool/float.",
+      "pid": "Integer1..2147483647; no bool/float.",
+      "recovery_reason": {
+        "enum": [
+          "binding_refused",
+          "bootstrap_refused",
+          "closure_unproved",
+          "deadline",
+          "resource_limit",
+          "unexpected_transition",
+          "authority_unavailable"
+        ]
+      },
+      "sha256": "Exactly64 lowercase hexadecimal characters over validated public metadata only.",
+      "sigchld": {
+        "const": "SIGCHLD"
+      },
+      "signal": {
+        "enum": [
+          "SIGSTOP",
+          "SIGCONT"
+        ]
+      },
+      "stage": {
+        "enum": [
+          "bootstrap",
+          "ready",
+          "reserved",
+          "tls",
+          "released",
+          "exchange",
+          "cleanup"
+        ]
+      },
+      "true": {
+        "const": true
+      },
+      "u64": "Integer0..18446744073709551615; no bool/float.",
+      "uid_gid": "Integer0..4294967294; no bool/float; exact child real UID.",
+      "uuid4": "Canonical lowercase UUID4, full-string validation.",
+      "uuid_list10": "Array1..10 unique UUID4 values, sorted ASCII; no nulls.",
+      "uuid_list3": "Array0..3 unique UUID4 values, sorted ASCII; no nulls.",
+      "wait_code": {
+        "enum": [
+          "CLD_STOPPED",
+          "CLD_CONTINUED"
+        ]
+      }
+    },
+    "variants": [
+      "S43-AUTH02",
+      "S43-AUTH03",
+      "S43-AUTH04"
+    ]
+  },
   "replay_mutations": {
     "S4-V03": [
       "engagement",
@@ -7360,7 +9190,7 @@
       "project_hard_bytes": 83886080,
       "project_inode_hard_limit": 3
     },
-    "supervisor_identity": "Namespace root during bootstrap; retained post-bootstrap capabilities limited to CAP_KILL and CAP_SYS_PTRACE for metadata visibility only, with seccomp forbidding ptrace/process_vm_readv/process_vm_writev/pidfd_getfd. Exact capability effectiveness must be physically demonstrated. All other roles zero capabilities.",
+    "supervisor_identity": "Namespace root during bootstrap; retained post-bootstrap capabilities limited to CAP_KILL and CAP_SYS_PTRACE for metadata visibility only, with seccomp forbidding ptrace/process_vm_readv/process_vm_writev/pidfd_getfd. Exact capability effectiveness must be physically demonstrated. All other roles zero capabilities. Recovery profile retains no added capability: only its exact declared pidfd stop/continue/cleanup operations are proposed; native effectiveness remains unproved.",
     "syscall_candidate": {
       "base": [
         "read",
@@ -7396,7 +9226,7 @@
       ],
       "constraints": [
         "Candidate syscall names are not an installed filter or permission to admit all arguments. Compile exact architecture/numbers/FD/flags/device ioctl request constraints and bind BPF digest before native launch; unresolved argument restrictions block readiness.",
-        "No role may fork/clone/exec after READY. Preallocated threads only. Recovery bootstrap remains unresolved and disabled; no privilege, mount or filter exception is granted.",
+        "No role may fork/clone/exec after READY. Recovery uses only one already-confined prestarted instance; exact signal, wait and indirect-signal argument predicates in recovery_bootstrap_contract are mandatory before native use.",
         "Socket creation/connect only connector, owned_service, declared probe, and restricted AF_UNIX display paths for reviewer/display. Operation cannot create/connect sockets; recvmsg accepts rights only on pinned transfer endpoints.",
         "openat only declared role mounts/slots; broker constant database/journal filenames in private directory, source only its own memfd reopen during construction. Unknown path/FD or runtime-loaded module stops.",
         "No writable-executable memory, executable anonymous mappings, core dump, key logging, ambient config/home/proxy/CA discovery or unrestricted ioctl. Bootstrap-only loader/architecture syscalls require separate finite filter, not a READY exception.",
@@ -7584,7 +9414,8 @@
         "A transfer ACK is not proof of sender-copy closure. Require live descriptor/lifecycle evidence before TLS or terminal cleanup as appropriate.",
         "Driver bootstrap has exclusive inherited endpoints and observed launcher identity; unmapped namespace PID0 is never accepted as child identity.",
         "Graphical/probe transports are explicit exceptions, remain unimplemented and need exact codecs/permissions. No undeclared ancillary FD transfer is allowed.",
-        "Guard has only private operation input and public broker output. Supervisor observes its lifecycle via kernel metadata; it has no supervisor control socket."
+        "Guard has only private operation input and public broker output. Supervisor observes its lifecycle via kernel metadata; it has no supervisor control socket.",
+        "Recovery edges bind exact original/recovery instance IDs, not only broker role/UID. The only historical-producer relay is the bounded read-only physical provenance cache; live channel sender must be original supervisor and all preserved producer/subject/ancestor bindings must validate. No old authority registry import."
       ],
       "schema_version": "s43-channel-v1",
       "seqpacket_fields": [
@@ -7640,6 +9471,7 @@
         "peer_binding": "live_child_credentials",
         "receiver": "broker",
         "receiver_fd": 3,
+        "receiver_instance": "original",
         "rights_per_message": 0,
         "sender": "supervisor",
         "sender_fd": 4,
@@ -7659,6 +9491,7 @@
         "rights_per_message": 0,
         "sender": "broker",
         "sender_fd": 3,
+        "sender_instance": "original",
         "transport": "seqpacket"
       },
       {
@@ -7850,6 +9683,7 @@
         "rights_per_message": 0,
         "sender": "broker",
         "sender_fd": 4,
+        "sender_instance": "original",
         "transport": "seqpacket"
       },
       {
@@ -7860,6 +9694,7 @@
         "peer_binding": "live_child_credentials",
         "receiver": "broker",
         "receiver_fd": 4,
+        "receiver_instance": "original",
         "rights_per_message": 0,
         "sender": "reviewer",
         "sender_fd": 4,
@@ -7880,6 +9715,7 @@
         "rights_per_message": 0,
         "sender": "broker",
         "sender_fd": 5,
+        "sender_instance": "original",
         "transport": "seqpacket"
       },
       {
@@ -7891,6 +9727,7 @@
         "peer_binding": "live_child_credentials",
         "receiver": "broker",
         "receiver_fd": 5,
+        "receiver_instance": "original",
         "rights_per_message": 0,
         "sender": "operation_worker",
         "sender_fd": 4,
@@ -7908,6 +9745,7 @@
         "rights_per_message": 0,
         "sender": "broker",
         "sender_fd": 6,
+        "sender_instance": "original",
         "transport": "seqpacket"
       },
       {
@@ -7918,6 +9756,7 @@
         "peer_binding": "live_child_credentials",
         "receiver": "broker",
         "receiver_fd": 3,
+        "receiver_instance": "original",
         "rights_per_message": 0,
         "sender": "supervisor",
         "sender_fd": 4,
@@ -8006,6 +9845,7 @@
         ],
         "receiver": "broker",
         "receiver_fd": 12,
+        "receiver_instance": "original",
         "rights_per_message": 0,
         "sender": "release_guard",
         "sender_fd": 4,
@@ -8055,13 +9895,51 @@
         "sender": "fixture_probe",
         "sender_fd": 4,
         "transport": "fixture_specific_owned_transport"
+      },
+      {
+        "id": "supervisor_recovery",
+        "message_kinds": [
+          "recovery_activate",
+          "recovery_response",
+          "recovery_refused",
+          "stop",
+          "fixed_failure",
+          "public_evidence_record"
+        ],
+        "peer_binding": "live_child_credentials_and_exact_recovery_instance",
+        "profile": "recovery_bootstrap_contract",
+        "receiver": "broker",
+        "receiver_fd": 3,
+        "receiver_instance": "recovery",
+        "rights_per_message": 0,
+        "sender": "supervisor",
+        "sender_fd": 24,
+        "transport": "seqpacket"
+      },
+      {
+        "id": "recovery_supervisor",
+        "message_kinds": [
+          "recovery_prepared",
+          "recovery_challenge",
+          "fixed_failure",
+          "public_evidence_record"
+        ],
+        "peer_binding": "live_child_credentials_and_exact_recovery_instance",
+        "profile": "recovery_bootstrap_contract",
+        "receiver": "supervisor",
+        "receiver_fd": 24,
+        "rights_per_message": 0,
+        "sender": "broker",
+        "sender_fd": 3,
+        "sender_instance": "recovery",
+        "transport": "seqpacket"
       }
     ],
     "custody_rules": [
       "Supervisor is the sole owned PID-namespace init/reaper; all child roles are direct children. No shell, helper daemon or unlisted process.",
       "Base includes nine roles; display and probe are optional. Ceilings apply to simultaneous and lifetime allocations unless a separately reviewed fixture explicitly permits replacement. No automatic restart.",
       "limits.worker_tasks=1 applies to each secret-bearing worker; nonsecret reviewer/display use explicit role caps. No role borrows capacity.",
-      "No role may fork/clone/exec after READY. All role instances created during reviewed bootstrap; recovery creation remains unresolved and disabled.",
+      "No fork/clone/exec after READY. AUTH02/03/04 alone use the reviewed prestarted recovery instance and exact lifecycle/profile in recovery_bootstrap_contract; execution remains gated.",
       "Only broker mounts private authority storage. Supervisor bootstrap privileges, distinct owned role UID/GIDs and per-role mount/syscall/device/FD tables require exact runtime lock.",
       "Service and connector use fresh disconnected owned network namespace; operation has no socket-creation permission and receives the connected FD directly.",
       "Source creates credential memfd internally with MFD_ALLOW_SEALING, bounds public fixture to64bytes, installs F_SEAL_WRITE/GROW/SHRINK/SEAL, obtains separate O_RDONLY FD and closes all writable aliases before transfer.",
@@ -8131,14 +10009,14 @@
       "Physical storage quota denial witness and complete runtime lock"
     ],
     "recovery_allocation": {
-      "creation": "Unresolved: restricted READY supervisor cannot acquire broker identity, mount/FD custody or install required bootstrap confinement. No replacement creation mechanism authorized.",
+      "creation": "One recovery-only broker is created and confined during original privileged bootstrap, stopped before initial store open, and activated once after old owner closure; exact recovery_bootstrap_contract applies. No post-READY creation.",
       "execution_authorized": false,
-      "lifetime": "Lifetime12 and snapshot10 are provisional planning ceilings only; no restart/fork permission.",
+      "lifetime": "Recovery profile10 lifetime processes, within unchanged global12; no extra replacement or retry.",
       "max_additional_broker_instances": 1,
-      "max_simultaneous_broker_instances": 1,
-      "replacement_authority": "Future required semantics only, disabled until bootstrap design reviewed: reconcile/lookup with fresh owner/session after old graph closes; no reserve/release, resume or new socket.",
+      "max_simultaneous_broker_instances": 2,
+      "replacement_authority": "Bounded reconcile/lookup only after fresh continuous-monitor closure binding. No new operation, reserve/release, resend, source or socket.",
       "review_required_before_use": true,
-      "status": "unresolved_execution_disabled",
+      "status": "reviewed_prestarted_design_execution_disabled",
       "variants": [
         "S43-AUTH02",
         "S43-AUTH03",
@@ -8148,12 +10026,14 @@
     "roles": {
       "broker": {
         "fds_max": 16,
+        "normal_processes_max": 1,
         "optional": false,
         "parent_role": "supervisor",
-        "processes_max": 1,
+        "processes_max": 2,
         "secret_bearing": false,
         "task_policy": "One task normally; exactly two preallocated broker threads only in explicitly mapped concurrent authority fixtures, separate SQLite connections, no automatic thread pool or third task.",
-        "tasks_max": 2
+        "tasks_max": 2,
+        "two_instance_exception": "Only recovery_bootstrap_contract terminal AUTH02/03/04 profile; original and one prestarted recovery broker, one task each, phase-exclusive store use. Other cases retain one broker process."
       },
       "connector": {
         "fds_max": 12,
@@ -8928,25 +10808,45 @@
   },
   "source_scope": {
     "existing_files_modified": [
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
       "tests/test_secure_engagement_live_preservation.py"
     ],
+    "historical_PR106_scope": {
+      "existing_files_modified": [
+        "tests/test_secure_engagement_live_preservation.py"
+      ],
+      "legacy_provider_and_competition_sources_unchanged": true,
+      "preservation_amendment": {
+        "affected_check": "tests/test_secure_engagement_live_preservation.py::test_exact_accepted_source_and_change_allowlist",
+        "allowed_change": "Add only the two named S4.3 documents with literal SHA-256 pins and regular-file/non-executable checks to the tracked-path allowance. Keep all historical assertions, manifests, hashes and counts.",
+        "amended_test_hash_omitted_to_avoid_hash_cycle": true,
+        "before_bytes": 20602,
+        "before_sha256": "c52b839418cc9dfefeed3087d785c999b731eda963c2c18153d8ddc716dc5654",
+        "historical_contracts_unchanged": true,
+        "new_path_source": "Exact literal paths in the preservation test; no wildcard or inventory-derived permission.",
+        "path": "tests/test_secure_engagement_live_preservation.py",
+        "validation": "Run affected check with both new documents in the Git index; retain any original failing output. Future source/test additions require a separate reviewed amendment."
+      },
+      "prior_eight_status_edits_kept_in_main_checkout": true,
+      "this_change_new_files": [
+        "docs/stage4-synthetic-custody.md",
+        "docs/stage4-synthetic-custody-gates.json"
+      ]
+    },
     "legacy_provider_and_competition_sources_unchanged": true,
     "preservation_amendment": {
       "affected_check": "tests/test_secure_engagement_live_preservation.py::test_exact_accepted_source_and_change_allowlist",
-      "allowed_change": "Add only the two named S4.3 documents with literal SHA-256 pins and regular-file/non-executable checks to the tracked-path allowance. Keep all historical assertions, manifests, hashes and counts.",
+      "allowed_change": "Only refresh the two literal design-document SHA256 pins. Preserve every historical assertion, source manifest, count and check; no new source/test path permission.",
       "amended_test_hash_omitted_to_avoid_hash_cycle": true,
-      "before_bytes": 20602,
-      "before_sha256": "c52b839418cc9dfefeed3087d785c999b731eda963c2c18153d8ddc716dc5654",
+      "before_bytes": 21229,
+      "before_sha256": "7ef7b10da32ab8b50eeddcfb7dba622e1da77bb9bb19541c0f76a19db035183e",
       "historical_contracts_unchanged": true,
-      "new_path_source": "Exact literal paths in the preservation test; no wildcard or inventory-derived permission.",
       "path": "tests/test_secure_engagement_live_preservation.py",
-      "validation": "Run affected check with both new documents in the Git index; retain any original failing output. Future source/test additions require a separate reviewed amendment."
+      "validation": "Validate affected preservation check after final document changes; preserve original failures. Future production paths need their own exact reviewed amendment."
     },
     "prior_eight_status_edits_kept_in_main_checkout": true,
-    "this_change_new_files": [
-      "docs/stage4-synthetic-custody.md",
-      "docs/stage4-synthetic-custody-gates.json"
-    ]
+    "this_change_new_files": []
   },
   "stage4_acceptance": false,
   "status": "design_draft_not_execution_ready",
