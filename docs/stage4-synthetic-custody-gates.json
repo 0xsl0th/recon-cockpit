@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "20cd431f53c710232b5a5389ced4531cf437c31d90b28ecc3288986984f5b54d",
+  "contract_sha256": "8eff7cdf1ea14a5f46832643e361fd2fe77efa7964402a5a6453046f9a4e2918",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -10864,5 +10864,52 @@
       "restricted": "RECON_PUBLIC_SYNTHETIC_RESTRICTED_V1"
     },
     "values_are_deliberately_public_test_inputs": true
+  },
+  "portable_result_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_codec_implementation",
+    "scope_review_candidate_sha256": "45505f3271a7903352580d506c696c9f3a220b9d13b14d03a463d41a73bbb6e1",
+    "scope": "Intrinsic public-result validation/canonical encoding only; no physical/authority/runtime proof.",
+    "implementation_authorized_for_this_slice_only": true,
+    "source_and_test_paths": [
+      "recon_cockpit_synthetic/__init__.py",
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py"
+    ],
+    "existing_amendment_paths": [
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "allowed_direct_imports": {
+      "recon_cockpit_synthetic/__init__.py": [],
+      "recon_cockpit_synthetic/contract.py": [],
+      "recon_cockpit_synthetic/codec.py": [
+        "json",
+        "re",
+        "recon_cockpit_synthetic.contract"
+      ],
+      "tests/test_secure_synthetic_custody_contract.py": [
+        "json",
+        "pytest",
+        "recon_cockpit_synthetic.codec"
+      ]
+    },
+    "unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_public_result_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_result_shape_and_scalar_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_result_relation_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_result_encoding_and_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_result_subject_binding",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_result_type_hooks"
+    ],
+    "unit_node_count": 6,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 35,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "validation": "Collect exact six unit nodes, run them and affected preservation check; require final independent diff/evidence review. Runtime prerequisites and publication remain separate."
   }
 }

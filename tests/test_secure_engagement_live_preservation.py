@@ -253,16 +253,59 @@ def test_exact_accepted_source_and_change_allowlist():
     assert len(sync_additions) == 2 and not sync_additions & _new_paths()
     # Admit only the reviewed S4.3 design documents; historical checks stay intact.
     s43_documents = {
-        'docs/stage4-synthetic-custody.md': '20cd431f53c710232b5a5389ced4531cf437c31d90b28ecc3288986984f5b54d',
-        'docs/stage4-synthetic-custody-gates.json': '7b98b9d30659c164f2ee92b63c0846ed4e82cd10c864a37961d57e93da6e4fe6',
+        'docs/stage4-synthetic-custody.md': '8eff7cdf1ea14a5f46832643e361fd2fe77efa7964402a5a6453046f9a4e2918',
+        'docs/stage4-synthetic-custody-gates.json': '95163cccf04854fdeb8ae5f17e7a37590511ea40525f0102fd398da85149d8f3',
     }
     for name, expected_sha256 in s43_documents.items():
         path = ROOT / name
         mode = path.lstat().st_mode
         assert stat.S_ISREG(mode) and not mode & 0o111
         assert hashlib.sha256(path.read_bytes()).hexdigest() == expected_sha256, name
+    # Independently reviewed intrinsic codec slice: exact paths, never a package wildcard.
+    s43_codec_files = {
+        'recon_cockpit_synthetic/__init__.py': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        'recon_cockpit_synthetic/contract.py': '944a8344f1ac63305277a6aad7c34165853c93966e3a063b95dbc084ed25b208',
+        'recon_cockpit_synthetic/codec.py': 'd45b9ad5028404cdd7d70f4b080487ac92c2da66584ee109d4d4109b99fa6217',
+        'tests/test_secure_synthetic_custody_contract.py': '493c066cc5045bdf17f3e0547a079cedf7397bde67c7b8f66905664f2c82ace3',
+    }
+    s43_codec_imports = {
+        'recon_cockpit_synthetic/__init__.py': set(),
+        'recon_cockpit_synthetic/contract.py': set(),
+        'recon_cockpit_synthetic/codec.py': {'json', 're', 'recon_cockpit_synthetic.contract'},
+        'tests/test_secure_synthetic_custody_contract.py': {'json', 'pytest', 'recon_cockpit_synthetic.codec'},
+    }
+    forbidden = {'__import__', 'eval', 'exec', 'compile', 'globals', 'locals',
+                 'vars', 'getattr', 'setattr', 'delattr', 'open', 'input'}
+    for name, expected_sha256 in s43_codec_files.items():
+        path = ROOT / name
+        mode = path.lstat().st_mode
+        assert stat.S_ISREG(mode) and not mode & 0o111
+        raw = path.read_bytes()
+        assert hashlib.sha256(raw).hexdigest() == expected_sha256, name
+        tree = ast.parse(raw)
+        imports = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imports.update(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                assert node.level == 0 and all(alias.name != '*' for alias in node.names)
+                imports.add(node.module)
+            elif isinstance(node, ast.Name):
+                assert node.id not in forbidden, (name, node.id)
+            elif isinstance(node, ast.Attribute):
+                assert node.attr not in forbidden, (name, node.attr)
+        assert imports == s43_codec_imports[name], name
+        for node in tree.body:
+            if isinstance(node, ast.Assign):
+                ast.literal_eval(node.value)  # No executable module-level initializers.
+            elif isinstance(node, ast.Expr):
+                assert isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
+            else:
+                assert isinstance(node, (ast.Import, ast.ImportFrom, ast.FunctionDef, ast.ClassDef))
+        if name == 'recon_cockpit_synthetic/__init__.py':
+            assert raw == b''
     tracked = set(subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().rstrip('\0').split('\0'))
-    assert tracked <= {row['path'] for row in baseline} | _new_paths() | sync_additions | s43_documents.keys()
+    assert tracked <= {row['path'] for row in baseline} | _new_paths() | sync_additions | s43_documents.keys() | s43_codec_files.keys()
     assert all((ROOT / name).is_file() for name in _new_paths())
 
 
