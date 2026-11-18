@@ -251,3 +251,128 @@ def encode_public_roe(record: dict, expected_engagement_id: str) -> bytes:
     if validated['engagement_id'] != expected_engagement_id:
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _lease_state(value):
+    times = contract.LEASE_TIME_FIELDS
+    state = value['state']
+    if state == 'prepared':
+        present = ()
+        empty = contract.LEASE_LINK_FIELDS + times + ('close_kind',)
+    elif state in ('reserved', 'released'):
+        present = ('reservation_id',) + times
+        empty = ('completion_event_id', 'closure_event_id', 'close_kind')
+        if state == 'released':
+            present += ('release_event_id',)
+        else:
+            empty += ('release_event_id',)
+    else:
+        present = ('closure_event_id', 'close_kind')
+        kind = value['close_kind']
+        if kind == 'unadmitted':
+            empty = ('reservation_id', 'release_event_id', 'completion_event_id') + times
+        else:
+            present += ('reservation_id',) + times
+            if kind == 'unreleased':
+                empty = ('release_event_id', 'completion_event_id')
+            elif kind == 'completed':
+                present += ('completion_event_id',)
+                empty = ()
+            else:
+                empty = ('completion_event_id',)
+    if any(value[key] is None for key in present) or any(value[key] is not None for key in empty):
+        raise ResultCodecError('invalid_result')
+    start = value['operation_started_ns']
+    if start is not None:
+        work, cleanup = value['work_deadline_ns'], value['cleanup_deadline_ns']
+        if not start < work < cleanup or cleanup - start > 5000000000:
+            raise ResultCodecError('invalid_result')
+        # Bounded differences avoid overflowing a signed-64-bit timestamp sum.
+        if work - start != min(4000000000, cleanup - start - 1000000000):
+            raise ResultCodecError('invalid_result')
+
+
+def _lease_record(value):
+    if type(value) is not dict or len(value) != 33:
+        raise ResultCodecError('invalid_shape')
+    for key in value:
+        if type(key) is not str or len(key) > 24 or key not in contract.LEASE_FIELDS:
+            raise ResultCodecError('invalid_shape')
+    for key, item in value.items():
+        if key == 'cancel_requested':
+            if type(item) is not bool:
+                raise ResultCodecError('invalid_value')
+        elif key in ('revision', 'generation') + contract.LEASE_TIME_FIELDS:
+            if item is None and key in contract.LEASE_TIME_FIELDS:
+                continue
+            minimum = 1 if key == 'revision' else 0
+            maximum = 2147483647 if key in ('revision', 'generation') else 9223372036854775807
+            if type(item) is not int or not minimum <= item <= maximum:
+                raise ResultCodecError('invalid_value')
+        elif item is None and key in contract.LEASE_LINK_FIELDS + ('close_kind',):
+            continue
+        elif type(item) is not str or len(item) > 64:
+            raise ResultCodecError('invalid_value')
+    for key in contract.LEASE_UUID_FIELDS + contract.LEASE_LINK_FIELDS:
+        if value[key] is not None and re.fullmatch(contract.UUID4_PATTERN, value[key]) is None:
+            raise ResultCodecError('invalid_value')
+    for key in contract.LEASE_HASH_FIELDS:
+        if re.fullmatch(contract.SHA256_PATTERN, value[key]) is None:
+            raise ResultCodecError('invalid_value')
+    if value['schema_version'] != 's43-lease-v1' or value['operation_profile_sha256'] != contract.ROE_PROFILE_SHA256:
+        raise ResultCodecError('invalid_value')
+    if value['fixture_id'] not in ('allowed', 'invalid', 'restricted') or value['review_view'] not in ('terminal', 'graphical'):
+        raise ResultCodecError('invalid_value')
+    if value['state'] not in ('prepared', 'reserved', 'released', 'closed'):
+        raise ResultCodecError('invalid_value')
+    if value['close_kind'] not in (None, 'unadmitted', 'unreleased', 'completed', 'interrupted_unknown'):
+        raise ResultCodecError('invalid_value')
+    interval = _roe_calendar(value['expires_utc']) - _roe_calendar(value['prepared_utc'])
+    microseconds = (interval.days * 86400 + interval.seconds) * 1000000 + interval.microseconds
+    if not 0 < microseconds <= 30000000:
+        raise ResultCodecError('invalid_result')
+    _lease_state(value)
+    return dict(value)
+
+
+def decode_public_lease(frame: bytes, expected_engagement_id: str,
+                        expected_operation_id: str, expected_lease_id: str) -> dict:
+    """Validate a lease snapshot; no live authority, history or cleanup proof."""
+    for subject in (expected_engagement_id, expected_operation_id, expected_lease_id):
+        _expected_subject(subject)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.LEASE_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.LEASE_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _lease_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if (record['engagement_id'], record['operation_id'], record['lease_id']) != (
+            expected_engagement_id, expected_operation_id, expected_lease_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_public_lease(record: dict, expected_engagement_id: str,
+                        expected_operation_id: str, expected_lease_id: str) -> bytes:
+    """Encode intrinsic bindings only; stored deadlines never authorize resumption."""
+    for subject in (expected_engagement_id, expected_operation_id, expected_lease_id):
+        _expected_subject(subject)
+    validated = _lease_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.LEASE_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if (validated['engagement_id'], validated['operation_id'], validated['lease_id']) != (
+            expected_engagement_id, expected_operation_id, expected_lease_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

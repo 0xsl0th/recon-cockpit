@@ -1,4 +1,4 @@
-"""Twelve codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""Nineteen codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -457,3 +457,269 @@ def test_public_roe_subject_binding():
     for value in (None, True, 1, [], {}):
         _reject(lambda: codec.decode_public_roe(wire, value), 'invalid_shape')
         _reject(lambda: codec.encode_public_roe(_roe(), value), 'invalid_shape')
+
+
+LEASE_ID = '32345678-1234-4234-9234-123456789abc'
+LEASE_UUID_KEYS = (
+    'approval_id', 'broker_id', 'clock_epoch_id', 'credential_reference',
+    'engagement_id', 'lease_id', 'operation_id', 'reviewer_id', 'session_id', 'store_owner_id',
+)
+LEASE_LINK_KEYS = ('closure_event_id', 'completion_event_id', 'release_event_id', 'reservation_id')
+LEASE_HASH_KEYS = ('action_sha256', 'operation_profile_sha256', 'request_template_sha256',
+                   'roe_sha256', 'runtime_lock_sha256', 'trust_sha256')
+LEASE_TIME_KEYS = ('operation_started_ns', 'work_deadline_ns', 'cleanup_deadline_ns')
+LEASE_STATES = (
+    ('prepared', None, False), ('reserved', None, False), ('released', None, True),
+    ('closed', 'unadmitted', False), ('closed', 'unreleased', False),
+    ('closed', 'completed', False), ('closed', 'completed', True),
+    ('closed', 'interrupted_unknown', False), ('closed', 'interrupted_unknown', True),
+)
+
+
+def _lease(state='prepared', kind=None, released=False):
+    record = {
+        'action_sha256': 'a' * 64,
+        'approval_id': SUBJECT, 'broker_id': SUBJECT, 'cancel_requested': False,
+        'cleanup_deadline_ns': None, 'clock_epoch_id': SUBJECT, 'close_kind': kind,
+        'closure_event_id': None, 'completion_event_id': None,
+        'credential_reference': SUBJECT, 'engagement_id': SUBJECT,
+        'expires_utc': '2024-02-29T23:59:59.123456Z', 'fixture_id': 'allowed',
+        'generation': 0, 'lease_id': LEASE_ID, 'operation_id': OTHER,
+        'operation_profile_sha256': 'b0e32be82eb77085db8fed7a165cab5c13ca2219247958f69dfe0ed8fc47d5e2',
+        'operation_started_ns': None, 'prepared_utc': '2024-02-29T23:59:29.123456Z',
+        'release_event_id': None, 'request_template_sha256': 'b' * 64,
+        'reservation_id': None, 'review_view': 'terminal', 'reviewer_id': SUBJECT,
+        'revision': 1, 'roe_sha256': 'c' * 64, 'runtime_lock_sha256': 'd' * 64,
+        'schema_version': 's43-lease-v1', 'session_id': SUBJECT, 'state': state,
+        'store_owner_id': SUBJECT, 'trust_sha256': 'e' * 64, 'work_deadline_ns': None,
+    }
+    if state in ('reserved', 'released') or (state == 'closed' and kind != 'unadmitted'):
+        record.update(reservation_id=SUBJECT, operation_started_ns=0,
+                      work_deadline_ns=4000000000, cleanup_deadline_ns=5000000000)
+    if state == 'released' or released:
+        record['release_event_id'] = SUBJECT
+    if state == 'closed':
+        record['closure_event_id'] = SUBJECT
+        if kind == 'completed':
+            record['completion_event_id'] = SUBJECT
+    return record
+
+
+def _lease_accept(record):
+    wire = _wire(record)
+    assert codec.encode_public_lease(record, SUBJECT, OTHER, LEASE_ID) == wire
+    decoded = codec.decode_public_lease(wire, SUBJECT, OTHER, LEASE_ID)
+    assert decoded == record and type(decoded) is dict and decoded is not record
+    return decoded
+
+
+def _lease_reject(record, code):
+    _reject(lambda: codec.encode_public_lease(record, SUBJECT, OTHER, LEASE_ID), code)
+    return _reject(lambda: codec.decode_public_lease(_wire(record), SUBJECT, OTHER, LEASE_ID), code)
+
+
+def test_public_lease_canonical_examples():
+    for state, kind, released in LEASE_STATES:
+        for cancel in (False, True):
+            for fixture in ('allowed', 'invalid', 'restricted'):
+                for view in ('terminal', 'graphical'):
+                    record = dict(_lease(state, kind, released), cancel_requested=cancel,
+                                  fixture_id=fixture, review_view=view)
+                    decoded = _lease_accept(record)
+                    decoded['revision'] = 99
+                    assert record['revision'] == 1
+                    assert _lease_accept(record)['revision'] == 1
+    # Identical syntactic IDs in unrelated reference fields are not a new ban.
+    assert _lease_accept(_lease())['approval_id'] == SUBJECT
+
+
+def test_public_lease_shape_and_type_rejections():
+    for value in (None, True, 1, 'RAW_SENTINEL', [], {}):
+        _lease_reject(value, 'invalid_shape')
+    record = _lease()
+    for key in record:
+        missing = dict(record)
+        del missing[key]
+        _lease_reject(missing, 'invalid_shape')
+        wrong = (0, 1, 'false', None) if key == 'cancel_requested' else (True, 1.0)
+        for bad in wrong:
+            _lease_reject(dict(record, **{key: bad}), 'invalid_value')
+        if key not in LEASE_LINK_KEYS + LEASE_TIME_KEYS + ('close_kind',):
+            _lease_reject(dict(record, **{key: None}), 'invalid_value')
+        for bad in ([], {}, object()):
+            _reject(lambda: codec.encode_public_lease(dict(record, **{key: bad}), SUBJECT, OTHER, LEASE_ID), 'invalid_value')
+    _lease_reject(dict(record, extra='RAW_SENTINEL'), 'invalid_shape')
+    renamed = dict(record)
+    renamed['RAW_SENTINEL'] = renamed.pop('revision')
+    _lease_reject(renamed, 'invalid_shape')
+    for key in (1, 'x' * 10000):
+        bad = dict(record)
+        del bad['revision']
+        bad[key] = 1
+        _reject(lambda: codec.encode_public_lease(bad, SUBJECT, OTHER, LEASE_ID), 'invalid_shape')
+
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+
+    class IntHook(int):
+        def __lt__(self, other):
+            raise AssertionError('hook reached')
+
+    _reject(lambda: codec.encode_public_lease(DictHook(record), SUBJECT, OTHER, LEASE_ID), 'invalid_shape')
+    for key in record:
+        bad = IntHook(1) if key in LEASE_TIME_KEYS + ('revision', 'generation') else StringHook('x')
+        _reject(lambda: codec.encode_public_lease(dict(record, **{key: bad}), SUBJECT, OTHER, LEASE_ID), 'invalid_value')
+    keys = dict(record)
+    keys[StringHook('revision')] = keys.pop('revision')
+    _reject(lambda: codec.encode_public_lease(keys, SUBJECT, OTHER, LEASE_ID), 'invalid_shape')
+
+
+def test_public_lease_scalar_bounds():
+    for key, minimum in (('revision', 1), ('generation', 0)):
+        for good in (minimum, 2147483647):
+            _lease_accept(dict(_lease(), **{key: good}))
+        for bad in (minimum - 1, 2147483648, 10 ** 200, '1', True, 1.0):
+            _lease_reject(dict(_lease(), **{key: bad}), 'invalid_value')
+    for key in LEASE_TIME_KEYS:
+        for bad in (-1, 9223372036854775808, 10 ** 200, '1', True, 1.0):
+            _lease_reject(dict(_lease('reserved'), **{key: bad}), 'invalid_value')
+    for key in LEASE_UUID_KEYS + LEASE_LINK_KEYS:
+        for bad in ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT[:-1],
+                    SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-')):
+            _lease_reject(dict(_lease('closed', 'completed', True), **{key: bad}), 'invalid_value')
+    for key in LEASE_HASH_KEYS:
+        for bad in ('', 'a' * 63, 'a' * 65, 'A' * 64, 'g' * 64, 'a' * 64 + '\n'):
+            _lease_reject(dict(_lease(), **{key: bad}), 'invalid_value')
+    _lease_reject(dict(_lease(), operation_profile_sha256='a' * 64), 'invalid_value')
+    for key in ('schema_version', 'fixture_id', 'review_view', 'state', 'close_kind'):
+        for bad in ('RAW_SENTINEL', 'x' * 65, '', 'prepared\n'):
+            _lease_reject(dict(_lease(), **{key: bad}), 'invalid_value')
+
+
+def test_public_lease_calendar_and_deadlines():
+    for start, end in (
+        ('0001-01-01T00:00:00.000000Z', '0001-01-01T00:00:00.000001Z'),
+        ('2000-02-28T23:59:59.999999Z', '2000-02-29T00:00:00.000000Z'),
+        ('2024-12-31T23:59:45.000000Z', '2025-01-01T00:00:15.000000Z'),
+        ('9999-12-31T23:59:29.999999Z', '9999-12-31T23:59:59.999999Z'),
+    ):
+        _lease_accept(dict(_lease(), prepared_utc=start, expires_utc=end))
+    invalid = ('0000-01-01T00:00:00.000000Z', '10000-01-01T00:00:00.000000Z',
+               '1900-02-29T00:00:00.000000Z', '2100-02-29T00:00:00.000000Z',
+               '2023-02-29T00:00:00.000000Z', '2024-04-31T00:00:00.000000Z',
+               '2024-00-01T00:00:00.000000Z', '2024-13-01T00:00:00.000000Z',
+               '2024-01-00T00:00:00.000000Z', '2024-01-01T24:00:00.000000Z',
+               '2024-01-01T00:60:00.000000Z', '2024-01-01T00:00:60.000000Z',
+               '2024-01-01T00:00:00.00000Z', '2024-01-01T00:00:00.0000000Z',
+               '2024-01-01T00:00:00.000000+00:00', '2024-01-01T00:00:00.000000Z\n')
+    for key in ('prepared_utc', 'expires_utc'):
+        for bad in invalid:
+            error = _lease_reject(dict(_lease(), **{key: bad}), 'invalid_value')
+            assert error.__context__ is None
+    for end in ('2024-02-29T23:59:29.123456Z', '2024-02-29T23:59:29.123455Z',
+                '2024-02-29T23:59:59.123457Z', '2025-02-28T23:59:59.123456Z'):
+        _lease_reject(dict(_lease(), expires_utc=end), 'invalid_result')
+    for start, work, cleanup in (
+        (0, 4000000000, 5000000000), (0, 1, 1000000001),
+        (7, 2000000007, 3000000007),
+        (9223372031854775807, 9223372035854775807, 9223372036854775807),
+        (9223372035854775806, 9223372035854775807, 9223372036854775807),
+    ):
+        _lease_accept(dict(_lease('reserved'), operation_started_ns=start,
+                           work_deadline_ns=work, cleanup_deadline_ns=cleanup))
+    for start, work, cleanup in (
+        (0, 0, 1000000000), (0, 1, 1000000000), (0, 5000000000, 5000000000),
+        (0, 4000000001, 5000000001), (0, 3999999999, 5000000000),
+        (0, 1, 5000000000), (5, 4, 3), (1, 2, 2),
+    ):
+        _lease_reject(dict(_lease('reserved'), operation_started_ns=start,
+                           work_deadline_ns=work, cleanup_deadline_ns=cleanup), 'invalid_result')
+
+
+def test_public_lease_state_relations():
+    # Independent state truth table: nullable links, times and terminal kind.
+    for state, kind, released in LEASE_STATES:
+        record = _lease(state, kind, released)
+        _lease_accept(record)
+        for key in LEASE_LINK_KEYS + LEASE_TIME_KEYS + ('close_kind',):
+            # Release is optional in completed/unknown snapshots; all other
+            # null/non-null flips violate a required presence/absence relation.
+            if state == 'closed' and kind in ('completed', 'interrupted_unknown') and key == 'release_event_id':
+                _lease_accept(dict(record, release_event_id=None if released else SUBJECT))
+                continue
+            value = None if record[key] is not None else (
+                'completed' if key == 'close_kind' else (1 if key in LEASE_TIME_KEYS else SUBJECT))
+            _lease_reject(dict(record, **{key: value}), 'invalid_result')
+        _lease_accept(dict(record, cancel_requested=True))
+    for state in ('prepared', 'reserved', 'released'):
+        for kind in ('unadmitted', 'unreleased', 'completed', 'interrupted_unknown'):
+            _lease_reject(dict(_lease(state), close_kind=kind), 'invalid_result')
+    for mask in range(1, 8):
+        record = _lease('reserved')
+        for index, key in enumerate(LEASE_TIME_KEYS):
+            if mask & (1 << index):
+                record[key] = None
+        _lease_reject(record, 'invalid_result')
+
+
+def test_public_lease_encoding_and_depth():
+    wire = _wire(_lease())
+    unsorted = json.dumps(dict(reversed(tuple(_lease().items()))), separators=(',', ':')).encode('ascii')
+    for frame in (unsorted, wire + b'\n', b' ' + wire, wire.replace(b':', b': ', 1),
+                  wire.replace(b'"s43-lease-v1"', b'"\\u007343-lease-v1"'),
+                  wire.replace(b'"revision":1', b'"revision":-0'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\x80', b'', b'{}x', b'{',
+                  b'x' * 4097, b'{"x":{}}', b'[[0]]'):
+        # -0 is outside revision bounds and fails scalar validation first.
+        code = 'invalid_value' if b'"revision":-0' in frame else 'invalid_encoding'
+        error = _reject(lambda: codec.decode_public_lease(frame, SUBJECT, OTHER, LEASE_ID), code)
+        assert error.__context__ is None
+    _reject(lambda: codec.decode_public_lease(b'{"revision":1,' + wire[1:], SUBJECT, OTHER, LEASE_ID), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        frame = wire.replace(b'"revision":1', b'"revision":' + scalar)
+        _reject(lambda: codec.decode_public_lease(frame, SUBJECT, OTHER, LEASE_ID), 'invalid_value')
+    _reject(lambda: codec.decode_public_lease(wire.replace(b'"generation":0', b'"generation":-0'), SUBJECT, OTHER, LEASE_ID), 'invalid_encoding')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None):
+        _reject(lambda: codec.decode_public_lease(frame, SUBJECT, OTHER, LEASE_ID), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+
+    def observed_loads(*args, **kwargs):
+        calls.append(1)
+        return original_loads(*args, **kwargs)
+
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 4097, b'{"x":{}}', b'[[0]]'):
+            _reject(lambda: codec.decode_public_lease(frame, SUBJECT, OTHER, LEASE_ID), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_public_lease(b' ' * 4096, SUBJECT, OTHER, LEASE_ID), 'invalid_encoding')
+        assert len(calls) == 1
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _lease_reject(dict(_lease(), schema_version=text), 'invalid_value')
+        assert len(calls) == 4
+    finally:
+        json.loads = original_loads
+
+
+def test_public_lease_subject_binding():
+    record = _lease()
+    wire = _wire(record)
+    for index, key in enumerate(('engagement_id', 'operation_id', 'lease_id')):
+        args = [SUBJECT, OTHER, LEASE_ID]
+        args[index] = '42345678-1234-4234-9234-123456789abc'
+        _reject(lambda: codec.decode_public_lease(wire, *args), 'wrong_subject')
+        _reject(lambda: codec.encode_public_lease(record, *args), 'wrong_subject')
+        _reject(lambda: codec.decode_public_lease(wire + b' ', *args), 'invalid_encoding')
+        _lease_reject(dict(record, **{key: args[index]}), 'wrong_subject')
+        for bad in ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT.replace('-4234-', '-1234-'),
+                    SUBJECT.replace('-9234-', '-7234-'), None, True, 1, [], {}):
+            args[index] = bad
+            code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+            _reject(lambda: codec.decode_public_lease(wire, *args), code)
+            _reject(lambda: codec.encode_public_lease(record, *args), code)

@@ -1389,3 +1389,25 @@ case mappings, prior result-slice ledger and broader readiness flags are unchang
 The preservation amendment updates only literal changed-file pins and the explicit
 datetime import allowance. Native execution and publication of this new slice
 remain separate gates; all failed evidence is retained.
+
+
+## Reviewed portable lease codec slice
+
+After verified PR109 publication, this independently reviewed slice extends the
+same six existing paths with an intrinsic lease codec. No new tracked paths or
+imports are admitted. The prior result/ROE helpers and twelve unit nodes remain
+unchanged. The exact local scope is pinned by `portable_lease_codec_slice`.
+
+The codec checks the closed 33-field snapshot, canonical ASCII bytes4096/depth1,
+exact scalar types and subject equality, Gregorian UTC intervals up to30 seconds,
+bounded monotonic deadline differences and state/close-kind nullability. Completed
+pre-release observations and cancellation in any stored state remain legal.
+Single-record validation proves neither transitions nor live identity, authority,
+original clock health, external deadline minima, event links or physical cleanup.
+Stored deadlines never authorize resumption.
+
+Seven new finite unit nodes join the preserved twelve: actual collection19 and
+eventual portable union48 remain distinct from the unchanged formal29/native89
+identities. No formal acceptance is claimed. The preservation amendment refreshes
+only literal hashes; source/import allowances, historical assertions and all
+broader implementation/native readiness and acceptance flags remain unchanged.
