@@ -1327,3 +1327,37 @@ preservation amendment for selected portable modules and tests. This design
 amendment updates only these two design documents and their literal pins in the
 existing preservation test. Historical contracts, SQL semantics,19 obligations,
 29 portable node identities,89 native node identities and global limits remain.
+
+## Portable public-result codec amendment
+
+The first implementation slice provides intrinsic validation and canonical
+encoding for the six-field public result only. Its independently reviewed scope
+contains exactly three new source files: `recon_cockpit_synthetic/__init__.py`,
+`recon_cockpit_synthetic/contract.py`, and `recon_cockpit_synthetic/codec.py`.
+The empty initializer avoids legacy package imports. The contract imports nothing;
+the codec imports only `json`, `re` and its own contract, and performs no
+application I/O, hashing, authority lookup, SQL, TLS or native operation.
+
+The existing planned file `tests/test_secure_synthetic_custody_contract.py`
+contains exactly six additional unit nodes, listed in `portable_result_codec_slice`
+in the inventory. These are implementation regressions with no acceptance credit.
+The current slice collects six unit nodes; the existing 29 formal portable node
+identities remain planned and unimplemented. The eventual portable union is35
+(29 formal plus6 unit), recorded separately. All89 native identities, original
+obligations, variants, limits, pending statuses and acceptance counts remain.
+
+The only existing-file changes are this appended note, the new scoped inventory
+object and mechanical `contract_sha256` refresh, and literal document/source/test
+pins plus path/mode/import checks in the existing preservation test. The inventory
+object records the narrowly approved implementation scope; all broader readiness
+and acceptance flags retain their historical values. No other source allowance
+is implied. Private review receipts are retained with the handover.
+
+`decode_public_result` checks bounded canonical bytes and equality with a supplied
+trusted operation UUID4. `encode_public_result` checks exact built-in values and
+produces the same canonical bytes. Fixed rejection codes reveal no input fragments.
+Neither function establishes that the caller's subject is authenticated or that
+release, actual exchange, current authority, cancellation/expiry or cleanup has
+been proved. Those checks remain mandatory downstream before use/publication.
+No runtime, native execution, broader implementation readiness or S4.3 acceptance
+is established by this portable slice.
