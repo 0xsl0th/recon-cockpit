@@ -376,3 +376,163 @@ def encode_public_lease(record: dict, expected_engagement_id: str,
             expected_engagement_id, expected_operation_id, expected_lease_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _event_closed(value, fields):
+    if type(value) is not dict or len(value) != len(fields):
+        raise ResultCodecError('invalid_shape')
+    for key in value:
+        if type(key) is not str or len(key) > 32 or key not in fields:
+            raise ResultCodecError('invalid_shape')
+
+
+def _event_scalar(value, kind):
+    if kind.endswith('?'):
+        if value is None:
+            return
+        kind = kind[:-1]
+    if kind in ('generation', 'revision', 'event_sequence', 'monotonic_ns'):
+        minimum = 1 if kind in ('revision', 'event_sequence') else 0
+        maximum = 9223372036854775807 if kind == 'monotonic_ns' else 2147483647
+        if type(value) is not int or not minimum <= value <= maximum:
+            raise ResultCodecError('invalid_value')
+        return
+    if type(value) is not str or len(value) > 64:
+        raise ResultCodecError('invalid_value')
+    if kind == 'uuid4':
+        valid = re.fullmatch(contract.UUID4_PATTERN, value) is not None
+    elif kind == 'sha256':
+        valid = re.fullmatch(contract.SHA256_PATTERN, value) is not None
+    elif kind == 'utc':
+        _roe_calendar(value)
+        valid = True
+    elif kind == 'event_kind':
+        valid = value in contract.EVENT_VARIANTS
+    elif kind == 'cancel_reason':
+        valid = value in ('operator_cancel', 'lease_revoked', 'expired', 'runtime_failure')
+    elif kind == 'close_kind':
+        valid = value in ('unadmitted', 'unreleased', 'completed', 'interrupted_unknown')
+    elif kind in ('s43-event-v1', 'pre_write'):
+        valid = value == kind
+    else:
+        valid = False
+    if not valid:
+        raise ResultCodecError('invalid_value')
+
+
+def _event_budgets(value, vector):
+    _event_closed(value, tuple(key for key, _ in contract.ROE_BUDGET_MAXIMA))
+    for key, maximum in contract.ROE_BUDGET_MAXIMA:
+        amount = value[key]
+        if type(amount) is not int or not 0 <= amount <= maximum:
+            raise ResultCodecError('invalid_value')
+    if vector and any(value[key] != amount for key, amount in contract.EVENT_BUDGET_VECTOR):
+        raise ResultCodecError('invalid_result')
+    return dict(value)
+
+
+def _event_details(value, schema):
+    _event_closed(value, tuple(key for key, _ in schema))
+    nested = {}
+    for key, kind in schema:
+        if kind in ('budget_vector', 'budget_totals'):
+            nested[key] = _event_budgets(value[key], kind == 'budget_vector')
+        elif kind == 'public_result':
+            nested[key] = _record(value[key])
+        else:
+            _event_scalar(value[key], kind)
+    details = dict(value)
+    details.update(nested)
+    return details
+
+
+def _event_record(value):
+    _event_closed(value, contract.EVENT_FIELDS)
+    for key, kind in contract.EVENT_SCALARS:
+        _event_scalar(value[key], kind)
+    kind = value['kind']
+    scope, schema = contract.EVENT_VARIANTS[kind]
+    details = _event_details(value['details'], schema)
+    if (value['sequence'] == 1) != (value['previous_event_sha256'] is None):
+        raise ResultCodecError('invalid_result')
+    for key in ('operation_id', 'lease_id'):
+        if (scope == 'engagement') != (value[key] is None):
+            raise ResultCodecError('invalid_result')
+    if kind == 'allowance_reserved':
+        if any(details['usage_after'][key] < amount for key, amount in contract.EVENT_BUDGET_VECTOR):
+            raise ResultCodecError('invalid_result')
+        start, work, cleanup = (details[key] for key in contract.LEASE_TIME_FIELDS)
+        if not start < work < cleanup or cleanup - start > 5000000000:
+            raise ResultCodecError('invalid_result')
+        if work - start != min(4000000000, cleanup - start - 1000000000):
+            raise ResultCodecError('invalid_result')
+    elif kind == 'engagement_revoked':
+        if value['generation'] - details['previous_generation'] != 1:
+            raise ResultCodecError('invalid_result')
+    elif kind == 'roe_adopted':
+        if (value['revision'] == 1) != (details['previous_revision_sha256'] is None):
+            raise ResultCodecError('invalid_result')
+        if (value['revision'] == 1) != (value['generation'] == 0):
+            raise ResultCodecError('invalid_result')
+    elif kind == 'lease_closed':
+        if (details['close_kind'] == 'completed') != (details['completion_event_id'] is not None):
+            raise ResultCodecError('invalid_result')
+    elif kind == 'result_observed':
+        if details['result']['operation_id'] != value['operation_id']:
+            raise ResultCodecError('invalid_result')
+    record = dict(value)
+    record['details'] = details
+    return record
+
+
+def _event_subjects(engagement, operation, lease, event):
+    _expected_subject(engagement)
+    _expected_subject(event)
+    if (operation is None) != (lease is None):
+        raise ResultCodecError('invalid_shape')
+    if operation is not None:
+        _expected_subject(operation)
+        _expected_subject(lease)
+
+
+def decode_public_event(frame: bytes, expected_engagement_id: str,
+                        expected_operation_id: str | None, expected_lease_id: str | None,
+                        expected_event_id: str) -> dict:
+    """Validate one event; no ledger order, transaction or observation proof."""
+    _event_subjects(expected_engagement_id, expected_operation_id, expected_lease_id, expected_event_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.EVENT_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.EVENT_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _event_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('engagement_id', 'operation_id', 'lease_id', 'event_id')) != (
+            expected_engagement_id, expected_operation_id, expected_lease_id, expected_event_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_public_event(record: dict, expected_engagement_id: str,
+                        expected_operation_id: str | None, expected_lease_id: str | None,
+                        expected_event_id: str) -> bytes:
+    """Encode intrinsic event bindings; no audit commit or execution authority."""
+    _event_subjects(expected_engagement_id, expected_operation_id, expected_lease_id, expected_event_id)
+    validated = _event_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.EVENT_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('engagement_id', 'operation_id', 'lease_id', 'event_id')) != (
+            expected_engagement_id, expected_operation_id, expected_lease_id, expected_event_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

@@ -1411,3 +1411,25 @@ eventual portable union48 remain distinct from the unchanged formal29/native89
 identities. No formal acceptance is claimed. The preservation amendment refreshes
 only literal hashes; source/import allowances, historical assertions and all
 broader implementation/native readiness and acceptance flags remain unchanged.
+
+
+## Reviewed portable event codec slice
+
+After verified PR110 publication, the independently reviewed next slice extends
+the same six existing paths with an intrinsic authority-event codec. No new paths
+or imports are admitted; all shared helpers and nineteen prior unit nodes remain
+unchanged. The exact local scope is pinned by `portable_event_codec_slice`.
+
+The codec validates the fifteen-field envelope and eleven closed variants within
+4096 canonical ASCII bytes and depth3, with exact types and expected engagement/
+operation/lease/event equality. Intrinsic checks cover sequence/predecessor
+nullability, variant subject scope, reservation vectors/totals/deadlines, local
+adoption/revocation relationships, closure/completion links and nested result
+bindings. Returned nested dictionaries are fresh. These checks do not establish
+ledger history, actual accounting, authenticated observation, same-store commit,
+current authority or physical cleanup.
+
+Eight new finite unit nodes give actual collection27 and eventual portable union56.
+Formal29/native89 identities and all broader readiness/acceptance flags remain
+unchanged. The preservation amendment updates only five literal hashes; no
+existing path/import allowance or historical assertion changes.
