@@ -1,4 +1,4 @@
-"""Nineteen codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""Twenty-seven codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -723,3 +723,400 @@ def test_public_lease_subject_binding():
             code = 'invalid_value' if type(bad) is str else 'invalid_shape'
             _reject(lambda: codec.decode_public_lease(wire, *args), code)
             _reject(lambda: codec.encode_public_lease(record, *args), code)
+
+
+EVENT_ID = '42345678-1234-4234-9234-123456789abc'
+EVENT_ENVELOPE_KEYS = (
+    'actor_owner_id', 'actor_session_id', 'details', 'engagement_id', 'event_id',
+    'generation', 'kind', 'lease_id', 'operation_id', 'previous_event_sha256',
+    'recorded_utc', 'revision', 'schema_version', 'sequence', 'transaction_id',
+)
+EVENT_DETAIL_TYPES = {
+    'allowance_reserved': (('cleanup_deadline_ns', 'integer'), ('operation_started_ns', 'integer'),
+                           ('reservation_id', 'uuid'), ('reserved', 'vector'),
+                           ('usage_after', 'totals'), ('work_deadline_ns', 'integer')),
+    'cancellation_requested': (('reason', 'enum'),),
+    'credential_released': (('reservation_id', 'uuid'), ('tls_observation_id', 'uuid')),
+    'engagement_revoked': (('previous_generation', 'integer'),),
+    'exchange_observed': (('phase', 'enum'), ('progress_observation_id', 'uuid'), ('release_event_id', 'uuid')),
+    'lease_closed': (('cleanup_observation_id', 'uuid'), ('close_kind', 'enum'), ('completion_event_id', 'uuid?')),
+    'lease_prepared': (('lease_binding_sha256', 'hash'),),
+    'owner_recovered': (('cleanup_observation_id', 'uuid'), ('previous_owner_id', 'uuid')),
+    'result_observed': (('result', 'result'),),
+    'result_recorded': (('observation_event_id', 'uuid'), ('result_sha256', 'hash')),
+    'roe_adopted': (('previous_revision_sha256', 'hash?'), ('roe_sha256', 'hash')),
+}
+
+
+def _event(kind='lease_prepared'):
+    bodies = {
+        'allowance_reserved': {
+            'cleanup_deadline_ns': 5000000000, 'operation_started_ns': 0,
+            'reservation_id': SUBJECT,
+            'reserved': {'actions': 1, 'connections': 1, 'inbound_tls_bytes': 16384,
+                         'outbound_tls_bytes': 8192, 'runtime_ms': 5000},
+            'usage_after': {'actions': 1, 'connections': 1, 'inbound_tls_bytes': 16384,
+                            'outbound_tls_bytes': 8192, 'runtime_ms': 5000},
+            'work_deadline_ns': 4000000000,
+        },
+        'cancellation_requested': {'reason': 'operator_cancel'},
+        'credential_released': {'reservation_id': SUBJECT, 'tls_observation_id': SUBJECT},
+        'engagement_revoked': {'previous_generation': 0},
+        'exchange_observed': {'phase': 'pre_write', 'progress_observation_id': SUBJECT, 'release_event_id': SUBJECT},
+        'lease_closed': {'cleanup_observation_id': SUBJECT, 'close_kind': 'unadmitted', 'completion_event_id': None},
+        'lease_prepared': {'lease_binding_sha256': 'a' * 64},
+        'owner_recovered': {'cleanup_observation_id': SUBJECT, 'previous_owner_id': SUBJECT},
+        'result_observed': {'result': dict(_record(), operation_id=OTHER)},
+        'result_recorded': {'observation_event_id': SUBJECT, 'result_sha256': 'a' * 64},
+        'roe_adopted': {'previous_revision_sha256': None, 'roe_sha256': 'b' * 64},
+    }
+    engagement = kind in ('engagement_revoked', 'owner_recovered', 'roe_adopted')
+    return {
+        'actor_owner_id': SUBJECT, 'actor_session_id': SUBJECT, 'details': bodies[kind],
+        'engagement_id': SUBJECT, 'event_id': EVENT_ID,
+        'generation': 1 if kind == 'engagement_revoked' else 0, 'kind': kind,
+        'lease_id': None if engagement else LEASE_ID, 'operation_id': None if engagement else OTHER,
+        'previous_event_sha256': None, 'recorded_utc': '2024-02-29T23:59:59.123456Z',
+        'revision': 1, 'schema_version': 's43-event-v1', 'sequence': 1, 'transaction_id': SUBJECT,
+    }
+
+
+def _event_args(kind):
+    if kind in ('engagement_revoked', 'owner_recovered', 'roe_adopted'):
+        return SUBJECT, None, None, EVENT_ID
+    return SUBJECT, OTHER, LEASE_ID, EVENT_ID
+
+
+def _event_accept(record):
+    args = _event_args(record['kind'])
+    wire = _wire(record)
+    assert codec.encode_public_event(record, *args) == wire
+    decoded = codec.decode_public_event(wire, *args)
+    assert decoded == record and decoded is not record
+    assert decoded['details'] is not record['details']
+    return decoded
+
+
+def _event_reject(record, code, kind='lease_prepared'):
+    args = _event_args(kind)
+    _reject(lambda: codec.encode_public_event(record, *args), code)
+    return _reject(lambda: codec.decode_public_event(_wire(record), *args), code)
+
+
+def test_public_event_canonical_examples():
+    for kind in EVENT_DETAIL_TYPES:
+        record = _event(kind)
+        assert tuple(sorted(record)) == EVENT_ENVELOPE_KEYS
+        decoded = _event_accept(record)
+        decoded['details']['RAW_SENTINEL'] = 1
+        assert 'RAW_SENTINEL' not in record['details']
+        assert 'RAW_SENTINEL' not in _event_accept(record)['details']
+    for row in RELATIONS:
+        record = _event('result_observed')
+        record['details']['result'] = dict(_record(row), operation_id=OTHER)
+        decoded = _event_accept(record)
+        decoded['details']['result']['outcome'] = 'RAW_SENTINEL'
+        assert record['details']['result']['outcome'] == row[0]
+        assert _event_accept(record)['details']['result']['outcome'] == row[0]
+    record = _event('allowance_reserved')
+    decoded = _event_accept(record)
+    for key in ('reserved', 'usage_after'):
+        decoded['details'][key]['actions'] = 99
+        assert record['details'][key]['actions'] == 1
+        assert _event_accept(record)['details'][key]['actions'] == 1
+
+
+def test_public_event_shape_and_type_rejections():
+    for value in (None, True, 1, 'RAW_SENTINEL', [], {}):
+        _event_reject(value, 'invalid_shape')
+    for key in EVENT_ENVELOPE_KEYS:
+        record = _event()
+        del record[key]
+        _event_reject(record, 'invalid_shape')
+        for bad in (True, 'RAW_SENTINEL' if key in ('generation', 'revision', 'sequence') else 1):
+            _event_reject(dict(_event(), **{key: bad}), 'invalid_shape' if key == 'details' else 'invalid_value')
+        if key not in ('lease_id', 'operation_id', 'previous_event_sha256'):
+            _event_reject(dict(_event(), **{key: None}), 'invalid_shape' if key == 'details' else 'invalid_value')
+        if key != 'details':
+            _event_reject(dict(_event(), **{key: 1.0}), 'invalid_value')
+    _event_reject(dict(_event(), RAW_SENTINEL=1), 'invalid_shape')
+    for key in (1, 'x' * 10000):
+        record = _event()
+        del record['revision']
+        record[key] = 1
+        _reject(lambda: codec.encode_public_event(record, *_event_args('lease_prepared')), 'invalid_shape')
+
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+
+    class IntHook(int):
+        def __lt__(self, other):
+            raise AssertionError('hook reached')
+
+    _reject(lambda: codec.encode_public_event(DictHook(_event()), *_event_args('lease_prepared')), 'invalid_shape')
+    for key in EVENT_ENVELOPE_KEYS:
+        bad = DictHook() if key == 'details' else (IntHook(1) if key in ('revision', 'generation', 'sequence') else StringHook('x'))
+        _reject(lambda: codec.encode_public_event(dict(_event(), **{key: bad}), *_event_args('lease_prepared')), 'invalid_shape' if key == 'details' else 'invalid_value')
+    for kind, schema in EVENT_DETAIL_TYPES.items():
+        for key, value_type in schema:
+            record = _event(kind)
+            container = value_type in ('vector', 'totals', 'result')
+            for bad in (None, True, 'RAW_SENTINEL'):
+                if bad is None and value_type.endswith('?'):
+                    continue
+                record['details'][key] = bad
+                _event_reject(record, 'invalid_shape' if container else 'invalid_value', kind)
+            record['details'][key] = DictHook() if container else (IntHook(1) if value_type == 'integer' else StringHook('x'))
+            _reject(lambda: codec.encode_public_event(record, *_event_args(kind)), 'invalid_shape' if container else 'invalid_value')
+        record = _event(kind)
+        record['details'] = DictHook(record['details'])
+        _reject(lambda: codec.encode_public_event(record, *_event_args(kind)), 'invalid_shape')
+    for level in ('envelope', 'details', 'reserved'):
+        record = _event('allowance_reserved')
+        target = record if level == 'envelope' else (record['details'] if level == 'details' else record['details']['reserved'])
+        key = next(iter(target))
+        value = target.pop(key)
+        target[StringHook(key)] = value
+        _reject(lambda: codec.encode_public_event(record, *_event_args('allowance_reserved')), 'invalid_shape')
+
+
+def test_public_event_variant_schemas():
+    for kind, schema in EVENT_DETAIL_TYPES.items():
+        record = _event(kind)
+        assert set(record['details']) == {key for key, _ in schema}
+        for key, _ in schema:
+            bad = _event(kind)
+            del bad['details'][key]
+            _event_reject(bad, 'invalid_shape', kind)
+        bad = _event(kind)
+        bad['details']['RAW_SENTINEL'] = 1
+        _event_reject(bad, 'invalid_shape', kind)
+        for other in EVENT_DETAIL_TYPES:
+            if other != kind:
+                _event_reject(dict(record, details=_event(other)['details']), 'invalid_shape', kind)
+    for key in ('reserved', 'usage_after', 'result'):
+        kind = 'result_observed' if key == 'result' else 'allowance_reserved'
+        record = _event(kind)
+        for field in record['details'][key]:
+            bad = _event(kind)
+            del bad['details'][key][field]
+            _event_reject(bad, 'invalid_shape', kind)
+        record['details'][key]['RAW_SENTINEL'] = 1
+        _event_reject(record, 'invalid_shape', kind)
+    for reason in ('operator_cancel', 'lease_revoked', 'expired', 'runtime_failure'):
+        _event_accept(dict(_event('cancellation_requested'), details={'reason': reason}))
+    for key, bad in (('kind', 'unknown'), ('schema_version', 's43-event-v2')):
+        _event_reject(dict(_event(), **{key: bad}), 'invalid_value')
+
+
+def test_public_event_scalar_and_calendar_bounds():
+    for key, minimum in (('revision', 1), ('generation', 0), ('sequence', 1)):
+        for value in (minimum, 2147483647):
+            record = dict(_event(), **{key: value})
+            if key == 'sequence' and value != 1:
+                record['previous_event_sha256'] = 'a' * 64
+            _event_accept(record)
+        for bad in (minimum - 1, 2147483648, 10 ** 200, True, 1.0, '1'):
+            _event_reject(dict(_event(), **{key: bad}), 'invalid_value')
+    bad_uuids = ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT[:-1],
+                 SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'))
+    bad_hashes = ('', 'a' * 63, 'a' * 65, 'A' * 64, 'g' * 64, 'a' * 64 + '\n')
+    for key in ('actor_owner_id', 'actor_session_id', 'engagement_id', 'event_id', 'lease_id', 'operation_id', 'transaction_id'):
+        for bad in bad_uuids:
+            _event_reject(dict(_event(), **{key: bad}), 'invalid_value')
+    for bad in bad_hashes:
+        _event_reject(dict(_event(), previous_event_sha256=bad), 'invalid_value')
+    for kind, schema in EVENT_DETAIL_TYPES.items():
+        for key, typ in schema:
+            if typ in ('uuid', 'uuid?', 'hash', 'hash?'):
+                for bad in bad_uuids if typ.startswith('uuid') else bad_hashes:
+                    record = _event(kind)
+                    record['details'][key] = bad
+                    _event_reject(record, 'invalid_value', kind)
+            if typ == 'enum':
+                for bad in ('', 'RAW_SENTINEL', 'pre_write\n', 'x' * 65):
+                    record = _event(kind)
+                    record['details'][key] = bad
+                    _event_reject(record, 'invalid_value', kind)
+    for good in ('0001-01-01T00:00:00.000000Z', '2000-02-29T23:59:59.999999Z', '9999-12-31T23:59:59.999999Z'):
+        _event_accept(dict(_event(), recorded_utc=good))
+    for bad in ('0000-01-01T00:00:00.000000Z', '10000-01-01T00:00:00.000000Z',
+                '1900-02-29T00:00:00.000000Z', '2100-02-29T00:00:00.000000Z',
+                '2023-02-29T00:00:00.000000Z', '2024-04-31T00:00:00.000000Z',
+                '2024-00-01T00:00:00.000000Z', '2024-13-01T00:00:00.000000Z',
+                '2024-01-00T00:00:00.000000Z', '2024-01-01T24:00:00.000000Z',
+                '2024-01-01T00:60:00.000000Z', '2024-01-01T00:00:60.000000Z',
+                '2024-01-01T00:00:00.00000Z', '2024-01-01T00:00:00.0000000Z',
+                '2024-01-01T00:00:00.000000+00:00', '2024-01-01T00:00:00.000000Z\n'):
+        error = _event_reject(dict(_event(), recorded_utc=bad), 'invalid_value')
+        assert error.__context__ is None
+
+
+def test_public_event_sequence_and_subject_binding():
+    for sequence, previous in ((1, None), (2, 'a' * 64), (2147483647, 'b' * 64)):
+        _event_accept(dict(_event(), sequence=sequence, previous_event_sha256=previous))
+    for sequence, previous in ((1, 'a' * 64), (2, None), (2147483647, None)):
+        _event_reject(dict(_event(), sequence=sequence, previous_event_sha256=previous), 'invalid_result')
+    for kind in EVENT_DETAIL_TYPES:
+        record = _event(kind)
+        args = _event_args(kind)
+        wire = _wire(record)
+        for key in ('operation_id', 'lease_id'):
+            _event_reject(dict(record, **{key: SUBJECT if record[key] is None else None}), 'invalid_result', kind)
+        for index, key in enumerate(('engagement_id', 'operation_id', 'lease_id', 'event_id')):
+            changed = list(args)
+            changed[index] = '52345678-1234-4234-9234-123456789abc'
+            code = 'invalid_shape' if index in (1, 2) and args[index] is None else 'wrong_subject'
+            _reject(lambda: codec.decode_public_event(wire, *changed), code)
+            _reject(lambda: codec.encode_public_event(record, *changed), code)
+            if code == 'wrong_subject':
+                _reject(lambda: codec.decode_public_event(wire + b' ', *changed), 'invalid_encoding')
+        changed = list(args)
+        changed[1:3] = (None, None) if args[1] is not None else (OTHER, LEASE_ID)
+        _reject(lambda: codec.decode_public_event(wire, *changed), 'wrong_subject')
+        _reject(lambda: codec.encode_public_event(record, *changed), 'wrong_subject')
+    record = _event()
+    wire = _wire(record)
+    for index in range(4):
+        for bad in ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT.replace('-4234-', '-1234-'),
+                    SUBJECT.replace('-9234-', '-7234-'), None, True, 1, [], {}):
+            args = list(_event_args('lease_prepared'))
+            args[index] = bad
+            code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+            _reject(lambda: codec.decode_public_event(wire, *args), code)
+            _reject(lambda: codec.encode_public_event(record, *args), code)
+
+
+def test_public_event_budget_and_deadline_relations():
+    dimensions = (('actions', 1, 64), ('connections', 1, 64),
+                  ('inbound_tls_bytes', 16384, 1048576), ('outbound_tls_bytes', 8192, 524288),
+                  ('runtime_ms', 5000, 320000))
+    for key, minimum, maximum in dimensions:
+        for good in (minimum, maximum):
+            record = _event('allowance_reserved')
+            record['details']['usage_after'][key] = good
+            _event_accept(record)
+        for container in ('reserved', 'usage_after'):
+            for bad in (-1, maximum + 1, True, 1.0, '1', None):
+                record = _event('allowance_reserved')
+                record['details'][container][key] = bad
+                _event_reject(record, 'invalid_value', 'allowance_reserved')
+        for container, bad in (('reserved', 0), ('reserved', minimum + 1), ('usage_after', minimum - 1)):
+            record = _event('allowance_reserved')
+            record['details'][container][key] = bad
+            _event_reject(record, 'invalid_result', 'allowance_reserved')
+    for good, cases in ((True, (
+        (0, 4000000000, 5000000000), (0, 1, 1000000001), (7, 2000000007, 3000000007),
+        (9223372031854775807, 9223372035854775807, 9223372036854775807),
+        (9223372035854775806, 9223372035854775807, 9223372036854775807),
+    )), (False, (
+        (0, 0, 1000000000), (0, 1, 1000000000), (0, 5000000000, 5000000000),
+        (0, 4000000001, 5000000001), (0, 3999999999, 5000000000), (0, 1, 5000000000),
+        (5, 4, 3), (1, 2, 2),
+    ))):
+        for start, work, cleanup in cases:
+            record = _event('allowance_reserved')
+            record['details'].update(operation_started_ns=start, work_deadline_ns=work, cleanup_deadline_ns=cleanup)
+            if good:
+                _event_accept(record)
+            else:
+                _event_reject(record, 'invalid_result', 'allowance_reserved')
+    for key in ('operation_started_ns', 'work_deadline_ns', 'cleanup_deadline_ns'):
+        for bad in (-1, 9223372036854775808, 10 ** 200, None, True, 1.0, '1'):
+            record = _event('allowance_reserved')
+            record['details'][key] = bad
+            _event_reject(record, 'invalid_value', 'allowance_reserved')
+
+
+def test_public_event_intrinsic_relations():
+    for previous, generation in ((0, 1), (2147483646, 2147483647)):
+        record = _event('engagement_revoked')
+        record['generation'] = generation
+        record['details']['previous_generation'] = previous
+        _event_accept(record)
+    for previous, generation in ((0, 0), (0, 2), (1, 0), (2147483647, 2147483647), (2147483647, 0)):
+        record = _event('engagement_revoked')
+        record['generation'] = generation
+        record['details']['previous_generation'] = previous
+        _event_reject(record, 'invalid_result', 'engagement_revoked')
+    for bad in (-1, 2147483648, True, 1.0, '1'):
+        record = _event('engagement_revoked')
+        record['details']['previous_generation'] = bad
+        _event_reject(record, 'invalid_value', 'engagement_revoked')
+    for good, cases in ((True, ((1, None, 0), (2, 'a' * 64, 1), (2147483647, 'b' * 64, 2147483647))),
+                        (False, ((1, 'a' * 64, 0), (1, None, 1), (2, None, 1), (2, 'a' * 64, 0)))):
+        for revision, previous, generation in cases:
+            record = _event('roe_adopted')
+            record.update(revision=revision, generation=generation)
+            record['details']['previous_revision_sha256'] = previous
+            if good:
+                _event_accept(record)
+            else:
+                _event_reject(record, 'invalid_result', 'roe_adopted')
+    for kind in ('unadmitted', 'unreleased', 'completed', 'interrupted_unknown'):
+        record = _event('lease_closed')
+        record['details'].update(close_kind=kind, completion_event_id=SUBJECT if kind == 'completed' else None)
+        _event_accept(record)
+        record['details']['completion_event_id'] = None if kind == 'completed' else SUBJECT
+        _event_reject(record, 'invalid_result', 'lease_closed')
+    record = _event('result_observed')
+    record['details']['result']['operation_id'] = SUBJECT
+    _event_reject(record, 'invalid_result', 'result_observed')
+    record = _event('result_observed')
+    record['details']['result']['http_status'] = 401
+    _event_reject(record, 'invalid_result', 'result_observed')
+    record['details']['result']['http_status'] = True
+    _event_reject(record, 'invalid_value', 'result_observed')
+
+
+def test_public_event_encoding_and_depth():
+    record = _event('allowance_reserved')
+    wire = _wire(record)
+    args = _event_args('allowance_reserved')
+    reversed_root = json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii')
+    budget = record['details']['reserved']
+    reversed_budget = json.dumps(dict(reversed(tuple(budget.items()))), separators=(',', ':')).encode('ascii')
+    for frame in (reversed_root, wire.replace(_wire(budget), reversed_budget, 1),
+                  wire + b'\n', b' ' + wire, wire.replace(b':', b': ', 1),
+                  wire.replace(b'"s43-event-v1"', b'"\\u007343-event-v1"'),
+                  wire.replace(b'"generation":0', b'"generation":-0'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\x80', b'', b'{', b'{}x', b'x' * 4097,
+                  b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+        error = _reject(lambda: codec.decode_public_event(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None
+    for frame in (b'{"sequence":1,' + wire[1:],
+                  wire.replace(b'"details":{', b'"details":{"work_deadline_ns":4000000000,'),
+                  wire.replace(b'"reserved":{', b'"reserved":{"actions":1,')):
+        _reject(lambda: codec.decode_public_event(frame, *args), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        _reject(lambda: codec.decode_public_event(wire.replace(b'"revision":1', b'"revision":' + scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None):
+        _reject(lambda: codec.decode_public_event(frame, *args), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 4097, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+            _reject(lambda: codec.decode_public_event(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_public_event(b' ' * 4096, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_public_event(b'{"a":{"b":{}}}', *args), 'invalid_shape')
+        assert len(calls) == 2
+        assert codec.decode_public_event(wire, *args) == record
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _event_reject(dict(_event(), schema_version=text), 'invalid_value')
+        assert len(calls) == 6
+    finally:
+        json.loads = original_loads

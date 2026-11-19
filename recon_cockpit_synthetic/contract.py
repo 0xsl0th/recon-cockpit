@@ -68,3 +68,45 @@ LEASE_HASH_FIELDS = (
     'roe_sha256', 'runtime_lock_sha256', 'trust_sha256',
 )
 LEASE_TIME_FIELDS = ('operation_started_ns', 'work_deadline_ns', 'cleanup_deadline_ns')
+
+# Intrinsic event records only; no ledger, transaction or observation authority.
+EVENT_MAX_BYTES = 4096
+EVENT_MAX_DEPTH = 3
+EVENT_FIELDS = (
+    'actor_owner_id', 'actor_session_id', 'details', 'engagement_id', 'event_id',
+    'generation', 'kind', 'lease_id', 'operation_id', 'previous_event_sha256',
+    'recorded_utc', 'revision', 'schema_version', 'sequence', 'transaction_id',
+)
+EVENT_SCALARS = (
+    ('actor_owner_id', 'uuid4'), ('actor_session_id', 'uuid4'),
+    ('engagement_id', 'uuid4'), ('event_id', 'uuid4'), ('generation', 'generation'),
+    ('kind', 'event_kind'), ('lease_id', 'uuid4?'), ('operation_id', 'uuid4?'),
+    ('previous_event_sha256', 'sha256?'), ('recorded_utc', 'utc'),
+    ('revision', 'revision'), ('schema_version', 's43-event-v1'),
+    ('sequence', 'event_sequence'), ('transaction_id', 'uuid4'),
+)
+EVENT_BUDGET_VECTOR = (
+    ('actions', 1), ('connections', 1), ('inbound_tls_bytes', 16384),
+    ('outbound_tls_bytes', 8192), ('runtime_ms', 5000),
+)
+EVENT_VARIANTS = {
+    'allowance_reserved': ('lease', (
+        ('cleanup_deadline_ns', 'monotonic_ns'), ('operation_started_ns', 'monotonic_ns'),
+        ('reservation_id', 'uuid4'), ('reserved', 'budget_vector'),
+        ('usage_after', 'budget_totals'), ('work_deadline_ns', 'monotonic_ns'),
+    )),
+    'cancellation_requested': ('lease', (('reason', 'cancel_reason'),)),
+    'credential_released': ('lease', (('reservation_id', 'uuid4'), ('tls_observation_id', 'uuid4'))),
+    'engagement_revoked': ('engagement', (('previous_generation', 'generation'),)),
+    'exchange_observed': ('lease', (
+        ('phase', 'pre_write'), ('progress_observation_id', 'uuid4'), ('release_event_id', 'uuid4'),
+    )),
+    'lease_closed': ('lease', (
+        ('cleanup_observation_id', 'uuid4'), ('close_kind', 'close_kind'), ('completion_event_id', 'uuid4?'),
+    )),
+    'lease_prepared': ('lease', (('lease_binding_sha256', 'sha256'),)),
+    'owner_recovered': ('engagement', (('cleanup_observation_id', 'uuid4'), ('previous_owner_id', 'uuid4'))),
+    'result_observed': ('lease', (('result', 'public_result'),)),
+    'result_recorded': ('lease', (('observation_event_id', 'uuid4'), ('result_sha256', 'sha256'))),
+    'roe_adopted': ('engagement', (('previous_revision_sha256', 'sha256?'), ('roe_sha256', 'sha256'))),
+}

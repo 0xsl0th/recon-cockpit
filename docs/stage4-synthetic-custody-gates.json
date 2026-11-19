@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "d0e9b2336a4b00c00b88d61be03267b4eede30660cace3a36592e3ffa06ddd5a",
+  "contract_sha256": "661daf91117f72f325ffc860286ab9d1b09f61a174b6af24664372a35d49eadb",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -10986,5 +10986,43 @@
     "native_execution_authorized": false,
     "authority_predicates_implemented": false,
     "validation": "Collect exact19 unit IDs; run seven new lease units and affected preservation check; independent final review before publication."
+  },
+  "portable_event_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_event_codec_implementation",
+    "scope_sha256": "055a6b953b24f103fdb3b6973221b6dcd06696afbc986aed5cf7ca957a41258e",
+    "verified_base_merge": "f67b42490b30f8c732e7411e16d4adef17f52973",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_public_event_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_event_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_event_variant_schemas",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_event_scalar_and_calendar_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_event_sequence_and_subject_binding",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_event_budget_and_deadline_relations",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_event_intrinsic_relations",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_event_encoding_and_depth"
+    ],
+    "new_unit_node_count": 8,
+    "prior_result_roe_lease_unit_nodes_preserved": 19,
+    "combined_unit_node_count": 27,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 56,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "validation": "Collect exact27 unit IDs; run eight new event units and affected preservation check; independent final review before publication."
   }
 }
