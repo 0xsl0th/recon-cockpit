@@ -644,3 +644,96 @@ def encode_observation_record(record: dict, expected_engagement_id: str,
             expected_engagement_id, expected_operation_id, expected_lease_id, expected_reference_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _custody_receipt_scalar(value, kind):
+    if kind in contract.CUSTODY_RECEIPT_INTEGER_BOUNDS:
+        minimum, maximum = contract.CUSTODY_RECEIPT_INTEGER_BOUNDS[kind]
+        if type(value) is not int or not minimum <= value <= maximum:
+            raise ResultCodecError('invalid_value')
+    elif kind == 'true':
+        if type(value) is not bool or value is not True:
+            raise ResultCodecError('invalid_value')
+    elif kind in contract.CUSTODY_RECEIPT_ENUMS or kind in contract.CUSTODY_RECEIPT_LITERALS or kind == 'custody_receipt_kind':
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        if kind in contract.CUSTODY_RECEIPT_ENUMS:
+            valid = value in contract.CUSTODY_RECEIPT_ENUMS[kind]
+        elif kind == 'custody_receipt_kind':
+            valid = value in contract.CUSTODY_RECEIPT_VARIANTS
+        else:
+            valid = value == kind
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _event_scalar(value, kind)
+
+
+def _custody_receipt_record(value):
+    _event_closed(value, contract.CUSTODY_RECEIPT_FIELDS)
+    for key, kind in contract.CUSTODY_RECEIPT_SCALARS:
+        _custody_receipt_scalar(value[key], kind)
+    schema = contract.CUSTODY_RECEIPT_VARIANTS[value['kind']]
+    payload = value['payload']
+    _event_closed(payload, tuple(key for key, _ in schema))
+    for key, kind in schema:
+        _custody_receipt_scalar(payload[key], kind)
+    if value['issuer_role'] != 'operation_worker':
+        raise ResultCodecError('invalid_result')
+    result = dict(value)
+    result['payload'] = dict(payload)
+    return result
+
+
+def _custody_receipt_subjects(owner, operation, graph, receipt):
+    for value in (owner, graph, receipt):
+        _expected_subject(value)
+    if operation is not None:
+        _expected_subject(operation)
+
+
+def decode_custody_receipt_record(frame: bytes, expected_subject_owner_id: str,
+                                  expected_operation_id: str | None,
+                                  expected_graph_id: str, expected_receipt_id: str) -> dict:
+    """Parse socket/source records only; no producer authentication, receipt
+    registration/resolution, physical custody/closure proof or operation authorization.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.CUSTODY_RECEIPT_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.CUSTODY_RECEIPT_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _custody_receipt_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_custody_receipt_record(record: dict, expected_subject_owner_id: str,
+                                  expected_operation_id: str | None,
+                                  expected_graph_id: str, expected_receipt_id: str) -> bytes:
+    """Encode socket/source records only; no producer authentication, receipt
+    registration/resolution, physical custody/closure proof or operation authorization.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    validated = _custody_receipt_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.CUSTODY_RECEIPT_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

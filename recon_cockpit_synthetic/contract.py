@@ -165,3 +165,49 @@ OBSERVATION_VARIANTS = {
         ('session_reused', 'false'), ('socket_observation_id', 'uuid4'), ('trust_sha256', 'sha256'),
     )),
 }
+
+# Partial intrinsic receipt coverage; no physical custody or authority proof.
+CUSTODY_RECEIPT_MAX_BYTES = 4096
+CUSTODY_RECEIPT_MAX_DEPTH = 3
+CUSTODY_RECEIPT_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+CUSTODY_RECEIPT_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'custody_receipt_kind'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+CUSTODY_RECEIPT_ENUMS = {
+    'role': ('driver', 'supervisor', 'broker', 'reviewer', 'fixture_source', 'connector',
+             'operation_worker', 'release_guard', 'owned_service', 'graphical_display', 'fixture_probe'),
+    'phase': ('ready', 'socket_transferred', 'credential_transferred', 'result_released', 'closed'),
+    'fixture_id': ('allowed', 'invalid', 'restricted'),
+}
+CUSTODY_RECEIPT_LITERALS = (
+    's43-physical-receipt-v1', 'tcp', '127.0.0.1', 'read_only', 'write_grow_shrink_seal',
+)
+CUSTODY_RECEIPT_INTEGER_BOUNDS = {
+    'u64': (0, 18446744073709551615), 'port': (1, 65535),
+    'service_port': (9443, 9443), 'credential_size': (1, 64),
+}
+CUSTODY_RECEIPT_VARIANTS = {
+    'socket_custody': (
+        ('local_address', '127.0.0.1'), ('local_port', 'port'), ('network_namespace_inode', 'u64'),
+        ('peer_address', '127.0.0.1'), ('peer_port', 'service_port'), ('protocol', 'tcp'),
+        ('receiver_descriptor_receipt_id', 'uuid4'), ('receiver_instance_id', 'uuid4'),
+        ('sender_aliases_closed', 'true'), ('sender_descriptor_receipt_id', 'uuid4'),
+        ('sender_instance_id', 'uuid4'), ('socket_observation_id', 'uuid4'), ('transfer_id', 'uuid4'),
+    ),
+    'source_custody': (
+        ('access_mode', 'read_only'), ('fixture_id', 'fixture_id'),
+        ('receiver_descriptor_receipt_id', 'uuid4'), ('receiver_instance_id', 'uuid4'),
+        ('release_event_id', 'uuid4'), ('seals', 'write_grow_shrink_seal'), ('size_bytes', 'credential_size'),
+        ('source_aliases_closed', 'true'), ('source_descriptor_receipt_id', 'uuid4'),
+        ('source_instance_id', 'uuid4'), ('transfer_id', 'uuid4'), ('writable_aliases_closed', 'true'),
+    ),
+}

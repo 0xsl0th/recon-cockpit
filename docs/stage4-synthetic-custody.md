@@ -1462,3 +1462,34 @@ Seven new finite unit nodes give actual collection34 and eventual portable union
 Formal29/native89 identities and all broader readiness/acceptance flags remain
 unchanged. The preservation amendment updates only five literal hashes; existing
 path/import allowances and historical assertions remain unchanged.
+
+## Portable custody receipt codec slice (partial intrinsic coverage)
+
+The independently reviewed six-path scope extends the verified PR113 base
+`b5c9dc092ec977125b8d7a8ba9895ba2559a8c9e` with only `socket_custody` and
+`source_custody` record parsing/encoding. `decode_custody_receipt_record` and
+`encode_custody_receipt_record` require expected subject-owner, nullable operation,
+graph and receipt identifiers. These APIs cover two variants of the existing
+physical-receipt schema; they are not a complete physical-receipt validator.
+
+The closed 14-field envelope and 13/12-field payloads retain the existing
+4096-byte ASCII JSON bound, depth-three guard, canonical representation and exact
+built-in scalar types. All five declared phases and nullable operation identifiers
+remain representable for both variants. Claimed issuer role must be the declared
+`operation_worker`; this consistency check does not authenticate that producer.
+No issuer/receiver equality, pairwise UUID distinction or stronger phase mapping
+is inferred. Socket namespace zero remains a valid u64 value. Source size is
+checked only against the declared 1..64 range; fixture material is never read.
+
+Actual producer identity, current registry resolution, socket/memfd identity,
+namespace/address metadata, seals and access mode, exact fixture size, live alias
+closure, release commitment, ordering, deadlines and current authority remain
+external gates. A parsed record proves neither physical custody nor closure and
+authorizes no operation. No runtime, registry, SQL, descriptor or native behavior
+is implemented by this slice.
+
+Six new finite unit nodes extend the prior 34 unchanged codec nodes to 40 actual
+units. Local validation collects those exact 40 nodes and runs only the six new
+units plus the affected preservation check. Formal portable29/native89 counts
+remain unchanged; the eventual portable union is69. This slice grants zero formal
+acceptance credit and does not reopen S4.2c checks or authorize native execution.
