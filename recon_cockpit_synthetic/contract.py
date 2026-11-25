@@ -340,3 +340,31 @@ GRAPH_CLOSURE_RECEIPT_ENUMS = {
     'graph_scope': ('operation_graph', 'owner_graph'),
 }
 GRAPH_CLOSURE_RECEIPT_ISSUER_ROLES = ('supervisor',)
+
+# Intrinsic recovery binding claims only; continuous live custody is external.
+RECOVERY_BINDING_MAX_BYTES = 2048
+RECOVERY_BINDING_MAX_DEPTH = 3
+RECOVERY_BINDING_LIST_BOUNDS = (1, 10)
+RECOVERY_BINDING_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+RECOVERY_BINDING_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'recovery_closure_binding'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+RECOVERY_BINDING_PAYLOAD = (
+    ('activation_id', 'uuid4'), ('challenge_id', 'uuid4'), ('consumer_owner_id', 'uuid4'),
+    ('consumer_session_id', 'uuid4'), ('evaluated_monotonic_ns', 'monotonic_ns'),
+    ('graph_closure_receipt_id', 'uuid4'), ('monitor_session_id', 'uuid4'),
+    ('root_aliases_closed', 'true'), ('subject_graph_id', 'uuid4'),
+    ('terminal_pidfds_verified', 'true'), ('termination_receipt_ids', 'uuid_list10'),
+    ('transfers_empty', 'true'),
+)
+RECOVERY_BINDING_ISSUER_ROLES = ('supervisor',)
+RECOVERY_BINDING_PHASE = 'closed'
