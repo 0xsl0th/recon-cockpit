@@ -1,4 +1,4 @@
-"""Forty-six codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""Fifty-two codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -2065,5 +2065,341 @@ def test_descriptor_receipt_record_encoding_and_depth():
         oversized = dict(_descriptor(), schema_version='x' * 100000)
         _reject(lambda: codec.encode_descriptor_receipt_record(oversized, *args), 'invalid_value')
         _reject(lambda: codec.decode_descriptor_receipt_record(_wire(oversized), *args), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent process expectations; no production schema-derived expected values.
+PROC_ENVELOPE_TYPES = (
+    ('clock_epoch_id', 'uuid'), ('graph_id', 'uuid'), ('issuer_instance_id', 'uuid'),
+    ('issuer_role', 'enum'), ('kind', 'enum'), ('observed_monotonic_ns', 'integer'),
+    ('observer_session_id', 'uuid'), ('operation_id', 'uuid?'), ('payload', 'object'),
+    ('phase', 'enum'), ('receipt_id', 'uuid'), ('runtime_lock_sha256', 'hash'),
+    ('schema_version', 'enum'), ('subject_owner_id', 'uuid'),
+)
+PROC_PAYLOAD_TYPES = (
+    ('boot_id', 'uuid'), ('effective_capabilities', 'mask'), ('gid', 'integer'),
+    ('instance_id', 'uuid'), ('no_new_privileges', 'true'),
+    ('observer_pid_namespace_inode', 'integer'), ('parent_instance_id', 'uuid?'),
+    ('pid_in_observer_namespace', 'integer'), ('pid_in_subject_namespace', 'integer'),
+    ('pidfd_reference', 'uuid'), ('role', 'enum'), ('runtime_image_sha256', 'hash'),
+    ('start_ticks', 'integer'), ('subject_pid_namespace_inode', 'integer'),
+    ('task_count', 'integer'), ('uid', 'integer'),
+)
+PROC_KNOWN_ROLES = ('driver', 'supervisor', 'broker', 'reviewer', 'fixture_source', 'connector',
+                    'operation_worker', 'release_guard', 'owned_service', 'graphical_display', 'fixture_probe')
+PROC_CHILD_ROLES = ('broker', 'reviewer', 'fixture_source', 'connector', 'operation_worker',
+                    'release_guard', 'owned_service', 'graphical_display', 'fixture_probe')
+PROC_TASK_MAXIMA = {'supervisor': 1, 'broker': 2, 'reviewer': 2, 'fixture_source': 1,
+                   'connector': 1, 'operation_worker': 1, 'release_guard': 1,
+                   'owned_service': 1, 'graphical_display': 8, 'fixture_probe': 1}
+PROC_PHASES = ('ready', 'socket_transferred', 'credential_transferred', 'result_released', 'closed')
+
+
+def _process(operation=SUBJECT):
+    return dict(clock_epoch_id=OTHER, graph_id=CUST_GRAPH, issuer_instance_id=SUBJECT,
+        issuer_role='supervisor', kind='process_identity', observed_monotonic_ns=0,
+        observer_session_id=OTHER, operation_id=operation, phase='ready', receipt_id=CUST_RECEIPT,
+        runtime_lock_sha256='a' * 64, schema_version='s43-physical-receipt-v1', subject_owner_id=CUST_OWNER,
+        payload=dict(boot_id=OTHER, effective_capabilities='0000000000000000', gid=0,
+            instance_id=OTHER, no_new_privileges=True, observer_pid_namespace_inode=0,
+            parent_instance_id=None, pid_in_observer_namespace=1, pid_in_subject_namespace=1,
+            pidfd_reference=SUBJECT, role='broker', runtime_image_sha256='f' * 64,
+            start_ticks=0, subject_pid_namespace_inode=0, task_count=1, uid=0))
+
+
+PROC_CANONICAL_BYTES = (
+    b'{"clock_epoch_id":"22345678-1234-4234-9234-123456789abc","graph_id":"72345678-1234-4234-9234-1234567'
+    b'89abc","issuer_instance_id":"12345678-1234-4234-9234-123456789abc","issuer_role":"supervisor","kind"'
+    b':"process_identity","observed_monotonic_ns":0,"observer_session_id":"22345678-1234-4234-9234-1234567'
+    b'89abc","operation_id":"12345678-1234-4234-9234-123456789abc","payload":{"boot_id":"22345678-1234-423'
+    b'4-9234-123456789abc","effective_capabilities":"0000000000000000","gid":0,"instance_id":"22345678-123'
+    b'4-4234-9234-123456789abc","no_new_privileges":true,"observer_pid_namespace_inode":0,"parent_instance'
+    b'_id":null,"pid_in_observer_namespace":1,"pid_in_subject_namespace":1,"pidfd_reference":"12345678-123'
+    b'4-4234-9234-123456789abc","role":"broker","runtime_image_sha256":"ffffffffffffffffffffffffffffffffff'
+    b'ffffffffffffffffffffffffffffff","start_ticks":0,"subject_pid_namespace_inode":0,"task_count":1,"uid"'
+    b':0},"phase":"ready","receipt_id":"82345678-1234-4234-9234-123456789abc","runtime_lock_sha256":"aaaaa'
+    b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","schema_version":"s43-physical-receipt-'
+    b'v1","subject_owner_id":"62345678-1234-4234-9234-123456789abc"}'
+)
+
+
+def _process_args(operation=SUBJECT):
+    return CUST_OWNER, operation, CUST_GRAPH, CUST_RECEIPT
+
+
+def _process_accept(record):
+    args = tuple(record[k] for k in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id'))
+    wire = _wire(record)
+    assert codec.encode_process_receipt_record(record, *args) == wire
+    decoded = codec.decode_process_receipt_record(wire, *args)
+    assert decoded == record and decoded is not record
+    assert type(decoded) is dict and type(decoded['payload']) is dict
+    assert decoded['payload'] is not record['payload']
+    return decoded
+
+
+def _process_reject(record, code, operation=SUBJECT, decode_code=None):
+    args = _process_args(operation)
+    _reject(lambda: codec.encode_process_receipt_record(record, *args), code)
+    return _reject(lambda: codec.decode_process_receipt_record(_wire(record), *args), decode_code or code)
+
+
+def test_process_receipt_record_canonical_examples():
+    assert len(PROC_ENVELOPE_TYPES) == 14 and len(PROC_PAYLOAD_TYPES) == 16
+    assert len(PROC_KNOWN_ROLES) == 11 and len(PROC_CHILD_ROLES) == 9
+    assert codec.encode_process_receipt_record(_process(), *_process_args()) == PROC_CANONICAL_BYTES
+    assert codec.decode_process_receipt_record(PROC_CANONICAL_BYTES, *_process_args()) == _process()
+    for operation in (None, SUBJECT):
+        for parent in (None, SUBJECT):
+            for phase in PROC_PHASES:
+                record = dict(_process(operation), phase=phase)
+                record['payload']['parent_instance_id'] = parent
+                assert set(record) == {k for k, _ in PROC_ENVELOPE_TYPES}
+                assert set(record['payload']) == {k for k, _ in PROC_PAYLOAD_TYPES}
+                first, second = _process_accept(record), _process_accept(record)
+                first['payload'].clear()
+                first['receipt_id'] = 'changed'
+                assert second == record
+                reversed_record = dict(reversed(tuple(record.items())))
+                reversed_record['payload'] = dict(reversed(tuple(record['payload'].items())))
+                assert codec.encode_process_receipt_record(reversed_record, *_process_args(operation)) == _wire(record)
+    record = _process()
+    for key, typ in PROC_PAYLOAD_TYPES:
+        if typ.startswith('uuid'):
+            record['payload'][key] = SUBJECT
+    # Equal/repeated IDs and nullable parents are syntax, not proved live parentage.
+    _process_accept(record)
+    record['payload']['parent_instance_id'] = OTHER
+    _process_accept(record)
+
+
+def test_process_receipt_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class IntHook(int):
+        def __lt__(self, other):
+            raise AssertionError('hook reached')
+    class BoolHook:
+        def __bool__(self):
+            raise AssertionError('hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1]):
+        _process_reject(value, 'invalid_shape')
+    _reject(lambda: codec.encode_process_receipt_record(DictHook(_process()), *_process_args()), 'invalid_shape')
+    for nested, fields in ((False, PROC_ENVELOPE_TYPES), (True, PROC_PAYLOAD_TYPES)):
+        record = _process()
+        target = record['payload'] if nested else record
+        target['RAW_SENTINEL'] = 'extra'
+        _process_reject(record, 'invalid_shape')
+        for key, typ in fields:
+            for mutation in ('missing', 'unknown'):
+                record = _process()
+                target = record['payload'] if nested else record
+                value = target.pop(key)
+                if mutation == 'unknown':
+                    target['RAW_SENTINEL'] = value
+                _process_reject(record, 'invalid_shape')
+            bad_values = (None, True, False, 1.0, [], {}, 'RAW_SENTINEL')
+            if typ != 'integer':
+                bad_values += (0, 1)
+            for bad in bad_values:
+                if bad is None and typ.endswith('?') or bad is True and typ == 'true':
+                    continue
+                record = _process()
+                target = record['payload'] if nested else record
+                target[key] = bad
+                _process_reject(record, 'invalid_shape' if typ == 'object' else 'invalid_value',
+                                   decode_code='invalid_value' if typ == 'object' and type(bad) is float else None)
+            record = _process()
+            target = record['payload'] if nested else record
+            target[key] = (DictHook() if typ == 'object' else IntHook(1) if typ == 'integer'
+                           else BoolHook() if typ == 'true' else StringHook('RAW_SENTINEL'))
+            _reject(lambda: codec.encode_process_receipt_record(record, *_process_args()),
+                    'invalid_shape' if typ == 'object' else 'invalid_value')
+        for bad_key in (StringHook('x'), 'x' * 100000, 1):
+            record = _process()
+            target = record['payload'] if nested else record
+            target[bad_key] = target.pop(fields[0][0])
+            _reject(lambda: codec.encode_process_receipt_record(record, *_process_args()), 'invalid_shape')
+
+
+def test_process_receipt_record_role_capability_and_task_relations():
+    accepted = []
+    for issuer in PROC_KNOWN_ROLES:
+        for role in PROC_KNOWN_ROLES:
+            record = dict(_process(), issuer_role=issuer)
+            record['payload']['role'] = role
+            permitted = (issuer == 'driver' and role == 'supervisor'
+                         or issuer == 'supervisor' and role in PROC_CHILD_ROLES)
+            if permitted:
+                _process_accept(record)
+                accepted.append((issuer, role))
+            else:
+                _process_reject(record, 'invalid_result')
+    assert len(accepted) == 10
+    for key, bad in (('issuer_role', 'lifecycle_monitor'), ('phase', 'pre_write'),
+                     ('schema_version', 's43-observation-v1')):
+        _process_reject(dict(_process(), **{key: bad}), 'invalid_value')
+    for issuer in PROC_KNOWN_ROLES:
+        record = dict(_process(), issuer_role=issuer)
+        record['payload']['role'] = 'unknown'
+        _process_reject(record, 'invalid_value')
+    for kind in ('descriptor_identity', 'socket_custody', 'source_custody', 'graph_closure', 'RAW_SENTINEL', ''):
+        _process_reject(dict(_process(), kind=kind), 'invalid_value')
+    for role, maximum in PROC_TASK_MAXIMA.items():
+        record = dict(_process(), issuer_role='driver' if role == 'supervisor' else 'supervisor')
+        record['payload']['role'] = role
+        for count in (1, maximum):
+            record['payload']['task_count'] = count
+            _process_accept(record)
+        record['payload']['task_count'] = maximum + 1
+        _process_reject(record, 'invalid_value' if maximum == 8 else 'invalid_result')
+        record['payload']['task_count'] = 1
+        for mask in ('0000000000000000', '0000000000000001', '0123456789abcdef', 'ffffffffffffffff'):
+            record['payload']['effective_capabilities'] = mask
+            if role == 'supervisor' or mask == '0000000000000000':
+                _process_accept(record)
+            else:
+                _process_reject(record, 'invalid_result')
+        for mask in ('', '0' * 15, '0' * 17, 'F' * 16, 'g' * 16, '0' * 16 + '\n',
+                     '0x' + '0' * 14, '0' * 16 + 'x', 'x' + '0' * 16, '0' * 100000):
+            record['payload']['effective_capabilities'] = mask
+            _reject(lambda: codec.encode_process_receipt_record(record, *_process_args()), 'invalid_value')
+            _reject(lambda: codec.decode_process_receipt_record(_wire(record), *_process_args()),
+                    'invalid_encoding' if len(mask) > 4096 else 'invalid_value')
+    record = _process()
+    record['payload']['task_count'] = 2
+    _process_accept(record)  # Broker2 does not grant concurrent/recovery eligibility.
+    record['payload']['role'] = 'graphical_display'
+    for count in (1, 8):
+        record['payload']['task_count'] = count
+        _process_accept(record)
+    for count in (0, 9, True, False, 1.0):
+        record['payload']['task_count'] = count
+        _process_reject(record, 'invalid_value')
+
+
+def test_process_receipt_record_scalar_bounds():
+    for value in (0, 9223372036854775807):
+        _process_accept(dict(_process(), observed_monotonic_ns=value))
+    for value in (-1, 9223372036854775808, True, 0.0):
+        _process_reject(dict(_process(), observed_monotonic_ns=value), 'invalid_value')
+    for nested, fields in ((False, PROC_ENVELOPE_TYPES), (True, PROC_PAYLOAD_TYPES)):
+        for key, typ in fields:
+            if typ not in ('uuid', 'uuid?', 'hash'):
+                continue
+            valid = 'f' * 64 if typ == 'hash' else SUBJECT
+            bad_values = (valid.upper(), valid + '\n', valid + 'x', 'x' + valid, valid[:-1], '')
+            if typ != 'hash':
+                bad_values += (SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'))
+            for bad in bad_values:
+                record = _process()
+                target = record['payload'] if nested else record
+                target[key] = bad
+                _process_reject(record, 'invalid_value')
+    for value in ('0' * 64, 'f' * 64):
+        _process_accept(dict(_process(), runtime_lock_sha256=value))
+    for key, minimum, maximum in (
+            ('pid_in_observer_namespace', 1, 2147483647), ('pid_in_subject_namespace', 1, 2147483647),
+            ('observer_pid_namespace_inode', 0, 18446744073709551615),
+            ('subject_pid_namespace_inode', 0, 18446744073709551615), ('start_ticks', 0, 18446744073709551615),
+            ('uid', 0, 4294967294), ('gid', 0, 4294967294)):
+        for value in (minimum, 11, 12, maximum):
+            record = _process()
+            record['payload'][key] = value
+            _process_accept(record)
+        for value in (minimum - 1, maximum + 1, True, False, 1.0):
+            record = _process()
+            record['payload'][key] = value
+            _process_reject(record, 'invalid_value')
+    for value in ('0' * 64, 'f' * 64):
+        record = _process()
+        record['payload']['runtime_image_sha256'] = value
+        _process_accept(record)
+    # Runtime PID1/namespace binding is not inferred from a claimed supervisor role.
+    record = dict(_process(), issuer_role='driver')
+    record['payload'].update(role='supervisor', pid_in_subject_namespace=2147483647)
+    _process_accept(record)
+
+
+def test_process_receipt_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    for operation in (None, SUBJECT):
+        record = _process(operation)
+        args = _process_args(operation)
+        for index in range(4):
+            changed = list(args)
+            changed[index] = OTHER
+            _reject(lambda: codec.encode_process_receipt_record(record, *changed), 'wrong_subject')
+            _reject(lambda: codec.decode_process_receipt_record(_wire(record), *changed), 'wrong_subject')
+            for bad in (True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+                changed = list(args)
+                changed[index] = bad
+                code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+                _reject(lambda: codec.encode_process_receipt_record(record, *changed), code)
+                _reject(lambda: codec.decode_process_receipt_record(_wire(record), *changed), code)
+                _reject(lambda: codec.encode_process_receipt_record(None, *changed), code)
+                _reject(lambda: codec.decode_process_receipt_record(b'', *changed), code)
+            changed = list(args)
+            changed[index] = None
+            if index != 1 or operation is not None:
+                code = 'wrong_subject' if index == 1 else 'invalid_shape'
+                _reject(lambda: codec.encode_process_receipt_record(record, *changed), code)
+                _reject(lambda: codec.decode_process_receipt_record(_wire(record), *changed), code)
+        wrong = (OTHER, operation, CUST_GRAPH, CUST_RECEIPT)
+        _reject(lambda: codec.decode_process_receipt_record(_wire(record) + b'\n', *wrong), 'invalid_encoding')
+        record['issuer_role'] = 'broker'
+        _reject(lambda: codec.encode_process_receipt_record(record, *wrong), 'invalid_result')
+        _reject(lambda: codec.decode_process_receipt_record(_wire(record), *wrong), 'invalid_result')
+
+
+def test_process_receipt_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record = _process()
+    wire = _wire(record)
+    args = _process_args()
+    reverse_payload = json.dumps(dict(reversed(tuple(record['payload'].items()))), separators=(',', ':')).encode('ascii')
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire.replace(_wire(record['payload']), reverse_payload), wire + b'\n', b' ' + wire,
+                  wire.replace(b':', b': ', 1), wire.replace(b'"s43-physical-receipt-v1"', b'"\\u007343-physical-receipt-v1"'),
+                  wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":-0'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 4097, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+        error = _reject(lambda: codec.decode_process_receipt_record(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"receipt_id":null,' + wire[1:], b'{"receip\\u0074_id":null,' + wire[1:],
+                  wire.replace(b'"payload":{', b'"payload":{"parent_instance_id":null,')):
+        _reject(lambda: codec.decode_process_receipt_record(frame, *args), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        _reject(lambda: codec.decode_process_receipt_record(wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":' + scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_process_receipt_record(frame, *args), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 4097, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+            _reject(lambda: codec.decode_process_receipt_record(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_process_receipt_record(b' ' * 4096, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_process_receipt_record(b'{"a":{"b":{}}}', *args), 'invalid_shape')
+        assert len(calls) == 2
+        _process_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _process_reject(dict(_process(), schema_version=text), 'invalid_value')
+        oversized = dict(_process(), schema_version='x' * 100000)
+        _reject(lambda: codec.encode_process_receipt_record(oversized, *args), 'invalid_value')
+        _reject(lambda: codec.decode_process_receipt_record(_wire(oversized), *args), 'invalid_encoding')
     finally:
         json.loads = original_loads

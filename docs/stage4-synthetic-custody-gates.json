@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "4e818bee7f8994357a74aafd5a02a51f8286d922c32fd144ce69f3d3142502bc",
+  "contract_sha256": "f184ac710610bfc6f420273f3b8aeca129175d3fcaa73b48bab5cacc92deda81",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -11150,5 +11150,51 @@
     "physical_custody_proved": false,
     "nullability_eligibility_proved": false,
     "validation": "Collect exact46 unit IDs; run six new descriptor receipt units and affected preservation check; independent final review before publication."
+  },
+  "portable_process_receipt_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_process_identity_receipt_codec_implementation",
+    "scope_sha256": "0a8b75e05356981665618aa67505cca2c85239f865bd6ef2744f09d565d4bdbb",
+    "verified_base_merge": "7d48672df86c56ac70b3f1ee4633c5e719703287",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "receipt_variants": [
+      "process_identity"
+    ],
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_process_receipt_record_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_process_receipt_record_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_process_receipt_record_role_capability_and_task_relations",
+      "tests/test_secure_synthetic_custody_contract.py::test_process_receipt_record_scalar_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_process_receipt_record_expected_subject_binding",
+      "tests/test_secure_synthetic_custody_contract.py::test_process_receipt_record_encoding_and_depth"
+    ],
+    "new_unit_node_count": 6,
+    "prior_codec_unit_nodes_preserved": 46,
+    "combined_unit_node_count": 52,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 81,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "registry_implemented": false,
+    "producer_authentication_implemented": false,
+    "physical_custody_proved": false,
+    "nullability_eligibility_proved": false,
+    "validation": "Collect exact52 unit IDs; run six new process receipt units and affected preservation check; independent final review before publication.",
+    "physical_process_identity_proved": false,
+    "runtime_eligibility_proved": false,
+    "termination_or_reaping_proved": false
   }
 }
