@@ -1,4 +1,4 @@
-"""Fifty-eight codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""Sixty-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -2697,5 +2697,338 @@ def test_termination_receipt_record_encoding_and_depth():
         oversized = dict(_termination(), schema_version='x' * 100000)
         _reject(lambda: codec.encode_termination_receipt_record(oversized, *args), 'invalid_value')
         _reject(lambda: codec.decode_termination_receipt_record(_wire(oversized), *args), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent literal graph-closure expectations; no production-table imports.
+GC_ENVELOPE_TYPES = (
+    ('clock_epoch_id', 'uuid'), ('graph_id', 'uuid'), ('issuer_instance_id', 'uuid'),
+    ('issuer_role', 'enum'), ('kind', 'enum'), ('observed_monotonic_ns', 'integer'),
+    ('observer_session_id', 'uuid'), ('operation_id', 'uuid?'), ('payload', 'object'),
+    ('phase', 'enum'), ('receipt_id', 'uuid'), ('runtime_lock_sha256', 'hash'),
+    ('schema_version', 'enum'), ('subject_owner_id', 'uuid'),
+)
+GC_PAYLOAD_TYPES = (
+    ('expected_processes', 'integer'), ('graph_id', 'uuid'), ('graph_manifest_sha256', 'hash'),
+    ('member_process_receipt_ids', 'list'), ('outstanding_transfers', 'integer'),
+    ('reaped_processes', 'integer'), ('reason', 'enum'), ('remaining_descriptors', 'integer'),
+    ('scope', 'enum'), ('validated_receipt_set_sha256', 'hash'),
+)
+GC_ROLES = ('driver', 'supervisor', 'broker', 'reviewer', 'fixture_source', 'connector',
+            'operation_worker', 'release_guard', 'owned_service', 'graphical_display', 'fixture_probe')
+GC_PHASES = ('ready', 'socket_transferred', 'credential_transferred', 'result_released', 'closed')
+GC_REASONS = ('operation_terminal', 'owner_recovery')
+
+
+def _graph_closure(operation=SUBJECT):
+    return dict(clock_epoch_id=OTHER, graph_id=CUST_GRAPH, issuer_instance_id=SUBJECT,
+        issuer_role='supervisor', kind='graph_closure', observed_monotonic_ns=0,
+        observer_session_id=OTHER, operation_id=operation, phase='ready', receipt_id=CUST_RECEIPT,
+        runtime_lock_sha256='a' * 64, schema_version='s43-physical-receipt-v1', subject_owner_id=CUST_OWNER,
+        payload=dict(expected_processes=2, graph_id=CUST_GRAPH, graph_manifest_sha256='b' * 64,
+            member_process_receipt_ids=[OTHER, SUBJECT], outstanding_transfers=0, reaped_processes=2,
+            reason='operation_terminal', remaining_descriptors=0,
+            scope='owner_graph' if operation is None else 'operation_graph',
+            validated_receipt_set_sha256='c' * 64))
+
+
+GC_CANONICAL_BYTES = (
+    b'{"clock_epoch_id":"22345678-1234-4234-9234-123456789abc","graph_id":"72345678-1234-4234-9234-123'
+    b'456789abc","issuer_instance_id":"12345678-1234-4234-9234-123456789abc","issuer_role":"supervisor'
+    b'","kind":"graph_closure","observed_monotonic_ns":0,"observer_session_id":"22345678-1234-4234-923'
+    b'4-123456789abc","operation_id":"12345678-1234-4234-9234-123456789abc","payload":{"expected_proce'
+    b'sses":2,"graph_id":"72345678-1234-4234-9234-123456789abc","graph_manifest_sha256":"bbbbbbbbbbbbb'
+    b'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","member_process_receipt_ids":["22345678-123'
+    b'4-4234-9234-123456789abc","12345678-1234-4234-9234-123456789abc"],"outstanding_transfers":0,"rea'
+    b'ped_processes":2,"reason":"operation_terminal","remaining_descriptors":0,"scope":"operation_grap'
+    b'h","validated_receipt_set_sha256":"ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc'
+    b'ccc"},"phase":"ready","receipt_id":"82345678-1234-4234-9234-123456789abc","runtime_lock_sha256":'
+    b'"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","schema_version":"s43-physica'
+    b'l-receipt-v1","subject_owner_id":"62345678-1234-4234-9234-123456789abc"}'
+)
+
+
+def _graph_closure_args(operation=SUBJECT):
+    return CUST_OWNER, operation, CUST_GRAPH, CUST_RECEIPT
+
+
+def _graph_closure_accept(record):
+    args = tuple(record[k] for k in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id'))
+    wire = _wire(record)
+    assert codec.encode_graph_closure_receipt_record(record, *args) == wire
+    decoded = codec.decode_graph_closure_receipt_record(wire, *args)
+    assert decoded == record and decoded is not record
+    assert type(decoded) is dict and type(decoded['payload']) is dict
+    assert type(decoded['payload']['member_process_receipt_ids']) is list
+    assert decoded['payload'] is not record['payload']
+    assert decoded['payload']['member_process_receipt_ids'] is not record['payload']['member_process_receipt_ids']
+    return decoded
+
+
+def _graph_closure_reject(record, code, operation=SUBJECT, decode_code=None):
+    args = _graph_closure_args(operation)
+    _reject(lambda: codec.encode_graph_closure_receipt_record(record, *args), code)
+    return _reject(lambda: codec.decode_graph_closure_receipt_record(_wire(record), *args), decode_code or code)
+
+
+def test_graph_closure_receipt_record_canonical_examples():
+    assert len(GC_ENVELOPE_TYPES) == 14 and len(GC_PAYLOAD_TYPES) == 10 and len(GC_ROLES) == 11
+    assert codec.encode_graph_closure_receipt_record(_graph_closure(), *_graph_closure_args()) == GC_CANONICAL_BYTES
+    assert codec.decode_graph_closure_receipt_record(GC_CANONICAL_BYTES, *_graph_closure_args()) == _graph_closure()
+    for operation in (None, SUBJECT):
+        for reason in GC_REASONS:
+            for phase in GC_PHASES:
+                record = dict(_graph_closure(operation), phase=phase)
+                record['payload']['reason'] = reason
+                assert set(record) == {k for k, _ in GC_ENVELOPE_TYPES}
+                assert set(record['payload']) == {k for k, _ in GC_PAYLOAD_TYPES}
+                first, second = _graph_closure_accept(record), _graph_closure_accept(record)
+                first['payload']['member_process_receipt_ids'].clear()
+                first['receipt_id'] = 'changed'
+                assert second == record and record['payload']['member_process_receipt_ids'] == [OTHER, SUBJECT]
+                reversed_record = dict(reversed(tuple(record.items())))
+                reversed_record['payload'] = dict(reversed(tuple(record['payload'].items())))
+                assert codec.encode_graph_closure_receipt_record(reversed_record, *_graph_closure_args(operation)) == _wire(record)
+    record = _graph_closure()
+    record['payload']['graph_manifest_sha256'] = record['payload']['validated_receipt_set_sha256']
+    # Equal digests and IDs across unlike domains are representable, not live proof.
+    _graph_closure_accept(record)
+    record['payload']['member_process_receipt_ids'] = [SUBJECT, OTHER]
+    assert _wire(record) != GC_CANONICAL_BYTES
+    assert _graph_closure_accept(record)['payload']['member_process_receipt_ids'] == [SUBJECT, OTHER]
+
+
+def test_graph_closure_receipt_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class ListHook(list):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __iter__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class IntHook(int):
+        def __lt__(self, other):
+            raise AssertionError('hook reached')
+    class ElementHook(str):
+        def __hash__(self):
+            raise AssertionError('hash hook reached')
+        def __eq__(self, other):
+            raise AssertionError('equality hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1]):
+        _graph_closure_reject(value, 'invalid_shape')
+    _reject(lambda: codec.encode_graph_closure_receipt_record(DictHook(_graph_closure()), *_graph_closure_args()), 'invalid_shape')
+    for nested, fields in ((False, GC_ENVELOPE_TYPES), (True, GC_PAYLOAD_TYPES)):
+        record = _graph_closure()
+        target = record['payload'] if nested else record
+        target['RAW_SENTINEL'] = 'extra'
+        _graph_closure_reject(record, 'invalid_shape')
+        for key, typ in fields:
+            for mutation in ('missing', 'unknown'):
+                record = _graph_closure()
+                target = record['payload'] if nested else record
+                value = target.pop(key)
+                if mutation == 'unknown':
+                    target['RAW_SENTINEL'] = value
+                _graph_closure_reject(record, 'invalid_shape')
+            bad_values = (None, True, False, 1.0, [], {}, 'RAW_SENTINEL')
+            if typ != 'integer':
+                bad_values += (0, 1)
+            for bad in bad_values:
+                if bad is None and typ.endswith('?') or typ == 'list' and bad == []:
+                    continue
+                record = _graph_closure()
+                target = record['payload'] if nested else record
+                target[key] = bad
+                code = 'invalid_shape' if typ in ('object', 'list') else 'invalid_value'
+                _graph_closure_reject(record, code,
+                    decode_code='invalid_value' if typ in ('object', 'list') and type(bad) is float else None)
+            record = _graph_closure()
+            target = record['payload'] if nested else record
+            target[key] = (DictHook() if typ == 'object' else ListHook() if typ == 'list'
+                           else IntHook(1) if typ == 'integer' else StringHook('RAW_SENTINEL'))
+            _reject(lambda: codec.encode_graph_closure_receipt_record(record, *_graph_closure_args()),
+                    'invalid_shape' if typ in ('object', 'list') else 'invalid_value')
+        for bad_key in (StringHook('x'), 'x' * 100000, 1):
+            record = _graph_closure()
+            target = record['payload'] if nested else record
+            target[bad_key] = target.pop(fields[0][0])
+            _reject(lambda: codec.encode_graph_closure_receipt_record(record, *_graph_closure_args()), 'invalid_shape')
+    record = _graph_closure()
+    record['payload']['member_process_receipt_ids'] = (OTHER, SUBJECT)
+    _reject(lambda: codec.encode_graph_closure_receipt_record(record, *_graph_closure_args()), 'invalid_shape')
+    for item in (None, True, 1, 1.0, [], {}, 'RAW_SENTINEL'):
+        record = _graph_closure()
+        record['payload']['member_process_receipt_ids'][0] = item
+        _graph_closure_reject(record, 'invalid_value',
+            decode_code='invalid_encoding' if type(item) in (list, dict) else None)
+    for item in (StringHook(SUBJECT), ElementHook(SUBJECT), IntHook(1)):
+        record = _graph_closure()
+        record['payload']['member_process_receipt_ids'] = [item, item]
+        _reject(lambda: codec.encode_graph_closure_receipt_record(record, *_graph_closure_args()), 'invalid_value')
+
+
+def test_graph_closure_receipt_record_membership_and_scope_relations():
+    for role in GC_ROLES:
+        record = dict(_graph_closure(), issuer_role=role)
+        if role == 'supervisor':
+            _graph_closure_accept(record)
+        else:
+            _graph_closure_reject(record, 'invalid_result')
+    for operation in (None, SUBJECT):
+        record = _graph_closure(operation)
+        record['payload']['scope'] = 'operation_graph' if operation is None else 'owner_graph'
+        _graph_closure_reject(record, 'invalid_result', operation)
+        for expected, reaped in ((1, 2), (2, 1), (1, 1), (0, 2), (2, 0), (11, 11)):
+            record = _graph_closure(operation)
+            record['payload'].update(expected_processes=expected, reaped_processes=reaped)
+            _graph_closure_reject(record, 'invalid_result', operation)
+    record = _graph_closure()
+    record['payload']['graph_id'] = OTHER
+    _graph_closure_reject(record, 'invalid_result')
+    for members in ([SUBJECT, SUBJECT], [SUBJECT, OTHER, SUBJECT]):
+        record = _graph_closure()
+        record['payload'].update(member_process_receipt_ids=members,
+            expected_processes=len(members), reaped_processes=len(members))
+        _graph_closure_reject(record, 'invalid_value')
+    for key, bad in (('issuer_role', 'lifecycle_monitor'), ('phase', 'pre_write'),
+                     ('schema_version', 's43-observation-v1')):
+        _graph_closure_reject(dict(_graph_closure(), **{key: bad}), 'invalid_value')
+    for kind in ('process_identity', 'descriptor_identity', 'socket_custody', 'source_custody',
+                 'monitor_termination', 'recovery_closure_binding', 'RAW_SENTINEL', ''):
+        _graph_closure_reject(dict(_graph_closure(), kind=kind), 'invalid_value')
+    for key, bad in (('scope', 'execution_graph'), ('scope', 'OWNER_GRAPH'),
+                     ('reason', 'completed'), ('reason', 'OWNER_RECOVERY')):
+        record = _graph_closure()
+        record['payload'][key] = bad
+        _graph_closure_reject(record, 'invalid_value')
+    record = dict(_graph_closure(), issuer_role='broker')
+    record['payload']['reason'] = 'unknown'
+    _graph_closure_reject(record, 'invalid_value')
+
+
+def test_graph_closure_receipt_record_scalar_bounds():
+    for value in (0, 9223372036854775807):
+        _graph_closure_accept(dict(_graph_closure(), observed_monotonic_ns=value))
+    for value in (-1, 9223372036854775808, True, 0.0):
+        _graph_closure_reject(dict(_graph_closure(), observed_monotonic_ns=value), 'invalid_value')
+    for count in range(12):
+        for operation in (None, SUBJECT):
+            record = _graph_closure(operation)
+            members = [f'{index:08x}-1234-4234-9234-123456789abc' for index in reversed(range(count))]
+            record['payload'].update(expected_processes=count, reaped_processes=count, member_process_receipt_ids=members)
+            assert _graph_closure_accept(record)['payload']['member_process_receipt_ids'] == members
+    for key, maximum in (('expected_processes', 11), ('reaped_processes', 11),
+                         ('remaining_descriptors', 0), ('outstanding_transfers', 0)):
+        for bad in (-1, maximum + 1, True, False, 0.0):
+            record = _graph_closure()
+            record['payload'][key] = bad
+            _graph_closure_reject(record, 'invalid_value')
+    for count in (12, 100000):
+        record = _graph_closure()
+        record['payload']['member_process_receipt_ids'] = [None] * count
+        _reject(lambda: codec.encode_graph_closure_receipt_record(record, *_graph_closure_args()), 'invalid_value')
+        if count == 12:
+            _graph_closure_reject(record, 'invalid_value')
+    for nested, fields in ((False, GC_ENVELOPE_TYPES), (True, GC_PAYLOAD_TYPES)):
+        for key, typ in fields:
+            if typ not in ('uuid', 'uuid?', 'hash', 'list'):
+                continue
+            valid = 'f' * 64 if typ == 'hash' else SUBJECT
+            bad_values = (valid.upper(), valid + '\n', valid + 'x', 'x' + valid, valid[:-1], '')
+            if typ != 'hash':
+                bad_values += (SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'))
+            for bad in bad_values:
+                record = _graph_closure()
+                target = record['payload'] if nested else record
+                target[key] = [bad, OTHER] if typ == 'list' else bad
+                _graph_closure_reject(record, 'invalid_value')
+            if typ == 'hash':
+                for value in ('0' * 64, 'f' * 64):
+                    record = _graph_closure()
+                    target = record['payload'] if nested else record
+                    target[key] = value
+                    _graph_closure_accept(record)
+
+
+def test_graph_closure_receipt_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    for operation in (None, SUBJECT):
+        record = _graph_closure(operation)
+        args = _graph_closure_args(operation)
+        for index in range(4):
+            changed = list(args)
+            changed[index] = OTHER
+            _reject(lambda: codec.encode_graph_closure_receipt_record(record, *changed), 'wrong_subject')
+            _reject(lambda: codec.decode_graph_closure_receipt_record(_wire(record), *changed), 'wrong_subject')
+            for bad in (True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+                changed = list(args)
+                changed[index] = bad
+                code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+                _reject(lambda: codec.encode_graph_closure_receipt_record(record, *changed), code)
+                _reject(lambda: codec.decode_graph_closure_receipt_record(_wire(record), *changed), code)
+                _reject(lambda: codec.encode_graph_closure_receipt_record(None, *changed), code)
+                _reject(lambda: codec.decode_graph_closure_receipt_record(b'', *changed), code)
+            changed = list(args)
+            changed[index] = None
+            if index != 1 or operation is not None:
+                code = 'wrong_subject' if index == 1 else 'invalid_shape'
+                _reject(lambda: codec.encode_graph_closure_receipt_record(record, *changed), code)
+                _reject(lambda: codec.decode_graph_closure_receipt_record(_wire(record), *changed), code)
+        wrong = (OTHER, operation, CUST_GRAPH, CUST_RECEIPT)
+        _reject(lambda: codec.decode_graph_closure_receipt_record(_wire(record) + b'\n', *wrong), 'invalid_encoding')
+        record['payload']['graph_id'] = OTHER
+        _reject(lambda: codec.encode_graph_closure_receipt_record(record, *wrong), 'invalid_result')
+        _reject(lambda: codec.decode_graph_closure_receipt_record(_wire(record), *wrong), 'invalid_result')
+
+
+def test_graph_closure_receipt_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record = _graph_closure()
+    wire = _wire(record)
+    args = _graph_closure_args()
+    reverse_payload = json.dumps(dict(reversed(tuple(record['payload'].items()))), separators=(',', ':')).encode('ascii')
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire.replace(_wire(record['payload']), reverse_payload), wire + b'\n', b' ' + wire,
+                  wire.replace(b':', b': ', 1), wire.replace(b'"s43-physical-receipt-v1"', b'"\\u007343-physical-receipt-v1"'),
+                  wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":-0'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 4097, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]', wire.replace(_wire(record['payload']['member_process_receipt_ids']), b'[[]]')):
+        error = _reject(lambda: codec.decode_graph_closure_receipt_record(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"receipt_id":null,' + wire[1:], b'{"receip\\u0074_id":null,' + wire[1:],
+                  wire.replace(b'"payload":{', b'"payload":{"expected_processes":null,')):
+        _reject(lambda: codec.decode_graph_closure_receipt_record(frame, *args), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        _reject(lambda: codec.decode_graph_closure_receipt_record(wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":' + scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_graph_closure_receipt_record(frame, *args), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 4097, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]', wire.replace(_wire(record['payload']['member_process_receipt_ids']), b'[[]]')):
+            _reject(lambda: codec.decode_graph_closure_receipt_record(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_graph_closure_receipt_record(b' ' * 4096, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_graph_closure_receipt_record(b'{"a":{"b":{}}}', *args), 'invalid_shape')
+        assert len(calls) == 2
+        _graph_closure_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _graph_closure_reject(dict(_graph_closure(), schema_version=text), 'invalid_value')
+        oversized = dict(_graph_closure(), schema_version='x' * 100000)
+        _reject(lambda: codec.encode_graph_closure_receipt_record(oversized, *args), 'invalid_value')
+        _reject(lambda: codec.decode_graph_closure_receipt_record(_wire(oversized), *args), 'invalid_encoding')
     finally:
         json.loads = original_loads

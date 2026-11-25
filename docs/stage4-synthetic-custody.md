@@ -1594,3 +1594,37 @@ Formal29 portable/native89 remain unchanged; eventual portable union87 earns no
 acceptance credit. Existing helpers/imports and prior receipt APIs are unchanged.
 Graph closure and other recovery variants remain separate; no native execution
 is authorized by this slice.
+
+## Portable graph-closure receipt codec slice
+
+The independently reviewed slice follows verified PR117 at
+`85dfad26815eb21f1181b7650ea6e9cc15fa84a5`. It adds separate
+`decode_graph_closure_receipt_record` and `encode_graph_closure_receipt_record`
+APIs for intrinsic `graph_closure` claims only. The closed14-field envelope and
+closed10-field payload use canonical ASCII JSON with the generic physical
+4096-byte/depth3 limits. Recovery still requires its additional2048-byte gate;
+generic parsing does not establish recovery eligibility.
+
+Only a claimed supervisor issuer is allowed. The codec checks canonical scalar
+syntax, integer counts0..11, exact zero descriptor/transfer claims, and an exact
+built-in list of0..11 unique UUID4 member receipt IDs. It preserves array order
+and permits empty lists. Expected/reaped counts must equal the list length, and
+payload/envelope graph IDs must agree. Owner scope requires null operation;
+operation scope requires non-null operation. Both reasons and all five phases
+remain representable. Explicit expected owner/operation/graph/receipt IDs bind
+the parsed record; outputs contain fresh envelope, payload and member-list objects.
+
+These checks only reconcile claims. The codec authenticates no producer and
+registers/resolves no receipt. Exact live manifests/membership, actual reaping,
+observer exclusion, root-side descriptor closure and absence of transfers remain
+external. A zero-member claim proves no empty live graph. Digest computation and
+framing remain pending design; only hash syntax is checked. Session/epoch/runtime
+lock, ancestry and continuous custody, aggregate quotas and successful cleanup
+remain external gates. Saved records/digests grant no authority or cleanup proof.
+
+The exact six-file scope is pinned by `portable_graph_closure_codec_slice`.
+Prior58 codec units and existing helpers/imports remain unchanged. Six additional
+finite units bring actual unit collection to64; affected local validation runs
+those six plus the preservation check. Formal29 portable/native89 remain
+unchanged; eventual portable union93 gives no acceptance credit. No runtime
+registry, native execution, closed S4.2c rerun or strategic gate change is included.

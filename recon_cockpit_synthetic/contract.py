@@ -309,3 +309,34 @@ TERMINATION_RECEIPT_INTEGER_BOUNDS = {
 TERMINATION_RECEIPT_ENUMS = {'exit_code': ('CLD_EXITED', 'CLD_KILLED', 'CLD_DUMPED')}
 TERMINATION_RECEIPT_LITERALS = {'monitor_termination': 'monitor_termination', 'sigchld': 'SIGCHLD'}
 TERMINATION_RECEIPT_ISSUER_ROLES = ('supervisor', 'driver')
+
+# Intrinsic closure claims only; registry membership and live cleanup are external.
+GRAPH_CLOSURE_RECEIPT_MAX_BYTES = 4096
+GRAPH_CLOSURE_RECEIPT_MAX_DEPTH = 3
+GRAPH_CLOSURE_RECEIPT_MAX_MEMBERS = 11
+GRAPH_CLOSURE_RECEIPT_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+GRAPH_CLOSURE_RECEIPT_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'graph_closure'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+GRAPH_CLOSURE_RECEIPT_PAYLOAD = (
+    ('expected_processes', 'process_count'), ('graph_id', 'uuid4'),
+    ('graph_manifest_sha256', 'sha256'), ('member_process_receipt_ids', 'receipt_id_set'),
+    ('outstanding_transfers', 'zero'), ('reaped_processes', 'process_count'),
+    ('reason', 'closure_reason'), ('remaining_descriptors', 'zero'),
+    ('scope', 'graph_scope'), ('validated_receipt_set_sha256', 'sha256'),
+)
+GRAPH_CLOSURE_RECEIPT_INTEGER_BOUNDS = {'process_count': (0, 11), 'zero': (0, 0)}
+GRAPH_CLOSURE_RECEIPT_ENUMS = {
+    'closure_reason': ('operation_terminal', 'owner_recovery'),
+    'graph_scope': ('operation_graph', 'owner_graph'),
+}
+GRAPH_CLOSURE_RECEIPT_ISSUER_ROLES = ('supervisor',)
