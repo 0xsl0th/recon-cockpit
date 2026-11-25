@@ -242,3 +242,41 @@ DESCRIPTOR_RECEIPT_ENUMS = {
 }
 DESCRIPTOR_RECEIPT_ISSUER_ROLES = ('supervisor', 'driver', 'fixture_source', 'connector', 'operation_worker')
 DESCRIPTOR_RECEIPT_FD_BOUNDS = (0, 2147483647)
+
+# Intrinsic process claims only; live identity and runtime eligibility stay external.
+PROCESS_RECEIPT_MAX_BYTES = 4096
+PROCESS_RECEIPT_MAX_DEPTH = 3
+PROCESS_RECEIPT_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+PROCESS_RECEIPT_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'process_identity'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+PROCESS_RECEIPT_PAYLOAD = (
+    ('boot_id', 'uuid4'), ('effective_capabilities', 'cap_mask'), ('gid', 'uid_gid'),
+    ('instance_id', 'uuid4'), ('no_new_privileges', 'true'),
+    ('observer_pid_namespace_inode', 'u64'), ('parent_instance_id', 'uuid4?'),
+    ('pid_in_observer_namespace', 'pid'), ('pid_in_subject_namespace', 'pid'),
+    ('pidfd_reference', 'uuid4'), ('role', 'role'), ('runtime_image_sha256', 'sha256'),
+    ('start_ticks', 'u64'), ('subject_pid_namespace_inode', 'u64'),
+    ('task_count', 'task_count'), ('uid', 'uid_gid'),
+)
+PROCESS_RECEIPT_INTEGER_BOUNDS = {
+    'pid': (1, 2147483647), 'uid_gid': (0, 4294967294), 'task_count': (1, 8),
+}
+PROCESS_RECEIPT_CAP_MASK_PATTERN = r'[0-9a-f]{16}'
+# Subject role -> claimed issuer and static task ceiling; profile gates remain.
+PROCESS_RECEIPT_ROLE_RULES = {
+    'supervisor': ('driver', 1), 'broker': ('supervisor', 2),
+    'reviewer': ('supervisor', 2), 'fixture_source': ('supervisor', 1),
+    'connector': ('supervisor', 1), 'operation_worker': ('supervisor', 1),
+    'release_guard': ('supervisor', 1), 'owned_service': ('supervisor', 1),
+    'graphical_display': ('supervisor', 8), 'fixture_probe': ('supervisor', 1),
+}

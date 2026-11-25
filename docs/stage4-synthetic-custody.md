@@ -1526,3 +1526,36 @@ units. Local validation collects exact46 and runs only those six new units plus
 the affected preservation check. Formal portable29/native89 stay unchanged;
 eventual portable union75 grants zero formal acceptance credit. No native or
 closed S4.2c execution is authorized by this slice.
+
+
+## Portable process identity receipt codec slice
+
+The independently reviewed next slice follows verified PR115 at
+`7d48672df86c56ac70b3f1ee4633c5e719703287`. It adds only `process_identity`
+record parsing/encoding through `decode_process_receipt_record` and
+`encode_process_receipt_record`, with required expected subject-owner, nullable
+operation, graph and receipt IDs. The closed14-field envelope and16-field
+payload retain canonical ASCII JSON,4096-byte/depth3 limits and fixed errors.
+
+Ten claimed issuer/subject pairs are representable: driver observes supervisor;
+supervisor observes its nine declared child roles. Driver identity remains with
+outer-launcher custody. Child capability masks must be zero; supervisor masks
+retain canonical16-lowercase-hex syntax with actual privilege pins external.
+Task counts obey the declared static role ceiling after generic1..8 validation;
+broker count2 does not establish concurrent-fixture or recovery eligibility.
+
+PID syntax is1..2147483647; namespace inodes/start ticks retain full unsigned64,
+including zero; UID/GID are0..4294967294; no-new-privileges is exact True.
+Parent references remain independently nullable, with no invented UUID equality,
+non-nullness or distinctness rule. All five phases and nullable operation remain.
+Actual parentage, supervisor PID1, namespace visibility, pidfd custody, boot/start
+identity, image/credentials, privilege pins, profile eligibility and current
+registry bindings remain external gates. Parsed claims authenticate no producer,
+prove no live process identity or termination/reaping, and authorize no operation.
+
+The six append-only process units bring actual codec collection to52; prior46
+remain unchanged. Seven affected checks cover these units and preservation. The
+formal29 portable and89 native nodes remain unchanged; eventual portable union81
+carries no acceptance credit. Existing helpers/imports and custody/descriptor APIs
+remain unchanged. No runtime, process inspection, SQL, registry or native execution
+is introduced; closure, termination and recovery variants remain separately gated.

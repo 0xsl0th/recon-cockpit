@@ -817,3 +817,85 @@ def encode_descriptor_receipt_record(record: dict, expected_subject_owner_id: st
             expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _process_receipt_scalar(value, kind):
+    if kind in contract.PROCESS_RECEIPT_INTEGER_BOUNDS:
+        minimum, maximum = contract.PROCESS_RECEIPT_INTEGER_BOUNDS[kind]
+        if type(value) is not int or not minimum <= value <= maximum:
+            raise ResultCodecError('invalid_value')
+    elif kind == 'cap_mask':
+        if type(value) is not str or len(value) != 16 or re.fullmatch(contract.PROCESS_RECEIPT_CAP_MASK_PATTERN, value) is None:
+            raise ResultCodecError('invalid_value')
+    elif kind == 'process_identity':
+        if type(value) is not str or len(value) > 64 or value != 'process_identity':
+            raise ResultCodecError('invalid_value')
+    else:
+        _custody_receipt_scalar(value, kind)
+
+
+def _process_receipt_record(value):
+    _event_closed(value, contract.PROCESS_RECEIPT_FIELDS)
+    for key, kind in contract.PROCESS_RECEIPT_SCALARS:
+        _process_receipt_scalar(value[key], kind)
+    payload = value['payload']
+    _event_closed(payload, tuple(key for key, _ in contract.PROCESS_RECEIPT_PAYLOAD))
+    for key, kind in contract.PROCESS_RECEIPT_PAYLOAD:
+        _process_receipt_scalar(payload[key], kind)
+    rule = contract.PROCESS_RECEIPT_ROLE_RULES.get(payload['role'])
+    if rule is None or value['issuer_role'] != rule[0] or payload['task_count'] > rule[1]:
+        raise ResultCodecError('invalid_result')
+    if payload['role'] != 'supervisor' and payload['effective_capabilities'] != '0000000000000000':
+        raise ResultCodecError('invalid_result')
+    result = dict(value)
+    result['payload'] = dict(payload)
+    return result
+
+
+def decode_process_receipt_record(frame: bytes, expected_subject_owner_id: str,
+                                     expected_operation_id: str | None,
+                                     expected_graph_id: str, expected_receipt_id: str) -> dict:
+    """Parse process claims only; no producer authentication, receipt registration/
+    resolution, live process identity/runtime eligibility, termination/reaping
+    or operation authorization is established.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.PROCESS_RECEIPT_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.PROCESS_RECEIPT_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _process_receipt_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_process_receipt_record(record: dict, expected_subject_owner_id: str,
+                                     expected_operation_id: str | None,
+                                     expected_graph_id: str, expected_receipt_id: str) -> bytes:
+    """Encode process claims only; no producer authentication, receipt registration/
+    resolution, live process identity/runtime eligibility, termination/reaping
+    or operation authorization is established.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    validated = _process_receipt_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.PROCESS_RECEIPT_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded
