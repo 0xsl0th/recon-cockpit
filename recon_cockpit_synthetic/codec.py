@@ -980,3 +980,97 @@ def encode_termination_receipt_record(record: dict, expected_subject_owner_id: s
             expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _graph_closure_receipt_scalar(value, kind):
+    if kind == 'receipt_id_set':
+        if type(value) is not list:
+            raise ResultCodecError('invalid_shape')
+        if len(value) > contract.GRAPH_CLOSURE_RECEIPT_MAX_MEMBERS:
+            raise ResultCodecError('invalid_value')
+        for item in value:
+            _event_scalar(item, 'uuid4')
+        if len(set(value)) != len(value):
+            raise ResultCodecError('invalid_value')
+    elif kind in contract.GRAPH_CLOSURE_RECEIPT_INTEGER_BOUNDS:
+        minimum, maximum = contract.GRAPH_CLOSURE_RECEIPT_INTEGER_BOUNDS[kind]
+        if type(value) is not int or not minimum <= value <= maximum:
+            raise ResultCodecError('invalid_value')
+    elif kind in contract.GRAPH_CLOSURE_RECEIPT_ENUMS or kind == 'graph_closure':
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        valid = (value in contract.GRAPH_CLOSURE_RECEIPT_ENUMS[kind]
+                 if kind in contract.GRAPH_CLOSURE_RECEIPT_ENUMS else value == kind)
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _custody_receipt_scalar(value, kind)
+
+
+def _graph_closure_receipt_record(value):
+    _event_closed(value, contract.GRAPH_CLOSURE_RECEIPT_FIELDS)
+    for key, kind in contract.GRAPH_CLOSURE_RECEIPT_SCALARS:
+        _graph_closure_receipt_scalar(value[key], kind)
+    payload = value['payload']
+    _event_closed(payload, tuple(key for key, _ in contract.GRAPH_CLOSURE_RECEIPT_PAYLOAD))
+    for key, kind in contract.GRAPH_CLOSURE_RECEIPT_PAYLOAD:
+        _graph_closure_receipt_scalar(payload[key], kind)
+    members = payload['member_process_receipt_ids']
+    if (value['issuer_role'] not in contract.GRAPH_CLOSURE_RECEIPT_ISSUER_ROLES
+            or not payload['expected_processes'] == payload['reaped_processes'] == len(members)
+            or payload['graph_id'] != value['graph_id']
+            or (payload['scope'] == 'owner_graph') != (value['operation_id'] is None)):
+        raise ResultCodecError('invalid_result')
+    result = dict(value)
+    result['payload'] = dict(payload)
+    result['payload']['member_process_receipt_ids'] = list(members)
+    return result
+
+
+def decode_graph_closure_receipt_record(frame: bytes, expected_subject_owner_id: str,
+                                      expected_operation_id: str | None,
+                                      expected_graph_id: str, expected_receipt_id: str) -> dict:
+    """Parse closure claims only; no producer authentication, receipt registration
+    or resolution, actual membership/reaping/descriptor closure, successful cleanup,
+    recovery eligibility or operation authorization is established.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.GRAPH_CLOSURE_RECEIPT_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.GRAPH_CLOSURE_RECEIPT_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _graph_closure_receipt_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_graph_closure_receipt_record(record: dict, expected_subject_owner_id: str,
+                                      expected_operation_id: str | None,
+                                      expected_graph_id: str, expected_receipt_id: str) -> bytes:
+    """Encode closure claims only; no producer authentication, receipt registration
+    or resolution, actual membership/reaping/descriptor closure, successful cleanup,
+    recovery eligibility or operation authorization is established.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    validated = _graph_closure_receipt_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.GRAPH_CLOSURE_RECEIPT_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

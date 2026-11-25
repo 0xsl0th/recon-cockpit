@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "86b407c286f4c20c16d9c64a030b04f2da8213de5369b40d18f9ff3530b44e65",
+  "contract_sha256": "9a3980ac3bae9dbfbd5a086fb09bcd096d30c19e440e06b116ceefd4f4ee5c93",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -11243,5 +11243,56 @@
     "runtime_eligibility_proved": false,
     "termination_or_reaping_proved": false,
     "successful_source_or_connector_closure_proved": false
+  },
+  "portable_graph_closure_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_graph_closure_receipt_codec_implementation",
+    "scope_sha256": "2e90dc55c4bf7056f144a3b29502878cc2e7c052d2e3d325443021f588d085f4",
+    "verified_base_merge": "85dfad26815eb21f1181b7650ea6e9cc15fa84a5",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "receipt_variants": [
+      "graph_closure"
+    ],
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_graph_closure_receipt_record_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_graph_closure_receipt_record_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_graph_closure_receipt_record_membership_and_scope_relations",
+      "tests/test_secure_synthetic_custody_contract.py::test_graph_closure_receipt_record_scalar_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_graph_closure_receipt_record_expected_subject_binding",
+      "tests/test_secure_synthetic_custody_contract.py::test_graph_closure_receipt_record_encoding_and_depth"
+    ],
+    "new_unit_node_count": 6,
+    "prior_codec_unit_nodes_preserved": 58,
+    "combined_unit_node_count": 64,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 93,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "registry_implemented": false,
+    "producer_authentication_implemented": false,
+    "physical_custody_proved": false,
+    "nullability_eligibility_proved": false,
+    "validation": "Collect exact64 unit IDs; run six new graph closure receipt units and affected preservation check; independent final review before publication.",
+    "physical_process_identity_proved": false,
+    "runtime_eligibility_proved": false,
+    "termination_or_reaping_proved": false,
+    "successful_source_or_connector_closure_proved": false,
+    "actual_graph_membership_proved": false,
+    "successful_graph_cleanup_proved": false,
+    "recovery_profile_eligibility_proved": false,
+    "digest_framing_implemented": false
   }
 }
