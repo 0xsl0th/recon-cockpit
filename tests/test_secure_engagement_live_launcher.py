@@ -985,15 +985,15 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
             assert reader.recvmsg(c.MAX_PACKET)[2] & echoed.extra_flags==echoed.extra_flags
 
     @contextmanager
-    def path_model(monkeypatch, case_id='S42C-N35'):
+    def path_model(monkeypatch, case_id='S42C-N35', *, clock=time):
         launcher, broker = transformed(case_id)
         if backend=='stream':
             # Only this transformed module sees the portable flag value. Shared
             # socket APIs and the physical Linux backend remain unchanged.
             launcher.socket=SimpleNamespace(**vars(socket)); launcher.socket.MSG_CMSG_CLOEXEC=0
-        anchor = time.monotonic_ns()
+        anchor = clock.monotonic_ns()
         def sample():
-            now = time.monotonic_ns()
+            now = clock.monotonic_ns()
             return {'mono_before_ns':now, 'mono_after_ns':now, 'utc_ns':U+now-anchor}
         monkeypatch.setattr(c, 'sample_clock', sample)
         bundle = declared_runtime(); session = opened(clock_value=sample())
@@ -1020,7 +1020,7 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
         events=[]; errors=[]; threads=[]
         ready = declared_readiness(bundle,'nmap'); cleanup = declared_cleanup(ready)
         native = {'schema_version':'1','role':'nmap','waiting_image':deepcopy(ready['parent_observation']['executable']),
-                  'parent_observation':deepcopy(ready['parent_observation']), 'observed_at_ns':time.monotonic_ns()}
+                  'parent_observation':deepcopy(ready['parent_observation']), 'observed_at_ns':clock.monotonic_ns()}
         native['parent_observation']['stage']='native'; native['parent_observation']['executable'].update(destination='/tool/nmap',sha256='f'*64)
         capture={'stdout':b'actual model bytes','stderr':b'','exit_code':0,'truncated':False,
                  'status':'succeeded','cleanup':cleanup,'readiness':ready,'native_readiness':native}
@@ -1038,7 +1038,7 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
         state.admission=SimpleNamespace(close=lambda **kwargs:(events.append('admission_cleanup') or cleanup))
         def collect(control):
             control.check(); events.append('capture_delivered'); return capture
-        state.client=SimpleNamespace(native_ready=native,native_deadline=time.monotonic()+5,
+        state.client=SimpleNamespace(native_ready=native,native_deadline=clock.monotonic()+5,
             release=lambda *args:events.append('release'),observe_native=lambda *args:native,
             collect=collect,close=lambda:(events.append('native_cleanup') or cleanup))
         row={'prepared':value,'release':go,'state':'running','observations':[]}
@@ -1066,7 +1066,7 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
             return thread
         def ordinary(operation,body):
             frame=loop.sequences[('launcher',0)].make(operation,body)
-            p.send_packet(right,frame,role='launcher',control=rt._WorkerControl(time.monotonic_ns()+c.SECOND))
+            p.send_packet(right,frame,role='launcher',control=rt._WorkerControl(clock.monotonic_ns()+c.SECOND))
         model=SimpleNamespace(launcher=launcher,state=state,row=row,loop=loop,journal=journal,fd=fd,events=events,errors=errors,
             left=left,right=right,host=host,supervisor_host=supervisor_host,start=start,threads=threads,ordinary=ordinary,
             prepared=value,go=go,scope=session['scope'])
@@ -1188,32 +1188,52 @@ def _fixed_deadline_marker_path_cases(monkeypatch):
         # Return an actual empty readiness observation, then deliver the actual
         # journal ACK before the caller resumes. The old second broker check
         # consumes it through the ordinary protocol and rejects the private ACK.
-        with path_model(monkeypatch) as model:
-            real_select=model.launcher.select.select;injected=[]
-            def inject_after_empty(readers,writers,errors,timeout=None):
-                selected=real_select(readers,writers,errors,timeout)
-                if (readers==[model.state.broker] and not writers and not errors and timeout==0
-                        and not selected[0] and not injected
-                        and real_select([model.right],[],[],0)[0]):
-                    raw=model.right.recv(4097,socket.MSG_PEEK)
-                    assert json.loads(raw)['operation']=='OWNED_DEADLINE'
-                    model.loop.role_message('launcher',0)
-                    assert len(rows(model))==1 and 'launcher_close' not in model.events
-                    assert real_select([model.left],[],[],0)[0]
-                    injected.append(raw)
-                return selected
-            # This transformed module alone sees the scheduling seam; physical
-            # readiness, packet data, append and every control clock remain real.
-            monkeypatch.setattr(model.launcher,'select',SimpleNamespace(select=inject_after_empty))
-            thread=model.start(expect_marker=False);thread.join(.5)
-            assert not thread.is_alive(),(backend,model.errors)
-            assert len(injected)==1,(backend,model.errors)
-            assert len(model.errors)==1 and getattr(model.errors[0],'code',None)=='engagement_live_timeout',(backend,model.errors)
-            assert model.state._owned_deadline_seen is True
-            assert len(rows(model))==1 and 'RESULT' not in model.events
-            assert model.state.supervisor.failed and 'launcher_close' in model.events
-            assert model.state.poll_stop.__func__.__name__=='poll_stop'
-            assert not hasattr(model.state,'_owned_ack')
+        # ACK delivery does not imply acceptance before the phase expires.
+        # Declare both clock schedules; keep every control check and real I/O.
+        for at_limit in (False,True):
+            now=[time.monotonic_ns()]
+            fixed=SimpleNamespace(monotonic=lambda:now[0]/c.SECOND,monotonic_ns=lambda:now[0])
+            with monkeypatch.context() as local, path_model(local,clock=fixed) as model:
+                local.setattr(model.launcher,'time',fixed)
+                local.setattr(model.launcher.LauncherControl,'clock',staticmethod(fixed.monotonic))
+                local.setitem(model.loop.role_message.__func__.__globals__,'time',fixed)
+                local.setattr(rt,'time',fixed)
+                local.setattr(c.records,'time',fixed)
+                e=model.prepared['envelope']
+                limit=min(now[0]+100_000_000,model.state.deadline_ns,
+                    *(e[key] for key in ('action_deadline_ns','session_deadline_ns','broker_deadline_ns')),
+                    model.go['effect_stop_ns'],int(model.state.client.native_deadline*c.SECOND))
+                assert limit==now[0]+100_000_000
+                real_select=model.launcher.select.select;injected=[]
+                def inject_after_empty(readers,writers,errors,timeout=None):
+                    selected=real_select(readers,writers,errors,timeout)
+                    if (readers==[model.state.broker] and not writers and not errors and timeout==0
+                            and not selected[0] and not injected
+                            and real_select([model.right],[],[],0)[0]):
+                        raw=model.right.recv(4097,socket.MSG_PEEK)
+                        assert json.loads(raw)['operation']=='OWNED_DEADLINE'
+                        model.loop.role_message('launcher',0)
+                        assert len(rows(model))==1 and 'launcher_close' not in model.events
+                        assert real_select([model.left],[],[],0)[0]
+                        injected.append(raw)
+                        now[0]=limit if at_limit else limit-1_000_000
+                    return selected
+                local.setattr(model.launcher,'select',SimpleNamespace(select=inject_after_empty))
+                thread=model.start(expect_marker=False);thread.join(.5)
+                assert not thread.is_alive(),(backend,at_limit,model.errors)
+                assert len(injected)==1,(backend,at_limit,model.errors)
+                assert len(model.errors)==1 and getattr(model.errors[0],'code',None)=='engagement_live_timeout',(backend,at_limit,model.errors)
+                assert getattr(model.state,'_owned_deadline_seen',False) is (not at_limit)
+                if at_limit:
+                    ack=json.loads(model.left.recv(4097,socket.MSG_PEEK))
+                    assert ack['operation']=='OWNED_DEADLINE_ACK'
+                    assert ack['body']=={'marker_sha256':c.digest(injected[0])}
+                else:assert not real_select([model.left],[],[],0)[0]
+                assert model.state.sequence.received==0
+                assert len(rows(model))==1 and 'RESULT' not in model.events
+                assert model.state.supervisor.failed and 'launcher_close' in model.events
+                assert model.state.poll_stop.__func__.__name__=='poll_stop'
+                assert not hasattr(model.state,'_owned_ack')
 
     def test_original_deadline_can_expire_before_or_after_marker_send(monkeypatch,expiry):
         # Only time is declared here. Real socket send/absence, actual transformed
