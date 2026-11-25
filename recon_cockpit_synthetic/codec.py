@@ -536,3 +536,111 @@ def encode_public_event(record: dict, expected_engagement_id: str,
             expected_engagement_id, expected_operation_id, expected_lease_id, expected_event_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _observation_scalar(value, kind):
+    if kind in ('true', 'false'):
+        if type(value) is not bool or value is not (kind == 'true'):
+            raise ResultCodecError('invalid_value')
+    elif kind in contract.OBSERVATION_ENUMS or kind in contract.OBSERVATION_LITERALS or kind == 'observation_kind':
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        if kind in contract.OBSERVATION_ENUMS:
+            valid = value in contract.OBSERVATION_ENUMS[kind]
+        elif kind == 'observation_kind':
+            valid = value in contract.OBSERVATION_VARIANTS
+        else:
+            valid = value == kind
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _event_scalar(value, kind)
+
+
+def _observation_record(value):
+    _event_closed(value, contract.OBSERVATION_FIELDS)
+    for key, kind in contract.OBSERVATION_SCALARS:
+        _observation_scalar(value[key], kind)
+    kind = value['kind']
+    role, scope, schema = contract.OBSERVATION_VARIANTS[kind]
+    payload = value['payload']
+    _event_closed(payload, tuple(key for key, _ in schema))
+    nested = {}
+    for key, scalar in schema:
+        if scalar == 'public_result':
+            nested[key] = _record(payload[key])
+        else:
+            _observation_scalar(payload[key], scalar)
+    if value['issuer_role'] != role:
+        raise ResultCodecError('invalid_result')
+    if scope == 'operation_or_owner_graph':
+        scope = payload['scope']
+    for key in contract.OBSERVATION_SUBJECT_FIELDS:
+        must_be_null = scope == 'owner_graph' or (scope == 'operation_before_lease' and key == 'lease_id')
+        if (value[key] is None) != must_be_null:
+            raise ResultCodecError('invalid_result')
+    if kind == 'approval_recorded' and payload['reviewed_action_sha256'] != value['action_sha256']:
+        raise ResultCodecError('invalid_result')
+    if kind == 'result_released' and nested['result']['operation_id'] != value['operation_id']:
+        raise ResultCodecError('invalid_result')
+    result = dict(value)
+    result['payload'] = dict(payload)
+    result['payload'].update(nested)
+    return result
+
+
+def _observation_subjects(engagement, operation, lease, reference):
+    _expected_subject(engagement)
+    _expected_subject(reference)
+    if lease is not None and operation is None:
+        raise ResultCodecError('invalid_shape')
+    for value in (operation, lease):
+        if value is not None:
+            _expected_subject(value)
+
+
+def decode_observation_record(frame: bytes, expected_engagement_id: str,
+                              expected_operation_id: str | None, expected_lease_id: str | None,
+                              expected_reference_id: str) -> dict:
+    """Validate a record; no producer authentication, reference registration,
+    physical evidence or authorization of any operation is established.
+    """
+    _observation_subjects(expected_engagement_id, expected_operation_id, expected_lease_id, expected_reference_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.OBSERVATION_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.OBSERVATION_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _observation_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('engagement_id', 'operation_id', 'lease_id', 'reference_id')) != (
+            expected_engagement_id, expected_operation_id, expected_lease_id, expected_reference_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_observation_record(record: dict, expected_engagement_id: str,
+                              expected_operation_id: str | None, expected_lease_id: str | None,
+                              expected_reference_id: str) -> bytes:
+    """Encode a record; no producer authentication, reference registration,
+    physical evidence or authorization of any operation is established.
+    """
+    _observation_subjects(expected_engagement_id, expected_operation_id, expected_lease_id, expected_reference_id)
+    validated = _observation_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.OBSERVATION_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('engagement_id', 'operation_id', 'lease_id', 'reference_id')) != (
+            expected_engagement_id, expected_operation_id, expected_lease_id, expected_reference_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

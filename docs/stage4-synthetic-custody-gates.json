@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "661daf91117f72f325ffc860286ab9d1b09f61a174b6af24664372a35d49eadb",
+  "contract_sha256": "d54d946ab7cff8b456876350eb573019fdb78a556cc1a5d75a9ca29b1ec2057c",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -11024,5 +11024,45 @@
     "native_execution_authorized": false,
     "authority_predicates_implemented": false,
     "validation": "Collect exact27 unit IDs; run eight new event units and affected preservation check; independent final review before publication."
+  },
+  "portable_observation_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_observation_record_codec_implementation",
+    "scope_sha256": "1808cecf08178cdabf155dce90774fa0f1b617be07b5d6ac5f101e6f805afc76",
+    "verified_base_merge": "ab229fb09b0144cad4018e613695f279e4bfbd0a",
+    "prerequisite_amendment_sha256": "0be42151b1f08685a7e8d2469ec41248526493f383b515bd7c402a46a4894346",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_observation_record_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_observation_record_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_observation_record_variant_schemas",
+      "tests/test_secure_synthetic_custody_contract.py::test_observation_record_scalar_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_observation_record_subject_and_intrinsic_relations",
+      "tests/test_secure_synthetic_custody_contract.py::test_observation_record_encoding_and_depth",
+      "tests/test_secure_synthetic_custody_contract.py::test_observation_record_expected_subject_binding"
+    ],
+    "new_unit_node_count": 7,
+    "prior_result_roe_lease_event_unit_nodes_preserved": 27,
+    "combined_unit_node_count": 34,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 63,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "registry_implemented": false,
+    "producer_authentication_implemented": false,
+    "validation": "Collect exact34 unit IDs; run seven new observation units and affected preservation check; independent final review before publication."
   }
 }
