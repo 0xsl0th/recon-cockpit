@@ -211,3 +211,34 @@ CUSTODY_RECEIPT_VARIANTS = {
         ('source_instance_id', 'uuid4'), ('transfer_id', 'uuid4'), ('writable_aliases_closed', 'true'),
     ),
 }
+
+# Intrinsic descriptor syntax only; declared nullability eligibility stays external.
+DESCRIPTOR_RECEIPT_MAX_BYTES = 4096
+DESCRIPTOR_RECEIPT_MAX_DEPTH = 3
+DESCRIPTOR_RECEIPT_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+DESCRIPTOR_RECEIPT_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'descriptor_identity'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+DESCRIPTOR_RECEIPT_PAYLOAD = (
+    ('access_mode', 'access_mode'), ('close_on_exec', 'true'), ('device', 'u64'), ('fd_number', 'fd'),
+    ('holder_instance_id', 'uuid4'), ('inode', 'u64'), ('object_kind', 'object_kind'),
+    ('peer_instance_id', 'uuid4?'), ('process_receipt_id', 'uuid4'), ('seals', 'seals'),
+    ('transfer_id', 'uuid4?'),
+)
+DESCRIPTOR_RECEIPT_ENUMS = {
+    'access_mode': ('read_only', 'write_only', 'read_write'),
+    'object_kind': ('credential_memfd', 'connected_socket', 'seqpacket', 'pipe', 'null_sink',
+                    'authority_file', 'display_socket', 'other_pinned_bootstrap_object'),
+    'seals': ('none', 'write_grow_shrink_seal'),
+}
+DESCRIPTOR_RECEIPT_ISSUER_ROLES = ('supervisor', 'driver', 'fixture_source', 'connector', 'operation_worker')
+DESCRIPTOR_RECEIPT_FD_BOUNDS = (0, 2147483647)
