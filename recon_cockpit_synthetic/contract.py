@@ -110,3 +110,58 @@ EVENT_VARIANTS = {
     'result_recorded': ('lease', (('observation_event_id', 'uuid4'), ('result_sha256', 'sha256'))),
     'roe_adopted': ('engagement', (('previous_revision_sha256', 'sha256?'), ('roe_sha256', 'sha256'))),
 }
+
+# Intrinsic observation records only; no producer authentication or registry.
+OBSERVATION_MAX_BYTES = 4096
+OBSERVATION_MAX_DEPTH = 3
+OBSERVATION_FIELDS = (
+    'action_sha256', 'clock_epoch_id', 'engagement_id', 'issuer_instance_id',
+    'issuer_role', 'kind', 'lease_id', 'observed_monotonic_ns', 'observer_owner_id',
+    'observer_session_id', 'operation_id', 'payload', 'reference_id',
+    'runtime_lock_sha256', 'schema_version', 'subject_generation', 'subject_owner_id',
+)
+OBSERVATION_SCALARS = (
+    ('action_sha256', 'sha256?'), ('clock_epoch_id', 'uuid4'),
+    ('engagement_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'producer_role'), ('kind', 'observation_kind'),
+    ('lease_id', 'uuid4?'), ('observed_monotonic_ns', 'monotonic_ns'),
+    ('observer_owner_id', 'uuid4'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('reference_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-observation-v1'),
+    ('subject_generation', 'generation?'), ('subject_owner_id', 'uuid4'),
+)
+OBSERVATION_ENUMS = {
+    'producer_role': ('broker', 'reviewer', 'lifecycle_monitor', 'operation_worker', 'release_guard'),
+    'cleanup_scope': ('operation_graph', 'owner_graph'),
+    'fixture_id': ('allowed', 'invalid', 'restricted'),
+    'review_view': ('terminal', 'graphical'),
+}
+OBSERVATION_LITERALS = (
+    's43-observation-v1', 'TLSv1.2', 'ECDHE-RSA-AES128-GCM-SHA256',
+    'http/1.1', 'approved',
+)
+OBSERVATION_SUBJECT_FIELDS = ('operation_id', 'lease_id', 'action_sha256', 'subject_generation')
+OBSERVATION_VARIANTS = {
+    'action_prepared': ('broker', 'operation_before_lease', (
+        ('credential_reference', 'uuid4'), ('fixture_id', 'fixture_id'),
+        ('operation_profile_sha256', 'sha256'), ('request_template_sha256', 'sha256'),
+        ('revision', 'revision'), ('roe_sha256', 'sha256'), ('trust_sha256', 'sha256'),
+    )),
+    'approval_recorded': ('reviewer', 'operation_before_lease', (
+        ('action_reference_id', 'uuid4'), ('approval_id', 'uuid4'), ('decision', 'approved'),
+        ('review_view', 'review_view'), ('reviewed_action_sha256', 'sha256'),
+    )),
+    'graph_closed': ('lifecycle_monitor', 'operation_or_owner_graph', (
+        ('descriptors_closed', 'true'), ('graph_id', 'uuid4'),
+        ('physical_receipt_id', 'uuid4'), ('processes_reaped', 'true'), ('scope', 'cleanup_scope'),
+    )),
+    'pre_write_reached': ('operation_worker', 'operation_lease', (
+        ('phase', 'pre_write'), ('release_event_id', 'uuid4'), ('socket_observation_id', 'uuid4'),
+    )),
+    'result_released': ('release_guard', 'operation_lease', (('result', 'public_result'),)),
+    'tls_verified': ('operation_worker', 'operation_lease', (
+        ('negotiated_alpn', 'http/1.1'), ('negotiated_cipher', 'ECDHE-RSA-AES128-GCM-SHA256'),
+        ('negotiated_version', 'TLSv1.2'), ('peer_certificate_sha256', 'sha256'),
+        ('session_reused', 'false'), ('socket_observation_id', 'uuid4'), ('trust_sha256', 'sha256'),
+    )),
+}

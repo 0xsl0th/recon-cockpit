@@ -1433,3 +1433,32 @@ Eight new finite unit nodes give actual collection27 and eventual portable union
 Formal29/native89 identities and all broader readiness/acceptance flags remain
 unchanged. The preservation amendment updates only five literal hashes; no
 existing path/import allowance or historical assertion changes.
+
+
+## Reviewed portable observation record codec slice
+
+After verified PR112 publication, the independently reviewed next slice extends
+the same six existing paths with intrinsic observation record encoding and
+decoding. PR112 corrects the owned portable fixture that failed after PR111;
+PR111's original failed main-CI evidence remains failed and preserved. The reviewed
+prerequisite amendment binds this slice to the verified PR112 merge. No new paths
+or imports are admitted; all shared helpers and twenty-seven prior unit nodes
+remain unchanged. The exact scope is pinned by `portable_observation_codec_slice`.
+
+The codec validates the seventeen-field envelope and six closed payload variants
+within 4096 canonical ASCII bytes and depth3. Checks include exact types, claimed
+role consistency, operation/lease/owner subject nullability, approval digest and
+nested result relationships, declared TLS literals and exact closure booleans.
+Expected engagement/operation/lease/reference IDs are compared after intrinsic
+and canonical validation; returned nested dictionaries are fresh.
+
+These records do not authenticate a producer, register or resolve a reference,
+establish clock freshness, prove TLS or physical closure, or authorize an
+operation. A fresh observer may name an old subject owner. The operation profile
+hash remains syntax-only here; all external authority and physical bindings stay
+gated.
+
+Seven new finite unit nodes give actual collection34 and eventual portable union63.
+Formal29/native89 identities and all broader readiness/acceptance flags remain
+unchanged. The preservation amendment updates only five literal hashes; existing
+path/import allowances and historical assertions remain unchanged.

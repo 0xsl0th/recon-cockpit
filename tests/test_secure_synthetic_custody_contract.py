@@ -1,4 +1,4 @@
-"""Twenty-seven codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""Thirty-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -1120,3 +1120,369 @@ def test_public_event_encoding_and_depth():
         assert len(calls) == 6
     finally:
         json.loads = original_loads
+
+
+# Independent observation expectations; never derive them from codec tables.
+OBS_ENGAGEMENT = '32345678-1234-4234-9234-123456789abc'
+OBS_LEASE = '42345678-1234-4234-9234-123456789abc'
+OBS_REFERENCE = '52345678-1234-4234-9234-123456789abc'
+OBS_ENVELOPE_TYPES = (
+    ('action_sha256', 'hash?'), ('clock_epoch_id', 'uuid'), ('engagement_id', 'uuid'),
+    ('issuer_instance_id', 'uuid'), ('issuer_role', 'enum'), ('kind', 'enum'),
+    ('lease_id', 'uuid?'), ('observed_monotonic_ns', 'time'), ('observer_owner_id', 'uuid'),
+    ('observer_session_id', 'uuid'), ('operation_id', 'uuid?'), ('payload', 'object'),
+    ('reference_id', 'uuid'), ('runtime_lock_sha256', 'hash'), ('schema_version', 'enum'),
+    ('subject_generation', 'generation?'), ('subject_owner_id', 'uuid'),
+)
+OBS_PAYLOAD_TYPES = {
+    'action_prepared': (
+        ('credential_reference', 'uuid'), ('fixture_id', 'enum'), ('operation_profile_sha256', 'hash'),
+        ('request_template_sha256', 'hash'), ('revision', 'revision'), ('roe_sha256', 'hash'), ('trust_sha256', 'hash'),
+    ),
+    'approval_recorded': (
+        ('action_reference_id', 'uuid'), ('approval_id', 'uuid'), ('decision', 'enum'),
+        ('review_view', 'enum'), ('reviewed_action_sha256', 'hash'),
+    ),
+    'graph_closed': (
+        ('descriptors_closed', 'true'), ('graph_id', 'uuid'), ('physical_receipt_id', 'uuid'),
+        ('processes_reaped', 'true'), ('scope', 'enum'),
+    ),
+    'pre_write_reached': (('phase', 'enum'), ('release_event_id', 'uuid'), ('socket_observation_id', 'uuid')),
+    'result_released': (('result', 'result'),),
+    'tls_verified': (
+        ('negotiated_alpn', 'enum'), ('negotiated_cipher', 'enum'), ('negotiated_version', 'enum'),
+        ('peer_certificate_sha256', 'hash'), ('session_reused', 'false'),
+        ('socket_observation_id', 'uuid'), ('trust_sha256', 'hash'),
+    ),
+}
+OBS_ROLES = {
+    'action_prepared': 'broker', 'approval_recorded': 'reviewer',
+    'graph_closed': 'lifecycle_monitor', 'pre_write_reached': 'operation_worker',
+    'result_released': 'release_guard', 'tls_verified': 'operation_worker',
+}
+
+
+def _observation(kind='tls_verified', owner=False):
+    payloads = {
+        'action_prepared': dict(credential_reference=OTHER, fixture_id='allowed',
+            operation_profile_sha256='a' * 64, request_template_sha256='b' * 64,
+            revision=1, roe_sha256='c' * 64, trust_sha256='d' * 64),
+        'approval_recorded': dict(action_reference_id=OTHER, approval_id=OBS_REFERENCE,
+            decision='approved', review_view='terminal', reviewed_action_sha256='a' * 64),
+        'graph_closed': dict(descriptors_closed=True, graph_id=OTHER,
+            physical_receipt_id=OBS_REFERENCE, processes_reaped=True,
+            scope='owner_graph' if owner else 'operation_graph'),
+        'pre_write_reached': dict(phase='pre_write', release_event_id=OTHER, socket_observation_id=OBS_REFERENCE),
+        'result_released': dict(result=_record()),
+        'tls_verified': dict(negotiated_alpn='http/1.1', negotiated_cipher='ECDHE-RSA-AES128-GCM-SHA256',
+            negotiated_version='TLSv1.2', peer_certificate_sha256='b' * 64,
+            session_reused=False, socket_observation_id=OTHER, trust_sha256='c' * 64),
+    }
+    return dict(action_sha256=None if owner else 'a' * 64, clock_epoch_id=OTHER,
+        engagement_id=OBS_ENGAGEMENT, issuer_instance_id=OTHER, issuer_role=OBS_ROLES[kind],
+        kind=kind, lease_id=None if owner or kind in ('action_prepared', 'approval_recorded') else OBS_LEASE,
+        observed_monotonic_ns=0, observer_owner_id=SUBJECT, observer_session_id=OTHER,
+        operation_id=None if owner else SUBJECT, payload=payloads[kind], reference_id=OBS_REFERENCE,
+        runtime_lock_sha256='d' * 64, schema_version='s43-observation-v1',
+        subject_generation=None if owner else 0, subject_owner_id=OTHER)
+
+
+def _observation_args(kind='tls_verified', owner=False):
+    return (OBS_ENGAGEMENT, None if owner else SUBJECT,
+            None if owner or kind in ('action_prepared', 'approval_recorded') else OBS_LEASE, OBS_REFERENCE)
+
+
+def _observation_accept(record):
+    args = tuple(record[key] for key in ('engagement_id', 'operation_id', 'lease_id', 'reference_id'))
+    wire = _wire(record)
+    assert codec.encode_observation_record(record, *args) == wire
+    decoded = codec.decode_observation_record(wire, *args)
+    assert decoded == record and decoded is not record
+    assert decoded['payload'] is not record['payload']
+    return decoded
+
+
+def _observation_reject(record, code, kind='tls_verified', owner=False, decode_code=None):
+    args = _observation_args(kind, owner)
+    _reject(lambda: codec.encode_observation_record(record, *args), code)
+    return _reject(lambda: codec.decode_observation_record(_wire(record), *args), decode_code or code)
+
+
+def test_observation_record_canonical_examples():
+    assert len(OBS_ENVELOPE_TYPES) == 17 and len(OBS_PAYLOAD_TYPES) == 6
+    assert len(set(OBS_ROLES.values())) == 5
+    for kind in OBS_PAYLOAD_TYPES:
+        record = _observation(kind)
+        assert set(record) == {key for key, _ in OBS_ENVELOPE_TYPES}
+        assert record['issuer_role'] == OBS_ROLES[kind]
+        first = _observation_accept(record)
+        second = _observation_accept(record)
+        first['payload'].clear()
+        first['issuer_role'] = 'mutated'
+        assert second == record
+        assert codec.encode_observation_record(dict(reversed(tuple(record.items()))), *_observation_args(kind)) == _wire(record)
+    for row in RELATIONS:
+        record = _observation('result_released')
+        record['payload']['result'] = _record(row)
+        first = _observation_accept(record)
+        second = _observation_accept(record)
+        assert first['payload']['result'] is not record['payload']['result']
+        first['payload']['result']['outcome'] = 'mutated'
+        assert second == record
+    # Fresh observer may name an old subject owner, for either graph scope.
+    for owner in (False, True):
+        record = _observation('graph_closed', owner)
+        assert record['subject_owner_id'] != record['observer_owner_id']
+        _observation_accept(record)
+
+
+def test_observation_record_shape_and_type_rejections():
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1]):
+        _observation_reject(value, 'invalid_shape')
+    for key, typ in OBS_ENVELOPE_TYPES:
+        record = _observation()
+        del record[key]
+        _observation_reject(record, 'invalid_shape')
+        record = _observation()
+        record['RAW_SENTINEL'] = record.pop(key)
+        _observation_reject(record, 'invalid_shape')
+        for bad in (None, True, [], {}, 'RAW_SENTINEL'):
+            if bad is None and typ.endswith('?'):
+                continue
+            _observation_reject(dict(_observation(), **{key: bad}), 'invalid_shape' if typ == 'object' else 'invalid_value')
+    _observation_reject(dict(_observation(), extra='RAW_SENTINEL'), 'invalid_shape')
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class IntHook(int):
+        def __lt__(self, other):
+            raise AssertionError('hook reached')
+    class BoolHook:
+        def __bool__(self):
+            raise AssertionError('hook reached')
+    _reject(lambda: codec.encode_observation_record(DictHook(_observation()), *_observation_args()), 'invalid_shape')
+    for key, typ in OBS_ENVELOPE_TYPES:
+        bad = DictHook() if typ == 'object' else (IntHook(1) if typ in ('time', 'generation?') else StringHook('x'))
+        _reject(lambda: codec.encode_observation_record(dict(_observation(), **{key: bad}), *_observation_args()), 'invalid_shape' if typ == 'object' else 'invalid_value')
+    for kind, schema in OBS_PAYLOAD_TYPES.items():
+        for key, typ in schema:
+            bad_values = (None, True, [], {}, 'RAW_SENTINEL', 0, 1, 1.0)
+            for bad in bad_values:
+                if typ == 'true' and bad is True or typ == 'revision' and type(bad) is int and bad == 1:
+                    continue
+                record = _observation(kind)
+                record['payload'][key] = bad
+                _observation_reject(record, 'invalid_shape' if typ == 'result' else 'invalid_value', kind,
+                                    decode_code='invalid_value' if type(bad) is float else None)
+            record = _observation(kind)
+            record['payload'][key] = (DictHook() if typ == 'result' else BoolHook() if typ in ('true', 'false')
+                                      else IntHook(1) if typ == 'revision' else StringHook('x'))
+            _reject(lambda: codec.encode_observation_record(record, *_observation_args(kind)), 'invalid_shape' if typ == 'result' else 'invalid_value')
+        record = _observation(kind)
+        record['payload'] = DictHook(record['payload'])
+        _reject(lambda: codec.encode_observation_record(record, *_observation_args(kind)), 'invalid_shape')
+    for level in ('envelope', 'payload', 'result'):
+        record = _observation('result_released')
+        target = record if level == 'envelope' else record['payload'] if level == 'payload' else record['payload']['result']
+        key = next(iter(target))
+        target[StringHook(key)] = target.pop(key)
+        _reject(lambda: codec.encode_observation_record(record, *_observation_args('result_released')), 'invalid_shape')
+    huge = dict(_observation())
+    huge['X' * 10000] = 'RAW_SENTINEL'
+    _reject(lambda: codec.encode_observation_record(huge, *_observation_args()), 'invalid_shape')
+
+
+def test_observation_record_variant_schemas():
+    for kind, schema in OBS_PAYLOAD_TYPES.items():
+        record = _observation(kind)
+        assert set(record['payload']) == {key for key, _ in schema}
+        for key, _ in schema:
+            bad = _observation(kind)
+            del bad['payload'][key]
+            _observation_reject(bad, 'invalid_shape', kind)
+        record['payload']['RAW_SENTINEL'] = 1
+        _observation_reject(record, 'invalid_shape', kind)
+        for other in OBS_PAYLOAD_TYPES:
+            if other != kind:
+                _observation_reject(dict(_observation(kind), payload=_observation(other)['payload']), 'invalid_shape', kind)
+        for role in ('broker', 'reviewer', 'lifecycle_monitor', 'operation_worker', 'release_guard'):
+            record = dict(_observation(kind), issuer_role=role)
+            if role == OBS_ROLES[kind]:
+                _observation_accept(record)
+            else:
+                _observation_reject(record, 'invalid_result', kind)
+    for field in _record():
+        record = _observation('result_released')
+        del record['payload']['result'][field]
+        _observation_reject(record, 'invalid_shape', 'result_released')
+    record = _observation('result_released')
+    record['payload']['result']['RAW_SENTINEL'] = 1
+    _observation_reject(record, 'invalid_shape', 'result_released')
+    for kind, field, values in (
+            ('action_prepared', 'fixture_id', ('allowed', 'invalid', 'restricted')),
+            ('approval_recorded', 'review_view', ('terminal', 'graphical'))):
+        for value in values:
+            record = _observation(kind)
+            record['payload'][field] = value
+            _observation_accept(record)
+    for key in ('kind', 'issuer_role', 'schema_version'):
+        for bad in ('', 'RAW_SENTINEL', 's43-observation-v2', 'x' * 65):
+            _observation_reject(dict(_observation(), **{key: bad}), 'invalid_value')
+    for key, bad in (('negotiated_alpn', 'h2'), ('negotiated_cipher', 'TLS_AES_128_GCM_SHA256'),
+                     ('negotiated_version', 'TLSv1.3'), ('session_reused', True)):
+        record = _observation()
+        record['payload'][key] = bad
+        _observation_reject(record, 'invalid_value')
+    for key in ('processes_reaped', 'descriptors_closed'):
+        record = _observation('graph_closed')
+        record['payload'][key] = False
+        _observation_reject(record, 'invalid_value', 'graph_closed')
+
+
+def test_observation_record_scalar_bounds():
+    for key, minimum, maximum, kind, in_payload in (
+            ('observed_monotonic_ns', 0, 9223372036854775807, 'tls_verified', False),
+            ('subject_generation', 0, 2147483647, 'tls_verified', False),
+            ('revision', 1, 2147483647, 'action_prepared', True)):
+        for value in (minimum, maximum):
+            record = _observation(kind)
+            (record['payload'] if in_payload else record)[key] = value
+            _observation_accept(record)
+        for bad in (minimum - 1, maximum + 1, 10 ** 200, True, False, 1.0, '1'):
+            record = _observation(kind)
+            (record['payload'] if in_payload else record)[key] = bad
+            _observation_reject(record, 'invalid_value', kind)
+    bad_uuids = ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT[:-1],
+                 SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'))
+    bad_hashes = ('', 'a' * 63, 'a' * 65, 'A' * 64, 'g' * 64, 'a' * 64 + '\n')
+    for key, typ in OBS_ENVELOPE_TYPES:
+        if typ.startswith(('uuid', 'hash')):
+            for bad in bad_uuids if typ.startswith('uuid') else bad_hashes:
+                _observation_reject(dict(_observation(), **{key: bad}), 'invalid_value')
+    for kind, schema in OBS_PAYLOAD_TYPES.items():
+        for key, typ in schema:
+            for bad in bad_uuids if typ == 'uuid' else bad_hashes if typ == 'hash' else ('', 'RAW_SENTINEL', 'x' * 65) if typ == 'enum' else ():
+                record = _observation(kind)
+                record['payload'][key] = bad
+                _observation_reject(record, 'invalid_value', kind)
+    # Profile hash is syntax-only here; no unimplemented external binding is inferred.
+    record = _observation('action_prepared')
+    record['payload']['operation_profile_sha256'] = 'f' * 64
+    _observation_accept(record)
+
+
+def test_observation_record_subject_and_intrinsic_relations():
+    fields = ('operation_id', 'lease_id', 'action_sha256', 'subject_generation')
+    nonnull = (SUBJECT, OBS_LEASE, 'a' * 64, 0)
+    for kind in OBS_PAYLOAD_TYPES:
+        for owner in ((False, True) if kind == 'graph_closed' else (False,)):
+            expected = tuple(_observation(kind, owner)[key] is not None for key in fields)
+            for mask in range(16):
+                present = tuple(bool(mask & (1 << i)) for i in range(4))
+                record = _observation(kind, owner)
+                for key, value, enabled in zip(fields, nonnull, present):
+                    record[key] = value if enabled else None
+                if present == expected:
+                    _observation_accept(record)
+                else:
+                    _observation_reject(record, 'invalid_result', kind, owner)
+    record = _observation('approval_recorded')
+    record['payload']['reviewed_action_sha256'] = 'b' * 64
+    _observation_reject(record, 'invalid_result', 'approval_recorded')
+    record = _observation('result_released')
+    record['payload']['result']['operation_id'] = OTHER
+    _observation_reject(record, 'invalid_result', 'result_released')
+    record = _observation('result_released')
+    record['payload']['result']['http_status'] = None
+    _observation_reject(record, 'invalid_result', 'result_released')
+
+
+def test_observation_record_encoding_and_depth():
+    record = _observation('result_released')
+    wire = _wire(record)
+    args = _observation_args('result_released')
+    nested = record['payload']['result']
+    reversed_nested = json.dumps(dict(reversed(tuple(nested.items()))), separators=(',', ':')).encode('ascii')
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire.replace(_wire(nested), reversed_nested), wire + b'\n', b' ' + wire,
+                  wire.replace(b':', b': ', 1), wire.replace(b'"s43-observation-v1"', b'"\\u007343-observation-v1"'),
+                  wire.replace(b'"subject_generation":0', b'"subject_generation":-0'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x',
+                  b'{"x":"\\q"}', b'x' * 4097, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+        error = _reject(lambda: codec.decode_observation_record(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None
+    for frame in (b'{"reference_id":null,' + wire[1:],
+                  wire.replace(b'"payload":{', b'"payload":{"result":null,'),
+                  wire.replace(b'"result":{', b'"result":{"outcome":null,'),
+                  b'{"referenc\\u0065_id":null,' + wire[1:]):
+        _reject(lambda: codec.decode_observation_record(frame, *args), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        _reject(lambda: codec.decode_observation_record(wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":' + scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None):
+        _reject(lambda: codec.decode_observation_record(frame, *args), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 4097, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+            _reject(lambda: codec.decode_observation_record(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_observation_record(b' ' * 4096, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_observation_record(b'{"a":{"b":{}}}', *args), 'invalid_shape')
+        assert len(calls) == 2
+        assert codec.decode_observation_record(wire, *args) == record
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _observation_reject(dict(_observation(), schema_version=text), 'invalid_value')
+        assert len(calls) == 6
+    finally:
+        json.loads = original_loads
+
+
+def test_observation_record_expected_subject_binding():
+    for kind in OBS_PAYLOAD_TYPES:
+        for owner in ((False, True) if kind == 'graph_closed' else (False,)):
+            record = _observation(kind, owner)
+            wire = _wire(record)
+            args = _observation_args(kind, owner)
+            for index in range(4):
+                changed = list(args)
+                changed[index] = '62345678-1234-4234-9234-123456789abc'
+                code = 'invalid_shape' if changed[1] is None and changed[2] is not None else 'wrong_subject'
+                _reject(lambda: codec.decode_observation_record(wire, *changed), code)
+                _reject(lambda: codec.encode_observation_record(record, *changed), code)
+                for bad in (True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n'):
+                    changed = list(args)
+                    changed[index] = bad
+                    code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+                    if index == 2 and changed[1] is None:
+                        code = 'invalid_shape'
+                    _reject(lambda: codec.decode_observation_record(wire, *changed), code)
+                    _reject(lambda: codec.encode_observation_record(record, *changed), code)
+            for operation, lease in ((None, None), (SUBJECT, None), (SUBJECT, OBS_LEASE), (None, OBS_LEASE)):
+                changed = (OBS_ENGAGEMENT, operation, lease, OBS_REFERENCE)
+                if changed == args:
+                    assert codec.decode_observation_record(wire, *changed) == record
+                else:
+                    code = 'invalid_shape' if operation is None and lease is not None else 'wrong_subject'
+                    _reject(lambda: codec.decode_observation_record(wire, *changed), code)
+                    _reject(lambda: codec.encode_observation_record(record, *changed), code)
+            for index in (0, 3):
+                changed = list(args)
+                changed[index] = None
+                _reject(lambda: codec.decode_observation_record(wire, *changed), 'invalid_shape')
+                _reject(lambda: codec.encode_observation_record(record, *changed), 'invalid_shape')
+    # Intrinsic and canonical failures precede trusted-ID mismatch.
+    record = _observation()
+    wrong = (OTHER, SUBJECT, OBS_LEASE, OBS_REFERENCE)
+    _reject(lambda: codec.decode_observation_record(_wire(record) + b'\n', *wrong), 'invalid_encoding')
+    record['issuer_role'] = 'reviewer'
+    _reject(lambda: codec.encode_observation_record(record, *wrong), 'invalid_result')
+    _reject(lambda: codec.decode_observation_record(_wire(record), *wrong), 'invalid_result')
