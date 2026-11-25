@@ -1074,3 +1074,90 @@ def encode_graph_closure_receipt_record(record: dict, expected_subject_owner_id:
             expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _recovery_closure_binding_scalar(value, kind):
+    if kind == 'uuid_list10':
+        if type(value) is not list:
+            raise ResultCodecError('invalid_shape')
+        minimum, maximum = contract.RECOVERY_BINDING_LIST_BOUNDS
+        if not minimum <= len(value) <= maximum:
+            raise ResultCodecError('invalid_value')
+        for item in value:
+            _event_scalar(item, 'uuid4')
+        if len(set(value)) != len(value) or value != sorted(value):
+            raise ResultCodecError('invalid_value')
+    elif kind == 'recovery_closure_binding':
+        if type(value) is not str or len(value) > 64 or value != kind:
+            raise ResultCodecError('invalid_value')
+    else:
+        _custody_receipt_scalar(value, kind)
+
+
+def _recovery_closure_binding_record(value):
+    _event_closed(value, contract.RECOVERY_BINDING_FIELDS)
+    for key, kind in contract.RECOVERY_BINDING_SCALARS:
+        _recovery_closure_binding_scalar(value[key], kind)
+    payload = value['payload']
+    _event_closed(payload, tuple(key for key, _ in contract.RECOVERY_BINDING_PAYLOAD))
+    for key, kind in contract.RECOVERY_BINDING_PAYLOAD:
+        _recovery_closure_binding_scalar(payload[key], kind)
+    if (value['issuer_role'] not in contract.RECOVERY_BINDING_ISSUER_ROLES
+            or value['phase'] != contract.RECOVERY_BINDING_PHASE
+            or value['observer_session_id'] != payload['consumer_session_id']
+            or value['graph_id'] != payload['subject_graph_id']
+            or value['observed_monotonic_ns'] != payload['evaluated_monotonic_ns']):
+        raise ResultCodecError('invalid_result')
+    result = dict(value)
+    result['payload'] = dict(payload)
+    result['payload']['termination_receipt_ids'] = list(payload['termination_receipt_ids'])
+    return result
+
+
+def decode_recovery_closure_binding_record(frame: bytes, expected_subject_owner_id: str,
+                                      expected_operation_id: str | None,
+                                      expected_graph_id: str, expected_receipt_id: str) -> dict:
+    """Parse recovery binding claims only; no producer authentication, receipt
+    registration/resolution, actual historical membership/reaping or continuous
+    live custody, successful cleanup/recovery eligibility or operation authorization.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.RECOVERY_BINDING_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.RECOVERY_BINDING_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _recovery_closure_binding_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_recovery_closure_binding_record(record: dict, expected_subject_owner_id: str,
+                                      expected_operation_id: str | None,
+                                      expected_graph_id: str, expected_receipt_id: str) -> bytes:
+    """Encode recovery binding claims only; no producer authentication, receipt
+    registration/resolution, actual historical membership/reaping or continuous
+    live custody, successful cleanup/recovery eligibility or operation authorization.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    validated = _recovery_closure_binding_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.RECOVERY_BINDING_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

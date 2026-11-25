@@ -1628,3 +1628,39 @@ finite units bring actual unit collection to64; affected local validation runs
 those six plus the preservation check. Formal29 portable/native89 remain
 unchanged; eventual portable union93 gives no acceptance credit. No runtime
 registry, native execution, closed S4.2c rerun or strategic gate change is included.
+
+## Portable recovery closure-binding codec slice
+
+The independently reviewed slice follows verified PR118 at
+`94d5b6054d83e98d2e755fde59640cd3566e0598`. It adds separate
+`decode_recovery_closure_binding_record` and
+`encode_recovery_closure_binding_record` APIs for intrinsic
+`recovery_closure_binding` claims only. The closed14-field envelope and
+closed12-field payload use canonical ASCII JSON, a complete-record2048-byte limit
+and depth3. Explicit expected owner/operation/graph/receipt IDs bind the record.
+
+The codec allows only a claimed supervisor issuer and closed phase. Envelope
+observer session, graph and observed time must equal payload consumer session,
+subject graph and evaluation time respectively. The three closure predicates
+require exact Boolean True. Termination receipt IDs form an exact built-in list
+of1..10 unique canonical UUID4 strings sorted in ASCII order; unsorted input is
+rejected, never repaired. The nullable envelope operation remains representable.
+Returned envelope, payload and termination-ID list are fresh plain objects.
+Existing graph-closure member-list ordering and every prior API remain unchanged.
+
+These checks authenticate no producer and register/resolve no receipt. They prove
+no historical membership/reaping, unbroken supervisor/pidfd custody, current
+terminal/root-copy/transfer observations, successful cleanup or recovery
+eligibility. Parsed True values confer no authority. Original-owner/current-
+consumer binding, ancestry and immutable historical sessions/times remain external
+registry checks; no general owner/session inequality or UUID distinctness is
+invented. Separate provenance cache, cleanup registration, AUTH04 lookup-only
+behavior, exact operation binding and aggregate quotas remain mandatory gates.
+No store open, protocol action, digest framing or public evidence export is added.
+
+The six-file scope is pinned by `portable_recovery_binding_codec_slice`.
+Prior64 codec units and existing helpers/imports remain unchanged. Six additional
+finite units bring actual collection to70; affected local validation runs those
+six plus preservation. Formal29 portable/native89 remain unchanged; eventual
+portable union99 gives no acceptance credit. No native execution, closed S4.2c
+rerun or strategic gate change is included.
