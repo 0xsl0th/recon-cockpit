@@ -899,3 +899,84 @@ def encode_process_receipt_record(record: dict, expected_subject_owner_id: str,
             expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _termination_receipt_scalar(value, kind):
+    if kind in contract.TERMINATION_RECEIPT_INTEGER_BOUNDS:
+        minimum, maximum = contract.TERMINATION_RECEIPT_INTEGER_BOUNDS[kind]
+        if type(value) is not int or not minimum <= value <= maximum:
+            raise ResultCodecError('invalid_value')
+    elif kind in contract.TERMINATION_RECEIPT_ENUMS or kind in contract.TERMINATION_RECEIPT_LITERALS:
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        valid = (value in contract.TERMINATION_RECEIPT_ENUMS[kind]
+                 if kind in contract.TERMINATION_RECEIPT_ENUMS
+                 else value == contract.TERMINATION_RECEIPT_LITERALS[kind])
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _custody_receipt_scalar(value, kind)
+
+
+def _termination_receipt_record(value):
+    _event_closed(value, contract.TERMINATION_RECEIPT_FIELDS)
+    for key, kind in contract.TERMINATION_RECEIPT_SCALARS:
+        _termination_receipt_scalar(value[key], kind)
+    payload = value['payload']
+    _event_closed(payload, tuple(key for key, _ in contract.TERMINATION_RECEIPT_PAYLOAD))
+    for key, kind in contract.TERMINATION_RECEIPT_PAYLOAD:
+        _termination_receipt_scalar(payload[key], kind)
+    if value['issuer_role'] not in contract.TERMINATION_RECEIPT_ISSUER_ROLES:
+        raise ResultCodecError('invalid_result')
+    result = dict(value)
+    result['payload'] = dict(payload)
+    return result
+
+
+def decode_termination_receipt_record(frame: bytes, expected_subject_owner_id: str,
+                                      expected_operation_id: str | None,
+                                      expected_graph_id: str, expected_receipt_id: str) -> dict:
+    """Parse termination claims only; no producer authentication, receipt
+    registration/resolution, actual termination/reaping or live custody,
+    successful source/connector closure or operation authorization is established.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.TERMINATION_RECEIPT_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.TERMINATION_RECEIPT_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _termination_receipt_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_termination_receipt_record(record: dict, expected_subject_owner_id: str,
+                                      expected_operation_id: str | None,
+                                      expected_graph_id: str, expected_receipt_id: str) -> bytes:
+    """Encode termination claims only; no producer authentication, receipt
+    registration/resolution, actual termination/reaping or live custody,
+    successful source/connector closure or operation authorization is established.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    validated = _termination_receipt_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.TERMINATION_RECEIPT_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

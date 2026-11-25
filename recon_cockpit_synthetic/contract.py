@@ -280,3 +280,32 @@ PROCESS_RECEIPT_ROLE_RULES = {
     'release_guard': ('supervisor', 1), 'owned_service': ('supervisor', 1),
     'graphical_display': ('supervisor', 8), 'fixture_probe': ('supervisor', 1),
 }
+
+# Intrinsic termination claims only; actual reaping and closure remain external.
+TERMINATION_RECEIPT_MAX_BYTES = 2048
+TERMINATION_RECEIPT_MAX_DEPTH = 3
+TERMINATION_RECEIPT_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+TERMINATION_RECEIPT_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'monitor_termination'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+TERMINATION_RECEIPT_PAYLOAD = (
+    ('birth_process_receipt_id', 'uuid4'), ('exit_code', 'exit_code'),
+    ('exit_status', 'exit_status'), ('instance_id', 'uuid4'), ('monitor_session_id', 'uuid4'),
+    ('pidfd_reference', 'uuid4'), ('reaped_monotonic_ns', 'monotonic_ns'),
+    ('si_pid', 'pid'), ('si_signo', 'sigchld'), ('si_uid', 'uid_gid'),
+)
+TERMINATION_RECEIPT_INTEGER_BOUNDS = {
+    'exit_status': (0, 255), 'pid': (1, 2147483647), 'uid_gid': (0, 4294967294),
+}
+TERMINATION_RECEIPT_ENUMS = {'exit_code': ('CLD_EXITED', 'CLD_KILLED', 'CLD_DUMPED')}
+TERMINATION_RECEIPT_LITERALS = {'monitor_termination': 'monitor_termination', 'sigchld': 'SIGCHLD'}
+TERMINATION_RECEIPT_ISSUER_ROLES = ('supervisor', 'driver')

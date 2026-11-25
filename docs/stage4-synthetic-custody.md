@@ -1559,3 +1559,38 @@ formal29 portable and89 native nodes remain unchanged; eventual portable union81
 carries no acceptance credit. Existing helpers/imports and custody/descriptor APIs
 remain unchanged. No runtime, process inspection, SQL, registry or native execution
 is introduced; closure, termination and recovery variants remain separately gated.
+
+
+## Portable monitor termination receipt codec slice
+
+The independently reviewed next slice follows verified PR116 at
+`b82b05b7b0d93bb89fca0179ede1b7ea0c4a3e37`. It adds only `monitor_termination`
+record parsing/encoding through `decode_termination_receipt_record` and
+`encode_termination_receipt_record`, with required expected subject-owner, nullable
+operation, graph and receipt IDs. The closed14-field envelope and10-field non-null
+payload use canonical ASCII JSON, a complete-record2048-byte limit and depth3.
+The generic physical4096-byte ceiling does not override this variant's profile.
+
+Claimed issuers are driver or supervisor. Exit codes are CLD_EXITED, CLD_KILLED
+or CLD_DUMPED, each retaining scalar exit-status0..255; si_signo is SIGCHLD.
+PID syntax is1..2147483647; child-UID syntax is0..4294967294. Both monotonic
+fields retain0..9223372036854775807, and all UUID/hash fields retain their full
+canonical syntax. All five phases and nullable operation remain representable.
+No session equality, timestamp ordering, UUID distinctness or unproved child-role
+relationship is imposed by this intrinsic parser.
+
+Actual waitid/reaping, retained birth pidfd, direct parentage, child PID/real UID,
+authenticated issuer, original session/time and live ancestry/graph/epoch/runtime
+bindings remain external gates. The aggregate ten-record cap remains external.
+Parsed claims prove no actual termination or live custody, establish no successful
+source/connector closure and authorize no operation. Signal-death claims never
+establish successful source_closed/connector_closed; even CLD_EXITED/status0
+syntax does not establish that closure. No wait, signal or process operation is
+introduced; recovery ancestry exceptions remain unchanged and separately gated.
+
+Six append-only termination units bring actual codec collection to58; prior52
+remain unchanged. Seven affected checks cover these units and preservation.
+Formal29 portable/native89 remain unchanged; eventual portable union87 earns no
+acceptance credit. Existing helpers/imports and prior receipt APIs are unchanged.
+Graph closure and other recovery variants remain separate; no native execution
+is authorized by this slice.
