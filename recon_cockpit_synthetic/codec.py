@@ -737,3 +737,83 @@ def encode_custody_receipt_record(record: dict, expected_subject_owner_id: str,
             expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _descriptor_receipt_scalar(value, kind):
+    if kind == 'fd':
+        minimum, maximum = contract.DESCRIPTOR_RECEIPT_FD_BOUNDS
+        if type(value) is not int or not minimum <= value <= maximum:
+            raise ResultCodecError('invalid_value')
+    elif kind in contract.DESCRIPTOR_RECEIPT_ENUMS or kind == 'descriptor_identity':
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        valid = (value == 'descriptor_identity' if kind == 'descriptor_identity'
+                 else value in contract.DESCRIPTOR_RECEIPT_ENUMS[kind])
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _custody_receipt_scalar(value, kind)
+
+
+def _descriptor_receipt_record(value):
+    _event_closed(value, contract.DESCRIPTOR_RECEIPT_FIELDS)
+    for key, kind in contract.DESCRIPTOR_RECEIPT_SCALARS:
+        _descriptor_receipt_scalar(value[key], kind)
+    payload = value['payload']
+    _event_closed(payload, tuple(key for key, _ in contract.DESCRIPTOR_RECEIPT_PAYLOAD))
+    for key, kind in contract.DESCRIPTOR_RECEIPT_PAYLOAD:
+        _descriptor_receipt_scalar(payload[key], kind)
+    if value['issuer_role'] not in contract.DESCRIPTOR_RECEIPT_ISSUER_ROLES:
+        raise ResultCodecError('invalid_result')
+    result = dict(value)
+    result['payload'] = dict(payload)
+    return result
+
+
+def decode_descriptor_receipt_record(frame: bytes, expected_subject_owner_id: str,
+                                     expected_operation_id: str | None,
+                                     expected_graph_id: str, expected_receipt_id: str) -> dict:
+    """Parse descriptor syntax; no producer authentication, receipt registration/
+    resolution, descriptor identity/live custody, nullability eligibility proof
+    or operation authorization is established.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.DESCRIPTOR_RECEIPT_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.DESCRIPTOR_RECEIPT_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _descriptor_receipt_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_descriptor_receipt_record(record: dict, expected_subject_owner_id: str,
+                                     expected_operation_id: str | None,
+                                     expected_graph_id: str, expected_receipt_id: str) -> bytes:
+    """Encode descriptor syntax; no producer authentication, receipt registration/
+    resolution, descriptor identity/live custody, nullability eligibility proof
+    or operation authorization is established.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    validated = _descriptor_receipt_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.DESCRIPTOR_RECEIPT_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

@@ -1493,3 +1493,36 @@ units. Local validation collects those exact 40 nodes and runs only the six new
 units plus the affected preservation check. Formal portable29/native89 counts
 remain unchanged; the eventual portable union is69. This slice grants zero formal
 acceptance credit and does not reopen S4.2c checks or authorize native execution.
+
+## Portable descriptor identity receipt codec slice
+
+The independently reviewed six-path scope extends verified PR114 main
+`e7fa35c21cdec329e08257e86a1fbb0d9a1287b0` with only `descriptor_identity`
+record parsing/encoding. `decode_descriptor_receipt_record` and
+`encode_descriptor_receipt_record` require expected subject-owner, nullable
+operation, graph and receipt identifiers. Existing custody APIs retain their
+original socket/source coverage.
+
+This slice validates the existing closed 14-field envelope and 11-field payload,
+canonical ASCII JSON within4096 bytes/depth3, exact built-in scalar types, declared
+UUID/hash formats and numeric limits. FD numbers retain the0..2147483647 range;
+the204-descriptor graph ceiling is not a scalar FD-number limit. Device/inode
+values retain the entire u64 range, including zero. Claimed issuer roles are
+supervisor, driver, fixture_source, connector or operation_worker; the claim does
+not authenticate the producer. All five phases remain representable.
+
+Peer and transfer identifiers are independently nullable in the record syntax.
+Their required eligibility for declared nonchannel/nontransferred objects remains
+unproved until the runtime manifest/slot/channel/transfer bindings are available.
+No joint-null rule, issuer-holder equality, or object/access/seal mapping is
+invented. All eight object kinds, three access modes and two seal values remain
+representable; a descriptor credential_memfd record is not narrowed to source
+custody constants. Actual issuer, holder/process incarnation, registry, exact slot
+and phase, object/transfer identity, access/seals/CLOEXEC and permitted observation
+methods remain external gates. Parsing grants no authority or physical evidence.
+
+Six new finite unit nodes extend the prior40 unchanged codec nodes to46 actual
+units. Local validation collects exact46 and runs only those six new units plus
+the affected preservation check. Formal portable29/native89 stay unchanged;
+eventual portable union75 grants zero formal acceptance credit. No native or
+closed S4.2c execution is authorized by this slice.

@@ -1,4 +1,4 @@
-"""Forty codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""Forty-six codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -1791,5 +1791,279 @@ def test_custody_receipt_record_encoding_and_depth():
         oversized = dict(_custody(), schema_version='x' * 100000)
         _reject(lambda: codec.encode_custody_receipt_record(oversized, *_custody_args()), 'invalid_value')
         _reject(lambda: codec.decode_custody_receipt_record(_wire(oversized), *_custody_args()), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent descriptor expectations; do not import production schema tables.
+DESC_ENVELOPE_TYPES = (
+    ('clock_epoch_id', 'uuid'), ('graph_id', 'uuid'), ('issuer_instance_id', 'uuid'),
+    ('issuer_role', 'enum'), ('kind', 'enum'), ('observed_monotonic_ns', 'integer'),
+    ('observer_session_id', 'uuid'), ('operation_id', 'uuid?'), ('payload', 'object'),
+    ('phase', 'enum'), ('receipt_id', 'uuid'), ('runtime_lock_sha256', 'hash'),
+    ('schema_version', 'enum'), ('subject_owner_id', 'uuid'),
+)
+DESC_PAYLOAD_TYPES = (
+    ('access_mode', 'enum'), ('close_on_exec', 'true'), ('device', 'integer'), ('fd_number', 'integer'),
+    ('holder_instance_id', 'uuid'), ('inode', 'integer'), ('object_kind', 'enum'),
+    ('peer_instance_id', 'uuid?'), ('process_receipt_id', 'uuid'), ('seals', 'enum'), ('transfer_id', 'uuid?'),
+)
+DESC_OBJECTS = ('credential_memfd', 'connected_socket', 'seqpacket', 'pipe', 'null_sink',
+                'authority_file', 'display_socket', 'other_pinned_bootstrap_object')
+DESC_ALLOWED_ROLES = ('supervisor', 'driver', 'fixture_source', 'connector', 'operation_worker')
+DESC_KNOWN_ROLES = ('driver', 'supervisor', 'broker', 'reviewer', 'fixture_source', 'connector',
+                    'operation_worker', 'release_guard', 'owned_service', 'graphical_display', 'fixture_probe')
+DESC_PHASES = ('ready', 'socket_transferred', 'credential_transferred', 'result_released', 'closed')
+
+
+def _descriptor(operation=SUBJECT):
+    return dict(clock_epoch_id=OTHER, graph_id=CUST_GRAPH, issuer_instance_id=SUBJECT,
+        issuer_role='supervisor', kind='descriptor_identity', observed_monotonic_ns=0,
+        observer_session_id=OTHER, operation_id=operation, phase='ready', receipt_id=CUST_RECEIPT,
+        runtime_lock_sha256='a' * 64, schema_version='s43-physical-receipt-v1', subject_owner_id=CUST_OWNER,
+        payload=dict(access_mode='read_only', close_on_exec=True, device=0, fd_number=0,
+            holder_instance_id=OTHER, inode=0, object_kind='pipe', peer_instance_id=None,
+            process_receipt_id=SUBJECT, seals='none', transfer_id=None))
+
+
+def _descriptor_args(operation=SUBJECT):
+    return CUST_OWNER, operation, CUST_GRAPH, CUST_RECEIPT
+
+
+def _descriptor_accept(record):
+    args = tuple(record[k] for k in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id'))
+    wire = _wire(record)
+    assert codec.encode_descriptor_receipt_record(record, *args) == wire
+    decoded = codec.decode_descriptor_receipt_record(wire, *args)
+    assert decoded == record and decoded is not record
+    assert type(decoded) is dict and type(decoded['payload']) is dict
+    assert decoded['payload'] is not record['payload']
+    return decoded
+
+
+def _descriptor_reject(record, code, operation=SUBJECT, decode_code=None):
+    args = _descriptor_args(operation)
+    _reject(lambda: codec.encode_descriptor_receipt_record(record, *args), code)
+    return _reject(lambda: codec.decode_descriptor_receipt_record(_wire(record), *args), decode_code or code)
+
+
+def test_descriptor_receipt_record_canonical_examples():
+    assert len(DESC_ENVELOPE_TYPES) == 14 and len(DESC_PAYLOAD_TYPES) == 11
+    assert len(DESC_KNOWN_ROLES) == 11 and len(DESC_ALLOWED_ROLES) == 5
+    for operation in (None, SUBJECT):
+        for phase in DESC_PHASES:
+            record = dict(_descriptor(operation), phase=phase)
+            assert set(record) == {k for k, _ in DESC_ENVELOPE_TYPES}
+            assert set(record['payload']) == {k for k, _ in DESC_PAYLOAD_TYPES}
+            first, second = _descriptor_accept(record), _descriptor_accept(record)
+            first['payload'].clear()
+            first['receipt_id'] = 'changed'
+            assert second == record
+            reversed_record = dict(reversed(tuple(record.items())))
+            reversed_record['payload'] = dict(reversed(tuple(record['payload'].items())))
+            assert codec.encode_descriptor_receipt_record(reversed_record, *_descriptor_args(operation)) == _wire(record)
+    record = _descriptor()
+    assert record['issuer_instance_id'] != record['payload']['holder_instance_id']
+    _descriptor_accept(record)
+    record['issuer_instance_id'] = record['payload']['holder_instance_id']
+    _descriptor_accept(record)
+    for key, typ in DESC_PAYLOAD_TYPES:
+        if typ.startswith('uuid'):
+            record['payload'][key] = SUBJECT
+    _descriptor_accept(record)
+
+
+def test_descriptor_receipt_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class IntHook(int):
+        def __lt__(self, other):
+            raise AssertionError('hook reached')
+    class BoolHook:
+        def __bool__(self):
+            raise AssertionError('hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1]):
+        _descriptor_reject(value, 'invalid_shape')
+    _reject(lambda: codec.encode_descriptor_receipt_record(DictHook(_descriptor()), *_descriptor_args()), 'invalid_shape')
+    for nested, fields in ((False, DESC_ENVELOPE_TYPES), (True, DESC_PAYLOAD_TYPES)):
+        record = _descriptor()
+        target = record['payload'] if nested else record
+        target['RAW_SENTINEL'] = 'extra'
+        _descriptor_reject(record, 'invalid_shape')
+        for key, typ in fields:
+            for mutation in ('missing', 'unknown'):
+                record = _descriptor()
+                target = record['payload'] if nested else record
+                value = target.pop(key)
+                if mutation == 'unknown':
+                    target['RAW_SENTINEL'] = value
+                _descriptor_reject(record, 'invalid_shape')
+            bad_values = (None, True, False, 1.0, [], {}, 'RAW_SENTINEL')
+            if typ != 'integer':
+                bad_values += (0, 1)
+            for bad in bad_values:
+                if bad is None and typ.endswith('?') or bad is True and typ == 'true':
+                    continue
+                record = _descriptor()
+                target = record['payload'] if nested else record
+                target[key] = bad
+                _descriptor_reject(record, 'invalid_shape' if typ == 'object' else 'invalid_value',
+                                   decode_code='invalid_value' if typ == 'object' and type(bad) is float else None)
+            record = _descriptor()
+            target = record['payload'] if nested else record
+            target[key] = (DictHook() if typ == 'object' else IntHook(1) if typ == 'integer'
+                           else BoolHook() if typ == 'true' else StringHook('RAW_SENTINEL'))
+            _reject(lambda: codec.encode_descriptor_receipt_record(record, *_descriptor_args()),
+                    'invalid_shape' if typ == 'object' else 'invalid_value')
+        for bad_key in (StringHook('x'), 'x' * 100000, 1):
+            record = _descriptor()
+            target = record['payload'] if nested else record
+            target[bad_key] = target.pop(fields[0][0])
+            _reject(lambda: codec.encode_descriptor_receipt_record(record, *_descriptor_args()), 'invalid_shape')
+
+
+def test_descriptor_receipt_record_variant_and_nullability():
+    for role in DESC_KNOWN_ROLES:
+        record = dict(_descriptor(), issuer_role=role)
+        if role in DESC_ALLOWED_ROLES:
+            _descriptor_accept(record)
+        else:
+            _descriptor_reject(record, 'invalid_result')
+    for key, bad in (('issuer_role', 'lifecycle_monitor'), ('phase', 'pre_write'),
+                     ('schema_version', 's43-observation-v1')):
+        _descriptor_reject(dict(_descriptor(), **{key: bad}), 'invalid_value')
+    for kind in ('process_identity', 'socket_custody', 'source_custody', 'graph_closure', 'RAW_SENTINEL', ''):
+        _descriptor_reject(dict(_descriptor(), kind=kind), 'invalid_value')
+    for kind in DESC_OBJECTS:
+        for access in ('read_only', 'write_only', 'read_write'):
+            for seals in ('none', 'write_grow_shrink_seal'):
+                record = _descriptor()
+                record['payload'].update(object_kind=kind, access_mode=access, seals=seals)
+                _descriptor_accept(record)
+        # Syntax acceptance does not prove the required manifest/slot eligibility.
+        for peer in (None, SUBJECT):
+            for transfer in (None, OTHER):
+                record = _descriptor()
+                record['payload'].update(object_kind=kind, peer_instance_id=peer, transfer_id=transfer)
+                _descriptor_accept(record)
+    for key, values in {'object_kind': ('socket', 'RAW_SENTINEL'), 'access_mode': ('readonly', 'READ_ONLY'),
+                        'seals': ('write_grow_shrink', ''), 'close_on_exec': (False, 0, 1, 'true')}.items():
+        for bad in values:
+            record = _descriptor()
+            record['payload'][key] = bad
+            _descriptor_reject(record, 'invalid_value')
+
+
+def test_descriptor_receipt_record_scalar_bounds():
+    for value in (0, 9223372036854775807):
+        _descriptor_accept(dict(_descriptor(), observed_monotonic_ns=value))
+    for value in (-1, 9223372036854775808, True, 0.0):
+        _descriptor_reject(dict(_descriptor(), observed_monotonic_ns=value), 'invalid_value')
+    for nested, fields in ((False, DESC_ENVELOPE_TYPES), (True, DESC_PAYLOAD_TYPES)):
+        for key, typ in fields:
+            if typ not in ('uuid', 'uuid?', 'hash'):
+                continue
+            valid = 'f' * 64 if typ == 'hash' else SUBJECT
+            bad_values = (valid.upper(), valid + '\n', valid + 'x', 'x' + valid, valid[:-1], '')
+            if typ != 'hash':
+                bad_values += (SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'))
+            for bad in bad_values:
+                record = _descriptor()
+                target = record['payload'] if nested else record
+                target[key] = bad
+                _descriptor_reject(record, 'invalid_value')
+    for value in ('0' * 64, 'f' * 64):
+        _descriptor_accept(dict(_descriptor(), runtime_lock_sha256=value))
+    for key, maximum in (('fd_number', 2147483647), ('device', 18446744073709551615),
+                         ('inode', 18446744073709551615)):
+        for value in (0, 204, 205, maximum):
+            record = _descriptor()
+            record['payload'][key] = value
+            _descriptor_accept(record)
+        for value in (-1, maximum + 1, True, False, 0.0):
+            record = _descriptor()
+            record['payload'][key] = value
+            _descriptor_reject(record, 'invalid_value')
+
+
+def test_descriptor_receipt_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    for operation in (None, SUBJECT):
+        record = _descriptor(operation)
+        args = _descriptor_args(operation)
+        for index in range(4):
+            changed = list(args)
+            changed[index] = OTHER
+            _reject(lambda: codec.encode_descriptor_receipt_record(record, *changed), 'wrong_subject')
+            _reject(lambda: codec.decode_descriptor_receipt_record(_wire(record), *changed), 'wrong_subject')
+            for bad in (True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+                changed = list(args)
+                changed[index] = bad
+                code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+                _reject(lambda: codec.encode_descriptor_receipt_record(record, *changed), code)
+                _reject(lambda: codec.decode_descriptor_receipt_record(_wire(record), *changed), code)
+                _reject(lambda: codec.encode_descriptor_receipt_record(None, *changed), code)
+                _reject(lambda: codec.decode_descriptor_receipt_record(b'', *changed), code)
+            changed = list(args)
+            changed[index] = None
+            if index != 1 or operation is not None:
+                code = 'wrong_subject' if index == 1 else 'invalid_shape'
+                _reject(lambda: codec.encode_descriptor_receipt_record(record, *changed), code)
+                _reject(lambda: codec.decode_descriptor_receipt_record(_wire(record), *changed), code)
+        wrong = (OTHER, operation, CUST_GRAPH, CUST_RECEIPT)
+        _reject(lambda: codec.decode_descriptor_receipt_record(_wire(record) + b'\n', *wrong), 'invalid_encoding')
+        record['issuer_role'] = 'broker'
+        _reject(lambda: codec.encode_descriptor_receipt_record(record, *wrong), 'invalid_result')
+        _reject(lambda: codec.decode_descriptor_receipt_record(_wire(record), *wrong), 'invalid_result')
+
+
+def test_descriptor_receipt_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record = _descriptor()
+    wire = _wire(record)
+    args = _descriptor_args()
+    reverse_payload = json.dumps(dict(reversed(tuple(record['payload'].items()))), separators=(',', ':')).encode('ascii')
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire.replace(_wire(record['payload']), reverse_payload), wire + b'\n', b' ' + wire,
+                  wire.replace(b':', b': ', 1), wire.replace(b'"s43-physical-receipt-v1"', b'"\\u007343-physical-receipt-v1"'),
+                  wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":-0'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 4097, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+        error = _reject(lambda: codec.decode_descriptor_receipt_record(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"receipt_id":null,' + wire[1:], b'{"receip\\u0074_id":null,' + wire[1:],
+                  wire.replace(b'"payload":{', b'"payload":{"transfer_id":null,')):
+        _reject(lambda: codec.decode_descriptor_receipt_record(frame, *args), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        _reject(lambda: codec.decode_descriptor_receipt_record(wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":' + scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_descriptor_receipt_record(frame, *args), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 4097, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+            _reject(lambda: codec.decode_descriptor_receipt_record(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_descriptor_receipt_record(b' ' * 4096, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_descriptor_receipt_record(b'{"a":{"b":{}}}', *args), 'invalid_shape')
+        assert len(calls) == 2
+        _descriptor_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _descriptor_reject(dict(_descriptor(), schema_version=text), 'invalid_value')
+        oversized = dict(_descriptor(), schema_version='x' * 100000)
+        _reject(lambda: codec.encode_descriptor_receipt_record(oversized, *args), 'invalid_value')
+        _reject(lambda: codec.decode_descriptor_receipt_record(_wire(oversized), *args), 'invalid_encoding')
     finally:
         json.loads = original_loads
