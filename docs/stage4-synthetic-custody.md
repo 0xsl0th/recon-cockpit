@@ -2296,3 +2296,71 @@ only the six new units plus the affected preservation check. Actual 136 and
 eventual portable union 165 remain distinct from unchanged 29 formal portable
 and 89 native nodes. No acceptance credit, native execution or closed S4.2c
 checks are authorized.
+
+
+### Intrinsic transaction-witness record codec slice
+
+This append-only portable slice follows the independently approved witness scope
+and verified PR130 merge/main CI. It adds decode_transaction_witness_record and
+encode_transaction_witness_record for the closed nine-field
+s43-transaction-witness-v1 record. Expected writer/call/record UUIDs are checked
+before input and matched only after full intrinsic/canonical validation.
+Prior 136 units, imports, APIs and shared helpers remain unchanged.
+
+Outer scalars are checked before the event list, then the optional nested result
+and its same-call relationship. event_ids is an exact built-in list of zero to
+two unique canonical UUID4s; length is bounded before iteration, every scalar is
+validated before uniqueness, and order is preserved. IDs need not be disjoint
+from other fields. A nonnull result reuses the unchanged eight-field intrinsic
+transaction-result validator and its separate 1024-byte canonical cap; its
+call_id must match the outer call_id. Root/list/nested dictionaries are copied
+fresh, and encoding does not mutate caller data.
+
+General records are canonical ASCII with sorted object keys, at most 3072 bytes
+and depth 2. Recovery retains its separate 2048-byte complete witness cap before
+allocation/publication; JSONL adds one LF. Independent golden examples include
+null and every valid nested status/reason/committed scope. Maximum complete
+fixture sizes: null 402 bytes, committed/engagement 645 bytes, committed/lease 713 bytes, refused/invalid_input 614 bytes, refused/stale_authority 616 bytes, refused/wrong_state 612 bytes, refused/expired 608 bytes, refused/budget_exhausted 617 bytes, refused/scope_refused 614 bytes, unavailable/audit_unavailable 622 bytes, unavailable/store_unavailable 622 bytes, unavailable/cleanup_unconfirmed 624 bytes, uncertain/commit_unknown 617 bytes. The largest nested result is 315 bytes,
+within its unchanged 1024 cap. The maximum complete witness fits 2048, but general
+parsing alone does not establish recovery-profile eligibility.
+
+The approved intrinsic boundary intentionally adds no undeclared barrier/result
+table, method-specific event count or subject scope, terminal-result requirement,
+or empty-event-list rule for null/noncommitted results. These combinations are
+accepted only as closed syntax. A null result claims that no result exists yet;
+actual availability at a reached boundary remains external. Uncertain COMMIT
+does not prove rollback. Codec success proves no legal transaction, committed
+event or successful witness.
+
+Actual reached SQL boundaries, result availability, contender ordering, same-call
+persisted-event resolution, method/event correspondence, refused calls producing
+no mutation/event, no manufactured committed IDs and mutually exclusive terminal
+outcomes remain mandatory external gates. Ordinal claims observed ordering, not
+wall-clock atomicity. Authentication/trusted writer/call origin, provenance/
+freshness, physical custody/closure, completed witness and operation/recovery
+authority are not established. Imported records create no audit event, mutation,
+registry entry, permission, signal, restored authority, retry/restart or deadline
+reset. No SQL/hooks/lookup/transaction, file/fixture read, runtime/native action,
+stream/packet/digest/export API, registry or manifest resolution is implemented.
+
+transactions.jsonl still shares 64 records/131072 bytes with lookup records;
+selected recovery shares 50 records including two lookup attempts. Twelve mutation
+attempts each emit at most four actually reached barriers: call_entered,
+before_begin, before_commit and exactly one after_commit_before_ack/refused/
+unknown_commit. Additional barrier enum values remain syntactically valid without
+earning selected-profile eligibility. No schedule or capacity reservation is
+implemented. Mutation/audit remain one durable transaction; audit failure aborts
+mutation. Missing COMMIT acknowledgment stops live delivery and requires bounded
+reconciliation, never proves rollback and authorizes no mutation retry. Store
+failure cannot manufacture committed audit events. Recovery cut_transaction_id
+must resolve an actual after_commit_before_ack witness plus persisted history;
+unknown commit cannot satisfy that gate. Original evidence, uncertainty, deadlines,
+authenticated controls, live custody and closure/wait/SQL predicates remain.
+
+Six finite units cover all method/barrier combinations, nested-result cases and
+704 intrinsic nested relationships, list order/fresh copies, type/scalar/canonical/
+depth/size failures and expected-ID/error precedence. Collect exactly 142 IDs and
+run only the new six units plus the affected preservation check. Actual 142 and
+eventual portable union 171 remain distinct from unchanged 29 formal portable
+and 89 native nodes. This slice earns no acceptance credit and authorizes no
+native execution or closed S4.2c checks.

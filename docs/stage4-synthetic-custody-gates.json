@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "79643bf23a93c1546ead501cd4c47e70afd3b4fc3ec4e9919156e1ac5ab14ebd",
+  "contract_sha256": "c7b618cc4d38a05e4b7e8c5c441a22f79e4feefc46f1768796cbf0aebba7891d",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -12009,5 +12009,55 @@
     "packet_or_stream_adapter_implemented": false,
     "digest_or_export_implemented": false,
     "validation": "Collect exact136 unit IDs; run six new transaction-result units and affected preservation check; independent final review before publication."
+  },
+  "portable_transaction_witness_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_transaction_witness_codec_implementation",
+    "scope_sha256": "de7ce731676207cf417e6644ba94256ed5ca0a5646324af4e970bddbd936d30b",
+    "verified_base_merge": "ca47a4672d3645348a69fb0f856531234c339f8d",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "record_schema": "s43-transaction-witness-v1",
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_transaction_witness_record_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_transaction_witness_record_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_transaction_witness_record_enums_and_nested_relationships",
+      "tests/test_secure_synthetic_custody_contract.py::test_transaction_witness_record_list_and_scalar_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_transaction_witness_record_expected_subject_binding",
+      "tests/test_secure_synthetic_custody_contract.py::test_transaction_witness_record_encoding_and_depth"
+    ],
+    "new_unit_node_count": 6,
+    "prior_codec_unit_nodes_preserved": 136,
+    "combined_unit_node_count": 142,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 171,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "registry_implemented": false,
+    "producer_authentication_implemented": false,
+    "actual_transaction_implemented": false,
+    "persisted_event_resolution_implemented": false,
+    "commit_or_rollback_proved": false,
+    "provenance_or_freshness_proved": false,
+    "physical_custody_or_closure_proved": false,
+    "completed_witness_proved": false,
+    "transaction_witness_wrapper_implemented": true,
+    "actual_witness_proved": false,
+    "live_signal_implemented": false,
+    "packet_or_stream_adapter_implemented": false,
+    "digest_or_export_implemented": false,
+    "validation": "Collect exact142 unit IDs; run six new transaction-witness units and affected preservation check; independent final review before publication."
   }
 }
