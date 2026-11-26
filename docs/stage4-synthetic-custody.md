@@ -1928,3 +1928,73 @@ bring actual collection to100; local validation runs those six plus preservation
 Formal29 portable/native89 remain unchanged; eventual portable union129 gives no
 acceptance credit. No native execution, closed S4.2c rerun or strategic gate change
 is included.
+
+
+## Portable refusal control-receipt codec slice
+
+The independently reviewed slice follows verified PR124 at
+`f5bd411173729d4d7a23205ffa2dde35a53448c4`. Separate
+`decode_recovery_refused_receipt_record` and
+`encode_recovery_refused_receipt_record` APIs validate intrinsic
+`recovery_control_refused` claims. The closed14-field envelope and flattened
+closed16-field payload use canonical ASCII JSON, complete-record2048 bytes and
+depth3. Explicit expected owner/operation/graph/receipt IDs bind each record;
+returned envelope and payload are fresh plain dictionaries.
+
+The claimed issuer must be supervisor or broker after full role validation.
+message_kind is exactly recovery_refused. reason is one of binding_refused,
+bootstrap_refused, closure_unproved, deadline, resource_limit,
+unexpected_transition or authority_unavailable. This recovery_reason enum is
+distinct from fixed_failure's failure_reason; protocol_refused and unexpected_exit
+are not accepted here. Exact string type and bounded length precede comparisons.
+Reason syntax proves no actual failure cause or valid preceding challenge.
+
+Channel sequence uses unsigned64 range0..18446744073709551615. Observation time
+and original deadline use0..9223372036854775807. Both runtime-lock digests require
+lowercase SHA-256 syntax only. All five physical phases and nullable operation
+remain representable, without inferred time ordering, ID/digest equality,
+freshness or phase coupling. No list or nested packet is declared.
+
+These checks authenticate no producer/peer, register/resolve no receipt and prove
+no actual refusal receive, valid preceding challenge, truth of failure reason,
+live custody, completed witness or recovery eligibility. They authorize no
+operation. Refusal is failed evidence, not a successful recovery witness. Actual
+direction remains supervisor_recovery with authenticated receiving recovery
+broker, exact live original supervisor/endpoint/incarnation/context. The separate
+channel envelope requires null operation, zero rights, exact peer credentials,
+per-direction sequence and4096-byte packet limit; physical claims prove none.
+
+Actual refusal is permitted only after a valid challenge, when activation and
+challenge IDs are known. Before that, authenticated context permits only the
+separate fixed bootstrap failure path; otherwise driver records failed context
+without invented peer fields. A failed receive produces no fabricated receive
+projection. Response and refusal share one mutually exclusive allowance; retain
+the prefix plus refusal as failed evidence, never partial success or completion.
+
+No retry/reconnect, new activation/deadline, quota replenishment, fresh authority,
+DB/journal/sync open, recovery grant, lease close or operation follows this parser.
+Preserve unknown outcomes, owned store/journal and original owner/event history.
+Successful-response checks for all owner/operation bindings, bounded historical
+provenance, current terminal/root-copy state and continuous supervisor/pidfd
+custody remain external and unchanged. Historical envelopes/sessions/timestamps
+remain original; imported records convey no live authority.
+
+Original epoch/session/broker/operation/work/cleanup bounds, confinement, native
+wait sets, resource caps and failed-prefix reservations remain unchanged. Each
+state may transition once to unavailable then cleanup; supervisor death or
+ambiguous activation/commit remains unavailable. No runtime action is added.
+
+Flattened projection contains selected packet fields plus message_kind and
+channel_sequence; future reconstruction removes only those two. No reconstruction
+API is added. Actual authenticated receives alone produce receive projections;
+a received refusal still records failure. Six aggregate slots remain prepared,
+activate,challenge,response OR refusal,and at most two fixed failures.
+Debit-before-send and no uncertain-delivery retry remain external; no counter,
+quota reset or stateful protocol is added.
+
+The six-file scope is pinned by `portable_recovery_refused_codec_slice`.
+Prior100 codec units and shared helpers/imports remain unchanged. Six finite
+units bring actual collection to106; local validation runs six plus preservation.
+Formal29 portable/native89 remain unchanged; eventual portable union135 gives no
+acceptance credit. No native execution, closed S4.2c rerun or strategic gate
+change is included.

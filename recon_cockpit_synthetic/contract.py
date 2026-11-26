@@ -534,3 +534,39 @@ RECOVERY_RESPONSE_LITERALS = {
 }
 RECOVERY_RESPONSE_ISSUER_ROLES = ('supervisor', 'broker')
 RECOVERY_RESPONSE_LIST_BOUNDS = (0, 3)
+
+
+# Intrinsic refusal projection only; receive, cause and failed-witness checks are external.
+RECOVERY_REFUSED_MAX_BYTES = 2048
+RECOVERY_REFUSED_MAX_DEPTH = 3
+RECOVERY_REFUSED_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+RECOVERY_REFUSED_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'recovery_control_refused'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+RECOVERY_REFUSED_PAYLOAD = (
+    ('activation_id', 'uuid4'), ('case_id', 'uuid4'), ('challenge_id', 'uuid4'),
+    ('channel_sequence', 'u64'), ('clock_epoch_id', 'uuid4'),
+    ('engagement_id', 'uuid4'), ('message_kind', 'control_kind_refused'),
+    ('monitor_session_id', 'uuid4'), ('old_owner_graph_id', 'uuid4'), ('old_owner_id', 'uuid4'),
+    ('original_deadline_ns', 'monotonic_ns'), ('reason', 'recovery_reason'),
+    ('recovery_instance_id', 'uuid4'), ('recovery_owner_id', 'uuid4'),
+    ('recovery_session_id', 'uuid4'), ('runtime_lock_sha256', 'sha256'),
+)
+RECOVERY_REFUSED_INTEGER_BOUNDS = {'u64': (0, 18446744073709551615)}
+RECOVERY_REFUSED_LITERALS = {
+    'recovery_control_refused': 'recovery_control_refused', 'control_kind_refused': 'recovery_refused',
+}
+RECOVERY_REFUSED_ISSUER_ROLES = ('supervisor', 'broker')
+RECOVERY_REFUSED_ENUMS = {
+    'recovery_reason': ('binding_refused', 'bootstrap_refused', 'closure_unproved',
+                        'deadline', 'resource_limit', 'unexpected_transition', 'authority_unavailable'),
+}
