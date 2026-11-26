@@ -1,4 +1,4 @@
-"""Ninety-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -4671,5 +4671,396 @@ def test_recovery_challenge_receipt_record_encoding_and_depth():
         oversized = dict(_recovery_challenge(), schema_version='x' * 100000)
         _reject(lambda: codec.encode_recovery_challenge_receipt_record(oversized, *args), 'invalid_value')
         _reject(lambda: codec.decode_recovery_challenge_receipt_record(_wire(oversized), *args), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent response-receipt expectations; no production-table imports.
+RR_ENVELOPE_TYPES = (
+    ('clock_epoch_id', 'uuid'), ('graph_id', 'uuid'), ('issuer_instance_id', 'uuid'),
+    ('issuer_role', 'enum'), ('kind', 'enum'), ('observed_monotonic_ns', 'integer'),
+    ('observer_session_id', 'uuid'), ('operation_id', 'uuid?'), ('payload', 'object'),
+    ('phase', 'enum'), ('receipt_id', 'uuid'), ('runtime_lock_sha256', 'hash'),
+    ('schema_version', 'enum'), ('subject_owner_id', 'uuid'),
+)
+RR_PAYLOAD_TYPES = (
+    ('activation_id', 'uuid'), ('binding_receipt_ids', 'list'), ('case_id', 'uuid'), ('challenge_id', 'uuid'),
+    ('channel_sequence', 'integer'), ('clock_epoch_id', 'uuid'),
+    ('engagement_id', 'uuid'), ('message_kind', 'enum'), ('monitor_session_id', 'uuid'),
+    ('old_owner_graph_id', 'uuid'), ('old_owner_id', 'uuid'), ('original_deadline_ns', 'integer'),
+    ('recovery_instance_id', 'uuid'),
+    ('recovery_owner_id', 'uuid'), ('recovery_session_id', 'uuid'), ('runtime_lock_sha256', 'hash'),
+)
+RR_KNOWN_ROLES = ('driver', 'supervisor', 'broker', 'reviewer', 'fixture_source', 'connector',
+                  'operation_worker', 'release_guard', 'owned_service', 'graphical_display', 'fixture_probe')
+RR_ALLOWED_ROLES = ('supervisor', 'broker')
+RR_PHASES = ('ready', 'socket_transferred', 'credential_transferred', 'result_released', 'closed')
+
+
+def _recovery_response(operation=SUBJECT):
+    return dict(clock_epoch_id=OTHER, graph_id=CUST_GRAPH, issuer_instance_id=SUBJECT,
+        issuer_role='supervisor', kind='recovery_control_response', observed_monotonic_ns=0,
+        observer_session_id=OTHER, operation_id=operation, phase='ready', receipt_id=CUST_RECEIPT,
+        runtime_lock_sha256='a' * 64, schema_version='s43-physical-receipt-v1', subject_owner_id=CUST_OWNER,
+        payload=dict(activation_id=SUBJECT, binding_receipt_ids=[SUBJECT, OTHER], case_id=OTHER, challenge_id=OTHER, channel_sequence=0,
+            clock_epoch_id=SUBJECT, engagement_id=SUBJECT,
+            message_kind='recovery_response', monitor_session_id=SUBJECT, old_owner_graph_id=CUST_GRAPH,
+            old_owner_id=CUST_OWNER, original_deadline_ns=0,
+            recovery_instance_id=OTHER, recovery_owner_id=SUBJECT, recovery_session_id=OTHER,
+            runtime_lock_sha256='f' * 64))
+
+
+RR_CANONICAL_BYTES = (
+    b'{"clock_epoch_id":"22345678-1234-4234-9234-123456789abc","graph_id":"72345678-1234-4234-9234-123'
+    b'456789abc","issuer_instance_id":"12345678-1234-4234-9234-123456789abc","issuer_role":"supervisor'
+    b'","kind":"recovery_control_response","observed_monotonic_ns":0,"observer_session_id":"22345678-1'
+    b'234-4234-9234-123456789abc","operation_id":"12345678-1234-4234-9234-123456789abc","payload":{"ac'
+    b'tivation_id":"12345678-1234-4234-9234-123456789abc","binding_receipt_ids":["12345678-1234-4234-9'
+    b'234-123456789abc","22345678-1234-4234-9234-123456789abc"],"case_id":"22345678-1234-4234-9234-123'
+    b'456789abc","challenge_id":"22345678-1234-4234-9234-123456789abc","channel_sequence":0,"clock_epo'
+    b'ch_id":"12345678-1234-4234-9234-123456789abc","engagement_id":"12345678-1234-4234-9234-123456789'
+    b'abc","message_kind":"recovery_response","monitor_session_id":"12345678-1234-4234-9234-123456789a'
+    b'bc","old_owner_graph_id":"72345678-1234-4234-9234-123456789abc","old_owner_id":"62345678-1234-42'
+    b'34-9234-123456789abc","original_deadline_ns":0,"recovery_instance_id":"22345678-1234-4234-9234-1'
+    b'23456789abc","recovery_owner_id":"12345678-1234-4234-9234-123456789abc","recovery_session_id":"2'
+    b'2345678-1234-4234-9234-123456789abc","runtime_lock_sha256":"ffffffffffffffffffffffffffffffffffff'
+    b'ffffffffffffffffffffffffffff"},"phase":"ready","receipt_id":"82345678-1234-4234-9234-123456789ab'
+    b'c","runtime_lock_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","sch'
+    b'ema_version":"s43-physical-receipt-v1","subject_owner_id":"62345678-1234-4234-9234-123456789abc"'
+    b'}'
+)
+
+
+def _recovery_response_args(operation=SUBJECT):
+    return CUST_OWNER, operation, CUST_GRAPH, CUST_RECEIPT
+
+
+def _recovery_response_accept(record):
+    args = tuple(record[k] for k in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id'))
+    wire = _wire(record)
+    assert codec.encode_recovery_response_receipt_record(record, *args) == wire
+    decoded = codec.decode_recovery_response_receipt_record(wire, *args)
+    assert decoded == record and decoded is not record
+    assert type(decoded) is dict and type(decoded['payload']) is dict
+    assert decoded['payload'] is not record['payload']
+    assert type(decoded['payload']['binding_receipt_ids']) is list
+    assert decoded['payload']['binding_receipt_ids'] is not record['payload']['binding_receipt_ids']
+    return decoded
+
+
+def _recovery_response_reject(record, code, operation=SUBJECT, decode_code=None):
+    args = _recovery_response_args(operation)
+    _reject(lambda: codec.encode_recovery_response_receipt_record(record, *args), code)
+    return _reject(lambda: codec.decode_recovery_response_receipt_record(_wire(record), *args), decode_code or code)
+
+
+def test_recovery_response_receipt_record_canonical_examples():
+    assert len(RR_ENVELOPE_TYPES) == 14 and len(RR_PAYLOAD_TYPES) == 16 and len(RR_KNOWN_ROLES) == 11
+    assert codec.encode_recovery_response_receipt_record(_recovery_response(), *_recovery_response_args()) == RR_CANONICAL_BYTES
+    assert codec.decode_recovery_response_receipt_record(RR_CANONICAL_BYTES, *_recovery_response_args()) == _recovery_response()
+    for operation in (None, SUBJECT):
+        for phase in RR_PHASES:
+            for issuer in RR_ALLOWED_ROLES:
+                record = dict(_recovery_response(operation), phase=phase, issuer_role=issuer)
+                assert set(record) == {k for k, _ in RR_ENVELOPE_TYPES}
+                assert set(record['payload']) == {k for k, _ in RR_PAYLOAD_TYPES}
+                first, second = _recovery_response_accept(record), _recovery_response_accept(record)
+                first['payload']['binding_receipt_ids'].append(CUST_RECEIPT)
+                assert second == record
+                record['payload']['binding_receipt_ids'].append(CUST_GRAPH)
+                assert len(second['payload']['binding_receipt_ids']) == 2
+                record['payload']['binding_receipt_ids'].pop()
+                first['payload'].clear()
+                first['receipt_id'] = 'changed'
+                assert second == record
+                reversed_record = dict(reversed(tuple(record.items())))
+                reversed_record['payload'] = dict(reversed(tuple(record['payload'].items())))
+                assert codec.encode_recovery_response_receipt_record(reversed_record, *_recovery_response_args(operation)) == _wire(record)
+    # All four list cardinalities are intrinsic claims, not successful live responses.
+    for bindings in ([], [SUBJECT], [SUBJECT, OTHER], [SUBJECT, OTHER, CUST_GRAPH],
+                     ['00000000-0000-4000-8000-000000000000', 'ffffffff-ffff-4fff-bfff-ffffffffffff']):
+        record = _recovery_response()
+        record['payload']['binding_receipt_ids'] = bindings
+        _recovery_response_accept(record)
+    # Equal/distinct context values are claims, not live immutable-manifest proof.
+    for monitor in (SUBJECT, OTHER):
+        record = _recovery_response()
+        record['payload']['monitor_session_id'] = monitor
+        _recovery_response_accept(record)
+    record = _recovery_response()
+    for nested, fields in ((False, RR_ENVELOPE_TYPES), (True, RR_PAYLOAD_TYPES)):
+        for key, typ in fields:
+            if typ in ('uuid', 'uuid?'):
+                (record['payload'] if nested else record)[key] = SUBJECT
+            elif typ == 'hash':
+                (record['payload'] if nested else record)[key] = 'a' * 64
+    _recovery_response_accept(record)
+    for observed, deadline in ((0, 0), (0, 1), (1, 0), (0, 9223372036854775807),
+                              (9223372036854775807, 0), (9223372036854775807, 9223372036854775807)):
+        record = dict(_recovery_response(), observed_monotonic_ns=observed)
+        record['payload']['original_deadline_ns'] = deadline
+        _recovery_response_accept(record)
+    record = dict(_recovery_response(), phase='credential_transferred', observed_monotonic_ns=9223372036854775807)
+    record['payload'].update(channel_sequence=18446744073709551615, original_deadline_ns=9223372036854775807)
+    record['payload']['binding_receipt_ids'] = [SUBJECT, OTHER, CUST_GRAPH]
+    assert len(_wire(record)) == 1648
+    _recovery_response_accept(record)
+
+
+def test_recovery_response_receipt_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class ListHook(list):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __iter__(self):
+            raise AssertionError('hook reached')
+    class IntHook(int):
+        def __lt__(self, other):
+            raise AssertionError('hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1]):
+        _recovery_response_reject(value, 'invalid_shape')
+    _reject(lambda: codec.encode_recovery_response_receipt_record(DictHook(_recovery_response()), *_recovery_response_args()), 'invalid_shape')
+    for nested, fields in ((False, RR_ENVELOPE_TYPES), (True, RR_PAYLOAD_TYPES)):
+        record = _recovery_response()
+        target = record['payload'] if nested else record
+        target['RAW_SENTINEL'] = 'extra'
+        _recovery_response_reject(record, 'invalid_shape')
+        for key, typ in fields:
+            for mutation in ('missing', 'unknown'):
+                record = _recovery_response()
+                target = record['payload'] if nested else record
+                value = target.pop(key)
+                if mutation == 'unknown':
+                    target['RAW_SENTINEL'] = value
+                _recovery_response_reject(record, 'invalid_shape')
+            bad_values = (None, True, False, 1.0, {}, 'RAW_SENTINEL')
+            if typ != 'list':
+                bad_values += ([],)
+            if typ != 'integer':
+                bad_values += (0, 1)
+            for bad in bad_values:
+                if bad is None and typ.endswith('?'):
+                    continue
+                record = _recovery_response()
+                target = record['payload'] if nested else record
+                target[key] = bad
+                _recovery_response_reject(record, 'invalid_shape' if typ in ('object', 'list') else 'invalid_value',
+                                   decode_code='invalid_value' if typ in ('object', 'list') and type(bad) is float else None)
+            record = _recovery_response()
+            target = record['payload'] if nested else record
+            target[key] = (DictHook() if typ == 'object' else ListHook() if typ == 'list' else IntHook(1) if typ == 'integer'
+                           else StringHook('RAW_SENTINEL'))
+            _reject(lambda: codec.encode_recovery_response_receipt_record(record, *_recovery_response_args()),
+                    'invalid_shape' if typ in ('object', 'list') else 'invalid_value')
+        for bad_key in (StringHook('x'), 'x' * 100000, 1):
+            record = _recovery_response()
+            target = record['payload'] if nested else record
+            target[bad_key] = target.pop(fields[0][0])
+            _reject(lambda: codec.encode_recovery_response_receipt_record(record, *_recovery_response_args()), 'invalid_shape')
+
+    record = _recovery_response()
+    for wrapper in ('payload', 'packet'):
+        _recovery_response_reject(dict(record, payload={wrapper: record['payload']}), 'invalid_shape',
+                                 decode_code='invalid_encoding')
+    for nested in (False, True):
+        record = _recovery_response()
+        target = record['payload'] if nested else record
+        target.update({str(n): None for n in range(10000)})
+        _reject(lambda: codec.encode_recovery_response_receipt_record(record, *_recovery_response_args()), 'invalid_shape')
+
+
+    for value in ((SUBJECT,), {SUBJECT}, DictHook(), ListHook([SUBJECT])):
+        record = _recovery_response()
+        record['payload']['binding_receipt_ids'] = value
+        _reject(lambda: codec.encode_recovery_response_receipt_record(record, *_recovery_response_args()), 'invalid_shape')
+    for value in ([StringHook(SUBJECT)], [object()] * 4, [object()] * 100000):
+        record = _recovery_response()
+        record['payload']['binding_receipt_ids'] = value
+        _reject(lambda: codec.encode_recovery_response_receipt_record(record, *_recovery_response_args()), 'invalid_value')
+    record = dict(_recovery_response(), issuer_role='driver')
+    record['payload']['binding_receipt_ids'] = None
+    _recovery_response_reject(record, 'invalid_shape')
+
+
+def test_recovery_response_receipt_record_issuer_and_literals():
+    for role in RR_KNOWN_ROLES:
+        record = dict(_recovery_response(), issuer_role=role)
+        if role in RR_ALLOWED_ROLES:
+            _recovery_response_accept(record)
+        else:
+            _recovery_response_reject(record, 'invalid_result')
+    for key, bad in (('issuer_role', 'lifecycle_monitor'), ('phase', 'pre_write'),
+                     ('schema_version', 's43-observation-v1')):
+        _recovery_response_reject(dict(_recovery_response(), **{key: bad}), 'invalid_value')
+    for kind in ('process_identity', 'descriptor_identity', 'socket_custody', 'source_custody',
+                 'monitor_termination', 'graph_closure', 'recovery_lifecycle', 'recovery_closure_binding',
+                 'recovery_control_prepared', 'recovery_control_activate', 'recovery_control_challenge',
+                 'recovery_control_refused', 'recovery_control_fixed_failure', 'RAW_SENTINEL', ''):
+        _recovery_response_reject(dict(_recovery_response(), kind=kind), 'invalid_value')
+    for bad in ('recovery_prepared', 'recovery_activate', 'recovery_challenge', 'recovery_refused',
+                'fixed_failure', 'RECOVERY_RESPONSE', 'recovery_response\n', '1', 1, '', None):
+        record = _recovery_response()
+        record['payload']['message_kind'] = bad
+        _recovery_response_reject(record, 'invalid_value')
+    for key, value in (('database_open', False), ('owner_closure_receipt_id', OTHER),
+                       ('continued_receipt_id', SUBJECT),
+                       ('cut_transaction_id', OTHER), ('requested_graph_ids', [CUST_GRAPH])):
+        record = _recovery_response()
+        record['payload'][key] = value
+        _recovery_response_reject(record, 'invalid_shape')
+    record = dict(_recovery_response(), issuer_role='driver')
+    record['payload']['message_kind'] = 'unknown'
+    _recovery_response_reject(record, 'invalid_value')
+
+
+def test_recovery_response_receipt_record_scalar_bounds():
+    for value in (0, 9223372036854775807):
+        _recovery_response_accept(dict(_recovery_response(), observed_monotonic_ns=value))
+    for value in (-1, 9223372036854775808, True, 0.0):
+        _recovery_response_reject(dict(_recovery_response(), observed_monotonic_ns=value), 'invalid_value')
+    for nested, fields in ((False, RR_ENVELOPE_TYPES), (True, RR_PAYLOAD_TYPES)):
+        for key, typ in fields:
+            if typ not in ('uuid', 'uuid?', 'hash'):
+                continue
+            valid = 'f' * 64 if typ == 'hash' else SUBJECT
+            bad_values = (valid.upper(), valid + '\n', valid + 'x', 'x' + valid, valid[:-1], '')
+            if typ != 'hash':
+                bad_values += (SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'))
+            for bad in bad_values:
+                record = _recovery_response()
+                target = record['payload'] if nested else record
+                target[key] = bad
+                _recovery_response_reject(record, 'invalid_value')
+    for value in ('0' * 64, 'f' * 64):
+        _recovery_response_accept(dict(_recovery_response(), runtime_lock_sha256=value))
+    for key, minimum, maximum in (
+            ('channel_sequence', 0, 18446744073709551615), ('original_deadline_ns', 0, 9223372036854775807)):
+        for value in (minimum, 1, 2, maximum):
+            record = _recovery_response()
+            record['payload'][key] = value
+            _recovery_response_accept(record)
+        for value in (minimum - 1, maximum + 1, True, False, 1.0):
+            record = _recovery_response()
+            record['payload'][key] = value
+            _recovery_response_reject(record, 'invalid_value')
+
+    for key in ('runtime_lock_sha256',):
+        for value in ('0' * 64, 'f' * 64):
+            record = _recovery_response()
+            record['payload'][key] = value
+            _recovery_response_accept(record)
+
+
+    # Invalid lists are refused, never sorted, deduplicated or truncated.
+    for bindings in ([SUBJECT, SUBJECT], [OTHER, SUBJECT], [SUBJECT, OTHER, CUST_GRAPH, CUST_RECEIPT]):
+        record = _recovery_response()
+        record['payload']['binding_receipt_ids'] = bindings
+        before = list(bindings)
+        _recovery_response_reject(record, 'invalid_value')
+        assert bindings == before
+    for bad in (None, True, False, 0, 1.0, SUBJECT.upper(), SUBJECT + '\n', SUBJECT + 'x',
+                'x' + SUBJECT, SUBJECT[:-1], '', 'x' * 100, SUBJECT.replace('-4234-', '-1234-'),
+                SUBJECT.replace('-9234-', '-7234-'), [], {}):
+        record = _recovery_response()
+        record['payload']['binding_receipt_ids'] = [bad]
+        _recovery_response_reject(record, 'invalid_value',
+                                 decode_code='invalid_encoding' if type(bad) in (list, dict) else None)
+    class ElementHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __hash__(self):
+            raise AssertionError('hook reached')
+        def __eq__(self, other):
+            raise AssertionError('hook reached')
+        def __lt__(self, other):
+            raise AssertionError('hook reached')
+    for bindings in ([ElementHook(SUBJECT)], [SUBJECT, ElementHook(OTHER)]):
+        record = _recovery_response()
+        record['payload']['binding_receipt_ids'] = bindings
+        _reject(lambda: codec.encode_recovery_response_receipt_record(record, *_recovery_response_args()), 'invalid_value')
+
+
+def test_recovery_response_receipt_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    for operation in (None, SUBJECT):
+        record = _recovery_response(operation)
+        args = _recovery_response_args(operation)
+        for index in range(4):
+            changed = list(args)
+            changed[index] = OTHER
+            _reject(lambda: codec.encode_recovery_response_receipt_record(record, *changed), 'wrong_subject')
+            _reject(lambda: codec.decode_recovery_response_receipt_record(_wire(record), *changed), 'wrong_subject')
+            for bad in (True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+                changed = list(args)
+                changed[index] = bad
+                code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+                _reject(lambda: codec.encode_recovery_response_receipt_record(record, *changed), code)
+                _reject(lambda: codec.decode_recovery_response_receipt_record(_wire(record), *changed), code)
+                _reject(lambda: codec.encode_recovery_response_receipt_record(None, *changed), code)
+                _reject(lambda: codec.decode_recovery_response_receipt_record(b'', *changed), code)
+            changed = list(args)
+            changed[index] = None
+            if index != 1 or operation is not None:
+                code = 'wrong_subject' if index == 1 else 'invalid_shape'
+                _reject(lambda: codec.encode_recovery_response_receipt_record(record, *changed), code)
+                _reject(lambda: codec.decode_recovery_response_receipt_record(_wire(record), *changed), code)
+        wrong = (OTHER, operation, CUST_GRAPH, CUST_RECEIPT)
+        _reject(lambda: codec.decode_recovery_response_receipt_record(_wire(record) + b'\n', *wrong), 'invalid_encoding')
+        record['issuer_role'] = 'driver'
+        _reject(lambda: codec.encode_recovery_response_receipt_record(record, *wrong), 'invalid_result')
+        _reject(lambda: codec.decode_recovery_response_receipt_record(_wire(record), *wrong), 'invalid_result')
+
+
+def test_recovery_response_receipt_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record = _recovery_response()
+    wire = _wire(record)
+    args = _recovery_response_args()
+    reverse_payload = json.dumps(dict(reversed(tuple(record['payload'].items()))), separators=(',', ':')).encode('ascii')
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire.replace(_wire(record['payload']), reverse_payload), wire + b'\n', b' ' + wire,
+                  wire.replace(b':', b': ', 1), wire.replace(b'"s43-physical-receipt-v1"', b'"\\u007343-physical-receipt-v1"'),
+                  wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":-0'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 2049, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+        error = _reject(lambda: codec.decode_recovery_response_receipt_record(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"receipt_id":null,' + wire[1:], b'{"receip\\u0074_id":null,' + wire[1:],
+                  wire.replace(b'"payload":{', b'"payload":{"activation_id":null,')):
+        _reject(lambda: codec.decode_recovery_response_receipt_record(frame, *args), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        _reject(lambda: codec.decode_recovery_response_receipt_record(wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":' + scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_recovery_response_receipt_record(frame, *args), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        nested_list = _recovery_response()
+        nested_list['payload']['binding_receipt_ids'] = [[]]
+        for frame in (b'x' * 2049, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]', _wire(nested_list)):
+            _reject(lambda: codec.decode_recovery_response_receipt_record(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_recovery_response_receipt_record(b' ' * 2048, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_recovery_response_receipt_record(b'{"a":{"b":{}}}', *args), 'invalid_shape')
+        assert len(calls) == 2
+        _recovery_response_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _recovery_response_reject(dict(_recovery_response(), schema_version=text), 'invalid_value')
+        oversized = dict(_recovery_response(), schema_version='x' * 100000)
+        _reject(lambda: codec.encode_recovery_response_receipt_record(oversized, *args), 'invalid_value')
+        _reject(lambda: codec.decode_recovery_response_receipt_record(_wire(oversized), *args), 'invalid_encoding')
     finally:
         json.loads = original_loads
