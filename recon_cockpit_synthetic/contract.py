@@ -469,3 +469,35 @@ RECOVERY_ACTIVATE_LITERALS = {
     'recovery_control_activate': 'recovery_control_activate', 'control_kind_activate': 'recovery_activate',
 }
 RECOVERY_ACTIVATE_ISSUER_ROLES = ('supervisor', 'broker')
+
+
+# Intrinsic challenge projection only; receive/freshness/consumption proof is external.
+RECOVERY_CHALLENGE_MAX_BYTES = 2048
+RECOVERY_CHALLENGE_MAX_DEPTH = 3
+RECOVERY_CHALLENGE_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+RECOVERY_CHALLENGE_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'recovery_control_challenge'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+RECOVERY_CHALLENGE_PAYLOAD = (
+    ('activation_id', 'uuid4'), ('case_id', 'uuid4'), ('challenge_id', 'uuid4'),
+    ('channel_sequence', 'u64'), ('clock_epoch_id', 'uuid4'),
+    ('engagement_id', 'uuid4'), ('message_kind', 'control_kind_challenge'),
+    ('monitor_session_id', 'uuid4'), ('old_owner_graph_id', 'uuid4'), ('old_owner_id', 'uuid4'),
+    ('original_deadline_ns', 'monotonic_ns'), ('owner_closure_receipt_id', 'uuid4'),
+    ('recovery_instance_id', 'uuid4'), ('recovery_owner_id', 'uuid4'),
+    ('recovery_session_id', 'uuid4'), ('runtime_lock_sha256', 'sha256'),
+)
+RECOVERY_CHALLENGE_INTEGER_BOUNDS = {'u64': (0, 18446744073709551615)}
+RECOVERY_CHALLENGE_LITERALS = {
+    'recovery_control_challenge': 'recovery_control_challenge', 'control_kind_challenge': 'recovery_challenge',
+}
+RECOVERY_CHALLENGE_ISSUER_ROLES = ('supervisor', 'broker')

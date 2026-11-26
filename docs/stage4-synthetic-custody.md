@@ -1799,3 +1799,62 @@ bring actual collection to88; local validation runs those six plus preservation.
 Formal29 portable/native89 remain unchanged; eventual portable union117 gives no
 acceptance credit. No native execution, closed S4.2c rerun or strategic gate change
 is included.
+
+
+## Portable challenge control-receipt codec slice
+
+The independently reviewed slice follows verified PR122 at
+`2285f3fa677ff363d1e02c5094d5dd6651a460c1`. Separate
+`decode_recovery_challenge_receipt_record` and
+`encode_recovery_challenge_receipt_record` APIs validate intrinsic
+`recovery_control_challenge` claims. The closed14-field envelope and flattened
+closed16-field payload use canonical ASCII JSON, complete-record2048 bytes and
+depth3. Explicit expected owner/operation/graph/receipt IDs bind each record;
+returned envelope and payload are fresh plain dictionaries.
+
+The claimed issuer must be supervisor or broker after full role validation.
+message_kind is exactly recovery_challenge; channel sequence uses unsigned64
+range0..18446744073709551615. Observation time and original deadline use
+0..9223372036854775807. Both runtime-lock digests require lowercase SHA-256
+syntax only. All five phases and nullable physical operation remain representable,
+without inferred time ordering, ID/digest equality, freshness or phase coupling.
+Reference syntax establishes no resolution or one-time consumption.
+
+These checks authenticate no producer/peer, register/resolve no receipt and prove
+no actual challenge receive, freshness/consumption, activation or closure, live
+custody or recovery eligibility. They authorize no operation. Actual challenge
+direction remains recovery_supervisor with receiving supervisor and the exact
+live resumed recovery instance after validated activation. The separate channel
+envelope requires null operation, zero rights, exact endpoint/peer/context and
+per-direction sequence, and at most one challenge. A broker issuer claim passing
+syntax earns no receive credit. Supervisor derives old owner and all allocated
+operation scopes from its immutable live registry; no requested graph list.
+
+Fresh challenge is consumed once, with no reconnect, retry, new deadline or
+activation; custody/identity discontinuity refuses. Old durable cut/owner closure,
+activation spent before signalling and actual CLD_CONTINUED/SIGCONT before
+activation remain prerequisites. Challenge/response use the fresh recovery
+session; historical records retain their original sessions/times and continuous
+supervisor/pidfd custody. No DB/journal/sync open or SQL before complete current
+live bindings and response pass.
+
+Original ancestors delivered after challenge belong to the bounded read-only
+provenance cache, never the live registry. Exact owner/operation scope, complete
+closure/member/death/digest backing records and current terminal/root-copy checks
+remain external. This codec performs no cache import, reference resolution,
+digest, store read/open or runtime action. Original deadlines, native wait sets,
+confinement, resource caps and failed-prefix preservation remain unchanged.
+
+The flattened projection contains packet fields plus message_kind/channel_sequence;
+future reconstruction removes only these two. No reconstruction API is added.
+Only actual authenticated receives produce success projections. Activation-before-
+challenge, challenge-before-bindings and bindings-before-response ordering,
+debit-before-send, no uncertain-delivery retry and six aggregate control slots
+remain external. No quota reset or stateful protocol is added.
+
+The six-file scope is pinned by `portable_recovery_challenge_codec_slice`.
+Prior88 codec units and shared helpers/imports remain unchanged. Six finite units
+bring actual collection to94; local validation runs those six plus preservation.
+Formal29 portable/native89 remain unchanged; eventual portable union123 gives no
+acceptance credit. No native execution, closed S4.2c rerun or strategic gate change
+is included.
