@@ -1854,3 +1854,83 @@ def encode_progress_record(record: dict, expected_owner_id: str, expected_operat
             expected_owner_id, expected_operation_id, expected_graph_id, expected_record_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _public_binding_scalar(value, kind):
+    if kind in ('binding_kind', 's43-public-binding-v1'):
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        valid = value in contract.PUBLIC_BINDING_KINDS if kind == 'binding_kind' else value == kind
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _event_scalar(value, kind)
+
+
+def _public_binding_related_ids(value):
+    if type(value) is not list:
+        raise ResultCodecError('invalid_shape')
+    if len(value) > contract.PUBLIC_BINDING_MAX_RELATED_IDS:
+        raise ResultCodecError('invalid_value')
+    for item in value:
+        _event_scalar(item, 'uuid4')
+    if len(set(value)) != len(value):
+        raise ResultCodecError('invalid_value')
+    return list(value)
+
+
+def _public_binding_record(value):
+    _event_closed(value, contract.PUBLIC_BINDING_FIELDS)
+    for key, kind in contract.PUBLIC_BINDING_SCALARS:
+        _public_binding_scalar(value[key], kind)
+    related_ids = _public_binding_related_ids(value['related_ids'])
+    result = dict(value)
+    result['related_ids'] = related_ids
+    return result
+
+
+def decode_public_binding_record(frame: bytes, expected_subject_id: str, expected_record_id: str) -> dict:
+    """Parse public-manifest claims only; no producer/peer authentication,
+    manifest/input resolution, digest verification, live registry membership,
+    provenance/freshness, physical custody/closure, completed witness or
+    operation/recovery authority is established. Profile eligibility is external.
+    """
+    _expected_subject(expected_subject_id)
+    _expected_subject(expected_record_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.PUBLIC_BINDING_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.PUBLIC_BINDING_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _public_binding_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if (record['subject_id'], record['record_id']) != (expected_subject_id, expected_record_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_public_binding_record(record: dict, expected_subject_id: str, expected_record_id: str) -> bytes:
+    """Encode public-manifest claims only; no producer/peer authentication,
+    manifest/input resolution, digest verification, live registry membership,
+    provenance/freshness, physical custody/closure, completed witness or
+    operation/recovery authority is established. Profile eligibility is external.
+    """
+    _expected_subject(expected_subject_id)
+    _expected_subject(expected_record_id)
+    validated = _public_binding_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.PUBLIC_BINDING_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if (validated['subject_id'], validated['record_id']) != (expected_subject_id, expected_record_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

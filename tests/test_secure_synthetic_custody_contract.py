@@ -1,4 +1,4 @@
-"""One hundred eighteen codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred twenty-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -6101,5 +6101,258 @@ def test_progress_record_encoding_and_depth():
         oversized = dict(record, schema_version='x' * 100000)
         _reject(lambda: codec.encode_progress_record(oversized, *args), 'invalid_value')
         _reject(lambda: codec.decode_progress_record(_wire(oversized), *args), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent public-binding expectations; list order is significant and preserved.
+PUBB_TYPES = (('kind', 'enum'), ('public_manifest_sha256', 'hash'), ('record_id', 'uuid'),
+              ('related_ids', 'list'), ('schema_version', 'enum'), ('subject_id', 'uuid'))
+PUBB_KINDS = ('runtime', 'graph', 'role', 'input', 'source_manifest')
+PUBB_IDS = (
+    '00000000-1234-4234-9234-123456789abc', '00000001-1234-4234-9234-123456789abc',
+    '00000002-1234-4234-9234-123456789abc', '00000003-1234-4234-9234-123456789abc',
+    '00000004-1234-4234-9234-123456789abc', '00000005-1234-4234-9234-123456789abc',
+    '00000006-1234-4234-9234-123456789abc', '00000007-1234-4234-9234-123456789abc',
+    '00000008-1234-4234-9234-123456789abc', '00000009-1234-4234-9234-123456789abc',
+    '0000000a-1234-4234-9234-123456789abc',
+)
+
+
+def _public_binding():
+    return dict(kind='runtime', public_manifest_sha256='a' * 64, record_id=OTHER,
+                related_ids=[OTHER, SUBJECT], schema_version='s43-public-binding-v1', subject_id=SUBJECT)
+
+
+PUBB_CANONICAL_BYTES = (
+    b'{"kind":"runtime","public_manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    b'aaaaaaaaaaaaa","record_id":"22345678-1234-4234-9234-123456789abc","related_ids":["22345678-1234'
+    b'-4234-9234-123456789abc","12345678-1234-4234-9234-123456789abc"],"schema_version":"s43-public-b'
+    b'inding-v1","subject_id":"12345678-1234-4234-9234-123456789abc"}'
+)
+PUBB_MAXIMUM_BYTES = 707
+
+
+def _public_binding_args():
+    return SUBJECT, OTHER
+
+
+def _public_binding_accept(record):
+    args = record['subject_id'], record['record_id']
+    before = _wire(record)
+    assert codec.encode_public_binding_record(record, *args) == before
+    assert _wire(record) == before
+    result = codec.decode_public_binding_record(before, *args)
+    assert type(result) is dict and result == record and result is not record
+    assert type(result['related_ids']) is list and result['related_ids'] is not record['related_ids']
+    return result
+
+
+def _public_binding_reject(record, code, decode_code=None):
+    _reject(lambda: codec.encode_public_binding_record(record, *_public_binding_args()), code)
+    return _reject(lambda: codec.decode_public_binding_record(_wire(record), *_public_binding_args()), decode_code or code)
+
+
+def test_public_binding_record_canonical_examples():
+    assert len(PUBB_TYPES) == 6 and len(PUBB_KINDS) == 5 and len(PUBB_IDS) == 11
+    assert codec.encode_public_binding_record(_public_binding(), *_public_binding_args()) == PUBB_CANONICAL_BYTES
+    assert codec.decode_public_binding_record(PUBB_CANONICAL_BYTES, *_public_binding_args()) == _public_binding()
+    orders = ([], [SUBJECT], [OTHER, SUBJECT], list(PUBB_IDS),
+              list(reversed(PUBB_IDS)), list(PUBB_IDS[5:] + PUBB_IDS[:5]))
+    for kind in PUBB_KINDS:
+        for ids in orders:
+            record = dict(_public_binding(), kind=kind, related_ids=list(ids))
+            assert set(record) == {k for k, _ in PUBB_TYPES}
+            first, second = _public_binding_accept(record), _public_binding_accept(record)
+            first['related_ids'].append('changed')
+            first['kind'] = 'changed'
+            assert second == record and record['related_ids'] == ids
+            assert codec.encode_public_binding_record(dict(reversed(tuple(record.items()))), *_public_binding_args()) == _wire(record)
+    _public_binding_accept(dict(_public_binding(), record_id=SUBJECT, related_ids=[SUBJECT]))
+    maximum = dict(_public_binding(), kind='source_manifest', related_ids=list(PUBB_IDS))
+    assert len(_wire(maximum)) == PUBB_MAXIMUM_BYTES == 707
+    assert PUBB_MAXIMUM_BYTES <= 1024 < 3072
+    _public_binding_accept(maximum)
+    original = _public_binding()
+    first = _public_binding_accept(original)
+    original['related_ids'].clear()
+    assert first['related_ids'] == [OTHER, SUBJECT]
+
+
+def test_public_binding_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class ListHook(list):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __iter__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1], [{}]):
+        _public_binding_reject(value, 'invalid_shape')
+    _reject(lambda: codec.encode_public_binding_record(1.0, *_public_binding_args()), 'invalid_shape')
+    _reject(lambda: codec.decode_public_binding_record(b'1.0', *_public_binding_args()), 'invalid_value')
+    _reject(lambda: codec.encode_public_binding_record(DictHook(_public_binding()), *_public_binding_args()), 'invalid_shape')
+    for key, typ in PUBB_TYPES:
+        for mutation in ('missing', 'unknown'):
+            record = _public_binding()
+            value = record.pop(key)
+            if mutation == 'unknown':
+                record['RAW_SENTINEL'] = value
+            _public_binding_reject(record, 'invalid_shape')
+        for bad in (None, True, False, 0, 1, 1.0, {}, 'RAW_SENTINEL'):
+            _public_binding_reject(dict(_public_binding(), **{key: bad}),
+                'invalid_shape' if typ == 'list' else 'invalid_value',
+                'invalid_value' if typ == 'list' and type(bad) is float else None)
+        if typ != 'list':
+            _public_binding_reject(dict(_public_binding(), **{key: []}), 'invalid_value')
+        bad = ListHook([SUBJECT]) if typ == 'list' else StringHook('RAW_SENTINEL')
+        _reject(lambda: codec.encode_public_binding_record(dict(_public_binding(), **{key: bad}), *_public_binding_args()),
+                'invalid_shape' if typ == 'list' else 'invalid_value')
+        _reject(lambda: codec.encode_public_binding_record(dict(_public_binding(), **{key: b'RAW_SENTINEL'}), *_public_binding_args()),
+                'invalid_shape' if typ == 'list' else 'invalid_value')
+    for bad_key in (StringHook('x'), 'x' * 100000, 1):
+        record = _public_binding()
+        record[bad_key] = record.pop('kind')
+        _reject(lambda: codec.encode_public_binding_record(record, *_public_binding_args()), 'invalid_shape')
+    _public_binding_reject(dict(_public_binding(), RAW_SENTINEL=0), 'invalid_shape')
+    for wrapper in ('payload', 'packet'):
+        _public_binding_reject({wrapper: _public_binding()}, 'invalid_shape', 'invalid_encoding')
+    record = dict(_public_binding(), **{str(n): None for n in range(10000)})
+    _reject(lambda: codec.encode_public_binding_record(record, *_public_binding_args()), 'invalid_shape')
+
+
+def test_public_binding_record_kind_and_literals():
+    for kind in PUBB_KINDS:
+        _public_binding_accept(dict(_public_binding(), kind=kind))
+    for key, values in (('kind', PUBB_KINDS), ('schema_version', ('s43-public-binding-v1',))):
+        for value in values:
+            for bad in (value.upper(), value + '\n', value + 'x', '', 'x' * 100000):
+                _public_binding_reject(dict(_public_binding(), **{key: bad}), 'invalid_value',
+                                       'invalid_encoding' if len(bad) > 3072 else None)
+    for key, bad in (('kind', 'recovery_closure_binding'), ('kind', 'public_binding'),
+                     ('kind', 'manifest'), ('kind', 'unknown'), ('schema_version', 's43-physical-receipt-v1')):
+        _public_binding_reject(dict(_public_binding(), **{key: bad}), 'invalid_value')
+    class EnumHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __eq__(self, other):
+            raise AssertionError('hook reached')
+    for key, value in (('kind', 'runtime'), ('schema_version', 's43-public-binding-v1')):
+        _reject(lambda: codec.encode_public_binding_record(dict(_public_binding(), **{key: EnumHook(value)}), *_public_binding_args()), 'invalid_value')
+
+
+def test_public_binding_record_list_and_scalar_bounds():
+    for key, typ in PUBB_TYPES:
+        if typ not in ('uuid', 'hash'):
+            continue
+        valid = 'f' * 64 if typ == 'hash' else SUBJECT
+        bad_values = (valid.upper(), valid + '\n', valid + 'x', 'x' + valid, valid[:-1], '', 'x' * 100000)
+        if typ == 'uuid':
+            bad_values += (SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'))
+        for bad in bad_values:
+            _public_binding_reject(dict(_public_binding(), **{key: bad}), 'invalid_value',
+                                   'invalid_encoding' if len(bad) > 3072 else None)
+    for value in ('0' * 64, 'f' * 64):
+        _public_binding_accept(dict(_public_binding(), public_manifest_sha256=value))
+    for count in (0, 1, 2, 11):
+        _public_binding_accept(dict(_public_binding(), related_ids=list(PUBB_IDS[:count])))
+    _public_binding_reject(dict(_public_binding(), related_ids=[*PUBB_IDS, SUBJECT]), 'invalid_value')
+    _public_binding_reject(dict(_public_binding(), related_ids=[SUBJECT] * 12), 'invalid_value')
+    class HashHook(str):
+        def __hash__(self):
+            raise AssertionError('hash hook reached')
+        def __eq__(self, other):
+            raise AssertionError('comparison hook reached')
+    class RawHook:
+        def __hash__(self):
+            raise AssertionError('hash hook reached')
+    for ids in ([HashHook(SUBJECT)], [SUBJECT, SUBJECT, HashHook(OTHER)],
+                [RawHook()] * 12, [HashHook(SUBJECT)] * 100000):
+        _reject(lambda: codec.encode_public_binding_record(dict(_public_binding(), related_ids=ids), *_public_binding_args()), 'invalid_value')
+    for ids in ([SUBJECT, SUBJECT], [SUBJECT, OTHER, SUBJECT], [OTHER, SUBJECT, SUBJECT],
+                [*PUBB_IDS[:-1], PUBB_IDS[0]], [SUBJECT, SUBJECT, 'RAW_SENTINEL']):
+        _public_binding_reject(dict(_public_binding(), related_ids=ids), 'invalid_value')
+    bad_ids = (None, True, False, 0, 1, 1.0, {}, [], '', SUBJECT.upper(), SUBJECT + '\n',
+               SUBJECT + 'x', 'x' + SUBJECT, SUBJECT[:-1], SUBJECT.replace('-4234-', '-1234-'),
+               SUBJECT.replace('-9234-', '-7234-'), 'x' * 100000)
+    for bad in bad_ids:
+        decode_code = 'invalid_encoding' if type(bad) in (dict, list) or (type(bad) is str and len(bad) > 3072) else None
+        _public_binding_reject(dict(_public_binding(), related_ids=[bad]), 'invalid_value', decode_code)
+    for bad in ((SUBJECT,), {SUBJECT}, iter([SUBJECT])):
+        _reject(lambda: codec.encode_public_binding_record(dict(_public_binding(), related_ids=bad), *_public_binding_args()), 'invalid_shape')
+
+
+def test_public_binding_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    record, args = _public_binding(), _public_binding_args()
+    for index in range(2):
+        changed = list(args)
+        changed[index] = PUBB_IDS[0]
+        _reject(lambda: codec.encode_public_binding_record(record, *changed), 'wrong_subject')
+        _reject(lambda: codec.decode_public_binding_record(_wire(record), *changed), 'wrong_subject')
+        for bad in (None, True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+            changed = list(args)
+            changed[index] = bad
+            code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+            _reject(lambda: codec.encode_public_binding_record(record, *changed), code)
+            _reject(lambda: codec.decode_public_binding_record(_wire(record), *changed), code)
+            _reject(lambda: codec.encode_public_binding_record(None, *changed), code)
+            _reject(lambda: codec.decode_public_binding_record(b'', *changed), code)
+    wrong = (PUBB_IDS[0], OTHER)
+    _reject(lambda: codec.decode_public_binding_record(_wire(record) + b'\n', *wrong), 'invalid_encoding')
+    for bad, code in ((dict(record, kind='unknown'), 'invalid_value'),
+                      (dict(record, related_ids=[SUBJECT, SUBJECT]), 'invalid_value'),
+                      (dict(record, related_ids=None), 'invalid_shape')):
+        _reject(lambda: codec.encode_public_binding_record(bad, *wrong), code)
+        _reject(lambda: codec.decode_public_binding_record(_wire(bad), *wrong), code)
+
+
+def test_public_binding_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record, args = _public_binding(), _public_binding_args()
+    wire = _wire(record)
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire + b'\n', b' ' + wire, wire.replace(b':', b': ', 1),
+                  wire.replace(b'"runtime"', b'"\\u0072untime"'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 3073, b'{"a":{"b":{}}}', b'[[[]]]'):
+        error = _reject(lambda: codec.decode_public_binding_record(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"record_id":null,' + wire[1:], b'{"recor\\u0064_id":null,' + wire[1:]):
+        _reject(lambda: codec.decode_public_binding_record(frame, *args), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        _reject(lambda: codec.decode_public_binding_record(wire.replace(b'"runtime"', scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_public_binding_record(frame, *args), 'invalid_shape')
+    reordered = dict(record, related_ids=list(reversed(record['related_ids'])))
+    assert _wire(reordered) != wire
+    _public_binding_accept(reordered)
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 3073, b'{"a":{"b":{}}}', b'[[[]]]'):
+            _reject(lambda: codec.decode_public_binding_record(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_public_binding_record(b' ' * 3072, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_public_binding_record(b'{"related_ids":[]}', *args), 'invalid_shape')
+        assert len(calls) == 2
+        _public_binding_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _public_binding_reject(dict(record, schema_version=text), 'invalid_value')
+        oversized = dict(record, schema_version='x' * 100000)
+        _reject(lambda: codec.encode_public_binding_record(oversized, *args), 'invalid_value')
+        _reject(lambda: codec.decode_public_binding_record(_wire(oversized), *args), 'invalid_encoding')
     finally:
         json.loads = original_loads

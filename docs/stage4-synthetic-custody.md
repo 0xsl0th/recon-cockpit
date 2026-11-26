@@ -2136,3 +2136,55 @@ helpers/imports and historical gates remain unchanged. Six finite units bring
 actual collection to118; affected validation is six plus preservation. Eventual
 portable union147, formal29 and native89 remain distinct. This slice grants no
 formal/native acceptance credit and runs no native or closed S4.2c checks.
+
+
+## Portable public-binding record codec slice
+
+The s43-public-binding-v1 codec validates six required fields: kind,
+public_manifest_sha256,record_id,related_ids,schema_version,subject_id. kind is
+runtime,graph,role,input or source_manifest. UUID4 and lowercase SHA-256 checks
+establish syntax only. Expected subject/record IDs are non-null canonical UUID4
+strings validated before input; binding follows intrinsic/canonical checks.
+
+related_ids is an exact built-in list of0..11 unique canonical UUID4 strings.
+Empty lists and arbitrary unique permutations are valid; order is preserved.
+There is no sorting, per-kind cardinality or requirement that subject/record IDs
+be disjoint from the list or each other. List type and cardinality are bounded
+before iteration/copy; all element types/syntax are checked before uniqueness.
+Returned root and list are fresh plain objects; encoding preserves caller data.
+
+Complete canonical ASCII is bounded to3072 bytes/depth2. Reject duplicate,
+missing, unknown or wrapped fields, invalid scalars, list duplicates, subclasses/
+hooks and noncanonical encoding. Structural/list type errors are invalid_shape;
+invalid scalar, list cardinality or duplicate ID is invalid_value. Preparse or
+canonical failures are invalid_encoding; expected-ID mismatch is wrong_subject.
+Rejections expose fixed codes without raw data or parser exception chains.
+
+The independent maximum complete example is707 bytes (11UUIDs and longest kind),
+within recovery's separate1024-byte record cap. Passing this general codec alone
+does not establish profile eligibility. Recovery size validation before
+allocation/publication, one LF per JSONL record and bindings.jsonl limits of64
+records/131072 bytes remain external. No stream/member reservation or export
+behavior is implemented; no cap or existing schema is widened.
+
+Parsing authenticates no producer/peer, resolves no manifest/input, verifies no
+digest, and establishes no live registry membership, provenance/freshness,
+physical custody/closure, completed witness or operation/recovery authority.
+The digest must later resolve the exact separately validated public fixed input/
+manifest in frozen execution context; absent/unknown context refuses. Hashes do
+not substitute for physical observations. Public role/graph/runtime/input
+identities never contain runtime object contents or dynamic credential digests.
+This codec calculates no digests of unvalidated/private data.
+
+Preserve original evidence, failures/uncertainty and deadlines. Imported claims
+do not become live registry entries or recovery_closure_binding records.
+Successful recovery still needs actual authenticated controls, exact current and
+bounded historical provenance, live custody and closure/wait/SQL predicates.
+No native action, grant, store opening, retry/restart or deadline reset follows
+parsing. Packet/stream/reader/manifest resolution and runtime remain unimplemented.
+
+portable_public_binding_codec_slice binds the six-file amendment. Prior118 units,
+shared helpers/imports and historical gates remain unchanged. Six finite units
+bring actual collection to124; affected validation runs six plus preservation.
+Eventual portable union153, formal29 and native89 remain distinct, with no formal
+or native acceptance credit and no native or closed S4.2c execution.
