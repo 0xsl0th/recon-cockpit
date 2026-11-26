@@ -1703,3 +1703,47 @@ units bring actual collection to76; local validation runs those six plus
 preservation. Formal29 portable/native89 remain unchanged; eventual portable
 union105 gives no acceptance credit. No native execution, closed S4.2c rerun or
 strategic gate change is included.
+
+
+## Portable prepared control-receipt codec slice
+
+The independently reviewed slice follows verified PR120 at
+`eb14e00a3d602167a54ab4bcd05f123ef0846249`. Separate
+`decode_recovery_prepared_receipt_record` and
+`encode_recovery_prepared_receipt_record` APIs validate intrinsic
+`recovery_control_prepared` claims. The closed14-field envelope and flattened
+closed18-field payload use canonical ASCII JSON, complete-record2048 bytes and
+depth3. Explicit expected owner/operation/graph/receipt IDs bind each record;
+returned envelope and payload are fresh plain dictionaries.
+
+The claimed issuer must be supervisor or broker after validating the full role
+enum. The payload requires message_kind recovery_prepared and exact Boolean
+False for database_open. Channel sequence uses0..18446744073709551615; observation
+time and original deadline use0..9223372036854775807. Six SHA-256 fields require
+full lowercase syntax only. All five phases and nullable physical operation
+remain representable. No timestamp ordering, cross-field ID/hash equality,
+freshness or phase coupling is inferred.
+
+These checks authenticate no producer/peer, register/resolve no receipt and prove
+no actual packet receive, prepared barrier, installed filter/bootstrap, unopened
+database, live custody or recovery eligibility. They authorize no operation.
+Actual prepared direction remains recovery_supervisor with authenticated receiving
+supervisor, exact peer/context and operation_id=null in the separate channel
+envelope. A broker claim or non-null physical operation passing syntax provides
+no transport credit. Original bootstrap monitor/session/time, immutable manifest,
+image/filter installation, exact FDs/mounts/credentials, receive-only barrier and
+continuous stopped one-task custody remain external gates.
+
+The flattened projection contains packet fields plus message_kind/channel_sequence;
+future reconstruction removes only those two fields. No reconstruction, packet
+codec, receive, database access, digest computation, signal or wait is implemented.
+The one-prepared-message allowance, zero rights, per-direction sequence and six
+aggregate control-receive slots remain external; failed receives produce no
+fabricated success. All existing runtime/transport restrictions and quotas remain.
+
+The six-file scope is pinned by `portable_recovery_prepared_codec_slice`.
+Prior76 codec units and shared helpers/imports remain unchanged. Six finite units
+bring actual collection to82; affected local checks run those six and preservation.
+Formal29 portable/native89 remain unchanged; eventual portable union111 gives no
+acceptance credit. No native execution, closed S4.2c rerun or strategic gate change
+is included.
