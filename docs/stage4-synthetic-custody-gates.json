@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "4e6a86c5ac49df044c959785fa1218de8390ae1648a63dea0dac6f0e46db2c43",
+  "contract_sha256": "ef1b3b405cbdf2411a3e7d9893bd4eb494f43726574857cf75edca0207eb7ce9",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -11913,5 +11913,52 @@
     "packet_or_stream_adapter_implemented": false,
     "digest_or_export_implemented": false,
     "validation": "Collect exact124 unit IDs; run six new public-binding units and affected preservation check; independent final review before publication."
+  },
+  "portable_lookup_observed_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_lookup_observed_record_codec_implementation",
+    "scope_sha256": "ff59ce3966477ea1a911b25fa09d68b01d454254f21fdb00476cac717f022387",
+    "verified_base_merge": "32d68d8771d72932665f1cd91a08cadc9d40a763",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "record_schema": "s43-lookup-observed-v1",
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_lookup_observed_record_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_lookup_observed_record_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_lookup_observed_record_status_and_literals",
+      "tests/test_secure_synthetic_custody_contract.py::test_lookup_observed_record_scalar_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_lookup_observed_record_expected_subject_binding",
+      "tests/test_secure_synthetic_custody_contract.py::test_lookup_observed_record_encoding_and_depth"
+    ],
+    "new_unit_node_count": 6,
+    "prior_codec_unit_nodes_preserved": 124,
+    "combined_unit_node_count": 130,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 159,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "registry_implemented": false,
+    "producer_authentication_implemented": false,
+    "live_lookup_implemented": false,
+    "persisted_reference_resolution_implemented": false,
+    "provenance_or_freshness_proved": false,
+    "physical_custody_or_closure_proved": false,
+    "completed_witness_proved": false,
+    "recovery_profile_eligibility_proved": false,
+    "packet_or_stream_adapter_implemented": false,
+    "digest_or_export_implemented": false,
+    "validation": "Collect exact130 unit IDs; run six new lookup-observation units and affected preservation check; independent final review before publication."
   }
 }

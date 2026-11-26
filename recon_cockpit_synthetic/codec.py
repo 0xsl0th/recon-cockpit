@@ -1934,3 +1934,86 @@ def encode_public_binding_record(record: dict, expected_subject_id: str, expecte
     if (validated['subject_id'], validated['record_id']) != (expected_subject_id, expected_record_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _lookup_observed_scalar(value, kind):
+    if kind in ('lookup_status', 's43-lookup-observed-v1'):
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        valid = value in contract.LOOKUP_OBSERVED_STATUSES if kind == 'lookup_status' else value == kind
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _event_scalar(value, kind)
+
+
+def _lookup_observed_record(value):
+    _event_closed(value, contract.LOOKUP_OBSERVED_FIELDS)
+    for key, kind in contract.LOOKUP_OBSERVED_SCALARS:
+        _lookup_observed_scalar(value[key], kind)
+    if value['status'] == 'closed':
+        if value['lease_id'] is None or value['closure_event_id'] is None:
+            raise ResultCodecError('invalid_result')
+        if (value['completion_event_id'] is None) != (value['result_operation_id'] is None):
+            raise ResultCodecError('invalid_result')
+        if value['result_operation_id'] is not None and value['result_operation_id'] != value['operation_id']:
+            raise ResultCodecError('invalid_result')
+    elif any(value[key] is not None for key in contract.LOOKUP_OBSERVED_REFERENCES):
+        raise ResultCodecError('invalid_result')
+    return dict(value)
+
+
+def _lookup_observed_subjects(owner, operation, record):
+    for value in (owner, operation, record):
+        _expected_subject(value)
+
+
+def decode_lookup_observed_record(frame: bytes, expected_owner_id: str,
+                                  expected_operation_id: str, expected_record_id: str) -> dict:
+    """Parse intrinsic lookup claims only; no actual lookup, producer/broker/peer
+    authentication, issuer/session/epoch/runtime binding, provenance/freshness,
+    history uniqueness, persisted lease/event/result resolution, physical custody/
+    closure, completed witness or operation/recovery authority is established.
+    Recovery-profile size eligibility and live broker provenance remain external.
+    """
+    _lookup_observed_subjects(expected_owner_id, expected_operation_id, expected_record_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.LOOKUP_OBSERVED_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.LOOKUP_OBSERVED_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _lookup_observed_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('owner_id', 'operation_id', 'record_id')) != (
+            expected_owner_id, expected_operation_id, expected_record_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_lookup_observed_record(record: dict, expected_owner_id: str,
+                                  expected_operation_id: str, expected_record_id: str) -> bytes:
+    """Encode intrinsic lookup claims only; no actual lookup, producer/broker/peer
+    authentication, issuer/session/epoch/runtime binding, provenance/freshness,
+    history uniqueness, persisted lease/event/result resolution, physical custody/
+    closure, completed witness or operation/recovery authority is established.
+    Recovery-profile size eligibility and live broker provenance remain external.
+    """
+    _lookup_observed_subjects(expected_owner_id, expected_operation_id, expected_record_id)
+    validated = _lookup_observed_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.LOOKUP_OBSERVED_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('owner_id', 'operation_id', 'record_id')) != (
+            expected_owner_id, expected_operation_id, expected_record_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

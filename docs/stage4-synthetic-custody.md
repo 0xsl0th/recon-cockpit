@@ -2188,3 +2188,51 @@ shared helpers/imports and historical gates remain unchanged. Six finite units
 bring actual collection to124; affected validation runs six plus preservation.
 Eventual portable union153, formal29 and native89 remain distinct, with no formal
 or native acceptance credit and no native or closed S4.2c execution.
+
+
+### Intrinsic lookup-observation codec slice
+
+This append-only portable slice follows the independently approved
+lookup-observation scope and verified PR128 merge/main CI. It implements only
+decode_lookup_observed_record and encode_lookup_observed_record: the closed
+14-field s43-lookup-observed-v1 public record, with expected owner, operation
+and record UUIDs checked before input and matched after full intrinsic/canonical
+validation. Prior 124 codec units, imports and shared helpers remain unchanged.
+
+All scalar types, canonical UUID4/hash syntax and monotonic integer bounds are
+validated before relationships. Closed status requires lease/closure references;
+completion/result references are both null or both nonnull, and a nonnull
+result_operation_id equals this operation. Other statuses (not_closed,
+absent, unavailable) require all four references null. These checks do not
+establish completed lease state, actual lookup truth or reference resolution.
+No other UUID equality, distinctness or temporal relation is inferred.
+
+The flat canonical ASCII object has depth 1 and a general 3072-byte cap.
+Recovery retains its separate 2048-byte lookup cap before allocation/publication;
+JSONL adds one LF. Independent fixtures freeze five status/completion examples
+and their maximum timestamp variants: closed without completion 679 bytes, closed with completion 747 bytes, not_closed without completion 615 bytes, absent without completion 611 bytes, unavailable without completion 616 bytes.
+The maximum fits 2048; parsing alone does not establish profile eligibility.
+transactions.jsonl still shares 64 records/131072 bytes with transaction
+witnesses. The selected recovery profile shares 50 records, with two read-only
+lookup attempts. This slice implements no member accounting or stream adapter.
+
+Only a live broker after an actual authorized lookup may emit this record.
+Issuer/session/epoch/runtime bindings, producer/broker/peer authentication,
+provenance/freshness, history uniqueness and exact exported/persisted
+lease/event/result crosslinks remain external. Forwarding through the existing
+broker_supervisor public_evidence_record retains producer provenance.
+Parsed/imported claims establish no physical custody/closure, completed witness
+or operation/recovery authority. They create no audit event, mutation, registry
+entry, permission, restored authority, retry/restart or deadline reset. Original
+failure evidence, uncertainty and deadlines remain preserved; current/bounded
+historical provenance, live custody and closure/wait/SQL predicates still apply.
+No SQL, live lookup, fixture/file read, runtime/native action, packet/digest/export
+API, manifest resolution or authentication is implemented.
+
+Six finite units cover independent golden bytes, all 64 status/reference patterns,
+same-operation result linkage, scalar/boundary/type/canonical failures, expected
+ID precedence, fresh copies and error hygiene. Collect exactly 130 codec unit
+IDs and run only the six new units plus the affected source-preservation check.
+Actual 130 units and eventual portable union 159 remain distinct from the unchanged
+29 formal portable and 89 native nodes. This slice earns no acceptance credit
+and authorizes no native execution or closed S4.2c checks.
