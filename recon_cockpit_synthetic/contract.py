@@ -665,3 +665,17 @@ PROGRESS_BYTE_CAPS = {
     'server_local': (('tls_outbound_bytes', 16384), ('tls_inbound_bytes', 8192),
                      ('plaintext_request_bytes', 512), ('plaintext_response_bytes', 2048)),
 }
+
+
+# Intrinsic public-manifest claims only; context and digest resolution are external.
+PUBLIC_BINDING_MAX_BYTES = 3072
+PUBLIC_BINDING_MAX_DEPTH = 2
+PUBLIC_BINDING_MAX_RELATED_IDS = 11
+PUBLIC_BINDING_FIELDS = (
+    'kind', 'public_manifest_sha256', 'record_id', 'related_ids', 'schema_version', 'subject_id',
+)
+PUBLIC_BINDING_SCALARS = (
+    ('kind', 'binding_kind'), ('public_manifest_sha256', 'sha256'), ('record_id', 'uuid4'),
+    ('schema_version', 's43-public-binding-v1'), ('subject_id', 'uuid4'),
+)
+PUBLIC_BINDING_KINDS = ('runtime', 'graph', 'role', 'input', 'source_manifest')
