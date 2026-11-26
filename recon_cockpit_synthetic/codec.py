@@ -1245,3 +1245,87 @@ def encode_recovery_lifecycle_record(record: dict, expected_subject_owner_id: st
             expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _recovery_prepared_receipt_scalar(value, kind):
+    if kind in contract.RECOVERY_PREPARED_INTEGER_BOUNDS:
+        minimum, maximum = contract.RECOVERY_PREPARED_INTEGER_BOUNDS[kind]
+        if type(value) is not int or not minimum <= value <= maximum:
+            raise ResultCodecError('invalid_value')
+    elif kind == 'false':
+        if type(value) is not bool or value is not False:
+            raise ResultCodecError('invalid_value')
+    elif kind in contract.RECOVERY_PREPARED_LITERALS:
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        valid = value == contract.RECOVERY_PREPARED_LITERALS[kind]
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _custody_receipt_scalar(value, kind)
+
+
+def _recovery_prepared_receipt_record(value):
+    _event_closed(value, contract.RECOVERY_PREPARED_FIELDS)
+    for key, kind in contract.RECOVERY_PREPARED_SCALARS:
+        _recovery_prepared_receipt_scalar(value[key], kind)
+    payload = value['payload']
+    _event_closed(payload, tuple(key for key, _ in contract.RECOVERY_PREPARED_PAYLOAD))
+    for key, kind in contract.RECOVERY_PREPARED_PAYLOAD:
+        _recovery_prepared_receipt_scalar(payload[key], kind)
+    if value['issuer_role'] not in contract.RECOVERY_PREPARED_ISSUER_ROLES:
+        raise ResultCodecError('invalid_result')
+    result = dict(value)
+    result['payload'] = dict(payload)
+    return result
+
+
+def decode_recovery_prepared_receipt_record(frame: bytes, expected_subject_owner_id: str,
+                                      expected_operation_id: str | None,
+                                      expected_graph_id: str, expected_receipt_id: str) -> dict:
+    """Parse prepared claims only; no producer/peer authentication, receipt
+    registration/resolution, actual packet receive/prepared barrier, installed-filter
+    or bootstrap proof, unopened database proof, live custody/recovery eligibility
+    or operation authorization is established.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.RECOVERY_PREPARED_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.RECOVERY_PREPARED_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _recovery_prepared_receipt_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_recovery_prepared_receipt_record(record: dict, expected_subject_owner_id: str,
+                                      expected_operation_id: str | None,
+                                      expected_graph_id: str, expected_receipt_id: str) -> bytes:
+    """Encode prepared claims only; no producer/peer authentication, receipt
+    registration/resolution, actual packet receive/prepared barrier, installed-filter
+    or bootstrap proof, unopened database proof, live custody/recovery eligibility
+    or operation authorization is established.
+    """
+    _custody_receipt_subjects(expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id)
+    validated = _recovery_prepared_receipt_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.RECOVERY_PREPARED_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id')) != (
+            expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded
