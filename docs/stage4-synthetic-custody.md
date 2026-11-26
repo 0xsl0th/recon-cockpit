@@ -1998,3 +1998,75 @@ units bring actual collection to106; local validation runs six plus preservation
 Formal29 portable/native89 remain unchanged; eventual portable union135 gives no
 acceptance credit. No native execution, closed S4.2c rerun or strategic gate
 change is included.
+
+
+## Portable recovery fixed-failure receipt codec slice
+
+The intrinsic recovery_control_fixed_failure projection uses the closed14-field
+physical envelope and closed14-field scalar payload. Complete canonical ASCII is
+bounded to2048 bytes/depth3. Expected owner/operation/graph/receipt IDs bind the
+record after intrinsic and canonical validation; fresh plain dictionaries are
+returned. No packet reconstruction, runtime protocol or live adapter is added.
+
+message_kind is exactly fixed_failure. failure_reason is bootstrap_refused,
+binding_refused, protocol_refused, deadline, resource_limit, unexpected_exit or
+authority_unavailable. stage is bootstrap, ready, reserved, tls, released,
+exchange or cleanup. Exact string type and bounded length precede comparisons.
+The recovery_reason-only closure_unproved/unexpected_transition are rejected.
+Envelope issuer must be supervisor or broker after full role validation; payload
+role accepts all eleven declared roles as claims, without inferred issuer equality.
+
+Sequence uses unsigned64 range0..18446744073709551615. Observation/session deadline
+use0..9223372036854775807. Envelope and payload runtime-lock digests and payload
+bootstrap-manifest digest require lowercase SHA-256 syntax only. All physical
+phases and nullable operation remain representable. No cross-field ID, role,
+hash, time, phase/stage equality, freshness or failure causality is inferred.
+
+Parsing authenticates no producer/peer, registers/resolves no receipt and proves
+no actual receive, authenticated bootstrap context, claimed cause/stage, live
+custody, completed witness or recovery eligibility. Failure claims authorize no
+operation and earn no successful-witness credit. Actual fixed_failure projections
+require authenticated receives on supervisor_recovery or recovery_supervisor,
+the exact receiving broker/supervisor, original/recovery instances, credentials,
+endpoints and all common bootstrap fields matching the declared context.
+
+The separate channel envelope retains sequence1..2147483647, strictly increasing
+per direction/instance, no wrap/reconnect/replay, zero rights and4096-byte cap.
+Operation follows the declared owner/bootstrap rule; nullable physical operation
+proves no channel compliance. Missing, wrong or truncated credential/ancillary
+evidence refuses; unexpected rights require cleanup without reading secret data.
+
+Unlike recovery_refused, early fixed failure needs authenticated bootstrap context
+but no valid preceding challenge or activation/challenge IDs. Without context,
+driver records failed context without invented peer fields. Required payload
+fields are never repaired using dummy IDs/nulls. Assumed sends, missing delivery
+or failed receives produce no fabricated receive projection.
+
+Keep failed prefixes and uncertainty, mandatory cleanup, unknown activation/commit
+outcomes, owned store/journal and original owner/event history. No retry/restart,
+reconnect, new activation/deadline, counter refund, fresh authority, imported live
+registry entry, database/journal/sync open, recovery grant, lease close or operation
+follows this parser. Fixed enums disclose no raw exceptions/private bytes or
+content-derived digests. Successful-response predicates remain complete exact
+owner/operation bindings, live terminal/root-copy checks, bounded historical
+provenance and uninterrupted supervisor/pidfd custody. Historical envelopes,
+sessions/timestamps, deadlines, native wait sets, confinement/resource caps and
+failed-prefix reservations remain unchanged.
+
+At most two recovery-channel fixed failures fit within six aggregate control
+projection slots: prepared,activate,challenge,response OR refusal,and two failures.
+They consume two of eight total failure slots. Debit-before-send and uncertain
+delivery spending remain mandatory; no fallback handshake or response-plus-refusal
+is permitted. This accounting grants no runtime stop/failure authority.
+
+Projection contains bootstrap_contract.variants.fixed_failure's twelve fields
+plus message_kind/channel_sequence. Future reconstruction removes only those two;
+there is no recovery_bootstrap_contract.packet_payloads.fixed_failure entry and no
+reconstruction API here. No protocol state, counters or acceptance is implemented.
+
+The six-file scope is pinned by portable_recovery_fixed_failure_codec_slice.
+Prior106 codec units and shared helpers/imports remain unchanged. Six finite units
+bring actual collection to112; affected validation runs six plus preservation.
+Formal29 portable/native89 remain unchanged; eventual portable union141 conveys
+no acceptance credit. No native execution, closed S4.2c rerun or strategic gate
+change is included.

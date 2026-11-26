@@ -1,4 +1,4 @@
-"""One hundred six codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred twelve codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -5410,5 +5410,371 @@ def test_recovery_refused_receipt_record_encoding_and_depth():
         oversized = dict(_recovery_refused(), schema_version='x' * 100000)
         _reject(lambda: codec.encode_recovery_refused_receipt_record(oversized, *args), 'invalid_value')
         _reject(lambda: codec.decode_recovery_refused_receipt_record(_wire(oversized), *args), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent fixed-failure receipt expectations; no production-table imports.
+RFF_ENVELOPE_TYPES = (
+    ('clock_epoch_id', 'uuid'), ('graph_id', 'uuid'), ('issuer_instance_id', 'uuid'),
+    ('issuer_role', 'enum'), ('kind', 'enum'), ('observed_monotonic_ns', 'integer'),
+    ('observer_session_id', 'uuid'), ('operation_id', 'uuid?'), ('payload', 'object'),
+    ('phase', 'enum'), ('receipt_id', 'uuid'), ('runtime_lock_sha256', 'hash'),
+    ('schema_version', 'enum'), ('subject_owner_id', 'uuid'),
+)
+RFF_PAYLOAD_TYPES = (
+    ('bootstrap_manifest_sha256', 'hash'), ('case_id', 'uuid'), ('channel_sequence', 'integer'),
+    ('clock_epoch_id', 'uuid'), ('graph_id', 'uuid'), ('message_kind', 'enum'),
+    ('owner_id', 'uuid'), ('reason', 'enum'), ('role', 'enum'), ('role_instance_id', 'uuid'),
+    ('runtime_lock_sha256', 'hash'), ('session_deadline_ns', 'integer'),
+    ('session_id', 'uuid'), ('stage', 'enum'),
+)
+RFF_KNOWN_ROLES = ('driver', 'supervisor', 'broker', 'reviewer', 'fixture_source', 'connector',
+                  'operation_worker', 'release_guard', 'owned_service', 'graphical_display', 'fixture_probe')
+RFF_ALLOWED_ROLES = ('supervisor', 'broker')
+RFF_REASONS = ('bootstrap_refused', 'binding_refused', 'protocol_refused', 'deadline', 'resource_limit', 'unexpected_exit', 'authority_unavailable')
+RFF_STAGES = ('bootstrap', 'ready', 'reserved', 'tls', 'released', 'exchange', 'cleanup')
+RFF_PHASES = ('ready', 'socket_transferred', 'credential_transferred', 'result_released', 'closed')
+
+
+def _recovery_fixed_failure(operation=SUBJECT):
+    return dict(clock_epoch_id=OTHER, graph_id=CUST_GRAPH, issuer_instance_id=SUBJECT,
+        issuer_role='supervisor', kind='recovery_control_fixed_failure', observed_monotonic_ns=0,
+        observer_session_id=OTHER, operation_id=operation, phase='ready', receipt_id=CUST_RECEIPT,
+        runtime_lock_sha256='a' * 64, schema_version='s43-physical-receipt-v1', subject_owner_id=CUST_OWNER,
+        payload=dict(bootstrap_manifest_sha256='b' * 64, case_id=OTHER, channel_sequence=0,
+            clock_epoch_id=SUBJECT, graph_id=CUST_GRAPH, message_kind='fixed_failure',
+            owner_id=CUST_OWNER, reason='binding_refused', role='broker', role_instance_id=OTHER,
+            runtime_lock_sha256='f' * 64, session_deadline_ns=0, session_id=SUBJECT, stage='bootstrap'))
+
+
+RFF_CANONICAL_BYTES = (
+    b'{"clock_epoch_id":"22345678-1234-4234-9234-123456789abc","graph_id":"72345678-1234-4234-9234-12'
+    b'3456789abc","issuer_instance_id":"12345678-1234-4234-9234-123456789abc","issuer_role":"supervis'
+    b'or","kind":"recovery_control_fixed_failure","observed_monotonic_ns":0,"observer_session_id":"22'
+    b'345678-1234-4234-9234-123456789abc","operation_id":"12345678-1234-4234-9234-123456789abc","payl'
+    b'oad":{"bootstrap_manifest_sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+    b'bbbb","case_id":"22345678-1234-4234-9234-123456789abc","channel_sequence":0,"clock_epoch_id":"1'
+    b'2345678-1234-4234-9234-123456789abc","graph_id":"72345678-1234-4234-9234-123456789abc","message'
+    b'_kind":"fixed_failure","owner_id":"62345678-1234-4234-9234-123456789abc","reason":"binding_refu'
+    b'sed","role":"broker","role_instance_id":"22345678-1234-4234-9234-123456789abc","runtime_lock_sh'
+    b'a256":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","session_deadline_ns":'
+    b'0,"session_id":"12345678-1234-4234-9234-123456789abc","stage":"bootstrap"},"phase":"ready","rec'
+    b'eipt_id":"82345678-1234-4234-9234-123456789abc","runtime_lock_sha256":"aaaaaaaaaaaaaaaaaaaaaaaa'
+    b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","schema_version":"s43-physical-receipt-v1","subject_o'
+    b'wner_id":"62345678-1234-4234-9234-123456789abc"}'
+)
+
+
+def _recovery_fixed_failure_args(operation=SUBJECT):
+    return CUST_OWNER, operation, CUST_GRAPH, CUST_RECEIPT
+
+
+def _recovery_fixed_failure_accept(record):
+    args = tuple(record[k] for k in ('subject_owner_id', 'operation_id', 'graph_id', 'receipt_id'))
+    wire = _wire(record)
+    assert codec.encode_recovery_fixed_failure_receipt_record(record, *args) == wire
+    decoded = codec.decode_recovery_fixed_failure_receipt_record(wire, *args)
+    assert decoded == record and decoded is not record
+    assert type(decoded) is dict and type(decoded['payload']) is dict
+    assert decoded['payload'] is not record['payload']
+    return decoded
+
+
+def _recovery_fixed_failure_reject(record, code, operation=SUBJECT, decode_code=None):
+    args = _recovery_fixed_failure_args(operation)
+    _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(record, *args), code)
+    return _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(_wire(record), *args), decode_code or code)
+
+
+def test_recovery_fixed_failure_receipt_record_canonical_examples():
+    assert len(RFF_ENVELOPE_TYPES) == 14 and len(RFF_PAYLOAD_TYPES) == 14 and len(RFF_KNOWN_ROLES) == 11
+    assert codec.encode_recovery_fixed_failure_receipt_record(_recovery_fixed_failure(), *_recovery_fixed_failure_args()) == RFF_CANONICAL_BYTES
+    assert codec.decode_recovery_fixed_failure_receipt_record(RFF_CANONICAL_BYTES, *_recovery_fixed_failure_args()) == _recovery_fixed_failure()
+    for operation in (None, SUBJECT):
+        for phase in RFF_PHASES:
+            for issuer in RFF_ALLOWED_ROLES:
+                record = dict(_recovery_fixed_failure(operation), phase=phase, issuer_role=issuer)
+                assert set(record) == {k for k, _ in RFF_ENVELOPE_TYPES}
+                assert set(record['payload']) == {k for k, _ in RFF_PAYLOAD_TYPES}
+                first, second = _recovery_fixed_failure_accept(record), _recovery_fixed_failure_accept(record)
+                first['payload'].clear()
+                first['receipt_id'] = 'changed'
+                assert second == record
+                reversed_record = dict(reversed(tuple(record.items())))
+                reversed_record['payload'] = dict(reversed(tuple(record['payload'].items())))
+                assert codec.encode_recovery_fixed_failure_receipt_record(reversed_record, *_recovery_fixed_failure_args(operation)) == _wire(record)
+    # Every reason is a parsed failure claim, not proof of actual cause or recovery.
+    assert len(RFF_REASONS) == len(RFF_STAGES) == 7
+    for reason in RFF_REASONS:
+        record = _recovery_fixed_failure()
+        record['payload']['reason'] = reason
+        _recovery_fixed_failure_accept(record)
+    for stage in RFF_STAGES:
+        for phase in RFF_PHASES:
+            record = dict(_recovery_fixed_failure(), phase=phase)
+            record['payload']['stage'] = stage
+            _recovery_fixed_failure_accept(record)
+    for role in RFF_KNOWN_ROLES:
+        for issuer in RFF_ALLOWED_ROLES:
+            record = dict(_recovery_fixed_failure(), issuer_role=issuer)
+            record['payload']['role'] = role
+            _recovery_fixed_failure_accept(record)
+    # Equal/distinct context values are claims, not live immutable-manifest proof.
+    for session in (SUBJECT, OTHER):
+        record = _recovery_fixed_failure()
+        record['payload']['session_id'] = session
+        _recovery_fixed_failure_accept(record)
+    record = _recovery_fixed_failure()
+    for nested, fields in ((False, RFF_ENVELOPE_TYPES), (True, RFF_PAYLOAD_TYPES)):
+        for key, typ in fields:
+            if typ.startswith('uuid'):
+                (record['payload'] if nested else record)[key] = SUBJECT
+            elif typ == 'hash':
+                (record['payload'] if nested else record)[key] = 'a' * 64
+    _recovery_fixed_failure_accept(record)
+    for observed, deadline in ((0, 0), (0, 1), (1, 0), (0, 9223372036854775807),
+                              (9223372036854775807, 0), (9223372036854775807, 9223372036854775807)):
+        record = dict(_recovery_fixed_failure(), observed_monotonic_ns=observed)
+        record['payload']['session_deadline_ns'] = deadline
+        _recovery_fixed_failure_accept(record)
+    record = dict(_recovery_fixed_failure(), phase='credential_transferred', observed_monotonic_ns=9223372036854775807)
+    record['payload'].update(channel_sequence=18446744073709551615, session_deadline_ns=9223372036854775807)
+    record['payload'].update(reason='authority_unavailable', role='graphical_display', stage='bootstrap')
+    assert len(_wire(record)) == 1372
+    _recovery_fixed_failure_accept(record)
+
+
+def test_recovery_fixed_failure_receipt_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class IntHook(int):
+        def __lt__(self, other):
+            raise AssertionError('hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1]):
+        _recovery_fixed_failure_reject(value, 'invalid_shape')
+    _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(DictHook(_recovery_fixed_failure()), *_recovery_fixed_failure_args()), 'invalid_shape')
+    for nested, fields in ((False, RFF_ENVELOPE_TYPES), (True, RFF_PAYLOAD_TYPES)):
+        record = _recovery_fixed_failure()
+        target = record['payload'] if nested else record
+        target['RAW_SENTINEL'] = 'extra'
+        _recovery_fixed_failure_reject(record, 'invalid_shape')
+        for key, typ in fields:
+            for mutation in ('missing', 'unknown'):
+                record = _recovery_fixed_failure()
+                target = record['payload'] if nested else record
+                value = target.pop(key)
+                if mutation == 'unknown':
+                    target['RAW_SENTINEL'] = value
+                _recovery_fixed_failure_reject(record, 'invalid_shape')
+            bad_values = (None, True, False, 1.0, [], {}, 'RAW_SENTINEL')
+            if typ != 'integer':
+                bad_values += (0, 1)
+            for bad in bad_values:
+                if bad is None and typ.endswith('?'):
+                    continue
+                record = _recovery_fixed_failure()
+                target = record['payload'] if nested else record
+                target[key] = bad
+                _recovery_fixed_failure_reject(record, 'invalid_shape' if typ == 'object' else 'invalid_value',
+                                   decode_code='invalid_value' if typ == 'object' and type(bad) is float else None)
+            record = _recovery_fixed_failure()
+            target = record['payload'] if nested else record
+            target[key] = (DictHook() if typ == 'object' else IntHook(1) if typ == 'integer'
+                           else StringHook('RAW_SENTINEL'))
+            _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(record, *_recovery_fixed_failure_args()),
+                    'invalid_shape' if typ == 'object' else 'invalid_value')
+        for bad_key in (StringHook('x'), 'x' * 100000, 1):
+            record = _recovery_fixed_failure()
+            target = record['payload'] if nested else record
+            target[bad_key] = target.pop(fields[0][0])
+            _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(record, *_recovery_fixed_failure_args()), 'invalid_shape')
+
+    record = _recovery_fixed_failure()
+    for wrapper in ('payload', 'packet'):
+        _recovery_fixed_failure_reject(dict(record, payload={wrapper: record['payload']}), 'invalid_shape')
+    for nested in (False, True):
+        record = _recovery_fixed_failure()
+        target = record['payload'] if nested else record
+        target.update({str(n): None for n in range(10000)})
+        _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(record, *_recovery_fixed_failure_args()), 'invalid_shape')
+
+
+def test_recovery_fixed_failure_receipt_record_issuer_and_literals():
+    for role in RFF_KNOWN_ROLES:
+        record = dict(_recovery_fixed_failure(), issuer_role=role)
+        if role in RFF_ALLOWED_ROLES:
+            _recovery_fixed_failure_accept(record)
+        else:
+            _recovery_fixed_failure_reject(record, 'invalid_result')
+    for key, bad in (('issuer_role', 'lifecycle_monitor'), ('phase', 'pre_write'),
+                     ('schema_version', 's43-observation-v1')):
+        _recovery_fixed_failure_reject(dict(_recovery_fixed_failure(), **{key: bad}), 'invalid_value')
+    for kind in ('process_identity', 'descriptor_identity', 'socket_custody', 'source_custody',
+                 'monitor_termination', 'graph_closure', 'recovery_lifecycle', 'recovery_closure_binding',
+                 'recovery_control_prepared', 'recovery_control_activate', 'recovery_control_response',
+                 'recovery_control_challenge', 'recovery_control_refused', 'RAW_SENTINEL', ''):
+        _recovery_fixed_failure_reject(dict(_recovery_fixed_failure(), kind=kind), 'invalid_value')
+    for bad in ('recovery_prepared', 'recovery_activate', 'recovery_response', 'recovery_challenge',
+                'recovery_refused', 'recovery_fixed_failure', 'FIXED_FAILURE', 'fixed_failure\n', '1', 1, '', None):
+        record = _recovery_fixed_failure()
+        record['payload']['message_kind'] = bad
+        _recovery_fixed_failure_reject(record, 'invalid_value')
+    for key, value in (('database_open', False), ('binding_receipt_ids', [SUBJECT]),
+                       ('owner_closure_receipt_id', OTHER), ('continued_receipt_id', SUBJECT),
+                       ('cut_transaction_id', OTHER), ('requested_graph_ids', [CUST_GRAPH]),
+                       ('activation_id', SUBJECT), ('challenge_id', OTHER), ('engagement_id', SUBJECT),
+                       ('monitor_session_id', OTHER), ('old_owner_graph_id', CUST_GRAPH),
+                       ('old_owner_id', CUST_OWNER), ('original_deadline_ns', 0),
+                       ('recovery_instance_id', SUBJECT), ('recovery_owner_id', CUST_OWNER),
+                       ('recovery_session_id', OTHER)):
+        record = _recovery_fixed_failure()
+        record['payload'][key] = value
+        _recovery_fixed_failure_reject(record, 'invalid_shape')
+    for key in ('reason', 'stage', 'role'):
+        record = dict(_recovery_fixed_failure(), issuer_role='driver')
+        record['payload'][key] = 'unknown'
+        _recovery_fixed_failure_reject(record, 'invalid_value')
+
+    for bad in ('closure_unproved', 'unexpected_transition', 'RAW_SENTINEL', '',
+                'binding_refused\n', 'Binding_refused', 'binding_refusedx', 'x' * 100000):
+        record = _recovery_fixed_failure()
+        record['payload']['reason'] = bad
+        _recovery_fixed_failure_reject(record, 'invalid_value',
+                                decode_code='invalid_encoding' if len(bad) > 2048 else None)
+    for bad in ('pre_write', 'closed', 'RAW_SENTINEL', '', 'bootstrap\n',
+                'Bootstrap', 'bootstrapx', 'x' * 100000):
+        record = _recovery_fixed_failure()
+        record['payload']['stage'] = bad
+        _recovery_fixed_failure_reject(record, 'invalid_value',
+                                      decode_code='invalid_encoding' if len(bad) > 2048 else None)
+    class ReasonHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __eq__(self, other):
+            raise AssertionError('hook reached')
+    for key, value in (('reason', 'deadline'), ('stage', 'bootstrap'), ('role', 'broker')):
+        record = _recovery_fixed_failure()
+        record['payload'][key] = ReasonHook(value)
+        _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(record, *_recovery_fixed_failure_args()), 'invalid_value')
+
+
+def test_recovery_fixed_failure_receipt_record_scalar_bounds():
+    for value in (0, 9223372036854775807):
+        _recovery_fixed_failure_accept(dict(_recovery_fixed_failure(), observed_monotonic_ns=value))
+    for value in (-1, 9223372036854775808, True, 0.0):
+        _recovery_fixed_failure_reject(dict(_recovery_fixed_failure(), observed_monotonic_ns=value), 'invalid_value')
+    for nested, fields in ((False, RFF_ENVELOPE_TYPES), (True, RFF_PAYLOAD_TYPES)):
+        for key, typ in fields:
+            if typ not in ('uuid', 'uuid?', 'hash'):
+                continue
+            valid = 'f' * 64 if typ == 'hash' else SUBJECT
+            bad_values = (valid.upper(), valid + '\n', valid + 'x', 'x' + valid, valid[:-1], '')
+            if typ != 'hash':
+                bad_values += (SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'))
+            for bad in bad_values:
+                record = _recovery_fixed_failure()
+                target = record['payload'] if nested else record
+                target[key] = bad
+                _recovery_fixed_failure_reject(record, 'invalid_value')
+    for value in ('0' * 64, 'f' * 64):
+        _recovery_fixed_failure_accept(dict(_recovery_fixed_failure(), runtime_lock_sha256=value))
+    for key, minimum, maximum in (
+            ('channel_sequence', 0, 18446744073709551615), ('session_deadline_ns', 0, 9223372036854775807)):
+        for value in (minimum, 1, 2, maximum):
+            record = _recovery_fixed_failure()
+            record['payload'][key] = value
+            _recovery_fixed_failure_accept(record)
+        for value in (minimum - 1, maximum + 1, True, False, 1.0):
+            record = _recovery_fixed_failure()
+            record['payload'][key] = value
+            _recovery_fixed_failure_reject(record, 'invalid_value')
+
+    for key in ('runtime_lock_sha256', 'bootstrap_manifest_sha256'):
+        for value in ('0' * 64, 'f' * 64):
+            record = _recovery_fixed_failure()
+            record['payload'][key] = value
+            _recovery_fixed_failure_accept(record)
+
+
+def test_recovery_fixed_failure_receipt_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    for operation in (None, SUBJECT):
+        record = _recovery_fixed_failure(operation)
+        args = _recovery_fixed_failure_args(operation)
+        for index in range(4):
+            changed = list(args)
+            changed[index] = OTHER
+            _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(record, *changed), 'wrong_subject')
+            _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(_wire(record), *changed), 'wrong_subject')
+            for bad in (True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+                changed = list(args)
+                changed[index] = bad
+                code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+                _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(record, *changed), code)
+                _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(_wire(record), *changed), code)
+                _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(None, *changed), code)
+                _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(b'', *changed), code)
+            changed = list(args)
+            changed[index] = None
+            if index != 1 or operation is not None:
+                code = 'wrong_subject' if index == 1 else 'invalid_shape'
+                _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(record, *changed), code)
+                _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(_wire(record), *changed), code)
+        wrong = (OTHER, operation, CUST_GRAPH, CUST_RECEIPT)
+        _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(_wire(record) + b'\n', *wrong), 'invalid_encoding')
+        record['issuer_role'] = 'driver'
+        _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(record, *wrong), 'invalid_result')
+        _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(_wire(record), *wrong), 'invalid_result')
+
+
+def test_recovery_fixed_failure_receipt_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record = _recovery_fixed_failure()
+    wire = _wire(record)
+    args = _recovery_fixed_failure_args()
+    reverse_payload = json.dumps(dict(reversed(tuple(record['payload'].items()))), separators=(',', ':')).encode('ascii')
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire.replace(_wire(record['payload']), reverse_payload), wire + b'\n', b' ' + wire,
+                  wire.replace(b':', b': ', 1), wire.replace(b'"s43-physical-receipt-v1"', b'"\\u007343-physical-receipt-v1"'),
+                  wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":-0'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 2049, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+        error = _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"receipt_id":null,' + wire[1:], b'{"receip\\u0074_id":null,' + wire[1:],
+                  wire.replace(b'"payload":{', b'"payload":{"bootstrap_manifest_sha256":null,')):
+        _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(frame, *args), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":' + scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(frame, *args), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 2049, b'{"a":{"b":{"c":{}}}}', b'[[[[]]]]'):
+            _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(b' ' * 2048, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(b'{"a":{"b":{}}}', *args), 'invalid_shape')
+        assert len(calls) == 2
+        _recovery_fixed_failure_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _recovery_fixed_failure_reject(dict(_recovery_fixed_failure(), schema_version=text), 'invalid_value')
+        oversized = dict(_recovery_fixed_failure(), schema_version='x' * 100000)
+        _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(oversized, *args), 'invalid_value')
+        _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(_wire(oversized), *args), 'invalid_encoding')
     finally:
         json.loads = original_loads
