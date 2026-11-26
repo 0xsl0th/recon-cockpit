@@ -679,3 +679,22 @@ PUBLIC_BINDING_SCALARS = (
     ('schema_version', 's43-public-binding-v1'), ('subject_id', 'uuid4'),
 )
 PUBLIC_BINDING_KINDS = ('runtime', 'graph', 'role', 'input', 'source_manifest')
+
+
+# Intrinsic lookup claims only; live lookup and persisted crosslinks are external.
+LOOKUP_OBSERVED_MAX_BYTES = 3072
+LOOKUP_OBSERVED_MAX_DEPTH = 1
+LOOKUP_OBSERVED_FIELDS = (
+    'clock_epoch_id', 'closure_event_id', 'completion_event_id', 'issuer_instance_id',
+    'lease_id', 'observed_monotonic_ns', 'operation_id', 'owner_id', 'record_id',
+    'result_operation_id', 'runtime_lock_sha256', 'schema_version', 'session_id', 'status',
+)
+LOOKUP_OBSERVED_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('closure_event_id', 'uuid4?'),
+    ('completion_event_id', 'uuid4?'), ('issuer_instance_id', 'uuid4'), ('lease_id', 'uuid4?'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('operation_id', 'uuid4'), ('owner_id', 'uuid4'),
+    ('record_id', 'uuid4'), ('result_operation_id', 'uuid4?'), ('runtime_lock_sha256', 'sha256'),
+    ('schema_version', 's43-lookup-observed-v1'), ('session_id', 'uuid4'), ('status', 'lookup_status'),
+)
+LOOKUP_OBSERVED_STATUSES = ('closed', 'not_closed', 'absent', 'unavailable')
+LOOKUP_OBSERVED_REFERENCES = ('lease_id', 'closure_event_id', 'completion_event_id', 'result_operation_id')

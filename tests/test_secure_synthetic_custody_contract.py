@@ -1,4 +1,4 @@
-"""One hundred twenty-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred thirty codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -6354,5 +6354,291 @@ def test_public_binding_record_encoding_and_depth():
         oversized = dict(record, schema_version='x' * 100000)
         _reject(lambda: codec.encode_public_binding_record(oversized, *args), 'invalid_value')
         _reject(lambda: codec.decode_public_binding_record(_wire(oversized), *args), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent lookup-observation grammar and fixtures; no production-table oracle.
+LOOKO_TYPES = (
+    ('clock_epoch_id', 'uuid'), ('closure_event_id', 'uuid?'), ('completion_event_id', 'uuid?'),
+    ('issuer_instance_id', 'uuid'), ('lease_id', 'uuid?'), ('observed_monotonic_ns', 'integer'),
+    ('operation_id', 'uuid'), ('owner_id', 'uuid'), ('record_id', 'uuid'),
+    ('result_operation_id', 'uuid?'), ('runtime_lock_sha256', 'hash'),
+    ('schema_version', 'literal'), ('session_id', 'uuid'), ('status', 'enum'),
+)
+LOOKO_STATUSES = ('closed', 'not_closed', 'absent', 'unavailable')
+LOOKO_REFERENCES = ('lease_id', 'closure_event_id', 'completion_event_id', 'result_operation_id')
+LOOKO_OWNER = '62345678-1234-4234-9234-123456789abc'
+LOOKO_RECORD = '82345678-1234-4234-9234-123456789abc'
+LOOKO_CASES = (('closed', False), ('closed', True), ('not_closed', False),
+               ('absent', False), ('unavailable', False))
+LOOKO_GOLDEN_CASES = (
+    ('closed', False, (
+        b'{"clock_epoch_id":"22345678-1234-4234-9234-123456789abc","closure_event_id":"22345678-1234-4234'
+        b'-9234-123456789abc","completion_event_id":null,"issuer_instance_id":"12345678-1234-4234-9234-12'
+        b'3456789abc","lease_id":"22345678-1234-4234-9234-123456789abc","observed_monotonic_ns":0,"operat'
+        b'ion_id":"12345678-1234-4234-9234-123456789abc","owner_id":"62345678-1234-4234-9234-123456789abc'
+        b'","record_id":"82345678-1234-4234-9234-123456789abc","result_operation_id":null,"runtime_lock_s'
+        b'ha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","schema_version":"s43'
+        b'-lookup-observed-v1","session_id":"22345678-1234-4234-9234-123456789abc","status":"closed"}'
+    )),
+    ('closed', True, (
+        b'{"clock_epoch_id":"22345678-1234-4234-9234-123456789abc","closure_event_id":"22345678-1234-4234'
+        b'-9234-123456789abc","completion_event_id":"22345678-1234-4234-9234-123456789abc","issuer_instan'
+        b'ce_id":"12345678-1234-4234-9234-123456789abc","lease_id":"22345678-1234-4234-9234-123456789abc"'
+        b',"observed_monotonic_ns":0,"operation_id":"12345678-1234-4234-9234-123456789abc","owner_id":"62'
+        b'345678-1234-4234-9234-123456789abc","record_id":"82345678-1234-4234-9234-123456789abc","result_'
+        b'operation_id":"12345678-1234-4234-9234-123456789abc","runtime_lock_sha256":"aaaaaaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","schema_version":"s43-lookup-observed-v1","sessi'
+        b'on_id":"22345678-1234-4234-9234-123456789abc","status":"closed"}'
+    )),
+    ('not_closed', False, (
+        b'{"clock_epoch_id":"22345678-1234-4234-9234-123456789abc","closure_event_id":null,"completion_ev'
+        b'ent_id":null,"issuer_instance_id":"12345678-1234-4234-9234-123456789abc","lease_id":null,"obser'
+        b'ved_monotonic_ns":0,"operation_id":"12345678-1234-4234-9234-123456789abc","owner_id":"62345678-'
+        b'1234-4234-9234-123456789abc","record_id":"82345678-1234-4234-9234-123456789abc","result_operati'
+        b'on_id":null,"runtime_lock_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        b'aaaa","schema_version":"s43-lookup-observed-v1","session_id":"22345678-1234-4234-9234-123456789'
+        b'abc","status":"not_closed"}'
+    )),
+    ('absent', False, (
+        b'{"clock_epoch_id":"22345678-1234-4234-9234-123456789abc","closure_event_id":null,"completion_ev'
+        b'ent_id":null,"issuer_instance_id":"12345678-1234-4234-9234-123456789abc","lease_id":null,"obser'
+        b'ved_monotonic_ns":0,"operation_id":"12345678-1234-4234-9234-123456789abc","owner_id":"62345678-'
+        b'1234-4234-9234-123456789abc","record_id":"82345678-1234-4234-9234-123456789abc","result_operati'
+        b'on_id":null,"runtime_lock_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        b'aaaa","schema_version":"s43-lookup-observed-v1","session_id":"22345678-1234-4234-9234-123456789'
+        b'abc","status":"absent"}'
+    )),
+    ('unavailable', False, (
+        b'{"clock_epoch_id":"22345678-1234-4234-9234-123456789abc","closure_event_id":null,"completion_ev'
+        b'ent_id":null,"issuer_instance_id":"12345678-1234-4234-9234-123456789abc","lease_id":null,"obser'
+        b'ved_monotonic_ns":0,"operation_id":"12345678-1234-4234-9234-123456789abc","owner_id":"62345678-'
+        b'1234-4234-9234-123456789abc","record_id":"82345678-1234-4234-9234-123456789abc","result_operati'
+        b'on_id":null,"runtime_lock_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        b'aaaa","schema_version":"s43-lookup-observed-v1","session_id":"22345678-1234-4234-9234-123456789'
+        b'abc","status":"unavailable"}'
+    )),
+)
+LOOKO_MAXIMUM_SIZES = (('closed', False, 679), ('closed', True, 747), ('not_closed', False, 615), ('absent', False, 611), ('unavailable', False, 616))
+
+
+def _lookup_observed(status='closed', completed=True):
+    closed = status == 'closed'
+    return dict(clock_epoch_id=OTHER, closure_event_id=OTHER if closed else None,
+        completion_event_id=OTHER if closed and completed else None, issuer_instance_id=SUBJECT,
+        lease_id=OTHER if closed else None, observed_monotonic_ns=0, operation_id=SUBJECT,
+        owner_id=LOOKO_OWNER, record_id=LOOKO_RECORD,
+        result_operation_id=SUBJECT if closed and completed else None,
+        runtime_lock_sha256='a' * 64, schema_version='s43-lookup-observed-v1',
+        session_id=OTHER, status=status)
+
+
+def _lookup_observed_args():
+    return LOOKO_OWNER, SUBJECT, LOOKO_RECORD
+
+
+def _lookup_observed_accept(record):
+    args = tuple(record[k] for k in ('owner_id', 'operation_id', 'record_id'))
+    before = _wire(record)
+    assert codec.encode_lookup_observed_record(record, *args) == before
+    assert _wire(record) == before
+    result = codec.decode_lookup_observed_record(before, *args)
+    assert type(result) is dict and result == record and result is not record
+    assert all(type(v) in (str, int, type(None)) for v in result.values())
+    return result
+
+
+def _lookup_observed_reject(record, code, decode_code=None):
+    _reject(lambda: codec.encode_lookup_observed_record(record, *_lookup_observed_args()), code)
+    return _reject(lambda: codec.decode_lookup_observed_record(_wire(record), *_lookup_observed_args()), decode_code or code)
+
+
+def test_lookup_observed_record_canonical_examples():
+    assert len(LOOKO_TYPES) == 14 and len(LOOKO_STATUSES) == 4 and len(LOOKO_CASES) == 5
+    assert tuple((s, c) for s, c, _ in LOOKO_GOLDEN_CASES) == LOOKO_CASES
+    for status, completed, golden in LOOKO_GOLDEN_CASES:
+        record = _lookup_observed(status, completed)
+        assert set(record) == {k for k, _ in LOOKO_TYPES}
+        assert codec.encode_lookup_observed_record(record, *_lookup_observed_args()) == golden
+        assert codec.decode_lookup_observed_record(golden, *_lookup_observed_args()) == record
+        first, second = _lookup_observed_accept(record), _lookup_observed_accept(record)
+        first['status'] = 'changed'
+        assert second == record
+        assert codec.encode_lookup_observed_record(dict(reversed(tuple(record.items()))), *_lookup_observed_args()) == golden
+    for status, completed, size in LOOKO_MAXIMUM_SIZES:
+        record = dict(_lookup_observed(status, completed), observed_monotonic_ns=9223372036854775807)
+        assert len(_wire(record)) == size and size <= 2048 < 3072
+        _lookup_observed_accept(record)
+    assert len(LOOKO_MAXIMUM_SIZES) == 5
+    assert max(LOOKO_MAXIMUM_SIZES, key=lambda row: row[2])[:2] == ('closed', True)
+    equal = _lookup_observed()
+    for key, typ in LOOKO_TYPES:
+        if typ.startswith('uuid'):
+            equal[key] = SUBJECT
+    _lookup_observed_accept(equal)
+
+
+def test_lookup_observed_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __eq__(self, other):
+            raise AssertionError('hook reached')
+        __hash__ = str.__hash__
+    class IntHook(int):
+        def __le__(self, other):
+            raise AssertionError('hook reached')
+        def __ge__(self, other):
+            raise AssertionError('hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1]):
+        _lookup_observed_reject(value, 'invalid_shape')
+    for value in ([{}], {'payload': _lookup_observed()}, {'packet': _lookup_observed()}):
+        _lookup_observed_reject(value, 'invalid_shape', 'invalid_encoding')
+    _reject(lambda: codec.encode_lookup_observed_record(DictHook(_lookup_observed()), *_lookup_observed_args()), 'invalid_shape')
+    _reject(lambda: codec.encode_lookup_observed_record(1.0, *_lookup_observed_args()), 'invalid_shape')
+    _reject(lambda: codec.decode_lookup_observed_record(b'1.0', *_lookup_observed_args()), 'invalid_value')
+    for key, typ in LOOKO_TYPES:
+        for mutation in ('missing', 'unknown', 'extra'):
+            record = _lookup_observed()
+            if mutation != 'extra':
+                record.pop(key)
+            if mutation != 'missing':
+                record['RAW_SENTINEL'] = None
+            _lookup_observed_reject(record, 'invalid_shape')
+        for bad in (None, True, False, 1.0, [], {}, 'RAW_SENTINEL', 0):
+            if typ == 'integer' and type(bad) is int:
+                continue
+            code = 'invalid_result' if bad is None and typ.endswith('?') else 'invalid_value'
+            _lookup_observed_reject(dict(_lookup_observed(), **{key: bad}), code,
+                                    'invalid_encoding' if type(bad) in (dict, list) else code)
+        hook = IntHook(0) if typ == 'integer' else StringHook(SUBJECT)
+        _reject(lambda: codec.encode_lookup_observed_record(dict(_lookup_observed(), **{key: hook}), *_lookup_observed_args()), 'invalid_value')
+    for key in ('x' * 33, 'x' * 100000, 1, StringHook('status')):
+        record = _lookup_observed()
+        record.pop('status')
+        record[key] = 'closed'
+        _reject(lambda: codec.encode_lookup_observed_record(record, *_lookup_observed_args()), 'invalid_shape')
+    _reject(lambda: codec.encode_lookup_observed_record(dict.fromkeys(range(10000)), *_lookup_observed_args()), 'invalid_shape')
+
+
+def test_lookup_observed_record_status_and_literals():
+    for status in LOOKO_STATUSES:
+        for mask in range(16):
+            record = _lookup_observed(status)
+            for bit, key in enumerate(LOOKO_REFERENCES):
+                record[key] = SUBJECT if mask & (1 << bit) else None
+            accepted = mask in (3, 15) if status == 'closed' else mask == 0
+            if accepted:
+                _lookup_observed_accept(record)
+            else:
+                _lookup_observed_reject(record, 'invalid_result')
+    _lookup_observed_reject(dict(_lookup_observed(), result_operation_id=OTHER), 'invalid_result')
+    # Every scalar is checked before any status/link relationship.
+    for key, typ in LOOKO_TYPES:
+        bad = dict(_lookup_observed('absent'), lease_id=SUBJECT)
+        bad[key] = 'RAW_SENTINEL'
+        _lookup_observed_reject(bad, 'invalid_value')
+    for key, literal in (('status', 'closed'), ('schema_version', 's43-lookup-observed-v1')):
+        for bad in ('', literal.upper(), literal + '\n', literal + 'x', 'x' * 65, 'x' * 100000):
+            _reject(lambda: codec.encode_lookup_observed_record(dict(_lookup_observed(), **{key: bad}), *_lookup_observed_args()), 'invalid_value')
+            if len(bad) < 100000:
+                _lookup_observed_reject(dict(_lookup_observed(), **{key: bad}), 'invalid_value')
+
+
+def test_lookup_observed_record_scalar_bounds():
+    for key, typ in LOOKO_TYPES:
+        if not typ.startswith('uuid'):
+            continue
+        for bad in ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT.replace('-', ''), SUBJECT.replace('-4234-', '-1234-'),
+                    SUBJECT.replace('-9234-', '-7234-'), '0' * 36, 'x' * 65):
+            _lookup_observed_reject(dict(_lookup_observed(), **{key: bad}), 'invalid_value')
+    for bad in ('', 'a' * 63, 'a' * 65, 'A' * 64, 'g' * 64, 'a' * 63 + '\n', 'é' * 64):
+        _lookup_observed_reject(dict(_lookup_observed(), runtime_lock_sha256=bad), 'invalid_value')
+    for value in ('0' * 64, 'f' * 64):
+        _lookup_observed_accept(dict(_lookup_observed(), runtime_lock_sha256=value))
+    for value in (0, 9223372036854775807):
+        _lookup_observed_accept(dict(_lookup_observed(), observed_monotonic_ns=value))
+    for value in (-1, 9223372036854775808, True, False, 0.0, '0', None):
+        _lookup_observed_reject(dict(_lookup_observed(), observed_monotonic_ns=value), 'invalid_value')
+
+
+def test_lookup_observed_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    record, args = _lookup_observed(), _lookup_observed_args()
+    for index in range(3):
+        changed = list(args)
+        changed[index] = OTHER
+        _reject(lambda: codec.encode_lookup_observed_record(record, *changed), 'wrong_subject')
+        _reject(lambda: codec.decode_lookup_observed_record(_wire(record), *changed), 'wrong_subject')
+        for bad in (None, True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+            changed = list(args)
+            changed[index] = bad
+            code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+            for value in (record, None):
+                _reject(lambda: codec.encode_lookup_observed_record(value, *changed), code)
+            for value in (_wire(record), b''):
+                _reject(lambda: codec.decode_lookup_observed_record(value, *changed), code)
+    for first, second in ((0, 1), (0, 2), (1, 2)):
+        changed = list(args)
+        changed[first], changed[second] = 'malformed', None
+        _reject(lambda: codec.encode_lookup_observed_record(None, *changed), 'invalid_value')
+        _reject(lambda: codec.decode_lookup_observed_record(b'', *changed), 'invalid_value')
+        changed[first], changed[second] = None, 'malformed'
+        _reject(lambda: codec.encode_lookup_observed_record(None, *changed), 'invalid_shape')
+        _reject(lambda: codec.decode_lookup_observed_record(b'', *changed), 'invalid_shape')
+    wrong = (OTHER, OTHER, OTHER)
+    _reject(lambda: codec.decode_lookup_observed_record(_wire(record) + b'\n', *wrong), 'invalid_encoding')
+    for bad, code in ((dict(record, status='unknown'), 'invalid_value'),
+                      (dict(record, result_operation_id=OTHER), 'invalid_result'),
+                      (dict(record, lease_id=None), 'invalid_result')):
+        _reject(lambda: codec.encode_lookup_observed_record(bad, *wrong), code)
+        _reject(lambda: codec.decode_lookup_observed_record(_wire(bad), *wrong), code)
+
+
+def test_lookup_observed_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record, args = _lookup_observed(), _lookup_observed_args()
+    wire = _wire(record)
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire + b'\n', b' ' + wire, wire.replace(b':', b': ', 1),
+                  wire.replace(b'"closed"', b'"\\u0063losed"'),
+                  wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":-0'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 3073, b'{"a":{}}', b'[[]]'):
+        error = _reject(lambda: codec.decode_lookup_observed_record(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"record_id":null,' + wire[1:], b'{"recor\\u0064_id":null,' + wire[1:]):
+        _reject(lambda: codec.decode_lookup_observed_record(frame, *args), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        _reject(lambda: codec.decode_lookup_observed_record(wire.replace(b'"closed"', scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_lookup_observed_record(frame, *args), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 3073, b'{"a":{}}', b'[[]]', _wire({'payload': record})):
+            _reject(lambda: codec.decode_lookup_observed_record(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_lookup_observed_record(b' ' * 3072, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_lookup_observed_record(b'{}', *args), 'invalid_shape')
+        assert len(calls) == 2
+        _lookup_observed_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _lookup_observed_reject(dict(record, schema_version=text), 'invalid_value')
+        oversized = dict(record, schema_version='x' * 100000)
+        _reject(lambda: codec.encode_lookup_observed_record(oversized, *args), 'invalid_value')
+        _reject(lambda: codec.decode_lookup_observed_record(_wire(oversized), *args), 'invalid_encoding')
     finally:
         json.loads = original_loads
