@@ -1747,3 +1747,55 @@ bring actual collection to82; affected local checks run those six and preservati
 Formal29 portable/native89 remain unchanged; eventual portable union111 gives no
 acceptance credit. No native execution, closed S4.2c rerun or strategic gate change
 is included.
+
+
+## Portable activation control-receipt codec slice
+
+The independently reviewed slice follows verified PR121 at
+`adabe58f4d5ccabc748de03b257ae2f6b13b4c9e`. Separate
+`decode_recovery_activate_receipt_record` and
+`encode_recovery_activate_receipt_record` APIs validate intrinsic
+`recovery_control_activate` claims. The closed14-field envelope and flattened
+closed17-field payload use canonical ASCII JSON, complete-record2048 bytes and
+depth3. Explicit expected owner/operation/graph/receipt IDs bind each record;
+returned envelope and payload are fresh plain dictionaries.
+
+The claimed issuer must be supervisor or broker after full role validation.
+message_kind is exactly recovery_activate; channel sequence uses unsigned64
+range0..18446744073709551615. Observation time and original deadline use
+0..9223372036854775807. Both runtime-lock digests require full lowercase SHA-256
+syntax only. All five phases and nullable physical operation remain representable,
+without inferred time ordering, context/reference ID equality, digest equality,
+freshness or phase coupling. Reference syntax establishes no resolution.
+
+These checks authenticate no producer/peer, register/resolve no receipt and prove
+no actual activation receive, continuation, owner closure, commit witness or
+persisted history, live custody or recovery eligibility. They authorize no
+operation. Actual activation direction remains supervisor_recovery with receiving
+recovery broker, exact inherited endpoint/peer/context and null operation in the
+separate channel envelope. A supervisor claim or non-null physical operation
+passing syntax earns no transport credit. Activation must be spent before
+signalling; sending requires old owner closure and actual CLD_CONTINUED/SIGCONT.
+There is no resend or unknown-delivery retry. Recovery validates the exact message,
+original deadline and context before challenge; no SQL or grants yet.
+
+cut_transaction_id must resolve an actual after_commit_before_ack witness, with
+persisted transaction/history validation on reopen; unknown commit is not a
+witness. Bootstrap monitor session, original observations, continuous pidfd
+custody, immutable old/new subjects and installed-filter/FD/bootstrap proofs
+remain external. No store read/open, digest, wait, signal, protocol or reference
+resolution is implemented. Native wait sets and runtime restrictions remain.
+
+The flattened projection contains packet fields plus message_kind/channel_sequence;
+future reconstruction removes only these two. No reconstruction API is added.
+Only actual authenticated receives produce success projections. The one-activation
+allowance, zero rights, exact sequence, activation-before-challenge and
+bindings-before-response ordering, and six aggregate control slots remain external.
+No quota reset or stateful protocol is added.
+
+The six-file scope is pinned by `portable_recovery_activate_codec_slice`.
+Prior82 codec units and shared helpers/imports remain unchanged. Six finite units
+bring actual collection to88; local validation runs those six plus preservation.
+Formal29 portable/native89 remain unchanged; eventual portable union117 gives no
+acceptance credit. No native execution, closed S4.2c rerun or strategic gate change
+is included.

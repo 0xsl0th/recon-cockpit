@@ -437,3 +437,35 @@ RECOVERY_PREPARED_LITERALS = {
     'recovery_control_prepared': 'recovery_control_prepared', 'control_kind_prepared': 'recovery_prepared',
 }
 RECOVERY_PREPARED_ISSUER_ROLES = ('supervisor', 'broker')
+
+
+# Intrinsic activation projection only; receive/continuation/witness proof is external.
+RECOVERY_ACTIVATE_MAX_BYTES = 2048
+RECOVERY_ACTIVATE_MAX_DEPTH = 3
+RECOVERY_ACTIVATE_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+RECOVERY_ACTIVATE_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'recovery_control_activate'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+RECOVERY_ACTIVATE_PAYLOAD = (
+    ('activation_id', 'uuid4'), ('case_id', 'uuid4'), ('channel_sequence', 'u64'),
+    ('clock_epoch_id', 'uuid4'), ('continued_receipt_id', 'uuid4'), ('cut_transaction_id', 'uuid4'),
+    ('engagement_id', 'uuid4'), ('message_kind', 'control_kind_activate'),
+    ('monitor_session_id', 'uuid4'), ('old_owner_graph_id', 'uuid4'), ('old_owner_id', 'uuid4'),
+    ('original_deadline_ns', 'monotonic_ns'), ('owner_closure_receipt_id', 'uuid4'),
+    ('recovery_instance_id', 'uuid4'), ('recovery_owner_id', 'uuid4'),
+    ('recovery_session_id', 'uuid4'), ('runtime_lock_sha256', 'sha256'),
+)
+RECOVERY_ACTIVATE_INTEGER_BOUNDS = {'u64': (0, 18446744073709551615)}
+RECOVERY_ACTIVATE_LITERALS = {
+    'recovery_control_activate': 'recovery_control_activate', 'control_kind_activate': 'recovery_activate',
+}
+RECOVERY_ACTIVATE_ISSUER_ROLES = ('supervisor', 'broker')

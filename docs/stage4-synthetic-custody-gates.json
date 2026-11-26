@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "75138d935ad021081a4bafc2734308b06e09a1fa38336c6f9e5b10b5b25028b9",
+  "contract_sha256": "84389a44d4635b3cb9e37f0bb4d8c93528ec2fd129eb9a1155c7a5e865c280f8",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -11466,5 +11466,69 @@
     "actual_prepared_receive_proved": false,
     "unopened_database_proved": false,
     "bootstrap_barrier_proved": false
+  },
+  "portable_recovery_activate_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_recovery_activate_receipt_codec_implementation",
+    "scope_sha256": "674cb78e08c4a94b7d201e2441d15623774a7b6772f1726c1f7812edf99c8608",
+    "verified_base_merge": "adabe58f4d5ccabc748de03b257ae2f6b13b4c9e",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "receipt_variants": [
+      "recovery_control_activate"
+    ],
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_activate_receipt_record_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_activate_receipt_record_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_activate_receipt_record_issuer_and_literals",
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_activate_receipt_record_scalar_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_activate_receipt_record_expected_subject_binding",
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_activate_receipt_record_encoding_and_depth"
+    ],
+    "new_unit_node_count": 6,
+    "prior_codec_unit_nodes_preserved": 82,
+    "combined_unit_node_count": 88,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 117,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "registry_implemented": false,
+    "producer_authentication_implemented": false,
+    "physical_custody_proved": false,
+    "nullability_eligibility_proved": false,
+    "validation": "Collect exact88 unit IDs; run six new activation receipt units and affected preservation check; independent final review before publication.",
+    "physical_process_identity_proved": false,
+    "runtime_eligibility_proved": false,
+    "termination_or_reaping_proved": false,
+    "successful_source_or_connector_closure_proved": false,
+    "actual_graph_membership_proved": false,
+    "successful_graph_cleanup_proved": false,
+    "recovery_profile_eligibility_proved": false,
+    "digest_framing_implemented": false,
+    "continuous_live_custody_proved": false,
+    "historical_provenance_resolved": false,
+    "cleanup_registration_implemented": false,
+    "actual_wait_stop_continue_proved": false,
+    "installed_filter_proved": false,
+    "lifecycle_sequence_proved": false,
+    "packet_codec_implemented": false,
+    "actual_prepared_receive_proved": false,
+    "unopened_database_proved": false,
+    "bootstrap_barrier_proved": false,
+    "actual_activation_receive_proved": false,
+    "activation_spend_or_continuation_proved": false,
+    "commit_witness_or_persisted_history_proved": false
   }
 }
