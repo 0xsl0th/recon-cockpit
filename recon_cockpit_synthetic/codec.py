@@ -1765,3 +1765,92 @@ def encode_recovery_fixed_failure_receipt_record(record: dict, expected_subject_
             expected_subject_owner_id, expected_operation_id, expected_graph_id, expected_receipt_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _progress_scalar(value, kind):
+    if value is None and kind in contract.PROGRESS_NULLABLE_TYPES:
+        return
+    if kind in contract.PROGRESS_INTEGER_BOUNDS:
+        minimum, maximum = contract.PROGRESS_INTEGER_BOUNDS[kind]
+        if type(value) is not int or not minimum <= value <= maximum:
+            raise ResultCodecError('invalid_value')
+    elif kind in contract.PROGRESS_ENUMS:
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        if value not in contract.PROGRESS_ENUMS[kind]:
+            raise ResultCodecError('invalid_value')
+    elif kind == 's43-progress-v1':
+        if type(value) is not str or len(value) > 64 or value != kind:
+            raise ResultCodecError('invalid_value')
+    else:
+        _event_scalar(value, kind)
+
+
+def _progress_record(value):
+    _event_closed(value, contract.PROGRESS_FIELDS)
+    for key, kind in contract.PROGRESS_SCALARS:
+        _progress_scalar(value[key], kind)
+    perspective = value['perspective']
+    if perspective != contract.PROGRESS_ROLE_PERSPECTIVES[value['issuer_role']]:
+        raise ResultCodecError('invalid_result')
+    for key in contract.PROGRESS_COUNTER_FIELDS:
+        if key not in contract.PROGRESS_KNOWN_FIELDS[perspective] and value[key] is not None:
+            raise ResultCodecError('invalid_result')
+    for key, maximum in contract.PROGRESS_BYTE_CAPS[perspective]:
+        if value[key] is not None and value[key] > maximum:
+            raise ResultCodecError('invalid_result')
+    return dict(value)
+
+
+def _progress_subjects(owner, operation, graph, record):
+    for value in (owner, operation, graph, record):
+        _expected_subject(value)
+
+
+def decode_progress_record(frame: bytes, expected_owner_id: str, expected_operation_id: str,
+                           expected_graph_id: str, expected_record_id: str) -> dict:
+    """Parse progress claims only; no producer/peer authentication, registry
+    membership, freshness, actual stage/counter truth, interval coverage, remote
+    delivery, physical closure, successful witness or operation/recovery
+    authorization is established. Recovery-profile size eligibility is external.
+    """
+    _progress_subjects(expected_owner_id, expected_operation_id, expected_graph_id, expected_record_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.PROGRESS_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.PROGRESS_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _progress_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('owner_id', 'operation_id', 'graph_id', 'record_id')) != (
+            expected_owner_id, expected_operation_id, expected_graph_id, expected_record_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_progress_record(record: dict, expected_owner_id: str, expected_operation_id: str,
+                           expected_graph_id: str, expected_record_id: str) -> bytes:
+    """Encode progress claims only; no producer/peer authentication, registry
+    membership, freshness, actual stage/counter truth, interval coverage, remote
+    delivery, physical closure, successful witness or operation/recovery
+    authorization is established. Recovery-profile size eligibility is external.
+    """
+    _progress_subjects(expected_owner_id, expected_operation_id, expected_graph_id, expected_record_id)
+    validated = _progress_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.PROGRESS_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('owner_id', 'operation_id', 'graph_id', 'record_id')) != (
+            expected_owner_id, expected_operation_id, expected_graph_id, expected_record_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded
