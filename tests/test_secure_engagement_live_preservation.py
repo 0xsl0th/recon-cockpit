@@ -253,8 +253,8 @@ def test_exact_accepted_source_and_change_allowlist():
     assert len(sync_additions) == 2 and not sync_additions & _new_paths()
     # Admit only the reviewed S4.3 design documents; historical checks stay intact.
     s43_documents = {
-        'docs/stage4-synthetic-custody.md': '84389a44d4635b3cb9e37f0bb4d8c93528ec2fd129eb9a1155c7a5e865c280f8',
-        'docs/stage4-synthetic-custody-gates.json': 'f0aed66c254e47cff99451227b1bb5bb30c533b82e236263953edc6fb9875fac',
+        'docs/stage4-synthetic-custody.md': '3d2b5521e77cae984a125d6535ca9680bbd31f6219005fca580a7794f83f9156',
+        'docs/stage4-synthetic-custody-gates.json': '18af773f8954712145958cb6829c9724a7e3cffaffe9ea71c698ce780bb6bb12',
     }
     for name, expected_sha256 in s43_documents.items():
         path = ROOT / name
@@ -264,9 +264,9 @@ def test_exact_accepted_source_and_change_allowlist():
     # Independently reviewed intrinsic codec slice: exact paths, never a package wildcard.
     s43_codec_files = {
         'recon_cockpit_synthetic/__init__.py': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-        'recon_cockpit_synthetic/contract.py': '0ce3d022319c09481c65be7f4d4db7cd14d5a6f02006a1896ea4213af73ee12e',
-        'recon_cockpit_synthetic/codec.py': 'f3a28edb4c2dbbc82cc449d436a565f4a23a72eab62f8987a7f19586247a65d9',
-        'tests/test_secure_synthetic_custody_contract.py': 'fd6bfd6f8f4c8e6ea9b1ea7ad7cfd43b93584add2d8b2e2289d1ef6d97d230cc',
+        'recon_cockpit_synthetic/contract.py': '89f5988c71edee3fec9acc50407a8ef496705c86a79e5e74279cd670e67cea04',
+        'recon_cockpit_synthetic/codec.py': 'adcc54987ebc34b9e73ce1884962a78032099fa6f63e91f9f6c91cf035c5918e',
+        'tests/test_secure_synthetic_custody_contract.py': 'e6ec29cb8cf1ca2e6387f4860cb1a7037cbc4289f4b7500178611e6cfbff7541',
     }
     s43_codec_imports = {
         'recon_cockpit_synthetic/__init__.py': set(),
