@@ -698,3 +698,31 @@ LOOKUP_OBSERVED_SCALARS = (
 )
 LOOKUP_OBSERVED_STATUSES = ('closed', 'not_closed', 'absent', 'unavailable')
 LOOKUP_OBSERVED_REFERENCES = ('lease_id', 'closure_event_id', 'completion_event_id', 'result_operation_id')
+
+
+# Intrinsic transaction-result claims only; commit and live authority are external.
+TRANSACTION_RESULT_MAX_BYTES = 1024
+TRANSACTION_RESULT_MAX_DEPTH = 1
+TRANSACTION_RESULT_FIELDS = (
+    'call_id', 'last_event_sequence', 'lease_id', 'operation_id', 'reason',
+    'schema_version', 'status', 'transaction_id',
+)
+TRANSACTION_RESULT_SCALARS = (
+    ('call_id', 'uuid4'), ('last_event_sequence', 'event_sequence?'),
+    ('lease_id', 'uuid4?'), ('operation_id', 'uuid4?'), ('reason', 'transaction_reason?'),
+    ('schema_version', 's43-txn-result-v1'), ('status', 'transaction_status'),
+    ('transaction_id', 'uuid4?'),
+)
+TRANSACTION_RESULT_STATUSES = ('committed', 'refused', 'unavailable', 'uncertain')
+TRANSACTION_RESULT_REASONS = (
+    'invalid_input', 'stale_authority', 'wrong_state', 'expired', 'budget_exhausted',
+    'scope_refused', 'audit_unavailable', 'store_unavailable', 'commit_unknown', 'cleanup_unconfirmed',
+)
+TRANSACTION_RESULT_STATUS_REASONS = {
+    'committed': (None,),
+    'refused': ('invalid_input', 'stale_authority', 'wrong_state', 'expired',
+                'budget_exhausted', 'scope_refused'),
+    'unavailable': ('audit_unavailable', 'store_unavailable', 'cleanup_unconfirmed'),
+    'uncertain': ('commit_unknown',),
+}
+TRANSACTION_RESULT_COMMIT_FIELDS = ('transaction_id', 'last_event_sequence', 'operation_id', 'lease_id')

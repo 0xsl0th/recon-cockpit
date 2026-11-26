@@ -2236,3 +2236,63 @@ IDs and run only the six new units plus the affected source-preservation check.
 Actual 130 units and eventual portable union 159 remain distinct from the unchanged
 29 formal portable and 89 native nodes. This slice earns no acceptance credit
 and authorizes no native execution or closed S4.2c checks.
+
+
+### Intrinsic transaction-result codec slice
+
+This append-only portable slice follows the independently approved transaction-
+result scope and verified PR129 merge/main CI. It implements only
+decode_transaction_result and encode_transaction_result: the closed eight-field
+s43-txn-result-v1 record with an expected nonnull call UUID checked before input
+and matched after full intrinsic/canonical validation. Prior 130 units, imports
+and shared helpers remain unchanged. This is the smaller prerequisite for the
+future transaction-witness envelope; no witness or lookup-result wrapper is added.
+
+Scalars and nullable UUID/sequence values are checked before relationships.
+Committed requires null reason and nonnull transaction ID/sequence; operation
+and lease IDs are both null or both nonnull, following the existing event-scope
+rule. Actual scope selection and same-lease/event resolution remain external.
+Noncommitted replies have null transaction/sequence/operation/lease fields.
+Uncertain permits only commit_unknown; unavailable permits audit_unavailable,
+store_unavailable or cleanup_unconfirmed; refused permits invalid_input,
+stale_authority, wrong_state, expired, budget_exhausted or scope_refused.
+No UUID equality/distinctness, sequence progression or freshness is inferred.
+
+The flat canonical ASCII object has its own 1024-byte cap and depth 1.
+Independent golden examples cover both committed scopes and all ten failure
+reasons. Maximum complete fixture sizes: committed/engagement 247 bytes, committed/lease 315 bytes, refused/invalid_input 216 bytes, refused/stale_authority 218 bytes, refused/wrong_state 214 bytes, refused/expired 210 bytes, refused/budget_exhausted 219 bytes, refused/scope_refused 216 bytes, unavailable/audit_unavailable 224 bytes, unavailable/store_unavailable 224 bytes, unavailable/cleanup_unconfirmed 226 bytes, uncertain/commit_unknown 219 bytes.
+The future witness must account for the entire envelope within its separate
+general public cap and recovery 2048-byte cap; JSONL adds one LF. The shared
+transactions.jsonl limit remains 64 records/131072 bytes; selected recovery
+shares 50 records including two lookup attempts. No stream/member accounting
+or transaction attempt is implemented.
+
+Parsing proves no actual transaction, commit/rollback, authenticated broker or
+trusted-call origin, persisted sequence/event resolution, event scope,
+provenance/freshness, physical custody/closure, completed witness or operation/
+recovery authority. A committed receipt is not a capability. Only the original
+live broker may deliver the separate one-use setup/release signal after renewed
+deadline/cancellation checks. Imported claims create no audit event, mutation,
+registry entry, permission, signal, restored authority, retry/restart or deadline
+reset. No SQL, actual lookup/transaction, file/fixture read, transport, runtime/
+native action, manifest resolution, packet/digest/export API or authentication
+is implemented.
+
+State mutation and required audit insertion remain one durable transaction;
+audit failure aborts mutation. Missing/unknown COMMIT acknowledgment stops live
+delivery and leaves authority unavailable pending bounded reconciliation; it
+never proves rollback. Store failure cannot manufacture a committed event;
+closed non-secret failures are preserved outside that transaction. Refused
+requests append no event or mutation. Missing acknowledgment, uncertain commit
+and read-only receipt recovery authorize no mutation retry. Cleanup/recovery
+never revalidates a dead lease as executable. Original evidence, uncertainty,
+deadlines, live controls and closure/SQL predicates remain mandatory.
+
+Six finite units cover independent golden bytes, all 704 status/reason/presence
+combinations, scalar/canonical/type/boundary failures, expected-call precedence,
+fresh copies and error hygiene. Sequence -0 is invalid_value because zero is
+out of range before canonical comparison. Collect exactly 136 unit IDs and run
+only the six new units plus the affected preservation check. Actual 136 and
+eventual portable union 165 remain distinct from unchanged 29 formal portable
+and 89 native nodes. No acceptance credit, native execution or closed S4.2c
+checks are authorized.
