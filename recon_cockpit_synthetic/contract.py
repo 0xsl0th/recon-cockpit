@@ -368,3 +368,40 @@ RECOVERY_BINDING_PAYLOAD = (
 )
 RECOVERY_BINDING_ISSUER_ROLES = ('supervisor',)
 RECOVERY_BINDING_PHASE = 'closed'
+
+
+# Intrinsic lifecycle claims only; actual waits, signals and live custody are external.
+RECOVERY_LIFECYCLE_MAX_BYTES = 2048
+RECOVERY_LIFECYCLE_MAX_DEPTH = 3
+RECOVERY_LIFECYCLE_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+RECOVERY_LIFECYCLE_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'recovery_lifecycle'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+RECOVERY_LIFECYCLE_PAYLOAD = (
+    ('bootstrap_manifest_sha256', 'sha256'), ('fd_layout_sha256', 'sha256'),
+    ('filter_sha256', 'sha256'), ('monitor_session_id', 'uuid4'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('pidfd_reference', 'uuid4'),
+    ('recovery_instance_id', 'uuid4'), ('si_pid', 'pid'), ('si_signo', 'sigchld'),
+    ('si_uid', 'uid_gid'), ('signal', 'signal'), ('state', 'lifecycle_state'),
+    ('wait_code', 'wait_code'),
+)
+RECOVERY_LIFECYCLE_INTEGER_BOUNDS = {'pid': (1, 2147483647), 'uid_gid': (0, 4294967294)}
+RECOVERY_LIFECYCLE_ENUMS = {
+    'lifecycle_state': ('stopped', 'precontinue', 'continued'),
+    'wait_code': ('CLD_STOPPED', 'CLD_CONTINUED'), 'signal': ('SIGSTOP', 'SIGCONT'),
+}
+RECOVERY_LIFECYCLE_LITERALS = {'recovery_lifecycle': 'recovery_lifecycle', 'sigchld': 'SIGCHLD'}
+RECOVERY_LIFECYCLE_ISSUER_ROLES = ('supervisor',)
+RECOVERY_LIFECYCLE_VALID_TUPLES = (
+    ('stopped', 'CLD_STOPPED', 'SIGSTOP'), ('precontinue', 'CLD_STOPPED', 'SIGSTOP'),
+    ('continued', 'CLD_CONTINUED', 'SIGCONT'),
+)

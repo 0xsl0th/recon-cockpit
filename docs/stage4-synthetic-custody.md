@@ -1664,3 +1664,42 @@ finite units bring actual collection to70; affected local validation runs those
 six plus preservation. Formal29 portable/native89 remain unchanged; eventual
 portable union99 gives no acceptance credit. No native execution, closed S4.2c
 rerun or strategic gate change is included.
+
+
+## Portable recovery lifecycle codec slice
+
+The independently reviewed slice follows verified PR119 at
+`f4e2b5fea0681250f025625387c538a1db2969f5`. Separate
+`decode_recovery_lifecycle_record` and `encode_recovery_lifecycle_record` APIs
+validate intrinsic `recovery_lifecycle` claims in a closed14-field envelope and
+closed13-field payload. Canonical ASCII records retain the complete-record2048-byte
+limit and depth3. Expected owner/operation/graph/receipt IDs bind each record.
+
+Only a claimed supervisor issuer is allowed. The three accepted state/wait/signal
+tuples are stopped/CLD_STOPPED/SIGSTOP, precontinue/CLD_STOPPED/SIGSTOP and
+continued/CLD_CONTINUED/SIGCONT. SIGCHLD is exact; PID is1..2147483647 and UID
+is0..4294967294. Envelope/payload observation times both use0..9223372036854775807
+and must match. Four digests require full lowercase SHA-256 syntax only. All five
+phases and nullable operation remain representable, without inferred phase/state,
+monitor/observer equality, UUID distinctness, digest equality or sequence ordering.
+Decoded envelope/payload are fresh plain objects.
+
+Parsed claims authenticate no producer, register/resolve no receipt, prove no
+actual wait/stop/continue, installed filter, live custody or recovery eligibility,
+and authorize no operation. Actual birth pidfd/child PID/real UID, one-task stopped
+state, retained initial notification, consumed precontinue notification and the
+one SIGCONT remain external observations. Native wait sets remain initial
+WSTOPPED|WNOHANG|WNOWAIT, precontinue WSTOPPED|WNOHANG, continued
+WCONTINUED|WNOHANG, and separate termination WEXITED|WNOHANG without WNOWAIT.
+Trusted installed-filter contents/provenance, exact bootstrap/FD layout, continuous
+custody and supervisor/monitor identity remain mandatory external gates. At most
+three chronological records, one per state with the same birth pidfd/bootstrap
+manifest, remains an aggregate gate. No wait, signal, protocol or digest action
+is added; a parsed receipt cannot substitute for termination/reaping evidence.
+
+The six-file scope is pinned by `portable_recovery_lifecycle_codec_slice`.
+Prior70 codec units and existing helpers/imports remain unchanged. Six new finite
+units bring actual collection to76; local validation runs those six plus
+preservation. Formal29 portable/native89 remain unchanged; eventual portable
+union105 gives no acceptance credit. No native execution, closed S4.2c rerun or
+strategic gate change is included.

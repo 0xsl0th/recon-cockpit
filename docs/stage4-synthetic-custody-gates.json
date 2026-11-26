@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "7bb7bbdda604c1e0837f3c55e0dbf58cac304a33de4f5dc29a0430313922dac6",
+  "contract_sha256": "f51bd1479e163cfdce432cb4579d869a6110df001c09f35b9024fc4c05c6bfc6",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -11348,5 +11348,62 @@
     "continuous_live_custody_proved": false,
     "historical_provenance_resolved": false,
     "cleanup_registration_implemented": false
+  },
+  "portable_recovery_lifecycle_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_recovery_lifecycle_codec_implementation",
+    "scope_sha256": "1c1b8a9cf57e146171ba012dddf3cdc9433d59c233faa4477fdf8f2eb0bd2ecb",
+    "verified_base_merge": "f4e2b5fea0681250f025625387c538a1db2969f5",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "receipt_variants": [
+      "recovery_lifecycle"
+    ],
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_lifecycle_record_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_lifecycle_record_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_lifecycle_record_state_and_time_relations",
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_lifecycle_record_scalar_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_lifecycle_record_expected_subject_binding",
+      "tests/test_secure_synthetic_custody_contract.py::test_recovery_lifecycle_record_encoding_and_depth"
+    ],
+    "new_unit_node_count": 6,
+    "prior_codec_unit_nodes_preserved": 70,
+    "combined_unit_node_count": 76,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 105,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "registry_implemented": false,
+    "producer_authentication_implemented": false,
+    "physical_custody_proved": false,
+    "nullability_eligibility_proved": false,
+    "validation": "Collect exact76 unit IDs; run six new recovery lifecycle units and affected preservation check; independent final review before publication.",
+    "physical_process_identity_proved": false,
+    "runtime_eligibility_proved": false,
+    "termination_or_reaping_proved": false,
+    "successful_source_or_connector_closure_proved": false,
+    "actual_graph_membership_proved": false,
+    "successful_graph_cleanup_proved": false,
+    "recovery_profile_eligibility_proved": false,
+    "digest_framing_implemented": false,
+    "continuous_live_custody_proved": false,
+    "historical_provenance_resolved": false,
+    "cleanup_registration_implemented": false,
+    "actual_wait_stop_continue_proved": false,
+    "installed_filter_proved": false,
+    "lifecycle_sequence_proved": false
   }
 }
